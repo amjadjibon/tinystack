@@ -19,6 +19,7 @@ task all        # generate, lint, test, build
 
 Run a single test: `go test -race ./tests/integration -run TestName` (or any package path).
 Run the server: `./bin/tinystack start [--host H] [--port P] [--config examples/tinystack.yaml]` (default `127.0.0.1:4566`).
+`GET /_tinystack/health` lists the registered services.
 
 ## Architecture
 
@@ -62,6 +63,14 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   if the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape
   the callback. `storage/memory` is the only backend; `start.go` shares one store across services.
 
+## Adding an operation or service
+
+1. **Operation:** add it to the service's `operations` in `generator/model/profile.json` and add the input and output
+   members it needs under `shapes`. Run `task generate`, then implement the new `API` method in `internal/services/<service>`.
+2. **Service:** pin the upstream Smithy model in `generator/model/` and record it in `manifest.json`. Add a
+   `profile.json` entry, generate, and write `internal/services/<service>`. Register `api.Descriptor(...)` with
+   `gateway.New` in both `internal/cmd/start.go` and the shared test server in `tests/integration/dynamodb_test.go`.
+
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON) against an `httptest` server built the
@@ -73,3 +82,6 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 `.golangci.yml` (v2) enforces a 120-column line limit (`lll`/`golines`) and runs gofumpt, goimports and gci. Imports
 go in three groups: standard library, third-party, then `github.com/amjadjibon/tinystack`. gosec is enabled, so
 local-file reads carry `// #nosec` justifications.
+
+In hand-written Go, put a blank line after a closing `}` when another statement follows in the same block, and keep an
+`if err != nil` check directly under the call that returns the error.
