@@ -21,9 +21,11 @@ import (
 	"github.com/aws/smithy-go"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
@@ -35,10 +37,12 @@ func server(t *testing.T) *httptest.Server {
 		cfg,
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
 		api.Descriptor(provider.New(&memory.Store{})),
+		sqsapi.Descriptor(queues.New(&memory.Store{})),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	s := httptest.NewServer(h)
 	t.Cleanup(s.Close)
 	return s
@@ -93,9 +97,11 @@ func TestSDKLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if *created.TableDescription.TableArn != "arn:aws:dynamodb:us-east-1:000000000000:table/users" {
 		t.Fatal(created.TableDescription)
 	}
+
 	_, err = create(ctx, c, "users")
 	code(t, err, "ResourceInUseException")
 	item := key("one")
@@ -109,6 +115,7 @@ func TestSDKLifecycle(t *testing.T) {
 	if _, err = c.PutItem(ctx, &sdk.PutItemInput{TableName: aws.String("users"), Item: item}); err != nil {
 		t.Fatal(err)
 	}
+
 	got, err := c.GetItem(
 		ctx,
 		&sdk.GetItemInput{TableName: aws.String("users"), Key: key("one"), ConsistentRead: aws.Bool(true)},
@@ -116,9 +123,11 @@ func TestSDKLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !reflect.DeepEqual(item, got.Item) {
 		t.Fatalf("round trip changed item: %#v", got.Item)
 	}
+
 	old, err := c.PutItem(
 		ctx,
 		&sdk.PutItemInput{TableName: aws.String("users"), Item: key("one"), ReturnValues: types.ReturnValueAllOld},
@@ -126,14 +135,17 @@ func TestSDKLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !reflect.DeepEqual(old.Attributes, item) {
 		t.Fatal("ALL_OLD mismatch")
 	}
+
 	for _, v := range []string{"two", "three"} {
 		if _, err = c.PutItem(ctx, &sdk.PutItemInput{TableName: aws.String("users"), Item: key(v)}); err != nil {
 			t.Fatal(err)
 		}
 	}
+
 	paginator := sdk.NewScanPaginator(c, &sdk.ScanInput{TableName: aws.String("users"), Limit: aws.Int32(1)})
 	seen := map[string]bool{}
 	for paginator.HasMorePages() {
@@ -141,26 +153,33 @@ func TestSDKLifecycle(t *testing.T) {
 		if pageErr != nil {
 			t.Fatal(pageErr)
 		}
+
 		if page.Count != 1 {
 			t.Fatalf("wrong page count: %d", page.Count)
 		}
+
 		v := page.Items[0]["PK"].(*types.AttributeValueMemberS).Value
 		if seen[v] {
 			t.Fatal("duplicate pagination result")
 		}
+
 		seen[v] = true
 	}
+
 	if len(seen) != 3 {
 		t.Fatal(seen)
 	}
+
 	count, err := c.Scan(ctx, &sdk.ScanInput{TableName: aws.String("users"), Select: types.SelectCount})
 	if err != nil || count.Count != 3 || len(count.Items) != 0 {
 		t.Fatalf("count: %v %v", count, err)
 	}
+
 	desc, err := c.DescribeTable(ctx, &sdk.DescribeTableInput{TableName: aws.String("users")})
 	if err != nil || *desc.Table.ItemCount != 3 {
 		t.Fatalf("describe: %v %v", desc, err)
 	}
+
 	deleted, err := c.DeleteItem(
 		ctx,
 		&sdk.DeleteItemInput{TableName: aws.String("users"), Key: key("one"), ReturnValues: types.ReturnValueAllOld},
@@ -168,13 +187,16 @@ func TestSDKLifecycle(t *testing.T) {
 	if err != nil || len(deleted.Attributes) == 0 {
 		t.Fatalf("delete: %v %v", deleted, err)
 	}
+
 	missing, err := c.GetItem(ctx, &sdk.GetItemInput{TableName: aws.String("users"), Key: key("one")})
 	if err != nil || len(missing.Item) != 0 {
 		t.Fatalf("missing item: %v %v", missing, err)
 	}
+
 	if _, err = c.DeleteTable(ctx, &sdk.DeleteTableInput{TableName: aws.String("users")}); err != nil {
 		t.Fatal(err)
 	}
+
 	_, err = c.DescribeTable(ctx, &sdk.DescribeTableInput{TableName: aws.String("users")})
 	code(t, err, "ResourceNotFoundException")
 }
@@ -188,6 +210,7 @@ func TestIdentityAndListPagination(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
 	for _, tc := range []struct {
 		name, key, region string
 		count             int
@@ -206,16 +229,20 @@ func TestIdentityAndListPagination(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				names = append(names, page.TableNames...)
 			}
+
 			if len(names) != tc.count {
 				t.Fatal(names)
 			}
 		})
 	}
+
 	if _, err := create(ctx, client(s, "team-b", "us-east-1"), "aaa"); err != nil {
 		t.Fatal(err)
 	}
+
 	status, body := raw(t, s, "ListTables", `{}`, nil)
 	if status != 200 || !strings.Contains(body, `"aaa"`) {
 		t.Fatalf("unsigned default: %d %s", status, body)
@@ -239,10 +266,12 @@ func TestConcurrentWrites(t *testing.T) {
 			}
 		}()
 	}
+
 	wg.Wait()
 	if created.Load() != 1 {
 		t.Fatalf("created %d tables", created.Load())
 	}
+
 	for i := range 40 {
 		wg.Add(1)
 		go func(i int) {
@@ -255,6 +284,7 @@ func TestConcurrentWrites(t *testing.T) {
 			}
 		}(i)
 	}
+
 	wg.Wait()
 	out, err := c.Scan(ctx, &sdk.ScanInput{TableName: aws.String("users")})
 	if err != nil || out.Count != 40 {
@@ -268,30 +298,37 @@ func raw(t *testing.T, s *httptest.Server, op, body string, headers map[string]s
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	r.Header.Set("X-Amz-Target", "DynamoDB_20120810."+op)
 	r.Header.Set("Content-Type", "application/x-amz-json-1.0")
 	for k, v := range headers {
 		r.Header.Set(k, v)
 	}
+
 	resp, err := s.Client().Do(r)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
 			t.Error(closeErr)
 		}
 	}()
+
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if resp.Header.Get("x-amzn-RequestId") == "" {
 		t.Fatal("missing request ID")
 	}
+
 	if resp.Header.Get("Content-Type") != "application/x-amz-json-1.0" {
 		t.Fatal("wrong response protocol")
 	}
+
 	return resp.StatusCode, string(b)
 }
 
@@ -332,9 +369,11 @@ func TestProtocolErrors(t *testing.T) {
 			var e struct {
 				Type string `json:"__type"`
 			}
+
 			if err := json.Unmarshal([]byte(body), &e); err != nil {
 				t.Fatal(err)
 			}
+
 			if status != 400 || e.Type != tc.code {
 				t.Fatalf("%d %s", status, body)
 			}
@@ -362,6 +401,7 @@ func TestNumericKeysAndValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, n := range []string{"1.0", "1e0"} {
 		if _, err = c.PutItem(
 			ctx,
@@ -373,10 +413,12 @@ func TestNumericKeysAndValidation(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
 	scan, err := c.Scan(ctx, &sdk.ScanInput{TableName: aws.String("numbers")})
 	if err != nil || scan.Count != 1 {
 		t.Fatalf("numeric identity: %v %v", scan, err)
 	}
+
 	for _, v := range []string{
 		`{"N":"NaN"}`, `{"N":"1e99999999999999"}`, `{"S":"wrong"}`,
 		`{"N":"2","S":"two"}`, `{"SS":[]}`, `{"NULL":false}`,
@@ -386,6 +428,7 @@ func TestNumericKeysAndValidation(t *testing.T) {
 			t.Fatalf("invalid attribute accepted: %s %s", v, body)
 		}
 	}
+
 	scan, err = c.Scan(ctx, &sdk.ScanInput{TableName: aws.String("numbers")})
 	if err != nil || scan.Count != 1 {
 		t.Fatal("invalid writes changed state")

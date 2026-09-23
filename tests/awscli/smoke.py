@@ -36,8 +36,8 @@ def main():
                         time.sleep(0.05)
                 else:
                     raise RuntimeError("server never became healthy")
-                def aws(*args):
-                    result = subprocess.run(["aws", "--endpoint-url", endpoint, "--region", "us-east-1", "--output", "json", "dynamodb", *args], env=env, text=True, capture_output=True, check=True, timeout=20)
+                def aws(*args, service="dynamodb"):
+                    result = subprocess.run(["aws", "--endpoint-url", endpoint, "--region", "us-east-1", "--output", "json", service, *args], env=env, text=True, capture_output=True, check=True, timeout=20)
                     return json.loads(result.stdout or "{}")
                 aws("create-table", "--table-name", "users", "--attribute-definitions", "AttributeName=PK,AttributeType=S", "--key-schema", "AttributeName=PK,KeyType=HASH", "--billing-mode", "PAY_PER_REQUEST")
                 assert aws("list-tables")["TableNames"] == ["users"]
@@ -48,6 +48,18 @@ def main():
                 aws("delete-item", "--table-name", "users", "--key", '{"PK":{"S":"one"}}')
                 aws("delete-table", "--table-name", "users")
                 assert aws("list-tables")["TableNames"] == []
+                def sqs(*args):
+                    return aws(*args, service="sqs")
+                queue_url = sqs("create-queue", "--queue-name", "jobs")["QueueUrl"]
+                assert sqs("get-queue-url", "--queue-name", "jobs")["QueueUrl"] == queue_url
+                sent = sqs("send-message", "--queue-url", queue_url, "--message-body", "hello", "--message-attributes", '{"kind":{"DataType":"String","StringValue":"test"}}')
+                received = sqs("receive-message", "--queue-url", queue_url, "--message-attribute-names", "All", "--wait-time-seconds", "1")["Messages"]
+                assert [m["MessageId"] for m in received] == [sent["MessageId"]]
+                assert received[0]["MessageAttributes"]["kind"]["StringValue"] == "test"
+                sqs("delete-message", "--queue-url", queue_url, "--receipt-handle", received[0]["ReceiptHandle"])
+                assert "Messages" not in sqs("receive-message", "--queue-url", queue_url)
+                sqs("delete-queue", "--queue-url", queue_url)
+                assert "QueueUrls" not in sqs("list-queues")
             finally:
                 if process.poll() is None:
                     process.terminate()
