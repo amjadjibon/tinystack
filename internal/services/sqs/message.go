@@ -214,69 +214,110 @@ func (q *queue) purge(now int64) {
 	q.Messages = kept
 }
 
+// outgoing is a validated message that the queue's settings have not yet been
+// applied to.
+type outgoing struct {
+	delay *int64
+	msg   message
+	size  int64
+}
+
+// prepare validates a message independently of its queue.
+func (s *Service) prepare(
+	ctx context.Context,
+	body *string,
+	delay *int64,
+	attributes map[string]api.MessageAttributeValue,
+) (*outgoing, error) {
+	m, err := identity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if value(body) == "" {
+		return nil, missing("MessageBody")
+	}
+
+	if !validText(*body) {
+		return nil, invalidContents()
+	}
+
+	if guardErr := between("DelaySeconds", delay, 0, maxDelay); guardErr != nil {
+		return nil, guardErr
+	}
+
+	size, err := checkAttributes(attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	sender := m.AccessKey
+	if sender == "" {
+		sender = m.AccountID
+	}
+
+	return &outgoing{
+		delay: delay,
+		size:  int64(len(*body)) + size,
+		msg: message{
+			ID:         messageID(),
+			Body:       *body,
+			BodyMD5:    md5Hex([]byte(*body)),
+			SenderID:   sender,
+			Attributes: attributes,
+		},
+	}, nil
+}
+
+// enqueue applies the queue's size limit and default delay, then appends the
+// message. A per-message delay overrides the queue's default delay.
+func (q *queue) enqueue(o *outgoing, now int64) error {
+	if limit := q.Settings.MaximumMessageSize; o.size > limit {
+		return invalid("One or more parameters are invalid. Reason: Message must be shorter than %d bytes.", limit)
+	}
+
+	delay := q.Settings.DelaySeconds
+	if o.delay != nil {
+		delay = *o.delay
+	}
+
+	o.msg.SentAt = now
+	o.msg.VisibleAt = now + delay*1000
+	q.Messages = append(q.Messages, o.msg)
+	return nil
+}
+
+func (o *outgoing) md5OfAttributes() *string {
+	if len(o.msg.Attributes) == 0 {
+		return nil
+	}
+
+	return ptr(attributesMD5(o.msg.Attributes))
+}
+
 func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (*api.SendMessageResult, error) {
 	key, err := resolve(ctx, in.QueueUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := identity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	body := value(in.MessageBody)
-	if body == "" {
-		return nil, missing("MessageBody")
-	}
-
-	if !validText(body) {
-		return nil, invalidContents()
-	}
-
-	if guardErr := between("DelaySeconds", in.DelaySeconds, 0, maxDelay); guardErr != nil {
-		return nil, guardErr
-	}
-
-	size, err := checkAttributes(in.MessageAttributes)
+	o, err := s.prepare(ctx, in.MessageBody, in.DelaySeconds, in.MessageAttributes)
 	if err != nil {
 		return nil, err
 	}
 
 	now := s.now().UnixMilli()
-	sender := m.AccessKey
-	if sender == "" {
-		sender = m.AccountID
-	}
-
-	msg := message{
-		ID:         messageID(),
-		Body:       body,
-		BodyMD5:    md5Hex([]byte(body)),
-		SenderID:   sender,
-		Attributes: in.MessageAttributes,
-		SentAt:     now,
-	}
-
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		q, loadErr := load(tx, key)
 		if loadErr != nil {
 			return loadErr
 		}
 
-		if limit := q.Settings.MaximumMessageSize; int64(len(body))+size > limit {
-			return invalid("One or more parameters are invalid. Reason: Message must be shorter than %d bytes.", limit)
-		}
-
-		// A per-message delay overrides the queue's default delay.
-		delay := q.Settings.DelaySeconds
-		if in.DelaySeconds != nil {
-			delay = *in.DelaySeconds
-		}
-
-		msg.VisibleAt = now + delay*1000
 		q.purge(now)
-		q.Messages = append(q.Messages, msg)
+		if guardErr := q.enqueue(o, now); guardErr != nil {
+			return guardErr
+		}
+
 		return save(tx, key, q)
 	})
 	if err != nil {
@@ -284,12 +325,11 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 	}
 
 	s.notify(key)
-	out := &api.SendMessageResult{MessageId: ptr(msg.ID), MD5OfMessageBody: ptr(msg.BodyMD5)}
-	if len(msg.Attributes) > 0 {
-		out.MD5OfMessageAttributes = ptr(attributesMD5(msg.Attributes))
-	}
-
-	return out, nil
+	return &api.SendMessageResult{
+		MessageId:              ptr(o.msg.ID),
+		MD5OfMessageBody:       ptr(o.msg.BodyMD5),
+		MD5OfMessageAttributes: o.md5OfAttributes(),
+	}, nil
 }
 
 type receiveOptions struct {
@@ -492,6 +532,19 @@ func (s *Service) ReceiveMessage(
 	}
 }
 
+// remove deletes the message a receipt handle refers to. A stale handle
+// matches nothing and reports false.
+func (q *queue) remove(id, nonce string) bool {
+	for i, msg := range q.Messages {
+		if msg.ID == id && msg.Receipt == nonce {
+			q.Messages = append(q.Messages[:i], q.Messages[i+1:]...)
+			return true
+		}
+	}
+
+	return false
+}
+
 func (s *Service) DeleteMessage(ctx context.Context, in *api.DeleteMessageRequest) (*api.DeleteMessageOutput, error) {
 	key, err := resolve(ctx, in.QueueUrl)
 	if err != nil {
@@ -509,20 +562,36 @@ func (s *Service) DeleteMessage(ctx context.Context, in *api.DeleteMessageReques
 			return loadErr
 		}
 
-		for i, msg := range q.Messages {
-			if msg.ID == id && msg.Receipt == nonce {
-				q.Messages = append(q.Messages[:i], q.Messages[i+1:]...)
-				return save(tx, key, q)
-			}
+		if !q.remove(id, nonce) {
+			return nil
 		}
 
-		return nil
+		return save(tx, key, q)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &api.DeleteMessageOutput{}, nil
+}
+
+// changeVisibility makes an in-flight message visible after timeout seconds.
+func (q *queue) changeVisibility(id, nonce string, timeout, now int64) error {
+	for i := range q.Messages {
+		msg := &q.Messages[i]
+		if msg.ID != id || msg.Receipt != nonce {
+			continue
+		}
+
+		if msg.VisibleAt <= now {
+			return awserror.New("MessageNotInflight", "Message is not in flight.")
+		}
+
+		msg.VisibleAt = now + timeout*1000
+		return nil
+	}
+
+	return awserror.New("ReceiptHandleIsInvalid", "The receipt handle does not refer to a received message.")
 }
 
 func (s *Service) ChangeMessageVisibility(
@@ -555,21 +624,11 @@ func (s *Service) ChangeMessageVisibility(
 		}
 
 		q.purge(now)
-		for i := range q.Messages {
-			msg := &q.Messages[i]
-			if msg.ID != id || msg.Receipt != nonce {
-				continue
-			}
-
-			if msg.VisibleAt <= now {
-				return awserror.New("MessageNotInflight", "Message is not in flight.")
-			}
-
-			msg.VisibleAt = now + *in.VisibilityTimeout*1000
-			return save(tx, key, q)
+		if guardErr := q.changeVisibility(id, nonce, *in.VisibilityTimeout, now); guardErr != nil {
+			return guardErr
 		}
 
-		return awserror.New("ReceiptHandleIsInvalid", "The receipt handle does not refer to a received message.")
+		return save(tx, key, q)
 	})
 	if err != nil {
 		return nil, err
