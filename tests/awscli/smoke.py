@@ -74,6 +74,26 @@ def main():
                 sns("unsubscribe", "--subscription-arn", subscription_arn)
                 sns("delete-topic", "--topic-arn", topic_arn)
                 assert sns("list-topics").get("Topics", []) == []
+                def s3api(*args):
+                    return aws(*args, service="s3api")
+                s3api("create-bucket", "--bucket", "assets")
+                assert [b["Name"] for b in s3api("list-buckets")["Buckets"]] == ["assets"]
+                source = Path(directory) / "hello.txt"
+                source.write_text("hello from the cli")
+                put = s3api("put-object", "--bucket", "assets", "--key", "docs/hello world.txt", "--body", str(source), "--content-type", "text/plain")
+                listed = s3api("list-objects-v2", "--bucket", "assets", "--prefix", "docs/")
+                assert [(o["Key"], o["ETag"]) for o in listed["Contents"]] == [("docs/hello world.txt", put["ETag"])]
+                target = Path(directory) / "downloaded.txt"
+                got = s3api("get-object", "--bucket", "assets", "--key", "docs/hello world.txt", str(target))
+                assert got["ContentType"] == "text/plain" and target.read_text() == "hello from the cli"
+                def cli(*args):
+                    return subprocess.run(["aws", "--endpoint-url", endpoint, "--region", "us-east-1", *args], env=env, text=True, capture_output=True, check=True, timeout=20).stdout
+                cli("s3", "cp", str(source), "s3://assets/copied.txt")
+                assert "copied.txt" in cli("s3", "ls", "s3://assets/")
+                cli("s3", "rm", "s3://assets/copied.txt")
+                s3api("delete-object", "--bucket", "assets", "--key", "docs/hello world.txt")
+                s3api("delete-bucket", "--bucket", "assets")
+                assert s3api("list-buckets").get("Buckets", []) == []
             finally:
                 if process.poll() is None:
                     process.terminate()

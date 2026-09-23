@@ -21,11 +21,13 @@ import (
 	"github.com/aws/smithy-go"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
 	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
@@ -44,6 +46,7 @@ func server(t *testing.T) *httptest.Server {
 		api.Descriptor(provider.New(store)),
 		sqsapi.Descriptor(sqsService),
 		snsapi.Descriptor(topics.New(store, sqsService)),
+		s3api.Descriptor(buckets.New(store)),
 	)
 	if err != nil {
 		t.Fatal(err)
