@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB and SQS endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, and SNS endpoints for development and tests.
 
 ## Run
 
@@ -39,6 +39,13 @@ aws --endpoint-url http://localhost:4566 sqs send-message \
   --queue-url "$QUEUE_URL" --message-body hello
 aws --endpoint-url http://localhost:4566 sqs receive-message \
   --queue-url "$QUEUE_URL" --wait-time-seconds 5
+
+TOPIC_ARN=$(aws --endpoint-url http://localhost:4566 sns create-topic \
+  --name alerts --query TopicArn --output text)
+aws --endpoint-url http://localhost:4566 sns subscribe --topic-arn "$TOPIC_ARN" \
+  --protocol sqs --notification-endpoint arn:aws:sqs:us-east-1:000000000000:jobs
+aws --endpoint-url http://localhost:4566 sns publish \
+  --topic-arn "$TOPIC_ARN" --message "hello subscribers"
 ```
 
 AWS SDK clients use their standard endpoint override and local credentials; no
@@ -72,7 +79,19 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 | DeleteMessage / ChangeMessageVisibility | Receipt handles change on each receive; a stale handle deletes nothing |
 | SendMessageBatch / DeleteMessageBatch / ChangeMessageVisibilityBatch | Up to 10 entries with distinct IDs in one transaction; each entry succeeds or fails on its own; batch sends are limited to 1 MiB in total |
 
-The server uses AWS JSON 1.0 and parses SigV4 credential scopes without verifying
+### SNS (AWS Query)
+
+Standard topics that fan out to SQS queues in-process.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateTopic | Idempotent for identical attributes; `DisplayName` |
+| DeleteTopic | Removes the topic and its subscriptions; deleting a missing topic succeeds |
+| ListTopics / ListSubscriptions / ListSubscriptionsByTopic | Account/region isolation, 100 per page with `NextToken` |
+| Subscribe / Unsubscribe | `sqs` protocol with a queue ARN in the subscriber's account, confirmed at once; `RawMessageDelivery`; subscribing twice returns the existing subscription |
+| Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus an optional `sqs` text); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; a failed delivery does not fail Publish |
+
+SigV4 credential scopes are parsed without verifying
 signatures. `identity.accounts` maps access keys to 12-digit account IDs. Unmapped
 keys and unsigned requests use the default account. Signed regions take precedence
 over recognized regional hosts and the configured default. This is local identity
@@ -82,7 +101,9 @@ DynamoDB limits: no Query, UpdateItem, expressions or conditional writes, projec
 secondary indexes, transactions API, tags, or capacity accounting/throttling.
 SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
 message groups on standard queues, dead-letter redrive back to the source queue, tags,
-policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. Neither service has IAM,
+policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` subscriptions; no FIFO topics, filter
+policies, message signatures (the envelope omits the `Signature` fields), topic attribute APIs,
+tags, data protection, or cross-account subscriptions. No service has IAM,
 persistence, or Terraform support yet. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.
@@ -99,17 +120,19 @@ bindings supply Query error codes and HTTP statuses, which query-compatible JSON
 services also send in `X-Amzn-Query-Error`. `services/*` contains behavior without
 HTTP dependencies. Storage uses serializable callback transactions with rollback
 and copied byte values. The memory backend stores each table or queue as one
-record; it favors simple correctness for small test datasets over large-table
+record (a topic record holds its subscriptions); it favors simple correctness for small test datasets over large-table
 performance. SQS long polls wait outside transactions and retry the atomic claim
-when the queue changes or an in-flight message becomes visible.
+when the queue changes or an in-flight message becomes visible. SNS delivers to
+SQS by calling the SQS service directly, never over HTTP.
 
 The pinned upstream Smithy models, checksums, and license live in `generator/model`.
 `profile.json` selects each service's operations and implemented fields; its
 `query` block is the compatibility overlay for legacy AWS Query facts (the XML
-namespace) that current models omit. `go generate ./...` works offline after Go
+namespace) that query-compatible JSON models omit; pure AWS Query models such as
+SNS declare their namespace themselves. `go generate ./...` works offline after Go
 dependencies are available and reproduces the checked-in types, bindings, and
 error descriptors. The generator fails on unsupported wire traits; it supports
-AWS JSON 1.0 services, plus AWS Query for query-compatible ones. REST codecs
+AWS JSON 1.0 services (plus AWS Query for query-compatible ones) and AWS Query services. REST codecs
 come later.
 
 ## Validate
@@ -118,7 +141,7 @@ come later.
 task test       # Official Go SDK, AWS Query wire, and transaction tests, with -race
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
-task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS), verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS), verify graceful shutdown
 ```
 
 Tasks run with [Task](https://taskfile.dev). The tests use local ephemeral ports

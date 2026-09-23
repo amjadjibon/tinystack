@@ -46,8 +46,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     and `query:"..."` struct tags.
   - Modeled errors become `Descriptor().Errors` (Query code and HTTP status from `awsQueryError`/`httpError`). Unit
     outputs are generated as `<Op>Output struct{}`.
-  - The generator rejects unsupported wire traits and only handles AWS JSON 1.0 services (plus Query for
-    `awsQueryCompatible` ones).
+  - The generator rejects unsupported wire traits. It handles AWS JSON 1.0 services (plus Query for
+    `awsQueryCompatible` ones, which need the `query` overlay) and pure AWS Query services such as SNS, which take their
+    XML namespace from the model and must not have an overlay.
 
   `TestReproducibleGeneration` fails if any committed `api.go` is stale, so run `task generate` after changing the
   generator or the profile.
@@ -55,12 +56,13 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   the model's error shape name as the code. The gateway applies the service's error bindings, and each codec renders
   the envelope; `X-Amzn-Query-Error` is sent for query-compatible JSON services. The `query` codec is driven entirely
   by the generated struct tags. Unsupported input fields or parameters must fail explicitly, never be silently ignored.
-- **services/dynamodb**, **services/sqs**: behavior only, with no HTTP dependencies. Each table or queue is stored as
-  **one JSON-serialized record** under `account/region/<service>/<name>`. Scoping comes from request metadata, which is
-  how account/region isolation works. SQS long polling registers `watch` before the atomic `claim` (so wakeups are not
-  lost), waits outside the transaction, and is released by `Stop` (registered with `http.Server.RegisterOnShutdown`).
-  FIFO group ordering and dead-letter moves also happen inside `claim`, and batch operations run all entries in one
-  `Update`, so every queue change stays atomic.
+- **services/dynamodb**, **services/sqs**, **services/sns**: behavior only, with no HTTP dependencies. Each table,
+  queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`. Scoping comes
+  from request metadata, which is how account/region isolation works. SQS long polling registers `watch` before the
+  atomic `claim` (so wakeups are not lost), waits outside the transaction, and is released by `Stop` (registered with
+  `http.Server.RegisterOnShutdown`). FIFO group ordering and dead-letter moves also happen inside `claim`, and batch
+  operations run all entries in one `Update`, so every queue change stays atomic. SNS holds a `*sqs.Service` and
+  delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its subscriptions.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only
   if the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape
   the callback. `storage/memory` is the only backend; `start.go` shares one store across services.
@@ -75,8 +77,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 
 ## Tests
 
-- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON) against an `httptest` server built the
-  same way as `start.go`, plus raw AWS Query wire tests for SQS. Prefer adding behavior coverage here.
+- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS over Query) against an `httptest`
+  server built the same way as `start.go`, plus raw AWS Query wire tests for SQS. Prefer adding behavior coverage here.
 - Tests use ephemeral local ports and never contact AWS.
 
 ## Lint/style
