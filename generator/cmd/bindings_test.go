@@ -65,7 +65,16 @@ func TestRESTBindingFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := compileBinding(m, "fixture#Upload", "restJson1", "", "")
+	all := func(id string) []string {
+		var names []string
+		for name := range m.Shapes[id].Members {
+			names = append(names, name)
+		}
+
+		return names
+	}
+
+	b, err := compileBinding(m, "fixture#Upload", "restJson1", "", "", all)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +86,24 @@ func TestRESTBindingFixture(t *testing.T) {
 		t.Fatalf("lost wire metadata: %#v", b)
 	}
 
-	if _, err = compileBinding(m, "fixture#Upload", "unknown", "", ""); err == nil {
+	// Unselected header inputs stay visible so requests that set them fail.
+	b, err = compileBinding(m, "fixture#Upload", "restXml", "", "", func(id string) []string {
+		if id == "fixture#Input" {
+			return []string{"Key", "Body"}
+		}
+
+		return all(id)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if b.ContentType != "application/xml" || b.Input["Checksum"].Location != "unsupported:header" ||
+		b.Input["Checksum"].Name != "X-Checksum" {
+		t.Fatalf("unselected header lost: %#v", b.Input)
+	}
+
+	if _, err = compileBinding(m, "fixture#Upload", "unknown", "", "", all); err == nil {
 		t.Fatal("unsupported protocol accepted")
 	}
 }

@@ -3,14 +3,21 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
 
 // compileBinding retains wire metadata independently of runtime codec support.
-func compileBinding(m model, id, protocol, targetPrefix, version string) (catalog.Binding, error) {
+// fields selects the generated members of a structure.
+func compileBinding(
+	m model,
+	id, protocol, targetPrefix, version string,
+	fields func(string) []string,
+) (catalog.Binding, error) {
 	op := m.Shapes[id]
+	contentType := "application/json"
 	switch protocol {
 	case catalog.AWSQuery:
 		return catalog.Binding{
@@ -30,6 +37,8 @@ func compileBinding(m model, id, protocol, targetPrefix, version string) (catalo
 			StatusCode:  200,
 		}, nil
 	case "restJson1":
+	case catalog.RESTXML:
+		contentType = "application/xml"
 	default:
 		return catalog.Binding{}, fmt.Errorf("unsupported protocol %s", protocol)
 	}
@@ -52,12 +61,12 @@ func compileBinding(m model, id, protocol, targetPrefix, version string) (catalo
 		return catalog.Binding{}, fmt.Errorf("invalid HTTP trait")
 	}
 
-	in, err := memberBindings(m.Shapes[op.Input.Target].Members)
+	in, err := memberBindings(m.Shapes[op.Input.Target].Members, fields(op.Input.Target), true)
 	if err != nil {
 		return catalog.Binding{}, err
 	}
 
-	out, err := memberBindings(m.Shapes[op.Output.Target].Members)
+	out, err := memberBindings(m.Shapes[op.Output.Target].Members, fields(op.Output.Target), false)
 	if err != nil {
 		return catalog.Binding{}, err
 	}
@@ -66,13 +75,26 @@ func compileBinding(m model, id, protocol, targetPrefix, version string) (catalo
 		Method:      httpTrait.Method,
 		URI:         httpTrait.URI,
 		StatusCode:  httpTrait.Code,
-		ContentType: "application/json",
+		ContentType: contentType,
 		Input:       in,
 		Output:      out,
 	}, nil
 }
 
-func memberBindings(members map[string]reference) (map[string]catalog.MemberBinding, error) {
+const (
+	locHeader = "header"
+	locQuery  = "query"
+	locPrefix = "prefix"
+)
+
+// memberBindings locates the selected members. For inputs, modeled header and
+// query members the profile leaves out are recorded as unsupported, so a
+// request that sets them fails instead of being silently ignored.
+func memberBindings(
+	members map[string]reference,
+	selected []string,
+	input bool,
+) (map[string]catalog.MemberBinding, error) {
 	bindings := map[string]catalog.MemberBinding{}
 	for name, member := range members {
 		binding := catalog.MemberBinding{Location: "document", Name: name}
@@ -83,13 +105,15 @@ func memberBindings(members map[string]reference) (map[string]catalog.MemberBind
 			case "smithy.api#httpLabel":
 				location = "label"
 			case "smithy.api#httpHeader":
-				location = "header"
+				location = locHeader
 			case "smithy.api#httpQuery":
-				location = "query"
+				location = locQuery
 			case "smithy.api#httpPayload":
 				location = "payload"
+			case "smithy.api#httpPrefixHeaders":
+				location = locPrefix
 			default:
-				if strings.HasPrefix(trait, "smithy.api#http") {
+				if strings.HasPrefix(trait, "smithy.api#http") && slices.Contains(selected, name) {
 					return nil, fmt.Errorf("unsupported HTTP binding %s", trait)
 				}
 			}
@@ -104,14 +128,20 @@ func memberBindings(members map[string]reference) (map[string]catalog.MemberBind
 
 			bound = true
 			binding.Location = location
-			if location == "header" || location == "query" {
+			if location == locHeader || location == locQuery || location == locPrefix {
 				if guardErr := json.Unmarshal(raw, &binding.Name); guardErr != nil {
 					return nil, guardErr
 				}
 			}
 		}
 
-		bindings[name] = binding
+		switch {
+		case slices.Contains(selected, name):
+			bindings[name] = binding
+		case input && (binding.Location == locHeader || binding.Location == locQuery || binding.Location == locPrefix):
+			binding.Location = "unsupported:" + binding.Location
+			bindings[name] = binding
+		}
 	}
 
 	return bindings, nil

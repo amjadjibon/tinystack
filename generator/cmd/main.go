@@ -57,11 +57,15 @@ type queryOverlay struct {
 type (
 	model     struct{ Shapes map[string]shape }
 	generator struct {
-		model   model
-		profile serviceProfile
-		seen    map[string]bool
-		out     bytes.Buffer
-		query   bool
+		model     model
+		profile   serviceProfile
+		seen      map[string]bool
+		imports   map[string]bool
+		roots     map[string]bool
+		namespace string
+		out       bytes.Buffer
+		query     bool
+		rest      bool
 	}
 )
 
@@ -93,7 +97,16 @@ func (g *generator) typeName(id string) (string, error) {
 		return "bool", nil
 	case "integer", "long":
 		return "int64", nil
-	case "double", "float", "timestamp":
+	case "timestamp":
+		// REST XML carries timestamps as ISO 8601 text and HTTP dates, which
+		// time.Time encodes; the JSON protocols use epoch seconds.
+		if g.rest {
+			g.imports["time"] = true
+			return "time.Time", nil
+		}
+
+		return "float64", nil
+	case "double", "float":
 		return "float64", nil
 	case "blob":
 		return "[]byte", nil
@@ -110,8 +123,25 @@ func (g *generator) typeName(id string) (string, error) {
 	}
 }
 
-func checkTraits(traits map[string]json.RawMessage) error {
+// restTraits are the HTTP binding traits REST protocols support.
+var restTraits = map[string]bool{
+	"smithy.api#http":              true,
+	"smithy.api#httpLabel":         true,
+	"smithy.api#httpHeader":        true,
+	"smithy.api#httpQuery":         true,
+	"smithy.api#httpPayload":       true,
+	"smithy.api#httpPrefixHeaders": true,
+	"smithy.api#streaming":         true,
+}
+
+// checkTraits rejects wire traits the codecs do not implement. REST services
+// also accept the HTTP binding traits.
+func checkTraits(traits map[string]json.RawMessage, rest bool) error {
 	for t := range traits {
+		if rest && restTraits[t] {
+			continue
+		}
+
 		if strings.HasPrefix(t, "smithy.api#http") || t == "smithy.api#streaming" ||
 			t == "smithy.api#timestampFormat" ||
 			t == "smithy.api#jsonName" ||
@@ -198,6 +228,67 @@ func (g *generator) queryTag(member reference, name string) (string, error) {
 	return ` query:"` + strings.Join(opts, ",") + `"`, nil
 }
 
+// xmlTag records the encoding/xml element for a REST XML body member. Members
+// bound to the HTTP message are skipped by the XML codec.
+func (g *generator) xmlTag(member reference, name string) (string, error) {
+	for trait := range member.Traits {
+		if trait != "smithy.api#http" && restTraits[trait] {
+			return ` xml:"-"`, nil
+		}
+	}
+
+	wire, err := xmlName(member.Traits, name)
+	if err != nil {
+		return "", err
+	}
+
+	target := g.model.Shapes[member.Target]
+	switch target.Type {
+	case shapeMap:
+		return "", fmt.Errorf("maps in REST XML bodies are not supported")
+	case shapeList:
+		if kind := g.model.Shapes[target.Member.Target].Type; kind == shapeList || kind == shapeMap {
+			return "", fmt.Errorf("nested collections are not supported by the REST XML codec")
+		}
+
+		if _, flat := member.Traits["smithy.api#xmlFlattened"]; !flat {
+			memberName, nameErr := xmlName(target.Member.Traits, "member")
+			if nameErr != nil {
+				return "", nameErr
+			}
+
+			wire += ">" + memberName
+		}
+	}
+
+	return ` xml:"` + wire + `,omitempty"`, nil
+}
+
+// xmlRoot returns the XMLName field of a REST XML structure that is an XML
+// document root: shapes with an xmlName trait, and operation inputs and outputs
+// with body members.
+func (g *generator) xmlRoot(id string, s *shape) (string, error) {
+	name, err := xmlName(s.Traits, short(id))
+	if err != nil {
+		return "", err
+	}
+
+	_, named := s.Traits["smithy.api#xmlName"]
+	body := false
+	for _, n := range g.fields(id) {
+		if tag, tagErr := g.xmlTag(s.Members[n], n); tagErr == nil && tag != ` xml:"-"` {
+			body = true
+		}
+	}
+
+	if !named && (!g.roots[id] || !body) {
+		return "", nil
+	}
+
+	g.imports["encoding/xml"] = true
+	return fmt.Sprintf("XMLName xml.Name `json:\"-\" xml:%q`\n", strings.TrimSpace(g.namespace+" "+name)), nil
+}
+
 func (g *generator) emit(id string) error {
 	if g.seen[id] {
 		return nil
@@ -205,20 +296,20 @@ func (g *generator) emit(id string) error {
 
 	g.seen[id] = true
 	s := g.model.Shapes[id]
-	if guardErr := checkTraits(s.Traits); guardErr != nil {
+	if guardErr := checkTraits(s.Traits, g.rest); guardErr != nil {
 		return fmt.Errorf("%s: %w", id, guardErr)
 	}
 
 	switch s.Type {
 	case shapeList:
-		if guardErr := checkTraits(s.Member.Traits); guardErr != nil {
+		if guardErr := checkTraits(s.Member.Traits, g.rest); guardErr != nil {
 			return fmt.Errorf("%s: %w", id, guardErr)
 		}
 
 		return g.emit(s.Member.Target)
 	case shapeMap:
 		for _, ref := range []reference{s.Key, s.Value} {
-			if guardErr := checkTraits(ref.Traits); guardErr != nil {
+			if guardErr := checkTraits(ref.Traits, g.rest); guardErr != nil {
 				return fmt.Errorf("%s: %w", id, guardErr)
 			}
 		}
@@ -232,7 +323,7 @@ func (g *generator) emit(id string) error {
 				return fmt.Errorf("unknown field %s.%s", id, n)
 			}
 
-			if guardErr := checkTraits(m.Traits); guardErr != nil {
+			if guardErr := checkTraits(m.Traits, g.rest); guardErr != nil {
 				return guardErr
 			}
 
@@ -242,6 +333,15 @@ func (g *generator) emit(id string) error {
 		}
 
 		fmt.Fprintf(&g.out, "type %s struct {\n", short(id))
+		if g.rest {
+			root, err := g.xmlRoot(id, &s)
+			if err != nil {
+				return fmt.Errorf("%s: %w", id, err)
+			}
+
+			g.out.WriteString(root)
+		}
+
 		for _, n := range fields {
 			m := s.Members[n]
 			t, err := g.typeName(m.Target)
@@ -264,10 +364,15 @@ func (g *generator) emit(id string) error {
 			}
 
 			queryTag := ""
-			if g.query {
-				if queryTag, err = g.queryTag(m, n); err != nil {
-					return fmt.Errorf("%s.%s: %w", id, n, err)
-				}
+			switch {
+			case g.query:
+				queryTag, err = g.queryTag(m, n)
+			case g.rest:
+				queryTag, err = g.xmlTag(m, n)
+			}
+
+			if err != nil {
+				return fmt.Errorf("%s.%s: %w", id, n, err)
 			}
 
 			fmt.Fprintf(&g.out, "%s %s `json:\"%s\"%s`\n", n, t, tag, queryTag)
@@ -343,7 +448,20 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 	_, jsonProtocol := svc.Traits["aws.protocols#awsJson1_0"]
 	_, queryProtocol := svc.Traits["aws.protocols#awsQuery"]
 	_, queryCompatible = svc.Traits["aws.protocols#awsQueryCompatible"]
+	_, restXML := svc.Traits["aws.protocols#restXml"]
 	switch {
+	case restXML:
+		var ns struct{ URI string }
+		if guardErr := json.Unmarshal(svc.Traits["smithy.api#xmlNamespace"], &ns); guardErr != nil || ns.URI == "" {
+			return nil, "", false, fmt.Errorf("restXml model needs an XML namespace")
+		}
+
+		if g.query {
+			return nil, "", false, fmt.Errorf("restXml models do not take a query overlay")
+		}
+
+		g.rest = true
+		return []string{catalog.RESTXML}, ns.URI, false, nil
 	case jsonProtocol && g.query:
 		if !queryCompatible || svc.Version == "" || g.profile.Query.XMLNamespace == "" {
 			return nil, "", false, fmt.Errorf(
@@ -393,7 +511,13 @@ func (g *generator) service() (string, shape, error) {
 }
 
 func generate(name string, data []byte, profile serviceProfile) ([]byte, error) {
-	g := generator{seen: map[string]bool{}, profile: profile, query: profile.Query != nil}
+	g := generator{
+		seen:    map[string]bool{},
+		imports: map[string]bool{},
+		roots:   map[string]bool{},
+		profile: profile,
+		query:   profile.Query != nil,
+	}
 	if guardErr := json.Unmarshal(data, &g.model); guardErr != nil {
 		return nil, guardErr
 	}
@@ -407,6 +531,8 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	g.namespace = namespace
 
 	var sigv4 struct{ Name string }
 	if guardErr := json.Unmarshal(svc.Traits["aws.auth#sigv4"], &sigv4); guardErr != nil || sigv4.Name == "" {
@@ -423,12 +549,6 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		return nil, fmt.Errorf("profile selects no operations")
 	}
 
-	fmt.Fprintln(
-		&g.out,
-		"// Code generated by generator/cmd; DO NOT EDIT.\npackage "+name+"\n\nimport ("+
-			"\"context\"; \"github.com/amjadjibon/tinystack/internal/aws/catalog\")",
-	)
-
 	outputs := map[string]string{}
 	for _, op := range profile.Operations {
 		s, ok := g.model.Shapes[prefix+op]
@@ -436,7 +556,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 			return nil, fmt.Errorf("unknown operation %s", op)
 		}
 
-		if guardErr := checkTraits(s.Traits); guardErr != nil {
+		if guardErr := checkTraits(s.Traits, g.rest); guardErr != nil {
 			return nil, guardErr
 		}
 
@@ -444,6 +564,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 			return nil, fmt.Errorf("%s: operations without input are not supported", op)
 		}
 
+		g.roots[s.Input.Target], g.roots[s.Output.Target] = true, true
 		outputs[op] = short(s.Output.Target)
 		ids := []string{s.Input.Target}
 		if s.Output.Target == unitShape {
@@ -495,7 +616,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		s := g.model.Shapes[prefix+op]
 		bindings := map[string]catalog.Binding{}
 		for _, protocol := range protocols {
-			binding, bindingErr := compileBinding(g.model, prefix+op, protocol, targetPrefix, svc.Version)
+			binding, bindingErr := compileBinding(g.model, prefix+op, protocol, targetPrefix, svc.Version, g.fields)
 			if bindingErr != nil {
 				return nil, bindingErr
 			}
@@ -519,7 +640,21 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 
 	fmt.Fprintln(&g.out, "}}}")
 
-	formatted, err := format.Source(g.out.Bytes())
+	imports := []string{"context", "github.com/amjadjibon/tinystack/internal/aws/catalog"}
+	for pkg := range g.imports {
+		imports = append(imports, pkg)
+	}
+
+	sort.Strings(imports)
+	var source bytes.Buffer
+	source.WriteString("// Code generated by generator/cmd; DO NOT EDIT.\npackage " + name + "\n\nimport (\n")
+	for _, pkg := range imports {
+		fmt.Fprintf(&source, "%q\n", pkg)
+	}
+
+	source.WriteString(")\n\n")
+	source.Write(g.out.Bytes())
+	formatted, err := format.Source(source.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("format generated source: %w", err)
 	}

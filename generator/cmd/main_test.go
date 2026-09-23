@@ -165,6 +165,52 @@ func TestPureQueryFixture(t *testing.T) {
 	}
 }
 
+func TestRESTXMLFixture(t *testing.T) {
+	model := `{"shapes": {
+  "fixture#Svc": {"type": "service", "version": "2020-01-01", "traits": {
+    "aws.protocols#restXml": {"noErrorWrapping": true}, "aws.auth#sigv4": {"name": "fix"},
+    "smithy.api#xmlNamespace": {"uri": "urn:fixture"}}},
+  "fixture#List": {"type": "operation", "input": {"target": "fixture#In"}, "output": {"target": "fixture#Out"},
+    "traits": {"smithy.api#http": {"method": "GET", "uri": "/{Bucket}?list", "code": 200}}},
+  "fixture#In": {"type": "structure", "members": {
+    "Bucket": {"target": "smithy.api#String", "traits": {"smithy.api#httpLabel": {}, "smithy.api#required": {}}},
+    "Prefix": {"target": "smithy.api#String", "traits": {"smithy.api#httpQuery": "prefix"}},
+    "Owner": {"target": "smithy.api#String", "traits": {"smithy.api#httpHeader": "x-owner"}}}},
+  "fixture#Out": {"type": "structure", "traits": {"smithy.api#xmlName": "Result"}, "members": {
+    "Items": {"target": "fixture#ItemList", "traits": {"smithy.api#xmlFlattened": {}}},
+    "Names": {"target": "fixture#NameList"},
+    "Meta": {"target": "fixture#MetaMap", "traits": {"smithy.api#httpPrefixHeaders": "x-meta-"}}}},
+  "fixture#ItemList": {"type": "list", "member": {"target": "fixture#Item"}},
+  "fixture#NameList": {"type": "list",
+    "member": {"target": "smithy.api#String", "traits": {"smithy.api#xmlName": "Name"}}},
+  "fixture#MetaMap": {"type": "map", "key": {"target": "smithy.api#String"}, "value": {"target": "smithy.api#String"}},
+  "fixture#Item": {"type": "structure", "members": {"When": {"target": "smithy.api#Timestamp"}}},
+  "smithy.api#String": {"type": "string"},
+  "smithy.api#Timestamp": {"type": "timestamp"}
+}}`
+	profile := serviceProfile{Operations: []string{"List"}, Shapes: map[string][]string{"In": {"Bucket", "Prefix"}}}
+	source, err := generate("fixture", []byte(model), profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		`XMLName xml.Name ` + "`" + `json:"-" xml:"urn:fixture Result"` + "`",
+		`Items []Item ` + "`" + `json:"Items,omitempty" xml:"Items,omitempty"` + "`",
+		`xml:"Names>Name,omitempty"`,
+		`When *time.Time`,
+		`Protocols: []string{"restXml"}`,
+		`"Owner": catalog.MemberBinding{Location: "unsupported:header", Name: "x-owner"}`,
+		`"Meta": catalog.MemberBinding{Location: "prefix", Name: "x-meta-"}`,
+		`URI: "/{Bucket}?list"`,
+	} {
+		// Compare without gofmt's column alignment.
+		if !strings.Contains(strings.Join(strings.Fields(string(source)), " "), want) {
+			t.Fatalf("generated source lacks %s:\n%s", want, source)
+		}
+	}
+}
+
 func TestUnsupportedWireTraitsFail(t *testing.T) {
 	for _, trait := range []string{
 		"smithy.api#streaming", "smithy.api#httpHeader",
@@ -172,7 +218,10 @@ func TestUnsupportedWireTraitsFail(t *testing.T) {
 		"smithy.api#xmlAttribute", "smithy.api#xmlNamespace",
 	} {
 		t.Run(trait, func(t *testing.T) {
-			if guardErr := checkTraits(map[string]json.RawMessage{trait: json.RawMessage(`{}`)}); guardErr == nil {
+			if guardErr := checkTraits(
+				map[string]json.RawMessage{trait: json.RawMessage(`{}`)},
+				false,
+			); guardErr == nil {
 				t.Fatal("unsupported trait accepted")
 			}
 		})

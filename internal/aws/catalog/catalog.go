@@ -8,6 +8,7 @@ import (
 const (
 	AWSJSON10 = "awsJson1_0"
 	AWSQuery  = "awsQuery"
+	RESTXML   = "restXml"
 )
 
 type Binding struct {
@@ -21,6 +22,11 @@ type Binding struct {
 	StatusCode  int
 }
 
+// MemberBinding places a member in a REST message: "label", "header", "query",
+// "prefix" (httpPrefixHeaders), "payload", or "document" for body members.
+// "unsupported:header", "unsupported:query", and "unsupported:prefix" mark
+// modeled inputs the profile does not implement; requests that set them must
+// fail instead of being ignored.
 type MemberBinding struct{ Location, Name string }
 
 // ErrorBinding carries modeled wire facts for one error code.
