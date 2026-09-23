@@ -22,6 +22,13 @@ import (
 
 const listLimit = 1000
 
+// Queue attributes that are not plain integers.
+const (
+	attrFifoQueue                 = "FifoQueue"
+	attrContentBasedDeduplication = "ContentBasedDeduplication"
+	attrRedrivePolicy             = "RedrivePolicy"
+)
+
 var _ api.API = (*Service)(nil)
 
 type Service struct {
@@ -68,6 +75,8 @@ func (s *Service) notify(key string) {
 type settings struct {
 	DeadLetterTargetArn           string `json:",omitempty"`
 	MaxReceiveCount               int64  `json:",omitempty"`
+	FifoQueue                     bool   `json:",omitempty"`
+	ContentBasedDeduplication     bool   `json:",omitempty"`
 	DelaySeconds                  int64
 	VisibilityTimeout             int64
 	MaximumMessageSize            int64
@@ -75,11 +84,15 @@ type settings struct {
 	ReceiveMessageWaitTimeSeconds int64
 }
 
+// queue is one stored queue. FIFO queues also keep the deduplication window
+// and the last sequence number.
 type queue struct {
+	Dedup        map[string]dedup `json:",omitempty"`
 	Messages     []message
 	Settings     settings
 	CreatedAt    int64
 	LastModified int64
+	Sequence     int64 `json:",omitempty"`
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -104,7 +117,7 @@ func notFound() error {
 }
 
 var (
-	queueName = regexp.MustCompile(`^[A-Za-z0-9_-]{1,80}$`)
+	queueName = regexp.MustCompile(`^([A-Za-z0-9_-]{1,80}|[A-Za-z0-9_-]{1,75}\.fifo)$`)
 	accountID = regexp.MustCompile(`^\d{12}$`)
 )
 
@@ -206,6 +219,18 @@ func defaults() settings {
 	}
 }
 
+// parseBool accepts exactly "true" or "false", as SQS does.
+func parseBool(name, raw string) (bool, error) {
+	if raw != "true" && raw != "false" {
+		return false, awserror.New(
+			"InvalidAttributeValue",
+			"Invalid value for the parameter "+name+": must be true or false.",
+		)
+	}
+
+	return raw == "true", nil
+}
+
 // apply validates queue attributes. Attributes TinyStack does not implement
 // fail instead of being ignored.
 func (st *settings) apply(attributes map[string]string) error {
@@ -219,7 +244,20 @@ func (st *settings) apply(attributes map[string]string) error {
 		var field *int64
 		var lo, hi int64
 		switch name {
-		case "RedrivePolicy":
+		case attrFifoQueue, attrContentBasedDeduplication:
+			v, err := parseBool(name, attributes[name])
+			if err != nil {
+				return err
+			}
+
+			if name == attrFifoQueue {
+				st.FifoQueue = v
+			} else {
+				st.ContentBasedDeduplication = v
+			}
+
+			continue
+		case attrRedrivePolicy:
 			if guardErr := st.redrive(attributes[name]); guardErr != nil {
 				return guardErr
 			}
@@ -250,6 +288,10 @@ func (st *settings) apply(attributes map[string]string) error {
 		*field = n
 	}
 
+	if st.ContentBasedDeduplication && !st.FifoQueue {
+		return awserror.New("InvalidAttributeName", "ContentBasedDeduplication is only supported for FIFO queues.")
+	}
+
 	return nil
 }
 
@@ -271,6 +313,10 @@ func (s *Service) CreateQueue(ctx context.Context, in *api.CreateQueueRequest) (
 	st := defaults()
 	if guardErr := st.apply(in.Attributes); guardErr != nil {
 		return nil, guardErr
+	}
+
+	if st.FifoQueue != strings.HasSuffix(name, ".fifo") {
+		return nil, invalid("The name of a FIFO queue must end with the .fifo suffix, and only FIFO queues may use it.")
 	}
 
 	key := queueKey(m, name)

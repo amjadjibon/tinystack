@@ -29,9 +29,13 @@ const (
 	maxReceive    = 10
 )
 
-// message times are Unix milliseconds.
+// message times are Unix milliseconds. GroupID, DedupID, and Sequence are set
+// only for FIFO queues.
 type message struct {
 	Attributes      map[string]api.MessageAttributeValue `json:",omitempty"`
+	GroupID         string                               `json:",omitempty"`
+	DedupID         string                               `json:",omitempty"`
+	Sequence        string                               `json:",omitempty"`
 	ID              string
 	Body            string
 	BodyMD5         string
@@ -202,12 +206,19 @@ func parseReceipt(handle *string) (id, nonce string, err error) {
 	return id, nonce, nil
 }
 
-// purge drops messages past the queue's retention period.
+// purge drops messages past the queue's retention period and expired
+// deduplication records.
 func (q *queue) purge(now int64) {
+	for id, d := range q.Dedup {
+		if d.Expires <= now {
+			delete(q.Dedup, id)
+		}
+	}
+
 	kept := q.Messages[:0]
-	for _, msg := range q.Messages {
-		if msg.SentAt+q.Settings.MessageRetentionPeriod*1000 > now {
-			kept = append(kept, msg)
+	for i := range q.Messages {
+		if q.Messages[i].SentAt+q.Settings.MessageRetentionPeriod*1000 > now {
+			kept = append(kept, q.Messages[i])
 		}
 	}
 
@@ -222,18 +233,15 @@ type outgoing struct {
 	size  int64
 }
 
-// prepare validates a message independently of its queue.
-func (s *Service) prepare(
-	ctx context.Context,
-	body *string,
-	delay *int64,
-	attributes map[string]api.MessageAttributeValue,
-) (*outgoing, error) {
+// prepare validates a message independently of its queue. SendMessage passes
+// its request as a batch entry, which has the same message fields.
+func (s *Service) prepare(ctx context.Context, in *api.SendMessageBatchRequestEntry) (*outgoing, error) {
 	m, err := identity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	body := in.MessageBody
 	if value(body) == "" {
 		return nil, missing("MessageBody")
 	}
@@ -242,11 +250,20 @@ func (s *Service) prepare(
 		return nil, invalidContents()
 	}
 
-	if guardErr := between("DelaySeconds", delay, 0, maxDelay); guardErr != nil {
+	if guardErr := between("DelaySeconds", in.DelaySeconds, 0, maxDelay); guardErr != nil {
 		return nil, guardErr
 	}
 
-	size, err := checkAttributes(attributes)
+	for name, id := range map[string]*string{
+		"MessageGroupId":         in.MessageGroupId,
+		"MessageDeduplicationId": in.MessageDeduplicationId,
+	} {
+		if id != nil && !fifoID.MatchString(*id) {
+			return nil, invalid("Value %s for parameter %s is invalid.", *id, name)
+		}
+	}
+
+	size, err := checkAttributes(in.MessageAttributes)
 	if err != nil {
 		return nil, err
 	}
@@ -257,23 +274,34 @@ func (s *Service) prepare(
 	}
 
 	return &outgoing{
-		delay: delay,
+		delay: in.DelaySeconds,
 		size:  int64(len(*body)) + size,
 		msg: message{
 			ID:         messageID(),
 			Body:       *body,
 			BodyMD5:    md5Hex([]byte(*body)),
 			SenderID:   sender,
-			Attributes: attributes,
+			Attributes: in.MessageAttributes,
+			GroupID:    value(in.MessageGroupId),
+			DedupID:    value(in.MessageDeduplicationId),
 		},
 	}, nil
 }
 
-// enqueue applies the queue's size limit and default delay, then appends the
-// message. A per-message delay overrides the queue's default delay.
+// enqueue applies the queue's size limit, type rules, and default delay, then
+// appends the message. A per-message delay overrides the queue's default delay.
 func (q *queue) enqueue(o *outgoing, now int64) error {
 	if limit := q.Settings.MaximumMessageSize; o.size > limit {
 		return invalid("One or more parameters are invalid. Reason: Message must be shorter than %d bytes.", limit)
+	}
+
+	if q.Settings.FifoQueue {
+		duplicate, err := q.sequence(o, now)
+		if err != nil || duplicate {
+			return err
+		}
+	} else if o.msg.GroupID != "" || o.msg.DedupID != "" {
+		return invalid("MessageGroupId and MessageDeduplicationId are only supported for FIFO queues.")
 	}
 
 	delay := q.Settings.DelaySeconds
@@ -301,7 +329,13 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 		return nil, err
 	}
 
-	o, err := s.prepare(ctx, in.MessageBody, in.DelaySeconds, in.MessageAttributes)
+	o, err := s.prepare(ctx, &api.SendMessageBatchRequestEntry{
+		MessageBody:            in.MessageBody,
+		DelaySeconds:           in.DelaySeconds,
+		MessageAttributes:      in.MessageAttributes,
+		MessageGroupId:         in.MessageGroupId,
+		MessageDeduplicationId: in.MessageDeduplicationId,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -329,6 +363,7 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 		MessageId:              ptr(o.msg.ID),
 		MD5OfMessageBody:       ptr(o.msg.BodyMD5),
 		MD5OfMessageAttributes: o.md5OfAttributes(),
+		SequenceNumber:         o.sequenceNumber(),
 	}, nil
 }
 
@@ -374,6 +409,12 @@ func render(msg *message, opts *receiveOptions) api.Message {
 		"SentTimestamp":                    strconv.FormatInt(msg.SentAt, 10),
 		"ApproximateReceiveCount":          strconv.FormatInt(msg.ReceiveCount, 10),
 		"ApproximateFirstReceiveTimestamp": strconv.FormatInt(msg.FirstReceivedAt, 10),
+	}
+
+	if msg.GroupID != "" {
+		system["MessageGroupId"] = msg.GroupID
+		system["MessageDeduplicationId"] = msg.DedupID
+		system["SequenceNumber"] = msg.Sequence
 	}
 
 	for name, v := range system {
@@ -457,12 +498,17 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 		}
 
 		var dlq deadLetter
+		blocked := q.inFlightGroups(now)
 		kept := q.Messages[:0]
 		for i := range q.Messages {
 			msg := q.Messages[i]
-			if msg.VisibleAt > now || len(c.messages) == opts.limit {
+			if msg.VisibleAt > now || len(c.messages) == opts.limit || blocked[msg.GroupID] {
 				if msg.VisibleAt > now && (c.next == 0 || msg.VisibleAt < c.next) {
 					c.next = msg.VisibleAt
+				}
+				// Later messages in a FIFO group wait for the earlier ones.
+				if msg.GroupID != "" {
+					blocked[msg.GroupID] = true
 				}
 
 				kept = append(kept, msg)
@@ -595,8 +641,8 @@ func (s *Service) ReceiveMessage(
 // remove deletes the message a receipt handle refers to. A stale handle
 // matches nothing and reports false.
 func (q *queue) remove(id, nonce string) bool {
-	for i, msg := range q.Messages {
-		if msg.ID == id && msg.Receipt == nonce {
+	for i := range q.Messages {
+		if msg := &q.Messages[i]; msg.ID == id && msg.Receipt == nonce {
 			q.Messages = append(q.Messages[:i], q.Messages[i+1:]...)
 			return true
 		}
@@ -631,7 +677,8 @@ func (s *Service) DeleteMessage(ctx context.Context, in *api.DeleteMessageReques
 	if err != nil {
 		return nil, err
 	}
-
+	// Deleting may unblock a FIFO message group.
+	s.notify(key)
 	return &api.DeleteMessageOutput{}, nil
 }
 

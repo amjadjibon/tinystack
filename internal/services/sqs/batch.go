@@ -116,7 +116,7 @@ func (s *Service) SendMessageBatch(
 	err = s.batch(ctx, key, func(q *queue, now int64) {
 		for i := range in.Entries {
 			entry := &in.Entries[i]
-			o, prepareErr := s.prepare(ctx, entry.MessageBody, entry.DelaySeconds, entry.MessageAttributes)
+			o, prepareErr := s.prepare(ctx, entry)
 			if prepareErr == nil {
 				prepareErr = q.enqueue(o, now)
 			}
@@ -131,6 +131,7 @@ func (s *Service) SendMessageBatch(
 				MessageId:              ptr(o.msg.ID),
 				MD5OfMessageBody:       ptr(o.msg.BodyMD5),
 				MD5OfMessageAttributes: o.md5OfAttributes(),
+				SequenceNumber:         o.sequenceNumber(),
 			})
 		}
 	})

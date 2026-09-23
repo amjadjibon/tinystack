@@ -72,6 +72,15 @@ func checkTarget(tx storage.ReadTx, key string, st *settings) error {
 		return invalidRedrive("Dead letter target does not exist.")
 	}
 
+	q, err := load(tx, target)
+	if err != nil {
+		return err
+	}
+
+	if q.Settings.FifoQueue != st.FifoQueue {
+		return invalidRedrive("The dead-letter queue must be the same type as the source queue.")
+	}
+
 	return nil
 }
 
@@ -106,12 +115,17 @@ func (q *queue) attributes(key string, now int64) map[string]string {
 		"ReceiveMessageWaitTimeSeconds":         format(st.ReceiveMessageWaitTimeSeconds),
 	}
 
+	if st.FifoQueue {
+		out[attrFifoQueue] = strconv.FormatBool(st.FifoQueue)
+		out[attrContentBasedDeduplication] = strconv.FormatBool(st.ContentBasedDeduplication)
+	}
+
 	if st.DeadLetterTargetArn != "" {
 		policy, _ := json.Marshal(map[string]any{
 			"deadLetterTargetArn": st.DeadLetterTargetArn,
 			"maxReceiveCount":     st.MaxReceiveCount,
 		})
-		out["RedrivePolicy"] = string(policy)
+		out[attrRedrivePolicy] = string(policy)
 	}
 
 	return out
@@ -152,7 +166,8 @@ func (s *Service) GetQueueAttributes(
 			}
 
 			out.Attributes[name] = v
-		case name != "RedrivePolicy": // RedrivePolicy is known but unset.
+		// Known attributes that are unset or do not apply to this queue are omitted.
+		case name != attrRedrivePolicy && name != attrFifoQueue && name != attrContentBasedDeduplication:
 			return nil, awserror.New("InvalidAttributeName", fmt.Sprintf("Unknown or unsupported attribute %s.", name))
 		}
 	}
@@ -171,6 +186,10 @@ func (s *Service) SetQueueAttributes(
 
 	if len(in.Attributes) == 0 {
 		return nil, missing("Attribute.1.Name")
+	}
+
+	if _, ok := in.Attributes[attrFifoQueue]; ok {
+		return nil, awserror.New("InvalidAttributeName", "FifoQueue can only be set when the queue is created.")
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {

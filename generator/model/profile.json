@@ -119,12 +119,15 @@
         "QueueUrl",
         "MessageBody",
         "DelaySeconds",
-        "MessageAttributes"
+        "MessageAttributes",
+        "MessageDeduplicationId",
+        "MessageGroupId"
       ],
       "SendMessageResult": [
         "MD5OfMessageBody",
         "MD5OfMessageAttributes",
-        "MessageId"
+        "MessageId",
+        "SequenceNumber"
       ],
       "MessageAttributeValue": [
         "StringValue",
@@ -166,7 +169,9 @@
         "Id",
         "MessageBody",
         "DelaySeconds",
-        "MessageAttributes"
+        "MessageAttributes",
+        "MessageDeduplicationId",
+        "MessageGroupId"
       ],
       "SendMessageBatchResult": [
         "Successful",
@@ -176,7 +181,8 @@
         "Id",
         "MessageId",
         "MD5OfMessageBody",
-        "MD5OfMessageAttributes"
+        "MD5OfMessageAttributes",
+        "SequenceNumber"
       ],
       "BatchResultErrorEntry": [
         "Id",

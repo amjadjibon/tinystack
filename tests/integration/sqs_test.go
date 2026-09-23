@@ -63,8 +63,8 @@ func TestSQSLifecycle(t *testing.T) {
 	}
 
 	_, err = c.CreateQueue(ctx, &sqs.CreateQueueInput{
-		QueueName:  aws.String("fifo"),
-		Attributes: map[string]string{"FifoQueue": "true"},
+		QueueName:  aws.String("encrypted"),
+		Attributes: map[string]string{"KmsMasterKeyId": "alias/aws/sqs"},
 	})
 	var badName *types.InvalidAttributeName
 	if !errors.As(err, &badName) {
@@ -629,6 +629,186 @@ func TestSQSDeadLetterQueue(t *testing.T) {
 	if status != http.StatusOK || xml.Unmarshal(body, &queried) != nil || len(queried.Attributes) != 1 ||
 		queried.Attributes[0].Value != "arn:aws:sqs:us-east-1:000000000000:orders" {
 		t.Fatalf("%d %s", status, body)
+	}
+}
+
+func TestSQSFIFO(t *testing.T) {
+	s := server(t)
+	c := sqsClient(s, "test")
+	ctx := context.Background()
+
+	for name, attributes := range map[string]map[string]string{
+		"orders":      {"FifoQueue": "true"},
+		"orders.fifo": nil,
+		"plain":       {"ContentBasedDeduplication": "true"},
+	} {
+		if _, err := c.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: &name, Attributes: attributes}); err == nil {
+			t.Fatalf("%s %v accepted", name, attributes)
+		}
+	}
+
+	queueURL := createQueue(t, c, "orders.fifo", map[string]string{"FifoQueue": "true"})
+	standardURL := createQueue(t, c, "standard", nil)
+	send := func(url, body, group, dedup string) (*sqs.SendMessageOutput, error) {
+		in := &sqs.SendMessageInput{QueueUrl: &url, MessageBody: &body}
+		if group != "" {
+			in.MessageGroupId = &group
+		}
+
+		if dedup != "" {
+			in.MessageDeduplicationId = &dedup
+		}
+
+		return c.SendMessage(ctx, in)
+	}
+
+	for _, tc := range []struct{ url, group, dedup string }{
+		{queueURL, "", "d"},          // missing group
+		{queueURL, "g", ""},          // no deduplication ID or content-based deduplication
+		{standardURL, "g", "d"},      // FIFO parameters on a standard queue
+		{queueURL, "bad group", "d"}, // spaces are not allowed
+	} {
+		if _, err := send(tc.url, "x", tc.group, tc.dedup); err == nil {
+			t.Fatalf("send %+v accepted", tc)
+		}
+	}
+
+	if _, err := c.SendMessage(ctx, &sqs.SendMessageInput{
+		QueueUrl: &queueURL, MessageBody: aws.String("x"), MessageGroupId: aws.String("g"),
+		MessageDeduplicationId: aws.String("d"), DelaySeconds: 5,
+	}); err == nil {
+		t.Fatal("per-message delay accepted on a FIFO queue")
+	}
+
+	a, err := send(queueURL, "a", "g1", "d1")
+	if err != nil || a.SequenceNumber == nil {
+		t.Fatal(a, err)
+	}
+
+	b, err := send(queueURL, "b", "g1", "d2")
+	if err != nil || *b.SequenceNumber <= *a.SequenceNumber {
+		t.Fatal(b, err)
+	}
+
+	if _, err = send(queueURL, "c", "g2", "d3"); err != nil {
+		t.Fatal(err)
+	}
+	// A repeated deduplication ID returns the original message and enqueues nothing.
+	dup, err := send(queueURL, "a again", "g1", "d1")
+	if err != nil || *dup.MessageId != *a.MessageId || *dup.SequenceNumber != *a.SequenceNumber {
+		t.Fatal(dup, err)
+	}
+
+	received, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl:                    &queueURL,
+		MaxNumberOfMessages:         10,
+		MessageSystemAttributeNames: []types.MessageSystemAttributeName{types.MessageSystemAttributeNameAll},
+	})
+	if err != nil || len(received.Messages) != 3 {
+		t.Fatal(received, err)
+	}
+
+	var bodies []string
+	for _, msg := range received.Messages {
+		bodies = append(bodies, *msg.Body)
+	}
+
+	first := received.Messages[0]
+	if strings.Join(bodies, ",") != "a,b,c" || first.Attributes["MessageGroupId"] != "g1" ||
+		first.Attributes["MessageDeduplicationId"] != "d1" || first.Attributes["SequenceNumber"] != *a.SequenceNumber {
+		t.Fatal(bodies, first.Attributes)
+	}
+
+	// b is visible again, but a is still in flight, so group g1 stays blocked.
+	if _, err = c.ChangeMessageVisibility(ctx, &sqs.ChangeMessageVisibilityInput{
+		QueueUrl: &queueURL, ReceiptHandle: received.Messages[1].ReceiptHandle, VisibilityTimeout: 0,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	blocked, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL})
+	if err != nil || len(blocked.Messages) != 0 {
+		t.Fatal("message delivered while its group was in flight", blocked, err)
+	}
+
+	// Deleting a unblocks the group and wakes a waiting receiver.
+	done := make(chan *sqs.ReceiveMessageOutput, 1)
+	go func() {
+		out, receiveErr := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL, WaitTimeSeconds: 10})
+		if receiveErr != nil {
+			t.Error(receiveErr)
+		}
+
+		done <- out
+	}()
+
+	time.Sleep(200 * time.Millisecond)
+	start := time.Now()
+	if _, err = c.DeleteMessage(ctx, &sqs.DeleteMessageInput{
+		QueueUrl: &queueURL, ReceiptHandle: first.ReceiptHandle,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	next := <-done
+	if next == nil || len(next.Messages) != 1 || *next.Messages[0].Body != "b" || time.Since(start) > 5*time.Second {
+		t.Fatal("deleting the in-flight message did not release the group", next)
+	}
+
+	// FifoQueue is fixed at creation; content-based deduplication hashes the body.
+	var badName *types.InvalidAttributeName
+	if _, err = c.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+		QueueUrl: &queueURL, Attributes: map[string]string{"FifoQueue": "false"},
+	}); !errors.As(err, &badName) {
+		t.Fatalf("FifoQueue changed after creation: %v", err)
+	}
+
+	if _, err = c.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+		QueueUrl: &queueURL, Attributes: map[string]string{"ContentBasedDeduplication": "true"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	one, err := send(queueURL, "same", "g3", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	two, err := send(queueURL, "same", "g3", "")
+	if err != nil || *two.MessageId != *one.MessageId {
+		t.Fatal("content-based deduplication did not match", two, err)
+	}
+
+	attrs, err := c.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		QueueUrl:       &queueURL,
+		AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameAll},
+	})
+	if err != nil || attrs.Attributes["FifoQueue"] != "true" ||
+		attrs.Attributes["ContentBasedDeduplication"] != "true" {
+		t.Fatal(attrs, err)
+	}
+
+	batch, err := c.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
+		QueueUrl: &queueURL,
+		Entries: []types.SendMessageBatchRequestEntry{
+			{Id: aws.String("x"), MessageBody: aws.String("x"), MessageGroupId: aws.String("g4")},
+			{Id: aws.String("y"), MessageBody: aws.String("y")},
+		},
+	})
+	if err != nil || len(batch.Successful) != 1 || batch.Successful[0].SequenceNumber == nil ||
+		len(batch.Failed) != 1 || *batch.Failed[0].Code != "MissingParameter" {
+		t.Fatal(batch, err)
+	}
+
+	// A dead-letter queue must match the source queue's type.
+	var badValue *types.InvalidAttributeValue
+	if _, err = c.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+		QueueUrl: &standardURL,
+		Attributes: map[string]string{
+			"RedrivePolicy": `{"deadLetterTargetArn":"arn:aws:sqs:us-east-1:000000000000:orders.fifo","maxReceiveCount":1}`,
+		},
+	}); !errors.As(err, &badValue) {
+		t.Fatalf("standard queue accepted a FIFO dead-letter queue: %v", err)
 	}
 }
 
