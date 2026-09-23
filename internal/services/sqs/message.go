@@ -323,19 +323,9 @@ func (o *outgoing) md5OfAttributes() *string {
 	return ptr(attributesMD5(o.msg.Attributes))
 }
 
-func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (*api.SendMessageResult, error) {
-	key, err := resolve(ctx, in.QueueUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	o, err := s.prepare(ctx, &api.SendMessageBatchRequestEntry{
-		MessageBody:            in.MessageBody,
-		DelaySeconds:           in.DelaySeconds,
-		MessageAttributes:      in.MessageAttributes,
-		MessageGroupId:         in.MessageGroupId,
-		MessageDeduplicationId: in.MessageDeduplicationId,
-	})
+// send validates one message and enqueues it on the queue stored under key.
+func (s *Service) send(ctx context.Context, key string, entry *api.SendMessageBatchRequestEntry) (*outgoing, error) {
+	o, err := s.prepare(ctx, entry)
 	if err != nil {
 		return nil, err
 	}
@@ -359,6 +349,43 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 	}
 
 	s.notify(key)
+	return o, nil
+}
+
+// Deliver sends a message to the queue named by queueARN with the same rules as
+// SendMessage. Other services, such as SNS, call it in-process instead of going
+// through HTTP.
+func (s *Service) Deliver(
+	ctx context.Context,
+	queueARN, body string,
+	attributes map[string]api.MessageAttributeValue,
+) error {
+	key, ok := arnKey(queueARN)
+	if !ok {
+		return invalid("%s is not an SQS queue ARN.", queueARN)
+	}
+
+	_, err := s.send(ctx, key, &api.SendMessageBatchRequestEntry{MessageBody: &body, MessageAttributes: attributes})
+	return err
+}
+
+func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (*api.SendMessageResult, error) {
+	key, err := resolve(ctx, in.QueueUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	o, err := s.send(ctx, key, &api.SendMessageBatchRequestEntry{
+		MessageBody:            in.MessageBody,
+		DelaySeconds:           in.DelaySeconds,
+		MessageAttributes:      in.MessageAttributes,
+		MessageGroupId:         in.MessageGroupId,
+		MessageDeduplicationId: in.MessageDeduplicationId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &api.SendMessageResult{
 		MessageId:              ptr(o.msg.ID),
 		MD5OfMessageBody:       ptr(o.msg.BodyMD5),
