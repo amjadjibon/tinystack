@@ -60,6 +60,20 @@ def main():
                 assert "Messages" not in sqs("receive-message", "--queue-url", queue_url)
                 sqs("delete-queue", "--queue-url", queue_url)
                 assert "QueueUrls" not in sqs("list-queues")
+                def sns(*args):
+                    return aws(*args, service="sns")
+                topic_arn = sns("create-topic", "--name", "alerts")["TopicArn"]
+                assert [t["TopicArn"] for t in sns("list-topics")["Topics"]] == [topic_arn]
+                inbox_url = sqs("create-queue", "--queue-name", "inbox")["QueueUrl"]
+                inbox_arn = sqs("get-queue-attributes", "--queue-url", inbox_url, "--attribute-names", "QueueArn")["Attributes"]["QueueArn"]
+                subscription_arn = sns("subscribe", "--topic-arn", topic_arn, "--protocol", "sqs", "--notification-endpoint", inbox_arn, "--attributes", "RawMessageDelivery=true")["SubscriptionArn"]
+                published = sns("publish", "--topic-arn", topic_arn, "--message", "fan out")
+                assert published["MessageId"]
+                delivered = sqs("receive-message", "--queue-url", inbox_url, "--wait-time-seconds", "1")["Messages"]
+                assert [m["Body"] for m in delivered] == ["fan out"]
+                sns("unsubscribe", "--subscription-arn", subscription_arn)
+                sns("delete-topic", "--topic-arn", topic_arn)
+                assert sns("list-topics").get("Topics", []) == []
             finally:
                 if process.poll() is None:
                     process.terminate()

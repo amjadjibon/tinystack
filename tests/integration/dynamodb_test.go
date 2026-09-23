@@ -21,10 +21,12 @@ import (
 	"github.com/aws/smithy-go"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	topics "github.com/amjadjibon/tinystack/internal/services/sns"
 	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
@@ -33,11 +35,15 @@ func server(t *testing.T) *httptest.Server {
 	t.Helper()
 	cfg := config.Default()
 	cfg.Identity.Accounts = map[string]string{"team-b": "111111111111", "alias": "000000000000"}
+	// Services share one store, as in start.go.
+	store := &memory.Store{}
+	sqsService := queues.New(store)
 	h, err := gateway.New(
 		cfg,
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
-		api.Descriptor(provider.New(&memory.Store{})),
-		sqsapi.Descriptor(queues.New(&memory.Store{})),
+		api.Descriptor(provider.New(store)),
+		sqsapi.Descriptor(sqsService),
+		snsapi.Descriptor(topics.New(store, sqsService)),
 	)
 	if err != nil {
 		t.Fatal(err)
