@@ -14,10 +14,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
@@ -26,26 +28,38 @@ func newStartCommand() *cobra.Command {
 	var port int
 	start := &cobra.Command{
 		Use:   "start",
-		Short: "Run the DynamoDB MVP in the foreground",
+		Short: "Run the local AWS endpoint in the foreground",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := config.Load(configPath)
 			if err != nil {
 				return err
 			}
+
 			if cmd.Flags().Changed("host") {
 				cfg.Server.Host = host
 			}
+
 			if cmd.Flags().Changed("port") {
 				cfg.Server.Port = port
 			}
+
 			if guardErr := cfg.Validate(); guardErr != nil {
 				return guardErr
 			}
+
 			logger := slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), nil))
-			handler, err := gateway.New(cfg, logger, api.Descriptor(dynamodb.New(&memory.Store{})))
+			store := &memory.Store{}
+			queues := sqs.New(store)
+			handler, err := gateway.New(
+				cfg,
+				logger,
+				dynamodbapi.Descriptor(dynamodb.New(store)),
+				sqsapi.Descriptor(queues),
+			)
 			if err != nil {
 				return err
 			}
+
 			var listenConfig net.ListenConfig
 			listener, err := listenConfig.Listen(
 				cmd.Context(),
@@ -55,6 +69,7 @@ func newStartCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			server := &http.Server{
 				Handler:           handler,
 				ReadHeaderTimeout: 5 * time.Second,
@@ -62,6 +77,8 @@ func newStartCommand() *cobra.Command {
 				WriteTimeout:      30 * time.Second,
 				IdleTimeout:       60 * time.Second,
 			}
+
+			server.RegisterOnShutdown(queues.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)
@@ -72,30 +89,35 @@ func newStartCommand() *cobra.Command {
 				"http://"+listener.Addr().String(),
 				"storage",
 				"memory",
-				"service",
-				"dynamodb",
+				"services",
+				"dynamodb,sqs",
 			)
 			select {
 			case err = <-done:
 				if errors.Is(err, http.ErrServerClosed) {
 					return nil
 				}
+
 				return err
 			case <-ctx.Done():
 			}
+
 			shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			if guardErr := server.Shutdown(shutdown); guardErr != nil {
 				closeErr := server.Close()
 				return errors.Join(guardErr, closeErr)
 			}
+
 			err = <-done
 			if errors.Is(err, http.ErrServerClosed) {
 				return nil
 			}
+
 			return err
 		},
 	}
+
 	start.Flags().StringVar(&configPath, "config", "", "YAML configuration path")
 	start.Flags().StringVar(&host, "host", "127.0.0.1", "listen host")
 	start.Flags().IntVar(&port, "port", 4566, "listen port")
