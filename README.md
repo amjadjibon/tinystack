@@ -1,11 +1,10 @@
 # TinyStack
 
-A single Go binary providing a local DynamoDB endpoint for development and tests.
-This repository implements the first DynamoDB milestone of the TinyStack design.
+A single Go binary providing local DynamoDB and SQS endpoints for development and tests.
 
 ## Run
 
-Requires Go 1.24 or newer.
+Requires Go 1.27 or newer.
 
 ```sh
 go build -o bin/tinystack ./cmd/tinystack
@@ -33,12 +32,21 @@ aws --endpoint-url http://localhost:4566 dynamodb put-item \
 
 aws --endpoint-url http://localhost:4566 dynamodb get-item \
   --table-name users --key '{"PK":{"S":"USER#1"}}'
+
+QUEUE_URL=$(aws --endpoint-url http://localhost:4566 sqs create-queue \
+  --queue-name jobs --query QueueUrl --output text)
+aws --endpoint-url http://localhost:4566 sqs send-message \
+  --queue-url "$QUEUE_URL" --message-body hello
+aws --endpoint-url http://localhost:4566 sqs receive-message \
+  --queue-url "$QUEUE_URL" --wait-time-seconds 5
 ```
 
 AWS SDK clients use their standard endpoint override and local credentials; no
 TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 ## Supported subset
+
+### DynamoDB (AWS JSON 1.0)
 
 | Operation | Behavior |
 | --- | --- |
@@ -48,15 +56,32 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 | PutItem / GetItem / DeleteItem | Typed attributes, atomic replacement/deletion, `ALL_OLD` for writes |
 | Scan | Limit, continuation key, `COUNT`, approximately 1 MiB pages |
 
+### SQS (AWS JSON 1.0 and AWS Query)
+
+Standard queues. Both protocols share state, and each response or error uses the
+protocol of its request. Query requests may post to `/` or to the queue URL.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateQueue | Idempotent for identical attributes; `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds` |
+| GetQueueUrl / DeleteQueue | Queue URLs are `<endpoint>/<account>/<name>`; the host part is ignored on input |
+| ListQueues | Name prefix, `MaxResults`, and `NextToken` |
+| SendMessage | Body character and size checks, message attributes, body and attribute MD5s |
+| ReceiveMessage | Up to 10 messages, visibility override, long polling up to 20 s, system and message attribute selection |
+| DeleteMessage / ChangeMessageVisibility | Receipt handles change on each receive; a stale handle deletes nothing |
+
 The server uses AWS JSON 1.0 and parses SigV4 credential scopes without verifying
 signatures. `identity.accounts` maps access keys to 12-digit account IDs. Unmapped
 keys and unsigned requests use the default account. Signed regions take precedence
 over recognized regional hosts and the configured default. This is local identity
 selection, not access control.
 
-Known limits: no Query, UpdateItem, expressions or conditional writes, projections,
-secondary indexes, transactions API, tags, capacity accounting/throttling, IAM,
-persistence, other AWS services, or Terraform support yet. Table names (not ARNs)
+DynamoDB limits: no Query, UpdateItem, expressions or conditional writes, projections,
+secondary indexes, transactions API, tags, or capacity accounting/throttling.
+SQS limits: no FIFO queues, dead-letter queues, delays, batch operations, queue
+attributes APIs, tags, policies, or encryption settings; the 60-second
+name-reuse delay after DeleteQueue is not enforced. Neither service has IAM,
+persistence, or Terraform support yet. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.
 Item/page size accounting is approximate, particularly for numbers and sets.
@@ -64,26 +89,34 @@ Unsupported input fields fail explicitly instead of being silently ignored.
 
 ## Architecture and generation
 
-`gateway` classifies requests and resolves identity. Generated catalog bindings
-create typed inputs; `aws/protocol/awsjson` handles JSON and error envelopes.
-`services/dynamodb` contains behavior without HTTP dependencies. Storage uses
-serializable callback transactions with rollback and copied byte values.
-The first backend stores each table as one record; it favors simple correctness
-for small test datasets over large-table performance.
+`gateway` picks the protocol from the request headers (`X-Amz-Target` for JSON,
+a form body for Query), then resolves identity, service, and operation. Generated
+catalog bindings create typed inputs; `aws/protocol/awsjson` and
+`aws/protocol/query` encode responses and error envelopes. Modeled error
+bindings supply Query error codes and HTTP statuses, which query-compatible JSON
+services also send in `X-Amzn-Query-Error`. `services/*` contains behavior without
+HTTP dependencies. Storage uses serializable callback transactions with rollback
+and copied byte values. The memory backend stores each table or queue as one
+record; it favors simple correctness for small test datasets over large-table
+performance. SQS long polls wait outside transactions and retry the atomic claim
+when the queue changes or an in-flight message becomes visible.
 
-The pinned upstream Smithy model, checksum, and license live in `generator/model`.
-`profile.json` explicitly selects the implemented fields. `go generate ./...` works
-offline after Go dependencies are available and reproduces the checked-in types
-and bindings. The generator fails on unsupported wire traits; it is currently
-limited to AWS JSON 1.0. REST codecs and broader model generation come later.
+The pinned upstream Smithy models, checksums, and license live in `generator/model`.
+`profile.json` selects each service's operations and implemented fields; its
+`query` block is the compatibility overlay for legacy AWS Query facts (the XML
+namespace) that current models omit. `go generate ./...` works offline after Go
+dependencies are available and reproduces the checked-in types, bindings, and
+error descriptors. The generator fails on unsupported wire traits; it supports
+AWS JSON 1.0 services, plus AWS Query for query-compatible ones. REST codecs
+come later.
 
 ## Validate
 
 ```sh
-task test       # Official Go SDK integration and transaction tests, with -race
+task test       # Official Go SDK, AWS Query wire, and transaction tests, with -race
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
-task smoke      # Build/start, run installed AWS CLI, verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS), verify graceful shutdown
 ```
 
 Tasks run with [Task](https://taskfile.dev). The tests use local ephemeral ports
