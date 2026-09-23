@@ -9,6 +9,7 @@ import (
 	"go/format"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -47,7 +48,8 @@ type serviceProfile struct {
 	Operations []string            `json:"operations"`
 }
 
-// queryOverlay supplies legacy awsQuery facts that current models no longer carry.
+// queryOverlay supplies legacy awsQuery facts that awsQueryCompatible models no
+// longer carry. Pure awsQuery models declare their namespace themselves.
 type queryOverlay struct {
 	XMLNamespace string `json:"xmlNamespace"`
 }
@@ -278,11 +280,12 @@ func (g *generator) emit(id string) error {
 	return nil
 }
 
-// errorBindings describes every modeled error of the enabled operations.
+// errorBindings describes every modeled error of the enabled operations. Query
+// codes are recorded for services that speak AWS Query.
 func (g *generator) errorBindings(
 	ops []string,
 	prefix string,
-	queryCompatible bool,
+	query bool,
 ) (map[string]catalog.ErrorBinding, error) {
 	bindings := map[string]catalog.ErrorBinding{}
 	for _, op := range ops {
@@ -319,7 +322,7 @@ func (g *generator) errorBindings(
 				}
 			}
 
-			if queryCompatible {
+			if query {
 				binding.QueryCode = short(ref.Target)
 				if queryError.Code != "" {
 					binding.QueryCode = queryError.Code
@@ -331,6 +334,42 @@ func (g *generator) errorBindings(
 	}
 
 	return bindings, nil
+}
+
+// protocols selects the wire protocols of the service. AWS JSON 1.0 services
+// add AWS Query when they are awsQueryCompatible and the profile supplies the
+// legacy XML namespace; pure awsQuery services take it from the model.
+func (g *generator) protocols(svc *shape) (protocols []string, namespace string, queryCompatible bool, err error) {
+	_, jsonProtocol := svc.Traits["aws.protocols#awsJson1_0"]
+	_, queryProtocol := svc.Traits["aws.protocols#awsQuery"]
+	_, queryCompatible = svc.Traits["aws.protocols#awsQueryCompatible"]
+	switch {
+	case jsonProtocol && g.query:
+		if !queryCompatible || svc.Version == "" || g.profile.Query.XMLNamespace == "" {
+			return nil, "", false, fmt.Errorf(
+				"query overlay needs an awsQueryCompatible model, API version, and XML namespace",
+			)
+		}
+
+		return []string{catalog.AWSJSON10, catalog.AWSQuery}, g.profile.Query.XMLNamespace, true, nil
+	case jsonProtocol:
+		return []string{catalog.AWSJSON10}, "", queryCompatible, nil
+	case queryProtocol:
+		var ns struct{ URI string }
+		if guardErr := json.Unmarshal(svc.Traits["smithy.api#xmlNamespace"], &ns); guardErr != nil || ns.URI == "" ||
+			svc.Version == "" {
+			return nil, "", false, fmt.Errorf("awsQuery model needs an API version and XML namespace")
+		}
+
+		if g.query {
+			return nil, "", false, fmt.Errorf("awsQuery models declare their own namespace; remove the query overlay")
+		}
+
+		g.query = true
+		return []string{catalog.AWSQuery}, ns.URI, false, nil
+	default:
+		return nil, "", false, fmt.Errorf("model is neither AWS JSON 1.0 nor AWS Query")
+	}
 }
 
 // service returns the model's only service shape.
@@ -364,8 +403,9 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		return nil, err
 	}
 
-	if _, ok := svc.Traits["aws.protocols#awsJson1_0"]; !ok {
-		return nil, fmt.Errorf("model is not AWS JSON 1.0")
+	protocols, namespace, queryCompatible, err := g.protocols(&svc)
+	if err != nil {
+		return nil, err
 	}
 
 	var sigv4 struct{ Name string }
@@ -373,13 +413,12 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		return nil, fmt.Errorf("model has no SigV4 signing name")
 	}
 
-	_, queryCompatible := svc.Traits["aws.protocols#awsQueryCompatible"]
-	if g.query && (!queryCompatible || svc.Version == "" || profile.Query.XMLNamespace == "") {
-		return nil, fmt.Errorf("query overlay needs an awsQueryCompatible model, API version, and XML namespace")
-	}
-
 	prefix, targetPrefix, _ := strings.Cut(serviceID, "#")
 	prefix += "#"
+	if !slices.Contains(protocols, catalog.AWSJSON10) {
+		targetPrefix = ""
+	}
+
 	if len(profile.Operations) == 0 {
 		return nil, fmt.Errorf("profile selects no operations")
 	}
@@ -432,15 +471,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 	}
 
 	fmt.Fprintln(&g.out, "}")
-	protocols := []string{catalog.AWSJSON10}
-
-	namespace := ""
-	if g.query {
-		protocols = append(protocols, catalog.AWSQuery)
-		namespace = profile.Query.XMLNamespace
-	}
-
-	errorBindings, err := g.errorBindings(profile.Operations, prefix, queryCompatible)
+	errorBindings, err := g.errorBindings(profile.Operations, prefix, g.query)
 	if err != nil {
 		return nil, err
 	}

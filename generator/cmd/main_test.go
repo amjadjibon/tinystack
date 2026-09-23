@@ -126,6 +126,45 @@ func TestQueryOverlayFixture(t *testing.T) {
 	}
 }
 
+func TestPureQueryFixture(t *testing.T) {
+	model := `{"shapes": {
+  "fixture#Svc": {"type": "service", "version": "2020-01-01", "traits": {
+    "aws.protocols#awsQuery": {}, "aws.auth#sigv4": {"name": "fix"},
+    "smithy.api#xmlNamespace": {"uri": "urn:fixture"}}},
+  "fixture#Put": {"type": "operation", "input": {"target": "fixture#In"}, "output": {"target": "smithy.api#Unit"},
+    "errors": [{"target": "fixture#Missing"}]},
+  "fixture#In": {"type": "structure", "members": {"Ids": {"target": "fixture#IdList"}}},
+  "fixture#IdList": {"type": "list", "member": {"target": "smithy.api#String"}},
+  "fixture#Missing": {"type": "structure", "traits": {"smithy.api#error": "client"}},
+  "smithy.api#String": {"type": "string"}
+}}`
+	profile := serviceProfile{Operations: []string{"Put"}}
+	source, err := generate("fixture", []byte(model), profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		`query:"Ids"`,
+		`TargetPrefix: "", QueryCompatible: false, XMLNamespace: "urn:fixture", Protocols: []string{"awsQuery"}`,
+		`"Missing": catalog.ErrorBinding{QueryCode: "Missing", StatusCode: 400}`,
+		`Target: "Put", Version: "2020-01-01", ContentType: "application/x-www-form-urlencoded"`,
+	} {
+		if !strings.Contains(string(source), want) {
+			t.Fatalf("generated source lacks %s:\n%s", want, source)
+		}
+	}
+
+	if strings.Contains(string(source), "awsJson1_0") {
+		t.Fatalf("pure awsQuery service has a JSON binding:\n%s", source)
+	}
+
+	profile.Query = &queryOverlay{XMLNamespace: "urn:other"}
+	if _, err = generate("fixture", []byte(model), profile); err == nil {
+		t.Fatal("query overlay accepted for a pure awsQuery model")
+	}
+}
+
 func TestUnsupportedWireTraitsFail(t *testing.T) {
 	for _, trait := range []string{
 		"smithy.api#streaming", "smithy.api#httpHeader",
