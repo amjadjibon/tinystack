@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/aws/aws-sdk-go-v2",
+  "commit": "54529057fb19d483cd1657d00166cea216e364c4",
+  "path": "codegen/sdk-codegen/aws-models/dynamodb.json",
+  "sha256": "7e9436596b667e2e0600de9c086205b38960012028bcd625ee786a5126d0f63e",
+  "license": "LICENSE.aws-sdk-go-v2"
+}

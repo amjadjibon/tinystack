@@ -1,0 +1,105 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+)
+
+// compileBinding retains wire metadata independently of runtime codec support.
+func compileBinding(m model, id, protocol, targetPrefix string) (catalog.Binding, error) {
+	op := m.Shapes[id]
+	if protocol == catalog.AWSJSON10 {
+		return catalog.Binding{
+			Method:      "POST",
+			URI:         "/",
+			Target:      targetPrefix + "." + short(id),
+			ContentType: "application/x-amz-json-1.0",
+			StatusCode:  200,
+		}, nil
+	}
+
+	if protocol != "restJson1" {
+		return catalog.Binding{}, fmt.Errorf("unsupported protocol %s", protocol)
+	}
+
+	var httpTrait struct {
+		Method, URI string
+		Code        int
+	}
+
+	raw, ok := op.Traits["smithy.api#http"]
+	if !ok {
+		return catalog.Binding{}, fmt.Errorf("REST operation missing http trait")
+	}
+
+	if guardErr := json.Unmarshal(raw, &httpTrait); guardErr != nil {
+		return catalog.Binding{}, guardErr
+	}
+
+	if httpTrait.Method == "" || httpTrait.URI == "" || httpTrait.Code < 100 {
+		return catalog.Binding{}, fmt.Errorf("invalid HTTP trait")
+	}
+
+	in, err := memberBindings(m.Shapes[op.Input.Target].Members)
+	if err != nil {
+		return catalog.Binding{}, err
+	}
+
+	out, err := memberBindings(m.Shapes[op.Output.Target].Members)
+	if err != nil {
+		return catalog.Binding{}, err
+	}
+
+	return catalog.Binding{
+		Method:      httpTrait.Method,
+		URI:         httpTrait.URI,
+		StatusCode:  httpTrait.Code,
+		ContentType: "application/json",
+		Input:       in,
+		Output:      out,
+	}, nil
+}
+
+func memberBindings(members map[string]reference) (map[string]catalog.MemberBinding, error) {
+	bindings := map[string]catalog.MemberBinding{}
+	for name, member := range members {
+		binding := catalog.MemberBinding{Location: "document", Name: name}
+		bound := false
+		for trait, raw := range member.Traits {
+			location := ""
+			switch trait {
+			case "smithy.api#httpLabel":
+				location = "label"
+			case "smithy.api#httpHeader":
+				location = "header"
+			case "smithy.api#httpQuery":
+				location = "query"
+			case "smithy.api#httpPayload":
+				location = "payload"
+			default:
+				if strings.HasPrefix(trait, "smithy.api#http") {
+					return nil, fmt.Errorf("unsupported HTTP binding %s", trait)
+				}
+			}
+			if location == "" {
+				continue
+			}
+			if bound {
+				return nil, fmt.Errorf("conflicting bindings on %s", name)
+			}
+			bound = true
+			binding.Location = location
+			if location == "header" || location == "query" {
+				if guardErr := json.Unmarshal(raw, &binding.Name); guardErr != nil {
+					return nil, guardErr
+				}
+			}
+		}
+		bindings[name] = binding
+	}
+
+	return bindings, nil
+}

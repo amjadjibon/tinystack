@@ -1,0 +1,268 @@
+package main
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"go/format"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+)
+
+const (
+	shapeUnion = "union"
+	shapeList  = "list"
+	shapeMap   = "map"
+)
+
+type reference struct {
+	Traits map[string]json.RawMessage
+	Target string
+}
+
+type shape struct {
+	Member  reference
+	Key     reference
+	Value   reference
+	Input   reference
+	Output  reference
+	Members map[string]reference
+	Traits  map[string]json.RawMessage
+	Type    string
+}
+
+type (
+	model     struct{ Shapes map[string]shape }
+	generator struct {
+		model   model
+		profile map[string][]string
+		seen    map[string]bool
+		out     bytes.Buffer
+	}
+)
+
+func short(s string) string { _, b, _ := strings.Cut(s, "#"); return b }
+func (g *generator) fields(id string) []string {
+	if p, ok := g.profile[short(id)]; ok {
+		return p
+	}
+	keys := make([]string, 0, len(g.model.Shapes[id].Members))
+	for k := range g.model.Shapes[id].Members {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func (g *generator) typeName(id string) (string, error) {
+	s, ok := g.model.Shapes[id]
+	if !ok {
+		return "", fmt.Errorf("missing shape %s", id)
+	}
+	switch s.Type {
+	case "string", "enum":
+		return "string", nil
+	case "boolean":
+		return "bool", nil
+	case "integer", "long":
+		return "int64", nil
+	case "double", "float", "timestamp":
+		return "float64", nil
+	case "blob":
+		return "[]byte", nil
+	case "structure", shapeUnion:
+		return short(id), nil
+	case shapeList:
+		t, e := g.typeName(s.Member.Target)
+		return "[]" + t, e
+	case shapeMap:
+		t, e := g.typeName(s.Value.Target)
+		return "map[string]" + t, e
+	default:
+		return "", fmt.Errorf("unsupported shape %s: %s", id, s.Type)
+	}
+}
+
+func checkTraits(traits map[string]json.RawMessage) error {
+	for t := range traits {
+		if strings.HasPrefix(t, "smithy.api#http") || t == "smithy.api#streaming" ||
+			t == "smithy.api#timestampFormat" ||
+			t == "smithy.api#jsonName" ||
+			t == "smithy.api#sparse" ||
+			t == "smithy.api#mediaType" {
+			return fmt.Errorf("unsupported wire trait %s", t)
+		}
+	}
+	return nil
+}
+
+func (g *generator) emit(id string) error {
+	if g.seen[id] {
+		return nil
+	}
+	g.seen[id] = true
+	s := g.model.Shapes[id]
+	if guardErr := checkTraits(s.Traits); guardErr != nil {
+		return fmt.Errorf("%s: %w", id, guardErr)
+	}
+	switch s.Type {
+	case shapeList:
+		return g.emit(s.Member.Target)
+	case shapeMap:
+		return g.emit(s.Value.Target)
+	case "structure", shapeUnion:
+		fields := g.fields(id)
+		for _, n := range fields {
+			m, ok := s.Members[n]
+			if !ok {
+				return fmt.Errorf("unknown field %s.%s", id, n)
+			}
+			if guardErr := checkTraits(m.Traits); guardErr != nil {
+				return guardErr
+			}
+			if guardErr := g.emit(m.Target); guardErr != nil {
+				return guardErr
+			}
+		}
+		fmt.Fprintf(&g.out, "type %s struct {\n", short(id))
+		for _, n := range fields {
+			m := s.Members[n]
+			t, err := g.typeName(m.Target)
+			if err != nil {
+				return err
+			}
+			kind := g.model.Shapes[m.Target].Type
+			if s.Type == shapeUnion || (kind != shapeList && kind != shapeMap && kind != "blob") {
+				t = "*" + t
+			}
+			tag := n + ",omitempty"
+			if short(id) == "ListTablesOutput" && n == "TableNames" {
+				tag = n
+			}
+			if short(id) == "ScanOutput" && n == "Items" {
+				t = "*" + t
+			}
+			fmt.Fprintf(&g.out, "%s %s `json:\"%s\"`\n", n, t, tag)
+		}
+		fmt.Fprintln(&g.out, "}")
+		fmt.Fprintln(&g.out)
+	}
+	return nil
+}
+
+func run(root string) error {
+	dir := filepath.Join(root, "generator", "model")
+	// #nosec G304 -- root is an explicit local code-generation input, not an HTTP parameter.
+	data, err := os.ReadFile(filepath.Join(dir, "dynamodb.json"))
+	if err != nil {
+		return err
+	}
+	var manifest struct {
+		SHA256 string `json:"sha256"`
+	}
+	// #nosec G304 -- manifest is read from the selected local model directory.
+	b, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
+	if err != nil {
+		return err
+	}
+	if guardErr := json.Unmarshal(b, &manifest); guardErr != nil {
+		return guardErr
+	}
+	if fmt.Sprintf("%x", sha256.Sum256(data)) != manifest.SHA256 {
+		return fmt.Errorf("model checksum mismatch")
+	}
+	g := generator{seen: map[string]bool{}}
+	if guardErr := json.Unmarshal(data, &g.model); guardErr != nil {
+		return guardErr
+	}
+	// #nosec G304 -- profile is a selected local generator input.
+	b, err = os.ReadFile(filepath.Join(dir, "profile.json"))
+	if err != nil {
+		return err
+	}
+	if guardErr := json.Unmarshal(b, &g.profile); guardErr != nil {
+		return guardErr
+	}
+	prefix := "com.amazonaws.dynamodb#"
+	svc := g.model.Shapes[prefix+"DynamoDB_20120810"]
+	if _, ok := svc.Traits["aws.protocols#awsJson1_0"]; !ok {
+		return fmt.Errorf("model is not AWS JSON 1.0")
+	}
+	ops := []string{
+		"CreateTable",
+		"DeleteTable",
+		"DescribeTable",
+		"ListTables",
+		"PutItem",
+		"GetItem",
+		"DeleteItem",
+		"Scan",
+	}
+	fmt.Fprintln(
+		&g.out,
+		"// Code generated by generator/cmd; DO NOT EDIT.\npackage dynamodb\n\nimport ("+
+			"\"context\"; \"github.com/amjadjibon/tinystack/internal/aws/catalog\")",
+	)
+	for _, op := range ops {
+		s := g.model.Shapes[prefix+op]
+		if guardErr := checkTraits(s.Traits); guardErr != nil {
+			return guardErr
+		}
+		for _, id := range []string{s.Input.Target, s.Output.Target} {
+			if guardErr := g.emit(id); guardErr != nil {
+				return guardErr
+			}
+		}
+	}
+	fmt.Fprintln(&g.out, "type API interface {")
+	for _, op := range ops {
+		s := g.model.Shapes[prefix+op]
+		fmt.Fprintf(&g.out, "%s(context.Context,*%s)(*%s,error)\n", op, short(s.Input.Target), short(s.Output.Target))
+	}
+	fmt.Fprintln(&g.out, "}")
+	fmt.Fprintln(
+		&g.out,
+		"func D"+
+			"escriptor(api API) catalog.Service {return catalog.Service{Name: \"dynamodb\""+
+			", SigningName: \"dynamodb\",TargetPrefix:\"DynamoDB_20120810\",Protocols:[]stri"+
+			"ng{catalog.AWSJSON10},Operations:map[string]catalog.Operation{",
+	)
+	for _, op := range ops {
+		s := g.model.Shapes[prefix+op]
+		binding, bindingErr := compileBinding(g.model, prefix+op, "awsJson1_0", "DynamoDB_20120810")
+		if bindingErr != nil {
+			return bindingErr
+		}
+		fmt.Fprintf(
+			&g.out,
+			"%q:{Name:%q,Bindings:map[string]catalog.Binding{catalog.AWSJSON10:%#v},NewI"+
+				"nput:func()any{return &%s{}},Invoke:func(ctx context.Context,input any)(any"+
+				",error){return api.%s(ctx,input.(*%s))}},\n",
+			op,
+			op,
+			binding,
+			short(s.Input.Target),
+			op,
+			short(s.Input.Target),
+		)
+	}
+	fmt.Fprintln(&g.out, "}}}")
+	formatted, err := format.Source(g.out.Bytes())
+	if err != nil {
+		return fmt.Errorf("format generated source: %w", err)
+	}
+	return os.WriteFile(filepath.Join(root, "internal", "aws", "generated", "dynamodb", "api.go"), formatted, 0o644)
+}
+
+func main() {
+	root := flag.String("root", ".", "repository root")
+	flag.Parse()
+	if guardErr := run(*root); guardErr != nil {
+		fmt.Fprintln(os.Stderr, guardErr)
+		os.Exit(1)
+	}
+}

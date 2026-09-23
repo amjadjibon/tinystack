@@ -1,0 +1,69 @@
+{
+  "CreateTableInput": [
+    "TableName",
+    "AttributeDefinitions",
+    "KeySchema",
+    "BillingMode",
+    "ProvisionedThroughput"
+  ],
+  "DeleteTableInput": [
+    "TableName"
+  ],
+  "DescribeTableInput": [
+    "TableName"
+  ],
+  "ListTablesInput": [
+    "ExclusiveStartTableName",
+    "Limit"
+  ],
+  "PutItemInput": [
+    "TableName",
+    "Item",
+    "ReturnValues"
+  ],
+  "GetItemInput": [
+    "TableName",
+    "Key",
+    "ConsistentRead"
+  ],
+  "DeleteItemInput": [
+    "TableName",
+    "Key",
+    "ReturnValues"
+  ],
+  "ScanInput": [
+    "TableName",
+    "Limit",
+    "ExclusiveStartKey",
+    "ConsistentRead",
+    "Select"
+  ],
+  "PutItemOutput": [
+    "Attributes"
+  ],
+  "GetItemOutput": [
+    "Item"
+  ],
+  "DeleteItemOutput": [
+    "Attributes"
+  ],
+  "ScanOutput": [
+    "Items",
+    "Count",
+    "ScannedCount",
+    "LastEvaluatedKey"
+  ],
+  "TableDescription": [
+    "TableName",
+    "TableStatus",
+    "TableArn",
+    "TableId",
+    "CreationDateTime",
+    "KeySchema",
+    "AttributeDefinitions",
+    "ItemCount",
+    "TableSizeBytes",
+    "BillingModeSummary",
+    "ProvisionedThroughput"
+  ]
+}
