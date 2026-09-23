@@ -37,6 +37,7 @@ func TestAttributeValidation(t *testing.T) {
 			}
 		})
 	}
+
 	for _, v := range []string{"1e126", "1e-131", "123456789012345678901234567890123456789", "1e-201"} {
 		t.Run(v, func(t *testing.T) {
 			if _, err := number(v); err == nil {
@@ -44,10 +45,12 @@ func TestAttributeValidation(t *testing.T) {
 			}
 		})
 	}
+
 	a := api.AttributeValue{S: ptr("leaf")}
 	for range 34 {
 		a = api.AttributeValue{L: ptr([]api.AttributeValue{a})}
 	}
+
 	if _, err := attributeSize(a, 0); err == nil {
 		t.Fatal("excessive depth accepted")
 	}

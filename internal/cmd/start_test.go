@@ -18,10 +18,12 @@ func TestStartAndCancel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	port := probe.Addr().(*net.TCPAddr).Port
 	if guardErr := probe.Close(); guardErr != nil {
 		t.Fatal(guardErr)
 	}
+
 	cmd := newRootCommand()
 	cmd.SetContext(ctx)
 	cmd.SetOut(io.Discard)
@@ -41,18 +43,22 @@ func TestStartAndCancel(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		resp, err := client.Do(req)
 		if err == nil {
 			ready = resp.StatusCode == 200
 			if guardErr := resp.Body.Close(); guardErr != nil {
 				t.Fatal(guardErr)
 			}
+
 			if ready {
 				break
 			}
 		}
+
 		time.Sleep(10 * time.Millisecond)
 	}
+
 	cancel()
 	select {
 	case err := <-done:
@@ -62,6 +68,7 @@ func TestStartAndCancel(t *testing.T) {
 	case <-time.After(6 * time.Second):
 		t.Fatal("shutdown timed out")
 	}
+
 	if !ready {
 		t.Fatal("server never became ready")
 	}

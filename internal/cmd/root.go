@@ -23,6 +23,7 @@ func newRootCommand() *cobra.Command {
 		SilenceErrors: true,
 		Version:       "0.1.0-dev",
 	}
+
 	root.AddCommand(newStartCommand())
 	return root
 }

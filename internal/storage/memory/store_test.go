@@ -27,18 +27,22 @@ func TestTransactionContract(t *testing.T) {
 				if tc.cancel {
 					cancel()
 				}
+
 				if tc.fail {
 					return errors.New("abort")
 				}
+
 				return nil
 			})
 			if (err != nil) != (tc.fail || tc.cancel) {
 				t.Fatalf("commit error: %v", err)
 			}
+
 			err = s.View(context.Background(), func(tx storage.ReadTx) error {
 				if len(tx.Keys()) != map[bool]int{true: 0, false: 2}[tc.fail || tc.cancel] {
 					t.Fatal("partial or incorrect commit")
 				}
+
 				return nil
 			})
 			if err != nil {
@@ -66,6 +70,7 @@ func TestConcurrentUpdatesAndCopies(t *testing.T) {
 						return guardErr
 					}
 				}
+
 				tx.Put("counter", []byte(strconv.Itoa(n+1)))
 				return nil
 			}); guardErr != nil {
@@ -73,21 +78,25 @@ func TestConcurrentUpdatesAndCopies(t *testing.T) {
 			}
 		}()
 	}
+
 	wg.Wait()
 	if guardErr := s.View(ctx, func(tx storage.ReadTx) error {
 		v, ok := tx.Get("counter")
 		if !ok || string(v) != "50" {
 			t.Fatalf("lost update: %s", v)
 		}
+
 		v[0] = '0'
 		again, _ := tx.Get("counter")
 		if string(again) != "50" {
 			t.Fatal("read aliases stored bytes")
 		}
+
 		return nil
 	}); guardErr != nil {
 		t.Fatal(guardErr)
 	}
+
 	if guardErr := s.Update(ctx, func(tx storage.WriteTx) error {
 		v := []byte("safe")
 		tx.Put("copy", v)
@@ -96,18 +105,22 @@ func TestConcurrentUpdatesAndCopies(t *testing.T) {
 		if _, ok := tx.Get("counter"); ok {
 			t.Fatal("deleted value visible")
 		}
+
 		return nil
 	}); guardErr != nil {
 		t.Fatal(guardErr)
 	}
+
 	if guardErr := s.View(ctx, func(tx storage.ReadTx) error {
 		v, _ := tx.Get("copy")
 		if string(v) != "safe" {
 			t.Fatal("write aliases caller bytes")
 		}
+
 		if _, ok := tx.Get("counter"); ok {
 			t.Fatal("delete did not commit")
 		}
+
 		return nil
 	}); guardErr != nil {
 		t.Fatal(guardErr)

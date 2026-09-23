@@ -49,16 +49,19 @@ func Load(path string) (Config, error) {
 		if err != nil {
 			return c, err
 		}
+
 		d := yaml.NewDecoder(bytes.NewReader(data))
 		d.KnownFields(true)
 		if guardErr := d.Decode(&c); guardErr != nil {
 			return c, guardErr
 		}
+
 		var extra any
 		if err = d.Decode(&extra); !errors.Is(err, io.EOF) {
 			return c, fmt.Errorf("configuration must contain exactly one YAML document")
 		}
 	}
+
 	validationErr := c.Validate()
 	return c, validationErr
 }
@@ -68,16 +71,20 @@ func (c *Config) Validate() error {
 	if !account.MatchString(c.Defaults.Account) {
 		return fmt.Errorf("defaults.account must have 12 digits")
 	}
+
 	for key, id := range c.Identity.Accounts {
 		if key == "" || !account.MatchString(id) {
 			return fmt.Errorf("invalid identity mapping for %q", key)
 		}
 	}
+
 	if c.Defaults.Region == "" || c.Server.Host == "" || c.Server.Port < 1 || c.Server.Port > 65535 {
 		return fmt.Errorf("host, region, and a port between 1 and 65535 are required")
 	}
+
 	if c.Storage.Mode != "memory" {
 		return fmt.Errorf("only storage.mode=memory is supported in this MVP")
 	}
+
 	return nil
 }

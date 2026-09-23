@@ -25,6 +25,7 @@ func TestLoad(t *testing.T) {
 			if guardErr := os.WriteFile(path, []byte(tc.text), 0o600); guardErr != nil {
 				t.Fatal(guardErr)
 			}
+
 			_, err := Load(path)
 			if (err == nil) != tc.valid {
 				t.Fatalf("valid=%v error=%v", tc.valid, err)
