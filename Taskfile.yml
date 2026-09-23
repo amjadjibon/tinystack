@@ -1,0 +1,34 @@
+version: '3'
+
+tasks:
+  all:
+    cmds:
+      - task generate
+      - task lint
+      - task test
+      - task build
+
+  build:
+    cmds:
+      - go build -o bin/tinystack ./cmd/tinystack
+  test:
+    cmds:
+      - go test -race ./...
+  lint:
+    cmds:
+      - go vet ./...
+      - golangci-lint run ./...
+  generate:
+    cmds:
+      - go generate ./...
+
+  smoke:
+    cmds:
+      - python3 tests/awscli/smoke.py
+
+  clean:
+    cmds:
+      - rm -rf bin
+      - rm -rf coverage.out
+      - rm -rf coverage.html
+      - rm -rf coverage.txt

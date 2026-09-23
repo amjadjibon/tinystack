@@ -80,11 +80,11 @@ limited to AWS JSON 1.0. REST codecs and broader model generation come later.
 ## Validate
 
 ```sh
-make test       # Official Go SDK integration and transaction tests, with -race
-make lint       # go vet and golangci-lint (install golangci-lint separately)
-make generate   # Regenerate pinned API types and descriptors
-make smoke      # Build/start, run installed AWS CLI, verify graceful shutdown
+task test       # Official Go SDK integration and transaction tests, with -race
+task lint       # go vet and golangci-lint (install golangci-lint separately)
+task generate   # Regenerate pinned API types and descriptors
+task smoke      # Build/start, run installed AWS CLI, verify graceful shutdown
 ```
 
-The tests use local ephemeral ports and do not contact AWS. The smoke test also
-requires Python 3 and the AWS CLI.
+Tasks run with [Task](https://taskfile.dev). The tests use local ephemeral ports
+and do not contact AWS. The smoke test also requires Python 3 and the AWS CLI.
