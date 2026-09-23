@@ -20,6 +20,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/awsjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/query"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 )
@@ -31,6 +32,7 @@ const (
 
 type Server struct {
 	services map[string]*catalog.Service
+	routes   map[string][]route
 	logger   *slog.Logger
 	health   []byte
 	cfg      config.Config
@@ -40,7 +42,9 @@ type Server struct {
 type call struct {
 	service *catalog.Service
 	form    url.Values
+	labels  map[string]string
 	meta    request.Metadata
+	head    bool
 }
 
 //nolint:gocritic // Snapshot scalar server configuration instead of sharing mutable caller fields.
@@ -53,7 +57,7 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		logger = slog.Default()
 	}
 
-	s := &Server{cfg: cfg, logger: logger, services: map[string]*catalog.Service{}}
+	s := &Server{cfg: cfg, logger: logger, services: map[string]*catalog.Service{}, routes: map[string][]route{}}
 	names := make([]string, 0, len(services))
 	for i := range services {
 		service := &services[i]
@@ -62,6 +66,7 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		}
 
 		s.services[service.Name] = service
+		s.routes[service.Name] = routes(service)
 		names = append(names, service.Name)
 	}
 
@@ -83,10 +88,12 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 		host = h
 	}
 
-	parts := strings.Split(host, ".")
-	if len(parts) == 4 && parts[2] == "amazonaws" && parts[3] == "com" {
-		m.Service = parts[0]
-		m.Region = parts[1]
+	// "<service>.<region>.amazonaws.com", or "<bucket>.s3.<region>.amazonaws.com"
+	// for S3 virtual-hosted addressing.
+	if trimmed, ok := strings.CutSuffix(host, ".amazonaws.com"); ok {
+		if parts := strings.Split(trimmed, "."); len(parts) >= 2 {
+			m.Service, m.Region = parts[len(parts)-2], parts[len(parts)-1]
+		}
 	}
 
 	auth := r.Header.Get("Authorization")
@@ -134,6 +141,14 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 		c.meta.Protocol = catalog.AWSQuery
 	}
 
+	if target == "" {
+		// REST services are chosen by the signed or host service name; unsigned
+		// requests without a JSON target or form body fall back to REST.
+		if rest := s.restService(r); rest != nil {
+			c.meta.Protocol = catalog.RESTXML
+		}
+	}
+
 	var random [16]byte
 	if _, err := rand.Read(random[:]); err != nil {
 		return c, err
@@ -151,8 +166,18 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 		return c, err
 	}
 
-	if c.meta.Protocol == catalog.AWSQuery {
+	switch c.meta.Protocol {
+	case catalog.AWSQuery:
 		return c, s.classifyQuery(w, r, c, signed)
+	case catalog.RESTXML:
+		c.service = s.restService(r)
+		if signed != "" && signed != c.service.SigningName {
+			return c, awserror.New("IncompleteSignatureException", "Signing service does not match the request")
+		}
+
+		c.meta.Service = c.service.Name
+		c.labels, err = s.restOperation(r, c)
+		return c, err
 	}
 
 	prefix, op, ok := strings.Cut(target, ".")
@@ -228,6 +253,40 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 	return nil
 }
 
+// restService selects the REST service for a request: the one named by the
+// signed scope or regional host, or, for unsigned requests that are neither
+// AWS JSON nor AWS Query, the only registered REST service.
+func (s *Server) restService(r *http.Request) *catalog.Service {
+	var m request.Metadata
+	signed, err := s.identify(r, &m)
+	name := signed
+	if name == "" {
+		name = m.Service
+	}
+
+	contentType, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	var only *catalog.Service
+	count := 0
+	for _, service := range s.services {
+		if !service.Supports(catalog.RESTXML) {
+			continue
+		}
+
+		if name != "" && service.SigningName == name {
+			return service
+		}
+
+		only = service
+		count++
+	}
+
+	if err == nil && name == "" && count == 1 && contentType != formContentType {
+		return only
+	}
+
+	return nil
+}
+
 func (s *Server) decode(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -235,6 +294,11 @@ func (s *Server) decode(
 	contentType string,
 ) (catalog.Operation, any, error) {
 	op, ok := c.service.Operations[c.meta.Operation]
+	if c.meta.Protocol == catalog.RESTXML {
+		input, err := decodeREST(w, r, c, &op)
+		return op, input, err
+	}
+
 	if !ok {
 		if c.meta.Protocol == catalog.AWSQuery {
 			return op, nil, awserror.New(
@@ -284,12 +348,14 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 		namespace = c.service.XMLNamespace
 	}
 
-	if c.meta.Protocol == catalog.AWSQuery {
+	switch c.meta.Protocol {
+	case catalog.AWSQuery:
 		query.WriteError(w, namespace, c.meta.RequestID, e)
-		return
+	case catalog.RESTXML:
+		restxml.WriteError(w, e, c.meta.RequestID, c.head)
+	default:
+		awsjson.WriteError(w, e)
 	}
-
-	awsjson.WriteError(w, e)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -307,8 +373,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	contentType, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	c, err := s.classify(w, r, contentType)
+	c.head = r.Method == http.MethodHead
 	m := &c.meta
 	w.Header().Set("x-amzn-RequestId", m.RequestID)
+	if m.Protocol == catalog.RESTXML {
+		w.Header().Set("x-amz-request-id", m.RequestID)
+	}
+
 	defer func() {
 		s.logger.Info(
 			"request",
@@ -346,7 +417,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := op.Bindings[m.Protocol].StatusCode
+	binding := op.Bindings[m.Protocol]
+	status := binding.StatusCode
+	if m.Protocol == catalog.RESTXML {
+		restxml.Write(w, &binding, output, c.head)
+		return
+	}
+
 	if m.Protocol == catalog.AWSQuery {
 		query.Write(w, status, m.Operation, c.service.XMLNamespace, m.RequestID, output)
 		return
