@@ -63,10 +63,10 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateQueue | Idempotent for identical attributes; `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds` |
+| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds` |
 | GetQueueUrl / DeleteQueue | Queue URLs are `<endpoint>/<account>/<name>`; the host part is ignored on input |
 | ListQueues | Name prefix, `MaxResults`, and `NextToken` |
-| SendMessage | Body character and size checks, message attributes, body and attribute MD5s |
+| SendMessage | Body character and size checks, per-message `DelaySeconds`, message attributes, body and attribute MD5s |
 | ReceiveMessage | Up to 10 messages, visibility override, long polling up to 20 s, system and message attribute selection |
 | DeleteMessage / ChangeMessageVisibility | Receipt handles change on each receive; a stale handle deletes nothing |
 
@@ -78,7 +78,7 @@ selection, not access control.
 
 DynamoDB limits: no Query, UpdateItem, expressions or conditional writes, projections,
 secondary indexes, transactions API, tags, or capacity accounting/throttling.
-SQS limits: no FIFO queues, dead-letter queues, delays, batch operations, queue
+SQS limits: no FIFO queues, dead-letter queues, batch operations, queue
 attributes APIs, tags, policies, or encryption settings; the 60-second
 name-reuse delay after DeleteQueue is not enforced. Neither service has IAM,
 persistence, or Terraform support yet. Table names (not ARNs)

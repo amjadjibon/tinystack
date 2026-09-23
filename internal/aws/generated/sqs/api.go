@@ -49,6 +49,7 @@ type MessageAttributeValue struct {
 type SendMessageRequest struct {
 	QueueUrl          *string                          `json:"QueueUrl,omitempty" query:"QueueUrl"`
 	MessageBody       *string                          `json:"MessageBody,omitempty" query:"MessageBody"`
+	DelaySeconds      *int64                           `json:"DelaySeconds,omitempty" query:"DelaySeconds"`
 	MessageAttributes map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttribute,flat,key=Name,value=Value"`
 }
 

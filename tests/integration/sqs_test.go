@@ -293,6 +293,66 @@ func TestSQSLongPolling(t *testing.T) {
 	}
 }
 
+func TestSQSDelay(t *testing.T) {
+	s := server(t)
+	c := sqsClient(s, "test")
+	ctx := context.Background()
+	queueURL := createQueue(t, c, "delayed", map[string]string{"DelaySeconds": "1"})
+
+	attrs, err := c.CreateQueue(ctx, &sqs.CreateQueueInput{
+		QueueName:  aws.String("too-late"),
+		Attributes: map[string]string{"DelaySeconds": "901"},
+	})
+	var badValue *types.InvalidAttributeValue
+	if !errors.As(err, &badValue) {
+		t.Fatalf("DelaySeconds 901 accepted: %v %v", attrs, err)
+	}
+
+	_, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+		QueueUrl: &queueURL, MessageBody: aws.String("x"), DelaySeconds: 901,
+	})
+	if err == nil || !strings.Contains(err.Error(), "InvalidParameterValue") {
+		t.Fatalf("message DelaySeconds 901 accepted: %v", err)
+	}
+
+	// The queue default delays the message until a long poll picks it up.
+	start := time.Now()
+	if _, err = c.SendMessage(
+		ctx,
+		&sqs.SendMessageInput{QueueUrl: &queueURL, MessageBody: aws.String("later")},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	early, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL})
+	if err != nil || len(early.Messages) != 0 {
+		t.Fatal("delayed message delivered early", err)
+	}
+
+	out, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL, WaitTimeSeconds: 5})
+	if err != nil || len(out.Messages) != 1 || *out.Messages[0].Body != "later" {
+		t.Fatal("long poll did not wake when the delay ended", err)
+	}
+
+	if elapsed := time.Since(start); elapsed < 900*time.Millisecond || elapsed > 4*time.Second {
+		t.Fatalf("delayed message arrived after %s", elapsed)
+	}
+
+	// A per-message delay of zero overrides the queue default. The Go SDK omits
+	// a zero DelaySeconds, so send it over the Query wire.
+	status, _, body := queryCall(t, s, "/", url.Values{
+		"Action": {"SendMessage"}, "QueueUrl": {queueURL}, "MessageBody": {"now"}, "DelaySeconds": {"0"},
+	}, nil)
+	if status != http.StatusOK {
+		t.Fatalf("SendMessage with DelaySeconds=0: %d %s", status, body)
+	}
+
+	now, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL})
+	if err != nil || len(now.Messages) != 1 || *now.Messages[0].Body != "now" {
+		t.Fatal("zero message delay did not override the queue delay", err)
+	}
+}
+
 func TestSQSConcurrentReceivers(t *testing.T) {
 	s := server(t)
 	c := sqsClient(s, "test")

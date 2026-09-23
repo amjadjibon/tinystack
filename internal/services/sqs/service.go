@@ -64,6 +64,7 @@ func (s *Service) notify(key string) {
 }
 
 type settings struct {
+	DelaySeconds                  int64
 	VisibilityTimeout             int64
 	MaximumMessageSize            int64
 	MessageRetentionPeriod        int64
@@ -196,6 +197,8 @@ func (st *settings) apply(attributes map[string]string) error {
 		var field *int64
 		var lo, hi int64
 		switch name {
+		case "DelaySeconds":
+			field, lo, hi = &st.DelaySeconds, 0, maxDelay
 		case "VisibilityTimeout":
 			field, lo, hi = &st.VisibilityTimeout, 0, 43200
 		case "MaximumMessageSize":

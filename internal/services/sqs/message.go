@@ -23,6 +23,7 @@ import (
 
 const (
 	maxAttributes = 10
+	maxDelay      = 900
 	maxVisibility = 43200
 	maxWait       = 20
 	maxReceive    = 10
@@ -233,6 +234,10 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 		return nil, invalidContents()
 	}
 
+	if guardErr := between("DelaySeconds", in.DelaySeconds, 0, maxDelay); guardErr != nil {
+		return nil, guardErr
+	}
+
 	size, err := checkAttributes(in.MessageAttributes)
 	if err != nil {
 		return nil, err
@@ -251,7 +256,6 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 		SenderID:   sender,
 		Attributes: in.MessageAttributes,
 		SentAt:     now,
-		VisibleAt:  now,
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -264,6 +268,13 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 			return invalid("One or more parameters are invalid. Reason: Message must be shorter than %d bytes.", limit)
 		}
 
+		// A per-message delay overrides the queue's default delay.
+		delay := q.Settings.DelaySeconds
+		if in.DelaySeconds != nil {
+			delay = *in.DelaySeconds
+		}
+
+		msg.VisibleAt = now + delay*1000
 		q.purge(now)
 		q.Messages = append(q.Messages, msg)
 		return save(tx, key, q)

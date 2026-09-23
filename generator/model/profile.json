@@ -113,6 +113,7 @@
       "SendMessageRequest": [
         "QueueUrl",
         "MessageBody",
+        "DelaySeconds",
         "MessageAttributes"
       ],
       "SendMessageResult": [
