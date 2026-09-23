@@ -168,6 +168,22 @@ type ChangeMessageVisibilityBatchResult struct {
 	Failed     []BatchResultErrorEntry                   `json:"Failed,omitempty" query:"BatchResultErrorEntry,flat"`
 }
 
+type GetQueueAttributesRequest struct {
+	QueueUrl       *string  `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	AttributeNames []string `json:"AttributeNames,omitempty" query:"AttributeName,flat"`
+}
+
+type GetQueueAttributesResult struct {
+	Attributes map[string]string `json:"Attributes,omitempty" query:"Attribute,flat,key=Name,value=Value"`
+}
+
+type SetQueueAttributesOutput struct{}
+
+type SetQueueAttributesRequest struct {
+	QueueUrl   *string           `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	Attributes map[string]string `json:"Attributes,omitempty" query:"Attribute,flat,key=Name,value=Value"`
+}
+
 type API interface {
 	CreateQueue(context.Context, *CreateQueueRequest) (*CreateQueueResult, error)
 	DeleteQueue(context.Context, *DeleteQueueRequest) (*DeleteQueueOutput, error)
@@ -180,6 +196,8 @@ type API interface {
 	SendMessageBatch(context.Context, *SendMessageBatchRequest) (*SendMessageBatchResult, error)
 	DeleteMessageBatch(context.Context, *DeleteMessageBatchRequest) (*DeleteMessageBatchResult, error)
 	ChangeMessageVisibilityBatch(context.Context, *ChangeMessageVisibilityBatchRequest) (*ChangeMessageVisibilityBatchResult, error)
+	GetQueueAttributes(context.Context, *GetQueueAttributesRequest) (*GetQueueAttributesResult, error)
+	SetQueueAttributes(context.Context, *SetQueueAttributesRequest) (*SetQueueAttributesOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -216,6 +234,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ChangeMessageVisibilityBatch": {Name: "ChangeMessageVisibilityBatch", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.ChangeMessageVisibilityBatch", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ChangeMessageVisibilityBatch", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ChangeMessageVisibilityBatchRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ChangeMessageVisibilityBatch(ctx, input.(*ChangeMessageVisibilityBatchRequest))
+		}},
+		"GetQueueAttributes": {Name: "GetQueueAttributes", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.GetQueueAttributes", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetQueueAttributes", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetQueueAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetQueueAttributes(ctx, input.(*GetQueueAttributesRequest))
+		}},
+		"SetQueueAttributes": {Name: "SetQueueAttributes", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.SetQueueAttributes", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SetQueueAttributes", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SetQueueAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetQueueAttributes(ctx, input.(*SetQueueAttributesRequest))
 		}},
 	}}
 }

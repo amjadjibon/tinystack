@@ -63,7 +63,11 @@ func (s *Service) notify(key string) {
 	}
 }
 
+// settings are the writable queue attributes. The redrive fields hold a parsed
+// RedrivePolicy and are empty when the queue has no dead-letter queue.
 type settings struct {
+	DeadLetterTargetArn           string `json:",omitempty"`
+	MaxReceiveCount               int64  `json:",omitempty"`
 	DelaySeconds                  int64
 	VisibilityTimeout             int64
 	MaximumMessageSize            int64
@@ -72,9 +76,10 @@ type settings struct {
 }
 
 type queue struct {
-	Messages  []message
-	Settings  settings
-	CreatedAt int64
+	Messages     []message
+	Settings     settings
+	CreatedAt    int64
+	LastModified int64
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -120,6 +125,23 @@ func queueKey(m request.Metadata, name string) string {
 //nolint:gocritic // Metadata is an immutable request snapshot.
 func queueURL(m request.Metadata, name string) string {
 	return m.Endpoint + "/" + m.AccountID + "/" + name
+}
+
+// keyARN is the ARN of the queue stored under key.
+func keyARN(key string) string {
+	parts := strings.SplitN(key, "/", 4)
+	return "arn:aws:sqs:" + parts[1] + ":" + parts[0] + ":" + parts[3]
+}
+
+// arnKey maps a queue ARN to its storage key.
+func arnKey(arn string) (string, bool) {
+	parts := strings.Split(arn, ":")
+	if len(parts) != 6 || parts[0] != "arn" || parts[2] != "sqs" || parts[3] == "" ||
+		!accountID.MatchString(parts[4]) || !queueName.MatchString(parts[5]) {
+		return "", false
+	}
+
+	return parts[4] + "/" + parts[3] + "/sqs/" + parts[5], true
 }
 
 // resolve maps a queue URL to the caller's regional queue key. The URL host
@@ -197,6 +219,12 @@ func (st *settings) apply(attributes map[string]string) error {
 		var field *int64
 		var lo, hi int64
 		switch name {
+		case "RedrivePolicy":
+			if guardErr := st.redrive(attributes[name]); guardErr != nil {
+				return guardErr
+			}
+
+			continue
 		case "DelaySeconds":
 			field, lo, hi = &st.DelaySeconds, 0, maxDelay
 		case "VisibilityTimeout":
@@ -263,7 +291,12 @@ func (s *Service) CreateQueue(ctx context.Context, in *api.CreateQueueRequest) (
 			return nil
 		}
 
-		return save(tx, key, &queue{Settings: st, CreatedAt: s.now().Unix()})
+		if guardErr := checkTarget(tx, key, &st); guardErr != nil {
+			return guardErr
+		}
+
+		now := s.now().Unix()
+		return save(tx, key, &queue{Settings: st, CreatedAt: now, LastModified: now})
 	})
 	if err != nil {
 		return nil, err

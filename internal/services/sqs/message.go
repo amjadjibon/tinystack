@@ -340,8 +340,10 @@ type receiveOptions struct {
 }
 
 // claimed is one atomic receive attempt; next is when the earliest in-flight
-// message becomes visible again, or zero.
+// message becomes visible again, or zero. moved is the key of the dead-letter
+// queue that received messages, or empty.
 type claimed struct {
+	moved    string
 	messages []api.Message
 	next     int64
 	wait     int64
@@ -401,7 +403,43 @@ func render(msg *message, opts *receiveOptions) api.Message {
 	return out
 }
 
-// claim atomically makes up to opts.limit visible messages in flight.
+// deadLetter is a queue's dead-letter queue, loaded on first use during a claim.
+type deadLetter struct {
+	queue *queue
+	key   string
+}
+
+// accept moves msg to the dead-letter queue when it has already been received
+// maxReceiveCount times. It reports false, leaving msg in place, when the queue
+// has no redrive policy or its target no longer exists.
+func (d *deadLetter) accept(tx storage.WriteTx, st *settings, msg *message, now int64) (bool, error) {
+	if st.DeadLetterTargetArn == "" || msg.ReceiveCount < st.MaxReceiveCount {
+		return false, nil
+	}
+
+	if d.queue == nil {
+		d.key, _ = arnKey(st.DeadLetterTargetArn)
+		if _, ok := tx.Get(d.key); !ok {
+			return false, nil
+		}
+
+		q, err := load(tx, d.key)
+		if err != nil {
+			return false, err
+		}
+
+		d.queue = q
+	}
+
+	moved := *msg
+	moved.Receipt = ""
+	moved.VisibleAt = now
+	d.queue.Messages = append(d.queue.Messages, moved)
+	return true, nil
+}
+
+// claim atomically makes up to opts.limit visible messages in flight, first
+// moving messages past the redrive policy's maxReceiveCount to the dead-letter queue.
 func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (claimed, error) {
 	var c claimed
 	now := s.now().UnixMilli()
@@ -418,17 +456,25 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 			visibility = *opts.visibility
 		}
 
+		var dlq deadLetter
+		kept := q.Messages[:0]
 		for i := range q.Messages {
-			msg := &q.Messages[i]
-			if msg.VisibleAt > now {
-				if c.next == 0 || msg.VisibleAt < c.next {
+			msg := q.Messages[i]
+			if msg.VisibleAt > now || len(c.messages) == opts.limit {
+				if msg.VisibleAt > now && (c.next == 0 || msg.VisibleAt < c.next) {
 					c.next = msg.VisibleAt
 				}
 
+				kept = append(kept, msg)
 				continue
 			}
 
-			if len(c.messages) == opts.limit {
+			moved, moveErr := dlq.accept(tx, &q.Settings, &msg, now)
+			if moveErr != nil {
+				return moveErr
+			}
+
+			if moved {
 				continue
 			}
 
@@ -439,7 +485,17 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 
 			msg.VisibleAt = now + visibility*1000
 			msg.Receipt = rand.Text()
-			c.messages = append(c.messages, render(msg, opts))
+			c.messages = append(c.messages, render(&msg, opts))
+			kept = append(kept, msg)
+		}
+
+		q.Messages = kept
+		if dlq.queue != nil {
+			if saveErr := save(tx, dlq.key, dlq.queue); saveErr != nil {
+				return saveErr
+			}
+
+			c.moved = dlq.key
 		}
 
 		return save(tx, key, q)
@@ -495,6 +551,10 @@ func (s *Service) ReceiveMessage(
 		c, claimErr := s.claim(ctx, key, opts)
 		if claimErr != nil {
 			return nil, claimErr
+		}
+
+		if c.moved != "" {
+			s.notify(c.moved)
 		}
 
 		now := s.now()

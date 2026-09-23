@@ -92,7 +92,9 @@
       "ChangeMessageVisibility",
       "SendMessageBatch",
       "DeleteMessageBatch",
-      "ChangeMessageVisibilityBatch"
+      "ChangeMessageVisibilityBatch",
+      "GetQueueAttributes",
+      "SetQueueAttributes"
     ],
     "query": {
       "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
@@ -212,6 +214,17 @@
       ],
       "ChangeMessageVisibilityBatchResultEntry": [
         "Id"
+      ],
+      "GetQueueAttributesRequest": [
+        "QueueUrl",
+        "AttributeNames"
+      ],
+      "GetQueueAttributesResult": [
+        "Attributes"
+      ],
+      "SetQueueAttributesRequest": [
+        "QueueUrl",
+        "Attributes"
       ]
     }
   }

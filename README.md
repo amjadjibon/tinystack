@@ -63,11 +63,12 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds` |
+| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy` |
+| GetQueueAttributes / SetQueueAttributes | The writable attributes above plus `QueueArn`, message counts, and created/modified timestamps; unsupported names fail |
 | GetQueueUrl / DeleteQueue | Queue URLs are `<endpoint>/<account>/<name>`; the host part is ignored on input |
 | ListQueues | Name prefix, `MaxResults`, and `NextToken` |
 | SendMessage | Body character and size checks, per-message `DelaySeconds`, message attributes, body and attribute MD5s |
-| ReceiveMessage | Up to 10 messages, visibility override, long polling up to 20 s, system and message attribute selection |
+| ReceiveMessage | Up to 10 messages, visibility override, long polling up to 20 s, system and message attribute selection; a message received `maxReceiveCount` times moves to the dead-letter queue (same account and region) on its next receive |
 | DeleteMessage / ChangeMessageVisibility | Receipt handles change on each receive; a stale handle deletes nothing |
 | SendMessageBatch / DeleteMessageBatch / ChangeMessageVisibilityBatch | Up to 10 entries with distinct IDs in one transaction; each entry succeeds or fails on its own; batch sends are limited to 1 MiB in total |
 
@@ -79,9 +80,8 @@ selection, not access control.
 
 DynamoDB limits: no Query, UpdateItem, expressions or conditional writes, projections,
 secondary indexes, transactions API, tags, or capacity accounting/throttling.
-SQS limits: no FIFO queues, dead-letter queues, queue
-attributes APIs, tags, policies, or encryption settings; the 60-second
-name-reuse delay after DeleteQueue is not enforced. Neither service has IAM,
+SQS limits: no FIFO queues, dead-letter redrive back to the source queue, tags,
+policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. Neither service has IAM,
 persistence, or Terraform support yet. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.

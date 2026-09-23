@@ -499,6 +499,139 @@ func TestSQSBatch(t *testing.T) {
 	}
 }
 
+func TestSQSDeadLetterQueue(t *testing.T) {
+	s := server(t)
+	c := sqsClient(s, "test")
+	ctx := context.Background()
+	dlqURL := createQueue(t, c, "orders-dlq", nil)
+	const dlqARN = "arn:aws:sqs:us-east-1:000000000000:orders-dlq"
+
+	var badValue *types.InvalidAttributeValue
+	for _, policy := range []string{
+		`{"deadLetterTargetArn":"arn:aws:sqs:us-east-1:000000000000:missing","maxReceiveCount":2}`,
+		`{"deadLetterTargetArn":"arn:aws:sqs:eu-west-1:000000000000:orders-dlq","maxReceiveCount":2}`,
+		`{"deadLetterTargetArn":"` + dlqARN + `","maxReceiveCount":0}`,
+		`{"deadLetterTargetArn":"` + dlqARN + `","maxReceiveCount":2,"extra":true}`,
+		`not json`,
+	} {
+		_, err := c.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName:  aws.String("orders"),
+			Attributes: map[string]string{"RedrivePolicy": policy},
+		})
+		if !errors.As(err, &badValue) {
+			t.Fatalf("policy %s accepted: %v", policy, err)
+		}
+	}
+
+	// maxReceiveCount may be a string; a zero visibility timeout redelivers at once.
+	queueURL := createQueue(t, c, "orders", map[string]string{
+		"VisibilityTimeout": "0",
+		"RedrivePolicy":     `{"deadLetterTargetArn":"` + dlqARN + `","maxReceiveCount":"2"}`,
+	})
+
+	attrs, err := c.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		QueueUrl:       &queueURL,
+		AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameAll},
+	})
+	if err != nil || attrs.Attributes["QueueArn"] != "arn:aws:sqs:us-east-1:000000000000:orders" ||
+		attrs.Attributes["RedrivePolicy"] != `{"deadLetterTargetArn":"`+dlqARN+`","maxReceiveCount":2}` ||
+		attrs.Attributes["VisibilityTimeout"] != "0" || attrs.Attributes["CreatedTimestamp"] == "" {
+		t.Fatal(attrs, err)
+	}
+
+	_, err = c.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+		QueueUrl: &queueURL,
+		Attributes: map[string]string{
+			"RedrivePolicy": `{"deadLetterTargetArn":"arn:aws:sqs:us-east-1:000000000000:orders","maxReceiveCount":2}`,
+		},
+	})
+	if !errors.As(err, &badValue) {
+		t.Fatalf("queue accepted itself as its dead-letter queue: %v", err)
+	}
+
+	_, err = c.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		QueueUrl: &queueURL, AttributeNames: []types.QueueAttributeName{types.QueueAttributeNamePolicy},
+	})
+	var badName *types.InvalidAttributeName
+	if !errors.As(err, &badName) {
+		t.Fatalf("unsupported attribute requested: %v", err)
+	}
+
+	sent, err := c.SendMessage(ctx, &sqs.SendMessageInput{QueueUrl: &queueURL, MessageBody: aws.String("poison")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for range 2 {
+		out, receiveErr := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL})
+		if receiveErr != nil || len(out.Messages) != 1 {
+			t.Fatal("message not redelivered", out, receiveErr)
+		}
+	}
+
+	// The third receive exceeds maxReceiveCount and moves the message.
+	out, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL})
+	if err != nil || len(out.Messages) != 0 {
+		t.Fatal("message delivered past maxReceiveCount", out, err)
+	}
+
+	moved, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &dlqURL})
+	if err != nil || len(moved.Messages) != 1 || *moved.Messages[0].MessageId != *sent.MessageId {
+		t.Fatal("message not moved to the dead-letter queue", moved, err)
+	}
+
+	// Clearing the policy stops redrive; counts cover visible, in-flight, and delayed messages.
+	if _, err = c.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+		QueueUrl:   &queueURL,
+		Attributes: map[string]string{"RedrivePolicy": "", "VisibilityTimeout": "30"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, delay := range []int32{0, 0, 60} {
+		if _, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl: &queueURL, MessageBody: aws.String("m"), DelaySeconds: delay,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if _, err = c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL}); err != nil {
+		t.Fatal(err)
+	}
+
+	attrs, err = c.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		QueueUrl: &queueURL,
+		AttributeNames: []types.QueueAttributeName{
+			types.QueueAttributeNameRedrivePolicy,
+			types.QueueAttributeNameApproximateNumberOfMessages,
+			types.QueueAttributeNameApproximateNumberOfMessagesNotVisible,
+			types.QueueAttributeNameApproximateNumberOfMessagesDelayed,
+		},
+	})
+	want := map[string]string{
+		"ApproximateNumberOfMessages":           "1",
+		"ApproximateNumberOfMessagesNotVisible": "1",
+		"ApproximateNumberOfMessagesDelayed":    "1",
+	}
+	if err != nil || fmt.Sprint(attrs.Attributes) != fmt.Sprint(want) {
+		t.Fatal(attrs, err)
+	}
+
+	// Query renders attributes as flattened Name/Value entries.
+	status, _, body := queryCall(t, s, "/", url.Values{
+		"Action": {"GetQueueAttributes"}, "QueueUrl": {queueURL}, "AttributeName.1": {"QueueArn"},
+	}, nil)
+	var queried struct {
+		Attributes []struct{ Name, Value string } `xml:"GetQueueAttributesResult>Attribute"`
+	}
+
+	if status != http.StatusOK || xml.Unmarshal(body, &queried) != nil || len(queried.Attributes) != 1 ||
+		queried.Attributes[0].Value != "arn:aws:sqs:us-east-1:000000000000:orders" {
+		t.Fatalf("%d %s", status, body)
+	}
+}
+
 func TestSQSConcurrentReceivers(t *testing.T) {
 	s := server(t)
 	c := sqsClient(s, "test")
