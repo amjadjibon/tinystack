@@ -7,6 +7,8 @@ type Scope struct{ AccountID, Region string }
 type Metadata struct {
 	Scope
 	RequestID, Service, Operation, Protocol, AccessKey string
+	// Endpoint is the base URL the client used, for resource URLs such as SQS queue URLs.
+	Endpoint string
 }
 
 type contextKey struct{}

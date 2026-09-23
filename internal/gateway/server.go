@@ -3,25 +3,44 @@ package gateway
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"mime"
 	"net"
 	"net/http"
+	"net/url"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/awsjson"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/query"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 )
 
+const (
+	maxBody         = 2 << 20
+	formContentType = "application/x-www-form-urlencoded"
+)
+
 type Server struct {
-	services map[string]catalog.Service
+	services map[string]*catalog.Service
 	logger   *slog.Logger
+	health   []byte
 	cfg      config.Config
+}
+
+// call is a request classified to a protocol and, once known, a service.
+type call struct {
+	service *catalog.Service
+	form    url.Values
+	meta    request.Metadata
 }
 
 //nolint:gocritic // Snapshot scalar server configuration instead of sharing mutable caller fields.
@@ -29,83 +48,248 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	if guardErr := cfg.Validate(); guardErr != nil {
 		return nil, guardErr
 	}
+
 	if logger == nil {
 		logger = slog.Default()
 	}
-	s := &Server{cfg: cfg, logger: logger, services: map[string]catalog.Service{}}
-	for _, service := range services {
+
+	s := &Server{cfg: cfg, logger: logger, services: map[string]*catalog.Service{}}
+	names := make([]string, 0, len(services))
+	for i := range services {
+		service := &services[i]
 		if _, exists := s.services[service.Name]; exists {
 			return nil, fmt.Errorf("duplicate service %s", service.Name)
 		}
+
 		s.services[service.Name] = service
+		names = append(names, service.Name)
 	}
+
+	sort.Strings(names)
+	health, err := json.Marshal(map[string]any{"status": "ok", "services": names, "storage": cfg.Storage.Mode})
+	if err != nil {
+		return nil, err
+	}
+
+	s.health = health
 	return s, nil
 }
 
-func (s *Server) metadata(r *http.Request) (request.Metadata, error) {
-	m := request.Metadata{
-		Scope:    request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
-		Protocol: catalog.AWSJSON10,
-	}
-	var random [16]byte
-	if _, err := rand.Read(random[:]); err != nil {
-		return m, err
-	}
-	m.RequestID = hex.EncodeToString(random[:])
+// identify resolves the caller scope from the host and SigV4 credential scope,
+// returning the signed service name. Signatures are not verified.
+func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) {
 	host := r.Host
 	if h, _, err := net.SplitHostPort(host); err == nil {
 		host = h
 	}
+
 	parts := strings.Split(host, ".")
 	if len(parts) == 4 && parts[2] == "amazonaws" && parts[3] == "com" {
 		m.Service = parts[0]
 		m.Region = parts[1]
 	}
-	signedService := ""
-	if auth := r.Header.Get("Authorization"); auth != "" {
-		if !strings.HasPrefix(auth, "AWS4-HMAC-SHA256 ") {
-			return m, awserror.New("IncompleteSignatureException", "Expected AWS4-HMAC-SHA256")
-		}
-		credential := ""
-		for _, field := range strings.Split(strings.TrimPrefix(auth, "AWS4-HMAC-SHA256 "), ",") {
-			k, v, ok := strings.Cut(strings.TrimSpace(field), "=")
-			if ok && k == "Credential" {
-				credential = v
-			}
-		}
-		scope := strings.Split(credential, "/")
-		if len(scope) != 5 || scope[0] == "" || len(scope[1]) != 8 || scope[2] == "" || scope[3] == "" ||
-			scope[4] != "aws4_request" {
-			return m, awserror.New("IncompleteSignatureException", "Malformed credential scope")
-		}
-		m.AccessKey = scope[0]
-		m.Region = scope[2]
-		signedService = scope[3]
-		m.Service = signedService
-		if account, ok := s.cfg.Identity.Accounts[m.AccessKey]; ok {
-			m.AccountID = account
+
+	auth := r.Header.Get("Authorization")
+	if auth == "" {
+		return "", nil
+	}
+
+	if !strings.HasPrefix(auth, "AWS4-HMAC-SHA256 ") {
+		return "", awserror.New("IncompleteSignatureException", "Expected AWS4-HMAC-SHA256")
+	}
+
+	credential := ""
+	for _, field := range strings.Split(strings.TrimPrefix(auth, "AWS4-HMAC-SHA256 "), ",") {
+		k, v, ok := strings.Cut(strings.TrimSpace(field), "=")
+		if ok && k == "Credential" {
+			credential = v
 		}
 	}
-	target, op, ok := strings.Cut(r.Header.Get("X-Amz-Target"), ".")
+
+	scope := strings.Split(credential, "/")
+	if len(scope) != 5 || scope[0] == "" || len(scope[1]) != 8 || scope[2] == "" || scope[3] == "" ||
+		scope[4] != "aws4_request" {
+		return "", awserror.New("IncompleteSignatureException", "Malformed credential scope")
+	}
+
+	m.AccessKey = scope[0]
+	m.Region = scope[2]
+	m.Service = scope[3]
+	if account, ok := s.cfg.Identity.Accounts[m.AccessKey]; ok {
+		m.AccountID = account
+	}
+
+	return scope[3], nil
+}
+
+// classify selects the protocol from headers alone, so early errors use the
+// client's envelope, then resolves the service and operation.
+func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType string) (*call, error) {
+	c := &call{meta: request.Metadata{
+		Scope:    request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
+		Protocol: catalog.AWSJSON10,
+	}}
+	target := r.Header.Get("X-Amz-Target")
+	if target == "" && contentType == formContentType {
+		c.meta.Protocol = catalog.AWSQuery
+	}
+
+	var random [16]byte
+	if _, err := rand.Read(random[:]); err != nil {
+		return c, err
+	}
+
+	c.meta.RequestID = hex.EncodeToString(random[:])
+	host := r.Host
+	if host == "" {
+		host = net.JoinHostPort(s.cfg.Server.Host, strconv.Itoa(s.cfg.Server.Port))
+	}
+
+	c.meta.Endpoint = "http://" + host
+	signed, err := s.identify(r, &c.meta)
+	if err != nil {
+		return c, err
+	}
+
+	if c.meta.Protocol == catalog.AWSQuery {
+		return c, s.classifyQuery(w, r, c, signed)
+	}
+
+	prefix, op, ok := strings.Cut(target, ".")
 	if !ok || op == "" {
-		return m, awserror.New("UnknownOperationException", "X-Amz-Target must identify an operation")
+		return c, awserror.New("UnknownOperationException", "X-Amz-Target must identify an operation")
 	}
-	found := false
+
 	for _, service := range s.services {
-		if service.TargetPrefix == target {
-			if signedService != "" && signedService != service.SigningName {
-				return m, awserror.Validation("Signing service conflicts with X-Amz-Target")
-			}
-			m.Service = service.Name
-			found = true
+		if service.TargetPrefix == prefix && service.Supports(catalog.AWSJSON10) {
+			c.service = service
+		}
+	}
+
+	if c.service == nil {
+		return c, awserror.New("UnknownOperationException", "Unknown target prefix")
+	}
+
+	if signed != "" && signed != c.service.SigningName {
+		return c, awserror.Validation("Signing service conflicts with X-Amz-Target")
+	}
+
+	c.meta.Service = c.service.Name
+	c.meta.Operation = op
+	return c, nil
+}
+
+// classifyQuery reads the form once; decoding later reuses the parsed values.
+func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, signed string) error {
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBody))
+	if err != nil {
+		return awserror.New("InvalidParameterValue", "Cannot read request body: "+err.Error())
+	}
+
+	if c.form, err = url.ParseQuery(string(body)); err != nil {
+		return awserror.New("MalformedQueryString", "Request body is not valid form encoding")
+	}
+
+	actions := c.form["Action"]
+	if len(actions) != 1 || actions[0] == "" {
+		return awserror.New("MissingAction", "The request must contain exactly one Action parameter")
+	}
+
+	c.meta.Operation = actions[0]
+	// Signed and host-derived service names win; unsigned local requests fall
+	// back to the only Query service that implements the action.
+	name := signed
+	if name == "" {
+		name = c.meta.Service
+	}
+
+	var candidates []*catalog.Service
+	for _, service := range s.services {
+		if !service.Supports(catalog.AWSQuery) {
+			continue
+		}
+
+		if name != "" && service.SigningName == name {
+			candidates = []*catalog.Service{service}
 			break
 		}
+
+		if _, ok := service.Operations[c.meta.Operation]; ok && name == "" {
+			candidates = append(candidates, service)
+		}
 	}
-	if !found {
-		return m, awserror.New("UnknownOperationException", "Unknown target prefix")
+
+	if len(candidates) != 1 {
+		return awserror.New("InvalidAction", "Cannot resolve a service for action "+c.meta.Operation)
 	}
-	m.Operation = op
-	return m, nil
+
+	c.service = candidates[0]
+	c.meta.Service = c.service.Name
+	return nil
+}
+
+func (s *Server) decode(
+	w http.ResponseWriter,
+	r *http.Request,
+	c *call,
+	contentType string,
+) (catalog.Operation, any, error) {
+	op, ok := c.service.Operations[c.meta.Operation]
+	if !ok {
+		if c.meta.Protocol == catalog.AWSQuery {
+			return op, nil, awserror.New(
+				"InvalidAction",
+				"The action "+c.meta.Operation+" is not valid for this endpoint",
+			)
+		}
+
+		return op, nil, awserror.New("UnknownOperationException", "Operation is not implemented")
+	}
+
+	binding, supported := op.Bindings[c.meta.Protocol]
+	if !supported || contentType != binding.ContentType {
+		return op, nil, awserror.Validation("Unsupported content type for this operation")
+	}
+	// Query clients may post to a resource URL such as an SQS queue URL.
+	pathOK := c.meta.Protocol == catalog.AWSQuery || r.URL.Path == binding.URI
+	if r.Method != binding.Method || !pathOK || r.URL.RawQuery != "" {
+		return op, nil, awserror.Validation("Unexpected method, path, or query parameters")
+	}
+
+	input := op.NewInput()
+	if c.meta.Protocol == catalog.AWSQuery {
+		if versions := c.form["Version"]; len(versions) > 0 && (len(versions) != 1 || versions[0] != binding.Version) {
+			return op, nil, awserror.New("NoSuchVersion", "Version must be "+binding.Version)
+		}
+
+		return op, input, query.Decode(c.form, input)
+	}
+
+	return op, input, awsjson.Decode(http.MaxBytesReader(w, r.Body, maxBody), input)
+}
+
+func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
+	e := awserror.From(err)
+	namespace := ""
+	if c.service != nil {
+		if binding, ok := c.service.Errors[e.Code]; ok {
+			e.StatusCode = binding.StatusCode
+			e.QueryCode = binding.QueryCode
+		}
+
+		if c.service.QueryCompatible && e.QueryCode == "" {
+			e.QueryCode = e.Code
+		}
+
+		namespace = c.service.XMLNamespace
+	}
+
+	if c.meta.Protocol == catalog.AWSQuery {
+		query.WriteError(w, namespace, c.meta.RequestID, e)
+		return
+	}
+
+	awsjson.WriteError(w, e)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -114,12 +298,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(405)
 			return
 		}
+
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"ok","services":["dynamodb"],"storage":"memory"}`))
+		_, _ = w.Write(s.health)
 		return
 	}
+
 	start := time.Now()
-	m, err := s.metadata(r)
+	contentType, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	c, err := s.classify(w, r, contentType)
+	m := &c.meta
 	w.Header().Set("x-amzn-RequestId", m.RequestID)
 	defer func() {
 		s.logger.Info(
@@ -130,6 +318,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			m.Service,
 			"operation",
 			m.Operation,
+			"protocol",
+			m.Protocol,
 			"account",
 			m.AccountID,
 			"region",
@@ -138,32 +328,29 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			float64(time.Since(start).Microseconds())/1000,
 		)
 	}()
+
 	if err != nil {
-		awsjson.Write(w, 0, nil, err)
+		s.fail(w, c, err)
 		return
 	}
-	service := s.services[m.Service]
-	op, ok := service.Operations[m.Operation]
-	if !ok {
-		awsjson.Write(w, 0, nil, awserror.New("UnknownOperationException", "Operation is not implemented"))
+
+	op, input, err := s.decode(w, r, c, contentType)
+	if err != nil {
+		s.fail(w, c, err)
 		return
 	}
-	contentType, _, parseErr := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	binding, supported := op.Bindings[catalog.AWSJSON10]
-	if parseErr != nil || !supported || contentType != binding.ContentType {
-		awsjson.Write(w, 0, nil, awserror.Validation("Unsupported content type for this operation"))
+
+	output, err := op.Invoke(request.WithMetadata(r.Context(), c.meta), input)
+	if err != nil {
+		s.fail(w, c, err)
 		return
 	}
-	if r.Method != binding.Method || r.URL.Path != binding.URI || r.URL.RawQuery != "" {
-		awsjson.Write(w, 0, nil, awserror.Validation("Unexpected method, path, or query parameters"))
+
+	status := op.Bindings[m.Protocol].StatusCode
+	if m.Protocol == catalog.AWSQuery {
+		query.Write(w, status, m.Operation, c.service.XMLNamespace, m.RequestID, output)
 		return
 	}
-	input := op.NewInput()
-	r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
-	if guardErr := awsjson.Decode(r.Body, input); guardErr != nil {
-		awsjson.Write(w, 0, nil, guardErr)
-		return
-	}
-	output, err := op.Invoke(request.WithMetadata(r.Context(), m), input)
-	awsjson.Write(w, binding.StatusCode, output, err)
+
+	awsjson.Write(w, status, output)
 }
