@@ -26,20 +26,25 @@ Run the server: `./bin/tinystack start [--host H] [--port P] [--config examples/
 Request flow: `cmd/tinystack` → `internal/cmd` (cobra; `start.go` wires everything) → `internal/gateway.Server` →
 generated `catalog.Operation` → `internal/services/<service>.Service` → `internal/storage.Store`.
 
-- **gateway** (`internal/gateway/server.go`): picks the protocol from headers only: `X-Amz-Target` means AWS JSON, and a
-  form content type without a target means AWS Query. It does this before anything else, so even early errors use the
-  client's envelope. It then resolves identity from the SigV4 `Credential` scope *without verifying signatures*: the
-  access key maps to an account through `identity.accounts`, and the region comes from the signed scope, then the
-  regional host, then the configured default. The service comes from the JSON target prefix, or for Query from the
-  signed or host service name, falling back to the only Query service that has the `Action`. The gateway also validates
-  content type, method, path and version against the operation's binding (Query skips the path check because SQS
-  clients post to queue URLs), decodes input with a 2 MiB limit, and puts `request.Metadata` (including `Endpoint`)
-  into the context.
+- **gateway** (`internal/gateway/server.go`, `rest.go`): picks the protocol from headers only: `X-Amz-Target` means AWS
+  JSON; a signed or host service name that is a REST XML service (S3) means REST; otherwise a form content type means
+  AWS Query, and an unsigned request that is neither falls back to the only REST service. It does this before anything
+  else, so even early errors use the client's envelope. It then resolves identity from the SigV4 `Credential` scope
+  *without verifying signatures*: the access key maps to an account through `identity.accounts`, and the region comes
+  from the signed scope, then the regional host, then the configured default. The service comes from the JSON target
+  prefix, or for Query from the signed or host service name, falling back to the only Query service that has the
+  `Action`. The gateway also validates content type, method, path and version against the operation's binding (Query
+  skips the path check because SQS clients post to queue URLs), decodes input with a 2 MiB limit, and puts
+  `request.Metadata` (including `Endpoint`) into the context. REST requests match an operation by method, path labels
+  (greedy `{Key+}`), and the URI's query literals (`x-id` is optional); unknown query parameters mean no match
+  (`NotImplemented`), so S3 subresources such as `?acl` never reach another operation. S3 virtual-hosted buckets
+  (`<bucket>.localhost`, `<bucket>.s3.…amazonaws.com`) are folded into the path. REST payloads are limited to 64 MiB and
+  aws-chunked bodies are decoded.
 - **catalog** (`internal/aws/catalog`): protocol-neutral service/operation/binding/error descriptors. A service
   registers with the gateway by passing `api.Descriptor(impl)`.
-- **generated** (`internal/aws/generated/<service>/api.go`): wire types, the `API` interface and `Descriptor`.
-  **Never hand-write or hand-edit these.** Always produce them with `generator/cmd` (`task generate`) from the pinned
-  Smithy models in `generator/model/`:
+- **generated** (`internal/aws/generated/<service>/api.go`): wire types, the `API` interface and `Descriptor`. **Never
+  hand-write or hand-edit these.** Always produce them with `generator/cmd` (`task generate`) from the pinned Smithy
+  models in `generator/model/`:
   - `manifest.json` pins every model's upstream path and SHA-256. Generation fails on a mismatch.
   - `profile.json` has one entry per service: `operations`, `shapes` (a whitelist of generated members; add a field
     here to support it) and an optional `query` overlay (the legacy XML namespace), which turns on AWS Query bindings
@@ -48,24 +53,33 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     outputs are generated as `<Op>Output struct{}`.
   - The generator rejects unsupported wire traits. It handles AWS JSON 1.0 services (plus Query for
     `awsQueryCompatible` ones, which need the `query` overlay) and pure AWS Query services such as SNS, which take their
-    XML namespace from the model and must not have an overlay.
+    XML namespace from the model and must not have an overlay, and REST XML services such as S3, whose types get
+    `encoding/xml` tags (`*time.Time` timestamps) and whose bindings place members by HTTP location. Modeled header and
+    query inputs left out of the profile become `unsupported:*` bindings, and the `restxml` codec answers
+    `NotImplemented` when a request sets one, so whitelist only what the service implements.
 
   `TestReproducibleGeneration` fails if any committed `api.go` is stale, so run `task generate` after changing the
   generator or the profile.
-- **awserror** / **awsjson** / **query**: services return `awserror.New(code, msg)` or `awserror.Validation(msg)` using
-  the model's error shape name as the code. The gateway applies the service's error bindings, and each codec renders
-  the envelope; `X-Amzn-Query-Error` is sent for query-compatible JSON services. The `query` codec is driven entirely
-  by the generated struct tags. Unsupported input fields or parameters must fail explicitly, never be silently ignored.
-- **services/dynamodb**, **services/sqs**, **services/sns**: behavior only, with no HTTP dependencies. Each table,
-  queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`. Scoping comes
-  from request metadata, which is how account/region isolation works. SQS long polling registers `watch` before the
-  atomic `claim` (so wakeups are not lost), waits outside the transaction, and is released by `Stop` (registered with
-  `http.Server.RegisterOnShutdown`). FIFO group ordering and dead-letter moves also happen inside `claim`, and batch
-  operations run all entries in one `Update`, so every queue change stays atomic. SNS holds a `*sqs.Service` and
-  delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its subscriptions.
-- **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only
-  if the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape
-  the callback. `storage/memory` is the only backend; `start.go` shares one store across services.
+- **awserror** / **awsjson** / **query** / **restxml**: services return `awserror.New(code, msg)` or
+  `awserror.Validation(msg)` using the model's error shape name as the code. The gateway applies the service's error
+  bindings, and each codec renders the envelope; `X-Amzn-Query-Error` is sent for query-compatible JSON services. The
+  `query` and `restxml` codecs are driven entirely by the generated tags and bindings; `restxml` writes S3's unwrapped
+  `<Error>` body (none for HEAD). Unsupported input fields or parameters must fail explicitly, never be silently
+  ignored.
+- **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**: behavior only, with no HTTP dependencies.
+  Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`.
+  Scoping comes from request metadata, which is how account/region isolation works. SQS long polling registers `watch`
+  before the atomic `claim` (so wakeups are not lost), waits outside the transaction, and is released by `Stop`
+  (registered with `http.Server.RegisterOnShutdown`). FIFO group ordering and dead-letter moves also happen inside
+  `claim`, and batch operations run all entries in one `Update`, so every queue change stays atomic. SNS holds a
+  `*sqs.Service` and delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its
+  subscriptions. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
+  in the same transaction as the regional bucket record; objects are `…/s3/<bucket>/o/<key>` (metadata) plus
+  `…/s3/<bucket>/d/<key>` (bytes). Unmodeled S3 errors carry their own HTTP status (`&awserror.Error{StatusCode: …}`);
+  modeled ones take it from the generated bindings.
+- **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
+  the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
+  callback. `storage/memory` is the only backend; `start.go` shares one store across services.
 
 ## Adding an operation or service
 
@@ -77,8 +91,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 
 ## Tests
 
-- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS over Query) against an `httptest`
-  server built the same way as `start.go`, plus raw AWS Query wire tests for SQS. Prefer adding behavior coverage here.
+- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS over Query, S3 over REST XML)
+  against an `httptest` server built the same way as `start.go`, plus raw AWS Query and S3 wire tests. Prefer adding
+  behavior coverage here.
 - Tests use ephemeral local ports and never contact AWS.
 
 ## Lint/style

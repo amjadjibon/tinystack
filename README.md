@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, and SNS endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, and S3 endpoints for development and tests.
 
 ## Run
 
@@ -46,6 +46,10 @@ aws --endpoint-url http://localhost:4566 sns subscribe --topic-arn "$TOPIC_ARN" 
   --protocol sqs --notification-endpoint arn:aws:sqs:us-east-1:000000000000:jobs
 aws --endpoint-url http://localhost:4566 sns publish \
   --topic-arn "$TOPIC_ARN" --message "hello subscribers"
+
+aws --endpoint-url http://localhost:4566 s3 mb s3://assets
+aws --endpoint-url http://localhost:4566 s3 cp ./README.md s3://assets/README.md
+aws --endpoint-url http://localhost:4566 s3 ls s3://assets/
 ```
 
 AWS SDK clients use their standard endpoint override and local credentials; no
@@ -91,6 +95,27 @@ Standard topics that fan out to SQS queues in-process.
 | Subscribe / Unsubscribe | `sqs` protocol with a queue ARN in the subscriber's account, confirmed at once; `RawMessageDelivery`; subscribing twice returns the existing subscription |
 | Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus an optional `sqs` text); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; a failed delivery does not fail Publish |
 
+### S3 (REST XML)
+
+Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
+`<bucket>.s3.<region>.amazonaws.com`) addressing.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateBucket | General purpose naming rules; `LocationConstraint` must match the request region (none in us-east-1); names are unique across accounts and regions |
+| HeadBucket / DeleteBucket | `x-amz-bucket-region`; deleting requires an empty bucket |
+| ListBuckets | The caller's buckets in every region; prefix, region filter, and continuation token |
+| PutObject | Keys up to 1024 bytes; `Content-Type`, `x-amz-meta-*`, `Content-MD5` and CRC32/CRC32C/CRC64NVME/SHA1/SHA256 checksums verified, including aws-chunked uploads with trailing checksums; `If-None-Match: *` and `If-Match`; MD5 ETags; objects up to 64 MiB |
+| GetObject / HeadObject | Body, size, type, ETag, `Last-Modified`, metadata; `If-Match` and `If-None-Match` |
+| DeleteObject | Deleting a missing key succeeds |
+| ListObjectsV2 | Prefix, delimiter and common prefixes, `max-keys`, continuation token, `start-after`, `encoding-type=url` |
+
+Another account's bucket answers `AccessDenied` (403), and a bucket in another
+region answers `PermanentRedirect` (301). Modeled request headers and query
+parameters that TinyStack does not implement (ranges, versions, ACLs,
+encryption, tagging, other storage classes, and so on) answer `NotImplemented`
+(501), as do S3 subresources such as `?acl`.
+
 SigV4 credential scopes are parsed without verifying
 signatures. `identity.accounts` maps access keys to 12-digit account IDs. Unmapped
 keys and unsigned requests use the default account. Signed regions take precedence
@@ -103,7 +128,10 @@ SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThrough
 message groups on standard queues, dead-letter redrive back to the source queue, tags,
 policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` subscriptions; no FIFO topics, filter
 policies, message signatures (the envelope omits the `Signature` fields), topic attribute APIs,
-tags, data protection, or cross-account subscriptions. No service has IAM,
+tags, data protection, or cross-account subscriptions.
+S3 limits: no multipart uploads, presigned URLs, range requests, versioning, ACLs or
+policies, encryption, tagging, lifecycle, notifications, or stored checksums on
+reads; objects are held in memory. No service has IAM,
 persistence, or Terraform support yet. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.
@@ -113,14 +141,17 @@ Unsupported input fields fail explicitly instead of being silently ignored.
 ## Architecture and generation
 
 `gateway` picks the protocol from the request headers (`X-Amz-Target` for JSON,
-a form body for Query), then resolves identity, service, and operation. Generated
+a form body for Query, and the signed or host service name for REST XML), then
+resolves identity, service, and operation. REST operations are matched on
+method, path labels (including greedy `{Key+}`), and URI query literals. Generated
 catalog bindings create typed inputs; `aws/protocol/awsjson` and
-`aws/protocol/query` encode responses and error envelopes. Modeled error
+`aws/protocol/query` and `aws/protocol/restxml` encode responses and error envelopes. Modeled error
 bindings supply Query error codes and HTTP statuses, which query-compatible JSON
 services also send in `X-Amzn-Query-Error`. `services/*` contains behavior without
 HTTP dependencies. Storage uses serializable callback transactions with rollback
 and copied byte values. The memory backend stores each table or queue as one
-record (a topic record holds its subscriptions); it favors simple correctness for small test datasets over large-table
+record (a topic record holds its subscriptions; each S3 object is a metadata
+record plus a data record, and a partition-wide index reserves bucket names); it favors simple correctness for small test datasets over large-table
 performance. SQS long polls wait outside transactions and retry the atomic claim
 when the queue changes or an in-flight message becomes visible. SNS delivers to
 SQS by calling the SQS service directly, never over HTTP.
@@ -132,8 +163,11 @@ namespace) that query-compatible JSON models omit; pure AWS Query models such as
 SNS declare their namespace themselves. `go generate ./...` works offline after Go
 dependencies are available and reproduces the checked-in types, bindings, and
 error descriptors. The generator fails on unsupported wire traits; it supports
-AWS JSON 1.0 services (plus AWS Query for query-compatible ones) and AWS Query services. REST codecs
-come later.
+AWS JSON 1.0 services (plus AWS Query for query-compatible ones), AWS Query
+services, and REST XML services. REST XML types carry `encoding/xml` tags, and
+their bindings place each member in a label, header, query parameter, prefix
+header, payload, or XML body; modeled header and query inputs left out of the
+profile are recorded as unsupported so requests that use them fail.
 
 ## Validate
 
@@ -141,7 +175,7 @@ come later.
 task test       # Official Go SDK, AWS Query wire, and transaction tests, with -race
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
-task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS), verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3), verify graceful shutdown
 ```
 
 Tasks run with [Task](https://taskfile.dev). The tests use local ephemeral ports
