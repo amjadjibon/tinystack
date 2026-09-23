@@ -15,11 +15,13 @@ import (
 	"github.com/spf13/cobra"
 
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
@@ -58,6 +60,7 @@ func newStartCommand() *cobra.Command {
 				dynamodbapi.Descriptor(dynamodb.New(store)),
 				sqsapi.Descriptor(queues),
 				snsapi.Descriptor(sns.New(store, queues)),
+				s3api.Descriptor(s3.New(store)),
 			)
 			if err != nil {
 				return err
@@ -93,7 +96,7 @@ func newStartCommand() *cobra.Command {
 				"storage",
 				"memory",
 				"services",
-				"dynamodb,sns,sqs",
+				"dynamodb,s3,sns,sqs",
 			)
 			select {
 			case err = <-done:

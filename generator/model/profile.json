@@ -317,5 +317,155 @@
         "BinaryValue"
       ]
     }
+  },
+  "s3": {
+    "operations": [
+      "CreateBucket",
+      "DeleteBucket",
+      "HeadBucket",
+      "ListBuckets",
+      "PutObject",
+      "GetObject",
+      "HeadObject",
+      "DeleteObject",
+      "ListObjectsV2"
+    ],
+    "shapes": {
+      "CreateBucketRequest": [
+        "Bucket",
+        "CreateBucketConfiguration"
+      ],
+      "CreateBucketConfiguration": [
+        "LocationConstraint"
+      ],
+      "CreateBucketOutput": [
+        "Location"
+      ],
+      "DeleteBucketRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "HeadBucketRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "HeadBucketOutput": [
+        "BucketRegion"
+      ],
+      "ListBucketsRequest": [
+        "MaxBuckets",
+        "ContinuationToken",
+        "Prefix",
+        "BucketRegion"
+      ],
+      "ListBucketsOutput": [
+        "Buckets",
+        "Owner",
+        "ContinuationToken",
+        "Prefix"
+      ],
+      "Bucket": [
+        "Name",
+        "CreationDate",
+        "BucketRegion"
+      ],
+      "Owner": [
+        "DisplayName",
+        "ID"
+      ],
+      "PutObjectRequest": [
+        "Bucket",
+        "Key",
+        "Body",
+        "ContentType",
+        "ContentLength",
+        "ContentMD5",
+        "Metadata",
+        "StorageClass",
+        "IfMatch",
+        "IfNoneMatch",
+        "ExpectedBucketOwner",
+        "ChecksumAlgorithm",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256"
+      ],
+      "PutObjectOutput": [
+        "ETag"
+      ],
+      "GetObjectRequest": [
+        "Bucket",
+        "Key",
+        "IfMatch",
+        "IfNoneMatch",
+        "ChecksumMode",
+        "ExpectedBucketOwner"
+      ],
+      "GetObjectOutput": [
+        "Body",
+        "ContentLength",
+        "ContentType",
+        "ETag",
+        "LastModified",
+        "Metadata"
+      ],
+      "HeadObjectRequest": [
+        "Bucket",
+        "Key",
+        "IfMatch",
+        "IfNoneMatch",
+        "ChecksumMode",
+        "ExpectedBucketOwner"
+      ],
+      "HeadObjectOutput": [
+        "ContentLength",
+        "ContentType",
+        "ETag",
+        "LastModified",
+        "Metadata"
+      ],
+      "DeleteObjectRequest": [
+        "Bucket",
+        "Key",
+        "ExpectedBucketOwner"
+      ],
+      "DeleteObjectOutput": [],
+      "ListObjectsV2Request": [
+        "Bucket",
+        "Delimiter",
+        "EncodingType",
+        "MaxKeys",
+        "Prefix",
+        "ContinuationToken",
+        "StartAfter",
+        "ExpectedBucketOwner"
+      ],
+      "ListObjectsV2Output": [
+        "IsTruncated",
+        "Contents",
+        "Name",
+        "Prefix",
+        "Delimiter",
+        "MaxKeys",
+        "CommonPrefixes",
+        "EncodingType",
+        "KeyCount",
+        "ContinuationToken",
+        "NextContinuationToken",
+        "StartAfter"
+      ],
+      "Object": [
+        "Key",
+        "LastModified",
+        "ETag",
+        "Size",
+        "StorageClass"
+      ],
+      "CommonPrefix": [
+        "Prefix"
+      ]
+    }
   }
 }
