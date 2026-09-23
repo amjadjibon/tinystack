@@ -10,6 +10,10 @@
     "sqs": {
       "path": "codegen/sdk-codegen/aws-models/sqs.json",
       "sha256": "38eef06ce5642b8a052282fd19a3ab275e0046d375474e2ff022d3e33aaeab72"
+    },
+    "sns": {
+      "path": "codegen/sdk-codegen/aws-models/sns.json",
+      "sha256": "18f6b7a336227cb46df17f20108498357dbe79f255cf3bad759d0d58f6d0bcbf"
     }
   }
 }

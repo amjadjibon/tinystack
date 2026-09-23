@@ -233,5 +233,89 @@
         "Attributes"
       ]
     }
+  },
+  "sns": {
+    "operations": [
+      "CreateTopic",
+      "DeleteTopic",
+      "ListTopics",
+      "Subscribe",
+      "Unsubscribe",
+      "ListSubscriptions",
+      "ListSubscriptionsByTopic",
+      "Publish"
+    ],
+    "shapes": {
+      "CreateTopicInput": [
+        "Name",
+        "Attributes"
+      ],
+      "CreateTopicResponse": [
+        "TopicArn"
+      ],
+      "DeleteTopicInput": [
+        "TopicArn"
+      ],
+      "ListTopicsInput": [
+        "NextToken"
+      ],
+      "ListTopicsResponse": [
+        "Topics",
+        "NextToken"
+      ],
+      "Topic": [
+        "TopicArn"
+      ],
+      "SubscribeInput": [
+        "TopicArn",
+        "Protocol",
+        "Endpoint",
+        "Attributes",
+        "ReturnSubscriptionArn"
+      ],
+      "SubscribeResponse": [
+        "SubscriptionArn"
+      ],
+      "UnsubscribeInput": [
+        "SubscriptionArn"
+      ],
+      "ListSubscriptionsInput": [
+        "NextToken"
+      ],
+      "ListSubscriptionsResponse": [
+        "Subscriptions",
+        "NextToken"
+      ],
+      "ListSubscriptionsByTopicInput": [
+        "TopicArn",
+        "NextToken"
+      ],
+      "ListSubscriptionsByTopicResponse": [
+        "Subscriptions",
+        "NextToken"
+      ],
+      "Subscription": [
+        "SubscriptionArn",
+        "Owner",
+        "Protocol",
+        "Endpoint",
+        "TopicArn"
+      ],
+      "PublishInput": [
+        "TopicArn",
+        "Message",
+        "Subject",
+        "MessageStructure",
+        "MessageAttributes"
+      ],
+      "PublishResponse": [
+        "MessageId"
+      ],
+      "MessageAttributeValue": [
+        "DataType",
+        "StringValue",
+        "BinaryValue"
+      ]
+    }
   }
 }
