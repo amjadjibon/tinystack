@@ -69,6 +69,7 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 | SendMessage | Body character and size checks, per-message `DelaySeconds`, message attributes, body and attribute MD5s |
 | ReceiveMessage | Up to 10 messages, visibility override, long polling up to 20 s, system and message attribute selection |
 | DeleteMessage / ChangeMessageVisibility | Receipt handles change on each receive; a stale handle deletes nothing |
+| SendMessageBatch / DeleteMessageBatch / ChangeMessageVisibilityBatch | Up to 10 entries with distinct IDs in one transaction; each entry succeeds or fails on its own; batch sends are limited to 1 MiB in total |
 
 The server uses AWS JSON 1.0 and parses SigV4 credential scopes without verifying
 signatures. `identity.accounts` maps access keys to 12-digit account IDs. Unmapped
@@ -78,7 +79,7 @@ selection, not access control.
 
 DynamoDB limits: no Query, UpdateItem, expressions or conditional writes, projections,
 secondary indexes, transactions API, tags, or capacity accounting/throttling.
-SQS limits: no FIFO queues, dead-letter queues, batch operations, queue
+SQS limits: no FIFO queues, dead-letter queues, queue
 attributes APIs, tags, policies, or encryption settings; the 60-second
 name-reuse delay after DeleteQueue is not enforced. Neither service has IAM,
 persistence, or Terraform support yet. Table names (not ARNs)

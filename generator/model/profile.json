@@ -89,7 +89,10 @@
       "SendMessage",
       "ReceiveMessage",
       "DeleteMessage",
-      "ChangeMessageVisibility"
+      "ChangeMessageVisibility",
+      "SendMessageBatch",
+      "DeleteMessageBatch",
+      "ChangeMessageVisibilityBatch"
     ],
     "query": {
       "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
@@ -152,6 +155,63 @@
         "QueueUrl",
         "ReceiptHandle",
         "VisibilityTimeout"
+      ],
+      "SendMessageBatchRequest": [
+        "QueueUrl",
+        "Entries"
+      ],
+      "SendMessageBatchRequestEntry": [
+        "Id",
+        "MessageBody",
+        "DelaySeconds",
+        "MessageAttributes"
+      ],
+      "SendMessageBatchResult": [
+        "Successful",
+        "Failed"
+      ],
+      "SendMessageBatchResultEntry": [
+        "Id",
+        "MessageId",
+        "MD5OfMessageBody",
+        "MD5OfMessageAttributes"
+      ],
+      "BatchResultErrorEntry": [
+        "Id",
+        "SenderFault",
+        "Code",
+        "Message"
+      ],
+      "DeleteMessageBatchRequest": [
+        "QueueUrl",
+        "Entries"
+      ],
+      "DeleteMessageBatchRequestEntry": [
+        "Id",
+        "ReceiptHandle"
+      ],
+      "DeleteMessageBatchResult": [
+        "Successful",
+        "Failed"
+      ],
+      "DeleteMessageBatchResultEntry": [
+        "Id"
+      ],
+      "ChangeMessageVisibilityBatchRequest": [
+        "QueueUrl",
+        "Entries"
+      ],
+      "ChangeMessageVisibilityBatchRequestEntry": [
+        "Id",
+        "ReceiptHandle",
+        "VisibilityTimeout"
+      ],
+      "ChangeMessageVisibilityBatchResult": [
+        "Successful",
+        "Failed"
+      ],
+      "ChangeMessageVisibilityBatchResultEntry": [
+        "Id"
       ]
     }
   }

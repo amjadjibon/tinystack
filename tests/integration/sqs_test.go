@@ -353,6 +353,152 @@ func TestSQSDelay(t *testing.T) {
 	}
 }
 
+func TestSQSBatch(t *testing.T) {
+	s := server(t)
+	c := sqsClient(s, "test")
+	ctx := context.Background()
+	queueURL := createQueue(t, c, "batch", nil)
+
+	entry := func(id string) types.SendMessageBatchRequestEntry {
+		return types.SendMessageBatchRequestEntry{Id: aws.String(id), MessageBody: aws.String("body " + id)}
+	}
+
+	var tooMany []types.SendMessageBatchRequestEntry
+	for i := range 11 {
+		tooMany = append(tooMany, entry(fmt.Sprint("e", i)))
+	}
+
+	var empty *types.EmptyBatchRequest
+	var many *types.TooManyEntriesInBatchRequest
+	var repeated *types.BatchEntryIdsNotDistinct
+	var badID *types.InvalidBatchEntryId
+	var tooLong *types.BatchRequestTooLong
+	// Six 200 KB bodies fit the message size limit but not the 1 MiB batch limit.
+	var huge []types.SendMessageBatchRequestEntry
+	for i := range 6 {
+		huge = append(huge, types.SendMessageBatchRequestEntry{
+			Id: aws.String(fmt.Sprint("h", i)), MessageBody: aws.String(strings.Repeat("x", 200000)),
+		})
+	}
+
+	for _, tc := range []struct {
+		target  any
+		entries []types.SendMessageBatchRequestEntry
+	}{
+		{&empty, []types.SendMessageBatchRequestEntry{}},
+		{&many, tooMany},
+		{&repeated, []types.SendMessageBatchRequestEntry{entry("a"), entry("a")}},
+		{&badID, []types.SendMessageBatchRequestEntry{entry("not valid")}},
+		{&tooLong, huge},
+	} {
+		_, err := c.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{QueueUrl: &queueURL, Entries: tc.entries})
+		if !errors.As(err, tc.target) {
+			t.Fatalf("expected %T, got %v", tc.target, err)
+		}
+	}
+
+	// Entries succeed or fail independently.
+	sent, err := c.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
+		QueueUrl: &queueURL,
+		Entries: []types.SendMessageBatchRequestEntry{
+			entry("first"),
+			{
+				Id:          aws.String("second"),
+				MessageBody: aws.String("with attributes"),
+				MessageAttributes: map[string]types.MessageAttributeValue{
+					"color": {DataType: aws.String("String"), StringValue: aws.String("red")},
+				},
+			},
+			{Id: aws.String("bad"), MessageBody: aws.String("bad \x00")},
+		},
+	})
+	if err != nil || len(sent.Successful) != 2 || len(sent.Failed) != 1 {
+		t.Fatal(sent, err)
+	}
+
+	if f := sent.Failed[0]; *f.Id != "bad" || *f.Code != "InvalidMessageContents" || !f.SenderFault {
+		t.Fatalf("failed entry %+v", f)
+	}
+
+	if s := sent.Successful[1]; *s.Id != "second" || s.MD5OfMessageAttributes == nil {
+		t.Fatalf("successful entry %+v", s)
+	}
+
+	received, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL, MaxNumberOfMessages: 10})
+	if err != nil || len(received.Messages) != 2 {
+		t.Fatal(received, err)
+	}
+
+	first, second := received.Messages[0].ReceiptHandle, received.Messages[1].ReceiptHandle
+	changed, err := c.ChangeMessageVisibilityBatch(ctx, &sqs.ChangeMessageVisibilityBatchInput{
+		QueueUrl: &queueURL,
+		Entries: []types.ChangeMessageVisibilityBatchRequestEntry{
+			{Id: aws.String("ok"), ReceiptHandle: first, VisibilityTimeout: 0},
+			{Id: aws.String("garbage"), ReceiptHandle: aws.String("garbage")},
+		},
+	})
+	if err != nil || len(changed.Successful) != 1 || len(changed.Failed) != 1 ||
+		*changed.Failed[0].Code != "ReceiptHandleIsInvalid" {
+		t.Fatal(changed, err)
+	}
+
+	again, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL, MaxNumberOfMessages: 10})
+	if err != nil || len(again.Messages) != 1 {
+		t.Fatal("visibility batch did not release one message", again, err)
+	}
+
+	deleted, err := c.DeleteMessageBatch(ctx, &sqs.DeleteMessageBatchInput{
+		QueueUrl: &queueURL,
+		Entries: []types.DeleteMessageBatchRequestEntry{
+			{Id: aws.String("current"), ReceiptHandle: again.Messages[0].ReceiptHandle},
+			{Id: aws.String("second"), ReceiptHandle: second},
+			{Id: aws.String("stale"), ReceiptHandle: first},
+			{Id: aws.String("garbage"), ReceiptHandle: aws.String("garbage")},
+		},
+	})
+	if err != nil || len(deleted.Successful) != 3 || len(deleted.Failed) != 1 {
+		t.Fatal(deleted, err)
+	}
+
+	left, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL, MaxNumberOfMessages: 10})
+	if err != nil || len(left.Messages) != 0 {
+		t.Fatal("batch delete left messages", left, err)
+	}
+
+	// Query uses flattened, numbered entries on the way in and out.
+	status, _, body := queryCall(t, s, "/", url.Values{
+		"Action":                            {"SendMessageBatch"},
+		"QueueUrl":                          {queueURL},
+		"SendMessageBatchRequestEntry.1.Id": {"q1"},
+		"SendMessageBatchRequestEntry.1.MessageBody":                       {"one"},
+		"SendMessageBatchRequestEntry.1.MessageAttribute.1.Name":           {"k"},
+		"SendMessageBatchRequestEntry.1.MessageAttribute.1.Value.DataType": {"String"},
+		"SendMessageBatchRequestEntry.1.MessageAttribute.1.Value.StringValue": {
+			"v",
+		},
+		"SendMessageBatchRequestEntry.2.Id":          {"q2"},
+		"SendMessageBatchRequestEntry.2.MessageBody": {"bad \x00"},
+	}, nil)
+	var batch struct {
+		Successful []struct {
+			ID            string `xml:"Id"`
+			AttributesMD5 string `xml:"MD5OfMessageAttributes"`
+		} `xml:"SendMessageBatchResult>SendMessageBatchResultEntry"`
+		Failed []struct {
+			ID          string `xml:"Id"`
+			Code        string `xml:"Code"`
+			SenderFault bool   `xml:"SenderFault"`
+		} `xml:"SendMessageBatchResult>BatchResultErrorEntry"`
+	}
+
+	if status != http.StatusOK || xml.Unmarshal(body, &batch) != nil || len(batch.Successful) != 1 ||
+		batch.Successful[0].ID != "q1" || batch.Successful[0].AttributesMD5 == "" || len(batch.Failed) != 1 ||
+		batch.Failed[0].ID != "q2" || batch.Failed[0].Code != "InvalidMessageContents" ||
+		!batch.Failed[0].SenderFault {
+		t.Fatalf("%d %s", status, body)
+	}
+}
+
 func TestSQSConcurrentReceivers(t *testing.T) {
 	s := server(t)
 	c := sqsClient(s, "test")

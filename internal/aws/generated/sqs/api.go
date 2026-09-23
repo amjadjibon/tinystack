@@ -98,6 +98,76 @@ type ChangeMessageVisibilityRequest struct {
 	VisibilityTimeout *int64  `json:"VisibilityTimeout,omitempty" query:"VisibilityTimeout"`
 }
 
+type SendMessageBatchRequestEntry struct {
+	Id                *string                          `json:"Id,omitempty" query:"Id"`
+	MessageBody       *string                          `json:"MessageBody,omitempty" query:"MessageBody"`
+	DelaySeconds      *int64                           `json:"DelaySeconds,omitempty" query:"DelaySeconds"`
+	MessageAttributes map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttribute,flat,key=Name,value=Value"`
+}
+
+type SendMessageBatchRequest struct {
+	QueueUrl *string                        `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	Entries  []SendMessageBatchRequestEntry `json:"Entries,omitempty" query:"SendMessageBatchRequestEntry,flat"`
+}
+
+type SendMessageBatchResultEntry struct {
+	Id                     *string `json:"Id,omitempty" query:"Id"`
+	MessageId              *string `json:"MessageId,omitempty" query:"MessageId"`
+	MD5OfMessageBody       *string `json:"MD5OfMessageBody,omitempty" query:"MD5OfMessageBody"`
+	MD5OfMessageAttributes *string `json:"MD5OfMessageAttributes,omitempty" query:"MD5OfMessageAttributes"`
+}
+
+type BatchResultErrorEntry struct {
+	Id          *string `json:"Id,omitempty" query:"Id"`
+	SenderFault *bool   `json:"SenderFault,omitempty" query:"SenderFault"`
+	Code        *string `json:"Code,omitempty" query:"Code"`
+	Message     *string `json:"Message,omitempty" query:"Message"`
+}
+
+type SendMessageBatchResult struct {
+	Successful []SendMessageBatchResultEntry `json:"Successful,omitempty" query:"SendMessageBatchResultEntry,flat"`
+	Failed     []BatchResultErrorEntry       `json:"Failed,omitempty" query:"BatchResultErrorEntry,flat"`
+}
+
+type DeleteMessageBatchRequestEntry struct {
+	Id            *string `json:"Id,omitempty" query:"Id"`
+	ReceiptHandle *string `json:"ReceiptHandle,omitempty" query:"ReceiptHandle"`
+}
+
+type DeleteMessageBatchRequest struct {
+	QueueUrl *string                          `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	Entries  []DeleteMessageBatchRequestEntry `json:"Entries,omitempty" query:"DeleteMessageBatchRequestEntry,flat"`
+}
+
+type DeleteMessageBatchResultEntry struct {
+	Id *string `json:"Id,omitempty" query:"Id"`
+}
+
+type DeleteMessageBatchResult struct {
+	Successful []DeleteMessageBatchResultEntry `json:"Successful,omitempty" query:"DeleteMessageBatchResultEntry,flat"`
+	Failed     []BatchResultErrorEntry         `json:"Failed,omitempty" query:"BatchResultErrorEntry,flat"`
+}
+
+type ChangeMessageVisibilityBatchRequestEntry struct {
+	Id                *string `json:"Id,omitempty" query:"Id"`
+	ReceiptHandle     *string `json:"ReceiptHandle,omitempty" query:"ReceiptHandle"`
+	VisibilityTimeout *int64  `json:"VisibilityTimeout,omitempty" query:"VisibilityTimeout"`
+}
+
+type ChangeMessageVisibilityBatchRequest struct {
+	QueueUrl *string                                    `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	Entries  []ChangeMessageVisibilityBatchRequestEntry `json:"Entries,omitempty" query:"ChangeMessageVisibilityBatchRequestEntry,flat"`
+}
+
+type ChangeMessageVisibilityBatchResultEntry struct {
+	Id *string `json:"Id,omitempty" query:"Id"`
+}
+
+type ChangeMessageVisibilityBatchResult struct {
+	Successful []ChangeMessageVisibilityBatchResultEntry `json:"Successful,omitempty" query:"ChangeMessageVisibilityBatchResultEntry,flat"`
+	Failed     []BatchResultErrorEntry                   `json:"Failed,omitempty" query:"BatchResultErrorEntry,flat"`
+}
+
 type API interface {
 	CreateQueue(context.Context, *CreateQueueRequest) (*CreateQueueResult, error)
 	DeleteQueue(context.Context, *DeleteQueueRequest) (*DeleteQueueOutput, error)
@@ -107,10 +177,13 @@ type API interface {
 	ReceiveMessage(context.Context, *ReceiveMessageRequest) (*ReceiveMessageResult, error)
 	DeleteMessage(context.Context, *DeleteMessageRequest) (*DeleteMessageOutput, error)
 	ChangeMessageVisibility(context.Context, *ChangeMessageVisibilityRequest) (*ChangeMessageVisibilityOutput, error)
+	SendMessageBatch(context.Context, *SendMessageBatchRequest) (*SendMessageBatchResult, error)
+	DeleteMessageBatch(context.Context, *DeleteMessageBatchRequest) (*DeleteMessageBatchResult, error)
+	ChangeMessageVisibilityBatch(context.Context, *ChangeMessageVisibilityBatchRequest) (*ChangeMessageVisibilityBatchResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "sqs", SigningName: "sqs", TargetPrefix: "AmazonSQS", QueryCompatible: true, XMLNamespace: "http://queue.amazonaws.com/doc/2012-11-05/", Protocols: []string{"awsJson1_0", "awsQuery"}, Errors: map[string]catalog.ErrorBinding{"InvalidAddress": catalog.ErrorBinding{QueryCode: "InvalidAddress", StatusCode: 404}, "InvalidAttributeName": catalog.ErrorBinding{QueryCode: "InvalidAttributeName", StatusCode: 400}, "InvalidAttributeValue": catalog.ErrorBinding{QueryCode: "InvalidAttributeValue", StatusCode: 400}, "InvalidIdFormat": catalog.ErrorBinding{QueryCode: "InvalidIdFormat", StatusCode: 400}, "InvalidMessageContents": catalog.ErrorBinding{QueryCode: "InvalidMessageContents", StatusCode: 400}, "InvalidSecurity": catalog.ErrorBinding{QueryCode: "InvalidSecurity", StatusCode: 403}, "KmsAccessDenied": catalog.ErrorBinding{QueryCode: "KMS.AccessDeniedException", StatusCode: 400}, "KmsDisabled": catalog.ErrorBinding{QueryCode: "KMS.DisabledException", StatusCode: 400}, "KmsInvalidKeyUsage": catalog.ErrorBinding{QueryCode: "KMS.InvalidKeyUsageException", StatusCode: 400}, "KmsInvalidState": catalog.ErrorBinding{QueryCode: "KMS.InvalidStateException", StatusCode: 400}, "KmsNotFound": catalog.ErrorBinding{QueryCode: "KMS.NotFoundException", StatusCode: 400}, "KmsOptInRequired": catalog.ErrorBinding{QueryCode: "KMS.OptInRequired", StatusCode: 403}, "KmsThrottled": catalog.ErrorBinding{QueryCode: "KMS.ThrottlingException", StatusCode: 400}, "MessageNotInflight": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.MessageNotInflight", StatusCode: 400}, "OverLimit": catalog.ErrorBinding{QueryCode: "OverLimit", StatusCode: 403}, "QueueDeletedRecently": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.QueueDeletedRecently", StatusCode: 400}, "QueueDoesNotExist": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.NonExistentQueue", StatusCode: 400}, "QueueNameExists": catalog.ErrorBinding{QueryCode: "QueueAlreadyExists", StatusCode: 400}, "ReceiptHandleIsInvalid": catalog.ErrorBinding{QueryCode: "ReceiptHandleIsInvalid", StatusCode: 404}, "RequestThrottled": catalog.ErrorBinding{QueryCode: "RequestThrottled", StatusCode: 403}, "UnsupportedOperation": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.UnsupportedOperation", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "sqs", SigningName: "sqs", TargetPrefix: "AmazonSQS", QueryCompatible: true, XMLNamespace: "http://queue.amazonaws.com/doc/2012-11-05/", Protocols: []string{"awsJson1_0", "awsQuery"}, Errors: map[string]catalog.ErrorBinding{"BatchEntryIdsNotDistinct": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.BatchEntryIdsNotDistinct", StatusCode: 400}, "BatchRequestTooLong": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.BatchRequestTooLong", StatusCode: 400}, "EmptyBatchRequest": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.EmptyBatchRequest", StatusCode: 400}, "InvalidAddress": catalog.ErrorBinding{QueryCode: "InvalidAddress", StatusCode: 404}, "InvalidAttributeName": catalog.ErrorBinding{QueryCode: "InvalidAttributeName", StatusCode: 400}, "InvalidAttributeValue": catalog.ErrorBinding{QueryCode: "InvalidAttributeValue", StatusCode: 400}, "InvalidBatchEntryId": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.InvalidBatchEntryId", StatusCode: 400}, "InvalidIdFormat": catalog.ErrorBinding{QueryCode: "InvalidIdFormat", StatusCode: 400}, "InvalidMessageContents": catalog.ErrorBinding{QueryCode: "InvalidMessageContents", StatusCode: 400}, "InvalidSecurity": catalog.ErrorBinding{QueryCode: "InvalidSecurity", StatusCode: 403}, "KmsAccessDenied": catalog.ErrorBinding{QueryCode: "KMS.AccessDeniedException", StatusCode: 400}, "KmsDisabled": catalog.ErrorBinding{QueryCode: "KMS.DisabledException", StatusCode: 400}, "KmsInvalidKeyUsage": catalog.ErrorBinding{QueryCode: "KMS.InvalidKeyUsageException", StatusCode: 400}, "KmsInvalidState": catalog.ErrorBinding{QueryCode: "KMS.InvalidStateException", StatusCode: 400}, "KmsNotFound": catalog.ErrorBinding{QueryCode: "KMS.NotFoundException", StatusCode: 400}, "KmsOptInRequired": catalog.ErrorBinding{QueryCode: "KMS.OptInRequired", StatusCode: 403}, "KmsThrottled": catalog.ErrorBinding{QueryCode: "KMS.ThrottlingException", StatusCode: 400}, "MessageNotInflight": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.MessageNotInflight", StatusCode: 400}, "OverLimit": catalog.ErrorBinding{QueryCode: "OverLimit", StatusCode: 403}, "QueueDeletedRecently": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.QueueDeletedRecently", StatusCode: 400}, "QueueDoesNotExist": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.NonExistentQueue", StatusCode: 400}, "QueueNameExists": catalog.ErrorBinding{QueryCode: "QueueAlreadyExists", StatusCode: 400}, "ReceiptHandleIsInvalid": catalog.ErrorBinding{QueryCode: "ReceiptHandleIsInvalid", StatusCode: 404}, "RequestThrottled": catalog.ErrorBinding{QueryCode: "RequestThrottled", StatusCode: 403}, "TooManyEntriesInBatchRequest": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.TooManyEntriesInBatchRequest", StatusCode: 400}, "UnsupportedOperation": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.UnsupportedOperation", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateQueue": {Name: "CreateQueue", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.CreateQueue", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateQueue", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateQueue(ctx, input.(*CreateQueueRequest))
 		}},
@@ -134,6 +207,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ChangeMessageVisibility": {Name: "ChangeMessageVisibility", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.ChangeMessageVisibility", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ChangeMessageVisibility", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ChangeMessageVisibilityRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ChangeMessageVisibility(ctx, input.(*ChangeMessageVisibilityRequest))
+		}},
+		"SendMessageBatch": {Name: "SendMessageBatch", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.SendMessageBatch", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SendMessageBatch", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SendMessageBatchRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SendMessageBatch(ctx, input.(*SendMessageBatchRequest))
+		}},
+		"DeleteMessageBatch": {Name: "DeleteMessageBatch", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.DeleteMessageBatch", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteMessageBatch", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteMessageBatchRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteMessageBatch(ctx, input.(*DeleteMessageBatchRequest))
+		}},
+		"ChangeMessageVisibilityBatch": {Name: "ChangeMessageVisibilityBatch", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.ChangeMessageVisibilityBatch", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ChangeMessageVisibilityBatch", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ChangeMessageVisibilityBatchRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ChangeMessageVisibilityBatch(ctx, input.(*ChangeMessageVisibilityBatchRequest))
 		}},
 	}}
 }
