@@ -59,6 +59,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **one JSON-serialized record** under `account/region/<service>/<name>`. Scoping comes from request metadata, which is
   how account/region isolation works. SQS long polling registers `watch` before the atomic `claim` (so wakeups are not
   lost), waits outside the transaction, and is released by `Stop` (registered with `http.Server.RegisterOnShutdown`).
+  FIFO group ordering and dead-letter moves also happen inside `claim`, and batch operations run all entries in one
+  `Update`, so every queue change stays atomic.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only
   if the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape
   the callback. `storage/memory` is the only backend; `start.go` shares one store across services.
