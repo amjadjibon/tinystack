@@ -1,0 +1,94 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - errorlint
+    - errname
+    - bodyclose
+    - durationcheck
+    - copyloopvar
+    - nilerr
+    - nilnil
+    - contextcheck
+    - noctx
+    - gosec
+    - gocritic
+    - goconst
+    - misspell
+    - unconvert
+    - unparam
+    - intrange
+    - exptostd
+    - lll
+
+  settings:
+    lll:
+      line-length: 120
+      tab-width: 1
+
+    govet:
+      enable-all: true
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+
+    gosec:
+      excludes:
+        - G301
+        - G302
+        - G306
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+          - bodyclose
+          - noctx
+          - goconst
+
+      - linters:
+          - lll
+        source: "^//go:generate "
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+    - gci
+    - golines
+
+  settings:
+    gofumpt:
+      module-path: github.com/amjadjibon/tinystack
+      extra:
+        group-params: true
+
+    goimports:
+      local-prefixes:
+        - github.com/amjadjibon/tinystack
+
+    gci:
+      custom-order: true
+      sections:
+        - standard
+        - default
+        - prefix(github.com/amjadjibon/tinystack)
+
+    golines:
+      max-len: 120
