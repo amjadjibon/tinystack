@@ -1,0 +1,12 @@
+server:
+  host: 127.0.0.1
+  port: 4566
+defaults:
+  account: "000000000000"
+  region: us-east-1
+identity:
+  accounts:
+    test: "000000000000"
+    team-b: "111111111111"
+storage:
+  mode: memory
