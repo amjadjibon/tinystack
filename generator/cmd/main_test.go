@@ -5,69 +5,78 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func TestReproducibleGeneration(t *testing.T) {
 	root := t.TempDir()
-	if guardErr := os.MkdirAll(filepath.Join(root, "generator", "model"), 0o755); guardErr != nil {
+	models := filepath.Join(root, "generator", "model")
+	if guardErr := os.MkdirAll(models, 0o755); guardErr != nil {
 		t.Fatal(guardErr)
 	}
 
-	if guardErr := os.MkdirAll(
-		filepath.Join(root, "internal", "aws", "generated", "dynamodb"),
-		0o755,
-	); guardErr != nil {
-		t.Fatal(guardErr)
+	entries, err := os.ReadDir(filepath.Join("..", "model"))
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	for _, name := range []string{"dynamodb.json", "manifest.json", "profile.json"} {
-		b, err := os.ReadFile(filepath.Join("..", "model", name))
-		if err != nil {
-			t.Fatal(err)
+	for _, entry := range entries {
+		b, readErr := os.ReadFile(filepath.Join("..", "model", entry.Name()))
+		if readErr != nil {
+			t.Fatal(readErr)
 		}
-		if guardErr := os.WriteFile(filepath.Join(root, "generator", "model", name), b, 0o644); guardErr != nil {
+
+		if guardErr := os.WriteFile(filepath.Join(models, entry.Name()), b, 0o644); guardErr != nil {
 			t.Fatal(guardErr)
 		}
 	}
 
-	if guardErr := run(root); guardErr != nil {
-		t.Fatal(guardErr)
+	generated := func() map[string][]byte {
+		t.Helper()
+		if guardErr := run(root); guardErr != nil {
+			t.Fatal(guardErr)
+		}
+
+		files := map[string][]byte{}
+		dirs, readErr := os.ReadDir(filepath.Join(root, "internal", "aws", "generated"))
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+
+		for _, dir := range dirs {
+			b, fileErr := os.ReadFile(filepath.Join(root, "internal", "aws", "generated", dir.Name(), "api.go"))
+			if fileErr != nil {
+				t.Fatal(fileErr)
+			}
+
+			files[dir.Name()] = b
+		}
+
+		return files
 	}
 
-	path := filepath.Join(root, "internal", "aws", "generated", "dynamodb", "api.go")
-	first, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
+	first, second := generated(), generated()
+	if len(first) < 2 {
+		t.Fatalf("expected every profiled service to be generated, got %d", len(first))
 	}
 
-	if guardErr := run(root); guardErr != nil {
-		t.Fatal(guardErr)
+	for name, source := range first {
+		if !bytes.Equal(source, second[name]) {
+			t.Fatalf("%s generation is not deterministic", name)
+		}
+
+		committed, readErr := os.ReadFile(filepath.Join("..", "..", "internal", "aws", "generated", name, "api.go"))
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+
+		if !bytes.Equal(source, committed) {
+			t.Fatalf("generated %s source is stale; run go generate ./...", name)
+		}
 	}
 
-	second, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !bytes.Equal(first, second) {
-		t.Fatal("generation is not deterministic")
-	}
-
-	committed, err := os.ReadFile("../../internal/aws/generated/dynamodb/api.go")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !bytes.Equal(first, committed) {
-		t.Fatal("generated source is stale; run go generate ./...")
-	}
-
-	if guardErr := os.WriteFile(
-		filepath.Join(root, "generator", "model", "dynamodb.json"),
-		[]byte(`{}`),
-		0o644,
-	); guardErr != nil {
+	if guardErr := os.WriteFile(filepath.Join(models, "dynamodb.json"), []byte(`{}`), 0o644); guardErr != nil {
 		t.Fatal(guardErr)
 	}
 
@@ -76,10 +85,52 @@ func TestReproducibleGeneration(t *testing.T) {
 	}
 }
 
+func TestQueryOverlayFixture(t *testing.T) {
+	model := `{"shapes": {
+  "fixture#Svc": {"type": "service", "version": "2020-01-01", "traits": {
+    "aws.protocols#awsJson1_0": {}, "aws.protocols#awsQueryCompatible": {}, "aws.auth#sigv4": {"name": "fix"}}},
+  "fixture#Put": {"type": "operation", "input": {"target": "fixture#In"}, "output": {"target": "smithy.api#Unit"},
+    "errors": [{"target": "fixture#Missing"}]},
+  "fixture#In": {"type": "structure", "members": {
+    "Tags": {"target": "fixture#TagMap", "traits": {"smithy.api#xmlFlattened": {}, "smithy.api#xmlName": "Tag"}},
+    "Ids": {"target": "fixture#IdList"}}},
+  "fixture#TagMap": {"type": "map", "key": {"target": "smithy.api#String", "traits": {"smithy.api#xmlName": "Key"}},
+    "value": {"target": "smithy.api#String"}},
+  "fixture#IdList": {"type": "list", "member": {"target": "smithy.api#String", "traits": {"smithy.api#xmlName": "Id"}}},
+  "fixture#Missing": {"type": "structure", "traits": {"smithy.api#error": "client",
+    "aws.protocols#awsQueryError": {"code": "Fixture.Missing", "httpResponseCode": 404}}},
+  "smithy.api#String": {"type": "string"}
+}}`
+	profile := serviceProfile{Operations: []string{"Put"}, Query: &queryOverlay{XMLNamespace: "urn:fixture"}}
+	source, err := generate("fixture", []byte(model), profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		`query:"Tag,flat,key=Key"`,
+		`query:"Ids,member=Id"`,
+		"type PutOutput struct{}",
+		`"Missing": catalog.ErrorBinding{QueryCode: "Fixture.Missing", StatusCode: 404}`,
+		`Target: "Put", Version: "2020-01-01", ContentType: "application/x-www-form-urlencoded"`,
+		`XMLNamespace: "urn:fixture"`,
+	} {
+		if !strings.Contains(string(source), want) {
+			t.Fatalf("generated source lacks %s:\n%s", want, source)
+		}
+	}
+
+	profile.Query = &queryOverlay{}
+	if _, err = generate("fixture", []byte(model), profile); err == nil {
+		t.Fatal("query overlay without namespace accepted")
+	}
+}
+
 func TestUnsupportedWireTraitsFail(t *testing.T) {
 	for _, trait := range []string{
 		"smithy.api#streaming", "smithy.api#httpHeader",
 		"smithy.api#jsonName", "smithy.api#timestampFormat",
+		"smithy.api#xmlAttribute", "smithy.api#xmlNamespace",
 	} {
 		t.Run(trait, func(t *testing.T) {
 			if guardErr := checkTraits(map[string]json.RawMessage{trait: json.RawMessage(`{}`)}); guardErr == nil {

@@ -65,7 +65,7 @@ func TestRESTBindingFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := compileBinding(m, "fixture#Upload", "restJson1", "")
+	b, err := compileBinding(m, "fixture#Upload", "restJson1", "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestRESTBindingFixture(t *testing.T) {
 		t.Fatalf("lost wire metadata: %#v", b)
 	}
 
-	if _, err = compileBinding(m, "fixture#Upload", "unknown", ""); err == nil {
+	if _, err = compileBinding(m, "fixture#Upload", "unknown", "", ""); err == nil {
 		t.Fatal("unsupported protocol accepted")
 	}
 }

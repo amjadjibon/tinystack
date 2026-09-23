@@ -9,9 +9,19 @@ import (
 )
 
 // compileBinding retains wire metadata independently of runtime codec support.
-func compileBinding(m model, id, protocol, targetPrefix string) (catalog.Binding, error) {
+func compileBinding(m model, id, protocol, targetPrefix, version string) (catalog.Binding, error) {
 	op := m.Shapes[id]
-	if protocol == catalog.AWSJSON10 {
+	switch protocol {
+	case catalog.AWSQuery:
+		return catalog.Binding{
+			Method:      "POST",
+			URI:         "/",
+			Target:      short(id),
+			Version:     version,
+			ContentType: "application/x-www-form-urlencoded",
+			StatusCode:  200,
+		}, nil
+	case catalog.AWSJSON10:
 		return catalog.Binding{
 			Method:      "POST",
 			URI:         "/",
@@ -19,9 +29,8 @@ func compileBinding(m model, id, protocol, targetPrefix string) (catalog.Binding
 			ContentType: "application/x-amz-json-1.0",
 			StatusCode:  200,
 		}, nil
-	}
-
-	if protocol != "restJson1" {
+	case "restJson1":
+	default:
 		return catalog.Binding{}, fmt.Errorf("unsupported protocol %s", protocol)
 	}
 
@@ -84,12 +93,15 @@ func memberBindings(members map[string]reference) (map[string]catalog.MemberBind
 					return nil, fmt.Errorf("unsupported HTTP binding %s", trait)
 				}
 			}
+
 			if location == "" {
 				continue
 			}
+
 			if bound {
 				return nil, fmt.Errorf("conflicting bindings on %s", name)
 			}
+
 			bound = true
 			binding.Location = location
 			if location == "header" || location == "query" {
@@ -98,6 +110,7 @@ func memberBindings(members map[string]reference) (map[string]catalog.MemberBind
 				}
 			}
 		}
+
 		bindings[name] = binding
 	}
 

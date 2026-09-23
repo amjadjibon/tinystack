@@ -1,69 +1,157 @@
 {
-  "CreateTableInput": [
-    "TableName",
-    "AttributeDefinitions",
-    "KeySchema",
-    "BillingMode",
-    "ProvisionedThroughput"
-  ],
-  "DeleteTableInput": [
-    "TableName"
-  ],
-  "DescribeTableInput": [
-    "TableName"
-  ],
-  "ListTablesInput": [
-    "ExclusiveStartTableName",
-    "Limit"
-  ],
-  "PutItemInput": [
-    "TableName",
-    "Item",
-    "ReturnValues"
-  ],
-  "GetItemInput": [
-    "TableName",
-    "Key",
-    "ConsistentRead"
-  ],
-  "DeleteItemInput": [
-    "TableName",
-    "Key",
-    "ReturnValues"
-  ],
-  "ScanInput": [
-    "TableName",
-    "Limit",
-    "ExclusiveStartKey",
-    "ConsistentRead",
-    "Select"
-  ],
-  "PutItemOutput": [
-    "Attributes"
-  ],
-  "GetItemOutput": [
-    "Item"
-  ],
-  "DeleteItemOutput": [
-    "Attributes"
-  ],
-  "ScanOutput": [
-    "Items",
-    "Count",
-    "ScannedCount",
-    "LastEvaluatedKey"
-  ],
-  "TableDescription": [
-    "TableName",
-    "TableStatus",
-    "TableArn",
-    "TableId",
-    "CreationDateTime",
-    "KeySchema",
-    "AttributeDefinitions",
-    "ItemCount",
-    "TableSizeBytes",
-    "BillingModeSummary",
-    "ProvisionedThroughput"
-  ]
+  "dynamodb": {
+    "operations": [
+      "CreateTable",
+      "DeleteTable",
+      "DescribeTable",
+      "ListTables",
+      "PutItem",
+      "GetItem",
+      "DeleteItem",
+      "Scan"
+    ],
+    "shapes": {
+      "CreateTableInput": [
+        "TableName",
+        "AttributeDefinitions",
+        "KeySchema",
+        "BillingMode",
+        "ProvisionedThroughput"
+      ],
+      "DeleteTableInput": [
+        "TableName"
+      ],
+      "DescribeTableInput": [
+        "TableName"
+      ],
+      "ListTablesInput": [
+        "ExclusiveStartTableName",
+        "Limit"
+      ],
+      "PutItemInput": [
+        "TableName",
+        "Item",
+        "ReturnValues"
+      ],
+      "GetItemInput": [
+        "TableName",
+        "Key",
+        "ConsistentRead"
+      ],
+      "DeleteItemInput": [
+        "TableName",
+        "Key",
+        "ReturnValues"
+      ],
+      "ScanInput": [
+        "TableName",
+        "Limit",
+        "ExclusiveStartKey",
+        "ConsistentRead",
+        "Select"
+      ],
+      "PutItemOutput": [
+        "Attributes"
+      ],
+      "GetItemOutput": [
+        "Item"
+      ],
+      "DeleteItemOutput": [
+        "Attributes"
+      ],
+      "ScanOutput": [
+        "Items",
+        "Count",
+        "ScannedCount",
+        "LastEvaluatedKey"
+      ],
+      "TableDescription": [
+        "TableName",
+        "TableStatus",
+        "TableArn",
+        "TableId",
+        "CreationDateTime",
+        "KeySchema",
+        "AttributeDefinitions",
+        "ItemCount",
+        "TableSizeBytes",
+        "BillingModeSummary",
+        "ProvisionedThroughput"
+      ]
+    }
+  },
+  "sqs": {
+    "operations": [
+      "CreateQueue",
+      "DeleteQueue",
+      "ListQueues",
+      "GetQueueUrl",
+      "SendMessage",
+      "ReceiveMessage",
+      "DeleteMessage",
+      "ChangeMessageVisibility"
+    ],
+    "query": {
+      "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
+    },
+    "shapes": {
+      "CreateQueueRequest": [
+        "QueueName",
+        "Attributes"
+      ],
+      "DeleteQueueRequest": [
+        "QueueUrl"
+      ],
+      "ListQueuesRequest": [
+        "QueueNamePrefix",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetQueueUrlRequest": [
+        "QueueName"
+      ],
+      "SendMessageRequest": [
+        "QueueUrl",
+        "MessageBody",
+        "MessageAttributes"
+      ],
+      "SendMessageResult": [
+        "MD5OfMessageBody",
+        "MD5OfMessageAttributes",
+        "MessageId"
+      ],
+      "MessageAttributeValue": [
+        "StringValue",
+        "BinaryValue",
+        "DataType"
+      ],
+      "ReceiveMessageRequest": [
+        "QueueUrl",
+        "AttributeNames",
+        "MessageSystemAttributeNames",
+        "MessageAttributeNames",
+        "MaxNumberOfMessages",
+        "VisibilityTimeout",
+        "WaitTimeSeconds"
+      ],
+      "Message": [
+        "MessageId",
+        "ReceiptHandle",
+        "MD5OfBody",
+        "Body",
+        "Attributes",
+        "MD5OfMessageAttributes",
+        "MessageAttributes"
+      ],
+      "DeleteMessageRequest": [
+        "QueueUrl",
+        "ReceiptHandle"
+      ],
+      "ChangeMessageVisibilityRequest": [
+        "QueueUrl",
+        "ReceiptHandle",
+        "VisibilityTimeout"
+      ]
+    }
+  }
 }
