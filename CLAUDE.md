@@ -27,6 +27,8 @@ clears them. `GET /_tinystack/metrics` serves Prometheus counters by service, op
 (`gateway/metrics.go`; labels come from the catalog, never from the client).
 `GET /_tinystack/resources` lists resources from each service's `Resources` method (`catalog.Inventory`; the generated
 `Descriptor` picks it up, so a service's `inventory.go` is all a new service needs).
+`GET /_tinystack/deliveries` is the `delivery.Log` that SNS, EventBridge, and Lambda record every in-process delivery
+in; `start.go` mounts it with `gateway.Handle`. Both logs keep their entries in `recent.Log`.
 
 ## Architecture
 

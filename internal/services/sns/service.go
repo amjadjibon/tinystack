@@ -19,6 +19,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -38,14 +39,15 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store     storage.Store
-	queues    *sqs.Service
-	functions *lambda.Service
-	now       func() time.Time
+	store      storage.Store
+	queues     *sqs.Service
+	functions  *lambda.Service
+	deliveries *delivery.Log
+	now        func() time.Time
 }
 
-func New(store storage.Store, queues *sqs.Service, functions *lambda.Service) *Service {
-	return &Service{store: store, queues: queues, functions: functions, now: time.Now}
+func New(store storage.Store, queues *sqs.Service, functions *lambda.Service, deliveries *delivery.Log) *Service {
+	return &Service{store: store, queues: queues, functions: functions, deliveries: deliveries, now: time.Now}
 }
 
 // subscription is a confirmed SQS or Lambda subscription. These endpoints are

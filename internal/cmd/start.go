@@ -21,6 +21,7 @@ import (
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
@@ -58,11 +59,12 @@ func newStartCommand() *cobra.Command {
 
 			logger := slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), nil))
 			store := &memory.Store{}
+			deliveries := delivery.New()
 			queues := sqs.New(store)
-			functions := lambda.New(store, queues, docker.New(), logger, cfg.Identity.SecretKeys)
+			functions := lambda.New(store, queues, docker.New(), logger, cfg.Identity.SecretKeys, deliveries)
 			// Stop removes function containers; it must finish before exit.
 			defer functions.Stop()
-			topics := sns.New(store, queues, functions)
+			topics := sns.New(store, queues, functions, deliveries)
 			handler, err := gateway.New(
 				cfg,
 				logger,
@@ -71,11 +73,13 @@ func newStartCommand() *cobra.Command {
 				snsapi.Descriptor(topics),
 				s3api.Descriptor(s3.New(store)),
 				lambdaapi.Descriptor(functions),
-				eventbridgeapi.Descriptor(eventbridge.New(store, queues, topics, functions)),
+				eventbridgeapi.Descriptor(eventbridge.New(store, queues, topics, functions, deliveries)),
 			)
 			if err != nil {
 				return err
 			}
+
+			handler.Handle("deliveries", deliveries)
 
 			var listenConfig net.ListenConfig
 			listener, err := listenConfig.Listen(

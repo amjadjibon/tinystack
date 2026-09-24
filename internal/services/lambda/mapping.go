@@ -15,6 +15,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -437,7 +438,15 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 		}
 
 		result, err := s.run(ctx, scope, mp.FunctionName, payload)
-		if err != nil || result.Error {
+		failure := invokeError(result, err)
+		s.deliveries.Add(
+			delivery.ViaEventSourceMapping,
+			mp.EventSourceArn,
+			functionARN(scope, mp.FunctionName),
+			payload,
+			failure,
+		)
+		if failure != nil {
 			s.logger.Warn(
 				"lambda failed to process SQS batch",
 				"function", functionARN(scope, mp.FunctionName),

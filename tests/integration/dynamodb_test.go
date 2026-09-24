@@ -27,6 +27,7 @@ import (
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
@@ -63,9 +64,10 @@ func serverConfig(t *testing.T, cfg config.Config, runtime lambda.Runtime) *http
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	// Services share one store, as in start.go.
 	store := &memory.Store{}
+	deliveries := delivery.New()
 	sqsService := queues.New(store)
-	functions := lambda.New(store, sqsService, runtime, logger, cfg.Identity.SecretKeys)
-	snsService := topics.New(store, sqsService, functions)
+	functions := lambda.New(store, sqsService, runtime, logger, cfg.Identity.SecretKeys, deliveries)
+	snsService := topics.New(store, sqsService, functions, deliveries)
 	h, err := gateway.New(
 		cfg,
 		logger,
@@ -74,11 +76,13 @@ func serverConfig(t *testing.T, cfg config.Config, runtime lambda.Runtime) *http
 		snsapi.Descriptor(snsService),
 		s3api.Descriptor(buckets.New(store)),
 		lambdaapi.Descriptor(functions),
-		eventbridgeapi.Descriptor(eventbridge.New(store, sqsService, snsService, functions)),
+		eventbridgeapi.Descriptor(eventbridge.New(store, sqsService, snsService, functions, deliveries)),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	h.Handle("deliveries", deliveries)
 
 	s := httptest.NewServer(h)
 	t.Cleanup(func() {

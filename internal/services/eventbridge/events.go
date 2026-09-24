@@ -13,6 +13,7 @@ import (
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -142,7 +143,7 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 			}
 
 			for j := range r.targets {
-				s.deliver(ctx, &r.targets[j], e.ID, encoded)
+				s.deliver(ctx, r.arn, &r.targets[j], e.ID, encoded)
 			}
 		}
 
@@ -154,6 +155,7 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 
 type compiledRule struct {
 	pattern *pattern
+	arn     string
 	targets []target
 }
 
@@ -180,7 +182,7 @@ func (s *Service) enabledRules(ctx context.Context, scope request.Scope) ([]comp
 				return err
 			}
 
-			rules = append(rules, compiledRule{pattern: p, targets: r.Targets})
+			rules = append(rules, compiledRule{pattern: p, arn: ruleARN(scope, r.Name), targets: r.Targets})
 		}
 
 		return nil
@@ -214,9 +216,11 @@ func render(t *target, encoded []byte) []byte {
 }
 
 // deliver sends an event to one target. As in EventBridge, a failed delivery
-// (such as a deleted queue or function) does not fail PutEvents.
-func (s *Service) deliver(ctx context.Context, t *target, eventID string, encoded []byte) {
+// (such as a deleted queue or function) does not fail PutEvents; the delivery
+// log records it.
+func (s *Service) deliver(ctx context.Context, rule string, t *target, eventID string, encoded []byte) {
 	payload := render(t, encoded)
+	var err error
 	switch strings.SplitN(t.ARN, ":", 4)[2] {
 	case serviceSQS:
 		entry := &sqsapi.SendMessageBatchRequestEntry{MessageBody: ptr(string(payload))}
@@ -225,10 +229,12 @@ func (s *Service) deliver(ctx context.Context, t *target, eventID string, encode
 			entry.MessageDeduplicationId = ptr(eventID)
 		}
 
-		_ = s.queues.Deliver(ctx, t.ARN, entry)
+		err = s.queues.Deliver(ctx, t.ARN, entry)
 	case serviceSNS:
-		_, _ = s.topics.Publish(ctx, &snsapi.PublishInput{TopicArn: new(t.ARN), Message: new(string(payload))})
+		_, err = s.topics.Publish(ctx, &snsapi.PublishInput{TopicArn: new(t.ARN), Message: new(string(payload))})
 	case serviceLambda:
-		_ = s.functions.InvokeAsync(ctx, t.ARN, payload)
+		err = s.functions.InvokeAsync(ctx, t.ARN, payload)
 	}
+
+	s.deliveries.Add(delivery.ViaEventBridge, rule, t.ARN, payload, err)
 }

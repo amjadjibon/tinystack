@@ -3,6 +3,8 @@ package lambda
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +13,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/recent"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -107,7 +111,13 @@ func (s *Service) runAsync(scope request.Scope, name string, payload []byte) boo
 	return s.spawn(func(ctx context.Context) {
 		for attempt := 1; ; attempt++ {
 			result, err := s.run(ctx, scope, name, payload)
-			if err == nil && !result.Error {
+			failure := invokeError(result, err)
+			if failure != nil {
+				failure = fmt.Errorf("attempt %d of %d: %w", attempt, asyncAttempts, failure)
+			}
+
+			s.deliveries.Add(delivery.ViaLambdaAsync, "", functionARN(scope, name), payload, failure)
+			if failure == nil {
 				return
 			}
 
@@ -130,6 +140,20 @@ func (s *Service) runAsync(scope request.Scope, name string, payload []byte) boo
 			}
 		}
 	})
+}
+
+// invokeError reports why an invocation failed: the runtime error, or the
+// function's error payload. It is nil when the function succeeded.
+func invokeError(result Result, err error) error {
+	if err != nil {
+		return err
+	}
+
+	if result.Error {
+		return errors.New("function error: " + recent.Text(result.Payload))
+	}
+
+	return nil
 }
 
 func checkPayload(payload []byte, limit int) ([]byte, error) {

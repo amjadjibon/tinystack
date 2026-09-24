@@ -26,6 +26,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -59,6 +60,8 @@ type Service struct {
 	// secretKeys are the configured SigV4 secrets by access key; function code
 	// signs its SDK calls with its creator's.
 	secretKeys map[string]string
+	// deliveries records asynchronous invocations and mapping batches.
+	deliveries *delivery.Log
 	now        func() time.Time
 	// ctx ends background work (async invocations and pollers) on Stop.
 	ctx     context.Context
@@ -78,6 +81,7 @@ func New(
 	runtime Runtime,
 	logger *slog.Logger,
 	secretKeys map[string]string,
+	deliveries *delivery.Log,
 ) *Service {
 	if logger == nil {
 		logger = slog.Default()
@@ -90,6 +94,7 @@ func New(
 		runtime:    runtime,
 		logger:     logger,
 		secretKeys: secretKeys,
+		deliveries: deliveries,
 		now:        time.Now,
 		ctx:        ctx,
 		cancel:     cancel,

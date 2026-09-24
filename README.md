@@ -87,7 +87,7 @@ lifecycle, and so on) and accepts their `NotImplemented` answers as "not
 configured"; setting any of them in Terraform fails. `tests/terraform/main.tf` is a
 working example.
 
-### Request inspector, metrics, and resources
+### Request inspector, deliveries, metrics, and resources
 
 `GET /_tinystack/requests` lists the last 256 AWS requests, newest first: time,
 request ID, method, path, service, operation, protocol, account, region, status,
@@ -109,6 +109,13 @@ event source mapping, and rule in every account and region, with its ARN, tags, 
 details: queue attributes and message counts, topic subscriptions, the table
 description, bucket object count and size, the function or mapping configuration,
 and the rule with its targets.
+
+`GET /_tinystack/deliveries` lists the last 256 messages services handed to each other:
+SNS fan-out to queues and functions, EventBridge targets, each asynchronous Lambda
+attempt, and each event source mapping batch. Every record has the source and target
+ARNs, `delivered` or `failed` with the error, and the first 4 KiB of the payload. AWS
+never reports these failures to the publisher, so this is where a message that went
+nowhere shows up. `DELETE` clears the list.
 
 ## Supported subset
 

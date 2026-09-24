@@ -11,6 +11,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -215,7 +216,7 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		envelope.Message = textFor(sub.Protocol)
 		envelope.UnsubscribeURL = m.Endpoint + "/?Action=Unsubscribe&SubscriptionArn=" + url.QueryEscape(subARN)
 		// As in SNS, a failed delivery (such as a deleted queue or function)
-		// does not fail Publish.
+		// does not fail Publish; the delivery log records it.
 		if sub.Protocol == protocolLambda {
 			event, encodeErr := json.Marshal(lambdaEvent{Records: []lambdaRecord{{
 				EventSource:          "aws:sns",
@@ -227,7 +228,8 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 				return nil, encodeErr
 			}
 
-			_ = s.functions.InvokeAsync(ctx, sub.Endpoint, event)
+			err := s.functions.InvokeAsync(ctx, sub.Endpoint, event)
+			s.deliveries.Add(delivery.ViaSNS, arn, sub.Endpoint, event, err)
 			continue
 		}
 
@@ -244,10 +246,11 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 			body = string(encoded)
 		}
 
-		_ = s.queues.Deliver(ctx, sub.Endpoint, &sqsapi.SendMessageBatchRequestEntry{
+		err := s.queues.Deliver(ctx, sub.Endpoint, &sqsapi.SendMessageBatchRequestEntry{
 			MessageBody:       &body,
 			MessageAttributes: attributes,
 		})
+		s.deliveries.Add(delivery.ViaSNS, arn, sub.Endpoint, []byte(body), err)
 	}
 
 	return &api.PublishResponse{MessageId: ptr(id)}, nil
