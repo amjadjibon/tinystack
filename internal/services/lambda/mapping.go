@@ -311,6 +311,45 @@ func (s *Service) ListEventSourceMappings(
 	return out, nil
 }
 
+// Resume starts a poller for every enabled mapping already in the store, such
+// as those a persistent store reloads on start.
+func (s *Service) Resume(ctx context.Context) error {
+	type stored struct {
+		mp    *mapping
+		scope request.Scope
+	}
+
+	var enabled []stored
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		for _, key := range tx.Keys() {
+			account, region, rest, ok := storage.Scoped(key, "lambda")
+			if !ok || !strings.HasPrefix(rest, kindMapping+"/") {
+				continue
+			}
+
+			mp, _, err := loadMapping(tx, key)
+			if err != nil {
+				return err
+			}
+
+			if mp.Enabled {
+				enabled = append(enabled, stored{mp: mp, scope: request.Scope{AccountID: account, Region: region}})
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, e := range enabled {
+		s.startPoller(e.scope, e.mp) //nolint:contextcheck // The poller outlives Resume until Stop.
+	}
+
+	return nil
+}
+
 func (s *Service) startPoller(scope request.Scope, mp *mapping) {
 	ctx, cancel := context.WithCancel(s.ctx)
 	s.mu.Lock()
