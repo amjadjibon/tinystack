@@ -3,7 +3,6 @@ package dynamodb
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -27,10 +26,12 @@ type Service struct{ store storage.Store }
 
 func New(store storage.Store) *Service { return &Service{store: store} }
 
+// table is the table record. Each item is its own record under the table's
+// key (itemRecord), and the description's item count and size are kept
+// current as items are written.
 type table struct {
 	Tags        map[string]string `json:",omitempty"`
 	Description api.TableDescription
-	Items       map[string]map[string]api.AttributeValue
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -72,20 +73,6 @@ func load(tx storage.ReadTx, key string) (*table, error) {
 }
 
 func save(tx storage.WriteTx, key string, t *table) error {
-	t.Description.ItemCount = ptr(int64(len(t.Items)))
-	var size int64
-	for _, item := range t.Items {
-		for name, a := range item {
-			n, err := attributeSize(a, 0)
-			if err != nil {
-				return err
-			}
-
-			size += int64(len(name) + n)
-		}
-	}
-
-	t.Description.TableSizeBytes = &size
 	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Errorf("encode table: %w", err)
@@ -178,9 +165,10 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 			AttributeDefinitions:  in.AttributeDefinitions,
 			BillingModeSummary:    &api.BillingModeSummary{BillingMode: &mode},
 			ProvisionedThroughput: throughput,
+			ItemCount:             ptr(int64(0)),
+			TableSizeBytes:        ptr(int64(0)),
 		},
-		Items: map[string]map[string]api.AttributeValue{},
-		Tags:  tags,
+		Tags: tags,
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -230,6 +218,10 @@ func (s *Service) DeleteTable(ctx context.Context, in *api.DeleteTableInput) (*a
 		}
 
 		tx.Delete(key)
+		for _, record := range itemRecords(tx, key, "") {
+			tx.Delete(record)
+		}
+
 		t.Description.TableStatus = ptr("DELETING")
 		out.TableDescription = &t.Description
 		return nil
@@ -264,7 +256,7 @@ func (s *Service) ListTables(ctx context.Context, in *api.ListTablesInput) (*api
 			}
 
 			name := strings.TrimPrefix(key, prefix)
-			if name <= value(in.ExclusiveStartTableName) {
+			if strings.Contains(name, "/") || name <= value(in.ExclusiveStartTableName) {
 				continue
 			}
 
@@ -279,281 +271,6 @@ func (s *Service) ListTables(ctx context.Context, in *api.ListTablesInput) (*api
 		return nil
 	})
 	return out, err
-}
-
-func itemKey(t *table, item map[string]api.AttributeValue, exact bool) (string, error) {
-	if exact && len(item) != len(t.Description.KeySchema) {
-		return "", awserror.Validation("Key must contain exactly the table key attributes")
-	}
-
-	parts := []string{}
-	for _, k := range t.Description.KeySchema {
-		name := value(k.AttributeName)
-		a, ok := item[name]
-		if !ok {
-			return "", awserror.Validation("Missing key attribute %s", name)
-		}
-
-		if _, err := attributeSize(a, 0); err != nil {
-			return "", err
-		}
-
-		kind := ""
-		for _, d := range t.Description.AttributeDefinitions {
-			if value(d.AttributeName) == name {
-				kind = value(d.AttributeType)
-			}
-		}
-
-		var v string
-		switch kind {
-		case "S":
-			if a.S == nil {
-				return "", awserror.Validation("Key type mismatch for %s", name)
-			}
-
-			v = *a.S
-		case "N":
-			if a.N == nil {
-				return "", awserror.Validation("Key type mismatch for %s", name)
-			}
-
-			r, err := number(*a.N)
-			if err != nil {
-				return "", err
-			}
-
-			v = r.RatString()
-		case "B":
-			if a.B == nil {
-				return "", awserror.Validation("Key type mismatch for %s", name)
-			}
-
-			v = string(*a.B)
-		}
-
-		maxLength := 2048
-		if value(k.KeyType) == "RANGE" {
-			maxLength = 1024
-		}
-
-		if v == "" || len(v) > maxLength {
-			return "", awserror.Validation("Invalid key length for %s", name)
-		}
-
-		parts = append(parts, base64.RawStdEncoding.EncodeToString([]byte(v)))
-	}
-
-	return strings.Join(parts, ":"), nil
-}
-
-func returnValues(p *string) error {
-	if p != nil && *p != "NONE" && *p != returnAllOld {
-		return awserror.Validation("ReturnValues must be NONE or ALL_OLD")
-	}
-
-	return nil
-}
-
-func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutItemOutput, error) {
-	key, err := tableKey(ctx, in.TableName)
-	if err != nil {
-		return nil, err
-	}
-
-	if guardErr := returnValues(in.ReturnValues); guardErr != nil {
-		return nil, guardErr
-	}
-
-	size := 0
-	for name, a := range in.Item {
-		if name == "" {
-			return nil, awserror.Validation("Attribute names must not be empty")
-		}
-
-		n, e := attributeSize(a, 0)
-		if e != nil {
-			return nil, e
-		}
-
-		size += len(name) + n
-	}
-
-	if size > 400*1024 {
-		return nil, awserror.Validation("Item exceeds 400 KB")
-	}
-
-	out := &api.PutItemOutput{}
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		t, e := load(tx, key)
-		if e != nil {
-			return e
-		}
-
-		id, e := itemKey(t, in.Item, false)
-		if e != nil {
-			return e
-		}
-
-		if value(in.ReturnValues) == returnAllOld {
-			out.Attributes = t.Items[id]
-		}
-
-		t.Items[id] = in.Item
-		return save(tx, key, t)
-	})
-	return out, err
-}
-
-// GetItem returns the item, or an empty output when the key is absent.
-func (s *Service) GetItem(ctx context.Context, in *api.GetItemInput) (*api.GetItemOutput, error) {
-	key, err := tableKey(ctx, in.TableName)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &api.GetItemOutput{}
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		t, e := load(tx, key)
-		if e != nil {
-			return e
-		}
-
-		id, e := itemKey(t, in.Key, true)
-		if e != nil {
-			return e
-		}
-
-		out.Item = t.Items[id]
-		return nil
-	})
-	return out, err
-}
-
-func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api.DeleteItemOutput, error) {
-	key, err := tableKey(ctx, in.TableName)
-	if err != nil {
-		return nil, err
-	}
-
-	if guardErr := returnValues(in.ReturnValues); guardErr != nil {
-		return nil, guardErr
-	}
-
-	out := &api.DeleteItemOutput{}
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		t, e := load(tx, key)
-		if e != nil {
-			return e
-		}
-
-		id, e := itemKey(t, in.Key, true)
-		if e != nil {
-			return e
-		}
-
-		if value(in.ReturnValues) == returnAllOld {
-			out.Attributes = t.Items[id]
-		}
-
-		delete(t.Items, id)
-		return save(tx, key, t)
-	})
-	return out, err
-}
-
-// Scan returns a deterministic page; ordering is a local implementation detail.
-func (s *Service) Scan(ctx context.Context, in *api.ScanInput) (*api.ScanOutput, error) {
-	key, err := tableKey(ctx, in.TableName)
-	if err != nil {
-		return nil, err
-	}
-
-	if in.Limit != nil && *in.Limit < 1 {
-		return nil, awserror.Validation("Limit must be positive")
-	}
-
-	selection := value(in.Select)
-	if selection != "" && selection != "ALL_ATTRIBUTES" && selection != selectCount {
-		return nil, awserror.Validation("Select supports ALL_ATTRIBUTES or COUNT")
-	}
-
-	out := &api.ScanOutput{
-		Items:        ptr([]map[string]api.AttributeValue{}),
-		Count:        ptr(int64(0)),
-		ScannedCount: ptr(int64(0)),
-	}
-
-	if selection == selectCount {
-		out.Items = nil
-	}
-
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		t, e := load(tx, key)
-		if e != nil {
-			return e
-		}
-
-		after := ""
-		if len(in.ExclusiveStartKey) > 0 {
-			after, e = itemKey(t, in.ExclusiveStartKey, true)
-			if e != nil {
-				return e
-			}
-		}
-
-		ids := make([]string, 0, len(t.Items))
-		for id := range t.Items {
-			if id > after {
-				ids = append(ids, id)
-			}
-		}
-
-		sort.Strings(ids)
-		size := 0
-		for i, id := range ids {
-			item := t.Items[id]
-			itemBytes := 0
-			for name, a := range item {
-				n, e := attributeSize(a, 0)
-				if e != nil {
-					return e
-				}
-
-				itemBytes += len(name) + n
-			}
-
-			if i > 0 && size+itemBytes > 1<<20 {
-				out.LastEvaluatedKey = primaryKey(t, t.Items[ids[i-1]])
-				break
-			}
-
-			size += itemBytes
-			if selection != selectCount {
-				*out.Items = append(*out.Items, item)
-			}
-
-			*out.Count++
-			*out.ScannedCount++
-			if i < len(ids)-1 && ((in.Limit != nil && *out.Count >= *in.Limit) || size >= 1<<20) {
-				out.LastEvaluatedKey = primaryKey(t, item)
-				break
-			}
-		}
-
-		return nil
-	})
-	return out, err
-}
-
-func primaryKey(t *table, item map[string]api.AttributeValue) map[string]api.AttributeValue {
-	key := map[string]api.AttributeValue{}
-	for _, field := range t.Description.KeySchema {
-		name := value(field.AttributeName)
-		key[name] = item[name]
-	}
-
-	return key
 }
 
 var numeric = regexp.MustCompile(`^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$`)

@@ -404,14 +404,14 @@ func TestProtocolErrors(t *testing.T) {
 		body    string
 		code    string
 	}{
-		{name: "unknown operation", op: "UpdateItem", body: `{}`, code: "UnknownOperationException"},
+		{name: "unknown operation", op: "BatchGetItem", body: `{}`, code: "UnknownOperationException"},
 		{name: "null input", op: "ListTables", body: `null`, code: "SerializationException"},
 		{name: "trailing input", op: "ListTables", body: `{} {}`, code: "SerializationException"},
 		{name: "malformed JSON", op: "ListTables", body: `{`, code: "ValidationException"},
 		{name: "missing fields", op: "CreateTable", body: `{}`, code: "ValidationException"},
 		{
-			name: "unsupported condition", op: "PutItem",
-			body: `{"TableName":"users","Item":{"PK":{"S":"one"}},"ConditionExpression":"attribute_not_exists(PK)"}`,
+			name: "unsupported legacy condition", op: "PutItem",
+			body: `{"TableName":"users","Item":{"PK":{"S":"one"}},"Expected":{"PK":{"Exists":false}}}`,
 			code: "ValidationException",
 		},
 		{

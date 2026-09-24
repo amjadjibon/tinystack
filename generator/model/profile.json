@@ -6,9 +6,11 @@
       "DescribeTable",
       "ListTables",
       "PutItem",
+      "UpdateItem",
       "GetItem",
       "DeleteItem",
       "Scan",
+      "Query",
       "DescribeContinuousBackups",
       "DescribeTimeToLive",
       "ListTagsOfResource",
@@ -37,20 +39,54 @@
       "PutItemInput": [
         "TableName",
         "Item",
-        "ReturnValues"
+        "ReturnValues",
+        "ConditionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues"
       ],
       "GetItemInput": [
         "TableName",
         "Key",
-        "ConsistentRead"
+        "ConsistentRead",
+        "ProjectionExpression",
+        "ExpressionAttributeNames"
       ],
       "DeleteItemInput": [
         "TableName",
         "Key",
+        "ReturnValues",
+        "ConditionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues"
+      ],
+      "UpdateItemInput": [
+        "TableName",
+        "Key",
+        "UpdateExpression",
+        "ConditionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
         "ReturnValues"
       ],
       "ScanInput": [
         "TableName",
+        "Limit",
+        "ExclusiveStartKey",
+        "ConsistentRead",
+        "Select",
+        "FilterExpression",
+        "ProjectionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues"
+      ],
+      "QueryInput": [
+        "TableName",
+        "KeyConditionExpression",
+        "FilterExpression",
+        "ProjectionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
+        "ScanIndexForward",
         "Limit",
         "ExclusiveStartKey",
         "ConsistentRead",
@@ -65,7 +101,16 @@
       "DeleteItemOutput": [
         "Attributes"
       ],
+      "UpdateItemOutput": [
+        "Attributes"
+      ],
       "ScanOutput": [
+        "Items",
+        "Count",
+        "ScannedCount",
+        "LastEvaluatedKey"
+      ],
+      "QueryOutput": [
         "Items",
         "Count",
         "ScannedCount",

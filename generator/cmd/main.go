@@ -380,7 +380,7 @@ func (g *generator) emit(id string) error {
 				tag = n
 			}
 
-			if short(id) == "ScanOutput" && n == "Items" {
+			if (short(id) == "ScanOutput" || short(id) == "QueryOutput") && n == "Items" {
 				t = "*" + t
 			}
 

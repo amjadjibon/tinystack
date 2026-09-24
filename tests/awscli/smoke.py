@@ -58,6 +58,10 @@ def main():
                 aws("put-item", "--table-name", "users", "--item", json.dumps(item))
                 assert aws("get-item", "--table-name", "users", "--key", '{"PK":{"S":"one"}}')["Item"] == item
                 assert aws("scan", "--table-name", "users")["Count"] == 1
+                updated = aws("update-item", "--table-name", "users", "--key", '{"PK":{"S":"one"}}', "--update-expression", "ADD visits :one", "--condition-expression", "attribute_exists(PK)", "--expression-attribute-values", '{":one":{"N":"1"}}', "--return-values", "UPDATED_NEW")
+                assert updated["Attributes"] == {"visits": {"N": "1"}}, updated
+                queried = aws("query", "--table-name", "users", "--key-condition-expression", "PK = :pk", "--projection-expression", "visits", "--expression-attribute-values", '{":pk":{"S":"one"}}')
+                assert queried["Items"] == [{"visits": {"N": "1"}}], queried
                 aws("delete-item", "--table-name", "users", "--key", '{"PK":{"S":"one"}}')
                 aws("delete-table", "--table-name", "users")
                 assert aws("list-tables")["TableNames"] == []

@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -13,7 +14,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, key := range tx.Keys() {
 			account, region, name, ok := storage.Scoped(key, "dynamodb")
-			if !ok {
+			if !ok || strings.Contains(name, "/") {
 				continue
 			}
 

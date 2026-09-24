@@ -106,19 +106,38 @@ type AttributeValue struct {
 }
 
 type PutItemInput struct {
-	TableName    *string                   `json:"TableName,omitempty"`
-	Item         map[string]AttributeValue `json:"Item,omitempty"`
-	ReturnValues *string                   `json:"ReturnValues,omitempty"`
+	TableName                 *string                   `json:"TableName,omitempty"`
+	Item                      map[string]AttributeValue `json:"Item,omitempty"`
+	ReturnValues              *string                   `json:"ReturnValues,omitempty"`
+	ConditionExpression       *string                   `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
 }
 
 type PutItemOutput struct {
 	Attributes map[string]AttributeValue `json:"Attributes,omitempty"`
 }
 
+type UpdateItemInput struct {
+	TableName                 *string                   `json:"TableName,omitempty"`
+	Key                       map[string]AttributeValue `json:"Key,omitempty"`
+	UpdateExpression          *string                   `json:"UpdateExpression,omitempty"`
+	ConditionExpression       *string                   `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	ReturnValues              *string                   `json:"ReturnValues,omitempty"`
+}
+
+type UpdateItemOutput struct {
+	Attributes map[string]AttributeValue `json:"Attributes,omitempty"`
+}
+
 type GetItemInput struct {
-	TableName      *string                   `json:"TableName,omitempty"`
-	Key            map[string]AttributeValue `json:"Key,omitempty"`
-	ConsistentRead *bool                     `json:"ConsistentRead,omitempty"`
+	TableName                *string                   `json:"TableName,omitempty"`
+	Key                      map[string]AttributeValue `json:"Key,omitempty"`
+	ConsistentRead           *bool                     `json:"ConsistentRead,omitempty"`
+	ProjectionExpression     *string                   `json:"ProjectionExpression,omitempty"`
+	ExpressionAttributeNames map[string]string         `json:"ExpressionAttributeNames,omitempty"`
 }
 
 type GetItemOutput struct {
@@ -126,9 +145,12 @@ type GetItemOutput struct {
 }
 
 type DeleteItemInput struct {
-	TableName    *string                   `json:"TableName,omitempty"`
-	Key          map[string]AttributeValue `json:"Key,omitempty"`
-	ReturnValues *string                   `json:"ReturnValues,omitempty"`
+	TableName                 *string                   `json:"TableName,omitempty"`
+	Key                       map[string]AttributeValue `json:"Key,omitempty"`
+	ReturnValues              *string                   `json:"ReturnValues,omitempty"`
+	ConditionExpression       *string                   `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
 }
 
 type DeleteItemOutput struct {
@@ -136,14 +158,39 @@ type DeleteItemOutput struct {
 }
 
 type ScanInput struct {
-	TableName         *string                   `json:"TableName,omitempty"`
-	Limit             *int64                    `json:"Limit,omitempty"`
-	ExclusiveStartKey map[string]AttributeValue `json:"ExclusiveStartKey,omitempty"`
-	ConsistentRead    *bool                     `json:"ConsistentRead,omitempty"`
-	Select            *string                   `json:"Select,omitempty"`
+	TableName                 *string                   `json:"TableName,omitempty"`
+	Limit                     *int64                    `json:"Limit,omitempty"`
+	ExclusiveStartKey         map[string]AttributeValue `json:"ExclusiveStartKey,omitempty"`
+	ConsistentRead            *bool                     `json:"ConsistentRead,omitempty"`
+	Select                    *string                   `json:"Select,omitempty"`
+	FilterExpression          *string                   `json:"FilterExpression,omitempty"`
+	ProjectionExpression      *string                   `json:"ProjectionExpression,omitempty"`
+	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
 }
 
 type ScanOutput struct {
+	Items            *[]map[string]AttributeValue `json:"Items,omitempty"`
+	Count            *int64                       `json:"Count,omitempty"`
+	ScannedCount     *int64                       `json:"ScannedCount,omitempty"`
+	LastEvaluatedKey map[string]AttributeValue    `json:"LastEvaluatedKey,omitempty"`
+}
+
+type QueryInput struct {
+	TableName                 *string                   `json:"TableName,omitempty"`
+	KeyConditionExpression    *string                   `json:"KeyConditionExpression,omitempty"`
+	FilterExpression          *string                   `json:"FilterExpression,omitempty"`
+	ProjectionExpression      *string                   `json:"ProjectionExpression,omitempty"`
+	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	ScanIndexForward          *bool                     `json:"ScanIndexForward,omitempty"`
+	Limit                     *int64                    `json:"Limit,omitempty"`
+	ExclusiveStartKey         map[string]AttributeValue `json:"ExclusiveStartKey,omitempty"`
+	ConsistentRead            *bool                     `json:"ConsistentRead,omitempty"`
+	Select                    *string                   `json:"Select,omitempty"`
+}
+
+type QueryOutput struct {
 	Items            *[]map[string]AttributeValue `json:"Items,omitempty"`
 	Count            *int64                       `json:"Count,omitempty"`
 	ScannedCount     *int64                       `json:"ScannedCount,omitempty"`
@@ -210,9 +257,11 @@ type API interface {
 	DescribeTable(context.Context, *DescribeTableInput) (*DescribeTableOutput, error)
 	ListTables(context.Context, *ListTablesInput) (*ListTablesOutput, error)
 	PutItem(context.Context, *PutItemInput) (*PutItemOutput, error)
+	UpdateItem(context.Context, *UpdateItemInput) (*UpdateItemOutput, error)
 	GetItem(context.Context, *GetItemInput) (*GetItemOutput, error)
 	DeleteItem(context.Context, *DeleteItemInput) (*DeleteItemOutput, error)
 	Scan(context.Context, *ScanInput) (*ScanOutput, error)
+	Query(context.Context, *QueryInput) (*QueryOutput, error)
 	DescribeContinuousBackups(context.Context, *DescribeContinuousBackupsInput) (*DescribeContinuousBackupsOutput, error)
 	DescribeTimeToLive(context.Context, *DescribeTimeToLiveInput) (*DescribeTimeToLiveOutput, error)
 	ListTagsOfResource(context.Context, *ListTagsOfResourceInput) (*ListTagsOfResourceOutput, error)
@@ -235,11 +284,15 @@ func Descriptor(api API) catalog.Service {
 			return api.ListTables(ctx, input.(*ListTablesInput))
 		}},
 		"PutItem": {Name: "PutItem", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.PutItem", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &PutItemInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.PutItem(ctx, input.(*PutItemInput)) }},
+		"UpdateItem": {Name: "UpdateItem", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UpdateItem", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateItemInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateItem(ctx, input.(*UpdateItemInput))
+		}},
 		"GetItem": {Name: "GetItem", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.GetItem", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &GetItemInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetItem(ctx, input.(*GetItemInput)) }},
 		"DeleteItem": {Name: "DeleteItem", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DeleteItem", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteItemInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteItem(ctx, input.(*DeleteItemInput))
 		}},
-		"Scan": {Name: "Scan", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.Scan", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ScanInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Scan(ctx, input.(*ScanInput)) }},
+		"Scan":  {Name: "Scan", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.Scan", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ScanInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Scan(ctx, input.(*ScanInput)) }},
+		"Query": {Name: "Query", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.Query", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &QueryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Query(ctx, input.(*QueryInput)) }},
 		"DescribeContinuousBackups": {Name: "DescribeContinuousBackups", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeContinuousBackups", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeContinuousBackupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeContinuousBackups(ctx, input.(*DescribeContinuousBackupsInput))
 		}},

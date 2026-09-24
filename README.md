@@ -145,8 +145,10 @@ nowhere shows up. `DELETE` clears the list.
 | CreateTable | HASH key, optional RANGE key; string/number/binary keys; provisioned or on-demand metadata |
 | DescribeTable / DeleteTable | Scoped metadata and atomic table deletion |
 | ListTables | Account/region isolation, limit and continuation token |
-| PutItem / GetItem / DeleteItem | Typed attributes, atomic replacement/deletion, `ALL_OLD` for writes |
-| Scan | Limit, continuation key, `COUNT`, approximately 1 MiB pages |
+| PutItem / GetItem / DeleteItem | Typed attributes, atomic replacement/deletion, `ALL_OLD` for writes; `ConditionExpression` on writes, `ProjectionExpression` on GetItem |
+| UpdateItem | `SET` (with `+`, `-`, `if_not_exists`, `list_append`), `REMOVE`, `ADD`, and `DELETE` on nested paths; `ConditionExpression`; creates missing items; every `ReturnValues` option |
+| Query | `KeyConditionExpression` (partition key `=`, sort key `=`, `<`, `<=`, `>`, `>=`, `BETWEEN`, `begins_with`), sort key order either way, `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key |
+| Scan | `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key, approximately 1 MiB pages |
 | DescribeContinuousBackups / DescribeTimeToLive | A new table's settings: continuous backups on, point-in-time recovery and TTL off |
 | TagResource / UntagResource / ListTagsOfResource | Table ARNs; also `Tags` on CreateTable |
 
@@ -276,8 +278,10 @@ signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`), presigned URL
 and session tokens are not supported. There is still no IAM: any configured key
 may call any operation in its account.
 
-DynamoDB limits: no Query, UpdateItem, expressions or conditional writes, projections,
-secondary indexes, transactions API, TTL expiry, backups, or capacity accounting/throttling.
+DynamoDB limits: no secondary indexes, batch or transaction operations, legacy parameters
+(`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...), parallel scans,
+`ReturnValuesOnConditionCheckFailure`, TTL expiry, backups, or capacity accounting/throttling. Expressions
+support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
 message groups on standard queues, dead-letter redrive back to the source queue,
 policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, filter
