@@ -642,6 +642,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		&g.out,
 		"func D"+
 			"escriptor(api API) catalog.Service {return catalog.Service{Name: %q, SigningName: %q,"+
+			"Inventory:catalog.InventoryOf(api),"+
 			"TargetPrefix:%q,QueryCompatible:%t,XMLNamespace:%q,Protocols:%#v,Errors:%#v,Operations:map[stri"+
 			"ng]catalog.Operation{\n",
 		name,

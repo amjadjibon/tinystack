@@ -52,7 +52,32 @@ type Operation struct {
 	UnitOutput bool
 }
 
+// Resource is one resource a service holds, as the resource browser shows it.
+type Resource struct {
+	Details any               `json:"details,omitempty"`
+	Tags    map[string]string `json:"tags,omitempty"`
+	Type    string            `json:"type"`
+	Account string            `json:"account"`
+	Region  string            `json:"region"`
+	Name    string            `json:"name"`
+	ARN     string            `json:"arn"`
+}
+
+// Inventory is implemented by services whose resources the resource browser
+// lists, across every account and region.
+type Inventory interface {
+	Resources(context.Context) ([]Resource, error)
+}
+
+// InventoryOf returns api's Inventory, or nil if it has none.
+func InventoryOf(api any) Inventory {
+	inventory, _ := api.(Inventory)
+	return inventory
+}
+
 type Service struct {
+	// Inventory lists the service's resources; it may be nil.
+	Inventory       Inventory
 	Operations      map[string]Operation
 	Errors          map[string]ErrorBinding
 	Name            string
