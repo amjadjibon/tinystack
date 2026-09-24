@@ -2,6 +2,8 @@ package memory
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"sync"
 
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -9,8 +11,19 @@ import (
 
 // Store owns byte records. Its zero value is ready for use.
 type Store struct {
-	data map[string][]byte
-	mu   sync.RWMutex
+	data    map[string][]byte
+	persist Persist
+	mu      sync.RWMutex
+}
+
+// Persist durably records one commit's changes: the records it puts and the
+// keys it deletes. An error aborts the commit. It must not retain puts.
+type Persist func(puts map[string][]byte, deletes []string) error
+
+// New returns a store holding data. Update calls persist, when set, with each
+// commit's changes before they become visible, so a failed write changes nothing.
+func New(data map[string][]byte, persist Persist) *Store {
+	return &Store{data: data, persist: persist}
 }
 
 type transaction struct {
@@ -93,6 +106,12 @@ func (s *Store) Update(ctx context.Context, fn func(storage.WriteTx) error) erro
 
 	if guardErr := ctx.Err(); guardErr != nil {
 		return guardErr
+	}
+
+	if s.persist != nil && len(tx.writes)+len(tx.deleted) > 0 {
+		if guardErr := s.persist(tx.writes, slices.Collect(maps.Keys(tx.deleted))); guardErr != nil {
+			return guardErr
+		}
 	}
 
 	if s.data == nil {

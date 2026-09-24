@@ -96,9 +96,10 @@ func concurrentUpdates(t *testing.T, s storage.Store) {
 
 func copies(t *testing.T, s storage.Store) {
 	t.Helper()
+	const safe = "safe"
 	ctx := context.Background()
 	err := s.Update(ctx, func(tx storage.WriteTx) error {
-		v := []byte("safe")
+		v := []byte(safe)
 		tx.Put("copy", v)
 		tx.Put("gone", v)
 		v[0] = 'X'
@@ -107,7 +108,7 @@ func copies(t *testing.T, s storage.Store) {
 			t.Error("deleted value visible")
 		}
 
-		if got, _ := tx.Get("copy"); string(got) != "safe" {
+		if got, _ := tx.Get("copy"); string(got) != safe {
 			t.Errorf("staged write aliases caller bytes: %q", got)
 		}
 
@@ -119,12 +120,12 @@ func copies(t *testing.T, s storage.Store) {
 
 	err = s.View(ctx, func(tx storage.ReadTx) error {
 		v, ok := tx.Get("copy")
-		if !ok || string(v) != "safe" {
+		if !ok || string(v) != safe {
 			t.Fatalf("write aliases caller bytes: %q", v)
 		}
 
 		v[0] = 'X'
-		if again, _ := tx.Get("copy"); string(again) != "safe" {
+		if again, _ := tx.Get("copy"); string(again) != safe {
 			t.Fatal("read aliases stored bytes")
 		}
 
