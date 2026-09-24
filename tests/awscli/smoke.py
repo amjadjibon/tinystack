@@ -125,12 +125,20 @@ def main():
                 events("remove-targets", "--rule", "orders", "--ids", "inbox")
                 events("delete-rule", "--name", "orders")
                 assert events("list-rules").get("Rules", []) == []
+                def iam(*args):
+                    return aws(*args, service="iam")
+                trust = {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}
+                role = iam("create-role", "--role-name", "lambda", "--assume-role-policy-document", json.dumps(trust))["Role"]
+                # IAM returns policy documents URL-encoded; the AWS CLI decodes them.
+                assert iam("get-role", "--role-name", "lambda")["Role"]["AssumeRolePolicyDocument"] == trust
+                iam("attach-role-policy", "--role-name", "lambda", "--policy-arn", "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
+                assert [p["PolicyName"] for p in iam("list-attached-role-policies", "--role-name", "lambda")["AttachedPolicies"]] == ["AWSLambdaBasicExecutionRole"]
                 def lam(*args):
                     return aws(*args, service="lambda")
                 package = Path(directory) / "function.zip"
                 with zipfile.ZipFile(package, "w") as archive:
                     archive.writestr("app.py", "def handler(event, context):\n    return {'echo': event}\n")
-                created = lam("create-function", "--function-name", "hello", "--runtime", "python3.14", "--handler", "app.handler", "--role", "arn:aws:iam::000000000000:role/lambda", "--zip-file", f"fileb://{package}")
+                created = lam("create-function", "--function-name", "hello", "--runtime", "python3.14", "--handler", "app.handler", "--role", role["Arn"], "--zip-file", f"fileb://{package}")
                 assert created["State"] == "Active" and created["Version"] == "$LATEST"
                 assert lam("get-function", "--function-name", "hello")["Configuration"]["CodeSha256"] == created["CodeSha256"]
                 assert [f["FunctionName"] for f in lam("list-functions")["Functions"]] == ["hello"]
@@ -143,6 +151,9 @@ def main():
                     assert json.loads(output.read_text()) == {"echo": {"n": 1}}
                 lam("delete-function", "--function-name", "hello")
                 assert lam("list-functions").get("Functions", []) == []
+                iam("detach-role-policy", "--role-name", "lambda", "--policy-arn", "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
+                iam("delete-role", "--role-name", "lambda")
+                assert iam("list-roles")["Roles"] == []
             finally:
                 if process.poll() is None:
                     process.terminate()

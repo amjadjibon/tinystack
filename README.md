@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, and EventBridge endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, EventBridge, and IAM endpoints for development and tests.
 
 ## Run
 
@@ -73,7 +73,8 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables, S3 buckets and objects, Lambda functions
-and SQS event source mappings, and EventBridge rules and targets, tags included.
+and SQS event source mappings, EventBridge rules and targets, and IAM roles,
+role policies, and managed policies, tags included.
 Skip the calls to services TinyStack does not have:
 
 ```hcl
@@ -88,6 +89,7 @@ provider "aws" {
   endpoints {
     dynamodb    = "http://localhost:4566"
     eventbridge = "http://localhost:4566"
+    iam         = "http://localhost:4566"
     lambda      = "http://localhost:4566"
     s3          = "http://localhost:4566"
     sns         = "http://localhost:4566"
@@ -232,6 +234,25 @@ verified), so SDK calls reach
 the right account once you set `AWS_ENDPOINT_URL` in the function's environment
 to an address the container can reach.
 
+### IAM (AWS Query)
+
+Roles and managed policies, global within each account: a client in any region
+sees the same records. Policies are stored and returned, never evaluated.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateRole / GetRole / ListRoles / DeleteRole | Paths, `Description`, `MaxSessionDuration`, `Tags`, and the trust policy (returned URL-encoded, as AWS does); names are case-insensitive; `PathPrefix`, `Marker`, and `MaxItems`; a role with inline or attached policies cannot be deleted |
+| UpdateRole / UpdateRoleDescription / UpdateAssumeRolePolicy | Description, session duration, and trust policy |
+| TagRole / UntagRole / ListRoleTags | Up to 50 tags |
+| PutRolePolicy / GetRolePolicy / ListRolePolicies / DeleteRolePolicy | Inline role policies |
+| AttachRolePolicy / DetachRolePolicy / ListAttachedRolePolicies | Up to 10 managed policies per role; AWS managed ARNs (`arn:aws:iam::aws:policy/...`) can be attached but are not modeled |
+| CreatePolicy / GetPolicy / ListPolicies / DeletePolicy | Paths, descriptions, tags, and attachment counts; `Scope`, `OnlyAttached`, and `PathPrefix`; attached policies, and policies with non-default versions, cannot be deleted |
+| CreatePolicyVersion / GetPolicyVersion / ListPolicyVersions / DeletePolicyVersion / SetDefaultPolicyVersion | Up to 5 versions; the default version cannot be deleted |
+| TagPolicy / UntagPolicy / ListPolicyTags | Up to 50 tags |
+| ListInstanceProfilesForRole | Always empty: instance profiles are not modeled |
+
+Policy documents must be JSON objects with a `Statement`.
+
 ### EventBridge (AWS JSON 1.1)
 
 Rules on each account's `default` event bus route events to SQS queues, SNS
@@ -276,8 +297,8 @@ each service's error codes (such as `InvalidSignatureException`,
 `SignatureDoesNotMatch`, `UnrecognizedClientException`, or `InvalidAccessKeyId`).
 S3 accepts `UNSIGNED-PAYLOAD` and `STREAMING-UNSIGNED-PAYLOAD-TRAILER` bodies;
 signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`), presigned URLs,
-and session tokens are not supported. There is still no IAM: any configured key
-may call any operation in its account.
+and session tokens are not supported. IAM policies are stored but not
+evaluated: any configured key may call any operation in its account.
 
 DynamoDB limits: no secondary indexes, batch or transaction operations, legacy parameters
 (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...), parallel scans,
@@ -298,7 +319,9 @@ logged and dropped after the retries. EventBridge limits: only the default event
 (no custom or partner buses and no archives or replays), no scheduled rules,
 `InputTransformer`, dead-letter queues, retry policies, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; delivery happens
-synchronously during PutEvents. No service has IAM. Asynchronous Lambda invocations still in flight are lost on
+synchronously during PutEvents. IAM limits: no users, access keys, groups, instance
+profiles, permissions boundaries, or policy evaluation, and AWS managed policies
+are not modeled. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.
@@ -335,7 +358,8 @@ The pinned upstream Smithy models, checksums, and license live in `generator/mod
 `profile.json` selects each service's operations and implemented fields; its
 `query` block is the compatibility overlay for legacy AWS Query facts (the XML
 namespace) that query-compatible JSON models omit; pure AWS Query models such as
-SNS declare their namespace themselves. `go generate ./...` works offline after Go
+SNS and IAM declare their namespace themselves, and their timestamps are ISO 8601
+`time.Time` values. `go generate ./...` works offline after Go
 dependencies are available and reproduces the checked-in types, bindings, and
 error descriptors. The generator fails on unsupported wire traits; it supports
 AWS JSON 1.0 services (plus AWS Query for query-compatible ones), AWS JSON 1.1
@@ -352,7 +376,7 @@ task test       # Official Go SDK, AWS Query wire, and transaction tests, with -
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
 task models:sync -- -ref main   # Re-vendor the pinned Smithy models from aws-sdk-go-v2, then regenerate
-task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, Lambda), verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, IAM, Lambda), verify graceful shutdown
 task test:docker # Run Lambda functions in real containers (needs Docker; pulls python:3.14)
 task test:terraform # Apply, update, and destroy tests/terraform/main.tf with Terraform
 ```

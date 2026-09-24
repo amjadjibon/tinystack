@@ -22,6 +22,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
+	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -31,6 +32,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
+	principals "github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
@@ -96,6 +98,7 @@ func serverStore(
 		s3api.Descriptor(buckets.New(store)),
 		lambdaapi.Descriptor(functions),
 		eventbridgeapi.Descriptor(eventbridge.New(store, sqsService, snsService, functions, deliveries)),
+		iamapi.Descriptor(principals.New(store)),
 	)
 	if err != nil {
 		t.Fatal(err)

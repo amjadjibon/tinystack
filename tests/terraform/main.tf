@@ -21,6 +21,7 @@ provider "aws" {
   endpoints {
     dynamodb    = var.endpoint
     eventbridge = var.endpoint
+    iam         = var.endpoint
     lambda      = var.endpoint
     s3          = var.endpoint
     sns         = var.endpoint
@@ -85,7 +86,7 @@ resource "aws_s3_object" "hello" {
 
 resource "aws_lambda_function" "echo" {
   function_name    = "echo"
-  role             = "arn:aws:iam::000000000000:role/lambda"
+  role             = aws_iam_role.lambda.arn
   runtime          = "python3.12"
   handler          = "app.handler"
   filename         = var.function_zip
@@ -109,4 +110,48 @@ resource "aws_cloudwatch_event_target" "orders" {
   rule      = aws_cloudwatch_event_rule.orders.name
   target_id = "jobs"
   arn       = aws_sqs_queue.jobs.arn
+}
+
+resource "aws_iam_role" "lambda" {
+  name        = "lambda"
+  description = "Runs ${var.team} functions"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+  tags = local.tags
+}
+
+resource "aws_iam_role_policy" "queue" {
+  name = "queue"
+  role = aws_iam_role.lambda.id
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Effect = "Allow", Action = ["sqs:ReceiveMessage"], Resource = aws_sqs_queue.jobs.arn }]
+  })
+}
+
+# The statement ID follows the team, so an update creates a new policy version.
+resource "aws_iam_policy" "assets" {
+  name = "read-assets"
+  path = "/app/"
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Sid = var.team, Effect = "Allow", Action = ["s3:GetObject"], Resource = "*" }]
+  })
+  tags = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "assets" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.assets.arn
+}
+
+resource "aws_iam_role_policy_attachment" "basic" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }

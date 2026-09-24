@@ -1108,5 +1108,292 @@
         "Tags"
       ]
     }
+  },
+  "iam": {
+    "operations": [
+      "CreateRole",
+      "GetRole",
+      "DeleteRole",
+      "ListRoles",
+      "UpdateRole",
+      "UpdateAssumeRolePolicy",
+      "UpdateRoleDescription",
+      "TagRole",
+      "UntagRole",
+      "ListRoleTags",
+      "PutRolePolicy",
+      "GetRolePolicy",
+      "DeleteRolePolicy",
+      "ListRolePolicies",
+      "AttachRolePolicy",
+      "DetachRolePolicy",
+      "ListAttachedRolePolicies",
+      "ListInstanceProfilesForRole",
+      "CreatePolicy",
+      "GetPolicy",
+      "DeletePolicy",
+      "ListPolicies",
+      "CreatePolicyVersion",
+      "GetPolicyVersion",
+      "DeletePolicyVersion",
+      "ListPolicyVersions",
+      "SetDefaultPolicyVersion",
+      "TagPolicy",
+      "UntagPolicy",
+      "ListPolicyTags"
+    ],
+    "shapes": {
+      "CreateRoleRequest": [
+        "Path",
+        "RoleName",
+        "AssumeRolePolicyDocument",
+        "Description",
+        "MaxSessionDuration",
+        "Tags"
+      ],
+      "CreateRoleResponse": [
+        "Role"
+      ],
+      "GetRoleRequest": [
+        "RoleName"
+      ],
+      "GetRoleResponse": [
+        "Role"
+      ],
+      "DeleteRoleRequest": [
+        "RoleName"
+      ],
+      "ListRolesRequest": [
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListRolesResponse": [
+        "Roles",
+        "IsTruncated",
+        "Marker"
+      ],
+      "UpdateRoleRequest": [
+        "RoleName",
+        "Description",
+        "MaxSessionDuration"
+      ],
+      "UpdateRoleResponse": [],
+      "UpdateAssumeRolePolicyRequest": [
+        "RoleName",
+        "PolicyDocument"
+      ],
+      "TagRoleRequest": [
+        "RoleName",
+        "Tags"
+      ],
+      "UntagRoleRequest": [
+        "RoleName",
+        "TagKeys"
+      ],
+      "ListRoleTagsRequest": [
+        "RoleName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListRoleTagsResponse": [
+        "Tags",
+        "IsTruncated",
+        "Marker"
+      ],
+      "PutRolePolicyRequest": [
+        "RoleName",
+        "PolicyName",
+        "PolicyDocument"
+      ],
+      "GetRolePolicyRequest": [
+        "RoleName",
+        "PolicyName"
+      ],
+      "GetRolePolicyResponse": [
+        "RoleName",
+        "PolicyName",
+        "PolicyDocument"
+      ],
+      "DeleteRolePolicyRequest": [
+        "RoleName",
+        "PolicyName"
+      ],
+      "ListRolePoliciesRequest": [
+        "RoleName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListRolePoliciesResponse": [
+        "PolicyNames",
+        "IsTruncated",
+        "Marker"
+      ],
+      "AttachRolePolicyRequest": [
+        "RoleName",
+        "PolicyArn"
+      ],
+      "DetachRolePolicyRequest": [
+        "RoleName",
+        "PolicyArn"
+      ],
+      "ListAttachedRolePoliciesRequest": [
+        "RoleName",
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListAttachedRolePoliciesResponse": [
+        "AttachedPolicies",
+        "IsTruncated",
+        "Marker"
+      ],
+      "ListInstanceProfilesForRoleRequest": [
+        "RoleName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListInstanceProfilesForRoleResponse": [
+        "InstanceProfiles",
+        "IsTruncated",
+        "Marker"
+      ],
+      "CreatePolicyRequest": [
+        "PolicyName",
+        "Path",
+        "PolicyDocument",
+        "Description",
+        "Tags"
+      ],
+      "CreatePolicyResponse": [
+        "Policy"
+      ],
+      "GetPolicyRequest": [
+        "PolicyArn"
+      ],
+      "GetPolicyResponse": [
+        "Policy"
+      ],
+      "DeletePolicyRequest": [
+        "PolicyArn"
+      ],
+      "ListPoliciesRequest": [
+        "Scope",
+        "OnlyAttached",
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListPoliciesResponse": [
+        "Policies",
+        "IsTruncated",
+        "Marker"
+      ],
+      "CreatePolicyVersionRequest": [
+        "PolicyArn",
+        "PolicyDocument",
+        "SetAsDefault"
+      ],
+      "CreatePolicyVersionResponse": [
+        "PolicyVersion"
+      ],
+      "GetPolicyVersionRequest": [
+        "PolicyArn",
+        "VersionId"
+      ],
+      "GetPolicyVersionResponse": [
+        "PolicyVersion"
+      ],
+      "DeletePolicyVersionRequest": [
+        "PolicyArn",
+        "VersionId"
+      ],
+      "ListPolicyVersionsRequest": [
+        "PolicyArn",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListPolicyVersionsResponse": [
+        "Versions",
+        "IsTruncated",
+        "Marker"
+      ],
+      "SetDefaultPolicyVersionRequest": [
+        "PolicyArn",
+        "VersionId"
+      ],
+      "TagPolicyRequest": [
+        "PolicyArn",
+        "Tags"
+      ],
+      "UntagPolicyRequest": [
+        "PolicyArn",
+        "TagKeys"
+      ],
+      "ListPolicyTagsRequest": [
+        "PolicyArn",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListPolicyTagsResponse": [
+        "Tags",
+        "IsTruncated",
+        "Marker"
+      ],
+      "Role": [
+        "Path",
+        "RoleName",
+        "RoleId",
+        "Arn",
+        "CreateDate",
+        "AssumeRolePolicyDocument",
+        "Description",
+        "MaxSessionDuration",
+        "Tags"
+      ],
+      "Policy": [
+        "PolicyName",
+        "PolicyId",
+        "Arn",
+        "Path",
+        "DefaultVersionId",
+        "AttachmentCount",
+        "PermissionsBoundaryUsageCount",
+        "IsAttachable",
+        "Description",
+        "CreateDate",
+        "UpdateDate",
+        "Tags"
+      ],
+      "PolicyVersion": [
+        "Document",
+        "VersionId",
+        "IsDefaultVersion",
+        "CreateDate"
+      ],
+      "AttachedPolicy": [
+        "PolicyName",
+        "PolicyArn"
+      ],
+      "InstanceProfile": [
+        "Path",
+        "InstanceProfileName",
+        "InstanceProfileId",
+        "Arn",
+        "CreateDate",
+        "Roles"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "UpdateRoleDescriptionRequest": [
+        "RoleName",
+        "Description"
+      ],
+      "UpdateRoleDescriptionResponse": [
+        "Role"
+      ]
+    }
   }
 }
