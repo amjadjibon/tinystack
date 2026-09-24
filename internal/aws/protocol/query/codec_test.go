@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 )
@@ -22,6 +23,7 @@ type fixture struct {
 	Enabled *bool             `query:"Enabled"`
 	Ratio   *float64          `query:"Ratio"`
 	Nested  *inner            `query:"Nested"`
+	At      *time.Time        `query:"At"`
 	Ids     []string          `query:"Ids,member=Id"`
 	Flat    []inner           `query:"Item,flat"`
 	Tags    map[string]string `query:"Tags"`
@@ -34,7 +36,7 @@ func TestDecode(t *testing.T) {
 		"Action=Op&Version=1&Name=a%20b&Count=-3&Enabled=true&Ratio=1.5&Nested.Label=n&Nested.Blob=AAE%3D" +
 			"&Ids.Id.1=x&Ids.Id.2=y&Item.1.Label=i1&Item.2.Label=i2" +
 			"&Tags.entry.1.key=k&Tags.entry.1.value=v" +
-			"&Attr.1.Name=color&Attr.1.Value.Label=blue&Empty=",
+			"&Attr.1.Name=color&Attr.1.Value.Label=blue&Empty=&At=2024-05-06T07%3A08%3A09Z",
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -47,6 +49,7 @@ func TestDecode(t *testing.T) {
 
 	label := func(s string) *string { return &s }
 	count, enabled, ratio := int64(-3), true, 1.5
+	at := time.Date(2024, 5, 6, 7, 8, 9, 0, time.UTC)
 	want := fixture{
 		Name: label("a b"), Count: &count, Enabled: &enabled, Ratio: &ratio,
 		Nested: &inner{Label: label("n"), Blob: []byte{0, 1}},
@@ -55,6 +58,7 @@ func TestDecode(t *testing.T) {
 		Tags:   map[string]string{"k": "v"},
 		Attrs:  map[string]inner{"color": {Label: label("blue")}},
 		Empty:  []string{},
+		At:     &at,
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -72,6 +76,7 @@ func TestDecodeRejects(t *testing.T) {
 		"bad integer":    "Count=1.5",
 		"bad bool":       "Enabled=yes",
 		"bad blob":       "Nested.Blob=!!",
+		"bad timestamp":  "At=yesterday",
 		"missing key":    "Tags.entry.1.value=v",
 		"missing value":  "Tags.entry.1.key=k",
 		"duplicate key":  "Tags.entry.1.key=k&Tags.entry.1.value=v&Tags.entry.2.key=k&Tags.entry.2.value=w",
@@ -92,6 +97,7 @@ func TestDecodeRejects(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	label := "a<b"
+	at := time.Date(2024, 5, 6, 7, 8, 9, 0, time.FixedZone("", 3600))
 	w := httptest.NewRecorder()
 	Write(w, 200, "Op", "urn:ns", "req-1", &fixture{
 		Name:  &label,
@@ -99,9 +105,10 @@ func TestWrite(t *testing.T) {
 		Flat:  []inner{{Label: &label}},
 		Tags:  map[string]string{"b": "2", "a": "1"},
 		Attrs: map[string]inner{"k": {Blob: []byte{0, 1}}},
+		At:    &at,
 	})
 	want := `<?xml version="1.0" encoding="UTF-8"?>` + "\n" +
-		`<OpResponse xmlns="urn:ns"><OpResult><Name>a&lt;b</Name><Ids><Id>x</Id></Ids>` +
+		`<OpResponse xmlns="urn:ns"><OpResult><Name>a&lt;b</Name><At>2024-05-06T06:08:09Z</At><Ids><Id>x</Id></Ids>` +
 		`<Item><Label>a&lt;b</Label></Item>` +
 		`<Tags><entry><key>a</key><value>1</value></entry><entry><key>b</key><value>2</value></entry></Tags>` +
 		`<Attr><Name>k</Name><Value><Blob>AAE=</Blob></Value></Attr></OpResult>` +

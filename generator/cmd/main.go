@@ -66,6 +66,8 @@ type (
 		namespace string
 		out       bytes.Buffer
 		query     bool
+		// queryOnly marks pure awsQuery models, whose messages are never JSON.
+		queryOnly bool
 		rest      bool
 		xml       bool
 	}
@@ -104,9 +106,10 @@ func (g *generator) typeName(id string) (string, error) {
 	case "integer", "long":
 		return "int64", nil
 	case "timestamp":
-		// REST XML carries timestamps as ISO 8601 text and HTTP dates, which
-		// time.Time encodes; the JSON protocols use epoch seconds.
-		if g.xml {
+		// REST XML and AWS Query carry timestamps as ISO 8601 text (REST XML
+		// also as HTTP dates), which time.Time encodes; the JSON protocols use
+		// epoch seconds.
+		if g.xml || g.queryOnly {
 			g.imports["time"] = true
 			return "time.Time", nil
 		}
@@ -210,7 +213,9 @@ func (g *generator) queryTag(member reference, name string) (string, error) {
 
 	switch target.Type {
 	case "timestamp":
-		return "", fmt.Errorf("timestamps are not supported by the query codec")
+		if !g.queryOnly {
+			return "", fmt.Errorf("timestamps of AWS Query compatible JSON services are not supported")
+		}
 	case shapeList:
 		if nested(target.Member.Target) {
 			return "", fmt.Errorf("nested collections are not supported by the query codec")
@@ -524,7 +529,7 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 			return nil, "", false, fmt.Errorf("awsQuery models declare their own namespace; remove the query overlay")
 		}
 
-		g.query = true
+		g.query, g.queryOnly = true, true
 		return []string{catalog.AWSQuery}, ns.URI, false, nil
 	default:
 		return nil, "", false, fmt.Errorf("model is not AWS JSON, AWS Query, REST XML, or REST JSON")

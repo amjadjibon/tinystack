@@ -2,7 +2,8 @@
 //
 // A tag names the member's query key and XML element, followed by options:
 // "flat" for flattened collections, and "member=", "key=", or "value=" for
-// non-default list member and map entry names.
+// non-default list member and map entry names. Timestamps are time.Time values
+// written as ISO 8601 date-times.
 package query
 
 import (
@@ -16,9 +17,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 )
+
+var timeType = reflect.TypeFor[time.Time]()
 
 type tag struct {
 	name, member, key, value string
@@ -117,7 +121,7 @@ func (d *decoder) field(v reflect.Value, key string, tg tag) error {
 	case reflect.Pointer:
 		elem := v.Type().Elem()
 		_, set := d.params[key]
-		if elem.Kind() == reflect.Struct {
+		if elem.Kind() == reflect.Struct && elem != timeType {
 			set = d.nested(key)
 		}
 
@@ -133,6 +137,10 @@ func (d *decoder) field(v reflect.Value, key string, tg tag) error {
 		v.Set(p)
 		return nil
 	case reflect.Struct:
+		if v.Type() == timeType {
+			return d.scalar(v, key)
+		}
+
 		return d.structure(v, key)
 	case reflect.Slice:
 		if v.Type().Elem().Kind() != reflect.Uint8 {
@@ -305,6 +313,13 @@ func (d *decoder) scalar(v reflect.Value, key string) error {
 		}
 
 		v.SetBytes(b)
+	case reflect.Struct:
+		ts, err := time.Parse(time.RFC3339, s)
+		if err != nil {
+			return invalid("Parameter %s must be an ISO 8601 date-time", key)
+		}
+
+		v.Set(reflect.ValueOf(ts))
 	default:
 		return fmt.Errorf("query: unsupported kind %s for %s", v.Kind(), key)
 	}
@@ -312,13 +327,23 @@ func (d *decoder) scalar(v reflect.Value, key string) error {
 	return nil
 }
 
-func open(b *bytes.Buffer, name string)     { b.WriteString("<" + name + ">") }
-func closeTag(b *bytes.Buffer, name string) { b.WriteString("</" + name + ">") }
+func open(b *bytes.Buffer, name string) {
+	b.WriteString("<")
+	b.WriteString(name)
+	b.WriteString(">")
+}
+
+func closeTag(b *bytes.Buffer, name string) {
+	b.WriteString("</")
+	b.WriteString(name)
+	b.WriteString(">")
+}
 
 func text(b *bytes.Buffer, s string) { _ = xml.EscapeText(b, []byte(s)) }
 
 func namespaced(b *bytes.Buffer, name, namespace string) {
-	b.WriteString("<" + name)
+	b.WriteString("<")
+	b.WriteString(name)
 	if namespace != "" {
 		b.WriteString(` xmlns="`)
 		text(b, namespace)
@@ -370,7 +395,9 @@ func WriteError(w http.ResponseWriter, namespace, requestID string, e *awserror.
 	var b bytes.Buffer
 	b.WriteString(xml.Header)
 	namespaced(&b, "ErrorResponse", namespace)
-	b.WriteString("<Error><Type>" + e.Fault() + "</Type><Code>")
+	b.WriteString("<Error><Type>")
+	b.WriteString(e.Fault())
+	b.WriteString("</Type><Code>")
 	text(&b, code)
 	b.WriteString("</Code><Message>")
 	text(&b, e.Message)
@@ -451,6 +478,11 @@ func element(b *bytes.Buffer, name string, v reflect.Value) {
 	open(b, name)
 	switch v.Kind() {
 	case reflect.Struct:
+		if ts, ok := v.Interface().(time.Time); ok {
+			b.WriteString(ts.UTC().Format(time.RFC3339))
+			break
+		}
+
 		encodeStruct(b, v)
 	case reflect.String:
 		text(b, v.String())

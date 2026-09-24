@@ -133,10 +133,12 @@ func TestPureQueryFixture(t *testing.T) {
     "smithy.api#xmlNamespace": {"uri": "urn:fixture"}}},
   "fixture#Put": {"type": "operation", "input": {"target": "fixture#In"}, "output": {"target": "smithy.api#Unit"},
     "errors": [{"target": "fixture#Missing"}]},
-  "fixture#In": {"type": "structure", "members": {"Ids": {"target": "fixture#IdList"}}},
+  "fixture#In": {"type": "structure", "members": {"Ids": {"target": "fixture#IdList"},
+    "At": {"target": "smithy.api#Timestamp"}}},
   "fixture#IdList": {"type": "list", "member": {"target": "smithy.api#String"}},
   "fixture#Missing": {"type": "structure", "traits": {"smithy.api#error": "client"}},
-  "smithy.api#String": {"type": "string"}
+  "smithy.api#String": {"type": "string"},
+  "smithy.api#Timestamp": {"type": "timestamp"}
 }}`
 	profile := serviceProfile{Operations: []string{"Put"}}
 	source, err := generate("fixture", []byte(model), profile)
@@ -146,6 +148,7 @@ func TestPureQueryFixture(t *testing.T) {
 
 	for _, want := range []string{
 		`query:"Ids"`,
+		"At  *time.Time `json:\"At,omitempty\" query:\"At\"`",
 		`TargetPrefix: "", QueryCompatible: false, XMLNamespace: "urn:fixture", Protocols: []string{"awsQuery"}`,
 		`"Missing": catalog.ErrorBinding{QueryCode: "Missing", MessageMember: "", StatusCode: 400}`,
 		`Target: "Put", Version: "2020-01-01", ContentType: "application/x-www-form-urlencoded"`,
