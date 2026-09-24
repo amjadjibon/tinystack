@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"regexp"
 	"sort"
 	"strings"
@@ -20,6 +21,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
+	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -30,6 +32,7 @@ const (
 	arnScheme       = "arn"
 	attrDisplayName = "DisplayName"
 	attrRaw         = "RawMessageDelivery"
+	attrTopicArn    = "TopicArn"
 )
 
 var _ api.API = (*Service)(nil)
@@ -57,6 +60,7 @@ type subscription struct {
 
 type topic struct {
 	Attributes    map[string]string `json:",omitempty"`
+	Tags          map[string]string `json:",omitempty"`
 	Subscriptions []subscription
 	CreatedAt     int64
 }
@@ -113,7 +117,7 @@ func resolve(ctx context.Context, arn *string, sub bool) (key, id string, err er
 		return "", "", err
 	}
 
-	name, want := "TopicArn", 6
+	name, want := attrTopicArn, 6
 	if sub {
 		name, want = "SubscriptionArn", 7
 	}
@@ -209,19 +213,25 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 	}
 
 	for k, v := range in.Attributes {
-		if k != attrDisplayName {
-			return nil, invalid("Attribute %s is not supported", k)
+		if guardErr := checkTopicAttribute(k, v); guardErr != nil {
+			return nil, guardErr
 		}
+	}
 
-		if len(v) > 100 {
-			return nil, invalid("DisplayName must be at most 100 characters")
-		}
+	tags, err := tagMap(in.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	if tagErr := tagging.Check(tags); tagErr != nil {
+		return nil, tagError(tagErr)
 	}
 
 	key := topicKey(m, name)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); !exists {
-			return save(tx, key, &topic{Attributes: in.Attributes, CreatedAt: s.now().Unix()})
+			t := &topic{Attributes: in.Attributes, Tags: tags, CreatedAt: s.now().Unix()}
+			return save(tx, key, t)
 		}
 
 		t, loadErr := load(tx, key)
@@ -231,6 +241,16 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 
 		if t.Attributes[attrDisplayName] != in.Attributes[attrDisplayName] {
 			return invalid("Topic already exists with different attributes")
+		}
+
+		for k, v := range in.Attributes {
+			if t.Attributes[k] != v {
+				return invalid("Topic already exists with different attributes")
+			}
+		}
+
+		if len(tags) > 0 && !maps.Equal(t.Tags, tags) {
+			return invalid("Tags Reason: Topic already exists with different tags")
 		}
 
 		return nil

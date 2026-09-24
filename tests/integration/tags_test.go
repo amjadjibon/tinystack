@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
+	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
@@ -66,5 +69,88 @@ func TestSQSTags(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != 200 || !strings.Contains(string(body), "<Tag><Key>env</Key><Value>dev</Value></Tag>") {
 		t.Fatalf("%d %s", resp.StatusCode, body)
+	}
+}
+
+func TestSNSTopicAttributesAndTags(t *testing.T) {
+	s := server(t)
+	c := snsClient(s, "test")
+	ctx := context.Background()
+	created, err := c.CreateTopic(ctx, &sns.CreateTopicInput{
+		Name: aws.String("tagged"), Tags: []snstypes.Tag{{Key: aws.String("team"), Value: aws.String("core")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	arn := created.TopicArn
+	_, err = c.SetTopicAttributes(ctx, &sns.SetTopicAttributesInput{
+		TopicArn: arn, AttributeName: aws.String("SQSSuccessFeedbackSampleRate"), AttributeValue: aws.String("50"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.SetTopicAttributes(ctx, &sns.SetTopicAttributesInput{
+		TopicArn: arn, AttributeName: aws.String("SQSSuccessFeedbackRoleArn"), AttributeValue: aws.String("x"),
+	})
+	code(t, err, "InvalidParameter")
+
+	attrs, err := c.GetTopicAttributes(ctx, &sns.GetTopicAttributesInput{TopicArn: arn})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var policy struct{ Statement []struct{ Resource string } }
+	if json.Unmarshal([]byte(attrs.Attributes["Policy"]), &policy) != nil || len(policy.Statement) != 1 ||
+		policy.Statement[0].Resource != *arn || attrs.Attributes["Owner"] != "000000000000" ||
+		attrs.Attributes["SQSSuccessFeedbackSampleRate"] != "50" {
+		t.Fatal(attrs.Attributes)
+	}
+
+	_, err = c.TagResource(ctx, &sns.TagResourceInput{
+		ResourceArn: arn, Tags: []snstypes.Tag{{Key: aws.String("env"), Value: aws.String("dev")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.UntagResource(ctx, &sns.UntagResourceInput{ResourceArn: arn, TagKeys: []string{"team"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tags, err := c.ListTagsForResource(ctx, &sns.ListTagsForResourceInput{ResourceArn: arn})
+	if err != nil || len(tags.Tags) != 1 || *tags.Tags[0].Key != "env" {
+		t.Fatal(tags, err)
+	}
+
+	missing := aws.String("arn:aws:sns:us-east-1:000000000000:missing")
+	_, err = c.ListTagsForResource(ctx, &sns.ListTagsForResourceInput{ResourceArn: missing})
+	code(t, err, "ResourceNotFound")
+
+	queueURL, queue := queueARN(t, sqsClient(s, "test"), "inbox")
+	_ = queueURL
+	sub, err := c.Subscribe(ctx, &sns.SubscribeInput{TopicArn: arn, Protocol: aws.String("sqs"), Endpoint: &queue})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.SetSubscriptionAttributes(ctx, &sns.SetSubscriptionAttributesInput{
+		SubscriptionArn: sub.SubscriptionArn,
+		AttributeName:   aws.String("RawMessageDelivery"),
+		AttributeValue:  aws.String("true"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	subAttrs, err := c.GetSubscriptionAttributes(
+		ctx,
+		&sns.GetSubscriptionAttributesInput{SubscriptionArn: sub.SubscriptionArn},
+	)
+	if err != nil || subAttrs.Attributes["RawMessageDelivery"] != "true" ||
+		subAttrs.Attributes["Endpoint"] != queue || subAttrs.Attributes["PendingConfirmation"] != "false" {
+		t.Fatal(subAttrs, err)
 	}
 }

@@ -6,9 +6,15 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
 
+type Tag struct {
+	Key   *string `json:"Key,omitempty" query:"Key"`
+	Value *string `json:"Value,omitempty" query:"Value"`
+}
+
 type CreateTopicInput struct {
 	Name       *string           `json:"Name,omitempty" query:"Name"`
 	Attributes map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+	Tags       []Tag             `json:"Tags,omitempty" query:"Tags"`
 }
 
 type CreateTopicResponse struct {
@@ -97,6 +103,62 @@ type PublishResponse struct {
 	MessageId *string `json:"MessageId,omitempty" query:"MessageId"`
 }
 
+type GetTopicAttributesInput struct {
+	TopicArn *string `json:"TopicArn,omitempty" query:"TopicArn"`
+}
+
+type GetTopicAttributesResponse struct {
+	Attributes map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type SetTopicAttributesOutput struct{}
+
+type SetTopicAttributesInput struct {
+	TopicArn       *string `json:"TopicArn,omitempty" query:"TopicArn"`
+	AttributeName  *string `json:"AttributeName,omitempty" query:"AttributeName"`
+	AttributeValue *string `json:"AttributeValue,omitempty" query:"AttributeValue"`
+}
+
+type GetSubscriptionAttributesInput struct {
+	SubscriptionArn *string `json:"SubscriptionArn,omitempty" query:"SubscriptionArn"`
+}
+
+type GetSubscriptionAttributesResponse struct {
+	Attributes map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type SetSubscriptionAttributesOutput struct{}
+
+type SetSubscriptionAttributesInput struct {
+	SubscriptionArn *string `json:"SubscriptionArn,omitempty" query:"SubscriptionArn"`
+	AttributeName   *string `json:"AttributeName,omitempty" query:"AttributeName"`
+	AttributeValue  *string `json:"AttributeValue,omitempty" query:"AttributeValue"`
+}
+
+type TagResourceRequest struct {
+	ResourceArn *string `json:"ResourceArn,omitempty" query:"ResourceArn"`
+	Tags        []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type TagResourceResponse struct {
+}
+
+type UntagResourceRequest struct {
+	ResourceArn *string  `json:"ResourceArn,omitempty" query:"ResourceArn"`
+	TagKeys     []string `json:"TagKeys,omitempty" query:"TagKeys"`
+}
+
+type UntagResourceResponse struct {
+}
+
+type ListTagsForResourceRequest struct {
+	ResourceArn *string `json:"ResourceArn,omitempty" query:"ResourceArn"`
+}
+
+type ListTagsForResourceResponse struct {
+	Tags []Tag `json:"Tags,omitempty" query:"Tags"`
+}
+
 type API interface {
 	CreateTopic(context.Context, *CreateTopicInput) (*CreateTopicResponse, error)
 	DeleteTopic(context.Context, *DeleteTopicInput) (*DeleteTopicOutput, error)
@@ -106,10 +168,17 @@ type API interface {
 	ListSubscriptions(context.Context, *ListSubscriptionsInput) (*ListSubscriptionsResponse, error)
 	ListSubscriptionsByTopic(context.Context, *ListSubscriptionsByTopicInput) (*ListSubscriptionsByTopicResponse, error)
 	Publish(context.Context, *PublishInput) (*PublishResponse, error)
+	GetTopicAttributes(context.Context, *GetTopicAttributesInput) (*GetTopicAttributesResponse, error)
+	SetTopicAttributes(context.Context, *SetTopicAttributesInput) (*SetTopicAttributesOutput, error)
+	GetSubscriptionAttributes(context.Context, *GetSubscriptionAttributesInput) (*GetSubscriptionAttributesResponse, error)
+	SetSubscriptionAttributes(context.Context, *SetSubscriptionAttributesInput) (*SetSubscriptionAttributesOutput, error)
+	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
+	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
+	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "sns", SigningName: "sns", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://sns.amazonaws.com/doc/2010-03-31/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"AuthorizationErrorException": catalog.ErrorBinding{QueryCode: "AuthorizationError", MessageMember: "", StatusCode: 403}, "ConcurrentAccessException": catalog.ErrorBinding{QueryCode: "ConcurrentAccess", MessageMember: "", StatusCode: 400}, "EndpointDisabledException": catalog.ErrorBinding{QueryCode: "EndpointDisabled", MessageMember: "", StatusCode: 400}, "FilterPolicyLimitExceededException": catalog.ErrorBinding{QueryCode: "FilterPolicyLimitExceeded", MessageMember: "", StatusCode: 403}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "InternalError", MessageMember: "", StatusCode: 500}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "InvalidParameter", MessageMember: "", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "ParameterValueInvalid", MessageMember: "", StatusCode: 400}, "InvalidSecurityException": catalog.ErrorBinding{QueryCode: "InvalidSecurity", MessageMember: "", StatusCode: 403}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "InvalidState", MessageMember: "", StatusCode: 400}, "KMSAccessDeniedException": catalog.ErrorBinding{QueryCode: "KMSAccessDenied", MessageMember: "", StatusCode: 400}, "KMSDisabledException": catalog.ErrorBinding{QueryCode: "KMSDisabled", MessageMember: "", StatusCode: 400}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "KMSInvalidState", MessageMember: "", StatusCode: 400}, "KMSNotFoundException": catalog.ErrorBinding{QueryCode: "KMSNotFound", MessageMember: "", StatusCode: 400}, "KMSOptInRequired": catalog.ErrorBinding{QueryCode: "KMSOptInRequired", MessageMember: "", StatusCode: 403}, "KMSThrottlingException": catalog.ErrorBinding{QueryCode: "KMSThrottling", MessageMember: "", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "NotFound", MessageMember: "", StatusCode: 404}, "PlatformApplicationDisabledException": catalog.ErrorBinding{QueryCode: "PlatformApplicationDisabled", MessageMember: "", StatusCode: 400}, "ReplayLimitExceededException": catalog.ErrorBinding{QueryCode: "ReplayLimitExceeded", MessageMember: "", StatusCode: 403}, "StaleTagException": catalog.ErrorBinding{QueryCode: "StaleTag", MessageMember: "", StatusCode: 400}, "SubscriptionLimitExceededException": catalog.ErrorBinding{QueryCode: "SubscriptionLimitExceeded", MessageMember: "", StatusCode: 403}, "TagLimitExceededException": catalog.ErrorBinding{QueryCode: "TagLimitExceeded", MessageMember: "", StatusCode: 400}, "TagPolicyException": catalog.ErrorBinding{QueryCode: "TagPolicy", MessageMember: "", StatusCode: 400}, "TopicLimitExceededException": catalog.ErrorBinding{QueryCode: "TopicLimitExceeded", MessageMember: "", StatusCode: 403}, "ValidationException": catalog.ErrorBinding{QueryCode: "ValidationException", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "sns", SigningName: "sns", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://sns.amazonaws.com/doc/2010-03-31/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"AuthorizationErrorException": catalog.ErrorBinding{QueryCode: "AuthorizationError", MessageMember: "", StatusCode: 403}, "ConcurrentAccessException": catalog.ErrorBinding{QueryCode: "ConcurrentAccess", MessageMember: "", StatusCode: 400}, "EndpointDisabledException": catalog.ErrorBinding{QueryCode: "EndpointDisabled", MessageMember: "", StatusCode: 400}, "FilterPolicyLimitExceededException": catalog.ErrorBinding{QueryCode: "FilterPolicyLimitExceeded", MessageMember: "", StatusCode: 403}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "InternalError", MessageMember: "", StatusCode: 500}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "InvalidParameter", MessageMember: "", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "ParameterValueInvalid", MessageMember: "", StatusCode: 400}, "InvalidSecurityException": catalog.ErrorBinding{QueryCode: "InvalidSecurity", MessageMember: "", StatusCode: 403}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "InvalidState", MessageMember: "", StatusCode: 400}, "KMSAccessDeniedException": catalog.ErrorBinding{QueryCode: "KMSAccessDenied", MessageMember: "", StatusCode: 400}, "KMSDisabledException": catalog.ErrorBinding{QueryCode: "KMSDisabled", MessageMember: "", StatusCode: 400}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "KMSInvalidState", MessageMember: "", StatusCode: 400}, "KMSNotFoundException": catalog.ErrorBinding{QueryCode: "KMSNotFound", MessageMember: "", StatusCode: 400}, "KMSOptInRequired": catalog.ErrorBinding{QueryCode: "KMSOptInRequired", MessageMember: "", StatusCode: 403}, "KMSThrottlingException": catalog.ErrorBinding{QueryCode: "KMSThrottling", MessageMember: "", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "NotFound", MessageMember: "", StatusCode: 404}, "PlatformApplicationDisabledException": catalog.ErrorBinding{QueryCode: "PlatformApplicationDisabled", MessageMember: "", StatusCode: 400}, "ReplayLimitExceededException": catalog.ErrorBinding{QueryCode: "ReplayLimitExceeded", MessageMember: "", StatusCode: 403}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "", StatusCode: 404}, "StaleTagException": catalog.ErrorBinding{QueryCode: "StaleTag", MessageMember: "", StatusCode: 400}, "SubscriptionLimitExceededException": catalog.ErrorBinding{QueryCode: "SubscriptionLimitExceeded", MessageMember: "", StatusCode: 403}, "TagLimitExceededException": catalog.ErrorBinding{QueryCode: "TagLimitExceeded", MessageMember: "", StatusCode: 400}, "TagPolicyException": catalog.ErrorBinding{QueryCode: "TagPolicy", MessageMember: "", StatusCode: 400}, "TopicLimitExceededException": catalog.ErrorBinding{QueryCode: "TopicLimitExceeded", MessageMember: "", StatusCode: 403}, "ValidationException": catalog.ErrorBinding{QueryCode: "ValidationException", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTopic": {Name: "CreateTopic", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateTopic", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateTopicInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTopic(ctx, input.(*CreateTopicInput))
 		}},
@@ -130,5 +199,26 @@ func Descriptor(api API) catalog.Service {
 			return api.ListSubscriptionsByTopic(ctx, input.(*ListSubscriptionsByTopicInput))
 		}},
 		"Publish": {Name: "Publish", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Publish", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PublishInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Publish(ctx, input.(*PublishInput)) }},
+		"GetTopicAttributes": {Name: "GetTopicAttributes", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetTopicAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetTopicAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTopicAttributes(ctx, input.(*GetTopicAttributesInput))
+		}},
+		"SetTopicAttributes": {Name: "SetTopicAttributes", UnitOutput: true, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SetTopicAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SetTopicAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetTopicAttributes(ctx, input.(*SetTopicAttributesInput))
+		}},
+		"GetSubscriptionAttributes": {Name: "GetSubscriptionAttributes", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetSubscriptionAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetSubscriptionAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSubscriptionAttributes(ctx, input.(*GetSubscriptionAttributesInput))
+		}},
+		"SetSubscriptionAttributes": {Name: "SetSubscriptionAttributes", UnitOutput: true, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SetSubscriptionAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SetSubscriptionAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetSubscriptionAttributes(ctx, input.(*SetSubscriptionAttributesInput))
+		}},
+		"TagResource": {Name: "TagResource", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TagResource", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagResource(ctx, input.(*TagResourceRequest))
+		}},
+		"UntagResource": {Name: "UntagResource", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UntagResource", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagResource(ctx, input.(*UntagResourceRequest))
+		}},
+		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListTagsForResource", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
 	}}
 }

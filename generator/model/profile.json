@@ -261,12 +261,20 @@
       "Unsubscribe",
       "ListSubscriptions",
       "ListSubscriptionsByTopic",
-      "Publish"
+      "Publish",
+      "GetTopicAttributes",
+      "SetTopicAttributes",
+      "GetSubscriptionAttributes",
+      "SetSubscriptionAttributes",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
     ],
     "shapes": {
       "CreateTopicInput": [
         "Name",
-        "Attributes"
+        "Attributes",
+        "Tags"
       ],
       "CreateTopicResponse": [
         "TopicArn"
@@ -333,6 +341,46 @@
         "DataType",
         "StringValue",
         "BinaryValue"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "GetTopicAttributesInput": [
+        "TopicArn"
+      ],
+      "GetTopicAttributesResponse": [
+        "Attributes"
+      ],
+      "SetTopicAttributesInput": [
+        "TopicArn",
+        "AttributeName",
+        "AttributeValue"
+      ],
+      "GetSubscriptionAttributesInput": [
+        "SubscriptionArn"
+      ],
+      "GetSubscriptionAttributesResponse": [
+        "Attributes"
+      ],
+      "SetSubscriptionAttributesInput": [
+        "SubscriptionArn",
+        "AttributeName",
+        "AttributeValue"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
       ]
     }
   },
