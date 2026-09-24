@@ -18,6 +18,8 @@ import (
 
 const (
 	traitStreaming = "smithy.api#streaming"
+	traitSensitive = "smithy.api#sensitive"
+	shapeStructure = "structure"
 	shapeUnion     = "union"
 	shapeList      = "list"
 	shapeMap       = "map"
@@ -92,6 +94,40 @@ func (g *generator) fields(id string) []string {
 	return keys
 }
 
+// sensitive reports whether id, or a generated member reachable from it, is
+// marked smithy.api#sensitive.
+func (g *generator) sensitive(id string, visited map[string]bool) bool {
+	if visited[id] {
+		return false
+	}
+
+	visited[id] = true
+	s := g.model.Shapes[id]
+	if _, ok := s.Traits[traitSensitive]; ok {
+		return true
+	}
+
+	var members []reference
+	switch s.Type {
+	case shapeList:
+		members = []reference{s.Member}
+	case shapeMap:
+		members = []reference{s.Key, s.Value}
+	case shapeStructure, shapeUnion:
+		for _, name := range g.fields(id) {
+			members = append(members, s.Members[name])
+		}
+	}
+
+	for _, m := range members {
+		if _, ok := m.Traits[traitSensitive]; ok || g.sensitive(m.Target, visited) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (g *generator) typeName(id string) (string, error) {
 	s, ok := g.model.Shapes[id]
 	if !ok {
@@ -119,7 +155,7 @@ func (g *generator) typeName(id string) (string, error) {
 		return "float64", nil
 	case "blob":
 		return "[]byte", nil
-	case "structure", shapeUnion:
+	case shapeStructure, shapeUnion:
 		return short(id), nil
 	case shapeList:
 		t, e := g.typeName(s.Member.Target)
@@ -337,7 +373,7 @@ func (g *generator) emit(id string) error {
 		}
 
 		return g.emit(s.Value.Target)
-	case "structure", shapeUnion:
+	case shapeStructure, shapeUnion:
 		fields := g.fields(id)
 		for _, n := range fields {
 			m, ok := s.Members[n]
@@ -673,12 +709,13 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 
 		fmt.Fprintf(
 			&g.out,
-			"%q:{Name:%q,UnitOutput:%t,Bindings:%#v,NewI"+
+			"%q:{Name:%q,UnitOutput:%t,Sensitive:%t,Bindings:%#v,NewI"+
 				"nput:func()any{return &%s{}},Invoke:func(ctx context.Context,input any)(any"+
 				",error){return api.%s(ctx,input.(*%s))}},\n",
 			op,
 			op,
 			s.Output.Target == unitShape,
+			g.sensitive(s.Input.Target, map[string]bool{}) || g.sensitive(s.Output.Target, map[string]bool{}),
 			bindings,
 			short(s.Input.Target),
 			op,

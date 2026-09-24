@@ -546,6 +546,10 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 		rec.ErrorCode, rec.ErrorMessage = c.failure.Code, c.failure.Message
 	}
 
+	if c.service != nil && c.service.Operations[m.Operation].Sensitive {
+		rec.RequestBody, rec.ResponseBody = redacted, redacted
+	}
+
 	s.requests.Add(rec)
 	s.metrics.add(c, rec.Status, rec.DurationMS/1000)
 	s.logger.Info(

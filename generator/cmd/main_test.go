@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -291,6 +292,41 @@ func TestJSON11Fixture(t *testing.T) {
 		`"aws.protocols#awsJson1_1": {}, "aws.protocols#awsQueryCompatible": {}`, 1)
 	if _, err = generate("fixture", []byte(compatible), serviceProfile{Operations: []string{"Put"}}); err == nil {
 		t.Fatal("query-compatible AWS JSON 1.1 model generated")
+	}
+}
+
+func TestSensitiveOperations(t *testing.T) {
+	model := `{"shapes": {
+  "fixture#Svc": {"type": "service", "version": "2020-01-01", "traits": {
+    "aws.protocols#awsJson1_1": {}, "aws.auth#sigv4": {"name": "fix"}}},
+  "fixture#Put": {"type": "operation", "input": {"target": "fixture#PutIn"}, "output": {"target": "smithy.api#Unit"}},
+  "fixture#Get": {"type": "operation", "input": {"target": "fixture#GetIn"}, "output": {"target": "fixture#GetOut"}},
+  "fixture#List": {"type": "operation", "input": {"target": "fixture#GetIn"}, "output": {"target": "fixture#ListOut"}},
+  "fixture#PutIn": {"type": "structure", "members": {"Name": {"target": "smithy.api#String"}}},
+  "fixture#GetIn": {"type": "structure", "members": {"Name": {"target": "smithy.api#String"}}},
+  "fixture#GetOut": {"type": "structure", "members": {"Values": {"target": "fixture#Values"}}},
+  "fixture#ListOut": {"type": "structure", "members": {"Name": {"target": "smithy.api#String"},
+    "Value": {"target": "fixture#Secret"}}},
+  "fixture#Values": {"type": "map", "key": {"target": "smithy.api#String"}, "value": {"target": "fixture#Secret"}},
+  "fixture#Secret": {"type": "string", "traits": {"smithy.api#sensitive": {}}},
+  "smithy.api#String": {"type": "string"}
+}}`
+	// List's sensitive Value is not generated, so List carries no secret.
+	profile := serviceProfile{
+		Operations: []string{"Put", "Get", "List"},
+		Shapes:     map[string][]string{"ListOut": {"Name"}},
+	}
+	source, err := generate("fixture", []byte(model), profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	flat := strings.Join(strings.Fields(string(source)), " ")
+	for op, want := range map[string]bool{"Put": false, "Get": true, "List": false} {
+		if field := fmt.Sprintf(`Name: %q, UnitOutput: %t, Sensitive: %t`, op, op == "Put", want); !strings.Contains(
+			flat, field) {
+			t.Errorf("generated source lacks %s", field)
+		}
 	}
 }
 

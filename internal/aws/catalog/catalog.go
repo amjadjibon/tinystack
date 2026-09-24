@@ -50,6 +50,10 @@ type Operation struct {
 	// AWS Query omits their Result element but writes one, even empty, for
 	// every structure output.
 	UnitOutput bool
+	// Sensitive marks operations whose input or output carries a value the
+	// model marks smithy.api#sensitive, such as a secret; the request
+	// inspector does not keep their bodies.
+	Sensitive bool
 }
 
 // Resource is one resource a service holds, as the resource browser shows it.

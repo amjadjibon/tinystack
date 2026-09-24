@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	"github.com/amjadjibon/tinystack/internal/gateway"
 )
@@ -197,5 +198,32 @@ func TestDashboard(t *testing.T) {
 	// The dashboard's own files are not AWS requests.
 	if _, records := inspect(t, s, http.MethodGet, "/_tinystack/requests"); len(records) != 0 {
 		t.Fatalf("recorded %+v", records)
+	}
+}
+
+// TestRequestInspectorRedacts keeps no body of an operation whose model marks
+// a value sensitive, such as the secret key AssumeRole returns.
+func TestRequestInspectorRedacts(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	deployer := createRole(t, s, "test", "deployer", "000000000000", "")
+	assumed, err := stsClient(s, "test", "test").AssumeRole(ctx, &sts.AssumeRoleInput{
+		RoleArn: &deployer, RoleSessionName: aws.String("ci"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, records := inspect(t, s, http.MethodGet, "/_tinystack/requests")
+	last := records[0]
+	if last.Operation != "AssumeRole" || last.ResponseSize == 0 ||
+		strings.Contains(last.ResponseBody, *assumed.Credentials.SecretAccessKey) ||
+		!strings.Contains(last.RequestBody, "redacted") || !strings.Contains(last.ResponseBody, "redacted") {
+		t.Fatalf("recorded %+v", last)
+	}
+
+	// Other operations keep their bodies.
+	if created := records[1]; created.Operation != "CreateRole" || !strings.Contains(created.RequestBody, "deployer") {
+		t.Fatalf("recorded %+v", created)
 	}
 }

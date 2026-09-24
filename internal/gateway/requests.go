@@ -12,6 +12,9 @@ import (
 // maxRecords is how many recent requests the inspector keeps.
 const maxRecords = 256
 
+// redacted replaces the bodies of operations that carry sensitive values.
+const redacted = "(redacted: this operation carries sensitive values)"
+
 // Record describes one AWS request for the request inspector. Bodies keep
 // their first recent.MaxText bytes; the sizes count every byte read or written.
 type Record struct {

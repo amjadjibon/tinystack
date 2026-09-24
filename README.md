@@ -113,7 +113,9 @@ reads only the JSON endpoints below, which scripts can use directly.
 `GET /_tinystack/requests` lists the last 256 AWS requests, newest first: time,
 request ID, method, path, service, operation, protocol, account, region, status,
 error code and message, duration, and the first 4 KiB of the request and response
-bodies (with their full sizes). `DELETE /_tinystack/requests` clears the list. The
+bodies (with their full sizes). Operations whose AWS model marks a value sensitive,
+such as STS AssumeRole or Lambda Invoke, keep only their sizes: their bodies are
+replaced with a redaction notice. `DELETE /_tinystack/requests` clears the list. The
 same fields, without the bodies, are logged as JSON to stderr.
 
 ```sh
