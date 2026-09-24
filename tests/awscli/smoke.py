@@ -30,8 +30,11 @@ def main():
         env = os.environ.copy()
         env.update(AWS_ACCESS_KEY_ID="test", AWS_SECRET_ACCESS_KEY="test", AWS_DEFAULT_REGION="us-east-1", AWS_EC2_METADATA_DISABLED="true", AWS_PAGER="")
         env.pop("AWS_SESSION_TOKEN", None)
+        # Verify signatures, so every AWS CLI call also checks botocore's SigV4 signing.
+        config = Path(directory) / "tinystack.yaml"
+        config.write_text("identity:\n  mode: verify\n  secret_keys:\n    test: test\n")
         with open(Path(directory) / "server.log", "w+") as log:
-            process = subprocess.Popen([str(binary), "start", "--port", str(port)], stdout=log, stderr=log)
+            process = subprocess.Popen([str(binary), "start", "--port", str(port), "--config", str(config)], stdout=log, stderr=log)
             try:
                 for _ in range(100):
                     if process.poll() is not None:
@@ -47,6 +50,8 @@ def main():
                 def aws(*args, service="dynamodb"):
                     result = subprocess.run(["aws", "--endpoint-url", endpoint, "--region", "us-east-1", "--output", "json", service, *args], env=env, text=True, capture_output=True, check=True, timeout=20)
                     return json.loads(result.stdout or "{}")
+                forged = subprocess.run(["aws", "--endpoint-url", endpoint, "--region", "us-east-1", "dynamodb", "list-tables"], env={**env, "AWS_SECRET_ACCESS_KEY": "wrong"}, text=True, capture_output=True, timeout=20)
+                assert forged.returncode != 0 and "InvalidSignatureException" in forged.stderr, forged.stderr
                 aws("create-table", "--table-name", "users", "--attribute-definitions", "AttributeName=PK,AttributeType=S", "--key-schema", "AttributeName=PK,KeyType=HASH", "--billing-mode", "PAY_PER_REQUEST")
                 assert aws("list-tables")["TableNames"] == ["users"]
                 item = {"PK": {"S": "one"}, "name": {"S": "TinyStack"}}
