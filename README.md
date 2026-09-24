@@ -87,7 +87,12 @@ lifecycle, and so on) and accepts their `NotImplemented` answers as "not
 configured"; setting any of them in Terraform fails. `tests/terraform/main.tf` is a
 working example.
 
-### Request inspector, deliveries, metrics, and resources
+### Dashboard and diagnostics
+
+Open `http://localhost:4566/_tinystack/` for a dashboard of recent requests,
+deliveries, resources, and metrics. It refreshes live, filters every table, and shows
+request and response bodies, payloads, and resource details when you click a row. It
+reads only the JSON endpoints below, which scripts can use directly.
 
 `GET /_tinystack/requests` lists the last 256 AWS requests, newest first: time,
 request ID, method, path, service, operation, protocol, account, region, status,

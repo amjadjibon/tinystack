@@ -102,6 +102,10 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		"/_tinystack/metrics":   http.HandlerFunc(s.serveMetrics),
 	}
 
+	for name, contentType := range dashboardFiles {
+		s.internal["/_tinystack/"+name] = serveDashboard(name, contentType)
+	}
+
 	return s, nil
 }
 
