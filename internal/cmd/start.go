@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -22,6 +23,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
@@ -60,14 +62,16 @@ func newStartCommand() *cobra.Command {
 			functions := lambda.New(store, queues, docker.New(), logger)
 			// Stop removes function containers; it must finish before exit.
 			defer functions.Stop()
+			topics := sns.New(store, queues, functions)
 			handler, err := gateway.New(
 				cfg,
 				logger,
 				dynamodbapi.Descriptor(dynamodb.New(store)),
 				sqsapi.Descriptor(queues),
-				snsapi.Descriptor(sns.New(store, queues, functions)),
+				snsapi.Descriptor(topics),
 				s3api.Descriptor(s3.New(store)),
 				lambdaapi.Descriptor(functions),
+				eventbridgeapi.Descriptor(eventbridge.New(store, queues, topics, functions)),
 			)
 			if err != nil {
 				return err
@@ -106,7 +110,7 @@ func newStartCommand() *cobra.Command {
 				"storage",
 				"memory",
 				"services",
-				"dynamodb,lambda,s3,sns,sqs",
+				"dynamodb,eventbridge,lambda,s3,sns,sqs",
 			)
 			select {
 			case err = <-done:

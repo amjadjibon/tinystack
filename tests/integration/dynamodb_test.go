@@ -21,6 +21,7 @@ import (
 	"github.com/aws/smithy-go"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -28,6 +29,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
@@ -50,14 +52,16 @@ func serverWith(t *testing.T, runtime lambda.Runtime) *httptest.Server {
 	store := &memory.Store{}
 	sqsService := queues.New(store)
 	functions := lambda.New(store, sqsService, runtime, logger)
+	snsService := topics.New(store, sqsService, functions)
 	h, err := gateway.New(
 		cfg,
 		logger,
 		api.Descriptor(provider.New(store)),
 		sqsapi.Descriptor(sqsService),
-		snsapi.Descriptor(topics.New(store, sqsService, functions)),
+		snsapi.Descriptor(snsService),
 		s3api.Descriptor(buckets.New(store)),
 		lambdaapi.Descriptor(functions),
+		eventbridgeapi.Descriptor(eventbridge.New(store, sqsService, snsService, functions)),
 	)
 	if err != nil {
 		t.Fatal(err)

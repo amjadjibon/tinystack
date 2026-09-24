@@ -22,6 +22,10 @@
     "lambda": {
       "path": "codegen/sdk-codegen/aws-models/lambda.json",
       "sha256": "5a19f9e4a3cf9f56d9efdadb0fa0f3b41e9cf174337dcd13a94668856eddb88c"
+    },
+    "eventbridge": {
+      "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
+      "sha256": "e2cb64e0c9ec540590204a414dbdc0d04827a677de0e9f6517647562b7149c40"
     }
   }
 }

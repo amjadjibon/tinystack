@@ -590,5 +590,156 @@
         "NextMarker"
       ]
     }
+  },
+  "eventbridge": {
+    "operations": [
+      "PutEvents",
+      "PutRule",
+      "DescribeRule",
+      "DeleteRule",
+      "ListRules",
+      "EnableRule",
+      "DisableRule",
+      "PutTargets",
+      "RemoveTargets",
+      "ListTargetsByRule",
+      "TestEventPattern"
+    ],
+    "shapes": {
+      "PutEventsRequest": [
+        "Entries"
+      ],
+      "PutEventsRequestEntry": [
+        "Time",
+        "Source",
+        "Resources",
+        "DetailType",
+        "Detail",
+        "EventBusName"
+      ],
+      "PutEventsResponse": [
+        "FailedEntryCount",
+        "Entries"
+      ],
+      "PutEventsResultEntry": [
+        "EventId",
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "PutRuleRequest": [
+        "Name",
+        "EventPattern",
+        "State",
+        "Description",
+        "RoleArn",
+        "EventBusName"
+      ],
+      "PutRuleResponse": [
+        "RuleArn"
+      ],
+      "DescribeRuleRequest": [
+        "Name",
+        "EventBusName"
+      ],
+      "DescribeRuleResponse": [
+        "Name",
+        "Arn",
+        "EventPattern",
+        "State",
+        "Description",
+        "RoleArn",
+        "EventBusName",
+        "CreatedBy"
+      ],
+      "DeleteRuleRequest": [
+        "Name",
+        "EventBusName",
+        "Force"
+      ],
+      "ListRulesRequest": [
+        "NamePrefix",
+        "EventBusName",
+        "NextToken",
+        "Limit"
+      ],
+      "ListRulesResponse": [
+        "Rules",
+        "NextToken"
+      ],
+      "Rule": [
+        "Name",
+        "Arn",
+        "EventPattern",
+        "State",
+        "Description",
+        "RoleArn",
+        "EventBusName"
+      ],
+      "EnableRuleRequest": [
+        "Name",
+        "EventBusName"
+      ],
+      "DisableRuleRequest": [
+        "Name",
+        "EventBusName"
+      ],
+      "PutTargetsRequest": [
+        "Rule",
+        "EventBusName",
+        "Targets"
+      ],
+      "Target": [
+        "Id",
+        "Arn",
+        "RoleArn",
+        "Input",
+        "InputPath",
+        "SqsParameters"
+      ],
+      "SqsParameters": [
+        "MessageGroupId"
+      ],
+      "PutTargetsResponse": [
+        "FailedEntryCount",
+        "FailedEntries"
+      ],
+      "PutTargetsResultEntry": [
+        "TargetId",
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "RemoveTargetsRequest": [
+        "Rule",
+        "EventBusName",
+        "Ids",
+        "Force"
+      ],
+      "RemoveTargetsResponse": [
+        "FailedEntryCount",
+        "FailedEntries"
+      ],
+      "RemoveTargetsResultEntry": [
+        "TargetId",
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "ListTargetsByRuleRequest": [
+        "Rule",
+        "EventBusName",
+        "NextToken",
+        "Limit"
+      ],
+      "ListTargetsByRuleResponse": [
+        "Targets",
+        "NextToken"
+      ],
+      "TestEventPatternRequest": [
+        "EventPattern",
+        "Event"
+      ],
+      "TestEventPatternResponse": [
+        "Result"
+      ]
+    }
   }
 }
