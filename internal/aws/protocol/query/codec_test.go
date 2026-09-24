@@ -111,9 +111,15 @@ func TestWrite(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	Write(w, 200, "Unit", "urn:ns", "req-2", &struct{}{})
+	Write(w, 200, "Unit", "urn:ns", "req-2", nil)
 	if strings.Contains(w.Body.String(), "UnitResult") {
-		t.Fatal("empty output wrote a result element")
+		t.Fatal("unit output wrote a result element")
+	}
+
+	w = httptest.NewRecorder()
+	Write(w, 200, "Empty", "urn:ns", "req-2", &struct{}{})
+	if !strings.Contains(w.Body.String(), "<EmptyResult></EmptyResult>") {
+		t.Fatalf("empty structure output wrote no result element: %s", w.Body.String())
 	}
 
 	w = httptest.NewRecorder()

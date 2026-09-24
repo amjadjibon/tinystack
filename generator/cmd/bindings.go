@@ -152,10 +152,10 @@ func memberBindings(
 
 		switch {
 		case slices.Contains(selected, name):
-			bindings[name] = binding
+			bindings[goName(name)] = binding
 		case input && (binding.Location == locHeader || binding.Location == locQuery || binding.Location == locPrefix):
 			binding.Location = "unsupported:" + binding.Location
-			bindings[name] = binding
+			bindings[goName(name)] = binding
 		}
 	}
 

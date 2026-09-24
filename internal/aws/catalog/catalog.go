@@ -46,6 +46,10 @@ type Operation struct {
 	NewInput func() any
 	Invoke   func(context.Context, any) (any, error)
 	Name     string
+	// UnitOutput marks operations whose modeled output is smithy.api#Unit.
+	// AWS Query omits their Result element but writes one, even empty, for
+	// every structure output.
+	UnitOutput bool
 }
 
 type Service struct {

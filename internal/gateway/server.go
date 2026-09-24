@@ -437,6 +437,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if m.Protocol == catalog.AWSQuery {
+		if op.UnitOutput {
+			output = nil
+		}
+
 		query.Write(w, status, m.Operation, c.service.XMLNamespace, m.RequestID, output)
 		return
 	}

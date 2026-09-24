@@ -72,6 +72,10 @@ type (
 )
 
 func short(s string) string { _, b, _ := strings.Cut(s, "#"); return b }
+
+// goName exports a member name, such as SQS's lowercase "tags", as a Go field name.
+func goName(member string) string { return strings.ToUpper(member[:1]) + member[1:] }
+
 func (g *generator) fields(id string) []string {
 	if p, ok := g.profile.Shapes[short(id)]; ok {
 		return p
@@ -392,7 +396,7 @@ func (g *generator) emit(id string) error {
 				return fmt.Errorf("%s.%s: %w", id, n, err)
 			}
 
-			fmt.Fprintf(&g.out, "%s %s `json:\"%s\"%s`\n", n, t, tag, queryTag)
+			fmt.Fprintf(&g.out, "%s %s `json:\"%s\"%s`\n", goName(n), t, tag, queryTag)
 		}
 
 		fmt.Fprintln(&g.out, "}")
@@ -663,11 +667,12 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 
 		fmt.Fprintf(
 			&g.out,
-			"%q:{Name:%q,Bindings:%#v,NewI"+
+			"%q:{Name:%q,UnitOutput:%t,Bindings:%#v,NewI"+
 				"nput:func()any{return &%s{}},Invoke:func(ctx context.Context,input any)(any"+
 				",error){return api.%s(ctx,input.(*%s))}},\n",
 			op,
 			op,
+			s.Output.Target == unitShape,
 			bindings,
 			short(s.Input.Target),
 			op,

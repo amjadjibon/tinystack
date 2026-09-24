@@ -334,7 +334,8 @@ func metadata(b *bytes.Buffer, requestID string) {
 	b.WriteString("</RequestId>")
 }
 
-// Write encodes a successful operation response.
+// Write encodes a successful operation response. A nil output, used for Unit
+// outputs, writes no Result element.
 func Write(w http.ResponseWriter, status int, operation, namespace, requestID string, output any) {
 	var b bytes.Buffer
 	b.WriteString(xml.Header)
@@ -344,7 +345,7 @@ func Write(w http.ResponseWriter, status int, operation, namespace, requestID st
 		v = v.Elem()
 	}
 
-	if v.Kind() == reflect.Struct && v.NumField() > 0 {
+	if v.Kind() == reflect.Struct {
 		open(&b, operation+"Result")
 		encodeStruct(&b, v)
 		closeTag(&b, operation+"Result")
