@@ -25,6 +25,8 @@ Run the server: `./bin/tinystack start [--host H] [--port P] [--config examples/
 `GET /_tinystack/requests` lists the last 256 requests with truncated bodies (`gateway/requests.go`); `DELETE`
 clears them. `GET /_tinystack/metrics` serves Prometheus counters by service, operation, and status
 (`gateway/metrics.go`; labels come from the catalog, never from the client).
+`GET /_tinystack/resources` lists resources from each service's `Resources` method (`catalog.Inventory`; the generated
+`Descriptor` picks it up, so a service's `inventory.go` is all a new service needs).
 
 ## Architecture
 

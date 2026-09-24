@@ -87,7 +87,7 @@ lifecycle, and so on) and accepts their `NotImplemented` answers as "not
 configured"; setting any of them in Terraform fails. `tests/terraform/main.tf` is a
 working example.
 
-### Request inspector and metrics
+### Request inspector, metrics, and resources
 
 `GET /_tinystack/requests` lists the last 256 AWS requests, newest first: time,
 request ID, method, path, service, operation, protocol, account, region, status,
@@ -103,6 +103,12 @@ curl -s http://localhost:4566/_tinystack/requests | jq '.requests[] | select(.er
 `tinystack_requests_total` and `tinystack_request_duration_seconds` (a summary), labeled
 by service, operation, and HTTP status. Requests for an unknown operation have an
 empty `operation` label.
+
+`GET /_tinystack/resources` lists every queue, topic, table, bucket, function,
+event source mapping, and rule in every account and region, with its ARN, tags, and
+details: queue attributes and message counts, topic subscriptions, the table
+description, bucket object count and size, the function or mapping configuration,
+and the rule with its targets.
 
 ## Supported subset
 

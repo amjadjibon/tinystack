@@ -15,7 +15,9 @@ import (
 	"github.com/amjadjibon/tinystack/internal/gateway"
 )
 
-func inspect(t *testing.T, s *httptest.Server, method, path string) (int, []gateway.Record) {
+// internal calls one of TinyStack's own endpoints and decodes a 200 JSON
+// response into out.
+func internal(t *testing.T, s *httptest.Server, method, path string, out any) int {
 	t.Helper()
 	req, err := http.NewRequestWithContext(context.Background(), method, s.URL+path, http.NoBody)
 	if err != nil {
@@ -28,17 +30,23 @@ func inspect(t *testing.T, s *httptest.Server, method, path string) (int, []gate
 	}
 
 	defer func() { _ = resp.Body.Close() }()
-	var out struct {
-		Requests []gateway.Record `json:"requests"`
-	}
-
-	if resp.StatusCode == http.StatusOK {
-		if guardErr := json.NewDecoder(resp.Body).Decode(&out); guardErr != nil {
+	if resp.StatusCode == http.StatusOK && out != nil {
+		if guardErr := json.NewDecoder(resp.Body).Decode(out); guardErr != nil {
 			t.Fatal(guardErr)
 		}
 	}
 
-	return resp.StatusCode, out.Requests
+	return resp.StatusCode
+}
+
+func inspect(t *testing.T, s *httptest.Server, method, path string) (int, []gateway.Record) {
+	t.Helper()
+	var out struct {
+		Requests []gateway.Record `json:"requests"`
+	}
+
+	status := internal(t, s, method, path, &out)
+	return status, out.Requests
 }
 
 func TestRequestInspector(t *testing.T) {

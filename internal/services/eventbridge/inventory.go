@@ -1,0 +1,42 @@
+package eventbridge
+
+import (
+	"context"
+
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+// Resources lists every rule with its targets, for the resource browser.
+func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
+	var out []catalog.Resource
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		for _, key := range tx.Keys() {
+			account, region, rest, ok := storage.Scoped(key, "eventbridge")
+			if !ok {
+				continue
+			}
+
+			r, _, err := load(tx, key)
+			if err != nil {
+				return err
+			}
+
+			scope := request.Scope{AccountID: account, Region: region}
+			out = append(out, catalog.Resource{
+				Type:    "rule",
+				Account: account,
+				Region:  region,
+				Name:    rest[len("rule/"):],
+				ARN:     ruleARN(scope, r.Name),
+				Tags:    r.Tags,
+				Details: map[string]any{"Rule": r.describe(scope), "Targets": r.Targets},
+			})
+		}
+
+		return nil
+	})
+
+	return out, err
+}

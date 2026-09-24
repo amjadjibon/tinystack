@@ -374,25 +374,31 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	}
 }
 
+func (s *Server) serveHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(s.health)
+}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/_tinystack/requests" {
+	// TinyStack's own endpoints; "_" is not valid in an S3 bucket name, so
+	// these paths never name one.
+	switch r.URL.Path {
+	case "/_tinystack/health":
+		s.serveHealth(w, r)
+		return
+	case "/_tinystack/requests":
 		s.serveRequests(w, r)
 		return
-	}
-
-	if r.URL.Path == "/_tinystack/metrics" {
-		s.serveMetrics(w, r)
+	case "/_tinystack/resources":
+		s.serveResources(w, r)
 		return
-	}
-
-	if r.URL.Path == "/_tinystack/health" {
-		if r.Method != "GET" {
-			w.WriteHeader(405)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(s.health)
+	case "/_tinystack/metrics":
+		s.serveMetrics(w, r)
 		return
 	}
 
