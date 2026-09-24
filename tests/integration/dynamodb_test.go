@@ -45,13 +45,26 @@ func server(t *testing.T) *httptest.Server {
 // serverWith builds the server like start.go, with runtime running Lambda code.
 func serverWith(t *testing.T, runtime lambda.Runtime) *httptest.Server {
 	t.Helper()
+	return serverConfig(t, testConfig(), runtime)
+}
+
+// testConfig maps the access keys tests use to accounts.
+func testConfig() config.Config {
 	cfg := config.Default()
 	cfg.Identity.Accounts = map[string]string{"team-b": "111111111111", "alias": "000000000000"}
+	return cfg
+}
+
+// serverConfig builds the server like start.go from cfg.
+//
+//nolint:gocritic // Tests build each configuration by value.
+func serverConfig(t *testing.T, cfg config.Config, runtime lambda.Runtime) *httptest.Server {
+	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	// Services share one store, as in start.go.
 	store := &memory.Store{}
 	sqsService := queues.New(store)
-	functions := lambda.New(store, sqsService, runtime, logger)
+	functions := lambda.New(store, sqsService, runtime, logger, cfg.Identity.SecretKeys)
 	snsService := topics.New(store, sqsService, functions)
 	h, err := gateway.New(
 		cfg,

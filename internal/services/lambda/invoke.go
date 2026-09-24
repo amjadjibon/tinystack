@@ -51,14 +51,18 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name string)
 		"AWS_LAMBDA_FUNCTION_VERSION":     latest,
 		"AWS_LAMBDA_FUNCTION_MEMORY_SIZE": strconv.FormatInt(fn.MemorySize, 10),
 		"AWS_LAMBDA_FUNCTION_TIMEOUT":     strconv.FormatInt(fn.Timeout, 10),
-		// SigV4 signatures are not verified, so the creator's access key
-		// selects the function's account for SDK calls back to TinyStack.
+		// The creator's access key selects the function's account for SDK
+		// calls back to TinyStack, signed with its secret when one is configured.
 		"AWS_ACCESS_KEY_ID":     placeholderKey,
 		"AWS_SECRET_ACCESS_KEY": placeholderKey,
 	}
 
 	if fn.AccessKey != "" {
 		env["AWS_ACCESS_KEY_ID"] = fn.AccessKey
+	}
+
+	if secret, ok := s.secretKeys[fn.AccessKey]; ok {
+		env["AWS_SECRET_ACCESS_KEY"] = secret
 	}
 
 	for k, v := range fn.Environment {

@@ -23,6 +23,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 	"github.com/amjadjibon/tinystack/internal/config"
 )
 
@@ -45,7 +46,9 @@ type call struct {
 	form    url.Values
 	labels  map[string]string
 	meta    request.Metadata
-	head    bool
+	// body is the raw AWS Query form, kept to hash it for authentication.
+	body []byte
+	head bool
 }
 
 //nolint:gocritic // Snapshot scalar server configuration instead of sharing mutable caller fields.
@@ -82,7 +85,7 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 }
 
 // identify resolves the caller scope from the host and SigV4 credential scope,
-// returning the signed service name. Signatures are not verified.
+// returning the signed service name. authenticate verifies the signature.
 func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) {
 	host := r.Host
 	if h, _, err := net.SplitHostPort(host); err == nil {
@@ -102,32 +105,19 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 		return "", nil
 	}
 
-	if !strings.HasPrefix(auth, "AWS4-HMAC-SHA256 ") {
-		return "", awserror.New("IncompleteSignatureException", "Expected AWS4-HMAC-SHA256")
+	a, err := sigv4.Parse(auth)
+	if err != nil {
+		return "", awserror.New("IncompleteSignatureException", "Invalid Authorization header: "+err.Error())
 	}
 
-	credential := ""
-	for _, field := range strings.Split(strings.TrimPrefix(auth, "AWS4-HMAC-SHA256 "), ",") {
-		k, v, ok := strings.Cut(strings.TrimSpace(field), "=")
-		if ok && k == "Credential" {
-			credential = v
-		}
-	}
-
-	scope := strings.Split(credential, "/")
-	if len(scope) != 5 || scope[0] == "" || len(scope[1]) != 8 || scope[2] == "" || scope[3] == "" ||
-		scope[4] != "aws4_request" {
-		return "", awserror.New("IncompleteSignatureException", "Malformed credential scope")
-	}
-
-	m.AccessKey = scope[0]
-	m.Region = scope[2]
-	m.Service = scope[3]
+	m.AccessKey = a.AccessKey
+	m.Region = a.Region
+	m.Service = a.Service
 	if account, ok := s.cfg.Identity.Accounts[m.AccessKey]; ok {
 		m.AccountID = account
 	}
 
-	return scope[3], nil
+	return a.Service, nil
 }
 
 // classify selects the protocol from headers alone, so early errors use the
@@ -225,6 +215,7 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 		return awserror.New("InvalidParameterValue", "Cannot read request body: "+err.Error())
 	}
 
+	c.body = body
 	if c.form, err = url.ParseQuery(string(body)); err != nil {
 		return awserror.New("MalformedQueryString", "Request body is not valid form encoding")
 	}
@@ -412,6 +403,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			float64(time.Since(start).Microseconds())/1000,
 		)
 	}()
+
+	if err == nil {
+		err = s.authenticate(w, r, c)
+	}
 
 	if err != nil {
 		s.fail(w, c, err)

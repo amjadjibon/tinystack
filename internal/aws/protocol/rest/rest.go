@@ -43,7 +43,8 @@ func NotImplemented(message string) error {
 	return &awserror.Error{Code: "NotImplemented", Message: message, StatusCode: http.StatusNotImplemented}
 }
 
-func tooLarge() error {
+// TooLarge reports a payload over the size limit.
+func TooLarge() error {
 	return &awserror.Error{
 		Code:       "EntityTooLarge",
 		Message:    "Your proposed upload exceeds the maximum allowed size",
@@ -79,7 +80,7 @@ func ReadBody(w http.ResponseWriter, r *http.Request, limit int64) ([]byte, erro
 
 	body, err := io.ReadAll(reader)
 	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-		return nil, tooLarge()
+		return nil, TooLarge()
 	}
 
 	return body, err
@@ -90,7 +91,7 @@ func ReadBody(w http.ResponseWriter, r *http.Request, limit int64) ([]byte, erro
 func dechunk(r *bufio.Reader, header http.Header) ([]byte, error) {
 	malformed := func(err error) error {
 		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-			return tooLarge()
+			return TooLarge()
 		}
 
 		return invalid("Malformed aws-chunked request body")

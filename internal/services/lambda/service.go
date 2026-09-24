@@ -43,7 +43,8 @@ const (
 	listLimit      = 50
 	timeFormat     = "2006-01-02T15:04:05.000-0700"
 	// placeholderKey signs SDK calls made by function code whose creator was
-	// unsigned; TinyStack maps unknown access keys to the default account.
+	// unsigned or has no configured secret key; TinyStack maps unknown access
+	// keys to the default account when it does not verify signatures.
 	placeholderKey = "tinystack"
 )
 
@@ -54,7 +55,10 @@ type Service struct {
 	queues  *sqs.Service
 	runtime Runtime
 	logger  *slog.Logger
-	now     func() time.Time
+	// secretKeys are the configured SigV4 secrets by access key; function code
+	// signs its SDK calls with its creator's.
+	secretKeys map[string]string
+	now        func() time.Time
 	// ctx ends background work (async invocations and pollers) on Stop.
 	ctx     context.Context
 	cancel  context.CancelFunc
@@ -65,22 +69,30 @@ type Service struct {
 }
 
 // New returns a Lambda service that runs code with runtime and reads SQS event
-// sources from queues.
-func New(store storage.Store, queues *sqs.Service, runtime Runtime, logger *slog.Logger) *Service {
+// sources from queues. secretKeys holds the configured SigV4 secrets by access
+// key, if any.
+func New(
+	store storage.Store,
+	queues *sqs.Service,
+	runtime Runtime,
+	logger *slog.Logger,
+	secretKeys map[string]string,
+) *Service {
 	if logger == nil {
 		logger = slog.Default()
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
-		store:   store,
-		queues:  queues,
-		runtime: runtime,
-		logger:  logger,
-		now:     time.Now,
-		ctx:     ctx,
-		cancel:  cancel,
-		pollers: map[string]context.CancelFunc{},
+		store:      store,
+		queues:     queues,
+		runtime:    runtime,
+		logger:     logger,
+		secretKeys: secretKeys,
+		now:        time.Now,
+		ctx:        ctx,
+		cancel:     cancel,
+		pollers:    map[string]context.CancelFunc{},
 	}
 }
 

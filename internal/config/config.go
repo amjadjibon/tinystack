@@ -11,9 +11,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Identity modes: parse maps access keys to accounts without checking
+// signatures; verify also requires a valid SigV4 signature from a key in
+// SecretKeys.
+const (
+	IdentityParse  = "parse"
+	IdentityVerify = "verify"
+)
+
 type Config struct {
 	Identity struct {
-		Accounts map[string]string `yaml:"accounts"`
+		Accounts   map[string]string `yaml:"accounts"`
+		SecretKeys map[string]string `yaml:"secret_keys"`
+		Mode       string            `yaml:"mode"`
 	} `yaml:"identity"`
 	Defaults struct {
 		Account string `yaml:"account"`
@@ -36,6 +46,7 @@ func Default() Config {
 	c.Defaults.Account = "000000000000"
 	c.Defaults.Region = "us-east-1"
 	c.Storage.Mode = "memory"
+	c.Identity.Mode = IdentityParse
 	c.Identity.Accounts = map[string]string{}
 	return c
 }
@@ -75,6 +86,25 @@ func (c *Config) Validate() error {
 	for key, id := range c.Identity.Accounts {
 		if key == "" || !account.MatchString(id) {
 			return fmt.Errorf("invalid identity mapping for %q", key)
+		}
+	}
+
+	switch c.Identity.Mode {
+	case IdentityParse:
+		if len(c.Identity.SecretKeys) > 0 {
+			return fmt.Errorf("identity.secret_keys requires identity.mode: verify")
+		}
+	case IdentityVerify:
+		if len(c.Identity.SecretKeys) == 0 {
+			return fmt.Errorf("identity.mode: verify requires identity.secret_keys")
+		}
+	default:
+		return fmt.Errorf("identity.mode must be parse or verify")
+	}
+
+	for key, secret := range c.Identity.SecretKeys {
+		if key == "" || secret == "" {
+			return fmt.Errorf("invalid secret key for %q", key)
 		}
 	}
 

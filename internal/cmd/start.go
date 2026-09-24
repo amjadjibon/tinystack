@@ -59,7 +59,7 @@ func newStartCommand() *cobra.Command {
 			logger := slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), nil))
 			store := &memory.Store{}
 			queues := sqs.New(store)
-			functions := lambda.New(store, queues, docker.New(), logger)
+			functions := lambda.New(store, queues, docker.New(), logger, cfg.Identity.SecretKeys)
 			// Stop removes function containers; it must finish before exit.
 			defer functions.Stop()
 			topics := sns.New(store, queues, functions)
