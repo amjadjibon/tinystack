@@ -353,19 +353,15 @@ func (s *Service) send(ctx context.Context, key string, entry *api.SendMessageBa
 }
 
 // Deliver sends a message to the queue named by queueARN with the same rules as
-// SendMessage. Other services, such as SNS, call it in-process instead of going
-// through HTTP.
-func (s *Service) Deliver(
-	ctx context.Context,
-	queueARN, body string,
-	attributes map[string]api.MessageAttributeValue,
-) error {
+// SendMessage. Other services, such as SNS and EventBridge, call it in-process
+// instead of going through HTTP.
+func (s *Service) Deliver(ctx context.Context, queueARN string, entry *api.SendMessageBatchRequestEntry) error {
 	key, ok := arnKey(queueARN)
 	if !ok {
 		return invalid("%s is not an SQS queue ARN.", queueARN)
 	}
 
-	_, err := s.send(ctx, key, &api.SendMessageBatchRequestEntry{MessageBody: &body, MessageAttributes: attributes})
+	_, err := s.send(ctx, key, entry)
 	return err
 }
 

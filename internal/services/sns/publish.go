@@ -244,7 +244,10 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 			body = string(encoded)
 		}
 
-		_ = s.queues.Deliver(ctx, sub.Endpoint, body, attributes)
+		_ = s.queues.Deliver(ctx, sub.Endpoint, &sqsapi.SendMessageBatchRequestEntry{
+			MessageBody:       &body,
+			MessageAttributes: attributes,
+		})
 	}
 
 	return &api.PublishResponse{MessageId: ptr(id)}, nil
