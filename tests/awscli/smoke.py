@@ -102,6 +102,20 @@ def main():
                 s3api("delete-object", "--bucket", "assets", "--key", "docs/hello world.txt")
                 s3api("delete-bucket", "--bucket", "assets")
                 assert s3api("list-buckets").get("Buckets", []) == []
+                def events(*args):
+                    return aws(*args, service="events")
+                rule_arn = events("put-rule", "--name", "orders", "--event-pattern", '{"source":["shop"]}')["RuleArn"]
+                assert rule_arn.endswith(":rule/orders")
+                events_url = sqs("create-queue", "--queue-name", "events-inbox")["QueueUrl"]
+                events_arn = sqs("get-queue-attributes", "--queue-url", events_url, "--attribute-names", "QueueArn")["Attributes"]["QueueArn"]
+                events("put-targets", "--rule", "orders", "--targets", json.dumps([{"Id": "inbox", "Arn": events_arn, "InputPath": "$.detail"}]))
+                put_events = events("put-events", "--entries", json.dumps([{"Source": "shop", "DetailType": "order", "Detail": '{"id":7}'}]))
+                assert put_events["FailedEntryCount"] == 0
+                routed = sqs("receive-message", "--queue-url", events_url, "--wait-time-seconds", "1")["Messages"]
+                assert [json.loads(m["Body"]) for m in routed] == [{"id": 7}]
+                events("remove-targets", "--rule", "orders", "--ids", "inbox")
+                events("delete-rule", "--name", "orders")
+                assert events("list-rules").get("Rules", []) == []
                 def lam(*args):
                     return aws(*args, service="lambda")
                 package = Path(directory) / "function.zip"
