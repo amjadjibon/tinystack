@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"hash"
 	"hash/crc32"
 	"hash/crc64"
@@ -256,14 +257,27 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 		return nil, err
 	}
 
-	return &api.GetObjectOutput{
+	out := &api.GetObjectOutput{
 		Body:          body,
 		ContentLength: new(obj.Size),
 		ContentType:   new(obj.ContentType),
 		ETag:          new(obj.ETag),
 		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
-	}, nil
+	}
+	if in.Range != nil {
+		interval, rangeErr := parseRange(*in.Range, obj.Size)
+		if rangeErr != nil {
+			return nil, rangeErr
+		}
+
+		out.Body = body[interval.start : interval.end+1]
+		out.ContentLength = new(interval.end - interval.start + 1)
+		out.ContentRange = new(fmt.Sprintf("bytes %d-%d/%d", interval.start, interval.end, obj.Size))
+		out.AcceptRanges = new("bytes")
+	}
+
+	return out, nil
 }
 
 func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*api.HeadObjectOutput, error) {
@@ -272,13 +286,24 @@ func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*a
 		return nil, err
 	}
 
-	return &api.HeadObjectOutput{
+	out := &api.HeadObjectOutput{
 		ContentLength: new(obj.Size),
 		ContentType:   new(obj.ContentType),
 		ETag:          new(obj.ETag),
 		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
-	}, nil
+	}
+	if in.Range != nil {
+		interval, rangeErr := parseRange(*in.Range, obj.Size)
+		if rangeErr != nil {
+			return nil, rangeErr
+		}
+
+		out.ContentLength = new(interval.end - interval.start + 1)
+		out.AcceptRanges = new("bytes")
+	}
+
+	return out, nil
 }
 
 // DeleteObject removes an object; deleting a missing key succeeds.

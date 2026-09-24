@@ -7,6 +7,9 @@ import (
 
 type Error struct {
 	Code, Message string
+	// Headers are response headers required by an operation error, such as the
+	// current object length on an unsatisfiable byte range.
+	Headers map[string]string
 	// QueryCode is the awsQuery error code; query-compatible JSON services also send it.
 	QueryCode  string
 	StatusCode int

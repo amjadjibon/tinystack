@@ -359,6 +359,11 @@ func Encode(w http.ResponseWriter, b *catalog.Binding, output any) Response {
 			resp.Document = true
 		}
 	})
+	// A single-part GET response with Content-Range is partial content. Smithy
+	// S3 models expose this header but have no httpResponseCode output member.
+	if b.Method == http.MethodGet && resp.Status == http.StatusOK && w.Header().Get("Content-Range") != "" {
+		resp.Status = http.StatusPartialContent
+	}
 
 	return resp
 }

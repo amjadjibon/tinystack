@@ -366,6 +366,10 @@ func (s *Server) decode(
 func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	e := awserror.From(err)
 	c.failure = e
+	for name, value := range e.Headers {
+		w.Header().Set(name, value)
+	}
+
 	namespace, messageMember := "", ""
 	if c.service != nil {
 		if binding, ok := c.service.Errors[e.Code]; ok {

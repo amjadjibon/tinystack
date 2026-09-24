@@ -562,6 +562,7 @@
       "GetObjectRequest": [
         "Bucket",
         "Key",
+        "Range",
         "IfMatch",
         "IfNoneMatch",
         "ChecksumMode",
@@ -570,6 +571,8 @@
       "GetObjectOutput": [
         "Body",
         "ContentLength",
+        "ContentRange",
+        "AcceptRanges",
         "ContentType",
         "ETag",
         "LastModified",
@@ -578,6 +581,7 @@
       "HeadObjectRequest": [
         "Bucket",
         "Key",
+        "Range",
         "IfMatch",
         "IfNoneMatch",
         "ChecksumMode",
@@ -585,6 +589,7 @@
       ],
       "HeadObjectOutput": [
         "ContentLength",
+        "AcceptRanges",
         "ContentType",
         "ETag",
         "LastModified",

@@ -90,7 +90,7 @@ func call(
 			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
 			SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
 		}
-		if err = signer.SignHTTP(
+		err = signer.SignHTTP(
 			ctx,
 			creds,
 			req,
@@ -98,7 +98,8 @@ func call(
 			"dynamodb",
 			os.Getenv("AWS_REGION"),
 			time.Now().UTC(),
-		); err != nil {
+		)
+		if err != nil {
 			return response{}, err
 		}
 	}
