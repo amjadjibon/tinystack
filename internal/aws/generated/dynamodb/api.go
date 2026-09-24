@@ -21,12 +21,18 @@ type ProvisionedThroughput struct {
 	WriteCapacityUnits *int64 `json:"WriteCapacityUnits,omitempty"`
 }
 
+type Tag struct {
+	Key   *string `json:"Key,omitempty"`
+	Value *string `json:"Value,omitempty"`
+}
+
 type CreateTableInput struct {
 	TableName             *string                `json:"TableName,omitempty"`
 	AttributeDefinitions  []AttributeDefinition  `json:"AttributeDefinitions,omitempty"`
 	KeySchema             []KeySchemaElement     `json:"KeySchema,omitempty"`
 	BillingMode           *string                `json:"BillingMode,omitempty"`
 	ProvisionedThroughput *ProvisionedThroughput `json:"ProvisionedThroughput,omitempty"`
+	Tags                  []Tag                  `json:"Tags,omitempty"`
 }
 
 type BillingModeSummary struct {
@@ -144,6 +150,60 @@ type ScanOutput struct {
 	LastEvaluatedKey map[string]AttributeValue    `json:"LastEvaluatedKey,omitempty"`
 }
 
+type DescribeContinuousBackupsInput struct {
+	TableName *string `json:"TableName,omitempty"`
+}
+
+type PointInTimeRecoveryDescription struct {
+	PointInTimeRecoveryStatus *string `json:"PointInTimeRecoveryStatus,omitempty"`
+}
+
+type ContinuousBackupsDescription struct {
+	ContinuousBackupsStatus        *string                         `json:"ContinuousBackupsStatus,omitempty"`
+	PointInTimeRecoveryDescription *PointInTimeRecoveryDescription `json:"PointInTimeRecoveryDescription,omitempty"`
+}
+
+type DescribeContinuousBackupsOutput struct {
+	ContinuousBackupsDescription *ContinuousBackupsDescription `json:"ContinuousBackupsDescription,omitempty"`
+}
+
+type DescribeTimeToLiveInput struct {
+	TableName *string `json:"TableName,omitempty"`
+}
+
+type TimeToLiveDescription struct {
+	TimeToLiveStatus *string `json:"TimeToLiveStatus,omitempty"`
+	AttributeName    *string `json:"AttributeName,omitempty"`
+}
+
+type DescribeTimeToLiveOutput struct {
+	TimeToLiveDescription *TimeToLiveDescription `json:"TimeToLiveDescription,omitempty"`
+}
+
+type ListTagsOfResourceInput struct {
+	ResourceArn *string `json:"ResourceArn,omitempty"`
+	NextToken   *string `json:"NextToken,omitempty"`
+}
+
+type ListTagsOfResourceOutput struct {
+	Tags      []Tag   `json:"Tags,omitempty"`
+	NextToken *string `json:"NextToken,omitempty"`
+}
+
+type TagResourceOutput struct{}
+
+type TagResourceInput struct {
+	ResourceArn *string `json:"ResourceArn,omitempty"`
+	Tags        []Tag   `json:"Tags,omitempty"`
+}
+
+type UntagResourceOutput struct{}
+
+type UntagResourceInput struct {
+	ResourceArn *string  `json:"ResourceArn,omitempty"`
+	TagKeys     []string `json:"TagKeys,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -153,10 +213,15 @@ type API interface {
 	GetItem(context.Context, *GetItemInput) (*GetItemOutput, error)
 	DeleteItem(context.Context, *DeleteItemInput) (*DeleteItemOutput, error)
 	Scan(context.Context, *ScanInput) (*ScanOutput, error)
+	DescribeContinuousBackups(context.Context, *DescribeContinuousBackupsInput) (*DescribeContinuousBackupsOutput, error)
+	DescribeTimeToLive(context.Context, *DescribeTimeToLiveInput) (*DescribeTimeToLiveOutput, error)
+	ListTagsOfResource(context.Context, *ListTagsOfResourceInput) (*ListTagsOfResourceOutput, error)
+	TagResource(context.Context, *TagResourceInput) (*TagResourceOutput, error)
+	UntagResource(context.Context, *UntagResourceInput) (*UntagResourceOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 421}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 421}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTable": {Name: "CreateTable", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.CreateTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTable(ctx, input.(*CreateTableInput))
 		}},
@@ -175,5 +240,20 @@ func Descriptor(api API) catalog.Service {
 			return api.DeleteItem(ctx, input.(*DeleteItemInput))
 		}},
 		"Scan": {Name: "Scan", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.Scan", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ScanInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Scan(ctx, input.(*ScanInput)) }},
+		"DescribeContinuousBackups": {Name: "DescribeContinuousBackups", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeContinuousBackups", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeContinuousBackupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeContinuousBackups(ctx, input.(*DescribeContinuousBackupsInput))
+		}},
+		"DescribeTimeToLive": {Name: "DescribeTimeToLive", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeTimeToLive", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeTimeToLiveInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeTimeToLive(ctx, input.(*DescribeTimeToLiveInput))
+		}},
+		"ListTagsOfResource": {Name: "ListTagsOfResource", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ListTagsOfResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListTagsOfResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListTagsOfResource(ctx, input.(*ListTagsOfResourceInput))
+		}},
+		"TagResource": {Name: "TagResource", UnitOutput: true, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.TagResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagResource(ctx, input.(*TagResourceInput))
+		}},
+		"UntagResource": {Name: "UntagResource", UnitOutput: true, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UntagResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UntagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagResource(ctx, input.(*UntagResourceInput))
+		}},
 	}}
 }

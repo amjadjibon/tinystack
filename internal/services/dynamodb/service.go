@@ -28,6 +28,7 @@ type Service struct{ store storage.Store }
 func New(store storage.Store) *Service { return &Service{store: store} }
 
 type table struct {
+	Tags        map[string]string `json:",omitempty"`
 	Description api.TableDescription
 	Items       map[string]map[string]api.AttributeValue
 }
@@ -129,6 +130,11 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 		names[name] = true
 	}
 
+	tags, err := tagMap(in.Tags)
+	if err != nil {
+		return nil, err
+	}
+
 	mode := value(in.BillingMode)
 	if mode == "" {
 		mode = "PROVISIONED"
@@ -174,6 +180,7 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 			ProvisionedThroughput: throughput,
 		},
 		Items: map[string]map[string]api.AttributeValue{},
+		Tags:  tags,
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {

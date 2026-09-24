@@ -8,7 +8,12 @@
       "PutItem",
       "GetItem",
       "DeleteItem",
-      "Scan"
+      "Scan",
+      "DescribeContinuousBackups",
+      "DescribeTimeToLive",
+      "ListTagsOfResource",
+      "TagResource",
+      "UntagResource"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -16,7 +21,8 @@
         "AttributeDefinitions",
         "KeySchema",
         "BillingMode",
-        "ProvisionedThroughput"
+        "ProvisionedThroughput",
+        "Tags"
       ],
       "DeleteTableInput": [
         "TableName"
@@ -77,6 +83,49 @@
         "TableSizeBytes",
         "BillingModeSummary",
         "ProvisionedThroughput"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "DescribeContinuousBackupsInput": [
+        "TableName"
+      ],
+      "DescribeContinuousBackupsOutput": [
+        "ContinuousBackupsDescription"
+      ],
+      "ContinuousBackupsDescription": [
+        "ContinuousBackupsStatus",
+        "PointInTimeRecoveryDescription"
+      ],
+      "PointInTimeRecoveryDescription": [
+        "PointInTimeRecoveryStatus"
+      ],
+      "DescribeTimeToLiveInput": [
+        "TableName"
+      ],
+      "DescribeTimeToLiveOutput": [
+        "TimeToLiveDescription"
+      ],
+      "TimeToLiveDescription": [
+        "TimeToLiveStatus",
+        "AttributeName"
+      ],
+      "ListTagsOfResourceInput": [
+        "ResourceArn",
+        "NextToken"
+      ],
+      "ListTagsOfResourceOutput": [
+        "Tags",
+        "NextToken"
+      ],
+      "TagResourceInput": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceInput": [
+        "ResourceArn",
+        "TagKeys"
       ]
     }
   },

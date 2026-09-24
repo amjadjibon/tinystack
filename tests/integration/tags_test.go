@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	dynamotypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -153,4 +155,56 @@ func TestSNSTopicAttributesAndTags(t *testing.T) {
 		subAttrs.Attributes["Endpoint"] != queue || subAttrs.Attributes["PendingConfirmation"] != "false" {
 		t.Fatal(subAttrs, err)
 	}
+}
+
+func TestDynamoDBTableSettingsAndTags(t *testing.T) {
+	s := server(t)
+	c := client(s, "test", "us-east-1")
+	ctx := context.Background()
+	created, err := c.CreateTable(ctx, &dynamodb.CreateTableInput{
+		TableName:            aws.String("tagged"),
+		BillingMode:          dynamotypes.BillingModePayPerRequest,
+		AttributeDefinitions: []dynamotypes.AttributeDefinition{{AttributeName: aws.String("PK"), AttributeType: "S"}},
+		KeySchema:            []dynamotypes.KeySchemaElement{{AttributeName: aws.String("PK"), KeyType: "HASH"}},
+		Tags:                 []dynamotypes.Tag{{Key: aws.String("team"), Value: aws.String("core")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	backups, err := c.DescribeContinuousBackups(ctx, &dynamodb.DescribeContinuousBackupsInput{
+		TableName: aws.String("tagged"),
+	})
+	if err != nil || backups.ContinuousBackupsDescription.PointInTimeRecoveryDescription.PointInTimeRecoveryStatus !=
+		dynamotypes.PointInTimeRecoveryStatusDisabled {
+		t.Fatal(backups, err)
+	}
+
+	ttl, err := c.DescribeTimeToLive(ctx, &dynamodb.DescribeTimeToLiveInput{TableName: aws.String("tagged")})
+	if err != nil || ttl.TimeToLiveDescription.TimeToLiveStatus != dynamotypes.TimeToLiveStatusDisabled {
+		t.Fatal(ttl, err)
+	}
+
+	arn := created.TableDescription.TableArn
+	_, err = c.TagResource(ctx, &dynamodb.TagResourceInput{
+		ResourceArn: arn, Tags: []dynamotypes.Tag{{Key: aws.String("env"), Value: aws.String("dev")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.UntagResource(ctx, &dynamodb.UntagResourceInput{ResourceArn: arn, TagKeys: []string{"team"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tags, err := c.ListTagsOfResource(ctx, &dynamodb.ListTagsOfResourceInput{ResourceArn: arn})
+	if err != nil || len(tags.Tags) != 1 || *tags.Tags[0].Key != "env" {
+		t.Fatal(tags, err)
+	}
+
+	// Another region's table ARN names no table the caller can see.
+	other := aws.String(strings.Replace(*arn, "us-east-1", "eu-west-1", 1))
+	_, err = c.ListTagsOfResource(ctx, &dynamodb.ListTagsOfResourceInput{ResourceArn: other})
+	code(t, err, "ResourceNotFoundException")
 }
