@@ -95,8 +95,6 @@ var (
 	inputPath = regexp.MustCompile(`^\$(\.[A-Za-z0-9_-]+)*$`)
 )
 
-func ptr[T any](v T) *T { return &v }
-
 func value[T any](p *T) (v T) {
 	if p != nil {
 		return *p
@@ -237,7 +235,7 @@ func page(token *string, limit *int64) (after string, size int, err error) {
 }
 
 func nextToken(last string) *string {
-	return ptr(base64.RawURLEncoding.EncodeToString([]byte(last)))
+	return new(base64.RawURLEncoding.EncodeToString([]byte(last)))
 }
 
 func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.PutRuleResponse, error) {
@@ -313,7 +311,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		return nil, err
 	}
 
-	return &api.PutRuleResponse{RuleArn: ptr(ruleARN(m.Scope, *in.Name))}, nil
+	return &api.PutRuleResponse{RuleArn: new(ruleARN(m.Scope, *in.Name))}, nil
 }
 
 func (s *Service) DescribeRule(ctx context.Context, in *api.DescribeRuleRequest) (*api.DescribeRuleResponse, error) {
@@ -345,24 +343,24 @@ func (s *Service) DescribeRule(ctx context.Context, in *api.DescribeRuleRequest)
 		Description:  out.Description,
 		RoleArn:      out.RoleArn,
 		EventBusName: out.EventBusName,
-		CreatedBy:    ptr(m.AccountID),
+		CreatedBy:    new(m.AccountID),
 	}, nil
 }
 
 func (r *rule) describe(scope request.Scope) api.Rule {
 	out := api.Rule{
-		Name:         ptr(r.Name),
-		Arn:          ptr(ruleARN(scope, r.Name)),
-		EventPattern: ptr(r.Pattern),
-		State:        ptr(r.State),
-		EventBusName: ptr(defaultBus),
+		Name:         new(r.Name),
+		Arn:          new(ruleARN(scope, r.Name)),
+		EventPattern: new(r.Pattern),
+		State:        new(r.State),
+		EventBusName: new(defaultBus),
 	}
 	if r.Description != "" {
-		out.Description = ptr(r.Description)
+		out.Description = new(r.Description)
 	}
 
 	if r.RoleARN != "" {
-		out.RoleArn = ptr(r.RoleARN)
+		out.RoleArn = new(r.RoleARN)
 	}
 
 	return out
@@ -488,5 +486,5 @@ func (s *Service) TestEventPattern(
 		return nil, invalid("Parameter Event is not valid.")
 	}
 
-	return &api.TestEventPatternResponse{Result: ptr(p.matches(event))}, nil
+	return &api.TestEventPatternResponse{Result: new(p.matches(event))}, nil
 }

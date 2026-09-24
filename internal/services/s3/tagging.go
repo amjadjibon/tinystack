@@ -122,7 +122,7 @@ func (s *Service) GetBucketTagging(
 
 	out := &api.GetBucketTaggingOutput{}
 	for _, k := range slices.Sorted(maps.Keys(meta.Tags)) {
-		out.TagSet = append(out.TagSet, api.Tag{Key: ptr(k), Value: ptr(meta.Tags[k])})
+		out.TagSet = append(out.TagSet, api.Tag{Key: new(k), Value: new(meta.Tags[k])})
 	}
 
 	return out, nil

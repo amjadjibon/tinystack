@@ -65,7 +65,7 @@ func (o *outgoing) sequenceNumber() *string {
 		return nil
 	}
 
-	return ptr(o.msg.Sequence)
+	return new(o.msg.Sequence)
 }
 
 // inFlightGroups returns the FIFO message groups that have a message in flight.

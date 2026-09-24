@@ -125,7 +125,7 @@ func TestExpressionErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err = ex.condition("ConditionExpression", ptr("#a = :v")); err != nil {
+	if _, err = ex.condition("ConditionExpression", new("#a = :v")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -159,7 +159,7 @@ func TestProjection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pr, err := ex.projection(ptr("age, #p.city, list[2].deep, list[0], missing, list[9]"))
+	pr, err := ex.projection(new("age, #p.city, list[2].deep, list[0], missing, list[9]"))
 	if err != nil {
 		t.Fatal(err)
 	}

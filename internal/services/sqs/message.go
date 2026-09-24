@@ -320,7 +320,7 @@ func (o *outgoing) md5OfAttributes() *string {
 		return nil
 	}
 
-	return ptr(attributesMD5(o.msg.Attributes))
+	return new(attributesMD5(o.msg.Attributes))
 }
 
 // send validates one message and enqueues it on the queue stored under key.
@@ -383,8 +383,8 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 	}
 
 	return &api.SendMessageResult{
-		MessageId:              ptr(o.msg.ID),
-		MD5OfMessageBody:       ptr(o.msg.BodyMD5),
+		MessageId:              new(o.msg.ID),
+		MD5OfMessageBody:       new(o.msg.BodyMD5),
 		MD5OfMessageAttributes: o.md5OfAttributes(),
 		SequenceNumber:         o.sequenceNumber(),
 	}, nil
@@ -421,10 +421,10 @@ func selected(name string, filter []string) bool {
 
 func render(msg *message, opts *receiveOptions) api.Message {
 	out := api.Message{
-		MessageId:     ptr(msg.ID),
-		ReceiptHandle: ptr(receiptHandle(msg)),
-		MD5OfBody:     ptr(msg.BodyMD5),
-		Body:          ptr(msg.Body),
+		MessageId:     new(msg.ID),
+		ReceiptHandle: new(receiptHandle(msg)),
+		MD5OfBody:     new(msg.BodyMD5),
+		Body:          new(msg.Body),
 	}
 
 	system := map[string]string{
@@ -461,7 +461,7 @@ func render(msg *message, opts *receiveOptions) api.Message {
 	}
 
 	if len(out.MessageAttributes) > 0 {
-		out.MD5OfMessageAttributes = ptr(attributesMD5(out.MessageAttributes))
+		out.MD5OfMessageAttributes = new(attributesMD5(out.MessageAttributes))
 	}
 
 	return out

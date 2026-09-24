@@ -194,9 +194,9 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 			return nil, runErr
 		}
 
-		out := &api.InvocationResponse{StatusCode: ptr(int64(http.StatusOK)), Payload: result.Payload}
+		out := &api.InvocationResponse{StatusCode: new(int64(http.StatusOK)), Payload: result.Payload}
 		if result.Error {
-			out.FunctionError = ptr("Unhandled")
+			out.FunctionError = new("Unhandled")
 		}
 
 		return out, nil
@@ -210,9 +210,9 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 			return nil, awserror.New("ServiceException", "The service is shutting down")
 		}
 
-		return &api.InvocationResponse{StatusCode: ptr(int64(http.StatusAccepted))}, nil
+		return &api.InvocationResponse{StatusCode: new(int64(http.StatusAccepted))}, nil
 	case "DryRun":
-		return &api.InvocationResponse{StatusCode: ptr(int64(http.StatusNoContent))}, nil
+		return &api.InvocationResponse{StatusCode: new(int64(http.StatusNoContent))}, nil
 	default:
 		return nil, invalid("InvocationType must be RequestResponse, Event, or DryRun")
 	}

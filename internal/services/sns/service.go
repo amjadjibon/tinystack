@@ -72,8 +72,6 @@ var (
 	accountID = regexp.MustCompile(`^\d{12}$`)
 )
 
-func ptr[T any](v T) *T { return &v }
-
 func value[T any](p *T) (v T) {
 	if p != nil {
 		return *p
@@ -198,7 +196,7 @@ func page(names []string, token *string) (selected []string, next *string, err e
 	}
 
 	names = names[:pageSize]
-	return names, ptr(base64.RawURLEncoding.EncodeToString([]byte(names[pageSize-1]))), nil
+	return names, new(base64.RawURLEncoding.EncodeToString([]byte(names[pageSize-1]))), nil
 }
 
 func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*api.CreateTopicResponse, error) {
@@ -261,7 +259,7 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 		return nil, err
 	}
 
-	return &api.CreateTopicResponse{TopicArn: ptr(keyARN(key))}, nil
+	return &api.CreateTopicResponse{TopicArn: new(keyARN(key))}, nil
 }
 
 // DeleteTopic removes a topic and its subscriptions. Deleting a missing topic succeeds.
@@ -321,7 +319,7 @@ func (s *Service) ListTopics(ctx context.Context, in *api.ListTopicsInput) (*api
 
 	out := &api.ListTopicsResponse{NextToken: next}
 	for _, arn := range arns {
-		out.Topics = append(out.Topics, api.Topic{TopicArn: ptr(arn)})
+		out.Topics = append(out.Topics, api.Topic{TopicArn: new(arn)})
 	}
 
 	return out, nil
@@ -409,7 +407,7 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 		return nil, err
 	}
 
-	return &api.SubscribeResponse{SubscriptionArn: ptr(keyARN(key) + ":" + sub.ID)}, nil
+	return &api.SubscribeResponse{SubscriptionArn: new(keyARN(key) + ":" + sub.ID)}, nil
 }
 
 func (s *Service) Unsubscribe(ctx context.Context, in *api.UnsubscribeInput) (*api.UnsubscribeOutput, error) {
@@ -453,11 +451,11 @@ func subscriptions(tx storage.ReadTx, keys []string) (map[string]api.Subscriptio
 		arn := keyARN(key)
 		for _, sub := range t.Subscriptions {
 			out[arn+":"+sub.ID] = api.Subscription{
-				SubscriptionArn: ptr(arn + ":" + sub.ID),
-				Owner:           ptr(sub.Owner),
-				Protocol:        ptr(sub.Protocol),
-				Endpoint:        ptr(sub.Endpoint),
-				TopicArn:        ptr(arn),
+				SubscriptionArn: new(arn + ":" + sub.ID),
+				Owner:           new(sub.Owner),
+				Protocol:        new(sub.Protocol),
+				Endpoint:        new(sub.Endpoint),
+				TopicArn:        new(arn),
 			}
 		}
 	}

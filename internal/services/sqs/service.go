@@ -97,7 +97,6 @@ type queue struct {
 	Sequence     int64 `json:",omitempty"`
 }
 
-func ptr[T any](v T) *T { return &v }
 func value[T any](p *T) (v T) {
 	if p != nil {
 		return *p
@@ -367,7 +366,7 @@ func (s *Service) CreateQueue(ctx context.Context, in *api.CreateQueueRequest) (
 		return nil, err
 	}
 
-	return &api.CreateQueueResult{QueueUrl: ptr(queueURL(m, name))}, nil
+	return &api.CreateQueueResult{QueueUrl: new(queueURL(m, name))}, nil
 }
 
 func (s *Service) DeleteQueue(ctx context.Context, in *api.DeleteQueueRequest) (*api.DeleteQueueOutput, error) {
@@ -418,7 +417,7 @@ func (s *Service) GetQueueUrl(ctx context.Context, in *api.GetQueueUrlRequest) (
 		return nil, err
 	}
 
-	return &api.GetQueueUrlResult{QueueUrl: ptr(queueURL(m, name))}, nil
+	return &api.GetQueueUrlResult{QueueUrl: new(queueURL(m, name))}, nil
 }
 
 func (s *Service) ListQueues(ctx context.Context, in *api.ListQueuesRequest) (*api.ListQueuesResult, error) {
@@ -465,7 +464,7 @@ func (s *Service) ListQueues(ctx context.Context, in *api.ListQueuesRequest) (*a
 	if int64(len(names)) > limit {
 		names = names[:limit]
 		if in.MaxResults != nil {
-			out.NextToken = ptr(base64.RawURLEncoding.EncodeToString([]byte(names[len(names)-1])))
+			out.NextToken = new(base64.RawURLEncoding.EncodeToString([]byte(names[len(names)-1])))
 		}
 	}
 

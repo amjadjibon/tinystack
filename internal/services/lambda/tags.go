@@ -45,7 +45,7 @@ func (s *Service) GetFunctionCodeSigningConfig(
 		return nil, err
 	}
 
-	return &api.GetFunctionCodeSigningConfigResponse{CodeSigningConfigArn: ptr(""), FunctionName: ptr(fn.Name)}, nil
+	return &api.GetFunctionCodeSigningConfigResponse{CodeSigningConfigArn: new(""), FunctionName: new(fn.Name)}, nil
 }
 
 // taggedFunction returns the name of the function a tagging ARN names. Only

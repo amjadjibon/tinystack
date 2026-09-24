@@ -84,7 +84,7 @@ func writeItem(tx storage.WriteTx, key string, t *table, record string, old, it 
 	}
 
 	t.Description.ItemCount = &count
-	t.Description.TableSizeBytes = ptr(value(t.Description.TableSizeBytes) - oldSize + newSize)
+	t.Description.TableSizeBytes = new(value(t.Description.TableSizeBytes) - oldSize + newSize)
 	return save(tx, key, t)
 }
 

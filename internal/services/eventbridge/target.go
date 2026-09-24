@@ -125,7 +125,7 @@ func (s *Service) PutTargets(ctx context.Context, in *api.PutTargetsRequest) (*a
 		return nil, err
 	}
 
-	return &api.PutTargetsResponse{FailedEntryCount: ptr(int64(0))}, nil
+	return &api.PutTargetsResponse{FailedEntryCount: new(int64(0))}, nil
 }
 
 // RemoveTargets succeeds for IDs the rule does not have, as EventBridge does.
@@ -153,25 +153,25 @@ func (s *Service) RemoveTargets(ctx context.Context, in *api.RemoveTargetsReques
 		return nil, err
 	}
 
-	return &api.RemoveTargetsResponse{FailedEntryCount: ptr(int64(0))}, nil
+	return &api.RemoveTargetsResponse{FailedEntryCount: new(int64(0))}, nil
 }
 
 func (t *target) describe() api.Target {
-	out := api.Target{Id: ptr(t.ID), Arn: ptr(t.ARN)}
+	out := api.Target{Id: new(t.ID), Arn: new(t.ARN)}
 	if t.RoleARN != "" {
-		out.RoleArn = ptr(t.RoleARN)
+		out.RoleArn = new(t.RoleARN)
 	}
 
 	if t.Input != "" {
-		out.Input = ptr(t.Input)
+		out.Input = new(t.Input)
 	}
 
 	if t.InputPath != "" {
-		out.InputPath = ptr(t.InputPath)
+		out.InputPath = new(t.InputPath)
 	}
 
 	if t.MessageGroupID != "" {
-		out.SqsParameters = &api.SqsParameters{MessageGroupId: ptr(t.MessageGroupID)}
+		out.SqsParameters = &api.SqsParameters{MessageGroupId: new(t.MessageGroupID)}
 	}
 
 	return out

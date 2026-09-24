@@ -253,7 +253,7 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		s.deliveries.Add(delivery.ViaSNS, arn, sub.Endpoint, []byte(body), err)
 	}
 
-	return &api.PublishResponse{MessageId: ptr(id)}, nil
+	return &api.PublishResponse{MessageId: new(id)}, nil
 }
 
 // forLambda renders the notification as a Lambda event carries it.

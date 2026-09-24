@@ -54,9 +54,9 @@ func failure(id *string, err error) api.BatchResultErrorEntry {
 	e := awserror.From(err)
 	return api.BatchResultErrorEntry{
 		Id:          id,
-		SenderFault: ptr(e.Fault() == "Sender"),
-		Code:        ptr(e.Code),
-		Message:     ptr(e.Message),
+		SenderFault: new(e.Fault() == "Sender"),
+		Code:        new(e.Code),
+		Message:     new(e.Message),
 	}
 }
 
@@ -128,8 +128,8 @@ func (s *Service) SendMessageBatch(
 
 			out.Successful = append(out.Successful, api.SendMessageBatchResultEntry{
 				Id:                     entry.Id,
-				MessageId:              ptr(o.msg.ID),
-				MD5OfMessageBody:       ptr(o.msg.BodyMD5),
+				MessageId:              new(o.msg.ID),
+				MD5OfMessageBody:       new(o.msg.BodyMD5),
 				MD5OfMessageAttributes: o.md5OfAttributes(),
 				SequenceNumber:         o.sequenceNumber(),
 			})

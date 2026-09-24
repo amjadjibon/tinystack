@@ -42,8 +42,8 @@ func (s *Service) DescribeContinuousBackups(
 	}
 
 	return &api.DescribeContinuousBackupsOutput{ContinuousBackupsDescription: &api.ContinuousBackupsDescription{
-		ContinuousBackupsStatus:        ptr("ENABLED"),
-		PointInTimeRecoveryDescription: &api.PointInTimeRecoveryDescription{PointInTimeRecoveryStatus: ptr("DISABLED")},
+		ContinuousBackupsStatus:        new("ENABLED"),
+		PointInTimeRecoveryDescription: &api.PointInTimeRecoveryDescription{PointInTimeRecoveryStatus: new("DISABLED")},
 	}}, nil
 }
 
@@ -58,7 +58,7 @@ func (s *Service) DescribeTimeToLive(
 	}
 
 	return &api.DescribeTimeToLiveOutput{
-		TimeToLiveDescription: &api.TimeToLiveDescription{TimeToLiveStatus: ptr("DISABLED")},
+		TimeToLiveDescription: &api.TimeToLiveDescription{TimeToLiveStatus: new("DISABLED")},
 	}, nil
 }
 
@@ -185,7 +185,7 @@ func (s *Service) ListTagsOfResource(
 	out := &api.ListTagsOfResourceOutput{Tags: []api.Tag{}}
 	err = s.view(ctx, name, func(t *table) {
 		for _, k := range slices.Sorted(maps.Keys(t.Tags)) {
-			out.Tags = append(out.Tags, api.Tag{Key: ptr(k), Value: ptr(t.Tags[k])})
+			out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(t.Tags[k])})
 		}
 	})
 	if err != nil {

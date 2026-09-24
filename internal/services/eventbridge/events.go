@@ -34,7 +34,7 @@ type event struct {
 }
 
 func failed(code, message string) api.PutEventsResultEntry {
-	return api.PutEventsResultEntry{ErrorCode: ptr(code), ErrorMessage: ptr(message)}
+	return api.PutEventsResultEntry{ErrorCode: new(code), ErrorMessage: new(message)}
 }
 
 func required(name string) api.PutEventsResultEntry {
@@ -122,7 +122,7 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 		return nil, err
 	}
 
-	out := &api.PutEventsResponse{FailedEntryCount: ptr(int64(0))}
+	out := &api.PutEventsResponse{FailedEntryCount: new(int64(0))}
 	for i := range in.Entries {
 		e, result := s.newEvent(m.Scope, &in.Entries[i])
 		if e == nil {
@@ -147,7 +147,7 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 			}
 		}
 
-		out.Entries = append(out.Entries, api.PutEventsResultEntry{EventId: ptr(e.ID)})
+		out.Entries = append(out.Entries, api.PutEventsResultEntry{EventId: new(e.ID)})
 	}
 
 	return out, nil
@@ -223,10 +223,10 @@ func (s *Service) deliver(ctx context.Context, rule string, t *target, eventID s
 	var err error
 	switch strings.SplitN(t.ARN, ":", 4)[2] {
 	case serviceSQS:
-		entry := &sqsapi.SendMessageBatchRequestEntry{MessageBody: ptr(string(payload))}
+		entry := &sqsapi.SendMessageBatchRequestEntry{MessageBody: new(string(payload))}
 		if t.MessageGroupID != "" {
-			entry.MessageGroupId = ptr(t.MessageGroupID)
-			entry.MessageDeduplicationId = ptr(eventID)
+			entry.MessageGroupId = new(t.MessageGroupID)
+			entry.MessageDeduplicationId = new(eventID)
 		}
 
 		err = s.queues.Deliver(ctx, t.ARN, entry)

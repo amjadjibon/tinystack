@@ -55,8 +55,6 @@ type bucketMeta struct {
 	CreatedAt int64
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func value[T any](p *T) (v T) {
 	if p != nil {
 		return *p
@@ -230,7 +228,7 @@ func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest)
 		return nil, err
 	}
 
-	return &api.CreateBucketOutput{Location: ptr("/" + name)}, nil
+	return &api.CreateBucketOutput{Location: new("/" + name)}, nil
 }
 
 func (s *Service) DeleteBucket(ctx context.Context, in *api.DeleteBucketRequest) (*api.DeleteBucketOutput, error) {
@@ -276,7 +274,7 @@ func (s *Service) HeadBucket(ctx context.Context, in *api.HeadBucketRequest) (*a
 		return nil, err
 	}
 
-	return &api.HeadBucketOutput{BucketRegion: ptr(m.Region)}, nil
+	return &api.HeadBucketOutput{BucketRegion: new(m.Region)}, nil
 }
 
 // ListBuckets lists the caller's buckets in every region, by name.
@@ -321,9 +319,9 @@ func (s *Service) ListBuckets(ctx context.Context, in *api.ListBucketsRequest) (
 			}
 
 			buckets = append(buckets, api.Bucket{
-				Name:         ptr(name),
-				CreationDate: ptr(time.UnixMilli(index.CreatedAt).UTC()),
-				BucketRegion: ptr(index.Region),
+				Name:         new(name),
+				CreationDate: new(time.UnixMilli(index.CreatedAt).UTC()),
+				BucketRegion: new(index.Region),
 			})
 		}
 
@@ -334,10 +332,10 @@ func (s *Service) ListBuckets(ctx context.Context, in *api.ListBucketsRequest) (
 	}
 
 	sort.Slice(buckets, func(i, j int) bool { return *buckets[i].Name < *buckets[j].Name })
-	out := &api.ListBucketsOutput{Owner: &api.Owner{ID: ptr(canonicalID(m.AccountID))}, Prefix: in.Prefix}
+	out := &api.ListBucketsOutput{Owner: &api.Owner{ID: new(canonicalID(m.AccountID))}, Prefix: in.Prefix}
 	if int64(len(buckets)) > limit {
 		buckets = buckets[:limit]
-		out.ContinuationToken = ptr(base64.RawURLEncoding.EncodeToString([]byte(*buckets[limit-1].Name)))
+		out.ContinuationToken = new(base64.RawURLEncoding.EncodeToString([]byte(*buckets[limit-1].Name)))
 	}
 
 	out.Buckets = buckets

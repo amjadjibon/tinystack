@@ -14,20 +14,20 @@ func TestAttributeValidation(t *testing.T) {
 	}{
 		{
 			name: "nested map",
-			value: api.AttributeValue{M: ptr(map[string]api.AttributeValue{
-				"nested": {L: ptr([]api.AttributeValue{{BOOL: ptr(false)}})},
+			value: api.AttributeValue{M: new(map[string]api.AttributeValue{
+				"nested": {L: new([]api.AttributeValue{{BOOL: new(false)}})},
 			})}, valid: true,
 		},
-		{name: "binary set", value: api.AttributeValue{BS: ptr([][]byte{{0, 1}, {2, 3}})}, valid: true},
-		{name: "number set", value: api.AttributeValue{NS: ptr([]string{"1", "2"})}, valid: true},
-		{name: "equivalent numbers", value: api.AttributeValue{NS: ptr([]string{"1", "1.0"})}, valid: false},
-		{name: "invalid number set", value: api.AttributeValue{NS: ptr([]string{"nan"})}, valid: false},
-		{name: "duplicate strings", value: api.AttributeValue{SS: ptr([]string{"one", "one"})}, valid: false},
-		{name: "bad child", value: api.AttributeValue{L: ptr([]api.AttributeValue{{}})}, valid: false},
-		{name: "bad map child", value: api.AttributeValue{M: ptr(map[string]api.AttributeValue{"bad": {}})}, valid: false},
+		{name: "binary set", value: api.AttributeValue{BS: new([][]byte{{0, 1}, {2, 3}})}, valid: true},
+		{name: "number set", value: api.AttributeValue{NS: new([]string{"1", "2"})}, valid: true},
+		{name: "equivalent numbers", value: api.AttributeValue{NS: new([]string{"1", "1.0"})}, valid: false},
+		{name: "invalid number set", value: api.AttributeValue{NS: new([]string{"nan"})}, valid: false},
+		{name: "duplicate strings", value: api.AttributeValue{SS: new([]string{"one", "one"})}, valid: false},
+		{name: "bad child", value: api.AttributeValue{L: new([]api.AttributeValue{{}})}, valid: false},
+		{name: "bad map child", value: api.AttributeValue{M: new(map[string]api.AttributeValue{"bad": {}})}, valid: false},
 		{
 			name:  "empty map name",
-			value: api.AttributeValue{M: ptr(map[string]api.AttributeValue{"": {S: ptr("x")}})}, valid: false,
+			value: api.AttributeValue{M: new(map[string]api.AttributeValue{"": {S: new("x")}})}, valid: false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -46,9 +46,9 @@ func TestAttributeValidation(t *testing.T) {
 		})
 	}
 
-	a := api.AttributeValue{S: ptr("leaf")}
+	a := api.AttributeValue{S: new("leaf")}
 	for range 34 {
-		a = api.AttributeValue{L: ptr([]api.AttributeValue{a})}
+		a = api.AttributeValue{L: new([]api.AttributeValue{a})}
 	}
 
 	if _, err := attributeSize(a, 0); err == nil {

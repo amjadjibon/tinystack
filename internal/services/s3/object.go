@@ -194,7 +194,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		return nil, err
 	}
 
-	return &api.PutObjectOutput{ETag: ptr(obj.ETag)}, nil
+	return &api.PutObjectOutput{ETag: new(obj.ETag)}, nil
 }
 
 // read loads an object and applies If-Match and If-None-Match.
@@ -258,10 +258,10 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 
 	return &api.GetObjectOutput{
 		Body:          body,
-		ContentLength: ptr(obj.Size),
-		ContentType:   ptr(obj.ContentType),
-		ETag:          ptr(obj.ETag),
-		LastModified:  ptr(time.UnixMilli(obj.LastModified).UTC()),
+		ContentLength: new(obj.Size),
+		ContentType:   new(obj.ContentType),
+		ETag:          new(obj.ETag),
+		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
 	}, nil
 }
@@ -273,10 +273,10 @@ func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*a
 	}
 
 	return &api.HeadObjectOutput{
-		ContentLength: ptr(obj.Size),
-		ContentType:   ptr(obj.ContentType),
-		ETag:          ptr(obj.ETag),
-		LastModified:  ptr(time.UnixMilli(obj.LastModified).UTC()),
+		ContentLength: new(obj.Size),
+		ContentType:   new(obj.ContentType),
+		ETag:          new(obj.ETag),
+		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
 	}, nil
 }
@@ -354,11 +354,11 @@ func page(keys []string, objects map[string]object, prefix, delimiter, start str
 
 		obj := objects[key]
 		l.contents = append(l.contents, api.Object{
-			Key:          ptr(key),
-			LastModified: ptr(time.UnixMilli(obj.LastModified).UTC()),
-			ETag:         ptr(obj.ETag),
-			Size:         ptr(obj.Size),
-			StorageClass: ptr(storageStandard),
+			Key:          new(key),
+			LastModified: new(time.UnixMilli(obj.LastModified).UTC()),
+			ETag:         new(obj.ETag),
+			Size:         new(obj.Size),
+			StorageClass: new(storageStandard),
 		})
 	}
 
@@ -431,15 +431,15 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 			s = url.QueryEscape(s)
 		}
 
-		return ptr(s)
+		return new(s)
 	}
 
 	out := &api.ListObjectsV2Output{
 		Name:              in.Bucket,
 		Prefix:            encode(value(in.Prefix)),
-		MaxKeys:           ptr(limit),
-		KeyCount:          ptr(int64(len(l.contents) + len(l.prefixes))),
-		IsTruncated:       ptr(l.more),
+		MaxKeys:           new(limit),
+		KeyCount:          new(int64(len(l.contents) + len(l.prefixes))),
+		IsTruncated:       new(l.more),
 		ContinuationToken: in.ContinuationToken,
 		EncodingType:      in.EncodingType,
 	}
@@ -453,7 +453,7 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 	}
 
 	if l.more {
-		out.NextContinuationToken = ptr(base64.RawURLEncoding.EncodeToString([]byte(l.last)))
+		out.NextContinuationToken = new(base64.RawURLEncoding.EncodeToString([]byte(l.last)))
 	}
 
 	for i := range l.contents {

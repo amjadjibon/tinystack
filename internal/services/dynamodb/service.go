@@ -34,7 +34,6 @@ type table struct {
 	Description api.TableDescription
 }
 
-func ptr[T any](v T) *T { return &v }
 func value[T any](p *T) (v T) {
 	if p != nil {
 		return *p
@@ -128,9 +127,9 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 	}
 
 	throughput := &api.ProvisionedThroughputDescription{
-		ReadCapacityUnits:      ptr(int64(0)),
-		WriteCapacityUnits:     ptr(int64(0)),
-		NumberOfDecreasesToday: ptr(int64(0)),
+		ReadCapacityUnits:      new(int64(0)),
+		WriteCapacityUnits:     new(int64(0)),
+		NumberOfDecreasesToday: new(int64(0)),
 	}
 
 	switch mode {
@@ -155,18 +154,18 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 	t := table{
 		Description: api.TableDescription{
 			TableName:   in.TableName,
-			TableStatus: ptr("ACTIVE"),
-			TableArn: ptr(
+			TableStatus: new("ACTIVE"),
+			TableArn: new(
 				fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", m.Region, m.AccountID, *in.TableName),
 			),
-			TableId:               ptr(rand.Text()),
+			TableId:               new(rand.Text()),
 			CreationDateTime:      &now,
 			KeySchema:             in.KeySchema,
 			AttributeDefinitions:  in.AttributeDefinitions,
 			BillingModeSummary:    &api.BillingModeSummary{BillingMode: &mode},
 			ProvisionedThroughput: throughput,
-			ItemCount:             ptr(int64(0)),
-			TableSizeBytes:        ptr(int64(0)),
+			ItemCount:             new(int64(0)),
+			TableSizeBytes:        new(int64(0)),
 		},
 		Tags: tags,
 	}
@@ -222,7 +221,7 @@ func (s *Service) DeleteTable(ctx context.Context, in *api.DeleteTableInput) (*a
 			tx.Delete(record)
 		}
 
-		t.Description.TableStatus = ptr("DELETING")
+		t.Description.TableStatus = new("DELETING")
 		out.TableDescription = &t.Description
 		return nil
 	})
@@ -261,7 +260,7 @@ func (s *Service) ListTables(ctx context.Context, in *api.ListTablesInput) (*api
 			}
 
 			if int64(len(out.TableNames)) == limit {
-				out.LastEvaluatedTableName = ptr(out.TableNames[len(out.TableNames)-1])
+				out.LastEvaluatedTableName = new(out.TableNames[len(out.TableNames)-1])
 				break
 			}
 

@@ -328,7 +328,7 @@ func (s *Service) ListTagsForResource(
 		}
 
 		for _, k := range slices.Sorted(maps.Keys(t.Tags)) {
-			out.Tags = append(out.Tags, api.Tag{Key: ptr(k), Value: ptr(t.Tags[k])})
+			out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(t.Tags[k])})
 		}
 
 		return nil

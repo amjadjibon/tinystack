@@ -16,7 +16,7 @@ func TestStopReleasesLongPolls(t *testing.T) {
 		Scope:    request.Scope{AccountID: "000000000000", Region: "us-east-1"},
 		Endpoint: "http://local",
 	})
-	created, err := s.CreateQueue(ctx, &api.CreateQueueRequest{QueueName: ptr("q")})
+	created, err := s.CreateQueue(ctx, &api.CreateQueueRequest{QueueName: new("q")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func TestStopReleasesLongPolls(t *testing.T) {
 	done := make(chan error, 1)
 	go func() {
 		out, receiveErr := s.ReceiveMessage(ctx, &api.ReceiveMessageRequest{
-			QueueUrl: created.QueueUrl, WaitTimeSeconds: ptr(int64(20)),
+			QueueUrl: created.QueueUrl, WaitTimeSeconds: new(int64(20)),
 		})
 		if receiveErr == nil && len(out.Messages) != 0 {
 			receiveErr = context.Canceled
@@ -48,8 +48,8 @@ func TestStopReleasesLongPolls(t *testing.T) {
 func TestAttributesMD5(t *testing.T) {
 	// Independent encoding: length-prefixed name, type, transport byte, value.
 	got := attributesMD5(map[string]api.MessageAttributeValue{
-		"b": {DataType: ptr("Binary"), BinaryValue: []byte{1}},
-		"a": {DataType: ptr("String"), StringValue: ptr("x")},
+		"b": {DataType: new("Binary"), BinaryValue: []byte{1}},
+		"a": {DataType: new("String"), StringValue: new("x")},
 	})
 	want := md5Hex([]byte(
 		"\x00\x00\x00\x01a\x00\x00\x00\x06String\x01\x00\x00\x00\x01x" +

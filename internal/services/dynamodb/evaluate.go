@@ -201,7 +201,7 @@ func (o *operand) resolve(it item) *api.AttributeValue {
 			return nil
 		}
 
-		return &api.AttributeValue{N: ptr(strconv.Itoa(n))}
+		return &api.AttributeValue{N: new(strconv.Itoa(n))}
 	default:
 		return get(it, o.path)
 	}
@@ -301,7 +301,7 @@ func attributeKey(v *api.AttributeValue) *string {
 		return v.S
 	}
 
-	return ptr(string(*v.B))
+	return new(string(*v.B))
 }
 
 // apply returns the attributes of it that the projection selects.

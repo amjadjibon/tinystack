@@ -53,14 +53,14 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 	}
 
 	return api.EventSourceMappingConfiguration{
-		UUID:                  ptr(mp.UUID),
-		EventSourceArn:        ptr(mp.EventSourceArn),
-		FunctionArn:           ptr(functionARN(scope, mp.FunctionName)),
-		BatchSize:             ptr(mp.BatchSize),
-		State:                 ptr(state),
-		StateTransitionReason: ptr("USER_INITIATED"),
-		LastModified:          ptr(float64(mp.LastModified) / 1000),
-		LastProcessingResult:  ptr(mp.LastProcessingResult),
+		UUID:                  new(mp.UUID),
+		EventSourceArn:        new(mp.EventSourceArn),
+		FunctionArn:           new(functionARN(scope, mp.FunctionName)),
+		BatchSize:             new(mp.BatchSize),
+		State:                 new(state),
+		StateTransitionReason: new("USER_INITIATED"),
+		LastModified:          new(float64(mp.LastModified) / 1000),
+		LastProcessingResult:  new(mp.LastProcessingResult),
 	}
 }
 
@@ -240,7 +240,7 @@ func (s *Service) DeleteEventSourceMapping(
 
 	s.stopPoller(mp.UUID)
 	cfg := mp.configuration(m.Scope)
-	cfg.State = ptr("Deleting")
+	cfg.State = new("Deleting")
 	return &cfg, nil
 }
 
@@ -415,7 +415,7 @@ func sqsEvent(queueARN, region string, messages []sqsapi.Message) ([]byte, error
 			}
 
 			if a.BinaryValue != nil {
-				v.BinaryValue = ptr(base64.StdEncoding.EncodeToString(a.BinaryValue))
+				v.BinaryValue = new(base64.StdEncoding.EncodeToString(a.BinaryValue))
 			}
 
 			record.MessageAttributes[name] = v
@@ -455,8 +455,8 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 
 		out, err := s.queues.ReceiveMessage(queueCtx, &sqsapi.ReceiveMessageRequest{
 			QueueUrl:                    &url,
-			MaxNumberOfMessages:         ptr(mp.BatchSize),
-			WaitTimeSeconds:             ptr(int64(pollWait)),
+			MaxNumberOfMessages:         new(mp.BatchSize),
+			WaitTimeSeconds:             new(int64(pollWait)),
 			MessageSystemAttributeNames: []string{"All"},
 			MessageAttributeNames:       []string{"All"},
 		})
@@ -499,7 +499,7 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 		entries := make([]sqsapi.DeleteMessageBatchRequestEntry, len(out.Messages))
 		for i := range out.Messages {
 			entries[i] = sqsapi.DeleteMessageBatchRequestEntry{
-				Id:            ptr(strconv.Itoa(i)),
+				Id:            new(strconv.Itoa(i)),
 				ReceiptHandle: out.Messages[i].ReceiptHandle,
 			}
 		}

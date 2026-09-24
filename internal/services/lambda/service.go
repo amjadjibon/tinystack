@@ -146,8 +146,6 @@ type function struct {
 	MemorySize   int64
 }
 
-func ptr[T any](v T) *T { return &v }
-
 func value[T any](p *T) (v T) {
 	if p != nil {
 		return *p
@@ -292,23 +290,23 @@ func writeJSON(tx storage.WriteTx, key string, v any) error {
 // configuration renders the stored function as the API reports it.
 func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration {
 	cfg := api.FunctionConfiguration{
-		FunctionName:  ptr(fn.Name),
-		FunctionArn:   ptr(functionARN(scope, fn.Name)),
-		Role:          ptr(fn.Role),
-		CodeSize:      ptr(fn.CodeSize),
-		Description:   ptr(fn.Description),
-		Timeout:       ptr(fn.Timeout),
-		MemorySize:    ptr(fn.MemorySize),
-		LastModified:  ptr(fn.LastModified),
-		CodeSha256:    ptr(fn.CodeSha256),
-		Version:       ptr(latest),
-		State:         ptr("Active"),
-		PackageType:   ptr(fn.PackageType),
+		FunctionName:  new(fn.Name),
+		FunctionArn:   new(functionARN(scope, fn.Name)),
+		Role:          new(fn.Role),
+		CodeSize:      new(fn.CodeSize),
+		Description:   new(fn.Description),
+		Timeout:       new(fn.Timeout),
+		MemorySize:    new(fn.MemorySize),
+		LastModified:  new(fn.LastModified),
+		CodeSha256:    new(fn.CodeSha256),
+		Version:       new(latest),
+		State:         new("Active"),
+		PackageType:   new(fn.PackageType),
 		Architectures: []string{"x86_64"},
 	}
 
 	if fn.Runtime != "" {
-		cfg.Runtime, cfg.Handler = ptr(fn.Runtime), ptr(fn.Handler)
+		cfg.Runtime, cfg.Handler = new(fn.Runtime), new(fn.Handler)
 	}
 
 	if fn.Architecture != "" {
@@ -556,11 +554,11 @@ func (s *Service) GetFunction(ctx context.Context, in *api.GetFunctionRequest) (
 	cfg := fn.configuration(m.Scope)
 	out := &api.GetFunctionResponse{
 		Configuration: &cfg,
-		Code:          &api.FunctionCodeLocation{RepositoryType: ptr("S3")},
+		Code:          &api.FunctionCodeLocation{RepositoryType: new("S3")},
 		Tags:          fn.Tags,
 	}
 	if fn.PackageType == packageImage {
-		out.Code = &api.FunctionCodeLocation{RepositoryType: ptr("ECR"), ImageUri: ptr(fn.ImageURI)}
+		out.Code = &api.FunctionCodeLocation{RepositoryType: new("ECR"), ImageUri: new(fn.ImageURI)}
 	}
 
 	return out, nil
@@ -590,7 +588,7 @@ func (s *Service) DeleteFunction(
 	}
 
 	s.runtime.Release(functionARN(m.Scope, fn.Name))
-	return &api.DeleteFunctionResponse{StatusCode: ptr(int64(http.StatusNoContent))}, nil
+	return &api.DeleteFunctionResponse{StatusCode: new(int64(http.StatusNoContent))}, nil
 }
 
 // after decodes a pagination marker, the last name of the previous page.
@@ -608,7 +606,7 @@ func after(marker *string) (string, error) {
 }
 
 func nextMarker(last string) *string {
-	return ptr(base64.RawURLEncoding.EncodeToString([]byte(last)))
+	return new(base64.RawURLEncoding.EncodeToString([]byte(last)))
 }
 
 func (s *Service) ListFunctions(
