@@ -23,7 +23,8 @@ Run a single test: `go test -race ./tests/integration -run TestName` (or any pac
 Run the server: `./bin/tinystack start [--host H] [--port P] [--config examples/tinystack.yaml]` (default `127.0.0.1:4566`).
 `GET /_tinystack/health` lists the registered services.
 `GET /_tinystack/requests` lists the last 256 requests with truncated bodies (`gateway/requests.go`); `DELETE`
-clears them.
+clears them. `GET /_tinystack/metrics` serves Prometheus counters by service, operation, and status
+(`gateway/metrics.go`; labels come from the catalog, never from the client).
 
 ## Architecture
 

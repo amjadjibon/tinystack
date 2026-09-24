@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -111,5 +112,47 @@ func TestRequestInspectorLimits(t *testing.T) {
 	last := records[0]
 	if len(last.RequestBody) != 4096 || last.RequestSize <= 10000 {
 		t.Fatalf("body %d bytes of %d", len(last.RequestBody), last.RequestSize)
+	}
+}
+
+func TestMetrics(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	c := sqsClient(s, "test")
+	createQueue(t, c, "counted", nil)
+	createQueue(t, c, "counted-too", nil)
+	_, err := c.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String("missing")})
+	code(t, err, "AWS.SimpleQueueService.NonExistentQueue")
+	status, _ := raw(t, s, "Bogus", "{}", nil)
+	if status != http.StatusBadRequest {
+		t.Fatalf("unknown operation status %d", status)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.URL+"/_tinystack/metrics", http.NoBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _ = resp.Body.Close() }()
+	text, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		"# TYPE tinystack_requests_total counter",
+		`tinystack_requests_total{service="sqs",operation="CreateQueue",status="200"} 2`,
+		`tinystack_requests_total{service="sqs",operation="GetQueueUrl",status="400"} 1`,
+		`tinystack_requests_total{service="dynamodb",operation="",status="400"} 1`,
+		`tinystack_request_duration_seconds_count{service="sqs",operation="CreateQueue",status="200"} 2`,
+	} {
+		if !strings.Contains(string(text), want+"\n") {
+			t.Fatalf("missing %q in\n%s", want, text)
+		}
 	}
 }

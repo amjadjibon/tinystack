@@ -87,7 +87,7 @@ lifecycle, and so on) and accepts their `NotImplemented` answers as "not
 configured"; setting any of them in Terraform fails. `tests/terraform/main.tf` is a
 working example.
 
-### Request inspector
+### Request inspector and metrics
 
 `GET /_tinystack/requests` lists the last 256 AWS requests, newest first: time,
 request ID, method, path, service, operation, protocol, account, region, status,
@@ -98,6 +98,11 @@ same fields, without the bodies, are logged as JSON to stderr.
 ```sh
 curl -s http://localhost:4566/_tinystack/requests | jq '.requests[] | select(.error_code)'
 ```
+
+`GET /_tinystack/metrics` serves Prometheus text metrics:
+`tinystack_requests_total` and `tinystack_request_duration_seconds` (a summary), labeled
+by service, operation, and HTTP status. Requests for an unknown operation have an
+empty `operation` label.
 
 ## Supported subset
 

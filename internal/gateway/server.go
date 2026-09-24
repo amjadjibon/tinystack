@@ -37,6 +37,7 @@ type Server struct {
 	routes   map[string][]route
 	logger   *slog.Logger
 	requests *requestLog
+	metrics  *metrics
 	health   []byte
 	cfg      config.Config
 }
@@ -68,6 +69,7 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		cfg:      cfg,
 		logger:   logger,
 		requests: &requestLog{},
+		metrics:  &metrics{},
 		services: map[string]*catalog.Service{},
 		routes:   map[string][]route{},
 	}
@@ -378,6 +380,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.URL.Path == "/_tinystack/metrics" {
+		s.serveMetrics(w, r)
+		return
+	}
+
 	if r.URL.Path == "/_tinystack/health" {
 		if r.Method != "GET" {
 			w.WriteHeader(405)
@@ -481,6 +488,7 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 	}
 
 	s.requests.add(&rec)
+	s.metrics.add(c, rec.Status, rec.DurationMS/1000)
 	s.logger.Info(
 		"request",
 		"request_id", rec.RequestID,
