@@ -14,7 +14,6 @@ import (
 	"hash/crc64"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -429,11 +428,8 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 			return resolveErr
 		}
 
-		for _, k := range tx.Keys() {
-			name, ok := strings.CutPrefix(k, prefix+"/o/")
-			if !ok || !strings.HasPrefix(name, value(in.Prefix)) {
-				continue
-			}
+		for _, k := range tx.Keys(prefix + "/o/" + value(in.Prefix)) {
+			name := strings.TrimPrefix(k, prefix+"/o/")
 
 			var obj object
 			if _, readErr := readJSON(tx, k, &obj); readErr != nil {
@@ -450,7 +446,6 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 		return nil, err
 	}
 
-	sort.Strings(keys)
 	l := page(keys, objects, value(in.Prefix), value(in.Delimiter), start, limit)
 	encode := func(s string) *string {
 		if encoding == "url" {

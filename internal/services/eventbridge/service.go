@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -282,14 +281,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		}
 
 		if !exists {
-			count := 0
-			for _, k := range tx.Keys() {
-				if strings.HasPrefix(k, rulePrefix(m.Scope)) {
-					count++
-				}
-			}
-
-			if count >= maxRules {
+			if len(tx.Keys(rulePrefix(m.Scope))) >= maxRules {
 				return awserror.New(
 					"LimitExceededException",
 					"The requested resource exceeds the maximum number allowed.",
@@ -411,8 +403,8 @@ func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api
 	var rules []*rule
 	prefix := rulePrefix(m.Scope) + value(in.NamePrefix)
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys() {
-			if !strings.HasPrefix(k, prefix) || strings.TrimPrefix(k, rulePrefix(m.Scope)) <= after {
+		for _, k := range tx.Keys(prefix) {
+			if strings.TrimPrefix(k, rulePrefix(m.Scope)) <= after {
 				continue
 			}
 
@@ -430,7 +422,6 @@ func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api
 		return nil, err
 	}
 
-	sort.Slice(rules, func(i, j int) bool { return rules[i].Name < rules[j].Name })
 	out := &api.ListRulesResponse{}
 	if len(rules) > size {
 		rules = rules[:size]

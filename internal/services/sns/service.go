@@ -287,15 +287,7 @@ func (s *Service) topicKeys(ctx context.Context, tx storage.ReadTx) ([]string, e
 		return nil, err
 	}
 
-	prefix := topicKey(m, "")
-	var keys []string
-	for _, k := range tx.Keys() {
-		if strings.HasPrefix(k, prefix) {
-			keys = append(keys, k)
-		}
-	}
-
-	return keys, nil
+	return tx.Keys(topicKey(m, "")), nil
 }
 
 func (s *Service) ListTopics(ctx context.Context, in *api.ListTopicsInput) (*api.ListTopicsResponse, error) {

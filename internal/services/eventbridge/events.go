@@ -163,11 +163,7 @@ type compiledRule struct {
 func (s *Service) enabledRules(ctx context.Context, scope request.Scope) ([]compiledRule, error) {
 	var rules []compiledRule
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys() {
-			if !strings.HasPrefix(k, rulePrefix(scope)) {
-				continue
-			}
-
+		for _, k := range tx.Keys(rulePrefix(scope)) {
 			r, _, err := load(tx, k)
 			if err != nil {
 				return err

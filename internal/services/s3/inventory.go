@@ -32,7 +32,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			return views[bucketKey]
 		}
 
-		for _, key := range tx.Keys() {
+		for _, key := range tx.Keys("") {
 			account, region, rest, ok := storage.Scoped(key, "s3")
 			if !ok {
 				continue

@@ -17,7 +17,6 @@ import (
 	"net"
 	"net/http"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -243,10 +242,8 @@ func (s *Service) DeleteBucket(ctx context.Context, in *api.DeleteBucketRequest)
 			return resolveErr
 		}
 
-		for _, k := range tx.Keys() {
-			if strings.HasPrefix(k, key+"/o/") || strings.HasPrefix(k, key+"/u/") {
-				return fail(http.StatusConflict, "BucketNotEmpty", "The bucket you tried to delete is not empty")
-			}
+		if len(tx.Keys(key+"/o/")) > 0 || len(tx.Keys(key+"/u/")) > 0 {
+			return fail(http.StatusConflict, "BucketNotEmpty", "The bucket you tried to delete is not empty")
 		}
 
 		tx.Delete(indexPrefix + *in.Bucket)
@@ -303,9 +300,9 @@ func (s *Service) ListBuckets(ctx context.Context, in *api.ListBucketsRequest) (
 
 	var buckets []api.Bucket
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys() {
-			name, ok := strings.CutPrefix(k, indexPrefix)
-			if !ok || name <= after || !strings.HasPrefix(name, value(in.Prefix)) {
+		for _, k := range tx.Keys(indexPrefix + value(in.Prefix)) {
+			name := strings.TrimPrefix(k, indexPrefix)
+			if name <= after {
 				continue
 			}
 
@@ -331,7 +328,6 @@ func (s *Service) ListBuckets(ctx context.Context, in *api.ListBucketsRequest) (
 		return nil, err
 	}
 
-	sort.Slice(buckets, func(i, j int) bool { return *buckets[i].Name < *buckets[j].Name })
 	out := &api.ListBucketsOutput{Owner: &api.Owner{ID: new(canonicalID(m.AccountID))}, Prefix: in.Prefix}
 	if int64(len(buckets)) > limit {
 		buckets = buckets[:limit]

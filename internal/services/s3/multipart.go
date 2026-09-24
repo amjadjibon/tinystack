@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -65,10 +64,8 @@ func loadUpload(tx storage.ReadTx, bucket, key, id string) (upload, error) {
 
 func removeUpload(tx storage.WriteTx, bucket, id string) {
 	tx.Delete(uploadKey(bucket, id))
-	for _, k := range tx.Keys() {
-		if strings.HasPrefix(k, bucket+"/p/"+id+"/") || strings.HasPrefix(k, bucket+"/pm/"+id+"/") {
-			tx.Delete(k)
-		}
+	for _, k := range append(tx.Keys(bucket+"/p/"+id+"/"), tx.Keys(bucket+"/pm/"+id+"/")...) {
+		tx.Delete(k)
 	}
 }
 
@@ -326,15 +323,13 @@ func (s *Service) ListParts(ctx context.Context, in *api.ListPartsRequest) (*api
 			return loadErr
 		}
 		var nums []int64
-		for _, k := range tx.Keys() {
-			if part, ok := strings.CutPrefix(k, bucket+"/pm/"+*in.UploadId+"/"); ok {
-				n, parseErr := strconv.ParseInt(part, 10, 64)
-				if parseErr == nil && n > marker {
-					nums = append(nums, n)
-				}
+		prefix := bucket + "/pm/" + *in.UploadId + "/"
+		for _, k := range tx.Keys(prefix) {
+			n, parseErr := strconv.ParseInt(strings.TrimPrefix(k, prefix), 10, 64)
+			if parseErr == nil && n > marker {
+				nums = append(nums, n)
 			}
 		}
-		slices.Sort(nums)
 		if int64(len(nums)) > limit {
 			*out.IsTruncated = true
 			nums = nums[:limit]
@@ -393,11 +388,8 @@ func (s *Service) ListMultipartUploads(
 			u  upload
 		}
 		var items []item
-		for _, k := range tx.Keys() {
-			id, ok := strings.CutPrefix(k, bucket+"/u/")
-			if !ok {
-				continue
-			}
+		for _, k := range tx.Keys(bucket + "/u/") {
+			id := strings.TrimPrefix(k, bucket+"/u/")
 			var u upload
 			if _, readErr := readJSON(tx, k, &u); readErr != nil {
 				return readErr

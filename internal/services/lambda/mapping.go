@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -147,11 +146,7 @@ func (s *Service) CreateEventSourceMapping(
 
 	prefix := scopeKey(m.Scope, kindMapping, "")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		for _, k := range tx.Keys() {
-			if !strings.HasPrefix(k, prefix) {
-				continue
-			}
-
+		for _, k := range tx.Keys(prefix) {
 			existing, _, loadErr := loadMapping(tx, k)
 			if loadErr != nil {
 				return loadErr
@@ -275,8 +270,8 @@ func (s *Service) ListEventSourceMappings(
 	var mps []*mapping
 	prefix := scopeKey(m.Scope, kindMapping, "")
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys() {
-			if id, ok := strings.CutPrefix(k, prefix); !ok || id <= start {
+		for _, k := range tx.Keys(prefix) {
+			if strings.TrimPrefix(k, prefix) <= start {
 				continue
 			}
 
@@ -297,7 +292,6 @@ func (s *Service) ListEventSourceMappings(
 		return nil, err
 	}
 
-	sort.Slice(mps, func(i, j int) bool { return mps[i].UUID < mps[j].UUID })
 	out := &api.ListEventSourceMappingsResponse{}
 	if int64(len(mps)) > limit {
 		mps = mps[:limit]
@@ -321,7 +315,7 @@ func (s *Service) Resume(ctx context.Context) error {
 
 	var enabled []stored
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, key := range tx.Keys() {
+		for _, key := range tx.Keys("") {
 			account, region, rest, ok := storage.Scoped(key, "lambda")
 			if !ok || !strings.HasPrefix(rest, kindMapping+"/") {
 				continue

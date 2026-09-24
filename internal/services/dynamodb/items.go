@@ -28,16 +28,7 @@ func itemRecord(key, id string) string { return key + "/item/" + id }
 // itemRecords returns, in order, the storage keys of the table's items whose
 // ids start with prefix.
 func itemRecords(tx storage.ReadTx, key, prefix string) []string {
-	start := itemRecord(key, prefix)
-	var out []string
-	for _, k := range tx.Keys() {
-		if strings.HasPrefix(k, start) {
-			out = append(out, k)
-		}
-	}
-
-	sort.Strings(out)
-	return out
+	return tx.Keys(itemRecord(key, prefix))
 }
 
 func loadItem(tx storage.ReadTx, record string) (it item, found bool, err error) {

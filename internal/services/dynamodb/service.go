@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/big"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -247,13 +246,7 @@ func (s *Service) ListTables(ctx context.Context, in *api.ListTablesInput) (*api
 	prefix := m.AccountID + "/" + m.Region + "/dynamodb/"
 	out := &api.ListTablesOutput{TableNames: []string{}}
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		keys := tx.Keys()
-		sort.Strings(keys)
-		for _, key := range keys {
-			if !strings.HasPrefix(key, prefix) {
-				continue
-			}
-
+		for _, key := range tx.Keys(prefix) {
 			name := strings.TrimPrefix(key, prefix)
 			if strings.Contains(name, "/") || name <= value(in.ExclusiveStartTableName) {
 				continue

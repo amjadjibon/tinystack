@@ -633,8 +633,8 @@ func (s *Service) ListFunctions(
 	var fns []*function
 	prefix := scopeKey(m.Scope, kindFunction, "")
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys() {
-			if name, ok := strings.CutPrefix(k, prefix); !ok || name <= start {
+		for _, k := range tx.Keys(prefix) {
+			if strings.TrimPrefix(k, prefix) <= start {
 				continue
 			}
 
@@ -652,7 +652,6 @@ func (s *Service) ListFunctions(
 		return nil, err
 	}
 
-	sort.Slice(fns, func(i, j int) bool { return fns[i].Name < fns[j].Name })
 	out := &api.ListFunctionsResponse{}
 	if int64(len(fns)) > limit {
 		fns = fns[:limit]

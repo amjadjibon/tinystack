@@ -8,7 +8,8 @@ import (
 // ReadTx exposes a consistent snapshot; handles must stay inside the callback.
 type ReadTx interface {
 	Get(string) ([]byte, bool)
-	Keys() []string
+	// Keys returns, in order, the keys that start with prefix.
+	Keys(prefix string) []string
 }
 
 // WriteTx stages changes which are committed together on callback success.

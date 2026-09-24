@@ -1,11 +1,13 @@
 // Package storagetest checks that a storage.Store backend keeps the contract
-// every service relies on: atomic commits, rollback, serializable updates, and
-// values that never alias the caller's bytes.
+// every service relies on: atomic commits, rollback, serializable updates,
+// ordered prefix listings, and values that never alias the caller's bytes.
 package storagetest
 
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -20,6 +22,7 @@ func Run(t *testing.T, open func(t *testing.T) storage.Store) {
 	t.Run("transactions", func(t *testing.T) { transactions(t, open) })
 	t.Run("concurrent updates", func(t *testing.T) { concurrentUpdates(t, open(t)) })
 	t.Run("copies", func(t *testing.T) { copies(t, open(t)) })
+	t.Run("keys", func(t *testing.T) { keys(t, open(t)) })
 }
 
 func transactions(t *testing.T, open func(t *testing.T) storage.Store) {
@@ -140,12 +143,72 @@ func copies(t *testing.T, s storage.Store) {
 	}
 }
 
+func keys(t *testing.T, s storage.Store) {
+	t.Helper()
+	ctx := context.Background()
+	// A large commit, so the store also covers rebuilding its order.
+	var many []string
+	err := s.Update(ctx, func(tx storage.WriteTx) error {
+		for i := 999; i >= 0; i-- {
+			k := fmt.Sprintf("n/%03d", i)
+			many = append(many, k)
+			tx.Put(k, nil)
+		}
+
+		for _, k := range []string{"b/2", "a", "b/1", "c", "b/3"} {
+			tx.Put(k, nil)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	slices.Sort(many)
+	want := func(tx storage.ReadTx, prefix string, keys ...string) {
+		t.Helper()
+		if got := tx.Keys(prefix); !slices.Equal(got, keys) {
+			t.Errorf("Keys(%q) = %q, want %q", prefix, got, keys)
+		}
+	}
+
+	err = s.Update(ctx, func(tx storage.WriteTx) error {
+		want(tx, "n/", many...)
+		tx.Delete("b/1")
+		tx.Put("b/0", nil)
+		tx.Put("b/2", []byte("changed"))
+		tx.Delete("n/500")
+		want(tx, "b/", "b/0", "b/2", "b/3")
+		want(tx, "b", "b/0", "b/2", "b/3")
+		want(tx, "x")
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = s.View(ctx, func(tx storage.ReadTx) error {
+		want(tx, "b/", "b/0", "b/2", "b/3")
+		want(tx, "n/", slices.DeleteFunc(slices.Clone(many), func(k string) bool { return k == "n/500" })...)
+		all := tx.Keys("")
+		if !slices.IsSorted(all) || len(all) != len(many)-1+5 {
+			t.Errorf("Keys(\"\") returned %d keys, sorted %t", len(all), slices.IsSorted(all))
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // Snapshot returns every committed record in s.
 func Snapshot(t *testing.T, s storage.Store) map[string][]byte {
 	t.Helper()
 	out := map[string][]byte{}
 	err := s.View(context.Background(), func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys() {
+		for _, k := range tx.Keys("") {
 			out[k], _ = tx.Get(k)
 		}
 

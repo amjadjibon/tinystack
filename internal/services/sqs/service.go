@@ -446,9 +446,8 @@ func (s *Service) ListQueues(ctx context.Context, in *api.ListQueuesRequest) (*a
 	prefix := queueKey(m, "")
 	var names []string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys() {
-			name, ok := strings.CutPrefix(k, prefix)
-			if ok && strings.HasPrefix(name, value(in.QueueNamePrefix)) && name > after {
+		for _, k := range tx.Keys(prefix + value(in.QueueNamePrefix)) {
+			if name := strings.TrimPrefix(k, prefix); name > after {
 				names = append(names, name)
 			}
 		}
@@ -459,7 +458,6 @@ func (s *Service) ListQueues(ctx context.Context, in *api.ListQueuesRequest) (*a
 		return nil, err
 	}
 
-	sort.Strings(names)
 	out := &api.ListQueuesResult{}
 	if int64(len(names)) > limit {
 		names = names[:limit]

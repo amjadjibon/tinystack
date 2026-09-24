@@ -116,7 +116,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
-  callback. `storage/memory` holds every record in memory;
+  callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for
+  their own prefix and never re-sort by key. `storage/memory` holds every record in memory with a sorted key index;
   `storage/sqlite` (`storage.mode: persistent`) is that store with a `memory.Persist` hook that writes each commit to
   `<storage.path>/state.db` before it becomes visible and reloads it on open (exclusively locked, schema version checked).
   `storagetest.Run` is the contract every backend runs. `start.go` shares one store across services and calls
