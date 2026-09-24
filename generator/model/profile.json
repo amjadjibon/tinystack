@@ -1398,9 +1398,30 @@
   },
   "sts": {
     "operations": [
+      "AssumeRole",
       "GetCallerIdentity"
     ],
     "shapes": {
+      "AssumeRoleRequest": [
+        "RoleArn",
+        "RoleSessionName",
+        "DurationSeconds",
+        "ExternalId"
+      ],
+      "AssumeRoleResponse": [
+        "Credentials",
+        "AssumedRoleUser"
+      ],
+      "Credentials": [
+        "AccessKeyId",
+        "SecretAccessKey",
+        "SessionToken",
+        "Expiration"
+      ],
+      "AssumedRoleUser": [
+        "AssumedRoleId",
+        "Arn"
+      ],
       "GetCallerIdentityRequest": [],
       "GetCallerIdentityResponse": [
         "UserId",

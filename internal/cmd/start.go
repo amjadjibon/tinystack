@@ -88,6 +88,8 @@ func newStartCommand() *cobra.Command {
 			}
 
 			topics := sns.New(store, queues, functions, deliveries)
+			roles := iam.New(store)
+			tokens := sts.New(store, roles)
 			handler, err := gateway.New(
 				cfg,
 				logger,
@@ -97,13 +99,14 @@ func newStartCommand() *cobra.Command {
 				s3api.Descriptor(s3.New(store)),
 				lambdaapi.Descriptor(functions),
 				eventbridgeapi.Descriptor(eventbridge.New(store, queues, topics, functions, deliveries)),
-				iamapi.Descriptor(iam.New(store)),
-				stsapi.Descriptor(sts.New()),
+				iamapi.Descriptor(roles),
+				stsapi.Descriptor(tokens),
 			)
 			if err != nil {
 				return err
 			}
 
+			handler.UseSessions(tokens.Session)
 			handler.Handle("deliveries", deliveries)
 
 			var listenConfig net.ListenConfig

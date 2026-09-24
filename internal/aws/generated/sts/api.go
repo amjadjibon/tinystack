@@ -4,7 +4,32 @@ package sts
 import (
 	"context"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"time"
 )
+
+type AssumeRoleRequest struct {
+	RoleArn         *string `json:"RoleArn,omitempty" query:"RoleArn"`
+	RoleSessionName *string `json:"RoleSessionName,omitempty" query:"RoleSessionName"`
+	DurationSeconds *int64  `json:"DurationSeconds,omitempty" query:"DurationSeconds"`
+	ExternalId      *string `json:"ExternalId,omitempty" query:"ExternalId"`
+}
+
+type Credentials struct {
+	AccessKeyId     *string    `json:"AccessKeyId,omitempty" query:"AccessKeyId"`
+	SecretAccessKey *string    `json:"SecretAccessKey,omitempty" query:"SecretAccessKey"`
+	SessionToken    *string    `json:"SessionToken,omitempty" query:"SessionToken"`
+	Expiration      *time.Time `json:"Expiration,omitempty" query:"Expiration"`
+}
+
+type AssumedRoleUser struct {
+	AssumedRoleId *string `json:"AssumedRoleId,omitempty" query:"AssumedRoleId"`
+	Arn           *string `json:"Arn,omitempty" query:"Arn"`
+}
+
+type AssumeRoleResponse struct {
+	Credentials     *Credentials     `json:"Credentials,omitempty" query:"Credentials"`
+	AssumedRoleUser *AssumedRoleUser `json:"AssumedRoleUser,omitempty" query:"AssumedRoleUser"`
+}
 
 type GetCallerIdentityRequest struct {
 }
@@ -16,11 +41,15 @@ type GetCallerIdentityResponse struct {
 }
 
 type API interface {
+	AssumeRole(context.Context, *AssumeRoleRequest) (*AssumeRoleResponse, error)
 	GetCallerIdentity(context.Context, *GetCallerIdentityRequest) (*GetCallerIdentityResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "sts", SigningName: "sts", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://sts.amazonaws.com/doc/2011-06-15/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "sts", SigningName: "sts", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://sts.amazonaws.com/doc/2011-06-15/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ExpiredTokenException": catalog.ErrorBinding{QueryCode: "ExpiredTokenException", MessageMember: "", StatusCode: 400}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "PackedPolicyTooLargeException": catalog.ErrorBinding{QueryCode: "PackedPolicyTooLarge", MessageMember: "", StatusCode: 400}, "RegionDisabledException": catalog.ErrorBinding{QueryCode: "RegionDisabledException", MessageMember: "", StatusCode: 403}}, Operations: map[string]catalog.Operation{
+		"AssumeRole": {Name: "AssumeRole", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssumeRole", Version: "2011-06-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssumeRoleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssumeRole(ctx, input.(*AssumeRoleRequest))
+		}},
 		"GetCallerIdentity": {Name: "GetCallerIdentity", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetCallerIdentity", Version: "2011-06-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetCallerIdentityRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetCallerIdentity(ctx, input.(*GetCallerIdentityRequest))
 		}},

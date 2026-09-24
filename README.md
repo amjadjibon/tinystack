@@ -257,7 +257,16 @@ Policy documents must be JSON objects with a `Statement`.
 
 | Operation | Behavior |
 | --- | --- |
-| GetCallerIdentity | The caller's account (from `identity.accounts`, or the default account for unmapped keys and unsigned requests) and its root user ARN |
+| GetCallerIdentity | The caller's account (from `identity.accounts`, or the default account for unmapped keys and unsigned requests) and its root user ARN, or the role session for temporary credentials |
+| AssumeRole | Temporary credentials for a role in any account (`RoleArn`, `RoleSessionName`, `DurationSeconds` from 900 seconds up to the role's `MaxSessionDuration`, `ExternalId`); a session assuming another role is limited to one hour |
+
+AssumeRole checks the role's trust policy: an `Allow` for `sts:AssumeRole` (wildcards
+allowed) whose `AWS` principal is `*`, the caller's account ID or root ARN, or the
+caller's role or session ARN. `StringEquals` on `sts:ExternalId` is the only
+condition understood: an `Allow` with any other condition (or `NotPrincipal` /
+`NotAction`) grants nothing, and such a `Deny` always applies. Temporary
+credentials act in the role's account for every service; sessions survive restarts
+in persistent mode, and expired ones are removed when the next role is assumed.
 
 ### EventBridge (AWS JSON 1.1)
 
@@ -302,9 +311,11 @@ hash), the credential scope, and a signing time within 15 minutes, and answers w
 each service's error codes (such as `InvalidSignatureException`,
 `SignatureDoesNotMatch`, `UnrecognizedClientException`, or `InvalidAccessKeyId`).
 S3 accepts `UNSIGNED-PAYLOAD` and `STREAMING-UNSIGNED-PAYLOAD-TRAILER` bodies;
-signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`), presigned URLs,
-and session tokens are not supported. IAM policies are stored but not
-evaluated: any configured key may call any operation in its account.
+signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`) and presigned URLs
+are not supported. Temporary credentials from STS AssumeRole need no configuration:
+they must send their session token (`X-Amz-Security-Token`) and fail with
+`ExpiredToken` once expired. IAM policies are stored but not evaluated: any
+configured key or role session may call any operation in its account.
 
 DynamoDB limits: no secondary indexes, batch or transaction operations, legacy parameters
 (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...), parallel scans,
@@ -327,7 +338,9 @@ logged and dropped after the retries. EventBridge limits: only the default event
 SQS, SNS, and Lambda in the rule's account and region; delivery happens
 synchronously during PutEvents. IAM limits: no users, access keys, groups, instance
 profiles, permissions boundaries, or policy evaluation, and AWS managed policies
-are not modeled. Asynchronous Lambda invocations still in flight are lost on
+are not modeled. STS limits: no `GetSessionToken`, federation, web identity, SAML,
+session tags, or session policies, and functions created with temporary
+credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.

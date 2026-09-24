@@ -91,6 +91,8 @@ func serverStore(
 	}
 
 	snsService := topics.New(store, sqsService, functions, deliveries)
+	roles := principals.New(store)
+	stsService := tokens.New(store, roles)
 	h, err := gateway.New(
 		cfg,
 		logger,
@@ -100,13 +102,14 @@ func serverStore(
 		s3api.Descriptor(buckets.New(store)),
 		lambdaapi.Descriptor(functions),
 		eventbridgeapi.Descriptor(eventbridge.New(store, sqsService, snsService, functions, deliveries)),
-		iamapi.Descriptor(principals.New(store)),
-		stsapi.Descriptor(tokens.New()),
+		iamapi.Descriptor(roles),
+		stsapi.Descriptor(stsService),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	h.UseSessions(stsService.Session)
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)

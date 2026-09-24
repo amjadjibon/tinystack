@@ -155,6 +155,14 @@ def main():
                 assert lam("list-functions").get("Functions", []) == []
                 iam("detach-role-policy", "--role-name", "lambda", "--policy-arn", "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
                 iam("delete-role", "--role-name", "lambda")
+                deployer_trust = {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": "000000000000"}, "Action": "sts:AssumeRole"}]}
+                deployer = iam("create-role", "--role-name", "deployer", "--assume-role-policy-document", json.dumps(deployer_trust))["Role"]
+                session = aws("assume-role", "--role-arn", deployer["Arn"], "--role-session-name", "smoke", service="sts")["Credentials"]
+                # Temporary credentials sign requests, verified against the session's secret and token.
+                session_env = {**env, "AWS_ACCESS_KEY_ID": session["AccessKeyId"], "AWS_SECRET_ACCESS_KEY": session["SecretAccessKey"], "AWS_SESSION_TOKEN": session["SessionToken"]}
+                assumed = subprocess.run(["aws", "--endpoint-url", endpoint, "--region", "us-east-1", "--output", "json", "sts", "get-caller-identity"], env=session_env, text=True, capture_output=True, check=True, timeout=20)
+                assert json.loads(assumed.stdout)["Arn"] == "arn:aws:sts::000000000000:assumed-role/deployer/smoke", assumed.stdout
+                iam("delete-role", "--role-name", "deployer")
                 assert iam("list-roles")["Roles"] == []
             finally:
                 if process.poll() is None:

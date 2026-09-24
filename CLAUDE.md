@@ -42,7 +42,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   REST JSON for Lambda); otherwise a form content type means AWS Query, and an unsigned request that is neither falls
   back to S3, the REST service that serves anonymous requests. It does this before anything
   else, so even early errors use the client's envelope. It then resolves identity from the SigV4 `Credential` scope
-  (`aws/sigv4`): the access key maps to an account through `identity.accounts`, and the region comes
+  (`aws/sigv4`): the access key maps to an account through `identity.accounts` (or, for an unconfigured key, through
+  the STS session registered with `Server.UseSessions`), and the region comes
   from the signed scope, then the regional host, then the configured default. The service comes from the JSON target
   prefix, or for Query from the signed or host service name, falling back to the only Query service that has the
   `Action`. The gateway also validates content type, method, path and version against the operation's binding (Query
@@ -53,7 +54,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   (`<bucket>.localhost`, `<bucket>.s3.…amazonaws.com`) are folded into the path. REST payloads are limited to 64 MiB and
   aws-chunked bodies are decoded. Signatures are checked only in `identity.mode: verify` (`gateway/auth.go`), after
   classification (so S3 can use its single path encoding and unsigned-payload literals) and before decoding: the key
-  must be in `identity.secret_keys`, the body is hashed (and replaced for decoding), and failures use per-protocol codes.
+  must be in `identity.secret_keys` (or be an STS session key sent with its `X-Amz-Security-Token`, which fails with
+  `ExpiredToken` once expired), the body is hashed (and replaced for decoding), and failures use per-protocol codes.
   Lambda hands function code its creator's configured secret so SDK calls back to TinyStack verify.
 - **catalog** (`internal/aws/catalog`): protocol-neutral service/operation/binding/error descriptors. A service
   registers with the gateway by passing `api.Descriptor(impl)`.
@@ -118,7 +120,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   case-insensitive); a role record holds its inline policies and attached ARNs, and attaching updates the policy's
   attachment count in the same transaction. Policies are stored, never evaluated. Users and access keys wait until
   their credentials can be registered with the gateway's identity resolver (`docs/services/iam.md`). STS
-  `GetCallerIdentity` reports the gateway-resolved account's root user; it stores nothing.
+  `AssumeRole` checks the role's trust policy (`sts/trust.go`, a documented subset) through `iam.Service.RoleByARN`
+  and stores each session under the partition-wide `aws/sts/session/<access key>`; `GetCallerIdentity` reports that
+  session or the gateway-resolved account's root user.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for
