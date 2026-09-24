@@ -25,6 +25,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/recent"
 )
 
 const (
@@ -36,8 +37,10 @@ type Server struct {
 	services map[string]*catalog.Service
 	routes   map[string][]route
 	logger   *slog.Logger
-	requests *requestLog
+	requests *recent.Log[Record]
 	metrics  *metrics
+	// internal serves TinyStack's own endpoints under /_tinystack/.
+	internal map[string]http.Handler
 	health   []byte
 	cfg      config.Config
 }
@@ -68,7 +71,7 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	s := &Server{
 		cfg:      cfg,
 		logger:   logger,
-		requests: &requestLog{},
+		requests: recent.New[Record](maxRecords, "requests"),
 		metrics:  &metrics{},
 		services: map[string]*catalog.Service{},
 		routes:   map[string][]route{},
@@ -92,7 +95,19 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	}
 
 	s.health = health
+	s.internal = map[string]http.Handler{
+		"/_tinystack/health":    http.HandlerFunc(s.serveHealth),
+		"/_tinystack/requests":  s.requests,
+		"/_tinystack/resources": http.HandlerFunc(s.serveResources),
+		"/_tinystack/metrics":   http.HandlerFunc(s.serveMetrics),
+	}
+
 	return s, nil
+}
+
+// Handle serves h at /_tinystack/<name>. Call it before serving requests.
+func (s *Server) Handle(name string, h http.Handler) {
+	s.internal["/_tinystack/"+name] = h
 }
 
 // identify resolves the caller scope from the host and SigV4 credential scope,
@@ -385,20 +400,9 @@ func (s *Server) serveHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TinyStack's own endpoints; "_" is not valid in an S3 bucket name, so
-	// these paths never name one.
-	switch r.URL.Path {
-	case "/_tinystack/health":
-		s.serveHealth(w, r)
-		return
-	case "/_tinystack/requests":
-		s.serveRequests(w, r)
-		return
-	case "/_tinystack/resources":
-		s.serveResources(w, r)
-		return
-	case "/_tinystack/metrics":
-		s.serveMetrics(w, r)
+	// "_" is not valid in an S3 bucket name, so these paths never name one.
+	if h, ok := s.internal[r.URL.Path]; ok {
+		h.ServeHTTP(w, r)
 		return
 	}
 
@@ -493,7 +497,7 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 		rec.ErrorCode, rec.ErrorMessage = c.failure.Code, c.failure.Message
 	}
 
-	s.requests.add(&rec)
+	s.requests.Add(rec)
 	s.metrics.add(c, rec.Status, rec.DurationMS/1000)
 	s.logger.Info(
 		"request",
