@@ -244,7 +244,7 @@ func (s *Service) DeleteBucket(ctx context.Context, in *api.DeleteBucketRequest)
 		}
 
 		for _, k := range tx.Keys() {
-			if strings.HasPrefix(k, key+"/o/") {
+			if strings.HasPrefix(k, key+"/o/") || strings.HasPrefix(k, key+"/u/") {
 				return fail(http.StatusConflict, "BucketNotEmpty", "The bucket you tried to delete is not empty")
 			}
 		}

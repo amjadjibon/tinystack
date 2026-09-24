@@ -31,6 +31,7 @@ func restProtocol(service *catalog.Service) string {
 type route struct {
 	literals map[string]string
 	allowed  map[string]bool
+	required []string
 	name     string
 	method   string
 	segments []string
@@ -75,6 +76,15 @@ func routes(service *catalog.Service) []route {
 				rt.allowed[mb.Name] = true
 			}
 		}
+		// S3's multipart routes share their method and object path with
+		// ordinary object operations. Their upload query parameters distinguish
+		// the operations even when the optional x-id parameter is absent.
+		switch name {
+		case "UploadPart":
+			rt.required = []string{"uploadId", "partNumber"}
+		case "ListParts", "CompleteMultipartUpload", "AbortMultipartUpload":
+			rt.required = []string{"uploadId"}
+		}
 
 		out = append(out, rt)
 	}
@@ -90,6 +100,11 @@ func (rt *route) match(method string, segments []string, query url.Values) (map[
 
 	for k, v := range rt.literals {
 		if got, ok := query[k]; !ok || (v != "" && (len(got) != 1 || got[0] != v)) {
+			return nil, false
+		}
+	}
+	for _, k := range rt.required {
+		if len(query[k]) != 1 || query.Get(k) == "" {
 			return nil, false
 		}
 	}

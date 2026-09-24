@@ -199,10 +199,11 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | GetObject / HeadObject | Body, size, type, ETag, `Last-Modified`, metadata; `If-Match` and `If-None-Match`; one `Range` byte interval (206 and `Content-Range` for GET, adjusted length for HEAD, 416 when unsatisfiable) |
 | DeleteObject | Deleting a missing key succeeds |
 | ListObjectsV2 | Prefix, delimiter and common prefixes, `max-keys`, continuation token, `start-after`, `encoding-type=url` |
+| Multipart uploads | Create, upload parts, list parts/uploads, complete, and abort; completion validates ordered part ETags and 5 MiB nonfinal parts, then atomically installs an object up to 64 MiB |
 
 Another account's bucket answers `AccessDenied` (403), and a bucket in another
 region answers `PermanentRedirect` (301). Modeled request headers and query
-parameters that TinyStack does not implement (part numbers, versions, ACLs,
+parameters that TinyStack does not implement (versions, ACLs,
 encryption, object tagging, other storage classes, and so on) answer `NotImplemented`
 (501), as do S3 subresources such as `?acl`.
 
@@ -287,7 +288,7 @@ message groups on standard queues, dead-letter redrive back to the source queue,
 policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, filter
 policies, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
-S3 limits: no multipart uploads, presigned URLs, multiple ranges per request, versioning, ACLs other than `private`,
+S3 limits: no presigned URLs, multiple ranges per request, versioning, ACLs other than `private`,
 policies, encryption, object tagging, lifecycle, notifications, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no versions, aliases, layers,
 function updates, code from S3, `ImageConfig`, `LogType: Tail`, function URLs,

@@ -491,7 +491,13 @@
       "ListObjectsV2",
       "PutBucketTagging",
       "GetBucketTagging",
-      "DeleteBucketTagging"
+      "DeleteBucketTagging",
+      "CreateMultipartUpload",
+      "UploadPart",
+      "ListParts",
+      "CompleteMultipartUpload",
+      "AbortMultipartUpload",
+      "ListMultipartUploads"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -657,6 +663,116 @@
       "DeleteBucketTaggingRequest": [
         "Bucket",
         "ExpectedBucketOwner"
+      ],
+      "CreateMultipartUploadRequest": [
+        "Bucket",
+        "Key",
+        "ContentType",
+        "Metadata",
+        "StorageClass",
+        "ExpectedBucketOwner"
+      ],
+      "CreateMultipartUploadOutput": [
+        "Bucket",
+        "Key",
+        "UploadId"
+      ],
+      "UploadPartRequest": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "PartNumber",
+        "Body",
+        "ContentLength",
+        "ContentMD5",
+        "ExpectedBucketOwner"
+      ],
+      "UploadPartOutput": [
+        "ETag"
+      ],
+      "CompleteMultipartUploadRequest": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "MultipartUpload",
+        "ExpectedBucketOwner",
+        "IfMatch",
+        "IfNoneMatch"
+      ],
+      "CompleteMultipartUploadOutput": [
+        "Location",
+        "Bucket",
+        "Key",
+        "ETag"
+      ],
+      "CompletedMultipartUpload": [
+        "Parts"
+      ],
+      "CompletedPart": [
+        "PartNumber",
+        "ETag"
+      ],
+      "AbortMultipartUploadRequest": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "ExpectedBucketOwner"
+      ],
+      "AbortMultipartUploadOutput": [],
+      "ListPartsRequest": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "MaxParts",
+        "PartNumberMarker",
+        "ExpectedBucketOwner"
+      ],
+      "ListPartsOutput": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "PartNumberMarker",
+        "NextPartNumberMarker",
+        "MaxParts",
+        "IsTruncated",
+        "Parts",
+        "StorageClass"
+      ],
+      "Part": [
+        "PartNumber",
+        "LastModified",
+        "ETag",
+        "Size"
+      ],
+      "ListMultipartUploadsRequest": [
+        "Bucket",
+        "Delimiter",
+        "EncodingType",
+        "KeyMarker",
+        "MaxUploads",
+        "Prefix",
+        "UploadIdMarker",
+        "ExpectedBucketOwner"
+      ],
+      "ListMultipartUploadsOutput": [
+        "Bucket",
+        "KeyMarker",
+        "UploadIdMarker",
+        "NextKeyMarker",
+        "NextUploadIdMarker",
+        "Prefix",
+        "Delimiter",
+        "MaxUploads",
+        "IsTruncated",
+        "Uploads",
+        "CommonPrefixes",
+        "EncodingType"
+      ],
+      "MultipartUpload": [
+        "UploadId",
+        "Key",
+        "Initiated",
+        "StorageClass"
       ]
     }
   },

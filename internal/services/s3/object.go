@@ -30,6 +30,7 @@ const (
 	maxListKeys      = 1000
 	storageStandard  = "STANDARD"
 	defaultType      = "binary/octet-stream"
+	encodingURL      = "url"
 )
 
 // object is the stored metadata of one object; its bytes are a separate record.
@@ -406,7 +407,7 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 	}
 
 	encoding := value(in.EncodingType)
-	if encoding != "" && encoding != "url" {
+	if encoding != "" && encoding != encodingURL {
 		return nil, fail(http.StatusBadRequest, "InvalidArgument", "Invalid Encoding Method specified in Request")
 	}
 
