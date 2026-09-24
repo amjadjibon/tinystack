@@ -30,6 +30,10 @@ tasks:
     cmds:
       - python3 tests/awscli/smoke.py
 
+  test:terraform:
+    cmds:
+      - python3 tests/terraform/terraform.py
+
   clean:
     cmds:
       - rm -rf bin

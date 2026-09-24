@@ -1,0 +1,112 @@
+# One resource per TinyStack service, applied by tests/terraform/terraform.py.
+
+terraform {
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+  }
+}
+
+variable "endpoint" { type = string }
+variable "function_zip" { type = string }
+variable "team" { type = string }
+
+provider "aws" {
+  access_key                  = "test"
+  secret_key                  = "test"
+  region                      = "us-east-1"
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+
+  endpoints {
+    dynamodb    = var.endpoint
+    eventbridge = var.endpoint
+    lambda      = var.endpoint
+    s3          = var.endpoint
+    sns         = var.endpoint
+    sqs         = var.endpoint
+  }
+}
+
+locals {
+  tags = { team = var.team }
+}
+
+resource "aws_sqs_queue" "dead" {
+  name = "jobs-dead"
+}
+
+resource "aws_sqs_queue" "jobs" {
+  name                       = "jobs"
+  visibility_timeout_seconds = 60
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.dead.arn
+    maxReceiveCount     = 3
+  })
+  tags = local.tags
+}
+
+resource "aws_sns_topic" "alerts" {
+  name = "alerts"
+  tags = local.tags
+}
+
+resource "aws_sns_topic_subscription" "jobs" {
+  topic_arn            = aws_sns_topic.alerts.arn
+  protocol             = "sqs"
+  endpoint             = aws_sqs_queue.jobs.arn
+  raw_message_delivery = true
+}
+
+resource "aws_dynamodb_table" "users" {
+  name         = "users"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+
+  tags = local.tags
+}
+
+resource "aws_s3_bucket" "assets" {
+  bucket = "assets"
+  tags   = local.tags
+}
+
+resource "aws_s3_object" "hello" {
+  bucket       = aws_s3_bucket.assets.id
+  key          = "hello.txt"
+  content      = "hello"
+  content_type = "text/plain"
+}
+
+resource "aws_lambda_function" "echo" {
+  function_name    = "echo"
+  role             = "arn:aws:iam::000000000000:role/lambda"
+  runtime          = "python3.12"
+  handler          = "app.handler"
+  filename         = var.function_zip
+  source_code_hash = filebase64sha256(var.function_zip)
+  tags             = local.tags
+}
+
+resource "aws_lambda_event_source_mapping" "jobs" {
+  event_source_arn = aws_sqs_queue.jobs.arn
+  function_name    = aws_lambda_function.echo.arn
+  batch_size       = 5
+}
+
+resource "aws_cloudwatch_event_rule" "orders" {
+  name          = "orders"
+  event_pattern = jsonencode({ source = ["shop"] })
+  tags          = local.tags
+}
+
+resource "aws_cloudwatch_event_target" "orders" {
+  rule      = aws_cloudwatch_event_rule.orders.name
+  target_id = "jobs"
+  arn       = aws_sqs_queue.jobs.arn
+}
