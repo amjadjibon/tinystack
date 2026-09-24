@@ -10,6 +10,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/rest"
 )
 
 type input struct {
@@ -35,7 +36,7 @@ func TestDecodeBindsMembers(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPut, "/b/k?max-keys=5", strings.NewReader("data"))
 	r.Header.Set("If-Modified-Since", "Mon, 02 Jan 2006 15:04:05 GMT")
 	r.Header.Set("X-Amz-Meta-Owner", "ada")
-	body, err := ReadBody(httptest.NewRecorder(), r, 1<<20)
+	body, err := rest.ReadBody(httptest.NewRecorder(), r, 1<<20)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,32 +55,6 @@ func TestDecodeBindsMembers(t *testing.T) {
 	var e *awserror.Error
 	if err = Decode(r, &binding, nil, body, &input{}); !errors.As(err, &e) || e.StatusCode != 501 {
 		t.Fatalf("unsupported header accepted: %v", err)
-	}
-}
-
-func TestReadBodyDecodesAWSChunked(t *testing.T) {
-	chunked := "5;chunk-signature=abc\r\nhello\r\n6\r\n world\r\n0\r\nx-amz-checksum-crc32:DUoRhQ==\r\n\r\n"
-	r := httptest.NewRequest(http.MethodPut, "/b/k", strings.NewReader(chunked))
-	r.Header.Set("Content-Encoding", "aws-chunked,gzip")
-	body, err := ReadBody(httptest.NewRecorder(), r, 1<<20)
-	if err != nil || string(body) != "hello world" {
-		t.Fatalf("%q %v", body, err)
-	}
-
-	if r.Header.Get("Content-Encoding") != "gzip" || r.Header.Get("x-amz-checksum-crc32") != "DUoRhQ==" {
-		t.Fatal(r.Header)
-	}
-
-	r = httptest.NewRequest(http.MethodPut, "/b/k", strings.NewReader("zz\r\nbad"))
-	r.Header.Set("Content-Encoding", "aws-chunked")
-	if _, err = ReadBody(httptest.NewRecorder(), r, 1<<20); err == nil {
-		t.Fatal("malformed chunk accepted")
-	}
-
-	r = httptest.NewRequest(http.MethodPut, "/b/k", strings.NewReader("too large"))
-	var e *awserror.Error
-	if _, err = ReadBody(httptest.NewRecorder(), r, 3); !errors.As(err, &e) || e.Code != "EntityTooLarge" {
-		t.Fatalf("oversized body: %v", err)
 	}
 }
 

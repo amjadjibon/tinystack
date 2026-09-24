@@ -20,6 +20,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/awsjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/query"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
@@ -143,9 +144,9 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 
 	if target == "" {
 		// REST services are chosen by the signed or host service name; unsigned
-		// requests without a JSON target or form body fall back to REST.
+		// requests without a JSON target or form body fall back to S3.
 		if rest := s.restService(r); rest != nil {
-			c.meta.Protocol = catalog.RESTXML
+			c.meta.Protocol = restProtocol(rest)
 		}
 	}
 
@@ -169,7 +170,7 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	switch c.meta.Protocol {
 	case catalog.AWSQuery:
 		return c, s.classifyQuery(w, r, c, signed)
-	case catalog.RESTXML:
+	case catalog.RESTXML, catalog.RESTJSON:
 		c.service = s.restService(r)
 		if signed != "" && signed != c.service.SigningName {
 			return c, awserror.New("IncompleteSignatureException", "Signing service does not match the request")
@@ -254,8 +255,9 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 }
 
 // restService selects the REST service for a request: the one named by the
-// signed scope or regional host, or, for unsigned requests that are neither
-// AWS JSON nor AWS Query, the only registered REST service.
+// signed scope or regional host, or S3 for unsigned requests that are neither
+// AWS JSON nor AWS Query, since S3 is the REST service that serves anonymous
+// requests such as presigned URLs.
 func (s *Server) restService(r *http.Request) *catalog.Service {
 	var m request.Metadata
 	signed, err := s.identify(r, &m)
@@ -265,23 +267,18 @@ func (s *Server) restService(r *http.Request) *catalog.Service {
 	}
 
 	contentType, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	var only *catalog.Service
-	count := 0
-	for _, service := range s.services {
-		if !service.Supports(catalog.RESTXML) {
-			continue
-		}
-
-		if name != "" && service.SigningName == name {
-			return service
-		}
-
-		only = service
-		count++
+	if name == "" && (err != nil || contentType == formContentType) {
+		return nil
 	}
 
-	if err == nil && name == "" && count == 1 && contentType != formContentType {
-		return only
+	if name == "" {
+		name = "s3"
+	}
+
+	for _, service := range s.services {
+		if restProtocol(service) != "" && service.SigningName == name {
+			return service
+		}
 	}
 
 	return nil
@@ -294,7 +291,7 @@ func (s *Server) decode(
 	contentType string,
 ) (catalog.Operation, any, error) {
 	op, ok := c.service.Operations[c.meta.Operation]
-	if c.meta.Protocol == catalog.RESTXML {
+	if restProtocol(c.service) == c.meta.Protocol {
 		input, err := decodeREST(w, r, c, &op)
 		return op, input, err
 	}
@@ -334,11 +331,12 @@ func (s *Server) decode(
 
 func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	e := awserror.From(err)
-	namespace := ""
+	namespace, messageMember := "", ""
 	if c.service != nil {
 		if binding, ok := c.service.Errors[e.Code]; ok {
 			e.StatusCode = binding.StatusCode
 			e.QueryCode = binding.QueryCode
+			messageMember = binding.MessageMember
 		}
 
 		if c.service.QueryCompatible && e.QueryCode == "" {
@@ -353,6 +351,8 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 		query.WriteError(w, namespace, c.meta.RequestID, e)
 	case catalog.RESTXML:
 		restxml.WriteError(w, e, c.meta.RequestID, c.head)
+	case catalog.RESTJSON:
+		restjson.WriteError(w, e, messageMember)
 	default:
 		awsjson.WriteError(w, e)
 	}
@@ -419,8 +419,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	binding := op.Bindings[m.Protocol]
 	status := binding.StatusCode
-	if m.Protocol == catalog.RESTXML {
+	switch m.Protocol {
+	case catalog.RESTXML:
 		restxml.Write(w, &binding, output, c.head)
+		return
+	case catalog.RESTJSON:
+		restjson.Write(w, &binding, output)
 		return
 	}
 

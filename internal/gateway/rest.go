@@ -8,11 +8,24 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/rest"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
 )
 
 // restMaxBody bounds REST payloads such as S3 objects, which are held in memory.
 const restMaxBody = 64 << 20
+
+// restProtocol returns the REST protocol a service speaks, or "".
+func restProtocol(service *catalog.Service) string {
+	for _, protocol := range []string{catalog.RESTXML, catalog.RESTJSON} {
+		if service.Supports(protocol) {
+			return protocol
+		}
+	}
+
+	return ""
+}
 
 // route is a parsed REST URI template such as "/{Bucket}/{Key+}?x-id=GetObject".
 type route struct {
@@ -27,8 +40,9 @@ type route struct {
 // routes parses the REST bindings of a service.
 func routes(service *catalog.Service) []route {
 	var out []route
+	protocol := restProtocol(service)
 	for name := range service.Operations {
-		b, ok := service.Operations[name].Bindings[catalog.RESTXML]
+		b, ok := service.Operations[name].Bindings[protocol]
 		if !ok {
 			continue
 		}
@@ -142,7 +156,7 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 		for _, seg := range strings.Split(trimmed, "/") {
 			decoded, err := url.PathUnescape(seg)
 			if err != nil {
-				return nil, restxml.NotImplemented("Invalid request path")
+				return nil, rest.NotImplemented("Invalid request path")
 			}
 
 			segments = append(segments, decoded)
@@ -170,7 +184,7 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 	}
 
 	if best < 0 {
-		return nil, restxml.NotImplemented("TinyStack does not implement this " + c.service.Name + " request.")
+		return nil, rest.NotImplemented("TinyStack does not implement this " + c.service.Name + " request.")
 	}
 
 	c.meta.Operation = routes[best].name
@@ -179,8 +193,8 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 
 // decodeREST reads and decodes a REST request into the operation input.
 func decodeREST(w http.ResponseWriter, r *http.Request, c *call, op *catalog.Operation) (any, error) {
-	binding := op.Bindings[catalog.RESTXML]
-	body, err := restxml.ReadBody(w, r, restMaxBody)
+	binding := op.Bindings[c.meta.Protocol]
+	body, err := rest.ReadBody(w, r, restMaxBody)
 	if err != nil {
 		if _, ok := err.(*awserror.Error); ok { //nolint:errorlint // ReadBody returns awserror values directly.
 			return nil, err
@@ -190,5 +204,9 @@ func decodeREST(w http.ResponseWriter, r *http.Request, c *call, op *catalog.Ope
 	}
 
 	input := op.NewInput()
+	if c.meta.Protocol == catalog.RESTJSON {
+		return input, restjson.Decode(r, &binding, c.labels, body, input)
+	}
+
 	return input, restxml.Decode(r, &binding, c.labels, body, input)
 }
