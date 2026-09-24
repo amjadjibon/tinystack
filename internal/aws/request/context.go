@@ -1,6 +1,9 @@
 package request
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Scope struct{ AccountID, Region string }
 
@@ -9,6 +12,15 @@ type Metadata struct {
 	RequestID, Service, Operation, Protocol, AccessKey string
 	// Endpoint is the base URL the client used, for resource URLs such as SQS queue URLs.
 	Endpoint string
+}
+
+// Session is a temporary credential that STS issued. Requests signed with its
+// access key act in AccountID; verified requests must also carry Token.
+type Session struct {
+	Expires   time.Time
+	AccountID string
+	Secret    string
+	Token     string
 }
 
 type contextKey struct{}

@@ -3,6 +3,7 @@ package gateway
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -25,29 +26,33 @@ const (
 	unknownKey
 	badSignature
 	expired
+	expiredToken
 )
 
 // authCodes are the error codes each protocol family's services use for
 // authentication failures.
-var authCodes = map[string][4]string{
-	catalog.RESTXML: {"AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch", "RequestTimeTooSkewed"},
+var authCodes = map[string][5]string{
+	catalog.RESTXML: {
+		"AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch", "RequestTimeTooSkewed", "ExpiredToken",
+	},
 	catalog.AWSQuery: {
-		"MissingAuthenticationToken", "InvalidClientTokenId", "SignatureDoesNotMatch", "RequestExpired",
+		"MissingAuthenticationToken", "InvalidClientTokenId", "SignatureDoesNotMatch", "RequestExpired", "ExpiredToken",
 	},
 }
 
 // jsonAuthCodes serve AWS JSON and REST JSON services.
-var jsonAuthCodes = [4]string{
+var jsonAuthCodes = [5]string{
 	"MissingAuthenticationTokenException", "UnrecognizedClientException", "InvalidSignatureException",
-	"InvalidSignatureException",
+	"InvalidSignatureException", "ExpiredTokenException",
 }
 
-var authMessages = [4]string{
+var authMessages = [5]string{
 	"Request is missing Authentication Token",
 	"The security token included in the request is invalid.",
 	"The request signature we calculated does not match the signature you provided. " +
 		"Check your AWS Secret Access Key and signing method.",
 	"Signature expired: the signing time must be within 15 minutes of the server time.",
+	"The security token included in the request is expired",
 }
 
 func authError(protocol string, failure authFailure) error {
@@ -56,7 +61,12 @@ func authError(protocol string, failure authFailure) error {
 		codes = jsonAuthCodes
 	}
 
-	return &awserror.Error{Code: codes[failure], Message: authMessages[failure], StatusCode: http.StatusForbidden}
+	status := http.StatusForbidden
+	if failure == expiredToken {
+		status = http.StatusBadRequest
+	}
+
+	return &awserror.Error{Code: codes[failure], Message: authMessages[failure], StatusCode: status}
 }
 
 // authenticate verifies the request's SigV4 signature in identity.mode verify.
@@ -80,7 +90,13 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 
 	secret, ok := s.cfg.Identity.SecretKeys[a.AccessKey]
 	if !ok {
-		return authError(protocol, unknownKey)
+		// A temporary key must come with its session's token.
+		token := r.Header.Get("X-Amz-Security-Token")
+		if c.session == nil || subtle.ConstantTimeCompare([]byte(token), []byte(c.session.Token)) != 1 {
+			return authError(protocol, unknownKey)
+		}
+
+		secret = c.session.Secret
 	}
 
 	s3 := c.service.SigningName == "s3"
@@ -97,6 +113,8 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 		return awserror.New("IncompleteSignatureException", err.Error())
 	case err != nil:
 		return authError(protocol, badSignature)
+	case c.session != nil && !time.Now().Before(c.session.Expires):
+		return authError(protocol, expiredToken)
 	}
 
 	return nil

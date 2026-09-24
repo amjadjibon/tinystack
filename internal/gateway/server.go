@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -41,13 +42,19 @@ type Server struct {
 	metrics  *metrics
 	// internal serves TinyStack's own endpoints under /_tinystack/.
 	internal map[string]http.Handler
+	sessions SessionLookup
 	health   []byte
 	cfg      config.Config
 }
 
+// SessionLookup returns the STS session that issued accessKey, if any.
+type SessionLookup func(ctx context.Context, accessKey string) (request.Session, bool, error)
+
 // call is a request classified to a protocol and, once known, a service.
 type call struct {
 	service *catalog.Service
+	// session is the STS session the access key belongs to, if any.
+	session *request.Session
 	form    url.Values
 	labels  map[string]string
 	// failure is the error the response reports, if any.
@@ -109,6 +116,12 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	return s, nil
 }
 
+// UseSessions resolves access keys that are not configured, such as the
+// temporary keys STS issues, through lookup. Call it before serving requests.
+func (s *Server) UseSessions(lookup SessionLookup) {
+	s.sessions = lookup
+}
+
 // Handle serves h at /_tinystack/<name>. Call it before serving requests.
 func (s *Server) Handle(name string, h http.Handler) {
 	s.internal["/_tinystack/"+name] = h
@@ -150,6 +163,30 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 	return a.Service, nil
 }
 
+// resolveSession maps a temporary access key to the account of its session.
+// Configured keys win; authenticate checks the session token and expiry.
+func (s *Server) resolveSession(ctx context.Context, c *call) error {
+	key := c.meta.AccessKey
+	if s.sessions == nil || key == "" {
+		return nil
+	}
+
+	_, mapped := s.cfg.Identity.Accounts[key]
+	_, secret := s.cfg.Identity.SecretKeys[key]
+	if mapped || secret {
+		return nil
+	}
+
+	session, ok, err := s.sessions(ctx, key)
+	if err != nil || !ok {
+		return err
+	}
+
+	c.session = &session
+	c.meta.AccountID = session.AccountID
+	return nil
+}
+
 // classify selects the protocol from headers alone, so early errors use the
 // client's envelope, then resolves the service and operation.
 func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType string) (*call, error) {
@@ -185,6 +222,10 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	signed, err := s.identify(r, &c.meta)
 	if err != nil {
 		return c, err
+	}
+
+	if guardErr := s.resolveSession(r.Context(), c); guardErr != nil {
+		return c, guardErr
 	}
 
 	switch c.meta.Protocol {
