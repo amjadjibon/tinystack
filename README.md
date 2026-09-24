@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, and S3 endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, S3, and Lambda endpoints for development and tests.
 
 ## Run
 
@@ -85,15 +85,15 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 ### SNS (AWS Query)
 
-Standard topics that fan out to SQS queues in-process.
+Standard topics that fan out to SQS queues and Lambda functions in-process.
 
 | Operation | Behavior |
 | --- | --- |
 | CreateTopic | Idempotent for identical attributes; `DisplayName` |
 | DeleteTopic | Removes the topic and its subscriptions; deleting a missing topic succeeds |
 | ListTopics / ListSubscriptions / ListSubscriptionsByTopic | Account/region isolation, 100 per page with `NextToken` |
-| Subscribe / Unsubscribe | `sqs` protocol with a queue ARN in the subscriber's account, confirmed at once; `RawMessageDelivery`; subscribing twice returns the existing subscription |
-| Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus an optional `sqs` text); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; a failed delivery does not fail Publish |
+| Subscribe / Unsubscribe | `sqs` (queue ARN) and `lambda` (function ARN) protocols with endpoints in the subscriber's account, confirmed at once; `RawMessageDelivery` for queues; subscribing twice returns the existing subscription |
+| Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus optional `sqs` and `lambda` texts); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; each subscribed function is invoked asynchronously with an `aws:sns` event; a failed delivery does not fail Publish |
 
 ### S3 (REST XML)
 
@@ -116,6 +116,28 @@ parameters that TinyStack does not implement (ranges, versions, ACLs,
 encryption, tagging, other storage classes, and so on) answer `NotImplemented`
 (501), as do S3 subresources such as `?acl`.
 
+### Lambda (REST JSON)
+
+Functions run in Docker, in the AWS base image of their runtime (or their own
+image for `Image` functions), through the Lambda Runtime Interface Emulator the
+images contain. Code is copied into the container, so Docker Desktop, Colima,
+and remote daemons all work. Containers stay warm per function, run concurrent
+invocations in separate containers, and are removed when the function is
+deleted and when TinyStack shuts down. Creating functions does not need Docker;
+invoking them does.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateFunction | `Zip` packages (`ZipFile`) for python3.9–3.14, nodejs18.x–24.x, java11–25, ruby3.2–3.4, dotnet8/10, and provided.al2/al2023; `Image` packages (`ImageUri`); `Timeout`, `MemorySize`, `Environment` (reserved keys rejected, 4 KB limit), `Description`, `Architectures` |
+| GetFunction / ListFunctions / DeleteFunction | Name, partial ARN, or ARN; only the `$LATEST` qualifier exists; 50 per page with `Marker` |
+| Invoke | `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |
+| Create/Get/Delete/ListEventSourceMappings | SQS queues in the function's account and region; `BatchSize` up to 10; a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies |
+
+Function code gets `AWS_REGION`, the function name, memory size, and timeout,
+and the creator's access key (signatures are not verified), so SDK calls reach
+the right account once you set `AWS_ENDPOINT_URL` in the function's environment
+to an address the container can reach.
+
 SigV4 credential scopes are parsed without verifying
 signatures. `identity.accounts` maps access keys to 12-digit account IDs. Unmapped
 keys and unsigned requests use the default account. Signed regions take precedence
@@ -131,7 +153,11 @@ policies, message signatures (the envelope omits the `Signature` fields), topic 
 tags, data protection, or cross-account subscriptions.
 S3 limits: no multipart uploads, presigned URLs, range requests, versioning, ACLs or
 policies, encryption, tagging, lifecycle, notifications, or stored checksums on
-reads; objects are held in memory. No service has IAM,
+reads; objects are held in memory. Lambda limits: no versions, aliases, layers,
+function updates, code from S3, `ImageConfig`, `LogType: Tail`, function URLs,
+concurrency settings, resource policies, or event sources other than SQS
+(no batching window or partial batch responses); asynchronous failures are
+logged and dropped after the retries. No service has IAM,
 persistence, or Terraform support yet. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.
@@ -141,11 +167,13 @@ Unsupported input fields fail explicitly instead of being silently ignored.
 ## Architecture and generation
 
 `gateway` picks the protocol from the request headers (`X-Amz-Target` for JSON,
-a form body for Query, and the signed or host service name for REST XML), then
+a form body for Query, and the signed or host service name for REST XML and REST
+JSON; unsigned requests fall back to S3), then
 resolves identity, service, and operation. REST operations are matched on
 method, path labels (including greedy `{Key+}`), and URI query literals. Generated
 catalog bindings create typed inputs; `aws/protocol/awsjson` and
-`aws/protocol/query` and `aws/protocol/restxml` encode responses and error envelopes. Modeled error
+`aws/protocol/query`, `aws/protocol/restxml`, and `aws/protocol/restjson` (sharing
+the HTTP bindings in `aws/protocol/rest`) encode responses and error envelopes. Modeled error
 bindings supply Query error codes and HTTP statuses, which query-compatible JSON
 services also send in `X-Amzn-Query-Error`. `services/*` contains behavior without
 HTTP dependencies. Storage uses serializable callback transactions with rollback
@@ -154,7 +182,10 @@ record (a topic record holds its subscriptions; each S3 object is a metadata
 record plus a data record, and a partition-wide index reserves bucket names); it favors simple correctness for small test datasets over large-table
 performance. SQS long polls wait outside transactions and retry the atomic claim
 when the queue changes or an in-flight message becomes visible. SNS delivers to
-SQS by calling the SQS service directly, never over HTTP.
+SQS by calling the SQS service directly, never over HTTP, and to Lambda through
+the Lambda service's asynchronous invoke. Lambda event source mappings read SQS
+the same way. `services/lambda` runs code through a `Runtime`; `services/lambda/docker`
+implements it with the docker CLI.
 
 The pinned upstream Smithy models, checksums, and license live in `generator/model`.
 `profile.json` selects each service's operations and implemented fields; its
@@ -164,9 +195,9 @@ SNS declare their namespace themselves. `go generate ./...` works offline after 
 dependencies are available and reproduces the checked-in types, bindings, and
 error descriptors. The generator fails on unsupported wire traits; it supports
 AWS JSON 1.0 services (plus AWS Query for query-compatible ones), AWS Query
-services, and REST XML services. REST XML types carry `encoding/xml` tags, and
-their bindings place each member in a label, header, query parameter, prefix
-header, payload, or XML body; modeled header and query inputs left out of the
+services, REST XML services, and REST JSON services. REST XML types carry
+`encoding/xml` tags, and REST bindings place each member in a label, header,
+query parameter, prefix header, payload, status code, or document body; modeled header and query inputs left out of the
 profile are recorded as unsupported so requests that use them fail.
 
 ## Validate
@@ -175,8 +206,10 @@ profile are recorded as unsupported so requests that use them fail.
 task test       # Official Go SDK, AWS Query wire, and transaction tests, with -race
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
-task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3), verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, Lambda), verify graceful shutdown
+task test:docker # Run Lambda functions in real containers (needs Docker; pulls python:3.14)
 ```
 
 Tasks run with [Task](https://taskfile.dev). The tests use local ephemeral ports
-and do not contact AWS. The smoke test also requires Python 3 and the AWS CLI.
+and do not contact AWS; Lambda tests use an in-process runtime. The smoke test
+also requires Python 3 and the AWS CLI, and invokes a function when Docker is available.
