@@ -1602,5 +1602,181 @@
         "Value"
       ]
     }
+  },
+  "secretsmanager": {
+    "operations": [
+      "CreateSecret",
+      "DescribeSecret",
+      "ListSecrets",
+      "UpdateSecret",
+      "DeleteSecret",
+      "RestoreSecret",
+      "PutSecretValue",
+      "GetSecretValue",
+      "ListSecretVersionIds",
+      "UpdateSecretVersionStage",
+      "TagResource",
+      "UntagResource",
+      "GetResourcePolicy"
+    ],
+    "shapes": {
+      "CreateSecretRequest": [
+        "Name",
+        "ClientRequestToken",
+        "Description",
+        "KmsKeyId",
+        "SecretBinary",
+        "SecretString",
+        "Tags"
+      ],
+      "CreateSecretResponse": [
+        "ARN",
+        "Name",
+        "VersionId"
+      ],
+      "DescribeSecretRequest": [
+        "SecretId"
+      ],
+      "DescribeSecretResponse": [
+        "ARN",
+        "Name",
+        "Description",
+        "KmsKeyId",
+        "LastChangedDate",
+        "DeletedDate",
+        "Tags",
+        "VersionIdsToStages",
+        "CreatedDate"
+      ],
+      "ListSecretsRequest": [
+        "IncludePlannedDeletion",
+        "MaxResults",
+        "NextToken",
+        "Filters",
+        "SortOrder"
+      ],
+      "ListSecretsResponse": [
+        "SecretList",
+        "NextToken"
+      ],
+      "SecretListEntry": [
+        "ARN",
+        "Name",
+        "Description",
+        "KmsKeyId",
+        "LastChangedDate",
+        "DeletedDate",
+        "Tags",
+        "SecretVersionsToStages",
+        "CreatedDate"
+      ],
+      "Filter": [
+        "Key",
+        "Values"
+      ],
+      "UpdateSecretRequest": [
+        "SecretId",
+        "ClientRequestToken",
+        "Description",
+        "KmsKeyId",
+        "SecretBinary",
+        "SecretString"
+      ],
+      "UpdateSecretResponse": [
+        "ARN",
+        "Name",
+        "VersionId"
+      ],
+      "DeleteSecretRequest": [
+        "SecretId",
+        "RecoveryWindowInDays",
+        "ForceDeleteWithoutRecovery"
+      ],
+      "DeleteSecretResponse": [
+        "ARN",
+        "Name",
+        "DeletionDate"
+      ],
+      "RestoreSecretRequest": [
+        "SecretId"
+      ],
+      "RestoreSecretResponse": [
+        "ARN",
+        "Name"
+      ],
+      "PutSecretValueRequest": [
+        "SecretId",
+        "ClientRequestToken",
+        "SecretBinary",
+        "SecretString",
+        "VersionStages"
+      ],
+      "PutSecretValueResponse": [
+        "ARN",
+        "Name",
+        "VersionId",
+        "VersionStages"
+      ],
+      "GetSecretValueRequest": [
+        "SecretId",
+        "VersionId",
+        "VersionStage"
+      ],
+      "GetSecretValueResponse": [
+        "ARN",
+        "Name",
+        "VersionId",
+        "SecretBinary",
+        "SecretString",
+        "VersionStages",
+        "CreatedDate"
+      ],
+      "ListSecretVersionIdsRequest": [
+        "SecretId",
+        "MaxResults",
+        "NextToken",
+        "IncludeDeprecated"
+      ],
+      "ListSecretVersionIdsResponse": [
+        "Versions",
+        "NextToken",
+        "ARN",
+        "Name"
+      ],
+      "SecretVersionsListEntry": [
+        "VersionId",
+        "VersionStages",
+        "CreatedDate"
+      ],
+      "UpdateSecretVersionStageRequest": [
+        "SecretId",
+        "VersionStage",
+        "RemoveFromVersionId",
+        "MoveToVersionId"
+      ],
+      "UpdateSecretVersionStageResponse": [
+        "ARN",
+        "Name"
+      ],
+      "TagResourceRequest": [
+        "SecretId",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "SecretId",
+        "TagKeys"
+      ],
+      "GetResourcePolicyRequest": [
+        "SecretId"
+      ],
+      "GetResourcePolicyResponse": [
+        "ARN",
+        "Name"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ]
+    }
   }
 }

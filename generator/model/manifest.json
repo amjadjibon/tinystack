@@ -23,6 +23,10 @@
       "path": "codegen/sdk-codegen/aws-models/s3.json",
       "sha256": "ea4b0318e929b56b01523e7fd25e139b5646055dba96bbf6e41a79ac90522c71"
     },
+    "secretsmanager": {
+      "path": "codegen/sdk-codegen/aws-models/secrets-manager.json",
+      "sha256": "b1bce4d92db3876e6811dd5900a26e4b6b9af15833425dc7a07a5e23886fa886"
+    },
     "sns": {
       "path": "codegen/sdk-codegen/aws-models/sns.json",
       "sha256": "18f6b7a336227cb46df17f20108498357dbe79f255cf3bad759d0d58f6d0bcbf"

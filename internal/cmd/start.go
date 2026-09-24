@@ -21,6 +21,7 @@ import (
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
@@ -34,6 +35,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
+	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
@@ -104,6 +106,7 @@ func newStartCommand() *cobra.Command {
 				iamapi.Descriptor(roles),
 				stsapi.Descriptor(tokens),
 				ssmapi.Descriptor(ssm.New(store)),
+				secretsmanagerapi.Descriptor(secretsmanager.New(store)),
 			)
 			if err != nil {
 				return err
@@ -145,7 +148,7 @@ func newStartCommand() *cobra.Command {
 				"storage",
 				cfg.Storage.Mode,
 				"services",
-				"dynamodb,eventbridge,iam,lambda,s3,sns,sqs,ssm,sts",
+				"dynamodb,eventbridge,iam,lambda,s3,secretsmanager,sns,sqs,ssm,sts",
 			)
 			select {
 			case err = <-done:

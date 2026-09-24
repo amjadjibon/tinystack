@@ -25,6 +25,7 @@ import (
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
@@ -37,6 +38,7 @@ import (
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
+	secrets "github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
 	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
 	parameters "github.com/amjadjibon/tinystack/internal/services/ssm"
@@ -107,6 +109,7 @@ func serverStore(
 		iamapi.Descriptor(roles),
 		stsapi.Descriptor(stsService),
 		ssmapi.Descriptor(parameters.New(store)),
+		secretsmanagerapi.Descriptor(secrets.New(store)),
 	)
 	if err != nil {
 		t.Fatal(err)

@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, EventBridge, SSM Parameter Store, IAM, and STS endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, EventBridge, SSM Parameter Store, Secrets Manager, IAM, and STS endpoints for development and tests.
 
 ## Run
 
@@ -74,7 +74,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables, S3 buckets and objects, Lambda functions
 and SQS event source mappings, EventBridge rules and targets, SSM parameters
-(including SecureString), and IAM roles, role policies, and managed policies, tags
+(including SecureString), Secrets Manager secrets and versions, and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
@@ -87,15 +87,16 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
-    dynamodb    = "http://localhost:4566"
-    eventbridge = "http://localhost:4566"
-    iam         = "http://localhost:4566"
-    lambda      = "http://localhost:4566"
-    s3          = "http://localhost:4566"
-    sns         = "http://localhost:4566"
-    sqs         = "http://localhost:4566"
-    ssm         = "http://localhost:4566"
-    sts         = "http://localhost:4566"
+    dynamodb       = "http://localhost:4566"
+    eventbridge    = "http://localhost:4566"
+    iam            = "http://localhost:4566"
+    lambda         = "http://localhost:4566"
+    s3             = "http://localhost:4566"
+    secretsmanager = "http://localhost:4566"
+    sns            = "http://localhost:4566"
+    sqs            = "http://localhost:4566"
+    ssm            = "http://localhost:4566"
+    sts            = "http://localhost:4566"
   }
 }
 ```
@@ -296,6 +297,30 @@ as plain text in memory and in `state.db`. Reads without `WithDecryption` return
 opaque placeholder, never the value. The request inspector redacts every operation
 that carries values, and the resource browser leaves out SecureString values.
 
+### Secrets Manager (AWS JSON 1.1)
+
+Secrets belong to an account and region, and are found by name, full ARN, or ARN
+without the random six-character suffix.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateSecret | `SecretString` or `SecretBinary` (up to 64 KB), `Description`, `Tags`, and `ClientRequestToken` (the version ID); a value becomes the `AWSCURRENT` version |
+| DescribeSecret / ListSecrets | Metadata and `VersionIdsToStages`, never values; `Filters` (`name`, `description`, `tag-key`, `tag-value`, `all`: prefixes, `!` negates), `IncludePlannedDeletion`, `SortOrder` by creation date, `MaxResults` and `NextToken` |
+| UpdateSecret | Description, and a value as a new `AWSCURRENT` version |
+| PutSecretValue | A new version, labeled `AWSCURRENT` unless `VersionStages` says otherwise; moving `AWSCURRENT` labels the old version `AWSPREVIOUS`; a repeated `ClientRequestToken` is idempotent for the same value and fails for another |
+| GetSecretValue | The version `VersionId` and/or `VersionStage` select (`AWSCURRENT` by default) |
+| ListSecretVersionIds | Labeled versions, or every version with `IncludeDeprecated`, in creation order |
+| UpdateSecretVersionStage | Moves or removes a label; a label another version has moves only when `RemoveFromVersionId` names it, and `AWSCURRENT` can only move |
+| DeleteSecret / RestoreSecret | A recovery window of 7 to 30 days (30 by default) blocks reading and changing the secret and its name until restored; `ForceDeleteWithoutRecovery` deletes at once |
+| TagResource / UntagResource | Up to 50 tags |
+| GetResourcePolicy | Always no policy |
+
+Only the AWS managed key (`alias/aws/secretsmanager`) is accepted, and values are
+not encrypted: they are kept as plain text in memory and in `state.db`. A secret
+keeps up to 100 versions, dropping the oldest unlabeled ones. The request inspector
+redacts every operation that carries values, and the resource browser shows only
+metadata.
+
 ### EventBridge (AWS JSON 1.1)
 
 Rules on each account's `default` event bus route events to SQS queues, SNS
@@ -369,6 +394,8 @@ profiles, permissions boundaries, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, customer-managed KMS keys, `aws:ec2:image` or other data
 types, public `/aws/service/...` parameters, shared parameters, or parameter quotas.
+Secrets Manager limits: no rotation, replication, resource policies,
+`BatchGetSecretValue`, `GetRandomPassword`, `SortBy`, or customer-managed KMS keys.
 STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
@@ -426,7 +453,7 @@ task test       # Official Go SDK, AWS Query wire, and transaction tests, with -
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
 task models:sync -- -ref main   # Re-vendor the pinned Smithy models from aws-sdk-go-v2, then regenerate
-task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, SSM, IAM, STS, Lambda), verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, SSM, Secrets Manager, IAM, STS, Lambda), verify graceful shutdown
 task test:docker # Run Lambda functions in real containers (needs Docker; pulls python:3.14)
 task test:terraform # Apply, update, and destroy tests/terraform/main.tf with Terraform
 ```
