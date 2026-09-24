@@ -22,6 +22,8 @@ task all        # generate, lint, test, build
 Run a single test: `go test -race ./tests/integration -run TestName` (or any package path).
 Run the server: `./bin/tinystack start [--host H] [--port P] [--config examples/tinystack.yaml]` (default `127.0.0.1:4566`).
 `GET /_tinystack/health` lists the registered services.
+`GET /_tinystack/requests` lists the last 256 requests with truncated bodies (`gateway/requests.go`); `DELETE`
+clears them.
 
 ## Architecture
 

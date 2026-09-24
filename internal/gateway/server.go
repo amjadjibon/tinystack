@@ -36,6 +36,7 @@ type Server struct {
 	services map[string]*catalog.Service
 	routes   map[string][]route
 	logger   *slog.Logger
+	requests *requestLog
 	health   []byte
 	cfg      config.Config
 }
@@ -45,6 +46,8 @@ type call struct {
 	service *catalog.Service
 	form    url.Values
 	labels  map[string]string
+	// failure is the error the response reports, if any.
+	failure *awserror.Error
 	meta    request.Metadata
 	// body is the raw AWS Query form, kept to hash it for authentication.
 	body []byte
@@ -61,7 +64,13 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		logger = slog.Default()
 	}
 
-	s := &Server{cfg: cfg, logger: logger, services: map[string]*catalog.Service{}, routes: map[string][]route{}}
+	s := &Server{
+		cfg:      cfg,
+		logger:   logger,
+		requests: &requestLog{},
+		services: map[string]*catalog.Service{},
+		routes:   map[string][]route{},
+	}
 	names := make([]string, 0, len(services))
 	for i := range services {
 		service := &services[i]
@@ -335,6 +344,7 @@ func (s *Server) decode(
 
 func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	e := awserror.From(err)
+	c.failure = e
 	namespace, messageMember := "", ""
 	if c.service != nil {
 		if binding, ok := c.service.Errors[e.Code]; ok {
@@ -363,6 +373,11 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/_tinystack/requests" {
+		s.serveRequests(w, r)
+		return
+	}
+
 	if r.URL.Path == "/_tinystack/health" {
 		if r.Method != "GET" {
 			w.WriteHeader(405)
@@ -375,6 +390,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	start := time.Now()
+	body := &capturingBody{ReadCloser: r.Body}
+	r.Body = body
+	cw := &capturingWriter{ResponseWriter: w}
+	w = cw
 	contentType, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	c, err := s.classify(w, r, contentType)
 	c.head = r.Method == http.MethodHead
@@ -385,23 +404,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer func() {
-		s.logger.Info(
-			"request",
-			"request_id",
-			m.RequestID,
-			"service",
-			m.Service,
-			"operation",
-			m.Operation,
-			"protocol",
-			m.Protocol,
-			"account",
-			m.AccountID,
-			"region",
-			m.Region,
-			"duration_ms",
-			float64(time.Since(start).Microseconds())/1000,
-		)
+		s.record(r, c, start, body, cw)
 	}()
 
 	if err == nil {
@@ -446,4 +449,48 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	awsjson.Write(w, m.Protocol, status, output)
+}
+
+// record logs a finished request and adds it to the request inspector.
+func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturingBody, w *capturingWriter) {
+	m := &c.meta
+	rec := Record{
+		Time:         start.UTC(),
+		RequestID:    m.RequestID,
+		Method:       r.Method,
+		Path:         r.URL.Path,
+		Service:      m.Service,
+		Operation:    m.Operation,
+		Protocol:     m.Protocol,
+		Account:      m.AccountID,
+		Region:       m.Region,
+		Status:       w.status,
+		RequestBody:  body.text(),
+		RequestSize:  body.size,
+		ResponseBody: w.text(),
+		ResponseSize: w.size,
+		DurationMS:   float64(time.Since(start).Microseconds()) / 1000,
+	}
+
+	if rec.Status == 0 {
+		rec.Status = http.StatusOK
+	}
+
+	if c.failure != nil {
+		rec.ErrorCode, rec.ErrorMessage = c.failure.Code, c.failure.Message
+	}
+
+	s.requests.add(&rec)
+	s.logger.Info(
+		"request",
+		"request_id", rec.RequestID,
+		"service", rec.Service,
+		"operation", rec.Operation,
+		"protocol", rec.Protocol,
+		"account", rec.Account,
+		"region", rec.Region,
+		"status", rec.Status,
+		"error_code", rec.ErrorCode,
+		"duration_ms", rec.DurationMS,
+	)
 }

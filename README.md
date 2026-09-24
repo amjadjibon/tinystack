@@ -87,6 +87,18 @@ lifecycle, and so on) and accepts their `NotImplemented` answers as "not
 configured"; setting any of them in Terraform fails. `tests/terraform/main.tf` is a
 working example.
 
+### Request inspector
+
+`GET /_tinystack/requests` lists the last 256 AWS requests, newest first: time,
+request ID, method, path, service, operation, protocol, account, region, status,
+error code and message, duration, and the first 4 KiB of the request and response
+bodies (with their full sizes). `DELETE /_tinystack/requests` clears the list. The
+same fields, without the bodies, are logged as JSON to stderr.
+
+```sh
+curl -s http://localhost:4566/_tinystack/requests | jq '.requests[] | select(.error_code)'
+```
+
 ## Supported subset
 
 ### DynamoDB (AWS JSON 1.0)
