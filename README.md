@@ -12,9 +12,23 @@ go build -o bin/tinystack ./cmd/tinystack
 ```
 
 The server listens on `http://127.0.0.1:4566`. It runs in the foreground and drains
-HTTP requests on SIGINT or SIGTERM. All state is in memory and disappears on exit.
-Use `--host`, `--port`, or `--config examples/tinystack.yaml` to change settings.
+HTTP requests on SIGINT or SIGTERM. By default all state is in memory and disappears
+on exit. Use `--host`, `--port`, or `--config examples/tinystack.yaml` to change settings.
 Health is available at `GET /_tinystack/health`.
+
+To keep state across restarts, set a persistent storage directory (`~` expands to
+your home directory):
+
+```yaml
+storage:
+  mode: persistent
+  path: ~/.tinystack
+```
+
+Every change is written to `state.db` (SQLite, readable only by you) before the
+request succeeds, and a restart reloads it, including Lambda event source mappings,
+which resume polling. One server holds the database at a time; a second one on the
+same directory refuses to start. The request, delivery, and metrics logs are not kept.
 
 ```sh
 export AWS_ACCESS_KEY_ID=test
@@ -271,7 +285,7 @@ policies, message signatures (the envelope omits the `Signature` fields), topic 
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multipart uploads, presigned URLs, range requests, versioning, ACLs other than `private`,
 policies, encryption, object tagging, lifecycle, notifications, or stored checksums on
-reads; objects are held in memory. Lambda limits: no versions, aliases, layers,
+reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no versions, aliases, layers,
 function updates, code from S3, `ImageConfig`, `LogType: Tail`, function URLs,
 concurrency settings, resource policies, or event sources other than SQS
 (no batching window or partial batch responses); asynchronous failures are
@@ -279,8 +293,8 @@ logged and dropped after the retries. EventBridge limits: only the default event
 (no custom or partner buses and no archives or replays), no scheduled rules,
 `InputTransformer`, dead-letter queues, retry policies, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; delivery happens
-synchronously during PutEvents. No service has IAM or
-persistence. Table names (not ARNs)
+synchronously during PutEvents. No service has IAM. Asynchronous Lambda invocations still in flight are lost on
+restart. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.
 Item/page size accounting is approximate, particularly for numbers and sets.
@@ -303,7 +317,8 @@ HTTP dependencies. Storage uses serializable callback transactions with rollback
 and copied byte values. The memory backend stores each table or queue as one
 record (a topic record holds its subscriptions; each S3 object is a metadata
 record plus a data record, and a partition-wide index reserves bucket names); it favors simple correctness for small test datasets over large-table
-performance. SQS long polls wait outside transactions and retry the atomic claim
+performance. The persistent backend is the same store, writing each commit through
+to SQLite (`modernc.org/sqlite`, no cgo) before it becomes visible. SQS long polls wait outside transactions and retry the atomic claim
 when the queue changes or an in-flight message becomes visible. SNS delivers to
 SQS by calling the SQS service directly, never over HTTP, and to Lambda through
 the Lambda service's asynchronous invoke. Lambda event source mappings read SQS

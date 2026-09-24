@@ -21,7 +21,10 @@ func TestLoad(t *testing.T) {
 		{"empty secret", "identity:\n  mode: verify\n  secret_keys:\n    test: ''\n", false},
 		{"bad mode", "identity:\n  mode: strict\n", false},
 		{"unknown", "server:\n  typo: 10", false},
-		{"persistent", "storage:\n  mode: persistent", false},
+		{"persistent", "storage:\n  mode: persistent\n  path: /tmp/tinystack", true},
+		{"persistent without path", "storage:\n  mode: persistent", false},
+		{"memory with path", "storage:\n  path: /tmp/tinystack", false},
+		{"bad storage mode", "storage:\n  mode: disk", false},
 		{"port", "server:\n  port: 0", false},
 		{"documents", "{}\n---\n{}", false},
 	} {

@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -30,7 +32,9 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
+	"github.com/amjadjibon/tinystack/internal/storage"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
+	"github.com/amjadjibon/tinystack/internal/storage/sqlite"
 )
 
 func newStartCommand() *cobra.Command {
@@ -58,12 +62,27 @@ func newStartCommand() *cobra.Command {
 			}
 
 			logger := slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), nil))
-			store := &memory.Store{}
+			store, closeStore, err := openStore(cmd.Context(), cfg.Storage.Mode, cfg.Storage.Path)
+			if err != nil {
+				return err
+			}
+
+			// Deferred first so it runs last, after Lambda's pollers stop writing.
+			defer func() {
+				if closeErr := closeStore(); closeErr != nil {
+					logger.Error("close storage", "error", closeErr)
+				}
+			}()
+
 			deliveries := delivery.New()
 			queues := sqs.New(store)
 			functions := lambda.New(store, queues, docker.New(), logger, cfg.Identity.SecretKeys, deliveries)
 			// Stop removes function containers; it must finish before exit.
 			defer functions.Stop()
+			if guardErr := functions.Resume(cmd.Context()); guardErr != nil {
+				return guardErr
+			}
+
 			topics := sns.New(store, queues, functions, deliveries)
 			handler, err := gateway.New(
 				cfg,
@@ -112,7 +131,7 @@ func newStartCommand() *cobra.Command {
 				"endpoint",
 				"http://"+listener.Addr().String(),
 				"storage",
-				"memory",
+				cfg.Storage.Mode,
 				"services",
 				"dynamodb,eventbridge,lambda,s3,sns,sqs",
 			)
@@ -146,4 +165,28 @@ func newStartCommand() *cobra.Command {
 	start.Flags().StringVar(&host, "host", "127.0.0.1", "listen host")
 	start.Flags().IntVar(&port, "port", 4566, "listen port")
 	return start
+}
+
+// openStore returns the store the storage mode selects, keeping persistent
+// state in dir, and the function that releases it.
+func openStore(ctx context.Context, mode, dir string) (storage.Store, func() error, error) {
+	if mode == config.StorageMemory {
+		return &memory.Store{}, func() error { return nil }, nil
+	}
+
+	if dir == "~" || strings.HasPrefix(dir, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		dir = filepath.Join(home, dir[1:])
+	}
+
+	store, err := sqlite.Open(ctx, dir)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return store, store.Close, nil
 }

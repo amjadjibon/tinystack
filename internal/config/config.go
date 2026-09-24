@@ -19,6 +19,13 @@ const (
 	IdentityVerify = "verify"
 )
 
+// Storage modes: memory keeps state until the process exits; persistent also
+// writes every commit to state.db in Storage.Path.
+const (
+	StorageMemory     = "memory"
+	StoragePersistent = "persistent"
+)
+
 type Config struct {
 	Identity struct {
 		Accounts   map[string]string `yaml:"accounts"`
@@ -31,6 +38,7 @@ type Config struct {
 	} `yaml:"defaults"`
 	Storage struct {
 		Mode string `yaml:"mode"`
+		Path string `yaml:"path"`
 	} `yaml:"storage"`
 	Server struct {
 		Host string `yaml:"host"`
@@ -45,7 +53,7 @@ func Default() Config {
 	c.Server.Port = 4566
 	c.Defaults.Account = "000000000000"
 	c.Defaults.Region = "us-east-1"
-	c.Storage.Mode = "memory"
+	c.Storage.Mode = StorageMemory
 	c.Identity.Mode = IdentityParse
 	c.Identity.Accounts = map[string]string{}
 	return c
@@ -112,8 +120,17 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("host, region, and a port between 1 and 65535 are required")
 	}
 
-	if c.Storage.Mode != "memory" {
-		return fmt.Errorf("only storage.mode=memory is supported in this MVP")
+	switch c.Storage.Mode {
+	case StorageMemory:
+		if c.Storage.Path != "" {
+			return fmt.Errorf("storage.path requires storage.mode: persistent")
+		}
+	case StoragePersistent:
+		if c.Storage.Path == "" {
+			return fmt.Errorf("storage.mode: persistent requires storage.path")
+		}
+	default:
+		return fmt.Errorf("storage.mode must be memory or persistent")
 	}
 
 	return nil

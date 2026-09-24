@@ -35,6 +35,7 @@ import (
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
 	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
+	"github.com/amjadjibon/tinystack/internal/storage"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
@@ -61,12 +62,30 @@ func testConfig() config.Config {
 //nolint:gocritic // Tests build each configuration by value.
 func serverConfig(t *testing.T, cfg config.Config, runtime lambda.Runtime) *httptest.Server {
 	t.Helper()
+	s, stop := serverStore(t, cfg, runtime, &memory.Store{})
+	t.Cleanup(stop)
+	return s
+}
+
+// serverStore builds the server like start.go, with every service sharing
+// store. stop shuts the server down.
+//
+//nolint:gocritic // Tests build each configuration by value.
+func serverStore(
+	t *testing.T,
+	cfg config.Config,
+	runtime lambda.Runtime,
+	store storage.Store,
+) (s *httptest.Server, stop func()) {
+	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	// Services share one store, as in start.go.
-	store := &memory.Store{}
 	deliveries := delivery.New()
 	sqsService := queues.New(store)
 	functions := lambda.New(store, sqsService, runtime, logger, cfg.Identity.SecretKeys, deliveries)
+	if err := functions.Resume(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
 	snsService := topics.New(store, sqsService, functions, deliveries)
 	h, err := gateway.New(
 		cfg,
@@ -84,13 +103,12 @@ func serverConfig(t *testing.T, cfg config.Config, runtime lambda.Runtime) *http
 
 	h.Handle("deliveries", deliveries)
 
-	s := httptest.NewServer(h)
-	t.Cleanup(func() {
+	s = httptest.NewServer(h)
+	return s, func() {
 		sqsService.Stop()
 		functions.Stop()
 		s.Close()
-	})
-	return s
+	}
 }
 
 func client(s *httptest.Server, key, region string) *sdk.Client {

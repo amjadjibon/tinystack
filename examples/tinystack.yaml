@@ -12,4 +12,7 @@ identity:
     test: "000000000000"
     team-b: "111111111111"
 storage:
+  # memory loses state on exit; persistent keeps it in <path>/state.db.
   mode: memory
+  # mode: persistent
+  # path: ~/.tinystack
