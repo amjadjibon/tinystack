@@ -127,6 +127,14 @@ def main():
                 events("remove-targets", "--rule", "orders", "--ids", "inbox")
                 events("delete-rule", "--name", "orders")
                 assert events("list-rules").get("Rules", []) == []
+                def ssm(*args):
+                    return aws(*args, service="ssm")
+                assert ssm("put-parameter", "--name", "/smoke/url", "--value", "db.local", "--type", "String")["Version"] == 1
+                ssm("put-parameter", "--name", "/smoke/token", "--value", "s3cret", "--type", "SecureString")
+                by_path = ssm("get-parameters-by-path", "--path", "/smoke", "--with-decryption")["Parameters"]
+                assert [(p["Name"], p["Value"]) for p in by_path] == [("/smoke/token", "s3cret"), ("/smoke/url", "db.local")], by_path
+                assert ssm("get-parameter", "--name", "/smoke/token")["Parameter"]["Value"] != "s3cret"
+                assert ssm("delete-parameters", "--names", "/smoke/url", "/smoke/token")["DeletedParameters"] == ["/smoke/url", "/smoke/token"]
                 def iam(*args):
                     return aws(*args, service="iam")
                 trust = {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}

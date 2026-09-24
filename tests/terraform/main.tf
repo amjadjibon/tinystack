@@ -24,6 +24,7 @@ provider "aws" {
     s3          = var.endpoint
     sns         = var.endpoint
     sqs         = var.endpoint
+    ssm         = var.endpoint
     sts         = var.endpoint
   }
 }
@@ -160,4 +161,18 @@ resource "aws_iam_role_policy_attachment" "assets" {
 resource "aws_iam_role_policy_attachment" "basic" {
   role       = aws_iam_role.lambda.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_ssm_parameter" "team" {
+  name        = "/app/config/team"
+  type        = "String"
+  value       = var.team
+  description = "Owning team"
+  tags        = local.tags
+}
+
+resource "aws_ssm_parameter" "token" {
+  name  = "/app/config/token"
+  type  = "SecureString"
+  value = "token-${var.team}"
 }
