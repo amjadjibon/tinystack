@@ -1,6 +1,10 @@
 version: '3'
 
 tasks:
+  default:
+    cmds:
+      - task --list-all
+
   all:
     cmds:
       - task generate
