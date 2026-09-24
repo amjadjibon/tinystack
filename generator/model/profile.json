@@ -593,7 +593,12 @@
       "CreateEventSourceMapping",
       "GetEventSourceMapping",
       "DeleteEventSourceMapping",
-      "ListEventSourceMappings"
+      "ListEventSourceMappings",
+      "ListVersionsByFunction",
+      "GetFunctionCodeSigningConfig",
+      "ListTags",
+      "TagResource",
+      "UntagResource"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -607,7 +612,8 @@
         "MemorySize",
         "PackageType",
         "Environment",
-        "Architectures"
+        "Architectures",
+        "Tags"
       ],
       "FunctionCode": [
         "ZipFile",
@@ -642,7 +648,8 @@
       ],
       "GetFunctionResponse": [
         "Configuration",
-        "Code"
+        "Code",
+        "Tags"
       ],
       "FunctionCodeLocation": [
         "RepositoryType",
@@ -703,6 +710,36 @@
       "ListEventSourceMappingsResponse": [
         "EventSourceMappings",
         "NextMarker"
+      ],
+      "ListVersionsByFunctionRequest": [
+        "FunctionName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListVersionsByFunctionResponse": [
+        "Versions",
+        "NextMarker"
+      ],
+      "GetFunctionCodeSigningConfigRequest": [
+        "FunctionName"
+      ],
+      "GetFunctionCodeSigningConfigResponse": [
+        "CodeSigningConfigArn",
+        "FunctionName"
+      ],
+      "ListTagsRequest": [
+        "Resource"
+      ],
+      "ListTagsResponse": [
+        "Tags"
+      ],
+      "TagResourceRequest": [
+        "Resource",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "Resource",
+        "TagKeys"
       ]
     }
   },

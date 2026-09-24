@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamotypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	sdklambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -207,4 +208,51 @@ func TestDynamoDBTableSettingsAndTags(t *testing.T) {
 	other := aws.String(strings.Replace(*arn, "us-east-1", "eu-west-1", 1))
 	_, err = c.ListTagsOfResource(ctx, &dynamodb.ListTagsOfResourceInput{ResourceArn: other})
 	code(t, err, "ResourceNotFoundException")
+}
+
+func TestLambdaTagsAndVersions(t *testing.T) {
+	s := server(t)
+	c := lambdaClient(s, "test")
+	ctx := context.Background()
+	created := createFunction(t, c, "tagged", "app.echo")
+	arn := created.FunctionArn
+	_, err := c.TagResource(
+		ctx,
+		&sdklambda.TagResourceInput{Resource: arn, Tags: map[string]string{"a": "1", "b": "2"}},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.UntagResource(ctx, &sdklambda.UntagResourceInput{Resource: arn, TagKeys: []string{"a"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tags, err := c.ListTags(ctx, &sdklambda.ListTagsInput{Resource: arn})
+	if err != nil || len(tags.Tags) != 1 || tags.Tags["b"] != "2" {
+		t.Fatal(tags, err)
+	}
+
+	got, err := c.GetFunction(ctx, &sdklambda.GetFunctionInput{FunctionName: aws.String("tagged")})
+	if err != nil || got.Tags["b"] != "2" {
+		t.Fatal(got, err)
+	}
+
+	_, err = c.TagResource(ctx, &sdklambda.TagResourceInput{Resource: aws.String(*arn + ":$LATEST"), Tags: tooMany()})
+	code(t, err, "InvalidParameterValueException")
+
+	versions, err := c.ListVersionsByFunction(ctx, &sdklambda.ListVersionsByFunctionInput{
+		FunctionName: aws.String("tagged"), MaxItems: aws.Int32(10000),
+	})
+	if err != nil || len(versions.Versions) != 1 || *versions.Versions[0].Version != "$LATEST" {
+		t.Fatal(versions, err)
+	}
+
+	signing, err := c.GetFunctionCodeSigningConfig(ctx, &sdklambda.GetFunctionCodeSigningConfigInput{
+		FunctionName: aws.String("tagged"),
+	})
+	if err != nil || *signing.CodeSigningConfigArn != "" || *signing.FunctionName != "tagged" {
+		t.Fatal(signing, err)
+	}
 }

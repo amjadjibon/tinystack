@@ -27,6 +27,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
+	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -123,6 +124,7 @@ func (s *Service) spawn(fn func(context.Context)) bool {
 // function is the stored configuration of one function.
 type function struct {
 	Environment  map[string]string `json:",omitempty"`
+	Tags         map[string]string `json:",omitempty"`
 	Name         string
 	Runtime      string `json:",omitempty"`
 	Role         string
@@ -419,6 +421,11 @@ func newFunction(in *api.CreateFunctionRequest) (*function, []byte, error) {
 		fn.Environment = in.Environment.Variables
 	}
 
+	if err := tagging.Check(in.Tags); err != nil {
+		return nil, nil, invalid("Invalid tags: %v", err)
+	}
+
+	fn.Tags = in.Tags
 	if in.Code == nil {
 		return nil, nil, invalid("Code is required")
 	}
@@ -535,7 +542,11 @@ func (s *Service) GetFunction(ctx context.Context, in *api.GetFunctionRequest) (
 	}
 
 	cfg := fn.configuration(m.Scope)
-	out := &api.GetFunctionResponse{Configuration: &cfg, Code: &api.FunctionCodeLocation{RepositoryType: ptr("S3")}}
+	out := &api.GetFunctionResponse{
+		Configuration: &cfg,
+		Code:          &api.FunctionCodeLocation{RepositoryType: ptr("S3")},
+		Tags:          fn.Tags,
+	}
 	if fn.PackageType == packageImage {
 		out.Code = &api.FunctionCodeLocation{RepositoryType: ptr("ECR"), ImageUri: ptr(fn.ImageURI)}
 	}

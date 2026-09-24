@@ -16,17 +16,18 @@ type Environment struct {
 }
 
 type CreateFunctionRequest struct {
-	FunctionName  *string       `json:"FunctionName,omitempty"`
-	Runtime       *string       `json:"Runtime,omitempty"`
-	Role          *string       `json:"Role,omitempty"`
-	Handler       *string       `json:"Handler,omitempty"`
-	Code          *FunctionCode `json:"Code,omitempty"`
-	Description   *string       `json:"Description,omitempty"`
-	Timeout       *int64        `json:"Timeout,omitempty"`
-	MemorySize    *int64        `json:"MemorySize,omitempty"`
-	PackageType   *string       `json:"PackageType,omitempty"`
-	Environment   *Environment  `json:"Environment,omitempty"`
-	Architectures []string      `json:"Architectures,omitempty"`
+	FunctionName  *string           `json:"FunctionName,omitempty"`
+	Runtime       *string           `json:"Runtime,omitempty"`
+	Role          *string           `json:"Role,omitempty"`
+	Handler       *string           `json:"Handler,omitempty"`
+	Code          *FunctionCode     `json:"Code,omitempty"`
+	Description   *string           `json:"Description,omitempty"`
+	Timeout       *int64            `json:"Timeout,omitempty"`
+	MemorySize    *int64            `json:"MemorySize,omitempty"`
+	PackageType   *string           `json:"PackageType,omitempty"`
+	Environment   *Environment      `json:"Environment,omitempty"`
+	Architectures []string          `json:"Architectures,omitempty"`
+	Tags          map[string]string `json:"Tags,omitempty"`
 }
 
 type EnvironmentResponse struct {
@@ -64,6 +65,7 @@ type FunctionCodeLocation struct {
 type GetFunctionResponse struct {
 	Configuration *FunctionConfiguration `json:"Configuration,omitempty"`
 	Code          *FunctionCodeLocation  `json:"Code,omitempty"`
+	Tags          map[string]string      `json:"Tags,omitempty"`
 }
 
 type DeleteFunctionRequest struct {
@@ -134,6 +136,48 @@ type ListEventSourceMappingsResponse struct {
 	NextMarker          *string                           `json:"NextMarker,omitempty"`
 }
 
+type ListVersionsByFunctionRequest struct {
+	FunctionName *string `json:"-"`
+	Marker       *string `json:"-"`
+	MaxItems     *int64  `json:"-"`
+}
+
+type ListVersionsByFunctionResponse struct {
+	Versions   []FunctionConfiguration `json:"Versions,omitempty"`
+	NextMarker *string                 `json:"NextMarker,omitempty"`
+}
+
+type GetFunctionCodeSigningConfigRequest struct {
+	FunctionName *string `json:"-"`
+}
+
+type GetFunctionCodeSigningConfigResponse struct {
+	CodeSigningConfigArn *string `json:"CodeSigningConfigArn,omitempty"`
+	FunctionName         *string `json:"FunctionName,omitempty"`
+}
+
+type ListTagsRequest struct {
+	Resource *string `json:"-"`
+}
+
+type ListTagsResponse struct {
+	Tags map[string]string `json:"Tags,omitempty"`
+}
+
+type TagResourceOutput struct{}
+
+type TagResourceRequest struct {
+	Resource *string           `json:"-"`
+	Tags     map[string]string `json:"Tags,omitempty"`
+}
+
+type UntagResourceOutput struct{}
+
+type UntagResourceRequest struct {
+	Resource *string  `json:"-"`
+	TagKeys  []string `json:"-"`
+}
+
 type API interface {
 	CreateFunction(context.Context, *CreateFunctionRequest) (*FunctionConfiguration, error)
 	GetFunction(context.Context, *GetFunctionRequest) (*GetFunctionResponse, error)
@@ -144,14 +188,19 @@ type API interface {
 	GetEventSourceMapping(context.Context, *GetEventSourceMappingRequest) (*EventSourceMappingConfiguration, error)
 	DeleteEventSourceMapping(context.Context, *DeleteEventSourceMappingRequest) (*EventSourceMappingConfiguration, error)
 	ListEventSourceMappings(context.Context, *ListEventSourceMappingsRequest) (*ListEventSourceMappingsResponse, error)
+	ListVersionsByFunction(context.Context, *ListVersionsByFunctionRequest) (*ListVersionsByFunctionResponse, error)
+	GetFunctionCodeSigningConfig(context.Context, *GetFunctionCodeSigningConfigRequest) (*GetFunctionCodeSigningConfigResponse, error)
+	ListTags(context.Context, *ListTagsRequest) (*ListTagsResponse, error)
+	TagResource(context.Context, *TagResourceRequest) (*TagResourceOutput, error)
+	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "lambda", SigningName: "lambda", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CodeArtifactUserDeletedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CodeArtifactUserFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CodeArtifactUserPendingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CodeSigningConfigNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "CodeStorageExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeVerificationFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "DurableExecutionAlreadyStartedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 409}, "EC2AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "EC2ThrottledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "EC2UnexpectedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "EFSIOException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 410}, "EFSMountConnectivityException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 408}, "EFSMountFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 403}, "EFSMountTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 408}, "ENILimitReachedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "ENINotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "FunctionVersionsPerCapacityProviderLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidCodeSignatureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRequestContentException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRuntimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "InvalidSecurityGroupIDException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "InvalidSubnetIDException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "InvalidZipFileException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "KMSAccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "KMSDisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "KMSNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "ModeNotSupportedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NoPublishedVersionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "RecursiveInvocationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "RequestTooLargeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 413}, "ResourceConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "ResourceNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 502}, "S3FilesMountConnectivityException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 408}, "S3FilesMountFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 403}, "S3FilesMountTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 408}, "SerializedRequestEntityTooLargeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 413}, "ServiceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 402}, "SnapStartException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SnapStartNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 409}, "SnapStartRegenerationFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 409}, "SnapStartTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 408}, "SubnetIPAddressLimitReachedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 502}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnsupportedMediaTypeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 415}}, Operations: map[string]catalog.Operation{
-		"CreateFunction": {Name: "CreateFunction", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Architectures": catalog.MemberBinding{Location: "document", Name: "Architectures"}, "Code": catalog.MemberBinding{Location: "document", Name: "Code"}, "Description": catalog.MemberBinding{Location: "document", Name: "Description"}, "Environment": catalog.MemberBinding{Location: "document", Name: "Environment"}, "FunctionName": catalog.MemberBinding{Location: "document", Name: "FunctionName"}, "Handler": catalog.MemberBinding{Location: "document", Name: "Handler"}, "MemorySize": catalog.MemberBinding{Location: "document", Name: "MemorySize"}, "PackageType": catalog.MemberBinding{Location: "document", Name: "PackageType"}, "Role": catalog.MemberBinding{Location: "document", Name: "Role"}, "Runtime": catalog.MemberBinding{Location: "document", Name: "Runtime"}, "Timeout": catalog.MemberBinding{Location: "document", Name: "Timeout"}}, Output: map[string]catalog.MemberBinding{"Architectures": catalog.MemberBinding{Location: "document", Name: "Architectures"}, "CodeSha256": catalog.MemberBinding{Location: "document", Name: "CodeSha256"}, "CodeSize": catalog.MemberBinding{Location: "document", Name: "CodeSize"}, "Description": catalog.MemberBinding{Location: "document", Name: "Description"}, "Environment": catalog.MemberBinding{Location: "document", Name: "Environment"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "FunctionName": catalog.MemberBinding{Location: "document", Name: "FunctionName"}, "Handler": catalog.MemberBinding{Location: "document", Name: "Handler"}, "LastModified": catalog.MemberBinding{Location: "document", Name: "LastModified"}, "MemorySize": catalog.MemberBinding{Location: "document", Name: "MemorySize"}, "PackageType": catalog.MemberBinding{Location: "document", Name: "PackageType"}, "Role": catalog.MemberBinding{Location: "document", Name: "Role"}, "Runtime": catalog.MemberBinding{Location: "document", Name: "Runtime"}, "State": catalog.MemberBinding{Location: "document", Name: "State"}, "Timeout": catalog.MemberBinding{Location: "document", Name: "Timeout"}, "Version": catalog.MemberBinding{Location: "document", Name: "Version"}}, Method: "POST", URI: "/2015-03-31/functions", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateFunctionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateFunction": {Name: "CreateFunction", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Architectures": catalog.MemberBinding{Location: "document", Name: "Architectures"}, "Code": catalog.MemberBinding{Location: "document", Name: "Code"}, "Description": catalog.MemberBinding{Location: "document", Name: "Description"}, "Environment": catalog.MemberBinding{Location: "document", Name: "Environment"}, "FunctionName": catalog.MemberBinding{Location: "document", Name: "FunctionName"}, "Handler": catalog.MemberBinding{Location: "document", Name: "Handler"}, "MemorySize": catalog.MemberBinding{Location: "document", Name: "MemorySize"}, "PackageType": catalog.MemberBinding{Location: "document", Name: "PackageType"}, "Role": catalog.MemberBinding{Location: "document", Name: "Role"}, "Runtime": catalog.MemberBinding{Location: "document", Name: "Runtime"}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags"}, "Timeout": catalog.MemberBinding{Location: "document", Name: "Timeout"}}, Output: map[string]catalog.MemberBinding{"Architectures": catalog.MemberBinding{Location: "document", Name: "Architectures"}, "CodeSha256": catalog.MemberBinding{Location: "document", Name: "CodeSha256"}, "CodeSize": catalog.MemberBinding{Location: "document", Name: "CodeSize"}, "Description": catalog.MemberBinding{Location: "document", Name: "Description"}, "Environment": catalog.MemberBinding{Location: "document", Name: "Environment"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "FunctionName": catalog.MemberBinding{Location: "document", Name: "FunctionName"}, "Handler": catalog.MemberBinding{Location: "document", Name: "Handler"}, "LastModified": catalog.MemberBinding{Location: "document", Name: "LastModified"}, "MemorySize": catalog.MemberBinding{Location: "document", Name: "MemorySize"}, "PackageType": catalog.MemberBinding{Location: "document", Name: "PackageType"}, "Role": catalog.MemberBinding{Location: "document", Name: "Role"}, "Runtime": catalog.MemberBinding{Location: "document", Name: "Runtime"}, "State": catalog.MemberBinding{Location: "document", Name: "State"}, "Timeout": catalog.MemberBinding{Location: "document", Name: "Timeout"}, "Version": catalog.MemberBinding{Location: "document", Name: "Version"}}, Method: "POST", URI: "/2015-03-31/functions", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateFunctionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateFunction(ctx, input.(*CreateFunctionRequest))
 		}},
-		"GetFunction": {Name: "GetFunction", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Qualifier": catalog.MemberBinding{Location: "unsupported:query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"Code": catalog.MemberBinding{Location: "document", Name: "Code"}, "Configuration": catalog.MemberBinding{Location: "document", Name: "Configuration"}}, Method: "GET", URI: "/2015-03-31/functions/{FunctionName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetFunctionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetFunction": {Name: "GetFunction", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Qualifier": catalog.MemberBinding{Location: "unsupported:query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"Code": catalog.MemberBinding{Location: "document", Name: "Code"}, "Configuration": catalog.MemberBinding{Location: "document", Name: "Configuration"}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags"}}, Method: "GET", URI: "/2015-03-31/functions/{FunctionName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetFunctionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetFunction(ctx, input.(*GetFunctionRequest))
 		}},
 		"DeleteFunction": {Name: "DeleteFunction", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Qualifier": catalog.MemberBinding{Location: "unsupported:query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"StatusCode": catalog.MemberBinding{Location: "status", Name: "StatusCode"}}, Method: "DELETE", URI: "/2015-03-31/functions/{FunctionName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteFunctionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -172,6 +221,19 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListEventSourceMappings": {Name: "ListEventSourceMappings", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EventSourceArn": catalog.MemberBinding{Location: "query", Name: "EventSourceArn"}, "FunctionName": catalog.MemberBinding{Location: "query", Name: "FunctionName"}, "Marker": catalog.MemberBinding{Location: "query", Name: "Marker"}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems"}}, Output: map[string]catalog.MemberBinding{"EventSourceMappings": catalog.MemberBinding{Location: "document", Name: "EventSourceMappings"}, "NextMarker": catalog.MemberBinding{Location: "document", Name: "NextMarker"}}, Method: "GET", URI: "/2015-03-31/event-source-mappings", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListEventSourceMappingsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListEventSourceMappings(ctx, input.(*ListEventSourceMappingsRequest))
+		}},
+		"ListVersionsByFunction": {Name: "ListVersionsByFunction", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Marker": catalog.MemberBinding{Location: "query", Name: "Marker"}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems"}}, Output: map[string]catalog.MemberBinding{"NextMarker": catalog.MemberBinding{Location: "document", Name: "NextMarker"}, "Versions": catalog.MemberBinding{Location: "document", Name: "Versions"}}, Method: "GET", URI: "/2015-03-31/functions/{FunctionName}/versions", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListVersionsByFunctionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListVersionsByFunction(ctx, input.(*ListVersionsByFunctionRequest))
+		}},
+		"GetFunctionCodeSigningConfig": {Name: "GetFunctionCodeSigningConfig", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}}, Output: map[string]catalog.MemberBinding{"CodeSigningConfigArn": catalog.MemberBinding{Location: "document", Name: "CodeSigningConfigArn"}, "FunctionName": catalog.MemberBinding{Location: "document", Name: "FunctionName"}}, Method: "GET", URI: "/2020-06-30/functions/{FunctionName}/code-signing-config", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetFunctionCodeSigningConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetFunctionCodeSigningConfig(ctx, input.(*GetFunctionCodeSigningConfigRequest))
+		}},
+		"ListTags": {Name: "ListTags", UnitOutput: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Resource": catalog.MemberBinding{Location: "label", Name: "Resource"}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "Tags"}}, Method: "GET", URI: "/2017-03-31/tags/{Resource}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.ListTags(ctx, input.(*ListTagsRequest)) }},
+		"TagResource": {Name: "TagResource", UnitOutput: true, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Resource": catalog.MemberBinding{Location: "label", Name: "Resource"}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags"}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/2017-03-31/tags/{Resource}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagResource(ctx, input.(*TagResourceRequest))
+		}},
+		"UntagResource": {Name: "UntagResource", UnitOutput: true, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Resource": catalog.MemberBinding{Location: "label", Name: "Resource"}, "TagKeys": catalog.MemberBinding{Location: "query", Name: "tagKeys"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2017-03-31/tags/{Resource}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagResource(ctx, input.(*UntagResourceRequest))
 		}},
 	}}
 }
