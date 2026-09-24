@@ -7,11 +7,19 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+def docker_available():
+    try:
+        return subprocess.run(["docker", "info"], capture_output=True, timeout=20).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
 def main():
+    docker = docker_available()
     with tempfile.TemporaryDirectory(prefix="tinystack-smoke-") as directory:
         binary = Path(directory) / "tinystack"
         subprocess.run(["go", "build", "-o", str(binary), "./cmd/tinystack"], cwd=ROOT, check=True)
@@ -94,6 +102,24 @@ def main():
                 s3api("delete-object", "--bucket", "assets", "--key", "docs/hello world.txt")
                 s3api("delete-bucket", "--bucket", "assets")
                 assert s3api("list-buckets").get("Buckets", []) == []
+                def lam(*args):
+                    return aws(*args, service="lambda")
+                package = Path(directory) / "function.zip"
+                with zipfile.ZipFile(package, "w") as archive:
+                    archive.writestr("app.py", "def handler(event, context):\n    return {'echo': event}\n")
+                created = lam("create-function", "--function-name", "hello", "--runtime", "python3.14", "--handler", "app.handler", "--role", "arn:aws:iam::000000000000:role/lambda", "--zip-file", f"fileb://{package}")
+                assert created["State"] == "Active" and created["Version"] == "$LATEST"
+                assert lam("get-function", "--function-name", "hello")["Configuration"]["CodeSha256"] == created["CodeSha256"]
+                assert [f["FunctionName"] for f in lam("list-functions")["Functions"]] == ["hello"]
+                if docker:
+                    output, payload = Path(directory) / "out.json", Path(directory) / "payload.json"
+                    payload.write_text('{"n":1}')
+                    # fileb:// sends the payload unchanged with AWS CLI v1 and v2.
+                    invoked = lam("invoke", "--function-name", "hello", "--payload", f"fileb://{payload}", str(output))
+                    assert invoked["StatusCode"] == 200 and "FunctionError" not in invoked
+                    assert json.loads(output.read_text()) == {"echo": {"n": 1}}
+                lam("delete-function", "--function-name", "hello")
+                assert lam("list-functions").get("Functions", []) == []
             finally:
                 if process.poll() is None:
                     process.terminate()
@@ -106,7 +132,10 @@ def main():
                 if process.returncode != 0:
                     log.seek(0)
                     raise RuntimeError(log.read())
-        print("AWS CLI smoke passed; SIGTERM shutdown passed.")
+        if docker:
+            left = subprocess.run(["docker", "ps", "-aq", "--filter", "label=tinystack.function"], text=True, capture_output=True, check=True).stdout
+            assert left.strip() == "", f"function containers left after shutdown: {left}"
+        print("AWS CLI smoke passed; SIGTERM shutdown passed." + ("" if docker else " Lambda invoke skipped: Docker is unavailable."))
 
 if __name__ == "__main__":
     main()
