@@ -111,7 +111,7 @@ func TestQueryOverlayFixture(t *testing.T) {
 		`query:"Tag,flat,key=Key"`,
 		`query:"Ids,member=Id"`,
 		"type PutOutput struct{}",
-		`"Missing": catalog.ErrorBinding{QueryCode: "Fixture.Missing", StatusCode: 404}`,
+		`"Missing": catalog.ErrorBinding{QueryCode: "Fixture.Missing", MessageMember: "", StatusCode: 404}`,
 		`Target: "Put", Version: "2020-01-01", ContentType: "application/x-www-form-urlencoded"`,
 		`XMLNamespace: "urn:fixture"`,
 	} {
@@ -147,7 +147,7 @@ func TestPureQueryFixture(t *testing.T) {
 	for _, want := range []string{
 		`query:"Ids"`,
 		`TargetPrefix: "", QueryCompatible: false, XMLNamespace: "urn:fixture", Protocols: []string{"awsQuery"}`,
-		`"Missing": catalog.ErrorBinding{QueryCode: "Missing", StatusCode: 400}`,
+		`"Missing": catalog.ErrorBinding{QueryCode: "Missing", MessageMember: "", StatusCode: 400}`,
 		`Target: "Put", Version: "2020-01-01", ContentType: "application/x-www-form-urlencoded"`,
 	} {
 		if !strings.Contains(string(source), want) {
@@ -208,6 +208,54 @@ func TestRESTXMLFixture(t *testing.T) {
 		if !strings.Contains(strings.Join(strings.Fields(string(source)), " "), want) {
 			t.Fatalf("generated source lacks %s:\n%s", want, source)
 		}
+	}
+}
+
+func TestRESTJSONFixture(t *testing.T) {
+	model := `{"shapes": {
+  "fixture#Svc": {"type": "service", "version": "2020-01-01", "traits": {
+    "aws.protocols#restJson1": {}, "aws.auth#sigv4": {"name": "fix"}}},
+  "fixture#Run": {"type": "operation", "input": {"target": "fixture#In"}, "output": {"target": "fixture#Out"},
+    "errors": [{"target": "fixture#Missing"}],
+    "traits": {"smithy.api#http": {"method": "POST", "uri": "/runs/{Name}"}}},
+  "fixture#In": {"type": "structure", "members": {
+    "Name": {"target": "smithy.api#String", "traits": {"smithy.api#httpLabel": {}, "smithy.api#required": {}}},
+    "Mode": {"target": "smithy.api#String", "traits": {"smithy.api#httpHeader": "X-Mode"}},
+    "Payload": {"target": "smithy.api#Blob", "traits": {"smithy.api#httpPayload": {}}}}},
+  "fixture#Out": {"type": "structure", "members": {
+    "Status": {"target": "smithy.api#Integer", "traits": {"smithy.api#httpResponseCode": {}}},
+    "At": {"target": "smithy.api#Timestamp"}}},
+  "fixture#Missing": {"type": "structure", "traits": {"smithy.api#error": "client", "smithy.api#httpError": 404},
+    "members": {"Message": {"target": "smithy.api#String"}}},
+  "smithy.api#String": {"type": "string"},
+  "smithy.api#Blob": {"type": "blob"},
+  "smithy.api#Integer": {"type": "integer"},
+  "smithy.api#Timestamp": {"type": "timestamp"}
+}}`
+	profile := serviceProfile{Operations: []string{"Run"}, Shapes: map[string][]string{"In": {"Name", "Payload"}}}
+	source, err := generate("fixture", []byte(model), profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		`Name *string ` + "`" + `json:"-"` + "`",
+		`At *float64 ` + "`" + `json:"At,omitempty"` + "`",
+		`Protocols: []string{"restJson1"}`,
+		// Smithy's default success code applies when the http trait has none.
+		`StatusCode: 200`,
+		`"Status": catalog.MemberBinding{Location: "status", Name: "Status"}`,
+		`"Mode": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Mode"}`,
+		`"Missing": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}`,
+	} {
+		// Compare without gofmt's column alignment.
+		if !strings.Contains(strings.Join(strings.Fields(string(source)), " "), want) {
+			t.Fatalf("generated source lacks %s:\n%s", want, source)
+		}
+	}
+
+	if strings.Contains(string(source), "encoding/xml") {
+		t.Fatalf("REST JSON service has XML tags:\n%s", source)
 	}
 }
 

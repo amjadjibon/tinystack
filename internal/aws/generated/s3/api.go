@@ -13,35 +13,35 @@ type CreateBucketConfiguration struct {
 }
 
 type CreateBucketRequest struct {
-	Bucket                    *string                    `json:"Bucket,omitempty" xml:"-"`
-	CreateBucketConfiguration *CreateBucketConfiguration `json:"CreateBucketConfiguration,omitempty" xml:"-"`
+	Bucket                    *string                    `json:"-" xml:"-"`
+	CreateBucketConfiguration *CreateBucketConfiguration `json:"-" xml:"-"`
 }
 
 type CreateBucketOutput struct {
-	Location *string `json:"Location,omitempty" xml:"-"`
+	Location *string `json:"-" xml:"-"`
 }
 
 type DeleteBucketOutput struct{}
 
 type DeleteBucketRequest struct {
-	Bucket              *string `json:"Bucket,omitempty" xml:"-"`
-	ExpectedBucketOwner *string `json:"ExpectedBucketOwner,omitempty" xml:"-"`
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
 type HeadBucketRequest struct {
-	Bucket              *string `json:"Bucket,omitempty" xml:"-"`
-	ExpectedBucketOwner *string `json:"ExpectedBucketOwner,omitempty" xml:"-"`
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
 type HeadBucketOutput struct {
-	BucketRegion *string `json:"BucketRegion,omitempty" xml:"-"`
+	BucketRegion *string `json:"-" xml:"-"`
 }
 
 type ListBucketsRequest struct {
-	MaxBuckets        *int64  `json:"MaxBuckets,omitempty" xml:"-"`
-	ContinuationToken *string `json:"ContinuationToken,omitempty" xml:"-"`
-	Prefix            *string `json:"Prefix,omitempty" xml:"-"`
-	BucketRegion      *string `json:"BucketRegion,omitempty" xml:"-"`
+	MaxBuckets        *int64  `json:"-" xml:"-"`
+	ContinuationToken *string `json:"-" xml:"-"`
+	Prefix            *string `json:"-" xml:"-"`
+	BucketRegion      *string `json:"-" xml:"-"`
 }
 
 type Bucket struct {
@@ -64,82 +64,82 @@ type ListBucketsOutput struct {
 }
 
 type PutObjectRequest struct {
-	Bucket              *string           `json:"Bucket,omitempty" xml:"-"`
-	Key                 *string           `json:"Key,omitempty" xml:"-"`
-	Body                []byte            `json:"Body,omitempty" xml:"-"`
-	ContentType         *string           `json:"ContentType,omitempty" xml:"-"`
-	ContentLength       *int64            `json:"ContentLength,omitempty" xml:"-"`
-	ContentMD5          *string           `json:"ContentMD5,omitempty" xml:"-"`
-	Metadata            map[string]string `json:"Metadata,omitempty" xml:"-"`
-	StorageClass        *string           `json:"StorageClass,omitempty" xml:"-"`
-	IfMatch             *string           `json:"IfMatch,omitempty" xml:"-"`
-	IfNoneMatch         *string           `json:"IfNoneMatch,omitempty" xml:"-"`
-	ExpectedBucketOwner *string           `json:"ExpectedBucketOwner,omitempty" xml:"-"`
-	ChecksumAlgorithm   *string           `json:"ChecksumAlgorithm,omitempty" xml:"-"`
-	ChecksumCRC32       *string           `json:"ChecksumCRC32,omitempty" xml:"-"`
-	ChecksumCRC32C      *string           `json:"ChecksumCRC32C,omitempty" xml:"-"`
-	ChecksumCRC64NVME   *string           `json:"ChecksumCRC64NVME,omitempty" xml:"-"`
-	ChecksumSHA1        *string           `json:"ChecksumSHA1,omitempty" xml:"-"`
-	ChecksumSHA256      *string           `json:"ChecksumSHA256,omitempty" xml:"-"`
+	Bucket              *string           `json:"-" xml:"-"`
+	Key                 *string           `json:"-" xml:"-"`
+	Body                []byte            `json:"-" xml:"-"`
+	ContentType         *string           `json:"-" xml:"-"`
+	ContentLength       *int64            `json:"-" xml:"-"`
+	ContentMD5          *string           `json:"-" xml:"-"`
+	Metadata            map[string]string `json:"-" xml:"-"`
+	StorageClass        *string           `json:"-" xml:"-"`
+	IfMatch             *string           `json:"-" xml:"-"`
+	IfNoneMatch         *string           `json:"-" xml:"-"`
+	ExpectedBucketOwner *string           `json:"-" xml:"-"`
+	ChecksumAlgorithm   *string           `json:"-" xml:"-"`
+	ChecksumCRC32       *string           `json:"-" xml:"-"`
+	ChecksumCRC32C      *string           `json:"-" xml:"-"`
+	ChecksumCRC64NVME   *string           `json:"-" xml:"-"`
+	ChecksumSHA1        *string           `json:"-" xml:"-"`
+	ChecksumSHA256      *string           `json:"-" xml:"-"`
 }
 
 type PutObjectOutput struct {
-	ETag *string `json:"ETag,omitempty" xml:"-"`
+	ETag *string `json:"-" xml:"-"`
 }
 
 type GetObjectRequest struct {
-	Bucket              *string `json:"Bucket,omitempty" xml:"-"`
-	Key                 *string `json:"Key,omitempty" xml:"-"`
-	IfMatch             *string `json:"IfMatch,omitempty" xml:"-"`
-	IfNoneMatch         *string `json:"IfNoneMatch,omitempty" xml:"-"`
-	ChecksumMode        *string `json:"ChecksumMode,omitempty" xml:"-"`
-	ExpectedBucketOwner *string `json:"ExpectedBucketOwner,omitempty" xml:"-"`
+	Bucket              *string `json:"-" xml:"-"`
+	Key                 *string `json:"-" xml:"-"`
+	IfMatch             *string `json:"-" xml:"-"`
+	IfNoneMatch         *string `json:"-" xml:"-"`
+	ChecksumMode        *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
 type GetObjectOutput struct {
-	Body          []byte            `json:"Body,omitempty" xml:"-"`
-	ContentLength *int64            `json:"ContentLength,omitempty" xml:"-"`
-	ContentType   *string           `json:"ContentType,omitempty" xml:"-"`
-	ETag          *string           `json:"ETag,omitempty" xml:"-"`
-	LastModified  *time.Time        `json:"LastModified,omitempty" xml:"-"`
-	Metadata      map[string]string `json:"Metadata,omitempty" xml:"-"`
+	Body          []byte            `json:"-" xml:"-"`
+	ContentLength *int64            `json:"-" xml:"-"`
+	ContentType   *string           `json:"-" xml:"-"`
+	ETag          *string           `json:"-" xml:"-"`
+	LastModified  *time.Time        `json:"-" xml:"-"`
+	Metadata      map[string]string `json:"-" xml:"-"`
 }
 
 type HeadObjectRequest struct {
-	Bucket              *string `json:"Bucket,omitempty" xml:"-"`
-	Key                 *string `json:"Key,omitempty" xml:"-"`
-	IfMatch             *string `json:"IfMatch,omitempty" xml:"-"`
-	IfNoneMatch         *string `json:"IfNoneMatch,omitempty" xml:"-"`
-	ChecksumMode        *string `json:"ChecksumMode,omitempty" xml:"-"`
-	ExpectedBucketOwner *string `json:"ExpectedBucketOwner,omitempty" xml:"-"`
+	Bucket              *string `json:"-" xml:"-"`
+	Key                 *string `json:"-" xml:"-"`
+	IfMatch             *string `json:"-" xml:"-"`
+	IfNoneMatch         *string `json:"-" xml:"-"`
+	ChecksumMode        *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
 type HeadObjectOutput struct {
-	ContentLength *int64            `json:"ContentLength,omitempty" xml:"-"`
-	ContentType   *string           `json:"ContentType,omitempty" xml:"-"`
-	ETag          *string           `json:"ETag,omitempty" xml:"-"`
-	LastModified  *time.Time        `json:"LastModified,omitempty" xml:"-"`
-	Metadata      map[string]string `json:"Metadata,omitempty" xml:"-"`
+	ContentLength *int64            `json:"-" xml:"-"`
+	ContentType   *string           `json:"-" xml:"-"`
+	ETag          *string           `json:"-" xml:"-"`
+	LastModified  *time.Time        `json:"-" xml:"-"`
+	Metadata      map[string]string `json:"-" xml:"-"`
 }
 
 type DeleteObjectRequest struct {
-	Bucket              *string `json:"Bucket,omitempty" xml:"-"`
-	Key                 *string `json:"Key,omitempty" xml:"-"`
-	ExpectedBucketOwner *string `json:"ExpectedBucketOwner,omitempty" xml:"-"`
+	Bucket              *string `json:"-" xml:"-"`
+	Key                 *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
 type DeleteObjectOutput struct {
 }
 
 type ListObjectsV2Request struct {
-	Bucket              *string `json:"Bucket,omitempty" xml:"-"`
-	Delimiter           *string `json:"Delimiter,omitempty" xml:"-"`
-	EncodingType        *string `json:"EncodingType,omitempty" xml:"-"`
-	MaxKeys             *int64  `json:"MaxKeys,omitempty" xml:"-"`
-	Prefix              *string `json:"Prefix,omitempty" xml:"-"`
-	ContinuationToken   *string `json:"ContinuationToken,omitempty" xml:"-"`
-	StartAfter          *string `json:"StartAfter,omitempty" xml:"-"`
-	ExpectedBucketOwner *string `json:"ExpectedBucketOwner,omitempty" xml:"-"`
+	Bucket              *string `json:"-" xml:"-"`
+	Delimiter           *string `json:"-" xml:"-"`
+	EncodingType        *string `json:"-" xml:"-"`
+	MaxKeys             *int64  `json:"-" xml:"-"`
+	Prefix              *string `json:"-" xml:"-"`
+	ContinuationToken   *string `json:"-" xml:"-"`
+	StartAfter          *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
 type Object struct {
@@ -183,7 +183,7 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "s3", SigningName: "s3", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://s3.amazonaws.com/doc/2006-03-01/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{"BucketAlreadyExists": catalog.ErrorBinding{QueryCode: "", StatusCode: 409}, "BucketAlreadyOwnedByYou": catalog.ErrorBinding{QueryCode: "", StatusCode: 409}, "EncryptionTypeMismatch": catalog.ErrorBinding{QueryCode: "", StatusCode: 400}, "InvalidObjectState": catalog.ErrorBinding{QueryCode: "", StatusCode: 403}, "InvalidRequest": catalog.ErrorBinding{QueryCode: "", StatusCode: 400}, "InvalidWriteOffset": catalog.ErrorBinding{QueryCode: "", StatusCode: 400}, "NoSuchBucket": catalog.ErrorBinding{QueryCode: "", StatusCode: 404}, "NoSuchKey": catalog.ErrorBinding{QueryCode: "", StatusCode: 404}, "NotFound": catalog.ErrorBinding{QueryCode: "", StatusCode: 400}, "TooManyParts": catalog.ErrorBinding{QueryCode: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "s3", SigningName: "s3", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://s3.amazonaws.com/doc/2006-03-01/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{"BucketAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "BucketAlreadyOwnedByYou": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "EncryptionTypeMismatch": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidObjectState": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "InvalidRequest": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidWriteOffset": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "NoSuchBucket": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchKey": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyParts": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateBucket": {Name: "CreateBucket", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-acl"}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "BucketNamespace": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bucket-namespace"}, "CreateBucketConfiguration": catalog.MemberBinding{Location: "payload", Name: "CreateBucketConfiguration"}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control"}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read"}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp"}, "GrantWrite": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write"}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp"}, "ObjectLockEnabledForBucket": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bucket-object-lock-enabled"}, "ObjectOwnership": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-ownership"}}, Output: map[string]catalog.MemberBinding{"Location": catalog.MemberBinding{Location: "header", Name: "Location"}}, Method: "PUT", URI: "/{Bucket}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CreateBucketRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateBucket(ctx, input.(*CreateBucketRequest))
 		}},

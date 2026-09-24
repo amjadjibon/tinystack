@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	shapeUnion = "union"
-	shapeList  = "list"
-	shapeMap   = "map"
-	unitShape  = "smithy.api#Unit"
+	traitStreaming = "smithy.api#streaming"
+	shapeUnion     = "union"
+	shapeList      = "list"
+	shapeMap       = "map"
+	unitShape      = "smithy.api#Unit"
 )
 
 type reference struct {
@@ -66,6 +67,7 @@ type (
 		out       bytes.Buffer
 		query     bool
 		rest      bool
+		xml       bool
 	}
 )
 
@@ -100,7 +102,7 @@ func (g *generator) typeName(id string) (string, error) {
 	case "timestamp":
 		// REST XML carries timestamps as ISO 8601 text and HTTP dates, which
 		// time.Time encodes; the JSON protocols use epoch seconds.
-		if g.rest {
+		if g.xml {
 			g.imports["time"] = true
 			return "time.Time", nil
 		}
@@ -131,7 +133,20 @@ var restTraits = map[string]bool{
 	"smithy.api#httpQuery":         true,
 	"smithy.api#httpPayload":       true,
 	"smithy.api#httpPrefixHeaders": true,
-	"smithy.api#streaming":         true,
+	"smithy.api#httpResponseCode":  true,
+	traitStreaming:                 true,
+}
+
+// httpBound reports whether a member is placed in the HTTP message rather than
+// the document body.
+func httpBound(member reference) bool {
+	for trait := range member.Traits {
+		if trait != "smithy.api#http" && restTraits[trait] && trait != traitStreaming {
+			return true
+		}
+	}
+
+	return false
 }
 
 // checkTraits rejects wire traits the codecs do not implement. REST services
@@ -142,7 +157,7 @@ func checkTraits(traits map[string]json.RawMessage, rest bool) error {
 			continue
 		}
 
-		if strings.HasPrefix(t, "smithy.api#http") || t == "smithy.api#streaming" ||
+		if strings.HasPrefix(t, "smithy.api#http") || t == traitStreaming ||
 			t == "smithy.api#timestampFormat" ||
 			t == "smithy.api#jsonName" ||
 			t == "smithy.api#sparse" ||
@@ -231,10 +246,8 @@ func (g *generator) queryTag(member reference, name string) (string, error) {
 // xmlTag records the encoding/xml element for a REST XML body member. Members
 // bound to the HTTP message are skipped by the XML codec.
 func (g *generator) xmlTag(member reference, name string) (string, error) {
-	for trait := range member.Traits {
-		if trait != "smithy.api#http" && restTraits[trait] {
-			return ` xml:"-"`, nil
-		}
+	if httpBound(member) {
+		return ` xml:"-"`, nil
 	}
 
 	wire, err := xmlName(member.Traits, name)
@@ -333,7 +346,7 @@ func (g *generator) emit(id string) error {
 		}
 
 		fmt.Fprintf(&g.out, "type %s struct {\n", short(id))
-		if g.rest {
+		if g.xml {
 			root, err := g.xmlRoot(id, &s)
 			if err != nil {
 				return fmt.Errorf("%s: %w", id, err)
@@ -355,6 +368,10 @@ func (g *generator) emit(id string) error {
 			}
 
 			tag := n + ",omitempty"
+			if g.rest && httpBound(m) {
+				tag = "-"
+			}
+
 			if short(id) == "ListTablesOutput" && n == "TableNames" {
 				tag = n
 			}
@@ -367,7 +384,7 @@ func (g *generator) emit(id string) error {
 			switch {
 			case g.query:
 				queryTag, err = g.queryTag(m, n)
-			case g.rest:
+			case g.xml:
 				queryTag, err = g.xmlTag(m, n)
 			}
 
@@ -386,7 +403,8 @@ func (g *generator) emit(id string) error {
 }
 
 // errorBindings describes every modeled error of the enabled operations. Query
-// codes are recorded for services that speak AWS Query.
+// codes are recorded for services that speak AWS Query, and message members for
+// REST JSON services, whose error bodies use the modeled member name.
 func (g *generator) errorBindings(
 	ops []string,
 	prefix string,
@@ -434,6 +452,14 @@ func (g *generator) errorBindings(
 				}
 			}
 
+			if g.rest && !g.xml {
+				for member := range g.model.Shapes[ref.Target].Members {
+					if strings.EqualFold(member, "message") {
+						binding.MessageMember = member
+					}
+				}
+			}
+
 			bindings[short(ref.Target)] = binding
 		}
 	}
@@ -443,12 +469,18 @@ func (g *generator) errorBindings(
 
 // protocols selects the wire protocols of the service. AWS JSON 1.0 services
 // add AWS Query when they are awsQueryCompatible and the profile supplies the
-// legacy XML namespace; pure awsQuery services take it from the model.
+// legacy XML namespace; pure awsQuery services take it from the model. REST
+// services bind members to the HTTP message.
 func (g *generator) protocols(svc *shape) (protocols []string, namespace string, queryCompatible bool, err error) {
 	_, jsonProtocol := svc.Traits["aws.protocols#awsJson1_0"]
 	_, queryProtocol := svc.Traits["aws.protocols#awsQuery"]
 	_, queryCompatible = svc.Traits["aws.protocols#awsQueryCompatible"]
 	_, restXML := svc.Traits["aws.protocols#restXml"]
+	_, restJSON := svc.Traits["aws.protocols#restJson1"]
+	if (restXML || restJSON) && g.query {
+		return nil, "", false, fmt.Errorf("REST models do not take a query overlay")
+	}
+
 	switch {
 	case restXML:
 		var ns struct{ URI string }
@@ -456,12 +488,11 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 			return nil, "", false, fmt.Errorf("restXml model needs an XML namespace")
 		}
 
-		if g.query {
-			return nil, "", false, fmt.Errorf("restXml models do not take a query overlay")
-		}
-
-		g.rest = true
+		g.rest, g.xml = true, true
 		return []string{catalog.RESTXML}, ns.URI, false, nil
+	case restJSON:
+		g.rest = true
+		return []string{catalog.RESTJSON}, "", false, nil
 	case jsonProtocol && g.query:
 		if !queryCompatible || svc.Version == "" || g.profile.Query.XMLNamespace == "" {
 			return nil, "", false, fmt.Errorf(
@@ -486,7 +517,7 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 		g.query = true
 		return []string{catalog.AWSQuery}, ns.URI, false, nil
 	default:
-		return nil, "", false, fmt.Errorf("model is neither AWS JSON 1.0 nor AWS Query")
+		return nil, "", false, fmt.Errorf("model is not AWS JSON 1.0, AWS Query, REST XML, or REST JSON")
 	}
 }
 

@@ -36,7 +36,7 @@ func compileBinding(
 			ContentType: "application/x-amz-json-1.0",
 			StatusCode:  200,
 		}, nil
-	case "restJson1":
+	case catalog.RESTJSON:
 	case catalog.RESTXML:
 		contentType = "application/xml"
 	default:
@@ -55,6 +55,10 @@ func compileBinding(
 
 	if guardErr := json.Unmarshal(raw, &httpTrait); guardErr != nil {
 		return catalog.Binding{}, guardErr
+	}
+	// Smithy defaults the success code to 200.
+	if httpTrait.Code == 0 {
+		httpTrait.Code = 200
 	}
 
 	if httpTrait.Method == "" || httpTrait.URI == "" || httpTrait.Code < 100 {
@@ -112,6 +116,12 @@ func memberBindings(
 				location = "payload"
 			case "smithy.api#httpPrefixHeaders":
 				location = locPrefix
+			case "smithy.api#httpResponseCode":
+				if input {
+					return nil, fmt.Errorf("httpResponseCode on input member %s", name)
+				}
+
+				location = "status"
 			default:
 				if strings.HasPrefix(trait, "smithy.api#http") && slices.Contains(selected, name) {
 					return nil, fmt.Errorf("unsupported HTTP binding %s", trait)
