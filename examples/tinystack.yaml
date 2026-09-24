@@ -5,6 +5,9 @@ defaults:
   account: "000000000000"
   region: us-east-1
 identity:
+  # parse maps access keys to accounts without checking signatures; verify also
+  # requires SigV4 signatures from the keys in secret_keys.
+  mode: parse
   accounts:
     test: "000000000000"
     team-b: "111111111111"

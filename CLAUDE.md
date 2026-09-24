@@ -32,7 +32,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   REST JSON for Lambda); otherwise a form content type means AWS Query, and an unsigned request that is neither falls
   back to S3, the REST service that serves anonymous requests. It does this before anything
   else, so even early errors use the client's envelope. It then resolves identity from the SigV4 `Credential` scope
-  *without verifying signatures*: the access key maps to an account through `identity.accounts`, and the region comes
+  (`aws/sigv4`): the access key maps to an account through `identity.accounts`, and the region comes
   from the signed scope, then the regional host, then the configured default. The service comes from the JSON target
   prefix, or for Query from the signed or host service name, falling back to the only Query service that has the
   `Action`. The gateway also validates content type, method, path and version against the operation's binding (Query
@@ -41,7 +41,10 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   (greedy `{Key+}`), and the URI's query literals (`x-id` is optional); unknown query parameters mean no match
   (`NotImplemented`), so S3 subresources such as `?acl` never reach another operation. S3 virtual-hosted buckets
   (`<bucket>.localhost`, `<bucket>.s3.…amazonaws.com`) are folded into the path. REST payloads are limited to 64 MiB and
-  aws-chunked bodies are decoded.
+  aws-chunked bodies are decoded. Signatures are checked only in `identity.mode: verify` (`gateway/auth.go`), after
+  classification (so S3 can use its single path encoding and unsigned-payload literals) and before decoding: the key
+  must be in `identity.secret_keys`, the body is hashed (and replaced for decoding), and failures use per-protocol codes.
+  Lambda hands function code its creator's configured secret so SDK calls back to TinyStack verify.
 - **catalog** (`internal/aws/catalog`): protocol-neutral service/operation/binding/error descriptors. A service
   registers with the gateway by passing `api.Descriptor(impl)`.
 - **generated** (`internal/aws/generated/<service>/api.go`): wire types, the `API` interface and `Descriptor`. **Never

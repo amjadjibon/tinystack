@@ -134,7 +134,8 @@ invoking them does.
 | Create/Get/Delete/ListEventSourceMappings | SQS queues in the function's account and region; `BatchSize` up to 10; a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies |
 
 Function code gets `AWS_REGION`, the function name, memory size, and timeout,
-and the creator's access key (signatures are not verified), so SDK calls reach
+and the creator's access key (and its configured secret key when signatures are
+verified), so SDK calls reach
 the right account once you set `AWS_ENDPOINT_URL` in the function's environment
 to an address the container can reach.
 
@@ -156,11 +157,33 @@ Patterns support exact strings, numbers, booleans, and `null`; `prefix`, `suffix
 nested fields, arrays (any element matches), and `$or`. Other operators, such as
 `cidr`, are rejected with `InvalidEventPatternException`.
 
-SigV4 credential scopes are parsed without verifying
-signatures. `identity.accounts` maps access keys to 12-digit account IDs. Unmapped
-keys and unsigned requests use the default account. Signed regions take precedence
-over recognized regional hosts and the configured default. This is local identity
-selection, not access control.
+By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
+verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.
+Unmapped keys and unsigned requests use the default account. Signed regions take
+precedence over recognized regional hosts and the configured default. This is local
+identity selection, not access control.
+
+With `identity.mode: verify`, every request must carry a valid SigV4
+`Authorization` header signed by a key in `identity.secret_keys` (access key to
+secret key); unmapped keys still use the default account:
+
+```yaml
+identity:
+  mode: verify
+  accounts:
+    test: "000000000000"
+  secret_keys:
+    test: test
+```
+
+TinyStack checks the canonical request (path, query, signed headers, and payload
+hash), the credential scope, and a signing time within 15 minutes, and answers with
+each service's error codes (such as `InvalidSignatureException`,
+`SignatureDoesNotMatch`, `UnrecognizedClientException`, or `InvalidAccessKeyId`).
+S3 accepts `UNSIGNED-PAYLOAD` and `STREAMING-UNSIGNED-PAYLOAD-TRAILER` bodies;
+signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`), presigned URLs,
+and session tokens are not supported. There is still no IAM: any configured key
+may call any operation in its account.
 
 DynamoDB limits: no Query, UpdateItem, expressions or conditional writes, projections,
 secondary indexes, transactions API, tags, or capacity accounting/throttling.
