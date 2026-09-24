@@ -50,7 +50,10 @@ type bucketIndex struct {
 }
 
 // bucketMeta is the bucket's regional metadata.
-type bucketMeta struct{ CreatedAt int64 }
+type bucketMeta struct {
+	Tags      map[string]string `json:",omitempty"`
+	CreatedAt int64
+}
 
 func ptr[T any](v T) *T { return &v }
 
@@ -174,6 +177,11 @@ func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest)
 	name := value(in.Bucket)
 	if !validBucketName(name) {
 		return nil, fail(http.StatusBadRequest, "InvalidBucketName", "The specified bucket is not valid.")
+	}
+
+	// "private" is the default canned ACL, so it asks for nothing TinyStack lacks.
+	if acl := value(in.ACL); acl != "" && acl != "private" {
+		return nil, fail(http.StatusNotImplemented, "NotImplemented", "TinyStack only supports the private canned ACL.")
 	}
 
 	constraint := ""

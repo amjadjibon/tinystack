@@ -16,6 +16,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	eventtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	sdklambda "github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -293,4 +295,58 @@ func TestEventBridgeRuleTags(t *testing.T) {
 	missing := aws.String("arn:aws:events:us-east-1:000000000000:rule/missing")
 	_, err = c.ListTagsForResource(ctx, &eventbridge.ListTagsForResourceInput{ResourceARN: missing})
 	code(t, err, "ResourceNotFoundException")
+}
+
+func TestS3BucketTaggingAndACL(t *testing.T) {
+	s := server(t)
+	c := s3Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	_, err := c.CreateBucket(
+		ctx,
+		&s3.CreateBucketInput{Bucket: aws.String("tagged"), ACL: s3types.BucketCannedACLPrivate},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String("public"), ACL: s3types.BucketCannedACLPublicRead,
+	})
+	if got, status := s3Code(err); got != "NotImplemented" || status != http.StatusNotImplemented {
+		t.Fatal(err)
+	}
+
+	_, err = c.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{Bucket: aws.String("tagged")})
+	if got, status := s3Code(err); got != "NoSuchTagSet" || status != http.StatusNotFound {
+		t.Fatal(err)
+	}
+
+	tag := func(k, v string) s3types.Tag { return s3types.Tag{Key: aws.String(k), Value: aws.String(v)} }
+	_, err = c.PutBucketTagging(ctx, &s3.PutBucketTaggingInput{
+		Bucket: aws.String("tagged"), Tagging: &s3types.Tagging{TagSet: []s3types.Tag{tag("b", "2"), tag("a", "1")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := c.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{Bucket: aws.String("tagged")})
+	if err != nil || len(got.TagSet) != 2 || *got.TagSet[0].Key != "a" || *got.TagSet[1].Value != "2" {
+		t.Fatal(got, err)
+	}
+
+	_, err = c.PutBucketTagging(ctx, &s3.PutBucketTaggingInput{
+		Bucket: aws.String("tagged"), Tagging: &s3types.Tagging{TagSet: []s3types.Tag{tag("a", "1"), tag("a", "2")}},
+	})
+	if code, status := s3Code(err); code != "InvalidTag" || status != http.StatusBadRequest {
+		t.Fatal(err)
+	}
+
+	if _, err = c.DeleteBucketTagging(ctx, &s3.DeleteBucketTaggingInput{Bucket: aws.String("tagged")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{Bucket: aws.String("tagged")})
+	if got, _ := s3Code(err); got != "NoSuchTagSet" {
+		t.Fatal(err)
+	}
 }

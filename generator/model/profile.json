@@ -443,12 +443,16 @@
       "GetObject",
       "HeadObject",
       "DeleteObject",
-      "ListObjectsV2"
+      "ListObjectsV2",
+      "PutBucketTagging",
+      "GetBucketTagging",
+      "DeleteBucketTagging"
     ],
     "shapes": {
       "CreateBucketRequest": [
         "Bucket",
-        "CreateBucketConfiguration"
+        "CreateBucketConfiguration",
+        "ACL"
       ],
       "CreateBucketConfiguration": [
         "LocationConstraint"
@@ -580,6 +584,29 @@
       ],
       "CommonPrefix": [
         "Prefix"
+      ],
+      "PutBucketTaggingRequest": [
+        "Bucket",
+        "Tagging",
+        "ExpectedBucketOwner"
+      ],
+      "Tagging": [
+        "TagSet"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "GetBucketTaggingRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketTaggingOutput": [
+        "TagSet"
+      ],
+      "DeleteBucketTaggingRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
       ]
     }
   },

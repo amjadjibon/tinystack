@@ -15,6 +15,7 @@ type CreateBucketConfiguration struct {
 type CreateBucketRequest struct {
 	Bucket                    *string                    `json:"-" xml:"-"`
 	CreateBucketConfiguration *CreateBucketConfiguration `json:"-" xml:"-"`
+	ACL                       *string                    `json:"-" xml:"-"`
 }
 
 type CreateBucketOutput struct {
@@ -170,6 +171,40 @@ type ListObjectsV2Output struct {
 	StartAfter            *string        `json:"StartAfter,omitempty" xml:"StartAfter,omitempty"`
 }
 
+type PutBucketTaggingOutput struct{}
+
+type Tag struct {
+	Key   *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	Value *string `json:"Value,omitempty" xml:"Value,omitempty"`
+}
+
+type Tagging struct {
+	TagSet []Tag `json:"TagSet,omitempty" xml:"TagSet>Tag,omitempty"`
+}
+
+type PutBucketTaggingRequest struct {
+	Bucket              *string  `json:"-" xml:"-"`
+	Tagging             *Tagging `json:"-" xml:"-"`
+	ExpectedBucketOwner *string  `json:"-" xml:"-"`
+}
+
+type GetBucketTaggingRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketTaggingOutput struct {
+	XMLName xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ Tagging"`
+	TagSet  []Tag    `json:"TagSet,omitempty" xml:"TagSet>Tag,omitempty"`
+}
+
+type DeleteBucketTaggingOutput struct{}
+
+type DeleteBucketTaggingRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -180,11 +215,14 @@ type API interface {
 	HeadObject(context.Context, *HeadObjectRequest) (*HeadObjectOutput, error)
 	DeleteObject(context.Context, *DeleteObjectRequest) (*DeleteObjectOutput, error)
 	ListObjectsV2(context.Context, *ListObjectsV2Request) (*ListObjectsV2Output, error)
+	PutBucketTagging(context.Context, *PutBucketTaggingRequest) (*PutBucketTaggingOutput, error)
+	GetBucketTagging(context.Context, *GetBucketTaggingRequest) (*GetBucketTaggingOutput, error)
+	DeleteBucketTagging(context.Context, *DeleteBucketTaggingRequest) (*DeleteBucketTaggingOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "s3", SigningName: "s3", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://s3.amazonaws.com/doc/2006-03-01/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{"BucketAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "BucketAlreadyOwnedByYou": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "EncryptionTypeMismatch": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidObjectState": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "InvalidRequest": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidWriteOffset": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "NoSuchBucket": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchKey": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyParts": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
-		"CreateBucket": {Name: "CreateBucket", UnitOutput: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-acl"}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "BucketNamespace": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bucket-namespace"}, "CreateBucketConfiguration": catalog.MemberBinding{Location: "payload", Name: "CreateBucketConfiguration"}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control"}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read"}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp"}, "GrantWrite": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write"}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp"}, "ObjectLockEnabledForBucket": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bucket-object-lock-enabled"}, "ObjectOwnership": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-ownership"}}, Output: map[string]catalog.MemberBinding{"Location": catalog.MemberBinding{Location: "header", Name: "Location"}}, Method: "PUT", URI: "/{Bucket}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CreateBucketRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateBucket": {Name: "CreateBucket", UnitOutput: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "header", Name: "x-amz-acl"}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "BucketNamespace": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bucket-namespace"}, "CreateBucketConfiguration": catalog.MemberBinding{Location: "payload", Name: "CreateBucketConfiguration"}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control"}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read"}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp"}, "GrantWrite": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write"}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp"}, "ObjectLockEnabledForBucket": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bucket-object-lock-enabled"}, "ObjectOwnership": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-ownership"}}, Output: map[string]catalog.MemberBinding{"Location": catalog.MemberBinding{Location: "header", Name: "Location"}}, Method: "PUT", URI: "/{Bucket}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CreateBucketRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateBucket(ctx, input.(*CreateBucketRequest))
 		}},
 		"DeleteBucket": {Name: "DeleteBucket", UnitOutput: true, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -210,6 +248,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListObjectsV2": {Name: "ListObjectsV2", UnitOutput: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ContinuationToken": catalog.MemberBinding{Location: "query", Name: "continuation-token"}, "Delimiter": catalog.MemberBinding{Location: "query", Name: "delimiter"}, "EncodingType": catalog.MemberBinding{Location: "query", Name: "encoding-type"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "FetchOwner": catalog.MemberBinding{Location: "unsupported:query", Name: "fetch-owner"}, "MaxKeys": catalog.MemberBinding{Location: "query", Name: "max-keys"}, "OptionalObjectAttributes": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-optional-object-attributes"}, "Prefix": catalog.MemberBinding{Location: "query", Name: "prefix"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer"}, "StartAfter": catalog.MemberBinding{Location: "query", Name: "start-after"}}, Output: map[string]catalog.MemberBinding{"CommonPrefixes": catalog.MemberBinding{Location: "document", Name: "CommonPrefixes"}, "Contents": catalog.MemberBinding{Location: "document", Name: "Contents"}, "ContinuationToken": catalog.MemberBinding{Location: "document", Name: "ContinuationToken"}, "Delimiter": catalog.MemberBinding{Location: "document", Name: "Delimiter"}, "EncodingType": catalog.MemberBinding{Location: "document", Name: "EncodingType"}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated"}, "KeyCount": catalog.MemberBinding{Location: "document", Name: "KeyCount"}, "MaxKeys": catalog.MemberBinding{Location: "document", Name: "MaxKeys"}, "Name": catalog.MemberBinding{Location: "document", Name: "Name"}, "NextContinuationToken": catalog.MemberBinding{Location: "document", Name: "NextContinuationToken"}, "Prefix": catalog.MemberBinding{Location: "document", Name: "Prefix"}, "StartAfter": catalog.MemberBinding{Location: "document", Name: "StartAfter"}}, Method: "GET", URI: "/{Bucket}?list-type=2", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListObjectsV2Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListObjectsV2(ctx, input.(*ListObjectsV2Request))
+		}},
+		"PutBucketTagging": {Name: "PutBucketTagging", UnitOutput: true, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-sdk-checksum-algorithm"}, "ContentMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "Tagging": catalog.MemberBinding{Location: "payload", Name: "Tagging"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?tagging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketTaggingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketTagging(ctx, input.(*PutBucketTaggingRequest))
+		}},
+		"GetBucketTagging": {Name: "GetBucketTagging", UnitOutput: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"TagSet": catalog.MemberBinding{Location: "document", Name: "TagSet"}}, Method: "GET", URI: "/{Bucket}?tagging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketTaggingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketTagging(ctx, input.(*GetBucketTaggingRequest))
+		}},
+		"DeleteBucketTagging": {Name: "DeleteBucketTagging", UnitOutput: true, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?tagging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketTaggingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketTagging(ctx, input.(*DeleteBucketTaggingRequest))
 		}},
 	}}
 }
