@@ -1,0 +1,16 @@
+{
+  "description": "DynamoDB Query, UpdateItem, and conditional failure over AWS JSON 1.0",
+  "steps": [
+    {
+      "name": "create-table",
+      "operation": "CreateTable",
+      "request": {"TableName":"__TABLE__","BillingMode":"PAY_PER_REQUEST","AttributeDefinitions":[{"AttributeName":"PK","AttributeType":"S"},{"AttributeName":"SK","AttributeType":"N"}],"KeySchema":[{"AttributeName":"PK","KeyType":"HASH"},{"AttributeName":"SK","KeyType":"RANGE"}]}
+    },
+    {"name":"put-one","operation":"PutItem","request":{"TableName":"__TABLE__","Item":{"PK":{"S":"ada"},"SK":{"N":"2"},"status":{"S":"open"}}}},
+    {"name":"put-two","operation":"PutItem","request":{"TableName":"__TABLE__","Item":{"PK":{"S":"ada"},"SK":{"N":"10"},"status":{"S":"open"}}}},
+    {"name":"query","operation":"Query","request":{"TableName":"__TABLE__","KeyConditionExpression":"PK = :pk","ExpressionAttributeValues":{":pk":{"S":"ada"}}}},
+    {"name":"update","operation":"UpdateItem","request":{"TableName":"__TABLE__","Key":{"PK":{"S":"ada"},"SK":{"N":"2"}},"UpdateExpression":"SET #s = :done","ExpressionAttributeNames":{"#s":"status"},"ExpressionAttributeValues":{":done":{"S":"done"}},"ReturnValues":"ALL_NEW"}},
+    {"name":"conditional-failure","operation":"UpdateItem","request":{"TableName":"__TABLE__","Key":{"PK":{"S":"ada"},"SK":{"N":"2"}},"UpdateExpression":"SET #s = :wrong","ConditionExpression":"#s = :open","ExpressionAttributeNames":{"#s":"status"},"ExpressionAttributeValues":{":wrong":{"S":"wrong"},":open":{"S":"open"}}}},
+    {"name":"get-after-failure","operation":"GetItem","request":{"TableName":"__TABLE__","Key":{"PK":{"S":"ada"},"SK":{"N":"2"}}}}
+  ]
+}

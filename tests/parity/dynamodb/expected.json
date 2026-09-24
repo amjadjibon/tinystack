@@ -1,0 +1,80 @@
+{
+  "provenance": "contract baseline; run TestCaptureDynamoDBAgainstAWS to collect a real AWS snapshot",
+  "responses": {
+    "query": {
+      "status": 200,
+      "content_type": "application/x-amz-json-1.0",
+      "body": {
+        "Count": 2,
+        "ScannedCount": 2,
+        "Items": [
+          {
+            "PK": {
+              "S": "ada"
+            },
+            "SK": {
+              "N": "2"
+            },
+            "status": {
+              "S": "open"
+            }
+          },
+          {
+            "PK": {
+              "S": "ada"
+            },
+            "SK": {
+              "N": "10"
+            },
+            "status": {
+              "S": "open"
+            }
+          }
+        ]
+      },
+      "request_id": true
+    },
+    "update": {
+      "status": 200,
+      "content_type": "application/x-amz-json-1.0",
+      "body": {
+        "Attributes": {
+          "PK": {
+            "S": "ada"
+          },
+          "SK": {
+            "N": "2"
+          },
+          "status": {
+            "S": "done"
+          }
+        }
+      },
+      "request_id": true
+    },
+    "conditional-failure": {
+      "status": 400,
+      "content_type": "application/x-amz-json-1.0",
+      "error_code": "ConditionalCheckFailedException",
+      "request_id": true
+    },
+    "get-after-failure": {
+      "status": 200,
+      "content_type": "application/x-amz-json-1.0",
+      "body": {
+        "Item": {
+          "PK": {
+            "S": "ada"
+          },
+          "SK": {
+            "N": "2"
+          },
+          "status": {
+            "S": "done"
+          }
+        }
+      },
+      "request_id": true
+    }
+  }
+}
