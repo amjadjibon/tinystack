@@ -8,7 +8,17 @@ import (
 	"net/http"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
+
+// contentType returns the media type of an AWS JSON protocol version.
+func contentType(protocol string) string {
+	if protocol == catalog.AWSJSON11 {
+		return "application/x-amz-json-1.1"
+	}
+
+	return "application/x-amz-json-1.0"
+}
 
 func Decode(body io.Reader, input any) error {
 	data, err := io.ReadAll(body)
@@ -34,10 +44,10 @@ func Decode(body io.Reader, input any) error {
 	return nil
 }
 
-func Write(w http.ResponseWriter, status int, output any) {
+func Write(w http.ResponseWriter, protocol string, status int, output any) {
 	data, err := json.Marshal(output)
 	if err != nil {
-		WriteError(w, &awserror.Error{
+		WriteError(w, protocol, &awserror.Error{
 			Code:       "InternalServerError",
 			Message:    "Response encoding failed",
 			StatusCode: 500,
@@ -45,13 +55,13 @@ func Write(w http.ResponseWriter, status int, output any) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/x-amz-json-1.0")
+	w.Header().Set("Content-Type", contentType(protocol))
 	w.WriteHeader(status)
 	_, _ = w.Write(data)
 }
 
 // WriteError encodes e; a QueryCode is also sent for query-compatible clients.
-func WriteError(w http.ResponseWriter, e *awserror.Error) {
+func WriteError(w http.ResponseWriter, protocol string, e *awserror.Error) {
 	if e.QueryCode != "" {
 		w.Header().Set("X-Amzn-Query-Error", e.QueryCode+";"+e.Fault())
 	}
@@ -60,7 +70,7 @@ func WriteError(w http.ResponseWriter, e *awserror.Error) {
 		Type    string `json:"__type"`
 		Message string `json:"message"`
 	}{e.Code, e.Message})
-	w.Header().Set("Content-Type", "application/x-amz-json-1.0")
+	w.Header().Set("Content-Type", contentType(protocol))
 	w.WriteHeader(e.StatusCode)
 	_, _ = w.Write(data)
 }

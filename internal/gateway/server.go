@@ -187,7 +187,7 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	}
 
 	for _, service := range s.services {
-		if service.TargetPrefix == prefix && service.Supports(catalog.AWSJSON10) {
+		if service.TargetPrefix == prefix && jsonProtocol(service) != "" {
 			c.service = service
 		}
 	}
@@ -196,6 +196,8 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 		return c, awserror.New("UnknownOperationException", "Unknown target prefix")
 	}
 
+	c.meta.Protocol = jsonProtocol(c.service)
+
 	if signed != "" && signed != c.service.SigningName {
 		return c, awserror.Validation("Signing service conflicts with X-Amz-Target")
 	}
@@ -203,6 +205,17 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	c.meta.Service = c.service.Name
 	c.meta.Operation = op
 	return c, nil
+}
+
+// jsonProtocol returns the AWS JSON version a service speaks, or "".
+func jsonProtocol(service *catalog.Service) string {
+	for _, protocol := range []string{catalog.AWSJSON10, catalog.AWSJSON11} {
+		if service.Supports(protocol) {
+			return protocol
+		}
+	}
+
+	return ""
 }
 
 // classifyQuery reads the form once; decoding later reuses the parsed values.
@@ -354,7 +367,7 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	case catalog.RESTJSON:
 		restjson.WriteError(w, e, messageMember)
 	default:
-		awsjson.WriteError(w, e)
+		awsjson.WriteError(w, c.meta.Protocol, e)
 	}
 }
 
@@ -433,5 +446,5 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	awsjson.Write(w, status, output)
+	awsjson.Write(w, m.Protocol, status, output)
 }

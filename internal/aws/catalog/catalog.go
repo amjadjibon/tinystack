@@ -7,6 +7,7 @@ import (
 
 const (
 	AWSJSON10 = "awsJson1_0"
+	AWSJSON11 = "awsJson1_1"
 	AWSQuery  = "awsQuery"
 	RESTXML   = "restXml"
 	RESTJSON  = "restJson1"

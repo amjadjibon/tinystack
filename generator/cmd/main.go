@@ -469,10 +469,12 @@ func (g *generator) errorBindings(
 
 // protocols selects the wire protocols of the service. AWS JSON 1.0 services
 // add AWS Query when they are awsQueryCompatible and the profile supplies the
-// legacy XML namespace; pure awsQuery services take it from the model. REST
-// services bind members to the HTTP message.
+// legacy XML namespace; pure awsQuery services take it from the model. AWS JSON
+// 1.1 services differ from 1.0 only in content type. REST services bind members
+// to the HTTP message.
 func (g *generator) protocols(svc *shape) (protocols []string, namespace string, queryCompatible bool, err error) {
 	_, jsonProtocol := svc.Traits["aws.protocols#awsJson1_0"]
+	_, json11Protocol := svc.Traits["aws.protocols#awsJson1_1"]
 	_, queryProtocol := svc.Traits["aws.protocols#awsQuery"]
 	_, queryCompatible = svc.Traits["aws.protocols#awsQueryCompatible"]
 	_, restXML := svc.Traits["aws.protocols#restXml"]
@@ -503,6 +505,10 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 		return []string{catalog.AWSJSON10, catalog.AWSQuery}, g.profile.Query.XMLNamespace, true, nil
 	case jsonProtocol:
 		return []string{catalog.AWSJSON10}, "", queryCompatible, nil
+	case json11Protocol && (g.query || queryCompatible):
+		return nil, "", false, fmt.Errorf("AWS Query compatibility needs an AWS JSON 1.0 model")
+	case json11Protocol:
+		return []string{catalog.AWSJSON11}, "", false, nil
 	case queryProtocol:
 		var ns struct{ URI string }
 		if guardErr := json.Unmarshal(svc.Traits["smithy.api#xmlNamespace"], &ns); guardErr != nil || ns.URI == "" ||
@@ -517,7 +523,7 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 		g.query = true
 		return []string{catalog.AWSQuery}, ns.URI, false, nil
 	default:
-		return nil, "", false, fmt.Errorf("model is not AWS JSON 1.0, AWS Query, REST XML, or REST JSON")
+		return nil, "", false, fmt.Errorf("model is not AWS JSON, AWS Query, REST XML, or REST JSON")
 	}
 }
 
@@ -572,7 +578,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 
 	prefix, targetPrefix, _ := strings.Cut(serviceID, "#")
 	prefix += "#"
-	if !slices.Contains(protocols, catalog.AWSJSON10) {
+	if !slices.Contains(protocols, catalog.AWSJSON10) && !slices.Contains(protocols, catalog.AWSJSON11) {
 		targetPrefix = ""
 	}
 

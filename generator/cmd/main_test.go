@@ -259,6 +259,38 @@ func TestRESTJSONFixture(t *testing.T) {
 	}
 }
 
+func TestJSON11Fixture(t *testing.T) {
+	model := `{"shapes": {
+  "fixture#Svc": {"type": "service", "version": "2020-01-01", "traits": {
+    "aws.protocols#awsJson1_1": {}, "aws.auth#sigv4": {"name": "fix"}}},
+  "fixture#Put": {"type": "operation", "input": {"target": "fixture#In"}, "output": {"target": "smithy.api#Unit"}},
+  "fixture#In": {"type": "structure", "members": {"Name": {"target": "smithy.api#String"}}},
+  "smithy.api#String": {"type": "string"}
+}}`
+	source, err := generate("fixture", []byte(model), serviceProfile{Operations: []string{"Put"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		`TargetPrefix: "Svc"`,
+		`Protocols: []string{"awsJson1_1"}`,
+		`Target: "Svc.Put"`,
+		`ContentType: "application/x-amz-json-1.1"`,
+	} {
+		if !strings.Contains(strings.Join(strings.Fields(string(source)), " "), want) {
+			t.Fatalf("generated source lacks %s:\n%s", want, source)
+		}
+	}
+
+	// AWS Query compatibility is defined only for AWS JSON 1.0.
+	compatible := strings.Replace(model, `"aws.protocols#awsJson1_1": {}`,
+		`"aws.protocols#awsJson1_1": {}, "aws.protocols#awsQueryCompatible": {}`, 1)
+	if _, err = generate("fixture", []byte(compatible), serviceProfile{Operations: []string{"Put"}}); err == nil {
+		t.Fatal("query-compatible AWS JSON 1.1 model generated")
+	}
+}
+
 func TestUnsupportedWireTraitsFail(t *testing.T) {
 	for _, trait := range []string{
 		"smithy.api#streaming", "smithy.api#httpHeader",

@@ -28,12 +28,17 @@ func compileBinding(
 			ContentType: "application/x-www-form-urlencoded",
 			StatusCode:  200,
 		}, nil
-	case catalog.AWSJSON10:
+	case catalog.AWSJSON10, catalog.AWSJSON11:
+		contentType = "application/x-amz-json-1.0"
+		if protocol == catalog.AWSJSON11 {
+			contentType = "application/x-amz-json-1.1"
+		}
+
 		return catalog.Binding{
 			Method:      "POST",
 			URI:         "/",
 			Target:      targetPrefix + "." + short(id),
-			ContentType: "application/x-amz-json-1.0",
+			ContentType: contentType,
 			StatusCode:  200,
 		}, nil
 	case catalog.RESTJSON:
