@@ -31,6 +31,10 @@
       "path": "codegen/sdk-codegen/aws-models/sqs.json",
       "sha256": "38eef06ce5642b8a052282fd19a3ab275e0046d375474e2ff022d3e33aaeab72"
     },
+    "ssm": {
+      "path": "codegen/sdk-codegen/aws-models/ssm.json",
+      "sha256": "6fea3c5ffc0e590e9c292d77c201b03d39945adfa6ab319b5c5c1389788c18fe"
+    },
     "sts": {
       "path": "codegen/sdk-codegen/aws-models/sts.json",
       "sha256": "3012bfe1c6d44b4348ed03888085fd0b7a506e4da3335250280537b85e834864"

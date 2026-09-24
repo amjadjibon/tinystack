@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, EventBridge, IAM, and STS endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, EventBridge, SSM Parameter Store, IAM, and STS endpoints for development and tests.
 
 ## Run
 
@@ -73,8 +73,9 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables, S3 buckets and objects, Lambda functions
-and SQS event source mappings, EventBridge rules and targets, and IAM roles,
-role policies, and managed policies, tags included. The provider validates its
+and SQS event source mappings, EventBridge rules and targets, SSM parameters
+(including SecureString), and IAM roles, role policies, and managed policies, tags
+included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
 
@@ -93,6 +94,7 @@ provider "aws" {
     s3          = "http://localhost:4566"
     sns         = "http://localhost:4566"
     sqs         = "http://localhost:4566"
+    ssm         = "http://localhost:4566"
     sts         = "http://localhost:4566"
   }
 }
@@ -270,6 +272,30 @@ condition understood: an `Allow` with any other condition (or `NotPrincipal` /
 credentials act in the role's account for every service; sessions survive restarts
 in persistent mode, and expired ones are removed when the next role is assumed.
 
+### SSM Parameter Store (AWS JSON 1.1)
+
+Parameters belong to an account and region. Names are plain (`db-url`) or fully
+qualified hierarchies (`/app/db/url`, at most 15 levels); names starting with `aws`
+or `ssm` are reserved. Reads accept a `name:version` or `name:label` selector.
+
+| Operation | Behavior |
+| --- | --- |
+| PutParameter | `String`, `StringList`, and `SecureString`; `Overwrite` adds a version, keeping the `Description`, `AllowedPattern` (matched against the whole value), tier, and type it leaves out; `Tags` only on create; `Standard` (4 KB), `Advanced` (8 KB), and `Intelligent-Tiering` tiers; the `text` data type |
+| GetParameter / GetParameters | Up to 10 names per batch; missing names and selectors are listed in `InvalidParameters` |
+| GetParametersByPath | One level or `Recursive`; `Type`, `KeyId`, `Tier`, and `DataType` filters; `MaxResults` (10) and `NextToken` |
+| DescribeParameters | Metadata, never values; `Name` (`Equals`, `BeginsWith`, `Contains`), `Path` (`OneLevel`, `Recursive`), `tag:<key>`, `Type`, `KeyId`, `Tier`, and `DataType` filters; `MaxResults` (50) and `NextToken` |
+| DeleteParameter / DeleteParameters | Every version, label, and tag; a new parameter with the same name starts at version 1 |
+| GetParameterHistory | Every version, oldest first, with its labels |
+| LabelParameterVersion / UnlabelParameterVersion | Up to 10 labels per version; labeling moves a label from another version; invalid labels are returned, not applied |
+| AddTagsToResource / RemoveTagsFromResource / ListTagsForResource | `ResourceType: Parameter`, up to 50 tags |
+
+A parameter keeps its 100 newest versions: the oldest is dropped, unless it has a
+label. SecureString values use the AWS managed key `alias/aws/ssm` only (another
+`KeyId` fails with `InvalidKeyId`). TinyStack does not encrypt them: they are kept
+as plain text in memory and in `state.db`. Reads without `WithDecryption` return an
+opaque placeholder, never the value. The request inspector redacts every operation
+that carries values, and the resource browser leaves out SecureString values.
+
 ### EventBridge (AWS JSON 1.1)
 
 Rules on each account's `default` event bus route events to SQS queues, SNS
@@ -340,7 +366,10 @@ logged and dropped after the retries. EventBridge limits: only the default event
 SQS, SNS, and Lambda in the rule's account and region; delivery happens
 synchronously during PutEvents. IAM limits: no users, access keys, groups, instance
 profiles, permissions boundaries, or policy evaluation, and AWS managed policies
-are not modeled. STS limits: no `GetSessionToken`, federation, web identity, SAML,
+are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
+no parameter policies, customer-managed KMS keys, `aws:ec2:image` or other data
+types, public `/aws/service/...` parameters, shared parameters, or parameter quotas.
+STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
@@ -397,7 +426,7 @@ task test       # Official Go SDK, AWS Query wire, and transaction tests, with -
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
 task models:sync -- -ref main   # Re-vendor the pinned Smithy models from aws-sdk-go-v2, then regenerate
-task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, IAM, STS, Lambda), verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, SSM, IAM, STS, Lambda), verify graceful shutdown
 task test:docker # Run Lambda functions in real containers (needs Docker; pulls python:3.14)
 task test:terraform # Apply, update, and destroy tests/terraform/main.tf with Terraform
 ```

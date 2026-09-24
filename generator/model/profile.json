@@ -1429,5 +1429,178 @@
         "Arn"
       ]
     }
+  },
+  "ssm": {
+    "operations": [
+      "PutParameter",
+      "GetParameter",
+      "GetParameters",
+      "DeleteParameter",
+      "DeleteParameters",
+      "GetParametersByPath",
+      "DescribeParameters",
+      "GetParameterHistory",
+      "LabelParameterVersion",
+      "UnlabelParameterVersion",
+      "AddTagsToResource",
+      "RemoveTagsFromResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "PutParameterRequest": [
+        "Name",
+        "Description",
+        "Value",
+        "Type",
+        "KeyId",
+        "Overwrite",
+        "AllowedPattern",
+        "Tags",
+        "Tier",
+        "DataType"
+      ],
+      "PutParameterResult": [
+        "Version",
+        "Tier"
+      ],
+      "GetParameterRequest": [
+        "Name",
+        "WithDecryption"
+      ],
+      "GetParameterResult": [
+        "Parameter"
+      ],
+      "Parameter": [
+        "Name",
+        "Type",
+        "Value",
+        "Version",
+        "Selector",
+        "LastModifiedDate",
+        "ARN",
+        "DataType"
+      ],
+      "GetParametersRequest": [
+        "Names",
+        "WithDecryption"
+      ],
+      "GetParametersResult": [
+        "Parameters",
+        "InvalidParameters"
+      ],
+      "DeleteParameterRequest": [
+        "Name"
+      ],
+      "DeleteParameterResult": [],
+      "DeleteParametersRequest": [
+        "Names"
+      ],
+      "DeleteParametersResult": [
+        "DeletedParameters",
+        "InvalidParameters"
+      ],
+      "GetParametersByPathRequest": [
+        "Path",
+        "Recursive",
+        "ParameterFilters",
+        "WithDecryption",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetParametersByPathResult": [
+        "Parameters",
+        "NextToken"
+      ],
+      "ParameterStringFilter": [
+        "Key",
+        "Option",
+        "Values"
+      ],
+      "DescribeParametersRequest": [
+        "ParameterFilters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeParametersResult": [
+        "Parameters",
+        "NextToken"
+      ],
+      "ParameterMetadata": [
+        "Name",
+        "ARN",
+        "Type",
+        "KeyId",
+        "LastModifiedDate",
+        "Description",
+        "AllowedPattern",
+        "Version",
+        "Tier",
+        "DataType"
+      ],
+      "GetParameterHistoryRequest": [
+        "Name",
+        "WithDecryption",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetParameterHistoryResult": [
+        "Parameters",
+        "NextToken"
+      ],
+      "ParameterHistory": [
+        "Name",
+        "Type",
+        "KeyId",
+        "LastModifiedDate",
+        "Description",
+        "Value",
+        "AllowedPattern",
+        "Version",
+        "Labels",
+        "Tier",
+        "DataType"
+      ],
+      "LabelParameterVersionRequest": [
+        "Name",
+        "ParameterVersion",
+        "Labels"
+      ],
+      "LabelParameterVersionResult": [
+        "InvalidLabels",
+        "ParameterVersion"
+      ],
+      "UnlabelParameterVersionRequest": [
+        "Name",
+        "ParameterVersion",
+        "Labels"
+      ],
+      "UnlabelParameterVersionResult": [
+        "RemovedLabels",
+        "InvalidLabels"
+      ],
+      "AddTagsToResourceRequest": [
+        "ResourceType",
+        "ResourceId",
+        "Tags"
+      ],
+      "AddTagsToResourceResult": [],
+      "RemoveTagsFromResourceRequest": [
+        "ResourceType",
+        "ResourceId",
+        "TagKeys"
+      ],
+      "RemoveTagsFromResourceResult": [],
+      "ListTagsForResourceRequest": [
+        "ResourceType",
+        "ResourceId"
+      ],
+      "ListTagsForResourceResult": [
+        "TagList"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ]
+    }
   }
 }

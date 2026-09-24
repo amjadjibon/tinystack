@@ -23,6 +23,7 @@ import (
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
@@ -35,6 +36,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
+	"github.com/amjadjibon/tinystack/internal/services/ssm"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/storage"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
@@ -101,6 +103,7 @@ func newStartCommand() *cobra.Command {
 				eventbridgeapi.Descriptor(eventbridge.New(store, queues, topics, functions, deliveries)),
 				iamapi.Descriptor(roles),
 				stsapi.Descriptor(tokens),
+				ssmapi.Descriptor(ssm.New(store)),
 			)
 			if err != nil {
 				return err
@@ -142,7 +145,7 @@ func newStartCommand() *cobra.Command {
 				"storage",
 				cfg.Storage.Mode,
 				"services",
-				"dynamodb,eventbridge,iam,lambda,s3,sns,sqs,sts",
+				"dynamodb,eventbridge,iam,lambda,s3,sns,sqs,ssm,sts",
 			)
 			select {
 			case err = <-done:

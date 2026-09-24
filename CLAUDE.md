@@ -92,7 +92,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   S3's unwrapped `<Error>` body (none for HEAD) and `restjson` sends `X-Amzn-ErrorType`. Unsupported input fields or parameters must fail explicitly, never be silently
   ignored.
 - **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**,
-  **services/eventbridge**, **services/iam**, **services/sts**: behavior only, with
+  **services/eventbridge**, **services/ssm**, **services/iam**, **services/sts**: behavior only, with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
   (DynamoDB items are separate records under `…/dynamodb/<table>/item/<key>`, and the table record keeps the item
@@ -116,7 +116,10 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   container. SNS invokes subscribed functions through `lambda.Service.InvokeAsync`, and mappings read SQS in-process
   via `sqs.QueueURL`. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus
   only), matches `PutEvents` entries against compiled patterns (`pattern.go`), and delivers synchronously through
-  `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. IAM is account-wide, so its roles
+  `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. SSM Parameter Store keeps each
+  parameter under `…/ssm/p/<name>` (current version number, labels, tags) and each immutable version under
+  `…/ssm/v/<name>:<zero-padded version>`, so path and history listings read keys in order; SecureString values are
+  stored as plain text and only a random placeholder is returned without decryption. IAM is account-wide, so its roles
   and managed policies live under `<account>/iam/<kind>/<lowercased name>` with no region (names are
   case-insensitive); a role record holds its inline policies and attached ARNs, and attaching updates the policy's
   attachment count in the same transaction. Policies are stored, never evaluated. Users and access keys wait until
@@ -144,7 +147,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS, IAM, and STS over Query, S3 over REST
-  XML, Lambda over REST JSON, EventBridge over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  XML, Lambda over REST JSON, EventBridge and SSM over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real
