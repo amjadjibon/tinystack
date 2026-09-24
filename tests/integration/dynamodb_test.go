@@ -55,7 +55,7 @@ func serverWith(t *testing.T, runtime lambda.Runtime) *httptest.Server {
 		logger,
 		api.Descriptor(provider.New(store)),
 		sqsapi.Descriptor(sqsService),
-		snsapi.Descriptor(topics.New(store, sqsService)),
+		snsapi.Descriptor(topics.New(store, sqsService, functions)),
 		s3api.Descriptor(buckets.New(store)),
 		lambdaapi.Descriptor(functions),
 	)

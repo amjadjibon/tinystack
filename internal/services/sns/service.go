@@ -1,5 +1,6 @@
-// Package sns implements standard SNS topics with SQS subscriptions, without
-// HTTP dependencies. Deliveries call the SQS service in-process.
+// Package sns implements standard SNS topics with SQS and Lambda subscriptions,
+// without HTTP dependencies. Deliveries call the SQS and Lambda services
+// in-process.
 package sns
 
 import (
@@ -17,6 +18,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -24,6 +26,8 @@ import (
 const (
 	pageSize        = 100
 	protocolSQS     = "sqs"
+	protocolLambda  = "lambda"
+	arnScheme       = "arn"
 	attrDisplayName = "DisplayName"
 	attrRaw         = "RawMessageDelivery"
 )
@@ -31,17 +35,18 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store  storage.Store
-	queues *sqs.Service
-	now    func() time.Time
+	store     storage.Store
+	queues    *sqs.Service
+	functions *lambda.Service
+	now       func() time.Time
 }
 
-func New(store storage.Store, queues *sqs.Service) *Service {
-	return &Service{store: store, queues: queues, now: time.Now}
+func New(store storage.Store, queues *sqs.Service, functions *lambda.Service) *Service {
+	return &Service{store: store, queues: queues, functions: functions, now: time.Now}
 }
 
-// subscription is a confirmed SQS subscription. SQS endpoints are confirmed
-// immediately, as AWS does for queues in the subscriber's account.
+// subscription is a confirmed SQS or Lambda subscription. These endpoints are
+// confirmed immediately, as AWS does for resources in the subscriber's account.
 type subscription struct {
 	ID       string
 	Protocol string
@@ -114,7 +119,7 @@ func resolve(ctx context.Context, arn *string, sub bool) (key, id string, err er
 	}
 
 	parts := strings.Split(value(arn), ":")
-	if len(parts) != want || parts[0] != "arn" || parts[2] != "sns" || parts[3] == "" ||
+	if len(parts) != want || parts[0] != arnScheme || parts[2] != "sns" || parts[3] == "" ||
 		!accountID.MatchString(parts[4]) || !topicName.MatchString(parts[5]) || (sub && parts[6] == "") {
 		return "", "", invalid("%s", name)
 	}
@@ -328,18 +333,24 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 		return nil, err
 	}
 
-	if value(in.Protocol) != protocolSQS {
-		return nil, invalid("Protocol %q is not supported; only sqs subscriptions are", value(in.Protocol))
-	}
-
-	endpoint := value(in.Endpoint)
+	protocol, endpoint := value(in.Protocol), value(in.Endpoint)
 	parts := strings.Split(endpoint, ":")
-	if len(parts) != 6 || parts[0] != "arn" || parts[2] != protocolSQS || parts[3] == "" || parts[5] == "" {
-		return nil, invalid("SQS endpoint ARN")
+	switch protocol {
+	case protocolSQS:
+		if len(parts) != 6 || parts[0] != arnScheme || parts[2] != protocolSQS || parts[3] == "" || parts[5] == "" {
+			return nil, invalid("SQS endpoint ARN")
+		}
+	case protocolLambda:
+		if len(parts) < 7 || len(parts) > 8 || parts[0] != arnScheme || parts[2] != protocolLambda ||
+			parts[3] == "" || parts[5] != "function" || parts[6] == "" {
+			return nil, invalid("Lambda endpoint ARN")
+		}
+	default:
+		return nil, invalid("Protocol %q is not supported; only sqs and lambda subscriptions are", protocol)
 	}
-	// Cross-account delivery needs a queue policy, which TinyStack does not model.
+	// Cross-account delivery needs a resource policy, which TinyStack does not model.
 	if parts[4] != m.AccountID {
-		return nil, invalid("SQS endpoint must be a queue in the subscriber's account")
+		return nil, invalid("The endpoint must be in the subscriber's account")
 	}
 
 	raw, err := parseSubscriptionAttributes(in.Attributes)
@@ -347,7 +358,11 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 		return nil, err
 	}
 
-	sub := subscription{ID: newID(), Protocol: protocolSQS, Endpoint: endpoint, Owner: m.AccountID, Raw: raw}
+	if raw && protocol == protocolLambda {
+		return nil, invalid("Delivery protocol [lambda] does not support raw message delivery.")
+	}
+
+	sub := subscription{ID: newID(), Protocol: protocol, Endpoint: endpoint, Owner: m.AccountID, Raw: raw}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil {

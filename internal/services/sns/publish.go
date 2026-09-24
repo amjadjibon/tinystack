@@ -41,6 +41,35 @@ type notificationAttribute struct {
 	Value string
 }
 
+// lambdaEvent is the event SNS passes to subscribed functions.
+type lambdaEvent struct {
+	Records []lambdaRecord
+}
+
+type lambdaRecord struct {
+	EventSource          string
+	EventVersion         string
+	EventSubscriptionArn string
+	Sns                  lambdaNotification
+}
+
+// lambdaNotification is the notification inside a Lambda event. Unlike the SQS
+// envelope it always carries MessageAttributes and a Subject (null when unset),
+// and it spells UnsubscribeUrl in mixed case. Signatures are empty.
+type lambdaNotification struct {
+	MessageAttributes map[string]notificationAttribute
+	Subject           *string
+	Type              string
+	MessageID         string `json:"MessageId"`
+	TopicArn          string
+	Message           string
+	Timestamp         string
+	SignatureVersion  string
+	Signature         string
+	SigningCertURL    string `json:"SigningCertUrl"`
+	UnsubscribeURL    string `json:"UnsubscribeUrl"`
+}
+
 // checkAttributes validates message attributes against the SNS data types.
 func checkAttributes(attributes map[string]api.MessageAttributeValue) error {
 	if len(attributes) > maxAttributes {
@@ -72,31 +101,33 @@ func checkAttributes(attributes map[string]api.MessageAttributeValue) error {
 	return nil
 }
 
-// sqsMessage selects the text SQS subscribers receive. With MessageStructure
-// "json" the message is a JSON object holding a "default" text and optionally
-// an "sqs" override.
-func sqsMessage(message, structure string) (string, error) {
+// messages selects the text subscribers of each protocol receive. With
+// MessageStructure "json" the message is a JSON object holding a "default"
+// text and optional per-protocol overrides such as "sqs" or "lambda".
+func messages(message, structure string) (func(protocol string) string, error) {
 	switch structure {
 	case "":
-		return message, nil
+		return func(string) string { return message }, nil
 	case "json":
 		var texts map[string]any
 		if err := json.Unmarshal([]byte(message), &texts); err != nil {
-			return "", invalid("Message Structure - JSON message body failed to parse")
+			return nil, invalid("Message Structure - JSON message body failed to parse")
 		}
 
 		text, ok := texts["default"].(string)
 		if !ok {
-			return "", invalid("Message Structure - No default entry in JSON message body")
+			return nil, invalid("Message Structure - No default entry in JSON message body")
 		}
 
-		if override, isString := texts[protocolSQS].(string); isString {
-			text = override
-		}
+		return func(protocol string) string {
+			if override, isString := texts[protocol].(string); isString {
+				return override
+			}
 
-		return text, nil
+			return text
+		}, nil
 	default:
-		return "", invalid("MessageStructure must be json")
+		return nil, invalid("MessageStructure must be json")
 	}
 }
 
@@ -137,7 +168,7 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		return nil, guardErr
 	}
 
-	text, err := sqsMessage(message, value(in.MessageStructure))
+	textFor, err := messages(message, value(in.MessageStructure))
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +193,6 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		MessageID: id,
 		TopicArn:  arn,
 		Subject:   value(in.Subject),
-		Message:   text,
 		Timestamp: s.now().UTC().Format("2006-01-02T15:04:05.000Z"),
 	}
 
@@ -182,12 +212,30 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 	for i := range subs {
 		sub := &subs[i]
 		subARN := arn + ":" + sub.ID
-		body := text
+		envelope.Message = textFor(sub.Protocol)
+		envelope.UnsubscribeURL = m.Endpoint + "/?Action=Unsubscribe&SubscriptionArn=" + url.QueryEscape(subARN)
+		// As in SNS, a failed delivery (such as a deleted queue or function)
+		// does not fail Publish.
+		if sub.Protocol == protocolLambda {
+			event, encodeErr := json.Marshal(lambdaEvent{Records: []lambdaRecord{{
+				EventSource:          "aws:sns",
+				EventVersion:         "1.0",
+				EventSubscriptionArn: subARN,
+				Sns:                  envelope.forLambda(in.Subject),
+			}}})
+			if encodeErr != nil {
+				return nil, encodeErr
+			}
+
+			_ = s.functions.InvokeAsync(ctx, sub.Endpoint, event)
+			continue
+		}
+
+		body := envelope.Message
 		var attributes map[string]sqsapi.MessageAttributeValue
 		if sub.Raw {
 			attributes = sqsAttributes(in.MessageAttributes)
 		} else {
-			envelope.UnsubscribeURL = m.Endpoint + "/?Action=Unsubscribe&SubscriptionArn=" + url.QueryEscape(subARN)
 			encoded, encodeErr := json.Marshal(envelope)
 			if encodeErr != nil {
 				return nil, encodeErr
@@ -195,11 +243,31 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 
 			body = string(encoded)
 		}
-		// As in SNS, a failed delivery (such as a deleted queue) does not fail Publish.
+
 		_ = s.queues.Deliver(ctx, sub.Endpoint, body, attributes)
 	}
 
 	return &api.PublishResponse{MessageId: ptr(id)}, nil
+}
+
+// forLambda renders the notification as a Lambda event carries it.
+func (n *notification) forLambda(subject *string) lambdaNotification {
+	attributes := n.MessageAttributes
+	if attributes == nil {
+		attributes = map[string]notificationAttribute{}
+	}
+
+	return lambdaNotification{
+		MessageAttributes: attributes,
+		Subject:           subject,
+		Type:              n.Type,
+		MessageID:         n.MessageID,
+		TopicArn:          n.TopicArn,
+		Message:           n.Message,
+		Timestamp:         n.Timestamp,
+		SignatureVersion:  "1",
+		UnsubscribeURL:    n.UnsubscribeURL,
+	}
 }
 
 // sqsAttributes forwards message attributes on raw delivery.

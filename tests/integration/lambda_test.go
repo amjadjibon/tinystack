@@ -18,6 +18,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	sdklambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/aws/smithy-go"
@@ -508,5 +509,75 @@ func TestLambdaSQSFailuresRedrive(t *testing.T) {
 	out, err := q.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &dlqURL, WaitTimeSeconds: 5})
 	if err != nil || len(out.Messages) != 1 || aws.ToString(out.Messages[0].Body) != "x" {
 		t.Fatalf("%+v %v", out, err)
+	}
+}
+
+func TestSNSDeliversToLambda(t *testing.T) {
+	runtime := &fakeRuntime{calls: make(chan invocation, 10)}
+	s := serverWith(t, runtime)
+	c := lambdaClient(s, "test")
+	n := snsClient(s, "test")
+	ctx := context.Background()
+	fn := createFunction(t, c, "notify", "app.echo")
+	topic, err := n.CreateTopic(ctx, &sns.CreateTopicInput{Name: aws.String("events")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = n.Subscribe(ctx, &sns.SubscribeInput{
+		TopicArn:   topic.TopicArn,
+		Protocol:   aws.String("lambda"),
+		Endpoint:   fn.FunctionArn,
+		Attributes: map[string]string{"RawMessageDelivery": "true"},
+	})
+	if err == nil {
+		t.Fatal("raw delivery to Lambda accepted")
+	}
+
+	sub, err := n.Subscribe(ctx, &sns.SubscribeInput{
+		TopicArn: topic.TopicArn,
+		Protocol: aws.String("lambda"),
+		Endpoint: fn.FunctionArn,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = n.Publish(ctx, &sns.PublishInput{
+		TopicArn:         topic.TopicArn,
+		MessageStructure: aws.String("json"),
+		Message:          aws.String(`{"default":"plain","lambda":"for functions"}`),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var call invocation
+	select {
+	case call = <-runtime.calls:
+	case <-time.After(5 * time.Second):
+		t.Fatal("SNS did not invoke the function")
+	}
+
+	var event struct {
+		Records []struct {
+			Sns struct {
+				MessageAttributes       map[string]any
+				Subject                 *string
+				Type, TopicArn, Message string
+			}
+			EventSource          string
+			EventSubscriptionArn string
+		}
+	}
+	if err = json.Unmarshal(call.payload, &event); err != nil || len(event.Records) != 1 {
+		t.Fatalf("%s %v", call.payload, err)
+	}
+
+	record := event.Records[0]
+	if record.EventSource != "aws:sns" || record.EventSubscriptionArn != aws.ToString(sub.SubscriptionArn) ||
+		record.Sns.Message != "for functions" || record.Sns.TopicArn != aws.ToString(topic.TopicArn) ||
+		record.Sns.Subject != nil || record.Sns.MessageAttributes == nil {
+		t.Fatalf("%s", call.payload)
 	}
 }

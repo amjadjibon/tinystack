@@ -65,7 +65,7 @@ func newStartCommand() *cobra.Command {
 				logger,
 				dynamodbapi.Descriptor(dynamodb.New(store)),
 				sqsapi.Descriptor(queues),
-				snsapi.Descriptor(sns.New(store, queues)),
+				snsapi.Descriptor(sns.New(store, queues, functions)),
 				s3api.Descriptor(s3.New(store)),
 				lambdaapi.Descriptor(functions),
 			)
