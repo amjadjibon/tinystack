@@ -8,7 +8,31 @@ import (
 	"testing"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
+
+func TestDecodeQueryList(t *testing.T) {
+	var in struct {
+		One  *string  `json:"-"`
+		Keys []string `json:"-"`
+	}
+
+	b := &catalog.Binding{Input: map[string]catalog.MemberBinding{
+		"Keys": {Location: locationQuery, Name: "tagKeys"},
+		"One":  {Location: locationQuery, Name: "one"},
+	}}
+
+	r := httptest.NewRequest(http.MethodDelete, "/t?tagKeys=a&tagKeys=b%20c&one=x", http.NoBody)
+	if err := Decode(r, b, nil, nil, &in, nil); err != nil || strings.Join(in.Keys, ",") != "a,b c" ||
+		*in.One != "x" {
+		t.Fatalf("%v %+v", err, in)
+	}
+
+	r = httptest.NewRequest(http.MethodDelete, "/t?one=x&one=y", http.NoBody)
+	if err := Decode(r, b, nil, nil, &in, nil); err == nil {
+		t.Fatal("repeated scalar query parameter was accepted")
+	}
+}
 
 func TestReadBodyDecodesAWSChunked(t *testing.T) {
 	chunked := "5;chunk-signature=abc\r\nhello\r\n6\r\n world\r\n0\r\nx-amz-checksum-crc32:DUoRhQ==\r\n\r\n"

@@ -203,6 +203,12 @@ func Decode(
 			}
 		case locationQuery:
 			if values, ok := query[mb.Name]; ok {
+				// A list member repeats its key once per element.
+				if f.Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.String {
+					f.Set(reflect.ValueOf(values))
+					return
+				}
+
 				if len(values) != 1 {
 					err = invalid("Query parameter %s must be given once", mb.Name)
 					return
