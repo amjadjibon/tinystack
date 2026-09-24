@@ -32,7 +32,7 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name string)
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
 		var loadErr error
-		fn, found, loadErr = loadFunction(tx, scopeKey(scope, "function", name))
+		fn, found, loadErr = loadFunction(tx, scopeKey(scope, kindFunction, name))
 		if loadErr == nil && !found {
 			return notFound("Function " + functionARN(scope, name))
 		}

@@ -144,7 +144,7 @@ func (s *Service) CreateEventSourceMapping(
 		}
 	}
 
-	prefix := scopeKey(m.Scope, "mapping", "")
+	prefix := scopeKey(m.Scope, kindMapping, "")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, k := range tx.Keys() {
 			if !strings.HasPrefix(k, prefix) {
@@ -192,7 +192,7 @@ func (s *Service) loadMappingByID(ctx context.Context, id *string) (request.Meta
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
 		var loadErr error
-		mp, found, loadErr = loadMapping(tx, scopeKey(m.Scope, "mapping", *id))
+		mp, found, loadErr = loadMapping(tx, scopeKey(m.Scope, kindMapping, *id))
 		if loadErr == nil && !found {
 			return notFound("Event source mapping " + *id)
 		}
@@ -225,7 +225,7 @@ func (s *Service) DeleteEventSourceMapping(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		key := scopeKey(m.Scope, "mapping", mp.UUID)
+		key := scopeKey(m.Scope, kindMapping, mp.UUID)
 		if _, ok := tx.Get(key); !ok {
 			return notFound("Event source mapping " + mp.UUID)
 		}
@@ -272,7 +272,7 @@ func (s *Service) ListEventSourceMappings(
 	}
 
 	var mps []*mapping
-	prefix := scopeKey(m.Scope, "mapping", "")
+	prefix := scopeKey(m.Scope, kindMapping, "")
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys() {
 			if id, ok := strings.CutPrefix(k, prefix); !ok || id <= start {
@@ -469,7 +469,7 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 
 // recordResult stores the mapping's LastProcessingResult when it changes.
 func (s *Service) recordResult(scope request.Scope, id, result string) {
-	key := scopeKey(scope, "mapping", id)
+	key := scopeKey(scope, kindMapping, id)
 	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
 		mp, found, err := loadMapping(tx, key)
 		if err != nil || !found || mp.LastProcessingResult == result {

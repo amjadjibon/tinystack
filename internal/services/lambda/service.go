@@ -170,6 +170,13 @@ func identity(ctx context.Context) (request.Metadata, error) {
 	return m, nil
 }
 
+// Storage kinds: functions are "<scope>/lambda/function/<name>" and event
+// source mappings "<scope>/lambda/mapping/<uuid>".
+const (
+	kindFunction = "function"
+	kindMapping  = "mapping"
+)
+
 func scopeKey(m request.Scope, kind, name string) string {
 	return m.AccountID + "/" + m.Region + "/lambda/" + kind + "/" + name
 }
@@ -489,7 +496,7 @@ func (s *Service) CreateFunction(
 
 	fn.AccessKey = m.AccessKey
 	fn.LastModified = s.now().UTC().Format(timeFormat)
-	key := scopeKey(m.Scope, "function", fn.Name)
+	key := scopeKey(m.Scope, kindFunction, fn.Name)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); exists {
 			return conflict("Function already exist: " + fn.Name)
@@ -525,7 +532,7 @@ func (s *Service) load(ctx context.Context, raw *string) (request.Metadata, *fun
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
 		var loadErr error
-		fn, found, loadErr = loadFunction(tx, scopeKey(m.Scope, "function", name))
+		fn, found, loadErr = loadFunction(tx, scopeKey(m.Scope, kindFunction, name))
 		if loadErr == nil && !found {
 			return notFound("Function " + functionARN(m.Scope, name))
 		}
@@ -564,7 +571,7 @@ func (s *Service) DeleteFunction(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		key := scopeKey(m.Scope, "function", fn.Name)
+		key := scopeKey(m.Scope, kindFunction, fn.Name)
 		if _, ok := tx.Get(key); !ok {
 			return notFound("Function " + functionARN(m.Scope, fn.Name))
 		}
@@ -621,7 +628,7 @@ func (s *Service) ListFunctions(
 	}
 
 	var fns []*function
-	prefix := scopeKey(m.Scope, "function", "")
+	prefix := scopeKey(m.Scope, kindFunction, "")
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys() {
 			if name, ok := strings.CutPrefix(k, prefix); !ok || name <= start {

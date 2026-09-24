@@ -77,7 +77,7 @@ func (s *Service) retag(
 		return err
 	}
 
-	key := scopeKey(m.Scope, "function", name)
+	key := scopeKey(m.Scope, kindFunction, name)
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		f, found, loadErr := loadFunction(tx, key)
 		if loadErr != nil {
