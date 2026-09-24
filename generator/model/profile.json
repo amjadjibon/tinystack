@@ -755,7 +755,10 @@
       "PutTargets",
       "RemoveTargets",
       "ListTargetsByRule",
-      "TestEventPattern"
+      "TestEventPattern",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
     ],
     "shapes": {
       "PutEventsRequest": [
@@ -784,7 +787,8 @@
         "State",
         "Description",
         "RoleArn",
-        "EventBusName"
+        "EventBusName",
+        "Tags"
       ],
       "PutRuleResponse": [
         "RuleArn"
@@ -891,6 +895,24 @@
       ],
       "TestEventPatternResponse": [
         "Result"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
       ]
     }
   }

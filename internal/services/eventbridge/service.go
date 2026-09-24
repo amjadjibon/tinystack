@@ -66,8 +66,9 @@ type rule struct {
 	Name        string
 	Pattern     string
 	State       string
-	Description string `json:",omitempty"`
-	RoleARN     string `json:",omitempty"`
+	Description string            `json:",omitempty"`
+	RoleARN     string            `json:",omitempty"`
+	Tags        map[string]string `json:",omitempty"`
 	Targets     []target
 }
 
@@ -256,6 +257,11 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		return nil, invalid("Description must be at most 512 characters.")
 	}
 
+	tags, err := tagMap(in.Tags)
+	if err != nil {
+		return nil, err
+	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, exists, loadErr := load(tx, key)
 		if loadErr != nil {
@@ -282,6 +288,10 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 
 		r.Pattern, r.State = text, state
 		r.Description, r.RoleARN = value(in.Description), value(in.RoleArn)
+		if tagErr := mergeTags(r, tags); tagErr != nil {
+			return tagErr
+		}
+
 		return save(tx, key, r)
 	})
 	if err != nil {

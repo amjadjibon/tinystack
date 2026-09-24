@@ -30,6 +30,11 @@ type PutEventsResponse struct {
 	Entries          []PutEventsResultEntry `json:"Entries,omitempty"`
 }
 
+type Tag struct {
+	Key   *string `json:"Key,omitempty"`
+	Value *string `json:"Value,omitempty"`
+}
+
 type PutRuleRequest struct {
 	Name         *string `json:"Name,omitempty"`
 	EventPattern *string `json:"EventPattern,omitempty"`
@@ -37,6 +42,7 @@ type PutRuleRequest struct {
 	Description  *string `json:"Description,omitempty"`
 	RoleArn      *string `json:"RoleArn,omitempty"`
 	EventBusName *string `json:"EventBusName,omitempty"`
+	Tags         []Tag   `json:"Tags,omitempty"`
 }
 
 type PutRuleResponse struct {
@@ -172,6 +178,30 @@ type TestEventPatternResponse struct {
 	Result *bool `json:"Result,omitempty"`
 }
 
+type TagResourceRequest struct {
+	ResourceARN *string `json:"ResourceARN,omitempty"`
+	Tags        []Tag   `json:"Tags,omitempty"`
+}
+
+type TagResourceResponse struct {
+}
+
+type UntagResourceRequest struct {
+	ResourceARN *string  `json:"ResourceARN,omitempty"`
+	TagKeys     []string `json:"TagKeys,omitempty"`
+}
+
+type UntagResourceResponse struct {
+}
+
+type ListTagsForResourceRequest struct {
+	ResourceARN *string `json:"ResourceARN,omitempty"`
+}
+
+type ListTagsForResourceResponse struct {
+	Tags []Tag `json:"Tags,omitempty"`
+}
+
 type API interface {
 	PutEvents(context.Context, *PutEventsRequest) (*PutEventsResponse, error)
 	PutRule(context.Context, *PutRuleRequest) (*PutRuleResponse, error)
@@ -184,6 +214,9 @@ type API interface {
 	RemoveTargets(context.Context, *RemoveTargetsRequest) (*RemoveTargetsResponse, error)
 	ListTargetsByRule(context.Context, *ListTargetsByRuleRequest) (*ListTargetsByRuleResponse, error)
 	TestEventPattern(context.Context, *TestEventPatternRequest) (*TestEventPatternResponse, error)
+	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
+	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
+	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -218,6 +251,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"TestEventPattern": {Name: "TestEventPattern", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.TestEventPattern", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TestEventPatternRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.TestEventPattern(ctx, input.(*TestEventPatternRequest))
+		}},
+		"TagResource": {Name: "TagResource", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagResource(ctx, input.(*TagResourceRequest))
+		}},
+		"UntagResource": {Name: "UntagResource", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagResource(ctx, input.(*UntagResourceRequest))
+		}},
+		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
 		}},
 	}}
 }

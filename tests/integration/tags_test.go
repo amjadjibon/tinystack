@@ -13,6 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamotypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
+	eventtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	sdklambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
@@ -255,4 +257,40 @@ func TestLambdaTagsAndVersions(t *testing.T) {
 	if err != nil || *signing.CodeSigningConfigArn != "" || *signing.FunctionName != "tagged" {
 		t.Fatal(signing, err)
 	}
+}
+
+func TestEventBridgeRuleTags(t *testing.T) {
+	s := server(t)
+	c := eventsClient(s, "test")
+	ctx := context.Background()
+	rule, err := c.PutRule(ctx, &eventbridge.PutRuleInput{
+		Name:         aws.String("tagged"),
+		EventPattern: aws.String(`{"source":["shop"]}`),
+		Tags:         []eventtypes.Tag{{Key: aws.String("team"), Value: aws.String("core")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	arn := rule.RuleArn
+	_, err = c.TagResource(ctx, &eventbridge.TagResourceInput{
+		ResourceARN: arn, Tags: []eventtypes.Tag{{Key: aws.String("env"), Value: aws.String("dev")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.UntagResource(ctx, &eventbridge.UntagResourceInput{ResourceARN: arn, TagKeys: []string{"team"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tags, err := c.ListTagsForResource(ctx, &eventbridge.ListTagsForResourceInput{ResourceARN: arn})
+	if err != nil || len(tags.Tags) != 1 || *tags.Tags[0].Key != "env" {
+		t.Fatal(tags, err)
+	}
+
+	missing := aws.String("arn:aws:events:us-east-1:000000000000:rule/missing")
+	_, err = c.ListTagsForResource(ctx, &eventbridge.ListTagsForResourceInput{ResourceARN: missing})
+	code(t, err, "ResourceNotFoundException")
 }
