@@ -9,6 +9,7 @@ import (
 type CreateQueueRequest struct {
 	QueueName  *string           `json:"QueueName,omitempty" query:"QueueName"`
 	Attributes map[string]string `json:"Attributes,omitempty" query:"Attribute,flat,key=Name,value=Value"`
+	Tags       map[string]string `json:"tags,omitempty" query:"Tag,flat,key=Key,value=Value"`
 }
 
 type CreateQueueResult struct {
@@ -190,6 +191,28 @@ type SetQueueAttributesRequest struct {
 	Attributes map[string]string `json:"Attributes,omitempty" query:"Attribute,flat,key=Name,value=Value"`
 }
 
+type TagQueueOutput struct{}
+
+type TagQueueRequest struct {
+	QueueUrl *string           `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	Tags     map[string]string `json:"Tags,omitempty" query:"Tag,flat,key=Key,value=Value"`
+}
+
+type UntagQueueOutput struct{}
+
+type UntagQueueRequest struct {
+	QueueUrl *string  `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	TagKeys  []string `json:"TagKeys,omitempty" query:"TagKey,flat"`
+}
+
+type ListQueueTagsRequest struct {
+	QueueUrl *string `json:"QueueUrl,omitempty" query:"QueueUrl"`
+}
+
+type ListQueueTagsResult struct {
+	Tags map[string]string `json:"Tags,omitempty" query:"Tag,flat,key=Key,value=Value"`
+}
+
 type API interface {
 	CreateQueue(context.Context, *CreateQueueRequest) (*CreateQueueResult, error)
 	DeleteQueue(context.Context, *DeleteQueueRequest) (*DeleteQueueOutput, error)
@@ -204,6 +227,9 @@ type API interface {
 	ChangeMessageVisibilityBatch(context.Context, *ChangeMessageVisibilityBatchRequest) (*ChangeMessageVisibilityBatchResult, error)
 	GetQueueAttributes(context.Context, *GetQueueAttributesRequest) (*GetQueueAttributesResult, error)
 	SetQueueAttributes(context.Context, *SetQueueAttributesRequest) (*SetQueueAttributesOutput, error)
+	TagQueue(context.Context, *TagQueueRequest) (*TagQueueOutput, error)
+	UntagQueue(context.Context, *UntagQueueRequest) (*UntagQueueOutput, error)
+	ListQueueTags(context.Context, *ListQueueTagsRequest) (*ListQueueTagsResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -246,6 +272,13 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"SetQueueAttributes": {Name: "SetQueueAttributes", UnitOutput: true, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.SetQueueAttributes", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SetQueueAttributes", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SetQueueAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.SetQueueAttributes(ctx, input.(*SetQueueAttributesRequest))
+		}},
+		"TagQueue": {Name: "TagQueue", UnitOutput: true, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.TagQueue", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TagQueue", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TagQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.TagQueue(ctx, input.(*TagQueueRequest)) }},
+		"UntagQueue": {Name: "UntagQueue", UnitOutput: true, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.UntagQueue", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UntagQueue", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UntagQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagQueue(ctx, input.(*UntagQueueRequest))
+		}},
+		"ListQueueTags": {Name: "ListQueueTags", UnitOutput: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.ListQueueTags", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListQueueTags", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListQueueTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListQueueTags(ctx, input.(*ListQueueTagsRequest))
 		}},
 	}}
 }

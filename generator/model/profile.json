@@ -94,7 +94,10 @@
       "DeleteMessageBatch",
       "ChangeMessageVisibilityBatch",
       "GetQueueAttributes",
-      "SetQueueAttributes"
+      "SetQueueAttributes",
+      "TagQueue",
+      "UntagQueue",
+      "ListQueueTags"
     ],
     "query": {
       "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
@@ -102,7 +105,8 @@
     "shapes": {
       "CreateQueueRequest": [
         "QueueName",
-        "Attributes"
+        "Attributes",
+        "tags"
       ],
       "DeleteQueueRequest": [
         "QueueUrl"
@@ -231,6 +235,20 @@
       "SetQueueAttributesRequest": [
         "QueueUrl",
         "Attributes"
+      ],
+      "TagQueueRequest": [
+        "QueueUrl",
+        "Tags"
+      ],
+      "UntagQueueRequest": [
+        "QueueUrl",
+        "TagKeys"
+      ],
+      "ListQueueTagsRequest": [
+        "QueueUrl"
+      ],
+      "ListQueueTagsResult": [
+        "Tags"
       ]
     }
   },

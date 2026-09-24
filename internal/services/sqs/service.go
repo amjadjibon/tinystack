@@ -17,6 +17,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -87,7 +88,8 @@ type settings struct {
 // queue is one stored queue. FIFO queues also keep the deduplication window
 // and the last sequence number.
 type queue struct {
-	Dedup        map[string]dedup `json:",omitempty"`
+	Dedup        map[string]dedup  `json:",omitempty"`
+	Tags         map[string]string `json:",omitempty"`
 	Messages     []message
 	Settings     settings
 	CreatedAt    int64
@@ -332,6 +334,10 @@ func (s *Service) CreateQueue(ctx context.Context, in *api.CreateQueueRequest) (
 		return nil, invalid("The name of a FIFO queue must end with the .fifo suffix, and only FIFO queues may use it.")
 	}
 
+	if tagErr := tagging.Check(in.Tags); tagErr != nil {
+		return nil, invalid("Invalid tags: %v.", tagErr)
+	}
+
 	key := queueKey(m, name)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); exists {
@@ -355,7 +361,7 @@ func (s *Service) CreateQueue(ctx context.Context, in *api.CreateQueueRequest) (
 		}
 
 		now := s.now().Unix()
-		return save(tx, key, &queue{Settings: st, CreatedAt: now, LastModified: now})
+		return save(tx, key, &queue{Settings: st, Tags: in.Tags, CreatedAt: now, LastModified: now})
 	})
 	if err != nil {
 		return nil, err
