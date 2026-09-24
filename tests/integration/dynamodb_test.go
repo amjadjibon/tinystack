@@ -27,6 +27,7 @@ import (
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
@@ -37,6 +38,7 @@ import (
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
 	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
+	tokens "github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/storage"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
@@ -99,6 +101,7 @@ func serverStore(
 		lambdaapi.Descriptor(functions),
 		eventbridgeapi.Descriptor(eventbridge.New(store, sqsService, snsService, functions, deliveries)),
 		iamapi.Descriptor(principals.New(store)),
+		stsapi.Descriptor(tokens.New()),
 	)
 	if err != nil {
 		t.Fatal(err)

@@ -14,9 +14,7 @@ provider "aws" {
   access_key                  = "test"
   secret_key                  = "test"
   region                      = "us-east-1"
-  skip_credentials_validation = true
-  skip_requesting_account_id  = true
-  skip_metadata_api_check     = true
+  skip_metadata_api_check = true
 
   endpoints {
     dynamodb    = var.endpoint
@@ -26,7 +24,15 @@ provider "aws" {
     s3          = var.endpoint
     sns         = var.endpoint
     sqs         = var.endpoint
+    sts         = var.endpoint
   }
+}
+
+# The provider validates its credentials and reads the account ID with STS.
+data "aws_caller_identity" "current" {}
+
+output "account_id" {
+  value = data.aws_caller_identity.current.account_id
 }
 
 locals {

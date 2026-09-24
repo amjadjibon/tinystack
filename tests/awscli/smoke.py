@@ -52,6 +52,8 @@ def main():
                     return json.loads(result.stdout or "{}")
                 forged = subprocess.run(["aws", "--endpoint-url", endpoint, "--region", "us-east-1", "dynamodb", "list-tables"], env={**env, "AWS_SECRET_ACCESS_KEY": "wrong"}, text=True, capture_output=True, timeout=20)
                 assert forged.returncode != 0 and "InvalidSignatureException" in forged.stderr, forged.stderr
+                caller = aws("get-caller-identity", service="sts")
+                assert caller["Account"] == "000000000000" and caller["Arn"] == "arn:aws:iam::000000000000:root", caller
                 aws("create-table", "--table-name", "users", "--attribute-definitions", "AttributeName=PK,AttributeType=S", "--key-schema", "AttributeName=PK,KeyType=HASH", "--billing-mode", "PAY_PER_REQUEST")
                 assert aws("list-tables")["TableNames"] == ["users"]
                 item = {"PK": {"S": "one"}, "name": {"S": "TinyStack"}}

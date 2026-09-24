@@ -1395,5 +1395,18 @@
         "Role"
       ]
     }
+  },
+  "sts": {
+    "operations": [
+      "GetCallerIdentity"
+    ],
+    "shapes": {
+      "GetCallerIdentityRequest": [],
+      "GetCallerIdentityResponse": [
+        "UserId",
+        "Account",
+        "Arn"
+      ]
+    }
   }
 }

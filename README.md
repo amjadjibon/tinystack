@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, EventBridge, and IAM endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, EventBridge, IAM, and STS endpoints for development and tests.
 
 ## Run
 
@@ -74,17 +74,16 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables, S3 buckets and objects, Lambda functions
 and SQS event source mappings, EventBridge rules and targets, and IAM roles,
-role policies, and managed policies, tags included.
-Skip the calls to services TinyStack does not have:
+role policies, and managed policies, tags included. The provider validates its
+credentials and reads the account ID through STS. Skip the calls to services
+TinyStack does not have:
 
 ```hcl
 provider "aws" {
-  access_key                  = "test"
-  secret_key                  = "test"
-  region                      = "us-east-1"
-  skip_credentials_validation = true
-  skip_requesting_account_id  = true
-  skip_metadata_api_check     = true
+  access_key              = "test"
+  secret_key              = "test"
+  region                  = "us-east-1"
+  skip_metadata_api_check = true
 
   endpoints {
     dynamodb    = "http://localhost:4566"
@@ -94,6 +93,7 @@ provider "aws" {
     s3          = "http://localhost:4566"
     sns         = "http://localhost:4566"
     sqs         = "http://localhost:4566"
+    sts         = "http://localhost:4566"
   }
 }
 ```
@@ -253,6 +253,12 @@ sees the same records. Policies are stored and returned, never evaluated.
 
 Policy documents must be JSON objects with a `Statement`.
 
+### STS (AWS Query)
+
+| Operation | Behavior |
+| --- | --- |
+| GetCallerIdentity | The caller's account (from `identity.accounts`, or the default account for unmapped keys and unsigned requests) and its root user ARN |
+
 ### EventBridge (AWS JSON 1.1)
 
 Rules on each account's `default` event bus route events to SQS queues, SNS
@@ -358,7 +364,7 @@ The pinned upstream Smithy models, checksums, and license live in `generator/mod
 `profile.json` selects each service's operations and implemented fields; its
 `query` block is the compatibility overlay for legacy AWS Query facts (the XML
 namespace) that query-compatible JSON models omit; pure AWS Query models such as
-SNS and IAM declare their namespace themselves, and their timestamps are ISO 8601
+SNS, IAM, and STS declare their namespace themselves, and their timestamps are ISO 8601
 `time.Time` values. `go generate ./...` works offline after Go
 dependencies are available and reproduces the checked-in types, bindings, and
 error descriptors. The generator fails on unsupported wire traits; it supports
@@ -376,7 +382,7 @@ task test       # Official Go SDK, AWS Query wire, and transaction tests, with -
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
 task models:sync -- -ref main   # Re-vendor the pinned Smithy models from aws-sdk-go-v2, then regenerate
-task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, IAM, Lambda), verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, IAM, STS, Lambda), verify graceful shutdown
 task test:docker # Run Lambda functions in real containers (needs Docker; pulls python:3.14)
 task test:terraform # Apply, update, and destroy tests/terraform/main.tf with Terraform
 ```

@@ -71,7 +71,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     marked `UnitOutput` (AWS Query writes a `<Op>Result` element for every other output, even an empty one). Member
     names become exported Go field names (SQS's `tags` is `Tags`); the JSON/XML/query tags keep the wire name.
   - The generator rejects unsupported wire traits. It handles AWS JSON 1.0 services (plus Query for
-    `awsQueryCompatible` ones, which need the `query` overlay), AWS JSON 1.1 services such as EventBridge, and pure AWS Query services such as SNS and IAM, which take their
+    `awsQueryCompatible` ones, which need the `query` overlay), AWS JSON 1.1 services such as EventBridge, and pure AWS Query services such as SNS, IAM, and STS, which take their
     XML namespace from the model, must not have an overlay, and get `*time.Time` timestamps (ISO 8601 on the wire), and REST XML services such as S3, whose types get
     `encoding/xml` tags (`*time.Time` timestamps) and whose bindings place members by HTTP location, and REST JSON
     services such as Lambda (HTTP-bound members get `json:"-"`; `httpResponseCode` becomes a `status` binding).
@@ -89,7 +89,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   S3's unwrapped `<Error>` body (none for HEAD) and `restjson` sends `X-Amzn-ErrorType`. Unsupported input fields or parameters must fail explicitly, never be silently
   ignored.
 - **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**,
-  **services/eventbridge**, **services/iam**: behavior only, with
+  **services/eventbridge**, **services/iam**, **services/sts**: behavior only, with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
   (DynamoDB items are separate records under `…/dynamodb/<table>/item/<key>`, and the table record keeps the item
@@ -117,7 +117,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   and managed policies live under `<account>/iam/<kind>/<lowercased name>` with no region (names are
   case-insensitive); a role record holds its inline policies and attached ARNs, and attaching updates the policy's
   attachment count in the same transaction. Policies are stored, never evaluated. Users and access keys wait until
-  their credentials can be registered with the gateway's identity resolver (`docs/services/iam.md`).
+  their credentials can be registered with the gateway's identity resolver (`docs/services/iam.md`). STS
+  `GetCallerIdentity` reports the gateway-resolved account's root user; it stores nothing.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for
@@ -137,7 +138,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 
 ## Tests
 
-- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS and IAM over Query, S3 over REST
+- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS, IAM, and STS over Query, S3 over REST
   XML, Lambda over REST JSON, EventBridge over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.

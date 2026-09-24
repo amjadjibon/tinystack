@@ -34,8 +34,10 @@ def main():
         config.write_text("identity:\n  mode: verify\n  secret_keys:\n    test: test\n")
 
         def terraform(*args, team="core", code=0):
-            command = ["terraform", *args, "-no-color", "-input=false"]
-            if args[0] != "init":
+            command = ["terraform", *args, "-no-color"]
+            if args[0] != "output":
+                command.append("-input=false")
+            if args[0] not in ("init", "output"):
                 command += ["-var", f"endpoint={endpoint}", "-var", f"function_zip={package}", "-var", f"team={team}"]
             result = subprocess.run(command, cwd=work, text=True, capture_output=True, timeout=600)
             if result.returncode != code:
@@ -58,6 +60,7 @@ def main():
                     raise RuntimeError("server never became healthy")
                 terraform("init")
                 terraform("apply", "-auto-approve")
+                assert terraform("output", "-raw", "account_id") == "000000000000"
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 updated = terraform("apply", "-auto-approve", team="platform")
