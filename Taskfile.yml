@@ -26,6 +26,12 @@ tasks:
     cmds:
       - go generate ./...
 
+  models:sync:
+    desc: "Vendor the pinned Smithy models at an aws-sdk-go-v2 ref and regenerate (task models:sync -- -ref main -add sts)"
+    cmds:
+      - go run ./generator/sync {{.CLI_ARGS}}
+      - task generate
+
   test:docker:
     cmds:
       - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 ./internal/services/lambda/docker

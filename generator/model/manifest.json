@@ -7,25 +7,25 @@
       "path": "codegen/sdk-codegen/aws-models/dynamodb.json",
       "sha256": "7e9436596b667e2e0600de9c086205b38960012028bcd625ee786a5126d0f63e"
     },
-    "sqs": {
-      "path": "codegen/sdk-codegen/aws-models/sqs.json",
-      "sha256": "38eef06ce5642b8a052282fd19a3ab275e0046d375474e2ff022d3e33aaeab72"
-    },
-    "sns": {
-      "path": "codegen/sdk-codegen/aws-models/sns.json",
-      "sha256": "18f6b7a336227cb46df17f20108498357dbe79f255cf3bad759d0d58f6d0bcbf"
-    },
-    "s3": {
-      "path": "codegen/sdk-codegen/aws-models/s3.json",
-      "sha256": "ea4b0318e929b56b01523e7fd25e139b5646055dba96bbf6e41a79ac90522c71"
+    "eventbridge": {
+      "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
+      "sha256": "e2cb64e0c9ec540590204a414dbdc0d04827a677de0e9f6517647562b7149c40"
     },
     "lambda": {
       "path": "codegen/sdk-codegen/aws-models/lambda.json",
       "sha256": "5a19f9e4a3cf9f56d9efdadb0fa0f3b41e9cf174337dcd13a94668856eddb88c"
     },
-    "eventbridge": {
-      "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
-      "sha256": "e2cb64e0c9ec540590204a414dbdc0d04827a677de0e9f6517647562b7149c40"
+    "s3": {
+      "path": "codegen/sdk-codegen/aws-models/s3.json",
+      "sha256": "ea4b0318e929b56b01523e7fd25e139b5646055dba96bbf6e41a79ac90522c71"
+    },
+    "sns": {
+      "path": "codegen/sdk-codegen/aws-models/sns.json",
+      "sha256": "18f6b7a336227cb46df17f20108498357dbe79f255cf3bad759d0d58f6d0bcbf"
+    },
+    "sqs": {
+      "path": "codegen/sdk-codegen/aws-models/sqs.json",
+      "sha256": "38eef06ce5642b8a052282fd19a3ab275e0046d375474e2ff022d3e33aaeab72"
     }
   }
 }

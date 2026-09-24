@@ -346,6 +346,7 @@ profile are recorded as unsupported so requests that use them fail.
 task test       # Official Go SDK, AWS Query wire, and transaction tests, with -race
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
+task models:sync -- -ref main   # Re-vendor the pinned Smithy models from aws-sdk-go-v2, then regenerate
 task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, Lambda), verify graceful shutdown
 task test:docker # Run Lambda functions in real containers (needs Docker; pulls python:3.14)
 task test:terraform # Apply, update, and destroy tests/terraform/main.tf with Terraform

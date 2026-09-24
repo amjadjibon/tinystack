@@ -13,6 +13,7 @@ task build      # go build -o bin/tinystack ./cmd/tinystack
 task test       # go test -race ./...
 task lint       # go vet + golangci-lint (installed separately)
 task generate   # go generate ./... — regenerates internal/aws/generated/<service>/api.go
+task models:sync -- -ref main [-add name[=file.json]]  # vendor models + license at an aws-sdk-go-v2 ref, update manifest, generate
 task smoke      # python3 tests/awscli/smoke.py — needs Python 3 and the AWS CLI (invokes Lambda if Docker is up)
 task test:docker # runs Lambda functions in real containers (TINYSTACK_DOCKER_TESTS=1)
 task test:terraform # python3 tests/terraform/terraform.py — applies, updates, destroys tests/terraform/main.tf (needs Terraform)
@@ -59,7 +60,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 - **generated** (`internal/aws/generated/<service>/api.go`): wire types, the `API` interface and `Descriptor`. **Never
   hand-write or hand-edit these.** Always produce them with `generator/cmd` (`task generate`) from the pinned Smithy
   models in `generator/model/`:
-  - `manifest.json` pins every model's upstream path and SHA-256. Generation fails on a mismatch.
+  - `manifest.json` pins every model's upstream path and SHA-256. Generation fails on a mismatch. Never edit models
+    or the manifest by hand: `generator/sync` (`task models:sync`) downloads every pinned model and the license at one
+    commit, writes nothing unless all downloads are Smithy JSON, and records the commit and checksums.
   - `profile.json` has one entry per service: `operations`, `shapes` (a whitelist of generated members; add a field
     here to support it) and an optional `query` overlay (the legacy XML namespace), which turns on AWS Query bindings
     and `query:"..."` struct tags.
@@ -120,7 +123,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 
 1. **Operation:** add it to the service's `operations` in `generator/model/profile.json` and add the input and output
    members it needs under `shapes`. Run `task generate`, then implement the new `API` method in `internal/services/<service>`.
-2. **Service:** pin the upstream Smithy model in `generator/model/` and record it in `manifest.json`. Add a
+2. **Service:** pin the upstream Smithy model with `task models:sync -- -ref <current commit> -add <name>[=<file>.json]`. Add a
    `profile.json` entry, generate, and write `internal/services/<service>`. Register `api.Descriptor(...)` with
    `gateway.New` in both `internal/cmd/start.go` and the shared test server in `tests/integration/dynamodb_test.go`.
 
