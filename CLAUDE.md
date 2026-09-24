@@ -15,6 +15,7 @@ task lint       # go vet + golangci-lint (installed separately)
 task generate   # go generate ./... — regenerates internal/aws/generated/<service>/api.go
 task smoke      # python3 tests/awscli/smoke.py — needs Python 3 and the AWS CLI (invokes Lambda if Docker is up)
 task test:docker # runs Lambda functions in real containers (TINYSTACK_DOCKER_TESTS=1)
+task test:terraform # python3 tests/terraform/terraform.py — applies, updates, destroys tests/terraform/main.tf (needs Terraform)
 task all        # generate, lint, test, build
 ```
 
@@ -55,7 +56,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     here to support it) and an optional `query` overlay (the legacy XML namespace), which turns on AWS Query bindings
     and `query:"..."` struct tags.
   - Modeled errors become `Descriptor().Errors` (Query code and HTTP status from `awsQueryError`/`httpError`, and for
-    REST JSON the modeled `message`/`Message` member name). Unit outputs are generated as `<Op>Output struct{}`.
+    REST JSON the modeled `message`/`Message` member name). Unit outputs are generated as `<Op>Output struct{}` and
+    marked `UnitOutput` (AWS Query writes a `<Op>Result` element for every other output, even an empty one). Member
+    names become exported Go field names (SQS's `tags` is `Tags`); the JSON/XML/query tags keep the wire name.
   - The generator rejects unsupported wire traits. It handles AWS JSON 1.0 services (plus Query for
     `awsQueryCompatible` ones, which need the `query` overlay), AWS JSON 1.1 services such as EventBridge, and pure AWS Query services such as SNS, which take their
     XML namespace from the model and must not have an overlay, and REST XML services such as S3, whose types get
@@ -78,6 +81,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**: behavior only, with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`.
+  Resource tags live in that record (S3: the bucket's regional metadata record); `services/tagging` holds the shared
+  limits (50 tags, 128-character keys, 256-character values), and each service reports violations with its own code.
   Scoping comes from request metadata, which is how account/region isolation works. SQS long polling registers `watch`
   before the atomic `claim` (so wakeups are not lost), waits outside the transaction, and is released by `Stop`
   (registered with `http.Server.RegisterOnShutdown`). FIFO group ordering and dead-letter moves also happen inside
@@ -113,6 +118,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   Lambda over REST JSON, EventBridge over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
+- `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real
+  `hashicorp/aws` provider against a built server in verify mode; it downloads the provider. When the provider needs a
+  new call, add it to that config and to `tests/integration/tags_test.go`-style SDK coverage.
 - Tests use ephemeral local ports and never contact AWS.
 
 ## Lint/style
