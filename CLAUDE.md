@@ -28,7 +28,7 @@ Request flow: `cmd/tinystack` → `internal/cmd` (cobra; `start.go` wires everyt
 generated `catalog.Operation` → `internal/services/<service>.Service` → `internal/storage.Store`.
 
 - **gateway** (`internal/gateway/server.go`, `rest.go`): picks the protocol from headers only: `X-Amz-Target` means AWS
-  JSON; a signed or host service name that is a REST service means that service's REST protocol (REST XML for S3,
+  JSON (1.0 or 1.1, whichever the target prefix's service speaks); a signed or host service name that is a REST service means that service's REST protocol (REST XML for S3,
   REST JSON for Lambda); otherwise a form content type means AWS Query, and an unsigned request that is neither falls
   back to S3, the REST service that serves anonymous requests. It does this before anything
   else, so even early errors use the client's envelope. It then resolves identity from the SigV4 `Credential` scope
@@ -54,7 +54,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   - Modeled errors become `Descriptor().Errors` (Query code and HTTP status from `awsQueryError`/`httpError`, and for
     REST JSON the modeled `message`/`Message` member name). Unit outputs are generated as `<Op>Output struct{}`.
   - The generator rejects unsupported wire traits. It handles AWS JSON 1.0 services (plus Query for
-    `awsQueryCompatible` ones, which need the `query` overlay) and pure AWS Query services such as SNS, which take their
+    `awsQueryCompatible` ones, which need the `query` overlay), AWS JSON 1.1 services such as EventBridge, and pure AWS Query services such as SNS, which take their
     XML namespace from the model and must not have an overlay, and REST XML services such as S3, whose types get
     `encoding/xml` tags (`*time.Time` timestamps) and whose bindings place members by HTTP location, and REST JSON
     services such as Lambda (HTTP-bound members get `json:"-"`; `httpResponseCode` becomes a `status` binding).
@@ -71,7 +71,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   (labels, headers, query, payload, status, aws-chunked bodies) that `restxml` and `restjson` share; `restxml` writes
   S3's unwrapped `<Error>` body (none for HEAD) and `restjson` sends `X-Amzn-ErrorType`. Unsupported input fields or parameters must fail explicitly, never be silently
   ignored.
-- **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**: behavior only, with
+- **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**,
+  **services/eventbridge**: behavior only, with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`.
   Scoping comes from request metadata, which is how account/region isolation works. SQS long polling registers `watch`
@@ -88,7 +89,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   pooling warm containers that run the AWS base images' Runtime Interface Emulator). Pollers and async invocations
   run on the service's own context; `Stop` (a shutdown hook, also deferred in `start.go`) ends them and removes every
   container. SNS invokes subscribed functions through `lambda.Service.InvokeAsync`, and mappings read SQS in-process
-  via `sqs.QueueURL`.
+  via `sqs.QueueURL`. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus
+  only), matches `PutEvents` entries against compiled patterns (`pattern.go`), and delivers synchronously through
+  `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `storage/memory` is the only backend; `start.go` shares one store across services.
@@ -104,7 +107,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS over Query, S3 over REST XML,
-  Lambda over REST JSON) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  Lambda over REST JSON, EventBridge over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - Tests use ephemeral local ports and never contact AWS.

@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, S3, and Lambda endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, and EventBridge endpoints for development and tests.
 
 ## Run
 
@@ -138,6 +138,24 @@ and the creator's access key (signatures are not verified), so SDK calls reach
 the right account once you set `AWS_ENDPOINT_URL` in the function's environment
 to an address the container can reach.
 
+### EventBridge (AWS JSON 1.1)
+
+Rules on each account's `default` event bus route events to SQS queues, SNS
+topics, and Lambda functions in the rule's account and region, in-process.
+
+| Operation | Behavior |
+| --- | --- |
+| PutRule / DescribeRule / DeleteRule / ListRules / EnableRule / DisableRule | Event-pattern rules (`EventPattern`, `State`, `Description`, `RoleArn`); PutRule updates an existing rule; a rule with targets cannot be deleted; deleting a missing rule succeeds; `NamePrefix`, `Limit`, and `NextToken`; 300 rules per bus |
+| PutTargets / RemoveTargets / ListTargetsByRule | Up to 5 targets per rule; `Input` (constant JSON), `InputPath` (`$` or dotted fields such as `$.detail.id`), and `SqsParameters.MessageGroupId` for FIFO queues (the event ID is the deduplication ID) |
+| PutEvents | Up to 10 entries (256 KB); entries need `Source`, `DetailType`, and a JSON object `Detail`, and failed entries are reported per entry; each matching enabled rule delivers the event envelope (or its target input) to every target; a failed delivery does not fail PutEvents |
+| TestEventPattern | Matches an event against a pattern |
+
+Patterns support exact strings, numbers, booleans, and `null`; `prefix`, `suffix`,
+`equals-ignore-case`, `wildcard`, `anything-but` (a value, a list, or `prefix`,
+`suffix`, or `equals-ignore-case`), `numeric` comparisons and ranges, `exists`,
+nested fields, arrays (any element matches), and `$or`. Other operators, such as
+`cidr`, are rejected with `InvalidEventPatternException`.
+
 SigV4 credential scopes are parsed without verifying
 signatures. `identity.accounts` maps access keys to 12-digit account IDs. Unmapped
 keys and unsigned requests use the default account. Signed regions take precedence
@@ -148,7 +166,7 @@ DynamoDB limits: no Query, UpdateItem, expressions or conditional writes, projec
 secondary indexes, transactions API, tags, or capacity accounting/throttling.
 SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
 message groups on standard queues, dead-letter redrive back to the source queue, tags,
-policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` subscriptions; no FIFO topics, filter
+policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, filter
 policies, message signatures (the envelope omits the `Signature` fields), topic attribute APIs,
 tags, data protection, or cross-account subscriptions.
 S3 limits: no multipart uploads, presigned URLs, range requests, versioning, ACLs or
@@ -157,7 +175,11 @@ reads; objects are held in memory. Lambda limits: no versions, aliases, layers,
 function updates, code from S3, `ImageConfig`, `LogType: Tail`, function URLs,
 concurrency settings, resource policies, or event sources other than SQS
 (no batching window or partial batch responses); asynchronous failures are
-logged and dropped after the retries. No service has IAM,
+logged and dropped after the retries. EventBridge limits: only the default event bus
+(no custom or partner buses and no archives or replays), no scheduled rules,
+`InputTransformer`, dead-letter queues, retry policies, tags, or targets other than
+SQS, SNS, and Lambda in the rule's account and region; delivery happens
+synchronously during PutEvents. No service has IAM,
 persistence, or Terraform support yet. Table names (not ARNs)
 are accepted. Tables become ACTIVE immediately; reads are immediately consistent.
 Scan ordering is deterministic locally, but applications must not depend on it.
@@ -166,7 +188,8 @@ Unsupported input fields fail explicitly instead of being silently ignored.
 
 ## Architecture and generation
 
-`gateway` picks the protocol from the request headers (`X-Amz-Target` for JSON,
+`gateway` picks the protocol from the request headers (`X-Amz-Target` for AWS JSON
+1.0 or 1.1, chosen by the target's service,
 a form body for Query, and the signed or host service name for REST XML and REST
 JSON; unsigned requests fall back to S3), then
 resolves identity, service, and operation. REST operations are matched on
@@ -184,7 +207,8 @@ performance. SQS long polls wait outside transactions and retry the atomic claim
 when the queue changes or an in-flight message becomes visible. SNS delivers to
 SQS by calling the SQS service directly, never over HTTP, and to Lambda through
 the Lambda service's asynchronous invoke. Lambda event source mappings read SQS
-the same way. `services/lambda` runs code through a `Runtime`; `services/lambda/docker`
+the same way, and EventBridge delivers to SQS, SNS, and Lambda targets through
+those services. `services/lambda` runs code through a `Runtime`; `services/lambda/docker`
 implements it with the docker CLI.
 
 The pinned upstream Smithy models, checksums, and license live in `generator/model`.
@@ -194,7 +218,8 @@ namespace) that query-compatible JSON models omit; pure AWS Query models such as
 SNS declare their namespace themselves. `go generate ./...` works offline after Go
 dependencies are available and reproduces the checked-in types, bindings, and
 error descriptors. The generator fails on unsupported wire traits; it supports
-AWS JSON 1.0 services (plus AWS Query for query-compatible ones), AWS Query
+AWS JSON 1.0 services (plus AWS Query for query-compatible ones), AWS JSON 1.1
+services, AWS Query
 services, REST XML services, and REST JSON services. REST XML types carry
 `encoding/xml` tags, and REST bindings place each member in a label, header,
 query parameter, prefix header, payload, status code, or document body; modeled header and query inputs left out of the
@@ -206,7 +231,7 @@ profile are recorded as unsupported so requests that use them fail.
 task test       # Official Go SDK, AWS Query wire, and transaction tests, with -race
 task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
-task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, Lambda), verify graceful shutdown
+task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, Lambda), verify graceful shutdown
 task test:docker # Run Lambda functions in real containers (needs Docker; pulls python:3.14)
 ```
 
