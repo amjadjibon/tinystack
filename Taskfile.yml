@@ -22,6 +22,10 @@ tasks:
     cmds:
       - go generate ./...
 
+  test:docker:
+    cmds:
+      - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 ./internal/services/lambda/docker
+
   smoke:
     cmds:
       - python3 tests/awscli/smoke.py

@@ -18,6 +18,10 @@
     "s3": {
       "path": "codegen/sdk-codegen/aws-models/s3.json",
       "sha256": "ea4b0318e929b56b01523e7fd25e139b5646055dba96bbf6e41a79ac90522c71"
+    },
+    "lambda": {
+      "path": "codegen/sdk-codegen/aws-models/lambda.json",
+      "sha256": "5a19f9e4a3cf9f56d9efdadb0fa0f3b41e9cf174337dcd13a94668856eddb88c"
     }
   }
 }

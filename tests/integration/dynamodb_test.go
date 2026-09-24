@@ -21,12 +21,14 @@ import (
 	"github.com/aws/smithy-go"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
 	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -35,25 +37,38 @@ import (
 
 func server(t *testing.T) *httptest.Server {
 	t.Helper()
+	return serverWith(t, &fakeRuntime{})
+}
+
+// serverWith builds the server like start.go, with runtime running Lambda code.
+func serverWith(t *testing.T, runtime lambda.Runtime) *httptest.Server {
+	t.Helper()
 	cfg := config.Default()
 	cfg.Identity.Accounts = map[string]string{"team-b": "111111111111", "alias": "000000000000"}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	// Services share one store, as in start.go.
 	store := &memory.Store{}
 	sqsService := queues.New(store)
+	functions := lambda.New(store, sqsService, runtime, logger)
 	h, err := gateway.New(
 		cfg,
-		slog.New(slog.NewTextHandler(io.Discard, nil)),
+		logger,
 		api.Descriptor(provider.New(store)),
 		sqsapi.Descriptor(sqsService),
 		snsapi.Descriptor(topics.New(store, sqsService)),
 		s3api.Descriptor(buckets.New(store)),
+		lambdaapi.Descriptor(functions),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	s := httptest.NewServer(h)
-	t.Cleanup(s.Close)
+	t.Cleanup(func() {
+		sqsService.Stop()
+		functions.Stop()
+		s.Close()
+	})
 	return s
 }
 

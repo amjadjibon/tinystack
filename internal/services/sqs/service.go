@@ -157,6 +157,19 @@ func arnKey(arn string) (string, bool) {
 	return parts[4] + "/" + parts[3] + "/sqs/" + parts[5], true
 }
 
+// QueueURL returns a path-only URL of the queue named by queueARN. Other
+// services, such as Lambda event source mappings, pass it to the queue
+// operations in-process.
+func QueueURL(queueARN string) (string, bool) {
+	key, ok := arnKey(queueARN)
+	if !ok {
+		return "", false
+	}
+
+	parts := strings.SplitN(key, "/", 4)
+	return "/" + parts[0] + "/" + parts[3], true
+}
+
 // resolve maps a queue URL to the caller's regional queue key. The URL host
 // is ignored so URLs stay valid across localhost aliases.
 func resolve(ctx context.Context, raw *string) (string, error) {

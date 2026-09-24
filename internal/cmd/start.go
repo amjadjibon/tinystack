@@ -15,12 +15,15 @@ import (
 	"github.com/spf13/cobra"
 
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
+	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -54,6 +57,9 @@ func newStartCommand() *cobra.Command {
 			logger := slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), nil))
 			store := &memory.Store{}
 			queues := sqs.New(store)
+			functions := lambda.New(store, queues, docker.New(), logger)
+			// Stop removes function containers; it must finish before exit.
+			defer functions.Stop()
 			handler, err := gateway.New(
 				cfg,
 				logger,
@@ -61,6 +67,7 @@ func newStartCommand() *cobra.Command {
 				sqsapi.Descriptor(queues),
 				snsapi.Descriptor(sns.New(store, queues)),
 				s3api.Descriptor(s3.New(store)),
+				lambdaapi.Descriptor(functions),
 			)
 			if err != nil {
 				return err
@@ -80,11 +87,14 @@ func newStartCommand() *cobra.Command {
 				Handler:           handler,
 				ReadHeaderTimeout: 5 * time.Second,
 				ReadTimeout:       30 * time.Second,
-				WriteTimeout:      30 * time.Second,
-				IdleTimeout:       60 * time.Second,
+				// Synchronous Lambda invocations may run for the 15-minute
+				// maximum function timeout.
+				WriteTimeout: 16 * time.Minute,
+				IdleTimeout:  60 * time.Second,
 			}
 
 			server.RegisterOnShutdown(queues.Stop)
+			server.RegisterOnShutdown(functions.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)
@@ -96,7 +106,7 @@ func newStartCommand() *cobra.Command {
 				"storage",
 				"memory",
 				"services",
-				"dynamodb,s3,sns,sqs",
+				"dynamodb,lambda,s3,sns,sqs",
 			)
 			select {
 			case err = <-done:

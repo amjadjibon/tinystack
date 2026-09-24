@@ -467,5 +467,128 @@
         "Prefix"
       ]
     }
+  },
+  "lambda": {
+    "operations": [
+      "CreateFunction",
+      "GetFunction",
+      "DeleteFunction",
+      "ListFunctions",
+      "Invoke",
+      "CreateEventSourceMapping",
+      "GetEventSourceMapping",
+      "DeleteEventSourceMapping",
+      "ListEventSourceMappings"
+    ],
+    "shapes": {
+      "CreateFunctionRequest": [
+        "FunctionName",
+        "Runtime",
+        "Role",
+        "Handler",
+        "Code",
+        "Description",
+        "Timeout",
+        "MemorySize",
+        "PackageType",
+        "Environment",
+        "Architectures"
+      ],
+      "FunctionCode": [
+        "ZipFile",
+        "ImageUri"
+      ],
+      "Environment": [
+        "Variables"
+      ],
+      "FunctionConfiguration": [
+        "FunctionName",
+        "FunctionArn",
+        "Runtime",
+        "Role",
+        "Handler",
+        "CodeSize",
+        "Description",
+        "Timeout",
+        "MemorySize",
+        "LastModified",
+        "CodeSha256",
+        "Version",
+        "Environment",
+        "State",
+        "PackageType",
+        "Architectures"
+      ],
+      "EnvironmentResponse": [
+        "Variables"
+      ],
+      "GetFunctionRequest": [
+        "FunctionName"
+      ],
+      "GetFunctionResponse": [
+        "Configuration",
+        "Code"
+      ],
+      "FunctionCodeLocation": [
+        "RepositoryType",
+        "ImageUri"
+      ],
+      "DeleteFunctionRequest": [
+        "FunctionName"
+      ],
+      "DeleteFunctionResponse": [
+        "StatusCode"
+      ],
+      "ListFunctionsRequest": [
+        "Marker",
+        "MaxItems"
+      ],
+      "ListFunctionsResponse": [
+        "Functions",
+        "NextMarker"
+      ],
+      "InvocationRequest": [
+        "FunctionName",
+        "InvocationType",
+        "Payload"
+      ],
+      "InvocationResponse": [
+        "StatusCode",
+        "FunctionError",
+        "Payload"
+      ],
+      "CreateEventSourceMappingRequest": [
+        "EventSourceArn",
+        "FunctionName",
+        "Enabled",
+        "BatchSize"
+      ],
+      "EventSourceMappingConfiguration": [
+        "UUID",
+        "EventSourceArn",
+        "FunctionArn",
+        "BatchSize",
+        "State",
+        "StateTransitionReason",
+        "LastModified",
+        "LastProcessingResult"
+      ],
+      "GetEventSourceMappingRequest": [
+        "UUID"
+      ],
+      "DeleteEventSourceMappingRequest": [
+        "UUID"
+      ],
+      "ListEventSourceMappingsRequest": [
+        "EventSourceArn",
+        "FunctionName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListEventSourceMappingsResponse": [
+        "EventSourceMappings",
+        "NextMarker"
+      ]
+    }
   }
 }
