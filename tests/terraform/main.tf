@@ -11,21 +11,22 @@ variable "function_zip" { type = string }
 variable "team" { type = string }
 
 provider "aws" {
-  access_key                  = "test"
-  secret_key                  = "test"
-  region                      = "us-east-1"
+  access_key              = "test"
+  secret_key              = "test"
+  region                  = "us-east-1"
   skip_metadata_api_check = true
 
   endpoints {
-    dynamodb    = var.endpoint
-    eventbridge = var.endpoint
-    iam         = var.endpoint
-    lambda      = var.endpoint
-    s3          = var.endpoint
-    sns         = var.endpoint
-    sqs         = var.endpoint
-    ssm         = var.endpoint
-    sts         = var.endpoint
+    dynamodb       = var.endpoint
+    eventbridge    = var.endpoint
+    iam            = var.endpoint
+    lambda         = var.endpoint
+    s3             = var.endpoint
+    secretsmanager = var.endpoint
+    sns            = var.endpoint
+    sqs            = var.endpoint
+    ssm            = var.endpoint
+    sts            = var.endpoint
   }
 }
 
@@ -175,4 +176,16 @@ resource "aws_ssm_parameter" "token" {
   name  = "/app/config/token"
   type  = "SecureString"
   value = "token-${var.team}"
+}
+
+resource "aws_secretsmanager_secret" "db" {
+  name                    = "app/db"
+  description             = "Database for ${var.team}"
+  recovery_window_in_days = 0
+  tags                    = local.tags
+}
+
+resource "aws_secretsmanager_secret_version" "db" {
+  secret_id     = aws_secretsmanager_secret.db.id
+  secret_string = jsonencode({ user = var.team, password = "local" })
 }

@@ -135,6 +135,14 @@ def main():
                 assert [(p["Name"], p["Value"]) for p in by_path] == [("/smoke/token", "s3cret"), ("/smoke/url", "db.local")], by_path
                 assert ssm("get-parameter", "--name", "/smoke/token")["Parameter"]["Value"] != "s3cret"
                 assert ssm("delete-parameters", "--names", "/smoke/url", "/smoke/token")["DeletedParameters"] == ["/smoke/url", "/smoke/token"]
+                def secrets(*args):
+                    return aws(*args, service="secretsmanager")
+                secret_arn = secrets("create-secret", "--name", "smoke/db", "--secret-string", '{"password":"one"}')["ARN"]
+                secrets("put-secret-value", "--secret-id", secret_arn, "--secret-string", '{"password":"two"}')
+                assert secrets("get-secret-value", "--secret-id", "smoke/db")["SecretString"] == '{"password":"two"}'
+                assert secrets("get-secret-value", "--secret-id", "smoke/db", "--version-stage", "AWSPREVIOUS")["SecretString"] == '{"password":"one"}'
+                assert [e["Name"] for e in secrets("list-secrets")["SecretList"]] == ["smoke/db"]
+                secrets("delete-secret", "--secret-id", "smoke/db", "--force-delete-without-recovery")
                 def iam(*args):
                     return aws(*args, service="iam")
                 trust = {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}
