@@ -341,6 +341,64 @@ type ListMultipartUploadsOutput struct {
 	EncodingType       *string           `json:"EncodingType,omitempty" xml:"EncodingType,omitempty"`
 }
 
+type PutBucketNotificationConfigurationOutput struct{}
+
+type EventBridgeConfiguration struct {
+}
+
+type FilterRule struct {
+	Name  *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	Value *string `json:"Value,omitempty" xml:"Value,omitempty"`
+}
+
+type S3KeyFilter struct {
+	FilterRules []FilterRule `json:"FilterRules,omitempty" xml:"FilterRule,omitempty"`
+}
+
+type NotificationConfigurationFilter struct {
+	Key *S3KeyFilter `json:"Key,omitempty" xml:"S3Key,omitempty"`
+}
+
+type LambdaFunctionConfiguration struct {
+	Events            []string                         `json:"Events,omitempty" xml:"Event,omitempty"`
+	Filter            *NotificationConfigurationFilter `json:"Filter,omitempty" xml:"Filter,omitempty"`
+	Id                *string                          `json:"Id,omitempty" xml:"Id,omitempty"`
+	LambdaFunctionArn *string                          `json:"LambdaFunctionArn,omitempty" xml:"CloudFunction,omitempty"`
+}
+
+type QueueConfiguration struct {
+	Events   []string                         `json:"Events,omitempty" xml:"Event,omitempty"`
+	Filter   *NotificationConfigurationFilter `json:"Filter,omitempty" xml:"Filter,omitempty"`
+	Id       *string                          `json:"Id,omitempty" xml:"Id,omitempty"`
+	QueueArn *string                          `json:"QueueArn,omitempty" xml:"Queue,omitempty"`
+}
+
+type TopicConfiguration struct {
+	Events   []string                         `json:"Events,omitempty" xml:"Event,omitempty"`
+	Filter   *NotificationConfigurationFilter `json:"Filter,omitempty" xml:"Filter,omitempty"`
+	Id       *string                          `json:"Id,omitempty" xml:"Id,omitempty"`
+	TopicArn *string                          `json:"TopicArn,omitempty" xml:"Topic,omitempty"`
+}
+
+type NotificationConfiguration struct {
+	EventBridgeConfiguration     *EventBridgeConfiguration     `json:"EventBridgeConfiguration,omitempty" xml:"EventBridgeConfiguration,omitempty"`
+	LambdaFunctionConfigurations []LambdaFunctionConfiguration `json:"LambdaFunctionConfigurations,omitempty" xml:"CloudFunctionConfiguration,omitempty"`
+	QueueConfigurations          []QueueConfiguration          `json:"QueueConfigurations,omitempty" xml:"QueueConfiguration,omitempty"`
+	TopicConfigurations          []TopicConfiguration          `json:"TopicConfigurations,omitempty" xml:"TopicConfiguration,omitempty"`
+}
+
+type PutBucketNotificationConfigurationRequest struct {
+	Bucket                    *string                    `json:"-" xml:"-"`
+	NotificationConfiguration *NotificationConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner       *string                    `json:"-" xml:"-"`
+	SkipDestinationValidation *bool                      `json:"-" xml:"-"`
+}
+
+type GetBucketNotificationConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -360,6 +418,8 @@ type API interface {
 	CompleteMultipartUpload(context.Context, *CompleteMultipartUploadRequest) (*CompleteMultipartUploadOutput, error)
 	AbortMultipartUpload(context.Context, *AbortMultipartUploadRequest) (*AbortMultipartUploadOutput, error)
 	ListMultipartUploads(context.Context, *ListMultipartUploadsRequest) (*ListMultipartUploadsOutput, error)
+	PutBucketNotificationConfiguration(context.Context, *PutBucketNotificationConfigurationRequest) (*PutBucketNotificationConfigurationOutput, error)
+	GetBucketNotificationConfiguration(context.Context, *GetBucketNotificationConfigurationRequest) (*NotificationConfiguration, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -417,6 +477,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListMultipartUploads": {Name: "ListMultipartUploads", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "Delimiter": catalog.MemberBinding{Location: "query", Name: "delimiter"}, "EncodingType": catalog.MemberBinding{Location: "query", Name: "encoding-type"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "KeyMarker": catalog.MemberBinding{Location: "query", Name: "key-marker"}, "MaxUploads": catalog.MemberBinding{Location: "query", Name: "max-uploads"}, "Prefix": catalog.MemberBinding{Location: "query", Name: "prefix"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer"}, "UploadIdMarker": catalog.MemberBinding{Location: "query", Name: "upload-id-marker"}}, Output: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "document", Name: "Bucket"}, "CommonPrefixes": catalog.MemberBinding{Location: "document", Name: "CommonPrefixes"}, "Delimiter": catalog.MemberBinding{Location: "document", Name: "Delimiter"}, "EncodingType": catalog.MemberBinding{Location: "document", Name: "EncodingType"}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated"}, "KeyMarker": catalog.MemberBinding{Location: "document", Name: "KeyMarker"}, "MaxUploads": catalog.MemberBinding{Location: "document", Name: "MaxUploads"}, "NextKeyMarker": catalog.MemberBinding{Location: "document", Name: "NextKeyMarker"}, "NextUploadIdMarker": catalog.MemberBinding{Location: "document", Name: "NextUploadIdMarker"}, "Prefix": catalog.MemberBinding{Location: "document", Name: "Prefix"}, "UploadIdMarker": catalog.MemberBinding{Location: "document", Name: "UploadIdMarker"}, "Uploads": catalog.MemberBinding{Location: "document", Name: "Uploads"}}, Method: "GET", URI: "/{Bucket}?uploads", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListMultipartUploadsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListMultipartUploads(ctx, input.(*ListMultipartUploadsRequest))
+		}},
+		"PutBucketNotificationConfiguration": {Name: "PutBucketNotificationConfiguration", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "NotificationConfiguration": catalog.MemberBinding{Location: "payload", Name: "NotificationConfiguration"}, "SkipDestinationValidation": catalog.MemberBinding{Location: "header", Name: "x-amz-skip-destination-validation"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?notification", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketNotificationConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketNotificationConfiguration(ctx, input.(*PutBucketNotificationConfigurationRequest))
+		}},
+		"GetBucketNotificationConfiguration": {Name: "GetBucketNotificationConfiguration", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"EventBridgeConfiguration": catalog.MemberBinding{Location: "document", Name: "EventBridgeConfiguration"}, "LambdaFunctionConfigurations": catalog.MemberBinding{Location: "document", Name: "LambdaFunctionConfigurations"}, "QueueConfigurations": catalog.MemberBinding{Location: "document", Name: "QueueConfigurations"}, "TopicConfigurations": catalog.MemberBinding{Location: "document", Name: "TopicConfigurations"}}, Method: "GET", URI: "/{Bucket}?notification", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketNotificationConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketNotificationConfiguration(ctx, input.(*GetBucketNotificationConfigurationRequest))
 		}},
 	}}
 }

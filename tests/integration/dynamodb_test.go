@@ -98,6 +98,7 @@ func serverStore(
 	}
 
 	snsService := topics.New(store, sqsService, functions, deliveries)
+	rules := eventbridge.New(store, sqsService, snsService, functions, deliveries)
 	roles := principals.New(store)
 	stsService := tokens.New(store, roles)
 	h, err := gateway.New(
@@ -106,9 +107,9 @@ func serverStore(
 		api.Descriptor(provider.New(store)),
 		sqsapi.Descriptor(sqsService),
 		snsapi.Descriptor(snsService),
-		s3api.Descriptor(buckets.New(store)),
+		s3api.Descriptor(buckets.New(store, sqsService, snsService, functions, rules, deliveries)),
 		lambdaapi.Descriptor(functions),
-		eventbridgeapi.Descriptor(eventbridge.New(store, sqsService, snsService, functions, deliveries)),
+		eventbridgeapi.Descriptor(rules),
 		iamapi.Descriptor(roles),
 		stsapi.Descriptor(stsService),
 		ssmapi.Descriptor(parameters.New(store)),

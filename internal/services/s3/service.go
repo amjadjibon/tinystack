@@ -23,6 +23,11 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
+	"github.com/amjadjibon/tinystack/internal/services/sns"
+	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -36,10 +41,34 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store storage.Store
-	now   func() time.Time
+	// queues, topics, functions, and events receive bucket notifications,
+	// which deliveries records.
+	queues     *sqs.Service
+	topics     *sns.Service
+	functions  *lambda.Service
+	events     *eventbridge.Service
+	deliveries *delivery.Log
+	now        func() time.Time
 }
 
-func New(store storage.Store) *Service { return &Service{store: store, now: time.Now} }
+func New(
+	store storage.Store,
+	queues *sqs.Service,
+	topics *sns.Service,
+	functions *lambda.Service,
+	events *eventbridge.Service,
+	deliveries *delivery.Log,
+) *Service {
+	return &Service{
+		store:      store,
+		queues:     queues,
+		topics:     topics,
+		functions:  functions,
+		events:     events,
+		deliveries: deliveries,
+		now:        time.Now,
+	}
+}
 
 // bucketIndex is the partition-wide record that reserves a bucket name.
 type bucketIndex struct {
@@ -50,8 +79,9 @@ type bucketIndex struct {
 
 // bucketMeta is the bucket's regional metadata.
 type bucketMeta struct {
-	Tags      map[string]string `json:",omitempty"`
-	CreatedAt int64
+	Tags          map[string]string              `json:",omitempty"`
+	Notifications *api.NotificationConfiguration `json:",omitempty"`
+	CreatedAt     int64
 }
 
 func value[T any](p *T) (v T) {

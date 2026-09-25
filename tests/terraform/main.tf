@@ -97,6 +97,21 @@ resource "aws_s3_bucket" "assets" {
   tags   = local.tags
 }
 
+resource "aws_sqs_queue" "uploads" {
+  name = "uploads"
+}
+
+resource "aws_s3_bucket_notification" "assets" {
+  bucket      = aws_s3_bucket.assets.id
+  eventbridge = true
+
+  queue {
+    queue_arn     = aws_sqs_queue.uploads.arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = "uploads/"
+  }
+}
+
 resource "aws_s3_object" "hello" {
   bucket       = aws_s3_bucket.assets.id
   key          = "hello.txt"

@@ -95,6 +95,7 @@ func newStartCommand() *cobra.Command {
 			}
 
 			topics := sns.New(store, queues, functions, deliveries)
+			rules := eventbridge.New(store, queues, topics, functions, deliveries)
 			roles := iam.New(store)
 			tokens := sts.New(store, roles)
 			handler, err := gateway.New(
@@ -103,9 +104,9 @@ func newStartCommand() *cobra.Command {
 				dynamodbapi.Descriptor(dynamodb.New(store)),
 				sqsapi.Descriptor(queues),
 				snsapi.Descriptor(topics),
-				s3api.Descriptor(s3.New(store)),
+				s3api.Descriptor(s3.New(store, queues, topics, functions, rules, deliveries)),
 				lambdaapi.Descriptor(functions),
-				eventbridgeapi.Descriptor(eventbridge.New(store, queues, topics, functions, deliveries)),
+				eventbridgeapi.Descriptor(rules),
 				iamapi.Descriptor(roles),
 				stsapi.Descriptor(tokens),
 				ssmapi.Descriptor(ssm.New(store)),

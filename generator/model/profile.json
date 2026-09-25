@@ -631,7 +631,9 @@
       "ListParts",
       "CompleteMultipartUpload",
       "AbortMultipartUpload",
-      "ListMultipartUploads"
+      "ListMultipartUploads",
+      "PutBucketNotificationConfiguration",
+      "GetBucketNotificationConfiguration"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -907,6 +909,16 @@
         "Key",
         "Initiated",
         "StorageClass"
+      ],
+      "PutBucketNotificationConfigurationRequest": [
+        "Bucket",
+        "NotificationConfiguration",
+        "ExpectedBucketOwner",
+        "SkipDestinationValidation"
+      ],
+      "GetBucketNotificationConfigurationRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
       ]
     }
   },

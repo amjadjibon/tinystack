@@ -73,7 +73,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables, S3 buckets and objects, Lambda functions
-and SQS event source mappings, CloudWatch log groups, EventBridge rules and targets, SSM parameters
+and SQS event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge rules and targets, SSM parameters
 (including SecureString), Secrets Manager secrets and versions, and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
@@ -138,7 +138,7 @@ description, bucket object count and size, the function or mapping configuration
 and the rule with its targets.
 
 `GET /_tinystack/deliveries` lists the last 256 messages services handed to each other:
-SNS fan-out to queues and functions, EventBridge targets, each asynchronous Lambda
+SNS fan-out to queues and functions, S3 event notifications, EventBridge targets, each asynchronous Lambda
 attempt, and each event source mapping batch. Every record has the source and target
 ARNs, `delivered` or `failed` with the error, and the first 4 KiB of the payload. AWS
 never reports these failures to the publisher, so this is where a message that went
@@ -216,9 +216,18 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | DeleteObject | Deleting a missing key succeeds |
 | ListObjectsV2 | Prefix, delimiter and common prefixes, `max-keys`, continuation token, `start-after`, `encoding-type=url` |
 | Multipart uploads | Create, upload parts, list parts/uploads, complete, and abort; completion validates ordered part ETags and 5 MiB nonfinal parts, then atomically installs an object up to 64 MiB |
+| PutBucketNotificationConfiguration / GetBucketNotificationConfiguration | SQS (standard), SNS, and Lambda destinations in the bucket's region for `s3:ObjectCreated:*` and `s3:ObjectRemoved:*` events, with prefix and suffix filters, plus `EventBridgeConfiguration`; overlapping configurations are rejected; unless `SkipDestinationValidation`, queues and topics get an `s3:TestEvent` and functions must exist |
 
 Another account's bucket answers `AccessDenied` (403), and a bucket in another
-region answers `PermanentRedirect` (301). Modeled request headers and query
+region answers `PermanentRedirect` (301).
+
+After a PutObject, CompleteMultipartUpload, or a DeleteObject that removed an
+object commits, matching destinations receive an S3 event message (version 2.1,
+keys URL-encoded), and with EventBridge enabled the default event bus gets an
+`Object Created` or `Object Deleted` event from `aws.s3`. Failed deliveries never
+fail the request; they appear in `/_tinystack/deliveries`.
+
+Modeled request headers and query
 parameters that TinyStack does not implement (versions, ACLs,
 encryption, object tagging, other storage classes, and so on) answer `NotImplemented`
 (501), as do S3 subresources such as `?acl`.

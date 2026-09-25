@@ -29,7 +29,7 @@ clears them. `GET /_tinystack/metrics` serves Prometheus counters by service, op
 (`gateway/metrics.go`; labels come from the catalog, never from the client).
 `GET /_tinystack/resources` lists resources from each service's `Resources` method (`catalog.Inventory`; the generated
 `Descriptor` picks it up, so a service's `inventory.go` is all a new service needs).
-`GET /_tinystack/deliveries` is the `delivery.Log` that SNS, EventBridge, and Lambda record every in-process delivery
+`GET /_tinystack/deliveries` is the `delivery.Log` that SNS, S3, EventBridge, and Lambda record every in-process delivery
 in; `start.go` mounts it with `gateway.Handle`. Both logs keep their entries in `recent.Log`. `GET /_tinystack/` is the dashboard: static files embedded from
 `gateway/dashboard/` that only read those endpoints and write every value with `textContent` (strict CSP, no build step).
 
@@ -109,7 +109,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `*sqs.Service` and delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its
   subscriptions. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
   in the same transaction as the regional bucket record; objects are `…/s3/<bucket>/o/<key>` (metadata) plus
-  `…/s3/<bucket>/d/<key>` (bytes). Unmodeled S3 errors carry their own HTTP status (`&awserror.Error{StatusCode: …}`);
+  `…/s3/<bucket>/d/<key>` (bytes). The bucket record also holds its notification configuration, which object writes
+  read in their transaction and deliver after commit (`notification.go`) through `sqs.Service.Deliver`,
+  `sns.Service.Publish`, `lambda.Service.InvokeAsync`, and `eventbridge.Service.PutEvents`. Unmodeled S3 errors carry their own HTTP status (`&awserror.Error{StatusCode: …}`);
   modeled ones take it from the generated bindings. Lambda stores functions under `…/lambda/function/<name>`, code
   under `…/lambda/code/<name>`, and event source mappings under `…/lambda/mapping/<uuid>`; it runs code only through
   the `lambda.Runtime` interface (`services/lambda/docker` uses the docker CLI, copying code in with `docker cp` and

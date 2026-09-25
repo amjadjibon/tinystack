@@ -19,9 +19,10 @@ const (
 	ViaEventBridge        = "eventbridge"
 	ViaLambdaAsync        = "lambda-async"
 	ViaEventSourceMapping = "event-source-mapping"
+	ViaS3                 = "s3"
 )
 
-// Record is one delivery. Source is the topic, rule, or queue ARN it came
+// Record is one delivery. Source is the topic, rule, queue, or bucket ARN it came
 // from, empty for asynchronous invocations; Payload keeps the first
 // recent.MaxText bytes and Size counts them all.
 type Record struct {

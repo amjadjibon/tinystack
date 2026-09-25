@@ -183,11 +183,19 @@ func (s *Service) CompleteMultipartUpload(
 		lastNumber = n
 	}
 	var etag string
+	var size int64
+	var cfg *api.NotificationConfiguration
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		bucket, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
 			return resolveErr
 		}
+
+		var cfgErr error
+		if cfg, cfgErr = notifications(tx, bucket); cfgErr != nil {
+			return cfgErr
+		}
+
 		u, loadErr := loadUpload(tx, bucket, *in.Key, value(in.UploadId))
 		if loadErr != nil {
 			return loadErr
@@ -248,11 +256,17 @@ func (s *Service) CompleteMultipartUpload(
 			return writeErr
 		}
 		removeUpload(tx, bucket, *in.UploadId)
+		size = obj.Size
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	s.notify(ctx, m, cfg, objectEvent{
+		name: "ObjectCreated:CompleteMultipartUpload", reason: "CompleteMultipartUpload",
+		bucket: *in.Bucket, key: *in.Key, etag: etag, size: size,
+	})
 	location := "/" + *in.Bucket + "/" + url.PathEscape(*in.Key)
 	return &api.CompleteMultipartUploadOutput{Location: &location, Bucket: in.Bucket, Key: in.Key, ETag: &etag}, nil
 }

@@ -169,10 +169,16 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		obj.ContentType = defaultType
 	}
 
+	var cfg *api.NotificationConfiguration
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
 			return resolveErr
+		}
+
+		var cfgErr error
+		if cfg, cfgErr = notifications(tx, key); cfgErr != nil {
+			return cfgErr
 		}
 
 		var existing object
@@ -195,6 +201,14 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		return nil, err
 	}
 
+	s.notify(ctx, m, cfg, objectEvent{
+		name:   "ObjectCreated:Put",
+		reason: "PutObject",
+		bucket: *in.Bucket,
+		key:    *in.Key,
+		etag:   obj.ETag,
+		size:   obj.Size,
+	})
 	return &api.PutObjectOutput{ETag: new(obj.ETag)}, nil
 }
 
@@ -317,10 +331,19 @@ func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest)
 		return nil, guardErr
 	}
 
+	var cfg *api.NotificationConfiguration
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
 			return resolveErr
+		}
+
+		// Only a deletion that removed an object is notified.
+		if _, found := tx.Get(key + "/o/" + *in.Key); found {
+			var cfgErr error
+			if cfg, cfgErr = notifications(tx, key); cfgErr != nil {
+				return cfgErr
+			}
 		}
 
 		tx.Delete(key + "/o/" + *in.Key)
@@ -331,6 +354,9 @@ func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest)
 		return nil, err
 	}
 
+	s.notify(ctx, m, cfg, objectEvent{
+		name: "ObjectRemoved:Delete", reason: "DeleteObject", bucket: *in.Bucket, key: *in.Key,
+	})
 	return &api.DeleteObjectOutput{}, nil
 }
 
