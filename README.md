@@ -72,9 +72,9 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 ### Terraform
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
-topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions
-versions and aliases, and SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules, and targets (with input transformers), SSM parameters
-(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases, and IAM roles, role policies, and managed policies, tags
+topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
+versions, and aliases, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules, and targets (with input transformers), SSM parameters
+(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
@@ -198,7 +198,7 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy`, `FifoQueue` (`.fifo` names), `ContentBasedDeduplication` |
+| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy`, `FifoQueue` (`.fifo` names), `ContentBasedDeduplication`, and encryption: `SqsManagedSseEnabled` (on by default) or `KmsMasterKeyId` with `KmsDataKeyReusePeriodSeconds` (60 to 86,400, 300 by default) |
 | GetQueueAttributes / SetQueueAttributes | The writable attributes above plus `QueueArn`, message counts, and created/modified timestamps; unsupported names fail |
 | GetQueueUrl / DeleteQueue | Queue URLs are `<endpoint>/<account>/<name>`; the host part is ignored on input |
 | ListQueues | Name prefix, `MaxResults`, and `NextToken` |
@@ -364,8 +364,11 @@ or `ssm` are reserved. Reads accept a `name:version` or `name:label` selector.
 | AddTagsToResource / RemoveTagsFromResource / ListTagsForResource | `ResourceType: Parameter`, up to 50 tags |
 
 A parameter keeps its 100 newest versions: the oldest is dropped, unless it has a
-label. SecureString values use the AWS managed key `alias/aws/ssm` only (another
-`KeyId` fails with `InvalidKeyId`). TinyStack does not encrypt them: they are kept
+label. SecureString values use the AWS managed key `alias/aws/ssm` or a KMS key
+named by `KeyId` (key ID, key ARN, alias name, or alias ARN in the caller's account
+and region); an overwrite without a `KeyId` keeps the current key. Writing, and
+reading with `WithDecryption`, fail with `InvalidKeyId` when the key is missing,
+disabled, or pending deletion. TinyStack does not encrypt the values: they are kept
 as plain text in memory and in `state.db`. Reads without `WithDecryption` return an
 opaque placeholder, never the value. The request inspector redacts every operation
 that carries values, and the resource browser leaves out SecureString values.
@@ -377,9 +380,9 @@ without the random six-character suffix.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateSecret | `SecretString` or `SecretBinary` (up to 64 KB), `Description`, `Tags`, and `ClientRequestToken` (the version ID); a value becomes the `AWSCURRENT` version |
+| CreateSecret | `SecretString` or `SecretBinary` (up to 64 KB), `Description`, `KmsKeyId`, `Tags`, and `ClientRequestToken` (the version ID); a value becomes the `AWSCURRENT` version |
 | DescribeSecret / ListSecrets | Metadata and `VersionIdsToStages`, never values; `Filters` (`name`, `description`, `tag-key`, `tag-value`, `all`: prefixes, `!` negates), `IncludePlannedDeletion`, `SortOrder` by creation date, `MaxResults` and `NextToken` |
-| UpdateSecret | Description, and a value as a new `AWSCURRENT` version |
+| UpdateSecret | Description, `KmsKeyId`, and a value as a new `AWSCURRENT` version |
 | PutSecretValue | A new version, labeled `AWSCURRENT` unless `VersionStages` says otherwise; moving `AWSCURRENT` labels the old version `AWSPREVIOUS`; a repeated `ClientRequestToken` is idempotent for the same value and fails for another |
 | GetSecretValue | The version `VersionId` and/or `VersionStage` select (`AWSCURRENT` by default) |
 | ListSecretVersionIds | Labeled versions, or every version with `IncludeDeprecated`, in creation order |
@@ -388,8 +391,10 @@ without the random six-character suffix.
 | TagResource / UntagResource | Up to 50 tags |
 | GetResourcePolicy | Always no policy |
 
-Only the AWS managed key (`alias/aws/secretsmanager`) is accepted, and values are
-not encrypted: they are kept as plain text in memory and in `state.db`. A secret
+A secret uses the AWS managed key (`alias/aws/secretsmanager`) or the KMS key its
+`KmsKeyId` names. While that key is missing, disabled, or pending deletion, adding a
+value or setting the key fails with `EncryptionFailure` and GetSecretValue with
+`DecryptionFailure`. Values are not encrypted: they are kept as plain text in memory and in `state.db`. A secret
 keeps up to 100 versions, dropping the oldest unlabeled ones. The request inspector
 redacts every operation that carries values, and the resource browser shows only
 metadata.
@@ -415,7 +420,14 @@ wherever KMS accepts an alias.
 | GenerateRandom | Up to 1024 bytes |
 
 Ciphertexts are AES-256-GCM under key material that is stored with the key, as
-plain bytes, in memory and in `state.db`: TinyStack protects nothing. Policies are
+plain bytes, in memory and in `state.db`: TinyStack protects nothing.
+
+SSM SecureString parameters, Secrets Manager secrets, and SQS queues accept these
+keys, but only check that the key exists and is enabled (each with its own error
+codes); their values are stored as plain text. SQS checks a queue's
+`KmsMasterKeyId` on every send (`KmsNotFound`, `KmsDisabled`, or `KmsInvalidState`),
+never on receives, and the AWS managed keys `alias/aws/ssm`,
+`alias/aws/secretsmanager`, and `alias/aws/sqs` need no key. Policies are
 stored, never evaluated, and enabling rotation never rotates the material.
 
 ### EventBridge (AWS JSON 1.1)
@@ -487,7 +499,7 @@ parallel scans, PartiQL, Kinesis streaming, stream shard splits, backups, or cap
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
 message groups on standard queues, dead-letter redrive back to the source queue,
-policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
+or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multiple ranges per request, versioning, ACLs other than `private`,
 policies, encryption, POST uploads, lifecycle, or stored checksums on
@@ -500,12 +512,11 @@ SQS, SNS, and Lambda in the rule's account and region; delivery happens
 synchronously during PutEvents. IAM limits: no users, access keys, groups, instance
 profiles, permissions boundaries, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
-no parameter policies, customer-managed KMS keys, `aws:ec2:image` or other data
+no parameter policies, `aws:ec2:image` or other data
 types, public `/aws/service/...` parameters, shared parameters, or parameter quotas.
 KMS limits: no asymmetric, HMAC, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
-material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation; SSM and Secrets Manager do not use KMS
-keys. Secrets Manager limits: no rotation, replication, resource policies,
-`BatchGetSecretValue`, `GetRandomPassword`, `SortBy`, or customer-managed KMS keys.
+material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no rotation, replication, resource policies,
+`BatchGetSecretValue`, `GetRandomPassword`, or `SortBy`.
 STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on

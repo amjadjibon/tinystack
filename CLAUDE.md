@@ -142,7 +142,8 @@ a per-service `Dialect`), and delivers synchronously through
   past its recovery window is treated as gone and purged when its name is reused. KMS keeps each key (its AES-256
   material, state, policy, and tags) under `…/kms/key/<key ID>` and each alias under `…/kms/alias/<name>`; a
   ciphertext starts with the ID of the key that sealed it (`kms/crypto.go`), and a key past its deletion date is
-  treated as gone. IAM is account-wide, so its roles
+  treated as gone. SSM, Secrets Manager, and SQS hold the `*kms.Service` and call `kms.Service.Check` outside
+  their own transactions to require a usable customer managed key, translating KMS's error into their own codes. IAM is account-wide, so its roles
   and managed policies live under `<account>/iam/<kind>/<lowercased name>` with no region (names are
   case-insensitive); a role record holds its inline policies and attached ARNs, and attaching updates the policy's
   attachment count in the same transaction. Policies are stored, never evaluated. Users and access keys wait until
