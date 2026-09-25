@@ -119,7 +119,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   read in their transaction and deliver after commit (`notification.go`) through `sqs.Service.Deliver`,
   `sns.Service.Publish`, `lambda.Service.InvokeAsync`, and `eventbridge.Service.PutEvents`. Unmodeled S3 errors carry their own HTTP status (`&awserror.Error{StatusCode: …}`);
   modeled ones take it from the generated bindings. Lambda stores functions under `…/lambda/function/<name>`, code
-  under `…/lambda/code/<name>`, and event source mappings under `…/lambda/mapping/<uuid>`; it runs code only through
+  under `…/lambda/code/<name>`, published versions under `…/lambda/version/<name>/<zero-padded number>` (code under
+  `…/lambda/version-code/…`), aliases under `…/lambda/alias/<name>/<alias>`, and event source mappings under
+  `…/lambda/mapping/<uuid>`; `versions.go` resolves a qualifier to the record and code an operation uses; it runs code only through
   the `lambda.Runtime` interface (`services/lambda/docker` uses the docker CLI, copying code in with `docker cp` and
   pooling warm containers that run the AWS base images' Runtime Interface Emulator). Pollers and async invocations
   run on the service's own context; `Stop` (a shutdown hook, also deferred in `start.go`) ends them and removes every

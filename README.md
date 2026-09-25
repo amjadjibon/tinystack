@@ -73,7 +73,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets and objects, Lambda functions
-and SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge rules and targets, SSM parameters
+versions and aliases, and SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge rules and targets, SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases, and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
@@ -276,12 +276,14 @@ invoking them does.
 | Operation | Behavior |
 | --- | --- |
 | CreateFunction | `Zip` packages (`ZipFile`) for python3.9–3.14, nodejs18.x–24.x, java11–25, ruby3.2–3.4, dotnet8/10, and provided.al2/al2023; `Image` packages (`ImageUri`); `Timeout`, `MemorySize`, `Environment` (reserved keys rejected, 4 KB limit), `Description`, `Architectures` |
-| GetFunction / ListFunctions / DeleteFunction | Name, partial ARN, or ARN; only the `$LATEST` qualifier exists; 50 per page with `Marker`; GetFunction returns the tags |
-| UpdateFunctionCode / UpdateFunctionConfiguration | Replace the `ZipFile` or `ImageUri` (and `Architectures`), or change `Role`, `Runtime`, `Handler`, `Description`, `Timeout`, `MemorySize`, and `Environment` (fields left out keep their values); `RevisionId` preconditions and `DryRun`; warm containers are released so the next invocation runs the new revision; `Publish` is not supported |
-| ListVersionsByFunction / GetFunctionCodeSigningConfig | `$LATEST` only; no code signing configuration |
+| GetFunction / GetFunctionConfiguration / ListFunctions / DeleteFunction | Name, partial ARN, or ARN, with a `Qualifier` (or `:qualifier` suffix) of `$LATEST`, a version, or an alias; 50 per page with `Marker`; GetFunction returns the tags; deleting a function deletes its versions and aliases, and deleting a version fails while an alias points to it |
+| UpdateFunctionCode / UpdateFunctionConfiguration | Replace the `ZipFile` or `ImageUri` (and `Architectures`), or change `Role`, `Runtime`, `Handler`, `Description`, `Timeout`, `MemorySize`, and `Environment` (fields left out keep their values); `RevisionId` preconditions and `DryRun`; `Publish` on code updates; warm containers are released so the next invocation runs the new revision |
+| PublishVersion / ListVersionsByFunction | Immutable numbered versions of `$LATEST`'s code and configuration, also from `Publish` on CreateFunction; publishing unchanged code and configuration returns the last version; `CodeSha256` and `RevisionId` preconditions; `$LATEST` then versions in order, with `Marker` and `MaxItems` |
+| CreateAlias / GetAlias / UpdateAlias / DeleteAlias / ListAliases | Names for `$LATEST` or a version, with a `Description` and `RoutingConfig` that sends a weighted share (0 to 1) of invocations to one other version (not with `$LATEST`); `RevisionId` preconditions; aliases in name order, optionally of one version |
+| GetFunctionCodeSigningConfig | No code signing configuration |
 | TagResource / UntagResource / ListTags | Unqualified function ARNs; also `Tags` on CreateFunction |
-| Invoke | `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`; `LogType: Tail` returns the last 4 KB of the log), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |
-| Create/Get/Delete/ListEventSourceMappings | SQS queues and DynamoDB streams in the function's account and region. For queues, `BatchSize` up to 10; a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies. For streams, `StartingPosition` `TRIM_HORIZON` or `LATEST`, `BatchSize` up to 10,000 (100 by default), and `MaximumRetryAttempts` (-1, the default, retries forever); batches of `aws:dynamodb` records are delivered in order, a failed batch is retried and then skipped, and the mapping resumes after its last record on restart |
+| Invoke | `Qualifier` (a version or alias; routed aliases pick a version per invocation, reported in `X-Amz-Executed-Version`); `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`; `LogType: Tail` returns the last 4 KB of the log), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |
+| Create/Get/Delete/ListEventSourceMappings | SQS queues and DynamoDB streams in the function's account and region, for a function, version, or alias. For queues, `BatchSize` up to 10; a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies. For streams, `StartingPosition` `TRIM_HORIZON` or `LATEST`, `BatchSize` up to 10,000 (100 by default), and `MaximumRetryAttempts` (-1, the default, retries forever); batches of `aws:dynamodb` records are delivered in order, a failed batch is retried and then skipped, and the mapping resumes after its last record on restart |
 
 Function code gets `AWS_REGION`, the function name, memory size, and timeout,
 and the creator's access key (and its configured secret key when signatures are
@@ -473,8 +475,7 @@ policies, or encryption settings; the 60-second name-reuse delay after DeleteQue
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no presigned URLs, multiple ranges per request, versioning, ACLs other than `private`,
 policies, encryption, object tagging, lifecycle, or stored checksums on
-reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no versions, aliases, layers,
-`Publish` on code updates, code from S3, `ImageConfig`, function URLs,
+reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, code from S3, `ImageConfig`, function URLs,
 concurrency settings, resource policies, or event sources other than SQS and DynamoDB
 streams (no batching window, filters, partial batch responses, bisecting, or failure destinations); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: only the default event bus
