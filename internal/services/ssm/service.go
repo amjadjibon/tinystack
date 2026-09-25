@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -18,6 +19,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -48,11 +50,46 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store storage.Store
+	keys  *kms.Service
 	now   func() time.Time
 }
 
-func New(store storage.Store) *Service {
-	return &Service{store: store, now: time.Now}
+// New returns the Parameter Store; keys checks the customer managed keys of
+// SecureString parameters.
+func New(store storage.Store, keys *kms.Service) *Service {
+	return &Service{store: store, keys: keys, now: time.Now}
+}
+
+// useKey reports why the customer managed key id cannot be used, as
+// InvalidKeyId. The AWS managed key needs no check.
+func (s *Service) useKey(ctx context.Context, scope request.Scope, id string) error {
+	if id == defaultKeyID {
+		return nil
+	}
+
+	err := s.keys.Check(ctx, scope, id)
+	if e, ok := errors.AsType[*awserror.Error](err); ok {
+		return awserror.New("InvalidKeyId", e.Message)
+	}
+
+	return err
+}
+
+// decrypting checks the keys of the SecureString versions a read decrypts.
+func (s *Service) decrypting(ctx context.Context, scope request.Scope, versions []*version) error {
+	checked := map[string]bool{}
+	for _, v := range versions {
+		if v.Type != typeSecureString || checked[v.KeyID] {
+			continue
+		}
+
+		checked[v.KeyID] = true
+		if err := s.useKey(ctx, scope, v.KeyID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // parameter is a parameter's mutable record.

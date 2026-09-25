@@ -112,6 +112,10 @@ func (s *Service) SendMessageBatch(
 		)
 	}
 
+	if keyErr := s.useKey(ctx, key); keyErr != nil {
+		return nil, keyErr
+	}
+
 	out := &api.SendMessageBatchResult{}
 	err = s.batch(ctx, key, func(q *queue, now int64) {
 		for i := range in.Entries {

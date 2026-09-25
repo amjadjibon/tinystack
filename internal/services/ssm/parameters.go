@@ -51,6 +51,13 @@ func (s *Service) PutParameter(ctx context.Context, in *api.PutParameterRequest)
 		return nil, err
 	}
 
+	// A key on another type fails validation in settings.
+	if value(in.Type, typeSecureString) == typeSecureString {
+		if keyErr := s.checkNewKey(ctx, m.Scope, *in.Name, in.KeyId, overwrite); keyErr != nil {
+			return nil, keyErr
+		}
+	}
+
 	now := s.now().UnixMilli()
 	var out *api.PutParameterResult
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -154,8 +161,43 @@ func value(p *string, fallback string) string {
 	return *p
 }
 
-// checkKey sets v's KMS key. SecureString values use the AWS managed key,
-// the only one TinyStack has; other types have none.
+// checkNewKey checks the key a SecureString version will use: the requested
+// one, or on overwrite the current version's.
+func (s *Service) checkNewKey(ctx context.Context, scope request.Scope, name string, keyID *string,
+	overwrite bool,
+) error {
+	if keyID != nil {
+		return s.useKey(ctx, scope, *keyID)
+	}
+
+	if !overwrite {
+		return nil
+	}
+
+	var current string
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		p, found, readErr := read[parameter](tx, parameterKey(scope, name))
+		if readErr != nil || !found {
+			return readErr
+		}
+
+		v, _, readErr := loadVersion(tx, scope, name, p.Version)
+		if readErr == nil {
+			current = v.KeyID
+		}
+
+		return readErr
+	})
+	if err != nil || current == "" {
+		return err
+	}
+
+	return s.useKey(ctx, scope, current)
+}
+
+// checkKey sets v's KMS key. A SecureString value uses the requested key, the
+// current version's, or the AWS managed key, as PutParameter has checked;
+// other types have none.
 func checkKey(keyID *string, v *version) error {
 	if v.Type != typeSecureString {
 		if keyID != nil {
@@ -166,11 +208,7 @@ func checkKey(keyID *string, v *version) error {
 		return nil
 	}
 
-	v.KeyID = value(keyID, defaultKeyID)
-	if v.KeyID != defaultKeyID {
-		return awserror.New("InvalidKeyId", "TinyStack supports only the AWS managed key "+defaultKeyID+".")
-	}
-
+	v.KeyID = value(keyID, value(&v.KeyID, defaultKeyID))
 	return nil
 }
 
@@ -288,19 +326,30 @@ func (s *Service) GetParameter(ctx context.Context, in *api.GetParameterRequest)
 		return nil, validation("Name is required.")
 	}
 
+	decrypt := in.WithDecryption != nil && *in.WithDecryption
 	var out *api.GetParameterResult
+	var got *version
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		p, v, selector, resolveErr := resolve(tx, m.Scope, *in.Name)
 		if resolveErr != nil {
 			return resolveErr
 		}
 
-		param := v.parameter(m.Scope, p.Name, selector, in.WithDecryption != nil && *in.WithDecryption)
-		out = &api.GetParameterResult{Parameter: &param}
+		param := v.parameter(m.Scope, p.Name, selector, decrypt)
+		out, got = &api.GetParameterResult{Parameter: &param}, v
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return out, err
+	if decrypt {
+		if keyErr := s.decrypting(ctx, m.Scope, []*version{got}); keyErr != nil {
+			return nil, keyErr
+		}
+	}
+
+	return out, nil
 }
 
 // checkBatch requires 1 to 10 names.
@@ -325,6 +374,7 @@ func (s *Service) GetParameters(ctx context.Context, in *api.GetParametersReques
 
 	out := &api.GetParametersResult{Parameters: []api.Parameter{}, InvalidParameters: []string{}}
 	decrypt := in.WithDecryption != nil && *in.WithDecryption
+	var versions []*version
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		seen := map[string]bool{}
 		for _, name := range in.Names {
@@ -344,12 +394,22 @@ func (s *Service) GetParameters(ctx context.Context, in *api.GetParametersReques
 			}
 
 			out.Parameters = append(out.Parameters, v.parameter(m.Scope, p.Name, selector, decrypt))
+			versions = append(versions, v)
 		}
 
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return out, err
+	if decrypt {
+		if keyErr := s.decrypting(ctx, m.Scope, versions); keyErr != nil {
+			return nil, keyErr
+		}
+	}
+
+	return out, nil
 }
 
 // deleteParameter removes a parameter with every version, label, and tag.

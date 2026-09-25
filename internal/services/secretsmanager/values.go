@@ -49,6 +49,15 @@ func (s *Service) PutSecretValue(
 		}
 	}
 
+	key, err := s.keyOf(ctx, m.Scope, in.SecretId)
+	if err != nil {
+		return nil, err
+	}
+
+	if keyErr := s.useKey(ctx, m.Scope, key, "EncryptionFailure"); keyErr != nil {
+		return nil, keyErr
+	}
+
 	now := s.now()
 	var out *api.PutSecretValueResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -85,11 +94,14 @@ func (s *Service) GetSecretValue(
 	}
 
 	var out *api.GetSecretValueResponse
+	var key string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		sec, findErr := findLive(tx, m.Scope, in.SecretId, s.now())
 		if findErr != nil {
 			return findErr
 		}
+
+		key = sec.KmsKeyID
 
 		id, resolveErr := sec.resolve(in.VersionId, in.VersionStage)
 		if resolveErr != nil {
@@ -113,8 +125,15 @@ func (s *Service) GetSecretValue(
 
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return out, err
+	if keyErr := s.useKey(ctx, m.Scope, key, "DecryptionFailure"); keyErr != nil {
+		return nil, keyErr
+	}
+
+	return out, nil
 }
 
 // resolve returns the version ID that a version ID and staging label select.

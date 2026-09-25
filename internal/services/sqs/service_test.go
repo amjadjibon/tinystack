@@ -7,11 +7,13 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
 func TestStopReleasesLongPolls(t *testing.T) {
-	s := New(&memory.Store{})
+	store := &memory.Store{}
+	s := New(store, kms.New(store))
 	ctx := request.WithMetadata(context.Background(), request.Metadata{
 		Scope:    request.Scope{AccountID: "000000000000", Region: "us-east-1"},
 		Endpoint: "http://local",

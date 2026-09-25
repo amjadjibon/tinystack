@@ -299,6 +299,20 @@ func (s *Service) change(ctx context.Context, ref *string, fn func(request.Scope
 	})
 }
 
+// Check reports why the key that ref (a key ID, key ARN, alias name, or alias
+// ARN) names in scope cannot encrypt or decrypt, for services that accept a
+// customer managed key. It returns KMS's own error, which callers translate.
+func (s *Service) Check(ctx context.Context, scope request.Scope, ref string) error {
+	return s.store.View(ctx, func(tx storage.ReadTx) error {
+		k, err := s.load(tx, scope, &ref, true)
+		if err != nil {
+			return err
+		}
+
+		return k.usable(scope)
+	})
+}
+
 // page returns the items after marker, at most limit of them (from 1 to most,
 // def by default), and the marker of the next page. items must be sorted by
 // id, and a marker holds the last returned item's id.

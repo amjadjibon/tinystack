@@ -17,6 +17,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -28,12 +29,16 @@ const (
 	attrFifoQueue                 = "FifoQueue"
 	attrContentBasedDeduplication = "ContentBasedDeduplication"
 	attrRedrivePolicy             = "RedrivePolicy"
+	attrKmsMasterKeyID            = "KmsMasterKeyId"
+	attrKmsDataKeyReusePeriod     = "KmsDataKeyReusePeriodSeconds"
+	attrSqsManagedSseEnabled      = "SqsManagedSseEnabled"
 )
 
 var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store    storage.Store
+	keys     *kms.Service
 	now      func() time.Time
 	ready    map[string]chan struct{}
 	stop     chan struct{}
@@ -41,8 +46,15 @@ type Service struct {
 	stopOnce sync.Once
 }
 
-func New(store storage.Store) *Service {
-	return &Service{store: store, now: time.Now, ready: map[string]chan struct{}{}, stop: make(chan struct{})}
+// New returns SQS; keys checks the customer managed keys of encrypted queues.
+func New(store storage.Store, keys *kms.Service) *Service {
+	return &Service{
+		store: store,
+		keys:  keys,
+		now:   time.Now,
+		ready: map[string]chan struct{}{},
+		stop:  make(chan struct{}),
+	}
 }
 
 // Stop ends pending long polls with empty results so the server can drain.
@@ -74,15 +86,21 @@ func (s *Service) notify(key string) {
 // settings are the writable queue attributes. The redrive fields hold a parsed
 // RedrivePolicy and are empty when the queue has no dead-letter queue.
 type settings struct {
-	DeadLetterTargetArn           string `json:",omitempty"`
+	DeadLetterTargetArn string `json:",omitempty"`
+	// KmsMasterKeyID turns on SSE-KMS; KmsDataKeyReusePeriodSeconds applies
+	// only then, and zero means the default. Without a KMS key, the queue uses
+	// SSE-SQS unless SqsManagedSseDisabled.
+	KmsMasterKeyID                string `json:",omitempty"`
+	KmsDataKeyReusePeriodSeconds  int64  `json:",omitempty"`
 	MaxReceiveCount               int64  `json:",omitempty"`
-	FifoQueue                     bool   `json:",omitempty"`
-	ContentBasedDeduplication     bool   `json:",omitempty"`
 	DelaySeconds                  int64
 	VisibilityTimeout             int64
 	MaximumMessageSize            int64
 	MessageRetentionPeriod        int64
 	ReceiveMessageWaitTimeSeconds int64
+	FifoQueue                     bool `json:",omitempty"`
+	ContentBasedDeduplication     bool `json:",omitempty"`
+	SqsManagedSseDisabled         bool `json:",omitempty"`
 }
 
 // queue is one stored queue. FIFO queues also keep the deduplication window
@@ -254,6 +272,7 @@ func (st *settings) apply(attributes map[string]string) error {
 	}
 
 	sort.Strings(names)
+	managedSSE := false
 	for _, name := range names {
 		var field *int64
 		var lo, hi int64
@@ -271,6 +290,19 @@ func (st *settings) apply(attributes map[string]string) error {
 			}
 
 			continue
+		case attrSqsManagedSseEnabled:
+			v, err := parseBool(name, attributes[name])
+			if err != nil {
+				return err
+			}
+
+			st.SqsManagedSseDisabled, managedSSE = !v, v
+			continue
+		case attrKmsMasterKeyID:
+			st.KmsMasterKeyID = attributes[name]
+			continue
+		case attrKmsDataKeyReusePeriod:
+			field, lo, hi = &st.KmsDataKeyReusePeriodSeconds, 60, 86400
 		case attrRedrivePolicy:
 			if guardErr := st.redrive(attributes[name]); guardErr != nil {
 				return guardErr
@@ -300,6 +332,16 @@ func (st *settings) apply(attributes map[string]string) error {
 		}
 
 		*field = n
+	}
+
+	if st.KmsMasterKeyID != "" && managedSSE {
+		return awserror.New("InvalidAttributeName", "You can use one type of server-side encryption (SSE) at "+
+			"one time. You can either enable KMS SSE or SQS SSE.")
+	}
+
+	// Zero is the default period, so asking for it matches a queue that did not.
+	if st.KmsDataKeyReusePeriodSeconds == defaultReusePeriod {
+		st.KmsDataKeyReusePeriodSeconds = 0
 	}
 
 	if st.ContentBasedDeduplication && !st.FifoQueue {

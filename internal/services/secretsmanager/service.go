@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -20,6 +21,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -47,11 +49,14 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store storage.Store
+	keys  *kms.Service
 	now   func() time.Time
 }
 
-func New(store storage.Store) *Service {
-	return &Service{store: store, now: time.Now}
+// New returns Secrets Manager; keys checks the customer managed keys secrets
+// name.
+func New(store storage.Store, keys *kms.Service) *Service {
+	return &Service{store: store, keys: keys, now: time.Now}
 }
 
 // secret is a secret's metadata.
@@ -337,13 +342,35 @@ func checkStage(stage string) error {
 	return nil
 }
 
-// checkKey accepts only the AWS managed key, the one TinyStack has.
-func checkKey(keyID *string) error {
-	if keyID != nil && *keyID != defaultKeyID {
-		return invalidParameter("TinyStack supports only the AWS managed key %s.", defaultKeyID)
+// useKey reports why the key id (empty for the AWS managed key, which needs no
+// check) cannot be used, with code: EncryptionFailure or DecryptionFailure.
+func (s *Service) useKey(ctx context.Context, scope request.Scope, id, code string) error {
+	if id == "" || id == defaultKeyID {
+		return nil
 	}
 
-	return nil
+	err := s.keys.Check(ctx, scope, id)
+	if e, ok := errors.AsType[*awserror.Error](err); ok {
+		return awserror.New(code, e.Message)
+	}
+
+	return err
+}
+
+// keyOf returns the key of the live secret that id names.
+func (s *Service) keyOf(ctx context.Context, scope request.Scope, id *string) (string, error) {
+	var key string
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		sec, findErr := findLive(tx, scope, id, s.now())
+		if findErr != nil {
+			return findErr
+		}
+
+		key = sec.KmsKeyID
+		return nil
+	})
+
+	return key, err
 }
 
 func checkDescription(description *string) error {

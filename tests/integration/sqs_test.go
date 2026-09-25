@@ -62,15 +62,6 @@ func TestSQSLifecycle(t *testing.T) {
 		t.Fatalf("conflicting CreateQueue: %v", err)
 	}
 
-	_, err = c.CreateQueue(ctx, &sqs.CreateQueueInput{
-		QueueName:  aws.String("encrypted"),
-		Attributes: map[string]string{"KmsMasterKeyId": "alias/aws/sqs"},
-	})
-	var badName *types.InvalidAttributeName
-	if !errors.As(err, &badName) {
-		t.Fatalf("unsupported attribute accepted: %v", err)
-	}
-
 	createQueue(t, c, "orders-dlq", nil)
 	createQueue(t, c, "emails", nil)
 

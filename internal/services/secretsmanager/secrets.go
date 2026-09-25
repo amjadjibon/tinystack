@@ -32,15 +32,18 @@ func (s *Service) CreateSecret(ctx context.Context, in *api.CreateSecretRequest)
 		return nil, err
 	}
 
-	for _, check := range []error{checkToken(in.ClientRequestToken), checkKey(in.KmsKeyId), checkDescription(
-		in.Description,
-	)} {
+	for _, check := range []error{checkToken(in.ClientRequestToken), checkDescription(in.Description)} {
 		if check != nil {
 			return nil, check
 		}
 	}
 
 	tags, err := tagMap(in.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.useKey(ctx, m.Scope, value0(in.KmsKeyId), "EncryptionFailure")
 	if err != nil {
 		return nil, err
 	}
@@ -265,12 +268,22 @@ func (s *Service) UpdateSecret(ctx context.Context, in *api.UpdateSecretRequest)
 		return nil, err
 	}
 
-	for _, check := range []error{checkToken(in.ClientRequestToken), checkKey(in.KmsKeyId), checkDescription(
-		in.Description,
-	)} {
+	for _, check := range []error{checkToken(in.ClientRequestToken), checkDescription(in.Description)} {
 		if check != nil {
 			return nil, check
 		}
+	}
+
+	// The new value is sealed with the new key, or the secret's current one.
+	key := value0(in.KmsKeyId)
+	if key == "" && hasValue {
+		if key, err = s.keyOf(ctx, m.Scope, in.SecretId); err != nil {
+			return nil, err
+		}
+	}
+
+	if keyErr := s.useKey(ctx, m.Scope, key, "EncryptionFailure"); keyErr != nil {
+		return nil, keyErr
 	}
 
 	now := s.now()

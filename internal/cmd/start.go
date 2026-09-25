@@ -91,7 +91,8 @@ func newStartCommand() *cobra.Command {
 			tables := dynamodb.New(store)
 			// Stop ends the TTL sweeper, which writes to the store.
 			defer tables.Stop()
-			queues := sqs.New(store)
+			keys := kms.New(store)
+			queues := sqs.New(store, keys)
 			logGroups := logs.New(store)
 			functions := lambda.New(
 				store,
@@ -125,10 +126,10 @@ func newStartCommand() *cobra.Command {
 				eventbridgeapi.Descriptor(rules),
 				iamapi.Descriptor(roles),
 				stsapi.Descriptor(tokens),
-				ssmapi.Descriptor(ssm.New(store)),
-				secretsmanagerapi.Descriptor(secretsmanager.New(store)),
+				ssmapi.Descriptor(ssm.New(store, keys)),
+				secretsmanagerapi.Descriptor(secretsmanager.New(store, keys)),
 				logsapi.Descriptor(logGroups),
-				kmsapi.Descriptor(kms.New(store)),
+				kmsapi.Descriptor(keys),
 			)
 			if err != nil {
 				return err

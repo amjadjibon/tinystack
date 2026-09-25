@@ -120,6 +120,12 @@ func (q *queue) attributes(key string, now int64) map[string]string {
 		out[attrContentBasedDeduplication] = strconv.FormatBool(st.ContentBasedDeduplication)
 	}
 
+	out[attrSqsManagedSseEnabled] = strconv.FormatBool(st.KmsMasterKeyID == "" && !st.SqsManagedSseDisabled)
+	if st.KmsMasterKeyID != "" {
+		out[attrKmsMasterKeyID] = st.KmsMasterKeyID
+		out[attrKmsDataKeyReusePeriod] = format(st.reusePeriod())
+	}
+
 	if st.DeadLetterTargetArn != "" {
 		policy, _ := json.Marshal(map[string]any{
 			"deadLetterTargetArn": st.DeadLetterTargetArn,
@@ -167,7 +173,7 @@ func (s *Service) GetQueueAttributes(
 
 			out.Attributes[name] = v
 		// Known attributes that are unset or do not apply to this queue are omitted.
-		case name != attrRedrivePolicy && name != attrFifoQueue && name != attrContentBasedDeduplication:
+		case !optionalAttributes[name]:
 			return nil, awserror.New("InvalidAttributeName", fmt.Sprintf("Unknown or unsupported attribute %s.", name))
 		}
 	}

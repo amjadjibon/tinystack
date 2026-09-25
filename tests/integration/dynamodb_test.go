@@ -94,7 +94,8 @@ func serverStore(
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	deliveries := delivery.New()
 	tables := provider.New(store)
-	sqsService := queues.New(store)
+	keys := kms.New(store)
+	sqsService := queues.New(store, keys)
 	logGroups := logs.New(store)
 	functions := lambda.New(
 		store,
@@ -126,10 +127,10 @@ func serverStore(
 		eventbridgeapi.Descriptor(rules),
 		iamapi.Descriptor(roles),
 		stsapi.Descriptor(stsService),
-		ssmapi.Descriptor(parameters.New(store)),
-		secretsmanagerapi.Descriptor(secrets.New(store)),
+		ssmapi.Descriptor(parameters.New(store, keys)),
+		secretsmanagerapi.Descriptor(secrets.New(store, keys)),
 		logsapi.Descriptor(logGroups),
-		kmsapi.Descriptor(kms.New(store)),
+		kmsapi.Descriptor(keys),
 	)
 	if err != nil {
 		t.Fatal(err)

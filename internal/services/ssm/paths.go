@@ -181,7 +181,9 @@ func (s *Service) GetParametersByPath(
 
 	recursive := in.Recursive != nil && *in.Recursive
 	keep := func(name string) bool { return under(name, *in.Path, recursive) }
+	decrypt := in.WithDecryption != nil && *in.WithDecryption
 	out := &api.GetParametersByPathResult{Parameters: []api.Parameter{}}
+	var versions []*version
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		found, listErr := matching(tx, m.Scope, keep, filters)
 		if listErr != nil {
@@ -193,16 +195,25 @@ func (s *Service) GetParametersByPath(
 			return pageErr
 		}
 
-		decrypt := in.WithDecryption != nil && *in.WithDecryption
 		for _, c := range selected {
 			out.Parameters = append(out.Parameters, c.parameterOutput(m.Scope, decrypt))
+			versions = append(versions, c.version)
 		}
 
 		out.NextToken = next
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return out, err
+	if decrypt {
+		if keyErr := s.decrypting(ctx, m.Scope, versions); keyErr != nil {
+			return nil, keyErr
+		}
+	}
+
+	return out, nil
 }
 
 func (c current) parameterOutput(scope request.Scope, decrypt bool) api.Parameter {

@@ -41,6 +41,7 @@ func (s *Service) GetParameterHistory(
 
 	decrypt := in.WithDecryption != nil && *in.WithDecryption
 	out := &api.GetParameterHistoryResult{Parameters: []api.ParameterHistory{}}
+	var decrypted []*version
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		p, loadErr := loadParameter(tx, m.Scope, *in.Name)
 		if loadErr != nil {
@@ -65,6 +66,7 @@ func (s *Service) GetParameterHistory(
 		}
 
 		labels := labelsOf(p)
+		decrypted = selected
 		for _, v := range selected {
 			out.Parameters = append(out.Parameters, api.ParameterHistory{
 				Name:             new(p.Name),
@@ -84,8 +86,17 @@ func (s *Service) GetParameterHistory(
 		out.NextToken = next
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return out, err
+	if decrypt {
+		if keyErr := s.decrypting(ctx, m.Scope, decrypted); keyErr != nil {
+			return nil, keyErr
+		}
+	}
+
+	return out, nil
 }
 
 // checkLabels requires 1 to 10 labels.

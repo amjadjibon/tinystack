@@ -111,7 +111,6 @@ func TestSecretsLifecycle(t *testing.T) {
 	for _, in := range []*secretsmanager.CreateSecretInput{
 		{Name: aws.String("both"), SecretString: aws.String("a"), SecretBinary: []byte("b")},
 		{Name: aws.String("bad name!")},
-		{Name: aws.String("kms"), KmsKeyId: aws.String("alias/mine")},
 	} {
 		_, err = c.CreateSecret(ctx, in)
 		wantCode(t, err, "InvalidParameterException")

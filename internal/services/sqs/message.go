@@ -330,6 +330,10 @@ func (s *Service) send(ctx context.Context, key string, entry *api.SendMessageBa
 		return nil, err
 	}
 
+	if keyErr := s.useKey(ctx, key); keyErr != nil {
+		return nil, keyErr
+	}
+
 	now := s.now().UnixMilli()
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		q, loadErr := load(tx, key)
