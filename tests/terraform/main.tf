@@ -191,6 +191,30 @@ resource "aws_cloudwatch_event_target" "orders" {
   arn       = aws_sqs_queue.jobs.arn
 }
 
+resource "aws_cloudwatch_event_bus" "shop" {
+  name        = "shop"
+  description = "Events for ${var.team}"
+  tags        = local.tags
+}
+
+resource "aws_cloudwatch_event_rule" "paid" {
+  name           = "paid"
+  event_bus_name = aws_cloudwatch_event_bus.shop.name
+  event_pattern  = jsonencode({ source = ["shop"], "detail-type" = ["paid"] })
+}
+
+resource "aws_cloudwatch_event_target" "paid" {
+  rule           = aws_cloudwatch_event_rule.paid.name
+  event_bus_name = aws_cloudwatch_event_bus.shop.name
+  target_id      = "jobs"
+  arn            = aws_sqs_queue.jobs.arn
+
+  input_transformer {
+    input_paths    = { id = "$.detail.id" }
+    input_template = "{\"order\": <id>}"
+  }
+}
+
 resource "aws_iam_role" "lambda" {
   name        = "lambda"
   description = "Runs ${var.team} functions"
