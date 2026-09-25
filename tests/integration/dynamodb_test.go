@@ -23,6 +23,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
@@ -37,6 +38,7 @@ import (
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
+	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
@@ -115,6 +117,7 @@ func serverStore(
 		ssmapi.Descriptor(parameters.New(store)),
 		secretsmanagerapi.Descriptor(secrets.New(store)),
 		logsapi.Descriptor(logGroups),
+		kmsapi.Descriptor(kms.New(store)),
 	)
 	if err != nil {
 		t.Fatal(err)

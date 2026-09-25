@@ -20,6 +20,7 @@ provider "aws" {
     dynamodb       = var.endpoint
     eventbridge    = var.endpoint
     iam            = var.endpoint
+    kms            = var.endpoint
     lambda         = var.endpoint
     logs           = var.endpoint
     s3             = var.endpoint
@@ -226,4 +227,16 @@ resource "aws_secretsmanager_secret" "db" {
 resource "aws_secretsmanager_secret_version" "db" {
   secret_id     = aws_secretsmanager_secret.db.id
   secret_string = jsonencode({ user = var.team, password = "local" })
+}
+
+resource "aws_kms_key" "data" {
+  description             = "Data key for ${var.team}"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  tags                    = local.tags
+}
+
+resource "aws_kms_alias" "data" {
+  name          = "alias/data"
+  target_key_id = aws_kms_key.data.key_id
 }
