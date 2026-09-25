@@ -58,8 +58,13 @@ func decodeJSON(body []byte, v any) error {
 func Write(w http.ResponseWriter, b *catalog.Binding, output any) {
 	resp := rest.Encode(w, b, output)
 	body := resp.Payload
-	if resp.Document {
-		encoded, err := json.Marshal(output)
+	if resp.Document || resp.Structure != nil {
+		document := output
+		if resp.Structure != nil {
+			document = resp.Structure
+		}
+
+		encoded, err := json.Marshal(document)
 		if err != nil {
 			WriteError(w, awserror.From(err), "message")
 			return

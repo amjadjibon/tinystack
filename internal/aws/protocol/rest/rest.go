@@ -324,6 +324,10 @@ func formatScalar(v reflect.Value) string {
 
 // Response is a success response with its HTTP-bound members applied.
 type Response struct {
+	// Structure is a structure payload member, if set, for the codec to
+	// encode as the whole body; StructureName is its member name.
+	Structure     any
+	StructureName string
 	// Payload is the raw payload member, if any.
 	Payload []byte
 	// Status is the binding's status code unless an httpResponseCode member
@@ -348,8 +352,11 @@ func Encode(w http.ResponseWriter, b *catalog.Binding, output any) Response {
 				w.Header().Set(mb.Name+k, val)
 			}
 		case locationPayload:
-			if f.Kind() == reflect.Slice {
+			switch {
+			case f.Kind() == reflect.Slice:
 				resp.Payload = f.Bytes()
+			case f.Kind() == reflect.Pointer && !f.IsNil():
+				resp.Structure, resp.StructureName = f.Interface(), mb.Name
 			}
 		case locationStatus:
 			if !f.IsNil() && f.Elem().Int() != 0 {

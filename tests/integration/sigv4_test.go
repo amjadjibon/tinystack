@@ -225,9 +225,14 @@ func TestSigV4RejectedRequests(t *testing.T) {
 		},
 		{
 			// S3 routes no X-Amz-* query parameters, so presigned URLs stay unsupported.
-			name: "presigned", status: 501, want: "NotImplemented",
+			name: "malformed presigned", status: 400, want: "AuthorizationQueryParametersError",
 			request: func() *http.Request {
-				r, _ := http.NewRequestWithContext(context.Background(), "GET", s.URL+"/files/a?X-Amz-Signature=abc", http.NoBody)
+				r, _ := http.NewRequestWithContext(
+					context.Background(),
+					"GET",
+					s.URL+"/files/a?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=bad&X-Amz-Signature=abc",
+					http.NoBody,
+				)
 				return r
 			},
 		},

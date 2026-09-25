@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/rest"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
+	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 )
 
 // restMaxBody bounds REST payloads such as S3 objects, which are held in memory.
@@ -34,6 +35,13 @@ type route struct {
 	required []string
 	name     string
 	method   string
+	// id is the route's x-id literal; a request that sends another x-id does
+	// not match.
+	id string
+	// header is a request header the operation needs, such as the copy source
+	// that tells CopyObject from PutObject; a route that needs one outranks
+	// routes that do not.
+	header   string
 	segments []string
 	greedy   bool
 }
@@ -65,7 +73,10 @@ func routes(service *catalog.Service) []route {
 		}
 
 		for _, pair := range strings.Split(rawQuery, "&") {
-			if k, v, _ := strings.Cut(pair, "="); k != "" && k != "x-id" {
+			switch k, v, _ := strings.Cut(pair, "="); {
+			case k == "x-id":
+				rt.id = v
+			case k != "":
 				rt.literals[k] = v
 				rt.allowed[k] = true
 			}
@@ -84,6 +95,8 @@ func routes(service *catalog.Service) []route {
 			rt.required = []string{"uploadId", "partNumber"}
 		case "ListParts", "CompleteMultipartUpload", "AbortMultipartUpload":
 			rt.required = []string{"uploadId"}
+		case "CopyObject":
+			rt.header = "X-Amz-Copy-Source"
 		}
 
 		out = append(out, rt)
@@ -92,9 +105,33 @@ func routes(service *catalog.Service) []route {
 	return out
 }
 
+// score ranks a matching route: routes that need a header and then routes with
+// more query literals are more specific.
+func (rt *route) score() int {
+	n := len(rt.literals)
+	if rt.header != "" {
+		n += 100
+	}
+
+	return n
+}
+
 // match binds the request path segments to the route's labels.
-func (rt *route) match(method string, segments []string, query url.Values) (map[string]string, bool) {
+func (rt *route) match(
+	method string,
+	segments []string,
+	query url.Values,
+	header http.Header,
+) (map[string]string, bool) {
 	if method != rt.method || len(segments) < len(rt.segments) || (!rt.greedy && len(segments) != len(rt.segments)) {
+		return nil, false
+	}
+
+	if id := query.Get("x-id"); id != "" && rt.id != "" && id != rt.id {
+		return nil, false
+	}
+
+	if rt.header != "" && header.Get(rt.header) == "" {
 		return nil, false
 	}
 
@@ -188,13 +225,21 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 		}
 	}
 
+	// A presigned URL's signature parameters belong to no operation.
 	query := r.URL.Query()
-	best, bestLiterals := -1, -1
+	for k := range query {
+		if sigv4.QueryParameter(k) {
+			delete(query, k)
+		}
+	}
+
+	best, bestScore := -1, -1
 	var labels map[string]string
 	routes := s.routes[c.service.Name]
 	for i := range routes {
-		if found, ok := routes[i].match(r.Method, segments, query); ok && len(routes[i].literals) > bestLiterals {
-			best, bestLiterals, labels = i, len(routes[i].literals), found
+		found, ok := routes[i].match(r.Method, segments, query, r.Header)
+		if ok && routes[i].score() > bestScore {
+			best, bestScore, labels = i, routes[i].score(), found
 		}
 	}
 

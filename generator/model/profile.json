@@ -761,7 +761,11 @@
       "AbortMultipartUpload",
       "ListMultipartUploads",
       "PutBucketNotificationConfiguration",
-      "GetBucketNotificationConfiguration"
+      "GetBucketNotificationConfiguration",
+      "CopyObject",
+      "GetObjectTagging",
+      "PutObjectTagging",
+      "DeleteObjectTagging"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -824,7 +828,8 @@
         "ChecksumCRC32C",
         "ChecksumCRC64NVME",
         "ChecksumSHA1",
-        "ChecksumSHA256"
+        "ChecksumSHA256",
+        "Tagging"
       ],
       "PutObjectOutput": [
         "ETag"
@@ -846,7 +851,8 @@
         "ContentType",
         "ETag",
         "LastModified",
-        "Metadata"
+        "Metadata",
+        "TagCount"
       ],
       "HeadObjectRequest": [
         "Bucket",
@@ -1047,7 +1053,50 @@
       "GetBucketNotificationConfigurationRequest": [
         "Bucket",
         "ExpectedBucketOwner"
-      ]
+      ],
+      "CopyObjectRequest": [
+        "Bucket",
+        "Key",
+        "CopySource",
+        "CopySourceIfMatch",
+        "CopySourceIfNoneMatch",
+        "MetadataDirective",
+        "Metadata",
+        "ContentType",
+        "TaggingDirective",
+        "Tagging",
+        "StorageClass",
+        "ExpectedBucketOwner",
+        "ExpectedSourceBucketOwner"
+      ],
+      "CopyObjectOutput": [
+        "CopyObjectResult"
+      ],
+      "CopyObjectResult": [
+        "ETag",
+        "LastModified"
+      ],
+      "GetObjectTaggingRequest": [
+        "Bucket",
+        "Key",
+        "ExpectedBucketOwner"
+      ],
+      "GetObjectTaggingOutput": [
+        "TagSet"
+      ],
+      "PutObjectTaggingRequest": [
+        "Bucket",
+        "Key",
+        "Tagging",
+        "ExpectedBucketOwner"
+      ],
+      "PutObjectTaggingOutput": [],
+      "DeleteObjectTaggingRequest": [
+        "Bucket",
+        "Key",
+        "ExpectedBucketOwner"
+      ],
+      "DeleteObjectTaggingOutput": []
     }
   },
   "lambda": {

@@ -24,7 +24,6 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/recent"
 )
@@ -143,14 +142,9 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 		}
 	}
 
-	auth := r.Header.Get("Authorization")
-	if auth == "" {
-		return "", nil
-	}
-
-	a, err := sigv4.Parse(auth)
-	if err != nil {
-		return "", awserror.New("IncompleteSignatureException", "Invalid Authorization header: "+err.Error())
+	a, signed, err := signature(r)
+	if err != nil || !signed {
+		return "", err
 	}
 
 	m.AccessKey = a.AccessKey

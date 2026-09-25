@@ -1,4 +1,5 @@
-// Package sigv4 parses and verifies AWS Signature Version 4 Authorization headers.
+// Package sigv4 parses and verifies AWS Signature Version 4 Authorization
+// headers and presigned URLs.
 package sigv4
 
 import (
@@ -19,10 +20,21 @@ const (
 	// Algorithm is the only signing algorithm TinyStack accepts.
 	Algorithm = "AWS4-HMAC-SHA256"
 	// MaxSkew is how far a request's signing time may be from the server clock.
-	MaxSkew    = 15 * time.Minute
+	MaxSkew = 15 * time.Minute
+	// MaxExpires is the longest a presigned URL may be valid.
+	MaxExpires = 7 * 24 * time.Hour
 	timeFormat = "20060102T150405Z"
 	dateFormat = "20060102"
 	terminator = "aws4_request"
+	// Query parameters of a presigned URL.
+	queryAlgorithm     = "X-Amz-Algorithm"
+	queryCredential    = "X-Amz-Credential" // #nosec G101 -- a parameter name, not a credential.
+	queryDate          = "X-Amz-Date"
+	queryExpires       = "X-Amz-Expires"
+	querySignedHeaders = "X-Amz-SignedHeaders"
+	querySignature     = "X-Amz-Signature"
+	// QuerySecurityToken carries a presigned URL's session token.
+	QuerySecurityToken = "X-Amz-Security-Token" // #nosec G101 -- a parameter name, not a credential.
 )
 
 var (
@@ -35,10 +47,12 @@ var (
 	ErrMismatch = errors.New("signature does not match")
 )
 
-// Authorization is a parsed SigV4 Authorization header.
+// Authorization is a parsed SigV4 Authorization header or presigned URL.
 type Authorization struct {
 	AccessKey, Date, Region, Service, Signature string
 	SignedHeaders                               []string
+	// Expires is how long a presigned URL is valid; it is zero for a header.
+	Expires time.Duration
 }
 
 // Parse parses an Authorization header. SignedHeaders and Signature may be
@@ -63,14 +77,59 @@ func Parse(header string) (*Authorization, error) {
 		}
 	}
 
+	err := a.setCredential(credential)
+	return a, err
+}
+
+// setCredential parses a credential scope,
+// "<access key>/<date>/<region>/<service>/aws4_request".
+func (a *Authorization) setCredential(credential string) error {
 	scope := strings.Split(credential, "/")
 	if len(scope) != 5 || scope[0] == "" || len(scope[1]) != 8 || scope[2] == "" || scope[3] == "" ||
 		scope[4] != terminator {
-		return nil, errors.New("malformed credential scope")
+		return errors.New("malformed credential scope")
 	}
 
 	a.AccessKey, a.Date, a.Region, a.Service = scope[0], scope[1], scope[2], scope[3]
-	return a, nil
+	return nil
+}
+
+// Presigned reports whether query holds a presigned URL's signature.
+func Presigned(query url.Values) bool {
+	return query.Has(queryAlgorithm) || query.Has(queryCredential)
+}
+
+// QueryParameter reports whether name is a signature parameter of a presigned
+// URL rather than a parameter of the operation.
+func QueryParameter(name string) bool {
+	switch name {
+	case queryAlgorithm, queryCredential, queryDate, queryExpires, querySignedHeaders, querySignature,
+		QuerySecurityToken:
+		return true
+	default:
+		return false
+	}
+}
+
+// ParseQuery parses the signature of a presigned URL. Signature may be empty;
+// Verify rejects it.
+func ParseQuery(query url.Values) (*Authorization, error) {
+	if query.Get(queryAlgorithm) != Algorithm {
+		return nil, errors.New("expected " + queryAlgorithm + "=" + Algorithm)
+	}
+
+	seconds, err := strconv.Atoi(query.Get(queryExpires))
+	if err != nil || seconds < 1 || time.Duration(seconds)*time.Second > MaxExpires {
+		return nil, errors.New(queryExpires + " must be between 1 and 604800 seconds")
+	}
+
+	a := &Authorization{Signature: query.Get(querySignature), Expires: time.Duration(seconds) * time.Second}
+	if headers := query.Get(querySignedHeaders); headers != "" {
+		a.SignedHeaders = strings.Split(headers, ";")
+	}
+
+	err = a.setCredential(query.Get(queryCredential))
+	return a, err
 }
 
 func (a *Authorization) scope() string {
@@ -78,24 +137,43 @@ func (a *Authorization) scope() string {
 }
 
 // Verify checks that a signed r with the given payload hash (the hex SHA-256 of
-// the body, or a literal such as UNSIGNED-PAYLOAD) was signed with secret at a
-// time within MaxSkew of now. S3 signs its URI path as sent; other services
-// encode it once more.
+// the body, or a literal such as UNSIGNED-PAYLOAD) was signed with secret. A
+// header signature must be from within MaxSkew of now; a presigned URL is
+// valid from its signing time until it expires. S3 signs its URI path as sent;
+// other services encode it once more.
 func Verify(r *http.Request, a *Authorization, secret, payloadHash string, s3 bool, now time.Time) error {
 	if a.Signature == "" || len(a.SignedHeaders) == 0 || !slices.Contains(a.SignedHeaders, "host") {
-		return errors.Join(ErrMalformed, errors.New("the Authorization header must sign at least the host header"))
+		return errors.Join(ErrMalformed, errors.New("the signature must sign at least the host header"))
 	}
 
-	signedAt, err := requestTime(r, a)
-	if err != nil {
-		return err
+	query := r.URL.RawQuery
+	var signedAt time.Time
+	var err error
+	if a.Expires == 0 {
+		if signedAt, err = requestTime(r, a); err != nil {
+			return err
+		}
+
+		if skew := now.Sub(signedAt); skew > MaxSkew || skew < -MaxSkew {
+			return ErrExpired
+		}
+	} else {
+		values := r.URL.Query()
+		if signedAt, err = time.Parse(timeFormat, values.Get(queryDate)); err != nil ||
+			signedAt.Format(dateFormat) != a.Date {
+			return errors.Join(ErrMalformed, errors.New("X-Amz-Date must be the credential date's signing time"))
+		}
+
+		if now.Before(signedAt.Add(-MaxSkew)) || now.After(signedAt.Add(a.Expires)) {
+			return ErrExpired
+		}
+
+		// The signature signs every other parameter.
+		values.Del(querySignature)
+		query = values.Encode()
 	}
 
-	if skew := now.Sub(signedAt); skew > MaxSkew || skew < -MaxSkew {
-		return ErrExpired
-	}
-
-	canonical, err := canonicalRequest(r, a.SignedHeaders, payloadHash, s3)
+	canonical, err := canonicalRequest(r, query, a.SignedHeaders, payloadHash, s3)
 	if err != nil {
 		return err
 	}
@@ -138,8 +216,15 @@ func requestTime(r *http.Request, a *Authorization) (time.Time, error) {
 	return signedAt.UTC(), nil
 }
 
-// canonicalRequest builds the SigV4 canonical request string.
-func canonicalRequest(r *http.Request, signedHeaders []string, payloadHash string, s3 bool) (string, error) {
+// canonicalRequest builds the SigV4 canonical request string of r with the
+// given raw query.
+func canonicalRequest(
+	r *http.Request,
+	rawQuery string,
+	signedHeaders []string,
+	payloadHash string,
+	s3 bool,
+) (string, error) {
 	path := r.URL.EscapedPath()
 	if path == "" {
 		path = "/"
@@ -149,7 +234,7 @@ func canonicalRequest(r *http.Request, signedHeaders []string, payloadHash strin
 		path = escape(path, false)
 	}
 
-	query, err := canonicalQuery(r.URL.RawQuery)
+	query, err := canonicalQuery(rawQuery)
 	if err != nil {
 		return "", err
 	}

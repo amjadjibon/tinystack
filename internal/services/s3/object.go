@@ -35,6 +35,7 @@ const (
 // object is the stored metadata of one object; its bytes are a separate record.
 type object struct {
 	Metadata     map[string]string `json:",omitempty"`
+	Tags         map[string]string `json:",omitempty"`
 	ETag         string
 	ContentType  string
 	Size         int64
@@ -156,6 +157,11 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		return nil, guardErr
 	}
 
+	tags, err := headerTags(in.Tagging)
+	if err != nil {
+		return nil, err
+	}
+
 	sum := md5.Sum(in.Body) // #nosec G401 -- S3 ETags are MD5 digests.
 	obj := object{
 		ETag:         `"` + hex.EncodeToString(sum[:]) + `"`,
@@ -163,6 +169,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		Size:         int64(len(in.Body)),
 		LastModified: s.now().UnixMilli(),
 		Metadata:     in.Metadata,
+		Tags:         tags,
 	}
 
 	if obj.ContentType == "" {
@@ -279,6 +286,10 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
 	}
+	if len(obj.Tags) > 0 {
+		out.TagCount = new(int64(len(obj.Tags)))
+	}
+
 	if in.Range != nil {
 		interval, rangeErr := parseRange(*in.Range, obj.Size)
 		if rangeErr != nil {

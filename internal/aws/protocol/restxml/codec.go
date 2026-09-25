@@ -69,14 +69,25 @@ func decodeXML(body []byte, v any) error {
 func Write(w http.ResponseWriter, b *catalog.Binding, output any, head bool) {
 	resp := rest.Encode(w, b, output)
 	body := resp.Payload
-	if resp.Document {
-		encoded, err := xml.Marshal(output)
+	if resp.Document || resp.Structure != nil {
+		var encoded bytes.Buffer
+		var err error
+		if resp.Structure != nil {
+			// A structure payload is the body, named after its member.
+			err = xml.NewEncoder(&encoded).EncodeElement(
+				resp.Structure,
+				xml.StartElement{Name: xml.Name{Local: resp.StructureName}},
+			)
+		} else {
+			err = xml.NewEncoder(&encoded).Encode(output)
+		}
+
 		if err != nil {
 			WriteError(w, awserror.From(err), "", head)
 			return
 		}
 
-		body = append([]byte(xml.Header), encoded...)
+		body = append([]byte(xml.Header), encoded.Bytes()...)
 		w.Header().Set("Content-Type", "application/xml")
 	}
 

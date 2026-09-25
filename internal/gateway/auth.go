@@ -69,6 +69,30 @@ func authError(protocol string, failure authFailure) error {
 	return &awserror.Error{Code: codes[failure], Message: authMessages[failure], StatusCode: status}
 }
 
+// signature parses the request's SigV4 signature from its Authorization
+// header or, for a presigned URL, its query. signed is false for an unsigned
+// request.
+func signature(r *http.Request) (a *sigv4.Authorization, signed bool, err error) {
+	if header := r.Header.Get("Authorization"); header != "" {
+		if a, err = sigv4.Parse(header); err != nil {
+			return nil, true, awserror.New("IncompleteSignatureException", "Invalid Authorization header: "+err.Error())
+		}
+
+		return a, true, nil
+	}
+
+	query := r.URL.Query()
+	if !sigv4.Presigned(query) {
+		return nil, false, nil
+	}
+
+	if a, err = sigv4.ParseQuery(query); err != nil {
+		return nil, true, awserror.New("AuthorizationQueryParametersError", "Invalid presigned URL: "+err.Error())
+	}
+
+	return a, true, nil
+}
+
 // authenticate verifies the request's SigV4 signature in identity.mode verify.
 // It runs once the service is known, so S3 can use its path and payload rules.
 func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) error {
@@ -77,21 +101,24 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 	}
 
 	protocol := c.meta.Protocol
-	header := r.Header.Get("Authorization")
-	if header == "" {
-		return authError(protocol, missingToken)
-	}
-
-	// identify has already parsed the header.
-	a, err := sigv4.Parse(header)
+	// identify has already parsed the signature.
+	a, signed, err := signature(r)
 	if err != nil {
 		return err
+	}
+
+	if !signed {
+		return authError(protocol, missingToken)
 	}
 
 	secret, ok := s.cfg.Identity.SecretKeys[a.AccessKey]
 	if !ok {
 		// A temporary key must come with its session's token.
 		token := r.Header.Get("X-Amz-Security-Token")
+		if a.Expires != 0 {
+			token = r.URL.Query().Get(sigv4.QuerySecurityToken)
+		}
+
 		if c.session == nil || subtle.ConstantTimeCompare([]byte(token), []byte(c.session.Token)) != 1 {
 			return authError(protocol, unknownKey)
 		}
@@ -100,13 +127,18 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 	}
 
 	s3 := c.service.SigningName == "s3"
-	payloadHash, err := s.payloadHash(w, r, c, s3)
-	if err != nil {
-		return err
+	payloadHash := "UNSIGNED-PAYLOAD"
+	// A presigned S3 URL leaves the payload unsigned.
+	if !s3 || a.Expires == 0 {
+		if payloadHash, err = s.payloadHash(w, r, c, s3); err != nil {
+			return err
+		}
 	}
 
 	err = sigv4.Verify(r, a, secret, payloadHash, s3, time.Now())
 	switch {
+	case errors.Is(err, sigv4.ErrExpired) && a.Expires != 0 && protocol == catalog.RESTXML:
+		return &awserror.Error{Code: "AccessDenied", Message: "Request has expired", StatusCode: http.StatusForbidden}
 	case errors.Is(err, sigv4.ErrExpired):
 		return authError(protocol, expired)
 	case errors.Is(err, sigv4.ErrMalformed):
