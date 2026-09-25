@@ -100,7 +100,12 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   count and size current; `expression.go` lexes and parses condition, key, filter, projection, and update expressions
   and `evaluate.go` runs them, all inside the operation's transaction; secondary indexes have no records of their own,
   since `indexes.go` derives them from the items at read time, and `TransactWriteItems` tokens live under
-  `…/dynamodb-token/`).
+  `…/dynamodb-token/`). Each write that changes an item appends a stream record, in the same transaction, when the
+  table has a stream (`stream.go`): streams are `…/dynamodb-stream/<table>/<label>` and records
+  `…/dynamodb-record/<table>/<label>/<zero-padded sequence>`, numbered from the table record's counter.
+  `dynamodb.Service.Streams()` serves the DynamoDB Streams API from the same store. TTL-enabled tables are indexed
+  under the partition-wide `aws/dynamodb/ttl/<account>/<region>/<table>`, which the service's sweeper (stopped by
+  `Stop`, deferred and a shutdown hook in `start.go`) reads every second to delete expired items.
   Resource tags live in that record (S3: the bucket's regional metadata record); `services/tagging` holds the shared
   limits (50 tags, 128-character keys, 256-character values), and each service reports violations with its own code.
   Scoping comes from request metadata, which is how account/region isolation works. SQS long polling registers `watch`
@@ -119,7 +124,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   pooling warm containers that run the AWS base images' Runtime Interface Emulator). Pollers and async invocations
   run on the service's own context; `Stop` (a shutdown hook, also deferred in `start.go`) ends them and removes every
   container. SNS invokes subscribed functions through `lambda.Service.InvokeAsync`, and mappings read SQS in-process
-  via `sqs.QueueURL`. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus
+  via `sqs.QueueURL` and DynamoDB streams through `dynamodb.Streams`, storing each stream mapping's cursor. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus
   only), matches `PutEvents` entries against compiled patterns (`services/pattern`, shared with SNS filter policies through
 a per-service `Dialect`), and delivers synchronously through
   `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. SSM Parameter Store keeps each
@@ -163,7 +168,7 @@ a per-service `Dialect`), and delivers synchronously through
 
 ## Tests
 
-- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS, IAM, and STS over Query, S3 over REST
+- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, and KMS over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.

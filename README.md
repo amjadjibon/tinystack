@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, and STS endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, and STS endpoints for development and tests.
 
 ## Run
 
@@ -72,8 +72,8 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 ### Terraform
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
-topics and subscriptions, DynamoDB tables, S3 buckets and objects, Lambda functions
-and SQS event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge rules and targets, SSM parameters
+topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets and objects, Lambda functions
+and SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge rules and targets, SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases, and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
@@ -160,7 +160,9 @@ nowhere shows up. `DELETE` clears the list.
 | Scan | `IndexName`, `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key, approximately 1 MiB pages |
 | BatchGetItem / BatchWriteItem | Up to 100 keys or 25 puts and deletes across tables, applied in one transaction; duplicate keys rejected; `UnprocessedKeys` only past the 16 MB response limit, `UnprocessedItems` always empty |
 | TransactGetItems / TransactWriteItems | Up to 100 items from one snapshot; `ConditionCheck`, `Put`, `Delete`, and `Update` all apply or none do, with `CancellationReasons` (and `ALL_OLD` items) on failure; `ClientRequestToken` idempotency for ten minutes |
-| DescribeContinuousBackups / DescribeTimeToLive | A new table's settings: continuous backups on, point-in-time recovery and TTL off |
+| UpdateTable | Enables or disables the stream (`StreamSpecification`); other changes are not supported |
+| DescribeContinuousBackups | Continuous backups on, point-in-time recovery off |
+| DescribeTimeToLive / UpdateTimeToLive | TTL on one attribute, enabled or disabled at once (no `ENABLING` or `DISABLING`); enabling or disabling twice fails |
 | TagResource / UntagResource / ListTagsOfResource | Table ARNs; also `Tags` on CreateTable |
 
 Secondary indexes are always consistent: an index query reads the table's items
@@ -168,6 +170,26 @@ in the same snapshot rather than a separately maintained copy, so it scans the
 whole table. Items missing an index key are left out of that index (sparse
 indexes), and ties between equal index keys come back in a stable local order.
 Index item counts and sizes stay 0, as DynamoDB updates them only every six hours.
+
+With TTL enabled, a background sweep deletes items whose TTL attribute is a number
+of epoch seconds that has passed (and is less than five years old) about every
+second, up to 1000 items per table per sweep. Each deletion is a stream record
+whose `userIdentity` is `dynamodb.amazonaws.com`.
+
+`StreamSpecification` on CreateTable or UpdateTable gives a table a stream with any
+`StreamViewType`. Every write that changes an item (including batch and
+transactional writes) appends an `INSERT`, `MODIFY`, or `REMOVE` record with the
+keys and the images the view type selects. Records are kept for 24 hours;
+disabling the stream closes it, and it stays readable for 24 hours.
+
+### DynamoDB Streams (AWS JSON 1.0)
+
+| Operation | Behavior |
+| --- | --- |
+| ListStreams | The caller's streams, or one table's, with `Limit` and `ExclusiveStartStreamArn` |
+| DescribeStream | The stream's status, view type, key schema, and its one shard |
+| GetShardIterator | `TRIM_HORIZON`, `LATEST`, `AT_SEQUENCE_NUMBER`, and `AFTER_SEQUENCE_NUMBER`; iterators expire after 15 minutes |
+| GetRecords | Up to 1000 records (`Limit`); `NextShardIterator` is left out once a closed shard is read |
 
 ### SQS (AWS JSON 1.0 and AWS Query)
 
@@ -259,7 +281,7 @@ invoking them does.
 | ListVersionsByFunction / GetFunctionCodeSigningConfig | `$LATEST` only; no code signing configuration |
 | TagResource / UntagResource / ListTags | Unqualified function ARNs; also `Tags` on CreateFunction |
 | Invoke | `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`; `LogType: Tail` returns the last 4 KB of the log), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |
-| Create/Get/Delete/ListEventSourceMappings | SQS queues in the function's account and region; `BatchSize` up to 10; a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies |
+| Create/Get/Delete/ListEventSourceMappings | SQS queues and DynamoDB streams in the function's account and region. For queues, `BatchSize` up to 10; a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies. For streams, `StartingPosition` `TRIM_HORIZON` or `LATEST`, `BatchSize` up to 10,000 (100 by default), and `MaximumRetryAttempts` (-1, the default, retries forever); batches of `aws:dynamodb` records are delivered in order, a failed batch is retried and then skipped, and the mapping resumes after its last record on restart |
 
 Function code gets `AWS_REGION`, the function name, memory size, and timeout,
 and the creator's access key (and its configured secret key when signatures are
@@ -442,7 +464,7 @@ they must send their session token (`X-Amz-Security-Token`) and fail with
 configured key or role session may call any operation in its account.
 
 DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...),
-parallel scans, PartiQL, streams, TTL expiry, backups, or capacity accounting/throttling (batch writes never return
+parallel scans, PartiQL, Kinesis streaming, stream shard splits, backups, or capacity accounting/throttling (batch writes never return
 `UnprocessedItems`), and index queries scan the whole table. Expressions
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
@@ -453,8 +475,8 @@ S3 limits: no presigned URLs, multiple ranges per request, versioning, ACLs othe
 policies, encryption, object tagging, lifecycle, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no versions, aliases, layers,
 `Publish` on code updates, code from S3, `ImageConfig`, function URLs,
-concurrency settings, resource policies, or event sources other than SQS
-(no batching window or partial batch responses); asynchronous failures are
+concurrency settings, resource policies, or event sources other than SQS and DynamoDB
+streams (no batching window, filters, partial batch responses, bisecting, or failure destinations); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: only the default event bus
 (no custom or partner buses and no archives or replays), no scheduled rules,
 `InputTransformer`, dead-letter queues, retry policies, or targets other than
