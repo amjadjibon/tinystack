@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, IAM, and STS endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, and STS endpoints for development and tests.
 
 ## Run
 
@@ -74,7 +74,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables, S3 buckets and objects, Lambda functions
 and SQS event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge rules and targets, SSM parameters
-(including SecureString), Secrets Manager secrets and versions, and IAM roles, role policies, and managed policies, tags
+(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases, and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
@@ -90,6 +90,7 @@ provider "aws" {
     dynamodb       = "http://localhost:4566"
     eventbridge    = "http://localhost:4566"
     iam            = "http://localhost:4566"
+    kms            = "http://localhost:4566"
     lambda         = "http://localhost:4566"
     logs           = "http://localhost:4566"
     s3             = "http://localhost:4566"
@@ -367,6 +368,30 @@ keeps up to 100 versions, dropping the oldest unlabeled ones. The request inspec
 redacts every operation that carries values, and the resource browser shows only
 metadata.
 
+### KMS (AWS JSON 1.1)
+
+Symmetric encryption keys (`SYMMETRIC_DEFAULT`, `ENCRYPT_DECRYPT`) belong to an
+account and region, and are named by key ID, key ARN, alias name, or alias ARN
+wherever KMS accepts an alias.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateKey | `Description`, `Policy` (or the default policy that delegates to IAM), and `Tags`; other key specs, key usages, origins, and multi-Region keys return `UnsupportedOperationException` |
+| DescribeKey / ListKeys | Key metadata; keys in ID order with `Limit` and `Marker` |
+| EnableKey / DisableKey / UpdateKeyDescription | A disabled key cannot encrypt or decrypt |
+| ScheduleKeyDeletion / CancelKeyDeletion | A pending window of 7 to 30 days (30 by default); a key pending deletion is described but not usable, and cancelling leaves it disabled |
+| GetKeyPolicy / PutKeyPolicy / ListKeyPolicies | The one `default` policy; any JSON object is accepted |
+| GetKeyRotationStatus / EnableKeyRotation / DisableKeyRotation | A rotation period of 90 to 2560 days (365 by default) |
+| CreateAlias / UpdateAlias / DeleteAlias / ListAliases | `alias/` names (not `alias/aws/`), in name order, optionally for one key |
+| TagResource / UntagResource / ListResourceTags | Up to 50 tags |
+| Encrypt / Decrypt | Up to 4 KB of plaintext, `EncryptionContext`, and `DryRun`; the ciphertext names its key, so `Decrypt` needs no `KeyId`, and a `KeyId` that names another key fails with `IncorrectKeyException` |
+| GenerateDataKey / GenerateDataKeyWithoutPlaintext | `KeySpec` `AES_256` or `AES_128`, or `NumberOfBytes` up to 1024 |
+| GenerateRandom | Up to 1024 bytes |
+
+Ciphertexts are AES-256-GCM under key material that is stored with the key, as
+plain bytes, in memory and in `state.db`: TinyStack protects nothing. Policies are
+stored, never evaluated, and enabling rotation never rotates the material.
+
 ### EventBridge (AWS JSON 1.1)
 
 Rules on each account's `default` event bus route events to SQS queues, SNS
@@ -439,7 +464,9 @@ profiles, permissions boundaries, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, customer-managed KMS keys, `aws:ec2:image` or other data
 types, public `/aws/service/...` parameters, shared parameters, or parameter quotas.
-Secrets Manager limits: no rotation, replication, resource policies,
+KMS limits: no asymmetric, HMAC, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
+material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation; SSM and Secrets Manager do not use KMS
+keys. Secrets Manager limits: no rotation, replication, resource policies,
 `BatchGetSecretValue`, `GetRandomPassword`, `SortBy`, or customer-managed KMS keys.
 STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
