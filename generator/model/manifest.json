@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/aws/aws-sdk-go-v2",
-  "commit": "ff3ac6fd925724bd92052df5a7d644aada844d80",
+  "commit": "52ba2565aefa81106ba8aca112e7c42176cc28a7",
   "license": "LICENSE.aws-sdk-go-v2",
   "models": {
     "dynamodb": {
@@ -13,7 +13,7 @@
     },
     "eventbridge": {
       "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
-      "sha256": "e2cb64e0c9ec540590204a414dbdc0d04827a677de0e9f6517647562b7149c40"
+      "sha256": "55dc4532838b71926afff18b6ce7a11892c6f4aadc81f4036b983eea24c4a449"
     },
     "iam": {
       "path": "codegen/sdk-codegen/aws-models/iam.json",
