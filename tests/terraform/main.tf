@@ -127,6 +127,15 @@ resource "aws_s3_object" "hello" {
   key          = "hello.txt"
   content      = "hello"
   content_type = "text/plain"
+  tags         = local.tags
+}
+
+# A copy keeps the source's tags unless it replaces them.
+resource "aws_s3_object_copy" "hello" {
+  bucket            = aws_s3_bucket.assets.id
+  key               = "copies/hello.txt"
+  source            = "${aws_s3_bucket.assets.id}/${aws_s3_object.hello.key}"
+  tagging_directive = "REPLACE"
 }
 
 resource "aws_lambda_function" "echo" {
