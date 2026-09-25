@@ -7,6 +7,10 @@
       "path": "codegen/sdk-codegen/aws-models/dynamodb.json",
       "sha256": "7e9436596b667e2e0600de9c086205b38960012028bcd625ee786a5126d0f63e"
     },
+    "dynamodbstreams": {
+      "path": "codegen/sdk-codegen/aws-models/dynamodb-streams.json",
+      "sha256": "c4ff064d1b2533430669bd0fdd085efabc378fd6210f7646953d984468e26689"
+    },
     "eventbridge": {
       "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
       "sha256": "e2cb64e0c9ec540590204a414dbdc0d04827a677de0e9f6517647562b7149c40"
