@@ -167,7 +167,7 @@ func (s *Service) GetSubscriptionAttributes(
 	}
 
 	arn := keyARN(key)
-	return &api.GetSubscriptionAttributesResponse{Attributes: map[string]string{
+	attributes := map[string]string{
 		"SubscriptionArn":              arn + ":" + sub.ID,
 		attrTopicArn:                   arn,
 		"Owner":                        sub.Owner,
@@ -176,7 +176,16 @@ func (s *Service) GetSubscriptionAttributes(
 		attrRaw:                        strconv.FormatBool(sub.Raw),
 		"ConfirmationWasAuthenticated": strconv.FormatBool(true),
 		"PendingConfirmation":          strconv.FormatBool(false),
-	}}, nil
+	}
+	if sub.FilterPolicy != "" {
+		attributes[attrFilterPolicy] = sub.FilterPolicy
+		attributes[attrFilterPolicyScope] = scopeAttributes
+		if sub.FilterPolicyScope != "" {
+			attributes[attrFilterPolicyScope] = sub.FilterPolicyScope
+		}
+	}
+
+	return &api.GetSubscriptionAttributesResponse{Attributes: attributes}, nil
 }
 
 func (s *Service) SetSubscriptionAttributes(
@@ -184,11 +193,6 @@ func (s *Service) SetSubscriptionAttributes(
 	in *api.SetSubscriptionAttributesInput,
 ) (*api.SetSubscriptionAttributesOutput, error) {
 	key, id, err := resolve(ctx, in.SubscriptionArn, true)
-	if err != nil {
-		return nil, err
-	}
-
-	raw, err := parseSubscriptionAttributes(map[string]string{value(in.AttributeName): value(in.AttributeValue)})
 	if err != nil {
 		return nil, err
 	}
@@ -204,11 +208,14 @@ func (s *Service) SetSubscriptionAttributes(
 			return findErr
 		}
 
-		if raw && sub.Protocol == protocolLambda {
-			return invalid("Delivery protocol [lambda] does not support raw message delivery.")
+		if setErr := sub.set(value(in.AttributeName), value(in.AttributeValue)); setErr != nil {
+			return setErr
 		}
 
-		sub.Raw = raw
+		if checkErr := sub.check(); checkErr != nil {
+			return checkErr
+		}
+
 		return save(tx, key, t)
 	})
 	if err != nil {

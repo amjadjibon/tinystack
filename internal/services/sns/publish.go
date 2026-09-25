@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -86,9 +87,13 @@ func checkAttributes(attributes map[string]api.MessageAttributeValue) error {
 
 		base, _, _ := strings.Cut(value(a.DataType), ".")
 		switch base {
-		case "String", "Number":
+		case typeString, typeNumber:
 			if value(a.StringValue) == "" || a.BinaryValue != nil {
 				return invalid("Message attribute %s must contain a non-empty string value", name)
+			}
+
+			if _, err := strconv.ParseFloat(value(a.StringValue), 64); base == typeNumber && err != nil {
+				return invalid("Could not cast message attribute '%s' value to number.", name)
 			}
 		case "Binary":
 			if len(a.BinaryValue) == 0 || a.StringValue != nil {
@@ -214,6 +219,16 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		sub := &subs[i]
 		subARN := arn + ":" + sub.ID
 		envelope.Message = textFor(sub.Protocol)
+		accepted, filterErr := sub.accepts(in.MessageAttributes, envelope.Message)
+		if filterErr != nil {
+			return nil, filterErr
+		}
+
+		// A message the filter policy rejects is not delivered, and not logged.
+		if !accepted {
+			continue
+		}
+
 		envelope.UnsubscribeURL = m.Endpoint + "/?Action=Unsubscribe&SubscriptionArn=" + url.QueryEscape(subARN)
 		// As in SNS, a failed delivery (such as a deleted queue or function)
 		// does not fail Publish; the delivery log records it.

@@ -52,12 +52,15 @@ func New(store storage.Store, queues *sqs.Service, functions *lambda.Service, de
 
 // subscription is a confirmed SQS or Lambda subscription. These endpoints are
 // confirmed immediately, as AWS does for resources in the subscriber's account.
+// FilterPolicyScope is empty for the default, MessageAttributes.
 type subscription struct {
-	ID       string
-	Protocol string
-	Endpoint string
-	Owner    string
-	Raw      bool `json:",omitempty"`
+	ID                string
+	Protocol          string
+	Endpoint          string
+	Owner             string
+	FilterPolicy      string `json:",omitempty"`
+	FilterPolicyScope string `json:",omitempty"`
+	Raw               bool   `json:",omitempty"`
 }
 
 type topic struct {
@@ -317,23 +320,6 @@ func (s *Service) ListTopics(ctx context.Context, in *api.ListTopicsInput) (*api
 	return out, nil
 }
 
-func parseSubscriptionAttributes(attributes map[string]string) (bool, error) {
-	raw := false
-	for k, v := range attributes {
-		if k != attrRaw {
-			return false, invalid("Attribute %s is not supported", k)
-		}
-
-		if v != "true" && v != "false" {
-			return false, invalid("RawMessageDelivery must be true or false")
-		}
-
-		raw = v == "true"
-	}
-
-	return raw, nil
-}
-
 func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.SubscribeResponse, error) {
 	m, err := identity(ctx)
 	if err != nil {
@@ -365,16 +351,17 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 		return nil, invalid("The endpoint must be in the subscriber's account")
 	}
 
-	raw, err := parseSubscriptionAttributes(in.Attributes)
-	if err != nil {
-		return nil, err
+	sub := subscription{ID: newID(), Protocol: protocol, Endpoint: endpoint, Owner: m.AccountID}
+	for k, v := range in.Attributes {
+		if guardErr := sub.set(k, v); guardErr != nil {
+			return nil, guardErr
+		}
 	}
 
-	if raw && protocol == protocolLambda {
-		return nil, invalid("Delivery protocol [lambda] does not support raw message delivery.")
+	if guardErr := sub.check(); guardErr != nil {
+		return nil, guardErr
 	}
 
-	sub := subscription{ID: newID(), Protocol: protocol, Endpoint: endpoint, Owner: m.AccountID, Raw: raw}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
@@ -383,7 +370,8 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 
 		for _, existing := range t.Subscriptions {
 			if existing.Protocol == sub.Protocol && existing.Endpoint == sub.Endpoint {
-				if existing.Raw != sub.Raw {
+				if existing.Raw != sub.Raw || existing.FilterPolicy != sub.FilterPolicy ||
+					existing.FilterPolicyScope != sub.FilterPolicyScope {
 					return invalid("Subscription already exists with different attributes")
 				}
 
