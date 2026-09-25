@@ -50,6 +50,7 @@ resource "aws_sqs_queue" "dead" {
 resource "aws_sqs_queue" "jobs" {
   name                       = "jobs"
   visibility_timeout_seconds = 60
+  kms_master_key_id          = aws_kms_alias.data.name
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dead.arn
     maxReceiveCount     = 3
@@ -268,15 +269,17 @@ resource "aws_ssm_parameter" "team" {
 }
 
 resource "aws_ssm_parameter" "token" {
-  name  = "/app/config/token"
-  type  = "SecureString"
-  value = "token-${var.team}"
+  name   = "/app/config/token"
+  type   = "SecureString"
+  value  = "token-${var.team}"
+  key_id = aws_kms_key.data.arn
 }
 
 resource "aws_secretsmanager_secret" "db" {
   name                    = "app/db"
   description             = "Database for ${var.team}"
   recovery_window_in_days = 0
+  kms_key_id              = aws_kms_key.data.arn
   tags                    = local.tags
 }
 
