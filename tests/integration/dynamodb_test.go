@@ -21,6 +21,7 @@ import (
 	"github.com/aws/smithy-go"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -92,9 +93,19 @@ func serverStore(
 	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	deliveries := delivery.New()
+	tables := provider.New(store)
 	sqsService := queues.New(store)
 	logGroups := logs.New(store)
-	functions := lambda.New(store, sqsService, logGroups, runtime, logger, cfg.Identity.SecretKeys, deliveries)
+	functions := lambda.New(
+		store,
+		sqsService,
+		tables.Streams(),
+		logGroups,
+		runtime,
+		logger,
+		cfg.Identity.SecretKeys,
+		deliveries,
+	)
 	if err := functions.Resume(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +117,8 @@ func serverStore(
 	h, err := gateway.New(
 		cfg,
 		logger,
-		api.Descriptor(provider.New(store)),
+		api.Descriptor(tables),
+		dynamodbstreamsapi.Descriptor(tables.Streams()),
 		sqsapi.Descriptor(sqsService),
 		snsapi.Descriptor(snsService),
 		s3api.Descriptor(buckets.New(store, sqsService, snsService, functions, rules, deliveries)),
@@ -130,6 +142,7 @@ func serverStore(
 	return s, func() {
 		sqsService.Stop()
 		functions.Stop()
+		tables.Stop()
 		s.Close()
 	}
 }

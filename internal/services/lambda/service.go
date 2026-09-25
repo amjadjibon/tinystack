@@ -1,5 +1,5 @@
-// Package lambda implements Lambda functions and SQS event source mappings
-// without HTTP dependencies. A Runtime runs function code.
+// Package lambda implements Lambda functions and SQS and DynamoDB stream event
+// source mappings without HTTP dependencies. A Runtime runs function code.
 //
 // Each function is one record under "<account>/<region>/lambda/function/<name>"
 // with its deployment package under ".../lambda/code/<name>"; event source
@@ -27,6 +27,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -56,6 +57,7 @@ var _ api.API = (*Service)(nil)
 type Service struct {
 	store   storage.Store
 	queues  *sqs.Service
+	streams *dynamodb.Streams
 	logs    *logs.Service
 	runtime Runtime
 	logger  *slog.Logger
@@ -74,12 +76,14 @@ type Service struct {
 	stop    sync.Once
 }
 
-// New returns a Lambda service that runs code with runtime, reads SQS event
-// sources from queues, and writes each invocation's log to logGroups.
+// New returns a Lambda service that runs code with runtime, reads SQS and
+// DynamoDB stream event sources from queues and streams, and writes each
+// invocation's log to logGroups.
 // secretKeys holds the configured SigV4 secrets by access key, if any.
 func New(
 	store storage.Store,
 	queues *sqs.Service,
+	streams *dynamodb.Streams,
 	logGroups *logs.Service,
 	runtime Runtime,
 	logger *slog.Logger,
@@ -94,6 +98,7 @@ func New(
 	return &Service{
 		store:      store,
 		queues:     queues,
+		streams:    streams,
 		logs:       logGroups,
 		runtime:    runtime,
 		logger:     logger,

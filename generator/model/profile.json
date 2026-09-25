@@ -19,7 +19,9 @@
       "BatchGetItem",
       "BatchWriteItem",
       "TransactGetItems",
-      "TransactWriteItems"
+      "TransactWriteItems",
+      "UpdateTable",
+      "UpdateTimeToLive"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -30,7 +32,8 @@
         "ProvisionedThroughput",
         "Tags",
         "GlobalSecondaryIndexes",
-        "LocalSecondaryIndexes"
+        "LocalSecondaryIndexes",
+        "StreamSpecification"
       ],
       "DeleteTableInput": [
         "TableName"
@@ -137,7 +140,10 @@
         "BillingModeSummary",
         "ProvisionedThroughput",
         "GlobalSecondaryIndexes",
-        "LocalSecondaryIndexes"
+        "LocalSecondaryIndexes",
+        "StreamSpecification",
+        "LatestStreamLabel",
+        "LatestStreamArn"
       ],
       "Tag": [
         "Key",
@@ -305,6 +311,128 @@
         "ExpressionAttributeNames",
         "ExpressionAttributeValues",
         "ReturnValuesOnConditionCheckFailure"
+      ],
+      "StreamSpecification": [
+        "StreamEnabled",
+        "StreamViewType"
+      ],
+      "UpdateTableInput": [
+        "TableName",
+        "StreamSpecification"
+      ],
+      "UpdateTableOutput": [
+        "TableDescription"
+      ],
+      "UpdateTimeToLiveInput": [
+        "TableName",
+        "TimeToLiveSpecification"
+      ],
+      "UpdateTimeToLiveOutput": [
+        "TimeToLiveSpecification"
+      ],
+      "TimeToLiveSpecification": [
+        "Enabled",
+        "AttributeName"
+      ]
+    }
+  },
+  "dynamodbstreams": {
+    "operations": [
+      "ListStreams",
+      "DescribeStream",
+      "GetShardIterator",
+      "GetRecords"
+    ],
+    "shapes": {
+      "ListStreamsInput": [
+        "TableName",
+        "Limit",
+        "ExclusiveStartStreamArn"
+      ],
+      "ListStreamsOutput": [
+        "Streams",
+        "LastEvaluatedStreamArn"
+      ],
+      "Stream": [
+        "StreamArn",
+        "TableName",
+        "StreamLabel"
+      ],
+      "DescribeStreamInput": [
+        "StreamArn",
+        "Limit",
+        "ExclusiveStartShardId",
+        "ShardFilter"
+      ],
+      "DescribeStreamOutput": [
+        "StreamDescription"
+      ],
+      "ShardFilter": [
+        "Type",
+        "ShardId"
+      ],
+      "StreamDescription": [
+        "StreamArn",
+        "StreamLabel",
+        "StreamStatus",
+        "StreamViewType",
+        "CreationRequestDateTime",
+        "TableName",
+        "KeySchema",
+        "Shards",
+        "LastEvaluatedShardId"
+      ],
+      "KeySchemaElement": [
+        "AttributeName",
+        "KeyType"
+      ],
+      "Shard": [
+        "ShardId",
+        "SequenceNumberRange",
+        "ParentShardId"
+      ],
+      "SequenceNumberRange": [
+        "StartingSequenceNumber",
+        "EndingSequenceNumber"
+      ],
+      "GetShardIteratorInput": [
+        "StreamArn",
+        "ShardId",
+        "ShardIteratorType",
+        "SequenceNumber"
+      ],
+      "GetShardIteratorOutput": [
+        "ShardIterator"
+      ],
+      "GetRecordsInput": [
+        "ShardIterator",
+        "Limit"
+      ],
+      "GetRecordsOutput": [
+        "Records",
+        "NextShardIterator"
+      ],
+      "Record": [
+        "eventID",
+        "eventName",
+        "eventVersion",
+        "eventSource",
+        "awsRegion",
+        "dynamodb",
+        "userIdentity"
+      ],
+      "StreamRecord": [
+        "ApproximateCreationDateTime",
+        "Keys",
+        "NewImage",
+        "OldImage",
+        "SequenceNumber",
+        "SizeBytes",
+        "StreamViewType"
+      ],
+      "Identity": [
+        "PrincipalId",
+        "Type"
       ]
     }
   },
@@ -1028,7 +1156,9 @@
         "EventSourceArn",
         "FunctionName",
         "Enabled",
-        "BatchSize"
+        "BatchSize",
+        "StartingPosition",
+        "MaximumRetryAttempts"
       ],
       "EventSourceMappingConfiguration": [
         "UUID",
@@ -1038,7 +1168,9 @@
         "State",
         "StateTransitionReason",
         "LastModified",
-        "LastProcessingResult"
+        "LastProcessingResult",
+        "StartingPosition",
+        "MaximumRetryAttempts"
       ],
       "GetEventSourceMappingRequest": [
         "UUID"

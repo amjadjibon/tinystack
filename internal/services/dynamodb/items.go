@@ -10,6 +10,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	streamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -43,9 +44,23 @@ func loadItem(tx storage.ReadTx, record string) (it item, found bool, err error)
 	return it, true, nil
 }
 
-// writeItem stores it as record in place of old (either may be nil) and keeps
-// the table's item count and size current.
+// writeItem stores it as record in place of old (either may be nil), keeps
+// the table's item count and size current, and writes the change to the
+// table's stream.
 func writeItem(tx storage.WriteTx, key string, t *table, record string, old, it item) error {
+	return writeItemBy(tx, key, t, record, old, it, nil)
+}
+
+// writeItemBy is writeItem for a change a service made, such as a TTL
+// deletion, which its stream record names as by.
+func writeItemBy(
+	tx storage.WriteTx,
+	key string,
+	t *table,
+	record string,
+	old, it item,
+	by *streamsapi.Identity,
+) error {
 	oldSize, err := itemSize(old)
 	if err != nil {
 		return err
@@ -75,6 +90,10 @@ func writeItem(tx storage.WriteTx, key string, t *table, record string, old, it 
 
 	t.Description.ItemCount = &count
 	t.Description.TableSizeBytes = new(value(t.Description.TableSizeBytes) - oldSize + newSize)
+	if guardErr := appendRecord(tx, key, t, old, it, by); guardErr != nil {
+		return guardErr
+	}
+
 	return save(tx, key, t)
 }
 

@@ -44,6 +44,11 @@ type LocalSecondaryIndex struct {
 	Projection *Projection        `json:"Projection,omitempty"`
 }
 
+type StreamSpecification struct {
+	StreamEnabled  *bool   `json:"StreamEnabled,omitempty"`
+	StreamViewType *string `json:"StreamViewType,omitempty"`
+}
+
 type CreateTableInput struct {
 	TableName              *string                `json:"TableName,omitempty"`
 	AttributeDefinitions   []AttributeDefinition  `json:"AttributeDefinitions,omitempty"`
@@ -53,6 +58,7 @@ type CreateTableInput struct {
 	Tags                   []Tag                  `json:"Tags,omitempty"`
 	GlobalSecondaryIndexes []GlobalSecondaryIndex `json:"GlobalSecondaryIndexes,omitempty"`
 	LocalSecondaryIndexes  []LocalSecondaryIndex  `json:"LocalSecondaryIndexes,omitempty"`
+	StreamSpecification    *StreamSpecification   `json:"StreamSpecification,omitempty"`
 }
 
 type BillingModeSummary struct {
@@ -102,6 +108,9 @@ type TableDescription struct {
 	ProvisionedThroughput  *ProvisionedThroughputDescription `json:"ProvisionedThroughput,omitempty"`
 	GlobalSecondaryIndexes []GlobalSecondaryIndexDescription `json:"GlobalSecondaryIndexes,omitempty"`
 	LocalSecondaryIndexes  []LocalSecondaryIndexDescription  `json:"LocalSecondaryIndexes,omitempty"`
+	StreamSpecification    *StreamSpecification              `json:"StreamSpecification,omitempty"`
+	LatestStreamLabel      *string                           `json:"LatestStreamLabel,omitempty"`
+	LatestStreamArn        *string                           `json:"LatestStreamArn,omitempty"`
 }
 
 type CreateTableOutput struct {
@@ -407,6 +416,29 @@ type TransactWriteItemsInput struct {
 type TransactWriteItemsOutput struct {
 }
 
+type UpdateTableInput struct {
+	TableName           *string              `json:"TableName,omitempty"`
+	StreamSpecification *StreamSpecification `json:"StreamSpecification,omitempty"`
+}
+
+type UpdateTableOutput struct {
+	TableDescription *TableDescription `json:"TableDescription,omitempty"`
+}
+
+type TimeToLiveSpecification struct {
+	Enabled       *bool   `json:"Enabled,omitempty"`
+	AttributeName *string `json:"AttributeName,omitempty"`
+}
+
+type UpdateTimeToLiveInput struct {
+	TableName               *string                  `json:"TableName,omitempty"`
+	TimeToLiveSpecification *TimeToLiveSpecification `json:"TimeToLiveSpecification,omitempty"`
+}
+
+type UpdateTimeToLiveOutput struct {
+	TimeToLiveSpecification *TimeToLiveSpecification `json:"TimeToLiveSpecification,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -427,6 +459,8 @@ type API interface {
 	BatchWriteItem(context.Context, *BatchWriteItemInput) (*BatchWriteItemOutput, error)
 	TransactGetItems(context.Context, *TransactGetItemsInput) (*TransactGetItemsOutput, error)
 	TransactWriteItems(context.Context, *TransactWriteItemsInput) (*TransactWriteItemsOutput, error)
+	UpdateTable(context.Context, *UpdateTableInput) (*UpdateTableOutput, error)
+	UpdateTimeToLive(context.Context, *UpdateTimeToLiveInput) (*UpdateTimeToLiveOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -479,6 +513,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"TransactWriteItems": {Name: "TransactWriteItems", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.TransactWriteItems", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TransactWriteItemsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.TransactWriteItems(ctx, input.(*TransactWriteItemsInput))
+		}},
+		"UpdateTable": {Name: "UpdateTable", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UpdateTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateTable(ctx, input.(*UpdateTableInput))
+		}},
+		"UpdateTimeToLive": {Name: "UpdateTimeToLive", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UpdateTimeToLive", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateTimeToLiveInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateTimeToLive(ctx, input.(*UpdateTimeToLiveInput))
 		}},
 	}}
 }

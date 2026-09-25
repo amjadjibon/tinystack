@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -87,9 +88,21 @@ func newStartCommand() *cobra.Command {
 			}()
 
 			deliveries := delivery.New()
+			tables := dynamodb.New(store)
+			// Stop ends the TTL sweeper, which writes to the store.
+			defer tables.Stop()
 			queues := sqs.New(store)
 			logGroups := logs.New(store)
-			functions := lambda.New(store, queues, logGroups, docker.New(), logger, cfg.Identity.SecretKeys, deliveries)
+			functions := lambda.New(
+				store,
+				queues,
+				tables.Streams(),
+				logGroups,
+				docker.New(),
+				logger,
+				cfg.Identity.SecretKeys,
+				deliveries,
+			)
 			// Stop removes function containers; it must finish before exit.
 			defer functions.Stop()
 			if guardErr := functions.Resume(cmd.Context()); guardErr != nil {
@@ -103,7 +116,8 @@ func newStartCommand() *cobra.Command {
 			handler, err := gateway.New(
 				cfg,
 				logger,
-				dynamodbapi.Descriptor(dynamodb.New(store)),
+				dynamodbapi.Descriptor(tables),
+				dynamodbstreamsapi.Descriptor(tables.Streams()),
 				sqsapi.Descriptor(queues),
 				snsapi.Descriptor(topics),
 				s3api.Descriptor(s3.New(store, queues, topics, functions, rules, deliveries)),
@@ -144,6 +158,7 @@ func newStartCommand() *cobra.Command {
 			}
 
 			server.RegisterOnShutdown(queues.Stop)
+			server.RegisterOnShutdown(tables.Stop)
 			server.RegisterOnShutdown(functions.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
@@ -156,7 +171,7 @@ func newStartCommand() *cobra.Command {
 				"storage",
 				cfg.Storage.Mode,
 				"services",
-				"dynamodb,eventbridge,iam,lambda,s3,secretsmanager,sns,sqs,ssm,sts",
+				"dynamodb,dynamodbstreams,eventbridge,iam,kms,lambda,logs,s3,secretsmanager,sns,sqs,ssm,sts",
 			)
 			select {
 			case err = <-done:

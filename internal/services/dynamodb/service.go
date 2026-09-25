@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -21,16 +23,43 @@ const (
 	selectCount  = "COUNT"
 )
 
-type Service struct{ store storage.Store }
+type Service struct {
+	store  storage.Store
+	logger *slog.Logger
+	// ctx ends the TTL sweeper on Stop.
+	ctx    context.Context
+	cancel context.CancelFunc
+	done   chan struct{}
+	stop   sync.Once
+}
 
-func New(store storage.Store) *Service { return &Service{store: store} }
+// New returns a DynamoDB service and starts its TTL sweeper, which runs until
+// Stop.
+func New(store storage.Store) *Service {
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &Service{store: store, logger: slog.Default(), ctx: ctx, cancel: cancel, done: make(chan struct{})}
+	go s.sweep()
+	return s
+}
+
+// Stop ends the TTL sweeper and waits for it. Later calls return at once.
+func (s *Service) Stop() {
+	s.stop.Do(func() {
+		s.cancel()
+		<-s.done
+	})
+}
 
 // table is the table record. Each item is its own record under the table's
 // key (itemRecord), and the description's item count and size are kept
 // current as items are written.
 type table struct {
-	Tags        map[string]string `json:",omitempty"`
 	Description api.TableDescription
+	Tags        map[string]string `json:",omitempty"`
+	// TTL is the attribute that holds item expiry times while TTL is enabled.
+	TTL string `json:",omitempty"`
+	// Sequence is the sequence number of the table's last stream record.
+	Sequence int64 `json:",omitempty"`
 }
 
 func value[T any](p *T) (v T) {
@@ -177,9 +206,20 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 		Tags: tags,
 	}
 
+	viewType, err := streamViewType(in.StreamSpecification)
+	if err != nil {
+		return nil, err
+	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, ok := tx.Get(key); ok {
 			return awserror.New("ResourceInUseException", "Table already exists")
+		}
+
+		if viewType != "" {
+			if openErr := openStream(tx, key, &t, viewType, time.Now()); openErr != nil {
+				return openErr
+			}
 		}
 
 		return save(tx, key, &t)
@@ -226,6 +266,11 @@ func (s *Service) DeleteTable(ctx context.Context, in *api.DeleteTableInput) (*a
 		tx.Delete(key)
 		for _, record := range itemRecords(tx, key, "") {
 			tx.Delete(record)
+		}
+
+		tx.Delete(ttlIndexKey(key))
+		if closeErr := closeStream(tx, key, t, time.Now()); closeErr != nil {
+			return closeErr
 		}
 
 		t.Description.TableStatus = new("DELETING")

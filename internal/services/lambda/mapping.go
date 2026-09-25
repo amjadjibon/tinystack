@@ -15,6 +15,7 @@ import (
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -34,12 +35,17 @@ var pollBackoff = time.Second
 
 var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
-// mapping is a stored SQS event source mapping.
+// mapping is a stored SQS queue or DynamoDB stream event source mapping.
 type mapping struct {
+	// MaximumRetryAttempts, StartingPosition, and Cursor, the sequence number
+	// of the last record processed, are only set for streams.
+	MaximumRetryAttempts *int64 `json:",omitempty"`
 	UUID                 string
 	EventSourceArn       string
 	FunctionName         string
 	LastProcessingResult string
+	StartingPosition     string `json:",omitempty"`
+	Cursor               string `json:",omitempty"`
 	BatchSize            int64
 	LastModified         int64
 	Enabled              bool
@@ -51,7 +57,7 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 		state = stateDisabled
 	}
 
-	return api.EventSourceMappingConfiguration{
+	cfg := api.EventSourceMappingConfiguration{
 		UUID:                  new(mp.UUID),
 		EventSourceArn:        new(mp.EventSourceArn),
 		FunctionArn:           new(functionARN(scope, mp.FunctionName)),
@@ -60,7 +66,14 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 		StateTransitionReason: new("USER_INITIATED"),
 		LastModified:          new(float64(mp.LastModified) / 1000),
 		LastProcessingResult:  new(mp.LastProcessingResult),
+		MaximumRetryAttempts:  mp.MaximumRetryAttempts,
 	}
+
+	if mp.StartingPosition != "" {
+		cfg.StartingPosition = new(mp.StartingPosition)
+	}
+
+	return cfg
 }
 
 func newUUID() string {
@@ -105,43 +118,27 @@ func (s *Service) CreateEventSourceMapping(
 	}
 
 	source := value(in.EventSourceArn)
-	scope, ok := queueScope(source)
-	if !ok {
-		return nil, invalid("EventSourceArn must be an SQS queue ARN; other event sources are not supported")
-	}
-	// Reading a queue of another account needs a queue policy, which TinyStack
-	// does not model.
-	if scope != m.Scope {
-		return nil, invalid("The SQS queue must be in the function's account and region")
-	}
-
-	url, _ := sqs.QueueURL(source)
-	_, err = s.queues.GetQueueAttributes(
-		request.WithMetadata(ctx, request.Metadata{Scope: scope}),
-		&sqsapi.GetQueueAttributesRequest{QueueUrl: &url},
-	)
-	if err != nil {
-		return nil, invalid("Error occurred while ReceiveMessage. SQS Error Code: " +
-			"AWS.SimpleQueueService.NonExistentQueue. SQS Error Message: The specified queue does not exist.")
-	}
-
 	mp := &mapping{
 		UUID:           newUUID(),
 		EventSourceArn: source,
 		FunctionName:   fn.Name,
-		BatchSize:      maxSQSBatch,
 		LastModified:   s.now().UnixMilli(),
 		Enabled:        in.Enabled == nil || *in.Enabled,
 		// Lambda reports "No records processed" until the first batch.
 		LastProcessingResult: "No records processed",
 	}
 
-	if in.BatchSize != nil {
-		// Larger SQS batches need MaximumBatchingWindowInSeconds, which is not
-		// supported.
-		if mp.BatchSize = *in.BatchSize; mp.BatchSize < 1 || mp.BatchSize > maxSQSBatch {
-			return nil, invalid("BatchSize must be between 1 and %d for SQS", maxSQSBatch)
-		}
+	if _, isQueue := queueScope(source); isQueue {
+		err = s.queueSource(ctx, m.Scope, in, mp)
+	} else if _, _, _, isStream := dynamodb.ParseStreamARN(source); isStream {
+		err = s.streamSource(ctx, m.Scope, in, mp)
+	} else {
+		err = invalid("EventSourceArn must be an SQS queue or DynamoDB stream ARN; " +
+			"other event sources are not supported")
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	prefix := scopeKey(m.Scope, kindMapping, "")
@@ -153,9 +150,9 @@ func (s *Service) CreateEventSourceMapping(
 			}
 
 			if existing.EventSourceArn == source && existing.FunctionName == fn.Name {
-				return conflict("An event source mapping with SQS arn (\" " + source + " \") and function (\" " +
-					fn.Name + " \") already exists. Please update or delete the existing mapping with UUID " +
-					existing.UUID)
+				return conflict("An event source mapping with event source (\" " + source + " \") and function " +
+					"(\" " + fn.Name + " \") already exists. Please update or delete the existing mapping with " +
+					"UUID " + existing.UUID)
 			}
 		}
 
@@ -171,6 +168,47 @@ func (s *Service) CreateEventSourceMapping(
 
 	cfg := mp.configuration(m.Scope)
 	return &cfg, nil
+}
+
+// queueSource checks an SQS queue event source and sets the mapping's batch
+// size.
+func (s *Service) queueSource(
+	ctx context.Context,
+	scope request.Scope,
+	in *api.CreateEventSourceMappingRequest,
+	mp *mapping,
+) error {
+	source, _ := queueScope(mp.EventSourceArn)
+	// Reading a queue of another account needs a queue policy, which TinyStack
+	// does not model.
+	if source != scope {
+		return invalid("The SQS queue must be in the function's account and region")
+	}
+
+	if in.StartingPosition != nil || in.MaximumRetryAttempts != nil {
+		return invalid("StartingPosition and MaximumRetryAttempts are only valid for stream event sources")
+	}
+
+	url, _ := sqs.QueueURL(mp.EventSourceArn)
+	_, err := s.queues.GetQueueAttributes(
+		request.WithMetadata(ctx, request.Metadata{Scope: scope}),
+		&sqsapi.GetQueueAttributesRequest{QueueUrl: &url},
+	)
+	if err != nil {
+		return invalid("Error occurred while ReceiveMessage. SQS Error Code: " +
+			"AWS.SimpleQueueService.NonExistentQueue. SQS Error Message: The specified queue does not exist.")
+	}
+
+	mp.BatchSize = maxSQSBatch
+	if in.BatchSize != nil {
+		// Larger SQS batches need MaximumBatchingWindowInSeconds, which is not
+		// supported.
+		if mp.BatchSize = *in.BatchSize; mp.BatchSize < 1 || mp.BatchSize > maxSQSBatch {
+			return invalid("BatchSize must be between 1 and %d for SQS", maxSQSBatch)
+		}
+	}
+
+	return nil
 }
 
 // loadMappingByID reads a mapping of the caller.
@@ -349,7 +387,12 @@ func (s *Service) startPoller(scope request.Scope, mp *mapping) {
 	s.mu.Lock()
 	s.pollers[mp.UUID] = cancel
 	s.mu.Unlock()
-	if !s.spawn(func(context.Context) { s.poll(ctx, scope, *mp) }) {
+	poll := s.poll
+	if mp.StartingPosition != "" {
+		poll = s.pollStream
+	}
+
+	if !s.spawn(func(context.Context) { poll(ctx, scope, *mp) }) {
 		cancel()
 	}
 }

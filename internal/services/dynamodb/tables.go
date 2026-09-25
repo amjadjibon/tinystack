@@ -5,6 +5,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
@@ -47,19 +48,53 @@ func (s *Service) DescribeContinuousBackups(
 	}}, nil
 }
 
-// DescribeTimeToLive reports TTL as disabled; TinyStack does not expire items.
-func (s *Service) DescribeTimeToLive(
-	ctx context.Context,
-	in *api.DescribeTimeToLiveInput,
-) (*api.DescribeTimeToLiveOutput, error) {
-	err := s.view(ctx, in.TableName, func(*table) {})
+// UpdateTable enables or disables the table's stream; it changes nothing else.
+func (s *Service) UpdateTable(ctx context.Context, in *api.UpdateTableInput) (*api.UpdateTableOutput, error) {
+	key, err := tableKey(ctx, in.TableName)
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.DescribeTimeToLiveOutput{
-		TimeToLiveDescription: &api.TimeToLiveDescription{TimeToLiveStatus: new("DISABLED")},
-	}, nil
+	if in.StreamSpecification == nil {
+		return nil, awserror.Validation("At least one of ProvisionedThroughput, BillingMode, UpdateStreamEnabled, " +
+			"GlobalSecondaryIndexUpdates or SSESpecification or ReplicaUpdates is required")
+	}
+
+	viewType, err := streamViewType(in.StreamSpecification)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &api.UpdateTableOutput{}
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		t, loadErr := load(tx, key)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		switch now := time.Now(); {
+		case viewType != "" && streamEnabled(t):
+			return awserror.Validation("Table already has an enabled stream: TableName: %s", value(in.TableName))
+		case viewType == "" && !streamEnabled(t):
+			return awserror.Validation("Table does not have an enabled stream: TableName: %s", value(in.TableName))
+		case viewType != "":
+			if openErr := openStream(tx, key, t, viewType, now); openErr != nil {
+				return openErr
+			}
+		default:
+			if closeErr := closeStream(tx, key, t, now); closeErr != nil {
+				return closeErr
+			}
+		}
+
+		out.TableDescription = &t.Description
+		return save(tx, key, t)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // tagMap converts DynamoDB tags to a map, rejecting repeated keys.
