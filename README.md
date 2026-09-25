@@ -72,7 +72,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 ### Terraform
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
-topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets and objects, Lambda functions
+topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions
 versions and aliases, and SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge rules and targets, SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases, and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
@@ -244,7 +244,9 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | ListBuckets | The caller's buckets in every region; prefix, region filter, and continuation token |
 | PutObject | Keys up to 1024 bytes; `Content-Type`, `x-amz-meta-*`, `Content-MD5` and CRC32/CRC32C/CRC64NVME/SHA1/SHA256 checksums verified, including aws-chunked uploads with trailing checksums; `If-None-Match: *` and `If-Match`; MD5 ETags; objects up to 64 MiB |
 | GetObject / HeadObject | Body, size, type, ETag, `Last-Modified`, metadata; `If-Match` and `If-None-Match`; one `Range` byte interval (206 and `Content-Range` for GET, adjusted length for HEAD, 416 when unsatisfiable) |
-| DeleteObject | Deleting a missing key succeeds |
+| CopyObject | Copies within and between the caller's buckets in any region (`x-amz-copy-source`, URL-encoded, without `versionId`); `MetadataDirective` and `TaggingDirective` (`COPY` by default, or `REPLACE` with `Metadata`, `ContentType`, and `Tagging`); `CopySourceIfMatch` and `CopySourceIfNoneMatch`; copying an object onto itself must replace something; notifies `s3:ObjectCreated:Copy` |
+| PutObjectTagging / GetObjectTagging / DeleteObjectTagging | Up to 10 tags per object, replaced as a whole; also the `x-amz-tagging` header on PutObject and CopyObject, and `x-amz-tagging-count` on GetObject |
+| DeleteObject | Deleting a missing key succeeds (and removes its tags) |
 | ListObjectsV2 | Prefix, delimiter and common prefixes, `max-keys`, continuation token, `start-after`, `encoding-type=url` |
 | Multipart uploads | Create, upload parts, list parts/uploads, complete, and abort; completion validates ordered part ETags and 5 MiB nonfinal parts, then atomically installs an object up to 64 MiB |
 | PutBucketNotificationConfiguration / GetBucketNotificationConfiguration | SQS (standard), SNS, and Lambda destinations in the bucket's region for `s3:ObjectCreated:*` and `s3:ObjectRemoved:*` events, with prefix and suffix filters, plus `EventBridgeConfiguration`; overlapping configurations are rejected; unless `SkipDestinationValidation`, queues and topics get an `s3:TestEvent` and functions must exist |
@@ -260,7 +262,7 @@ fail the request; they appear in `/_tinystack/deliveries`.
 
 Modeled request headers and query
 parameters that TinyStack does not implement (versions, ACLs,
-encryption, object tagging, other storage classes, and so on) answer `NotImplemented`
+encryption, other storage classes, and so on) answer `NotImplemented`
 (501), as do S3 subresources such as `?acl`.
 
 ### Lambda (REST JSON)
@@ -459,8 +461,10 @@ hash), the credential scope, and a signing time within 15 minutes, and answers w
 each service's error codes (such as `InvalidSignatureException`,
 `SignatureDoesNotMatch`, `UnrecognizedClientException`, or `InvalidAccessKeyId`).
 S3 accepts `UNSIGNED-PAYLOAD` and `STREAMING-UNSIGNED-PAYLOAD-TRAILER` bodies;
-signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`) and presigned URLs
-are not supported. Temporary credentials from STS AssumeRole need no configuration:
+signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`) are not supported.
+Presigned URLs (query-string SigV4 with `X-Amz-Expires` up to 7 days) are verified
+like headers, with an unsigned payload for S3; an expired one answers `AccessDenied`
+("Request has expired"). Temporary credentials from STS AssumeRole need no configuration:
 they must send their session token (`X-Amz-Security-Token`) and fail with
 `ExpiredToken` once expired. IAM policies are stored but not evaluated: any
 configured key or role session may call any operation in its account.
@@ -473,8 +477,8 @@ SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThrough
 message groups on standard queues, dead-letter redrive back to the source queue,
 policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
-S3 limits: no presigned URLs, multiple ranges per request, versioning, ACLs other than `private`,
-policies, encryption, object tagging, lifecycle, or stored checksums on
+S3 limits: no multiple ranges per request, versioning, ACLs other than `private`,
+policies, encryption, POST uploads, lifecycle, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, code from S3, `ImageConfig`, function URLs,
 concurrency settings, resource policies, or event sources other than SQS and DynamoDB
 streams (no batching window, filters, partial batch responses, bisecting, or failure destinations); asynchronous failures are

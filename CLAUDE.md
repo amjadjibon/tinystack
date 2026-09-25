@@ -50,13 +50,16 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `Action`. The gateway also validates content type, method, path and version against the operation's binding (Query
   skips the path check because SQS clients post to queue URLs), decodes input with a 2 MiB limit, and puts
   `request.Metadata` (including `Endpoint`) into the context. REST requests match an operation by method, path labels
-  (greedy `{Key+}`), and the URI's query literals (`x-id` is optional); unknown query parameters mean no match
+  (greedy `{Key+}`), the URI's query literals (`x-id` is optional, but must match when sent), and required headers
+  (S3's CopyObject is the PUT with `x-amz-copy-source`), preferring the most specific route; presigned-URL
+  parameters are removed before matching, and other unknown query parameters mean no match
   (`NotImplemented`), so S3 subresources such as `?acl` never reach another operation. S3 virtual-hosted buckets
   (`<bucket>.localhost`, `<bucket>.s3.…amazonaws.com`) are folded into the path. REST payloads are limited to 64 MiB and
   aws-chunked bodies are decoded. Signatures are checked only in `identity.mode: verify` (`gateway/auth.go`), after
   classification (so S3 can use its single path encoding and unsigned-payload literals) and before decoding: the key
   must be in `identity.secret_keys` (or be an STS session key sent with its `X-Amz-Security-Token`, which fails with
-  `ExpiredToken` once expired), the body is hashed (and replaced for decoding), and failures use per-protocol codes.
+  `ExpiredToken` once expired); a presigned URL carries the signature, expiry, and token in its query (`sigv4.ParseQuery`)
+  and leaves an S3 payload unsigned; the body is hashed (and replaced for decoding), and failures use per-protocol codes.
   Lambda hands function code its creator's configured secret so SDK calls back to TinyStack verify.
 - **catalog** (`internal/aws/catalog`): protocol-neutral service/operation/binding/error descriptors. A service
   registers with the gateway by passing `api.Descriptor(impl)`.
@@ -115,7 +118,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `*sqs.Service` and delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its
   subscriptions, and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
   in the same transaction as the regional bucket record; objects are `…/s3/<bucket>/o/<key>` (metadata) plus
-  `…/s3/<bucket>/d/<key>` (bytes). The bucket record also holds its notification configuration, which object writes
+  `…/s3/<bucket>/d/<key>` (bytes); the metadata record holds the object's tags. The bucket record also holds its notification configuration, which object writes
   read in their transaction and deliver after commit (`notification.go`) through `sqs.Service.Deliver`,
   `sns.Service.Publish`, `lambda.Service.InvokeAsync`, and `eventbridge.Service.PutEvents`. Unmodeled S3 errors carry their own HTTP status (`&awserror.Error{StatusCode: …}`);
   modeled ones take it from the generated bindings. Lambda stores functions under `…/lambda/function/<name>`, code
