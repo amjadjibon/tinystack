@@ -52,16 +52,24 @@ func newTarget(scope request.Scope, in *api.Target) (target, error) {
 		return t, err
 	}
 
-	if in.Input != nil && in.InputPath != nil {
+	if (in.Input != nil && in.InputPath != nil) || (in.InputTransformer != nil && (in.Input != nil ||
+		in.InputPath != nil)) {
 		return t, invalid("Only one of Input, InputPath, or InputTransformer can be specified for target %s.", t.ID)
+	}
+
+	if in.InputTransformer != nil {
+		if t.Transformer, err = newTransformer(t.ID, in.InputTransformer); err != nil {
+			return t, err
+		}
 	}
 
 	if in.Input != nil && (len(t.Input) > 8192 || !json.Valid([]byte(t.Input))) {
 		return t, invalid("Input for target %s must be valid JSON of at most 8192 characters.", t.ID)
 	}
 
-	if in.InputPath != nil && (len(t.InputPath) > 256 || !inputPath.MatchString(t.InputPath)) {
-		return t, invalid("TinyStack supports only $ and dotted field InputPaths such as $.detail.id.")
+	if in.InputPath != nil && (len(t.InputPath) > maxInputPath || !inputPath.MatchString(t.InputPath)) {
+		return t, invalid("TinyStack supports only $ followed by dotted fields and [index] steps in InputPaths " +
+			"such as $.detail.items[0].id.")
 	}
 
 	if in.SqsParameters != nil {
@@ -79,7 +87,7 @@ func newTarget(scope request.Scope, in *api.Target) (target, error) {
 }
 
 func (s *Service) PutTargets(ctx context.Context, in *api.PutTargetsRequest) (*api.PutTargetsResponse, error) {
-	m, key, err := resolveRule(ctx, in.Rule, in.EventBusName)
+	ref, err := resolveRule(ctx, in.Rule, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +98,7 @@ func (s *Service) PutTargets(ctx context.Context, in *api.PutTargetsRequest) (*a
 
 	targets := make([]target, 0, len(in.Targets))
 	for i := range in.Targets {
-		t, targetErr := newTarget(m.Scope, &in.Targets[i])
+		t, targetErr := newTarget(ref.scope, &in.Targets[i])
 		if targetErr != nil {
 			return nil, targetErr
 		}
@@ -102,7 +110,7 @@ func (s *Service) PutTargets(ctx context.Context, in *api.PutTargetsRequest) (*a
 		targets = append(targets, t)
 	}
 
-	err = s.update(ctx, *in.Rule, key, func(r *rule) error {
+	err = s.update(ctx, &ref, func(r *rule) error {
 		for _, t := range targets {
 			i := slices.IndexFunc(r.Targets, func(o target) bool { return o.ID == t.ID })
 			if i >= 0 {
@@ -130,7 +138,7 @@ func (s *Service) PutTargets(ctx context.Context, in *api.PutTargetsRequest) (*a
 
 // RemoveTargets succeeds for IDs the rule does not have, as EventBridge does.
 func (s *Service) RemoveTargets(ctx context.Context, in *api.RemoveTargetsRequest) (*api.RemoveTargetsResponse, error) {
-	_, key, err := resolveRule(ctx, in.Rule, in.EventBusName)
+	ref, err := resolveRule(ctx, in.Rule, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +153,7 @@ func (s *Service) RemoveTargets(ctx context.Context, in *api.RemoveTargetsReques
 		}
 	}
 
-	err = s.update(ctx, *in.Rule, key, func(r *rule) error {
+	err = s.update(ctx, &ref, func(r *rule) error {
 		r.Targets = slices.DeleteFunc(r.Targets, func(t target) bool { return slices.Contains(in.Ids, t.ID) })
 		return nil
 	})
@@ -174,6 +182,13 @@ func (t *target) describe() api.Target {
 		out.SqsParameters = &api.SqsParameters{MessageGroupId: new(t.MessageGroupID)}
 	}
 
+	if t.Transformer != nil {
+		out.InputTransformer = &api.InputTransformer{
+			InputPathsMap: t.Transformer.Paths,
+			InputTemplate: new(t.Transformer.Template),
+		}
+	}
+
 	return out
 }
 
@@ -181,7 +196,7 @@ func (s *Service) ListTargetsByRule(
 	ctx context.Context,
 	in *api.ListTargetsByRuleRequest,
 ) (*api.ListTargetsByRuleResponse, error) {
-	_, key, err := resolveRule(ctx, in.Rule, in.EventBusName)
+	ref, err := resolveRule(ctx, in.Rule, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}
@@ -193,11 +208,7 @@ func (s *Service) ListTargetsByRule(
 
 	var targets []target
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, ok, loadErr := load(tx, key)
-		if loadErr == nil && !ok {
-			return ruleNotFound(*in.Rule)
-		}
-
+		r, loadErr := loadRule(tx, &ref)
 		if loadErr == nil {
 			targets = r.Targets
 		}

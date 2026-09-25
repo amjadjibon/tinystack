@@ -200,7 +200,7 @@ func TestEventBridgeValidation(t *testing.T) {
 		"input and path": {
 			Id: aws.String("t"), Arn: aws.String(queue), Input: aws.String("{}"), InputPath: aws.String("$.detail"),
 		},
-		"unsupported path": {Id: aws.String("t"), Arn: aws.String(queue), InputPath: aws.String("$.a[0]")},
+		"unsupported path": {Id: aws.String("t"), Arn: aws.String(queue), InputPath: aws.String("$..a")},
 		"sqs parameters": {
 			Id:            aws.String("t"),
 			Arn:           aws.String("arn:aws:sns:us-east-1:000000000000:topic"),

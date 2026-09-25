@@ -113,13 +113,19 @@ type SqsParameters struct {
 	MessageGroupId *string `json:"MessageGroupId,omitempty"`
 }
 
+type InputTransformer struct {
+	InputPathsMap map[string]string `json:"InputPathsMap,omitempty"`
+	InputTemplate *string           `json:"InputTemplate,omitempty"`
+}
+
 type Target struct {
-	Id            *string        `json:"Id,omitempty"`
-	Arn           *string        `json:"Arn,omitempty"`
-	RoleArn       *string        `json:"RoleArn,omitempty"`
-	Input         *string        `json:"Input,omitempty"`
-	InputPath     *string        `json:"InputPath,omitempty"`
-	SqsParameters *SqsParameters `json:"SqsParameters,omitempty"`
+	Id               *string           `json:"Id,omitempty"`
+	Arn              *string           `json:"Arn,omitempty"`
+	RoleArn          *string           `json:"RoleArn,omitempty"`
+	Input            *string           `json:"Input,omitempty"`
+	InputPath        *string           `json:"InputPath,omitempty"`
+	SqsParameters    *SqsParameters    `json:"SqsParameters,omitempty"`
+	InputTransformer *InputTransformer `json:"InputTransformer,omitempty"`
 }
 
 type PutTargetsRequest struct {
@@ -202,6 +208,65 @@ type ListTagsForResourceResponse struct {
 	Tags []Tag `json:"Tags,omitempty"`
 }
 
+type CreateEventBusRequest struct {
+	Name        *string `json:"Name,omitempty"`
+	Description *string `json:"Description,omitempty"`
+	Tags        []Tag   `json:"Tags,omitempty"`
+}
+
+type CreateEventBusResponse struct {
+	EventBusArn *string `json:"EventBusArn,omitempty"`
+	Description *string `json:"Description,omitempty"`
+}
+
+type DescribeEventBusRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DescribeEventBusResponse struct {
+	Name             *string  `json:"Name,omitempty"`
+	Arn              *string  `json:"Arn,omitempty"`
+	Description      *string  `json:"Description,omitempty"`
+	CreationTime     *float64 `json:"CreationTime,omitempty"`
+	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty"`
+}
+
+type ListEventBusesRequest struct {
+	NamePrefix *string `json:"NamePrefix,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+	Limit      *int64  `json:"Limit,omitempty"`
+}
+
+type EventBus struct {
+	Name             *string  `json:"Name,omitempty"`
+	Arn              *string  `json:"Arn,omitempty"`
+	Description      *string  `json:"Description,omitempty"`
+	CreationTime     *float64 `json:"CreationTime,omitempty"`
+	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty"`
+}
+
+type ListEventBusesResponse struct {
+	EventBuses []EventBus `json:"EventBuses,omitempty"`
+	NextToken  *string    `json:"NextToken,omitempty"`
+}
+
+type UpdateEventBusRequest struct {
+	Name        *string `json:"Name,omitempty"`
+	Description *string `json:"Description,omitempty"`
+}
+
+type UpdateEventBusResponse struct {
+	Arn         *string `json:"Arn,omitempty"`
+	Name        *string `json:"Name,omitempty"`
+	Description *string `json:"Description,omitempty"`
+}
+
+type DeleteEventBusOutput struct{}
+
+type DeleteEventBusRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
 type API interface {
 	PutEvents(context.Context, *PutEventsRequest) (*PutEventsResponse, error)
 	PutRule(context.Context, *PutRuleRequest) (*PutRuleResponse, error)
@@ -217,10 +282,15 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	CreateEventBus(context.Context, *CreateEventBusRequest) (*CreateEventBusResponse, error)
+	DescribeEventBus(context.Context, *DescribeEventBusRequest) (*DescribeEventBusResponse, error)
+	ListEventBuses(context.Context, *ListEventBusesRequest) (*ListEventBusesResponse, error)
+	UpdateEventBus(context.Context, *UpdateEventBusRequest) (*UpdateEventBusResponse, error)
+	DeleteEventBus(context.Context, *DeleteEventBusRequest) (*DeleteEventBusOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "eventbridge", SigningName: "events", Inventory: catalog.InventoryOf(api), TargetPrefix: "AWSEvents", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 500}, "InvalidEventPatternException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ManagedRuleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "eventbridge", SigningName: "events", Inventory: catalog.InventoryOf(api), TargetPrefix: "AWSEvents", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 500}, "InvalidEventPatternException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ManagedRuleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "OperationDisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"PutEvents": {Name: "PutEvents", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.PutEvents", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutEventsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PutEvents(ctx, input.(*PutEventsRequest))
 		}},
@@ -260,6 +330,21 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"CreateEventBus": {Name: "CreateEventBus", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.CreateEventBus", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateEventBusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateEventBus(ctx, input.(*CreateEventBusRequest))
+		}},
+		"DescribeEventBus": {Name: "DescribeEventBus", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DescribeEventBus", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeEventBusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeEventBus(ctx, input.(*DescribeEventBusRequest))
+		}},
+		"ListEventBuses": {Name: "ListEventBuses", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.ListEventBuses", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListEventBusesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListEventBuses(ctx, input.(*ListEventBusesRequest))
+		}},
+		"UpdateEventBus": {Name: "UpdateEventBus", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.UpdateEventBus", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateEventBusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateEventBus(ctx, input.(*UpdateEventBusRequest))
+		}},
+		"DeleteEventBus": {Name: "DeleteEventBus", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DeleteEventBus", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteEventBusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteEventBus(ctx, input.(*DeleteEventBusRequest))
 		}},
 	}}
 }

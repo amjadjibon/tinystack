@@ -1,9 +1,12 @@
-// Package eventbridge implements rules and targets on each account's default
-// event bus, without HTTP dependencies. PutEvents matches events against rule
-// patterns and delivers them to SQS, SNS, and Lambda targets in-process.
+// Package eventbridge implements event buses with their rules and targets,
+// without HTTP dependencies. PutEvents matches events against the rule
+// patterns of their bus and delivers them to SQS, SNS, and Lambda targets
+// in-process.
 //
 // Each rule, with its targets, is one record under
-// "<account>/<region>/eventbridge/rule/<name>".
+// "<account>/<region>/eventbridge/rule/<name>" on the default bus, which every
+// account has, or "<account>/<region>/eventbridge/bus-rule/<bus>/<name>" on a
+// custom bus, whose record is "<account>/<region>/eventbridge/bus/<bus>".
 package eventbridge
 
 import (
@@ -69,6 +72,7 @@ func New(
 }
 
 type target struct {
+	Transformer    *transformer `json:",omitempty"`
 	ID             string
 	ARN            string
 	RoleARN        string `json:",omitempty"`
@@ -78,6 +82,8 @@ type target struct {
 }
 
 type rule struct {
+	// Bus is the custom bus of the rule; it is empty on the default bus.
+	Bus         string `json:",omitempty"`
 	Name        string
 	Pattern     string
 	State       string
@@ -91,8 +97,9 @@ var (
 	ruleName  = regexp.MustCompile(`^[.\-_A-Za-z0-9]{1,64}$`)
 	targetID  = ruleName
 	accountID = regexp.MustCompile(`^\d{12}$`)
-	// inputPath is the JSONPath subset TinyStack supports: "$" or dotted fields.
-	inputPath = regexp.MustCompile(`^\$(\.[A-Za-z0-9_-]+)*$`)
+	// inputPath is the JSONPath subset TinyStack supports: "$" followed by
+	// dotted fields and array indexes.
+	inputPath = regexp.MustCompile(`^\$(\.[A-Za-z0-9_-]+|\[\d+\])*$`)
 )
 
 func value[T any](p *T) (v T) {
@@ -107,8 +114,8 @@ func invalid(format string, args ...any) error {
 	return awserror.Validation(format, args...)
 }
 
-func ruleNotFound(name string) error {
-	return awserror.New("ResourceNotFoundException", "Rule "+name+" does not exist on EventBus default.")
+func ruleNotFound(name, bus string) error {
+	return awserror.New("ResourceNotFoundException", "Rule "+name+" does not exist on EventBus "+bus+".")
 }
 
 func identity(ctx context.Context) (request.Metadata, error) {
@@ -120,42 +127,53 @@ func identity(ctx context.Context) (request.Metadata, error) {
 	return m, nil
 }
 
-func rulePrefix(scope request.Scope) string {
-	return scope.AccountID + "/" + scope.Region + "/eventbridge/rule/"
+// rulePrefix is the storage prefix of the rules of a bus.
+func rulePrefix(scope request.Scope, bus string) string {
+	if bus == defaultBus {
+		return scope.AccountID + "/" + scope.Region + "/eventbridge/rule/"
+	}
+
+	return scope.AccountID + "/" + scope.Region + "/eventbridge/bus-rule/" + bus + "/"
 }
 
-func ruleARN(scope request.Scope, name string) string {
+// ruleARN is the ARN of a rule; the bus is part of it except for the default
+// bus.
+func ruleARN(scope request.Scope, bus, name string) string {
+	if bus != defaultBus {
+		name = bus + "/" + name
+	}
+
 	return "arn:aws:events:" + scope.Region + ":" + scope.AccountID + ":rule/" + name
 }
 
-// checkBus accepts the default bus by name or ARN. TinyStack has no custom
-// event buses, so any other bus does not exist.
-func checkBus(scope request.Scope, name *string) error {
-	bus := value(name)
-	if bus == "" || bus == defaultBus ||
-		bus == "arn:aws:events:"+scope.Region+":"+scope.AccountID+":event-bus/"+defaultBus {
-		return nil
-	}
-
-	return awserror.New("ResourceNotFoundException", "Event bus "+bus+" does not exist.")
+// ruleRef is a rule a request names, on its bus.
+type ruleRef struct {
+	scope          request.Scope
+	bus, name, key string
 }
 
-// resolveRule validates a rule reference and returns its storage key.
-func resolveRule(ctx context.Context, name, bus *string) (request.Metadata, string, error) {
+func (r *ruleRef) arn() string { return ruleARN(r.scope, r.bus, r.name) }
+
+func (r *ruleRef) notFound() error { return ruleNotFound(r.name, r.bus) }
+
+// resolveRule validates a rule reference on a bus given by name or ARN, the
+// default bus when it is absent.
+func resolveRule(ctx context.Context, name, bus *string) (ruleRef, error) {
 	m, err := identity(ctx)
 	if err != nil {
-		return m, "", err
+		return ruleRef{}, err
 	}
 
 	if !ruleName.MatchString(value(name)) {
-		return m, "", invalid("Rule name must be 1 to 64 characters from [.-_A-Za-z0-9].")
+		return ruleRef{}, invalid("Rule name must be 1 to 64 characters from [.-_A-Za-z0-9].")
 	}
 
-	if busErr := checkBus(m.Scope, bus); busErr != nil {
-		return m, "", busErr
+	b, err := busName(m.Scope, bus)
+	if err != nil {
+		return ruleRef{}, err
 	}
 
-	return m, rulePrefix(m.Scope) + *name, nil
+	return ruleRef{scope: m.Scope, bus: b, name: *name, key: rulePrefix(m.Scope, b) + *name}, nil
 }
 
 func newID() string {
@@ -192,23 +210,33 @@ func save(tx storage.WriteTx, key string, r *rule) error {
 }
 
 // update loads an existing rule, applies fn, and saves it.
-func (s *Service) update(ctx context.Context, name, key string, fn func(r *rule) error) error {
+func (s *Service) update(ctx context.Context, ref *ruleRef, fn func(r *rule) error) error {
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, ok, err := load(tx, key)
+		r, err := loadRule(tx, ref)
 		if err != nil {
 			return err
-		}
-
-		if !ok {
-			return ruleNotFound(name)
 		}
 
 		if fnErr := fn(r); fnErr != nil {
 			return fnErr
 		}
 
-		return save(tx, key, r)
+		return save(tx, ref.key, r)
 	})
+}
+
+// loadRule reads an existing rule on an existing bus.
+func loadRule(tx storage.ReadTx, ref *ruleRef) (*rule, error) {
+	if err := checkBus(tx, ref.scope, ref.bus); err != nil {
+		return nil, err
+	}
+
+	r, ok, err := load(tx, ref.key)
+	if err == nil && !ok {
+		return nil, ref.notFound()
+	}
+
+	return r, err
 }
 
 // page decodes a NextToken, the last name of the previous page, and checks a limit.
@@ -239,7 +267,7 @@ func nextToken(last string) *string {
 }
 
 func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.PutRuleResponse, error) {
-	m, key, err := resolveRule(ctx, in.Name, in.EventBusName)
+	ref, err := resolveRule(ctx, in.Name, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}
@@ -276,13 +304,17 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, exists, loadErr := load(tx, key)
+		if busErr := checkBus(tx, ref.scope, ref.bus); busErr != nil {
+			return busErr
+		}
+
+		r, exists, loadErr := load(tx, ref.key)
 		if loadErr != nil {
 			return loadErr
 		}
 
 		if !exists {
-			if len(tx.Keys(rulePrefix(m.Scope))) >= maxRules {
+			if len(tx.Keys(rulePrefix(ref.scope, ref.bus))) >= maxRules {
 				return awserror.New(
 					"LimitExceededException",
 					"The requested resource exceeds the maximum number allowed.",
@@ -290,6 +322,9 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 			}
 
 			r = &rule{Name: *in.Name}
+			if ref.bus != defaultBus {
+				r.Bus = ref.bus
+			}
 		}
 
 		r.Pattern, r.State = text, state
@@ -298,36 +333,32 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 			return tagErr
 		}
 
-		return save(tx, key, r)
+		return save(tx, ref.key, r)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.PutRuleResponse{RuleArn: new(ruleARN(m.Scope, *in.Name))}, nil
+	return &api.PutRuleResponse{RuleArn: new(ref.arn())}, nil
 }
 
 func (s *Service) DescribeRule(ctx context.Context, in *api.DescribeRuleRequest) (*api.DescribeRuleResponse, error) {
-	m, key, err := resolveRule(ctx, in.Name, in.EventBusName)
+	ref, err := resolveRule(ctx, in.Name, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}
 
 	var r *rule
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		var ok bool
-		r, ok, err = load(tx, key)
-		if err == nil && !ok {
-			return ruleNotFound(*in.Name)
-		}
-
-		return err
+		var loadErr error
+		r, loadErr = loadRule(tx, &ref)
+		return loadErr
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	out := r.describe(m.Scope)
+	out := r.describe(ref.scope)
 	return &api.DescribeRuleResponse{
 		Name:         out.Name,
 		Arn:          out.Arn,
@@ -336,17 +367,26 @@ func (s *Service) DescribeRule(ctx context.Context, in *api.DescribeRuleRequest)
 		Description:  out.Description,
 		RoleArn:      out.RoleArn,
 		EventBusName: out.EventBusName,
-		CreatedBy:    new(m.AccountID),
+		CreatedBy:    new(ref.scope.AccountID),
 	}, nil
+}
+
+// bus is the name of the rule's bus.
+func (r *rule) bus() string {
+	if r.Bus == "" {
+		return defaultBus
+	}
+
+	return r.Bus
 }
 
 func (r *rule) describe(scope request.Scope) api.Rule {
 	out := api.Rule{
 		Name:         new(r.Name),
-		Arn:          new(ruleARN(scope, r.Name)),
+		Arn:          new(ruleARN(scope, r.bus(), r.Name)),
 		EventPattern: new(r.Pattern),
 		State:        new(r.State),
-		EventBusName: new(defaultBus),
+		EventBusName: new(r.bus()),
 	}
 	if r.Description != "" {
 		out.Description = new(r.Description)
@@ -361,13 +401,17 @@ func (r *rule) describe(scope request.Scope) api.Rule {
 
 // DeleteRule succeeds for a rule that does not exist, as EventBridge does.
 func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleRequest) (*api.DeleteRuleOutput, error) {
-	_, key, err := resolveRule(ctx, in.Name, in.EventBusName)
+	ref, err := resolveRule(ctx, in.Name, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, ok, loadErr := load(tx, key)
+		if busErr := checkBus(tx, ref.scope, ref.bus); busErr != nil {
+			return busErr
+		}
+
+		r, ok, loadErr := load(tx, ref.key)
 		if loadErr != nil || !ok {
 			return loadErr
 		}
@@ -376,7 +420,7 @@ func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleRequest) (*a
 			return invalid("Rule can't be deleted since it has targets.")
 		}
 
-		tx.Delete(key)
+		tx.Delete(ref.key)
 		return nil
 	})
 	if err != nil {
@@ -392,8 +436,9 @@ func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api
 		return nil, err
 	}
 
-	if busErr := checkBus(m.Scope, in.EventBusName); busErr != nil {
-		return nil, busErr
+	bus, err := busName(m.Scope, in.EventBusName)
+	if err != nil {
+		return nil, err
 	}
 
 	after, size, err := page(in.NextToken, in.Limit)
@@ -402,10 +447,14 @@ func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api
 	}
 
 	var rules []*rule
-	prefix := rulePrefix(m.Scope) + value(in.NamePrefix)
+	prefix := rulePrefix(m.Scope, bus)
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(prefix) {
-			if strings.TrimPrefix(k, rulePrefix(m.Scope)) <= after {
+		if busErr := checkBus(tx, m.Scope, bus); busErr != nil {
+			return busErr
+		}
+
+		for _, k := range tx.Keys(prefix + value(in.NamePrefix)) {
+			if strings.TrimPrefix(k, prefix) <= after {
 				continue
 			}
 
@@ -437,12 +486,12 @@ func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api
 }
 
 func (s *Service) setState(ctx context.Context, name, bus *string, state string) error {
-	_, key, err := resolveRule(ctx, name, bus)
+	ref, err := resolveRule(ctx, name, bus)
 	if err != nil {
 		return err
 	}
 
-	return s.update(ctx, *name, key, func(r *rule) error {
+	return s.update(ctx, &ref, func(r *rule) error {
 		r.State = state
 		return nil
 	})

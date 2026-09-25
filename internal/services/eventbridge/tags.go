@@ -41,33 +41,92 @@ func mergeTags(r *rule, add map[string]string) error {
 	return nil
 }
 
-// resolveARN maps a rule ARN on the caller's default bus to its name and key.
-func resolveARN(ctx context.Context, arn *string) (name, key string, err error) {
-	m, err := identity(ctx)
-	if err != nil {
-		return "", "", err
-	}
-
-	name, ok := strings.CutPrefix(value(arn), ruleARN(m.Scope, ""))
-	if !ok || !ruleName.MatchString(name) {
-		return "", "", awserror.New("ResourceNotFoundException", "Resource "+value(arn)+" does not exist.")
-	}
-
-	return name, rulePrefix(m.Scope) + name, nil
+// tagged is the tag set of a rule or custom bus, and how to save it.
+type tagged struct {
+	tags *map[string]string
+	save func(storage.WriteTx) error
 }
 
-func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (*api.TagResourceResponse, error) {
-	name, key, err := resolveARN(ctx, in.ResourceARN)
+// resolveTagged loads the rule or custom bus a tagging ARN names.
+func resolveTagged(ctx context.Context, tx storage.ReadTx, arn *string) (*tagged, error) {
+	m, err := identity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	missing := awserror.New("ResourceNotFoundException", "Resource "+value(arn)+" does not exist.")
+	if name, ok := strings.CutPrefix(value(arn), busARN(m.Scope, "")); ok {
+		if !busPattern.MatchString(name) || name == defaultBus {
+			return nil, missing
+		}
+
+		b, found, loadErr := loadBus(tx, m.Scope, name)
+		if loadErr != nil || !found {
+			if loadErr != nil {
+				return nil, loadErr
+			}
+
+			return nil, missing
+		}
+
+		return &tagged{tags: &b.Tags, save: func(w storage.WriteTx) error { return saveBus(w, m.Scope, b) }}, nil
+	}
+
+	rest, ok := strings.CutPrefix(value(arn), ruleARN(m.Scope, defaultBus, ""))
+	if !ok {
+		return nil, missing
+	}
+
+	busRef, name, onBus := strings.Cut(rest, "/")
+	if !onBus {
+		busRef, name = "", rest
+	}
+
+	ref, err := resolveRule(ctx, &name, &busRef)
+	if err != nil {
+		return nil, missing
+	}
+
+	r, err := loadRule(tx, &ref)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tagged{tags: &r.Tags, save: func(w storage.WriteTx) error { return save(w, ref.key, r) }}, nil
+}
+
+// retag applies fn to the tags of the rule or custom bus arn names.
+func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]string) (map[string]string, error)) error {
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		t, err := resolveTagged(ctx, tx, arn)
+		if err != nil {
+			return err
+		}
+
+		tags, err := fn(*t.tags)
+		if err != nil {
+			return err
+		}
+
+		*t.tags = tags
+		return t.save(tx)
+	})
+}
+
+func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (*api.TagResourceResponse, error) {
 	add, err := tagMap(in.Tags)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.update(ctx, name, key, func(r *rule) error { return mergeTags(r, add) })
+	err = s.retag(ctx, in.ResourceARN, func(tags map[string]string) (map[string]string, error) {
+		merged, mergeErr := tagging.Merge(tags, add)
+		if mergeErr != nil {
+			return nil, invalid("Invalid tags: %v.", mergeErr)
+		}
+
+		return merged, nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -76,14 +135,8 @@ func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (
 }
 
 func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceRequest) (*api.UntagResourceResponse, error) {
-	name, key, err := resolveARN(ctx, in.ResourceARN)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.update(ctx, name, key, func(r *rule) error {
-		r.Tags = tagging.Remove(r.Tags, in.TagKeys)
-		return nil
+	err := s.retag(ctx, in.ResourceARN, func(tags map[string]string) (map[string]string, error) {
+		return tagging.Remove(tags, in.TagKeys), nil
 	})
 	if err != nil {
 		return nil, err
@@ -96,24 +149,14 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	name, key, err := resolveARN(ctx, in.ResourceARN)
-	if err != nil {
-		return nil, err
-	}
-
 	var tags map[string]string
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, ok, loadErr := load(tx, key)
-		if loadErr != nil {
-			return loadErr
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		t, err := resolveTagged(ctx, tx, in.ResourceARN)
+		if err == nil {
+			tags = *t.tags
 		}
 
-		if !ok {
-			return ruleNotFound(name)
-		}
-
-		tags = r.Tags
-		return nil
+		return err
 	})
 	if err != nil {
 		return nil, err

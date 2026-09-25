@@ -1370,7 +1370,12 @@
       "TestEventPattern",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "CreateEventBus",
+      "DescribeEventBus",
+      "ListEventBuses",
+      "UpdateEventBus",
+      "DeleteEventBus"
     ],
     "shapes": {
       "PutEventsRequest": [
@@ -1462,7 +1467,8 @@
         "RoleArn",
         "Input",
         "InputPath",
-        "SqsParameters"
+        "SqsParameters",
+        "InputTransformer"
       ],
       "SqsParameters": [
         "MessageGroupId"
@@ -1525,6 +1531,57 @@
       ],
       "ListTagsForResourceResponse": [
         "Tags"
+      ],
+      "InputTransformer": [
+        "InputPathsMap",
+        "InputTemplate"
+      ],
+      "CreateEventBusRequest": [
+        "Name",
+        "Description",
+        "Tags"
+      ],
+      "CreateEventBusResponse": [
+        "EventBusArn",
+        "Description"
+      ],
+      "DescribeEventBusRequest": [
+        "Name"
+      ],
+      "DescribeEventBusResponse": [
+        "Name",
+        "Arn",
+        "Description",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "ListEventBusesRequest": [
+        "NamePrefix",
+        "NextToken",
+        "Limit"
+      ],
+      "ListEventBusesResponse": [
+        "EventBuses",
+        "NextToken"
+      ],
+      "EventBus": [
+        "Name",
+        "Arn",
+        "Description",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "UpdateEventBusRequest": [
+        "Name",
+        "Description"
+      ],
+      "UpdateEventBusResponse": [
+        "Arn",
+        "Name",
+        "Description"
+      ],
+      "DeleteEventBusRequest": [
+        "Name"
       ]
     }
   },
