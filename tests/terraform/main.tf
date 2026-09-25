@@ -136,11 +136,20 @@ resource "aws_lambda_function" "echo" {
   handler          = "app.handler"
   filename         = var.function_zip
   source_code_hash = filebase64sha256(var.function_zip)
+  publish          = true
   tags             = local.tags
 
   environment {
     variables = { TEAM = var.team }
   }
+}
+
+# Each code change publishes a version, and the alias follows it.
+resource "aws_lambda_alias" "live" {
+  name             = "live"
+  function_name    = aws_lambda_function.echo.function_name
+  function_version = aws_lambda_function.echo.version
+  description      = "Serves ${var.team}"
 }
 
 resource "aws_cloudwatch_log_group" "echo" {
