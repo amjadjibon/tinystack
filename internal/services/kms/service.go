@@ -1,0 +1,759 @@
+// Package kms implements symmetric KMS keys, aliases, and envelope encryption,
+// without HTTP dependencies. Keys and aliases belong to an account and region:
+//
+//	<scope>/kms/key/<key ID>
+//	<scope>/kms/alias/<name without the alias/ prefix>
+//
+// Each key record holds its 256-bit key material, which is never rotated.
+// Policies are stored, never evaluated. A key past its scheduled deletion date
+// is treated as gone.
+package kms
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/tagging"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+const (
+	stateEnabled         = "Enabled"
+	stateDisabled        = "Disabled"
+	statePendingDeletion = "PendingDeletion"
+	symmetricDefault     = "SYMMETRIC_DEFAULT"
+	encryptDecrypt       = "ENCRYPT_DECRYPT"
+	originKMS            = "AWS_KMS"
+	defaultPolicyName    = "default"
+	maxDescription       = 8192
+	maxPolicy            = 32768
+	day                  = 24 * time.Hour
+)
+
+var _ api.API = (*Service)(nil)
+
+type Service struct {
+	store storage.Store
+	now   func() time.Time
+}
+
+func New(store storage.Store) *Service {
+	return &Service{store: store, now: time.Now}
+}
+
+// key is a KMS key record. Times are Unix milliseconds.
+type key struct {
+	Tags        map[string]string `json:",omitempty"`
+	ID          string
+	Description string
+	Policy      string
+	State       string
+	Material    []byte
+	Created     int64
+	// DeletionDate and PendingDays are set while the key is pending deletion.
+	DeletionDate int64 `json:",omitempty"`
+	PendingDays  int64 `json:",omitempty"`
+	// RotationDays is the rotation period, zero while rotation is disabled, and
+	// RotationStart is when rotation was enabled.
+	RotationDays  int64 `json:",omitempty"`
+	RotationStart int64 `json:",omitempty"`
+}
+
+var keyID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
+func value[T any](p *T) (v T) {
+	if p != nil {
+		return *p
+	}
+
+	return v
+}
+
+func notFound(format string, args ...any) error {
+	return awserror.New("NotFoundException", fmt.Sprintf(format, args...))
+}
+
+func invalidState(format string, args ...any) error {
+	return awserror.New("KMSInvalidStateException", fmt.Sprintf(format, args...))
+}
+
+func unsupported(format string, args ...any) error {
+	return awserror.New("UnsupportedOperationException", fmt.Sprintf(format, args...))
+}
+
+func identity(ctx context.Context) (request.Scope, error) {
+	m, ok := request.FromContext(ctx)
+	if !ok || m.AccountID == "" || m.Region == "" {
+		return request.Scope{}, fmt.Errorf("missing request identity")
+	}
+
+	return m.Scope, nil
+}
+
+func prefix(scope request.Scope, kind string) string {
+	return scope.AccountID + "/" + scope.Region + "/kms/" + kind + "/"
+}
+
+func keyKey(scope request.Scope, id string) string { return prefix(scope, "key") + id }
+
+func keyARN(scope request.Scope, id string) string {
+	return "arn:aws:kms:" + scope.Region + ":" + scope.AccountID + ":key/" + id
+}
+
+func seconds(ms int64) *float64 { return new(float64(ms) / 1000) }
+
+func newKeyID() string {
+	var b [16]byte
+	_, _ = rand.Read(b[:])
+	b[6] = b[6]&0x0f | 0x40
+	b[8] = b[8]&0x3f | 0x80
+	s := hex.EncodeToString(b[:])
+	return s[:8] + "-" + s[8:12] + "-" + s[12:16] + "-" + s[16:20] + "-" + s[20:]
+}
+
+func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
+	data, ok := tx.Get(k)
+	if !ok {
+		return nil, false, nil
+	}
+
+	v = new(T)
+	if err = json.Unmarshal(data, v); err != nil {
+		return nil, false, fmt.Errorf("decode %s: %w", k, err)
+	}
+
+	return v, true, nil
+}
+
+func write(tx storage.WriteTx, k string, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("encode %s: %w", k, err)
+	}
+
+	tx.Put(k, data)
+	return nil
+}
+
+// deleted reports whether the key's scheduled deletion date has passed.
+func (k *key) deleted(now time.Time) bool {
+	return k.State == statePendingDeletion && now.UnixMilli() >= k.DeletionDate
+}
+
+// usable reports why the key cannot encrypt or decrypt, if it cannot.
+func (k *key) usable(scope request.Scope) error {
+	switch k.State {
+	case stateDisabled:
+		return awserror.New("DisabledException", keyARN(scope, k.ID)+" is disabled.")
+	case statePendingDeletion:
+		return invalidState("%s is pending deletion.", keyARN(scope, k.ID))
+	}
+
+	return nil
+}
+
+// active fails unless the key is enabled or disabled, as operations that change
+// a key require.
+func (k *key) active(scope request.Scope) error {
+	if k.State == statePendingDeletion {
+		return invalidState("%s is pending deletion.", keyARN(scope, k.ID))
+	}
+
+	return nil
+}
+
+func (k *key) metadata(scope request.Scope) *api.KeyMetadata {
+	m := &api.KeyMetadata{
+		AWSAccountId:          new(scope.AccountID),
+		KeyId:                 new(k.ID),
+		Arn:                   new(keyARN(scope, k.ID)),
+		CreationDate:          seconds(k.Created),
+		Enabled:               new(k.State == stateEnabled),
+		Description:           new(k.Description),
+		KeyUsage:              new(encryptDecrypt),
+		KeyState:              new(k.State),
+		Origin:                new(originKMS),
+		KeyManager:            new("CUSTOMER"),
+		CustomerMasterKeySpec: new(symmetricDefault),
+		KeySpec:               new(symmetricDefault),
+		EncryptionAlgorithms:  []string{symmetricDefault},
+		MultiRegion:           new(false),
+	}
+	if k.State == statePendingDeletion {
+		m.DeletionDate = seconds(k.DeletionDate)
+		m.PendingDeletionWindowInDays = new(k.PendingDays)
+	}
+
+	return m
+}
+
+// resolve maps a key ID, key ARN, or (when aliases is true) an alias name or
+// alias ARN to the ID of a key in the caller's scope, which may not exist.
+func resolve(tx storage.ReadTx, scope request.Scope, ref string, aliases bool) (string, error) {
+	name := ref
+	if rest, ok := strings.CutPrefix(ref, "arn:"); ok {
+		parts := strings.SplitN(rest, ":", 5)
+		if len(parts) != 5 || parts[1] != "kms" {
+			return "", awserror.New("InvalidArnException", "Invalid arn "+ref)
+		}
+
+		if parts[2] != scope.Region || parts[3] != scope.AccountID {
+			return "", notFound("Invalid arn %s", ref)
+		}
+
+		name = parts[4]
+		if id, isKey := strings.CutPrefix(name, "key/"); isKey {
+			name = id
+		}
+	}
+
+	aliasName, isAlias := strings.CutPrefix(name, "alias/")
+	switch {
+	case isAlias && aliases:
+		a, found, err := read[alias](tx, aliasKey(scope, aliasName))
+		if err != nil {
+			return "", err
+		}
+
+		if !found {
+			return "", notFound("Alias %s is not found.", aliasARN(scope, aliasName))
+		}
+
+		return a.Target, nil
+	case keyID.MatchString(name):
+		return name, nil
+	default:
+		return "", notFound("Invalid keyId '%s'", ref)
+	}
+}
+
+// load resolves ref and reads the key it names.
+func (s *Service) load(tx storage.ReadTx, scope request.Scope, ref *string, aliases bool) (*key, error) {
+	if value(ref) == "" {
+		return nil, awserror.Validation("KeyId is required.")
+	}
+
+	id, err := resolve(tx, scope, *ref, aliases)
+	if err != nil {
+		return nil, err
+	}
+
+	k, found, err := read[key](tx, keyKey(scope, id))
+	if err != nil {
+		return nil, err
+	}
+
+	if !found || k.deleted(s.now()) {
+		return nil, notFound("Key '%s' does not exist", keyARN(scope, id))
+	}
+
+	return k, nil
+}
+
+// view runs fn on the key that ref names.
+func (s *Service) view(ctx context.Context, ref *string, aliases bool, fn func(request.Scope, *key) error) error {
+	scope, err := identity(ctx)
+	if err != nil {
+		return err
+	}
+
+	return s.store.View(ctx, func(tx storage.ReadTx) error {
+		k, loadErr := s.load(tx, scope, ref, aliases)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		return fn(scope, k)
+	})
+}
+
+// change runs fn on the key that ref (a key ID or ARN) names and saves it.
+func (s *Service) change(ctx context.Context, ref *string, fn func(request.Scope, *key) error) error {
+	scope, err := identity(ctx)
+	if err != nil {
+		return err
+	}
+
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		k, loadErr := s.load(tx, scope, ref, false)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		if fnErr := fn(scope, k); fnErr != nil {
+			return fnErr
+		}
+
+		return write(tx, keyKey(scope, k.ID), k)
+	})
+}
+
+// page returns the items after marker, at most limit of them (from 1 to most,
+// def by default), and the marker of the next page. items must be sorted by
+// id, and a marker holds the last returned item's id.
+func page[T any](items []T, id func(T) string, marker *string, limit *int64, def, most int64) (
+	selected []T,
+	next *string,
+	err error,
+) {
+	n := def
+	if limit != nil {
+		if *limit < 1 || *limit > most {
+			return nil, nil, awserror.Validation("Limit must be between 1 and %d.", most)
+		}
+
+		n = *limit
+	}
+
+	if marker != nil {
+		after, decodeErr := base64.RawURLEncoding.DecodeString(*marker)
+		if decodeErr != nil || len(after) == 0 {
+			return nil, nil, awserror.New("InvalidMarkerException", "Invalid marker "+*marker)
+		}
+
+		start := slices.IndexFunc(items, func(item T) bool { return id(item) > string(after) })
+		if start < 0 {
+			start = len(items)
+		}
+
+		items = items[start:]
+	}
+
+	if int64(len(items)) <= n {
+		return items, nil, nil
+	}
+
+	items = items[:n]
+	return items, new(base64.RawURLEncoding.EncodeToString([]byte(id(items[n-1])))), nil
+}
+
+func checkDescription(description *string) error {
+	if len(value(description)) > maxDescription {
+		return awserror.Validation("Description must be at most %d characters.", maxDescription)
+	}
+
+	return nil
+}
+
+// checkPolicy validates a key policy document; policies are never evaluated.
+func checkPolicy(policy string) error {
+	var document map[string]any
+	if len(policy) > maxPolicy || json.Unmarshal([]byte(policy), &document) != nil || document == nil {
+		return awserror.New("MalformedPolicyDocumentException", "The policy is not a valid JSON policy document.")
+	}
+
+	return nil
+}
+
+// defaultPolicy is the policy KMS gives a key created without one: the account
+// may use the key through IAM.
+func defaultPolicy(scope request.Scope) string {
+	policy := map[string]any{
+		"Version": "2012-10-17",
+		"Id":      "key-default-1",
+		"Statement": []map[string]any{{
+			"Sid":       "Enable IAM User Permissions",
+			"Effect":    "Allow",
+			"Principal": map[string]string{"AWS": "arn:aws:iam::" + scope.AccountID + ":root"},
+			"Action":    "kms:*",
+			"Resource":  "*",
+		}},
+	}
+
+	b, _ := json.Marshal(policy)
+	return string(b)
+}
+
+// checkKeySpec accepts only what TinyStack implements: symmetric encryption
+// keys that KMS generates, in one region.
+func checkKeySpec(in *api.CreateKeyRequest) error {
+	if in.KeySpec != nil && in.CustomerMasterKeySpec != nil {
+		return awserror.Validation("You cannot specify KeySpec and CustomerMasterKeySpec in the same request.")
+	}
+
+	spec := value(in.KeySpec)
+	if spec == "" {
+		spec = value(in.CustomerMasterKeySpec)
+	}
+
+	switch {
+	case spec != "" && spec != symmetricDefault:
+		return unsupported("TinyStack supports only %s keys, not %s.", symmetricDefault, spec)
+	case in.KeyUsage != nil && *in.KeyUsage != encryptDecrypt:
+		return unsupported("TinyStack supports only %s keys, not %s.", encryptDecrypt, *in.KeyUsage)
+	case in.Origin != nil && *in.Origin != originKMS:
+		return unsupported("TinyStack supports only %s key material, not %s.", originKMS, *in.Origin)
+	case value(in.MultiRegion):
+		return unsupported("TinyStack does not support multi-Region keys.")
+	}
+
+	return nil
+}
+
+func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api.CreateKeyResponse, error) {
+	scope, err := identity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if guardErr := checkKeySpec(in); guardErr != nil {
+		return nil, guardErr
+	}
+
+	if guardErr := checkDescription(in.Description); guardErr != nil {
+		return nil, guardErr
+	}
+
+	policy := value(in.Policy)
+	if policy == "" {
+		policy = defaultPolicy(scope)
+	} else if guardErr := checkPolicy(policy); guardErr != nil {
+		return nil, guardErr
+	}
+
+	tags, err := tagMap(in.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	if tagErr := tagging.Check(tags); tagErr != nil {
+		return nil, tagError(tagErr)
+	}
+
+	k := &key{
+		Tags: tags, ID: newKeyID(), Description: value(in.Description), Policy: policy, State: stateEnabled,
+		Material: make([]byte, 32), Created: s.now().UnixMilli(),
+	}
+	_, _ = rand.Read(k.Material)
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		return write(tx, keyKey(scope, k.ID), k)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.CreateKeyResponse{KeyMetadata: k.metadata(scope)}, nil
+}
+
+func (s *Service) DescribeKey(ctx context.Context, in *api.DescribeKeyRequest) (*api.DescribeKeyResponse, error) {
+	out := &api.DescribeKeyResponse{}
+	err := s.view(ctx, in.KeyId, true, func(scope request.Scope, k *key) error {
+		out.KeyMetadata = k.metadata(scope)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// ListKeys lists the caller's keys, including those pending deletion, in key ID order.
+func (s *Service) ListKeys(ctx context.Context, in *api.ListKeysRequest) (*api.ListKeysResponse, error) {
+	scope, err := identity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var ids []string
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		for _, k := range tx.Keys(prefix(scope, "key")) {
+			record, _, readErr := read[key](tx, k)
+			if readErr != nil {
+				return readErr
+			}
+
+			if !record.deleted(s.now()) {
+				ids = append(ids, record.ID)
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	ids, next, err := page(ids, func(id string) string { return id }, in.Marker, in.Limit, 100, 1000)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &api.ListKeysResponse{Keys: []api.KeyListEntry{}, NextMarker: next, Truncated: new(next != nil)}
+	for _, id := range ids {
+		out.Keys = append(out.Keys, api.KeyListEntry{KeyId: new(id), KeyArn: new(keyARN(scope, id))})
+	}
+
+	return out, nil
+}
+
+func (s *Service) EnableKey(ctx context.Context, in *api.EnableKeyRequest) (*api.EnableKeyOutput, error) {
+	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if activeErr := k.active(scope); activeErr != nil {
+			return activeErr
+		}
+
+		k.State = stateEnabled
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.EnableKeyOutput{}, nil
+}
+
+func (s *Service) DisableKey(ctx context.Context, in *api.DisableKeyRequest) (*api.DisableKeyOutput, error) {
+	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if activeErr := k.active(scope); activeErr != nil {
+			return activeErr
+		}
+
+		k.State = stateDisabled
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.DisableKeyOutput{}, nil
+}
+
+// ScheduleKeyDeletion deletes the key after 7 to 30 days (30 by default).
+func (s *Service) ScheduleKeyDeletion(
+	ctx context.Context,
+	in *api.ScheduleKeyDeletionRequest,
+) (*api.ScheduleKeyDeletionResponse, error) {
+	days := int64(30)
+	if in.PendingWindowInDays != nil {
+		days = *in.PendingWindowInDays
+		if days < 7 || days > 30 {
+			return nil, awserror.Validation("PendingWindowInDays must be between 7 and 30.")
+		}
+	}
+
+	out := &api.ScheduleKeyDeletionResponse{}
+	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if activeErr := k.active(scope); activeErr != nil {
+			return activeErr
+		}
+
+		k.State = statePendingDeletion
+		k.PendingDays = days
+		k.DeletionDate = s.now().Add(time.Duration(days) * day).UnixMilli()
+		out = &api.ScheduleKeyDeletionResponse{
+			KeyId: new(keyARN(scope, k.ID)), DeletionDate: seconds(k.DeletionDate),
+			KeyState: new(k.State), PendingWindowInDays: new(days),
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// CancelKeyDeletion leaves a key pending deletion disabled, as KMS does.
+func (s *Service) CancelKeyDeletion(
+	ctx context.Context,
+	in *api.CancelKeyDeletionRequest,
+) (*api.CancelKeyDeletionResponse, error) {
+	out := &api.CancelKeyDeletionResponse{}
+	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if k.State != statePendingDeletion {
+			return invalidState("%s is not pending deletion.", keyARN(scope, k.ID))
+		}
+
+		k.State, k.DeletionDate, k.PendingDays = stateDisabled, 0, 0
+		out.KeyId = new(keyARN(scope, k.ID))
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Service) UpdateKeyDescription(
+	ctx context.Context,
+	in *api.UpdateKeyDescriptionRequest,
+) (*api.UpdateKeyDescriptionOutput, error) {
+	if in.Description == nil {
+		return nil, awserror.Validation("Description is required.")
+	}
+
+	if guardErr := checkDescription(in.Description); guardErr != nil {
+		return nil, guardErr
+	}
+
+	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if activeErr := k.active(scope); activeErr != nil {
+			return activeErr
+		}
+
+		k.Description = *in.Description
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.UpdateKeyDescriptionOutput{}, nil
+}
+
+// checkPolicyName accepts the only key policy name, "default".
+func checkPolicyName(name *string) error {
+	if name != nil && *name != defaultPolicyName {
+		return notFound("Policy %s does not exist.", *name)
+	}
+
+	return nil
+}
+
+func (s *Service) GetKeyPolicy(ctx context.Context, in *api.GetKeyPolicyRequest) (*api.GetKeyPolicyResponse, error) {
+	if guardErr := checkPolicyName(in.PolicyName); guardErr != nil {
+		return nil, guardErr
+	}
+
+	out := &api.GetKeyPolicyResponse{PolicyName: new(defaultPolicyName)}
+	err := s.view(ctx, in.KeyId, false, func(_ request.Scope, k *key) error {
+		out.Policy = new(k.Policy)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Service) PutKeyPolicy(ctx context.Context, in *api.PutKeyPolicyRequest) (*api.PutKeyPolicyOutput, error) {
+	if guardErr := checkPolicyName(in.PolicyName); guardErr != nil {
+		return nil, guardErr
+	}
+
+	if guardErr := checkPolicy(value(in.Policy)); guardErr != nil {
+		return nil, guardErr
+	}
+
+	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if activeErr := k.active(scope); activeErr != nil {
+			return activeErr
+		}
+
+		k.Policy = *in.Policy
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.PutKeyPolicyOutput{}, nil
+}
+
+func (s *Service) ListKeyPolicies(
+	ctx context.Context,
+	in *api.ListKeyPoliciesRequest,
+) (*api.ListKeyPoliciesResponse, error) {
+	err := s.view(ctx, in.KeyId, false, func(request.Scope, *key) error { return nil })
+	if err != nil {
+		return nil, err
+	}
+
+	names, next, err := page(
+		[]string{defaultPolicyName}, func(name string) string { return name }, in.Marker, in.Limit, 100, 1000,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.ListKeyPoliciesResponse{PolicyNames: names, NextMarker: next, Truncated: new(next != nil)}, nil
+}
+
+func (s *Service) GetKeyRotationStatus(
+	ctx context.Context,
+	in *api.GetKeyRotationStatusRequest,
+) (*api.GetKeyRotationStatusResponse, error) {
+	out := &api.GetKeyRotationStatusResponse{}
+	err := s.view(ctx, in.KeyId, false, func(scope request.Scope, k *key) error {
+		out.KeyId = new(keyARN(scope, k.ID))
+		out.KeyRotationEnabled = new(k.RotationDays > 0)
+		if k.RotationDays > 0 {
+			out.RotationPeriodInDays = new(k.RotationDays)
+			out.NextRotationDate = seconds(k.RotationStart + (time.Duration(k.RotationDays) * day).Milliseconds())
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// EnableKeyRotation records a rotation period of 90 to 2560 days (365 by
+// default). TinyStack never rotates the key material.
+func (s *Service) EnableKeyRotation(
+	ctx context.Context,
+	in *api.EnableKeyRotationRequest,
+) (*api.EnableKeyRotationOutput, error) {
+	days := int64(365)
+	if in.RotationPeriodInDays != nil {
+		days = *in.RotationPeriodInDays
+		if days < 90 || days > 2560 {
+			return nil, awserror.Validation("RotationPeriodInDays must be between 90 and 2560.")
+		}
+	}
+
+	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if usableErr := k.usable(scope); usableErr != nil {
+			return usableErr
+		}
+
+		if k.RotationDays == 0 {
+			k.RotationStart = s.now().UnixMilli()
+		}
+
+		k.RotationDays = days
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.EnableKeyRotationOutput{}, nil
+}
+
+func (s *Service) DisableKeyRotation(
+	ctx context.Context,
+	in *api.DisableKeyRotationRequest,
+) (*api.DisableKeyRotationOutput, error) {
+	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if usableErr := k.usable(scope); usableErr != nil {
+			return usableErr
+		}
+
+		k.RotationDays, k.RotationStart = 0, 0
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.DisableKeyRotationOutput{}, nil
+}

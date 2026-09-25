@@ -2110,5 +2110,257 @@
         "tags"
       ]
     }
+  },
+  "kms": {
+    "operations": [
+      "CreateKey",
+      "DescribeKey",
+      "ListKeys",
+      "EnableKey",
+      "DisableKey",
+      "ScheduleKeyDeletion",
+      "CancelKeyDeletion",
+      "UpdateKeyDescription",
+      "GetKeyPolicy",
+      "PutKeyPolicy",
+      "ListKeyPolicies",
+      "GetKeyRotationStatus",
+      "EnableKeyRotation",
+      "DisableKeyRotation",
+      "CreateAlias",
+      "DeleteAlias",
+      "UpdateAlias",
+      "ListAliases",
+      "TagResource",
+      "UntagResource",
+      "ListResourceTags",
+      "Encrypt",
+      "Decrypt",
+      "GenerateDataKey",
+      "GenerateDataKeyWithoutPlaintext",
+      "GenerateRandom"
+    ],
+    "shapes": {
+      "CreateKeyRequest": [
+        "Policy",
+        "Description",
+        "KeyUsage",
+        "CustomerMasterKeySpec",
+        "KeySpec",
+        "Origin",
+        "BypassPolicyLockoutSafetyCheck",
+        "Tags",
+        "MultiRegion"
+      ],
+      "CreateKeyResponse": [
+        "KeyMetadata"
+      ],
+      "DescribeKeyRequest": [
+        "KeyId"
+      ],
+      "DescribeKeyResponse": [
+        "KeyMetadata"
+      ],
+      "KeyMetadata": [
+        "AWSAccountId",
+        "KeyId",
+        "Arn",
+        "CreationDate",
+        "Enabled",
+        "Description",
+        "KeyUsage",
+        "KeyState",
+        "DeletionDate",
+        "Origin",
+        "KeyManager",
+        "CustomerMasterKeySpec",
+        "KeySpec",
+        "EncryptionAlgorithms",
+        "MultiRegion",
+        "PendingDeletionWindowInDays"
+      ],
+      "ListKeysRequest": [
+        "Limit",
+        "Marker"
+      ],
+      "ListKeysResponse": [
+        "Keys",
+        "NextMarker",
+        "Truncated"
+      ],
+      "KeyListEntry": [
+        "KeyId",
+        "KeyArn"
+      ],
+      "EnableKeyRequest": [
+        "KeyId"
+      ],
+      "DisableKeyRequest": [
+        "KeyId"
+      ],
+      "ScheduleKeyDeletionRequest": [
+        "KeyId",
+        "PendingWindowInDays"
+      ],
+      "ScheduleKeyDeletionResponse": [
+        "KeyId",
+        "DeletionDate",
+        "KeyState",
+        "PendingWindowInDays"
+      ],
+      "CancelKeyDeletionRequest": [
+        "KeyId"
+      ],
+      "CancelKeyDeletionResponse": [
+        "KeyId"
+      ],
+      "UpdateKeyDescriptionRequest": [
+        "KeyId",
+        "Description"
+      ],
+      "GetKeyPolicyRequest": [
+        "KeyId",
+        "PolicyName"
+      ],
+      "GetKeyPolicyResponse": [
+        "Policy",
+        "PolicyName"
+      ],
+      "PutKeyPolicyRequest": [
+        "KeyId",
+        "PolicyName",
+        "Policy",
+        "BypassPolicyLockoutSafetyCheck"
+      ],
+      "ListKeyPoliciesRequest": [
+        "KeyId",
+        "Limit",
+        "Marker"
+      ],
+      "ListKeyPoliciesResponse": [
+        "PolicyNames",
+        "NextMarker",
+        "Truncated"
+      ],
+      "GetKeyRotationStatusRequest": [
+        "KeyId"
+      ],
+      "GetKeyRotationStatusResponse": [
+        "KeyRotationEnabled",
+        "KeyId",
+        "RotationPeriodInDays",
+        "NextRotationDate"
+      ],
+      "EnableKeyRotationRequest": [
+        "KeyId",
+        "RotationPeriodInDays"
+      ],
+      "DisableKeyRotationRequest": [
+        "KeyId"
+      ],
+      "CreateAliasRequest": [
+        "AliasName",
+        "TargetKeyId"
+      ],
+      "DeleteAliasRequest": [
+        "AliasName"
+      ],
+      "UpdateAliasRequest": [
+        "AliasName",
+        "TargetKeyId"
+      ],
+      "ListAliasesRequest": [
+        "KeyId",
+        "Limit",
+        "Marker"
+      ],
+      "ListAliasesResponse": [
+        "Aliases",
+        "NextMarker",
+        "Truncated"
+      ],
+      "AliasListEntry": [
+        "AliasName",
+        "AliasArn",
+        "TargetKeyId",
+        "CreationDate",
+        "LastUpdatedDate"
+      ],
+      "TagResourceRequest": [
+        "KeyId",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "KeyId",
+        "TagKeys"
+      ],
+      "ListResourceTagsRequest": [
+        "KeyId",
+        "Limit",
+        "Marker"
+      ],
+      "ListResourceTagsResponse": [
+        "Tags",
+        "NextMarker",
+        "Truncated"
+      ],
+      "Tag": [
+        "TagKey",
+        "TagValue"
+      ],
+      "EncryptRequest": [
+        "KeyId",
+        "Plaintext",
+        "EncryptionContext",
+        "EncryptionAlgorithm",
+        "DryRun"
+      ],
+      "EncryptResponse": [
+        "CiphertextBlob",
+        "KeyId",
+        "EncryptionAlgorithm"
+      ],
+      "DecryptRequest": [
+        "CiphertextBlob",
+        "EncryptionContext",
+        "KeyId",
+        "EncryptionAlgorithm",
+        "DryRun"
+      ],
+      "DecryptResponse": [
+        "KeyId",
+        "Plaintext",
+        "EncryptionAlgorithm"
+      ],
+      "GenerateDataKeyRequest": [
+        "KeyId",
+        "EncryptionContext",
+        "NumberOfBytes",
+        "KeySpec",
+        "DryRun"
+      ],
+      "GenerateDataKeyResponse": [
+        "CiphertextBlob",
+        "Plaintext",
+        "KeyId"
+      ],
+      "GenerateDataKeyWithoutPlaintextRequest": [
+        "KeyId",
+        "EncryptionContext",
+        "KeySpec",
+        "NumberOfBytes",
+        "DryRun"
+      ],
+      "GenerateDataKeyWithoutPlaintextResponse": [
+        "CiphertextBlob",
+        "KeyId"
+      ],
+      "GenerateRandomRequest": [
+        "NumberOfBytes"
+      ],
+      "GenerateRandomResponse": [
+        "Plaintext"
+      ]
+    }
   }
 }
