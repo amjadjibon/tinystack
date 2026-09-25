@@ -236,7 +236,7 @@ func TestEventBridgeTestEventPattern(t *testing.T) {
 	c := eventsClient(s, "test")
 	event := `{"id":"1","account":"000000000000","source":"shop","time":"2026-01-01T00:00:00Z","region":"us-east-1",
 		"detail-type":"order","resources":[],"detail":{"state":"PAID","amount":42.5,"tags":["a","vip"],
-		"items":[{"sku":"X-1"},{"sku":"Y-2"}],"note":null,"customer":{"country":"DE"}}}`
+		"items":[{"sku":"X-1"},{"sku":"Y-2"}],"note":null,"customer":{"country":"DE","ip":"10.1.2.3"}}}`
 	for pattern, want := range map[string]bool{
 		`{"source":["shop"]}`:                                                                  true,
 		`{"source":["bank"]}`:                                                                  false,
@@ -257,6 +257,8 @@ func TestEventBridgeTestEventPattern(t *testing.T) {
 		`{"detail":{"state":[{"anything-but":{"prefix":"P"}}]}}`:                               false,
 		`{"detail":{"amount":[{"numeric":[">",40,"<=",42.5]}]}}`:                               true,
 		`{"detail":{"amount":[{"numeric":["<",40]}]}}`:                                         false,
+		`{"detail":{"customer":{"ip":[{"cidr":"10.1.0.0/16"}]}}}`:                              true,
+		`{"detail":{"customer":{"ip":[{"cidr":"10.2.0.0/16"}]}}}`:                              false,
 		`{"detail":{"customer":{"country":[{"exists":true}]}}}`:                                true,
 		`{"detail":{"missing":[{"exists":false}]}}`:                                            true,
 		`{"detail":{"customer":[{"exists":true}]}}`:                                            false,

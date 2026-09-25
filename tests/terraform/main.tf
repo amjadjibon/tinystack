@@ -66,6 +66,7 @@ resource "aws_sns_topic_subscription" "jobs" {
   protocol             = "sqs"
   endpoint             = aws_sqs_queue.jobs.arn
   raw_message_delivery = true
+  filter_policy        = jsonencode({ team = [var.team] })
 }
 
 resource "aws_dynamodb_table" "users" {
