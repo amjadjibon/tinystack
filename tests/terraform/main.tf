@@ -91,6 +91,14 @@ resource "aws_dynamodb_table" "users" {
     projection_type = "KEYS_ONLY"
   }
 
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
+
+  ttl {
+    attribute_name = "expires"
+    enabled        = true
+  }
+
   tags = local.tags
 }
 
@@ -145,6 +153,12 @@ resource "aws_lambda_event_source_mapping" "jobs" {
   event_source_arn = aws_sqs_queue.jobs.arn
   function_name    = aws_lambda_function.echo.arn
   batch_size       = 5
+}
+
+resource "aws_lambda_event_source_mapping" "users" {
+  event_source_arn  = aws_dynamodb_table.users.stream_arn
+  function_name     = aws_lambda_function.echo.arn
+  starting_position = "LATEST"
 }
 
 resource "aws_cloudwatch_event_rule" "orders" {
