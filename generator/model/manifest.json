@@ -15,6 +15,10 @@
       "path": "codegen/sdk-codegen/aws-models/iam.json",
       "sha256": "c0cec5eeceeffdf03f310ae41c30d072041dbc274bc5a388cad525847de1bec2"
     },
+    "kms": {
+      "path": "codegen/sdk-codegen/aws-models/kms.json",
+      "sha256": "82e414ec6095a69dabe0e7de071a5b9704c413d3277ed1b293d3cbcd8dd6ce5f"
+    },
     "lambda": {
       "path": "codegen/sdk-codegen/aws-models/lambda.json",
       "sha256": "5a19f9e4a3cf9f56d9efdadb0fa0f3b41e9cf174337dcd13a94668856eddb88c"
