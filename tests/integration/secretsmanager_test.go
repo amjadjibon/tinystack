@@ -280,7 +280,12 @@ func TestSecretsVersions(t *testing.T) {
 		in.NextToken = out.NextToken
 	}
 
-	if !slices.Equal(ids, []string{v1, v2, v3}) {
+	// Versions created in the same millisecond are ordered by ID, so compare the
+	// pages as a set: each version must appear exactly once.
+	slices.Sort(ids)
+	versions := []string{v1, v2, v3}
+	slices.Sort(versions)
+	if !slices.Equal(ids, versions) {
 		t.Fatalf("versions %v", ids)
 	}
 }
