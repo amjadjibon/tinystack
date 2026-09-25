@@ -408,9 +408,9 @@ they must send their session token (`X-Amz-Security-Token`) and fail with
 `ExpiredToken` once expired. IAM policies are stored but not evaluated: any
 configured key or role session may call any operation in its account.
 
-DynamoDB limits: no secondary indexes, batch or transaction operations, legacy parameters
-(`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...), parallel scans,
-`ReturnValuesOnConditionCheckFailure`, TTL expiry, backups, or capacity accounting/throttling. Expressions
+DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...),
+parallel scans, PartiQL, streams, TTL expiry, backups, or capacity accounting/throttling (batch writes never return
+`UnprocessedItems`), and index queries scan the whole table. Expressions
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
 message groups on standard queues, dead-letter redrive back to the source queue,
@@ -418,9 +418,9 @@ policies, or encryption settings; the 60-second name-reuse delay after DeleteQue
 policies, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no presigned URLs, multiple ranges per request, versioning, ACLs other than `private`,
-policies, encryption, object tagging, lifecycle, notifications, or stored checksums on
+policies, encryption, object tagging, lifecycle, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no versions, aliases, layers,
-function updates, code from S3, `ImageConfig`, `LogType: Tail`, function URLs,
+`Publish` on code updates, code from S3, `ImageConfig`, function URLs,
 concurrency settings, resource policies, or event sources other than SQS
 (no batching window or partial batch responses); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: only the default event bus
