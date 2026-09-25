@@ -27,6 +27,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -55,6 +56,7 @@ var _ api.API = (*Service)(nil)
 type Service struct {
 	store   storage.Store
 	queues  *sqs.Service
+	logs    *logs.Service
 	runtime Runtime
 	logger  *slog.Logger
 	// secretKeys are the configured SigV4 secrets by access key; function code
@@ -72,12 +74,13 @@ type Service struct {
 	stop    sync.Once
 }
 
-// New returns a Lambda service that runs code with runtime and reads SQS event
-// sources from queues. secretKeys holds the configured SigV4 secrets by access
-// key, if any.
+// New returns a Lambda service that runs code with runtime, reads SQS event
+// sources from queues, and writes each invocation's log to logGroups.
+// secretKeys holds the configured SigV4 secrets by access key, if any.
 func New(
 	store storage.Store,
 	queues *sqs.Service,
+	logGroups *logs.Service,
 	runtime Runtime,
 	logger *slog.Logger,
 	secretKeys map[string]string,
@@ -91,6 +94,7 @@ func New(
 	return &Service{
 		store:      store,
 		queues:     queues,
+		logs:       logGroups,
 		runtime:    runtime,
 		logger:     logger,
 		secretKeys: secretKeys,

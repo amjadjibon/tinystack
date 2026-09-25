@@ -27,7 +27,8 @@ import (
 )
 
 // fakeRuntime runs handlers in-process: "echo" returns the event and the
-// function's environment, "fail" raises, and anything else returns null.
+// function's environment and logs a line, "fail" raises, and anything else
+// returns null.
 // Every invocation is sent to calls when it is set.
 type fakeRuntime struct {
 	calls    chan invocation
@@ -48,7 +49,7 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 	switch fn.Handler {
 	case "app.echo":
 		body, err := json.Marshal(map[string]any{"event": json.RawMessage(payload), "env": fn.Environment})
-		return lambda.Result{Payload: body}, err
+		return lambda.Result{Payload: body, Log: "echo received " + string(payload) + "\n"}, err
 	case "app.fail":
 		return lambda.Result{Payload: []byte(`{"errorType":"ValueError","errorMessage":"boom"}`), Error: true}, nil
 	default:
@@ -322,14 +323,6 @@ func TestLambdaInvoke(t *testing.T) {
 	_, err = c.Invoke(ctx, &sdklambda.InvokeInput{FunctionName: aws.String("missing")})
 	if !isType[*lambdatypes.ResourceNotFoundException](err) {
 		t.Fatalf("missing function: %v", err)
-	}
-
-	_, err = c.Invoke(ctx, &sdklambda.InvokeInput{
-		FunctionName: aws.String("echo"),
-		LogType:      lambdatypes.LogTypeTail,
-	})
-	if _, status := lambdaCode(err); status != http.StatusNotImplemented {
-		t.Fatalf("log tail: %v", err)
 	}
 }
 

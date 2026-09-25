@@ -470,7 +470,7 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 			return
 		}
 
-		result, err := s.run(ctx, scope, mp.FunctionName, payload)
+		result, _, err := s.run(ctx, scope, mp.FunctionName, payload)
 		failure := invokeError(result, err)
 		s.deliveries.Add(
 			delivery.ViaEventSourceMapping,

@@ -2,9 +2,13 @@ package lambda
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,6 +28,8 @@ const (
 	// asyncAttempts is how often an asynchronous invocation runs before it is
 	// dropped: the first attempt and two retries, as in Lambda.
 	asyncAttempts = 3
+	// maxLogTail is how much of the log LogType Tail returns.
+	maxLogTail = 4096
 )
 
 // retryDelay spaces asynchronous retries.
@@ -90,19 +96,65 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name string)
 	}, nil
 }
 
-// run invokes the function synchronously.
-func (s *Service) run(ctx context.Context, scope request.Scope, name string, payload []byte) (Result, error) {
+// run invokes the function synchronously and returns the invocation's log,
+// which it also writes to the function's log group.
+func (s *Service) run(
+	ctx context.Context,
+	scope request.Scope,
+	name string,
+	payload []byte,
+) (result Result, log string, err error) {
 	fn, err := s.prepare(ctx, scope, name)
 	if err != nil {
-		return Result{}, err
+		return Result{}, "", err
 	}
 
-	result, err := s.runtime.Invoke(ctx, fn, payload)
+	started := time.Now()
+	result, err = s.runtime.Invoke(ctx, fn, payload)
 	if err != nil {
-		return Result{}, awserror.New("ServiceException", "The function could not be run: "+err.Error())
+		return Result{}, "", awserror.New("ServiceException", "The function could not be run: "+err.Error())
 	}
 
-	return result, nil
+	return result, s.record(ctx, scope, fn, time.Since(started), result.Log), nil
+}
+
+// record writes an invocation's log, the function's output between START and
+// END lines and a REPORT line, to /aws/lambda/<name> in a stream per day and
+// revision, and returns it. A failure to write the log does not fail the
+// invocation.
+func (s *Service) record(
+	ctx context.Context,
+	scope request.Scope,
+	fn *Function,
+	duration time.Duration,
+	output string,
+) string {
+	id := newUUID()
+	if m, ok := request.FromContext(ctx); ok && m.RequestID != "" {
+		id = m.RequestID
+	}
+
+	lines := []string{"START RequestId: " + id + " Version: " + latest}
+	for line := range strings.SplitSeq(strings.TrimRight(output, "\n"), "\n") {
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+
+	ms := float64(duration.Microseconds()) / 1000
+	lines = append(lines,
+		"END RequestId: "+id,
+		fmt.Sprintf("REPORT RequestId: %s\tDuration: %.2f ms\tBilled Duration: %d ms\tMemory Size: %d MB",
+			id, ms, int64(math.Ceil(ms)), fn.MemorySize),
+	)
+
+	revision := sha256.Sum256([]byte(fn.Revision))
+	stream := time.Now().UTC().Format("2006/01/02") + "/[" + latest + "]" + hex.EncodeToString(revision[:16])
+	if err := s.logs.Append(context.WithoutCancel(ctx), scope, "/aws/lambda/"+fn.Name, stream, lines); err != nil {
+		s.logger.Warn("writing lambda log failed", "function", fn.ARN, "error", err)
+	}
+
+	return strings.Join(lines, "\n") + "\n"
 }
 
 // runAsync invokes the function in the background, retrying failures. It
@@ -110,7 +162,7 @@ func (s *Service) run(ctx context.Context, scope request.Scope, name string, pay
 func (s *Service) runAsync(scope request.Scope, name string, payload []byte) bool {
 	return s.spawn(func(ctx context.Context) {
 		for attempt := 1; ; attempt++ {
-			result, err := s.run(ctx, scope, name, payload)
+			result, _, err := s.run(ctx, scope, name, payload)
 			failure := invokeError(result, err)
 			if failure != nil {
 				failure = fmt.Errorf("attempt %d of %d: %w", attempt, asyncAttempts, failure)
@@ -182,6 +234,19 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 		return nil, err
 	}
 
+	tail := false
+	switch value(in.LogType) {
+	case "", "None":
+	case "Tail":
+		tail = true
+	default:
+		return nil, invalid("LogType must be None or Tail")
+	}
+
+	if tail && value(in.InvocationType) != "" && value(in.InvocationType) != "RequestResponse" {
+		return nil, invalid("LogType Tail is only supported for RequestResponse invocations")
+	}
+
 	switch value(in.InvocationType) {
 	case "", "RequestResponse":
 		payload, checkErr := checkPayload(in.Payload, maxSyncPayload)
@@ -189,12 +254,16 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 			return nil, checkErr
 		}
 
-		result, runErr := s.run(ctx, m.Scope, fn.Name, payload)
+		result, log, runErr := s.run(ctx, m.Scope, fn.Name, payload)
 		if runErr != nil {
 			return nil, runErr
 		}
 
 		out := &api.InvocationResponse{StatusCode: new(int64(http.StatusOK)), Payload: result.Payload}
+		if tail {
+			out.LogResult = new(base64.StdEncoding.EncodeToString([]byte(log[max(0, len(log)-maxLogTail):])))
+		}
+
 		if result.Error {
 			out.FunctionError = new("Unhandled")
 		}

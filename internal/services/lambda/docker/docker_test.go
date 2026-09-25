@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -96,6 +97,7 @@ func TestDockerRuntime(t *testing.T) {
 
 	code := deployment(t, map[string]string{"app.py": `import os, time
 def echo(event, context):
+    print("echo", event["n"])
     return {"event": event, "name": os.environ["AWS_LAMBDA_FUNCTION_NAME"], "greeting": os.environ["GREETING"]}
 def fail(event, context):
     raise ValueError("bad input")
@@ -120,8 +122,8 @@ def slow(event, context):
 
 	ctx := context.Background()
 	echo := fn("app.echo")
-	for range 2 { // The second invocation reuses the warm container.
-		result, err := r.Invoke(ctx, echo, []byte(`{"n":1}`))
+	for i := range 2 { // The second invocation reuses the warm container.
+		result, err := r.Invoke(ctx, echo, []byte(fmt.Sprintf(`{"n":%d}`, i+1)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -130,9 +132,15 @@ def slow(event, context):
 			Event          map[string]int
 			Name, Greeting string
 		}
-		if err = json.Unmarshal(result.Payload, &out); err != nil || result.Error || out.Event["n"] != 1 ||
+		if err = json.Unmarshal(result.Payload, &out); err != nil || result.Error || out.Event["n"] != i+1 ||
 			out.Name != "fn" || out.Greeting != "hi" {
 			t.Fatalf("%s %v", result.Payload, err)
+		}
+
+		// Each invocation's log holds its own output, without the emulator's lines.
+		if want := fmt.Sprintf("echo %d", i+1); !strings.Contains(result.Log, want) ||
+			strings.Contains(result.Log, fmt.Sprintf("echo %d", 2-i)) || strings.Contains(result.Log, "RequestId") {
+			t.Fatalf("log of invocation %d: %q", i+1, result.Log)
 		}
 	}
 

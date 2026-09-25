@@ -91,7 +91,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   (labels, headers, query, payload, status, aws-chunked bodies) that `restxml` and `restjson` share; `restxml` writes
   S3's unwrapped `<Error>` body (none for HEAD) and `restjson` sends `X-Amzn-ErrorType`. Unsupported input fields or parameters must fail explicitly, never be silently
   ignored.
-- **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**,
+- **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**, **services/logs**,
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/iam**, **services/sts**: behavior only, with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -131,7 +131,12 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   their credentials can be registered with the gateway's identity resolver (`docs/services/iam.md`). STS
   `AssumeRole` checks the role's trust policy (`sts/trust.go`, a documented subset) through `iam.Service.RoleByARN`
   and stores each session under the partition-wide `aws/sts/session/<access key>`; `GetCallerIdentity` reports that
-  session or the gateway-resolved account's root user.
+  session or the gateway-resolved account's root user. CloudWatch Logs keeps each group under
+  `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
+  `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
+  time order. Lambda writes every invocation's log (its own START/END/REPORT lines around the runtime's
+  `Result.Log`) through `logs.Service.Append`, which creates `/aws/lambda/<name>` and the stream on first use; the
+  docker runtime reads the container's output with `docker logs` after each invocation.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for
@@ -152,7 +157,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB, SQS over JSON, SNS, IAM, and STS over Query, S3 over REST
-  XML, Lambda over REST JSON, EventBridge, SSM, and Secrets Manager over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, and Secrets Manager over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real

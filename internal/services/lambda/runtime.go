@@ -30,7 +30,10 @@ type Function struct {
 
 // Result is a completed invocation. Error reports that the function failed
 // (it raised, crashed, or timed out) and Payload then holds the error document.
+// Log is what the function wrote to stdout and stderr during the invocation;
+// Lambda adds its own START, END, and REPORT lines around it.
 type Result struct {
+	Log     string
 	Payload []byte
 	Error   bool
 }

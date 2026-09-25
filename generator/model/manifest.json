@@ -19,6 +19,10 @@
       "path": "codegen/sdk-codegen/aws-models/lambda.json",
       "sha256": "5a19f9e4a3cf9f56d9efdadb0fa0f3b41e9cf174337dcd13a94668856eddb88c"
     },
+    "logs": {
+      "path": "codegen/sdk-codegen/aws-models/cloudwatch-logs.json",
+      "sha256": "8e51aad2fb99605ae6dfc350d5915215512f990eb1a0c16d07ef2c4e49297d77"
+    },
     "s3": {
       "path": "codegen/sdk-codegen/aws-models/s3.json",
       "sha256": "ea4b0318e929b56b01523e7fd25e139b5646055dba96bbf6e41a79ac90522c71"

@@ -1003,12 +1003,14 @@
       "InvocationRequest": [
         "FunctionName",
         "InvocationType",
-        "Payload"
+        "Payload",
+        "LogType"
       ],
       "InvocationResponse": [
         "StatusCode",
         "FunctionError",
-        "Payload"
+        "Payload",
+        "LogResult"
       ],
       "CreateEventSourceMappingRequest": [
         "EventSourceArn",
@@ -1933,6 +1935,167 @@
       "Tag": [
         "Key",
         "Value"
+      ]
+    }
+  },
+  "logs": {
+    "operations": [
+      "CreateLogGroup",
+      "DeleteLogGroup",
+      "DescribeLogGroups",
+      "PutRetentionPolicy",
+      "DeleteRetentionPolicy",
+      "CreateLogStream",
+      "DeleteLogStream",
+      "DescribeLogStreams",
+      "PutLogEvents",
+      "GetLogEvents",
+      "FilterLogEvents",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateLogGroupRequest": [
+        "logGroupName",
+        "tags",
+        "logGroupClass"
+      ],
+      "DeleteLogGroupRequest": [
+        "logGroupName"
+      ],
+      "DescribeLogGroupsRequest": [
+        "logGroupNamePrefix",
+        "logGroupNamePattern",
+        "nextToken",
+        "limit"
+      ],
+      "DescribeLogGroupsResponse": [
+        "logGroups",
+        "nextToken"
+      ],
+      "LogGroup": [
+        "logGroupName",
+        "creationTime",
+        "retentionInDays",
+        "metricFilterCount",
+        "arn",
+        "storedBytes",
+        "logGroupClass",
+        "logGroupArn"
+      ],
+      "PutRetentionPolicyRequest": [
+        "logGroupName",
+        "retentionInDays"
+      ],
+      "DeleteRetentionPolicyRequest": [
+        "logGroupName"
+      ],
+      "CreateLogStreamRequest": [
+        "logGroupName",
+        "logStreamName"
+      ],
+      "DeleteLogStreamRequest": [
+        "logGroupName",
+        "logStreamName"
+      ],
+      "DescribeLogStreamsRequest": [
+        "logGroupName",
+        "logGroupIdentifier",
+        "logStreamNamePrefix",
+        "orderBy",
+        "descending",
+        "nextToken",
+        "limit"
+      ],
+      "DescribeLogStreamsResponse": [
+        "logStreams",
+        "nextToken"
+      ],
+      "LogStream": [
+        "logStreamName",
+        "creationTime",
+        "firstEventTimestamp",
+        "lastEventTimestamp",
+        "lastIngestionTime",
+        "uploadSequenceToken",
+        "arn",
+        "storedBytes"
+      ],
+      "PutLogEventsRequest": [
+        "logGroupName",
+        "logStreamName",
+        "logEvents",
+        "sequenceToken"
+      ],
+      "PutLogEventsResponse": [
+        "nextSequenceToken",
+        "rejectedLogEventsInfo"
+      ],
+      "InputLogEvent": [
+        "timestamp",
+        "message"
+      ],
+      "RejectedLogEventsInfo": [
+        "tooNewLogEventStartIndex",
+        "tooOldLogEventEndIndex",
+        "expiredLogEventEndIndex"
+      ],
+      "GetLogEventsRequest": [
+        "logGroupName",
+        "logGroupIdentifier",
+        "logStreamName",
+        "startTime",
+        "endTime",
+        "nextToken",
+        "limit",
+        "startFromHead"
+      ],
+      "GetLogEventsResponse": [
+        "events",
+        "nextForwardToken",
+        "nextBackwardToken"
+      ],
+      "OutputLogEvent": [
+        "timestamp",
+        "message",
+        "ingestionTime"
+      ],
+      "FilterLogEventsRequest": [
+        "logGroupName",
+        "logGroupIdentifier",
+        "logStreamNames",
+        "logStreamNamePrefix",
+        "startTime",
+        "endTime",
+        "filterPattern",
+        "nextToken",
+        "limit"
+      ],
+      "FilterLogEventsResponse": [
+        "events",
+        "nextToken"
+      ],
+      "FilteredLogEvent": [
+        "logStreamName",
+        "timestamp",
+        "message",
+        "ingestionTime",
+        "eventId"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
       ]
     }
   }

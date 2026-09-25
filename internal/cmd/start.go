@@ -20,6 +20,7 @@ import (
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -34,6 +35,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
+	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
@@ -84,7 +86,8 @@ func newStartCommand() *cobra.Command {
 
 			deliveries := delivery.New()
 			queues := sqs.New(store)
-			functions := lambda.New(store, queues, docker.New(), logger, cfg.Identity.SecretKeys, deliveries)
+			logGroups := logs.New(store)
+			functions := lambda.New(store, queues, logGroups, docker.New(), logger, cfg.Identity.SecretKeys, deliveries)
 			// Stop removes function containers; it must finish before exit.
 			defer functions.Stop()
 			if guardErr := functions.Resume(cmd.Context()); guardErr != nil {
@@ -107,6 +110,7 @@ func newStartCommand() *cobra.Command {
 				stsapi.Descriptor(tokens),
 				ssmapi.Descriptor(ssm.New(store)),
 				secretsmanagerapi.Descriptor(secretsmanager.New(store)),
+				logsapi.Descriptor(logGroups),
 			)
 			if err != nil {
 				return err

@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os/exec"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -32,7 +33,9 @@ const (
 	// initTimeout bounds how long a started container may take to listen.
 	initTimeout = 10 * time.Second
 	// grace is added to the function timeout, which the emulator enforces.
-	grace       = 3 * time.Second
+	grace = 3 * time.Second
+	// logWait bounds how long an invocation waits for its log to arrive.
+	logWait     = 500 * time.Millisecond
 	invocations = "/2015-03-31/functions/function/invocations"
 )
 
@@ -54,6 +57,8 @@ type pool struct {
 }
 
 type container struct {
+	// since is the daemon time of the last log line an invocation took.
+	since    time.Time
 	id       string
 	endpoint string
 }
@@ -340,8 +345,85 @@ func (r *Runtime) Invoke(ctx context.Context, fn *lambda.Function, payload []byt
 	}
 
 	result, healthy, err := r.post(ctx, fn, c, payload)
+	if err == nil {
+		result.Log = c.output(ctx)
+	}
+
 	r.release(ctx, fn, c, healthy)
 	return result, err
+}
+
+// output returns what the function wrote since the container's previous
+// invocation. The emulator writes its REPORT line after it answers, so output
+// polls "docker logs" for it for up to logWait. The emulator's own lines are
+// dropped, since Lambda writes its own START, END, and REPORT lines.
+func (c *container) output(ctx context.Context) string {
+	deadline := time.Now().Add(logWait)
+	for {
+		lines, last, done := c.logs(ctx)
+		if done || time.Now().After(deadline) {
+			if !last.IsZero() {
+				c.since = last
+			}
+
+			return strings.Join(lines, "\n")
+		}
+
+		select {
+		case <-ctx.Done():
+			return strings.Join(lines, "\n")
+		case <-time.After(20 * time.Millisecond):
+		}
+	}
+}
+
+// logs reads the container's stdout and stderr after c.since, in time order.
+// It returns the function's lines, the time of the last line read, and whether
+// the emulator's REPORT line has arrived.
+func (c *container) logs(ctx context.Context) (lines []string, last time.Time, done bool) {
+	args := []string{"logs", "--timestamps"}
+	if !c.since.IsZero() {
+		args = append(args, "--since", c.since.Format(time.RFC3339Nano))
+	}
+
+	// #nosec G204 -- the container ID comes from docker create.
+	cmd := exec.CommandContext(ctx, "docker", append(args, c.id)...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	if cmd.Run() != nil {
+		return nil, time.Time{}, false
+	}
+
+	type line struct {
+		at   time.Time
+		text string
+	}
+
+	var all []line
+	for _, out := range []string{stdout.String(), stderr.String()} {
+		for raw := range strings.SplitSeq(out, "\n") {
+			stamp, text, _ := strings.Cut(raw, " ")
+			at, err := time.Parse(time.RFC3339Nano, stamp)
+			if err == nil && at.After(c.since) {
+				all = append(all, line{at: at, text: strings.TrimRight(text, "\r")})
+			}
+		}
+	}
+
+	slices.SortStableFunc(all, func(a, b line) int { return a.at.Compare(b.at) })
+	for _, l := range all {
+		last = l.at
+		switch {
+		case strings.HasPrefix(l.text, "REPORT RequestId:"):
+			done = true
+		case strings.HasPrefix(l.text, "START RequestId:"), strings.HasPrefix(l.text, "END RequestId:"),
+			strings.Contains(l.text, "] (rapid) "):
+		default:
+			lines = append(lines, l.text)
+		}
+	}
+
+	return lines, last, done
 }
 
 // post sends the payload to the emulator and classifies its answer: 502 means

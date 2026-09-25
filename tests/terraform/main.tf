@@ -21,6 +21,7 @@ provider "aws" {
     eventbridge    = var.endpoint
     iam            = var.endpoint
     lambda         = var.endpoint
+    logs           = var.endpoint
     s3             = var.endpoint
     secretsmanager = var.endpoint
     sns            = var.endpoint
@@ -115,6 +116,12 @@ resource "aws_lambda_function" "echo" {
   environment {
     variables = { TEAM = var.team }
   }
+}
+
+resource "aws_cloudwatch_log_group" "echo" {
+  name              = "/aws/lambda/echo"
+  retention_in_days = 7
+  tags              = local.tags
 }
 
 resource "aws_lambda_event_source_mapping" "jobs" {

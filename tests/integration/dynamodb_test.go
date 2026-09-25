@@ -24,6 +24,7 @@ import (
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -37,6 +38,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
+	"github.com/amjadjibon/tinystack/internal/services/logs"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	secrets "github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
@@ -89,7 +91,8 @@ func serverStore(
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	deliveries := delivery.New()
 	sqsService := queues.New(store)
-	functions := lambda.New(store, sqsService, runtime, logger, cfg.Identity.SecretKeys, deliveries)
+	logGroups := logs.New(store)
+	functions := lambda.New(store, sqsService, logGroups, runtime, logger, cfg.Identity.SecretKeys, deliveries)
 	if err := functions.Resume(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -110,6 +113,7 @@ func serverStore(
 		stsapi.Descriptor(stsService),
 		ssmapi.Descriptor(parameters.New(store)),
 		secretsmanagerapi.Descriptor(secrets.New(store)),
+		logsapi.Descriptor(logGroups),
 	)
 	if err != nil {
 		t.Fatal(err)

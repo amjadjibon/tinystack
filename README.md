@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, EventBridge, SSM Parameter Store, Secrets Manager, IAM, and STS endpoints for development and tests.
+A single Go binary providing local DynamoDB, SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, IAM, and STS endpoints for development and tests.
 
 ## Run
 
@@ -73,7 +73,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables, S3 buckets and objects, Lambda functions
-and SQS event source mappings, EventBridge rules and targets, SSM parameters
+and SQS event source mappings, CloudWatch log groups, EventBridge rules and targets, SSM parameters
 (including SecureString), Secrets Manager secrets and versions, and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
@@ -91,6 +91,7 @@ provider "aws" {
     eventbridge    = "http://localhost:4566"
     iam            = "http://localhost:4566"
     lambda         = "http://localhost:4566"
+    logs           = "http://localhost:4566"
     s3             = "http://localhost:4566"
     secretsmanager = "http://localhost:4566"
     sns            = "http://localhost:4566"
@@ -239,7 +240,7 @@ invoking them does.
 | UpdateFunctionCode / UpdateFunctionConfiguration | Replace the `ZipFile` or `ImageUri` (and `Architectures`), or change `Role`, `Runtime`, `Handler`, `Description`, `Timeout`, `MemorySize`, and `Environment` (fields left out keep their values); `RevisionId` preconditions and `DryRun`; warm containers are released so the next invocation runs the new revision; `Publish` is not supported |
 | ListVersionsByFunction / GetFunctionCodeSigningConfig | `$LATEST` only; no code signing configuration |
 | TagResource / UntagResource / ListTags | Unqualified function ARNs; also `Tags` on CreateFunction |
-| Invoke | `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |
+| Invoke | `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`; `LogType: Tail` returns the last 4 KB of the log), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |
 | Create/Get/Delete/ListEventSourceMappings | SQS queues in the function's account and region; `BatchSize` up to 10; a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies |
 
 Function code gets `AWS_REGION`, the function name, memory size, and timeout,
@@ -247,6 +248,25 @@ and the creator's access key (and its configured secret key when signatures are
 verified), so SDK calls reach
 the right account once you set `AWS_ENDPOINT_URL` in the function's environment
 to an address the container can reach.
+
+Every invocation is logged to the CloudWatch Logs group `/aws/lambda/<name>`,
+created on first use: a `START` line, what the function wrote to stdout and
+stderr, and `END` and `REPORT` lines, in a stream per day and function revision.
+
+### CloudWatch Logs (AWS JSON 1.1)
+
+Log groups belong to an account and region.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateLogGroup / DeleteLogGroup | Names of up to 512 characters, `tags`, and the `STANDARD` or `INFREQUENT_ACCESS` class; deleting a group deletes its streams and events |
+| DescribeLogGroups | Name order, `logGroupNamePrefix` or a case-insensitive `logGroupNamePattern`, `limit` up to 50 and `nextToken` |
+| PutRetentionPolicy / DeleteRetentionPolicy | The retention periods AWS accepts; expired events are never returned and are deleted when their stream is next written |
+| CreateLogStream / DeleteLogStream / DescribeLogStreams | Streams ordered by name (optionally filtered by prefix) or by their latest event, either way; groups named by `logGroupName` or `logGroupIdentifier` |
+| PutLogEvents | Up to 10,000 chronological events and 1 MB spanning at most 24 hours; events older than 14 days, past the retention period, or more than 2 hours ahead are skipped and reported in `rejectedLogEventsInfo`; `sequenceToken` is ignored, as it is by AWS |
+| GetLogEvents | Time order with `startTime` and `endTime`; the latest events first unless `startFromHead`; `nextForwardToken` and `nextBackwardToken`, which come back unchanged at the end of the stream |
+| FilterLogEvents | Every stream, `logStreamNames`, or a `logStreamNamePrefix`, interleaved in time order, with `nextToken`; filter patterns of terms, `"quoted phrases"`, `-excluded` terms, and `?alternatives` (JSON, space-delimited, and regular expression patterns are rejected) |
+| TagResource / UntagResource / ListTagsForResource | Log group ARNs, with or without `:*` |
 
 ### IAM (AWS Query)
 
