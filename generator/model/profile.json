@@ -925,7 +925,9 @@
       "GetFunctionCodeSigningConfig",
       "ListTags",
       "TagResource",
-      "UntagResource"
+      "UntagResource",
+      "UpdateFunctionCode",
+      "UpdateFunctionConfiguration"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -965,7 +967,9 @@
         "Environment",
         "State",
         "PackageType",
-        "Architectures"
+        "Architectures",
+        "RevisionId",
+        "LastUpdateStatus"
       ],
       "EnvironmentResponse": [
         "Variables"
@@ -1067,6 +1071,25 @@
       "UntagResourceRequest": [
         "Resource",
         "TagKeys"
+      ],
+      "UpdateFunctionCodeRequest": [
+        "FunctionName",
+        "ZipFile",
+        "ImageUri",
+        "Architectures",
+        "DryRun",
+        "RevisionId"
+      ],
+      "UpdateFunctionConfigurationRequest": [
+        "FunctionName",
+        "Role",
+        "Handler",
+        "Description",
+        "Timeout",
+        "MemorySize",
+        "Environment",
+        "Runtime",
+        "RevisionId"
       ]
     }
   },

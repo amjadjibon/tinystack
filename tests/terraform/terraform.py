@@ -22,9 +22,12 @@ def main():
         binary = work / "tinystack"
         subprocess.run(["go", "build", "-o", str(binary), "./cmd/tinystack"], cwd=ROOT, check=True)
         shutil.copy(ROOT / "tests" / "terraform" / "main.tf", work / "main.tf")
-        package = work / "function.zip"
-        with zipfile.ZipFile(package, "w") as archive:
-            archive.writestr("app.py", "def handler(event, context):\n    return event\n")
+        # Each team deploys different code, so the update also replaces the function's code.
+        packages = {}
+        for team in ("core", "platform"):
+            packages[team] = work / f"function-{team}.zip"
+            with zipfile.ZipFile(packages[team], "w") as archive:
+                archive.writestr("app.py", f"TEAM = {team!r}\n\ndef handler(event, context):\n    return event\n")
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             port = listener.getsockname()[1]
@@ -38,7 +41,7 @@ def main():
             if args[0] != "output":
                 command.append("-input=false")
             if args[0] not in ("init", "output"):
-                command += ["-var", f"endpoint={endpoint}", "-var", f"function_zip={package}", "-var", f"team={team}"]
+                command += ["-var", f"endpoint={endpoint}", "-var", f"function_zip={packages[team]}", "-var", f"team={team}"]
             result = subprocess.run(command, cwd=work, text=True, capture_output=True, timeout=600)
             if result.returncode != code:
                 raise RuntimeError(f"terraform {args[0]} exited {result.returncode}:\n{result.stdout}\n{result.stderr}")

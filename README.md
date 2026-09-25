@@ -236,6 +236,7 @@ invoking them does.
 | --- | --- |
 | CreateFunction | `Zip` packages (`ZipFile`) for python3.9–3.14, nodejs18.x–24.x, java11–25, ruby3.2–3.4, dotnet8/10, and provided.al2/al2023; `Image` packages (`ImageUri`); `Timeout`, `MemorySize`, `Environment` (reserved keys rejected, 4 KB limit), `Description`, `Architectures` |
 | GetFunction / ListFunctions / DeleteFunction | Name, partial ARN, or ARN; only the `$LATEST` qualifier exists; 50 per page with `Marker`; GetFunction returns the tags |
+| UpdateFunctionCode / UpdateFunctionConfiguration | Replace the `ZipFile` or `ImageUri` (and `Architectures`), or change `Role`, `Runtime`, `Handler`, `Description`, `Timeout`, `MemorySize`, and `Environment` (fields left out keep their values); `RevisionId` preconditions and `DryRun`; warm containers are released so the next invocation runs the new revision; `Publish` is not supported |
 | ListVersionsByFunction / GetFunctionCodeSigningConfig | `$LATEST` only; no code signing configuration |
 | TagResource / UntagResource / ListTags | Unqualified function ARNs; also `Tags` on CreateFunction |
 | Invoke | `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |

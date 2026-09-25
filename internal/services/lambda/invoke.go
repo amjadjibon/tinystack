@@ -83,7 +83,7 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name string)
 		PackageType:  fn.PackageType,
 		ImageURI:     fn.ImageURI,
 		Architecture: fn.Architecture,
-		Revision:     fn.CodeSha256 + "/" + fn.LastModified,
+		Revision:     fn.CodeSha256 + "/" + fn.LastModified + "/" + fn.RevisionID,
 		Code:         code,
 		Timeout:      time.Duration(fn.Timeout) * time.Second,
 		MemorySize:   fn.MemorySize,

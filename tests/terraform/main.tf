@@ -111,6 +111,10 @@ resource "aws_lambda_function" "echo" {
   filename         = var.function_zip
   source_code_hash = filebase64sha256(var.function_zip)
   tags             = local.tags
+
+  environment {
+    variables = { TEAM = var.team }
+  }
 }
 
 resource "aws_lambda_event_source_mapping" "jobs" {

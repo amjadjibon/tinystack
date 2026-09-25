@@ -140,10 +140,12 @@ type function struct {
 	Architecture string `json:",omitempty"`
 	CodeSha256   string
 	LastModified string
-	AccessKey    string `json:",omitempty"`
-	CodeSize     int64
-	Timeout      int64
-	MemorySize   int64
+	// RevisionID changes with every update of the code or configuration.
+	RevisionID string `json:",omitempty"`
+	AccessKey  string `json:",omitempty"`
+	CodeSize   int64
+	Timeout    int64
+	MemorySize int64
 }
 
 func value[T any](p *T) (v T) {
@@ -290,19 +292,20 @@ func writeJSON(tx storage.WriteTx, key string, v any) error {
 // configuration renders the stored function as the API reports it.
 func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration {
 	cfg := api.FunctionConfiguration{
-		FunctionName:  new(fn.Name),
-		FunctionArn:   new(functionARN(scope, fn.Name)),
-		Role:          new(fn.Role),
-		CodeSize:      new(fn.CodeSize),
-		Description:   new(fn.Description),
-		Timeout:       new(fn.Timeout),
-		MemorySize:    new(fn.MemorySize),
-		LastModified:  new(fn.LastModified),
-		CodeSha256:    new(fn.CodeSha256),
-		Version:       new(latest),
-		State:         new("Active"),
-		PackageType:   new(fn.PackageType),
-		Architectures: []string{"x86_64"},
+		FunctionName:     new(fn.Name),
+		FunctionArn:      new(functionARN(scope, fn.Name)),
+		Role:             new(fn.Role),
+		CodeSize:         new(fn.CodeSize),
+		Description:      new(fn.Description),
+		Timeout:          new(fn.Timeout),
+		MemorySize:       new(fn.MemorySize),
+		LastModified:     new(fn.LastModified),
+		CodeSha256:       new(fn.CodeSha256),
+		Version:          new(latest),
+		State:            new("Active"),
+		LastUpdateStatus: new("Successful"),
+		PackageType:      new(fn.PackageType),
+		Architectures:    []string{"x86_64"},
 	}
 
 	if fn.Runtime != "" {
@@ -311,6 +314,10 @@ func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration
 
 	if fn.Architecture != "" {
 		cfg.Architectures = []string{fn.Architecture}
+	}
+
+	if fn.RevisionID != "" {
+		cfg.RevisionId = new(fn.RevisionID)
 	}
 
 	if len(fn.Environment) > 0 {
@@ -376,62 +383,168 @@ func checkZip(code []byte) error {
 	return nil
 }
 
+// settings are the configuration fields CreateFunction and
+// UpdateFunctionConfiguration share; a nil field keeps its current value.
+type settings struct {
+	Environment *api.Environment
+	Role        *string
+	Handler     *string
+	Description *string
+	Runtime     *string
+	Timeout     *int64
+	MemorySize  *int64
+}
+
+// configure validates and applies c to fn.
+func (fn *function) configure(c *settings) error {
+	if c.Role != nil {
+		fn.Role = *c.Role
+	}
+
+	if !roleARN.MatchString(fn.Role) {
+		return invalid("The role defined for the function cannot be assumed by Lambda.")
+	}
+
+	if c.Description != nil {
+		if fn.Description = *c.Description; len(fn.Description) > 256 {
+			return invalid("Description must be at most 256 characters")
+		}
+	}
+
+	if c.Timeout != nil {
+		if fn.Timeout = *c.Timeout; fn.Timeout < 1 || fn.Timeout > maxTimeout {
+			return invalid("Timeout must be between 1 and %d seconds", maxTimeout)
+		}
+	}
+
+	if c.MemorySize != nil {
+		if fn.MemorySize = *c.MemorySize; fn.MemorySize < defaultMemory || fn.MemorySize > maxMemory {
+			return invalid("MemorySize must be between %d and %d MB", defaultMemory, maxMemory)
+		}
+	}
+
+	if c.Environment != nil {
+		if err := checkEnvironment(c.Environment); err != nil {
+			return err
+		}
+
+		fn.Environment = nil
+		if len(c.Environment.Variables) > 0 {
+			fn.Environment = c.Environment.Variables
+		}
+	}
+
+	if c.Runtime != nil {
+		fn.Runtime = *c.Runtime
+	}
+
+	if c.Handler != nil {
+		fn.Handler = *c.Handler
+	}
+
+	if fn.PackageType == packageImage {
+		if fn.Runtime != "" || fn.Handler != "" {
+			return invalid("Runtime and Handler are not supported for Image functions")
+		}
+
+		return nil
+	}
+
+	if _, ok := Image(fn.Runtime); !ok {
+		return invalid("The runtime parameter of %s is not supported", fn.Runtime)
+	}
+
+	if fn.Handler == "" || strings.ContainsAny(fn.Handler, " \t\r\n") || len(fn.Handler) > 128 {
+		return invalid("Handler is required for Zip functions and must not contain whitespace")
+	}
+
+	return nil
+}
+
+// setArchitecture applies an Architectures parameter, which holds at most one.
+func (fn *function) setArchitecture(architectures []string) error {
+	switch {
+	case len(architectures) > 1:
+		return invalid("Architectures must hold one architecture")
+	case len(architectures) == 1 && architectures[0] != "x86_64" && architectures[0] != "arm64":
+		return invalid("Architecture %s is not supported", architectures[0])
+	case len(architectures) == 1:
+		fn.Architecture = architectures[0]
+	}
+
+	return nil
+}
+
+// setCode validates a Zip package or image URI for fn's package type and
+// records its size and hash. It returns the package bytes of a Zip function.
+func (fn *function) setCode(zipFile []byte, imageURI *string) ([]byte, error) {
+	sum := sha256.New()
+	if fn.PackageType == packageImage {
+		if value(imageURI) == "" || len(zipFile) > 0 {
+			return nil, invalid("Image functions need Code.ImageUri")
+		}
+
+		fn.ImageURI = *imageURI
+		sum.Write([]byte(fn.ImageURI))
+		fn.CodeSha256 = base64.StdEncoding.EncodeToString(sum.Sum(nil))
+		return nil, nil
+	}
+
+	if imageURI != nil || len(zipFile) == 0 {
+		return nil, invalid("Zip functions need Code.ZipFile")
+	}
+
+	if err := checkZip(zipFile); err != nil {
+		return nil, err
+	}
+
+	sum.Write(zipFile)
+	fn.CodeSize = int64(len(zipFile))
+	fn.CodeSha256 = base64.StdEncoding.EncodeToString(sum.Sum(nil))
+	return zipFile, nil
+}
+
 // newFunction validates CreateFunction input into a function record and its
 // deployment package.
 func newFunction(in *api.CreateFunctionRequest) (*function, []byte, error) {
 	fn := &function{
 		Name:        value(in.FunctionName),
-		Runtime:     value(in.Runtime),
-		Role:        value(in.Role),
-		Handler:     value(in.Handler),
-		Description: value(in.Description),
 		PackageType: value(in.PackageType),
 		Timeout:     defaultTimeout,
 		MemorySize:  defaultMemory,
+		RevisionID:  newUUID(),
 	}
 
 	if !functionName.MatchString(fn.Name) {
 		return nil, nil, invalid("Invalid function name: %s", fn.Name)
 	}
 
-	if !roleARN.MatchString(fn.Role) {
-		return nil, nil, invalid("The role defined for the function cannot be assumed by Lambda.")
+	switch fn.PackageType {
+	case "":
+		fn.PackageType = packageZip
+	case packageZip, packageImage:
+	default:
+		return nil, nil, invalid("PackageType must be Zip or Image")
 	}
 
-	if len(fn.Description) > 256 {
-		return nil, nil, invalid("Description must be at most 256 characters")
-	}
-
-	if in.Timeout != nil {
-		if fn.Timeout = *in.Timeout; fn.Timeout < 1 || fn.Timeout > maxTimeout {
-			return nil, nil, invalid("Timeout must be between 1 and %d seconds", maxTimeout)
-		}
-	}
-
-	if in.MemorySize != nil {
-		if fn.MemorySize = *in.MemorySize; fn.MemorySize < defaultMemory || fn.MemorySize > maxMemory {
-			return nil, nil, invalid("MemorySize must be between %d and %d MB", defaultMemory, maxMemory)
-		}
-	}
-
-	switch {
-	case len(in.Architectures) > 1:
-		return nil, nil, invalid("Architectures must hold one architecture")
-	case len(in.Architectures) == 1 && in.Architectures[0] != "x86_64" && in.Architectures[0] != "arm64":
-		return nil, nil, invalid("Architecture %s is not supported", in.Architectures[0])
-	case len(in.Architectures) == 1:
-		fn.Architecture = in.Architectures[0]
-	}
-
-	if err := checkEnvironment(in.Environment); err != nil {
+	err := fn.configure(&settings{
+		Role:        in.Role,
+		Handler:     in.Handler,
+		Description: in.Description,
+		Runtime:     in.Runtime,
+		Timeout:     in.Timeout,
+		MemorySize:  in.MemorySize,
+		Environment: in.Environment,
+	})
+	if err != nil {
 		return nil, nil, err
 	}
 
-	if in.Environment != nil && len(in.Environment.Variables) > 0 {
-		fn.Environment = in.Environment.Variables
+	if guardErr := fn.setArchitecture(in.Architectures); guardErr != nil {
+		return nil, nil, guardErr
 	}
 
-	if err := tagging.Check(in.Tags); err != nil {
+	if err = tagging.Check(in.Tags); err != nil {
 		return nil, nil, invalid("Invalid tags: %v", err)
 	}
 
@@ -440,46 +553,11 @@ func newFunction(in *api.CreateFunctionRequest) (*function, []byte, error) {
 		return nil, nil, invalid("Code is required")
 	}
 
-	var code []byte
-	sum := sha256.New()
-	switch fn.PackageType {
-	case "", packageZip:
-		fn.PackageType = packageZip
-		if _, ok := Image(fn.Runtime); !ok {
-			return nil, nil, invalid("The runtime parameter of %s is not supported", fn.Runtime)
-		}
-
-		if fn.Handler == "" || strings.ContainsAny(fn.Handler, " \t\r\n") || len(fn.Handler) > 128 {
-			return nil, nil, invalid("Handler is required for Zip functions and must not contain whitespace")
-		}
-
-		if in.Code.ImageUri != nil || len(in.Code.ZipFile) == 0 {
-			return nil, nil, invalid("Zip functions need Code.ZipFile")
-		}
-
-		if err := checkZip(in.Code.ZipFile); err != nil {
-			return nil, nil, err
-		}
-
-		code = in.Code.ZipFile
-		sum.Write(code)
-		fn.CodeSize = int64(len(code))
-	case packageImage:
-		if fn.Runtime != "" || fn.Handler != "" {
-			return nil, nil, invalid("Runtime and Handler are not supported for Image functions")
-		}
-
-		if value(in.Code.ImageUri) == "" || len(in.Code.ZipFile) > 0 {
-			return nil, nil, invalid("Image functions need Code.ImageUri")
-		}
-
-		fn.ImageURI = *in.Code.ImageUri
-		sum.Write([]byte(fn.ImageURI))
-	default:
-		return nil, nil, invalid("PackageType must be Zip or Image")
+	code, err := fn.setCode(in.Code.ZipFile, in.Code.ImageUri)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	fn.CodeSha256 = base64.StdEncoding.EncodeToString(sum.Sum(nil))
 	return fn, code, nil
 }
 
