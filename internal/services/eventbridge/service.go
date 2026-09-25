@@ -22,6 +22,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
+	"github.com/amjadjibon/tinystack/internal/services/pattern"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -472,10 +473,23 @@ func (s *Service) TestEventPattern(
 		return nil, err
 	}
 
-	event, ok := flatten([]byte(value(in.Event)))
+	event, ok := pattern.Flatten([]byte(value(in.Event)))
 	if !ok {
 		return nil, invalid("Parameter Event is not valid.")
 	}
 
-	return &api.TestEventPatternResponse{Result: new(p.matches(event))}, nil
+	return &api.TestEventPatternResponse{Result: new(p.Matches(event))}, nil
+}
+
+// eventPatterns is the dialect of EventBridge event patterns.
+var eventPatterns = pattern.Dialect{MaxNumeric: 5e9, Wildcard: true}
+
+// compilePattern compiles an event pattern, reporting errors as EventBridge does.
+func compilePattern(text string) (*pattern.Pattern, error) {
+	p, err := pattern.Compile(text, eventPatterns)
+	if err != nil {
+		return nil, awserror.New("InvalidEventPatternException", "Event pattern is not valid. Reason: "+err.Error())
+	}
+
+	return p, nil
 }

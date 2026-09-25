@@ -1,4 +1,7 @@
-package eventbridge
+// Package pattern compiles and matches the JSON patterns that EventBridge event
+// patterns and SNS filter policies share. Each service picks its variant with a
+// Dialect and wraps compile errors in its own error code.
+package pattern
 
 import (
 	"bytes"
@@ -7,52 +10,57 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/netip"
 	"strings"
-
-	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 )
 
 const (
 	opPrefix           = "prefix"
 	opSuffix           = "suffix"
 	opEqualsIgnoreCase = "equals-ignore-case"
+	opWildcard         = "wildcard"
 )
 
-// maxNumeric bounds numeric matching values, as EventBridge does.
-const maxNumeric = 5e9
-
 // pathSeparator joins field names into leaf paths; it cannot occur in JSON keys
-// that EventBridge accepts in patterns.
+// that the services accept in patterns.
 const pathSeparator = "\x00"
 
-// matcher reports whether the leaf values found at a path match. Values are
-// strings, float64s, bools, or nil; a missing field has no values.
+// Dialect selects what a service accepts.
+type Dialect struct {
+	// MaxNumeric bounds numeric matching values.
+	MaxNumeric float64
+	// Wildcard allows the wildcard operator.
+	Wildcard bool
+	// Flat rejects nested objects, for patterns over a flat set of fields.
+	Flat bool
+}
+
+// Event is a JSON document flattened to its leaf values by field path. Values
+// are strings, float64s, bools, or nil; a missing field has no values.
+type Event map[string][]any
+
+// matcher reports whether the leaf values found at a path match.
 type matcher func(values []any) bool
 
-// pattern is a compiled event pattern: every field must match, and for every
-// $or group at least one branch must match.
-type pattern struct {
-	fields map[string][]matcher
-	ors    [][]*pattern
+// Pattern is a compiled pattern: every field must match, and for every $or
+// group at least one branch must match.
+type Pattern struct {
+	fields  map[string][]matcher
+	ors     [][]*Pattern
+	dialect Dialect
 }
 
-func invalidPattern(format string, args ...any) error {
-	return awserror.New(
-		"InvalidEventPatternException",
-		"Event pattern is not valid. Reason: "+fmt.Sprintf(format, args...),
-	)
+func invalid(format string, args ...any) error {
+	return fmt.Errorf(format, args...)
 }
 
-func unsupportedPattern(operator string) error {
-	return awserror.New(
-		"InvalidEventPatternException",
-		"Event pattern is not valid. Reason: TinyStack does not support the "+operator+" operator.",
-	)
+func unsupported(operator string) error {
+	return errors.New("TinyStack does not support the " + operator + " operator.")
 }
 
 // decodeObject decodes exactly one JSON object with numbers kept exact.
-func decodeObject(text string) (map[string]any, bool) {
-	decoder := json.NewDecoder(strings.NewReader(text))
+func decodeObject(text []byte) (map[string]any, bool) {
+	decoder := json.NewDecoder(bytes.NewReader(text))
 	decoder.UseNumber()
 	var object map[string]any
 	if err := decoder.Decode(&object); err != nil || object == nil {
@@ -66,18 +74,19 @@ func decodeObject(text string) (map[string]any, bool) {
 	return object, true
 }
 
-// compilePattern parses and validates an event pattern.
-func compilePattern(text string) (*pattern, error) {
-	object, ok := decodeObject(text)
+// Compile parses and validates a pattern. Its errors are the reason text that
+// the service reports under its own error code.
+func Compile(text string, d Dialect) (*Pattern, error) {
+	object, ok := decodeObject([]byte(text))
 	if !ok {
-		return nil, invalidPattern("Filter is not a valid JSON object.")
+		return nil, invalid("Filter is not a valid JSON object.")
 	}
 
 	if len(object) == 0 {
-		return nil, invalidPattern("Empty objects are not allowed.")
+		return nil, invalid("Empty objects are not allowed.")
 	}
 
-	p := &pattern{fields: map[string][]matcher{}}
+	p := &Pattern{fields: map[string][]matcher{}, dialect: d}
 	if err := p.compile(object, ""); err != nil {
 		return nil, err
 	}
@@ -85,7 +94,7 @@ func compilePattern(text string) (*pattern, error) {
 	return p, nil
 }
 
-func (p *pattern) compile(object map[string]any, prefix string) error {
+func (p *Pattern) compile(object map[string]any, prefix string) error {
 	for key, raw := range object {
 		if key == "$or" {
 			if err := p.compileOr(raw, prefix); err != nil {
@@ -98,8 +107,12 @@ func (p *pattern) compile(object map[string]any, prefix string) error {
 		path := prefix + key
 		switch v := raw.(type) {
 		case map[string]any:
+			if p.dialect.Flat {
+				return invalid("Nested objects are not allowed for field %s.", key)
+			}
+
 			if len(v) == 0 {
-				return invalidPattern("Empty objects are not allowed.")
+				return invalid("Empty objects are not allowed.")
 			}
 
 			if err := p.compile(v, path+pathSeparator); err != nil {
@@ -107,11 +120,11 @@ func (p *pattern) compile(object map[string]any, prefix string) error {
 			}
 		case []any:
 			if len(v) == 0 {
-				return invalidPattern("Empty arrays are not allowed.")
+				return invalid("Empty arrays are not allowed.")
 			}
 
 			for _, element := range v {
-				m, err := compileMatcher(element)
+				m, err := p.compileMatcher(element)
 				if err != nil {
 					return err
 				}
@@ -119,27 +132,27 @@ func (p *pattern) compile(object map[string]any, prefix string) error {
 				p.fields[path] = append(p.fields[path], m)
 			}
 		default:
-			return invalidPattern("Match value must be an array or an object for field %s.", key)
+			return invalid("Match value must be an array or an object for field %s.", key)
 		}
 	}
 
 	return nil
 }
 
-func (p *pattern) compileOr(raw any, prefix string) error {
+func (p *Pattern) compileOr(raw any, prefix string) error {
 	branches, ok := raw.([]any)
 	if !ok || len(branches) < 2 {
-		return invalidPattern("$or must be an array of at least two objects.")
+		return invalid("$or must be an array of at least two objects.")
 	}
 
-	group := make([]*pattern, 0, len(branches))
+	group := make([]*Pattern, 0, len(branches))
 	for _, branch := range branches {
 		object, isObject := branch.(map[string]any)
 		if !isObject || len(object) == 0 {
-			return invalidPattern("$or must be an array of at least two objects.")
+			return invalid("$or must be an array of at least two objects.")
 		}
 
-		sub := &pattern{fields: map[string][]matcher{}}
+		sub := &Pattern{fields: map[string][]matcher{}, dialect: p.dialect}
 		if err := sub.compile(object, prefix); err != nil {
 			return err
 		}
@@ -184,19 +197,19 @@ func stringPred(pred func(string) bool) func(any) bool {
 	}
 }
 
-func compileMatcher(element any) (matcher, error) {
+func (p *Pattern) compileMatcher(element any) (matcher, error) {
 	object, ok := element.(map[string]any)
 	if !ok {
 		want, isLiteral := literal(element)
 		if !isLiteral {
-			return nil, invalidPattern("Arrays may contain only literals and operator objects.")
+			return nil, invalid("Arrays may contain only literals and operator objects.")
 		}
 
 		return anyValue(func(v any) bool { return v == want }), nil
 	}
 
 	if len(object) != 1 {
-		return nil, invalidPattern("An operator object must have exactly one key.")
+		return nil, invalid("An operator object must have exactly one key.")
 	}
 
 	var operator string
@@ -209,26 +222,26 @@ func compileMatcher(element any) (matcher, error) {
 	case "exists":
 		want, isBool := arg.(bool)
 		if !isBool {
-			return nil, invalidPattern("exists match pattern must be either true or false.")
+			return nil, invalid("exists match pattern must be either true or false.")
 		}
 
 		return func(values []any) bool { return (len(values) > 0) == want }, nil
 	case "numeric":
-		pred, err := numeric(arg)
+		pred, err := numeric(arg, p.dialect.MaxNumeric)
 		if err != nil {
 			return nil, err
 		}
 
 		return anyValue(pred), nil
 	case "anything-but":
-		pred, err := anythingBut(arg)
+		pred, err := p.anythingBut(arg)
 		if err != nil {
 			return nil, err
 		}
 
 		return anyValue(func(v any) bool { return !pred(v) }), nil
 	default:
-		pred, err := stringOperator(operator, arg)
+		pred, err := p.stringOperator(operator, arg)
 		if err != nil {
 			return nil, err
 		}
@@ -238,17 +251,18 @@ func compileMatcher(element any) (matcher, error) {
 }
 
 // stringOperator compiles the operators that take one string argument.
-func stringOperator(operator string, arg any) (func(any) bool, error) {
+func (p *Pattern) stringOperator(operator string, arg any) (func(any) bool, error) {
 	s, ok := arg.(string)
-	switch operator {
-	case opPrefix, opSuffix, opEqualsIgnoreCase, "wildcard":
+	switch {
+	case operator == opWildcard && !p.dialect.Wildcard:
+		return nil, invalid("Unrecognized match type %s.", operator)
+	case operator == opPrefix || operator == opSuffix || operator == opEqualsIgnoreCase ||
+		operator == opWildcard || operator == "cidr":
 		if !ok {
-			return nil, invalidPattern("%s match pattern must be a string.", operator)
+			return nil, invalid("%s match pattern must be a string.", operator)
 		}
-	case "cidr":
-		return nil, unsupportedPattern(operator)
 	default:
-		return nil, invalidPattern("Unrecognized match type %s.", operator)
+		return nil, invalid("Unrecognized match type %s.", operator)
 	}
 
 	switch operator {
@@ -258,17 +272,33 @@ func stringOperator(operator string, arg any) (func(any) bool, error) {
 		return stringPred(func(v string) bool { return strings.HasSuffix(v, s) }), nil
 	case opEqualsIgnoreCase:
 		return stringPred(func(v string) bool { return strings.EqualFold(v, s) }), nil
+	case "cidr":
+		return cidr(s)
 	}
 
 	if strings.Contains(s, "\\") {
-		return nil, unsupportedPattern("escaped wildcard")
+		return nil, unsupported("escaped wildcard")
 	}
 
 	if strings.Contains(s, "**") {
-		return nil, invalidPattern("Consecutive wildcard characters are not allowed.")
+		return nil, invalid("Consecutive wildcard characters are not allowed.")
 	}
 
 	return stringPred(func(v string) bool { return wildcard(s, v) }), nil
+}
+
+// cidr matches IP address strings inside an IPv4 or IPv6 prefix.
+func cidr(s string) (func(any) bool, error) {
+	prefix, err := netip.ParsePrefix(s)
+	if err != nil {
+		return nil, invalid("Malformed CIDR, one '/' required.")
+	}
+
+	prefix = prefix.Masked()
+	return stringPred(func(v string) bool {
+		addr, parseErr := netip.ParseAddr(v)
+		return parseErr == nil && prefix.Contains(addr.Unmap())
+	}), nil
 }
 
 // wildcard matches v against a pattern in which "*" matches any run of characters.
@@ -297,30 +327,30 @@ func wildcard(pattern, v string) bool {
 }
 
 // anythingBut compiles the excluded set; the matcher negates it.
-func anythingBut(arg any) (func(any) bool, error) {
+func (p *Pattern) anythingBut(arg any) (func(any) bool, error) {
 	switch x := arg.(type) {
 	case map[string]any:
 		if len(x) != 1 {
-			return nil, invalidPattern("anything-but takes exactly one operator.")
+			return nil, invalid("anything-but takes exactly one operator.")
 		}
 
 		for operator, inner := range x {
 			if operator != opPrefix && operator != opSuffix && operator != opEqualsIgnoreCase {
-				return nil, unsupportedPattern("anything-but " + operator)
+				return nil, unsupported("anything-but " + operator)
 			}
 
-			return stringOperator(operator, inner)
+			return p.stringOperator(operator, inner)
 		}
 	case []any:
 		if len(x) == 0 {
-			return nil, invalidPattern("Empty arrays are not allowed.")
+			return nil, invalid("Empty arrays are not allowed.")
 		}
 
 		excluded := make([]any, 0, len(x))
 		for _, element := range x {
 			v, ok := literal(element)
 			if !ok || v == nil || v == true || v == false {
-				return nil, invalidPattern("anything-but list must contain only strings or numbers.")
+				return nil, invalid("anything-but list must contain only strings or numbers.")
 			}
 
 			excluded = append(excluded, v)
@@ -339,17 +369,17 @@ func anythingBut(arg any) (func(any) bool, error) {
 
 	v, ok := literal(arg)
 	if !ok || v == nil {
-		return nil, invalidPattern("anything-but must be a string, number, list, or operator.")
+		return nil, invalid("anything-but must be a string, number, list, or operator.")
 	}
 
 	return func(got any) bool { return got == v }, nil
 }
 
 // numeric compiles ["<op>", n] or a range such as [">", 0, "<=", 5].
-func numeric(arg any) (func(any) bool, error) {
+func numeric(arg any, limit float64) (func(any) bool, error) {
 	terms, ok := arg.([]any)
 	if !ok || (len(terms) != 2 && len(terms) != 4) {
-		return nil, invalidPattern("numeric match pattern must be one or two comparisons.")
+		return nil, invalid("numeric match pattern must be one or two comparisons.")
 	}
 
 	var checks []func(float64) bool
@@ -358,8 +388,8 @@ func numeric(arg any) (func(any) bool, error) {
 		op, isString := terms[i].(string)
 		n, isNumber := literal(terms[i+1])
 		bound, isFloat := n.(float64)
-		if !isString || !isNumber || !isFloat || math.Abs(bound) > maxNumeric {
-			return nil, invalidPattern("numeric match pattern must compare numbers between -5e9 and 5e9.")
+		if !isString || !isNumber || !isFloat || math.Abs(bound) > limit {
+			return nil, invalid("numeric match pattern must compare numbers between -%g and %g.", limit, limit)
 		}
 
 		var check func(float64) bool
@@ -369,20 +399,20 @@ func numeric(arg any) (func(any) bool, error) {
 			lower, upper = true, true
 		case ">", ">=":
 			if lower {
-				return nil, invalidPattern("numeric range has more than one lower bound.")
+				return nil, invalid("numeric range has more than one lower bound.")
 			}
 
 			lower = true
 			check = func(v float64) bool { return v > bound || (op == ">=" && v == bound) }
 		case "<", "<=":
 			if upper {
-				return nil, invalidPattern("numeric range has more than one upper bound.")
+				return nil, invalid("numeric range has more than one upper bound.")
 			}
 
 			upper = true
 			check = func(v float64) bool { return v < bound || (op == "<=" && v == bound) }
 		default:
-			return nil, invalidPattern("Unrecognized numeric operator %s.", op)
+			return nil, invalid("Unrecognized numeric operator %s.", op)
 		}
 
 		checks = append(checks, check)
@@ -404,9 +434,50 @@ func numeric(arg any) (func(any) bool, error) {
 	}, nil
 }
 
-// leaves flattens an event into its leaf values by path. Arrays contribute each
-// element at the array's own path, so a pattern matches any element.
-func leaves(v any, path string, out map[string][]any) {
+// Fields returns how many distinct field paths the pattern names, counting
+// those inside $or branches.
+func (p *Pattern) Fields() int {
+	paths := map[string]bool{}
+	p.collect(paths)
+	return len(paths)
+}
+
+func (p *Pattern) collect(paths map[string]bool) {
+	for path := range p.fields {
+		paths[path] = true
+	}
+
+	for _, group := range p.ors {
+		for _, branch := range group {
+			branch.collect(paths)
+		}
+	}
+}
+
+// Combinations returns the number of value combinations the pattern expands
+// to: the product of each field's value count, with each $or group adding up
+// its branches.
+func (p *Pattern) Combinations() int {
+	n := 1
+	for _, matchers := range p.fields {
+		n *= len(matchers)
+	}
+
+	for _, group := range p.ors {
+		sum := 0
+		for _, branch := range group {
+			sum += branch.Combinations()
+		}
+
+		n *= sum
+	}
+
+	return n
+}
+
+// leaves flattens a document into its leaf values by path. Arrays contribute
+// each element at the array's own path, so a pattern matches any element.
+func leaves(v any, path string, out Event) {
 	switch x := v.(type) {
 	case map[string]any:
 		prefix := path
@@ -428,8 +499,8 @@ func leaves(v any, path string, out map[string][]any) {
 	}
 }
 
-// matches reports whether the flattened event matches the pattern.
-func (p *pattern) matches(event map[string][]any) bool {
+// Matches reports whether the flattened event matches the pattern.
+func (p *Pattern) Matches(event Event) bool {
 	for path, matchers := range p.fields {
 		matched := false
 		for _, m := range matchers {
@@ -447,7 +518,7 @@ func (p *pattern) matches(event map[string][]any) bool {
 	for _, group := range p.ors {
 		matched := false
 		for _, branch := range group {
-			if branch.matches(event) {
+			if branch.Matches(event) {
 				matched = true
 				break
 			}
@@ -461,14 +532,30 @@ func (p *pattern) matches(event map[string][]any) bool {
 	return true
 }
 
-// flatten decodes an event object and returns its leaf values by path.
-func flatten(event []byte) (map[string][]any, bool) {
-	object, ok := decodeObject(string(bytes.TrimSpace(event)))
+// Flatten decodes a JSON object and returns its leaf values by path; ok is
+// false unless document is exactly one JSON object.
+func Flatten(document []byte) (Event, bool) {
+	object, ok := decodeObject(bytes.TrimSpace(document))
 	if !ok {
 		return nil, false
 	}
 
-	out := map[string][]any{}
+	out := Event{}
 	leaves(object, "", out)
 	return out, true
+}
+
+// Values flattens one JSON value into the values a field holds: a scalar is
+// one value and an array contributes its elements.
+func Values(document []byte) ([]any, bool) {
+	decoder := json.NewDecoder(bytes.NewReader(document))
+	decoder.UseNumber()
+	var v any
+	if err := decoder.Decode(&v); err != nil {
+		return nil, false
+	}
+
+	out := Event{}
+	leaves(v, "", out)
+	return out[""], true
 }

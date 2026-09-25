@@ -14,6 +14,7 @@ import (
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/pattern"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -57,7 +58,7 @@ func (s *Service) newEvent(scope request.Scope, in *api.PutEventsRequestEntry) (
 		return nil, required("Detail")
 	}
 
-	if _, ok := decodeObject(*in.Detail); !ok {
+	if _, ok := pattern.Flatten([]byte(*in.Detail)); !ok {
 		return nil, failed("MalformedDetail", "Detail is malformed.")
 	}
 
@@ -136,9 +137,9 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 			return nil, encodeErr
 		}
 
-		leafValues, _ := flatten(encoded)
+		leafValues, _ := pattern.Flatten(encoded)
 		for _, r := range rules {
-			if !r.pattern.matches(leafValues) {
+			if !r.pattern.Matches(leafValues) {
 				continue
 			}
 
@@ -154,7 +155,7 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 }
 
 type compiledRule struct {
-	pattern *pattern
+	pattern *pattern.Pattern
 	arn     string
 	targets []target
 }
