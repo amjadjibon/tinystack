@@ -74,14 +74,15 @@ func TestLambdaUpdates(t *testing.T) {
 		t.Fatalf("bad zip: %v", err)
 	}
 
-	// Publishing versions is not supported and fails explicitly.
-	_, err = c.UpdateFunctionCode(ctx, &sdklambda.UpdateFunctionCodeInput{
+	// Publish returns the new version.
+	published, err := c.UpdateFunctionCode(ctx, &sdklambda.UpdateFunctionCodeInput{
 		FunctionName: aws.String("worker"),
 		ZipFile:      zipOf(t, "app.py", "z = 3\n"),
 		Publish:      true,
 	})
-	if got, _ := lambdaCode(err); got != "NotImplemented" {
-		t.Fatalf("publish: %v", err)
+	if err != nil || aws.ToString(published.Version) != "1" ||
+		aws.ToString(published.FunctionArn) != "arn:aws:lambda:us-east-1:000000000000:function:worker:1" {
+		t.Fatalf("publish: %+v %v", published, err)
 	}
 
 	// Configuration changes apply only the fields sent, and the next

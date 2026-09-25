@@ -3,7 +3,6 @@ package lambda
 import (
 	"context"
 
-	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -14,7 +13,9 @@ func (s *Service) UpdateFunctionCode(
 	ctx context.Context,
 	in *api.UpdateFunctionCodeRequest,
 ) (*api.FunctionConfiguration, error) {
-	return s.update(ctx, in.FunctionName, in.RevisionId, value(in.DryRun), func(fn *function) ([]byte, error) {
+	return s.update(ctx, in.FunctionName, in.RevisionId, value(in.DryRun), value(in.Publish), func(
+		fn *function,
+	) ([]byte, error) {
 		if err := fn.setArchitecture(in.Architectures); err != nil {
 			return nil, err
 		}
@@ -29,7 +30,7 @@ func (s *Service) UpdateFunctionConfiguration(
 	ctx context.Context,
 	in *api.UpdateFunctionConfigurationRequest,
 ) (*api.FunctionConfiguration, error) {
-	return s.update(ctx, in.FunctionName, in.RevisionId, false, func(fn *function) ([]byte, error) {
+	return s.update(ctx, in.FunctionName, in.RevisionId, false, false, func(fn *function) ([]byte, error) {
 		return nil, fn.configure(&settings{
 			Role:        in.Role,
 			Handler:     in.Handler,
@@ -43,13 +44,13 @@ func (s *Service) UpdateFunctionConfiguration(
 }
 
 // update applies change, which returns new code or nil, to the caller's
-// function in one transaction when revision (if set) is still current, and
-// gives it a new revision. Unless dryRun, it then releases the function's warm
-// environments.
+// function in one transaction when revision (if set) is still current, gives
+// it a new revision, and with publish publishes it as a version, which it
+// returns. Unless dryRun, it then releases the function's warm environments.
 func (s *Service) update(
 	ctx context.Context,
 	raw, revision *string,
-	dryRun bool,
+	dryRun, publishing bool,
 	change func(*function) ([]byte, error),
 ) (*api.FunctionConfiguration, error) {
 	m, err := identity(ctx)
@@ -57,9 +58,13 @@ func (s *Service) update(
 		return nil, err
 	}
 
-	name, err := resolveName(m, value(raw))
+	name, q, err := resolveName(m, value(raw))
 	if err != nil {
 		return nil, err
+	}
+
+	if guardErr := unqualified(q); guardErr != nil {
+		return nil, guardErr
 	}
 
 	var fn *function
@@ -77,8 +82,7 @@ func (s *Service) update(
 		}
 
 		if revision != nil && *revision != fn.RevisionID {
-			return awserror.New("PreconditionFailedException", "The Revision Id provided does not match the "+
-				"latest Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id")
+			return revisionMismatch()
 		}
 
 		code, changeErr := change(fn)
@@ -87,12 +91,18 @@ func (s *Service) update(
 		}
 
 		if code != nil {
-			tx.Put(scopeKey(m.Scope, "code", name), code)
+			tx.Put(scopeKey(m.Scope, kindCode, name), code)
 		}
 
 		fn.RevisionID = newUUID()
 		fn.LastModified = s.now().UTC().Format(timeFormat)
-		return writeJSON(tx, key, fn)
+		if writeErr := writeJSON(tx, key, fn); writeErr != nil || !publishing {
+			return writeErr
+		}
+
+		var publishErr error
+		fn, publishErr = publish(tx, m.Scope, fn, nil, fn.LastModified)
+		return publishErr
 	})
 	if err != nil {
 		return nil, err

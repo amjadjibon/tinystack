@@ -139,7 +139,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 	var iterator *string
 	var failures int64
 	for ctx.Err() == nil {
-		if _, err := s.prepare(ctx, scope, mp.FunctionName); err != nil {
+		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
 			s.recordResult(scope, mp.UUID, "PROBLEM: Function not found.")
 			sleep(ctx, pollBackoff)
 			continue
@@ -180,12 +180,12 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 			return
 		}
 
-		result, _, err := s.run(ctx, scope, mp.FunctionName, payload)
+		result, _, _, err := s.run(ctx, scope, mp.FunctionName, mp.Qualifier, payload)
 		failure := invokeError(result, err)
 		s.deliveries.Add(
 			delivery.ViaEventSourceMapping,
 			mp.EventSourceArn,
-			functionARN(scope, mp.FunctionName),
+			mp.functionARN(scope),
 			payload,
 			failure,
 		)
@@ -194,7 +194,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 		if failure != nil {
 			s.logger.Warn(
 				"lambda failed to process DynamoDB stream batch",
-				"function", functionARN(scope, mp.FunctionName),
+				"function", mp.functionARN(scope),
 				"error", failure,
 				"attempt", failures+1,
 			)

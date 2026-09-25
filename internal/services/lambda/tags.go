@@ -10,30 +10,6 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// maxVersionItems is the modeled MaxItems limit of ListVersionsByFunction.
-const maxVersionItems = 10000
-
-// ListVersionsByFunction lists $LATEST, the only version TinyStack keeps.
-func (s *Service) ListVersionsByFunction(
-	ctx context.Context,
-	in *api.ListVersionsByFunctionRequest,
-) (*api.ListVersionsByFunctionResponse, error) {
-	if in.MaxItems != nil && (*in.MaxItems < 1 || *in.MaxItems > maxVersionItems) {
-		return nil, invalid("MaxItems must be between 1 and %d", maxVersionItems)
-	}
-
-	if in.Marker != nil {
-		return nil, invalid("Invalid Marker")
-	}
-
-	m, fn, err := s.load(ctx, in.FunctionName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &api.ListVersionsByFunctionResponse{Versions: []api.FunctionConfiguration{fn.configuration(m.Scope)}}, nil
-}
-
 // GetFunctionCodeSigningConfig reports that the function has no code signing
 // configuration; TinyStack does not model them.
 func (s *Service) GetFunctionCodeSigningConfig(
@@ -58,7 +34,8 @@ func taggedFunction(m request.Metadata, arn *string) (string, error) {
 		return "", invalid("Tags can only be managed on an unqualified function ARN: %s", raw)
 	}
 
-	return resolveName(m, raw)
+	name, _, err := resolveName(m, raw)
+	return name, err
 }
 
 // retag applies fn to the tags of the function a tagging ARN names.

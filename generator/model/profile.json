@@ -1067,7 +1067,14 @@
       "TagResource",
       "UntagResource",
       "UpdateFunctionCode",
-      "UpdateFunctionConfiguration"
+      "UpdateFunctionConfiguration",
+      "PublishVersion",
+      "CreateAlias",
+      "GetAlias",
+      "UpdateAlias",
+      "DeleteAlias",
+      "ListAliases",
+      "GetFunctionConfiguration"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -1082,7 +1089,8 @@
         "PackageType",
         "Environment",
         "Architectures",
-        "Tags"
+        "Tags",
+        "Publish"
       ],
       "FunctionCode": [
         "ZipFile",
@@ -1115,7 +1123,8 @@
         "Variables"
       ],
       "GetFunctionRequest": [
-        "FunctionName"
+        "FunctionName",
+        "Qualifier"
       ],
       "GetFunctionResponse": [
         "Configuration",
@@ -1127,7 +1136,8 @@
         "ImageUri"
       ],
       "DeleteFunctionRequest": [
-        "FunctionName"
+        "FunctionName",
+        "Qualifier"
       ],
       "DeleteFunctionResponse": [
         "StatusCode"
@@ -1144,13 +1154,15 @@
         "FunctionName",
         "InvocationType",
         "Payload",
-        "LogType"
+        "LogType",
+        "Qualifier"
       ],
       "InvocationResponse": [
         "StatusCode",
         "FunctionError",
         "Payload",
-        "LogResult"
+        "LogResult",
+        "ExecutedVersion"
       ],
       "CreateEventSourceMappingRequest": [
         "EventSourceArn",
@@ -1224,7 +1236,8 @@
         "ImageUri",
         "Architectures",
         "DryRun",
-        "RevisionId"
+        "RevisionId",
+        "Publish"
       ],
       "UpdateFunctionConfigurationRequest": [
         "FunctionName",
@@ -1236,6 +1249,60 @@
         "Environment",
         "Runtime",
         "RevisionId"
+      ],
+      "PublishVersionRequest": [
+        "FunctionName",
+        "CodeSha256",
+        "Description",
+        "RevisionId"
+      ],
+      "CreateAliasRequest": [
+        "FunctionName",
+        "Name",
+        "FunctionVersion",
+        "Description",
+        "RoutingConfig"
+      ],
+      "AliasConfiguration": [
+        "AliasArn",
+        "Name",
+        "FunctionVersion",
+        "Description",
+        "RevisionId",
+        "RoutingConfig"
+      ],
+      "GetAliasRequest": [
+        "FunctionName",
+        "Name"
+      ],
+      "UpdateAliasRequest": [
+        "FunctionName",
+        "Name",
+        "FunctionVersion",
+        "Description",
+        "RevisionId",
+        "RoutingConfig"
+      ],
+      "DeleteAliasRequest": [
+        "FunctionName",
+        "Name"
+      ],
+      "ListAliasesRequest": [
+        "FunctionName",
+        "FunctionVersion",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListAliasesResponse": [
+        "NextMarker",
+        "Aliases"
+      ],
+      "AliasRoutingConfiguration": [
+        "AdditionalVersionWeights"
+      ],
+      "GetFunctionConfigurationRequest": [
+        "FunctionName",
+        "Qualifier"
       ]
     }
   },

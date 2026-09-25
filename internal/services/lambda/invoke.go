@@ -35,20 +35,20 @@ const (
 // retryDelay spaces asynchronous retries.
 var retryDelay = time.Second
 
-// prepare loads what the runtime needs to run the function stored under name.
-func (s *Service) prepare(ctx context.Context, scope request.Scope, name string) (*Function, error) {
+// prepare loads what the runtime needs to run the function stored under name
+// at qualifier: $LATEST when it is empty, a version, or an alias.
+func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualifier string) (*Function, error) {
 	var fn *function
 	var code []byte
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		var found bool
+		var codeKey string
 		var loadErr error
-		fn, found, loadErr = loadFunction(tx, scopeKey(scope, kindFunction, name))
-		if loadErr == nil && !found {
-			return notFound("Function " + functionARN(scope, name))
+		if fn, codeKey, loadErr = resolveRouted(tx, scope, name, qualifier, true); loadErr != nil {
+			return loadErr
 		}
 
-		code, _ = tx.Get(scopeKey(scope, "code", name))
-		return loadErr
+		code, _ = tx.Get(codeKey)
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name string)
 		"AWS_REGION":                      scope.Region,
 		"AWS_DEFAULT_REGION":              scope.Region,
 		"AWS_LAMBDA_FUNCTION_NAME":        fn.Name,
-		"AWS_LAMBDA_FUNCTION_VERSION":     latest,
+		"AWS_LAMBDA_FUNCTION_VERSION":     fn.version(),
 		"AWS_LAMBDA_FUNCTION_MEMORY_SIZE": strconv.FormatInt(fn.MemorySize, 10),
 		"AWS_LAMBDA_FUNCTION_TIMEOUT":     strconv.FormatInt(fn.Timeout, 10),
 		// The creator's access key selects the function's account for SDK
@@ -81,8 +81,9 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name string)
 
 	return &Function{
 		Environment:  env,
-		ARN:          functionARN(scope, fn.Name),
+		ARN:          fn.arn(scope),
 		Name:         fn.Name,
+		Version:      fn.version(),
 		Region:       scope.Region,
 		Runtime:      fn.Runtime,
 		Handler:      fn.Handler,
@@ -96,26 +97,27 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name string)
 	}, nil
 }
 
-// run invokes the function synchronously and returns the invocation's log,
-// which it also writes to the function's log group.
+// run invokes the function at qualifier synchronously and returns the
+// invocation's log, which it also writes to the function's log group, and the
+// version that ran.
 func (s *Service) run(
 	ctx context.Context,
 	scope request.Scope,
-	name string,
+	name, qualifier string,
 	payload []byte,
-) (result Result, log string, err error) {
-	fn, err := s.prepare(ctx, scope, name)
+) (result Result, log, version string, err error) {
+	fn, err := s.prepare(ctx, scope, name, qualifier)
 	if err != nil {
-		return Result{}, "", err
+		return Result{}, "", "", err
 	}
 
 	started := time.Now()
 	result, err = s.runtime.Invoke(ctx, fn, payload)
 	if err != nil {
-		return Result{}, "", awserror.New("ServiceException", "The function could not be run: "+err.Error())
+		return Result{}, "", "", awserror.New("ServiceException", "The function could not be run: "+err.Error())
 	}
 
-	return result, s.record(ctx, scope, fn, time.Since(started), result.Log), nil
+	return result, s.record(ctx, scope, fn, time.Since(started), result.Log), fn.Version, nil
 }
 
 // record writes an invocation's log, the function's output between START and
@@ -134,7 +136,7 @@ func (s *Service) record(
 		id = m.RequestID
 	}
 
-	lines := []string{"START RequestId: " + id + " Version: " + latest}
+	lines := []string{"START RequestId: " + id + " Version: " + fn.Version}
 	for line := range strings.SplitSeq(strings.TrimRight(output, "\n"), "\n") {
 		if line != "" {
 			lines = append(lines, line)
@@ -149,7 +151,7 @@ func (s *Service) record(
 	)
 
 	revision := sha256.Sum256([]byte(fn.Revision))
-	stream := time.Now().UTC().Format("2006/01/02") + "/[" + latest + "]" + hex.EncodeToString(revision[:16])
+	stream := time.Now().UTC().Format("2006/01/02") + "/[" + fn.Version + "]" + hex.EncodeToString(revision[:16])
 	if err := s.logs.Append(context.WithoutCancel(ctx), scope, "/aws/lambda/"+fn.Name, stream, lines); err != nil {
 		s.logger.Warn("writing lambda log failed", "function", fn.ARN, "error", err)
 	}
@@ -157,25 +159,26 @@ func (s *Service) record(
 	return strings.Join(lines, "\n") + "\n"
 }
 
-// runAsync invokes the function in the background, retrying failures. It
-// reports false when the service is stopping.
-func (s *Service) runAsync(scope request.Scope, name string, payload []byte) bool {
+// runAsync invokes the function at qualifier in the background, retrying
+// failures. It reports false when the service is stopping.
+func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload []byte) bool {
+	arn := qualifiedARN(scope, name, qualifier)
 	return s.spawn(func(ctx context.Context) {
 		for attempt := 1; ; attempt++ {
-			result, _, err := s.run(ctx, scope, name, payload)
+			result, _, _, err := s.run(ctx, scope, name, qualifier, payload)
 			failure := invokeError(result, err)
 			if failure != nil {
 				failure = fmt.Errorf("attempt %d of %d: %w", attempt, asyncAttempts, failure)
 			}
 
-			s.deliveries.Add(delivery.ViaLambdaAsync, "", functionARN(scope, name), payload, failure)
+			s.deliveries.Add(delivery.ViaLambdaAsync, "", arn, payload, failure)
 			if failure == nil {
 				return
 			}
 
 			s.logger.Warn(
 				"async lambda invocation failed",
-				"function", functionARN(scope, name),
+				"function", arn,
 				"attempt", attempt,
 				"error", err,
 				"payload", string(result.Payload),
@@ -229,7 +232,21 @@ func checkPayload(payload []byte, limit int) ([]byte, error) {
 }
 
 func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.InvocationResponse, error) {
-	m, fn, err := s.load(ctx, in.FunctionName)
+	m, err := identity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	name, q, err := resolveName(m, value(in.FunctionName))
+	if err != nil {
+		return nil, err
+	}
+
+	if q, err = withQualifier(q, in.Qualifier); err != nil {
+		return nil, err
+	}
+
+	fn, err := s.prepare(ctx, m.Scope, name, q)
 	if err != nil {
 		return nil, err
 	}
@@ -254,12 +271,16 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 			return nil, checkErr
 		}
 
-		result, log, runErr := s.run(ctx, m.Scope, fn.Name, payload)
+		result, log, version, runErr := s.run(ctx, m.Scope, name, q, payload)
 		if runErr != nil {
 			return nil, runErr
 		}
 
-		out := &api.InvocationResponse{StatusCode: new(int64(http.StatusOK)), Payload: result.Payload}
+		out := &api.InvocationResponse{
+			StatusCode:      new(int64(http.StatusOK)),
+			Payload:         result.Payload,
+			ExecutedVersion: &version,
+		}
 		if tail {
 			out.LogResult = new(base64.StdEncoding.EncodeToString([]byte(log[max(0, len(log)-maxLogTail):])))
 		}
@@ -275,11 +296,11 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 			return nil, checkErr
 		}
 
-		if !s.runAsync(m.Scope, fn.Name, payload) {
+		if !s.runAsync(m.Scope, name, q, payload) {
 			return nil, awserror.New("ServiceException", "The service is shutting down")
 		}
 
-		return &api.InvocationResponse{StatusCode: new(int64(http.StatusAccepted))}, nil
+		return &api.InvocationResponse{StatusCode: new(int64(http.StatusAccepted)), ExecutedVersion: &fn.Version}, nil
 	case "DryRun":
 		return &api.InvocationResponse{StatusCode: new(int64(http.StatusNoContent))}, nil
 	default:
@@ -287,9 +308,9 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 	}
 }
 
-// InvokeAsync queues an asynchronous invocation of the function named by
-// functionARN, as an Event invocation does. Other services, such as SNS, call
-// it in-process instead of going through HTTP.
+// InvokeAsync queues an asynchronous invocation of the function, version, or
+// alias named by arn, as an Event invocation does. Other services, such as
+// SNS, call it in-process instead of going through HTTP.
 func (s *Service) InvokeAsync(ctx context.Context, arn string, payload []byte) error {
 	parts := strings.Split(arn, ":")
 	if len(parts) < 7 || parts[0] != "arn" || parts[2] != "lambda" || !accountID.MatchString(parts[4]) {
@@ -297,16 +318,16 @@ func (s *Service) InvokeAsync(ctx context.Context, arn string, payload []byte) e
 	}
 
 	m := request.Metadata{Scope: request.Scope{AccountID: parts[4], Region: parts[3]}}
-	name, err := resolveName(m, arn)
+	name, q, err := resolveName(m, arn)
 	if err != nil {
 		return err
 	}
 
-	if _, err = s.prepare(ctx, m.Scope, name); err != nil {
+	if _, err = s.prepare(ctx, m.Scope, name, q); err != nil {
 		return err
 	}
 
-	if !s.runAsync(m.Scope, name, payload) {
+	if !s.runAsync(m.Scope, name, q, payload) {
 		return awserror.New("ServiceException", "The service is shutting down")
 	}
 

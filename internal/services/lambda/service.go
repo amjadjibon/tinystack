@@ -135,7 +135,8 @@ func (s *Service) spawn(fn func(context.Context)) bool {
 	return true
 }
 
-// function is the stored configuration of one function.
+// function is the stored configuration of one function: $LATEST, or a
+// published version, which never changes.
 type function struct {
 	Environment  map[string]string `json:",omitempty"`
 	Tags         map[string]string `json:",omitempty"`
@@ -149,12 +150,32 @@ type function struct {
 	Architecture string `json:",omitempty"`
 	CodeSha256   string
 	LastModified string
+	// Version is the number of a published version, or empty for $LATEST.
+	Version string `json:",omitempty"`
+	// Source is the $LATEST revision a version was published from.
+	Source string `json:",omitempty"`
 	// RevisionID changes with every update of the code or configuration.
 	RevisionID string `json:",omitempty"`
 	AccessKey  string `json:",omitempty"`
 	CodeSize   int64
 	Timeout    int64
 	MemorySize int64
+	// Published is the last version number published, kept on $LATEST.
+	Published int64 `json:",omitempty"`
+}
+
+// version returns the function's version: its number or $LATEST.
+func (fn *function) version() string {
+	if fn.Version == "" {
+		return latest
+	}
+
+	return fn.Version
+}
+
+// arn is the ARN of the function's version: unqualified for $LATEST.
+func (fn *function) arn(scope request.Scope) string {
+	return qualifiedARN(scope, fn.Name, fn.Version)
 }
 
 func value[T any](p *T) (v T) {
@@ -184,11 +205,17 @@ func identity(ctx context.Context) (request.Metadata, error) {
 	return m, nil
 }
 
-// Storage kinds: functions are "<scope>/lambda/function/<name>" and event
-// source mappings "<scope>/lambda/mapping/<uuid>".
+// Storage kinds: functions are "<scope>/lambda/function/<name>" with their
+// code under "code/<name>", published versions "version/<name>/<number>" with
+// their code under "version-code/<name>/<number>", aliases
+// "alias/<name>/<alias>", and event source mappings "mapping/<uuid>".
 const (
-	kindFunction = "function"
-	kindMapping  = "mapping"
+	kindFunction    = "function"
+	kindCode        = "code"
+	kindVersion     = "version"
+	kindVersionCode = "version-code"
+	kindAlias       = "alias"
+	kindMapping     = "mapping"
 )
 
 func scopeKey(m request.Scope, kind, name string) string {
@@ -199,11 +226,22 @@ func functionARN(scope request.Scope, name string) string {
 	return "arn:aws:lambda:" + scope.Region + ":" + scope.AccountID + ":function:" + name
 }
 
+// qualifiedARN is the ARN of a function at a version or alias; an empty
+// qualifier leaves it unqualified.
+func qualifiedARN(scope request.Scope, name, qualifier string) string {
+	if qualifier == "" {
+		return functionARN(scope, name)
+	}
+
+	return functionARN(scope, name) + ":" + qualifier
+}
+
 var (
-	functionName = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
-	roleARN      = regexp.MustCompile(`^arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/?[a-zA-Z0-9+=,.@_/-]+$`)
-	accountID    = regexp.MustCompile(`^\d{12}$`)
-	envName      = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
+	functionName     = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+	qualifierPattern = regexp.MustCompile(`^(\$LATEST|[a-zA-Z0-9_-]{1,128})$`)
+	roleARN          = regexp.MustCompile(`^arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/?[a-zA-Z0-9+=,.@_/-]+$`)
+	accountID        = regexp.MustCompile(`^\d{12}$`)
+	envName          = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
 )
 
 // reserved lists environment variables Lambda sets itself.
@@ -216,13 +254,12 @@ var reserved = []string{
 }
 
 // resolveName maps a function name, partial ARN ("<account>:function:<name>"),
-// or ARN to a function in the caller's scope. Only the $LATEST qualifier
-// exists because TinyStack does not publish versions or aliases.
+// or ARN, any of them optionally qualified with a version or alias, to a
+// function in the caller's scope and the qualifier.
 //
 //nolint:gocritic // Metadata is an immutable request snapshot.
-func resolveName(m request.Metadata, raw string) (string, error) {
+func resolveName(m request.Metadata, raw string) (name, qualifier string, err error) {
 	parts := strings.Split(raw, ":")
-	var name, qualifier string
 	switch {
 	case len(parts) <= 2:
 		name = parts[0]
@@ -231,11 +268,11 @@ func resolveName(m request.Metadata, raw string) (string, error) {
 		}
 	case len(parts) >= 7 && len(parts) <= 8 && parts[0] == "arn" && parts[2] == "lambda" && parts[5] == "function":
 		if parts[3] != m.Region {
-			return "", invalid("The function ARN is not in the %s region", m.Region)
+			return "", "", invalid("The function ARN is not in the %s region", m.Region)
 		}
 
 		if parts[4] != m.AccountID {
-			return "", &awserror.Error{
+			return "", "", &awserror.Error{
 				Code:       "AccessDeniedException",
 				Message:    "The function belongs to another account",
 				StatusCode: http.StatusForbidden,
@@ -248,7 +285,7 @@ func resolveName(m request.Metadata, raw string) (string, error) {
 		}
 	case len(parts) >= 3 && len(parts) <= 4 && accountID.MatchString(parts[0]) && parts[1] == "function":
 		if parts[0] != m.AccountID {
-			return "", &awserror.Error{
+			return "", "", &awserror.Error{
 				Code:       "AccessDeniedException",
 				Message:    "The function belongs to another account",
 				StatusCode: http.StatusForbidden,
@@ -260,18 +297,38 @@ func resolveName(m request.Metadata, raw string) (string, error) {
 			qualifier = parts[3]
 		}
 	default:
-		return "", invalid("Invalid function name or ARN: %s", raw)
+		return "", "", invalid("Invalid function name or ARN: %s", raw)
 	}
 
 	if !functionName.MatchString(name) {
-		return "", invalid("Invalid function name: %s", raw)
+		return "", "", invalid("Invalid function name: %s", raw)
 	}
 
-	if qualifier != "" && qualifier != latest {
-		return "", notFound("Function " + functionARN(m.Scope, name) + ":" + qualifier)
+	if len(parts) == 2 || len(parts) == 4 || len(parts) == 8 {
+		if !qualifierPattern.MatchString(qualifier) {
+			return "", "", invalid("Invalid qualifier: %s", raw)
+		}
 	}
 
-	return name, nil
+	return name, qualifier, nil
+}
+
+// withQualifier combines the qualifier of a function name with a Qualifier
+// parameter, which must agree when both are set.
+func withQualifier(fromName string, param *string) (string, error) {
+	if param == nil {
+		return fromName, nil
+	}
+
+	if !qualifierPattern.MatchString(*param) {
+		return "", invalid("Invalid qualifier: %s", *param)
+	}
+
+	if fromName != "" && fromName != *param {
+		return "", invalid("The derived qualifier from the function name does not match the specified qualifier.")
+	}
+
+	return *param, nil
 }
 
 func loadFunction(tx storage.ReadTx, key string) (*function, bool, error) {
@@ -302,7 +359,7 @@ func writeJSON(tx storage.WriteTx, key string, v any) error {
 func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration {
 	cfg := api.FunctionConfiguration{
 		FunctionName:     new(fn.Name),
-		FunctionArn:      new(functionARN(scope, fn.Name)),
+		FunctionArn:      new(fn.arn(scope)),
 		Role:             new(fn.Role),
 		CodeSize:         new(fn.CodeSize),
 		Description:      new(fn.Description),
@@ -310,7 +367,7 @@ func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration
 		MemorySize:       new(fn.MemorySize),
 		LastModified:     new(fn.LastModified),
 		CodeSha256:       new(fn.CodeSha256),
-		Version:          new(latest),
+		Version:          new(fn.version()),
 		State:            new("Active"),
 		LastUpdateStatus: new("Successful"),
 		PackageType:      new(fn.PackageType),
@@ -587,17 +644,78 @@ func (s *Service) CreateFunction(
 	fn.AccessKey = m.AccessKey
 	fn.LastModified = s.now().UTC().Format(timeFormat)
 	key := scopeKey(m.Scope, kindFunction, fn.Name)
+	created := fn
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); exists {
 			return conflict("Function already exist: " + fn.Name)
 		}
 
 		if code != nil {
-			tx.Put(scopeKey(m.Scope, "code", fn.Name), code)
+			tx.Put(scopeKey(m.Scope, kindCode, fn.Name), code)
 		}
 
-		return writeJSON(tx, key, fn)
+		if writeErr := writeJSON(tx, key, fn); writeErr != nil || !value(in.Publish) {
+			return writeErr
+		}
+
+		var publishErr error
+		created, publishErr = publish(tx, m.Scope, fn, nil, fn.LastModified)
+		return publishErr
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := created.configuration(m.Scope)
+	return &cfg, nil
+}
+
+// load reads a function of the caller at the qualifier its name carries.
+func (s *Service) load(ctx context.Context, raw *string) (request.Metadata, *function, error) {
+	return s.loadAt(ctx, raw, nil)
+}
+
+// loadAt reads a function of the caller at the qualifier its name carries or
+// qualifier gives. The tags of a version are its function's.
+func (s *Service) loadAt(ctx context.Context, raw, qualifier *string) (request.Metadata, *function, error) {
+	m, err := identity(ctx)
+	if err != nil {
+		return m, nil, err
+	}
+
+	name, q, err := resolveName(m, value(raw))
+	if err != nil {
+		return m, nil, err
+	}
+
+	if q, err = withQualifier(q, qualifier); err != nil {
+		return m, nil, err
+	}
+
+	var fn *function
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		var loadErr error
+		if fn, _, loadErr = resolve(tx, m.Scope, name, q); loadErr != nil || fn.Version == "" {
+			return loadErr
+		}
+
+		base, _, loadErr := resolve(tx, m.Scope, name, "")
+		if loadErr == nil {
+			fn.Tags = base.Tags
+		}
+
+		return loadErr
+	})
+	return m, fn, err
+}
+
+// GetFunctionConfiguration returns the configuration of $LATEST, a version,
+// or the version an alias points to.
+func (s *Service) GetFunctionConfiguration(
+	ctx context.Context,
+	in *api.GetFunctionConfigurationRequest,
+) (*api.FunctionConfiguration, error) {
+	m, fn, err := s.loadAt(ctx, in.FunctionName, in.Qualifier)
 	if err != nil {
 		return nil, err
 	}
@@ -606,34 +724,8 @@ func (s *Service) CreateFunction(
 	return &cfg, nil
 }
 
-// load reads a function of the caller.
-func (s *Service) load(ctx context.Context, raw *string) (request.Metadata, *function, error) {
-	m, err := identity(ctx)
-	if err != nil {
-		return m, nil, err
-	}
-
-	name, err := resolveName(m, value(raw))
-	if err != nil {
-		return m, nil, err
-	}
-
-	var fn *function
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		var found bool
-		var loadErr error
-		fn, found, loadErr = loadFunction(tx, scopeKey(m.Scope, kindFunction, name))
-		if loadErr == nil && !found {
-			return notFound("Function " + functionARN(m.Scope, name))
-		}
-
-		return loadErr
-	})
-	return m, fn, err
-}
-
 func (s *Service) GetFunction(ctx context.Context, in *api.GetFunctionRequest) (*api.GetFunctionResponse, error) {
-	m, fn, err := s.load(ctx, in.FunctionName)
+	m, fn, err := s.loadAt(ctx, in.FunctionName, in.Qualifier)
 	if err != nil {
 		return nil, err
 	}
@@ -649,33 +741,6 @@ func (s *Service) GetFunction(ctx context.Context, in *api.GetFunctionRequest) (
 	}
 
 	return out, nil
-}
-
-func (s *Service) DeleteFunction(
-	ctx context.Context,
-	in *api.DeleteFunctionRequest,
-) (*api.DeleteFunctionResponse, error) {
-	m, fn, err := s.load(ctx, in.FunctionName)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		key := scopeKey(m.Scope, kindFunction, fn.Name)
-		if _, ok := tx.Get(key); !ok {
-			return notFound("Function " + functionARN(m.Scope, fn.Name))
-		}
-
-		tx.Delete(key)
-		tx.Delete(scopeKey(m.Scope, "code", fn.Name))
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	s.runtime.Release(functionARN(m.Scope, fn.Name))
-	return &api.DeleteFunctionResponse{StatusCode: new(int64(http.StatusNoContent))}, nil
 }
 
 // after decodes a pagination marker, the last name of the previous page.

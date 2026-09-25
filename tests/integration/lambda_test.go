@@ -199,7 +199,7 @@ func TestLambdaFunctions(t *testing.T) {
 		ctx,
 		&sdklambda.GetFunctionInput{FunctionName: aws.String("hello"), Qualifier: aws.String("1")},
 	)
-	if _, status := lambdaCode(err); status != http.StatusNotImplemented {
+	if code, status := lambdaCode(err); code != "ResourceNotFoundException" || status != http.StatusNotFound {
 		t.Fatalf("qualifier: %v", err)
 	}
 

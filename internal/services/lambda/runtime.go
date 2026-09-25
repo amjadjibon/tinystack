@@ -12,6 +12,8 @@ type Function struct {
 	Environment map[string]string
 	ARN         string
 	Name        string
+	// Version is the version that runs: a number or $LATEST.
+	Version     string
 	Region      string
 	Runtime     string
 	Handler     string

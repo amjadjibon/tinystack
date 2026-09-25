@@ -43,6 +43,8 @@ type mapping struct {
 	UUID                 string
 	EventSourceArn       string
 	FunctionName         string
+	// Qualifier is the version or alias the mapping invokes, if any.
+	Qualifier            string `json:",omitempty"`
 	LastProcessingResult string
 	StartingPosition     string `json:",omitempty"`
 	Cursor               string `json:",omitempty"`
@@ -60,7 +62,7 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 	cfg := api.EventSourceMappingConfiguration{
 		UUID:                  new(mp.UUID),
 		EventSourceArn:        new(mp.EventSourceArn),
-		FunctionArn:           new(functionARN(scope, mp.FunctionName)),
+		FunctionArn:           new(mp.functionARN(scope)),
 		BatchSize:             new(mp.BatchSize),
 		State:                 new(state),
 		StateTransitionReason: new("USER_INITIATED"),
@@ -74,6 +76,11 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 	}
 
 	return cfg
+}
+
+// functionARN is the ARN of the function, version, or alias the mapping invokes.
+func (mp *mapping) functionARN(scope request.Scope) string {
+	return qualifiedARN(scope, mp.FunctionName, mp.Qualifier)
 }
 
 func newUUID() string {
@@ -117,11 +124,13 @@ func (s *Service) CreateEventSourceMapping(
 		return nil, err
 	}
 
+	_, q, _ := resolveName(m, value(in.FunctionName))
 	source := value(in.EventSourceArn)
 	mp := &mapping{
 		UUID:           newUUID(),
 		EventSourceArn: source,
 		FunctionName:   fn.Name,
+		Qualifier:      q,
 		LastModified:   s.now().UnixMilli(),
 		Enabled:        in.Enabled == nil || *in.Enabled,
 		// Lambda reports "No records processed" until the first batch.
@@ -149,9 +158,9 @@ func (s *Service) CreateEventSourceMapping(
 				return loadErr
 			}
 
-			if existing.EventSourceArn == source && existing.FunctionName == fn.Name {
+			if existing.EventSourceArn == source && existing.FunctionName == fn.Name && existing.Qualifier == q {
 				return conflict("An event source mapping with event source (\" " + source + " \") and function " +
-					"(\" " + fn.Name + " \") already exists. Please update or delete the existing mapping with " +
+					"(\" " + mp.functionARN(m.Scope) + " \") already exists. Please update or delete the existing mapping with " +
 					"UUID " + existing.UUID)
 			}
 		}
@@ -298,9 +307,9 @@ func (s *Service) ListEventSourceMappings(
 		return nil, err
 	}
 
-	name := ""
+	name, qualifier := "", ""
 	if in.FunctionName != nil {
-		if name, err = resolveName(m, *in.FunctionName); err != nil {
+		if name, qualifier, err = resolveName(m, *in.FunctionName); err != nil {
 			return nil, err
 		}
 	}
@@ -318,7 +327,7 @@ func (s *Service) ListEventSourceMappings(
 				return loadErr
 			}
 
-			if (name == "" || mp.FunctionName == name) &&
+			if (name == "" || mp.FunctionName == name && (qualifier == "" || mp.Qualifier == qualifier)) &&
 				(in.EventSourceArn == nil || mp.EventSourceArn == *in.EventSourceArn) {
 				mps = append(mps, mp)
 			}
@@ -484,7 +493,7 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 	queueCtx := request.WithMetadata(ctx, request.Metadata{Scope: scope})
 	for ctx.Err() == nil {
 		// Receiving for a missing function would only hide the messages.
-		if _, err := s.prepare(ctx, scope, mp.FunctionName); err != nil {
+		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
 			s.recordResult(scope, mp.UUID, "PROBLEM: Function not found.")
 			sleep(ctx, pollBackoff)
 			continue
@@ -513,19 +522,19 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 			return
 		}
 
-		result, _, err := s.run(ctx, scope, mp.FunctionName, payload)
+		result, _, _, err := s.run(ctx, scope, mp.FunctionName, mp.Qualifier, payload)
 		failure := invokeError(result, err)
 		s.deliveries.Add(
 			delivery.ViaEventSourceMapping,
 			mp.EventSourceArn,
-			functionARN(scope, mp.FunctionName),
+			mp.functionARN(scope),
 			payload,
 			failure,
 		)
 		if failure != nil {
 			s.logger.Warn(
 				"lambda failed to process SQS batch",
-				"function", functionARN(scope, mp.FunctionName),
+				"function", mp.functionARN(scope),
 				"error", err,
 				"payload", string(result.Payload),
 			)
