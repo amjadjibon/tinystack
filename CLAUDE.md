@@ -129,8 +129,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   pooling warm containers that run the AWS base images' Runtime Interface Emulator). Pollers and async invocations
   run on the service's own context; `Stop` (a shutdown hook, also deferred in `start.go`) ends them and removes every
   container. SNS invokes subscribed functions through `lambda.Service.InvokeAsync`, and mappings read SQS in-process
-  via `sqs.QueueURL` and DynamoDB streams through `dynamodb.Streams`, storing each stream mapping's cursor. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus
-  only), matches `PutEvents` entries against compiled patterns (`services/pattern`, shared with SNS filter policies through
+  via `sqs.QueueURL` and DynamoDB streams through `dynamodb.Streams`, storing each stream mapping's cursor. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus)
+  or `…/eventbridge/bus-rule/<bus>/<name>` (custom buses, whose records are `…/eventbridge/bus/<name>`), renders
+  `InputTransformer` templates in `transform.go`, matches `PutEvents` entries against compiled patterns (`services/pattern`, shared with SNS filter policies through
 a per-service `Dialect`), and delivers synchronously through
   `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. SSM Parameter Store keeps each
   parameter under `…/ssm/p/<name>` (current version number, labels, tags) and each immutable version under

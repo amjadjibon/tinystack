@@ -73,7 +73,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions
-versions and aliases, and SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge rules and targets, SSM parameters
+versions and aliases, and SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules, and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases, and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
@@ -420,22 +420,34 @@ stored, never evaluated, and enabling rotation never rotates the material.
 
 ### EventBridge (AWS JSON 1.1)
 
-Rules on each account's `default` event bus route events to SQS queues, SNS
-topics, and Lambda functions in the rule's account and region, in-process.
+Rules on each account's `default` event bus and on custom buses route events to
+SQS queues, SNS topics, and Lambda functions in the rule's account and region,
+in-process. Rule operations, `PutEvents` entries, and tags take an `EventBusName`
+(a name or ARN; `default` when left out).
 
 | Operation | Behavior |
 | --- | --- |
+| CreateEventBus / DescribeEventBus / UpdateEventBus / DeleteEventBus / ListEventBuses | Custom buses (up to 100) with a `Description` and `Tags`; names starting with `aws.` (partner buses) are rejected; a bus with rules cannot be deleted, nor can `default`; ListEventBuses includes `default`, with `NamePrefix`, `Limit`, and `NextToken` |
 | PutRule / DescribeRule / DeleteRule / ListRules / EnableRule / DisableRule | Event-pattern rules (`EventPattern`, `State`, `Description`, `RoleArn`); PutRule updates an existing rule; a rule with targets cannot be deleted; deleting a missing rule succeeds; `NamePrefix`, `Limit`, and `NextToken`; 300 rules per bus |
-| PutTargets / RemoveTargets / ListTargetsByRule | Up to 5 targets per rule; `Input` (constant JSON), `InputPath` (`$` or dotted fields such as `$.detail.id`), and `SqsParameters.MessageGroupId` for FIFO queues (the event ID is the deduplication ID) |
-| PutEvents | Up to 10 entries (256 KB); entries need `Source`, `DetailType`, and a JSON object `Detail`, and failed entries are reported per entry; each matching enabled rule delivers the event envelope (or its target input) to every target; a failed delivery does not fail PutEvents |
+| PutTargets / RemoveTargets / ListTargetsByRule | Up to 5 targets per rule; `Input` (constant JSON), `InputPath` (`$` followed by dotted fields and `[index]` steps, such as `$.detail.items[0].id`), `InputTransformer`, and `SqsParameters.MessageGroupId` for FIFO queues (the event ID is the deduplication ID) |
+| PutEvents | Up to 10 entries (256 KB) for any of the caller's buses (a missing bus fails its entry); entries need `Source`, `DetailType`, and a JSON object `Detail`, and failed entries are reported per entry; each matching enabled rule delivers the event envelope (or its target input) to every target; a failed delivery does not fail PutEvents |
 | TestEventPattern | Matches an event against a pattern |
-| TagResource / UntagResource / ListTagsForResource | Rule ARNs; also `Tags` on PutRule |
+| TagResource / UntagResource / ListTagsForResource | Rule and custom bus ARNs; also `Tags` on PutRule and CreateEventBus |
 
 Patterns support exact strings, numbers, booleans, and `null`; `prefix`, `suffix`,
 `equals-ignore-case`, `wildcard`, `anything-but` (a value, a list, or `prefix`,
 `suffix`, or `equals-ignore-case`), `numeric` comparisons and ranges, `exists`,
 `cidr`, nested fields, arrays (any element matches), and `$or`. Other operators
 are rejected with `InvalidEventPatternException`.
+
+An `InputTransformer` has up to 100 `InputPathsMap` entries (paths as for
+`InputPath`) and an `InputTemplate` of up to 8192 characters. Each `<name>`
+placeholder becomes the selected value: as JSON outside a string (`null` when the
+path selects nothing), or as text inside one, escaped to keep the string valid.
+The reserved `<aws.events.rule-arn>`, `<aws.events.rule-name>`,
+`<aws.events.event.ingestion-time>`, `<aws.events.event>`, and
+`<aws.events.event.json>` are also available, and unknown placeholders are left as
+written.
 
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.
@@ -482,9 +494,8 @@ policies, encryption, POST uploads, lifecycle, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, code from S3, `ImageConfig`, function URLs,
 concurrency settings, resource policies, or event sources other than SQS and DynamoDB
 streams (no batching window, filters, partial batch responses, bisecting, or failure destinations); asynchronous failures are
-logged and dropped after the retries. EventBridge limits: only the default event bus
-(no custom or partner buses and no archives or replays), no scheduled rules,
-`InputTransformer`, dead-letter queues, retry policies, or targets other than
+logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
+buses or targets, bus policies, archives, or replays, no scheduled rules, dead-letter queues, retry policies, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; delivery happens
 synchronously during PutEvents. IAM limits: no users, access keys, groups, instance
 profiles, permissions boundaries, or policy evaluation, and AWS managed policies
