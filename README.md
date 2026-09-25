@@ -193,12 +193,20 @@ Standard topics that fan out to SQS queues and Lambda functions in-process.
 | --- | --- |
 | CreateTopic | Idempotent for identical attributes; `DisplayName`, the `*FeedbackSampleRate` attributes, and `Tags` |
 | GetTopicAttributes / SetTopicAttributes | The writable attributes above plus `TopicArn`, `Owner`, subscription counts, and the default owner-only `Policy`; delivery status sample rates are stored, but nothing is logged |
-| GetSubscriptionAttributes / SetSubscriptionAttributes | Endpoint, protocol, owner, and `RawMessageDelivery` |
+| GetSubscriptionAttributes / SetSubscriptionAttributes | Endpoint, protocol, owner, `RawMessageDelivery`, `FilterPolicy`, and `FilterPolicyScope` |
 | TagResource / UntagResource / ListTagsForResource | Topic ARNs |
 | DeleteTopic | Removes the topic and its subscriptions; deleting a missing topic succeeds |
 | ListTopics / ListSubscriptions / ListSubscriptionsByTopic | Account/region isolation, 100 per page with `NextToken` |
-| Subscribe / Unsubscribe | `sqs` (queue ARN) and `lambda` (function ARN) protocols with endpoints in the subscriber's account, confirmed at once; `RawMessageDelivery` for queues; subscribing twice returns the existing subscription |
-| Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus optional `sqs` and `lambda` texts); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; each subscribed function is invoked asynchronously with an `aws:sns` event; a failed delivery does not fail Publish |
+| Subscribe / Unsubscribe | `sqs` (queue ARN) and `lambda` (function ARN) protocols with endpoints in the subscriber's account, confirmed at once; `RawMessageDelivery` for queues; `FilterPolicy` and `FilterPolicyScope`; subscribing twice with the same attributes returns the existing subscription |
+| Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus optional `sqs` and `lambda` texts); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; each subscribed function is invoked asynchronously with an `aws:sns` event; subscriptions whose filter policy rejects the message are skipped; a failed delivery does not fail Publish |
+
+Filter policies use the EventBridge pattern syntax without `wildcard`: exact
+values, `prefix`, `suffix`, `equals-ignore-case`, `anything-but`, `numeric`
+(within ±1e9), `exists`, `cidr`, and `$or`, with at most 5 keys and 150 value
+combinations. The `MessageAttributes` scope matches `String`, `Number`, and
+`String.Array` attributes by name (never `Binary`); the `MessageBody` scope
+matches the JSON fields of the text each subscription receives, nested fields
+included, and a body that is not a JSON object matches nothing.
 
 ### S3 (REST XML)
 
@@ -375,8 +383,8 @@ topics, and Lambda functions in the rule's account and region, in-process.
 Patterns support exact strings, numbers, booleans, and `null`; `prefix`, `suffix`,
 `equals-ignore-case`, `wildcard`, `anything-but` (a value, a list, or `prefix`,
 `suffix`, or `equals-ignore-case`), `numeric` comparisons and ranges, `exists`,
-nested fields, arrays (any element matches), and `$or`. Other operators, such as
-`cidr`, are rejected with `InvalidEventPatternException`.
+`cidr`, nested fields, arrays (any element matches), and `$or`. Other operators
+are rejected with `InvalidEventPatternException`.
 
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.
@@ -414,8 +422,7 @@ parallel scans, PartiQL, streams, TTL expiry, backups, or capacity accounting/th
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
 message groups on standard queues, dead-letter redrive back to the source queue,
-policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, filter
-policies, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
+policies, or encryption settings; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no presigned URLs, multiple ranges per request, versioning, ACLs other than `private`,
 policies, encryption, object tagging, lifecycle, or stored checksums on

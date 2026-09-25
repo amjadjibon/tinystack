@@ -107,7 +107,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   (registered with `http.Server.RegisterOnShutdown`). FIFO group ordering and dead-letter moves also happen inside
   `claim`, and batch operations run all entries in one `Update`, so every queue change stays atomic. SNS holds a
   `*sqs.Service` and delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its
-  subscriptions. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
+  subscriptions, and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
   in the same transaction as the regional bucket record; objects are `…/s3/<bucket>/o/<key>` (metadata) plus
   `…/s3/<bucket>/d/<key>` (bytes). The bucket record also holds its notification configuration, which object writes
   read in their transaction and deliver after commit (`notification.go`) through `sqs.Service.Deliver`,
@@ -119,7 +119,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   run on the service's own context; `Stop` (a shutdown hook, also deferred in `start.go`) ends them and removes every
   container. SNS invokes subscribed functions through `lambda.Service.InvokeAsync`, and mappings read SQS in-process
   via `sqs.QueueURL`. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus
-  only), matches `PutEvents` entries against compiled patterns (`pattern.go`), and delivers synchronously through
+  only), matches `PutEvents` entries against compiled patterns (`services/pattern`, shared with SNS filter policies through
+a per-service `Dialect`), and delivers synchronously through
   `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. SSM Parameter Store keeps each
   parameter under `…/ssm/p/<name>` (current version number, labels, tags) and each immutable version under
   `…/ssm/v/<name>:<zero-padded version>`, so path and history listings read keys in order; SecureString values are
