@@ -140,8 +140,9 @@ func (s *secret) resolve(versionID, stage *string) (string, error) {
 	return id, nil
 }
 
-// ListSecretVersionIds lists versions in creation order: those with a staging
-// label, and with IncludeDeprecated the rest too.
+// ListSecretVersionIds lists versions in creation order, with versions created
+// in the same millisecond ordered by ID: those with a staging label, and with
+// IncludeDeprecated the rest too.
 func (s *Service) ListSecretVersionIds(
 	ctx context.Context,
 	in *api.ListSecretVersionIdsRequest,

@@ -231,11 +231,6 @@ func (s *Service) ListSecrets(ctx context.Context, in *api.ListSecretsRequest) (
 			found = append(found, sec)
 		}
 
-		slices.SortFunc(found, func(a, b *secret) int { return strings.Compare(createdKey(a), createdKey(b)) })
-		if order == sortDesc {
-			slices.Reverse(found)
-		}
-
 		selected, next, pageErr := page(found, createdKey, in.NextToken, in.MaxResults, order == sortDesc)
 		if pageErr != nil {
 			return pageErr

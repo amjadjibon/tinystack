@@ -454,14 +454,22 @@ func tagList(tags map[string]string) []api.Tag {
 	return out
 }
 
-// page returns the items after token, at most size of them (default and
-// maximum 100), and the token of the next page. items must be ordered by
-// sortKey, descending when desc.
+// page orders items by sortKey, descending when desc, and returns those after
+// token, at most size of them (default and maximum 100), and the token of the
+// next page. The token is the last item's sort key, so sort keys must be unique.
 func page[T any](items []T, sortKey func(T) string, token *string, size *int64, desc bool) (
 	selected []T,
 	next *string,
 	err error,
 ) {
+	slices.SortFunc(items, func(a, b T) int {
+		if desc {
+			return strings.Compare(sortKey(b), sortKey(a))
+		}
+
+		return strings.Compare(sortKey(a), sortKey(b))
+	})
+
 	n := int64(maxPage)
 	if size != nil {
 		if *size < 1 || *size > maxPage {
