@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"maps"
 	"net/http"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -66,10 +67,9 @@ func WriteError(w http.ResponseWriter, protocol string, e *awserror.Error) {
 		w.Header().Set("X-Amzn-Query-Error", e.QueryCode+";"+e.Fault())
 	}
 
-	data, _ := json.Marshal(struct {
-		Type    string `json:"__type"`
-		Message string `json:"message"`
-	}{e.Code, e.Message})
+	body := map[string]any{"__type": e.Code, "message": e.Message}
+	maps.Copy(body, e.Fields)
+	data, _ := json.Marshal(body)
 	w.Header().Set("Content-Type", contentType(protocol))
 	w.WriteHeader(e.StatusCode)
 	_, _ = w.Write(data)

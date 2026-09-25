@@ -26,13 +26,33 @@ type Tag struct {
 	Value *string `json:"Value,omitempty"`
 }
 
-type CreateTableInput struct {
-	TableName             *string                `json:"TableName,omitempty"`
-	AttributeDefinitions  []AttributeDefinition  `json:"AttributeDefinitions,omitempty"`
+type Projection struct {
+	ProjectionType   *string  `json:"ProjectionType,omitempty"`
+	NonKeyAttributes []string `json:"NonKeyAttributes,omitempty"`
+}
+
+type GlobalSecondaryIndex struct {
+	IndexName             *string                `json:"IndexName,omitempty"`
 	KeySchema             []KeySchemaElement     `json:"KeySchema,omitempty"`
-	BillingMode           *string                `json:"BillingMode,omitempty"`
+	Projection            *Projection            `json:"Projection,omitempty"`
 	ProvisionedThroughput *ProvisionedThroughput `json:"ProvisionedThroughput,omitempty"`
-	Tags                  []Tag                  `json:"Tags,omitempty"`
+}
+
+type LocalSecondaryIndex struct {
+	IndexName  *string            `json:"IndexName,omitempty"`
+	KeySchema  []KeySchemaElement `json:"KeySchema,omitempty"`
+	Projection *Projection        `json:"Projection,omitempty"`
+}
+
+type CreateTableInput struct {
+	TableName              *string                `json:"TableName,omitempty"`
+	AttributeDefinitions   []AttributeDefinition  `json:"AttributeDefinitions,omitempty"`
+	KeySchema              []KeySchemaElement     `json:"KeySchema,omitempty"`
+	BillingMode            *string                `json:"BillingMode,omitempty"`
+	ProvisionedThroughput  *ProvisionedThroughput `json:"ProvisionedThroughput,omitempty"`
+	Tags                   []Tag                  `json:"Tags,omitempty"`
+	GlobalSecondaryIndexes []GlobalSecondaryIndex `json:"GlobalSecondaryIndexes,omitempty"`
+	LocalSecondaryIndexes  []LocalSecondaryIndex  `json:"LocalSecondaryIndexes,omitempty"`
 }
 
 type BillingModeSummary struct {
@@ -48,18 +68,40 @@ type ProvisionedThroughputDescription struct {
 	WriteCapacityUnits     *int64   `json:"WriteCapacityUnits,omitempty"`
 }
 
-type TableDescription struct {
-	TableName             *string                           `json:"TableName,omitempty"`
-	TableStatus           *string                           `json:"TableStatus,omitempty"`
-	TableArn              *string                           `json:"TableArn,omitempty"`
-	TableId               *string                           `json:"TableId,omitempty"`
-	CreationDateTime      *float64                          `json:"CreationDateTime,omitempty"`
+type GlobalSecondaryIndexDescription struct {
+	IndexName             *string                           `json:"IndexName,omitempty"`
 	KeySchema             []KeySchemaElement                `json:"KeySchema,omitempty"`
-	AttributeDefinitions  []AttributeDefinition             `json:"AttributeDefinitions,omitempty"`
-	ItemCount             *int64                            `json:"ItemCount,omitempty"`
-	TableSizeBytes        *int64                            `json:"TableSizeBytes,omitempty"`
-	BillingModeSummary    *BillingModeSummary               `json:"BillingModeSummary,omitempty"`
+	Projection            *Projection                       `json:"Projection,omitempty"`
+	IndexStatus           *string                           `json:"IndexStatus,omitempty"`
 	ProvisionedThroughput *ProvisionedThroughputDescription `json:"ProvisionedThroughput,omitempty"`
+	IndexSizeBytes        *int64                            `json:"IndexSizeBytes,omitempty"`
+	ItemCount             *int64                            `json:"ItemCount,omitempty"`
+	IndexArn              *string                           `json:"IndexArn,omitempty"`
+}
+
+type LocalSecondaryIndexDescription struct {
+	IndexName      *string            `json:"IndexName,omitempty"`
+	KeySchema      []KeySchemaElement `json:"KeySchema,omitempty"`
+	Projection     *Projection        `json:"Projection,omitempty"`
+	IndexSizeBytes *int64             `json:"IndexSizeBytes,omitempty"`
+	ItemCount      *int64             `json:"ItemCount,omitempty"`
+	IndexArn       *string            `json:"IndexArn,omitempty"`
+}
+
+type TableDescription struct {
+	TableName              *string                           `json:"TableName,omitempty"`
+	TableStatus            *string                           `json:"TableStatus,omitempty"`
+	TableArn               *string                           `json:"TableArn,omitempty"`
+	TableId                *string                           `json:"TableId,omitempty"`
+	CreationDateTime       *float64                          `json:"CreationDateTime,omitempty"`
+	KeySchema              []KeySchemaElement                `json:"KeySchema,omitempty"`
+	AttributeDefinitions   []AttributeDefinition             `json:"AttributeDefinitions,omitempty"`
+	ItemCount              *int64                            `json:"ItemCount,omitempty"`
+	TableSizeBytes         *int64                            `json:"TableSizeBytes,omitempty"`
+	BillingModeSummary     *BillingModeSummary               `json:"BillingModeSummary,omitempty"`
+	ProvisionedThroughput  *ProvisionedThroughputDescription `json:"ProvisionedThroughput,omitempty"`
+	GlobalSecondaryIndexes []GlobalSecondaryIndexDescription `json:"GlobalSecondaryIndexes,omitempty"`
+	LocalSecondaryIndexes  []LocalSecondaryIndexDescription  `json:"LocalSecondaryIndexes,omitempty"`
 }
 
 type CreateTableOutput struct {
@@ -167,6 +209,7 @@ type ScanInput struct {
 	ProjectionExpression      *string                   `json:"ProjectionExpression,omitempty"`
 	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
 	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	IndexName                 *string                   `json:"IndexName,omitempty"`
 }
 
 type ScanOutput struct {
@@ -188,6 +231,7 @@ type QueryInput struct {
 	ExclusiveStartKey         map[string]AttributeValue `json:"ExclusiveStartKey,omitempty"`
 	ConsistentRead            *bool                     `json:"ConsistentRead,omitempty"`
 	Select                    *string                   `json:"Select,omitempty"`
+	IndexName                 *string                   `json:"IndexName,omitempty"`
 }
 
 type QueryOutput struct {
@@ -251,6 +295,118 @@ type UntagResourceInput struct {
 	TagKeys     []string `json:"TagKeys,omitempty"`
 }
 
+type KeysAndAttributes struct {
+	Keys                     []map[string]AttributeValue `json:"Keys,omitempty"`
+	ConsistentRead           *bool                       `json:"ConsistentRead,omitempty"`
+	ProjectionExpression     *string                     `json:"ProjectionExpression,omitempty"`
+	ExpressionAttributeNames map[string]string           `json:"ExpressionAttributeNames,omitempty"`
+}
+
+type BatchGetItemInput struct {
+	RequestItems map[string]KeysAndAttributes `json:"RequestItems,omitempty"`
+}
+
+type BatchGetItemOutput struct {
+	Responses       map[string][]map[string]AttributeValue `json:"Responses,omitempty"`
+	UnprocessedKeys map[string]KeysAndAttributes           `json:"UnprocessedKeys,omitempty"`
+}
+
+type PutRequest struct {
+	Item map[string]AttributeValue `json:"Item,omitempty"`
+}
+
+type DeleteRequest struct {
+	Key map[string]AttributeValue `json:"Key,omitempty"`
+}
+
+type WriteRequest struct {
+	PutRequest    *PutRequest    `json:"PutRequest,omitempty"`
+	DeleteRequest *DeleteRequest `json:"DeleteRequest,omitempty"`
+}
+
+type BatchWriteItemInput struct {
+	RequestItems map[string][]WriteRequest `json:"RequestItems,omitempty"`
+}
+
+type BatchWriteItemOutput struct {
+	UnprocessedItems map[string][]WriteRequest `json:"UnprocessedItems,omitempty"`
+}
+
+type Get struct {
+	Key                      map[string]AttributeValue `json:"Key,omitempty"`
+	TableName                *string                   `json:"TableName,omitempty"`
+	ProjectionExpression     *string                   `json:"ProjectionExpression,omitempty"`
+	ExpressionAttributeNames map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+}
+
+type TransactGetItem struct {
+	Get *Get `json:"Get,omitempty"`
+}
+
+type TransactGetItemsInput struct {
+	TransactItems []TransactGetItem `json:"TransactItems,omitempty"`
+}
+
+type ItemResponse struct {
+	Item map[string]AttributeValue `json:"Item,omitempty"`
+}
+
+type TransactGetItemsOutput struct {
+	Responses []ItemResponse `json:"Responses,omitempty"`
+}
+
+type ConditionCheck struct {
+	Key                                 map[string]AttributeValue `json:"Key,omitempty"`
+	TableName                           *string                   `json:"TableName,omitempty"`
+	ConditionExpression                 *string                   `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames            map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues           map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	ReturnValuesOnConditionCheckFailure *string                   `json:"ReturnValuesOnConditionCheckFailure,omitempty"`
+}
+
+type Put struct {
+	Item                                map[string]AttributeValue `json:"Item,omitempty"`
+	TableName                           *string                   `json:"TableName,omitempty"`
+	ConditionExpression                 *string                   `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames            map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues           map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	ReturnValuesOnConditionCheckFailure *string                   `json:"ReturnValuesOnConditionCheckFailure,omitempty"`
+}
+
+type Delete struct {
+	Key                                 map[string]AttributeValue `json:"Key,omitempty"`
+	TableName                           *string                   `json:"TableName,omitempty"`
+	ConditionExpression                 *string                   `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames            map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues           map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	ReturnValuesOnConditionCheckFailure *string                   `json:"ReturnValuesOnConditionCheckFailure,omitempty"`
+}
+
+type Update struct {
+	Key                                 map[string]AttributeValue `json:"Key,omitempty"`
+	UpdateExpression                    *string                   `json:"UpdateExpression,omitempty"`
+	TableName                           *string                   `json:"TableName,omitempty"`
+	ConditionExpression                 *string                   `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames            map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues           map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	ReturnValuesOnConditionCheckFailure *string                   `json:"ReturnValuesOnConditionCheckFailure,omitempty"`
+}
+
+type TransactWriteItem struct {
+	ConditionCheck *ConditionCheck `json:"ConditionCheck,omitempty"`
+	Put            *Put            `json:"Put,omitempty"`
+	Delete         *Delete         `json:"Delete,omitempty"`
+	Update         *Update         `json:"Update,omitempty"`
+}
+
+type TransactWriteItemsInput struct {
+	TransactItems      []TransactWriteItem `json:"TransactItems,omitempty"`
+	ClientRequestToken *string             `json:"ClientRequestToken,omitempty"`
+}
+
+type TransactWriteItemsOutput struct {
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -267,10 +423,14 @@ type API interface {
 	ListTagsOfResource(context.Context, *ListTagsOfResourceInput) (*ListTagsOfResourceOutput, error)
 	TagResource(context.Context, *TagResourceInput) (*TagResourceOutput, error)
 	UntagResource(context.Context, *UntagResourceInput) (*UntagResourceOutput, error)
+	BatchGetItem(context.Context, *BatchGetItemInput) (*BatchGetItemOutput, error)
+	BatchWriteItem(context.Context, *BatchWriteItemInput) (*BatchWriteItemOutput, error)
+	TransactGetItems(context.Context, *TransactGetItemsInput) (*TransactGetItemsOutput, error)
+	TransactWriteItems(context.Context, *TransactWriteItemsInput) (*TransactWriteItemsOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 421}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 421}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTable": {Name: "CreateTable", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.CreateTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTable(ctx, input.(*CreateTableInput))
 		}},
@@ -307,6 +467,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UntagResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UntagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UntagResource(ctx, input.(*UntagResourceInput))
+		}},
+		"BatchGetItem": {Name: "BatchGetItem", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.BatchGetItem", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &BatchGetItemInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchGetItem(ctx, input.(*BatchGetItemInput))
+		}},
+		"BatchWriteItem": {Name: "BatchWriteItem", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.BatchWriteItem", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &BatchWriteItemInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchWriteItem(ctx, input.(*BatchWriteItemInput))
+		}},
+		"TransactGetItems": {Name: "TransactGetItems", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.TransactGetItems", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TransactGetItemsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TransactGetItems(ctx, input.(*TransactGetItemsInput))
+		}},
+		"TransactWriteItems": {Name: "TransactWriteItems", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.TransactWriteItems", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TransactWriteItemsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TransactWriteItems(ctx, input.(*TransactWriteItemsInput))
 		}},
 	}}
 }

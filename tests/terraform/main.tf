@@ -77,6 +77,17 @@ resource "aws_dynamodb_table" "users" {
     type = "S"
   }
 
+  attribute {
+    name = "email"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "by-email"
+    hash_key        = "email"
+    projection_type = "KEYS_ONLY"
+  }
+
   tags = local.tags
 }
 

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"maps"
 	"net/http"
 	"strings"
 
@@ -83,7 +84,9 @@ func WriteError(w http.ResponseWriter, e *awserror.Error, messageMember string) 
 		kind = "Service"
 	}
 
-	body, _ := json.Marshal(map[string]string{"__type": e.Code, "Type": kind, messageMember: e.Message})
+	fields := map[string]any{"__type": e.Code, "Type": kind, messageMember: e.Message}
+	maps.Copy(fields, e.Fields)
+	body, _ := json.Marshal(fields)
 	w.Header().Set("X-Amzn-ErrorType", e.Code)
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Del("Content-Length")

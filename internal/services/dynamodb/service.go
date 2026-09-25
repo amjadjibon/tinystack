@@ -86,10 +86,6 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 		return nil, err
 	}
 
-	if len(in.KeySchema) < 1 || len(in.KeySchema) > 2 || len(in.AttributeDefinitions) != len(in.KeySchema) {
-		return nil, awserror.Validation("Define a HASH key and optional RANGE key with matching attribute definitions")
-	}
-
 	types := map[string]string{}
 	for _, d := range in.AttributeDefinitions {
 		name, kind := value(d.AttributeName), value(d.AttributeType)
@@ -100,19 +96,9 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 		types[name] = kind
 	}
 
-	names := map[string]bool{}
-	for i, k := range in.KeySchema {
-		expected := "HASH"
-		if i == 1 {
-			expected = "RANGE"
-		}
-
-		name := value(k.AttributeName)
-		if types[name] == "" || names[name] || value(k.KeyType) != expected {
-			return nil, awserror.Validation("Invalid key schema")
-		}
-
-		names[name] = true
+	used := map[string]bool{}
+	if guardErr := checkKeySchema(in.KeySchema, types, used); guardErr != nil {
+		return nil, guardErr
 	}
 
 	tags, err := tagMap(in.Tags)
@@ -125,46 +111,68 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 		mode = "PROVISIONED"
 	}
 
-	throughput := &api.ProvisionedThroughputDescription{
-		ReadCapacityUnits:      new(int64(0)),
-		WriteCapacityUnits:     new(int64(0)),
-		NumberOfDecreasesToday: new(int64(0)),
-	}
-
-	switch mode {
-	case "PAY_PER_REQUEST":
-		if in.ProvisionedThroughput != nil {
-			return nil, awserror.Validation("ProvisionedThroughput is not valid for PAY_PER_REQUEST")
-		}
-	case "PROVISIONED":
-		if in.ProvisionedThroughput == nil || value(in.ProvisionedThroughput.ReadCapacityUnits) < 1 ||
-			value(in.ProvisionedThroughput.WriteCapacityUnits) < 1 {
-			return nil, awserror.Validation("Positive provisioned read and write capacity required")
-		}
-
-		throughput.ReadCapacityUnits = in.ProvisionedThroughput.ReadCapacityUnits
-		throughput.WriteCapacityUnits = in.ProvisionedThroughput.WriteCapacityUnits
-	default:
+	if mode != "PAY_PER_REQUEST" && mode != "PROVISIONED" {
 		return nil, awserror.Validation("Invalid BillingMode")
 	}
 
+	// throughput describes the capacity of the table or an index in mode.
+	throughput := func(p *api.ProvisionedThroughput) (*api.ProvisionedThroughputDescription, error) {
+		out := &api.ProvisionedThroughputDescription{
+			ReadCapacityUnits:      new(int64(0)),
+			WriteCapacityUnits:     new(int64(0)),
+			NumberOfDecreasesToday: new(int64(0)),
+		}
+
+		if mode == "PAY_PER_REQUEST" {
+			if p != nil {
+				return nil, awserror.Validation("ProvisionedThroughput is not valid for PAY_PER_REQUEST")
+			}
+
+			return out, nil
+		}
+
+		if p == nil || value(p.ReadCapacityUnits) < 1 || value(p.WriteCapacityUnits) < 1 {
+			return nil, awserror.Validation("Positive provisioned read and write capacity required")
+		}
+
+		out.ReadCapacityUnits = p.ReadCapacityUnits
+		out.WriteCapacityUnits = p.WriteCapacityUnits
+		return out, nil
+	}
+
+	tableThroughput, err := throughput(in.ProvisionedThroughput)
+	if err != nil {
+		return nil, err
+	}
+
 	m, _ := request.FromContext(ctx)
+	arn := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", m.Region, m.AccountID, *in.TableName)
+	globals, locals, err := secondaryIndexDescriptions(in, types, used, arn, throughput)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(used) != len(types) {
+		return nil, awserror.Validation("One or more parameter values were invalid: " +
+			"every attribute definition must be used by the key schema of the table or an index")
+	}
+
 	now := float64(time.Now().UnixMilli()) / 1000
 	t := table{
 		Description: api.TableDescription{
-			TableName:   in.TableName,
-			TableStatus: new("ACTIVE"),
-			TableArn: new(
-				fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", m.Region, m.AccountID, *in.TableName),
-			),
-			TableId:               new(rand.Text()),
-			CreationDateTime:      &now,
-			KeySchema:             in.KeySchema,
-			AttributeDefinitions:  in.AttributeDefinitions,
-			BillingModeSummary:    &api.BillingModeSummary{BillingMode: &mode},
-			ProvisionedThroughput: throughput,
-			ItemCount:             new(int64(0)),
-			TableSizeBytes:        new(int64(0)),
+			TableName:              in.TableName,
+			TableStatus:            new("ACTIVE"),
+			TableArn:               &arn,
+			TableId:                new(rand.Text()),
+			CreationDateTime:       &now,
+			KeySchema:              in.KeySchema,
+			AttributeDefinitions:   in.AttributeDefinitions,
+			BillingModeSummary:     &api.BillingModeSummary{BillingMode: &mode},
+			ProvisionedThroughput:  tableThroughput,
+			ItemCount:              new(int64(0)),
+			TableSizeBytes:         new(int64(0)),
+			GlobalSecondaryIndexes: globals,
+			LocalSecondaryIndexes:  locals,
 		},
 		Tags: tags,
 	}

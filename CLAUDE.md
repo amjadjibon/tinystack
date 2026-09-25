@@ -97,7 +97,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
   (DynamoDB items are separate records under `…/dynamodb/<table>/item/<key>`, and the table record keeps the item
   count and size current; `expression.go` lexes and parses condition, key, filter, projection, and update expressions
-  and `evaluate.go` runs them, all inside the operation's transaction).
+  and `evaluate.go` runs them, all inside the operation's transaction; secondary indexes have no records of their own,
+  since `indexes.go` derives them from the items at read time, and `TransactWriteItems` tokens live under
+  `…/dynamodb-token/`).
   Resource tags live in that record (S3: the bucket's regional metadata record); `services/tagging` holds the shared
   limits (50 tags, 128-character keys, 256-character values), and each service reports violations with its own code.
   Scoping comes from request metadata, which is how account/region isolation works. SQS long polling registers `watch`

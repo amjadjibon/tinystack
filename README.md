@@ -149,15 +149,23 @@ nowhere shows up. `DELETE` clears the list.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateTable | HASH key, optional RANGE key; string/number/binary keys; provisioned or on-demand metadata |
+| CreateTable | HASH key, optional RANGE key; string/number/binary keys; provisioned or on-demand metadata; up to 20 global and 5 local secondary indexes with `ALL`, `KEYS_ONLY`, or `INCLUDE` projections |
 | DescribeTable / DeleteTable | Scoped metadata and atomic table deletion |
 | ListTables | Account/region isolation, limit and continuation token |
 | PutItem / GetItem / DeleteItem | Typed attributes, atomic replacement/deletion, `ALL_OLD` for writes; `ConditionExpression` on writes, `ProjectionExpression` on GetItem |
 | UpdateItem | `SET` (with `+`, `-`, `if_not_exists`, `list_append`), `REMOVE`, `ADD`, and `DELETE` on nested paths; `ConditionExpression`; creates missing items; every `ReturnValues` option |
-| Query | `KeyConditionExpression` (partition key `=`, sort key `=`, `<`, `<=`, `>`, `>=`, `BETWEEN`, `begins_with`), sort key order either way, `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key |
-| Scan | `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key, approximately 1 MiB pages |
+| Query | `KeyConditionExpression` (partition key `=`, sort key `=`, `<`, `<=`, `>`, `>=`, `BETWEEN`, `begins_with`), sort key order either way, `IndexName`, `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key |
+| Scan | `IndexName`, `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key, approximately 1 MiB pages |
+| BatchGetItem / BatchWriteItem | Up to 100 keys or 25 puts and deletes across tables, applied in one transaction; duplicate keys rejected; `UnprocessedKeys` only past the 16 MB response limit, `UnprocessedItems` always empty |
+| TransactGetItems / TransactWriteItems | Up to 100 items from one snapshot; `ConditionCheck`, `Put`, `Delete`, and `Update` all apply or none do, with `CancellationReasons` (and `ALL_OLD` items) on failure; `ClientRequestToken` idempotency for ten minutes |
 | DescribeContinuousBackups / DescribeTimeToLive | A new table's settings: continuous backups on, point-in-time recovery and TTL off |
 | TagResource / UntagResource / ListTagsOfResource | Table ARNs; also `Tags` on CreateTable |
+
+Secondary indexes are always consistent: an index query reads the table's items
+in the same snapshot rather than a separately maintained copy, so it scans the
+whole table. Items missing an index key are left out of that index (sparse
+indexes), and ties between equal index keys come back in a stable local order.
+Index item counts and sizes stay 0, as DynamoDB updates them only every six hours.
 
 ### SQS (AWS JSON 1.0 and AWS Query)
 

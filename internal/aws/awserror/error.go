@@ -10,6 +10,9 @@ type Error struct {
 	// Headers are response headers required by an operation error, such as the
 	// current object length on an unsatisfiable byte range.
 	Headers map[string]string
+	// Fields are other members of the modeled error shape, such as DynamoDB's
+	// CancellationReasons; the JSON codecs write them beside the message.
+	Fields map[string]any
 	// QueryCode is the awsQuery error code; query-compatible JSON services also send it.
 	QueryCode  string
 	StatusCode int

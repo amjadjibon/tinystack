@@ -15,7 +15,11 @@
       "DescribeTimeToLive",
       "ListTagsOfResource",
       "TagResource",
-      "UntagResource"
+      "UntagResource",
+      "BatchGetItem",
+      "BatchWriteItem",
+      "TransactGetItems",
+      "TransactWriteItems"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -24,7 +28,9 @@
         "KeySchema",
         "BillingMode",
         "ProvisionedThroughput",
-        "Tags"
+        "Tags",
+        "GlobalSecondaryIndexes",
+        "LocalSecondaryIndexes"
       ],
       "DeleteTableInput": [
         "TableName"
@@ -77,7 +83,8 @@
         "FilterExpression",
         "ProjectionExpression",
         "ExpressionAttributeNames",
-        "ExpressionAttributeValues"
+        "ExpressionAttributeValues",
+        "IndexName"
       ],
       "QueryInput": [
         "TableName",
@@ -90,7 +97,8 @@
         "Limit",
         "ExclusiveStartKey",
         "ConsistentRead",
-        "Select"
+        "Select",
+        "IndexName"
       ],
       "PutItemOutput": [
         "Attributes"
@@ -127,7 +135,9 @@
         "ItemCount",
         "TableSizeBytes",
         "BillingModeSummary",
-        "ProvisionedThroughput"
+        "ProvisionedThroughput",
+        "GlobalSecondaryIndexes",
+        "LocalSecondaryIndexes"
       ],
       "Tag": [
         "Key",
@@ -171,6 +181,130 @@
       "UntagResourceInput": [
         "ResourceArn",
         "TagKeys"
+      ],
+      "GlobalSecondaryIndex": [
+        "IndexName",
+        "KeySchema",
+        "Projection",
+        "ProvisionedThroughput"
+      ],
+      "LocalSecondaryIndex": [
+        "IndexName",
+        "KeySchema",
+        "Projection"
+      ],
+      "Projection": [
+        "ProjectionType",
+        "NonKeyAttributes"
+      ],
+      "GlobalSecondaryIndexDescription": [
+        "IndexName",
+        "KeySchema",
+        "Projection",
+        "IndexStatus",
+        "ProvisionedThroughput",
+        "IndexSizeBytes",
+        "ItemCount",
+        "IndexArn"
+      ],
+      "LocalSecondaryIndexDescription": [
+        "IndexName",
+        "KeySchema",
+        "Projection",
+        "IndexSizeBytes",
+        "ItemCount",
+        "IndexArn"
+      ],
+      "BatchGetItemInput": [
+        "RequestItems"
+      ],
+      "KeysAndAttributes": [
+        "Keys",
+        "ConsistentRead",
+        "ProjectionExpression",
+        "ExpressionAttributeNames"
+      ],
+      "BatchGetItemOutput": [
+        "Responses",
+        "UnprocessedKeys"
+      ],
+      "BatchWriteItemInput": [
+        "RequestItems"
+      ],
+      "BatchWriteItemOutput": [
+        "UnprocessedItems"
+      ],
+      "WriteRequest": [
+        "PutRequest",
+        "DeleteRequest"
+      ],
+      "PutRequest": [
+        "Item"
+      ],
+      "DeleteRequest": [
+        "Key"
+      ],
+      "TransactGetItemsInput": [
+        "TransactItems"
+      ],
+      "TransactGetItemsOutput": [
+        "Responses"
+      ],
+      "TransactGetItem": [
+        "Get"
+      ],
+      "Get": [
+        "Key",
+        "TableName",
+        "ProjectionExpression",
+        "ExpressionAttributeNames"
+      ],
+      "ItemResponse": [
+        "Item"
+      ],
+      "TransactWriteItemsInput": [
+        "TransactItems",
+        "ClientRequestToken"
+      ],
+      "TransactWriteItemsOutput": [],
+      "TransactWriteItem": [
+        "ConditionCheck",
+        "Put",
+        "Delete",
+        "Update"
+      ],
+      "Put": [
+        "Item",
+        "TableName",
+        "ConditionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
+        "ReturnValuesOnConditionCheckFailure"
+      ],
+      "Delete": [
+        "Key",
+        "TableName",
+        "ConditionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
+        "ReturnValuesOnConditionCheckFailure"
+      ],
+      "Update": [
+        "Key",
+        "UpdateExpression",
+        "TableName",
+        "ConditionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
+        "ReturnValuesOnConditionCheckFailure"
+      ],
+      "ConditionCheck": [
+        "Key",
+        "TableName",
+        "ConditionExpression",
+        "ExpressionAttributeNames",
+        "ExpressionAttributeValues",
+        "ReturnValuesOnConditionCheckFailure"
       ]
     }
   },
