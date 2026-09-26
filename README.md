@@ -547,11 +547,11 @@ S3 limits: no multiple ranges per request, MFA delete, ACLs other than `private`
 policies, encryption, POST uploads, lifecycle, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, `ImageConfig`, function URLs,
 concurrency settings, resource policies, or event sources other than SQS and DynamoDB
-streams (no batching window, filters, partial batch responses, bisecting, or failure destinations); asynchronous failures are
+streams (no bisecting, failure destinations, or `UpdateEventSourceMapping`); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
-buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, dead-letter queues, retry policies, or targets other than
-SQS, SNS, and Lambda in the rule's account and region; delivery happens
-synchronously during PutEvents. IAM limits: no groups, root access keys, login profiles, instance
+buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, or targets other than
+SQS, SNS, and Lambda in the rule's account and region; the first delivery happens
+synchronously during PutEvents, and retries run in the background. IAM limits: no groups, root access keys, login profiles, instance
 profiles, permissions boundaries, user policies, access key usage tracking, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, `aws:ec2:image` or other data
