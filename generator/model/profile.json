@@ -445,13 +445,17 @@
       "DescribeVpcs",
       "CreateSubnet",
       "DeleteSubnet",
-      "DescribeSubnets"
+      "DescribeSubnets",
+      "CreateTags",
+      "DeleteTags",
+      "DescribeTags"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
         "RegionNames",
         "AllRegions",
-        "DryRun"
+        "DryRun",
+        "Filters"
       ],
       "DescribeRegionsResult": [
         "Regions"
@@ -465,7 +469,8 @@
         "ZoneNames",
         "ZoneIds",
         "AllAvailabilityZones",
-        "DryRun"
+        "DryRun",
+        "Filters"
       ],
       "DescribeAvailabilityZonesResult": [
         "AvailabilityZones"
@@ -483,7 +488,8 @@
       "CreateVpcRequest": [
         "CidrBlock",
         "InstanceTenancy",
-        "DryRun"
+        "DryRun",
+        "TagSpecifications"
       ],
       "CreateVpcResult": [
         "Vpc"
@@ -496,7 +502,8 @@
         "VpcId",
         "State",
         "CidrBlock",
-        "DhcpOptionsId"
+        "DhcpOptionsId",
+        "Tags"
       ],
       "VpcCidrBlockAssociation": [
         "AssociationId",
@@ -514,7 +521,8 @@
         "VpcIds",
         "NextToken",
         "MaxResults",
-        "DryRun"
+        "DryRun",
+        "Filters"
       ],
       "DescribeVpcsResult": [
         "NextToken",
@@ -525,7 +533,8 @@
         "AvailabilityZoneId",
         "CidrBlock",
         "VpcId",
-        "DryRun"
+        "DryRun",
+        "TagSpecifications"
       ],
       "CreateSubnetResult": [
         "Subnet"
@@ -543,7 +552,8 @@
         "AvailableIpAddressCount",
         "AvailabilityZone",
         "DefaultForAz",
-        "MapPublicIpOnLaunch"
+        "MapPublicIpOnLaunch",
+        "Tags"
       ],
       "DeleteSubnetRequest": [
         "SubnetId",
@@ -553,11 +563,50 @@
         "SubnetIds",
         "NextToken",
         "MaxResults",
-        "DryRun"
+        "DryRun",
+        "Filters"
       ],
       "DescribeSubnetsResult": [
         "NextToken",
         "Subnets"
+      ],
+      "Filter": [
+        "Name",
+        "Values"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagSpecification": [
+        "ResourceType",
+        "Tags"
+      ],
+      "CreateTagsRequest": [
+        "DryRun",
+        "Resources",
+        "Tags"
+      ],
+      "DeleteTagsRequest": [
+        "DryRun",
+        "Resources",
+        "Tags"
+      ],
+      "DescribeTagsRequest": [
+        "DryRun",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeTagsResult": [
+        "NextToken",
+        "Tags"
+      ],
+      "TagDescription": [
+        "Key",
+        "ResourceId",
+        "ResourceType",
+        "Value"
       ]
     }
   },

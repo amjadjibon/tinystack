@@ -15,6 +15,12 @@ var regions = []string{
 	"il-central-1", "me-central-1", "me-south-1", "sa-east-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2",
 }
 
+func regionValues(name string) values {
+	return values{
+		"region-name": {name}, "endpoint": {"ec2." + name + ".amazonaws.com"}, "opt-in-status": {"opt-in-not-required"},
+	}
+}
+
 // DescribeRegions lists every Region, or those named. AllRegions changes
 // nothing, since no Region needs opting in.
 func (s *Service) DescribeRegions(
@@ -22,6 +28,11 @@ func (s *Service) DescribeRegions(
 	in *api.DescribeRegionsRequest,
 ) (*api.DescribeRegionsResult, error) {
 	if _, err := caller(ctx, in.DryRun); err != nil {
+		return nil, err
+	}
+
+	match, err := compileFilters(in.Filters, regionValues("").names()...)
+	if err != nil {
 		return nil, err
 	}
 
@@ -33,7 +44,7 @@ func (s *Service) DescribeRegions(
 
 	out := &api.DescribeRegionsResult{Regions: []api.Region{}}
 	for _, name := range regions {
-		if len(in.RegionNames) == 0 || slices.Contains(in.RegionNames, name) {
+		if (len(in.RegionNames) == 0 || slices.Contains(in.RegionNames, name)) && match.match(regionValues(name)) {
 			out.Regions = append(out.Regions, api.Region{
 				RegionName:  new(name),
 				Endpoint:    new("ec2." + name + ".amazonaws.com"),

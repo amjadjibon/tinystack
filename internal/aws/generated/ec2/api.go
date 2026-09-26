@@ -6,10 +6,16 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
 
+type Filter struct {
+	Name   *string  `json:"Name,omitempty" ec2:"Name,Name"`
+	Values []string `json:"Values,omitempty" ec2:"Value,Value,member=item"`
+}
+
 type DescribeRegionsRequest struct {
 	RegionNames []string `json:"RegionNames,omitempty" ec2:"RegionName,RegionName,member=RegionName"`
 	AllRegions  *bool    `json:"AllRegions,omitempty" ec2:"AllRegions,AllRegions"`
 	DryRun      *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters     []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
 }
 
 type Region struct {
@@ -27,6 +33,7 @@ type DescribeAvailabilityZonesRequest struct {
 	ZoneIds              []string `json:"ZoneIds,omitempty" ec2:"ZoneId,ZoneId,member=ZoneId"`
 	AllAvailabilityZones *bool    `json:"AllAvailabilityZones,omitempty" ec2:"AllAvailabilityZones,AllAvailabilityZones"`
 	DryRun               *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters              []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
 }
 
 type AvailabilityZone struct {
@@ -44,10 +51,21 @@ type DescribeAvailabilityZonesResult struct {
 	AvailabilityZones []AvailabilityZone `json:"AvailabilityZones,omitempty" ec2:"AvailabilityZoneInfo,availabilityZoneInfo,member=item"`
 }
 
+type Tag struct {
+	Key   *string `json:"Key,omitempty" ec2:"Key,key"`
+	Value *string `json:"Value,omitempty" ec2:"Value,value"`
+}
+
+type TagSpecification struct {
+	ResourceType *string `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	Tags         []Tag   `json:"Tags,omitempty" ec2:"Tag,Tag,member=item"`
+}
+
 type CreateVpcRequest struct {
-	CidrBlock       *string `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
-	InstanceTenancy *string `json:"InstanceTenancy,omitempty" ec2:"InstanceTenancy,instanceTenancy"`
-	DryRun          *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	CidrBlock         *string            `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
+	InstanceTenancy   *string            `json:"InstanceTenancy,omitempty" ec2:"InstanceTenancy,instanceTenancy"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
 }
 
 type VpcCidrBlockState struct {
@@ -69,6 +87,7 @@ type Vpc struct {
 	State                   *string                   `json:"State,omitempty" ec2:"State,state"`
 	CidrBlock               *string                   `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
 	DhcpOptionsId           *string                   `json:"DhcpOptionsId,omitempty" ec2:"DhcpOptionsId,dhcpOptionsId"`
+	Tags                    []Tag                     `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
 }
 
 type CreateVpcResult struct {
@@ -87,6 +106,7 @@ type DescribeVpcsRequest struct {
 	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
 	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
 	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
 }
 
 type DescribeVpcsResult struct {
@@ -95,11 +115,12 @@ type DescribeVpcsResult struct {
 }
 
 type CreateSubnetRequest struct {
-	AvailabilityZone   *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,AvailabilityZone"`
-	AvailabilityZoneId *string `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,AvailabilityZoneId"`
-	CidrBlock          *string `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
-	VpcId              *string `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
-	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	AvailabilityZone   *string            `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,AvailabilityZone"`
+	AvailabilityZoneId *string            `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,AvailabilityZoneId"`
+	CidrBlock          *string            `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
+	VpcId              *string            `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	DryRun             *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	TagSpecifications  []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
 }
 
 type Subnet struct {
@@ -116,6 +137,7 @@ type Subnet struct {
 	AvailabilityZone            *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
 	DefaultForAz                *bool   `json:"DefaultForAz,omitempty" ec2:"DefaultForAz,defaultForAz"`
 	MapPublicIpOnLaunch         *bool   `json:"MapPublicIpOnLaunch,omitempty" ec2:"MapPublicIpOnLaunch,mapPublicIpOnLaunch"`
+	Tags                        []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
 }
 
 type CreateSubnetResult struct {
@@ -134,11 +156,47 @@ type DescribeSubnetsRequest struct {
 	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
 	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
 	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
 }
 
 type DescribeSubnetsResult struct {
 	NextToken *string  `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
 	Subnets   []Subnet `json:"Subnets,omitempty" ec2:"SubnetSet,subnetSet,member=item"`
+}
+
+type CreateTagsOutput struct{}
+
+type CreateTagsRequest struct {
+	DryRun    *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Resources []string `json:"Resources,omitempty" ec2:"ResourceId,ResourceId"`
+	Tags      []Tag    `json:"Tags,omitempty" ec2:"Tag,Tag,member=item"`
+}
+
+type DeleteTagsOutput struct{}
+
+type DeleteTagsRequest struct {
+	DryRun    *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Resources []string `json:"Resources,omitempty" ec2:"ResourceId,resourceId"`
+	Tags      []Tag    `json:"Tags,omitempty" ec2:"Tag,tag,member=item"`
+}
+
+type DescribeTagsRequest struct {
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,maxResults"`
+	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type TagDescription struct {
+	Key          *string `json:"Key,omitempty" ec2:"Key,key"`
+	ResourceId   *string `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	ResourceType *string `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	Value        *string `json:"Value,omitempty" ec2:"Value,value"`
+}
+
+type DescribeTagsResult struct {
+	NextToken *string          `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	Tags      []TagDescription `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
 }
 
 type API interface {
@@ -150,6 +208,9 @@ type API interface {
 	CreateSubnet(context.Context, *CreateSubnetRequest) (*CreateSubnetResult, error)
 	DeleteSubnet(context.Context, *DeleteSubnetRequest) (*DeleteSubnetOutput, error)
 	DescribeSubnets(context.Context, *DescribeSubnetsRequest) (*DescribeSubnetsResult, error)
+	CreateTags(context.Context, *CreateTagsRequest) (*CreateTagsOutput, error)
+	DeleteTags(context.Context, *DeleteTagsRequest) (*DeleteTagsOutput, error)
+	DescribeTags(context.Context, *DescribeTagsRequest) (*DescribeTagsResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -177,6 +238,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeSubnets": {Name: "DescribeSubnets", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeSubnets", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeSubnetsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeSubnets(ctx, input.(*DescribeSubnetsRequest))
+		}},
+		"CreateTags": {Name: "CreateTags", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateTags", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateTags(ctx, input.(*CreateTagsRequest))
+		}},
+		"DeleteTags": {Name: "DeleteTags", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteTags", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteTags(ctx, input.(*DeleteTagsRequest))
+		}},
+		"DescribeTags": {Name: "DescribeTags", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeTags", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeTags(ctx, input.(*DescribeTagsRequest))
 		}},
 	}}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/netip"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -18,6 +19,7 @@ const (
 	maxVPCs         = 5
 	maxDescribe     = 1000
 	stateAvailable  = "available"
+	filterState     = "state"
 	tenancyDefault  = "default"
 	minPrefixLength = 16
 	maxPrefixLength = 28
@@ -94,6 +96,14 @@ func zoneNames(region string) []string {
 	return names
 }
 
+func zoneValues(region, suffix string) values {
+	return values{
+		"zone-name": {region + suffix}, "zone-id": {zoneID(region, suffix)}, "region-name": {region},
+		filterState: {stateAvailable}, "opt-in-status": {"opt-in-not-required"}, "zone-type": {"availability-zone"},
+		"group-name": {region}, "network-border-group": {region},
+	}
+}
+
 func (s *Service) DescribeAvailabilityZones(
 	ctx context.Context,
 	in *api.DescribeAvailabilityZonesRequest,
@@ -104,11 +114,20 @@ func (s *Service) DescribeAvailabilityZones(
 	}
 
 	region := m.Region
+	match, err := compileFilters(in.Filters, zoneValues(region, "").names()...)
+	if err != nil {
+		return nil, err
+	}
+
 	out := &api.DescribeAvailabilityZonesResult{AvailabilityZones: []api.AvailabilityZone{}}
 	for _, suffix := range zoneSuffixes {
 		name, id := region+suffix, zoneID(region, suffix)
 		if (len(in.ZoneNames) > 0 || len(in.ZoneIds) > 0) &&
 			!slices.Contains(in.ZoneNames, name) && !slices.Contains(in.ZoneIds, id) {
+			continue
+		}
+
+		if !match.match(zoneValues(region, suffix)) {
 			continue
 		}
 
@@ -198,7 +217,17 @@ func vpcOutput(scope request.Scope, v *vpc) api.Vpc {
 			AssociationId: new(v.AssociationID), CidrBlock: new(v.CIDR),
 			CidrBlockState: &api.VpcCidrBlockState{State: new("associated")},
 		}},
+		Tags: tagList(v.Tags),
 	}
+}
+
+func vpcValues(scope request.Scope, v *vpc) values {
+	return values{
+		"vpc-id": {v.ID}, "cidr": {v.CIDR}, "cidr-block-association.cidr-block": {v.CIDR},
+		"cidr-block-association.association-id": {v.AssociationID}, "cidr-block-association.state": {"associated"},
+		"dhcp-options-id": {v.DHCPOptionsID}, "is-default": boolValue(v.IsDefault), "owner-id": {scope.AccountID},
+		filterState: {stateAvailable},
+	}.withTags(v.Tags)
 }
 
 func vpcNotFound(id string) error { return notFound("InvalidVpcID.NotFound", "vpc", id) }
@@ -230,9 +259,14 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 		return nil, invalidParameter("Value (" + tenancy + ") for parameter instanceTenancy is invalid.")
 	}
 
-	v := &vpc{ID: newID("vpc"), CIDR: *in.CidrBlock, Tenancy: tenancy}
+	tags, err := specTags(in.TagSpecifications, "vpc")
+	if err != nil {
+		return nil, err
+	}
+
+	v := &vpc{ID: newID("vpc"), CIDR: *in.CidrBlock, Tenancy: tenancy, Tags: tags}
 	var out api.Vpc
-	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		if len(tx.Keys(key(scope, kindVPC, ""))) >= maxVPCs {
 			return awserror.New("VpcLimitExceeded", "The maximum number of VPCs has been reached.")
 		}
@@ -277,25 +311,32 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 }
 
 func (s *Service) DescribeVpcs(ctx context.Context, in *api.DescribeVpcsRequest) (*api.DescribeVpcsResult, error) {
+	match, err := compileFilters(in.Filters, vpcValues(request.Scope{}, &vpc{}).names()...)
+	if err != nil {
+		return nil, err
+	}
+
 	out := &api.DescribeVpcsResult{Vpcs: []api.Vpc{}}
-	err := s.view(ctx, in.DryRun, func(tx storage.ReadTx, scope request.Scope) error {
-		all, err := list[vpc](tx, scope, kindVPC)
-		if err != nil {
-			return err
+	err = s.view(ctx, in.DryRun, func(tx storage.ReadTx, scope request.Scope) error {
+		all, listErr := list[vpc](tx, scope, kindVPC)
+		if listErr != nil {
+			return listErr
 		}
 
 		id := func(v *vpc) string { return v.ID }
-		selected, err := selectIDs(all, id, in.VpcIds, vpcNotFound)
-		if err != nil {
-			return err
+		selected, selectErr := selectIDs(all, id, in.VpcIds, vpcNotFound)
+		if selectErr != nil {
+			return selectErr
 		}
 
-		selected, out.NextToken, err = page(selected, id, in.NextToken, in.MaxResults, maxDescribe)
+		selected = slices.DeleteFunc(selected, func(v *vpc) bool { return !match.match(vpcValues(scope, v)) })
+		selected, next, pageErr := page(selected, id, in.NextToken, in.MaxResults, maxDescribe)
 		for _, v := range selected {
 			out.Vpcs = append(out.Vpcs, vpcOutput(scope, v))
 		}
 
-		return err
+		out.NextToken = next
+		return pageErr
 	})
 	if err != nil {
 		return nil, err
@@ -314,8 +355,34 @@ func subnetOutput(scope request.Scope, sn *subnet) api.Subnet {
 		AvailableIpAddressCount: new(int64(1)<<(32-p.Bits()) - 5),
 		DefaultForAz:            new(sn.DefaultForAZ), MapPublicIpOnLaunch: new(sn.MapPublicIP),
 		OwnerId: new(scope.AccountID), AssignIpv6AddressOnCreation: new(false), Ipv6Native: new(false),
-		SubnetArn: new(fmt.Sprintf("arn:aws:ec2:%s:%s:subnet/%s", scope.Region, scope.AccountID, sn.ID)),
+		SubnetArn: new(subnetARN(scope, sn)),
+		Tags:      tagList(sn.Tags),
 	}
+}
+
+func subnetARN(scope request.Scope, sn *subnet) string {
+	return fmt.Sprintf("arn:aws:ec2:%s:%s:subnet/%s", scope.Region, scope.AccountID, sn.ID)
+}
+
+func subnetValues(scope request.Scope, sn *subnet) values {
+	count := "0"
+	if p, err := netip.ParsePrefix(sn.CIDR); err == nil {
+		count = strconv.FormatInt(int64(1)<<(32-p.Bits())-5, 10)
+	}
+
+	zoneName, zoneIDValue := sn.Zone, ""
+	if scope.Region != "" {
+		zoneIDValue = zoneID(scope.Region, strings.TrimPrefix(sn.Zone, scope.Region))
+	}
+
+	return values{
+		"subnet-id": {sn.ID}, "vpc-id": {sn.VPCID}, "cidr-block": {sn.CIDR}, "cidr": {sn.CIDR},
+		"cidrBlock": {sn.CIDR}, "availability-zone": {zoneName}, "availabilityZone": {zoneName},
+		"availability-zone-id": {zoneIDValue}, "default-for-az": boolValue(sn.DefaultForAZ),
+		"defaultForAz": boolValue(sn.DefaultForAZ), filterState: {stateAvailable}, "owner-id": {scope.AccountID},
+		"map-public-ip-on-launch": boolValue(sn.MapPublicIP), "available-ip-address-count": {count},
+		"subnet-arn": {subnetARN(scope, sn)}, "ipv6-native": boolValue(false),
+	}.withTags(sn.Tags)
 }
 
 func subnetNotFound(id string) error { return notFound("InvalidSubnetID.NotFound", "subnet", id) }
@@ -326,6 +393,11 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 	}
 
 	block, err := cidr(*in.CidrBlock, "InvalidSubnet.Range")
+	if err != nil {
+		return nil, err
+	}
+
+	tags, err := specTags(in.TagSpecifications, "subnet")
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +430,7 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 			return zoneErr
 		}
 
-		sn := &subnet{ID: newID("subnet"), VPCID: v.ID, CIDR: block.String(), Zone: name}
+		sn := &subnet{ID: newID("subnet"), VPCID: v.ID, CIDR: block.String(), Zone: name, Tags: tags}
 		out = subnetOutput(scope, sn)
 		return write(tx, key(scope, kindSubnet, sn.ID), sn)
 	})
@@ -390,25 +462,32 @@ func (s *Service) DescribeSubnets(
 	ctx context.Context,
 	in *api.DescribeSubnetsRequest,
 ) (*api.DescribeSubnetsResult, error) {
+	match, err := compileFilters(in.Filters, subnetValues(request.Scope{}, &subnet{}).names()...)
+	if err != nil {
+		return nil, err
+	}
+
 	out := &api.DescribeSubnetsResult{Subnets: []api.Subnet{}}
-	err := s.view(ctx, in.DryRun, func(tx storage.ReadTx, scope request.Scope) error {
-		all, err := list[subnet](tx, scope, kindSubnet)
-		if err != nil {
-			return err
+	err = s.view(ctx, in.DryRun, func(tx storage.ReadTx, scope request.Scope) error {
+		all, listErr := list[subnet](tx, scope, kindSubnet)
+		if listErr != nil {
+			return listErr
 		}
 
 		id := func(sn *subnet) string { return sn.ID }
-		selected, err := selectIDs(all, id, in.SubnetIds, subnetNotFound)
-		if err != nil {
-			return err
+		selected, selectErr := selectIDs(all, id, in.SubnetIds, subnetNotFound)
+		if selectErr != nil {
+			return selectErr
 		}
 
-		selected, out.NextToken, err = page(selected, id, in.NextToken, in.MaxResults, maxDescribe)
+		selected = slices.DeleteFunc(selected, func(sn *subnet) bool { return !match.match(subnetValues(scope, sn)) })
+		selected, next, pageErr := page(selected, id, in.NextToken, in.MaxResults, maxDescribe)
 		for _, sn := range selected {
 			out.Subnets = append(out.Subnets, subnetOutput(scope, sn))
 		}
 
-		return err
+		out.NextToken = next
+		return pageErr
 	})
 	if err != nil {
 		return nil, err
