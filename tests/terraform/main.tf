@@ -350,6 +350,17 @@ resource "aws_secretsmanager_secret_version" "db" {
   secret_string = jsonencode({ user = var.team, password = "local" })
 }
 
+# Rotation is scheduled, not run now, so the test needs no Docker.
+resource "aws_secretsmanager_secret_rotation" "db" {
+  secret_id           = aws_secretsmanager_secret.db.id
+  rotation_lambda_arn = aws_lambda_function.echo.arn
+  rotate_immediately  = false
+
+  rotation_rules {
+    automatically_after_days = 30
+  }
+}
+
 resource "aws_kms_key" "data" {
   description             = "Data key for ${var.team}"
   deletion_window_in_days = 7
