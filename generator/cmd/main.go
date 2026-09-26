@@ -68,10 +68,13 @@ type (
 		namespace string
 		out       bytes.Buffer
 		query     bool
-		// queryOnly marks pure awsQuery models, whose messages are never JSON.
+		// queryOnly marks pure awsQuery and ec2Query models, whose messages are
+		// never JSON.
 		queryOnly bool
-		rest      bool
-		xml       bool
+		// ec2 marks ec2Query models, whose members get `ec2` tags.
+		ec2  bool
+		rest bool
+		xml  bool
 	}
 )
 
@@ -288,6 +291,45 @@ func (g *generator) queryTag(member reference, name string) (string, error) {
 	return ` query:"` + strings.Join(opts, ",") + `"`, nil
 }
 
+// ec2Tag records the EC2 Query key and XML element of a member. The key is the
+// ec2QueryName, or else the capitalized xmlName or member name; lists are flat
+// in requests, so only responses use the list member name.
+func (g *generator) ec2Tag(member reference, name string) (string, error) {
+	element, err := xmlName(member.Traits, name)
+	if err != nil {
+		return "", err
+	}
+
+	key := goName(element)
+	if raw, ok := member.Traits["aws.protocols#ec2QueryName"]; ok {
+		if guardErr := json.Unmarshal(raw, &key); guardErr != nil || key == "" {
+			return "", fmt.Errorf("invalid ec2QueryName %s", raw)
+		}
+	}
+
+	opts := []string{key, element}
+	target := g.model.Shapes[member.Target]
+	switch target.Type {
+	case shapeMap:
+		return "", fmt.Errorf("maps are not supported by the EC2 Query codec")
+	case shapeList:
+		if kind := g.model.Shapes[target.Member.Target].Type; kind == shapeList || kind == shapeMap {
+			return "", fmt.Errorf("nested collections are not supported by the EC2 Query codec")
+		}
+
+		memberName, nameErr := xmlName(target.Member.Traits, "member")
+		if nameErr != nil {
+			return "", nameErr
+		}
+
+		if memberName != "member" {
+			opts = append(opts, "member="+memberName)
+		}
+	}
+
+	return ` ec2:"` + strings.Join(opts, ",") + `"`, nil
+}
+
 // xmlTag records the encoding/xml element for a REST XML body member. Members
 // bound to the HTTP message are skipped by the XML codec.
 func (g *generator) xmlTag(member reference, name string) (string, error) {
@@ -427,6 +469,8 @@ func (g *generator) emit(id string) error {
 
 			queryTag := ""
 			switch {
+			case g.ec2:
+				queryTag, err = g.ec2Tag(m, n)
 			case g.query:
 				queryTag, err = g.queryTag(m, n)
 			case g.xml:
@@ -525,11 +569,21 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 	_, queryCompatible = svc.Traits["aws.protocols#awsQueryCompatible"]
 	_, restXML := svc.Traits["aws.protocols#restXml"]
 	_, restJSON := svc.Traits["aws.protocols#restJson1"]
-	if (restXML || restJSON) && g.query {
-		return nil, "", false, fmt.Errorf("REST models do not take a query overlay")
+	_, ec2Protocol := svc.Traits["aws.protocols#ec2Query"]
+	if (restXML || restJSON || ec2Protocol) && g.query {
+		return nil, "", false, fmt.Errorf("REST and EC2 Query models do not take a query overlay")
 	}
 
 	switch {
+	case ec2Protocol:
+		var ns struct{ URI string }
+		if guardErr := json.Unmarshal(svc.Traits["smithy.api#xmlNamespace"], &ns); guardErr != nil || ns.URI == "" ||
+			svc.Version == "" {
+			return nil, "", false, fmt.Errorf("ec2Query model needs an API version and XML namespace")
+		}
+
+		g.ec2, g.queryOnly = true, true
+		return []string{catalog.EC2Query}, ns.URI, false, nil
 	case restXML:
 		var ns struct{ URI string }
 		if guardErr := json.Unmarshal(svc.Traits["smithy.api#xmlNamespace"], &ns); guardErr != nil || ns.URI == "" {
@@ -569,7 +623,7 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 		g.query, g.queryOnly = true, true
 		return []string{catalog.AWSQuery}, ns.URI, false, nil
 	default:
-		return nil, "", false, fmt.Errorf("model is not AWS JSON, AWS Query, REST XML, or REST JSON")
+		return nil, "", false, fmt.Errorf("model is not AWS JSON, AWS Query, EC2 Query, REST XML, or REST JSON")
 	}
 }
 

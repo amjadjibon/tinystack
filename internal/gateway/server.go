@@ -226,6 +226,7 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 
 	switch c.meta.Protocol {
 	case catalog.AWSQuery:
+		// EC2 Query is AWS Query's form request with other names and XML.
 		return c, s.classifyQuery(w, r, c, signed)
 	case catalog.RESTXML, catalog.RESTJSON:
 		c.service = s.restService(r)
@@ -302,7 +303,7 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 
 	var candidates []*catalog.Service
 	for _, service := range s.services {
-		if !service.Supports(catalog.AWSQuery) {
+		if !isQuery(service) {
 			continue
 		}
 
@@ -322,7 +323,22 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 
 	c.service = candidates[0]
 	c.meta.Service = c.service.Name
+	if c.service.Supports(catalog.EC2Query) {
+		c.meta.Protocol = catalog.EC2Query
+	}
+
 	return nil
+}
+
+// isQuery reports whether a service takes form requests: AWS Query or EC2
+// Query.
+func isQuery(service *catalog.Service) bool {
+	return service.Supports(catalog.AWSQuery) || service.Supports(catalog.EC2Query)
+}
+
+// formProtocol reports whether protocol sends form requests.
+func formProtocol(protocol string) bool {
+	return protocol == catalog.AWSQuery || protocol == catalog.EC2Query
 }
 
 // restService selects the REST service for a request: the one named by the
@@ -368,7 +384,7 @@ func (s *Server) decode(
 	}
 
 	if !ok {
-		if c.meta.Protocol == catalog.AWSQuery {
+		if formProtocol(c.meta.Protocol) {
 			return op, nil, awserror.New(
 				"InvalidAction",
 				"The action "+c.meta.Operation+" is not valid for this endpoint",
@@ -383,15 +399,19 @@ func (s *Server) decode(
 		return op, nil, awserror.Validation("Unsupported content type for this operation")
 	}
 	// Query clients may post to a resource URL such as an SQS queue URL.
-	pathOK := c.meta.Protocol == catalog.AWSQuery || r.URL.Path == binding.URI
+	pathOK := formProtocol(c.meta.Protocol) || r.URL.Path == binding.URI
 	if r.Method != binding.Method || !pathOK || r.URL.RawQuery != "" {
 		return op, nil, awserror.Validation("Unexpected method, path, or query parameters")
 	}
 
 	input := op.NewInput()
-	if c.meta.Protocol == catalog.AWSQuery {
+	if formProtocol(c.meta.Protocol) {
 		if versions := c.form["Version"]; len(versions) > 0 && (len(versions) != 1 || versions[0] != binding.Version) {
 			return op, nil, awserror.New("NoSuchVersion", "Version must be "+binding.Version)
+		}
+
+		if c.meta.Protocol == catalog.EC2Query {
+			return op, input, query.DecodeEC2(c.form, input)
 		}
 
 		return op, input, query.Decode(c.form, input)
@@ -425,6 +445,8 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	switch c.meta.Protocol {
 	case catalog.AWSQuery:
 		query.WriteError(w, namespace, c.meta.RequestID, e)
+	case catalog.EC2Query:
+		query.WriteEC2Error(w, c.meta.RequestID, e)
 	case catalog.RESTXML:
 		restxml.WriteError(w, e, c.meta.RequestID, c.head)
 	case catalog.RESTJSON:
@@ -501,9 +523,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if m.Protocol == catalog.AWSQuery {
+	if formProtocol(m.Protocol) {
 		if op.UnitOutput {
 			output = nil
+		}
+
+		if m.Protocol == catalog.EC2Query {
+			query.WriteEC2(w, status, m.Operation, c.service.XMLNamespace, m.RequestID, output)
+			return
 		}
 
 		query.Write(w, status, m.Operation, c.service.XMLNamespace, m.RequestID, output)

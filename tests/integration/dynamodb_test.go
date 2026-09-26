@@ -22,6 +22,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
+	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -37,6 +38,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	compute "github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -134,6 +136,7 @@ func serverStore(
 		secretsmanagerapi.Descriptor(secretsService),
 		logsapi.Descriptor(logGroups),
 		kmsapi.Descriptor(keys),
+		ec2api.Descriptor(compute.New(store)),
 	)
 	if err != nil {
 		t.Fatal(err)

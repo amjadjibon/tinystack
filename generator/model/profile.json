@@ -436,1067 +436,23 @@
       ]
     }
   },
-  "sqs": {
+  "ec2": {
     "operations": [
-      "CreateQueue",
-      "DeleteQueue",
-      "ListQueues",
-      "GetQueueUrl",
-      "SendMessage",
-      "ReceiveMessage",
-      "DeleteMessage",
-      "ChangeMessageVisibility",
-      "SendMessageBatch",
-      "DeleteMessageBatch",
-      "ChangeMessageVisibilityBatch",
-      "GetQueueAttributes",
-      "SetQueueAttributes",
-      "TagQueue",
-      "UntagQueue",
-      "ListQueueTags",
-      "StartMessageMoveTask",
-      "ListMessageMoveTasks",
-      "CancelMessageMoveTask",
-      "ListDeadLetterSourceQueues"
-    ],
-    "query": {
-      "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
-    },
-    "shapes": {
-      "CreateQueueRequest": [
-        "QueueName",
-        "Attributes",
-        "tags"
-      ],
-      "DeleteQueueRequest": [
-        "QueueUrl"
-      ],
-      "ListQueuesRequest": [
-        "QueueNamePrefix",
-        "NextToken",
-        "MaxResults"
-      ],
-      "GetQueueUrlRequest": [
-        "QueueName"
-      ],
-      "SendMessageRequest": [
-        "QueueUrl",
-        "MessageBody",
-        "DelaySeconds",
-        "MessageAttributes",
-        "MessageDeduplicationId",
-        "MessageGroupId"
-      ],
-      "SendMessageResult": [
-        "MD5OfMessageBody",
-        "MD5OfMessageAttributes",
-        "MessageId",
-        "SequenceNumber"
-      ],
-      "MessageAttributeValue": [
-        "StringValue",
-        "BinaryValue",
-        "DataType"
-      ],
-      "ReceiveMessageRequest": [
-        "QueueUrl",
-        "AttributeNames",
-        "MessageSystemAttributeNames",
-        "MessageAttributeNames",
-        "MaxNumberOfMessages",
-        "VisibilityTimeout",
-        "WaitTimeSeconds"
-      ],
-      "Message": [
-        "MessageId",
-        "ReceiptHandle",
-        "MD5OfBody",
-        "Body",
-        "Attributes",
-        "MD5OfMessageAttributes",
-        "MessageAttributes"
-      ],
-      "DeleteMessageRequest": [
-        "QueueUrl",
-        "ReceiptHandle"
-      ],
-      "ChangeMessageVisibilityRequest": [
-        "QueueUrl",
-        "ReceiptHandle",
-        "VisibilityTimeout"
-      ],
-      "SendMessageBatchRequest": [
-        "QueueUrl",
-        "Entries"
-      ],
-      "SendMessageBatchRequestEntry": [
-        "Id",
-        "MessageBody",
-        "DelaySeconds",
-        "MessageAttributes",
-        "MessageDeduplicationId",
-        "MessageGroupId"
-      ],
-      "SendMessageBatchResult": [
-        "Successful",
-        "Failed"
-      ],
-      "SendMessageBatchResultEntry": [
-        "Id",
-        "MessageId",
-        "MD5OfMessageBody",
-        "MD5OfMessageAttributes",
-        "SequenceNumber"
-      ],
-      "BatchResultErrorEntry": [
-        "Id",
-        "SenderFault",
-        "Code",
-        "Message"
-      ],
-      "DeleteMessageBatchRequest": [
-        "QueueUrl",
-        "Entries"
-      ],
-      "DeleteMessageBatchRequestEntry": [
-        "Id",
-        "ReceiptHandle"
-      ],
-      "DeleteMessageBatchResult": [
-        "Successful",
-        "Failed"
-      ],
-      "DeleteMessageBatchResultEntry": [
-        "Id"
-      ],
-      "ChangeMessageVisibilityBatchRequest": [
-        "QueueUrl",
-        "Entries"
-      ],
-      "ChangeMessageVisibilityBatchRequestEntry": [
-        "Id",
-        "ReceiptHandle",
-        "VisibilityTimeout"
-      ],
-      "ChangeMessageVisibilityBatchResult": [
-        "Successful",
-        "Failed"
-      ],
-      "ChangeMessageVisibilityBatchResultEntry": [
-        "Id"
-      ],
-      "GetQueueAttributesRequest": [
-        "QueueUrl",
-        "AttributeNames"
-      ],
-      "GetQueueAttributesResult": [
-        "Attributes"
-      ],
-      "SetQueueAttributesRequest": [
-        "QueueUrl",
-        "Attributes"
-      ],
-      "TagQueueRequest": [
-        "QueueUrl",
-        "Tags"
-      ],
-      "UntagQueueRequest": [
-        "QueueUrl",
-        "TagKeys"
-      ],
-      "ListQueueTagsRequest": [
-        "QueueUrl"
-      ],
-      "ListQueueTagsResult": [
-        "Tags"
-      ],
-      "StartMessageMoveTaskRequest": [
-        "SourceArn",
-        "DestinationArn",
-        "MaxNumberOfMessagesPerSecond"
-      ],
-      "StartMessageMoveTaskResult": [
-        "TaskHandle"
-      ],
-      "ListMessageMoveTasksRequest": [
-        "SourceArn",
-        "MaxResults"
-      ],
-      "ListMessageMoveTasksResult": [
-        "Results"
-      ],
-      "ListMessageMoveTasksResultEntry": [
-        "TaskHandle",
-        "Status",
-        "SourceArn",
-        "DestinationArn",
-        "MaxNumberOfMessagesPerSecond",
-        "ApproximateNumberOfMessagesMoved",
-        "ApproximateNumberOfMessagesToMove",
-        "FailureReason",
-        "StartedTimestamp"
-      ],
-      "CancelMessageMoveTaskRequest": [
-        "TaskHandle"
-      ],
-      "CancelMessageMoveTaskResult": [
-        "ApproximateNumberOfMessagesMoved"
-      ],
-      "ListDeadLetterSourceQueuesRequest": [
-        "QueueUrl",
-        "NextToken",
-        "MaxResults"
-      ],
-      "ListDeadLetterSourceQueuesResult": [
-        "queueUrls",
-        "NextToken"
-      ]
-    }
-  },
-  "sns": {
-    "operations": [
-      "CreateTopic",
-      "DeleteTopic",
-      "ListTopics",
-      "Subscribe",
-      "Unsubscribe",
-      "ListSubscriptions",
-      "ListSubscriptionsByTopic",
-      "Publish",
-      "GetTopicAttributes",
-      "SetTopicAttributes",
-      "GetSubscriptionAttributes",
-      "SetSubscriptionAttributes",
-      "TagResource",
-      "UntagResource",
-      "ListTagsForResource"
+      "DescribeRegions"
     ],
     "shapes": {
-      "CreateTopicInput": [
-        "Name",
-        "Attributes",
-        "Tags"
+      "DescribeRegionsRequest": [
+        "RegionNames",
+        "AllRegions",
+        "DryRun"
       ],
-      "CreateTopicResponse": [
-        "TopicArn"
+      "DescribeRegionsResult": [
+        "Regions"
       ],
-      "DeleteTopicInput": [
-        "TopicArn"
-      ],
-      "ListTopicsInput": [
-        "NextToken"
-      ],
-      "ListTopicsResponse": [
-        "Topics",
-        "NextToken"
-      ],
-      "Topic": [
-        "TopicArn"
-      ],
-      "SubscribeInput": [
-        "TopicArn",
-        "Protocol",
+      "Region": [
         "Endpoint",
-        "Attributes",
-        "ReturnSubscriptionArn"
-      ],
-      "SubscribeResponse": [
-        "SubscriptionArn"
-      ],
-      "UnsubscribeInput": [
-        "SubscriptionArn"
-      ],
-      "ListSubscriptionsInput": [
-        "NextToken"
-      ],
-      "ListSubscriptionsResponse": [
-        "Subscriptions",
-        "NextToken"
-      ],
-      "ListSubscriptionsByTopicInput": [
-        "TopicArn",
-        "NextToken"
-      ],
-      "ListSubscriptionsByTopicResponse": [
-        "Subscriptions",
-        "NextToken"
-      ],
-      "Subscription": [
-        "SubscriptionArn",
-        "Owner",
-        "Protocol",
-        "Endpoint",
-        "TopicArn"
-      ],
-      "PublishInput": [
-        "TopicArn",
-        "Message",
-        "Subject",
-        "MessageStructure",
-        "MessageAttributes"
-      ],
-      "PublishResponse": [
-        "MessageId"
-      ],
-      "MessageAttributeValue": [
-        "DataType",
-        "StringValue",
-        "BinaryValue"
-      ],
-      "Tag": [
-        "Key",
-        "Value"
-      ],
-      "GetTopicAttributesInput": [
-        "TopicArn"
-      ],
-      "GetTopicAttributesResponse": [
-        "Attributes"
-      ],
-      "SetTopicAttributesInput": [
-        "TopicArn",
-        "AttributeName",
-        "AttributeValue"
-      ],
-      "GetSubscriptionAttributesInput": [
-        "SubscriptionArn"
-      ],
-      "GetSubscriptionAttributesResponse": [
-        "Attributes"
-      ],
-      "SetSubscriptionAttributesInput": [
-        "SubscriptionArn",
-        "AttributeName",
-        "AttributeValue"
-      ],
-      "TagResourceRequest": [
-        "ResourceArn",
-        "Tags"
-      ],
-      "UntagResourceRequest": [
-        "ResourceArn",
-        "TagKeys"
-      ],
-      "ListTagsForResourceRequest": [
-        "ResourceArn"
-      ],
-      "ListTagsForResourceResponse": [
-        "Tags"
-      ]
-    }
-  },
-  "s3": {
-    "operations": [
-      "CreateBucket",
-      "DeleteBucket",
-      "HeadBucket",
-      "ListBuckets",
-      "PutObject",
-      "GetObject",
-      "HeadObject",
-      "DeleteObject",
-      "ListObjectsV2",
-      "PutBucketTagging",
-      "GetBucketTagging",
-      "DeleteBucketTagging",
-      "CreateMultipartUpload",
-      "UploadPart",
-      "ListParts",
-      "CompleteMultipartUpload",
-      "AbortMultipartUpload",
-      "ListMultipartUploads",
-      "PutBucketNotificationConfiguration",
-      "GetBucketNotificationConfiguration",
-      "CopyObject",
-      "GetObjectTagging",
-      "PutObjectTagging",
-      "DeleteObjectTagging",
-      "PutBucketVersioning",
-      "GetBucketVersioning",
-      "ListObjectVersions"
-    ],
-    "shapes": {
-      "CreateBucketRequest": [
-        "Bucket",
-        "CreateBucketConfiguration",
-        "ACL"
-      ],
-      "CreateBucketConfiguration": [
-        "LocationConstraint"
-      ],
-      "CreateBucketOutput": [
-        "Location"
-      ],
-      "DeleteBucketRequest": [
-        "Bucket",
-        "ExpectedBucketOwner"
-      ],
-      "HeadBucketRequest": [
-        "Bucket",
-        "ExpectedBucketOwner"
-      ],
-      "HeadBucketOutput": [
-        "BucketRegion"
-      ],
-      "ListBucketsRequest": [
-        "MaxBuckets",
-        "ContinuationToken",
-        "Prefix",
-        "BucketRegion"
-      ],
-      "ListBucketsOutput": [
-        "Buckets",
-        "Owner",
-        "ContinuationToken",
-        "Prefix"
-      ],
-      "Bucket": [
-        "Name",
-        "CreationDate",
-        "BucketRegion"
-      ],
-      "Owner": [
-        "DisplayName",
-        "ID"
-      ],
-      "PutObjectRequest": [
-        "Bucket",
-        "Key",
-        "Body",
-        "ContentType",
-        "ContentLength",
-        "ContentMD5",
-        "Metadata",
-        "StorageClass",
-        "IfMatch",
-        "IfNoneMatch",
-        "ExpectedBucketOwner",
-        "ChecksumAlgorithm",
-        "ChecksumCRC32",
-        "ChecksumCRC32C",
-        "ChecksumCRC64NVME",
-        "ChecksumSHA1",
-        "ChecksumSHA256",
-        "Tagging"
-      ],
-      "PutObjectOutput": [
-        "ETag",
-        "VersionId"
-      ],
-      "GetObjectRequest": [
-        "Bucket",
-        "Key",
-        "Range",
-        "IfMatch",
-        "IfNoneMatch",
-        "ChecksumMode",
-        "ExpectedBucketOwner",
-        "VersionId"
-      ],
-      "GetObjectOutput": [
-        "Body",
-        "ContentLength",
-        "ContentRange",
-        "AcceptRanges",
-        "ContentType",
-        "ETag",
-        "LastModified",
-        "Metadata",
-        "TagCount",
-        "VersionId",
-        "DeleteMarker"
-      ],
-      "HeadObjectRequest": [
-        "Bucket",
-        "Key",
-        "Range",
-        "IfMatch",
-        "IfNoneMatch",
-        "ChecksumMode",
-        "ExpectedBucketOwner",
-        "VersionId"
-      ],
-      "HeadObjectOutput": [
-        "ContentLength",
-        "AcceptRanges",
-        "ContentType",
-        "ETag",
-        "LastModified",
-        "Metadata",
-        "VersionId"
-      ],
-      "DeleteObjectRequest": [
-        "Bucket",
-        "Key",
-        "ExpectedBucketOwner",
-        "VersionId"
-      ],
-      "DeleteObjectOutput": [
-        "VersionId",
-        "DeleteMarker"
-      ],
-      "ListObjectsV2Request": [
-        "Bucket",
-        "Delimiter",
-        "EncodingType",
-        "MaxKeys",
-        "Prefix",
-        "ContinuationToken",
-        "StartAfter",
-        "ExpectedBucketOwner"
-      ],
-      "ListObjectsV2Output": [
-        "IsTruncated",
-        "Contents",
-        "Name",
-        "Prefix",
-        "Delimiter",
-        "MaxKeys",
-        "CommonPrefixes",
-        "EncodingType",
-        "KeyCount",
-        "ContinuationToken",
-        "NextContinuationToken",
-        "StartAfter"
-      ],
-      "Object": [
-        "Key",
-        "LastModified",
-        "ETag",
-        "Size",
-        "StorageClass"
-      ],
-      "CommonPrefix": [
-        "Prefix"
-      ],
-      "PutBucketTaggingRequest": [
-        "Bucket",
-        "Tagging",
-        "ExpectedBucketOwner"
-      ],
-      "Tagging": [
-        "TagSet"
-      ],
-      "Tag": [
-        "Key",
-        "Value"
-      ],
-      "GetBucketTaggingRequest": [
-        "Bucket",
-        "ExpectedBucketOwner"
-      ],
-      "GetBucketTaggingOutput": [
-        "TagSet"
-      ],
-      "DeleteBucketTaggingRequest": [
-        "Bucket",
-        "ExpectedBucketOwner"
-      ],
-      "CreateMultipartUploadRequest": [
-        "Bucket",
-        "Key",
-        "ContentType",
-        "Metadata",
-        "StorageClass",
-        "ExpectedBucketOwner"
-      ],
-      "CreateMultipartUploadOutput": [
-        "Bucket",
-        "Key",
-        "UploadId"
-      ],
-      "UploadPartRequest": [
-        "Bucket",
-        "Key",
-        "UploadId",
-        "PartNumber",
-        "Body",
-        "ContentLength",
-        "ContentMD5",
-        "ExpectedBucketOwner"
-      ],
-      "UploadPartOutput": [
-        "ETag"
-      ],
-      "CompleteMultipartUploadRequest": [
-        "Bucket",
-        "Key",
-        "UploadId",
-        "MultipartUpload",
-        "ExpectedBucketOwner",
-        "IfMatch",
-        "IfNoneMatch"
-      ],
-      "CompleteMultipartUploadOutput": [
-        "Location",
-        "Bucket",
-        "Key",
-        "ETag",
-        "VersionId"
-      ],
-      "CompletedMultipartUpload": [
-        "Parts"
-      ],
-      "CompletedPart": [
-        "PartNumber",
-        "ETag"
-      ],
-      "AbortMultipartUploadRequest": [
-        "Bucket",
-        "Key",
-        "UploadId",
-        "ExpectedBucketOwner"
-      ],
-      "AbortMultipartUploadOutput": [],
-      "ListPartsRequest": [
-        "Bucket",
-        "Key",
-        "UploadId",
-        "MaxParts",
-        "PartNumberMarker",
-        "ExpectedBucketOwner"
-      ],
-      "ListPartsOutput": [
-        "Bucket",
-        "Key",
-        "UploadId",
-        "PartNumberMarker",
-        "NextPartNumberMarker",
-        "MaxParts",
-        "IsTruncated",
-        "Parts",
-        "StorageClass"
-      ],
-      "Part": [
-        "PartNumber",
-        "LastModified",
-        "ETag",
-        "Size"
-      ],
-      "ListMultipartUploadsRequest": [
-        "Bucket",
-        "Delimiter",
-        "EncodingType",
-        "KeyMarker",
-        "MaxUploads",
-        "Prefix",
-        "UploadIdMarker",
-        "ExpectedBucketOwner"
-      ],
-      "ListMultipartUploadsOutput": [
-        "Bucket",
-        "KeyMarker",
-        "UploadIdMarker",
-        "NextKeyMarker",
-        "NextUploadIdMarker",
-        "Prefix",
-        "Delimiter",
-        "MaxUploads",
-        "IsTruncated",
-        "Uploads",
-        "CommonPrefixes",
-        "EncodingType"
-      ],
-      "MultipartUpload": [
-        "UploadId",
-        "Key",
-        "Initiated",
-        "StorageClass"
-      ],
-      "PutBucketNotificationConfigurationRequest": [
-        "Bucket",
-        "NotificationConfiguration",
-        "ExpectedBucketOwner",
-        "SkipDestinationValidation"
-      ],
-      "GetBucketNotificationConfigurationRequest": [
-        "Bucket",
-        "ExpectedBucketOwner"
-      ],
-      "CopyObjectRequest": [
-        "Bucket",
-        "Key",
-        "CopySource",
-        "CopySourceIfMatch",
-        "CopySourceIfNoneMatch",
-        "MetadataDirective",
-        "Metadata",
-        "ContentType",
-        "TaggingDirective",
-        "Tagging",
-        "StorageClass",
-        "ExpectedBucketOwner",
-        "ExpectedSourceBucketOwner"
-      ],
-      "CopyObjectOutput": [
-        "CopyObjectResult",
-        "VersionId",
-        "CopySourceVersionId"
-      ],
-      "CopyObjectResult": [
-        "ETag",
-        "LastModified"
-      ],
-      "GetObjectTaggingRequest": [
-        "Bucket",
-        "Key",
-        "ExpectedBucketOwner",
-        "VersionId"
-      ],
-      "GetObjectTaggingOutput": [
-        "TagSet",
-        "VersionId"
-      ],
-      "PutObjectTaggingRequest": [
-        "Bucket",
-        "Key",
-        "Tagging",
-        "ExpectedBucketOwner",
-        "VersionId"
-      ],
-      "PutObjectTaggingOutput": [
-        "VersionId"
-      ],
-      "DeleteObjectTaggingRequest": [
-        "Bucket",
-        "Key",
-        "ExpectedBucketOwner",
-        "VersionId"
-      ],
-      "DeleteObjectTaggingOutput": [
-        "VersionId"
-      ],
-      "PutBucketVersioningRequest": [
-        "Bucket",
-        "VersioningConfiguration",
-        "ExpectedBucketOwner"
-      ],
-      "VersioningConfiguration": [
-        "MFADelete",
-        "Status"
-      ],
-      "GetBucketVersioningRequest": [
-        "Bucket",
-        "ExpectedBucketOwner"
-      ],
-      "GetBucketVersioningOutput": [
-        "Status"
-      ],
-      "ListObjectVersionsRequest": [
-        "Bucket",
-        "Delimiter",
-        "EncodingType",
-        "KeyMarker",
-        "MaxKeys",
-        "Prefix",
-        "VersionIdMarker",
-        "ExpectedBucketOwner"
-      ],
-      "ListObjectVersionsOutput": [
-        "IsTruncated",
-        "KeyMarker",
-        "VersionIdMarker",
-        "NextKeyMarker",
-        "NextVersionIdMarker",
-        "Versions",
-        "DeleteMarkers",
-        "Name",
-        "Prefix",
-        "Delimiter",
-        "MaxKeys",
-        "CommonPrefixes",
-        "EncodingType"
-      ],
-      "ObjectVersion": [
-        "ETag",
-        "Size",
-        "StorageClass",
-        "Key",
-        "VersionId",
-        "IsLatest",
-        "LastModified",
-        "Owner"
-      ],
-      "DeleteMarkerEntry": [
-        "Owner",
-        "Key",
-        "VersionId",
-        "IsLatest",
-        "LastModified"
-      ]
-    }
-  },
-  "lambda": {
-    "operations": [
-      "CreateFunction",
-      "GetFunction",
-      "DeleteFunction",
-      "ListFunctions",
-      "Invoke",
-      "CreateEventSourceMapping",
-      "GetEventSourceMapping",
-      "DeleteEventSourceMapping",
-      "ListEventSourceMappings",
-      "ListVersionsByFunction",
-      "GetFunctionCodeSigningConfig",
-      "ListTags",
-      "TagResource",
-      "UntagResource",
-      "UpdateFunctionCode",
-      "UpdateFunctionConfiguration",
-      "PublishVersion",
-      "CreateAlias",
-      "GetAlias",
-      "UpdateAlias",
-      "DeleteAlias",
-      "ListAliases",
-      "GetFunctionConfiguration"
-    ],
-    "shapes": {
-      "CreateFunctionRequest": [
-        "FunctionName",
-        "Runtime",
-        "Role",
-        "Handler",
-        "Code",
-        "Description",
-        "Timeout",
-        "MemorySize",
-        "PackageType",
-        "Environment",
-        "Architectures",
-        "Tags",
-        "Publish"
-      ],
-      "FunctionCode": [
-        "ZipFile",
-        "ImageUri",
-        "S3Bucket",
-        "S3Key",
-        "S3ObjectVersion"
-      ],
-      "Environment": [
-        "Variables"
-      ],
-      "FunctionConfiguration": [
-        "FunctionName",
-        "FunctionArn",
-        "Runtime",
-        "Role",
-        "Handler",
-        "CodeSize",
-        "Description",
-        "Timeout",
-        "MemorySize",
-        "LastModified",
-        "CodeSha256",
-        "Version",
-        "Environment",
-        "State",
-        "PackageType",
-        "Architectures",
-        "RevisionId",
-        "LastUpdateStatus"
-      ],
-      "EnvironmentResponse": [
-        "Variables"
-      ],
-      "GetFunctionRequest": [
-        "FunctionName",
-        "Qualifier"
-      ],
-      "GetFunctionResponse": [
-        "Configuration",
-        "Code",
-        "Tags"
-      ],
-      "FunctionCodeLocation": [
-        "RepositoryType",
-        "ImageUri"
-      ],
-      "DeleteFunctionRequest": [
-        "FunctionName",
-        "Qualifier"
-      ],
-      "DeleteFunctionResponse": [
-        "StatusCode"
-      ],
-      "ListFunctionsRequest": [
-        "Marker",
-        "MaxItems"
-      ],
-      "ListFunctionsResponse": [
-        "Functions",
-        "NextMarker"
-      ],
-      "InvocationRequest": [
-        "FunctionName",
-        "InvocationType",
-        "Payload",
-        "LogType",
-        "Qualifier"
-      ],
-      "InvocationResponse": [
-        "StatusCode",
-        "FunctionError",
-        "Payload",
-        "LogResult",
-        "ExecutedVersion"
-      ],
-      "CreateEventSourceMappingRequest": [
-        "EventSourceArn",
-        "FunctionName",
-        "Enabled",
-        "BatchSize",
-        "StartingPosition",
-        "MaximumRetryAttempts",
-        "MaximumBatchingWindowInSeconds",
-        "FilterCriteria",
-        "FunctionResponseTypes"
-      ],
-      "EventSourceMappingConfiguration": [
-        "UUID",
-        "EventSourceArn",
-        "FunctionArn",
-        "BatchSize",
-        "State",
-        "StateTransitionReason",
-        "LastModified",
-        "LastProcessingResult",
-        "StartingPosition",
-        "MaximumRetryAttempts",
-        "MaximumBatchingWindowInSeconds",
-        "FilterCriteria",
-        "FunctionResponseTypes"
-      ],
-      "GetEventSourceMappingRequest": [
-        "UUID"
-      ],
-      "DeleteEventSourceMappingRequest": [
-        "UUID"
-      ],
-      "ListEventSourceMappingsRequest": [
-        "EventSourceArn",
-        "FunctionName",
-        "Marker",
-        "MaxItems"
-      ],
-      "ListEventSourceMappingsResponse": [
-        "EventSourceMappings",
-        "NextMarker"
-      ],
-      "ListVersionsByFunctionRequest": [
-        "FunctionName",
-        "Marker",
-        "MaxItems"
-      ],
-      "ListVersionsByFunctionResponse": [
-        "Versions",
-        "NextMarker"
-      ],
-      "GetFunctionCodeSigningConfigRequest": [
-        "FunctionName"
-      ],
-      "GetFunctionCodeSigningConfigResponse": [
-        "CodeSigningConfigArn",
-        "FunctionName"
-      ],
-      "ListTagsRequest": [
-        "Resource"
-      ],
-      "ListTagsResponse": [
-        "Tags"
-      ],
-      "TagResourceRequest": [
-        "Resource",
-        "Tags"
-      ],
-      "UntagResourceRequest": [
-        "Resource",
-        "TagKeys"
-      ],
-      "UpdateFunctionCodeRequest": [
-        "FunctionName",
-        "ZipFile",
-        "ImageUri",
-        "Architectures",
-        "DryRun",
-        "RevisionId",
-        "Publish",
-        "S3Bucket",
-        "S3Key",
-        "S3ObjectVersion"
-      ],
-      "UpdateFunctionConfigurationRequest": [
-        "FunctionName",
-        "Role",
-        "Handler",
-        "Description",
-        "Timeout",
-        "MemorySize",
-        "Environment",
-        "Runtime",
-        "RevisionId"
-      ],
-      "PublishVersionRequest": [
-        "FunctionName",
-        "CodeSha256",
-        "Description",
-        "RevisionId"
-      ],
-      "CreateAliasRequest": [
-        "FunctionName",
-        "Name",
-        "FunctionVersion",
-        "Description",
-        "RoutingConfig"
-      ],
-      "AliasConfiguration": [
-        "AliasArn",
-        "Name",
-        "FunctionVersion",
-        "Description",
-        "RevisionId",
-        "RoutingConfig"
-      ],
-      "GetAliasRequest": [
-        "FunctionName",
-        "Name"
-      ],
-      "UpdateAliasRequest": [
-        "FunctionName",
-        "Name",
-        "FunctionVersion",
-        "Description",
-        "RevisionId",
-        "RoutingConfig"
-      ],
-      "DeleteAliasRequest": [
-        "FunctionName",
-        "Name"
-      ],
-      "ListAliasesRequest": [
-        "FunctionName",
-        "FunctionVersion",
-        "Marker",
-        "MaxItems"
-      ],
-      "ListAliasesResponse": [
-        "NextMarker",
-        "Aliases"
-      ],
-      "AliasRoutingConfiguration": [
-        "AdditionalVersionWeights"
-      ],
-      "GetFunctionConfigurationRequest": [
-        "FunctionName",
-        "Qualifier"
-      ],
-      "FilterCriteria": [
-        "Filters"
-      ],
-      "Filter": [
-        "Pattern"
+        "RegionName",
+        "OptInStatus"
       ]
     }
   },
@@ -2327,587 +1283,6 @@
       ]
     }
   },
-  "sts": {
-    "operations": [
-      "AssumeRole",
-      "GetCallerIdentity"
-    ],
-    "shapes": {
-      "AssumeRoleRequest": [
-        "RoleArn",
-        "RoleSessionName",
-        "DurationSeconds",
-        "ExternalId"
-      ],
-      "AssumeRoleResponse": [
-        "Credentials",
-        "AssumedRoleUser"
-      ],
-      "Credentials": [
-        "AccessKeyId",
-        "SecretAccessKey",
-        "SessionToken",
-        "Expiration"
-      ],
-      "AssumedRoleUser": [
-        "AssumedRoleId",
-        "Arn"
-      ],
-      "GetCallerIdentityRequest": [],
-      "GetCallerIdentityResponse": [
-        "UserId",
-        "Account",
-        "Arn"
-      ]
-    }
-  },
-  "ssm": {
-    "operations": [
-      "PutParameter",
-      "GetParameter",
-      "GetParameters",
-      "DeleteParameter",
-      "DeleteParameters",
-      "GetParametersByPath",
-      "DescribeParameters",
-      "GetParameterHistory",
-      "LabelParameterVersion",
-      "UnlabelParameterVersion",
-      "AddTagsToResource",
-      "RemoveTagsFromResource",
-      "ListTagsForResource"
-    ],
-    "shapes": {
-      "PutParameterRequest": [
-        "Name",
-        "Description",
-        "Value",
-        "Type",
-        "KeyId",
-        "Overwrite",
-        "AllowedPattern",
-        "Tags",
-        "Tier",
-        "DataType"
-      ],
-      "PutParameterResult": [
-        "Version",
-        "Tier"
-      ],
-      "GetParameterRequest": [
-        "Name",
-        "WithDecryption"
-      ],
-      "GetParameterResult": [
-        "Parameter"
-      ],
-      "Parameter": [
-        "Name",
-        "Type",
-        "Value",
-        "Version",
-        "Selector",
-        "LastModifiedDate",
-        "ARN",
-        "DataType"
-      ],
-      "GetParametersRequest": [
-        "Names",
-        "WithDecryption"
-      ],
-      "GetParametersResult": [
-        "Parameters",
-        "InvalidParameters"
-      ],
-      "DeleteParameterRequest": [
-        "Name"
-      ],
-      "DeleteParameterResult": [],
-      "DeleteParametersRequest": [
-        "Names"
-      ],
-      "DeleteParametersResult": [
-        "DeletedParameters",
-        "InvalidParameters"
-      ],
-      "GetParametersByPathRequest": [
-        "Path",
-        "Recursive",
-        "ParameterFilters",
-        "WithDecryption",
-        "MaxResults",
-        "NextToken"
-      ],
-      "GetParametersByPathResult": [
-        "Parameters",
-        "NextToken"
-      ],
-      "ParameterStringFilter": [
-        "Key",
-        "Option",
-        "Values"
-      ],
-      "DescribeParametersRequest": [
-        "ParameterFilters",
-        "MaxResults",
-        "NextToken"
-      ],
-      "DescribeParametersResult": [
-        "Parameters",
-        "NextToken"
-      ],
-      "ParameterMetadata": [
-        "Name",
-        "ARN",
-        "Type",
-        "KeyId",
-        "LastModifiedDate",
-        "Description",
-        "AllowedPattern",
-        "Version",
-        "Tier",
-        "DataType"
-      ],
-      "GetParameterHistoryRequest": [
-        "Name",
-        "WithDecryption",
-        "MaxResults",
-        "NextToken"
-      ],
-      "GetParameterHistoryResult": [
-        "Parameters",
-        "NextToken"
-      ],
-      "ParameterHistory": [
-        "Name",
-        "Type",
-        "KeyId",
-        "LastModifiedDate",
-        "Description",
-        "Value",
-        "AllowedPattern",
-        "Version",
-        "Labels",
-        "Tier",
-        "DataType"
-      ],
-      "LabelParameterVersionRequest": [
-        "Name",
-        "ParameterVersion",
-        "Labels"
-      ],
-      "LabelParameterVersionResult": [
-        "InvalidLabels",
-        "ParameterVersion"
-      ],
-      "UnlabelParameterVersionRequest": [
-        "Name",
-        "ParameterVersion",
-        "Labels"
-      ],
-      "UnlabelParameterVersionResult": [
-        "RemovedLabels",
-        "InvalidLabels"
-      ],
-      "AddTagsToResourceRequest": [
-        "ResourceType",
-        "ResourceId",
-        "Tags"
-      ],
-      "AddTagsToResourceResult": [],
-      "RemoveTagsFromResourceRequest": [
-        "ResourceType",
-        "ResourceId",
-        "TagKeys"
-      ],
-      "RemoveTagsFromResourceResult": [],
-      "ListTagsForResourceRequest": [
-        "ResourceType",
-        "ResourceId"
-      ],
-      "ListTagsForResourceResult": [
-        "TagList"
-      ],
-      "Tag": [
-        "Key",
-        "Value"
-      ]
-    }
-  },
-  "secretsmanager": {
-    "operations": [
-      "CreateSecret",
-      "DescribeSecret",
-      "ListSecrets",
-      "UpdateSecret",
-      "DeleteSecret",
-      "RestoreSecret",
-      "PutSecretValue",
-      "GetSecretValue",
-      "ListSecretVersionIds",
-      "UpdateSecretVersionStage",
-      "TagResource",
-      "UntagResource",
-      "GetResourcePolicy",
-      "RotateSecret",
-      "CancelRotateSecret"
-    ],
-    "shapes": {
-      "CreateSecretRequest": [
-        "Name",
-        "ClientRequestToken",
-        "Description",
-        "KmsKeyId",
-        "SecretBinary",
-        "SecretString",
-        "Tags"
-      ],
-      "CreateSecretResponse": [
-        "ARN",
-        "Name",
-        "VersionId"
-      ],
-      "DescribeSecretRequest": [
-        "SecretId"
-      ],
-      "DescribeSecretResponse": [
-        "ARN",
-        "Name",
-        "Description",
-        "KmsKeyId",
-        "LastChangedDate",
-        "DeletedDate",
-        "Tags",
-        "VersionIdsToStages",
-        "CreatedDate",
-        "RotationEnabled",
-        "RotationLambdaARN",
-        "RotationRules",
-        "LastRotatedDate",
-        "NextRotationDate"
-      ],
-      "ListSecretsRequest": [
-        "IncludePlannedDeletion",
-        "MaxResults",
-        "NextToken",
-        "Filters",
-        "SortOrder"
-      ],
-      "ListSecretsResponse": [
-        "SecretList",
-        "NextToken"
-      ],
-      "SecretListEntry": [
-        "ARN",
-        "Name",
-        "Description",
-        "KmsKeyId",
-        "LastChangedDate",
-        "DeletedDate",
-        "Tags",
-        "SecretVersionsToStages",
-        "CreatedDate",
-        "RotationEnabled",
-        "RotationLambdaARN",
-        "RotationRules",
-        "LastRotatedDate",
-        "NextRotationDate"
-      ],
-      "Filter": [
-        "Key",
-        "Values"
-      ],
-      "UpdateSecretRequest": [
-        "SecretId",
-        "ClientRequestToken",
-        "Description",
-        "KmsKeyId",
-        "SecretBinary",
-        "SecretString"
-      ],
-      "UpdateSecretResponse": [
-        "ARN",
-        "Name",
-        "VersionId"
-      ],
-      "DeleteSecretRequest": [
-        "SecretId",
-        "RecoveryWindowInDays",
-        "ForceDeleteWithoutRecovery"
-      ],
-      "DeleteSecretResponse": [
-        "ARN",
-        "Name",
-        "DeletionDate"
-      ],
-      "RestoreSecretRequest": [
-        "SecretId"
-      ],
-      "RestoreSecretResponse": [
-        "ARN",
-        "Name"
-      ],
-      "PutSecretValueRequest": [
-        "SecretId",
-        "ClientRequestToken",
-        "SecretBinary",
-        "SecretString",
-        "VersionStages"
-      ],
-      "PutSecretValueResponse": [
-        "ARN",
-        "Name",
-        "VersionId",
-        "VersionStages"
-      ],
-      "GetSecretValueRequest": [
-        "SecretId",
-        "VersionId",
-        "VersionStage"
-      ],
-      "GetSecretValueResponse": [
-        "ARN",
-        "Name",
-        "VersionId",
-        "SecretBinary",
-        "SecretString",
-        "VersionStages",
-        "CreatedDate"
-      ],
-      "ListSecretVersionIdsRequest": [
-        "SecretId",
-        "MaxResults",
-        "NextToken",
-        "IncludeDeprecated"
-      ],
-      "ListSecretVersionIdsResponse": [
-        "Versions",
-        "NextToken",
-        "ARN",
-        "Name"
-      ],
-      "SecretVersionsListEntry": [
-        "VersionId",
-        "VersionStages",
-        "CreatedDate"
-      ],
-      "UpdateSecretVersionStageRequest": [
-        "SecretId",
-        "VersionStage",
-        "RemoveFromVersionId",
-        "MoveToVersionId"
-      ],
-      "UpdateSecretVersionStageResponse": [
-        "ARN",
-        "Name"
-      ],
-      "TagResourceRequest": [
-        "SecretId",
-        "Tags"
-      ],
-      "UntagResourceRequest": [
-        "SecretId",
-        "TagKeys"
-      ],
-      "GetResourcePolicyRequest": [
-        "SecretId"
-      ],
-      "GetResourcePolicyResponse": [
-        "ARN",
-        "Name"
-      ],
-      "Tag": [
-        "Key",
-        "Value"
-      ],
-      "RotateSecretRequest": [
-        "SecretId",
-        "ClientRequestToken",
-        "RotationLambdaARN",
-        "RotationRules",
-        "RotateImmediately"
-      ],
-      "RotateSecretResponse": [
-        "ARN",
-        "Name",
-        "VersionId"
-      ],
-      "CancelRotateSecretRequest": [
-        "SecretId"
-      ],
-      "CancelRotateSecretResponse": [
-        "ARN",
-        "Name",
-        "VersionId"
-      ],
-      "RotationRulesType": [
-        "AutomaticallyAfterDays",
-        "Duration",
-        "ScheduleExpression"
-      ]
-    }
-  },
-  "logs": {
-    "operations": [
-      "CreateLogGroup",
-      "DeleteLogGroup",
-      "DescribeLogGroups",
-      "PutRetentionPolicy",
-      "DeleteRetentionPolicy",
-      "CreateLogStream",
-      "DeleteLogStream",
-      "DescribeLogStreams",
-      "PutLogEvents",
-      "GetLogEvents",
-      "FilterLogEvents",
-      "TagResource",
-      "UntagResource",
-      "ListTagsForResource"
-    ],
-    "shapes": {
-      "CreateLogGroupRequest": [
-        "logGroupName",
-        "tags",
-        "logGroupClass"
-      ],
-      "DeleteLogGroupRequest": [
-        "logGroupName"
-      ],
-      "DescribeLogGroupsRequest": [
-        "logGroupNamePrefix",
-        "logGroupNamePattern",
-        "nextToken",
-        "limit"
-      ],
-      "DescribeLogGroupsResponse": [
-        "logGroups",
-        "nextToken"
-      ],
-      "LogGroup": [
-        "logGroupName",
-        "creationTime",
-        "retentionInDays",
-        "metricFilterCount",
-        "arn",
-        "storedBytes",
-        "logGroupClass",
-        "logGroupArn"
-      ],
-      "PutRetentionPolicyRequest": [
-        "logGroupName",
-        "retentionInDays"
-      ],
-      "DeleteRetentionPolicyRequest": [
-        "logGroupName"
-      ],
-      "CreateLogStreamRequest": [
-        "logGroupName",
-        "logStreamName"
-      ],
-      "DeleteLogStreamRequest": [
-        "logGroupName",
-        "logStreamName"
-      ],
-      "DescribeLogStreamsRequest": [
-        "logGroupName",
-        "logGroupIdentifier",
-        "logStreamNamePrefix",
-        "orderBy",
-        "descending",
-        "nextToken",
-        "limit"
-      ],
-      "DescribeLogStreamsResponse": [
-        "logStreams",
-        "nextToken"
-      ],
-      "LogStream": [
-        "logStreamName",
-        "creationTime",
-        "firstEventTimestamp",
-        "lastEventTimestamp",
-        "lastIngestionTime",
-        "uploadSequenceToken",
-        "arn",
-        "storedBytes"
-      ],
-      "PutLogEventsRequest": [
-        "logGroupName",
-        "logStreamName",
-        "logEvents",
-        "sequenceToken"
-      ],
-      "PutLogEventsResponse": [
-        "nextSequenceToken",
-        "rejectedLogEventsInfo"
-      ],
-      "InputLogEvent": [
-        "timestamp",
-        "message"
-      ],
-      "RejectedLogEventsInfo": [
-        "tooNewLogEventStartIndex",
-        "tooOldLogEventEndIndex",
-        "expiredLogEventEndIndex"
-      ],
-      "GetLogEventsRequest": [
-        "logGroupName",
-        "logGroupIdentifier",
-        "logStreamName",
-        "startTime",
-        "endTime",
-        "nextToken",
-        "limit",
-        "startFromHead"
-      ],
-      "GetLogEventsResponse": [
-        "events",
-        "nextForwardToken",
-        "nextBackwardToken"
-      ],
-      "OutputLogEvent": [
-        "timestamp",
-        "message",
-        "ingestionTime"
-      ],
-      "FilterLogEventsRequest": [
-        "logGroupName",
-        "logGroupIdentifier",
-        "logStreamNames",
-        "logStreamNamePrefix",
-        "startTime",
-        "endTime",
-        "filterPattern",
-        "nextToken",
-        "limit"
-      ],
-      "FilterLogEventsResponse": [
-        "events",
-        "nextToken"
-      ],
-      "FilteredLogEvent": [
-        "logStreamName",
-        "timestamp",
-        "message",
-        "ingestionTime",
-        "eventId"
-      ],
-      "TagResourceRequest": [
-        "resourceArn",
-        "tags"
-      ],
-      "UntagResourceRequest": [
-        "resourceArn",
-        "tagKeys"
-      ],
-      "ListTagsForResourceRequest": [
-        "resourceArn"
-      ],
-      "ListTagsForResourceResponse": [
-        "tags"
-      ]
-    }
-  },
   "kms": {
     "operations": [
       "CreateKey",
@@ -3157,6 +1532,1651 @@
       ],
       "GenerateRandomResponse": [
         "Plaintext"
+      ]
+    }
+  },
+  "lambda": {
+    "operations": [
+      "CreateFunction",
+      "GetFunction",
+      "DeleteFunction",
+      "ListFunctions",
+      "Invoke",
+      "CreateEventSourceMapping",
+      "GetEventSourceMapping",
+      "DeleteEventSourceMapping",
+      "ListEventSourceMappings",
+      "ListVersionsByFunction",
+      "GetFunctionCodeSigningConfig",
+      "ListTags",
+      "TagResource",
+      "UntagResource",
+      "UpdateFunctionCode",
+      "UpdateFunctionConfiguration",
+      "PublishVersion",
+      "CreateAlias",
+      "GetAlias",
+      "UpdateAlias",
+      "DeleteAlias",
+      "ListAliases",
+      "GetFunctionConfiguration"
+    ],
+    "shapes": {
+      "CreateFunctionRequest": [
+        "FunctionName",
+        "Runtime",
+        "Role",
+        "Handler",
+        "Code",
+        "Description",
+        "Timeout",
+        "MemorySize",
+        "PackageType",
+        "Environment",
+        "Architectures",
+        "Tags",
+        "Publish"
+      ],
+      "FunctionCode": [
+        "ZipFile",
+        "ImageUri",
+        "S3Bucket",
+        "S3Key",
+        "S3ObjectVersion"
+      ],
+      "Environment": [
+        "Variables"
+      ],
+      "FunctionConfiguration": [
+        "FunctionName",
+        "FunctionArn",
+        "Runtime",
+        "Role",
+        "Handler",
+        "CodeSize",
+        "Description",
+        "Timeout",
+        "MemorySize",
+        "LastModified",
+        "CodeSha256",
+        "Version",
+        "Environment",
+        "State",
+        "PackageType",
+        "Architectures",
+        "RevisionId",
+        "LastUpdateStatus"
+      ],
+      "EnvironmentResponse": [
+        "Variables"
+      ],
+      "GetFunctionRequest": [
+        "FunctionName",
+        "Qualifier"
+      ],
+      "GetFunctionResponse": [
+        "Configuration",
+        "Code",
+        "Tags"
+      ],
+      "FunctionCodeLocation": [
+        "RepositoryType",
+        "ImageUri"
+      ],
+      "DeleteFunctionRequest": [
+        "FunctionName",
+        "Qualifier"
+      ],
+      "DeleteFunctionResponse": [
+        "StatusCode"
+      ],
+      "ListFunctionsRequest": [
+        "Marker",
+        "MaxItems"
+      ],
+      "ListFunctionsResponse": [
+        "Functions",
+        "NextMarker"
+      ],
+      "InvocationRequest": [
+        "FunctionName",
+        "InvocationType",
+        "Payload",
+        "LogType",
+        "Qualifier"
+      ],
+      "InvocationResponse": [
+        "StatusCode",
+        "FunctionError",
+        "Payload",
+        "LogResult",
+        "ExecutedVersion"
+      ],
+      "CreateEventSourceMappingRequest": [
+        "EventSourceArn",
+        "FunctionName",
+        "Enabled",
+        "BatchSize",
+        "StartingPosition",
+        "MaximumRetryAttempts",
+        "MaximumBatchingWindowInSeconds",
+        "FilterCriteria",
+        "FunctionResponseTypes"
+      ],
+      "EventSourceMappingConfiguration": [
+        "UUID",
+        "EventSourceArn",
+        "FunctionArn",
+        "BatchSize",
+        "State",
+        "StateTransitionReason",
+        "LastModified",
+        "LastProcessingResult",
+        "StartingPosition",
+        "MaximumRetryAttempts",
+        "MaximumBatchingWindowInSeconds",
+        "FilterCriteria",
+        "FunctionResponseTypes"
+      ],
+      "GetEventSourceMappingRequest": [
+        "UUID"
+      ],
+      "DeleteEventSourceMappingRequest": [
+        "UUID"
+      ],
+      "ListEventSourceMappingsRequest": [
+        "EventSourceArn",
+        "FunctionName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListEventSourceMappingsResponse": [
+        "EventSourceMappings",
+        "NextMarker"
+      ],
+      "ListVersionsByFunctionRequest": [
+        "FunctionName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListVersionsByFunctionResponse": [
+        "Versions",
+        "NextMarker"
+      ],
+      "GetFunctionCodeSigningConfigRequest": [
+        "FunctionName"
+      ],
+      "GetFunctionCodeSigningConfigResponse": [
+        "CodeSigningConfigArn",
+        "FunctionName"
+      ],
+      "ListTagsRequest": [
+        "Resource"
+      ],
+      "ListTagsResponse": [
+        "Tags"
+      ],
+      "TagResourceRequest": [
+        "Resource",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "Resource",
+        "TagKeys"
+      ],
+      "UpdateFunctionCodeRequest": [
+        "FunctionName",
+        "ZipFile",
+        "ImageUri",
+        "Architectures",
+        "DryRun",
+        "RevisionId",
+        "Publish",
+        "S3Bucket",
+        "S3Key",
+        "S3ObjectVersion"
+      ],
+      "UpdateFunctionConfigurationRequest": [
+        "FunctionName",
+        "Role",
+        "Handler",
+        "Description",
+        "Timeout",
+        "MemorySize",
+        "Environment",
+        "Runtime",
+        "RevisionId"
+      ],
+      "PublishVersionRequest": [
+        "FunctionName",
+        "CodeSha256",
+        "Description",
+        "RevisionId"
+      ],
+      "CreateAliasRequest": [
+        "FunctionName",
+        "Name",
+        "FunctionVersion",
+        "Description",
+        "RoutingConfig"
+      ],
+      "AliasConfiguration": [
+        "AliasArn",
+        "Name",
+        "FunctionVersion",
+        "Description",
+        "RevisionId",
+        "RoutingConfig"
+      ],
+      "GetAliasRequest": [
+        "FunctionName",
+        "Name"
+      ],
+      "UpdateAliasRequest": [
+        "FunctionName",
+        "Name",
+        "FunctionVersion",
+        "Description",
+        "RevisionId",
+        "RoutingConfig"
+      ],
+      "DeleteAliasRequest": [
+        "FunctionName",
+        "Name"
+      ],
+      "ListAliasesRequest": [
+        "FunctionName",
+        "FunctionVersion",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListAliasesResponse": [
+        "NextMarker",
+        "Aliases"
+      ],
+      "AliasRoutingConfiguration": [
+        "AdditionalVersionWeights"
+      ],
+      "GetFunctionConfigurationRequest": [
+        "FunctionName",
+        "Qualifier"
+      ],
+      "FilterCriteria": [
+        "Filters"
+      ],
+      "Filter": [
+        "Pattern"
+      ]
+    }
+  },
+  "logs": {
+    "operations": [
+      "CreateLogGroup",
+      "DeleteLogGroup",
+      "DescribeLogGroups",
+      "PutRetentionPolicy",
+      "DeleteRetentionPolicy",
+      "CreateLogStream",
+      "DeleteLogStream",
+      "DescribeLogStreams",
+      "PutLogEvents",
+      "GetLogEvents",
+      "FilterLogEvents",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateLogGroupRequest": [
+        "logGroupName",
+        "tags",
+        "logGroupClass"
+      ],
+      "DeleteLogGroupRequest": [
+        "logGroupName"
+      ],
+      "DescribeLogGroupsRequest": [
+        "logGroupNamePrefix",
+        "logGroupNamePattern",
+        "nextToken",
+        "limit"
+      ],
+      "DescribeLogGroupsResponse": [
+        "logGroups",
+        "nextToken"
+      ],
+      "LogGroup": [
+        "logGroupName",
+        "creationTime",
+        "retentionInDays",
+        "metricFilterCount",
+        "arn",
+        "storedBytes",
+        "logGroupClass",
+        "logGroupArn"
+      ],
+      "PutRetentionPolicyRequest": [
+        "logGroupName",
+        "retentionInDays"
+      ],
+      "DeleteRetentionPolicyRequest": [
+        "logGroupName"
+      ],
+      "CreateLogStreamRequest": [
+        "logGroupName",
+        "logStreamName"
+      ],
+      "DeleteLogStreamRequest": [
+        "logGroupName",
+        "logStreamName"
+      ],
+      "DescribeLogStreamsRequest": [
+        "logGroupName",
+        "logGroupIdentifier",
+        "logStreamNamePrefix",
+        "orderBy",
+        "descending",
+        "nextToken",
+        "limit"
+      ],
+      "DescribeLogStreamsResponse": [
+        "logStreams",
+        "nextToken"
+      ],
+      "LogStream": [
+        "logStreamName",
+        "creationTime",
+        "firstEventTimestamp",
+        "lastEventTimestamp",
+        "lastIngestionTime",
+        "uploadSequenceToken",
+        "arn",
+        "storedBytes"
+      ],
+      "PutLogEventsRequest": [
+        "logGroupName",
+        "logStreamName",
+        "logEvents",
+        "sequenceToken"
+      ],
+      "PutLogEventsResponse": [
+        "nextSequenceToken",
+        "rejectedLogEventsInfo"
+      ],
+      "InputLogEvent": [
+        "timestamp",
+        "message"
+      ],
+      "RejectedLogEventsInfo": [
+        "tooNewLogEventStartIndex",
+        "tooOldLogEventEndIndex",
+        "expiredLogEventEndIndex"
+      ],
+      "GetLogEventsRequest": [
+        "logGroupName",
+        "logGroupIdentifier",
+        "logStreamName",
+        "startTime",
+        "endTime",
+        "nextToken",
+        "limit",
+        "startFromHead"
+      ],
+      "GetLogEventsResponse": [
+        "events",
+        "nextForwardToken",
+        "nextBackwardToken"
+      ],
+      "OutputLogEvent": [
+        "timestamp",
+        "message",
+        "ingestionTime"
+      ],
+      "FilterLogEventsRequest": [
+        "logGroupName",
+        "logGroupIdentifier",
+        "logStreamNames",
+        "logStreamNamePrefix",
+        "startTime",
+        "endTime",
+        "filterPattern",
+        "nextToken",
+        "limit"
+      ],
+      "FilterLogEventsResponse": [
+        "events",
+        "nextToken"
+      ],
+      "FilteredLogEvent": [
+        "logStreamName",
+        "timestamp",
+        "message",
+        "ingestionTime",
+        "eventId"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ]
+    }
+  },
+  "s3": {
+    "operations": [
+      "CreateBucket",
+      "DeleteBucket",
+      "HeadBucket",
+      "ListBuckets",
+      "PutObject",
+      "GetObject",
+      "HeadObject",
+      "DeleteObject",
+      "ListObjectsV2",
+      "PutBucketTagging",
+      "GetBucketTagging",
+      "DeleteBucketTagging",
+      "CreateMultipartUpload",
+      "UploadPart",
+      "ListParts",
+      "CompleteMultipartUpload",
+      "AbortMultipartUpload",
+      "ListMultipartUploads",
+      "PutBucketNotificationConfiguration",
+      "GetBucketNotificationConfiguration",
+      "CopyObject",
+      "GetObjectTagging",
+      "PutObjectTagging",
+      "DeleteObjectTagging",
+      "PutBucketVersioning",
+      "GetBucketVersioning",
+      "ListObjectVersions"
+    ],
+    "shapes": {
+      "CreateBucketRequest": [
+        "Bucket",
+        "CreateBucketConfiguration",
+        "ACL"
+      ],
+      "CreateBucketConfiguration": [
+        "LocationConstraint"
+      ],
+      "CreateBucketOutput": [
+        "Location"
+      ],
+      "DeleteBucketRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "HeadBucketRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "HeadBucketOutput": [
+        "BucketRegion"
+      ],
+      "ListBucketsRequest": [
+        "MaxBuckets",
+        "ContinuationToken",
+        "Prefix",
+        "BucketRegion"
+      ],
+      "ListBucketsOutput": [
+        "Buckets",
+        "Owner",
+        "ContinuationToken",
+        "Prefix"
+      ],
+      "Bucket": [
+        "Name",
+        "CreationDate",
+        "BucketRegion"
+      ],
+      "Owner": [
+        "DisplayName",
+        "ID"
+      ],
+      "PutObjectRequest": [
+        "Bucket",
+        "Key",
+        "Body",
+        "ContentType",
+        "ContentLength",
+        "ContentMD5",
+        "Metadata",
+        "StorageClass",
+        "IfMatch",
+        "IfNoneMatch",
+        "ExpectedBucketOwner",
+        "ChecksumAlgorithm",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256",
+        "Tagging"
+      ],
+      "PutObjectOutput": [
+        "ETag",
+        "VersionId"
+      ],
+      "GetObjectRequest": [
+        "Bucket",
+        "Key",
+        "Range",
+        "IfMatch",
+        "IfNoneMatch",
+        "ChecksumMode",
+        "ExpectedBucketOwner",
+        "VersionId"
+      ],
+      "GetObjectOutput": [
+        "Body",
+        "ContentLength",
+        "ContentRange",
+        "AcceptRanges",
+        "ContentType",
+        "ETag",
+        "LastModified",
+        "Metadata",
+        "TagCount",
+        "VersionId",
+        "DeleteMarker"
+      ],
+      "HeadObjectRequest": [
+        "Bucket",
+        "Key",
+        "Range",
+        "IfMatch",
+        "IfNoneMatch",
+        "ChecksumMode",
+        "ExpectedBucketOwner",
+        "VersionId"
+      ],
+      "HeadObjectOutput": [
+        "ContentLength",
+        "AcceptRanges",
+        "ContentType",
+        "ETag",
+        "LastModified",
+        "Metadata",
+        "VersionId"
+      ],
+      "DeleteObjectRequest": [
+        "Bucket",
+        "Key",
+        "ExpectedBucketOwner",
+        "VersionId"
+      ],
+      "DeleteObjectOutput": [
+        "VersionId",
+        "DeleteMarker"
+      ],
+      "ListObjectsV2Request": [
+        "Bucket",
+        "Delimiter",
+        "EncodingType",
+        "MaxKeys",
+        "Prefix",
+        "ContinuationToken",
+        "StartAfter",
+        "ExpectedBucketOwner"
+      ],
+      "ListObjectsV2Output": [
+        "IsTruncated",
+        "Contents",
+        "Name",
+        "Prefix",
+        "Delimiter",
+        "MaxKeys",
+        "CommonPrefixes",
+        "EncodingType",
+        "KeyCount",
+        "ContinuationToken",
+        "NextContinuationToken",
+        "StartAfter"
+      ],
+      "Object": [
+        "Key",
+        "LastModified",
+        "ETag",
+        "Size",
+        "StorageClass"
+      ],
+      "CommonPrefix": [
+        "Prefix"
+      ],
+      "PutBucketTaggingRequest": [
+        "Bucket",
+        "Tagging",
+        "ExpectedBucketOwner"
+      ],
+      "Tagging": [
+        "TagSet"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "GetBucketTaggingRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketTaggingOutput": [
+        "TagSet"
+      ],
+      "DeleteBucketTaggingRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "CreateMultipartUploadRequest": [
+        "Bucket",
+        "Key",
+        "ContentType",
+        "Metadata",
+        "StorageClass",
+        "ExpectedBucketOwner"
+      ],
+      "CreateMultipartUploadOutput": [
+        "Bucket",
+        "Key",
+        "UploadId"
+      ],
+      "UploadPartRequest": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "PartNumber",
+        "Body",
+        "ContentLength",
+        "ContentMD5",
+        "ExpectedBucketOwner"
+      ],
+      "UploadPartOutput": [
+        "ETag"
+      ],
+      "CompleteMultipartUploadRequest": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "MultipartUpload",
+        "ExpectedBucketOwner",
+        "IfMatch",
+        "IfNoneMatch"
+      ],
+      "CompleteMultipartUploadOutput": [
+        "Location",
+        "Bucket",
+        "Key",
+        "ETag",
+        "VersionId"
+      ],
+      "CompletedMultipartUpload": [
+        "Parts"
+      ],
+      "CompletedPart": [
+        "PartNumber",
+        "ETag"
+      ],
+      "AbortMultipartUploadRequest": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "ExpectedBucketOwner"
+      ],
+      "AbortMultipartUploadOutput": [],
+      "ListPartsRequest": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "MaxParts",
+        "PartNumberMarker",
+        "ExpectedBucketOwner"
+      ],
+      "ListPartsOutput": [
+        "Bucket",
+        "Key",
+        "UploadId",
+        "PartNumberMarker",
+        "NextPartNumberMarker",
+        "MaxParts",
+        "IsTruncated",
+        "Parts",
+        "StorageClass"
+      ],
+      "Part": [
+        "PartNumber",
+        "LastModified",
+        "ETag",
+        "Size"
+      ],
+      "ListMultipartUploadsRequest": [
+        "Bucket",
+        "Delimiter",
+        "EncodingType",
+        "KeyMarker",
+        "MaxUploads",
+        "Prefix",
+        "UploadIdMarker",
+        "ExpectedBucketOwner"
+      ],
+      "ListMultipartUploadsOutput": [
+        "Bucket",
+        "KeyMarker",
+        "UploadIdMarker",
+        "NextKeyMarker",
+        "NextUploadIdMarker",
+        "Prefix",
+        "Delimiter",
+        "MaxUploads",
+        "IsTruncated",
+        "Uploads",
+        "CommonPrefixes",
+        "EncodingType"
+      ],
+      "MultipartUpload": [
+        "UploadId",
+        "Key",
+        "Initiated",
+        "StorageClass"
+      ],
+      "PutBucketNotificationConfigurationRequest": [
+        "Bucket",
+        "NotificationConfiguration",
+        "ExpectedBucketOwner",
+        "SkipDestinationValidation"
+      ],
+      "GetBucketNotificationConfigurationRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "CopyObjectRequest": [
+        "Bucket",
+        "Key",
+        "CopySource",
+        "CopySourceIfMatch",
+        "CopySourceIfNoneMatch",
+        "MetadataDirective",
+        "Metadata",
+        "ContentType",
+        "TaggingDirective",
+        "Tagging",
+        "StorageClass",
+        "ExpectedBucketOwner",
+        "ExpectedSourceBucketOwner"
+      ],
+      "CopyObjectOutput": [
+        "CopyObjectResult",
+        "VersionId",
+        "CopySourceVersionId"
+      ],
+      "CopyObjectResult": [
+        "ETag",
+        "LastModified"
+      ],
+      "GetObjectTaggingRequest": [
+        "Bucket",
+        "Key",
+        "ExpectedBucketOwner",
+        "VersionId"
+      ],
+      "GetObjectTaggingOutput": [
+        "TagSet",
+        "VersionId"
+      ],
+      "PutObjectTaggingRequest": [
+        "Bucket",
+        "Key",
+        "Tagging",
+        "ExpectedBucketOwner",
+        "VersionId"
+      ],
+      "PutObjectTaggingOutput": [
+        "VersionId"
+      ],
+      "DeleteObjectTaggingRequest": [
+        "Bucket",
+        "Key",
+        "ExpectedBucketOwner",
+        "VersionId"
+      ],
+      "DeleteObjectTaggingOutput": [
+        "VersionId"
+      ],
+      "PutBucketVersioningRequest": [
+        "Bucket",
+        "VersioningConfiguration",
+        "ExpectedBucketOwner"
+      ],
+      "VersioningConfiguration": [
+        "MFADelete",
+        "Status"
+      ],
+      "GetBucketVersioningRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketVersioningOutput": [
+        "Status"
+      ],
+      "ListObjectVersionsRequest": [
+        "Bucket",
+        "Delimiter",
+        "EncodingType",
+        "KeyMarker",
+        "MaxKeys",
+        "Prefix",
+        "VersionIdMarker",
+        "ExpectedBucketOwner"
+      ],
+      "ListObjectVersionsOutput": [
+        "IsTruncated",
+        "KeyMarker",
+        "VersionIdMarker",
+        "NextKeyMarker",
+        "NextVersionIdMarker",
+        "Versions",
+        "DeleteMarkers",
+        "Name",
+        "Prefix",
+        "Delimiter",
+        "MaxKeys",
+        "CommonPrefixes",
+        "EncodingType"
+      ],
+      "ObjectVersion": [
+        "ETag",
+        "Size",
+        "StorageClass",
+        "Key",
+        "VersionId",
+        "IsLatest",
+        "LastModified",
+        "Owner"
+      ],
+      "DeleteMarkerEntry": [
+        "Owner",
+        "Key",
+        "VersionId",
+        "IsLatest",
+        "LastModified"
+      ]
+    }
+  },
+  "secretsmanager": {
+    "operations": [
+      "CreateSecret",
+      "DescribeSecret",
+      "ListSecrets",
+      "UpdateSecret",
+      "DeleteSecret",
+      "RestoreSecret",
+      "PutSecretValue",
+      "GetSecretValue",
+      "ListSecretVersionIds",
+      "UpdateSecretVersionStage",
+      "TagResource",
+      "UntagResource",
+      "GetResourcePolicy",
+      "RotateSecret",
+      "CancelRotateSecret"
+    ],
+    "shapes": {
+      "CreateSecretRequest": [
+        "Name",
+        "ClientRequestToken",
+        "Description",
+        "KmsKeyId",
+        "SecretBinary",
+        "SecretString",
+        "Tags"
+      ],
+      "CreateSecretResponse": [
+        "ARN",
+        "Name",
+        "VersionId"
+      ],
+      "DescribeSecretRequest": [
+        "SecretId"
+      ],
+      "DescribeSecretResponse": [
+        "ARN",
+        "Name",
+        "Description",
+        "KmsKeyId",
+        "LastChangedDate",
+        "DeletedDate",
+        "Tags",
+        "VersionIdsToStages",
+        "CreatedDate",
+        "RotationEnabled",
+        "RotationLambdaARN",
+        "RotationRules",
+        "LastRotatedDate",
+        "NextRotationDate"
+      ],
+      "ListSecretsRequest": [
+        "IncludePlannedDeletion",
+        "MaxResults",
+        "NextToken",
+        "Filters",
+        "SortOrder"
+      ],
+      "ListSecretsResponse": [
+        "SecretList",
+        "NextToken"
+      ],
+      "SecretListEntry": [
+        "ARN",
+        "Name",
+        "Description",
+        "KmsKeyId",
+        "LastChangedDate",
+        "DeletedDate",
+        "Tags",
+        "SecretVersionsToStages",
+        "CreatedDate",
+        "RotationEnabled",
+        "RotationLambdaARN",
+        "RotationRules",
+        "LastRotatedDate",
+        "NextRotationDate"
+      ],
+      "Filter": [
+        "Key",
+        "Values"
+      ],
+      "UpdateSecretRequest": [
+        "SecretId",
+        "ClientRequestToken",
+        "Description",
+        "KmsKeyId",
+        "SecretBinary",
+        "SecretString"
+      ],
+      "UpdateSecretResponse": [
+        "ARN",
+        "Name",
+        "VersionId"
+      ],
+      "DeleteSecretRequest": [
+        "SecretId",
+        "RecoveryWindowInDays",
+        "ForceDeleteWithoutRecovery"
+      ],
+      "DeleteSecretResponse": [
+        "ARN",
+        "Name",
+        "DeletionDate"
+      ],
+      "RestoreSecretRequest": [
+        "SecretId"
+      ],
+      "RestoreSecretResponse": [
+        "ARN",
+        "Name"
+      ],
+      "PutSecretValueRequest": [
+        "SecretId",
+        "ClientRequestToken",
+        "SecretBinary",
+        "SecretString",
+        "VersionStages"
+      ],
+      "PutSecretValueResponse": [
+        "ARN",
+        "Name",
+        "VersionId",
+        "VersionStages"
+      ],
+      "GetSecretValueRequest": [
+        "SecretId",
+        "VersionId",
+        "VersionStage"
+      ],
+      "GetSecretValueResponse": [
+        "ARN",
+        "Name",
+        "VersionId",
+        "SecretBinary",
+        "SecretString",
+        "VersionStages",
+        "CreatedDate"
+      ],
+      "ListSecretVersionIdsRequest": [
+        "SecretId",
+        "MaxResults",
+        "NextToken",
+        "IncludeDeprecated"
+      ],
+      "ListSecretVersionIdsResponse": [
+        "Versions",
+        "NextToken",
+        "ARN",
+        "Name"
+      ],
+      "SecretVersionsListEntry": [
+        "VersionId",
+        "VersionStages",
+        "CreatedDate"
+      ],
+      "UpdateSecretVersionStageRequest": [
+        "SecretId",
+        "VersionStage",
+        "RemoveFromVersionId",
+        "MoveToVersionId"
+      ],
+      "UpdateSecretVersionStageResponse": [
+        "ARN",
+        "Name"
+      ],
+      "TagResourceRequest": [
+        "SecretId",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "SecretId",
+        "TagKeys"
+      ],
+      "GetResourcePolicyRequest": [
+        "SecretId"
+      ],
+      "GetResourcePolicyResponse": [
+        "ARN",
+        "Name"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "RotateSecretRequest": [
+        "SecretId",
+        "ClientRequestToken",
+        "RotationLambdaARN",
+        "RotationRules",
+        "RotateImmediately"
+      ],
+      "RotateSecretResponse": [
+        "ARN",
+        "Name",
+        "VersionId"
+      ],
+      "CancelRotateSecretRequest": [
+        "SecretId"
+      ],
+      "CancelRotateSecretResponse": [
+        "ARN",
+        "Name",
+        "VersionId"
+      ],
+      "RotationRulesType": [
+        "AutomaticallyAfterDays",
+        "Duration",
+        "ScheduleExpression"
+      ]
+    }
+  },
+  "sns": {
+    "operations": [
+      "CreateTopic",
+      "DeleteTopic",
+      "ListTopics",
+      "Subscribe",
+      "Unsubscribe",
+      "ListSubscriptions",
+      "ListSubscriptionsByTopic",
+      "Publish",
+      "GetTopicAttributes",
+      "SetTopicAttributes",
+      "GetSubscriptionAttributes",
+      "SetSubscriptionAttributes",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateTopicInput": [
+        "Name",
+        "Attributes",
+        "Tags"
+      ],
+      "CreateTopicResponse": [
+        "TopicArn"
+      ],
+      "DeleteTopicInput": [
+        "TopicArn"
+      ],
+      "ListTopicsInput": [
+        "NextToken"
+      ],
+      "ListTopicsResponse": [
+        "Topics",
+        "NextToken"
+      ],
+      "Topic": [
+        "TopicArn"
+      ],
+      "SubscribeInput": [
+        "TopicArn",
+        "Protocol",
+        "Endpoint",
+        "Attributes",
+        "ReturnSubscriptionArn"
+      ],
+      "SubscribeResponse": [
+        "SubscriptionArn"
+      ],
+      "UnsubscribeInput": [
+        "SubscriptionArn"
+      ],
+      "ListSubscriptionsInput": [
+        "NextToken"
+      ],
+      "ListSubscriptionsResponse": [
+        "Subscriptions",
+        "NextToken"
+      ],
+      "ListSubscriptionsByTopicInput": [
+        "TopicArn",
+        "NextToken"
+      ],
+      "ListSubscriptionsByTopicResponse": [
+        "Subscriptions",
+        "NextToken"
+      ],
+      "Subscription": [
+        "SubscriptionArn",
+        "Owner",
+        "Protocol",
+        "Endpoint",
+        "TopicArn"
+      ],
+      "PublishInput": [
+        "TopicArn",
+        "Message",
+        "Subject",
+        "MessageStructure",
+        "MessageAttributes"
+      ],
+      "PublishResponse": [
+        "MessageId"
+      ],
+      "MessageAttributeValue": [
+        "DataType",
+        "StringValue",
+        "BinaryValue"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "GetTopicAttributesInput": [
+        "TopicArn"
+      ],
+      "GetTopicAttributesResponse": [
+        "Attributes"
+      ],
+      "SetTopicAttributesInput": [
+        "TopicArn",
+        "AttributeName",
+        "AttributeValue"
+      ],
+      "GetSubscriptionAttributesInput": [
+        "SubscriptionArn"
+      ],
+      "GetSubscriptionAttributesResponse": [
+        "Attributes"
+      ],
+      "SetSubscriptionAttributesInput": [
+        "SubscriptionArn",
+        "AttributeName",
+        "AttributeValue"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
+  },
+  "sqs": {
+    "operations": [
+      "CreateQueue",
+      "DeleteQueue",
+      "ListQueues",
+      "GetQueueUrl",
+      "SendMessage",
+      "ReceiveMessage",
+      "DeleteMessage",
+      "ChangeMessageVisibility",
+      "SendMessageBatch",
+      "DeleteMessageBatch",
+      "ChangeMessageVisibilityBatch",
+      "GetQueueAttributes",
+      "SetQueueAttributes",
+      "TagQueue",
+      "UntagQueue",
+      "ListQueueTags",
+      "StartMessageMoveTask",
+      "ListMessageMoveTasks",
+      "CancelMessageMoveTask",
+      "ListDeadLetterSourceQueues"
+    ],
+    "query": {
+      "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
+    },
+    "shapes": {
+      "CreateQueueRequest": [
+        "QueueName",
+        "Attributes",
+        "tags"
+      ],
+      "DeleteQueueRequest": [
+        "QueueUrl"
+      ],
+      "ListQueuesRequest": [
+        "QueueNamePrefix",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetQueueUrlRequest": [
+        "QueueName"
+      ],
+      "SendMessageRequest": [
+        "QueueUrl",
+        "MessageBody",
+        "DelaySeconds",
+        "MessageAttributes",
+        "MessageDeduplicationId",
+        "MessageGroupId"
+      ],
+      "SendMessageResult": [
+        "MD5OfMessageBody",
+        "MD5OfMessageAttributes",
+        "MessageId",
+        "SequenceNumber"
+      ],
+      "MessageAttributeValue": [
+        "StringValue",
+        "BinaryValue",
+        "DataType"
+      ],
+      "ReceiveMessageRequest": [
+        "QueueUrl",
+        "AttributeNames",
+        "MessageSystemAttributeNames",
+        "MessageAttributeNames",
+        "MaxNumberOfMessages",
+        "VisibilityTimeout",
+        "WaitTimeSeconds"
+      ],
+      "Message": [
+        "MessageId",
+        "ReceiptHandle",
+        "MD5OfBody",
+        "Body",
+        "Attributes",
+        "MD5OfMessageAttributes",
+        "MessageAttributes"
+      ],
+      "DeleteMessageRequest": [
+        "QueueUrl",
+        "ReceiptHandle"
+      ],
+      "ChangeMessageVisibilityRequest": [
+        "QueueUrl",
+        "ReceiptHandle",
+        "VisibilityTimeout"
+      ],
+      "SendMessageBatchRequest": [
+        "QueueUrl",
+        "Entries"
+      ],
+      "SendMessageBatchRequestEntry": [
+        "Id",
+        "MessageBody",
+        "DelaySeconds",
+        "MessageAttributes",
+        "MessageDeduplicationId",
+        "MessageGroupId"
+      ],
+      "SendMessageBatchResult": [
+        "Successful",
+        "Failed"
+      ],
+      "SendMessageBatchResultEntry": [
+        "Id",
+        "MessageId",
+        "MD5OfMessageBody",
+        "MD5OfMessageAttributes",
+        "SequenceNumber"
+      ],
+      "BatchResultErrorEntry": [
+        "Id",
+        "SenderFault",
+        "Code",
+        "Message"
+      ],
+      "DeleteMessageBatchRequest": [
+        "QueueUrl",
+        "Entries"
+      ],
+      "DeleteMessageBatchRequestEntry": [
+        "Id",
+        "ReceiptHandle"
+      ],
+      "DeleteMessageBatchResult": [
+        "Successful",
+        "Failed"
+      ],
+      "DeleteMessageBatchResultEntry": [
+        "Id"
+      ],
+      "ChangeMessageVisibilityBatchRequest": [
+        "QueueUrl",
+        "Entries"
+      ],
+      "ChangeMessageVisibilityBatchRequestEntry": [
+        "Id",
+        "ReceiptHandle",
+        "VisibilityTimeout"
+      ],
+      "ChangeMessageVisibilityBatchResult": [
+        "Successful",
+        "Failed"
+      ],
+      "ChangeMessageVisibilityBatchResultEntry": [
+        "Id"
+      ],
+      "GetQueueAttributesRequest": [
+        "QueueUrl",
+        "AttributeNames"
+      ],
+      "GetQueueAttributesResult": [
+        "Attributes"
+      ],
+      "SetQueueAttributesRequest": [
+        "QueueUrl",
+        "Attributes"
+      ],
+      "TagQueueRequest": [
+        "QueueUrl",
+        "Tags"
+      ],
+      "UntagQueueRequest": [
+        "QueueUrl",
+        "TagKeys"
+      ],
+      "ListQueueTagsRequest": [
+        "QueueUrl"
+      ],
+      "ListQueueTagsResult": [
+        "Tags"
+      ],
+      "StartMessageMoveTaskRequest": [
+        "SourceArn",
+        "DestinationArn",
+        "MaxNumberOfMessagesPerSecond"
+      ],
+      "StartMessageMoveTaskResult": [
+        "TaskHandle"
+      ],
+      "ListMessageMoveTasksRequest": [
+        "SourceArn",
+        "MaxResults"
+      ],
+      "ListMessageMoveTasksResult": [
+        "Results"
+      ],
+      "ListMessageMoveTasksResultEntry": [
+        "TaskHandle",
+        "Status",
+        "SourceArn",
+        "DestinationArn",
+        "MaxNumberOfMessagesPerSecond",
+        "ApproximateNumberOfMessagesMoved",
+        "ApproximateNumberOfMessagesToMove",
+        "FailureReason",
+        "StartedTimestamp"
+      ],
+      "CancelMessageMoveTaskRequest": [
+        "TaskHandle"
+      ],
+      "CancelMessageMoveTaskResult": [
+        "ApproximateNumberOfMessagesMoved"
+      ],
+      "ListDeadLetterSourceQueuesRequest": [
+        "QueueUrl",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListDeadLetterSourceQueuesResult": [
+        "queueUrls",
+        "NextToken"
+      ]
+    }
+  },
+  "ssm": {
+    "operations": [
+      "PutParameter",
+      "GetParameter",
+      "GetParameters",
+      "DeleteParameter",
+      "DeleteParameters",
+      "GetParametersByPath",
+      "DescribeParameters",
+      "GetParameterHistory",
+      "LabelParameterVersion",
+      "UnlabelParameterVersion",
+      "AddTagsToResource",
+      "RemoveTagsFromResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "PutParameterRequest": [
+        "Name",
+        "Description",
+        "Value",
+        "Type",
+        "KeyId",
+        "Overwrite",
+        "AllowedPattern",
+        "Tags",
+        "Tier",
+        "DataType"
+      ],
+      "PutParameterResult": [
+        "Version",
+        "Tier"
+      ],
+      "GetParameterRequest": [
+        "Name",
+        "WithDecryption"
+      ],
+      "GetParameterResult": [
+        "Parameter"
+      ],
+      "Parameter": [
+        "Name",
+        "Type",
+        "Value",
+        "Version",
+        "Selector",
+        "LastModifiedDate",
+        "ARN",
+        "DataType"
+      ],
+      "GetParametersRequest": [
+        "Names",
+        "WithDecryption"
+      ],
+      "GetParametersResult": [
+        "Parameters",
+        "InvalidParameters"
+      ],
+      "DeleteParameterRequest": [
+        "Name"
+      ],
+      "DeleteParameterResult": [],
+      "DeleteParametersRequest": [
+        "Names"
+      ],
+      "DeleteParametersResult": [
+        "DeletedParameters",
+        "InvalidParameters"
+      ],
+      "GetParametersByPathRequest": [
+        "Path",
+        "Recursive",
+        "ParameterFilters",
+        "WithDecryption",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetParametersByPathResult": [
+        "Parameters",
+        "NextToken"
+      ],
+      "ParameterStringFilter": [
+        "Key",
+        "Option",
+        "Values"
+      ],
+      "DescribeParametersRequest": [
+        "ParameterFilters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeParametersResult": [
+        "Parameters",
+        "NextToken"
+      ],
+      "ParameterMetadata": [
+        "Name",
+        "ARN",
+        "Type",
+        "KeyId",
+        "LastModifiedDate",
+        "Description",
+        "AllowedPattern",
+        "Version",
+        "Tier",
+        "DataType"
+      ],
+      "GetParameterHistoryRequest": [
+        "Name",
+        "WithDecryption",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetParameterHistoryResult": [
+        "Parameters",
+        "NextToken"
+      ],
+      "ParameterHistory": [
+        "Name",
+        "Type",
+        "KeyId",
+        "LastModifiedDate",
+        "Description",
+        "Value",
+        "AllowedPattern",
+        "Version",
+        "Labels",
+        "Tier",
+        "DataType"
+      ],
+      "LabelParameterVersionRequest": [
+        "Name",
+        "ParameterVersion",
+        "Labels"
+      ],
+      "LabelParameterVersionResult": [
+        "InvalidLabels",
+        "ParameterVersion"
+      ],
+      "UnlabelParameterVersionRequest": [
+        "Name",
+        "ParameterVersion",
+        "Labels"
+      ],
+      "UnlabelParameterVersionResult": [
+        "RemovedLabels",
+        "InvalidLabels"
+      ],
+      "AddTagsToResourceRequest": [
+        "ResourceType",
+        "ResourceId",
+        "Tags"
+      ],
+      "AddTagsToResourceResult": [],
+      "RemoveTagsFromResourceRequest": [
+        "ResourceType",
+        "ResourceId",
+        "TagKeys"
+      ],
+      "RemoveTagsFromResourceResult": [],
+      "ListTagsForResourceRequest": [
+        "ResourceType",
+        "ResourceId"
+      ],
+      "ListTagsForResourceResult": [
+        "TagList"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ]
+    }
+  },
+  "sts": {
+    "operations": [
+      "AssumeRole",
+      "GetCallerIdentity"
+    ],
+    "shapes": {
+      "AssumeRoleRequest": [
+        "RoleArn",
+        "RoleSessionName",
+        "DurationSeconds",
+        "ExternalId"
+      ],
+      "AssumeRoleResponse": [
+        "Credentials",
+        "AssumedRoleUser"
+      ],
+      "Credentials": [
+        "AccessKeyId",
+        "SecretAccessKey",
+        "SessionToken",
+        "Expiration"
+      ],
+      "AssumedRoleUser": [
+        "AssumedRoleId",
+        "Arn"
+      ],
+      "GetCallerIdentityRequest": [],
+      "GetCallerIdentityResponse": [
+        "UserId",
+        "Account",
+        "Arn"
       ]
     }
   }

@@ -29,6 +29,8 @@ const (
 	expiredToken
 )
 
+const requestExpired = "RequestExpired"
+
 // authCodes are the error codes each protocol family's services use for
 // authentication failures.
 var authCodes = map[string][5]string{
@@ -36,7 +38,10 @@ var authCodes = map[string][5]string{
 		"AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch", "RequestTimeTooSkewed", "ExpiredToken",
 	},
 	catalog.AWSQuery: {
-		"MissingAuthenticationToken", "InvalidClientTokenId", "SignatureDoesNotMatch", "RequestExpired", "ExpiredToken",
+		"MissingAuthenticationToken", "InvalidClientTokenId", "SignatureDoesNotMatch", requestExpired, "ExpiredToken",
+	},
+	catalog.EC2Query: {
+		"MissingAuthenticationToken", "AuthFailure", "AuthFailure", requestExpired, requestExpired,
 	},
 }
 
@@ -190,7 +195,7 @@ func (s *Server) payloadHash(w http.ResponseWriter, r *http.Request, c *call, s3
 // readBody returns the request body and leaves an equivalent one in place for
 // decoding. AWS Query bodies were already read to classify the request.
 func (s *Server) readBody(w http.ResponseWriter, r *http.Request, c *call) ([]byte, error) {
-	if c.meta.Protocol == catalog.AWSQuery {
+	if formProtocol(c.meta.Protocol) {
 		return c.body, nil
 	}
 

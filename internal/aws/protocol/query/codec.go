@@ -1,9 +1,12 @@
-// Package query implements the AWS Query protocol from generated `query` struct tags.
+// Package query implements the AWS Query protocol from generated `query` struct
+// tags, and EC2 Query from `ec2` tags.
 //
-// A tag names the member's query key and XML element, followed by options:
-// "flat" for flattened collections, and "member=", "key=", or "value=" for
-// non-default list member and map entry names. Timestamps are time.Time values
-// written as ISO 8601 date-times.
+// A `query` tag names the member's query key and XML element, followed by
+// options: "flat" for flattened collections, and "member=", "key=", or "value="
+// for non-default list member and map entry names. An `ec2` tag names the query
+// key and then the XML element, which differ in EC2 Query, followed by the same
+// options; EC2 Query lists are always flat in requests and wrapped in
+// responses. Timestamps are time.Time values written as ISO 8601 date-times.
 package query
 
 import (
@@ -24,15 +27,28 @@ import (
 
 var timeType = reflect.TypeFor[time.Time]()
 
+// Struct tag keys of the two dialects.
+const (
+	queryKey = "query"
+	ec2Key   = "ec2"
+)
+
+// tag is a member's wire names: name is its query key and element its XML
+// element.
 type tag struct {
-	name, member, key, value string
-	flat                     bool
+	name, element, member, key, value string
+	flat                              bool
 }
 
-func parseTag(raw string) tag {
+func parseTag(raw, dialect string) tag {
 	parts := strings.Split(raw, ",")
-	t := tag{name: parts[0], member: "member", key: "key", value: "value"}
-	for _, opt := range parts[1:] {
+	t := tag{name: parts[0], element: parts[0], member: "member", key: "key", value: "value"}
+	options := parts[1:]
+	if dialect == ec2Key && len(options) > 0 {
+		t.element, options = options[0], options[1:]
+	}
+
+	for _, opt := range options {
 		k, v, _ := strings.Cut(opt, "=")
 		switch k {
 		case "flat":
@@ -54,13 +70,24 @@ func invalid(format string, args ...any) error {
 }
 
 type decoder struct {
-	params url.Values
-	used   map[string]bool
+	params  url.Values
+	used    map[string]bool
+	dialect string
 }
 
 // Decode fills input from AWS Query parameters, rejecting any parameter it does not consume.
 func Decode(params url.Values, input any) error {
-	d := decoder{params: params, used: map[string]bool{"Action": true, "Version": true}}
+	return decode(params, input, queryKey)
+}
+
+// DecodeEC2 fills input from EC2 Query parameters, rejecting any parameter it
+// does not consume.
+func DecodeEC2(params url.Values, input any) error {
+	return decode(params, input, ec2Key)
+}
+
+func decode(params url.Values, input any, dialect string) error {
+	d := decoder{params: params, used: map[string]bool{"Action": true, "Version": true}, dialect: dialect}
 	if err := d.structure(reflect.ValueOf(input).Elem(), ""); err != nil {
 		return err
 	}
@@ -102,13 +129,13 @@ func (d *decoder) nested(key string) bool {
 func (d *decoder) structure(v reflect.Value, prefix string) error {
 	t := v.Type()
 	for i := range t.NumField() {
-		raw, ok := t.Field(i).Tag.Lookup("query")
+		raw, ok := t.Field(i).Tag.Lookup(d.dialect)
 		if !ok {
-			return fmt.Errorf("query: %s.%s has no query tag", t.Name(), t.Field(i).Name)
+			return fmt.Errorf("query: %s.%s has no %s tag", t.Name(), t.Field(i).Name, d.dialect)
 		}
 
-		tg := parseTag(raw)
-		if err := d.field(v.Field(i), join(prefix, tg.name), tg); err != nil {
+		tg := parseTag(raw, d.dialect)
+		if err := d.field(v.Field(i), join(prefix, tg.name), &tg); err != nil {
 			return err
 		}
 	}
@@ -116,7 +143,7 @@ func (d *decoder) structure(v reflect.Value, prefix string) error {
 	return nil
 }
 
-func (d *decoder) field(v reflect.Value, key string, tg tag) error {
+func (d *decoder) field(v reflect.Value, key string, tg *tag) error {
 	switch v.Kind() {
 	case reflect.Pointer:
 		elem := v.Type().Elem()
@@ -193,9 +220,9 @@ func (d *decoder) empty(key string) bool {
 	return false
 }
 
-func (d *decoder) list(v reflect.Value, key string, tg tag) error {
+func (d *decoder) list(v reflect.Value, key string, tg *tag) error {
 	base := key
-	if !tg.flat {
+	if !tg.flat && d.dialect != ec2Key {
 		base = key + "." + tg.member
 	}
 
@@ -215,7 +242,7 @@ func (d *decoder) list(v reflect.Value, key string, tg tag) error {
 
 	s := reflect.MakeSlice(v.Type(), len(idx), len(idx))
 	for i, n := range idx {
-		if guardErr := d.field(s.Index(i), base+"."+strconv.Itoa(n), tag{}); guardErr != nil {
+		if guardErr := d.field(s.Index(i), base+"."+strconv.Itoa(n), &tag{}); guardErr != nil {
 			return guardErr
 		}
 	}
@@ -224,7 +251,7 @@ func (d *decoder) list(v reflect.Value, key string, tg tag) error {
 	return nil
 }
 
-func (d *decoder) mapping(v reflect.Value, key string, tg tag) error {
+func (d *decoder) mapping(v reflect.Value, key string, tg *tag) error {
 	base := key
 	if !tg.flat {
 		base = key + ".entry"
@@ -260,7 +287,7 @@ func (d *decoder) mapping(v reflect.Value, key string, tg tag) error {
 		}
 
 		value := reflect.New(v.Type().Elem()).Elem()
-		if guardErr := d.field(value, valueKey, tag{}); guardErr != nil {
+		if guardErr := d.field(value, valueKey, &tag{}); guardErr != nil {
 			return guardErr
 		}
 
@@ -372,7 +399,7 @@ func Write(w http.ResponseWriter, status int, operation, namespace, requestID st
 
 	if v.Kind() == reflect.Struct {
 		open(&b, operation+"Result")
-		encodeStruct(&b, v)
+		encodeStruct(&b, v, queryKey)
 		closeTag(&b, operation+"Result")
 	}
 
@@ -409,64 +436,106 @@ func WriteError(w http.ResponseWriter, namespace, requestID string, e *awserror.
 	_, _ = w.Write(b.Bytes())
 }
 
-func encodeStruct(b *bytes.Buffer, v reflect.Value) {
+// WriteEC2 encodes a successful EC2 Query response: the output's members sit
+// directly under the <Operation>Response root, after its requestId. A nil
+// output, used for Unit outputs, writes only the requestId.
+func WriteEC2(w http.ResponseWriter, status int, operation, namespace, requestID string, output any) {
+	var b bytes.Buffer
+	b.WriteString(xml.Header)
+	namespaced(&b, operation+"Response", namespace)
+	b.WriteString("<requestId>")
+	text(&b, requestID)
+	b.WriteString("</requestId>")
+	v := reflect.ValueOf(output)
+	for v.Kind() == reflect.Pointer && !v.IsNil() {
+		v = v.Elem()
+	}
+
+	if v.Kind() == reflect.Struct {
+		encodeStruct(&b, v, ec2Key)
+	}
+
+	closeTag(&b, operation+"Response")
+	w.Header().Set("Content-Type", "text/xml;charset=UTF-8")
+	w.WriteHeader(status)
+	_, _ = w.Write(b.Bytes())
+}
+
+// WriteEC2Error encodes the EC2 Query error envelope, which has no namespace.
+func WriteEC2Error(w http.ResponseWriter, requestID string, e *awserror.Error) {
+	var b bytes.Buffer
+	b.WriteString(xml.Header)
+	b.WriteString("<Response><Errors><Error><Code>")
+	text(&b, e.Code)
+	b.WriteString("</Code><Message>")
+	text(&b, e.Message)
+	b.WriteString("</Message></Error></Errors><RequestID>")
+	text(&b, requestID)
+	b.WriteString("</RequestID></Response>")
+	w.Header().Set("Content-Type", "text/xml;charset=UTF-8")
+	w.WriteHeader(e.StatusCode)
+	_, _ = w.Write(b.Bytes())
+}
+
+func encodeStruct(b *bytes.Buffer, v reflect.Value, dialect string) {
 	t := v.Type()
 	for i := range t.NumField() {
-		encodeField(b, parseTag(t.Field(i).Tag.Get("query")), v.Field(i))
+		tg := parseTag(t.Field(i).Tag.Get(dialect), dialect)
+		encodeField(b, &tg, v.Field(i), dialect)
 	}
 }
 
-func encodeField(b *bytes.Buffer, tg tag, v reflect.Value) {
+func encodeField(b *bytes.Buffer, tg *tag, v reflect.Value, dialect string) {
 	if (v.Kind() == reflect.Pointer || v.Kind() == reflect.Map || v.Kind() == reflect.Slice) && v.IsNil() {
 		return
 	}
 
 	switch {
 	case v.Kind() == reflect.Pointer:
-		encodeField(b, tg, v.Elem())
+		encodeField(b, tg, v.Elem(), dialect)
 	case v.Kind() == reflect.Slice && v.Type().Elem().Kind() != reflect.Uint8:
 		if !tg.flat {
-			open(b, tg.name)
+			open(b, tg.element)
 		}
 
 		for i := range v.Len() {
 			name := tg.member
 			if tg.flat {
-				name = tg.name
+				name = tg.element
 			}
 
-			element(b, name, v.Index(i))
+			element(b, name, v.Index(i), dialect)
 		}
 
 		if !tg.flat {
-			closeTag(b, tg.name)
+			closeTag(b, tg.element)
 		}
 	case v.Kind() == reflect.Map:
 		keys := v.MapKeys()
 		sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })
 		entry := "entry"
 		if tg.flat {
-			entry = tg.name
+			entry = tg.element
 		} else {
-			open(b, tg.name)
+			open(b, tg.element)
 		}
 
 		for _, k := range keys {
 			open(b, entry)
-			element(b, tg.key, k)
-			element(b, tg.value, v.MapIndex(k))
+			element(b, tg.key, k, dialect)
+			element(b, tg.value, v.MapIndex(k), dialect)
 			closeTag(b, entry)
 		}
 
 		if !tg.flat {
-			closeTag(b, tg.name)
+			closeTag(b, tg.element)
 		}
 	default:
-		element(b, tg.name, v)
+		element(b, tg.element, v, dialect)
 	}
 }
 
-func element(b *bytes.Buffer, name string, v reflect.Value) {
+func element(b *bytes.Buffer, name string, v reflect.Value, dialect string) {
 	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return
@@ -483,7 +552,7 @@ func element(b *bytes.Buffer, name string, v reflect.Value) {
 			break
 		}
 
-		encodeStruct(b, v)
+		encodeStruct(b, v, dialect)
 	case reflect.String:
 		text(b, v.String())
 	case reflect.Bool:

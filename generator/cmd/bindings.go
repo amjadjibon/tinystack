@@ -19,7 +19,7 @@ func compileBinding(
 	op := m.Shapes[id]
 	contentType := "application/json"
 	switch protocol {
-	case catalog.AWSQuery:
+	case catalog.AWSQuery, catalog.EC2Query:
 		return catalog.Binding{
 			Method:      "POST",
 			URI:         "/",

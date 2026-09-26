@@ -9,6 +9,7 @@ const (
 	AWSJSON10 = "awsJson1_0"
 	AWSJSON11 = "awsJson1_1"
 	AWSQuery  = "awsQuery"
+	EC2Query  = "ec2Query"
 	RESTXML   = "restXml"
 	RESTJSON  = "restJson1"
 )

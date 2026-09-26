@@ -18,6 +18,7 @@ import (
 
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
+	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -33,6 +34,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -139,6 +141,7 @@ func newStartCommand() *cobra.Command {
 				secretsmanagerapi.Descriptor(secrets),
 				logsapi.Descriptor(logGroups),
 				kmsapi.Descriptor(keys),
+				ec2api.Descriptor(ec2.New(store)),
 			)
 			if err != nil {
 				return err
