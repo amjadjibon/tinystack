@@ -286,9 +286,9 @@ invoking them does.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateFunction | `Zip` packages (`ZipFile`) for python3.9–3.14, nodejs18.x–24.x, java11–25, ruby3.2–3.4, dotnet8/10, and provided.al2/al2023; `Image` packages (`ImageUri`); `Timeout`, `MemorySize`, `Environment` (reserved keys rejected, 4 KB limit), `Description`, `Architectures` |
+| CreateFunction | `Zip` packages (`ZipFile`, or `S3Bucket` and `S3Key` with an optional `S3ObjectVersion`: an object in the caller's account and region, copied when the call is made, with S3's error reported as `InvalidParameterValueException`) for python3.9–3.14, nodejs18.x–24.x, java11–25, ruby3.2–3.4, dotnet8/10, and provided.al2/al2023; `Image` packages (`ImageUri`); `Timeout`, `MemorySize`, `Environment` (reserved keys rejected, 4 KB limit), `Description`, `Architectures` |
 | GetFunction / GetFunctionConfiguration / ListFunctions / DeleteFunction | Name, partial ARN, or ARN, with a `Qualifier` (or `:qualifier` suffix) of `$LATEST`, a version, or an alias; 50 per page with `Marker`; GetFunction returns the tags; deleting a function deletes its versions and aliases, and deleting a version fails while an alias points to it |
-| UpdateFunctionCode / UpdateFunctionConfiguration | Replace the `ZipFile` or `ImageUri` (and `Architectures`), or change `Role`, `Runtime`, `Handler`, `Description`, `Timeout`, `MemorySize`, and `Environment` (fields left out keep their values); `RevisionId` preconditions and `DryRun`; `Publish` on code updates; warm containers are released so the next invocation runs the new revision |
+| UpdateFunctionCode / UpdateFunctionConfiguration | Replace the `ZipFile`, S3 object, or `ImageUri` (and `Architectures`), or change `Role`, `Runtime`, `Handler`, `Description`, `Timeout`, `MemorySize`, and `Environment` (fields left out keep their values); `RevisionId` preconditions and `DryRun`; `Publish` on code updates; warm containers are released so the next invocation runs the new revision |
 | PublishVersion / ListVersionsByFunction | Immutable numbered versions of `$LATEST`'s code and configuration, also from `Publish` on CreateFunction; publishing unchanged code and configuration returns the last version; `CodeSha256` and `RevisionId` preconditions; `$LATEST` then versions in order, with `Marker` and `MaxItems` |
 | CreateAlias / GetAlias / UpdateAlias / DeleteAlias / ListAliases | Names for `$LATEST` or a version, with a `Description` and `RoutingConfig` that sends a weighted share (0 to 1) of invocations to one other version (not with `$LATEST`); `RevisionId` preconditions; aliases in name order, optionally of one version |
 | GetFunctionCodeSigningConfig | No code signing configuration |
@@ -534,7 +534,7 @@ or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. S
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than `private`,
 policies, encryption, POST uploads, lifecycle, or stored checksums on
-reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, code from S3, `ImageConfig`, function URLs,
+reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, `ImageConfig`, function URLs,
 concurrency settings, resource policies, or event sources other than SQS and DynamoDB
 streams (no batching window, filters, partial batch responses, bisecting, or failure destinations); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
