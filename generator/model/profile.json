@@ -453,7 +453,11 @@
       "SetQueueAttributes",
       "TagQueue",
       "UntagQueue",
-      "ListQueueTags"
+      "ListQueueTags",
+      "StartMessageMoveTask",
+      "ListMessageMoveTasks",
+      "CancelMessageMoveTask",
+      "ListDeadLetterSourceQueues"
     ],
     "query": {
       "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
@@ -605,6 +609,47 @@
       ],
       "ListQueueTagsResult": [
         "Tags"
+      ],
+      "StartMessageMoveTaskRequest": [
+        "SourceArn",
+        "DestinationArn",
+        "MaxNumberOfMessagesPerSecond"
+      ],
+      "StartMessageMoveTaskResult": [
+        "TaskHandle"
+      ],
+      "ListMessageMoveTasksRequest": [
+        "SourceArn",
+        "MaxResults"
+      ],
+      "ListMessageMoveTasksResult": [
+        "Results"
+      ],
+      "ListMessageMoveTasksResultEntry": [
+        "TaskHandle",
+        "Status",
+        "SourceArn",
+        "DestinationArn",
+        "MaxNumberOfMessagesPerSecond",
+        "ApproximateNumberOfMessagesMoved",
+        "ApproximateNumberOfMessagesToMove",
+        "FailureReason",
+        "StartedTimestamp"
+      ],
+      "CancelMessageMoveTaskRequest": [
+        "TaskHandle"
+      ],
+      "CancelMessageMoveTaskResult": [
+        "ApproximateNumberOfMessagesMoved"
+      ],
+      "ListDeadLetterSourceQueuesRequest": [
+        "QueueUrl",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListDeadLetterSourceQueuesResult": [
+        "queueUrls",
+        "NextToken"
       ]
     }
   },

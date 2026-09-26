@@ -213,6 +213,56 @@ type ListQueueTagsResult struct {
 	Tags map[string]string `json:"Tags,omitempty" query:"Tag,flat,key=Key,value=Value"`
 }
 
+type StartMessageMoveTaskRequest struct {
+	SourceArn                    *string `json:"SourceArn,omitempty" query:"SourceArn"`
+	DestinationArn               *string `json:"DestinationArn,omitempty" query:"DestinationArn"`
+	MaxNumberOfMessagesPerSecond *int64  `json:"MaxNumberOfMessagesPerSecond,omitempty" query:"MaxNumberOfMessagesPerSecond"`
+}
+
+type StartMessageMoveTaskResult struct {
+	TaskHandle *string `json:"TaskHandle,omitempty" query:"TaskHandle"`
+}
+
+type ListMessageMoveTasksRequest struct {
+	SourceArn  *string `json:"SourceArn,omitempty" query:"SourceArn"`
+	MaxResults *int64  `json:"MaxResults,omitempty" query:"MaxResults"`
+}
+
+type ListMessageMoveTasksResultEntry struct {
+	TaskHandle                        *string `json:"TaskHandle,omitempty" query:"TaskHandle"`
+	Status                            *string `json:"Status,omitempty" query:"Status"`
+	SourceArn                         *string `json:"SourceArn,omitempty" query:"SourceArn"`
+	DestinationArn                    *string `json:"DestinationArn,omitempty" query:"DestinationArn"`
+	MaxNumberOfMessagesPerSecond      *int64  `json:"MaxNumberOfMessagesPerSecond,omitempty" query:"MaxNumberOfMessagesPerSecond"`
+	ApproximateNumberOfMessagesMoved  *int64  `json:"ApproximateNumberOfMessagesMoved,omitempty" query:"ApproximateNumberOfMessagesMoved"`
+	ApproximateNumberOfMessagesToMove *int64  `json:"ApproximateNumberOfMessagesToMove,omitempty" query:"ApproximateNumberOfMessagesToMove"`
+	FailureReason                     *string `json:"FailureReason,omitempty" query:"FailureReason"`
+	StartedTimestamp                  *int64  `json:"StartedTimestamp,omitempty" query:"StartedTimestamp"`
+}
+
+type ListMessageMoveTasksResult struct {
+	Results []ListMessageMoveTasksResultEntry `json:"Results,omitempty" query:"ListMessageMoveTasksResultEntry,flat"`
+}
+
+type CancelMessageMoveTaskRequest struct {
+	TaskHandle *string `json:"TaskHandle,omitempty" query:"TaskHandle"`
+}
+
+type CancelMessageMoveTaskResult struct {
+	ApproximateNumberOfMessagesMoved *int64 `json:"ApproximateNumberOfMessagesMoved,omitempty" query:"ApproximateNumberOfMessagesMoved"`
+}
+
+type ListDeadLetterSourceQueuesRequest struct {
+	QueueUrl   *string `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	NextToken  *string `json:"NextToken,omitempty" query:"NextToken"`
+	MaxResults *int64  `json:"MaxResults,omitempty" query:"MaxResults"`
+}
+
+type ListDeadLetterSourceQueuesResult struct {
+	QueueUrls []string `json:"queueUrls,omitempty" query:"QueueUrl,flat"`
+	NextToken *string  `json:"NextToken,omitempty" query:"NextToken"`
+}
+
 type API interface {
 	CreateQueue(context.Context, *CreateQueueRequest) (*CreateQueueResult, error)
 	DeleteQueue(context.Context, *DeleteQueueRequest) (*DeleteQueueOutput, error)
@@ -230,10 +280,14 @@ type API interface {
 	TagQueue(context.Context, *TagQueueRequest) (*TagQueueOutput, error)
 	UntagQueue(context.Context, *UntagQueueRequest) (*UntagQueueOutput, error)
 	ListQueueTags(context.Context, *ListQueueTagsRequest) (*ListQueueTagsResult, error)
+	StartMessageMoveTask(context.Context, *StartMessageMoveTaskRequest) (*StartMessageMoveTaskResult, error)
+	ListMessageMoveTasks(context.Context, *ListMessageMoveTasksRequest) (*ListMessageMoveTasksResult, error)
+	CancelMessageMoveTask(context.Context, *CancelMessageMoveTaskRequest) (*CancelMessageMoveTaskResult, error)
+	ListDeadLetterSourceQueues(context.Context, *ListDeadLetterSourceQueuesRequest) (*ListDeadLetterSourceQueuesResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "sqs", SigningName: "sqs", Inventory: catalog.InventoryOf(api), TargetPrefix: "AmazonSQS", QueryCompatible: true, XMLNamespace: "http://queue.amazonaws.com/doc/2012-11-05/", Protocols: []string{"awsJson1_0", "awsQuery"}, Errors: map[string]catalog.ErrorBinding{"BatchEntryIdsNotDistinct": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.BatchEntryIdsNotDistinct", MessageMember: "message", StatusCode: 400}, "BatchRequestTooLong": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.BatchRequestTooLong", MessageMember: "message", StatusCode: 400}, "EmptyBatchRequest": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.EmptyBatchRequest", MessageMember: "message", StatusCode: 400}, "InvalidAddress": catalog.ErrorBinding{QueryCode: "InvalidAddress", MessageMember: "message", StatusCode: 404}, "InvalidAttributeName": catalog.ErrorBinding{QueryCode: "InvalidAttributeName", MessageMember: "message", StatusCode: 400}, "InvalidAttributeValue": catalog.ErrorBinding{QueryCode: "InvalidAttributeValue", MessageMember: "message", StatusCode: 400}, "InvalidBatchEntryId": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.InvalidBatchEntryId", MessageMember: "message", StatusCode: 400}, "InvalidIdFormat": catalog.ErrorBinding{QueryCode: "InvalidIdFormat", MessageMember: "", StatusCode: 400}, "InvalidMessageContents": catalog.ErrorBinding{QueryCode: "InvalidMessageContents", MessageMember: "message", StatusCode: 400}, "InvalidSecurity": catalog.ErrorBinding{QueryCode: "InvalidSecurity", MessageMember: "message", StatusCode: 403}, "KmsAccessDenied": catalog.ErrorBinding{QueryCode: "KMS.AccessDeniedException", MessageMember: "message", StatusCode: 400}, "KmsDisabled": catalog.ErrorBinding{QueryCode: "KMS.DisabledException", MessageMember: "message", StatusCode: 400}, "KmsInvalidKeyUsage": catalog.ErrorBinding{QueryCode: "KMS.InvalidKeyUsageException", MessageMember: "message", StatusCode: 400}, "KmsInvalidState": catalog.ErrorBinding{QueryCode: "KMS.InvalidStateException", MessageMember: "message", StatusCode: 400}, "KmsNotFound": catalog.ErrorBinding{QueryCode: "KMS.NotFoundException", MessageMember: "message", StatusCode: 400}, "KmsOptInRequired": catalog.ErrorBinding{QueryCode: "KMS.OptInRequired", MessageMember: "message", StatusCode: 403}, "KmsThrottled": catalog.ErrorBinding{QueryCode: "KMS.ThrottlingException", MessageMember: "message", StatusCode: 400}, "MessageNotInflight": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.MessageNotInflight", MessageMember: "", StatusCode: 400}, "OverLimit": catalog.ErrorBinding{QueryCode: "OverLimit", MessageMember: "message", StatusCode: 403}, "QueueDeletedRecently": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.QueueDeletedRecently", MessageMember: "message", StatusCode: 400}, "QueueDoesNotExist": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.NonExistentQueue", MessageMember: "message", StatusCode: 400}, "QueueNameExists": catalog.ErrorBinding{QueryCode: "QueueAlreadyExists", MessageMember: "message", StatusCode: 400}, "ReceiptHandleIsInvalid": catalog.ErrorBinding{QueryCode: "ReceiptHandleIsInvalid", MessageMember: "message", StatusCode: 404}, "RequestThrottled": catalog.ErrorBinding{QueryCode: "RequestThrottled", MessageMember: "message", StatusCode: 403}, "TooManyEntriesInBatchRequest": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.TooManyEntriesInBatchRequest", MessageMember: "message", StatusCode: 400}, "UnsupportedOperation": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.UnsupportedOperation", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "sqs", SigningName: "sqs", Inventory: catalog.InventoryOf(api), TargetPrefix: "AmazonSQS", QueryCompatible: true, XMLNamespace: "http://queue.amazonaws.com/doc/2012-11-05/", Protocols: []string{"awsJson1_0", "awsQuery"}, Errors: map[string]catalog.ErrorBinding{"BatchEntryIdsNotDistinct": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.BatchEntryIdsNotDistinct", MessageMember: "message", StatusCode: 400}, "BatchRequestTooLong": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.BatchRequestTooLong", MessageMember: "message", StatusCode: 400}, "EmptyBatchRequest": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.EmptyBatchRequest", MessageMember: "message", StatusCode: 400}, "InvalidAddress": catalog.ErrorBinding{QueryCode: "InvalidAddress", MessageMember: "message", StatusCode: 404}, "InvalidAttributeName": catalog.ErrorBinding{QueryCode: "InvalidAttributeName", MessageMember: "message", StatusCode: 400}, "InvalidAttributeValue": catalog.ErrorBinding{QueryCode: "InvalidAttributeValue", MessageMember: "message", StatusCode: 400}, "InvalidBatchEntryId": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.InvalidBatchEntryId", MessageMember: "message", StatusCode: 400}, "InvalidIdFormat": catalog.ErrorBinding{QueryCode: "InvalidIdFormat", MessageMember: "", StatusCode: 400}, "InvalidMessageContents": catalog.ErrorBinding{QueryCode: "InvalidMessageContents", MessageMember: "message", StatusCode: 400}, "InvalidSecurity": catalog.ErrorBinding{QueryCode: "InvalidSecurity", MessageMember: "message", StatusCode: 403}, "KmsAccessDenied": catalog.ErrorBinding{QueryCode: "KMS.AccessDeniedException", MessageMember: "message", StatusCode: 400}, "KmsDisabled": catalog.ErrorBinding{QueryCode: "KMS.DisabledException", MessageMember: "message", StatusCode: 400}, "KmsInvalidKeyUsage": catalog.ErrorBinding{QueryCode: "KMS.InvalidKeyUsageException", MessageMember: "message", StatusCode: 400}, "KmsInvalidState": catalog.ErrorBinding{QueryCode: "KMS.InvalidStateException", MessageMember: "message", StatusCode: 400}, "KmsNotFound": catalog.ErrorBinding{QueryCode: "KMS.NotFoundException", MessageMember: "message", StatusCode: 400}, "KmsOptInRequired": catalog.ErrorBinding{QueryCode: "KMS.OptInRequired", MessageMember: "message", StatusCode: 403}, "KmsThrottled": catalog.ErrorBinding{QueryCode: "KMS.ThrottlingException", MessageMember: "message", StatusCode: 400}, "MessageNotInflight": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.MessageNotInflight", MessageMember: "", StatusCode: 400}, "OverLimit": catalog.ErrorBinding{QueryCode: "OverLimit", MessageMember: "message", StatusCode: 403}, "QueueDeletedRecently": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.QueueDeletedRecently", MessageMember: "message", StatusCode: 400}, "QueueDoesNotExist": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.NonExistentQueue", MessageMember: "message", StatusCode: 400}, "QueueNameExists": catalog.ErrorBinding{QueryCode: "QueueAlreadyExists", MessageMember: "message", StatusCode: 400}, "ReceiptHandleIsInvalid": catalog.ErrorBinding{QueryCode: "ReceiptHandleIsInvalid", MessageMember: "message", StatusCode: 404}, "RequestThrottled": catalog.ErrorBinding{QueryCode: "RequestThrottled", MessageMember: "message", StatusCode: 403}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "ResourceNotFoundException", MessageMember: "message", StatusCode: 404}, "TooManyEntriesInBatchRequest": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.TooManyEntriesInBatchRequest", MessageMember: "message", StatusCode: 400}, "UnsupportedOperation": catalog.ErrorBinding{QueryCode: "AWS.SimpleQueueService.UnsupportedOperation", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateQueue": {Name: "CreateQueue", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.CreateQueue", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateQueue", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateQueue(ctx, input.(*CreateQueueRequest))
 		}},
@@ -279,6 +333,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListQueueTags": {Name: "ListQueueTags", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.ListQueueTags", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListQueueTags", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListQueueTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListQueueTags(ctx, input.(*ListQueueTagsRequest))
+		}},
+		"StartMessageMoveTask": {Name: "StartMessageMoveTask", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.StartMessageMoveTask", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "StartMessageMoveTask", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &StartMessageMoveTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartMessageMoveTask(ctx, input.(*StartMessageMoveTaskRequest))
+		}},
+		"ListMessageMoveTasks": {Name: "ListMessageMoveTasks", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.ListMessageMoveTasks", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListMessageMoveTasks", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListMessageMoveTasksRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListMessageMoveTasks(ctx, input.(*ListMessageMoveTasksRequest))
+		}},
+		"CancelMessageMoveTask": {Name: "CancelMessageMoveTask", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.CancelMessageMoveTask", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CancelMessageMoveTask", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CancelMessageMoveTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CancelMessageMoveTask(ctx, input.(*CancelMessageMoveTaskRequest))
+		}},
+		"ListDeadLetterSourceQueues": {Name: "ListDeadLetterSourceQueues", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.ListDeadLetterSourceQueues", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListDeadLetterSourceQueues", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListDeadLetterSourceQueuesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListDeadLetterSourceQueues(ctx, input.(*ListDeadLetterSourceQueuesRequest))
 		}},
 	}}
 }

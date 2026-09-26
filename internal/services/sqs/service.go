@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"regexp"
 	"sort"
@@ -37,28 +38,42 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store    storage.Store
-	keys     *kms.Service
-	now      func() time.Time
-	ready    map[string]chan struct{}
+	store  storage.Store
+	keys   *kms.Service
+	logger *slog.Logger
+	now    func() time.Time
+	ready  map[string]chan struct{}
+	// stop ends long polls and the message mover, which closes done.
 	stop     chan struct{}
+	done     chan struct{}
 	mu       sync.Mutex
 	stopOnce sync.Once
 }
 
-// New returns SQS; keys checks the customer managed keys of encrypted queues.
+// New returns SQS and starts its message mover, which runs until Stop; keys
+// checks the customer managed keys of encrypted queues.
 func New(store storage.Store, keys *kms.Service) *Service {
-	return &Service{
-		store: store,
-		keys:  keys,
-		now:   time.Now,
-		ready: map[string]chan struct{}{},
-		stop:  make(chan struct{}),
+	s := &Service{
+		store:  store,
+		keys:   keys,
+		logger: slog.Default(),
+		now:    time.Now,
+		ready:  map[string]chan struct{}{},
+		stop:   make(chan struct{}),
+		done:   make(chan struct{}),
 	}
+	go s.mover()
+	return s
 }
 
-// Stop ends pending long polls with empty results so the server can drain.
-func (s *Service) Stop() { s.stopOnce.Do(func() { close(s.stop) }) }
+// Stop ends pending long polls with empty results so the server can drain,
+// and waits for the message mover.
+func (s *Service) Stop() {
+	s.stopOnce.Do(func() {
+		close(s.stop)
+		<-s.done
+	})
+}
 
 // watch returns a channel closed by the next change to the queue. Register it
 // before claiming so a change between the claim and the wait is not lost.
@@ -87,6 +102,8 @@ func (s *Service) notify(key string) {
 // RedrivePolicy and are empty when the queue has no dead-letter queue.
 type settings struct {
 	DeadLetterTargetArn string `json:",omitempty"`
+	// RedriveAllowPolicy is the canonical JSON policy; empty allows all sources.
+	RedriveAllowPolicy string `json:",omitempty"`
 	// KmsMasterKeyID turns on SSE-KMS; KmsDataKeyReusePeriodSeconds applies
 	// only then, and zero means the default. Without a KMS key, the queue uses
 	// SSE-SQS unless SqsManagedSseDisabled.
@@ -305,6 +322,12 @@ func (st *settings) apply(attributes map[string]string) error {
 			field, lo, hi = &st.KmsDataKeyReusePeriodSeconds, 60, 86400
 		case attrRedrivePolicy:
 			if guardErr := st.redrive(attributes[name]); guardErr != nil {
+				return guardErr
+			}
+
+			continue
+		case attrRedriveAllowPolicy:
+			if guardErr := st.allowRedrive(attributes[name]); guardErr != nil {
 				return guardErr
 			}
 

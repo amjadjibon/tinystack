@@ -30,12 +30,14 @@ const (
 )
 
 // message times are Unix milliseconds. GroupID, DedupID, and Sequence are set
-// only for FIFO queues.
+// only for FIFO queues, and SourceArn only for messages a redrive policy moved
+// to a dead-letter queue.
 type message struct {
 	Attributes      map[string]api.MessageAttributeValue `json:",omitempty"`
 	GroupID         string                               `json:",omitempty"`
 	DedupID         string                               `json:",omitempty"`
 	Sequence        string                               `json:",omitempty"`
+	SourceArn       string                               `json:",omitempty"`
 	ID              string
 	Body            string
 	BodyMD5         string
@@ -444,6 +446,10 @@ func render(msg *message, opts *receiveOptions) api.Message {
 		system["SequenceNumber"] = msg.Sequence
 	}
 
+	if msg.SourceArn != "" {
+		system["DeadLetterQueueSourceArn"] = msg.SourceArn
+	}
+
 	for name, v := range system {
 		if opts.system["All"] || opts.system[name] {
 			if out.Attributes == nil {
@@ -471,10 +477,11 @@ func render(msg *message, opts *receiveOptions) api.Message {
 	return out
 }
 
-// deadLetter is a queue's dead-letter queue, loaded on first use during a claim.
+// deadLetter is a queue's dead-letter queue, loaded on first use during a
+// claim; source is the ARN of the queue being received from.
 type deadLetter struct {
-	queue *queue
-	key   string
+	queue       *queue
+	key, source string
 }
 
 // accept moves msg to the dead-letter queue when it has already been received
@@ -502,6 +509,7 @@ func (d *deadLetter) accept(tx storage.WriteTx, st *settings, msg *message, now 
 	moved := *msg
 	moved.Receipt = ""
 	moved.VisibleAt = now
+	moved.SourceArn = d.source
 	d.queue.Messages = append(d.queue.Messages, moved)
 	return true, nil
 }
@@ -524,7 +532,7 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 			visibility = *opts.visibility
 		}
 
-		var dlq deadLetter
+		dlq := deadLetter{source: keyARN(key)}
 		blocked := q.inFlightGroups(now)
 		kept := q.Messages[:0]
 		for i := range q.Messages {

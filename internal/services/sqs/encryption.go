@@ -20,6 +20,7 @@ const (
 // GetQueueAttributes omits instead of rejecting.
 var optionalAttributes = map[string]bool{
 	attrRedrivePolicy:             true,
+	attrRedriveAllowPolicy:        true,
 	attrFifoQueue:                 true,
 	attrContentBasedDeduplication: true,
 	attrKmsMasterKeyID:            true,

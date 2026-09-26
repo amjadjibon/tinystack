@@ -93,6 +93,8 @@ func newStartCommand() *cobra.Command {
 			defer tables.Stop()
 			keys := kms.New(store)
 			queues := sqs.New(store, keys)
+			// Stop ends the message mover, which writes to the store.
+			defer queues.Stop()
 			logGroups := logs.New(store)
 			functions := lambda.New(
 				store,

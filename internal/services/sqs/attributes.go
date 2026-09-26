@@ -81,6 +81,11 @@ func checkTarget(tx storage.ReadTx, key string, st *settings) error {
 		return invalidRedrive("The dead-letter queue must be the same type as the source queue.")
 	}
 
+	if !q.Settings.allows(keyARN(key)) {
+		return invalidRedrive("The RedriveAllowPolicy of " + st.DeadLetterTargetArn + " does not allow this queue " +
+			"to use it as a dead-letter queue.")
+	}
+
 	return nil
 }
 
@@ -124,6 +129,10 @@ func (q *queue) attributes(key string, now int64) map[string]string {
 	if st.KmsMasterKeyID != "" {
 		out[attrKmsMasterKeyID] = st.KmsMasterKeyID
 		out[attrKmsDataKeyReusePeriod] = format(st.reusePeriod())
+	}
+
+	if st.RedriveAllowPolicy != "" {
+		out[attrRedriveAllowPolicy] = st.RedriveAllowPolicy
 	}
 
 	if st.DeadLetterTargetArn != "" {
