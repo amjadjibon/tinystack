@@ -295,6 +295,44 @@ resource "aws_iam_access_key" "deployer" {
   user = aws_iam_user.deployer.name
 }
 
+resource "aws_iam_user_policy" "deployer" {
+  name = "deploy"
+  user = aws_iam_user.deployer.name
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Effect = "Allow", Action = ["lambda:UpdateFunctionCode"], Resource = "*" }]
+  })
+}
+
+resource "aws_iam_user_policy_attachment" "deployer" {
+  user       = aws_iam_user.deployer.name
+  policy_arn = aws_iam_policy.assets.arn
+}
+
+resource "aws_iam_group" "deployers" {
+  name = "deployers"
+  path = "/ci/"
+}
+
+resource "aws_iam_user_group_membership" "deployer" {
+  user   = aws_iam_user.deployer.name
+  groups = [aws_iam_group.deployers.name]
+}
+
+resource "aws_iam_group_policy" "deployers" {
+  name  = "logs"
+  group = aws_iam_group.deployers.name
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Effect = "Allow", Action = ["logs:GetLogEvents"], Resource = "*" }]
+  })
+}
+
+resource "aws_iam_group_policy_attachment" "deployers" {
+  group      = aws_iam_group.deployers.name
+  policy_arn = aws_iam_policy.assets.arn
+}
+
 resource "aws_iam_role" "lambda" {
   name        = "lambda"
   description = "Runs ${var.team} functions"
