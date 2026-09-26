@@ -116,6 +116,8 @@ func newStartCommand() *cobra.Command {
 			rules := eventbridge.New(store, queues, topics, functions, deliveries)
 			// Stop ends the scheduler, which writes to the store.
 			defer rules.Stop()
+			buckets := s3.New(store, queues, topics, functions, rules, deliveries)
+			functions.UseObjects(buckets.Object)
 			roles := iam.New(store)
 			tokens := sts.New(store, roles)
 			handler, err := gateway.New(
@@ -125,7 +127,7 @@ func newStartCommand() *cobra.Command {
 				dynamodbstreamsapi.Descriptor(tables.Streams()),
 				sqsapi.Descriptor(queues),
 				snsapi.Descriptor(topics),
-				s3api.Descriptor(s3.New(store, queues, topics, functions, rules, deliveries)),
+				s3api.Descriptor(buckets),
 				lambdaapi.Descriptor(functions),
 				eventbridgeapi.Descriptor(rules),
 				iamapi.Descriptor(roles),

@@ -189,10 +189,12 @@ func TestLambdaFunctions(t *testing.T) {
 		Role:         aws.String("arn:aws:iam::000000000000:role/r"),
 		Runtime:      lambdatypes.RuntimePython312,
 		Handler:      aws.String("app.echo"),
-		Code:         &lambdatypes.FunctionCode{S3Bucket: aws.String("b"), S3Key: aws.String("k")},
+		Code: &lambdatypes.FunctionCode{
+			ZipFile: zipOf(t, "app.py", ""), SourceKMSKeyArn: aws.String("arn:aws:kms:us-east-1:000000000000:key/k"),
+		},
 	})
 	if _, status := lambdaCode(err); status != http.StatusNotImplemented {
-		t.Fatalf("S3 code: %v", err)
+		t.Fatalf("SourceKMSKeyArn: %v", err)
 	}
 
 	_, err = c.GetFunction(

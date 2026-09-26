@@ -1270,7 +1270,10 @@
       ],
       "FunctionCode": [
         "ZipFile",
-        "ImageUri"
+        "ImageUri",
+        "S3Bucket",
+        "S3Key",
+        "S3ObjectVersion"
       ],
       "Environment": [
         "Variables"
@@ -1413,7 +1416,10 @@
         "Architectures",
         "DryRun",
         "RevisionId",
-        "Publish"
+        "Publish",
+        "S3Bucket",
+        "S3Key",
+        "S3ObjectVersion"
       ],
       "UpdateFunctionConfigurationRequest": [
         "FunctionName",

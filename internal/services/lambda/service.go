@@ -13,6 +13,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -66,7 +67,9 @@ type Service struct {
 	secretKeys map[string]string
 	// deliveries records asynchronous invocations and mapping batches.
 	deliveries *delivery.Log
-	now        func() time.Time
+	// objects reads deployment packages from S3; see UseObjects.
+	objects ObjectReader
+	now     func() time.Time
 	// ctx ends background work (async invocations and pollers) on Stop.
 	ctx     context.Context
 	cancel  context.CancelFunc
@@ -109,6 +112,41 @@ func New(
 		cancel:     cancel,
 		pollers:    map[string]context.CancelFunc{},
 	}
+}
+
+// ObjectReader returns the bytes of an S3 object, or of one version when
+// version is not empty, in the caller's account and region.
+type ObjectReader func(ctx context.Context, bucket, key, version string) ([]byte, error)
+
+// UseObjects lets functions take their code from S3. S3 notifies Lambda, so it
+// is created after Lambda and registered here; call it before serving requests.
+func (s *Service) UseObjects(read ObjectReader) { s.objects = read }
+
+// deploymentPackage returns the Zip package a request gives: ZipFile, or the
+// S3 object that S3Bucket, S3Key, and S3ObjectVersion name, which is copied
+// when the request is made, so later changes to the object do not affect the
+// function.
+func (s *Service) deploymentPackage(ctx context.Context, zipFile []byte, bucket, key, version *string) ([]byte, error) {
+	if bucket == nil && key == nil && version == nil {
+		return zipFile, nil
+	}
+
+	switch {
+	case len(zipFile) > 0:
+		return nil, invalid("Please don't provide both S3 and ZipFile")
+	case value(bucket) == "" || value(key) == "":
+		return nil, invalid("Please provide both S3Bucket and S3Key")
+	case s.objects == nil:
+		return nil, invalid("Code from S3 is not available")
+	}
+
+	data, err := s.objects(ctx, *bucket, *key, value(version))
+	if s3Err, ok := errors.AsType[*awserror.Error](err); ok {
+		return nil, invalid("Error occurred while GetObject. S3 Error Code: %s. S3 Error Message: %s",
+			s3Err.Code, s3Err.Message)
+	}
+
+	return data, err
 }
 
 // Stop ends pollers and async invocations, waits for them, and then releases
@@ -571,8 +609,8 @@ func (fn *function) setCode(zipFile []byte, imageURI *string) ([]byte, error) {
 }
 
 // newFunction validates CreateFunction input into a function record and its
-// deployment package.
-func newFunction(in *api.CreateFunctionRequest) (*function, []byte, error) {
+// deployment package; zipFile is the Zip package the request gives.
+func newFunction(in *api.CreateFunctionRequest, zipFile []byte) (*function, []byte, error) {
 	fn := &function{
 		Name:        value(in.FunctionName),
 		PackageType: value(in.PackageType),
@@ -619,7 +657,7 @@ func newFunction(in *api.CreateFunctionRequest) (*function, []byte, error) {
 		return nil, nil, invalid("Code is required")
 	}
 
-	code, err := fn.setCode(in.Code.ZipFile, in.Code.ImageUri)
+	code, err := fn.setCode(zipFile, in.Code.ImageUri)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -636,7 +674,16 @@ func (s *Service) CreateFunction(
 		return nil, err
 	}
 
-	fn, code, err := newFunction(in)
+	var zipFile []byte
+	if in.Code != nil {
+		zipFile, err = s.deploymentPackage(ctx, in.Code.ZipFile, in.Code.S3Bucket, in.Code.S3Key,
+			in.Code.S3ObjectVersion)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	fn, code, err := newFunction(in, zipFile)
 	if err != nil {
 		return nil, err
 	}

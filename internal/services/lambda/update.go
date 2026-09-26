@@ -7,12 +7,18 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// UpdateFunctionCode replaces the code of $LATEST. Warm environments of the
-// old code are released. With DryRun it only validates.
+// UpdateFunctionCode replaces the code of $LATEST, from ZipFile, an S3 object,
+// or an image. Warm environments of the old code are released. With DryRun it
+// only validates.
 func (s *Service) UpdateFunctionCode(
 	ctx context.Context,
 	in *api.UpdateFunctionCodeRequest,
 ) (*api.FunctionConfiguration, error) {
+	zipFile, err := s.deploymentPackage(ctx, in.ZipFile, in.S3Bucket, in.S3Key, in.S3ObjectVersion)
+	if err != nil {
+		return nil, err
+	}
+
 	return s.update(ctx, in.FunctionName, in.RevisionId, value(in.DryRun), value(in.Publish), func(
 		fn *function,
 	) ([]byte, error) {
@@ -20,7 +26,7 @@ func (s *Service) UpdateFunctionCode(
 			return nil, err
 		}
 
-		return fn.setCode(in.ZipFile, in.ImageUri)
+		return fn.setCode(zipFile, in.ImageUri)
 	})
 }
 

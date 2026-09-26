@@ -113,6 +113,8 @@ func serverStore(
 
 	snsService := topics.New(store, sqsService, functions, deliveries)
 	rules := eventbridge.New(store, sqsService, snsService, functions, deliveries)
+	objects := buckets.New(store, sqsService, snsService, functions, rules, deliveries)
+	functions.UseObjects(objects.Object)
 	roles := principals.New(store)
 	stsService := tokens.New(store, roles)
 	h, err := gateway.New(
@@ -122,7 +124,7 @@ func serverStore(
 		dynamodbstreamsapi.Descriptor(tables.Streams()),
 		sqsapi.Descriptor(sqsService),
 		snsapi.Descriptor(snsService),
-		s3api.Descriptor(buckets.New(store, sqsService, snsService, functions, rules, deliveries)),
+		s3api.Descriptor(objects),
 		lambdaapi.Descriptor(functions),
 		eventbridgeapi.Descriptor(rules),
 		iamapi.Descriptor(roles),

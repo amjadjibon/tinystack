@@ -294,6 +294,23 @@ func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *stri
 	return &f, nil
 }
 
+// Object returns the bytes of the current object, or of one version, in the
+// caller's account and region, for services that read S3 in-process, such as
+// Lambda deployment packages.
+func (s *Service) Object(ctx context.Context, bucket, key, version string) ([]byte, error) {
+	t := target{bucket: &bucket, key: &key}
+	if version != "" {
+		t.version = &version
+	}
+
+	f, err := s.read(ctx, t, nil, nil, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return f.body, nil
+}
+
 func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api.GetObjectOutput, error) {
 	f, err := s.read(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, in.IfMatch,
 		in.IfNoneMatch, true)
