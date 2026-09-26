@@ -1,7 +1,7 @@
 // Package eventbridge implements event buses with their rules and targets,
 // without HTTP dependencies. PutEvents matches events against the rule
 // patterns of their bus and delivers them to SQS, SNS, and Lambda targets
-// in-process.
+// in-process; the scheduler fires scheduled rules (schedule.go).
 //
 // Each rule, with its targets, is one record under
 // "<account>/<region>/eventbridge/rule/<name>" on the default bus, which every
@@ -16,8 +16,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -51,9 +53,17 @@ type Service struct {
 	topics     *sns.Service
 	functions  *lambda.Service
 	deliveries *delivery.Log
+	logger     *slog.Logger
 	now        func() time.Time
+	// ctx ends the scheduler on Stop.
+	ctx    context.Context
+	cancel context.CancelFunc
+	done   chan struct{}
+	stop   sync.Once
 }
 
+// New returns an EventBridge service and starts its scheduler, which runs
+// until Stop.
 func New(
 	store storage.Store,
 	queues *sqs.Service,
@@ -61,14 +71,29 @@ func New(
 	functions *lambda.Service,
 	deliveries *delivery.Log,
 ) *Service {
-	return &Service{
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &Service{
 		store:      store,
 		queues:     queues,
 		topics:     topics,
 		functions:  functions,
 		deliveries: deliveries,
+		logger:     slog.Default(),
 		now:        time.Now,
+		ctx:        ctx,
+		cancel:     cancel,
+		done:       make(chan struct{}),
 	}
+	go s.scheduler()
+	return s
+}
+
+// Stop ends the scheduler and waits for it. Later calls return at once.
+func (s *Service) Stop() {
+	s.stop.Do(func() {
+		s.cancel()
+		<-s.done
+	})
 }
 
 type target struct {
@@ -83,9 +108,11 @@ type target struct {
 
 type rule struct {
 	// Bus is the custom bus of the rule; it is empty on the default bus.
-	Bus         string `json:",omitempty"`
-	Name        string
-	Pattern     string
+	Bus     string `json:",omitempty"`
+	Name    string
+	Pattern string `json:",omitempty"`
+	// Schedule is the rule's ScheduleExpression; only default bus rules have one.
+	Schedule    string `json:",omitempty"`
 	State       string
 	Description string            `json:",omitempty"`
 	RoleARN     string            `json:",omitempty"`
@@ -272,8 +299,8 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		return nil, err
 	}
 
-	text := value(in.EventPattern)
-	if text == "" {
+	text, expression := value(in.EventPattern), value(in.ScheduleExpression)
+	if text == "" && expression == "" {
 		return nil, invalid("Parameter(s) EventPattern or ScheduleExpression must be specified.")
 	}
 
@@ -281,8 +308,20 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		return nil, invalid("EventPattern must be at most 4096 characters.")
 	}
 
-	if _, err = compilePattern(text); err != nil {
-		return nil, err
+	if text != "" {
+		if _, err = compilePattern(text); err != nil {
+			return nil, err
+		}
+	}
+
+	if expression != "" {
+		if ref.bus != defaultBus {
+			return nil, invalid("ScheduleExpression is supported only on the default event bus.")
+		}
+
+		if _, err = parseSchedule(expression); err != nil {
+			return nil, err
+		}
 	}
 
 	state := value(in.State)
@@ -327,10 +366,14 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 			}
 		}
 
-		r.Pattern, r.State = text, state
+		r.Pattern, r.Schedule, r.State = text, expression, state
 		r.Description, r.RoleARN = value(in.Description), value(in.RoleArn)
 		if tagErr := mergeTags(r, tags); tagErr != nil {
 			return tagErr
+		}
+
+		if scheduleErr := reschedule(tx, ref.scope, r, s.now()); scheduleErr != nil {
+			return scheduleErr
 		}
 
 		return save(tx, ref.key, r)
@@ -360,14 +403,15 @@ func (s *Service) DescribeRule(ctx context.Context, in *api.DescribeRuleRequest)
 
 	out := r.describe(ref.scope)
 	return &api.DescribeRuleResponse{
-		Name:         out.Name,
-		Arn:          out.Arn,
-		EventPattern: out.EventPattern,
-		State:        out.State,
-		Description:  out.Description,
-		RoleArn:      out.RoleArn,
-		EventBusName: out.EventBusName,
-		CreatedBy:    new(ref.scope.AccountID),
+		Name:               out.Name,
+		Arn:                out.Arn,
+		EventPattern:       out.EventPattern,
+		ScheduleExpression: out.ScheduleExpression,
+		State:              out.State,
+		Description:        out.Description,
+		RoleArn:            out.RoleArn,
+		EventBusName:       out.EventBusName,
+		CreatedBy:          new(ref.scope.AccountID),
 	}, nil
 }
 
@@ -384,10 +428,17 @@ func (r *rule) describe(scope request.Scope) api.Rule {
 	out := api.Rule{
 		Name:         new(r.Name),
 		Arn:          new(ruleARN(scope, r.bus(), r.Name)),
-		EventPattern: new(r.Pattern),
 		State:        new(r.State),
 		EventBusName: new(r.bus()),
 	}
+	if r.Pattern != "" {
+		out.EventPattern = new(r.Pattern)
+	}
+
+	if r.Schedule != "" {
+		out.ScheduleExpression = new(r.Schedule)
+	}
+
 	if r.Description != "" {
 		out.Description = new(r.Description)
 	}
@@ -421,6 +472,7 @@ func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleRequest) (*a
 		}
 
 		tx.Delete(ref.key)
+		tx.Delete(scheduleKey(ref.scope, ref.name))
 		return nil
 	})
 	if err != nil {
@@ -485,15 +537,26 @@ func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api
 	return out, nil
 }
 
+// setState enables or disables a rule. Enabling a scheduled rule starts its
+// schedule again from now; enabling an enabled rule changes nothing.
 func (s *Service) setState(ctx context.Context, name, bus *string, state string) error {
 	ref, err := resolveRule(ctx, name, bus)
 	if err != nil {
 		return err
 	}
 
-	return s.update(ctx, &ref, func(r *rule) error {
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		r, loadErr := loadRule(tx, &ref)
+		if loadErr != nil || r.State == state {
+			return loadErr
+		}
+
 		r.State = state
-		return nil
+		if scheduleErr := reschedule(tx, ref.scope, r, s.now()); scheduleErr != nil {
+			return scheduleErr
+		}
+
+		return save(tx, ref.key, r)
 	})
 }
 

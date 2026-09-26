@@ -1487,7 +1487,8 @@
         "Description",
         "RoleArn",
         "EventBusName",
-        "Tags"
+        "Tags",
+        "ScheduleExpression"
       ],
       "PutRuleResponse": [
         "RuleArn"
@@ -1504,7 +1505,8 @@
         "Description",
         "RoleArn",
         "EventBusName",
-        "CreatedBy"
+        "CreatedBy",
+        "ScheduleExpression"
       ],
       "DeleteRuleRequest": [
         "Name",
@@ -1528,7 +1530,8 @@
         "State",
         "Description",
         "RoleArn",
-        "EventBusName"
+        "EventBusName",
+        "ScheduleExpression"
       ],
       "EnableRuleRequest": [
         "Name",

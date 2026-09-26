@@ -36,13 +36,14 @@ type Tag struct {
 }
 
 type PutRuleRequest struct {
-	Name         *string `json:"Name,omitempty"`
-	EventPattern *string `json:"EventPattern,omitempty"`
-	State        *string `json:"State,omitempty"`
-	Description  *string `json:"Description,omitempty"`
-	RoleArn      *string `json:"RoleArn,omitempty"`
-	EventBusName *string `json:"EventBusName,omitempty"`
-	Tags         []Tag   `json:"Tags,omitempty"`
+	Name               *string `json:"Name,omitempty"`
+	EventPattern       *string `json:"EventPattern,omitempty"`
+	State              *string `json:"State,omitempty"`
+	Description        *string `json:"Description,omitempty"`
+	RoleArn            *string `json:"RoleArn,omitempty"`
+	EventBusName       *string `json:"EventBusName,omitempty"`
+	Tags               []Tag   `json:"Tags,omitempty"`
+	ScheduleExpression *string `json:"ScheduleExpression,omitempty"`
 }
 
 type PutRuleResponse struct {
@@ -55,14 +56,15 @@ type DescribeRuleRequest struct {
 }
 
 type DescribeRuleResponse struct {
-	Name         *string `json:"Name,omitempty"`
-	Arn          *string `json:"Arn,omitempty"`
-	EventPattern *string `json:"EventPattern,omitempty"`
-	State        *string `json:"State,omitempty"`
-	Description  *string `json:"Description,omitempty"`
-	RoleArn      *string `json:"RoleArn,omitempty"`
-	EventBusName *string `json:"EventBusName,omitempty"`
-	CreatedBy    *string `json:"CreatedBy,omitempty"`
+	Name               *string `json:"Name,omitempty"`
+	Arn                *string `json:"Arn,omitempty"`
+	EventPattern       *string `json:"EventPattern,omitempty"`
+	State              *string `json:"State,omitempty"`
+	Description        *string `json:"Description,omitempty"`
+	RoleArn            *string `json:"RoleArn,omitempty"`
+	EventBusName       *string `json:"EventBusName,omitempty"`
+	CreatedBy          *string `json:"CreatedBy,omitempty"`
+	ScheduleExpression *string `json:"ScheduleExpression,omitempty"`
 }
 
 type DeleteRuleOutput struct{}
@@ -81,13 +83,14 @@ type ListRulesRequest struct {
 }
 
 type Rule struct {
-	Name         *string `json:"Name,omitempty"`
-	Arn          *string `json:"Arn,omitempty"`
-	EventPattern *string `json:"EventPattern,omitempty"`
-	State        *string `json:"State,omitempty"`
-	Description  *string `json:"Description,omitempty"`
-	RoleArn      *string `json:"RoleArn,omitempty"`
-	EventBusName *string `json:"EventBusName,omitempty"`
+	Name               *string `json:"Name,omitempty"`
+	Arn                *string `json:"Arn,omitempty"`
+	EventPattern       *string `json:"EventPattern,omitempty"`
+	State              *string `json:"State,omitempty"`
+	Description        *string `json:"Description,omitempty"`
+	RoleArn            *string `json:"RoleArn,omitempty"`
+	EventBusName       *string `json:"EventBusName,omitempty"`
+	ScheduleExpression *string `json:"ScheduleExpression,omitempty"`
 }
 
 type ListRulesResponse struct {

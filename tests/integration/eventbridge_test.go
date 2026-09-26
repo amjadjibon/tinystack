@@ -175,10 +175,10 @@ func TestEventBridgeValidation(t *testing.T) {
 		code(t, err, want)
 	}
 
-	// Scheduled rules are not implemented, so the unmodeled field fails.
+	// A rate of more than one takes a plural unit.
 	_, err := c.PutRule(ctx, &eventbridge.PutRuleInput{
 		Name:               aws.String("cron"),
-		ScheduleExpression: aws.String("rate(5 minutes)"),
+		ScheduleExpression: aws.String("rate(5 minute)"),
 	})
 	code(t, err, "ValidationException")
 	_, err = c.PutRule(ctx, &eventbridge.PutRuleInput{

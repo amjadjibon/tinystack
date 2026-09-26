@@ -141,6 +141,7 @@ func serverStore(
 
 	s = httptest.NewServer(h)
 	return s, func() {
+		rules.Stop()
 		sqsService.Stop()
 		functions.Stop()
 		tables.Stop()

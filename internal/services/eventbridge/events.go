@@ -193,7 +193,8 @@ func (s *Service) enabledRules(ctx context.Context, scope request.Scope, ref *st
 				return loadErr
 			}
 
-			if r.State != stateEnabled || len(r.Targets) == 0 {
+			// A rule with only a schedule matches no events.
+			if r.State != stateEnabled || r.Pattern == "" || len(r.Targets) == 0 {
 				continue
 			}
 

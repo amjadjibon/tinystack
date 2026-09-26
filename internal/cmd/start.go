@@ -112,6 +112,8 @@ func newStartCommand() *cobra.Command {
 
 			topics := sns.New(store, queues, functions, deliveries)
 			rules := eventbridge.New(store, queues, topics, functions, deliveries)
+			// Stop ends the scheduler, which writes to the store.
+			defer rules.Stop()
 			roles := iam.New(store)
 			tokens := sts.New(store, roles)
 			handler, err := gateway.New(
@@ -161,6 +163,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(queues.Stop)
 			server.RegisterOnShutdown(tables.Stop)
 			server.RegisterOnShutdown(functions.Stop)
+			server.RegisterOnShutdown(rules.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)
