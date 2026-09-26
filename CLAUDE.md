@@ -144,7 +144,10 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `Stop` like the DynamoDB sweeper) that reads the partition-wide `aws/eventbridge/schedule/<account>/<region>/<rule>`
   index of next fire times and advances an entry in the transaction that claims its run, matches `PutEvents` entries against compiled patterns (`services/pattern`, shared with SNS filter policies through
 a per-service `Dialect`), and delivers synchronously through
-  `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. SSM Parameter Store keeps each
+  `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. A delivery that fails with a
+  retryable error (`retry.go`) is stored in the partition-wide `aws/eventbridge/retry/<account>/<region>/<ID>` index,
+  which the same scheduler retries with backoff (claiming each attempt with a lease, so a crash retries it later) until
+  the target's `RetryPolicy` runs out; then, or for any other failure, the event goes to its SQS dead-letter queue. SSM Parameter Store keeps each
   parameter under `…/ssm/p/<name>` (current version number, labels, tags) and each immutable version under
   `…/ssm/v/<name>:<zero-padded version>`, so path and history listings read keys in order; SecureString values are
   stored as plain text and only a random placeholder is returned without decryption. Secrets Manager keeps each
