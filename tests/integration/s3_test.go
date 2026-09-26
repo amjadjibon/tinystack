@@ -215,7 +215,7 @@ func TestS3Objects(t *testing.T) {
 		{&s3.GetObjectInput{Key: aws.String("missing")}, "NoSuchKey", 404},
 		{&s3.GetObjectInput{Key: aws.String("dir/a b.txt"), IfMatch: aws.String(`"nope"`)}, "PreconditionFailed", 412},
 		{&s3.GetObjectInput{Key: aws.String("dir/a b.txt"), IfNoneMatch: &etag}, "NotModified", 304},
-		{&s3.GetObjectInput{Key: aws.String("dir/a b.txt"), VersionId: aws.String("v1")}, "NotImplemented", 501},
+		{&s3.GetObjectInput{Key: aws.String("dir/a b.txt"), VersionId: aws.String("v1")}, "NoSuchVersion", 404},
 	} {
 		tc.in.Bucket = bucket
 		_, getErr := c.GetObject(ctx, tc.in)

@@ -4,7 +4,8 @@
 // "aws/s3/buckets/<name>" maps each name to its owning account and region and
 // is written in the same transaction as the bucket's regional metadata under
 // "<account>/<region>/s3/<name>". Objects live below that regional key: object
-// metadata under ".../o/<key>" and object bytes under ".../d/<key>".
+// metadata under ".../o/<key>" and object bytes under ".../d/<key>", with
+// noncurrent versions and delete markers as described in versions.go.
 package s3
 
 import (
@@ -81,7 +82,9 @@ type bucketIndex struct {
 type bucketMeta struct {
 	Tags          map[string]string              `json:",omitempty"`
 	Notifications *api.NotificationConfiguration `json:",omitempty"`
-	CreatedAt     int64
+	// Versioning is "", "Enabled", or "Suspended".
+	Versioning string `json:",omitempty"`
+	CreatedAt  int64
 }
 
 func value[T any](p *T) (v T) {
@@ -272,7 +275,7 @@ func (s *Service) DeleteBucket(ctx context.Context, in *api.DeleteBucketRequest)
 			return resolveErr
 		}
 
-		if len(tx.Keys(key+"/o/")) > 0 || len(tx.Keys(key+"/u/")) > 0 {
+		if len(tx.Keys(key+"/o/")) > 0 || len(tx.Keys(key+"/v/")) > 0 || len(tx.Keys(key+"/u/")) > 0 {
 			return fail(http.StatusConflict, "BucketNotEmpty", "The bucket you tried to delete is not empty")
 		}
 

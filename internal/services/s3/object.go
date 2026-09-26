@@ -34,12 +34,16 @@ const (
 
 // object is the stored metadata of one object; its bytes are a separate record.
 type object struct {
-	Metadata     map[string]string `json:",omitempty"`
-	Tags         map[string]string `json:",omitempty"`
-	ETag         string
-	ContentType  string
+	Metadata    map[string]string `json:",omitempty"`
+	Tags        map[string]string `json:",omitempty"`
+	ETag        string
+	ContentType string
+	// VersionID is empty for the null version.
+	VersionID    string `json:",omitempty"`
 	Size         int64
 	LastModified int64
+	// DeleteMarker marks a delete marker, which only a history record holds.
+	DeleteMarker bool `json:",omitempty"`
 }
 
 // crc64NVME is the CRC-64/NVME table S3 uses for CRC64NVME checksums.
@@ -177,6 +181,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 	}
 
 	var cfg *api.NotificationConfiguration
+	var status string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
@@ -201,85 +206,105 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 			return preconditionFailed()
 		}
 
-		tx.Put(key+"/d/"+*in.Key, in.Body)
-		return writeJSON(tx, key+"/o/"+*in.Key, &obj)
+		var putErr error
+		status, putErr = putCurrent(tx, key, *in.Key, &obj, in.Body)
+		return putErr
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	version := reported(status, &obj)
 	s.notify(ctx, m, cfg, objectEvent{
-		name:   "ObjectCreated:Put",
-		reason: "PutObject",
-		bucket: *in.Bucket,
-		key:    *in.Key,
-		etag:   obj.ETag,
-		size:   obj.Size,
+		name:    "ObjectCreated:Put",
+		reason:  "PutObject",
+		bucket:  *in.Bucket,
+		key:     *in.Key,
+		etag:    obj.ETag,
+		version: value(version),
+		size:    obj.Size,
 	})
-	return &api.PutObjectOutput{ETag: new(obj.ETag)}, nil
+	return &api.PutObjectOutput{ETag: new(obj.ETag), VersionId: version}, nil
 }
 
-// read loads an object and applies If-Match and If-None-Match.
-func (s *Service) read(
-	ctx context.Context,
-	bucket, key, ifMatch, ifNoneMatch, owner *string,
-	withBody bool,
-) (*object, []byte, error) {
+// target names an object, or one version of it, in a request.
+type target struct {
+	bucket, key, version, owner *string
+}
+
+// found is an object version read by a request.
+type found struct {
+	version *string // the version ID to report, if any
+	body    []byte
+	obj     object
+}
+
+// read loads the current object, or the named version, and applies If-Match
+// and If-None-Match.
+func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *string, withBody bool) (*found, error) {
 	m, err := identity(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	if guardErr := validKey(key); guardErr != nil {
-		return nil, nil, guardErr
+	if guardErr := validKey(t.key); guardErr != nil {
+		return nil, guardErr
 	}
 
-	var obj object
-	var body []byte
+	var f found
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		prefix, resolveErr := resolve(tx, m, bucket, owner)
+		prefix, resolveErr := resolve(tx, m, t.bucket, t.owner)
 		if resolveErr != nil {
 			return resolveErr
 		}
 
-		found, readErr := readJSON(tx, prefix+"/o/"+*key, &obj)
+		status, readErr := versioning(tx, prefix)
 		if readErr != nil {
 			return readErr
 		}
 
-		if !found {
-			return noSuchKey()
+		obj, data, readErr := locate(tx, prefix, *t.key, value(t.version))
+		if readErr != nil {
+			return readErr
+		}
+
+		f.obj, f.version = obj, reported(status, &obj)
+		if t.version != nil {
+			f.version = t.version
 		}
 
 		if withBody {
-			body, _ = tx.Get(prefix + "/d/" + *key)
+			f.body, _ = tx.Get(data)
 		}
 
 		return nil
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	if ifMatch != nil && !matches(*ifMatch, obj.ETag) {
-		return nil, nil, preconditionFailed()
+	if ifMatch != nil && !matches(*ifMatch, f.obj.ETag) {
+		return nil, preconditionFailed()
 	}
 
-	if ifNoneMatch != nil && matches(*ifNoneMatch, obj.ETag) {
-		return nil, nil, fail(http.StatusNotModified, "NotModified", "Not Modified")
+	if ifNoneMatch != nil && matches(*ifNoneMatch, f.obj.ETag) {
+		return nil, fail(http.StatusNotModified, "NotModified", "Not Modified")
 	}
 
-	return &obj, body, nil
+	return &f, nil
 }
 
 func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api.GetObjectOutput, error) {
-	obj, body, err := s.read(ctx, in.Bucket, in.Key, in.IfMatch, in.IfNoneMatch, in.ExpectedBucketOwner, true)
+	f, err := s.read(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, in.IfMatch,
+		in.IfNoneMatch, true)
 	if err != nil {
 		return nil, err
 	}
 
+	obj, body := &f.obj, f.body
 	out := &api.GetObjectOutput{
 		Body:          body,
+		VersionId:     f.version,
 		ContentLength: new(obj.Size),
 		ContentType:   new(obj.ContentType),
 		ETag:          new(obj.ETag),
@@ -306,12 +331,15 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 }
 
 func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*api.HeadObjectOutput, error) {
-	obj, _, err := s.read(ctx, in.Bucket, in.Key, in.IfMatch, in.IfNoneMatch, in.ExpectedBucketOwner, false)
+	f, err := s.read(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, in.IfMatch,
+		in.IfNoneMatch, false)
 	if err != nil {
 		return nil, err
 	}
 
+	obj := &f.obj
 	out := &api.HeadObjectOutput{
+		VersionId:     f.version,
 		ContentLength: new(obj.Size),
 		ContentType:   new(obj.ContentType),
 		ETag:          new(obj.ETag),
@@ -331,7 +359,9 @@ func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*a
 	return out, nil
 }
 
-// DeleteObject removes an object; deleting a missing key succeeds.
+// DeleteObject removes an object, or hides it behind a delete marker in a
+// versioned bucket; naming a version deletes that version permanently.
+// Deleting a missing key or version succeeds.
 func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest) (*api.DeleteObjectOutput, error) {
 	m, err := identity(ctx)
 	if err != nil {
@@ -343,32 +373,50 @@ func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest)
 	}
 
 	var cfg *api.NotificationConfiguration
+	var r removal
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
 			return resolveErr
 		}
 
-		// Only a deletion that removed an object is notified.
-		if _, found := tx.Get(key + "/o/" + *in.Key); found {
-			var cfgErr error
-			if cfg, cfgErr = notifications(tx, key); cfgErr != nil {
-				return cfgErr
-			}
+		var deleteErr error
+		if in.VersionId != nil {
+			r, deleteErr = deleteVersion(tx, key, *in.Key, *in.VersionId)
+		} else {
+			r, deleteErr = deleteCurrent(tx, key, *in.Key, s.now().UnixMilli())
 		}
 
-		tx.Delete(key + "/o/" + *in.Key)
-		tx.Delete(key + "/d/" + *in.Key)
-		return nil
+		// Only a deletion that removed something is notified.
+		if deleteErr != nil || !r.removed {
+			return deleteErr
+		}
+
+		cfg, deleteErr = notifications(tx, key)
+		return deleteErr
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.notify(ctx, m, cfg, objectEvent{
-		name: "ObjectRemoved:Delete", reason: "DeleteObject", bucket: *in.Bucket, key: *in.Key,
-	})
-	return &api.DeleteObjectOutput{}, nil
+	e := objectEvent{
+		name: "ObjectRemoved:Delete", reason: "DeleteObject", bucket: *in.Bucket, key: *in.Key, version: r.version,
+	}
+	if r.marker && in.VersionId == nil {
+		e.name = "ObjectRemoved:DeleteMarkerCreated"
+	}
+
+	s.notify(ctx, m, cfg, e)
+	out := &api.DeleteObjectOutput{}
+	if r.version != "" {
+		out.VersionId = &r.version
+	}
+
+	if r.marker {
+		out.DeleteMarker = new(true)
+	}
+
+	return out, nil
 }
 
 // listing is one ListObjectsV2 page before encoding.

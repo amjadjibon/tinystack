@@ -765,7 +765,10 @@
       "CopyObject",
       "GetObjectTagging",
       "PutObjectTagging",
-      "DeleteObjectTagging"
+      "DeleteObjectTagging",
+      "PutBucketVersioning",
+      "GetBucketVersioning",
+      "ListObjectVersions"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -832,7 +835,8 @@
         "Tagging"
       ],
       "PutObjectOutput": [
-        "ETag"
+        "ETag",
+        "VersionId"
       ],
       "GetObjectRequest": [
         "Bucket",
@@ -841,7 +845,8 @@
         "IfMatch",
         "IfNoneMatch",
         "ChecksumMode",
-        "ExpectedBucketOwner"
+        "ExpectedBucketOwner",
+        "VersionId"
       ],
       "GetObjectOutput": [
         "Body",
@@ -852,7 +857,9 @@
         "ETag",
         "LastModified",
         "Metadata",
-        "TagCount"
+        "TagCount",
+        "VersionId",
+        "DeleteMarker"
       ],
       "HeadObjectRequest": [
         "Bucket",
@@ -861,7 +868,8 @@
         "IfMatch",
         "IfNoneMatch",
         "ChecksumMode",
-        "ExpectedBucketOwner"
+        "ExpectedBucketOwner",
+        "VersionId"
       ],
       "HeadObjectOutput": [
         "ContentLength",
@@ -869,14 +877,19 @@
         "ContentType",
         "ETag",
         "LastModified",
-        "Metadata"
+        "Metadata",
+        "VersionId"
       ],
       "DeleteObjectRequest": [
         "Bucket",
         "Key",
-        "ExpectedBucketOwner"
+        "ExpectedBucketOwner",
+        "VersionId"
       ],
-      "DeleteObjectOutput": [],
+      "DeleteObjectOutput": [
+        "VersionId",
+        "DeleteMarker"
+      ],
       "ListObjectsV2Request": [
         "Bucket",
         "Delimiter",
@@ -973,7 +986,8 @@
         "Location",
         "Bucket",
         "Key",
-        "ETag"
+        "ETag",
+        "VersionId"
       ],
       "CompletedMultipartUpload": [
         "Parts"
@@ -1070,7 +1084,9 @@
         "ExpectedSourceBucketOwner"
       ],
       "CopyObjectOutput": [
-        "CopyObjectResult"
+        "CopyObjectResult",
+        "VersionId",
+        "CopySourceVersionId"
       ],
       "CopyObjectResult": [
         "ETag",
@@ -1079,24 +1095,90 @@
       "GetObjectTaggingRequest": [
         "Bucket",
         "Key",
-        "ExpectedBucketOwner"
+        "ExpectedBucketOwner",
+        "VersionId"
       ],
       "GetObjectTaggingOutput": [
-        "TagSet"
+        "TagSet",
+        "VersionId"
       ],
       "PutObjectTaggingRequest": [
         "Bucket",
         "Key",
         "Tagging",
-        "ExpectedBucketOwner"
+        "ExpectedBucketOwner",
+        "VersionId"
       ],
-      "PutObjectTaggingOutput": [],
+      "PutObjectTaggingOutput": [
+        "VersionId"
+      ],
       "DeleteObjectTaggingRequest": [
         "Bucket",
         "Key",
+        "ExpectedBucketOwner",
+        "VersionId"
+      ],
+      "DeleteObjectTaggingOutput": [
+        "VersionId"
+      ],
+      "PutBucketVersioningRequest": [
+        "Bucket",
+        "VersioningConfiguration",
         "ExpectedBucketOwner"
       ],
-      "DeleteObjectTaggingOutput": []
+      "VersioningConfiguration": [
+        "MFADelete",
+        "Status"
+      ],
+      "GetBucketVersioningRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketVersioningOutput": [
+        "Status"
+      ],
+      "ListObjectVersionsRequest": [
+        "Bucket",
+        "Delimiter",
+        "EncodingType",
+        "KeyMarker",
+        "MaxKeys",
+        "Prefix",
+        "VersionIdMarker",
+        "ExpectedBucketOwner"
+      ],
+      "ListObjectVersionsOutput": [
+        "IsTruncated",
+        "KeyMarker",
+        "VersionIdMarker",
+        "NextKeyMarker",
+        "NextVersionIdMarker",
+        "Versions",
+        "DeleteMarkers",
+        "Name",
+        "Prefix",
+        "Delimiter",
+        "MaxKeys",
+        "CommonPrefixes",
+        "EncodingType"
+      ],
+      "ObjectVersion": [
+        "ETag",
+        "Size",
+        "StorageClass",
+        "Key",
+        "VersionId",
+        "IsLatest",
+        "LastModified",
+        "Owner"
+      ],
+      "DeleteMarkerEntry": [
+        "Owner",
+        "Key",
+        "VersionId",
+        "IsLatest",
+        "LastModified"
+      ]
     }
   },
   "lambda": {

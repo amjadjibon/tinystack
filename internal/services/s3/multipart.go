@@ -184,6 +184,7 @@ func (s *Service) CompleteMultipartUpload(
 	}
 	var etag string
 	var size int64
+	var version *string
 	var cfg *api.NotificationConfiguration
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		bucket, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
@@ -251,10 +252,11 @@ func (s *Service) CompleteMultipartUpload(
 			ETag: etag, ContentType: u.ContentType, Metadata: u.Metadata,
 			Size: int64(len(body)), LastModified: s.now().UnixMilli(),
 		}
-		tx.Put(bucket+"/d/"+*in.Key, body)
-		if writeErr := writeJSON(tx, bucket+"/o/"+*in.Key, &obj); writeErr != nil {
+		status, writeErr := putCurrent(tx, bucket, *in.Key, &obj, body)
+		if writeErr != nil {
 			return writeErr
 		}
+		version = reported(status, &obj)
 		removeUpload(tx, bucket, *in.UploadId)
 		size = obj.Size
 		return nil
@@ -265,10 +267,12 @@ func (s *Service) CompleteMultipartUpload(
 
 	s.notify(ctx, m, cfg, objectEvent{
 		name: "ObjectCreated:CompleteMultipartUpload", reason: "CompleteMultipartUpload",
-		bucket: *in.Bucket, key: *in.Key, etag: etag, size: size,
+		bucket: *in.Bucket, key: *in.Key, etag: etag, version: value(version), size: size,
 	})
 	location := "/" + *in.Bucket + "/" + url.PathEscape(*in.Key)
-	return &api.CompleteMultipartUploadOutput{Location: &location, Bucket: in.Bucket, Key: in.Key, ETag: &etag}, nil
+	return &api.CompleteMultipartUploadOutput{
+		Location: &location, Bucket: in.Bucket, Key: in.Key, ETag: &etag, VersionId: version,
+	}, nil
 }
 
 const restMultipartLimit = 64 << 20

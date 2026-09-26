@@ -191,40 +191,40 @@ func tagSet(tags map[string]string) []api.Tag {
 	return set
 }
 
-// retagObject applies fn to the tags of the caller's object.
-func (s *Service) retagObject(
-	ctx context.Context,
-	bucket, key, owner *string,
-	fn func(map[string]string) map[string]string,
-) error {
+// retagObject replaces the tags of the caller's object, or of the named
+// version, and returns the version ID to report.
+func (s *Service) retagObject(ctx context.Context, t target, tags map[string]string) (*string, error) {
 	m, err := identity(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if guardErr := validKey(key); guardErr != nil {
-		return guardErr
+	if guardErr := validKey(t.key); guardErr != nil {
+		return nil, guardErr
 	}
 
-	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		prefix, resolveErr := resolve(tx, m, bucket, owner)
+	var version *string
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		prefix, resolveErr := resolve(tx, m, t.bucket, t.owner)
 		if resolveErr != nil {
 			return resolveErr
 		}
 
-		var obj object
-		found, readErr := readJSON(tx, prefix+"/o/"+*key, &obj)
+		status, readErr := versioning(tx, prefix)
 		if readErr != nil {
 			return readErr
 		}
 
-		if !found {
-			return noSuchKey()
+		obj, writeErr := rewrite(tx, prefix, *t.key, value(t.version), func(o *object) { o.Tags = tags })
+		if writeErr != nil {
+			return writeErr
 		}
 
-		obj.Tags = fn(obj.Tags)
-		return writeJSON(tx, prefix+"/o/"+*key, &obj)
+		version = reported(status, obj)
+		return nil
 	})
+
+	return version, err
 }
 
 func (s *Service) PutObjectTagging(
@@ -240,28 +240,24 @@ func (s *Service) PutObjectTagging(
 		return nil, err
 	}
 
-	err = s.retagObject(ctx, in.Bucket, in.Key, in.ExpectedBucketOwner, func(map[string]string) map[string]string {
-		return tags
-	})
+	version, err := s.retagObject(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, tags)
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.PutObjectTaggingOutput{}, nil
+	return &api.PutObjectTaggingOutput{VersionId: version}, nil
 }
 
 func (s *Service) DeleteObjectTagging(
 	ctx context.Context,
 	in *api.DeleteObjectTaggingRequest,
 ) (*api.DeleteObjectTaggingOutput, error) {
-	err := s.retagObject(ctx, in.Bucket, in.Key, in.ExpectedBucketOwner, func(map[string]string) map[string]string {
-		return nil
-	})
+	version, err := s.retagObject(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.DeleteObjectTaggingOutput{}, nil
+	return &api.DeleteObjectTaggingOutput{VersionId: version}, nil
 }
 
 // GetObjectTagging returns the object's tags; an object without tags has an
@@ -270,10 +266,10 @@ func (s *Service) GetObjectTagging(
 	ctx context.Context,
 	in *api.GetObjectTaggingRequest,
 ) (*api.GetObjectTaggingOutput, error) {
-	obj, _, err := s.read(ctx, in.Bucket, in.Key, nil, nil, in.ExpectedBucketOwner, false)
+	f, err := s.read(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, nil, nil, false)
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.GetObjectTaggingOutput{TagSet: tagSet(obj.Tags)}, nil
+	return &api.GetObjectTaggingOutput{TagSet: tagSet(f.obj.Tags), VersionId: f.version}, nil
 }

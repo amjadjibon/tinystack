@@ -19,29 +19,30 @@ const (
 )
 
 // copySource splits an x-amz-copy-source header, "<bucket>/<key>" with an
-// optional leading slash, URL-encoded. Version IDs are not supported.
-func copySource(header *string) (bucket, key string, err error) {
+// optional leading slash, URL-encoded, and an optional "?versionId=".
+func copySource(header *string) (bucket, key, version string, err error) {
 	raw := strings.TrimPrefix(value(header), "/")
 	if path, query, hasQuery := strings.Cut(raw, "?"); hasQuery {
-		if strings.HasPrefix(query, "versionId=") {
-			return "", "", fail(http.StatusNotImplemented, "NotImplemented",
-				"TinyStack does not support object versions")
+		values, parseErr := url.ParseQuery(query)
+		if parseErr != nil || len(values) != 1 || len(values["versionId"]) != 1 || values.Get("versionId") == "" {
+			return "", "", "", invalidArgument("Invalid copy source version")
 		}
 
-		raw = path
+		raw, version = path, values.Get("versionId")
 	}
 
 	decoded, err := url.PathUnescape(raw)
 	if err != nil {
-		return "", "", invalidArgument("Invalid copy source encoding")
+		return "", "", "", invalidArgument("Invalid copy source encoding")
 	}
 
 	bucket, key, ok := strings.Cut(decoded, "/")
 	if !ok || bucket == "" || key == "" {
-		return "", "", invalidArgument("Copy Source must mention the source bucket and key: sourcebucket/sourcekey")
+		return "", "", "", invalidArgument(
+			"Copy Source must mention the source bucket and key: sourcebucket/sourcekey")
 	}
 
-	return bucket, key, nil
+	return bucket, key, version, nil
 }
 
 // directive validates a metadata or tagging directive, COPY by default.
@@ -92,7 +93,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		return nil, guardErr
 	}
 
-	sourceBucket, sourceKey, err := copySource(in.CopySource)
+	sourceBucket, sourceKey, sourceVersion, err := copySource(in.CopySource)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +125,8 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		return nil, err
 	}
 
-	if sourceBucket == value(in.Bucket) && sourceKey == value(in.Key) && metadataDirective == directiveCopy &&
+	if sourceBucket == value(in.Bucket) && sourceKey == value(in.Key) && sourceVersion == "" &&
+		metadataDirective == directiveCopy &&
 		taggingDirective == directiveCopy && in.StorageClass == nil {
 		return nil, fail(http.StatusBadRequest, "InvalidRequest", "This copy request is illegal because it is "+
 			"trying to copy an object to itself without changing the object's metadata, storage class, website "+
@@ -133,6 +135,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 
 	var obj object
 	var cfg *api.NotificationConfiguration
+	var copied, written *string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		source, resolveErr := resolveSource(tx, m, sourceBucket, in.ExpectedSourceBucketOwner)
 		if resolveErr != nil {
@@ -144,13 +147,18 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 			return resolveErr
 		}
 
-		found, readErr := readJSON(tx, source+"/o/"+sourceKey, &obj)
+		sourceStatus, readErr := versioning(tx, source)
 		if readErr != nil {
 			return readErr
 		}
 
-		if !found {
-			return noSuchKey()
+		var data string
+		if obj, data, readErr = locate(tx, source, sourceKey, sourceVersion); readErr != nil {
+			return readErr
+		}
+
+		if copied = reported(sourceStatus, &obj); sourceVersion != "" {
+			copied = &sourceVersion
 		}
 
 		if in.CopySourceIfMatch != nil && !matches(*in.CopySourceIfMatch, obj.ETag) ||
@@ -174,25 +182,31 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 			return cfgErr
 		}
 
-		body, _ := tx.Get(source + "/d/" + sourceKey)
+		body, _ := tx.Get(data)
 		obj.LastModified = s.now().UnixMilli()
-		tx.Put(target+"/d/"+*in.Key, body)
-		return writeJSON(tx, target+"/o/"+*in.Key, &obj)
+		status, putErr := putCurrent(tx, target, *in.Key, &obj, body)
+		written = reported(status, &obj)
+		return putErr
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	s.notify(ctx, m, cfg, objectEvent{
-		name:   "ObjectCreated:Copy",
-		reason: "CopyObject",
-		bucket: *in.Bucket,
-		key:    *in.Key,
-		etag:   obj.ETag,
-		size:   obj.Size,
+		name:    "ObjectCreated:Copy",
+		reason:  "CopyObject",
+		bucket:  *in.Bucket,
+		key:     *in.Key,
+		etag:    obj.ETag,
+		version: value(written),
+		size:    obj.Size,
 	})
-	return &api.CopyObjectOutput{CopyObjectResult: &api.CopyObjectResult{
-		ETag:         new(obj.ETag),
-		LastModified: new(time.UnixMilli(obj.LastModified).UTC()),
-	}}, nil
+	return &api.CopyObjectOutput{
+		CopyObjectResult: &api.CopyObjectResult{
+			ETag:         new(obj.ETag),
+			LastModified: new(time.UnixMilli(obj.LastModified).UTC()),
+		},
+		VersionId:           written,
+		CopySourceVersionId: copied,
+	}, nil
 }

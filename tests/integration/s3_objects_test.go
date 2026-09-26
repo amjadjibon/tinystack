@@ -192,7 +192,7 @@ func TestS3CopyObject(t *testing.T) {
 		{"dst", "x", "src/missing", nil, "NoSuchKey", http.StatusNotFound},
 		{"dst", "x", "nobucket/k", nil, "NoSuchBucket", http.StatusNotFound},
 		{"dst", "x", source, aws.String(`"stale"`), "PreconditionFailed", http.StatusPreconditionFailed},
-		{"dst", "x", source + "?versionId=1", nil, "NotImplemented", http.StatusNotImplemented},
+		{"dst", "x", source + "?versionId=1", nil, "NoSuchVersion", http.StatusNotFound},
 	} {
 		_, err = c.CopyObject(ctx, &s3.CopyObjectInput{
 			Bucket:            aws.String(tc.bucket),

@@ -342,7 +342,9 @@ type objectEvent struct {
 	bucket string
 	key    string
 	etag   string
-	size   int64
+	// version is the version ID written or deleted, if versioning applies.
+	version string
+	size    int64
 }
 
 const eventTime = "2006-01-02T15:04:05.000Z"
@@ -415,6 +417,10 @@ func (*Service) record(m request.Metadata, e objectEvent, id, sequencer string, 
 		object["size"], object["eTag"] = e.size, strings.Trim(e.etag, `"`)
 	}
 
+	if e.version != "" {
+		object["versionId"] = e.version
+	}
+
 	return json.Marshal(map[string]any{"Records": []map[string]any{{
 		"eventVersion":      "2.1",
 		"eventSource":       "aws:s3",
@@ -452,9 +458,16 @@ func (*Service) eventDetail(m request.Metadata, e objectEvent, sequencer string)
 		"reason":            e.reason,
 	}
 
-	if strings.HasPrefix(e.name, eventCreated) {
+	if e.version != "" {
+		object["version-id"] = e.version
+	}
+
+	switch {
+	case strings.HasPrefix(e.name, eventCreated):
 		object["size"], object["etag"] = e.size, strings.Trim(e.etag, `"`)
-	} else {
+	case e.name == eventRemoved+"DeleteMarkerCreated":
+		detail["deletion-type"] = "Delete Marker Created"
+	default:
 		detail["deletion-type"] = "Permanently Deleted"
 	}
 
