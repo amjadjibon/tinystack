@@ -121,6 +121,15 @@ type InputTransformer struct {
 	InputTemplate *string           `json:"InputTemplate,omitempty"`
 }
 
+type DeadLetterConfig struct {
+	Arn *string `json:"Arn,omitempty"`
+}
+
+type RetryPolicy struct {
+	MaximumRetryAttempts     *int64 `json:"MaximumRetryAttempts,omitempty"`
+	MaximumEventAgeInSeconds *int64 `json:"MaximumEventAgeInSeconds,omitempty"`
+}
+
 type Target struct {
 	Id               *string           `json:"Id,omitempty"`
 	Arn              *string           `json:"Arn,omitempty"`
@@ -129,6 +138,8 @@ type Target struct {
 	InputPath        *string           `json:"InputPath,omitempty"`
 	SqsParameters    *SqsParameters    `json:"SqsParameters,omitempty"`
 	InputTransformer *InputTransformer `json:"InputTransformer,omitempty"`
+	DeadLetterConfig *DeadLetterConfig `json:"DeadLetterConfig,omitempty"`
+	RetryPolicy      *RetryPolicy      `json:"RetryPolicy,omitempty"`
 }
 
 type PutTargetsRequest struct {

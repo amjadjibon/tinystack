@@ -1616,7 +1616,9 @@
         "Input",
         "InputPath",
         "SqsParameters",
-        "InputTransformer"
+        "InputTransformer",
+        "DeadLetterConfig",
+        "RetryPolicy"
       ],
       "SqsParameters": [
         "MessageGroupId"
@@ -1730,6 +1732,13 @@
       ],
       "DeleteEventBusRequest": [
         "Name"
+      ],
+      "RetryPolicy": [
+        "MaximumRetryAttempts",
+        "MaximumEventAgeInSeconds"
+      ],
+      "DeadLetterConfig": [
+        "Arn"
       ]
     }
   },
