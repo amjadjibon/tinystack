@@ -52,9 +52,10 @@ type s3Record struct {
 		ConfigurationID string `json:"configurationId"`
 		Bucket          struct{ Name string }
 		Object          struct {
-			Key  string
-			ETag string `json:"eTag"`
-			Size int64
+			Key       string
+			ETag      string `json:"eTag"`
+			VersionID string `json:"versionId"`
+			Size      int64
 		}
 	}
 }

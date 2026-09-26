@@ -108,6 +108,16 @@ resource "aws_s3_bucket" "assets" {
   tags   = local.tags
 }
 
+# Objects are written after versioning is enabled, so each has a version ID;
+# destroying them deletes every version, which lets the bucket be deleted.
+resource "aws_s3_bucket_versioning" "assets" {
+  bucket = aws_s3_bucket.assets.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 resource "aws_sqs_queue" "uploads" {
   name = "uploads"
 }
@@ -124,7 +134,7 @@ resource "aws_s3_bucket_notification" "assets" {
 }
 
 resource "aws_s3_object" "hello" {
-  bucket       = aws_s3_bucket.assets.id
+  bucket       = aws_s3_bucket_versioning.assets.id
   key          = "hello.txt"
   content      = "hello"
   content_type = "text/plain"
