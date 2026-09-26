@@ -202,6 +202,18 @@ resource "aws_cloudwatch_event_target" "orders" {
   arn       = aws_sqs_queue.jobs.arn
 }
 
+resource "aws_cloudwatch_event_rule" "nightly" {
+  name                = "nightly"
+  schedule_expression = "cron(0 3 * * ? *)"
+}
+
+resource "aws_cloudwatch_event_target" "nightly" {
+  rule      = aws_cloudwatch_event_rule.nightly.name
+  target_id = "jobs"
+  arn       = aws_sqs_queue.jobs.arn
+  input     = jsonencode({ job = "cleanup" })
+}
+
 resource "aws_cloudwatch_event_bus" "shop" {
   name        = "shop"
   description = "Events for ${var.team}"
