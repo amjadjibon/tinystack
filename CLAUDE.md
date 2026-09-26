@@ -44,7 +44,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   back to S3, the REST service that serves anonymous requests. It does this before anything
   else, so even early errors use the client's envelope. It then resolves identity from the SigV4 `Credential` scope
   (`aws/sigv4`): the access key maps to an account through `identity.accounts` (or, for an unconfigured key, through
-  the STS session registered with `Server.UseSessions`), and the region comes
+  the credential lookup registered with `Server.UseCredentials`: an STS session or an IAM user's access key), and the
+  region comes
   from the signed scope, then the regional host, then the configured default. The service comes from the JSON target
   prefix, or for Query from the signed or host service name, falling back to the only Query service that has the
   `Action`. The gateway also validates content type, method, path and version against the operation's binding (Query
@@ -57,8 +58,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   (`<bucket>.localhost`, `<bucket>.s3.…amazonaws.com`) are folded into the path. REST payloads are limited to 64 MiB and
   aws-chunked bodies are decoded. Signatures are checked only in `identity.mode: verify` (`gateway/auth.go`), after
   classification (so S3 can use its single path encoding and unsigned-payload literals) and before decoding: the key
-  must be in `identity.secret_keys` (or be an STS session key sent with its `X-Amz-Security-Token`, which fails with
-  `ExpiredToken` once expired); a presigned URL carries the signature, expiry, and token in its query (`sigv4.ParseQuery`)
+  must be in `identity.secret_keys` (or be an active IAM access key, or an STS session key sent with its
+  `X-Amz-Security-Token`, which fails with `ExpiredToken` once expired); a presigned URL carries the signature, expiry, and token in its query (`sigv4.ParseQuery`)
   and leaves an S3 payload unsigned; the body is hashed (and replaced for decoding), and failures use per-protocol codes.
   Lambda hands function code its creator's configured secret so SDK calls back to TinyStack verify.
 - **catalog** (`internal/aws/catalog`): protocol-neutral service/operation/binding/error descriptors. A service
@@ -153,11 +154,13 @@ a per-service `Dialect`), and delivers synchronously through
   their own transactions to require a usable customer managed key, translating KMS's error into their own codes. IAM is account-wide, so its roles
   and managed policies live under `<account>/iam/<kind>/<lowercased name>` with no region (names are
   case-insensitive); a role record holds its inline policies and attached ARNs, and attaching updates the policy's
-  attachment count in the same transaction. Policies are stored, never evaluated. Users and access keys wait until
-  their credentials can be registered with the gateway's identity resolver (`docs/services/iam.md`). STS
+  attachment count in the same transaction. Policies are stored, never evaluated. Users live under
+  `<account>/iam/user/<lowercased name>` and hold their access key IDs; each key (secret, status, owner) is in the
+  partition-wide `aws/iam/access-key/<key ID>`, which `iam.Service.AccessKey` reads. STS
   `AssumeRole` checks the role's trust policy (`sts/trust.go`, a documented subset) through `iam.Service.RoleByARN`
-  and stores each session under the partition-wide `aws/sts/session/<access key>`; `GetCallerIdentity` reports that
-  session or the gateway-resolved account's root user. CloudWatch Logs keeps each group under
+  and stores each session under the partition-wide `aws/sts/session/<access key>`; `sts.Service.Credentials` (the
+  gateway's credential lookup) resolves those sessions and then active IAM access keys, and `GetCallerIdentity`
+  reports the session, the IAM user, or the gateway-resolved account's root user. CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
   time order. Lambda writes every invocation's log (its own START/END/REPORT lines around the runtime's

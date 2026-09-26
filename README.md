@@ -323,8 +323,9 @@ Log groups belong to an account and region.
 
 ### IAM (AWS Query)
 
-Roles and managed policies, global within each account: a client in any region
-sees the same records. Policies are stored and returned, never evaluated.
+Roles, managed policies, users, and access keys, global within each account: a
+client in any region sees the same records. Policies are stored and returned,
+never evaluated.
 
 | Operation | Behavior |
 | --- | --- |
@@ -337,6 +338,15 @@ sees the same records. Policies are stored and returned, never evaluated.
 | CreatePolicyVersion / GetPolicyVersion / ListPolicyVersions / DeletePolicyVersion / SetDefaultPolicyVersion | Up to 5 versions; the default version cannot be deleted |
 | TagPolicy / UntagPolicy / ListPolicyTags | Up to 50 tags |
 | ListInstanceProfilesForRole | Always empty: instance profiles are not modeled |
+| CreateUser / GetUser / ListUsers / UpdateUser / DeleteUser | Paths and `Tags`; names are case-insensitive; GetUser without a name describes the calling IAM user, or the root user; UpdateUser renames (keeping the user's ID and keys) or moves a user; a user with access keys cannot be deleted |
+| TagUser / UntagUser / ListUserTags | Up to 50 tags |
+| ListGroupsForUser | Always empty: groups are not modeled |
+| CreateAccessKey / ListAccessKeys / UpdateAccessKey / DeleteAccessKey | Up to 2 `AKIA` keys per user, `Active` or `Inactive`; only CreateAccessKey returns the secret; without a `UserName`, the calling IAM user (root access keys are not issued) |
+| GetAccessKeyLastUsed | The key's user; use is not recorded, so every key reports `N/A` |
+
+An active access key signs requests like a configured one: it acts in its user's
+account, and in `identity.mode: verify` it must be signed with its secret. An
+inactive or deleted key is rejected. Keys survive restarts in persistent mode.
 
 Policy documents must be JSON objects with a `Statement`.
 
@@ -344,12 +354,12 @@ Policy documents must be JSON objects with a `Statement`.
 
 | Operation | Behavior |
 | --- | --- |
-| GetCallerIdentity | The caller's account (from `identity.accounts`, or the default account for unmapped keys and unsigned requests) and its root user ARN, or the role session for temporary credentials |
+| GetCallerIdentity | The caller's account (from `identity.accounts`, or the default account for unmapped keys and unsigned requests) and its root user ARN, the IAM user for an IAM access key, or the role session for temporary credentials |
 | AssumeRole | Temporary credentials for a role in any account (`RoleArn`, `RoleSessionName`, `DurationSeconds` from 900 seconds up to the role's `MaxSessionDuration`, `ExternalId`); a session assuming another role is limited to one hour |
 
 AssumeRole checks the role's trust policy: an `Allow` for `sts:AssumeRole` (wildcards
-allowed) whose `AWS` principal is `*`, the caller's account ID or root ARN, or the
-caller's role or session ARN. `StringEquals` on `sts:ExternalId` is the only
+allowed) whose `AWS` principal is `*`, the caller's account ID or root ARN, the
+caller's IAM user ARN, or the caller's role or session ARN. `StringEquals` on `sts:ExternalId` is the only
 condition understood: an `Allow` with any other condition (or `NotPrincipal` /
 `NotAction`) grants nothing, and such a `Deny` always applies. Temporary
 credentials act in the role's account for every service; sessions survive restarts
@@ -508,10 +518,11 @@ S3 accepts `UNSIGNED-PAYLOAD` and `STREAMING-UNSIGNED-PAYLOAD-TRAILER` bodies;
 signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`) are not supported.
 Presigned URLs (query-string SigV4 with `X-Amz-Expires` up to 7 days) are verified
 like headers, with an unsigned payload for S3; an expired one answers `AccessDenied`
-("Request has expired"). Temporary credentials from STS AssumeRole need no configuration:
-they must send their session token (`X-Amz-Security-Token`) and fail with
-`ExpiredToken` once expired. IAM policies are stored but not evaluated: any
-configured key or role session may call any operation in its account.
+("Request has expired"). IAM users' access keys and temporary credentials from STS
+AssumeRole need no configuration; temporary credentials must send their session
+token (`X-Amz-Security-Token`) and fail with `ExpiredToken` once expired. IAM
+policies are stored but not evaluated: any configured key, IAM access key, or role
+session may call any operation in its account.
 
 DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...),
 parallel scans, PartiQL, Kinesis streaming, stream shard splits, backups, or capacity accounting/throttling (batch writes never return
@@ -529,8 +540,8 @@ streams (no batching window, filters, partial batch responses, bisecting, or fai
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
 buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, dead-letter queues, retry policies, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; delivery happens
-synchronously during PutEvents. IAM limits: no users, access keys, groups, instance
-profiles, permissions boundaries, or policy evaluation, and AWS managed policies
+synchronously during PutEvents. IAM limits: no groups, root access keys, login profiles, instance
+profiles, permissions boundaries, user policies, access key usage tracking, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, `aws:ec2:image` or other data
 types, public `/aws/service/...` parameters, shared parameters, or parameter quotas.
