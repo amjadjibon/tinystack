@@ -428,7 +428,7 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	case catalog.RESTJSON:
 		restjson.WriteError(w, e, messageMember)
 	default:
-		awsjson.WriteError(w, c.meta.Protocol, e)
+		awsjson.WriteError(w, c.meta.Protocol, e, messageMember)
 	}
 }
 

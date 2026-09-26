@@ -52,7 +52,7 @@ func Write(w http.ResponseWriter, protocol string, status int, output any) {
 			Code:       "InternalServerError",
 			Message:    "Response encoding failed",
 			StatusCode: 500,
-		})
+		}, "")
 		return
 	}
 
@@ -61,13 +61,18 @@ func Write(w http.ResponseWriter, protocol string, status int, output any) {
 	_, _ = w.Write(data)
 }
 
-// WriteError encodes e; a QueryCode is also sent for query-compatible clients.
-func WriteError(w http.ResponseWriter, protocol string, e *awserror.Error) {
+// WriteError encodes e, with the message under the modeled message member name;
+// a QueryCode is also sent for query-compatible clients.
+func WriteError(w http.ResponseWriter, protocol string, e *awserror.Error, messageMember string) {
+	if messageMember == "" {
+		messageMember = "message"
+	}
+
 	if e.QueryCode != "" {
 		w.Header().Set("X-Amzn-Query-Error", e.QueryCode+";"+e.Fault())
 	}
 
-	body := map[string]any{"__type": e.Code, "message": e.Message}
+	body := map[string]any{"__type": e.Code, messageMember: e.Message}
 	maps.Copy(body, e.Fields)
 	data, _ := json.Marshal(body)
 	w.Header().Set("Content-Type", contentType(protocol))

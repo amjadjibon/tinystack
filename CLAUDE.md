@@ -73,7 +73,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     here to support it) and an optional `query` overlay (the legacy XML namespace), which turns on AWS Query bindings
     and `query:"..."` struct tags.
   - Modeled errors become `Descriptor().Errors` (Query code and HTTP status from `awsQueryError`/`httpError`, and for
-    REST JSON the modeled `message`/`Message` member name). Unit outputs are generated as `<Op>Output struct{}` and
+    the JSON protocols the modeled `message`/`Message` member name). Unit outputs are generated as `<Op>Output struct{}` and
     marked `UnitOutput` (AWS Query writes a `<Op>Result` element for every other output, even an empty one). Member
     names become exported Go field names (SQS's `tags` is `Tags`); the JSON/XML/query tags keep the wire name.
   - The generator rejects unsupported wire traits. It handles AWS JSON 1.0 services (plus Query for

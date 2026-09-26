@@ -449,7 +449,8 @@ func (g *generator) emit(id string) error {
 
 // errorBindings describes every modeled error of the enabled operations. Query
 // codes are recorded for services that speak AWS Query, and message members for
-// REST JSON services, whose error bodies use the modeled member name.
+// JSON services (AWS JSON and REST JSON), whose error bodies use the modeled
+// member name.
 func (g *generator) errorBindings(
 	ops []string,
 	prefix string,
@@ -497,7 +498,7 @@ func (g *generator) errorBindings(
 				}
 			}
 
-			if g.rest && !g.xml {
+			if !g.xml && !g.queryOnly {
 				for member := range g.model.Shapes[ref.Target].Members {
 					if strings.EqualFold(member, "message") {
 						binding.MessageMember = member

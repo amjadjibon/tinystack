@@ -33,7 +33,7 @@ type Binding struct {
 type MemberBinding struct{ Location, Name string }
 
 // ErrorBinding carries modeled wire facts for one error code. MessageMember is
-// the modeled message member name REST JSON error bodies use ("message" or
+// the modeled message member name JSON error bodies use ("message" or
 // "Message").
 type ErrorBinding struct {
 	QueryCode     string
