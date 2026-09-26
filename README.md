@@ -73,7 +73,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
-versions, and aliases, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules, and targets (with input transformers), SSM parameters
+versions, and aliases, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), and IAM roles, role policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
@@ -447,11 +447,22 @@ in-process. Rule operations, `PutEvents` entries, and tags take an `EventBusName
 | Operation | Behavior |
 | --- | --- |
 | CreateEventBus / DescribeEventBus / UpdateEventBus / DeleteEventBus / ListEventBuses | Custom buses (up to 100) with a `Description` and `Tags`; names starting with `aws.` (partner buses) are rejected; a bus with rules cannot be deleted, nor can `default`; ListEventBuses includes `default`, with `NamePrefix`, `Limit`, and `NextToken` |
-| PutRule / DescribeRule / DeleteRule / ListRules / EnableRule / DisableRule | Event-pattern rules (`EventPattern`, `State`, `Description`, `RoleArn`); PutRule updates an existing rule; a rule with targets cannot be deleted; deleting a missing rule succeeds; `NamePrefix`, `Limit`, and `NextToken`; 300 rules per bus |
+| PutRule / DescribeRule / DeleteRule / ListRules / EnableRule / DisableRule | Event-pattern and scheduled rules (`EventPattern`, `ScheduleExpression`, or both; `State`, `Description`, `RoleArn`); PutRule updates an existing rule; a rule with targets cannot be deleted; deleting a missing rule succeeds; `NamePrefix`, `Limit`, and `NextToken`; 300 rules per bus |
 | PutTargets / RemoveTargets / ListTargetsByRule | Up to 5 targets per rule; `Input` (constant JSON), `InputPath` (`$` followed by dotted fields and `[index]` steps, such as `$.detail.items[0].id`), `InputTransformer`, and `SqsParameters.MessageGroupId` for FIFO queues (the event ID is the deduplication ID) |
 | PutEvents | Up to 10 entries (256 KB) for any of the caller's buses (a missing bus fails its entry); entries need `Source`, `DetailType`, and a JSON object `Detail`, and failed entries are reported per entry; each matching enabled rule delivers the event envelope (or its target input) to every target; a failed delivery does not fail PutEvents |
 | TestEventPattern | Matches an event against a pattern |
 | TagResource / UntagResource / ListTagsForResource | Rule and custom bus ARNs; also `Tags` on PutRule and CreateEventBus |
+
+Scheduled rules, on the default bus only, take `rate(<n> <unit>)` (minutes, hours, or
+days; singular for 1) or `cron(<minutes> <hours> <day-of-month> <month> <day-of-week> <year>)`
+in UTC, with `*`, `?` (in exactly one of the day fields), lists, ranges, `/`
+increments, and month and day names; `L`, `W`, and `#` are rejected. A rate
+first fires one period after the rule is created or enabled. A scheduler checks
+every second and sends each enabled rule's targets a `Scheduled Event` from
+`aws.events` with the rule's ARN as its resource and the scheduled time. The
+next fire time is stored with the rule and advanced before delivery, so a run is
+delivered at most once, even across a restart; runs missed while TinyStack was
+stopped are skipped, not replayed.
 
 Patterns support exact strings, numbers, booleans, and `null`; `prefix`, `suffix`,
 `equals-ignore-case`, `wildcard`, `anything-but` (a value, a list, or `prefix`,
@@ -514,7 +525,7 @@ reads; objects are held in memory (and in `state.db` in persistent mode). Lambda
 concurrency settings, resource policies, or event sources other than SQS and DynamoDB
 streams (no batching window, filters, partial batch responses, bisecting, or failure destinations); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
-buses or targets, bus policies, archives, or replays, no scheduled rules, dead-letter queues, retry policies, or targets other than
+buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, dead-letter queues, retry policies, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; delivery happens
 synchronously during PutEvents. IAM limits: no users, access keys, groups, instance
 profiles, permissions boundaries, or policy evaluation, and AWS managed policies

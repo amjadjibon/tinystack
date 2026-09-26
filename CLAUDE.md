@@ -133,7 +133,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   container. SNS invokes subscribed functions through `lambda.Service.InvokeAsync`, and mappings read SQS in-process
   via `sqs.QueueURL` and DynamoDB streams through `dynamodb.Streams`, storing each stream mapping's cursor. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus)
   or `…/eventbridge/bus-rule/<bus>/<name>` (custom buses, whose records are `…/eventbridge/bus/<name>`), renders
-  `InputTransformer` templates in `transform.go`, matches `PutEvents` entries against compiled patterns (`services/pattern`, shared with SNS filter policies through
+  `InputTransformer` templates in `transform.go`, fires scheduled rules from a scheduler (`schedule.go`, stopped by
+  `Stop` like the DynamoDB sweeper) that reads the partition-wide `aws/eventbridge/schedule/<account>/<region>/<rule>`
+  index of next fire times and advances an entry in the transaction that claims its run, matches `PutEvents` entries against compiled patterns (`services/pattern`, shared with SNS filter policies through
 a per-service `Dialect`), and delivers synchronously through
   `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. SSM Parameter Store keeps each
   parameter under `…/ssm/p/<name>` (current version number, labels, tags) and each immutable version under
