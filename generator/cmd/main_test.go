@@ -98,7 +98,8 @@ func TestQueryOverlayFixture(t *testing.T) {
   "fixture#TagMap": {"type": "map", "key": {"target": "smithy.api#String", "traits": {"smithy.api#xmlName": "Key"}},
     "value": {"target": "smithy.api#String"}},
   "fixture#IdList": {"type": "list", "member": {"target": "smithy.api#String", "traits": {"smithy.api#xmlName": "Id"}}},
-  "fixture#Missing": {"type": "structure", "traits": {"smithy.api#error": "client",
+  "fixture#Missing": {"type": "structure", "members": {"Message": {"target": "smithy.api#String"}},
+    "traits": {"smithy.api#error": "client",
     "aws.protocols#awsQueryError": {"code": "Fixture.Missing", "httpResponseCode": 404}}},
   "smithy.api#String": {"type": "string"}
 }}`
@@ -112,7 +113,7 @@ func TestQueryOverlayFixture(t *testing.T) {
 		`query:"Tag,flat,key=Key"`,
 		`query:"Ids,member=Id"`,
 		"type PutOutput struct{}",
-		`"Missing": catalog.ErrorBinding{QueryCode: "Fixture.Missing", MessageMember: "", StatusCode: 404}`,
+		`"Missing": catalog.ErrorBinding{QueryCode: "Fixture.Missing", MessageMember: "Message", StatusCode: 404}`,
 		`Target: "Put", Version: "2020-01-01", ContentType: "application/x-www-form-urlencoded"`,
 		`XMLNamespace: "urn:fixture"`,
 	} {
