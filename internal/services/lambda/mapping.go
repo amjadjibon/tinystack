@@ -6,7 +6,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +24,7 @@ import (
 
 const (
 	maxSQSBatch     = 10
+	maxSQSWindowed  = 10000
 	mappingLimit    = 100
 	maxMappingLimit = 10000
 	pollWait        = 20
@@ -48,9 +51,13 @@ type mapping struct {
 	LastProcessingResult string
 	StartingPosition     string `json:",omitempty"`
 	Cursor               string `json:",omitempty"`
-	BatchSize            int64
-	LastModified         int64
-	Enabled              bool
+	// Filters are the FilterCriteria patterns a record must match one of.
+	Filters        []string `json:",omitempty"`
+	BatchSize      int64
+	BatchingWindow int64 `json:",omitempty"`
+	LastModified   int64
+	Enabled        bool
+	ReportFailures bool `json:",omitempty"`
 }
 
 func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConfiguration {
@@ -69,10 +76,23 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 		LastModified:          new(float64(mp.LastModified) / 1000),
 		LastProcessingResult:  new(mp.LastProcessingResult),
 		MaximumRetryAttempts:  mp.MaximumRetryAttempts,
+		// Lambda reports the window, even when it is 0.
+		MaximumBatchingWindowInSeconds: new(mp.BatchingWindow),
 	}
 
 	if mp.StartingPosition != "" {
 		cfg.StartingPosition = new(mp.StartingPosition)
+	}
+
+	if mp.ReportFailures {
+		cfg.FunctionResponseTypes = []string{reportBatchItemFailures}
+	}
+
+	if len(mp.Filters) > 0 {
+		cfg.FilterCriteria = &api.FilterCriteria{}
+		for _, text := range mp.Filters {
+			cfg.FilterCriteria.Filters = append(cfg.FilterCriteria.Filters, api.Filter{Pattern: new(text)})
+		}
 	}
 
 	return cfg
@@ -135,6 +155,10 @@ func (s *Service) CreateEventSourceMapping(
 		Enabled:        in.Enabled == nil || *in.Enabled,
 		// Lambda reports "No records processed" until the first batch.
 		LastProcessingResult: "No records processed",
+	}
+
+	if optionsErr := batchOptions(in, mp); optionsErr != nil {
+		return nil, optionsErr
 	}
 
 	if _, isQueue := queueScope(source); isQueue {
@@ -210,10 +234,13 @@ func (s *Service) queueSource(
 
 	mp.BatchSize = maxSQSBatch
 	if in.BatchSize != nil {
-		// Larger SQS batches need MaximumBatchingWindowInSeconds, which is not
-		// supported.
-		if mp.BatchSize = *in.BatchSize; mp.BatchSize < 1 || mp.BatchSize > maxSQSBatch {
-			return invalid("BatchSize must be between 1 and %d for SQS", maxSQSBatch)
+		if mp.BatchSize = *in.BatchSize; mp.BatchSize < 1 || mp.BatchSize > maxSQSWindowed {
+			return invalid("BatchSize must be between 1 and %d for SQS", maxSQSWindowed)
+		}
+
+		if mp.BatchSize > maxSQSBatch && mp.BatchingWindow == 0 {
+			return invalid("Maximum batch window in seconds must be greater than 0 if maximum batch size is " +
+				"greater than 10")
 		}
 	}
 
@@ -436,7 +463,7 @@ type sqsRecordValue struct {
 	BinaryListValues []string `json:"binaryListValues"`
 }
 
-func sqsEvent(queueARN, region string, messages []sqsapi.Message) ([]byte, error) {
+func sqsRecords(queueARN, region string, messages []sqsapi.Message) []sqsRecord {
 	records := make([]sqsRecord, 0, len(messages))
 	for i := range messages {
 		msg := &messages[i]
@@ -470,6 +497,27 @@ func sqsEvent(queueARN, region string, messages []sqsapi.Message) ([]byte, error
 		records = append(records, record)
 	}
 
+	return records
+}
+
+// filterDocument is the record filters match: its body is the parsed JSON
+// when the body is JSON, and the plain string otherwise.
+func (r *sqsRecord) filterDocument() []byte {
+	type document struct {
+		Body any `json:"body"`
+		sqsRecord
+	}
+
+	d := document{Body: r.Body, sqsRecord: *r}
+	if json.Valid([]byte(r.Body)) {
+		d.Body = json.RawMessage(r.Body)
+	}
+
+	data, _ := json.Marshal(d)
+	return data
+}
+
+func recordsEvent[T any](records []T) ([]byte, error) {
 	return json.Marshal(map[string]any{"Records": records})
 }
 
@@ -484,13 +532,16 @@ func sleep(ctx context.Context, d time.Duration) {
 }
 
 // poll feeds batches from the mapping's queue to its function until ctx ends.
-// Batches the function fails on stay on the queue and return after their
-// visibility timeout, so the queue's redrive policy applies.
+// Messages no filter matches are deleted without an invocation. Messages the
+// function fails on (the whole batch, or with ReportBatchItemFailures the ones
+// it names) stay on the queue and return after their visibility timeout, so
+// the queue's redrive policy applies.
 //
 //nolint:gocritic // The poller owns its copy of the mapping.
 func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 	url, _ := sqs.QueueURL(mp.EventSourceArn)
 	queueCtx := request.WithMetadata(ctx, request.Metadata{Scope: scope})
+	filters := mp.filters()
 	for ctx.Err() == nil {
 		// Receiving for a missing function would only hide the messages.
 		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
@@ -499,65 +550,159 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 			continue
 		}
 
-		out, err := s.queues.ReceiveMessage(queueCtx, &sqsapi.ReceiveMessageRequest{
-			QueueUrl:                    &url,
-			MaxNumberOfMessages:         new(mp.BatchSize),
-			WaitTimeSeconds:             new(int64(pollWait)),
-			MessageSystemAttributeNames: []string{"All"},
-			MessageAttributeNames:       []string{"All"},
-		})
+		messages, err := s.receive(queueCtx, url, &mp)
 		if err != nil {
 			s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the SQS queue.")
 			sleep(ctx, pollBackoff)
 			continue
 		}
 
-		if len(out.Messages) == 0 {
-			continue
-		}
-
-		payload, err := sqsEvent(mp.EventSourceArn, scope.Region, out.Messages)
-		if err != nil {
-			s.logger.Error("encode SQS event", "error", err)
-			return
-		}
-
-		result, _, _, err := s.run(ctx, scope, mp.FunctionName, mp.Qualifier, payload)
-		failure := invokeError(result, err)
-		s.deliveries.Add(
-			delivery.ViaEventSourceMapping,
-			mp.EventSourceArn,
-			mp.functionARN(scope),
-			payload,
-			failure,
-		)
-		if failure != nil {
-			s.logger.Warn(
-				"lambda failed to process SQS batch",
-				"function", mp.functionARN(scope),
-				"error", err,
-				"payload", string(result.Payload),
-			)
-			s.recordResult(scope, mp.UUID, "PROBLEM: Function call failed")
-			continue
-		}
-
-		entries := make([]sqsapi.DeleteMessageBatchRequestEntry, len(out.Messages))
-		for i := range out.Messages {
-			entries[i] = sqsapi.DeleteMessageBatchRequestEntry{
-				Id:            new(strconv.Itoa(i)),
-				ReceiptHandle: out.Messages[i].ReceiptHandle,
+		var batch, done []sqsRecord
+		for _, record := range sqsRecords(mp.EventSourceArn, scope.Region, messages) {
+			if keep(filters, record.filterDocument()) {
+				batch = append(batch, record)
+			} else {
+				done = append(done, record)
 			}
 		}
 
-		if _, err = s.queues.DeleteMessageBatch(queueCtx, &sqsapi.DeleteMessageBatchRequest{
+		if len(batch) > 0 {
+			processed, ok := s.processQueueBatch(ctx, scope, &mp, batch)
+			done = append(done, processed...)
+			result := resultOK
+			if !ok {
+				result = "PROBLEM: Function call failed"
+			}
+
+			s.recordResult(scope, mp.UUID, result)
+		}
+
+		s.deleteMessages(queueCtx, url, done)
+	}
+}
+
+// receive reads the next batch: one receive, or with a batching window,
+// receives until the batch is full or the window after the first message ends.
+func (s *Service) receive(ctx context.Context, url string, mp *mapping) ([]sqsapi.Message, error) {
+	var messages []sqsapi.Message
+	var deadline time.Time
+	for {
+		receiveCtx, cancel := ctx, context.CancelFunc(func() {})
+		wait := int64(pollWait)
+		if !deadline.IsZero() {
+			remaining := time.Until(deadline)
+			if remaining <= 0 {
+				return messages, nil
+			}
+
+			// WaitTimeSeconds is whole seconds, so the deadline ends the wait
+			// with the window; a cancelled wait claims nothing.
+			wait = int64(math.Ceil(remaining.Seconds()))
+			receiveCtx, cancel = context.WithDeadline(ctx, deadline)
+		}
+
+		out, err := s.queues.ReceiveMessage(receiveCtx, &sqsapi.ReceiveMessageRequest{
+			QueueUrl:                    &url,
+			MaxNumberOfMessages:         new(min(mp.BatchSize-int64(len(messages)), maxSQSBatch)),
+			WaitTimeSeconds:             new(wait),
+			MessageSystemAttributeNames: []string{"All"},
+			MessageAttributeNames:       []string{"All"},
+		})
+		cancel()
+		if err != nil {
+			// Messages already received are processed; the rest wait.
+			if len(messages) > 0 {
+				return messages, nil
+			}
+
+			return nil, err
+		}
+
+		messages = append(messages, out.Messages...)
+		if len(messages) == 0 || mp.BatchingWindow == 0 || int64(len(messages)) >= mp.BatchSize {
+			return messages, nil
+		}
+
+		if deadline.IsZero() {
+			deadline = time.Now().Add(mp.batchingWindow())
+		}
+	}
+}
+
+// processQueueBatch invokes the function with a batch and returns the records
+// it processed; ok is false when the whole batch failed.
+func (s *Service) processQueueBatch(
+	ctx context.Context,
+	scope request.Scope,
+	mp *mapping,
+	batch []sqsRecord,
+) (processed []sqsRecord, ok bool) {
+	payload, err := recordsEvent(batch)
+	if err != nil {
+		s.logger.Error("encode SQS event", "error", err)
+		return nil, false
+	}
+
+	result, _, _, err := s.run(ctx, scope, mp.FunctionName, mp.Qualifier, payload)
+	failure := invokeError(result, err)
+	s.deliveries.Add(delivery.ViaEventSourceMapping, mp.EventSourceArn, mp.functionARN(scope), payload, failure)
+	if failure != nil {
+		s.logger.Warn(
+			"lambda failed to process SQS batch",
+			"function", mp.functionARN(scope),
+			"error", failure,
+			"payload", string(result.Payload),
+		)
+
+		return nil, false
+	}
+
+	if !mp.ReportFailures {
+		return batch, true
+	}
+
+	ids := map[string]bool{}
+	for i := range batch {
+		ids[batch[i].MessageID] = true
+	}
+
+	failed, ok := batchItemFailures(result.Payload, ids)
+	if !ok {
+		s.logger.Warn(
+			"lambda returned an invalid batch item failure response",
+			"function", mp.functionARN(scope),
+			"payload", string(result.Payload),
+		)
+
+		return nil, false
+	}
+
+	for i := range batch {
+		if !failed[batch[i].MessageID] {
+			processed = append(processed, batch[i])
+		}
+	}
+
+	return processed, true
+}
+
+// deleteMessages deletes processed and filtered messages, ten at a time.
+func (s *Service) deleteMessages(ctx context.Context, url string, records []sqsRecord) {
+	for chunk := range slices.Chunk(records, maxSQSBatch) {
+		entries := make([]sqsapi.DeleteMessageBatchRequestEntry, len(chunk))
+		for i := range chunk {
+			entries[i] = sqsapi.DeleteMessageBatchRequestEntry{
+				Id:            new(strconv.Itoa(i)),
+				ReceiptHandle: new(chunk[i].ReceiptHandle),
+			}
+		}
+
+		if _, err := s.queues.DeleteMessageBatch(ctx, &sqsapi.DeleteMessageBatchRequest{
 			QueueUrl: &url,
 			Entries:  entries,
 		}); err != nil {
-			s.logger.Warn("delete processed SQS messages", "queue", mp.EventSourceArn, "error", err)
+			s.logger.Warn("delete processed SQS messages", "queue", url, "error", err)
 		}
-
-		s.recordResult(scope, mp.UUID, resultOK)
 	}
 }
 

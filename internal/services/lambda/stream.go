@@ -82,13 +82,23 @@ type streamRecord struct {
 	EventSourceARN string `json:"eventSourceARN"`
 }
 
-func streamEvent(arn string, records []streamsapi.Record) ([]byte, error) {
+func streamRecords(arn string, records []streamsapi.Record) []streamRecord {
 	out := make([]streamRecord, len(records))
 	for i := range records {
 		out[i] = streamRecord{Record: records[i], EventSourceARN: arn}
 	}
 
-	return json.Marshal(map[string]any{"Records": out})
+	return out
+}
+
+// sequence is the record's sequence number, which identifies it in batch item
+// failures.
+func (r *streamRecord) sequence() string {
+	if r.Dynamodb == nil {
+		return ""
+	}
+
+	return value(r.Dynamodb.SequenceNumber)
 }
 
 // shardIterator returns an iterator after cursor, or at the start of the
@@ -128,14 +138,16 @@ func (s *Service) shardIterator(ctx context.Context, arn, cursor string) (*strin
 }
 
 // pollStream feeds batches from the mapping's stream to its function, in
-// order, until ctx ends or the stream is closed and read. A failed batch is
-// retried until it succeeds or MaximumRetryAttempts runs out, when it is
-// skipped. The mapping stores the last record processed, so a restart
-// resumes after it.
+// order, until ctx ends or the stream is closed and read. Records no filter
+// matches are skipped. A failed batch is retried until it succeeds or
+// MaximumRetryAttempts runs out, when it is skipped; with
+// ReportBatchItemFailures, the retry starts at the first failed record. The
+// mapping stores the last record processed, so a restart resumes after it.
 //
 //nolint:gocritic // The poller owns its copy of the mapping.
 func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mapping) {
 	streamCtx := request.WithMetadata(ctx, request.Metadata{Scope: scope})
+	filters := mp.filters()
 	var iterator *string
 	var failures int64
 	for ctx.Err() == nil {
@@ -154,10 +166,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 			}
 		}
 
-		out, err := s.streams.GetRecords(streamCtx, &streamsapi.GetRecordsInput{
-			ShardIterator: iterator,
-			Limit:         new(min(mp.BatchSize, 1000)),
-		})
+		records, next, err := s.readStream(streamCtx, iterator, &mp)
 		if err != nil {
 			iterator = nil
 			s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the DynamoDB stream.")
@@ -165,8 +174,8 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 			continue
 		}
 
-		if len(out.Records) == 0 {
-			if iterator = out.NextShardIterator; iterator == nil {
+		if len(records) == 0 {
+			if iterator = next; iterator == nil {
 				return
 			}
 
@@ -174,34 +183,37 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 			continue
 		}
 
-		payload, err := streamEvent(mp.EventSourceArn, out.Records)
-		if err != nil {
-			s.logger.Error("encode DynamoDB stream event", "error", err)
-			return
+		all := streamRecords(mp.EventSourceArn, records)
+		var batch []streamRecord
+		for i := range all {
+			if document, _ := json.Marshal(all[i]); keep(filters, document) {
+				batch = append(batch, all[i])
+			}
 		}
 
-		result, _, _, err := s.run(ctx, scope, mp.FunctionName, mp.Qualifier, payload)
-		failure := invokeError(result, err)
-		s.deliveries.Add(
-			delivery.ViaEventSourceMapping,
-			mp.EventSourceArn,
-			mp.functionARN(scope),
-			payload,
-			failure,
-		)
+		// processed is how many records, from the start of all, are done.
+		processed, outcome := len(all), ""
+		if len(batch) > 0 {
+			var ok bool
+			processed, ok = s.processStreamBatch(ctx, scope, &mp, all, batch)
+			outcome = resultOK
+			if !ok {
+				outcome = "PROBLEM: Function call failed"
+			}
+		}
 
-		outcome := resultOK
-		if failure != nil {
-			s.logger.Warn(
-				"lambda failed to process DynamoDB stream batch",
-				"function", mp.functionARN(scope),
-				"error", failure,
-				"attempt", failures+1,
-			)
+		if processed < len(all) {
+			// A partial failure that moved the checkpoint starts a new count.
+			if failures++; processed > 0 {
+				failures = 1
+			}
 
-			outcome = "PROBLEM: Function call failed"
-			if failures++; value(mp.MaximumRetryAttempts) < 0 || failures <= value(mp.MaximumRetryAttempts) {
-				s.recordResult(scope, mp.UUID, outcome)
+			if value(mp.MaximumRetryAttempts) < 0 || failures <= value(mp.MaximumRetryAttempts) {
+				if processed > 0 {
+					mp.Cursor = all[processed-1].sequence()
+				}
+
+				s.recordCursor(scope, mp.UUID, mp.Cursor, outcome)
 				iterator = nil
 				sleep(ctx, pollBackoff)
 				continue
@@ -209,16 +221,113 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 		}
 
 		failures = 0
-		mp.Cursor = value(out.Records[len(out.Records)-1].Dynamodb.SequenceNumber)
+		mp.Cursor = all[len(all)-1].sequence()
 		s.recordCursor(scope, mp.UUID, mp.Cursor, outcome)
-		if iterator = out.NextShardIterator; iterator == nil {
+		if iterator = next; iterator == nil {
 			return
 		}
 	}
 }
 
+// readStream reads the next batch after iterator: one read, or with a
+// batching window, reads until the batch is full, the shard is closed, or the
+// window after the first record ends. It returns the iterator after the batch.
+func (s *Service) readStream(
+	ctx context.Context,
+	iterator *string,
+	mp *mapping,
+) ([]streamsapi.Record, *string, error) {
+	var records []streamsapi.Record
+	var deadline time.Time
+	for {
+		out, err := s.streams.GetRecords(ctx, &streamsapi.GetRecordsInput{
+			ShardIterator: iterator,
+			Limit:         new(min(mp.BatchSize-int64(len(records)), 1000)),
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		records, iterator = append(records, out.Records...), out.NextShardIterator
+		if len(records) == 0 || iterator == nil || mp.BatchingWindow == 0 || int64(len(records)) >= mp.BatchSize {
+			return records, iterator, nil
+		}
+
+		if deadline.IsZero() {
+			deadline = time.Now().Add(mp.batchingWindow())
+		}
+
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return records, iterator, nil
+		}
+
+		if len(out.Records) == 0 {
+			sleep(ctx, min(streamPollInterval, remaining))
+		}
+	}
+}
+
+// processStreamBatch invokes the function with the records of all that the
+// filters kept and returns how many records of all, from the start, are
+// processed: all of them, none when the whole batch failed, or those before
+// the first failed record; ok is false when the whole batch failed.
+func (s *Service) processStreamBatch(
+	ctx context.Context,
+	scope request.Scope,
+	mp *mapping,
+	all, batch []streamRecord,
+) (processed int, ok bool) {
+	payload, err := recordsEvent(batch)
+	if err != nil {
+		s.logger.Error("encode DynamoDB stream event", "error", err)
+		return 0, false
+	}
+
+	result, _, _, err := s.run(ctx, scope, mp.FunctionName, mp.Qualifier, payload)
+	failure := invokeError(result, err)
+	s.deliveries.Add(delivery.ViaEventSourceMapping, mp.EventSourceArn, mp.functionARN(scope), payload, failure)
+	if failure != nil {
+		s.logger.Warn(
+			"lambda failed to process DynamoDB stream batch",
+			"function", mp.functionARN(scope),
+			"error", failure,
+		)
+
+		return 0, false
+	}
+
+	if !mp.ReportFailures {
+		return len(all), true
+	}
+
+	ids := map[string]bool{}
+	for i := range batch {
+		ids[batch[i].sequence()] = true
+	}
+
+	failed, ok := batchItemFailures(result.Payload, ids)
+	if !ok {
+		s.logger.Warn(
+			"lambda returned an invalid batch item failure response",
+			"function", mp.functionARN(scope),
+			"payload", string(result.Payload),
+		)
+
+		return 0, false
+	}
+
+	for i := range all {
+		if failed[all[i].sequence()] {
+			return i, true
+		}
+	}
+
+	return len(all), true
+}
+
 // recordCursor stores the last record a stream mapping processed and the
-// batch's result.
+// batch's result, if it invoked the function.
 func (s *Service) recordCursor(scope request.Scope, id, cursor, result string) {
 	key := scopeKey(scope, kindMapping, id)
 	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
@@ -227,7 +336,11 @@ func (s *Service) recordCursor(scope request.Scope, id, cursor, result string) {
 			return err
 		}
 
-		mp.Cursor, mp.LastProcessingResult = cursor, result
+		mp.Cursor = cursor
+		if result != "" {
+			mp.LastProcessingResult = result
+		}
+
 		return writeJSON(tx, key, mp)
 	})
 	if err != nil && s.ctx.Err() == nil {
