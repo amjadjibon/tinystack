@@ -93,7 +93,7 @@ func (r *rotationRuntime) ran() []string {
 // waitFor polls until done reports true.
 func waitFor(t *testing.T, what string, done func() bool) {
 	t.Helper()
-	for range 100 {
+	for range 400 {
 		if done() {
 			return
 		}

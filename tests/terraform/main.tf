@@ -209,9 +209,17 @@ resource "aws_cloudwatch_log_group" "echo" {
 }
 
 resource "aws_lambda_event_source_mapping" "jobs" {
-  event_source_arn = aws_sqs_queue.jobs.arn
-  function_name    = aws_lambda_function.echo.arn
-  batch_size       = 5
+  event_source_arn                   = aws_sqs_queue.jobs.arn
+  function_name                      = aws_lambda_function.echo.arn
+  batch_size                         = 20
+  maximum_batching_window_in_seconds = 1
+  function_response_types            = ["ReportBatchItemFailures"]
+
+  filter_criteria {
+    filter {
+      pattern = jsonencode({ body = { kind = ["job"] } })
+    }
+  }
 }
 
 resource "aws_lambda_event_source_mapping" "users" {
