@@ -117,6 +117,9 @@ func newStartCommand() *cobra.Command {
 			// Stop ends the scheduler, which writes to the store.
 			defer rules.Stop()
 			buckets := s3.New(store, queues, topics, functions, rules, deliveries)
+			secrets := secretsmanager.New(store, keys, functions, deliveries)
+			// Stop ends the rotation scheduler and running rotations.
+			defer secrets.Stop()
 			functions.UseObjects(buckets.Object)
 			roles := iam.New(store)
 			tokens := sts.New(store, roles)
@@ -133,7 +136,7 @@ func newStartCommand() *cobra.Command {
 				iamapi.Descriptor(roles),
 				stsapi.Descriptor(tokens),
 				ssmapi.Descriptor(ssm.New(store, keys)),
-				secretsmanagerapi.Descriptor(secretsmanager.New(store, keys)),
+				secretsmanagerapi.Descriptor(secrets),
 				logsapi.Descriptor(logGroups),
 				kmsapi.Descriptor(keys),
 			)
@@ -168,6 +171,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(tables.Stop)
 			server.RegisterOnShutdown(functions.Stop)
 			server.RegisterOnShutdown(rules.Stop)
+			server.RegisterOnShutdown(secrets.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)

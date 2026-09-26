@@ -13,15 +13,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -50,13 +54,61 @@ var _ api.API = (*Service)(nil)
 type Service struct {
 	store storage.Store
 	keys  *kms.Service
-	now   func() time.Time
+	// functions run rotation functions; deliveries records each step.
+	functions  *lambda.Service
+	deliveries *delivery.Log
+	logger     *slog.Logger
+	now        func() time.Time
+	// ctx ends the rotation scheduler and running rotations on Stop.
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
+	mu     sync.Mutex
+	stop   sync.Once
 }
 
-// New returns Secrets Manager; keys checks the customer managed keys secrets
-// name.
-func New(store storage.Store, keys *kms.Service) *Service {
-	return &Service{store: store, keys: keys, now: time.Now}
+// New returns Secrets Manager and starts its rotation scheduler, which runs
+// until Stop. keys checks the customer managed keys secrets name, and
+// functions runs rotation functions.
+func New(
+	store storage.Store,
+	keys *kms.Service,
+	functions *lambda.Service,
+	deliveries *delivery.Log,
+) *Service {
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &Service{
+		store:      store,
+		keys:       keys,
+		functions:  functions,
+		deliveries: deliveries,
+		logger:     slog.Default(),
+		now:        time.Now,
+		ctx:        ctx,
+		cancel:     cancel,
+	}
+	s.spawn(s.scheduler)
+	return s
+}
+
+// Stop ends the scheduler and running rotations and waits for them. Later
+// calls return at once.
+func (s *Service) Stop() {
+	s.stop.Do(func() {
+		s.mu.Lock()
+		s.cancel()
+		s.mu.Unlock()
+		s.wg.Wait()
+	})
+}
+
+// spawn runs fn in the background until Stop, and not at all once Stop has run.
+func (s *Service) spawn(fn func(context.Context)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ctx.Err() == nil {
+		s.wg.Go(func() { fn(s.ctx) })
+	}
 }
 
 // secret is a secret's metadata.
@@ -64,9 +116,10 @@ type secret struct {
 	Tags        map[string]string `json:",omitempty"`
 	Stages      map[string]string `json:",omitempty"` // staging label to version ID
 	Name        string
-	Suffix      string // the random end of the ARN
-	Description string `json:",omitempty"`
-	KmsKeyID    string `json:",omitempty"`
+	Suffix      string    // the random end of the ARN
+	Description string    `json:",omitempty"`
+	KmsKeyID    string    `json:",omitempty"`
+	Rotation    *rotation `json:",omitempty"`
 	Versions    []versionInfo
 	CreatedAt   int64 // Unix milliseconds
 	ChangedAt   int64
@@ -103,8 +156,8 @@ func invalidParameter(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))
 }
 
-func invalidRequest(format string, args ...any) error {
-	return awserror.New("InvalidRequestException", fmt.Sprintf(format, args...))
+func invalidRequest(message string) error {
+	return awserror.New("InvalidRequestException", message)
 }
 
 func notFound(format string, args ...any) error {
@@ -258,6 +311,7 @@ func purge(tx storage.WriteTx, scope request.Scope, s *secret) {
 	}
 
 	tx.Delete(secretKey(scope, s.Name))
+	tx.Delete(rotationKey(scope, s.Name))
 }
 
 // stagesOf returns the staging labels on each version, sorted.

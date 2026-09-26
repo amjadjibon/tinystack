@@ -20,6 +20,7 @@ const (
 	ViaLambdaAsync        = "lambda-async"
 	ViaEventSourceMapping = "event-source-mapping"
 	ViaS3                 = "s3"
+	ViaSecretsManager     = "secretsmanager"
 )
 
 // Record is one delivery. Source is the topic, rule, queue, or bucket ARN it came

@@ -115,6 +115,7 @@ func serverStore(
 	rules := eventbridge.New(store, sqsService, snsService, functions, deliveries)
 	objects := buckets.New(store, sqsService, snsService, functions, rules, deliveries)
 	functions.UseObjects(objects.Object)
+	secretsService := secrets.New(store, keys, functions, deliveries)
 	roles := principals.New(store)
 	stsService := tokens.New(store, roles)
 	h, err := gateway.New(
@@ -130,7 +131,7 @@ func serverStore(
 		iamapi.Descriptor(roles),
 		stsapi.Descriptor(stsService),
 		ssmapi.Descriptor(parameters.New(store, keys)),
-		secretsmanagerapi.Descriptor(secrets.New(store, keys)),
+		secretsmanagerapi.Descriptor(secretsService),
 		logsapi.Descriptor(logGroups),
 		kmsapi.Descriptor(keys),
 	)
@@ -143,6 +144,7 @@ func serverStore(
 
 	s = httptest.NewServer(h)
 	return s, func() {
+		secretsService.Stop()
 		rules.Stop()
 		sqsService.Stop()
 		functions.Stop()

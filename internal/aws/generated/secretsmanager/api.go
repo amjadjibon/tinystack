@@ -31,6 +31,12 @@ type DescribeSecretRequest struct {
 	SecretId *string `json:"SecretId,omitempty"`
 }
 
+type RotationRulesType struct {
+	AutomaticallyAfterDays *int64  `json:"AutomaticallyAfterDays,omitempty"`
+	Duration               *string `json:"Duration,omitempty"`
+	ScheduleExpression     *string `json:"ScheduleExpression,omitempty"`
+}
+
 type DescribeSecretResponse struct {
 	ARN                *string             `json:"ARN,omitempty"`
 	Name               *string             `json:"Name,omitempty"`
@@ -41,6 +47,11 @@ type DescribeSecretResponse struct {
 	Tags               []Tag               `json:"Tags,omitempty"`
 	VersionIdsToStages map[string][]string `json:"VersionIdsToStages,omitempty"`
 	CreatedDate        *float64            `json:"CreatedDate,omitempty"`
+	RotationEnabled    *bool               `json:"RotationEnabled,omitempty"`
+	RotationLambdaARN  *string             `json:"RotationLambdaARN,omitempty"`
+	RotationRules      *RotationRulesType  `json:"RotationRules,omitempty"`
+	LastRotatedDate    *float64            `json:"LastRotatedDate,omitempty"`
+	NextRotationDate   *float64            `json:"NextRotationDate,omitempty"`
 }
 
 type Filter struct {
@@ -66,6 +77,11 @@ type SecretListEntry struct {
 	Tags                   []Tag               `json:"Tags,omitempty"`
 	SecretVersionsToStages map[string][]string `json:"SecretVersionsToStages,omitempty"`
 	CreatedDate            *float64            `json:"CreatedDate,omitempty"`
+	RotationEnabled        *bool               `json:"RotationEnabled,omitempty"`
+	RotationLambdaARN      *string             `json:"RotationLambdaARN,omitempty"`
+	RotationRules          *RotationRulesType  `json:"RotationRules,omitempty"`
+	LastRotatedDate        *float64            `json:"LastRotatedDate,omitempty"`
+	NextRotationDate       *float64            `json:"NextRotationDate,omitempty"`
 }
 
 type ListSecretsResponse struct {
@@ -195,6 +211,30 @@ type GetResourcePolicyResponse struct {
 	Name *string `json:"Name,omitempty"`
 }
 
+type RotateSecretRequest struct {
+	SecretId           *string            `json:"SecretId,omitempty"`
+	ClientRequestToken *string            `json:"ClientRequestToken,omitempty"`
+	RotationLambdaARN  *string            `json:"RotationLambdaARN,omitempty"`
+	RotationRules      *RotationRulesType `json:"RotationRules,omitempty"`
+	RotateImmediately  *bool              `json:"RotateImmediately,omitempty"`
+}
+
+type RotateSecretResponse struct {
+	ARN       *string `json:"ARN,omitempty"`
+	Name      *string `json:"Name,omitempty"`
+	VersionId *string `json:"VersionId,omitempty"`
+}
+
+type CancelRotateSecretRequest struct {
+	SecretId *string `json:"SecretId,omitempty"`
+}
+
+type CancelRotateSecretResponse struct {
+	ARN       *string `json:"ARN,omitempty"`
+	Name      *string `json:"Name,omitempty"`
+	VersionId *string `json:"VersionId,omitempty"`
+}
+
 type API interface {
 	CreateSecret(context.Context, *CreateSecretRequest) (*CreateSecretResponse, error)
 	DescribeSecret(context.Context, *DescribeSecretRequest) (*DescribeSecretResponse, error)
@@ -209,6 +249,8 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceOutput, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceOutput, error)
 	GetResourcePolicy(context.Context, *GetResourcePolicyRequest) (*GetResourcePolicyResponse, error)
+	RotateSecret(context.Context, *RotateSecretRequest) (*RotateSecretResponse, error)
+	CancelRotateSecret(context.Context, *CancelRotateSecretRequest) (*CancelRotateSecretResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -251,6 +293,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetResourcePolicy": {Name: "GetResourcePolicy", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.GetResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetResourcePolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetResourcePolicy(ctx, input.(*GetResourcePolicyRequest))
+		}},
+		"RotateSecret": {Name: "RotateSecret", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.RotateSecret", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RotateSecretRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RotateSecret(ctx, input.(*RotateSecretRequest))
+		}},
+		"CancelRotateSecret": {Name: "CancelRotateSecret", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.CancelRotateSecret", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CancelRotateSecretRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CancelRotateSecret(ctx, input.(*CancelRotateSecretRequest))
 		}},
 	}}
 }

@@ -2368,7 +2368,9 @@
       "UpdateSecretVersionStage",
       "TagResource",
       "UntagResource",
-      "GetResourcePolicy"
+      "GetResourcePolicy",
+      "RotateSecret",
+      "CancelRotateSecret"
     ],
     "shapes": {
       "CreateSecretRequest": [
@@ -2397,7 +2399,12 @@
         "DeletedDate",
         "Tags",
         "VersionIdsToStages",
-        "CreatedDate"
+        "CreatedDate",
+        "RotationEnabled",
+        "RotationLambdaARN",
+        "RotationRules",
+        "LastRotatedDate",
+        "NextRotationDate"
       ],
       "ListSecretsRequest": [
         "IncludePlannedDeletion",
@@ -2419,7 +2426,12 @@
         "DeletedDate",
         "Tags",
         "SecretVersionsToStages",
-        "CreatedDate"
+        "CreatedDate",
+        "RotationEnabled",
+        "RotationLambdaARN",
+        "RotationRules",
+        "LastRotatedDate",
+        "NextRotationDate"
       ],
       "Filter": [
         "Key",
@@ -2527,6 +2539,31 @@
       "Tag": [
         "Key",
         "Value"
+      ],
+      "RotateSecretRequest": [
+        "SecretId",
+        "ClientRequestToken",
+        "RotationLambdaARN",
+        "RotationRules",
+        "RotateImmediately"
+      ],
+      "RotateSecretResponse": [
+        "ARN",
+        "Name",
+        "VersionId"
+      ],
+      "CancelRotateSecretRequest": [
+        "SecretId"
+      ],
+      "CancelRotateSecretResponse": [
+        "ARN",
+        "Name",
+        "VersionId"
+      ],
+      "RotationRulesType": [
+        "AutomaticallyAfterDays",
+        "Duration",
+        "ScheduleExpression"
       ]
     }
   },

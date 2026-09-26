@@ -111,6 +111,7 @@ func (s *secret) describe(scope request.Scope) *api.DescribeSecretResponse {
 		out.DeletedDate = seconds(s.DeletionAt)
 	}
 
+	s.describeRotation(out)
 	return out
 }
 
@@ -245,6 +246,9 @@ func (s *Service) ListSecrets(ctx context.Context, in *api.ListSecretsRequest) (
 				ARN: d.ARN, Name: d.Name, Description: d.Description, KmsKeyId: d.KmsKeyId,
 				LastChangedDate: d.LastChangedDate, DeletedDate: d.DeletedDate, Tags: d.Tags,
 				SecretVersionsToStages: d.VersionIdsToStages, CreatedDate: d.CreatedDate,
+				RotationEnabled: d.RotationEnabled, RotationLambdaARN: d.RotationLambdaARN,
+				RotationRules: d.RotationRules, LastRotatedDate: d.LastRotatedDate,
+				NextRotationDate: d.NextRotationDate,
 			})
 		}
 
@@ -385,6 +389,7 @@ func (s *Service) RestoreSecret(ctx context.Context, in *api.RestoreSecretReques
 		}
 
 		sec.DeletionAt = 0
+		index(tx, m.Scope, sec)
 		out = &api.RestoreSecretResponse{ARN: new(sec.arn(m.Scope)), Name: new(sec.Name)}
 		return write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
