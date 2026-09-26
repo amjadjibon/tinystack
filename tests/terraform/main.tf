@@ -47,6 +47,15 @@ resource "aws_sqs_queue" "dead" {
   name = "jobs-dead"
 }
 
+# Only the jobs queue may use jobs-dead as its dead-letter queue.
+resource "aws_sqs_queue_redrive_allow_policy" "dead" {
+  queue_url = aws_sqs_queue.dead.id
+  redrive_allow_policy = jsonencode({
+    redrivePermission = "byQueue"
+    sourceQueueArns   = ["arn:aws:sqs:us-east-1:${data.aws_caller_identity.current.account_id}:jobs"]
+  })
+}
+
 resource "aws_sqs_queue" "jobs" {
   name                       = "jobs"
   visibility_timeout_seconds = 60
@@ -56,6 +65,9 @@ resource "aws_sqs_queue" "jobs" {
     maxReceiveCount     = 3
   })
   tags = local.tags
+
+  # The dead-letter queue must allow jobs before jobs can use it.
+  depends_on = [aws_sqs_queue_redrive_allow_policy.dead]
 }
 
 resource "aws_sns_topic" "alerts" {
