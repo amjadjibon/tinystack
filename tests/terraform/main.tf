@@ -250,6 +250,16 @@ resource "aws_cloudwatch_event_target" "paid" {
   }
 }
 
+resource "aws_iam_user" "deployer" {
+  name = "deployer"
+  path = "/ci/"
+  tags = local.tags
+}
+
+resource "aws_iam_access_key" "deployer" {
+  user = aws_iam_user.deployer.name
+}
+
 resource "aws_iam_role" "lambda" {
   name        = "lambda"
   description = "Runs ${var.team} functions"
