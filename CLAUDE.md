@@ -40,7 +40,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 
 - **gateway** (`internal/gateway/server.go`, `rest.go`): picks the protocol from headers only: `X-Amz-Target` means AWS
   JSON (1.0 or 1.1, whichever the target prefix's service speaks); a signed or host service name that is a REST service means that service's REST protocol (REST XML for S3,
-  REST JSON for Lambda); otherwise a form content type means AWS Query, and an unsigned request that is neither falls
+  REST JSON for Lambda); otherwise a form content type means AWS Query (EC2 Query once the signed or host service, or the action, resolves
+  to EC2), and an unsigned request that is neither falls
   back to S3, the REST service that serves anonymous requests. It does this before anything
   else, so even early errors use the client's envelope. It then resolves identity from the SigV4 `Credential` scope
   (`aws/sigv4`): the access key maps to an account through `identity.accounts` (or, for an unconfigured key, through
@@ -79,7 +80,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     names become exported Go field names (SQS's `tags` is `Tags`); the JSON/XML/query tags keep the wire name.
   - The generator rejects unsupported wire traits. It handles AWS JSON 1.0 services (plus Query for
     `awsQueryCompatible` ones, which need the `query` overlay), AWS JSON 1.1 services such as EventBridge, and pure AWS Query services such as SNS, IAM, and STS, which take their
-    XML namespace from the model, must not have an overlay, and get `*time.Time` timestamps (ISO 8601 on the wire), and REST XML services such as S3, whose types get
+    XML namespace from the model, EC2 Query services (EC2), whose members get `ec2:"<query key>,<XML element>"` tags
+    because the two names differ (the key is the `ec2QueryName`, or the capitalized `xmlName` or member name), must not have an overlay, and get `*time.Time` timestamps (ISO 8601 on the wire), and REST XML services such as S3, whose types get
     `encoding/xml` tags (`*time.Time` timestamps) and whose bindings place members by HTTP location, and REST JSON
     services such as Lambda (HTTP-bound members get `json:"-"`; `httpResponseCode` becomes a `status` binding).
     Modeled header and query inputs left out of the profile become `unsupported:*` bindings, and the REST codecs answer
@@ -91,13 +93,15 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 - **awserror** / **awsjson** / **query** / **rest** / **restxml** / **restjson**: services return `awserror.New(code, msg)` or
   `awserror.Validation(msg)` using the model's error shape name as the code. The gateway applies the service's error
   bindings, and each codec renders the envelope; `X-Amzn-Query-Error` is sent for query-compatible JSON services. The
+  `query` codec also speaks EC2 Query (`DecodeEC2`, `WriteEC2`, `WriteEC2Error`: always-flat request lists,
+  responses without a `Result` wrapper, and the `Response/Errors` error body). The
   `query` and REST codecs are driven entirely by the generated tags and bindings; `rest` holds the HTTP bindings
   (labels, headers, query, payload, status, aws-chunked bodies) that `restxml` and `restjson` share; `restxml` writes
   S3's unwrapped `<Error>` body (none for HEAD) and `restjson` sends `X-Amzn-ErrorType`. Unsupported input fields or parameters must fail explicitly, never be silently
   ignored.
 - **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**, **services/logs**,
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
-  **services/sts**: behavior only, with
+  **services/sts**, **services/ec2**: behavior only, with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
   (DynamoDB items are separate records under `…/dynamodb/<table>/item/<key>`, and the table record keeps the item
@@ -196,7 +200,7 @@ a per-service `Dialect`), and delivers synchronously through
 
 ## Tests
 
-- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, S3 over REST
+- `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, and KMS over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.

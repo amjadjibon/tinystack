@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, and STS endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, and EC2 endpoints for development and tests.
 
 ## Run
 
@@ -507,6 +507,16 @@ The reserved `<aws.events.rule-arn>`, `<aws.events.rule-name>`,
 `<aws.events.event.json>` are also available, and unknown placeholders are left as
 written.
 
+### EC2 (EC2 Query)
+
+EC2 resources are records in the caller's account and Region; no virtual machine
+runs. Every operation takes `DryRun`, which answers `DryRunOperation` (HTTP 412),
+since every caller is authorized.
+
+| Operation | Behavior |
+| --- | --- |
+| DescribeRegions | The commercial Regions, all `opt-in-not-required`, or those named in `RegionNames`; an unknown name is `InvalidParameterValue` |
+
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.
 Unmapped keys and unsigned requests use the default account. Signed regions take
@@ -529,7 +539,7 @@ identity:
 TinyStack checks the canonical request (path, query, signed headers, and payload
 hash), the credential scope, and a signing time within 15 minutes, and answers with
 each service's error codes (such as `InvalidSignatureException`,
-`SignatureDoesNotMatch`, `UnrecognizedClientException`, or `InvalidAccessKeyId`).
+`SignatureDoesNotMatch`, `UnrecognizedClientException`, `InvalidAccessKeyId`, or EC2's `AuthFailure`).
 S3 accepts `UNSIGNED-PAYLOAD` and `STREAMING-UNSIGNED-PAYLOAD-TRAILER` bodies;
 signed aws-chunked uploads (`STREAMING-AWS4-HMAC-SHA256-PAYLOAD`) are not supported.
 Presigned URLs (query-string SigV4 with `X-Amz-Expires` up to 7 days) are verified
@@ -609,7 +619,7 @@ dependencies are available and reproduces the checked-in types, bindings, and
 error descriptors. The generator fails on unsupported wire traits; it supports
 AWS JSON 1.0 services (plus AWS Query for query-compatible ones), AWS JSON 1.1
 services, AWS Query
-services, REST XML services, and REST JSON services. REST XML types carry
+services, EC2 Query (EC2, whose members carry both their query key and XML element), REST XML services, and REST JSON services. REST XML types carry
 `encoding/xml` tags, and REST bindings place each member in a label, header,
 query parameter, prefix header, payload, status code, or document body; modeled header and query inputs left out of the
 profile are recorded as unsupported so requests that use them fail.
