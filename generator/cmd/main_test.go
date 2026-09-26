@@ -170,6 +170,54 @@ func TestPureQueryFixture(t *testing.T) {
 	}
 }
 
+func TestEC2QueryFixture(t *testing.T) {
+	model := `{"shapes": {
+  "fixture#Svc": {"type": "service", "version": "2016-11-15", "traits": {
+    "aws.protocols#ec2Query": {}, "aws.auth#sigv4": {"name": "ec2"},
+    "smithy.api#xmlNamespace": {"uri": "urn:ec2"}}},
+  "fixture#Describe": {"type": "operation", "input": {"target": "fixture#In"}, "output": {"target": "fixture#Out"}},
+  "fixture#In": {"type": "structure", "members": {
+    "InstanceIds": {"target": "fixture#IdList", "traits": {"smithy.api#xmlName": "InstanceId"}},
+    "DryRun": {"target": "smithy.api#Boolean",
+      "traits": {"aws.protocols#ec2QueryName": "DryRun", "smithy.api#xmlName": "dryRun"}},
+    "Plain": {"target": "smithy.api#String"}}},
+  "fixture#Out": {"type": "structure", "members": {
+    "Items": {"target": "fixture#ItemList",
+      "traits": {"aws.protocols#ec2QueryName": "ItemSet", "smithy.api#xmlName": "itemSet"}},
+    "At": {"target": "smithy.api#Timestamp"}}},
+  "fixture#IdList": {"type": "list", "member": {"target": "smithy.api#String",
+    "traits": {"smithy.api#xmlName": "InstanceId"}}},
+  "fixture#ItemList": {"type": "list", "member": {"target": "smithy.api#String",
+    "traits": {"smithy.api#xmlName": "item"}}},
+  "smithy.api#String": {"type": "string"},
+  "smithy.api#Boolean": {"type": "boolean"},
+  "smithy.api#Timestamp": {"type": "timestamp"}
+}}`
+	source, err := generate("fixture", []byte(model), serviceProfile{Operations: []string{"Describe"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		`ec2:"InstanceId,InstanceId,member=InstanceId"`,
+		`ec2:"DryRun,dryRun"`,
+		`ec2:"Plain,Plain"`,
+		`ec2:"ItemSet,itemSet,member=item"`,
+		"*time.Time",
+		`XMLNamespace: "urn:ec2", Protocols: []string{"ec2Query"}`,
+		`Target: "Describe", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded"`,
+	} {
+		if !strings.Contains(string(source), want) {
+			t.Fatalf("generated source lacks %s:\n%s", want, source)
+		}
+	}
+
+	profile := serviceProfile{Operations: []string{"Describe"}, Query: &queryOverlay{XMLNamespace: "urn:other"}}
+	if _, err = generate("fixture", []byte(model), profile); err == nil {
+		t.Fatal("query overlay accepted for an ec2Query model")
+	}
+}
+
 func TestRESTXMLFixture(t *testing.T) {
 	model := `{"shapes": {
   "fixture#Svc": {"type": "service", "version": "2020-01-01", "traits": {

@@ -141,3 +141,57 @@ func TestWrite(t *testing.T) {
 		t.Fatal(w.Body.String())
 	}
 }
+
+type ec2Filter struct {
+	Name   *string  `ec2:"Name,name"`
+	Values []string `ec2:"Value,value,member=item"`
+}
+
+type ec2Fixture struct {
+	DryRun  *bool       `ec2:"DryRun,dryRun"`
+	IDs     []string    `ec2:"InstanceId,instanceId,member=item"`
+	Filters []ec2Filter `ec2:"Filter,filter,member=item"`
+}
+
+// TestEC2 decodes flat EC2 Query lists, including lists in list members, and
+// writes the response and error envelopes.
+func TestEC2(t *testing.T) {
+	params, err := url.ParseQuery("Action=Op&Version=1&DryRun=true&InstanceId.1=i-1&InstanceId.2=i-2" +
+		"&Filter.1.Name=tag%3Ateam&Filter.1.Value.1=a&Filter.1.Value.2=b")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var got ec2Fixture
+	if err = DecodeEC2(params, &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if !*got.DryRun || !reflect.DeepEqual(got.IDs, []string{"i-1", "i-2"}) || len(got.Filters) != 1 ||
+		*got.Filters[0].Name != "tag:team" || !reflect.DeepEqual(got.Filters[0].Values, []string{"a", "b"}) {
+		t.Fatalf("got %+v", got)
+	}
+
+	// AWS Query's wrapped list keys are not EC2 Query keys.
+	params.Set("InstanceId.member.1", "i-3")
+	if err = DecodeEC2(params, &got); err == nil {
+		t.Fatal("decoded an AWS Query list key")
+	}
+
+	w := httptest.NewRecorder()
+	WriteEC2(w, 200, "Op", "urn:ec2", "req-1", &got)
+	want := `<OpResponse xmlns="urn:ec2"><requestId>req-1</requestId><dryRun>true</dryRun>` +
+		`<instanceId><item>i-1</item><item>i-2</item></instanceId><filter><item><name>tag:team</name>` +
+		`<value><item>a</item><item>b</item></value></item></filter></OpResponse>`
+	if body := w.Body.String(); !strings.HasSuffix(body, want) {
+		t.Fatalf("got %s", body)
+	}
+
+	w = httptest.NewRecorder()
+	WriteEC2Error(w, "req-2", awserror.New("InvalidGroup.NotFound", "no <group>"))
+	want = `<Response><Errors><Error><Code>InvalidGroup.NotFound</Code><Message>no &lt;group&gt;</Message>` +
+		`</Error></Errors><RequestID>req-2</RequestID></Response>`
+	if body := w.Body.String(); w.Code != 400 || !strings.HasSuffix(body, want) {
+		t.Fatalf("got %d %s", w.Code, body)
+	}
+}
