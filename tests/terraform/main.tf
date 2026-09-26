@@ -18,6 +18,7 @@ provider "aws" {
 
   endpoints {
     dynamodb       = var.endpoint
+    ec2            = var.endpoint
     eventbridge    = var.endpoint
     iam            = var.endpoint
     kms            = var.endpoint
@@ -41,6 +42,27 @@ output "account_id" {
 
 locals {
   tags = { team = var.team }
+}
+
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
+  }
+}
+
+resource "aws_ec2_tag" "subnet" {
+  resource_id = data.aws_subnets.default.ids[0]
+  key         = "team"
+  value       = var.team
+}
+
+output "zones" {
+  value = length(data.aws_availability_zones.available.names)
 }
 
 resource "aws_sqs_queue" "dead" {

@@ -64,10 +64,11 @@ def main():
                 terraform("init")
                 terraform("apply", "-auto-approve")
                 assert terraform("output", "-raw", "account_id") == "000000000000"
+                assert terraform("output", "-raw", "zones") == "3"
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "1 added, 20 changed, 1 destroyed" in updated, updated
+                assert "1 added, 21 changed, 1 destroyed" in updated, updated
                 terraform("plan", "-detailed-exitcode", team="platform")
                 terraform("destroy", "-auto-approve", team="platform")
             finally:
