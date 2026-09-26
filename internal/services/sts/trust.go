@@ -10,8 +10,8 @@ import (
 // caller is who asks to assume a role, as a trust policy's principals name it.
 type caller struct {
 	account string
-	// arns are the principal ARNs that name the caller: the account root, or
-	// for a role session both the role and the session.
+	// arns are the principal ARNs that name the caller: the account root, and
+	// the IAM user, or for a role session both the role and the session.
 	arns []string
 }
 

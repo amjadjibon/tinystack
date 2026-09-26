@@ -14,9 +14,11 @@ type Metadata struct {
 	Endpoint string
 }
 
-// Session is a temporary credential that STS issued. Requests signed with its
-// access key act in AccountID; verified requests must also carry Token.
-type Session struct {
+// Credentials are what an access key that TinyStack issued stands for:
+// requests signed with it act in AccountID and verify with Secret. An IAM
+// user's key has no Token and never expires; an STS session's key expires, and
+// verified requests must also carry its Token.
+type Credentials struct {
 	Expires   time.Time
 	AccountID string
 	Secret    string

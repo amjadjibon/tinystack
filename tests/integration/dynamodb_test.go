@@ -136,7 +136,7 @@ func serverStore(
 		t.Fatal(err)
 	}
 
-	h.UseSessions(stsService.Session)
+	h.UseCredentials(stsService.Credentials)
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)

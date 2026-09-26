@@ -1,7 +1,7 @@
 // Package sts implements the AWS Security Token Service without HTTP
 // dependencies. Callers are identified by the account the gateway resolved for
-// their access key: a long-term key is that account's root user, and a key
-// that AssumeRole issued is its role session.
+// their access key: a configured key is that account's root user, an IAM
+// access key is its user, and a key that AssumeRole issued is its role session.
 package sts
 
 import (
@@ -105,10 +105,11 @@ func callerSession(tx storage.ReadTx, m *request.Metadata) (current *session, fo
 	return current, current.AccountID == m.AccountID, nil
 }
 
-// Session returns the session that AssumeRole issued for accessKey, for the
-// gateway to resolve and verify temporary credentials.
-func (s *Service) Session(ctx context.Context, accessKey string) (request.Session, bool, error) {
-	var out request.Session
+// Credentials returns the credentials of the session that AssumeRole issued
+// for accessKey, or else of the IAM user's access key accessKey, for the
+// gateway to resolve and verify.
+func (s *Service) Credentials(ctx context.Context, accessKey string) (request.Credentials, bool, error) {
+	var out request.Credentials
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		data, ok := tx.Get(sessionPrefix + accessKey)
@@ -122,7 +123,7 @@ func (s *Service) Session(ctx context.Context, accessKey string) (request.Sessio
 		}
 
 		found = true
-		out = request.Session{
+		out = request.Credentials{
 			Expires:   time.Unix(stored.Expires, 0),
 			AccountID: stored.AccountID,
 			Secret:    stored.Secret,
@@ -131,13 +132,27 @@ func (s *Service) Session(ctx context.Context, accessKey string) (request.Sessio
 
 		return nil
 	})
+	if err != nil || found {
+		return out, found, err
+	}
 
-	return out, found, err
+	key, found, err := s.roles.AccessKey(ctx, accessKey)
+	return request.Credentials{AccountID: key.Account, Secret: key.Secret}, found, err
 }
 
-// GetCallerIdentity returns the caller's role session, or the root user of the
-// caller's account: TinyStack maps a long-term access key to an account, not
-// to a user within it.
+// callerUser returns the IAM user whose access key m carries, if the key is
+// one of m's account.
+func (s *Service) callerUser(ctx context.Context, m *request.Metadata) (iam.Key, bool, error) {
+	if m.AccessKey == "" {
+		return iam.Key{}, false, nil
+	}
+
+	key, found, err := s.roles.AccessKey(ctx, m.AccessKey)
+	return key, found && key.Account == m.AccountID, err
+}
+
+// GetCallerIdentity returns the caller's role session, its IAM user, or the
+// root user of the caller's account, which a configured access key acts as.
 func (s *Service) GetCallerIdentity(
 	ctx context.Context,
 	_ *api.GetCallerIdentityRequest,
@@ -152,6 +167,16 @@ func (s *Service) GetCallerIdentity(
 		Account: new(m.AccountID),
 		Arn:     new(rootARN(m.AccountID)),
 	}
+	key, isUser, err := s.callerUser(ctx, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	if isUser {
+		out.UserId, out.Arn = new(key.UserID), new(key.UserARN)
+		return out, nil
+	}
+
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		current, found, lookupErr := callerSession(tx, &m)
 		if lookupErr != nil || !found {
@@ -183,6 +208,11 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 		return nil, err
 	}
 
+	key, isUser, err := s.callerUser(ctx, &m)
+	if err != nil {
+		return nil, err
+	}
+
 	now := s.now()
 	var out *api.AssumeRoleResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -192,8 +222,11 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 		}
 
 		c := caller{account: m.AccountID, arns: []string{rootARN(m.AccountID)}}
-		if chained {
+		switch {
+		case chained:
 			c.arns = append(c.arns, current.RoleARN, current.arn())
+		case isUser:
+			c.arns = append(c.arns, key.UserARN)
 		}
 
 		if !exists || !trusts(role.TrustPolicy, c, value(in.ExternalId)) {

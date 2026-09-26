@@ -139,7 +139,7 @@ func newStartCommand() *cobra.Command {
 				return err
 			}
 
-			handler.UseSessions(tokens.Session)
+			handler.UseCredentials(tokens.Credentials)
 			handler.Handle("deliveries", deliveries)
 
 			var listenConfig net.ListenConfig

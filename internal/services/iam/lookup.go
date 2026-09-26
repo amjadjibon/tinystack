@@ -60,3 +60,44 @@ func (s *Service) RoleByARN(ctx context.Context, arn string) (Role, bool, error)
 
 	return out, found && err == nil, err
 }
+
+// Key is an active access key of an IAM user: the secret the gateway verifies
+// signatures with, and the user the key acts as.
+type Key struct {
+	Account  string
+	Secret   string
+	UserName string
+	UserID   string
+	UserARN  string
+}
+
+// AccessKey returns the active access key with ID id, or false when there is
+// none or it is inactive.
+func (s *Service) AccessKey(ctx context.Context, id string) (Key, bool, error) {
+	var out Key
+	found := false
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		k, exists, err := read[accessKey](tx, accessKeyPrefix+id)
+		if err != nil || !exists || k.Status != keyActive || id == "" {
+			return err
+		}
+
+		u, _, err := loadUser(tx, k.Account, &k.UserName)
+		if err != nil {
+			return err
+		}
+
+		found = true
+		out = Key{
+			Account:  k.Account,
+			Secret:   k.Secret,
+			UserName: u.Name,
+			UserID:   u.ID,
+			UserARN:  userARN(k.Account, u),
+		}
+
+		return nil
+	})
+
+	return out, found && err == nil, err
+}

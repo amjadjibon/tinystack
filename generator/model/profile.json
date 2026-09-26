@@ -1746,7 +1746,21 @@
       "SetDefaultPolicyVersion",
       "TagPolicy",
       "UntagPolicy",
-      "ListPolicyTags"
+      "ListPolicyTags",
+      "CreateUser",
+      "GetUser",
+      "ListUsers",
+      "UpdateUser",
+      "DeleteUser",
+      "TagUser",
+      "UntagUser",
+      "ListUserTags",
+      "ListGroupsForUser",
+      "CreateAccessKey",
+      "ListAccessKeys",
+      "UpdateAccessKey",
+      "DeleteAccessKey",
+      "GetAccessKeyLastUsed"
     ],
     "shapes": {
       "CreateRoleRequest": [
@@ -1999,6 +2013,131 @@
       ],
       "UpdateRoleDescriptionResponse": [
         "Role"
+      ],
+      "CreateUserRequest": [
+        "Path",
+        "UserName",
+        "Tags"
+      ],
+      "CreateUserResponse": [
+        "User"
+      ],
+      "GetUserRequest": [
+        "UserName"
+      ],
+      "GetUserResponse": [
+        "User"
+      ],
+      "ListUsersRequest": [
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListUsersResponse": [
+        "Users",
+        "IsTruncated",
+        "Marker"
+      ],
+      "UpdateUserRequest": [
+        "UserName",
+        "NewPath",
+        "NewUserName"
+      ],
+      "DeleteUserRequest": [
+        "UserName"
+      ],
+      "TagUserRequest": [
+        "UserName",
+        "Tags"
+      ],
+      "UntagUserRequest": [
+        "UserName",
+        "TagKeys"
+      ],
+      "ListUserTagsRequest": [
+        "UserName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListUserTagsResponse": [
+        "Tags",
+        "IsTruncated",
+        "Marker"
+      ],
+      "ListGroupsForUserRequest": [
+        "UserName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListGroupsForUserResponse": [
+        "Groups",
+        "IsTruncated",
+        "Marker"
+      ],
+      "CreateAccessKeyRequest": [
+        "UserName"
+      ],
+      "CreateAccessKeyResponse": [
+        "AccessKey"
+      ],
+      "ListAccessKeysRequest": [
+        "UserName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListAccessKeysResponse": [
+        "AccessKeyMetadata",
+        "IsTruncated",
+        "Marker"
+      ],
+      "UpdateAccessKeyRequest": [
+        "UserName",
+        "AccessKeyId",
+        "Status"
+      ],
+      "DeleteAccessKeyRequest": [
+        "UserName",
+        "AccessKeyId"
+      ],
+      "GetAccessKeyLastUsedRequest": [
+        "AccessKeyId"
+      ],
+      "GetAccessKeyLastUsedResponse": [
+        "UserName",
+        "AccessKeyLastUsed"
+      ],
+      "User": [
+        "Path",
+        "UserName",
+        "UserId",
+        "Arn",
+        "CreateDate",
+        "Tags"
+      ],
+      "AccessKey": [
+        "UserName",
+        "AccessKeyId",
+        "Status",
+        "SecretAccessKey",
+        "CreateDate"
+      ],
+      "AccessKeyMetadata": [
+        "UserName",
+        "AccessKeyId",
+        "Status",
+        "CreateDate"
+      ],
+      "AccessKeyLastUsed": [
+        "LastUsedDate",
+        "ServiceName",
+        "Region"
+      ],
+      "Group": [
+        "Path",
+        "GroupName",
+        "GroupId",
+        "Arn",
+        "CreateDate"
       ]
     }
   },

@@ -10,8 +10,12 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// Resources lists every role and managed policy, for the resource browser. IAM
-// is global, so resources have no region.
+// detailPath is the resource detail that holds an entity's IAM path.
+const detailPath = "Path"
+
+// Resources lists every role, managed policy, and user, for the resource
+// browser. IAM is global, so resources have no region. Access key secrets are
+// never listed.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -32,7 +36,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				out = append(out, catalog.Resource{
 					Type: kindRole, Account: account, Name: r.Name, ARN: roleARN(account, r), Tags: r.Tags,
 					Details: map[string]any{
-						"Path":                     r.Path,
+						detailPath:                 r.Path,
 						"AssumeRolePolicyDocument": r.AssumeRolePolicy,
 						"InlinePolicies":           slices.Sorted(maps.Keys(r.Policies)),
 						"AttachedPolicies":         r.Attached,
@@ -56,9 +60,19 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				out = append(out, catalog.Resource{
 					Type: kindPolicy, Account: account, Name: p.Name, ARN: policyARN(account, p), Tags: p.Tags,
 					Details: map[string]any{
-						"Path": p.Path, "DefaultVersionId": p.DefaultVersion, "Versions": versions,
+						detailPath: p.Path, "DefaultVersionId": p.DefaultVersion, "Versions": versions,
 						"AttachmentCount": p.Attachments, "Document": document,
 					},
+				})
+			case kindUser:
+				u, _, err := read[user](tx, k)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: kindUser, Account: account, Name: u.Name, ARN: userARN(account, u), Tags: u.Tags,
+					Details: map[string]any{detailPath: u.Path, "UserId": u.ID, "AccessKeyIds": u.Keys},
 				})
 			}
 		}

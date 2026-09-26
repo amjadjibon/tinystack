@@ -40,22 +40,23 @@ type Server struct {
 	requests *recent.Log[Record]
 	metrics  *metrics
 	// internal serves TinyStack's own endpoints under /_tinystack/.
-	internal map[string]http.Handler
-	sessions SessionLookup
-	health   []byte
-	cfg      config.Config
+	internal    map[string]http.Handler
+	credentials CredentialLookup
+	health      []byte
+	cfg         config.Config
 }
 
-// SessionLookup returns the STS session that issued accessKey, if any.
-type SessionLookup func(ctx context.Context, accessKey string) (request.Session, bool, error)
+// CredentialLookup returns the credentials of an access key TinyStack issued,
+// such as an IAM user's key or an STS session's, if any.
+type CredentialLookup func(ctx context.Context, accessKey string) (request.Credentials, bool, error)
 
 // call is a request classified to a protocol and, once known, a service.
 type call struct {
 	service *catalog.Service
-	// session is the STS session the access key belongs to, if any.
-	session *request.Session
-	form    url.Values
-	labels  map[string]string
+	// credentials are those of an access key TinyStack issued, if the request's is one.
+	credentials *request.Credentials
+	form        url.Values
+	labels      map[string]string
 	// failure is the error the response reports, if any.
 	failure *awserror.Error
 	meta    request.Metadata
@@ -115,10 +116,11 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	return s, nil
 }
 
-// UseSessions resolves access keys that are not configured, such as the
-// temporary keys STS issues, through lookup. Call it before serving requests.
-func (s *Server) UseSessions(lookup SessionLookup) {
-	s.sessions = lookup
+// UseCredentials resolves access keys that are not configured, such as IAM
+// users' keys and the temporary keys STS issues, through lookup. Call it
+// before serving requests.
+func (s *Server) UseCredentials(lookup CredentialLookup) {
+	s.credentials = lookup
 }
 
 // Handle serves h at /_tinystack/<name>. Call it before serving requests.
@@ -157,11 +159,11 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 	return a.Service, nil
 }
 
-// resolveSession maps a temporary access key to the account of its session.
-// Configured keys win; authenticate checks the session token and expiry.
-func (s *Server) resolveSession(ctx context.Context, c *call) error {
+// resolveCredentials maps an access key TinyStack issued to its account.
+// Configured keys win; authenticate checks the secret, token, and expiry.
+func (s *Server) resolveCredentials(ctx context.Context, c *call) error {
 	key := c.meta.AccessKey
-	if s.sessions == nil || key == "" {
+	if s.credentials == nil || key == "" {
 		return nil
 	}
 
@@ -171,13 +173,13 @@ func (s *Server) resolveSession(ctx context.Context, c *call) error {
 		return nil
 	}
 
-	session, ok, err := s.sessions(ctx, key)
+	credentials, ok, err := s.credentials(ctx, key)
 	if err != nil || !ok {
 		return err
 	}
 
-	c.session = &session
-	c.meta.AccountID = session.AccountID
+	c.credentials = &credentials
+	c.meta.AccountID = credentials.AccountID
 	return nil
 }
 
@@ -218,7 +220,7 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 		return c, err
 	}
 
-	if guardErr := s.resolveSession(r.Context(), c); guardErr != nil {
+	if guardErr := s.resolveCredentials(r.Context(), c); guardErr != nil {
 		return c, guardErr
 	}
 

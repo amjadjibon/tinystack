@@ -113,17 +113,18 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 
 	secret, ok := s.cfg.Identity.SecretKeys[a.AccessKey]
 	if !ok {
-		// A temporary key must come with its session's token.
+		// An issued key must come with its token: a session's, or none for an
+		// IAM user's key.
 		token := r.Header.Get("X-Amz-Security-Token")
 		if a.Expires != 0 {
 			token = r.URL.Query().Get(sigv4.QuerySecurityToken)
 		}
 
-		if c.session == nil || subtle.ConstantTimeCompare([]byte(token), []byte(c.session.Token)) != 1 {
+		if c.credentials == nil || subtle.ConstantTimeCompare([]byte(token), []byte(c.credentials.Token)) != 1 {
 			return authError(protocol, unknownKey)
 		}
 
-		secret = c.session.Secret
+		secret = c.credentials.Secret
 	}
 
 	s3 := c.service.SigningName == "s3"
@@ -145,7 +146,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 		return awserror.New("IncompleteSignatureException", err.Error())
 	case err != nil:
 		return authError(protocol, badSignature)
-	case c.session != nil && !time.Now().Before(c.session.Expires):
+	case c.credentials != nil && !c.credentials.Expires.IsZero() && !time.Now().Before(c.credentials.Expires):
 		return authError(protocol, expiredToken)
 	}
 

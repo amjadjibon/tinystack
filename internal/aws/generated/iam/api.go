@@ -338,6 +338,170 @@ type ListPolicyTagsResponse struct {
 	Marker      *string `json:"Marker,omitempty" query:"Marker"`
 }
 
+type CreateUserRequest struct {
+	Path     *string `json:"Path,omitempty" query:"Path"`
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	Tags     []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type User struct {
+	Path       *string    `json:"Path,omitempty" query:"Path"`
+	UserName   *string    `json:"UserName,omitempty" query:"UserName"`
+	UserId     *string    `json:"UserId,omitempty" query:"UserId"`
+	Arn        *string    `json:"Arn,omitempty" query:"Arn"`
+	CreateDate *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+	Tags       []Tag      `json:"Tags,omitempty" query:"Tags"`
+}
+
+type CreateUserResponse struct {
+	User *User `json:"User,omitempty" query:"User"`
+}
+
+type GetUserRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type GetUserResponse struct {
+	User *User `json:"User,omitempty" query:"User"`
+}
+
+type ListUsersRequest struct {
+	PathPrefix *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
+	Marker     *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems   *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListUsersResponse struct {
+	Users       []User  `json:"Users,omitempty" query:"Users"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type UpdateUserOutput struct{}
+
+type UpdateUserRequest struct {
+	UserName    *string `json:"UserName,omitempty" query:"UserName"`
+	NewPath     *string `json:"NewPath,omitempty" query:"NewPath"`
+	NewUserName *string `json:"NewUserName,omitempty" query:"NewUserName"`
+}
+
+type DeleteUserOutput struct{}
+
+type DeleteUserRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type TagUserOutput struct{}
+
+type TagUserRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	Tags     []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type UntagUserOutput struct{}
+
+type UntagUserRequest struct {
+	UserName *string  `json:"UserName,omitempty" query:"UserName"`
+	TagKeys  []string `json:"TagKeys,omitempty" query:"TagKeys"`
+}
+
+type ListUserTagsRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	Marker   *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListUserTagsResponse struct {
+	Tags        []Tag   `json:"Tags,omitempty" query:"Tags"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type ListGroupsForUserRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	Marker   *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type Group struct {
+	Path       *string    `json:"Path,omitempty" query:"Path"`
+	GroupName  *string    `json:"GroupName,omitempty" query:"GroupName"`
+	GroupId    *string    `json:"GroupId,omitempty" query:"GroupId"`
+	Arn        *string    `json:"Arn,omitempty" query:"Arn"`
+	CreateDate *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+}
+
+type ListGroupsForUserResponse struct {
+	Groups      []Group `json:"Groups,omitempty" query:"Groups"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type CreateAccessKeyRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type AccessKey struct {
+	UserName        *string    `json:"UserName,omitempty" query:"UserName"`
+	AccessKeyId     *string    `json:"AccessKeyId,omitempty" query:"AccessKeyId"`
+	Status          *string    `json:"Status,omitempty" query:"Status"`
+	SecretAccessKey *string    `json:"SecretAccessKey,omitempty" query:"SecretAccessKey"`
+	CreateDate      *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+}
+
+type CreateAccessKeyResponse struct {
+	AccessKey *AccessKey `json:"AccessKey,omitempty" query:"AccessKey"`
+}
+
+type ListAccessKeysRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	Marker   *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type AccessKeyMetadata struct {
+	UserName    *string    `json:"UserName,omitempty" query:"UserName"`
+	AccessKeyId *string    `json:"AccessKeyId,omitempty" query:"AccessKeyId"`
+	Status      *string    `json:"Status,omitempty" query:"Status"`
+	CreateDate  *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+}
+
+type ListAccessKeysResponse struct {
+	AccessKeyMetadata []AccessKeyMetadata `json:"AccessKeyMetadata,omitempty" query:"AccessKeyMetadata"`
+	IsTruncated       *bool               `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker            *string             `json:"Marker,omitempty" query:"Marker"`
+}
+
+type UpdateAccessKeyOutput struct{}
+
+type UpdateAccessKeyRequest struct {
+	UserName    *string `json:"UserName,omitempty" query:"UserName"`
+	AccessKeyId *string `json:"AccessKeyId,omitempty" query:"AccessKeyId"`
+	Status      *string `json:"Status,omitempty" query:"Status"`
+}
+
+type DeleteAccessKeyOutput struct{}
+
+type DeleteAccessKeyRequest struct {
+	UserName    *string `json:"UserName,omitempty" query:"UserName"`
+	AccessKeyId *string `json:"AccessKeyId,omitempty" query:"AccessKeyId"`
+}
+
+type GetAccessKeyLastUsedRequest struct {
+	AccessKeyId *string `json:"AccessKeyId,omitempty" query:"AccessKeyId"`
+}
+
+type AccessKeyLastUsed struct {
+	LastUsedDate *time.Time `json:"LastUsedDate,omitempty" query:"LastUsedDate"`
+	ServiceName  *string    `json:"ServiceName,omitempty" query:"ServiceName"`
+	Region       *string    `json:"Region,omitempty" query:"Region"`
+}
+
+type GetAccessKeyLastUsedResponse struct {
+	UserName          *string            `json:"UserName,omitempty" query:"UserName"`
+	AccessKeyLastUsed *AccessKeyLastUsed `json:"AccessKeyLastUsed,omitempty" query:"AccessKeyLastUsed"`
+}
+
 type API interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
@@ -369,10 +533,24 @@ type API interface {
 	TagPolicy(context.Context, *TagPolicyRequest) (*TagPolicyOutput, error)
 	UntagPolicy(context.Context, *UntagPolicyRequest) (*UntagPolicyOutput, error)
 	ListPolicyTags(context.Context, *ListPolicyTagsRequest) (*ListPolicyTagsResponse, error)
+	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
+	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
+	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
+	UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserOutput, error)
+	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserOutput, error)
+	TagUser(context.Context, *TagUserRequest) (*TagUserOutput, error)
+	UntagUser(context.Context, *UntagUserRequest) (*UntagUserOutput, error)
+	ListUserTags(context.Context, *ListUserTagsRequest) (*ListUserTagsResponse, error)
+	ListGroupsForUser(context.Context, *ListGroupsForUserRequest) (*ListGroupsForUserResponse, error)
+	CreateAccessKey(context.Context, *CreateAccessKeyRequest) (*CreateAccessKeyResponse, error)
+	ListAccessKeys(context.Context, *ListAccessKeysRequest) (*ListAccessKeysResponse, error)
+	UpdateAccessKey(context.Context, *UpdateAccessKeyRequest) (*UpdateAccessKeyOutput, error)
+	DeleteAccessKey(context.Context, *DeleteAccessKeyRequest) (*DeleteAccessKeyOutput, error)
+	GetAccessKeyLastUsed(context.Context, *GetAccessKeyLastUsedRequest) (*GetAccessKeyLastUsedResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iam", SigningName: "iam", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://iam.amazonaws.com/doc/2010-05-08/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModification", MessageMember: "", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "DeleteConflict", MessageMember: "", StatusCode: 409}, "EntityAlreadyExistsException": catalog.ErrorBinding{QueryCode: "EntityAlreadyExists", MessageMember: "", StatusCode: 409}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "InvalidInput", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "", StatusCode: 409}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "NoSuchEntityException": catalog.ErrorBinding{QueryCode: "NoSuchEntity", MessageMember: "", StatusCode: 404}, "PolicyNotAttachableException": catalog.ErrorBinding{QueryCode: "PolicyNotAttachable", MessageMember: "", StatusCode: 400}, "ServiceFailureException": catalog.ErrorBinding{QueryCode: "ServiceFailure", MessageMember: "", StatusCode: 500}, "UnmodifiableEntityException": catalog.ErrorBinding{QueryCode: "UnmodifiableEntity", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iam", SigningName: "iam", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://iam.amazonaws.com/doc/2010-05-08/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModification", MessageMember: "", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "DeleteConflict", MessageMember: "", StatusCode: 409}, "EntityAlreadyExistsException": catalog.ErrorBinding{QueryCode: "EntityAlreadyExists", MessageMember: "", StatusCode: 409}, "EntityTemporarilyUnmodifiableException": catalog.ErrorBinding{QueryCode: "EntityTemporarilyUnmodifiable", MessageMember: "", StatusCode: 409}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "InvalidInput", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "", StatusCode: 409}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "NoSuchEntityException": catalog.ErrorBinding{QueryCode: "NoSuchEntity", MessageMember: "", StatusCode: 404}, "PolicyNotAttachableException": catalog.ErrorBinding{QueryCode: "PolicyNotAttachable", MessageMember: "", StatusCode: 400}, "ServiceFailureException": catalog.ErrorBinding{QueryCode: "ServiceFailure", MessageMember: "", StatusCode: 500}, "UnmodifiableEntityException": catalog.ErrorBinding{QueryCode: "UnmodifiableEntity", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateRole": {Name: "CreateRole", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateRole", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateRoleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateRole(ctx, input.(*CreateRoleRequest))
 		}},
@@ -458,6 +636,44 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListPolicyTags": {Name: "ListPolicyTags", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListPolicyTags", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListPolicyTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListPolicyTags(ctx, input.(*ListPolicyTagsRequest))
+		}},
+		"CreateUser": {Name: "CreateUser", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateUser", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateUser(ctx, input.(*CreateUserRequest))
+		}},
+		"GetUser": {Name: "GetUser", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetUser", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetUser(ctx, input.(*GetUserRequest)) }},
+		"ListUsers": {Name: "ListUsers", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListUsers", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListUsersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListUsers(ctx, input.(*ListUsersRequest))
+		}},
+		"UpdateUser": {Name: "UpdateUser", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateUser", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateUser(ctx, input.(*UpdateUserRequest))
+		}},
+		"DeleteUser": {Name: "DeleteUser", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteUser", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteUser(ctx, input.(*DeleteUserRequest))
+		}},
+		"TagUser": {Name: "TagUser", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TagUser", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TagUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.TagUser(ctx, input.(*TagUserRequest)) }},
+		"UntagUser": {Name: "UntagUser", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UntagUser", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UntagUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagUser(ctx, input.(*UntagUserRequest))
+		}},
+		"ListUserTags": {Name: "ListUserTags", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListUserTags", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListUserTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListUserTags(ctx, input.(*ListUserTagsRequest))
+		}},
+		"ListGroupsForUser": {Name: "ListGroupsForUser", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListGroupsForUser", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListGroupsForUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListGroupsForUser(ctx, input.(*ListGroupsForUserRequest))
+		}},
+		"CreateAccessKey": {Name: "CreateAccessKey", UnitOutput: false, Sensitive: true, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateAccessKey", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateAccessKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateAccessKey(ctx, input.(*CreateAccessKeyRequest))
+		}},
+		"ListAccessKeys": {Name: "ListAccessKeys", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListAccessKeys", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListAccessKeysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListAccessKeys(ctx, input.(*ListAccessKeysRequest))
+		}},
+		"UpdateAccessKey": {Name: "UpdateAccessKey", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateAccessKey", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateAccessKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateAccessKey(ctx, input.(*UpdateAccessKeyRequest))
+		}},
+		"DeleteAccessKey": {Name: "DeleteAccessKey", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteAccessKey", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteAccessKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteAccessKey(ctx, input.(*DeleteAccessKeyRequest))
+		}},
+		"GetAccessKeyLastUsed": {Name: "GetAccessKeyLastUsed", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetAccessKeyLastUsed", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetAccessKeyLastUsedRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetAccessKeyLastUsed(ctx, input.(*GetAccessKeyLastUsedRequest))
 		}},
 	}}
 }
