@@ -74,7 +74,7 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, and aliases, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
-(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), and IAM roles, role policies, and managed policies, tags
+(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), and IAM roles, users, groups, their inline and attached policies, and managed policies, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
@@ -323,7 +323,7 @@ Log groups belong to an account and region.
 
 ### IAM (AWS Query)
 
-Roles, managed policies, users, and access keys, global within each account: a
+Roles, users, groups, managed policies, and access keys, global within each account: a
 client in any region sees the same records. Policies are stored and returned,
 never evaluated.
 
@@ -338,9 +338,14 @@ never evaluated.
 | CreatePolicyVersion / GetPolicyVersion / ListPolicyVersions / DeletePolicyVersion / SetDefaultPolicyVersion | Up to 5 versions; the default version cannot be deleted |
 | TagPolicy / UntagPolicy / ListPolicyTags | Up to 50 tags |
 | ListInstanceProfilesForRole | Always empty: instance profiles are not modeled |
-| CreateUser / GetUser / ListUsers / UpdateUser / DeleteUser | Paths and `Tags`; names are case-insensitive; GetUser without a name describes the calling IAM user, or the root user; UpdateUser renames (keeping the user's ID and keys) or moves a user; a user with access keys cannot be deleted |
+| CreateUser / GetUser / ListUsers / UpdateUser / DeleteUser | Paths and `Tags`; names are case-insensitive; GetUser without a name describes the calling IAM user, or the root user; UpdateUser renames (keeping the user's ID, keys, policies, and groups) or moves a user; a user with access keys, policies, or groups cannot be deleted |
 | TagUser / UntagUser / ListUserTags | Up to 50 tags |
-| ListGroupsForUser | Always empty: groups are not modeled |
+| PutUserPolicy / GetUserPolicy / ListUserPolicies / DeleteUserPolicy | Inline user policies |
+| AttachUserPolicy / DetachUserPolicy / ListAttachedUserPolicies | Up to 10 managed policies per user |
+| CreateGroup / GetGroup / ListGroups / UpdateGroup / DeleteGroup | Paths; names are case-insensitive; GetGroup pages through the group's users; UpdateGroup renames (keeping members and policies) or moves a group; a group with users or policies cannot be deleted |
+| AddUserToGroup / RemoveUserFromGroup / ListGroupsForUser | Up to 10 groups per user; adding a member again changes nothing |
+| PutGroupPolicy / GetGroupPolicy / ListGroupPolicies / DeleteGroupPolicy | Inline group policies |
+| AttachGroupPolicy / DetachGroupPolicy / ListAttachedGroupPolicies | Up to 10 managed policies per group |
 | CreateAccessKey / ListAccessKeys / UpdateAccessKey / DeleteAccessKey | Up to 2 `AKIA` keys per user, `Active` or `Inactive`; only CreateAccessKey returns the secret; without a `UserName`, the calling IAM user (root access keys are not issued) |
 | GetAccessKeyLastUsed | The key's user; use is not recorded, so every key reports `N/A` |
 
@@ -551,8 +556,8 @@ streams (no bisecting, failure destinations, or `UpdateEventSourceMapping`); asy
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
 buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; the first delivery happens
-synchronously during PutEvents, and retries run in the background. IAM limits: no groups, root access keys, login profiles, instance
-profiles, permissions boundaries, user policies, access key usage tracking, or policy evaluation, and AWS managed policies
+synchronously during PutEvents, and retries run in the background. IAM limits: no root access keys, login profiles, instance
+profiles, permissions boundaries, access key usage tracking, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, `aws:ec2:image` or other data
 types, public `/aws/service/...` parameters, shared parameters, or parameter quotas.
