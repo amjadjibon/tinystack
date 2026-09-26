@@ -148,7 +148,11 @@ a per-service `Dialect`), and delivers synchronously through
   stored as plain text and only a random placeholder is returned without decryption. Secrets Manager keeps each
   secret's metadata (staging labels, version list, tags, scheduled deletion) under `…/secretsmanager/secret/<name>` and
   each version's value under `…/secretsmanager/value/<name>:<version ID>`, so listing never reads a value; a secret
-  past its recovery window is treated as gone and purged when its name is reused. KMS keeps each key (its AES-256
+  past its recovery window is treated as gone and purged when its name is reused. Rotation settings live in the secret
+  record; `rotation.go` runs a rotation function's four steps through `lambda.Service.Invoke` in the background, and
+  its scheduler (stopped by `Stop`, deferred and a shutdown hook in `start.go`) reads the partition-wide
+  `aws/secretsmanager/rotation/<account>/<region>/<name>` index and moves a secret's next rotation time in the
+  transaction that claims it. Schedule expressions (`rate`, `cron`) are parsed by the shared `services/schedule`. KMS keeps each key (its AES-256
   material, state, policy, and tags) under `…/kms/key/<key ID>` and each alias under `…/kms/alias/<name>`; a
   ciphertext starts with the ID of the key that sealed it (`kms/crypto.go`), and a key past its deletion date is
   treated as gone. SSM, Secrets Manager, and SQS hold the `*kms.Service` and call `kms.Service.Check` outside

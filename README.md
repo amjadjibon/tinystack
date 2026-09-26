@@ -409,6 +409,17 @@ without the random six-character suffix.
 | DeleteSecret / RestoreSecret | A recovery window of 7 to 30 days (30 by default) blocks reading and changing the secret and its name until restored; `ForceDeleteWithoutRecovery` deletes at once |
 | TagResource / UntagResource | Up to 50 tags |
 | GetResourcePolicy | Always no policy |
+| RotateSecret / CancelRotateSecret | Rotation with a Lambda function (`RotationLambdaARN`) and `RotationRules`: `AutomaticallyAfterDays` (1 to 1,000) or a `rate`/`cron` `ScheduleExpression` (at least 4 hours apart; no `L`, `W`, or `#`), and an optional `Duration`; both are kept from an earlier call when left out. Unless `RotateImmediately` is false, the function runs its steps at once; DescribeSecret and ListSecrets report `RotationEnabled`, the rules, `LastRotatedDate`, and `NextRotationDate`; cancelling turns rotation off and returns the version of an unfinished rotation |
+
+A rotation invokes the function in-process, in the background, with
+`{"Step", "SecretId", "ClientRequestToken"}` for `createSecret`, `setSecret`,
+`testSecret`, and `finishSecret`, the way AWS rotation templates expect; the
+function adds the `AWSPENDING` version and moves `AWSCURRENT` to it. The rotation
+counts only once that version is `AWSCURRENT`. A failed step stops it, leaving the
+version `AWSPENDING`: another rotation fails until one retries it with that
+`ClientRequestToken`, and the scheduler retries it at the next slot. A scheduler
+checks every second and starts each due rotation at most once per slot, even
+across a restart. Every step and failure appears in `/_tinystack/deliveries`.
 
 A secret uses the AWS managed key (`alias/aws/secretsmanager`) or the KMS key its
 `KmsKeyId` names. While that key is missing, disabled, or pending deletion, adding a
@@ -546,7 +557,7 @@ are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs
 no parameter policies, `aws:ec2:image` or other data
 types, public `/aws/service/...` parameters, shared parameters, or parameter quotas.
 KMS limits: no asymmetric, HMAC, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
-material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no rotation, replication, resource policies,
+material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policies,
 `BatchGetSecretValue`, `GetRandomPassword`, or `SortBy`.
 STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
