@@ -238,6 +238,15 @@ resource "aws_cloudwatch_event_target" "orders" {
   rule      = aws_cloudwatch_event_rule.orders.name
   target_id = "jobs"
   arn       = aws_sqs_queue.jobs.arn
+
+  retry_policy {
+    maximum_retry_attempts       = 3
+    maximum_event_age_in_seconds = 600
+  }
+
+  dead_letter_config {
+    arn = aws_sqs_queue.dead.arn
+  }
 }
 
 resource "aws_cloudwatch_event_rule" "nightly" {
