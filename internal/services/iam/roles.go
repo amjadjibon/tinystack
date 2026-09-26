@@ -2,8 +2,6 @@ package iam
 
 import (
 	"context"
-	"maps"
-	"slices"
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
@@ -192,13 +190,12 @@ func (s *Service) DeleteRole(ctx context.Context, in *api.DeleteRoleRequest) (*a
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, rk, loadErr := loadRole(tx, m.AccountID, in.RoleName)
-		switch {
-		case loadErr != nil:
+		if loadErr != nil {
 			return loadErr
-		case len(r.Policies) > 0:
-			return deleteConflict("Cannot delete entity, must delete policies first.")
-		case len(r.Attached) > 0:
-			return deleteConflict("Cannot delete entity, must detach all policies first.")
+		}
+
+		if conflict := r.deleteConflict(); conflict != nil {
+			return conflict
 		}
 
 		tx.Delete(rk)
@@ -366,40 +363,8 @@ func (s *Service) ListRoleTags(ctx context.Context, in *api.ListRoleTagsRequest)
 	return out, nil
 }
 
-// inline returns the stored name of an inline policy, matched case-insensitively.
-func (r *role) inline(policy string) (string, error) {
-	for name := range r.Policies {
-		if strings.EqualFold(name, policy) {
-			return name, nil
-		}
-	}
-
-	return "", noSuchEntity("The role policy with name %s cannot be found.", policy)
-}
-
 func (s *Service) PutRolePolicy(ctx context.Context, in *api.PutRolePolicyRequest) (*api.PutRolePolicyOutput, error) {
-	if err := checkName("policyName", in.PolicyName, policyName); err != nil {
-		return nil, err
-	}
-
-	if err := checkDocument("policyDocument", in.PolicyDocument); err != nil {
-		return nil, err
-	}
-
-	err := s.updateRole(ctx, in.RoleName, func(_ storage.WriteTx, _ string, r *role) error {
-		// Inline policy names are case-insensitive: a new case replaces the old.
-		if stored, findErr := r.inline(*in.PolicyName); findErr == nil {
-			delete(r.Policies, stored)
-		}
-
-		if r.Policies == nil {
-			r.Policies = map[string]string{}
-		}
-
-		r.Policies[*in.PolicyName] = *in.PolicyDocument
-		return nil
-	})
-	if err != nil {
+	if err := s.roles().putPolicy(ctx, in.RoleName, in.PolicyName, in.PolicyDocument); err != nil {
 		return nil, err
 	}
 
@@ -407,45 +372,19 @@ func (s *Service) PutRolePolicy(ctx context.Context, in *api.PutRolePolicyReques
 }
 
 func (s *Service) GetRolePolicy(ctx context.Context, in *api.GetRolePolicyRequest) (*api.GetRolePolicyResponse, error) {
-	if err := checkName("policyName", in.PolicyName, policyName); err != nil {
-		return nil, err
-	}
-
-	out := &api.GetRolePolicyResponse{}
-	err := s.viewRole(ctx, in.RoleName, func(_ string, r *role) error {
-		stored, err := r.inline(*in.PolicyName)
-		if err != nil {
-			return err
-		}
-
-		out.RoleName, out.PolicyName, out.PolicyDocument = new(r.Name), new(stored), encodeDocument(r.Policies[stored])
-		return nil
-	})
+	owner, name, document, err := s.roles().getPolicy(ctx, in.RoleName, in.PolicyName)
 	if err != nil {
 		return nil, err
 	}
 
-	return out, nil
+	return &api.GetRolePolicyResponse{RoleName: &owner, PolicyName: &name, PolicyDocument: document}, nil
 }
 
 func (s *Service) DeleteRolePolicy(
 	ctx context.Context,
 	in *api.DeleteRolePolicyRequest,
 ) (*api.DeleteRolePolicyOutput, error) {
-	if err := checkName("policyName", in.PolicyName, policyName); err != nil {
-		return nil, err
-	}
-
-	err := s.updateRole(ctx, in.RoleName, func(_ storage.WriteTx, _ string, r *role) error {
-		stored, err := r.inline(*in.PolicyName)
-		if err != nil {
-			return err
-		}
-
-		delete(r.Policies, stored)
-		return nil
-	})
-	if err != nil {
+	if err := s.roles().deletePolicy(ctx, in.RoleName, in.PolicyName); err != nil {
 		return nil, err
 	}
 
@@ -456,48 +395,19 @@ func (s *Service) ListRolePolicies(
 	ctx context.Context,
 	in *api.ListRolePoliciesRequest,
 ) (*api.ListRolePoliciesResponse, error) {
-	out := &api.ListRolePoliciesResponse{}
-	err := s.viewRole(ctx, in.RoleName, func(_ string, r *role) error {
-		var err error
-		out.PolicyNames, out.IsTruncated, out.Marker, err = page(
-			slices.Sorted(maps.Keys(r.Policies)), func(n string) string { return n }, in.Marker, in.MaxItems)
-		return err
-	})
+	names, truncated, next, err := s.roles().listPolicies(ctx, in.RoleName, in.Marker, in.MaxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	return out, nil
+	return &api.ListRolePoliciesResponse{PolicyNames: names, IsTruncated: truncated, Marker: next}, nil
 }
 
 func (s *Service) AttachRolePolicy(
 	ctx context.Context,
 	in *api.AttachRolePolicyRequest,
 ) (*api.AttachRolePolicyOutput, error) {
-	ref, err := requiredPolicyARN(in.PolicyArn)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.updateRole(ctx, in.RoleName, func(tx storage.WriteTx, account string, r *role) error {
-		// Attaching an attached policy changes nothing, including its count.
-		if slices.ContainsFunc(r.Attached, func(a string) bool { return strings.EqualFold(a, ref.arn()) }) {
-			return nil
-		}
-
-		if len(r.Attached) >= maxAttached {
-			return limitExceeded("Cannot exceed quota for PoliciesPerRole: %d", maxAttached)
-		}
-
-		canonical, countErr := countAttachment(tx, account, ref, 1)
-		if countErr != nil {
-			return countErr
-		}
-
-		r.Attached = append(r.Attached, canonical)
-		return nil
-	})
-	if err != nil {
+	if err := s.roles().attachPolicy(ctx, in.RoleName, in.PolicyArn); err != nil {
 		return nil, err
 	}
 
@@ -508,31 +418,7 @@ func (s *Service) DetachRolePolicy(
 	ctx context.Context,
 	in *api.DetachRolePolicyRequest,
 ) (*api.DetachRolePolicyOutput, error) {
-	ref, err := requiredPolicyARN(in.PolicyArn)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.updateRole(ctx, in.RoleName, func(tx storage.WriteTx, account string, r *role) error {
-		i := slices.IndexFunc(r.Attached, func(a string) bool { return strings.EqualFold(a, ref.arn()) })
-		if i < 0 {
-			return noSuchEntity("Policy %s was not found.", *in.PolicyArn)
-		}
-
-		// Count against the ARN as attached, whatever case the request used.
-		attached, parseErr := parsePolicyARN(r.Attached[i])
-		if parseErr != nil {
-			return parseErr
-		}
-
-		if _, countErr := countAttachment(tx, account, attached, -1); countErr != nil {
-			return countErr
-		}
-
-		r.Attached = slices.Delete(r.Attached, i, i+1)
-		return nil
-	})
-	if err != nil {
+	if err := s.roles().detachPolicy(ctx, in.RoleName, in.PolicyArn); err != nil {
 		return nil, err
 	}
 
@@ -543,39 +429,12 @@ func (s *Service) ListAttachedRolePolicies(
 	ctx context.Context,
 	in *api.ListAttachedRolePoliciesRequest,
 ) (*api.ListAttachedRolePoliciesResponse, error) {
-	prefix, err := checkPath(in.PathPrefix, policyPath)
+	policies, truncated, next, err := s.roles().listAttached(ctx, in.RoleName, in.PathPrefix, in.Marker, in.MaxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	out := &api.ListAttachedRolePoliciesResponse{AttachedPolicies: []api.AttachedPolicy{}}
-	err = s.viewRole(ctx, in.RoleName, func(_ string, r *role) error {
-		var refs []policyRef
-		for _, a := range r.Attached {
-			if ref, parseErr := parsePolicyARN(a); parseErr == nil && strings.HasPrefix(ref.path, prefix) {
-				refs = append(refs, ref)
-			}
-		}
-
-		slices.SortFunc(refs, func(a, b policyRef) int { return strings.Compare(a.arn(), b.arn()) })
-		selected, truncated, next, pageErr := page(refs, policyRef.arn, in.Marker, in.MaxItems)
-		if pageErr != nil {
-			return pageErr
-		}
-
-		for _, ref := range selected {
-			out.AttachedPolicies = append(out.AttachedPolicies,
-				api.AttachedPolicy{PolicyName: new(ref.name), PolicyArn: new(ref.arn())})
-		}
-
-		out.IsTruncated, out.Marker = truncated, next
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
+	return &api.ListAttachedRolePoliciesResponse{AttachedPolicies: policies, IsTruncated: truncated, Marker: next}, nil
 }
 
 // ListInstanceProfilesForRole always lists nothing: TinyStack does not model

@@ -13,7 +13,8 @@ import (
 const kindUser = "user"
 
 type user struct {
-	Tags      map[string]string `json:",omitempty"`
+	Tags map[string]string `json:",omitempty"`
+	permissions
 	Name      string
 	ID        string
 	Path      string
@@ -218,7 +219,7 @@ func (s *Service) ListUsers(ctx context.Context, in *api.ListUsersRequest) (*api
 }
 
 // UpdateUser changes a user's path or name; renaming keeps the user's ID,
-// access keys, and tags.
+// access keys, policies, tags, and groups.
 func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*api.UpdateUserOutput, error) {
 	m, err := identity(ctx)
 	if err != nil {
@@ -258,6 +259,10 @@ func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*a
 				return renameErr
 			}
 
+			if renameErr := renameMember(tx, m.AccountID, u.Name, *in.NewUserName); renameErr != nil {
+				return renameErr
+			}
+
 			tx.Delete(uk)
 			u.Name, uk = *in.NewUserName, target
 		}
@@ -271,7 +276,7 @@ func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*a
 	return &api.UpdateUserOutput{}, nil
 }
 
-// DeleteUser deletes a user that has no access keys left.
+// DeleteUser deletes a user that has no access keys, policies, or groups left.
 func (s *Service) DeleteUser(ctx context.Context, in *api.DeleteUserRequest) (*api.DeleteUserOutput, error) {
 	m, err := identity(ctx)
 	if err != nil {
@@ -286,6 +291,19 @@ func (s *Service) DeleteUser(ctx context.Context, in *api.DeleteUserRequest) (*a
 
 		if len(u.Keys) > 0 {
 			return deleteConflict("Cannot delete entity, must delete access keys first.")
+		}
+
+		if conflict := u.deleteConflict(); conflict != nil {
+			return conflict
+		}
+
+		memberOf, groupsErr := groupsOf(tx, m.AccountID, u.Name)
+		if groupsErr != nil {
+			return groupsErr
+		}
+
+		if len(memberOf) > 0 {
+			return deleteConflict("Cannot delete entity, must remove user from all groups first.")
 		}
 
 		tx.Delete(uk)
@@ -364,18 +382,76 @@ func (s *Service) ListUserTags(ctx context.Context, in *api.ListUserTagsRequest)
 	return out, nil
 }
 
-// ListGroupsForUser lists no groups: TinyStack has no IAM groups.
-func (s *Service) ListGroupsForUser(
-	ctx context.Context,
-	in *api.ListGroupsForUserRequest,
-) (*api.ListGroupsForUserResponse, error) {
-	err := s.viewUser(ctx, in.UserName, func(string, *user) error {
-		_, _, _, pageErr := page([]string{}, func(s string) string { return s }, in.Marker, in.MaxItems)
-		return pageErr
-	})
+func (s *Service) PutUserPolicy(ctx context.Context, in *api.PutUserPolicyRequest) (*api.PutUserPolicyOutput, error) {
+	if err := s.users().putPolicy(ctx, in.UserName, in.PolicyName, in.PolicyDocument); err != nil {
+		return nil, err
+	}
+
+	return &api.PutUserPolicyOutput{}, nil
+}
+
+func (s *Service) GetUserPolicy(ctx context.Context, in *api.GetUserPolicyRequest) (*api.GetUserPolicyResponse, error) {
+	owner, name, document, err := s.users().getPolicy(ctx, in.UserName, in.PolicyName)
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.ListGroupsForUserResponse{Groups: []api.Group{}, IsTruncated: new(false)}, nil
+	return &api.GetUserPolicyResponse{UserName: &owner, PolicyName: &name, PolicyDocument: document}, nil
+}
+
+func (s *Service) DeleteUserPolicy(
+	ctx context.Context,
+	in *api.DeleteUserPolicyRequest,
+) (*api.DeleteUserPolicyOutput, error) {
+	if err := s.users().deletePolicy(ctx, in.UserName, in.PolicyName); err != nil {
+		return nil, err
+	}
+
+	return &api.DeleteUserPolicyOutput{}, nil
+}
+
+func (s *Service) ListUserPolicies(
+	ctx context.Context,
+	in *api.ListUserPoliciesRequest,
+) (*api.ListUserPoliciesResponse, error) {
+	names, truncated, next, err := s.users().listPolicies(ctx, in.UserName, in.Marker, in.MaxItems)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.ListUserPoliciesResponse{PolicyNames: names, IsTruncated: truncated, Marker: next}, nil
+}
+
+func (s *Service) AttachUserPolicy(
+	ctx context.Context,
+	in *api.AttachUserPolicyRequest,
+) (*api.AttachUserPolicyOutput, error) {
+	if err := s.users().attachPolicy(ctx, in.UserName, in.PolicyArn); err != nil {
+		return nil, err
+	}
+
+	return &api.AttachUserPolicyOutput{}, nil
+}
+
+func (s *Service) DetachUserPolicy(
+	ctx context.Context,
+	in *api.DetachUserPolicyRequest,
+) (*api.DetachUserPolicyOutput, error) {
+	if err := s.users().detachPolicy(ctx, in.UserName, in.PolicyArn); err != nil {
+		return nil, err
+	}
+
+	return &api.DetachUserPolicyOutput{}, nil
+}
+
+func (s *Service) ListAttachedUserPolicies(
+	ctx context.Context,
+	in *api.ListAttachedUserPoliciesRequest,
+) (*api.ListAttachedUserPoliciesResponse, error) {
+	policies, truncated, next, err := s.users().listAttached(ctx, in.UserName, in.PathPrefix, in.Marker, in.MaxItems)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.ListAttachedUserPoliciesResponse{AttachedPolicies: policies, IsTruncated: truncated, Marker: next}, nil
 }

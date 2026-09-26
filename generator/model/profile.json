@@ -1787,7 +1787,28 @@
       "ListAccessKeys",
       "UpdateAccessKey",
       "DeleteAccessKey",
-      "GetAccessKeyLastUsed"
+      "GetAccessKeyLastUsed",
+      "PutUserPolicy",
+      "GetUserPolicy",
+      "DeleteUserPolicy",
+      "ListUserPolicies",
+      "AttachUserPolicy",
+      "DetachUserPolicy",
+      "ListAttachedUserPolicies",
+      "CreateGroup",
+      "GetGroup",
+      "ListGroups",
+      "UpdateGroup",
+      "DeleteGroup",
+      "AddUserToGroup",
+      "RemoveUserFromGroup",
+      "PutGroupPolicy",
+      "GetGroupPolicy",
+      "DeleteGroupPolicy",
+      "ListGroupPolicies",
+      "AttachGroupPolicy",
+      "DetachGroupPolicy",
+      "ListAttachedGroupPolicies"
     ],
     "shapes": {
       "CreateRoleRequest": [
@@ -2165,6 +2186,144 @@
         "GroupId",
         "Arn",
         "CreateDate"
+      ],
+      "PutUserPolicyRequest": [
+        "UserName",
+        "PolicyName",
+        "PolicyDocument"
+      ],
+      "GetUserPolicyRequest": [
+        "UserName",
+        "PolicyName"
+      ],
+      "GetUserPolicyResponse": [
+        "UserName",
+        "PolicyName",
+        "PolicyDocument"
+      ],
+      "DeleteUserPolicyRequest": [
+        "UserName",
+        "PolicyName"
+      ],
+      "ListUserPoliciesRequest": [
+        "UserName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListUserPoliciesResponse": [
+        "PolicyNames",
+        "IsTruncated",
+        "Marker"
+      ],
+      "AttachUserPolicyRequest": [
+        "UserName",
+        "PolicyArn"
+      ],
+      "DetachUserPolicyRequest": [
+        "UserName",
+        "PolicyArn"
+      ],
+      "ListAttachedUserPoliciesRequest": [
+        "UserName",
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListAttachedUserPoliciesResponse": [
+        "AttachedPolicies",
+        "IsTruncated",
+        "Marker"
+      ],
+      "CreateGroupRequest": [
+        "Path",
+        "GroupName"
+      ],
+      "CreateGroupResponse": [
+        "Group"
+      ],
+      "GetGroupRequest": [
+        "GroupName",
+        "Marker",
+        "MaxItems"
+      ],
+      "GetGroupResponse": [
+        "Group",
+        "Users",
+        "IsTruncated",
+        "Marker"
+      ],
+      "ListGroupsRequest": [
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListGroupsResponse": [
+        "Groups",
+        "IsTruncated",
+        "Marker"
+      ],
+      "UpdateGroupRequest": [
+        "GroupName",
+        "NewPath",
+        "NewGroupName"
+      ],
+      "DeleteGroupRequest": [
+        "GroupName"
+      ],
+      "AddUserToGroupRequest": [
+        "GroupName",
+        "UserName"
+      ],
+      "RemoveUserFromGroupRequest": [
+        "GroupName",
+        "UserName"
+      ],
+      "PutGroupPolicyRequest": [
+        "GroupName",
+        "PolicyName",
+        "PolicyDocument"
+      ],
+      "GetGroupPolicyRequest": [
+        "GroupName",
+        "PolicyName"
+      ],
+      "GetGroupPolicyResponse": [
+        "GroupName",
+        "PolicyName",
+        "PolicyDocument"
+      ],
+      "DeleteGroupPolicyRequest": [
+        "GroupName",
+        "PolicyName"
+      ],
+      "ListGroupPoliciesRequest": [
+        "GroupName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListGroupPoliciesResponse": [
+        "PolicyNames",
+        "IsTruncated",
+        "Marker"
+      ],
+      "AttachGroupPolicyRequest": [
+        "GroupName",
+        "PolicyArn"
+      ],
+      "DetachGroupPolicyRequest": [
+        "GroupName",
+        "PolicyArn"
+      ],
+      "ListAttachedGroupPoliciesRequest": [
+        "GroupName",
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListAttachedGroupPoliciesResponse": [
+        "AttachedPolicies",
+        "IsTruncated",
+        "Marker"
       ]
     }
   },

@@ -2,8 +2,6 @@ package iam
 
 import (
 	"context"
-	"maps"
-	"slices"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
@@ -13,7 +11,7 @@ import (
 // detailPath is the resource detail that holds an entity's IAM path.
 const detailPath = "Path"
 
-// Resources lists every role, managed policy, and user, for the resource
+// Resources lists every role, managed policy, user, and group, for the resource
 // browser. IAM is global, so resources have no region. Access key secrets are
 // never listed.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
@@ -35,12 +33,9 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 				out = append(out, catalog.Resource{
 					Type: kindRole, Account: account, Name: r.Name, ARN: roleARN(account, r), Tags: r.Tags,
-					Details: map[string]any{
-						detailPath:                 r.Path,
-						"AssumeRolePolicyDocument": r.AssumeRolePolicy,
-						"InlinePolicies":           slices.Sorted(maps.Keys(r.Policies)),
-						"AttachedPolicies":         r.Attached,
-					},
+					Details: r.details(map[string]any{
+						detailPath: r.Path, "AssumeRolePolicyDocument": r.AssumeRolePolicy,
+					}),
 				})
 			case kindPolicy:
 				p, _, err := read[policy](tx, k)
@@ -72,7 +67,17 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 				out = append(out, catalog.Resource{
 					Type: kindUser, Account: account, Name: u.Name, ARN: userARN(account, u), Tags: u.Tags,
-					Details: map[string]any{detailPath: u.Path, "UserId": u.ID, "AccessKeyIds": u.Keys},
+					Details: u.details(map[string]any{detailPath: u.Path, "UserId": u.ID, "AccessKeyIds": u.Keys}),
+				})
+			case kindGroup:
+				g, _, err := read[group](tx, k)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: kindGroup, Account: account, Name: g.Name, ARN: groupARN(account, g),
+					Details: g.details(map[string]any{detailPath: g.Path, "GroupId": g.ID, "Users": g.Users}),
 				})
 			}
 		}

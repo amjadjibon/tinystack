@@ -502,6 +502,198 @@ type GetAccessKeyLastUsedResponse struct {
 	AccessKeyLastUsed *AccessKeyLastUsed `json:"AccessKeyLastUsed,omitempty" query:"AccessKeyLastUsed"`
 }
 
+type PutUserPolicyOutput struct{}
+
+type PutUserPolicyRequest struct {
+	UserName       *string `json:"UserName,omitempty" query:"UserName"`
+	PolicyName     *string `json:"PolicyName,omitempty" query:"PolicyName"`
+	PolicyDocument *string `json:"PolicyDocument,omitempty" query:"PolicyDocument"`
+}
+
+type GetUserPolicyRequest struct {
+	UserName   *string `json:"UserName,omitempty" query:"UserName"`
+	PolicyName *string `json:"PolicyName,omitempty" query:"PolicyName"`
+}
+
+type GetUserPolicyResponse struct {
+	UserName       *string `json:"UserName,omitempty" query:"UserName"`
+	PolicyName     *string `json:"PolicyName,omitempty" query:"PolicyName"`
+	PolicyDocument *string `json:"PolicyDocument,omitempty" query:"PolicyDocument"`
+}
+
+type DeleteUserPolicyOutput struct{}
+
+type DeleteUserPolicyRequest struct {
+	UserName   *string `json:"UserName,omitempty" query:"UserName"`
+	PolicyName *string `json:"PolicyName,omitempty" query:"PolicyName"`
+}
+
+type ListUserPoliciesRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	Marker   *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListUserPoliciesResponse struct {
+	PolicyNames []string `json:"PolicyNames,omitempty" query:"PolicyNames"`
+	IsTruncated *bool    `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string  `json:"Marker,omitempty" query:"Marker"`
+}
+
+type AttachUserPolicyOutput struct{}
+
+type AttachUserPolicyRequest struct {
+	UserName  *string `json:"UserName,omitempty" query:"UserName"`
+	PolicyArn *string `json:"PolicyArn,omitempty" query:"PolicyArn"`
+}
+
+type DetachUserPolicyOutput struct{}
+
+type DetachUserPolicyRequest struct {
+	UserName  *string `json:"UserName,omitempty" query:"UserName"`
+	PolicyArn *string `json:"PolicyArn,omitempty" query:"PolicyArn"`
+}
+
+type ListAttachedUserPoliciesRequest struct {
+	UserName   *string `json:"UserName,omitempty" query:"UserName"`
+	PathPrefix *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
+	Marker     *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems   *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListAttachedUserPoliciesResponse struct {
+	AttachedPolicies []AttachedPolicy `json:"AttachedPolicies,omitempty" query:"AttachedPolicies"`
+	IsTruncated      *bool            `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker           *string          `json:"Marker,omitempty" query:"Marker"`
+}
+
+type CreateGroupRequest struct {
+	Path      *string `json:"Path,omitempty" query:"Path"`
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+}
+
+type CreateGroupResponse struct {
+	Group *Group `json:"Group,omitempty" query:"Group"`
+}
+
+type GetGroupRequest struct {
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+	Marker    *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems  *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type GetGroupResponse struct {
+	Group       *Group  `json:"Group,omitempty" query:"Group"`
+	Users       []User  `json:"Users,omitempty" query:"Users"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type ListGroupsRequest struct {
+	PathPrefix *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
+	Marker     *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems   *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListGroupsResponse struct {
+	Groups      []Group `json:"Groups,omitempty" query:"Groups"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type UpdateGroupOutput struct{}
+
+type UpdateGroupRequest struct {
+	GroupName    *string `json:"GroupName,omitempty" query:"GroupName"`
+	NewPath      *string `json:"NewPath,omitempty" query:"NewPath"`
+	NewGroupName *string `json:"NewGroupName,omitempty" query:"NewGroupName"`
+}
+
+type DeleteGroupOutput struct{}
+
+type DeleteGroupRequest struct {
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+}
+
+type AddUserToGroupOutput struct{}
+
+type AddUserToGroupRequest struct {
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+	UserName  *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type RemoveUserFromGroupOutput struct{}
+
+type RemoveUserFromGroupRequest struct {
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+	UserName  *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type PutGroupPolicyOutput struct{}
+
+type PutGroupPolicyRequest struct {
+	GroupName      *string `json:"GroupName,omitempty" query:"GroupName"`
+	PolicyName     *string `json:"PolicyName,omitempty" query:"PolicyName"`
+	PolicyDocument *string `json:"PolicyDocument,omitempty" query:"PolicyDocument"`
+}
+
+type GetGroupPolicyRequest struct {
+	GroupName  *string `json:"GroupName,omitempty" query:"GroupName"`
+	PolicyName *string `json:"PolicyName,omitempty" query:"PolicyName"`
+}
+
+type GetGroupPolicyResponse struct {
+	GroupName      *string `json:"GroupName,omitempty" query:"GroupName"`
+	PolicyName     *string `json:"PolicyName,omitempty" query:"PolicyName"`
+	PolicyDocument *string `json:"PolicyDocument,omitempty" query:"PolicyDocument"`
+}
+
+type DeleteGroupPolicyOutput struct{}
+
+type DeleteGroupPolicyRequest struct {
+	GroupName  *string `json:"GroupName,omitempty" query:"GroupName"`
+	PolicyName *string `json:"PolicyName,omitempty" query:"PolicyName"`
+}
+
+type ListGroupPoliciesRequest struct {
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+	Marker    *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems  *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListGroupPoliciesResponse struct {
+	PolicyNames []string `json:"PolicyNames,omitempty" query:"PolicyNames"`
+	IsTruncated *bool    `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string  `json:"Marker,omitempty" query:"Marker"`
+}
+
+type AttachGroupPolicyOutput struct{}
+
+type AttachGroupPolicyRequest struct {
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+	PolicyArn *string `json:"PolicyArn,omitempty" query:"PolicyArn"`
+}
+
+type DetachGroupPolicyOutput struct{}
+
+type DetachGroupPolicyRequest struct {
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+	PolicyArn *string `json:"PolicyArn,omitempty" query:"PolicyArn"`
+}
+
+type ListAttachedGroupPoliciesRequest struct {
+	GroupName  *string `json:"GroupName,omitempty" query:"GroupName"`
+	PathPrefix *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
+	Marker     *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems   *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListAttachedGroupPoliciesResponse struct {
+	AttachedPolicies []AttachedPolicy `json:"AttachedPolicies,omitempty" query:"AttachedPolicies"`
+	IsTruncated      *bool            `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker           *string          `json:"Marker,omitempty" query:"Marker"`
+}
+
 type API interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
@@ -547,6 +739,27 @@ type API interface {
 	UpdateAccessKey(context.Context, *UpdateAccessKeyRequest) (*UpdateAccessKeyOutput, error)
 	DeleteAccessKey(context.Context, *DeleteAccessKeyRequest) (*DeleteAccessKeyOutput, error)
 	GetAccessKeyLastUsed(context.Context, *GetAccessKeyLastUsedRequest) (*GetAccessKeyLastUsedResponse, error)
+	PutUserPolicy(context.Context, *PutUserPolicyRequest) (*PutUserPolicyOutput, error)
+	GetUserPolicy(context.Context, *GetUserPolicyRequest) (*GetUserPolicyResponse, error)
+	DeleteUserPolicy(context.Context, *DeleteUserPolicyRequest) (*DeleteUserPolicyOutput, error)
+	ListUserPolicies(context.Context, *ListUserPoliciesRequest) (*ListUserPoliciesResponse, error)
+	AttachUserPolicy(context.Context, *AttachUserPolicyRequest) (*AttachUserPolicyOutput, error)
+	DetachUserPolicy(context.Context, *DetachUserPolicyRequest) (*DetachUserPolicyOutput, error)
+	ListAttachedUserPolicies(context.Context, *ListAttachedUserPoliciesRequest) (*ListAttachedUserPoliciesResponse, error)
+	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
+	GetGroup(context.Context, *GetGroupRequest) (*GetGroupResponse, error)
+	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
+	UpdateGroup(context.Context, *UpdateGroupRequest) (*UpdateGroupOutput, error)
+	DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupOutput, error)
+	AddUserToGroup(context.Context, *AddUserToGroupRequest) (*AddUserToGroupOutput, error)
+	RemoveUserFromGroup(context.Context, *RemoveUserFromGroupRequest) (*RemoveUserFromGroupOutput, error)
+	PutGroupPolicy(context.Context, *PutGroupPolicyRequest) (*PutGroupPolicyOutput, error)
+	GetGroupPolicy(context.Context, *GetGroupPolicyRequest) (*GetGroupPolicyResponse, error)
+	DeleteGroupPolicy(context.Context, *DeleteGroupPolicyRequest) (*DeleteGroupPolicyOutput, error)
+	ListGroupPolicies(context.Context, *ListGroupPoliciesRequest) (*ListGroupPoliciesResponse, error)
+	AttachGroupPolicy(context.Context, *AttachGroupPolicyRequest) (*AttachGroupPolicyOutput, error)
+	DetachGroupPolicy(context.Context, *DetachGroupPolicyRequest) (*DetachGroupPolicyOutput, error)
+	ListAttachedGroupPolicies(context.Context, *ListAttachedGroupPoliciesRequest) (*ListAttachedGroupPoliciesResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -674,6 +887,67 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetAccessKeyLastUsed": {Name: "GetAccessKeyLastUsed", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetAccessKeyLastUsed", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetAccessKeyLastUsedRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetAccessKeyLastUsed(ctx, input.(*GetAccessKeyLastUsedRequest))
+		}},
+		"PutUserPolicy": {Name: "PutUserPolicy", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutUserPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PutUserPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutUserPolicy(ctx, input.(*PutUserPolicyRequest))
+		}},
+		"GetUserPolicy": {Name: "GetUserPolicy", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetUserPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetUserPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetUserPolicy(ctx, input.(*GetUserPolicyRequest))
+		}},
+		"DeleteUserPolicy": {Name: "DeleteUserPolicy", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteUserPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteUserPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteUserPolicy(ctx, input.(*DeleteUserPolicyRequest))
+		}},
+		"ListUserPolicies": {Name: "ListUserPolicies", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListUserPolicies", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListUserPoliciesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListUserPolicies(ctx, input.(*ListUserPoliciesRequest))
+		}},
+		"AttachUserPolicy": {Name: "AttachUserPolicy", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AttachUserPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AttachUserPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AttachUserPolicy(ctx, input.(*AttachUserPolicyRequest))
+		}},
+		"DetachUserPolicy": {Name: "DetachUserPolicy", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DetachUserPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DetachUserPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DetachUserPolicy(ctx, input.(*DetachUserPolicyRequest))
+		}},
+		"ListAttachedUserPolicies": {Name: "ListAttachedUserPolicies", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListAttachedUserPolicies", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListAttachedUserPoliciesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListAttachedUserPolicies(ctx, input.(*ListAttachedUserPoliciesRequest))
+		}},
+		"CreateGroup": {Name: "CreateGroup", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateGroup", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateGroup(ctx, input.(*CreateGroupRequest))
+		}},
+		"GetGroup": {Name: "GetGroup", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetGroup", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetGroup(ctx, input.(*GetGroupRequest)) }},
+		"ListGroups": {Name: "ListGroups", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListGroups", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListGroupsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListGroups(ctx, input.(*ListGroupsRequest))
+		}},
+		"UpdateGroup": {Name: "UpdateGroup", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateGroup", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateGroup(ctx, input.(*UpdateGroupRequest))
+		}},
+		"DeleteGroup": {Name: "DeleteGroup", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteGroup", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteGroup(ctx, input.(*DeleteGroupRequest))
+		}},
+		"AddUserToGroup": {Name: "AddUserToGroup", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AddUserToGroup", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AddUserToGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AddUserToGroup(ctx, input.(*AddUserToGroupRequest))
+		}},
+		"RemoveUserFromGroup": {Name: "RemoveUserFromGroup", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RemoveUserFromGroup", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RemoveUserFromGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemoveUserFromGroup(ctx, input.(*RemoveUserFromGroupRequest))
+		}},
+		"PutGroupPolicy": {Name: "PutGroupPolicy", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutGroupPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PutGroupPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutGroupPolicy(ctx, input.(*PutGroupPolicyRequest))
+		}},
+		"GetGroupPolicy": {Name: "GetGroupPolicy", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetGroupPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetGroupPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetGroupPolicy(ctx, input.(*GetGroupPolicyRequest))
+		}},
+		"DeleteGroupPolicy": {Name: "DeleteGroupPolicy", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteGroupPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteGroupPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteGroupPolicy(ctx, input.(*DeleteGroupPolicyRequest))
+		}},
+		"ListGroupPolicies": {Name: "ListGroupPolicies", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListGroupPolicies", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListGroupPoliciesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListGroupPolicies(ctx, input.(*ListGroupPoliciesRequest))
+		}},
+		"AttachGroupPolicy": {Name: "AttachGroupPolicy", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AttachGroupPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AttachGroupPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AttachGroupPolicy(ctx, input.(*AttachGroupPolicyRequest))
+		}},
+		"DetachGroupPolicy": {Name: "DetachGroupPolicy", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DetachGroupPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DetachGroupPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DetachGroupPolicy(ctx, input.(*DetachGroupPolicyRequest))
+		}},
+		"ListAttachedGroupPolicies": {Name: "ListAttachedGroupPolicies", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListAttachedGroupPolicies", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListAttachedGroupPoliciesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListAttachedGroupPolicies(ctx, input.(*ListAttachedGroupPoliciesRequest))
 		}},
 	}}
 }

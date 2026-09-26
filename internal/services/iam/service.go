@@ -1,5 +1,5 @@
-// Package iam implements IAM roles and their managed and inline policies,
-// without HTTP dependencies. IAM is global: records live under the account,
+// Package iam implements IAM roles, users, and groups with their managed and
+// inline policies, and users' access keys, without HTTP dependencies. IAM is global: records live under the account,
 // with no region, whatever region the request was signed for. Policies are
 // stored and returned but never evaluated.
 package iam
@@ -52,14 +52,13 @@ func New(store storage.Store) *Service {
 }
 
 type role struct {
-	Tags               map[string]string `json:",omitempty"`
-	Policies           map[string]string `json:",omitempty"` // inline policy name to document
-	Name               string
-	ID                 string
-	Path               string
-	AssumeRolePolicy   string
-	Description        string   `json:",omitempty"`
-	Attached           []string `json:",omitempty"` // ARNs of attached managed policies
+	Tags             map[string]string `json:",omitempty"`
+	Name             string
+	ID               string
+	Path             string
+	AssumeRolePolicy string
+	Description      string `json:",omitempty"`
+	permissions
 	MaxSessionDuration int64
 	CreatedAt          int64
 }
