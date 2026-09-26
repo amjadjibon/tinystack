@@ -114,7 +114,10 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   Scoping comes from request metadata, which is how account/region isolation works. SQS long polling registers `watch`
   before the atomic `claim` (so wakeups are not lost), waits outside the transaction, and is released by `Stop`
   (registered with `http.Server.RegisterOnShutdown`). FIFO group ordering and dead-letter moves also happen inside
-  `claim`, and batch operations run all entries in one `Update`, so every queue change stays atomic. SNS holds a
+  `claim`, and batch operations run all entries in one `Update`, so every queue change stays atomic. Message move
+  tasks (`sqs/move.go`) are partition-wide records `aws/sqs/move/<account>/<region>/<source>/<task ID>`; the service's
+  mover (started by `New`, ended by `Stop`, also deferred in `start.go`) moves each running task's next batch in one
+  `Update`. SNS holds a
   `*sqs.Service` and delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its
   subscriptions, and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
   in the same transaction as the regional bucket record; objects are `…/s3/<bucket>/o/<key>` (metadata) plus
