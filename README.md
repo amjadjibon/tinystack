@@ -519,12 +519,18 @@ since every caller is authorized.
 | DescribeAvailabilityZones | Three zones per Region (`<region>a` to `c`, with IDs such as `use1-az1`), by `ZoneNames` or `ZoneIds` |
 | CreateVpc / DeleteVpc / DescribeVpcs | IPv4 `CidrBlock` from /16 to /28, `InstanceTenancy` `default` or `dedicated`, up to 5 VPCs per Region; a VPC with subnets cannot be deleted (`DependencyViolation`) |
 | CreateSubnet / DeleteSubnet / DescribeSubnets | A CIDR inside the VPC's that overlaps no other subnet, in a zone given by name or ID (the first by default); the available address count leaves out AWS's five reserved addresses |
+| CreateTags / DeleteTags / DescribeTags | Up to 50 tags on any resource by ID, all in one change; `aws:` keys are reserved; DeleteTags removes the given keys (a key with a value only while it has that value), or every tag; DescribeTags filters by `key`, `value`, `resource-id`, and `resource-type` |
 
 The first request in an account and Region creates its default VPC
 (`172.31.0.0/16`) with a default `/20` subnet in each zone that maps public IPs
 on launch. A deleted default VPC does not come back. Describe operations take
 the resource IDs to select (an unknown one is `Invalid<Resource>ID.NotFound`),
 and `MaxResults` (5 to 1000) and `NextToken` page through results in ID order.
+They also take `Filters`: filters are ANDed and a filter's values ORed, values
+match with `*` and `?` (escaped with a backslash), every resource supports
+`tag:<key>`, `tag-key`, and `tag-value`, and an unknown filter name is
+`InvalidParameterValue`. Create operations take `TagSpecifications` for the
+resource type they create.
 
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.

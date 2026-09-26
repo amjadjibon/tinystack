@@ -178,7 +178,9 @@ a per-service `Dialect`), and delivers synchronously through
   reports the session, the IAM user, or the gateway-resolved account's root user. EC2 keeps each resource under
   `…/ec2/<kind>/<resource ID>` (`resources.go` holds the shared record, ID-selection, and paging helpers); the first
   request in a Region creates its default VPC and subnets (`network.go`) and writes `…/ec2/defaults/vpc` so a deleted
-  default VPC stays deleted. CloudWatch Logs keeps each group under
+  default VPC stays deleted. `filters.go` compiles `Filters` against the values each resource reports (whose keys are
+  also the filter names it accepts), and `tags.go` finds a resource by its ID prefix (`taggable`) and rewrites only the
+  `Tags` field of its record, so a new taggable kind only needs an entry there. CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
   time order. Lambda writes every invocation's log (its own START/END/REPORT lines around the runtime's
