@@ -45,6 +45,16 @@ func identity(ctx context.Context) (request.Metadata, error) {
 	return m, nil
 }
 
+// caller resolves the caller and answers DryRun.
+func caller(ctx context.Context, dry *bool) (request.Metadata, error) {
+	m, err := identity(ctx)
+	if err != nil {
+		return m, err
+	}
+
+	return m, dryRun(dry)
+}
+
 // dryRun answers a request with DryRun set: TinyStack authorizes every
 // caller, so it would have succeeded.
 func dryRun(flag *bool) error {

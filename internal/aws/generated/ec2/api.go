@@ -22,14 +22,161 @@ type DescribeRegionsResult struct {
 	Regions []Region `json:"Regions,omitempty" ec2:"RegionInfo,regionInfo,member=item"`
 }
 
+type DescribeAvailabilityZonesRequest struct {
+	ZoneNames            []string `json:"ZoneNames,omitempty" ec2:"ZoneName,ZoneName,member=ZoneName"`
+	ZoneIds              []string `json:"ZoneIds,omitempty" ec2:"ZoneId,ZoneId,member=ZoneId"`
+	AllAvailabilityZones *bool    `json:"AllAvailabilityZones,omitempty" ec2:"AllAvailabilityZones,AllAvailabilityZones"`
+	DryRun               *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type AvailabilityZone struct {
+	OptInStatus        *string `json:"OptInStatus,omitempty" ec2:"OptInStatus,optInStatus"`
+	RegionName         *string `json:"RegionName,omitempty" ec2:"RegionName,regionName"`
+	ZoneName           *string `json:"ZoneName,omitempty" ec2:"ZoneName,zoneName"`
+	ZoneId             *string `json:"ZoneId,omitempty" ec2:"ZoneId,zoneId"`
+	GroupName          *string `json:"GroupName,omitempty" ec2:"GroupName,groupName"`
+	NetworkBorderGroup *string `json:"NetworkBorderGroup,omitempty" ec2:"NetworkBorderGroup,networkBorderGroup"`
+	ZoneType           *string `json:"ZoneType,omitempty" ec2:"ZoneType,zoneType"`
+	State              *string `json:"State,omitempty" ec2:"ZoneState,zoneState"`
+}
+
+type DescribeAvailabilityZonesResult struct {
+	AvailabilityZones []AvailabilityZone `json:"AvailabilityZones,omitempty" ec2:"AvailabilityZoneInfo,availabilityZoneInfo,member=item"`
+}
+
+type CreateVpcRequest struct {
+	CidrBlock       *string `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
+	InstanceTenancy *string `json:"InstanceTenancy,omitempty" ec2:"InstanceTenancy,instanceTenancy"`
+	DryRun          *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type VpcCidrBlockState struct {
+	State *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type VpcCidrBlockAssociation struct {
+	AssociationId  *string            `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	CidrBlock      *string            `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	CidrBlockState *VpcCidrBlockState `json:"CidrBlockState,omitempty" ec2:"CidrBlockState,cidrBlockState"`
+}
+
+type Vpc struct {
+	OwnerId                 *string                   `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	InstanceTenancy         *string                   `json:"InstanceTenancy,omitempty" ec2:"InstanceTenancy,instanceTenancy"`
+	CidrBlockAssociationSet []VpcCidrBlockAssociation `json:"CidrBlockAssociationSet,omitempty" ec2:"CidrBlockAssociationSet,cidrBlockAssociationSet,member=item"`
+	IsDefault               *bool                     `json:"IsDefault,omitempty" ec2:"IsDefault,isDefault"`
+	VpcId                   *string                   `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	State                   *string                   `json:"State,omitempty" ec2:"State,state"`
+	CidrBlock               *string                   `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	DhcpOptionsId           *string                   `json:"DhcpOptionsId,omitempty" ec2:"DhcpOptionsId,dhcpOptionsId"`
+}
+
+type CreateVpcResult struct {
+	Vpc *Vpc `json:"Vpc,omitempty" ec2:"Vpc,vpc"`
+}
+
+type DeleteVpcOutput struct{}
+
+type DeleteVpcRequest struct {
+	VpcId  *string `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	DryRun *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeVpcsRequest struct {
+	VpcIds     []string `json:"VpcIds,omitempty" ec2:"VpcId,VpcId,member=VpcId"`
+	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeVpcsResult struct {
+	NextToken *string `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	Vpcs      []Vpc   `json:"Vpcs,omitempty" ec2:"VpcSet,vpcSet,member=item"`
+}
+
+type CreateSubnetRequest struct {
+	AvailabilityZone   *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,AvailabilityZone"`
+	AvailabilityZoneId *string `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,AvailabilityZoneId"`
+	CidrBlock          *string `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
+	VpcId              *string `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type Subnet struct {
+	AvailabilityZoneId          *string `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
+	OwnerId                     *string `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	AssignIpv6AddressOnCreation *bool   `json:"AssignIpv6AddressOnCreation,omitempty" ec2:"AssignIpv6AddressOnCreation,assignIpv6AddressOnCreation"`
+	SubnetArn                   *string `json:"SubnetArn,omitempty" ec2:"SubnetArn,subnetArn"`
+	Ipv6Native                  *bool   `json:"Ipv6Native,omitempty" ec2:"Ipv6Native,ipv6Native"`
+	SubnetId                    *string `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	State                       *string `json:"State,omitempty" ec2:"State,state"`
+	VpcId                       *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	CidrBlock                   *string `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	AvailableIpAddressCount     *int64  `json:"AvailableIpAddressCount,omitempty" ec2:"AvailableIpAddressCount,availableIpAddressCount"`
+	AvailabilityZone            *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	DefaultForAz                *bool   `json:"DefaultForAz,omitempty" ec2:"DefaultForAz,defaultForAz"`
+	MapPublicIpOnLaunch         *bool   `json:"MapPublicIpOnLaunch,omitempty" ec2:"MapPublicIpOnLaunch,mapPublicIpOnLaunch"`
+}
+
+type CreateSubnetResult struct {
+	Subnet *Subnet `json:"Subnet,omitempty" ec2:"Subnet,subnet"`
+}
+
+type DeleteSubnetOutput struct{}
+
+type DeleteSubnetRequest struct {
+	SubnetId *string `json:"SubnetId,omitempty" ec2:"SubnetId,SubnetId"`
+	DryRun   *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeSubnetsRequest struct {
+	SubnetIds  []string `json:"SubnetIds,omitempty" ec2:"SubnetId,SubnetId,member=SubnetId"`
+	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeSubnetsResult struct {
+	NextToken *string  `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	Subnets   []Subnet `json:"Subnets,omitempty" ec2:"SubnetSet,subnetSet,member=item"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
+	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
+	CreateVpc(context.Context, *CreateVpcRequest) (*CreateVpcResult, error)
+	DeleteVpc(context.Context, *DeleteVpcRequest) (*DeleteVpcOutput, error)
+	DescribeVpcs(context.Context, *DescribeVpcsRequest) (*DescribeVpcsResult, error)
+	CreateSubnet(context.Context, *CreateSubnetRequest) (*CreateSubnetResult, error)
+	DeleteSubnet(context.Context, *DeleteSubnetRequest) (*DeleteSubnetOutput, error)
+	DescribeSubnets(context.Context, *DescribeSubnetsRequest) (*DescribeSubnetsResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "ec2", SigningName: "ec2", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://ec2.amazonaws.com/doc/2016-11-15", Protocols: []string{"ec2Query"}, Errors: map[string]catalog.ErrorBinding{}, Operations: map[string]catalog.Operation{
 		"DescribeRegions": {Name: "DescribeRegions", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeRegions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeRegionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeRegions(ctx, input.(*DescribeRegionsRequest))
+		}},
+		"DescribeAvailabilityZones": {Name: "DescribeAvailabilityZones", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeAvailabilityZones", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeAvailabilityZonesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeAvailabilityZones(ctx, input.(*DescribeAvailabilityZonesRequest))
+		}},
+		"CreateVpc": {Name: "CreateVpc", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateVpc", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateVpcRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateVpc(ctx, input.(*CreateVpcRequest))
+		}},
+		"DeleteVpc": {Name: "DeleteVpc", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVpc", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVpcRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteVpc(ctx, input.(*DeleteVpcRequest))
+		}},
+		"DescribeVpcs": {Name: "DescribeVpcs", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVpcs", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVpcsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVpcs(ctx, input.(*DescribeVpcsRequest))
+		}},
+		"CreateSubnet": {Name: "CreateSubnet", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateSubnet", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateSubnetRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateSubnet(ctx, input.(*CreateSubnetRequest))
+		}},
+		"DeleteSubnet": {Name: "DeleteSubnet", UnitOutput: true, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteSubnet", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteSubnetRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteSubnet(ctx, input.(*DeleteSubnetRequest))
+		}},
+		"DescribeSubnets": {Name: "DescribeSubnets", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeSubnets", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeSubnetsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeSubnets(ctx, input.(*DescribeSubnetsRequest))
 		}},
 	}}
 }

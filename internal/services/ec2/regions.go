@@ -21,11 +21,7 @@ func (s *Service) DescribeRegions(
 	ctx context.Context,
 	in *api.DescribeRegionsRequest,
 ) (*api.DescribeRegionsResult, error) {
-	if _, err := identity(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := dryRun(in.DryRun); err != nil {
+	if _, err := caller(ctx, in.DryRun); err != nil {
 		return nil, err
 	}
 

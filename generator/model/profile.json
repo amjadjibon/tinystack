@@ -438,7 +438,14 @@
   },
   "ec2": {
     "operations": [
-      "DescribeRegions"
+      "DescribeRegions",
+      "DescribeAvailabilityZones",
+      "CreateVpc",
+      "DeleteVpc",
+      "DescribeVpcs",
+      "CreateSubnet",
+      "DeleteSubnet",
+      "DescribeSubnets"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -453,6 +460,104 @@
         "Endpoint",
         "RegionName",
         "OptInStatus"
+      ],
+      "DescribeAvailabilityZonesRequest": [
+        "ZoneNames",
+        "ZoneIds",
+        "AllAvailabilityZones",
+        "DryRun"
+      ],
+      "DescribeAvailabilityZonesResult": [
+        "AvailabilityZones"
+      ],
+      "AvailabilityZone": [
+        "OptInStatus",
+        "RegionName",
+        "ZoneName",
+        "ZoneId",
+        "GroupName",
+        "NetworkBorderGroup",
+        "ZoneType",
+        "State"
+      ],
+      "CreateVpcRequest": [
+        "CidrBlock",
+        "InstanceTenancy",
+        "DryRun"
+      ],
+      "CreateVpcResult": [
+        "Vpc"
+      ],
+      "Vpc": [
+        "OwnerId",
+        "InstanceTenancy",
+        "CidrBlockAssociationSet",
+        "IsDefault",
+        "VpcId",
+        "State",
+        "CidrBlock",
+        "DhcpOptionsId"
+      ],
+      "VpcCidrBlockAssociation": [
+        "AssociationId",
+        "CidrBlock",
+        "CidrBlockState"
+      ],
+      "VpcCidrBlockState": [
+        "State"
+      ],
+      "DeleteVpcRequest": [
+        "VpcId",
+        "DryRun"
+      ],
+      "DescribeVpcsRequest": [
+        "VpcIds",
+        "NextToken",
+        "MaxResults",
+        "DryRun"
+      ],
+      "DescribeVpcsResult": [
+        "NextToken",
+        "Vpcs"
+      ],
+      "CreateSubnetRequest": [
+        "AvailabilityZone",
+        "AvailabilityZoneId",
+        "CidrBlock",
+        "VpcId",
+        "DryRun"
+      ],
+      "CreateSubnetResult": [
+        "Subnet"
+      ],
+      "Subnet": [
+        "AvailabilityZoneId",
+        "OwnerId",
+        "AssignIpv6AddressOnCreation",
+        "SubnetArn",
+        "Ipv6Native",
+        "SubnetId",
+        "State",
+        "VpcId",
+        "CidrBlock",
+        "AvailableIpAddressCount",
+        "AvailabilityZone",
+        "DefaultForAz",
+        "MapPublicIpOnLaunch"
+      ],
+      "DeleteSubnetRequest": [
+        "SubnetId",
+        "DryRun"
+      ],
+      "DescribeSubnetsRequest": [
+        "SubnetIds",
+        "NextToken",
+        "MaxResults",
+        "DryRun"
+      ],
+      "DescribeSubnetsResult": [
+        "NextToken",
+        "Subnets"
       ]
     }
   },
