@@ -516,6 +516,15 @@ since every caller is authorized.
 | Operation | Behavior |
 | --- | --- |
 | DescribeRegions | The commercial Regions, all `opt-in-not-required`, or those named in `RegionNames`; an unknown name is `InvalidParameterValue` |
+| DescribeAvailabilityZones | Three zones per Region (`<region>a` to `c`, with IDs such as `use1-az1`), by `ZoneNames` or `ZoneIds` |
+| CreateVpc / DeleteVpc / DescribeVpcs | IPv4 `CidrBlock` from /16 to /28, `InstanceTenancy` `default` or `dedicated`, up to 5 VPCs per Region; a VPC with subnets cannot be deleted (`DependencyViolation`) |
+| CreateSubnet / DeleteSubnet / DescribeSubnets | A CIDR inside the VPC's that overlaps no other subnet, in a zone given by name or ID (the first by default); the available address count leaves out AWS's five reserved addresses |
+
+The first request in an account and Region creates its default VPC
+(`172.31.0.0/16`) with a default `/20` subnet in each zone that maps public IPs
+on launch. A deleted default VPC does not come back. Describe operations take
+the resource IDs to select (an unknown one is `Invalid<Resource>ID.NotFound`),
+and `MaxResults` (5 to 1000) and `NextToken` page through results in ID order.
 
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.

@@ -175,7 +175,10 @@ a per-service `Dialect`), and delivers synchronously through
   `AssumeRole` checks the role's trust policy (`sts/trust.go`, a documented subset) through `iam.Service.RoleByARN`
   and stores each session under the partition-wide `aws/sts/session/<access key>`; `sts.Service.Credentials` (the
   gateway's credential lookup) resolves those sessions and then active IAM access keys, and `GetCallerIdentity`
-  reports the session, the IAM user, or the gateway-resolved account's root user. CloudWatch Logs keeps each group under
+  reports the session, the IAM user, or the gateway-resolved account's root user. EC2 keeps each resource under
+  `…/ec2/<kind>/<resource ID>` (`resources.go` holds the shared record, ID-selection, and paging helpers); the first
+  request in a Region creates its default VPC and subnets (`network.go`) and writes `…/ec2/defaults/vpc` so a deleted
+  default VPC stays deleted. CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
   time order. Lambda writes every invocation's log (its own START/END/REPORT lines around the runtime's
