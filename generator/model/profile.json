@@ -1349,7 +1349,10 @@
         "Enabled",
         "BatchSize",
         "StartingPosition",
-        "MaximumRetryAttempts"
+        "MaximumRetryAttempts",
+        "MaximumBatchingWindowInSeconds",
+        "FilterCriteria",
+        "FunctionResponseTypes"
       ],
       "EventSourceMappingConfiguration": [
         "UUID",
@@ -1361,7 +1364,10 @@
         "LastModified",
         "LastProcessingResult",
         "StartingPosition",
-        "MaximumRetryAttempts"
+        "MaximumRetryAttempts",
+        "MaximumBatchingWindowInSeconds",
+        "FilterCriteria",
+        "FunctionResponseTypes"
       ],
       "GetEventSourceMappingRequest": [
         "UUID"
@@ -1485,6 +1491,12 @@
       "GetFunctionConfigurationRequest": [
         "FunctionName",
         "Qualifier"
+      ],
+      "FilterCriteria": [
+        "Filters"
+      ],
+      "Filter": [
+        "Pattern"
       ]
     }
   },
