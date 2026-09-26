@@ -3,11 +3,13 @@ package eventbridge
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/schedule"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -18,6 +20,20 @@ const scheduleIndex = "aws/eventbridge/schedule/"
 
 // scheduleInterval is how often the scheduler looks for due rules.
 var scheduleInterval = time.Second
+
+// parseSchedule parses a ScheduleExpression, reporting errors as EventBridge
+// does.
+func parseSchedule(text string) (*schedule.Schedule, error) {
+	s, err := schedule.Parse(text)
+	switch {
+	case errors.Is(err, schedule.ErrUnsupported):
+		return nil, invalid("TinyStack does not support L, W, or # in cron expressions.")
+	case err != nil:
+		return nil, invalid("Parameter ScheduleExpression is not valid.")
+	}
+
+	return s, nil
+}
 
 // scheduled is a schedule index entry.
 type scheduled struct {
@@ -43,7 +59,7 @@ func reschedule(tx storage.WriteTx, scope request.Scope, r *rule, now time.Time)
 		return err
 	}
 
-	at, ok := s.first(now)
+	at, ok := s.First(now)
 	if !ok {
 		tx.Delete(key)
 		return nil
@@ -187,7 +203,7 @@ func claim(tx storage.WriteTx, key string, due, now time.Time) (run, bool, error
 		return run{}, false, err
 	}
 
-	if next, ok := sched.after(due, now); ok {
+	if next, ok := sched.After(due, now); ok {
 		if putErr := putScheduled(tx, key, next); putErr != nil {
 			return run{}, false, putErr
 		}

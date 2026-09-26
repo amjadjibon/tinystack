@@ -1,29 +1,39 @@
-package eventbridge
+// Package schedule parses the rate and cron schedule expressions EventBridge
+// and Secrets Manager share, and finds their fire times in UTC.
+package schedule
 
 import (
+	"errors"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// schedule is a parsed ScheduleExpression: a fixed rate or a cron expression,
-// evaluated in UTC.
-type schedule struct {
+// Schedule is a parsed schedule expression: a fixed rate or a cron
+// expression, evaluated in UTC.
+type Schedule struct {
 	cron   *cron
 	period time.Duration
 }
 
+var (
+	// ErrInvalid reports an expression that is not a valid rate or cron
+	// expression.
+	ErrInvalid = errors.New("the schedule expression is not valid")
+	// ErrUnsupported reports L, W, or # in a cron expression, which AWS
+	// accepts but TinyStack does not evaluate.
+	ErrUnsupported = errors.New("TinyStack does not support L, W, or # in cron expressions")
+)
+
 var rateExpression = regexp.MustCompile(`^rate\((\d+) (minute|minutes|hour|hours|day|days)\)$`)
 
-func invalidSchedule() error { return invalid("Parameter ScheduleExpression is not valid.") }
-
-// parseSchedule parses "rate(<n> <unit>)", whose unit is singular only for a
-// value of 1, or "cron(<minutes> <hours> <day-of-month> <month> <day-of-week>
-// <year>)".
-func parseSchedule(text string) (*schedule, error) {
+// Parse parses "rate(<n> <unit>)", whose unit (minutes, hours, or days) is
+// singular only for a value of 1, or "cron(<minutes> <hours> <day-of-month>
+// <month> <day-of-week> <year>)".
+func Parse(text string) (*Schedule, error) {
 	if len(text) > 256 {
-		return nil, invalid("ScheduleExpression must be at most 256 characters.")
+		return nil, ErrInvalid
 	}
 
 	if body, ok := strings.CutPrefix(text, "cron("); ok && strings.HasSuffix(body, ")") {
@@ -32,26 +42,30 @@ func parseSchedule(text string) (*schedule, error) {
 			return nil, err
 		}
 
-		return &schedule{cron: c}, nil
+		return &Schedule{cron: c}, nil
 	}
 
 	match := rateExpression.FindStringSubmatch(text)
 	if match == nil {
-		return nil, invalidSchedule()
+		return nil, ErrInvalid
 	}
 
 	n, err := strconv.Atoi(match[1])
 	if err != nil || n < 1 || (n == 1) != !strings.HasSuffix(match[2], "s") {
-		return nil, invalidSchedule()
+		return nil, ErrInvalid
 	}
 
 	unit := map[string]time.Duration{"minute": time.Minute, "hour": time.Hour, "day": 24 * time.Hour}
-	return &schedule{period: time.Duration(n) * unit[strings.TrimSuffix(match[2], "s")]}, nil
+	return &Schedule{period: time.Duration(n) * unit[strings.TrimSuffix(match[2], "s")]}, nil
 }
 
-// first is the first fire time of a schedule set at now: one period later for
-// a rate, the next matching minute for a cron expression.
-func (s *schedule) first(now time.Time) (time.Time, bool) {
+// Period is the period of a rate expression, and zero for a cron expression.
+func (s *Schedule) Period() time.Duration { return s.period }
+
+// First is the first fire time of a schedule set at now: one period later for
+// a rate, the next matching minute for a cron expression. It reports false
+// when a cron expression never fires again.
+func (s *Schedule) First(now time.Time) (time.Time, bool) {
 	if s.cron != nil {
 		return s.cron.next(now)
 	}
@@ -59,9 +73,9 @@ func (s *schedule) first(now time.Time) (time.Time, bool) {
 	return now.Add(s.period), true
 }
 
-// after is the first fire time later than now for a schedule that was due at
-// due. Runs missed while TinyStack was stopped are skipped, not replayed.
-func (s *schedule) after(due, now time.Time) (time.Time, bool) {
+// After is the first fire time later than now for a schedule that was due at
+// due. Runs missed in between are skipped, not replayed.
+func (s *Schedule) After(due, now time.Time) (time.Time, bool) {
 	if s.cron != nil {
 		return s.cron.next(now)
 	}
@@ -89,12 +103,12 @@ var (
 func parseCron(body string) (*cron, error) {
 	fields := strings.Fields(body)
 	if len(fields) != 6 {
-		return nil, invalidSchedule()
+		return nil, ErrInvalid
 	}
 
 	// One of day-of-month and day-of-week must be "?", and only those may be.
 	if (fields[2] == "?") == (fields[4] == "?") || strings.Contains(fields[0]+fields[1]+fields[3]+fields[5], "?") {
-		return nil, invalidSchedule()
+		return nil, ErrInvalid
 	}
 
 	var c cron
@@ -139,13 +153,13 @@ func cronField(text string, names []string, low, high int) ([]bool, error) {
 	}
 
 	// bad reports a value that is neither a number nor a name; L, W, and #
-	// are valid in EventBridge but not supported.
+	// are valid in AWS but not supported.
 	bad := func(s string) error {
 		if strings.ContainsAny(s, "LW#") {
-			return invalid("TinyStack does not support L, W, or # in cron expressions.")
+			return ErrUnsupported
 		}
 
-		return invalidSchedule()
+		return ErrInvalid
 	}
 
 	set := make([]bool, high+1)
@@ -155,7 +169,7 @@ func cronField(text string, names []string, low, high int) ([]bool, error) {
 		if stepped {
 			var err error
 			if step, err = strconv.Atoi(stepText); err != nil || step < 1 {
-				return nil, invalidSchedule()
+				return nil, ErrInvalid
 			}
 		}
 
