@@ -161,6 +161,24 @@ resource "aws_s3_object_copy" "hello" {
   tagging_directive = "REPLACE"
 }
 
+# The same package, deployed from the versioned assets bucket.
+resource "aws_s3_object" "echo_zip" {
+  bucket = aws_s3_bucket_versioning.assets.id
+  key    = "lambda/echo.zip"
+  source = var.function_zip
+  etag   = filemd5(var.function_zip)
+}
+
+resource "aws_lambda_function" "from_s3" {
+  function_name     = "echo-s3"
+  role              = aws_iam_role.lambda.arn
+  runtime           = "python3.12"
+  handler           = "app.handler"
+  s3_bucket         = aws_s3_object.echo_zip.bucket
+  s3_key            = aws_s3_object.echo_zip.key
+  s3_object_version = aws_s3_object.echo_zip.version_id
+}
+
 resource "aws_lambda_function" "echo" {
   function_name    = "echo"
   role             = aws_iam_role.lambda.arn
