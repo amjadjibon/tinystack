@@ -118,7 +118,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `*sqs.Service` and delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its
   subscriptions, and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
   in the same transaction as the regional bucket record; objects are `…/s3/<bucket>/o/<key>` (metadata) plus
-  `…/s3/<bucket>/d/<key>` (bytes); the metadata record holds the object's tags. The bucket record also holds its notification configuration, which object writes
+  `…/s3/<bucket>/d/<key>` (bytes); the metadata record holds the object's tags. Those are always the current version:
+  in a versioned bucket (`versions.go`), older versions and delete markers are kept newest first in the key's history
+  record `…/s3/<bucket>/v/<key>`, with each noncurrent version's bytes under `…/s3/<bucket>/b/<version ID>/<key>`. The bucket record also holds its notification configuration, which object writes
   read in their transaction and deliver after commit (`notification.go`) through `sqs.Service.Deliver`,
   `sns.Service.Publish`, `lambda.Service.InvokeAsync`, and `eventbridge.Service.PutEvents`. Unmodeled S3 errors carry their own HTTP status (`&awserror.Error{StatusCode: …}`);
   modeled ones take it from the generated bindings. Lambda stores functions under `…/lambda/function/<name>`, code
