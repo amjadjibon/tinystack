@@ -85,7 +85,8 @@ type run struct {
 	rule  compiledRule
 }
 
-// scheduler fires due rules every scheduleInterval until Stop.
+// scheduler fires due rules and retries failed deliveries every
+// scheduleInterval until Stop.
 func (s *Service) scheduler() {
 	defer close(s.done)
 	ticker := time.NewTicker(scheduleInterval)
@@ -99,6 +100,10 @@ func (s *Service) scheduler() {
 
 		if err := s.fire(s.ctx, s.now()); err != nil && s.ctx.Err() == nil {
 			s.logger.Warn("fire scheduled EventBridge rules", "error", err)
+		}
+
+		if err := s.retryDue(s.ctx, s.now()); err != nil && s.ctx.Err() == nil {
+			s.logger.Warn("retry EventBridge deliveries", "error", err)
 		}
 	}
 }
@@ -216,7 +221,7 @@ func claim(tx storage.WriteTx, key string, due, now time.Time) (run, bool, error
 	}}, len(r.Targets) > 0, nil
 }
 
-// deliverScheduled sends a run's event to its rule's targets, acting in the
+// deliverScheduled sends a run's event to its rule's targets, which act in the
 // rule's account and region.
 func (s *Service) deliverScheduled(ctx context.Context, r *run) {
 	e := &event{
@@ -236,8 +241,7 @@ func (s *Service) deliverScheduled(ctx context.Context, r *run) {
 		return
 	}
 
-	ctx = request.WithMetadata(ctx, request.Metadata{Scope: r.scope, RequestID: e.ID, Service: "events"})
 	for i := range r.rule.targets {
-		s.deliver(ctx, &r.rule, &r.rule.targets[i], e, encoded)
+		s.deliver(ctx, r.scope, &r.rule, &r.rule.targets[i], e, encoded)
 	}
 }

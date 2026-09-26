@@ -15,7 +15,6 @@ import (
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -156,7 +155,7 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 			}
 
 			for j := range r.targets {
-				s.deliver(ctx, &r, &r.targets[j], e, encoded)
+				s.deliver(ctx, m.Scope, &r, &r.targets[j], e, encoded)
 			}
 		}
 
@@ -242,12 +241,32 @@ func decodeEvent(encoded []byte) any {
 	return v
 }
 
-// deliver sends an event to one target. As in EventBridge, a failed delivery
-// (such as a deleted queue or function) does not fail PutEvents; the delivery
-// log records it.
-func (s *Service) deliver(ctx context.Context, r *compiledRule, t *target, e *event, encoded []byte) {
-	payload := render(r, t, e, encoded)
-	eventID, rule := e.ID, r.arn
+// deliver sends an event to one target in scope. As in EventBridge, a failed
+// delivery (such as a deleted queue or function) does not fail PutEvents; the
+// delivery log records it, and it is retried or sent to the target's
+// dead-letter queue (retry.go).
+func (s *Service) deliver(
+	ctx context.Context,
+	scope request.Scope,
+	r *compiledRule,
+	t *target,
+	e *event,
+	encoded []byte,
+) {
+	d := &pending{
+		Target:  *t,
+		Rule:    r.arn,
+		EventID: e.ID,
+		Payload: string(render(r, t, e, encoded)),
+		First:   s.now().UnixMilli(),
+	}
+	if err := s.attempt(ctx, scope, d); err != nil {
+		s.failed(ctx, retryKey(scope), d, err)
+	}
+}
+
+// send makes one delivery of payload to a target.
+func (s *Service) send(ctx context.Context, t *target, eventID string, payload []byte) error {
 	var err error
 	switch strings.SplitN(t.ARN, ":", 4)[2] {
 	case serviceSQS:
@@ -264,5 +283,5 @@ func (s *Service) deliver(ctx context.Context, r *compiledRule, t *target, e *ev
 		err = s.functions.InvokeAsync(ctx, t.ARN, payload)
 	}
 
-	s.deliveries.Add(delivery.ViaEventBridge, rule, t.ARN, payload, err)
+	return err
 }

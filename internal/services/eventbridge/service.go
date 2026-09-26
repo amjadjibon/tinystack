@@ -97,13 +97,17 @@ func (s *Service) Stop() {
 }
 
 type target struct {
-	Transformer    *transformer `json:",omitempty"`
+	Transformer *transformer `json:",omitempty"`
+	// MaxRetries and MaxAge are the RetryPolicy members that were set.
+	MaxRetries     *int64 `json:",omitempty"`
+	MaxAge         *int64 `json:",omitempty"`
 	ID             string
 	ARN            string
 	RoleARN        string `json:",omitempty"`
 	Input          string `json:",omitempty"`
 	InputPath      string `json:",omitempty"`
 	MessageGroupID string `json:",omitempty"`
+	DeadLetterARN  string `json:",omitempty"`
 }
 
 type rule struct {

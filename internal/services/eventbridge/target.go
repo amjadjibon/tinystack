@@ -72,6 +72,22 @@ func newTarget(scope request.Scope, in *api.Target) (target, error) {
 			"such as $.detail.items[0].id.")
 	}
 
+	if in.RetryPolicy != nil || in.DeadLetterConfig != nil {
+		var retries, age *int64
+		if in.RetryPolicy != nil {
+			retries, age = in.RetryPolicy.MaximumRetryAttempts, in.RetryPolicy.MaximumEventAgeInSeconds
+		}
+
+		var arn *string
+		if in.DeadLetterConfig != nil {
+			arn = in.DeadLetterConfig.Arn
+		}
+
+		if policyErr := t.retryPolicy(scope, retries, age, arn); policyErr != nil {
+			return t, policyErr
+		}
+	}
+
 	if in.SqsParameters != nil {
 		if service != serviceSQS {
 			return t, invalid("SqsParameters apply only to SQS targets.")
@@ -111,12 +127,13 @@ func (s *Service) PutTargets(ctx context.Context, in *api.PutTargetsRequest) (*a
 	}
 
 	err = s.update(ctx, &ref, func(r *rule) error {
-		for _, t := range targets {
+		for j := range targets {
+			t := &targets[j]
 			i := slices.IndexFunc(r.Targets, func(o target) bool { return o.ID == t.ID })
 			if i >= 0 {
-				r.Targets[i] = t
+				r.Targets[i] = *t
 			} else {
-				r.Targets = append(r.Targets, t)
+				r.Targets = append(r.Targets, *t)
 			}
 		}
 
@@ -176,6 +193,14 @@ func (t *target) describe() api.Target {
 
 	if t.InputPath != "" {
 		out.InputPath = new(t.InputPath)
+	}
+
+	if t.MaxRetries != nil || t.MaxAge != nil {
+		out.RetryPolicy = &api.RetryPolicy{MaximumRetryAttempts: t.MaxRetries, MaximumEventAgeInSeconds: t.MaxAge}
+	}
+
+	if t.DeadLetterARN != "" {
+		out.DeadLetterConfig = &api.DeadLetterConfig{Arn: new(t.DeadLetterARN)}
 	}
 
 	if t.MessageGroupID != "" {
