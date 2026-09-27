@@ -218,16 +218,20 @@ func (s *Service) AdminUpdateUserAttributes(
 }
 
 // verifyChanged sends a verification code for each changed attribute the
-// pool verifies automatically and that is not yet verified.
-func (s *Service) verifyChanged(scope request.Scope, p *pool, u *user, changed []string, out *outbox) {
+// pool verifies automatically and that is not yet verified, and returns where
+// the codes went.
+func (s *Service) verifyChanged(scope request.Scope, p *pool, u *user, changed []string, out *outbox) []sent {
+	var sentTo []sent
 	for _, attr := range changed {
 		if (attr == attrEmail || attr == attrPhone) && hasAutoVerify(p, attr) && u.Attributes[attr] != "" &&
 			u.Attributes[attr+verifiedSuffix] != valueTrue {
 			subject, template := verificationMessage(p, mediumOf(attr))
-			out.send(scope, p, u, mediumOf(attr), subject, template,
-				u.setCode(purposeVerify+attr, s.now().UTC(), codeValidity))
+			secret := u.setCode(purposeVerify+attr, attr, s.now().UTC(), codeValidity)
+			sentTo = append(sentTo, out.send(scope, p, u, mediumOf(attr), subject, template, secret))
 		}
 	}
+
+	return sentTo
 }
 
 func (s *Service) AdminDeleteUserAttributes(
@@ -353,7 +357,7 @@ func (s *Service) sendReset(scope request.Scope, p *pool, u *user, out *outbox) 
 	for _, attr := range recoveryAttributes(p) {
 		if u.Attributes[attr] != "" && u.Attributes[attr+verifiedSuffix] == valueTrue {
 			subject, template := verificationMessage(p, mediumOf(attr))
-			secret := u.setCode(purposePassword, s.now().UTC(), time.Hour)
+			secret := u.setCode(purposePassword, attr, s.now().UTC(), time.Hour)
 			return out.send(scope, p, u, mediumOf(attr), subject, template, secret), nil
 		}
 	}

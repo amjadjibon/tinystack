@@ -412,13 +412,28 @@ func setPassword(p *pool, u *user, password string, permanent bool, now time.Tim
 	return nil
 }
 
-// setCode stores a new code for purpose, valid for ttl, and returns it.
-func (u *user) setCode(purpose string, now time.Time, ttl time.Duration) string {
+// setCode stores a new code for purpose, sent to attr and valid for ttl, and
+// returns it.
+func (u *user) setCode(purpose, attr string, now time.Time, ttl time.Duration) string {
 	if u.Codes == nil {
 		u.Codes = map[string]code{}
 	}
 
 	c := newCode()
-	u.Codes[purpose] = code{Value: c, Expires: now.Add(ttl)}
+	u.Codes[purpose] = code{Value: c, Expires: now.Add(ttl), Attribute: attr}
 	return c
+}
+
+// useCode checks and consumes the code for purpose.
+func (u *user) useCode(purpose, given string, now time.Time) error {
+	c, ok := u.Codes[purpose]
+	switch {
+	case !ok || c.Value != given:
+		return awserror.New("CodeMismatchException", "Invalid verification code provided, please try again.")
+	case !now.Before(c.Expires):
+		return awserror.New("ExpiredCodeException", "Invalid code provided, please request a code again.")
+	}
+
+	delete(u.Codes, purpose)
+	return nil
 }

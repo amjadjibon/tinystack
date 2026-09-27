@@ -127,6 +127,7 @@ func newStartCommand() *cobra.Command {
 			functions.UseObjects(buckets.Object)
 			roles := iam.New(store)
 			tokens := sts.New(store, roles)
+			identities := cognitoidp.New(store, deliveries)
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -147,13 +148,14 @@ func newStartCommand() *cobra.Command {
 				logsapi.Descriptor(logGroups),
 				kmsapi.Descriptor(keys),
 				ec2api.Descriptor(ec2.New(store)),
-				cognitoidpapi.Descriptor(cognitoidp.New(store, deliveries)),
+				cognitoidpapi.Descriptor(identities),
 			)
 			if err != nil {
 				return err
 			}
 
 			handler.UseCredentials(tokens.Credentials)
+			handler.UseDocuments(identities.Documents)
 			handler.Handle("deliveries", deliveries)
 
 			var listenConfig net.ListenConfig

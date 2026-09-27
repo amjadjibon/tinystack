@@ -28,6 +28,9 @@ const (
 	flowRefresh       = "ALLOW_REFRESH_TOKEN_AUTH"
 	flowSRP           = "ALLOW_USER_SRP_AUTH"
 	flowCustom        = "ALLOW_CUSTOM_AUTH"
+
+	legacyUserPassword  = "USER_PASSWORD_AUTH"
+	legacyAdminPassword = "ADMIN_NO_SRP_AUTH" // #nosec G101 -- an auth flow name, not a credential.
 )
 
 // client is an app client record.
@@ -75,9 +78,10 @@ var (
 	unitDuration = map[string]time.Duration{
 		"seconds": time.Second, unitMinutes: time.Minute, unitHours: time.Hour, unitDays: 24 * time.Hour,
 	}
-	legacyFlows = []string{"ADMIN_NO_SRP_AUTH", "CUSTOM_AUTH_FLOW_ONLY", "USER_PASSWORD_AUTH"}
-	allowFlows  = []string{flowAdminPassword, flowCustom, flowUserPassword, flowSRP, flowRefresh, "ALLOW_USER_AUTH"}
-	oauthScopes = []string{"phone", attrEmail, "openid", "profile", "aws.cognito.signin.user.admin"}
+	legacyFlows  = []string{legacyAdminPassword, "CUSTOM_AUTH_FLOW_ONLY", legacyUserPassword}
+	allowFlows   = []string{flowAdminPassword, flowCustom, flowUserPassword, flowSRP, flowRefresh, "ALLOW_USER_AUTH"}
+	oauthScopes  = []string{"phone", attrEmail, "openid", "profile", adminScope}
+	defaultFlows = []string{flowRefresh, flowSRP, flowCustom}
 )
 
 // validity returns how long a client's tokens of kind (tokenAccess, tokenID,
@@ -108,6 +112,27 @@ func (c *clientSettings) validity(kind string) time.Duration {
 	}
 
 	return time.Duration(*amount) * unitDuration[unit]
+}
+
+// flows returns the auth flows a client allows, mapping the legacy names.
+func (c *clientSettings) flows() []string {
+	if len(c.ExplicitAuthFlows) == 0 {
+		return defaultFlows
+	}
+
+	out := slices.Clone(c.ExplicitAuthFlows)
+	for _, flow := range c.ExplicitAuthFlows {
+		switch flow {
+		case legacyAdminPassword:
+			out = append(out, flowAdminPassword, flowRefresh, flowSRP)
+		case legacyUserPassword:
+			out = append(out, flowUserPassword, flowRefresh, flowSRP)
+		case "CUSTOM_AUTH_FLOW_ONLY":
+			out = append(out, flowCustom, flowRefresh)
+		}
+	}
+
+	return out
 }
 
 // checkClient validates client settings against the pool and fills defaults.

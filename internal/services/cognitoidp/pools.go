@@ -46,7 +46,10 @@ type pool struct {
 	Schema             []api.SchemaAttributeType
 	AliasAttributes    []string `json:",omitempty"`
 	UsernameAttributes []string `json:",omitempty"`
-	SoftwareTokenMFA   bool     `json:",omitempty"`
+	// Key is the RSA key (PKCS #1) that signs the pool's tokens, made when the
+	// pool first needs it.
+	Key              []byte `json:",omitempty"`
+	SoftwareTokenMFA bool   `json:",omitempty"`
 }
 
 // settings keep the wire names, so requests and responses convert to and from
@@ -544,6 +547,7 @@ func (s *Service) CreateUserPool(
 			return awserror.New("LimitExceededException", "The account has reached its limit of 1,000 user pools.")
 		}
 
+		tx.Put(poolIndexKey(p.ID), []byte(scope.AccountID))
 		return write(tx, poolKey(scope, p.ID), p)
 	})
 	if err != nil {
@@ -693,6 +697,7 @@ func (s *Service) DeleteUserPool(
 		}
 
 		tx.Delete(poolKey(scope, p.ID))
+		tx.Delete(poolIndexKey(p.ID))
 		return nil
 	})
 	if err != nil {

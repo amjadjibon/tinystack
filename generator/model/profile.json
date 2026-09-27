@@ -3825,7 +3825,26 @@
       "AdminEnableUser",
       "AdminDisableUser",
       "AdminConfirmSignUp",
-      "AdminResetUserPassword"
+      "AdminResetUserPassword",
+      "AdminUserGlobalSignOut",
+      "SignUp",
+      "ConfirmSignUp",
+      "ResendConfirmationCode",
+      "ForgotPassword",
+      "ConfirmForgotPassword",
+      "GetUser",
+      "UpdateUserAttributes",
+      "DeleteUserAttributes",
+      "VerifyUserAttribute",
+      "GetUserAttributeVerificationCode",
+      "ChangePassword",
+      "DeleteUser",
+      "GlobalSignOut",
+      "RevokeToken",
+      "InitiateAuth",
+      "AdminInitiateAuth",
+      "RespondToAuthChallenge",
+      "AdminRespondToAuthChallenge"
     ],
     "shapes": {
       "CreateUserPoolRequest": [
@@ -4245,7 +4264,176 @@
         "Username",
         "ClientMetadata"
       ],
-      "AdminResetUserPasswordResponse": []
+      "AdminResetUserPasswordResponse": [],
+      "AdminUserGlobalSignOutRequest": [
+        "UserPoolId",
+        "Username"
+      ],
+      "AdminUserGlobalSignOutResponse": [],
+      "SignUpRequest": [
+        "ClientId",
+        "SecretHash",
+        "Username",
+        "Password",
+        "UserAttributes",
+        "ValidationData",
+        "ClientMetadata"
+      ],
+      "SignUpResponse": [
+        "UserConfirmed",
+        "CodeDeliveryDetails",
+        "UserSub"
+      ],
+      "ConfirmSignUpRequest": [
+        "ClientId",
+        "SecretHash",
+        "Username",
+        "ConfirmationCode",
+        "ForceAliasCreation",
+        "ClientMetadata"
+      ],
+      "ConfirmSignUpResponse": [],
+      "ResendConfirmationCodeRequest": [
+        "ClientId",
+        "SecretHash",
+        "Username",
+        "ClientMetadata"
+      ],
+      "ResendConfirmationCodeResponse": [
+        "CodeDeliveryDetails"
+      ],
+      "ForgotPasswordRequest": [
+        "ClientId",
+        "SecretHash",
+        "Username",
+        "ClientMetadata"
+      ],
+      "ForgotPasswordResponse": [
+        "CodeDeliveryDetails"
+      ],
+      "ConfirmForgotPasswordRequest": [
+        "ClientId",
+        "SecretHash",
+        "Username",
+        "ConfirmationCode",
+        "Password",
+        "ClientMetadata"
+      ],
+      "ConfirmForgotPasswordResponse": [],
+      "GetUserRequest": [
+        "AccessToken"
+      ],
+      "GetUserResponse": [
+        "Username",
+        "UserAttributes"
+      ],
+      "UpdateUserAttributesRequest": [
+        "UserAttributes",
+        "AccessToken",
+        "ClientMetadata"
+      ],
+      "UpdateUserAttributesResponse": [
+        "CodeDeliveryDetailsList"
+      ],
+      "DeleteUserAttributesRequest": [
+        "UserAttributeNames",
+        "AccessToken"
+      ],
+      "DeleteUserAttributesResponse": [],
+      "VerifyUserAttributeRequest": [
+        "AccessToken",
+        "AttributeName",
+        "Code"
+      ],
+      "VerifyUserAttributeResponse": [],
+      "GetUserAttributeVerificationCodeRequest": [
+        "AccessToken",
+        "AttributeName",
+        "ClientMetadata"
+      ],
+      "GetUserAttributeVerificationCodeResponse": [
+        "CodeDeliveryDetails"
+      ],
+      "ChangePasswordRequest": [
+        "PreviousPassword",
+        "ProposedPassword",
+        "AccessToken"
+      ],
+      "ChangePasswordResponse": [],
+      "DeleteUserRequest": [
+        "AccessToken"
+      ],
+      "GlobalSignOutRequest": [
+        "AccessToken"
+      ],
+      "GlobalSignOutResponse": [],
+      "RevokeTokenRequest": [
+        "Token",
+        "ClientId",
+        "ClientSecret"
+      ],
+      "RevokeTokenResponse": [],
+      "InitiateAuthRequest": [
+        "AuthFlow",
+        "AuthParameters",
+        "ClientMetadata",
+        "ClientId",
+        "Session"
+      ],
+      "InitiateAuthResponse": [
+        "ChallengeName",
+        "Session",
+        "ChallengeParameters",
+        "AuthenticationResult"
+      ],
+      "AdminInitiateAuthRequest": [
+        "UserPoolId",
+        "ClientId",
+        "AuthFlow",
+        "AuthParameters",
+        "ClientMetadata",
+        "Session"
+      ],
+      "AdminInitiateAuthResponse": [
+        "ChallengeName",
+        "Session",
+        "ChallengeParameters",
+        "AuthenticationResult"
+      ],
+      "RespondToAuthChallengeRequest": [
+        "ClientId",
+        "ChallengeName",
+        "Session",
+        "ChallengeResponses",
+        "ClientMetadata"
+      ],
+      "RespondToAuthChallengeResponse": [
+        "ChallengeName",
+        "Session",
+        "ChallengeParameters",
+        "AuthenticationResult"
+      ],
+      "AdminRespondToAuthChallengeRequest": [
+        "UserPoolId",
+        "ClientId",
+        "ChallengeName",
+        "ChallengeResponses",
+        "Session",
+        "ClientMetadata"
+      ],
+      "AdminRespondToAuthChallengeResponse": [
+        "ChallengeName",
+        "Session",
+        "ChallengeParameters",
+        "AuthenticationResult"
+      ],
+      "AuthenticationResultType": [
+        "AccessToken",
+        "ExpiresIn",
+        "TokenType",
+        "RefreshToken",
+        "IdToken"
+      ]
     }
   }
 }

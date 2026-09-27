@@ -122,6 +122,7 @@ func serverStore(
 	secretsService := secrets.New(store, keys, functions, deliveries)
 	roles := principals.New(store)
 	stsService := tokens.New(store, roles)
+	userPools := identities.New(store, deliveries)
 	ssmService := parameters.New(store, keys)
 	ssmService.UsePublicParameters(compute.PublicParameters)
 	h, err := gateway.New(
@@ -141,13 +142,14 @@ func serverStore(
 		logsapi.Descriptor(logGroups),
 		kmsapi.Descriptor(keys),
 		ec2api.Descriptor(compute.New(store)),
-		cognitoidpapi.Descriptor(identities.New(store, deliveries)),
+		cognitoidpapi.Descriptor(userPools),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	h.UseCredentials(stsService.Credentials)
+	h.UseDocuments(userPools.Documents)
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)

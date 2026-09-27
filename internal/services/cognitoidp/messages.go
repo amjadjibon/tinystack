@@ -32,6 +32,9 @@ const (
 type code struct {
 	Expires time.Time
 	Value   string
+	// Attribute is the email or phone attribute a sign-up code went to, which
+	// confirming verifies.
+	Attribute string `json:",omitempty"`
 }
 
 // newCode returns a random six-digit code.
@@ -44,6 +47,10 @@ func newCode() string {
 // emulator, so it hashes at bcrypt's lowest cost to keep sign-ins fast.
 func hashPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+}
+
+func checkPassword(hash []byte, password string) bool {
+	return len(hash) > 0 && bcrypt.CompareHashAndPassword(hash, []byte(password)) == nil
 }
 
 func invalidPassword(reason string) error {
@@ -191,6 +198,18 @@ func first(values ...*string) string {
 	for _, v := range values {
 		if v != nil && *v != "" {
 			return *v
+		}
+	}
+
+	return ""
+}
+
+// verificationMedium returns how to send u a code: to its email if the pool
+// verifies email and u has one, else to its phone number, else "".
+func verificationMedium(p *pool, u *user) string {
+	for _, attr := range []string{attrEmail, attrPhone} {
+		if hasAutoVerify(p, attr) && u.Attributes[attr] != "" {
+			return mediumOf(attr)
 		}
 	}
 

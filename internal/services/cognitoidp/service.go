@@ -13,7 +13,8 @@
 //
 // Clients are also indexed partition-wide under aws/cognitoidp/client/<client
 // ID>, because the operations a pool's users call unsigned name only a client
-// ID or a token, never an account.
+// ID or a token, never an account; pools are indexed under
+// aws/cognitoidp/pool/<pool ID> for their public keys.
 package cognitoidp
 
 import (
@@ -88,6 +89,10 @@ func clientKey(scope request.Scope, pool, id string) string {
 }
 
 func userPrefix(scope request.Scope, pool string) string { return prefix(scope, "user") + pool + "/" }
+
+// poolIndexKey holds a pool's account, partition-wide, so its public keys can
+// be served by pool ID alone.
+func poolIndexKey(id string) string { return "aws/" + service + "/pool/" + id }
 
 // clientIndexKey locates a client, partition-wide, by its ID alone.
 func clientIndexKey(id string) string { return "aws/" + service + "/client/" + id }
