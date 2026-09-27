@@ -352,7 +352,7 @@ func ruleOutput(scope request.Scope, g *securityGroup, r *rule, egress bool) api
 
 func groupValues(scope request.Scope, g *securityGroup) values {
 	v := values{
-		filterGroupID: {g.ID}, "group-name": {g.Name}, "description": {g.Description}, filterVPCID: {g.VPCID},
+		filterGroupID: {g.ID}, "group-name": {g.Name}, filterDescription: {g.Description}, filterVPCID: {g.VPCID},
 		filterOwnerID: {scope.AccountID},
 	}
 	for prefix, rules := range map[string][]rule{"ip-permission.": g.Ingress, "egress.ip-permission.": g.Egress} {
@@ -468,6 +468,15 @@ func (s *Service) DeleteSecurityGroup(
 				(slices.ContainsFunc(other.Ingress, names) || slices.ContainsFunc(other.Egress, names)) {
 				return awserror.New("DependencyViolation", fmt.Sprintf("resource %s has a dependent object", g.ID))
 			}
+		}
+
+		inUse, err := groupInUse(tx, scope, g.ID)
+		if err != nil {
+			return err
+		}
+
+		if inUse {
+			return awserror.New("DependencyViolation", fmt.Sprintf("resource %s has a dependent object", g.ID))
 		}
 
 		id = g.ID

@@ -31,6 +31,7 @@ var taggable = map[string]taggableKind{
 	"subnet": {kind: kindSubnet, resourceType: "subnet", missing: subnetNotFound},
 	"sg":     {kind: kindSecurityGroup, resourceType: "security-group", missing: groupNotFound},
 	"key":    {kind: kindKeyPair, resourceType: "key-pair", missing: keyPairIDNotFound},
+	"i":      {kind: kindInstance, resourceType: kindInstance, missing: instanceNotFound},
 }
 
 // taggableByID returns the resource type of an ID.

@@ -15,18 +15,20 @@ import (
 )
 
 const (
-	defaultVPCCIDR  = "172.31.0.0/16"
-	maxVPCs         = 5
-	maxDescribe     = 1000
-	stateAvailable  = "available"
-	filterState     = "state"
-	filterOwnerID   = "owner-id"
-	filterCIDR      = "cidr"
-	filterVPCID     = "vpc-id"
-	filterZone      = "availability-zone"
-	tenancyDefault  = "default"
-	minPrefixLength = 16
-	maxPrefixLength = 28
+	defaultVPCCIDR    = "172.31.0.0/16"
+	maxVPCs           = 5
+	maxDescribe       = 1000
+	stateAvailable    = "available"
+	filterState       = "state"
+	filterOwnerID     = "owner-id"
+	filterCIDR        = "cidr"
+	filterVPCID       = "vpc-id"
+	filterZone        = "availability-zone"
+	filterSubnetID    = "subnet-id"
+	filterDescription = "description"
+	tenancyDefault    = "default"
+	minPrefixLength   = 16
+	maxPrefixLength   = 28
 )
 
 // zoneSuffixes name each Region's Availability Zones.
@@ -404,7 +406,7 @@ func subnetValues(scope request.Scope, sn *subnet) values {
 	}
 
 	return values{
-		"subnet-id": {sn.ID}, filterVPCID: {sn.VPCID}, "cidr-block": {sn.CIDR}, filterCIDR: {sn.CIDR},
+		filterSubnetID: {sn.ID}, filterVPCID: {sn.VPCID}, "cidr-block": {sn.CIDR}, filterCIDR: {sn.CIDR},
 		"cidrBlock": {sn.CIDR}, filterZone: {zoneName}, "availabilityZone": {zoneName},
 		"availability-zone-id": {zoneIDValue}, "default-for-az": boolValue(sn.DefaultForAZ),
 		"defaultForAz": boolValue(sn.DefaultForAZ), filterState: {stateAvailable}, filterOwnerID: {scope.AccountID},
@@ -471,9 +473,20 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 
 func (s *Service) DeleteSubnet(ctx context.Context, in *api.DeleteSubnetRequest) (*api.DeleteSubnetOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		k := key(scope, kindSubnet, value(in.SubnetId))
+		id := value(in.SubnetId)
+		k := key(scope, kindSubnet, id)
 		if _, ok := tx.Get(k); !ok {
-			return subnetNotFound(value(in.SubnetId))
+			return subnetNotFound(id)
+		}
+
+		inUse, err := subnetInUse(tx, scope, id)
+		if err != nil {
+			return err
+		}
+
+		if inUse {
+			return awserror.New("DependencyViolation",
+				fmt.Sprintf("The subnet '%s' has dependencies and cannot be deleted.", id))
 		}
 
 		tx.Delete(k)

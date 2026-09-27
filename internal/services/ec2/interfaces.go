@@ -10,7 +10,7 @@ import (
 
 // networkInterfaceFilters are the filters DescribeNetworkInterfaces accepts.
 var networkInterfaceFilters = []string{
-	"network-interface-id", filterGroupID, "subnet-id", filterVPCID, "status", "description", filterZone,
+	"network-interface-id", filterGroupID, filterSubnetID, filterVPCID, "status", filterDescription, filterZone,
 	"attachment.instance-id", filterOwnerID, "private-ip-address", "interface-type", "requester-managed",
 }
 

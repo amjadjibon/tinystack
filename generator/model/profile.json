@@ -461,7 +461,15 @@
       "ImportKeyPair",
       "DescribeKeyPairs",
       "DeleteKeyPair",
-      "DescribeNetworkInterfaces"
+      "DescribeNetworkInterfaces",
+      "RunInstances",
+      "DescribeInstances",
+      "StartInstances",
+      "StopInstances",
+      "RebootInstances",
+      "TerminateInstances",
+      "DescribeInstanceStatus",
+      "DescribeImages"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -862,6 +870,197 @@
       "GroupIdentifier": [
         "GroupId",
         "GroupName"
+      ],
+      "RunInstancesRequest": [
+        "ImageId",
+        "InstanceType",
+        "KeyName",
+        "MaxCount",
+        "MinCount",
+        "Monitoring",
+        "Placement",
+        "SecurityGroupIds",
+        "SecurityGroups",
+        "SubnetId",
+        "UserData",
+        "TagSpecifications",
+        "DryRun",
+        "DisableApiTermination",
+        "InstanceInitiatedShutdownBehavior",
+        "PrivateIpAddress",
+        "ClientToken"
+      ],
+      "RunInstancesMonitoringEnabled": [
+        "Enabled"
+      ],
+      "Placement": [
+        "AvailabilityZoneId",
+        "Tenancy",
+        "AvailabilityZone"
+      ],
+      "Reservation": [
+        "ReservationId",
+        "OwnerId",
+        "Groups",
+        "Instances"
+      ],
+      "Instance": [
+        "Architecture",
+        "ClientToken",
+        "EbsOptimized",
+        "EnaSupport",
+        "Hypervisor",
+        "RootDeviceName",
+        "RootDeviceType",
+        "SecurityGroups",
+        "SourceDestCheck",
+        "StateReason",
+        "Tags",
+        "VirtualizationType",
+        "PlatformDetails",
+        "UsageOperation",
+        "InstanceId",
+        "ImageId",
+        "State",
+        "PrivateDnsName",
+        "PublicDnsName",
+        "StateTransitionReason",
+        "KeyName",
+        "AmiLaunchIndex",
+        "InstanceType",
+        "LaunchTime",
+        "Placement",
+        "Monitoring",
+        "SubnetId",
+        "VpcId",
+        "PrivateIpAddress",
+        "PublicIpAddress"
+      ],
+      "InstanceState": [
+        "Code",
+        "Name"
+      ],
+      "Monitoring": [
+        "State"
+      ],
+      "StateReason": [
+        "Code",
+        "Message"
+      ],
+      "DescribeInstancesRequest": [
+        "InstanceIds",
+        "DryRun",
+        "Filters",
+        "NextToken",
+        "MaxResults"
+      ],
+      "DescribeInstancesResult": [
+        "NextToken",
+        "Reservations"
+      ],
+      "StartInstancesRequest": [
+        "InstanceIds",
+        "DryRun"
+      ],
+      "StartInstancesResult": [
+        "StartingInstances"
+      ],
+      "StopInstancesRequest": [
+        "InstanceIds",
+        "DryRun"
+      ],
+      "StopInstancesResult": [
+        "StoppingInstances"
+      ],
+      "TerminateInstancesRequest": [
+        "InstanceIds",
+        "DryRun"
+      ],
+      "TerminateInstancesResult": [
+        "TerminatingInstances"
+      ],
+      "RebootInstancesRequest": [
+        "InstanceIds",
+        "DryRun"
+      ],
+      "InstanceStateChange": [
+        "InstanceId",
+        "CurrentState",
+        "PreviousState"
+      ],
+      "DescribeInstanceStatusRequest": [
+        "InstanceIds",
+        "MaxResults",
+        "NextToken",
+        "DryRun",
+        "Filters",
+        "IncludeAllInstances"
+      ],
+      "DescribeInstanceStatusResult": [
+        "InstanceStatuses",
+        "NextToken"
+      ],
+      "InstanceStatus": [
+        "AvailabilityZone",
+        "AvailabilityZoneId",
+        "InstanceId",
+        "InstanceState",
+        "InstanceStatus",
+        "SystemStatus"
+      ],
+      "InstanceStatusSummary": [
+        "Details",
+        "Status"
+      ],
+      "InstanceStatusDetails": [
+        "Name",
+        "Status"
+      ],
+      "DescribeImagesRequest": [
+        "ImageIds",
+        "Owners",
+        "IncludeDeprecated",
+        "MaxResults",
+        "NextToken",
+        "DryRun",
+        "Filters"
+      ],
+      "DescribeImagesResult": [
+        "NextToken",
+        "Images"
+      ],
+      "Image": [
+        "PlatformDetails",
+        "UsageOperation",
+        "BlockDeviceMappings",
+        "Description",
+        "EnaSupport",
+        "Hypervisor",
+        "ImageOwnerAlias",
+        "Name",
+        "RootDeviceName",
+        "RootDeviceType",
+        "VirtualizationType",
+        "BootMode",
+        "ImageId",
+        "ImageLocation",
+        "State",
+        "OwnerId",
+        "CreationDate",
+        "Public",
+        "Architecture",
+        "ImageType"
+      ],
+      "BlockDeviceMapping": [
+        "DeviceName",
+        "Ebs"
+      ],
+      "EbsBlockDevice": [
+        "DeleteOnTermination",
+        "SnapshotId",
+        "VolumeSize",
+        "VolumeType",
+        "Encrypted"
       ]
     }
   },
