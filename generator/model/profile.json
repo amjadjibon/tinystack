@@ -448,7 +448,20 @@
       "DescribeSubnets",
       "CreateTags",
       "DeleteTags",
-      "DescribeTags"
+      "DescribeTags",
+      "CreateSecurityGroup",
+      "DeleteSecurityGroup",
+      "DescribeSecurityGroups",
+      "AuthorizeSecurityGroupIngress",
+      "AuthorizeSecurityGroupEgress",
+      "RevokeSecurityGroupIngress",
+      "RevokeSecurityGroupEgress",
+      "DescribeSecurityGroupRules",
+      "CreateKeyPair",
+      "ImportKeyPair",
+      "DescribeKeyPairs",
+      "DeleteKeyPair",
+      "DescribeNetworkInterfaces"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -607,6 +620,248 @@
         "ResourceId",
         "ResourceType",
         "Value"
+      ],
+      "CreateSecurityGroupRequest": [
+        "Description",
+        "GroupName",
+        "VpcId",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "CreateSecurityGroupResult": [
+        "GroupId",
+        "Tags",
+        "SecurityGroupArn"
+      ],
+      "DeleteSecurityGroupRequest": [
+        "GroupId",
+        "GroupName",
+        "DryRun"
+      ],
+      "DeleteSecurityGroupResult": [
+        "Return",
+        "GroupId"
+      ],
+      "DescribeSecurityGroupsRequest": [
+        "GroupIds",
+        "GroupNames",
+        "NextToken",
+        "MaxResults",
+        "DryRun",
+        "Filters"
+      ],
+      "DescribeSecurityGroupsResult": [
+        "NextToken",
+        "SecurityGroups"
+      ],
+      "SecurityGroup": [
+        "GroupId",
+        "IpPermissionsEgress",
+        "Tags",
+        "VpcId",
+        "SecurityGroupArn",
+        "OwnerId",
+        "GroupName",
+        "Description",
+        "IpPermissions"
+      ],
+      "IpPermission": [
+        "IpProtocol",
+        "FromPort",
+        "ToPort",
+        "UserIdGroupPairs",
+        "IpRanges",
+        "Ipv6Ranges",
+        "PrefixListIds"
+      ],
+      "IpRange": [
+        "Description",
+        "CidrIp"
+      ],
+      "Ipv6Range": [
+        "Description",
+        "CidrIpv6"
+      ],
+      "PrefixListId": [
+        "Description",
+        "PrefixListId"
+      ],
+      "UserIdGroupPair": [
+        "Description",
+        "UserId",
+        "GroupName",
+        "GroupId",
+        "VpcId"
+      ],
+      "AuthorizeSecurityGroupIngressRequest": [
+        "GroupId",
+        "GroupName",
+        "IpPermissions",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "AuthorizeSecurityGroupIngressResult": [
+        "Return",
+        "SecurityGroupRules"
+      ],
+      "AuthorizeSecurityGroupEgressRequest": [
+        "GroupId",
+        "IpPermissions",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "AuthorizeSecurityGroupEgressResult": [
+        "Return",
+        "SecurityGroupRules"
+      ],
+      "RevokeSecurityGroupIngressRequest": [
+        "GroupId",
+        "GroupName",
+        "IpPermissions",
+        "SecurityGroupRuleIds",
+        "DryRun"
+      ],
+      "RevokeSecurityGroupIngressResult": [
+        "Return",
+        "UnknownIpPermissions"
+      ],
+      "RevokeSecurityGroupEgressRequest": [
+        "GroupId",
+        "IpPermissions",
+        "SecurityGroupRuleIds",
+        "DryRun"
+      ],
+      "RevokeSecurityGroupEgressResult": [
+        "Return",
+        "UnknownIpPermissions"
+      ],
+      "DescribeSecurityGroupRulesRequest": [
+        "Filters",
+        "SecurityGroupRuleIds",
+        "DryRun",
+        "NextToken",
+        "MaxResults"
+      ],
+      "DescribeSecurityGroupRulesResult": [
+        "SecurityGroupRules",
+        "NextToken"
+      ],
+      "SecurityGroupRule": [
+        "SecurityGroupRuleId",
+        "GroupId",
+        "GroupOwnerId",
+        "IsEgress",
+        "IpProtocol",
+        "FromPort",
+        "ToPort",
+        "CidrIpv4",
+        "CidrIpv6",
+        "PrefixListId",
+        "ReferencedGroupInfo",
+        "Description",
+        "Tags",
+        "SecurityGroupRuleArn"
+      ],
+      "ReferencedSecurityGroup": [
+        "GroupId",
+        "UserId",
+        "VpcId"
+      ],
+      "CreateKeyPairRequest": [
+        "KeyName",
+        "KeyType",
+        "TagSpecifications",
+        "KeyFormat",
+        "DryRun"
+      ],
+      "KeyPair": [
+        "KeyPairId",
+        "Tags",
+        "KeyName",
+        "KeyFingerprint",
+        "KeyMaterial"
+      ],
+      "ImportKeyPairRequest": [
+        "TagSpecifications",
+        "DryRun",
+        "KeyName",
+        "PublicKeyMaterial"
+      ],
+      "ImportKeyPairResult": [
+        "KeyFingerprint",
+        "KeyName",
+        "KeyPairId",
+        "Tags"
+      ],
+      "DescribeKeyPairsRequest": [
+        "KeyNames",
+        "KeyPairIds",
+        "IncludePublicKey",
+        "DryRun",
+        "Filters"
+      ],
+      "DescribeKeyPairsResult": [
+        "KeyPairs"
+      ],
+      "KeyPairInfo": [
+        "KeyPairId",
+        "KeyType",
+        "Tags",
+        "PublicKey",
+        "CreateTime",
+        "KeyName",
+        "KeyFingerprint"
+      ],
+      "DeleteKeyPairRequest": [
+        "KeyName",
+        "KeyPairId",
+        "DryRun"
+      ],
+      "DeleteKeyPairResult": [
+        "Return",
+        "KeyPairId"
+      ],
+      "DescribeNetworkInterfacesRequest": [
+        "NextToken",
+        "MaxResults",
+        "DryRun",
+        "NetworkInterfaceIds",
+        "Filters"
+      ],
+      "DescribeNetworkInterfacesResult": [
+        "NetworkInterfaces",
+        "NextToken"
+      ],
+      "NetworkInterface": [
+        "Attachment",
+        "AvailabilityZone",
+        "AvailabilityZoneId",
+        "Description",
+        "Groups",
+        "InterfaceType",
+        "MacAddress",
+        "NetworkInterfaceId",
+        "OwnerId",
+        "PrivateIpAddress",
+        "RequesterManaged",
+        "SourceDestCheck",
+        "Status",
+        "SubnetId",
+        "TagSet",
+        "VpcId"
+      ],
+      "NetworkInterfaceAttachment": [
+        "AttachTime",
+        "AttachmentId",
+        "DeleteOnTermination",
+        "DeviceIndex",
+        "InstanceId",
+        "InstanceOwnerId",
+        "Status"
+      ],
+      "GroupIdentifier": [
+        "GroupId",
+        "GroupName"
       ]
     }
   },

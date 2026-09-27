@@ -29,6 +29,8 @@ type taggableKind struct {
 var taggable = map[string]taggableKind{
 	"vpc":    {kind: kindVPC, resourceType: "vpc", missing: vpcNotFound},
 	"subnet": {kind: kindSubnet, resourceType: "subnet", missing: subnetNotFound},
+	"sg":     {kind: kindSecurityGroup, resourceType: "security-group", missing: groupNotFound},
+	"key":    {kind: kindKeyPair, resourceType: "key-pair", missing: keyPairIDNotFound},
 }
 
 // taggableByID returns the resource type of an ID.
@@ -76,13 +78,12 @@ func checkTags(tags map[string]string) error {
 }
 
 // specTags returns the tags a create request's TagSpecifications give the
-// new resource of resourceType. Specifications may also name the types in
-// others, which the operation creates alongside it.
-func specTags(specs []api.TagSpecification, resourceType string, others ...string) (map[string]string, error) {
+// new resource of resourceType.
+func specTags(specs []api.TagSpecification, resourceType string) (map[string]string, error) {
 	tags := map[string]string{}
 	for _, spec := range specs {
 		kind := value(spec.ResourceType)
-		if kind != resourceType && !slices.Contains(others, kind) {
+		if kind != resourceType {
 			return nil, invalidParameter(fmt.Sprintf(
 				"'%s' is not a valid taggable resource type for this operation.", kind))
 		}
@@ -92,9 +93,7 @@ func specTags(specs []api.TagSpecification, resourceType string, others ...strin
 			return nil, err
 		}
 
-		if kind == resourceType {
-			maps.Copy(tags, given)
-		}
+		maps.Copy(tags, given)
 	}
 
 	return tags, checkTags(tags)

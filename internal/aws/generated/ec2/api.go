@@ -4,6 +4,7 @@ package ec2
 import (
 	"context"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"time"
 )
 
 type Filter struct {
@@ -199,6 +200,286 @@ type DescribeTagsResult struct {
 	Tags      []TagDescription `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
 }
 
+type CreateSecurityGroupRequest struct {
+	Description       *string            `json:"Description,omitempty" ec2:"GroupDescription,GroupDescription"`
+	GroupName         *string            `json:"GroupName,omitempty" ec2:"GroupName,GroupName"`
+	VpcId             *string            `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type CreateSecurityGroupResult struct {
+	GroupId          *string `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	Tags             []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	SecurityGroupArn *string `json:"SecurityGroupArn,omitempty" ec2:"SecurityGroupArn,securityGroupArn"`
+}
+
+type DeleteSecurityGroupRequest struct {
+	GroupId   *string `json:"GroupId,omitempty" ec2:"GroupId,GroupId"`
+	GroupName *string `json:"GroupName,omitempty" ec2:"GroupName,GroupName"`
+	DryRun    *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DeleteSecurityGroupResult struct {
+	Return  *bool   `json:"Return,omitempty" ec2:"Return,return"`
+	GroupId *string `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+}
+
+type DescribeSecurityGroupsRequest struct {
+	GroupIds   []string `json:"GroupIds,omitempty" ec2:"GroupId,GroupId,member=groupId"`
+	GroupNames []string `json:"GroupNames,omitempty" ec2:"GroupName,GroupName,member=GroupName"`
+	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type UserIdGroupPair struct {
+	Description *string `json:"Description,omitempty" ec2:"Description,description"`
+	UserId      *string `json:"UserId,omitempty" ec2:"UserId,userId"`
+	GroupName   *string `json:"GroupName,omitempty" ec2:"GroupName,groupName"`
+	GroupId     *string `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	VpcId       *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type IpRange struct {
+	Description *string `json:"Description,omitempty" ec2:"Description,description"`
+	CidrIp      *string `json:"CidrIp,omitempty" ec2:"CidrIp,cidrIp"`
+}
+
+type Ipv6Range struct {
+	Description *string `json:"Description,omitempty" ec2:"Description,description"`
+	CidrIpv6    *string `json:"CidrIpv6,omitempty" ec2:"CidrIpv6,cidrIpv6"`
+}
+
+type PrefixListId struct {
+	Description  *string `json:"Description,omitempty" ec2:"Description,description"`
+	PrefixListId *string `json:"PrefixListId,omitempty" ec2:"PrefixListId,prefixListId"`
+}
+
+type IpPermission struct {
+	IpProtocol       *string           `json:"IpProtocol,omitempty" ec2:"IpProtocol,ipProtocol"`
+	FromPort         *int64            `json:"FromPort,omitempty" ec2:"FromPort,fromPort"`
+	ToPort           *int64            `json:"ToPort,omitempty" ec2:"ToPort,toPort"`
+	UserIdGroupPairs []UserIdGroupPair `json:"UserIdGroupPairs,omitempty" ec2:"Groups,groups,member=item"`
+	IpRanges         []IpRange         `json:"IpRanges,omitempty" ec2:"IpRanges,ipRanges,member=item"`
+	Ipv6Ranges       []Ipv6Range       `json:"Ipv6Ranges,omitempty" ec2:"Ipv6Ranges,ipv6Ranges,member=item"`
+	PrefixListIds    []PrefixListId    `json:"PrefixListIds,omitempty" ec2:"PrefixListIds,prefixListIds,member=item"`
+}
+
+type SecurityGroup struct {
+	GroupId             *string        `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	IpPermissionsEgress []IpPermission `json:"IpPermissionsEgress,omitempty" ec2:"IpPermissionsEgress,ipPermissionsEgress,member=item"`
+	Tags                []Tag          `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VpcId               *string        `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	SecurityGroupArn    *string        `json:"SecurityGroupArn,omitempty" ec2:"SecurityGroupArn,securityGroupArn"`
+	OwnerId             *string        `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	GroupName           *string        `json:"GroupName,omitempty" ec2:"GroupName,groupName"`
+	Description         *string        `json:"Description,omitempty" ec2:"GroupDescription,groupDescription"`
+	IpPermissions       []IpPermission `json:"IpPermissions,omitempty" ec2:"IpPermissions,ipPermissions,member=item"`
+}
+
+type DescribeSecurityGroupsResult struct {
+	NextToken      *string         `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	SecurityGroups []SecurityGroup `json:"SecurityGroups,omitempty" ec2:"SecurityGroupInfo,securityGroupInfo,member=item"`
+}
+
+type AuthorizeSecurityGroupIngressRequest struct {
+	GroupId           *string            `json:"GroupId,omitempty" ec2:"GroupId,GroupId"`
+	GroupName         *string            `json:"GroupName,omitempty" ec2:"GroupName,GroupName"`
+	IpPermissions     []IpPermission     `json:"IpPermissions,omitempty" ec2:"IpPermissions,IpPermissions,member=item"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type ReferencedSecurityGroup struct {
+	GroupId *string `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	UserId  *string `json:"UserId,omitempty" ec2:"UserId,userId"`
+	VpcId   *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type SecurityGroupRule struct {
+	SecurityGroupRuleId  *string                  `json:"SecurityGroupRuleId,omitempty" ec2:"SecurityGroupRuleId,securityGroupRuleId"`
+	GroupId              *string                  `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	GroupOwnerId         *string                  `json:"GroupOwnerId,omitempty" ec2:"GroupOwnerId,groupOwnerId"`
+	IsEgress             *bool                    `json:"IsEgress,omitempty" ec2:"IsEgress,isEgress"`
+	IpProtocol           *string                  `json:"IpProtocol,omitempty" ec2:"IpProtocol,ipProtocol"`
+	FromPort             *int64                   `json:"FromPort,omitempty" ec2:"FromPort,fromPort"`
+	ToPort               *int64                   `json:"ToPort,omitempty" ec2:"ToPort,toPort"`
+	CidrIpv4             *string                  `json:"CidrIpv4,omitempty" ec2:"CidrIpv4,cidrIpv4"`
+	CidrIpv6             *string                  `json:"CidrIpv6,omitempty" ec2:"CidrIpv6,cidrIpv6"`
+	PrefixListId         *string                  `json:"PrefixListId,omitempty" ec2:"PrefixListId,prefixListId"`
+	ReferencedGroupInfo  *ReferencedSecurityGroup `json:"ReferencedGroupInfo,omitempty" ec2:"ReferencedGroupInfo,referencedGroupInfo"`
+	Description          *string                  `json:"Description,omitempty" ec2:"Description,description"`
+	Tags                 []Tag                    `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	SecurityGroupRuleArn *string                  `json:"SecurityGroupRuleArn,omitempty" ec2:"SecurityGroupRuleArn,securityGroupRuleArn"`
+}
+
+type AuthorizeSecurityGroupIngressResult struct {
+	Return             *bool               `json:"Return,omitempty" ec2:"Return,return"`
+	SecurityGroupRules []SecurityGroupRule `json:"SecurityGroupRules,omitempty" ec2:"SecurityGroupRuleSet,securityGroupRuleSet,member=item"`
+}
+
+type AuthorizeSecurityGroupEgressRequest struct {
+	GroupId           *string            `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	IpPermissions     []IpPermission     `json:"IpPermissions,omitempty" ec2:"IpPermissions,ipPermissions,member=item"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type AuthorizeSecurityGroupEgressResult struct {
+	Return             *bool               `json:"Return,omitempty" ec2:"Return,return"`
+	SecurityGroupRules []SecurityGroupRule `json:"SecurityGroupRules,omitempty" ec2:"SecurityGroupRuleSet,securityGroupRuleSet,member=item"`
+}
+
+type RevokeSecurityGroupIngressRequest struct {
+	GroupId              *string        `json:"GroupId,omitempty" ec2:"GroupId,GroupId"`
+	GroupName            *string        `json:"GroupName,omitempty" ec2:"GroupName,GroupName"`
+	IpPermissions        []IpPermission `json:"IpPermissions,omitempty" ec2:"IpPermissions,IpPermissions,member=item"`
+	SecurityGroupRuleIds []string       `json:"SecurityGroupRuleIds,omitempty" ec2:"SecurityGroupRuleId,SecurityGroupRuleId,member=item"`
+	DryRun               *bool          `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type RevokeSecurityGroupIngressResult struct {
+	Return               *bool          `json:"Return,omitempty" ec2:"Return,return"`
+	UnknownIpPermissions []IpPermission `json:"UnknownIpPermissions,omitempty" ec2:"UnknownIpPermissionSet,unknownIpPermissionSet,member=item"`
+}
+
+type RevokeSecurityGroupEgressRequest struct {
+	GroupId              *string        `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	IpPermissions        []IpPermission `json:"IpPermissions,omitempty" ec2:"IpPermissions,ipPermissions,member=item"`
+	SecurityGroupRuleIds []string       `json:"SecurityGroupRuleIds,omitempty" ec2:"SecurityGroupRuleId,SecurityGroupRuleId,member=item"`
+	DryRun               *bool          `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type RevokeSecurityGroupEgressResult struct {
+	Return               *bool          `json:"Return,omitempty" ec2:"Return,return"`
+	UnknownIpPermissions []IpPermission `json:"UnknownIpPermissions,omitempty" ec2:"UnknownIpPermissionSet,unknownIpPermissionSet,member=item"`
+}
+
+type DescribeSecurityGroupRulesRequest struct {
+	Filters              []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	SecurityGroupRuleIds []string `json:"SecurityGroupRuleIds,omitempty" ec2:"SecurityGroupRuleId,SecurityGroupRuleId,member=item"`
+	DryRun               *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	NextToken            *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults           *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+}
+
+type DescribeSecurityGroupRulesResult struct {
+	SecurityGroupRules []SecurityGroupRule `json:"SecurityGroupRules,omitempty" ec2:"SecurityGroupRuleSet,securityGroupRuleSet,member=item"`
+	NextToken          *string             `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type CreateKeyPairRequest struct {
+	KeyName           *string            `json:"KeyName,omitempty" ec2:"KeyName,KeyName"`
+	KeyType           *string            `json:"KeyType,omitempty" ec2:"KeyType,KeyType"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	KeyFormat         *string            `json:"KeyFormat,omitempty" ec2:"KeyFormat,KeyFormat"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type KeyPair struct {
+	KeyPairId      *string `json:"KeyPairId,omitempty" ec2:"KeyPairId,keyPairId"`
+	Tags           []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	KeyName        *string `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
+	KeyFingerprint *string `json:"KeyFingerprint,omitempty" ec2:"KeyFingerprint,keyFingerprint"`
+	KeyMaterial    *string `json:"KeyMaterial,omitempty" ec2:"KeyMaterial,keyMaterial"`
+}
+
+type ImportKeyPairRequest struct {
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	KeyName           *string            `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
+	PublicKeyMaterial []byte             `json:"PublicKeyMaterial,omitempty" ec2:"PublicKeyMaterial,publicKeyMaterial"`
+}
+
+type ImportKeyPairResult struct {
+	KeyFingerprint *string `json:"KeyFingerprint,omitempty" ec2:"KeyFingerprint,keyFingerprint"`
+	KeyName        *string `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
+	KeyPairId      *string `json:"KeyPairId,omitempty" ec2:"KeyPairId,keyPairId"`
+	Tags           []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type DescribeKeyPairsRequest struct {
+	KeyNames         []string `json:"KeyNames,omitempty" ec2:"KeyName,KeyName,member=KeyName"`
+	KeyPairIds       []string `json:"KeyPairIds,omitempty" ec2:"KeyPairId,KeyPairId,member=KeyPairId"`
+	IncludePublicKey *bool    `json:"IncludePublicKey,omitempty" ec2:"IncludePublicKey,IncludePublicKey"`
+	DryRun           *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters          []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type KeyPairInfo struct {
+	KeyPairId      *string    `json:"KeyPairId,omitempty" ec2:"KeyPairId,keyPairId"`
+	KeyType        *string    `json:"KeyType,omitempty" ec2:"KeyType,keyType"`
+	Tags           []Tag      `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	PublicKey      *string    `json:"PublicKey,omitempty" ec2:"PublicKey,publicKey"`
+	CreateTime     *time.Time `json:"CreateTime,omitempty" ec2:"CreateTime,createTime"`
+	KeyName        *string    `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
+	KeyFingerprint *string    `json:"KeyFingerprint,omitempty" ec2:"KeyFingerprint,keyFingerprint"`
+}
+
+type DescribeKeyPairsResult struct {
+	KeyPairs []KeyPairInfo `json:"KeyPairs,omitempty" ec2:"KeySet,keySet,member=item"`
+}
+
+type DeleteKeyPairRequest struct {
+	KeyName   *string `json:"KeyName,omitempty" ec2:"KeyName,KeyName"`
+	KeyPairId *string `json:"KeyPairId,omitempty" ec2:"KeyPairId,KeyPairId"`
+	DryRun    *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DeleteKeyPairResult struct {
+	Return    *bool   `json:"Return,omitempty" ec2:"Return,return"`
+	KeyPairId *string `json:"KeyPairId,omitempty" ec2:"KeyPairId,keyPairId"`
+}
+
+type DescribeNetworkInterfacesRequest struct {
+	NextToken           *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults          *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun              *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkInterfaceIds []string `json:"NetworkInterfaceIds,omitempty" ec2:"NetworkInterfaceId,NetworkInterfaceId,member=item"`
+	Filters             []Filter `json:"Filters,omitempty" ec2:"Filter,filter,member=Filter"`
+}
+
+type NetworkInterfaceAttachment struct {
+	AttachTime          *time.Time `json:"AttachTime,omitempty" ec2:"AttachTime,attachTime"`
+	AttachmentId        *string    `json:"AttachmentId,omitempty" ec2:"AttachmentId,attachmentId"`
+	DeleteOnTermination *bool      `json:"DeleteOnTermination,omitempty" ec2:"DeleteOnTermination,deleteOnTermination"`
+	DeviceIndex         *int64     `json:"DeviceIndex,omitempty" ec2:"DeviceIndex,deviceIndex"`
+	InstanceId          *string    `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	InstanceOwnerId     *string    `json:"InstanceOwnerId,omitempty" ec2:"InstanceOwnerId,instanceOwnerId"`
+	Status              *string    `json:"Status,omitempty" ec2:"Status,status"`
+}
+
+type GroupIdentifier struct {
+	GroupId   *string `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	GroupName *string `json:"GroupName,omitempty" ec2:"GroupName,groupName"`
+}
+
+type NetworkInterface struct {
+	Attachment         *NetworkInterfaceAttachment `json:"Attachment,omitempty" ec2:"Attachment,attachment"`
+	AvailabilityZone   *string                     `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	AvailabilityZoneId *string                     `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
+	Description        *string                     `json:"Description,omitempty" ec2:"Description,description"`
+	Groups             []GroupIdentifier           `json:"Groups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	InterfaceType      *string                     `json:"InterfaceType,omitempty" ec2:"InterfaceType,interfaceType"`
+	MacAddress         *string                     `json:"MacAddress,omitempty" ec2:"MacAddress,macAddress"`
+	NetworkInterfaceId *string                     `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	OwnerId            *string                     `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	PrivateIpAddress   *string                     `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	RequesterManaged   *bool                       `json:"RequesterManaged,omitempty" ec2:"RequesterManaged,requesterManaged"`
+	SourceDestCheck    *bool                       `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	Status             *string                     `json:"Status,omitempty" ec2:"Status,status"`
+	SubnetId           *string                     `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	TagSet             []Tag                       `json:"TagSet,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VpcId              *string                     `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type DescribeNetworkInterfacesResult struct {
+	NetworkInterfaces []NetworkInterface `json:"NetworkInterfaces,omitempty" ec2:"NetworkInterfaceSet,networkInterfaceSet,member=item"`
+	NextToken         *string            `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -211,6 +492,19 @@ type API interface {
 	CreateTags(context.Context, *CreateTagsRequest) (*CreateTagsOutput, error)
 	DeleteTags(context.Context, *DeleteTagsRequest) (*DeleteTagsOutput, error)
 	DescribeTags(context.Context, *DescribeTagsRequest) (*DescribeTagsResult, error)
+	CreateSecurityGroup(context.Context, *CreateSecurityGroupRequest) (*CreateSecurityGroupResult, error)
+	DeleteSecurityGroup(context.Context, *DeleteSecurityGroupRequest) (*DeleteSecurityGroupResult, error)
+	DescribeSecurityGroups(context.Context, *DescribeSecurityGroupsRequest) (*DescribeSecurityGroupsResult, error)
+	AuthorizeSecurityGroupIngress(context.Context, *AuthorizeSecurityGroupIngressRequest) (*AuthorizeSecurityGroupIngressResult, error)
+	AuthorizeSecurityGroupEgress(context.Context, *AuthorizeSecurityGroupEgressRequest) (*AuthorizeSecurityGroupEgressResult, error)
+	RevokeSecurityGroupIngress(context.Context, *RevokeSecurityGroupIngressRequest) (*RevokeSecurityGroupIngressResult, error)
+	RevokeSecurityGroupEgress(context.Context, *RevokeSecurityGroupEgressRequest) (*RevokeSecurityGroupEgressResult, error)
+	DescribeSecurityGroupRules(context.Context, *DescribeSecurityGroupRulesRequest) (*DescribeSecurityGroupRulesResult, error)
+	CreateKeyPair(context.Context, *CreateKeyPairRequest) (*KeyPair, error)
+	ImportKeyPair(context.Context, *ImportKeyPairRequest) (*ImportKeyPairResult, error)
+	DescribeKeyPairs(context.Context, *DescribeKeyPairsRequest) (*DescribeKeyPairsResult, error)
+	DeleteKeyPair(context.Context, *DeleteKeyPairRequest) (*DeleteKeyPairResult, error)
+	DescribeNetworkInterfaces(context.Context, *DescribeNetworkInterfacesRequest) (*DescribeNetworkInterfacesResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -247,6 +541,45 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeTags": {Name: "DescribeTags", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeTags", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeTags(ctx, input.(*DescribeTagsRequest))
+		}},
+		"CreateSecurityGroup": {Name: "CreateSecurityGroup", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateSecurityGroup", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateSecurityGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateSecurityGroup(ctx, input.(*CreateSecurityGroupRequest))
+		}},
+		"DeleteSecurityGroup": {Name: "DeleteSecurityGroup", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteSecurityGroup", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteSecurityGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteSecurityGroup(ctx, input.(*DeleteSecurityGroupRequest))
+		}},
+		"DescribeSecurityGroups": {Name: "DescribeSecurityGroups", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeSecurityGroups", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeSecurityGroupsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeSecurityGroups(ctx, input.(*DescribeSecurityGroupsRequest))
+		}},
+		"AuthorizeSecurityGroupIngress": {Name: "AuthorizeSecurityGroupIngress", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AuthorizeSecurityGroupIngress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AuthorizeSecurityGroupIngressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AuthorizeSecurityGroupIngress(ctx, input.(*AuthorizeSecurityGroupIngressRequest))
+		}},
+		"AuthorizeSecurityGroupEgress": {Name: "AuthorizeSecurityGroupEgress", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AuthorizeSecurityGroupEgress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AuthorizeSecurityGroupEgressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AuthorizeSecurityGroupEgress(ctx, input.(*AuthorizeSecurityGroupEgressRequest))
+		}},
+		"RevokeSecurityGroupIngress": {Name: "RevokeSecurityGroupIngress", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RevokeSecurityGroupIngress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RevokeSecurityGroupIngressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RevokeSecurityGroupIngress(ctx, input.(*RevokeSecurityGroupIngressRequest))
+		}},
+		"RevokeSecurityGroupEgress": {Name: "RevokeSecurityGroupEgress", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RevokeSecurityGroupEgress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RevokeSecurityGroupEgressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RevokeSecurityGroupEgress(ctx, input.(*RevokeSecurityGroupEgressRequest))
+		}},
+		"DescribeSecurityGroupRules": {Name: "DescribeSecurityGroupRules", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeSecurityGroupRules", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeSecurityGroupRulesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeSecurityGroupRules(ctx, input.(*DescribeSecurityGroupRulesRequest))
+		}},
+		"CreateKeyPair": {Name: "CreateKeyPair", UnitOutput: false, Sensitive: true, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateKeyPair", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateKeyPairRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateKeyPair(ctx, input.(*CreateKeyPairRequest))
+		}},
+		"ImportKeyPair": {Name: "ImportKeyPair", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ImportKeyPair", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ImportKeyPairRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ImportKeyPair(ctx, input.(*ImportKeyPairRequest))
+		}},
+		"DescribeKeyPairs": {Name: "DescribeKeyPairs", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeKeyPairs", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeKeyPairsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeKeyPairs(ctx, input.(*DescribeKeyPairsRequest))
+		}},
+		"DeleteKeyPair": {Name: "DeleteKeyPair", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteKeyPair", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteKeyPairRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteKeyPair(ctx, input.(*DeleteKeyPairRequest))
+		}},
+		"DescribeNetworkInterfaces": {Name: "DescribeNetworkInterfaces", UnitOutput: false, Sensitive: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeNetworkInterfaces", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeNetworkInterfacesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeNetworkInterfaces(ctx, input.(*DescribeNetworkInterfacesRequest))
 		}},
 	}}
 }

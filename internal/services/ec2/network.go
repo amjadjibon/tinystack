@@ -20,6 +20,10 @@ const (
 	maxDescribe     = 1000
 	stateAvailable  = "available"
 	filterState     = "state"
+	filterOwnerID   = "owner-id"
+	filterCIDR      = "cidr"
+	filterVPCID     = "vpc-id"
+	filterZone      = "availability-zone"
 	tenancyDefault  = "default"
 	minPrefixLength = 16
 	maxPrefixLength = 28
@@ -99,7 +103,7 @@ func zoneNames(region string) []string {
 func zoneValues(region, suffix string) values {
 	return values{
 		"zone-name": {region + suffix}, "zone-id": {zoneID(region, suffix)}, "region-name": {region},
-		filterState: {stateAvailable}, "opt-in-status": {"opt-in-not-required"}, "zone-type": {"availability-zone"},
+		filterState: {stateAvailable}, "opt-in-status": {"opt-in-not-required"}, "zone-type": {filterZone},
 		"group-name": {region}, "network-border-group": {region},
 	}
 }
@@ -133,7 +137,7 @@ func (s *Service) DescribeAvailabilityZones(
 
 		out.AvailabilityZones = append(out.AvailabilityZones, api.AvailabilityZone{
 			ZoneName: new(name), ZoneId: new(id), RegionName: new(region), State: new(stateAvailable),
-			OptInStatus: new("opt-in-not-required"), ZoneType: new("availability-zone"),
+			OptInStatus: new("opt-in-not-required"), ZoneType: new(filterZone),
 			GroupName: new(region), NetworkBorderGroup: new(region),
 		})
 	}
@@ -203,9 +207,14 @@ func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
 	})
 }
 
-// createVPC stores a new VPC.
+// createVPC stores a new VPC and its default security group.
 func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc) error {
 	v.AssociationID, v.DHCPOptionsID = newID("vpc-cidr-assoc"), newID("dopt")
+	g := defaultGroup(v.ID)
+	if err := write(tx, key(scope, kindSecurityGroup, g.ID), g); err != nil {
+		return err
+	}
+
 	return write(tx, key(scope, kindVPC, v.ID), v)
 }
 
@@ -223,10 +232,18 @@ func vpcOutput(scope request.Scope, v *vpc) api.Vpc {
 
 func vpcValues(scope request.Scope, v *vpc) values {
 	return values{
-		"vpc-id": {v.ID}, "cidr": {v.CIDR}, "cidr-block-association.cidr-block": {v.CIDR},
-		"cidr-block-association.association-id": {v.AssociationID}, "cidr-block-association.state": {"associated"},
-		"dhcp-options-id": {v.DHCPOptionsID}, "is-default": boolValue(v.IsDefault), "owner-id": {scope.AccountID},
-		filterState: {stateAvailable},
+		filterVPCID:                             {v.ID},
+		filterCIDR:                              {v.CIDR},
+		"cidr-block-association.cidr-block":     {v.CIDR},
+		"cidr-block-association.association-id": {v.AssociationID},
+		"cidr-block-association.state":          {"associated"},
+		"dhcp-options-id": {
+			v.DHCPOptionsID,
+		},
+		"is-default":  boolValue(v.IsDefault),
+		"isDefault":   boolValue(v.IsDefault),
+		filterOwnerID: {scope.AccountID},
+		filterState:   {stateAvailable},
 	}.withTags(v.Tags)
 }
 
@@ -281,8 +298,8 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 	return &api.CreateVpcResult{Vpc: &out}, nil
 }
 
-// DeleteVpc deletes a VPC that has no subnets left, including a default VPC,
-// which does not come back.
+// DeleteVpc deletes a VPC that has no subnets or security groups but its
+// default one left, including a default VPC, which does not come back.
 func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api.DeleteVpcOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		v, err := loadVPC(tx, scope, value(in.VpcId))
@@ -295,9 +312,20 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 			return err
 		}
 
-		if slices.ContainsFunc(subnets, func(sn *subnet) bool { return sn.VPCID == v.ID }) {
+		groups, err := list[securityGroup](tx, scope, kindSecurityGroup)
+		if err != nil {
+			return err
+		}
+
+		groups = slices.DeleteFunc(groups, func(g *securityGroup) bool { return g.VPCID != v.ID })
+		if slices.ContainsFunc(subnets, func(sn *subnet) bool { return sn.VPCID == v.ID }) ||
+			slices.ContainsFunc(groups, func(g *securityGroup) bool { return g.Name != defaultGroupName }) {
 			return awserror.New("DependencyViolation",
 				fmt.Sprintf("The vpc '%s' has dependencies and cannot be deleted.", v.ID))
+		}
+
+		for _, g := range groups {
+			tx.Delete(key(scope, kindSecurityGroup, g.ID))
 		}
 
 		tx.Delete(key(scope, kindVPC, v.ID))
@@ -376,10 +404,10 @@ func subnetValues(scope request.Scope, sn *subnet) values {
 	}
 
 	return values{
-		"subnet-id": {sn.ID}, "vpc-id": {sn.VPCID}, "cidr-block": {sn.CIDR}, "cidr": {sn.CIDR},
-		"cidrBlock": {sn.CIDR}, "availability-zone": {zoneName}, "availabilityZone": {zoneName},
+		"subnet-id": {sn.ID}, filterVPCID: {sn.VPCID}, "cidr-block": {sn.CIDR}, filterCIDR: {sn.CIDR},
+		"cidrBlock": {sn.CIDR}, filterZone: {zoneName}, "availabilityZone": {zoneName},
 		"availability-zone-id": {zoneIDValue}, "default-for-az": boolValue(sn.DefaultForAZ),
-		"defaultForAz": boolValue(sn.DefaultForAZ), filterState: {stateAvailable}, "owner-id": {scope.AccountID},
+		"defaultForAz": boolValue(sn.DefaultForAZ), filterState: {stateAvailable}, filterOwnerID: {scope.AccountID},
 		"map-public-ip-on-launch": boolValue(sn.MapPublicIP), "available-ip-address-count": {count},
 		"subnet-arn": {subnetARN(scope, sn)}, "ipv6-native": boolValue(false),
 	}.withTags(sn.Tags)
