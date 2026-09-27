@@ -40,8 +40,11 @@ type user struct {
 	Codes    map[string]code `json:",omitempty"`
 	Username string
 	Status   string
-	Password []byte   `json:",omitempty"`
-	Groups   []string `json:",omitempty"`
+	Password []byte `json:",omitempty"`
+	// History holds the hashes of earlier passwords the pool's password
+	// history keeps, newest first.
+	History [][]byte `json:",omitempty"`
+	Groups  []string `json:",omitempty"`
 	// Sessions are the origin token IDs of the user's signed-in sessions.
 	Sessions []string `json:",omitempty"`
 	Disabled bool     `json:",omitempty"`
@@ -393,11 +396,29 @@ func (u *user) output(names []string) api.UserType {
 }
 
 // setPassword sets u's password, temporary until the user changes it unless
-// permanent.
+// permanent. The pool's password history forbids reusing a recent password.
 func setPassword(p *pool, u *user, password string, permanent bool, now time.Time) error {
+	size := int(value(passwordPolicy(&p.Settings).PasswordHistorySize))
+	if size > 0 {
+		recent := append([][]byte{u.Password}, u.History...)
+		for _, hash := range recent[:min(size, len(recent))] {
+			if checkPassword(hash, password) {
+				return awserror.New("PasswordHistoryPolicyViolationException",
+					"The password can't be the same as a previous password.")
+			}
+		}
+	}
+
 	hash, err := hashPassword(password)
 	if err != nil {
 		return err
+	}
+
+	if size > 1 && len(u.Password) > 0 {
+		u.History = append([][]byte{u.Password}, u.History...)
+		u.History = u.History[:min(size-1, len(u.History))]
+	} else {
+		u.History = nil
 	}
 
 	u.Password, u.PasswordExpires = hash, time.Time{}

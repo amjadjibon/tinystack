@@ -12,6 +12,7 @@ type PasswordPolicyType struct {
 	RequireLowercase              *bool  `json:"RequireLowercase,omitempty"`
 	RequireNumbers                *bool  `json:"RequireNumbers,omitempty"`
 	RequireSymbols                *bool  `json:"RequireSymbols,omitempty"`
+	PasswordHistorySize           *int64 `json:"PasswordHistorySize,omitempty"`
 	TemporaryPasswordValidityDays *int64 `json:"TemporaryPasswordValidityDays,omitempty"`
 }
 

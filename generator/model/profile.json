@@ -3914,6 +3914,7 @@
         "RequireLowercase",
         "RequireNumbers",
         "RequireSymbols",
+        "PasswordHistorySize",
         "TemporaryPasswordValidityDays"
       ],
       "SmsConfigurationType": [

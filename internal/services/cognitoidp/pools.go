@@ -278,9 +278,10 @@ func validSettings(st *settings, softwareToken bool) error {
 	}
 
 	if pp := passwordPolicy(st); value(pp.MinimumLength) < 6 || value(pp.MinimumLength) > 99 ||
-		value(pp.TemporaryPasswordValidityDays) < 0 || value(pp.TemporaryPasswordValidityDays) > 365 {
-		return invalidParameter("Password policies need a MinimumLength of 6 to 99 and TemporaryPasswordValidityDays " +
-			"of 0 to 365.")
+		value(pp.TemporaryPasswordValidityDays) < 0 || value(pp.TemporaryPasswordValidityDays) > 365 ||
+		value(pp.PasswordHistorySize) < 0 || value(pp.PasswordHistorySize) > 24 {
+		return invalidParameter("Password policies need a MinimumLength of 6 to 99, TemporaryPasswordValidityDays " +
+			"of 0 to 365, and a PasswordHistorySize of 0 to 24.")
 	}
 
 	if err := checkMessages(st); err != nil {
@@ -746,11 +747,15 @@ func (s *Service) GetUserPoolMfaConfig(
 	return out, err
 }
 
+// mfaOutput reports the pool's MFA settings; like AWS, it omits software
+// token MFA unless it is on.
 func mfaOutput(p *pool) *api.GetUserPoolMfaConfigResponse {
-	return &api.GetUserPoolMfaConfigResponse{
-		MfaConfiguration:              p.Settings.MfaConfiguration,
-		SoftwareTokenMfaConfiguration: &api.SoftwareTokenMfaConfigType{Enabled: new(p.SoftwareTokenMFA)},
+	out := &api.GetUserPoolMfaConfigResponse{MfaConfiguration: p.Settings.MfaConfiguration}
+	if p.SoftwareTokenMFA {
+		out.SoftwareTokenMfaConfiguration = &api.SoftwareTokenMfaConfigType{Enabled: new(true)}
 	}
+
+	return out
 }
 
 // SetUserPoolMfaConfig turns software token MFA on or off. Users never set up
