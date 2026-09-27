@@ -61,6 +61,33 @@ resource "aws_ec2_tag" "subnet" {
   value       = var.team
 }
 
+resource "aws_security_group" "web" {
+  name        = "web"
+  description = "Web servers"
+  tags        = local.tags
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "https" {
+  security_group_id = aws_security_group.web.id
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_key_pair" "deploy" {
+  key_name   = "deploy"
+  public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAiGFuOTUakKkbrTkNONMQ+7aXDyAdX1ytmLYkAxeh1m"
+  tags       = local.tags
+}
+
 output "zones" {
   value = length(data.aws_availability_zones.available.names)
 }
