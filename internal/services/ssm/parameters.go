@@ -330,7 +330,7 @@ func (s *Service) GetParameter(ctx context.Context, in *api.GetParameterRequest)
 	var out *api.GetParameterResult
 	var got *version
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, v, selector, resolveErr := resolve(tx, m.Scope, *in.Name)
+		p, v, selector, resolveErr := s.resolve(tx, m.Scope, *in.Name)
 		if resolveErr != nil {
 			return resolveErr
 		}
@@ -383,7 +383,7 @@ func (s *Service) GetParameters(ctx context.Context, in *api.GetParametersReques
 			}
 
 			seen[name] = true
-			p, v, selector, resolveErr := resolve(tx, m.Scope, name)
+			p, v, selector, resolveErr := s.resolve(tx, m.Scope, name)
 			if _, isAWS := errors.AsType[*awserror.Error](resolveErr); isAWS {
 				out.InvalidParameters = append(out.InvalidParameters, name)
 				continue

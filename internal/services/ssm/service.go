@@ -44,14 +44,51 @@ const (
 	maxLabels        = 10
 	maxLabelLength   = 100
 	maxBatch         = 10
+	// publicPrefix starts the names of the public parameters AWS publishes.
+	publicPrefix = "/aws/service/"
 )
 
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
-	keys  *kms.Service
-	now   func() time.Time
+	store  storage.Store
+	keys   *kms.Service
+	public PublicParameters
+	now    func() time.Time
+}
+
+// PublicParameters returns the public parameters AWS publishes in a Region
+// under /aws/service/, by name.
+type PublicParameters func(region string) map[string]string
+
+// publicModified is when the public parameters were last changed, in Unix
+// milliseconds.
+const publicModified = 1736899200000
+
+// UsePublicParameters serves the public parameters that fn returns, such as
+// the EC2 image IDs; call it before serving requests.
+func (s *Service) UsePublicParameters(fn PublicParameters) { s.public = fn }
+
+// publicParameters returns the public parameters of region as current
+// parameters.
+func (s *Service) publicParameters(region string) []current {
+	if s.public == nil {
+		return nil
+	}
+
+	var out []current
+	for name, v := range s.public(region) {
+		out = append(out, current{
+			parameter: &parameter{Name: name, Version: 1},
+			version: &version{
+				Value: v, Type: typeString, Tier: tierStandard, DataType: dataTypeText, Version: 1,
+				ModifiedAt: publicModified,
+			},
+		})
+	}
+
+	slices.SortFunc(out, func(a, b current) int { return strings.Compare(a.Name, b.Name) })
+	return out
 }
 
 // New returns the Parameter Store; keys checks the customer managed keys of
@@ -156,8 +193,15 @@ func versionKey(scope request.Scope, name string, v int64) string {
 	return versionPrefix(scope, name) + fmt.Sprintf("%010d", v)
 }
 
+// parameterARN returns a parameter's ARN; AWS owns the public parameters,
+// whose names no account can create.
 func parameterARN(scope request.Scope, name string) string {
-	return "arn:aws:ssm:" + scope.Region + ":" + scope.AccountID + ":parameter/" + strings.TrimPrefix(name, "/")
+	account := scope.AccountID
+	if strings.HasPrefix(name, publicPrefix) {
+		account = ""
+	}
+
+	return "arn:aws:ssm:" + scope.Region + ":" + account + ":parameter/" + strings.TrimPrefix(name, "/")
 }
 
 func seconds(ms int64) *float64 { return new(float64(ms) / 1000) }
@@ -248,8 +292,8 @@ func loadVersion(tx storage.ReadTx, scope request.Scope, name string, v int64) (
 }
 
 // resolve returns the version that name, with an optional ":version" or
-// ":label" selector, refers to.
-func resolve(tx storage.ReadTx, scope request.Scope, name string) (
+// ":label" selector, refers to: a stored parameter or a public one.
+func (s *Service) resolve(tx storage.ReadTx, scope request.Scope, name string) (
 	p *parameter,
 	v *version,
 	selector string,
@@ -258,6 +302,24 @@ func resolve(tx storage.ReadTx, scope request.Scope, name string) (
 	base, sel, hasSelector := strings.Cut(name, ":")
 	if guardErr := checkName(&base); guardErr != nil {
 		return nil, nil, "", guardErr
+	}
+
+	if strings.HasPrefix(base, publicPrefix) {
+		for _, c := range s.publicParameters(scope.Region) {
+			if c.Name != base {
+				continue
+			}
+
+			if hasSelector && sel != "1" {
+				return nil, nil, "", versionNotFound(sel, base)
+			}
+
+			if hasSelector {
+				selector = ":" + sel
+			}
+
+			return c.parameter, c.version, selector, nil
+		}
 	}
 
 	if p, err = loadParameter(tx, scope, base); err != nil {

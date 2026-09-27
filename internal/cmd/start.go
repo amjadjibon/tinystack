@@ -125,6 +125,9 @@ func newStartCommand() *cobra.Command {
 			functions.UseObjects(buckets.Object)
 			roles := iam.New(store)
 			tokens := sts.New(store, roles)
+			parameters := ssm.New(store, keys)
+			// Systems Manager publishes the IDs of EC2's images.
+			parameters.UsePublicParameters(ec2.PublicParameters)
 			handler, err := gateway.New(
 				cfg,
 				logger,
@@ -137,7 +140,7 @@ func newStartCommand() *cobra.Command {
 				eventbridgeapi.Descriptor(rules),
 				iamapi.Descriptor(roles),
 				stsapi.Descriptor(tokens),
-				ssmapi.Descriptor(ssm.New(store, keys)),
+				ssmapi.Descriptor(parameters),
 				secretsmanagerapi.Descriptor(secrets),
 				logsapi.Descriptor(logGroups),
 				kmsapi.Descriptor(keys),

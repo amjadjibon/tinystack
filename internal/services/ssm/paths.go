@@ -190,6 +190,14 @@ func (s *Service) GetParametersByPath(
 			return listErr
 		}
 
+		for _, c := range s.publicParameters(m.Region) {
+			if keep(c.Name) && !slices.ContainsFunc(filters, func(f filter) bool { return !f(c) }) {
+				found = append(found, c)
+			}
+		}
+
+		slices.SortFunc(found, func(a, b current) int { return strings.Compare(a.Name, b.Name) })
+
 		selected, next, pageErr := page(found, current.name, in.NextToken, in.MaxResults, maxByPath)
 		if pageErr != nil {
 			return pageErr
