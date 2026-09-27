@@ -3,7 +3,6 @@ package cognitoidp
 import (
 	"context"
 	"maps"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -266,12 +265,9 @@ func validSettings(st *settings, softwareToken bool) error {
 		}
 	}
 
-	if u := st.UserAttributeUpdateSettings; u != nil {
-		for _, attr := range u.AttributesRequireVerificationBeforeUpdate {
-			if !slices.Contains(st.AutoVerifiedAttributes, attr) {
-				return invalidParameter("Attributes that require verification before update must be auto verified.")
-			}
-		}
+	if u := st.UserAttributeUpdateSettings; u != nil && len(u.AttributesRequireVerificationBeforeUpdate) > 0 {
+		return invalidParameter("TinyStack does not support keeping the original attribute value until an update " +
+			"is verified: AttributesRequireVerificationBeforeUpdate must be empty.")
 	}
 
 	if err := checkMFA(st.MfaConfiguration, st.SmsConfiguration != nil || softwareToken); err != nil {

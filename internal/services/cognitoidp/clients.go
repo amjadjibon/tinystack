@@ -365,7 +365,7 @@ func (s *Service) ListUserPoolClients(
 	ctx context.Context,
 	in *api.ListUserPoolClientsRequest,
 ) (*api.ListUserPoolClientsResponse, error) {
-	n, err := limit(in.MaxResults, "MaxResults", maxPage)
+	n, err := limit(in.MaxResults, "MaxResults")
 	if err != nil {
 		return nil, err
 	}

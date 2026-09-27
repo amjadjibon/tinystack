@@ -1,8 +1,15 @@
-// Package cognitoidp implements Amazon Cognito user pools and their app
-// clients without HTTP dependencies. Pools belong to an account and region:
+// Package cognitoidp implements Amazon Cognito user pools, their app clients,
+// groups, and users without HTTP dependencies. Pools belong to an account and
+// region:
 //
 //	<scope>/cognitoidp/pool/<pool ID>
 //	<scope>/cognitoidp/client/<pool ID>/<client ID>
+//	<scope>/cognitoidp/group/<pool ID>/<group name>
+//	<scope>/cognitoidp/user/<pool ID>/<username, folded if names ignore case>
+//	<scope>/cognitoidp/alias/<pool ID>/<attribute>/<lowercased value> (a username)
+//
+// Users hold their group names, password hash, and pending confirmation codes.
+// Messages a pool would send are recorded in the delivery log instead.
 //
 // Clients are also indexed partition-wide under aws/cognitoidp/client/<client
 // ID>, because the operations a pool's users call unsigned name only a client
@@ -23,6 +30,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -36,11 +44,15 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store storage.Store
-	now   func() time.Time
+	// deliveries records the messages TinyStack would send to users.
+	deliveries *delivery.Log
+	now        func() time.Time
 }
 
-func New(store storage.Store) *Service {
-	return &Service{store: store, now: time.Now}
+// New returns Cognito, recording the email and SMS messages its pools send in
+// deliveries.
+func New(store storage.Store, deliveries *delivery.Log) *Service {
+	return &Service{store: store, deliveries: deliveries, now: time.Now}
 }
 
 var poolID = regexp.MustCompile(`^[\w-]+_[0-9a-zA-Z]+$`)
@@ -170,19 +182,14 @@ func page[T any](items []T, id func(T) string, token *string, limit int) (select
 	return items[:limit], next, nil
 }
 
-// limit validates an optional page size between 1 and upper, which it
-// defaults to.
-func limit(n *int64, name string, upper int) (int, error) {
-	if n == nil {
-		return upper, nil
+// limit validates an optional page size of up to maxPage, which it defaults to.
+func limit(n *int64, name string) (int, error) {
+	if n == nil || *n == 0 {
+		return maxPage, nil
 	}
 
-	if *n < 0 || *n > int64(upper) {
-		return 0, invalidParameter("%s must be between 0 and %d.", name, upper)
-	}
-
-	if *n == 0 {
-		return upper, nil
+	if *n < 0 || *n > maxPage {
+		return 0, invalidParameter("%s must be between 0 and %d.", name, maxPage)
 	}
 
 	return int(*n), nil

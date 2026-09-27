@@ -147,7 +147,7 @@ func newStartCommand() *cobra.Command {
 				logsapi.Descriptor(logGroups),
 				kmsapi.Descriptor(keys),
 				ec2api.Descriptor(ec2.New(store)),
-				cognitoidpapi.Descriptor(cognitoidp.New(store)),
+				cognitoidpapi.Descriptor(cognitoidp.New(store, deliveries)),
 			)
 			if err != nil {
 				return err

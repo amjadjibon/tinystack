@@ -141,7 +141,7 @@ func serverStore(
 		logsapi.Descriptor(logGroups),
 		kmsapi.Descriptor(keys),
 		ec2api.Descriptor(compute.New(store)),
-		cognitoidpapi.Descriptor(identities.New(store)),
+		cognitoidpapi.Descriptor(identities.New(store, deliveries)),
 	)
 	if err != nil {
 		t.Fatal(err)

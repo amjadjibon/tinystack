@@ -3805,7 +3805,27 @@
       "DeleteUserPoolClient",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "CreateGroup",
+      "GetGroup",
+      "ListGroups",
+      "UpdateGroup",
+      "DeleteGroup",
+      "AdminAddUserToGroup",
+      "AdminRemoveUserFromGroup",
+      "AdminListGroupsForUser",
+      "ListUsersInGroup",
+      "AdminCreateUser",
+      "AdminGetUser",
+      "AdminDeleteUser",
+      "ListUsers",
+      "AdminUpdateUserAttributes",
+      "AdminDeleteUserAttributes",
+      "AdminSetUserPassword",
+      "AdminEnableUser",
+      "AdminDisableUser",
+      "AdminConfirmSignUp",
+      "AdminResetUserPassword"
     ],
     "shapes": {
       "CreateUserPoolRequest": [
@@ -4065,7 +4085,167 @@
       ],
       "ListTagsForResourceResponse": [
         "Tags"
-      ]
+      ],
+      "CreateGroupRequest": [
+        "GroupName",
+        "UserPoolId",
+        "Description",
+        "RoleArn",
+        "Precedence"
+      ],
+      "CreateGroupResponse": [
+        "Group"
+      ],
+      "GetGroupRequest": [
+        "GroupName",
+        "UserPoolId"
+      ],
+      "GetGroupResponse": [
+        "Group"
+      ],
+      "ListGroupsRequest": [
+        "UserPoolId",
+        "Limit",
+        "NextToken"
+      ],
+      "ListGroupsResponse": [
+        "Groups",
+        "NextToken"
+      ],
+      "UpdateGroupRequest": [
+        "GroupName",
+        "UserPoolId",
+        "Description",
+        "RoleArn",
+        "Precedence"
+      ],
+      "UpdateGroupResponse": [
+        "Group"
+      ],
+      "DeleteGroupRequest": [
+        "GroupName",
+        "UserPoolId"
+      ],
+      "AdminAddUserToGroupRequest": [
+        "UserPoolId",
+        "Username",
+        "GroupName"
+      ],
+      "AdminRemoveUserFromGroupRequest": [
+        "UserPoolId",
+        "Username",
+        "GroupName"
+      ],
+      "AdminListGroupsForUserRequest": [
+        "UserPoolId",
+        "Username",
+        "Limit",
+        "NextToken"
+      ],
+      "AdminListGroupsForUserResponse": [
+        "Groups",
+        "NextToken"
+      ],
+      "ListUsersInGroupRequest": [
+        "UserPoolId",
+        "GroupName",
+        "Limit",
+        "NextToken"
+      ],
+      "ListUsersInGroupResponse": [
+        "Users",
+        "NextToken"
+      ],
+      "AdminCreateUserRequest": [
+        "UserPoolId",
+        "Username",
+        "UserAttributes",
+        "ValidationData",
+        "TemporaryPassword",
+        "MessageAction",
+        "DesiredDeliveryMediums",
+        "ClientMetadata"
+      ],
+      "AdminCreateUserResponse": [
+        "User"
+      ],
+      "UserType": [
+        "Username",
+        "Attributes",
+        "UserCreateDate",
+        "UserLastModifiedDate",
+        "Enabled",
+        "UserStatus"
+      ],
+      "AdminGetUserRequest": [
+        "UserPoolId",
+        "Username"
+      ],
+      "AdminGetUserResponse": [
+        "Username",
+        "UserAttributes",
+        "UserCreateDate",
+        "UserLastModifiedDate",
+        "Enabled",
+        "UserStatus"
+      ],
+      "AdminDeleteUserRequest": [
+        "UserPoolId",
+        "Username"
+      ],
+      "ListUsersRequest": [
+        "UserPoolId",
+        "AttributesToGet",
+        "Limit",
+        "PaginationToken",
+        "Filter"
+      ],
+      "ListUsersResponse": [
+        "Users",
+        "PaginationToken"
+      ],
+      "AdminUpdateUserAttributesRequest": [
+        "UserPoolId",
+        "Username",
+        "UserAttributes",
+        "ClientMetadata"
+      ],
+      "AdminUpdateUserAttributesResponse": [],
+      "AdminDeleteUserAttributesRequest": [
+        "UserPoolId",
+        "Username",
+        "UserAttributeNames"
+      ],
+      "AdminDeleteUserAttributesResponse": [],
+      "AdminSetUserPasswordRequest": [
+        "UserPoolId",
+        "Username",
+        "Password",
+        "Permanent"
+      ],
+      "AdminSetUserPasswordResponse": [],
+      "AdminEnableUserRequest": [
+        "UserPoolId",
+        "Username"
+      ],
+      "AdminEnableUserResponse": [],
+      "AdminDisableUserRequest": [
+        "UserPoolId",
+        "Username"
+      ],
+      "AdminDisableUserResponse": [],
+      "AdminConfirmSignUpRequest": [
+        "UserPoolId",
+        "Username",
+        "ClientMetadata"
+      ],
+      "AdminConfirmSignUpResponse": [],
+      "AdminResetUserPasswordRequest": [
+        "UserPoolId",
+        "Username",
+        "ClientMetadata"
+      ],
+      "AdminResetUserPasswordResponse": []
     }
   }
 }

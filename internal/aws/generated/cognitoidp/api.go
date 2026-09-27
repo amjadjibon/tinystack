@@ -396,6 +396,233 @@ type ListTagsForResourceResponse struct {
 	Tags map[string]string `json:"Tags,omitempty"`
 }
 
+type CreateGroupRequest struct {
+	GroupName   *string `json:"GroupName,omitempty"`
+	UserPoolId  *string `json:"UserPoolId,omitempty"`
+	Description *string `json:"Description,omitempty"`
+	RoleArn     *string `json:"RoleArn,omitempty"`
+	Precedence  *int64  `json:"Precedence,omitempty"`
+}
+
+type GroupType struct {
+	CreationDate     *float64 `json:"CreationDate,omitempty"`
+	Description      *string  `json:"Description,omitempty"`
+	GroupName        *string  `json:"GroupName,omitempty"`
+	LastModifiedDate *float64 `json:"LastModifiedDate,omitempty"`
+	Precedence       *int64   `json:"Precedence,omitempty"`
+	RoleArn          *string  `json:"RoleArn,omitempty"`
+	UserPoolId       *string  `json:"UserPoolId,omitempty"`
+}
+
+type CreateGroupResponse struct {
+	Group *GroupType `json:"Group,omitempty"`
+}
+
+type GetGroupRequest struct {
+	GroupName  *string `json:"GroupName,omitempty"`
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+}
+
+type GetGroupResponse struct {
+	Group *GroupType `json:"Group,omitempty"`
+}
+
+type ListGroupsRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Limit      *int64  `json:"Limit,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type ListGroupsResponse struct {
+	Groups    []GroupType `json:"Groups,omitempty"`
+	NextToken *string     `json:"NextToken,omitempty"`
+}
+
+type UpdateGroupRequest struct {
+	GroupName   *string `json:"GroupName,omitempty"`
+	UserPoolId  *string `json:"UserPoolId,omitempty"`
+	Description *string `json:"Description,omitempty"`
+	RoleArn     *string `json:"RoleArn,omitempty"`
+	Precedence  *int64  `json:"Precedence,omitempty"`
+}
+
+type UpdateGroupResponse struct {
+	Group *GroupType `json:"Group,omitempty"`
+}
+
+type DeleteGroupOutput struct{}
+
+type DeleteGroupRequest struct {
+	GroupName  *string `json:"GroupName,omitempty"`
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+}
+
+type AdminAddUserToGroupOutput struct{}
+
+type AdminAddUserToGroupRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Username   *string `json:"Username,omitempty"`
+	GroupName  *string `json:"GroupName,omitempty"`
+}
+
+type AdminRemoveUserFromGroupOutput struct{}
+
+type AdminRemoveUserFromGroupRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Username   *string `json:"Username,omitempty"`
+	GroupName  *string `json:"GroupName,omitempty"`
+}
+
+type AdminListGroupsForUserRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Username   *string `json:"Username,omitempty"`
+	Limit      *int64  `json:"Limit,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type AdminListGroupsForUserResponse struct {
+	Groups    []GroupType `json:"Groups,omitempty"`
+	NextToken *string     `json:"NextToken,omitempty"`
+}
+
+type ListUsersInGroupRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	GroupName  *string `json:"GroupName,omitempty"`
+	Limit      *int64  `json:"Limit,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type AttributeType struct {
+	Name  *string `json:"Name,omitempty"`
+	Value *string `json:"Value,omitempty"`
+}
+
+type UserType struct {
+	Username             *string         `json:"Username,omitempty"`
+	Attributes           []AttributeType `json:"Attributes,omitempty"`
+	UserCreateDate       *float64        `json:"UserCreateDate,omitempty"`
+	UserLastModifiedDate *float64        `json:"UserLastModifiedDate,omitempty"`
+	Enabled              *bool           `json:"Enabled,omitempty"`
+	UserStatus           *string         `json:"UserStatus,omitempty"`
+}
+
+type ListUsersInGroupResponse struct {
+	Users     []UserType `json:"Users,omitempty"`
+	NextToken *string    `json:"NextToken,omitempty"`
+}
+
+type AdminCreateUserRequest struct {
+	UserPoolId             *string           `json:"UserPoolId,omitempty"`
+	Username               *string           `json:"Username,omitempty"`
+	UserAttributes         []AttributeType   `json:"UserAttributes,omitempty"`
+	ValidationData         []AttributeType   `json:"ValidationData,omitempty"`
+	TemporaryPassword      *string           `json:"TemporaryPassword,omitempty"`
+	MessageAction          *string           `json:"MessageAction,omitempty"`
+	DesiredDeliveryMediums []string          `json:"DesiredDeliveryMediums,omitempty"`
+	ClientMetadata         map[string]string `json:"ClientMetadata,omitempty"`
+}
+
+type AdminCreateUserResponse struct {
+	User *UserType `json:"User,omitempty"`
+}
+
+type AdminGetUserRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Username   *string `json:"Username,omitempty"`
+}
+
+type AdminGetUserResponse struct {
+	Username             *string         `json:"Username,omitempty"`
+	UserAttributes       []AttributeType `json:"UserAttributes,omitempty"`
+	UserCreateDate       *float64        `json:"UserCreateDate,omitempty"`
+	UserLastModifiedDate *float64        `json:"UserLastModifiedDate,omitempty"`
+	Enabled              *bool           `json:"Enabled,omitempty"`
+	UserStatus           *string         `json:"UserStatus,omitempty"`
+}
+
+type AdminDeleteUserOutput struct{}
+
+type AdminDeleteUserRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Username   *string `json:"Username,omitempty"`
+}
+
+type ListUsersRequest struct {
+	UserPoolId      *string  `json:"UserPoolId,omitempty"`
+	AttributesToGet []string `json:"AttributesToGet,omitempty"`
+	Limit           *int64   `json:"Limit,omitempty"`
+	PaginationToken *string  `json:"PaginationToken,omitempty"`
+	Filter          *string  `json:"Filter,omitempty"`
+}
+
+type ListUsersResponse struct {
+	Users           []UserType `json:"Users,omitempty"`
+	PaginationToken *string    `json:"PaginationToken,omitempty"`
+}
+
+type AdminUpdateUserAttributesRequest struct {
+	UserPoolId     *string           `json:"UserPoolId,omitempty"`
+	Username       *string           `json:"Username,omitempty"`
+	UserAttributes []AttributeType   `json:"UserAttributes,omitempty"`
+	ClientMetadata map[string]string `json:"ClientMetadata,omitempty"`
+}
+
+type AdminUpdateUserAttributesResponse struct {
+}
+
+type AdminDeleteUserAttributesRequest struct {
+	UserPoolId         *string  `json:"UserPoolId,omitempty"`
+	Username           *string  `json:"Username,omitempty"`
+	UserAttributeNames []string `json:"UserAttributeNames,omitempty"`
+}
+
+type AdminDeleteUserAttributesResponse struct {
+}
+
+type AdminSetUserPasswordRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Username   *string `json:"Username,omitempty"`
+	Password   *string `json:"Password,omitempty"`
+	Permanent  *bool   `json:"Permanent,omitempty"`
+}
+
+type AdminSetUserPasswordResponse struct {
+}
+
+type AdminEnableUserRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Username   *string `json:"Username,omitempty"`
+}
+
+type AdminEnableUserResponse struct {
+}
+
+type AdminDisableUserRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Username   *string `json:"Username,omitempty"`
+}
+
+type AdminDisableUserResponse struct {
+}
+
+type AdminConfirmSignUpRequest struct {
+	UserPoolId     *string           `json:"UserPoolId,omitempty"`
+	Username       *string           `json:"Username,omitempty"`
+	ClientMetadata map[string]string `json:"ClientMetadata,omitempty"`
+}
+
+type AdminConfirmSignUpResponse struct {
+}
+
+type AdminResetUserPasswordRequest struct {
+	UserPoolId     *string           `json:"UserPoolId,omitempty"`
+	Username       *string           `json:"Username,omitempty"`
+	ClientMetadata map[string]string `json:"ClientMetadata,omitempty"`
+}
+
+type AdminResetUserPasswordResponse struct {
+}
+
 type API interface {
 	CreateUserPool(context.Context, *CreateUserPoolRequest) (*CreateUserPoolResponse, error)
 	DescribeUserPool(context.Context, *DescribeUserPoolRequest) (*DescribeUserPoolResponse, error)
@@ -413,10 +640,30 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
+	GetGroup(context.Context, *GetGroupRequest) (*GetGroupResponse, error)
+	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
+	UpdateGroup(context.Context, *UpdateGroupRequest) (*UpdateGroupResponse, error)
+	DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupOutput, error)
+	AdminAddUserToGroup(context.Context, *AdminAddUserToGroupRequest) (*AdminAddUserToGroupOutput, error)
+	AdminRemoveUserFromGroup(context.Context, *AdminRemoveUserFromGroupRequest) (*AdminRemoveUserFromGroupOutput, error)
+	AdminListGroupsForUser(context.Context, *AdminListGroupsForUserRequest) (*AdminListGroupsForUserResponse, error)
+	ListUsersInGroup(context.Context, *ListUsersInGroupRequest) (*ListUsersInGroupResponse, error)
+	AdminCreateUser(context.Context, *AdminCreateUserRequest) (*AdminCreateUserResponse, error)
+	AdminGetUser(context.Context, *AdminGetUserRequest) (*AdminGetUserResponse, error)
+	AdminDeleteUser(context.Context, *AdminDeleteUserRequest) (*AdminDeleteUserOutput, error)
+	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
+	AdminUpdateUserAttributes(context.Context, *AdminUpdateUserAttributesRequest) (*AdminUpdateUserAttributesResponse, error)
+	AdminDeleteUserAttributes(context.Context, *AdminDeleteUserAttributesRequest) (*AdminDeleteUserAttributesResponse, error)
+	AdminSetUserPassword(context.Context, *AdminSetUserPasswordRequest) (*AdminSetUserPasswordResponse, error)
+	AdminEnableUser(context.Context, *AdminEnableUserRequest) (*AdminEnableUserResponse, error)
+	AdminDisableUser(context.Context, *AdminDisableUserRequest) (*AdminDisableUserResponse, error)
+	AdminConfirmSignUp(context.Context, *AdminConfirmSignUpRequest) (*AdminConfirmSignUpResponse, error)
+	AdminResetUserPassword(context.Context, *AdminResetUserPasswordRequest) (*AdminResetUserPasswordResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "cognitoidp", SigningName: "cognito-idp", Inventory: catalog.InventoryOf(api), TargetPrefix: "AWSCognitoIdentityProviderService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FeatureUnavailableInTierException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEmailRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOAuthFlowException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleTrustRelationshipException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotAuthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "OperationNotEnabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ScopeDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TierChangeNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UserImportInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserPoolTaggingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "cognitoidp", SigningName: "cognito-idp", Inventory: catalog.InventoryOf(api), TargetPrefix: "AWSCognitoIdentityProviderService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AliasExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeDeliveryFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FeatureUnavailableInTierException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "GroupExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEmailRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidLambdaResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOAuthFlowException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidPasswordException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleTrustRelationshipException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotAuthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "OperationNotEnabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordHistoryPolicyViolationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PreconditionNotMetException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ScopeDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TierChangeNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "TooManyFailedAttemptsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnexpectedLambdaException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedUserStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserImportInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserLambdaValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UserPoolTaggingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UsernameExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateUserPool": {Name: "CreateUserPool", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.CreateUserPool", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateUserPoolRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateUserPool(ctx, input.(*CreateUserPoolRequest))
 		}},
@@ -464,6 +711,64 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"CreateGroup": {Name: "CreateGroup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.CreateGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateGroup(ctx, input.(*CreateGroupRequest))
+		}},
+		"GetGroup": {Name: "GetGroup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.GetGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetGroup(ctx, input.(*GetGroupRequest)) }},
+		"ListGroups": {Name: "ListGroups", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.ListGroups", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListGroupsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListGroups(ctx, input.(*ListGroupsRequest))
+		}},
+		"UpdateGroup": {Name: "UpdateGroup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.UpdateGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateGroup(ctx, input.(*UpdateGroupRequest))
+		}},
+		"DeleteGroup": {Name: "DeleteGroup", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DeleteGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteGroup(ctx, input.(*DeleteGroupRequest))
+		}},
+		"AdminAddUserToGroup": {Name: "AdminAddUserToGroup", UnitOutput: true, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminAddUserToGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminAddUserToGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminAddUserToGroup(ctx, input.(*AdminAddUserToGroupRequest))
+		}},
+		"AdminRemoveUserFromGroup": {Name: "AdminRemoveUserFromGroup", UnitOutput: true, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminRemoveUserFromGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminRemoveUserFromGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminRemoveUserFromGroup(ctx, input.(*AdminRemoveUserFromGroupRequest))
+		}},
+		"AdminListGroupsForUser": {Name: "AdminListGroupsForUser", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminListGroupsForUser", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminListGroupsForUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminListGroupsForUser(ctx, input.(*AdminListGroupsForUserRequest))
+		}},
+		"ListUsersInGroup": {Name: "ListUsersInGroup", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.ListUsersInGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListUsersInGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListUsersInGroup(ctx, input.(*ListUsersInGroupRequest))
+		}},
+		"AdminCreateUser": {Name: "AdminCreateUser", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminCreateUser", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminCreateUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminCreateUser(ctx, input.(*AdminCreateUserRequest))
+		}},
+		"AdminGetUser": {Name: "AdminGetUser", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminGetUser", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminGetUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminGetUser(ctx, input.(*AdminGetUserRequest))
+		}},
+		"AdminDeleteUser": {Name: "AdminDeleteUser", UnitOutput: true, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminDeleteUser", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminDeleteUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminDeleteUser(ctx, input.(*AdminDeleteUserRequest))
+		}},
+		"ListUsers": {Name: "ListUsers", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.ListUsers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListUsersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListUsers(ctx, input.(*ListUsersRequest))
+		}},
+		"AdminUpdateUserAttributes": {Name: "AdminUpdateUserAttributes", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminUpdateUserAttributes", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminUpdateUserAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminUpdateUserAttributes(ctx, input.(*AdminUpdateUserAttributesRequest))
+		}},
+		"AdminDeleteUserAttributes": {Name: "AdminDeleteUserAttributes", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminDeleteUserAttributes", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminDeleteUserAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminDeleteUserAttributes(ctx, input.(*AdminDeleteUserAttributesRequest))
+		}},
+		"AdminSetUserPassword": {Name: "AdminSetUserPassword", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminSetUserPassword", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminSetUserPasswordRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminSetUserPassword(ctx, input.(*AdminSetUserPasswordRequest))
+		}},
+		"AdminEnableUser": {Name: "AdminEnableUser", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminEnableUser", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminEnableUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminEnableUser(ctx, input.(*AdminEnableUserRequest))
+		}},
+		"AdminDisableUser": {Name: "AdminDisableUser", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminDisableUser", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminDisableUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminDisableUser(ctx, input.(*AdminDisableUserRequest))
+		}},
+		"AdminConfirmSignUp": {Name: "AdminConfirmSignUp", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminConfirmSignUp", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminConfirmSignUpRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminConfirmSignUp(ctx, input.(*AdminConfirmSignUpRequest))
+		}},
+		"AdminResetUserPassword": {Name: "AdminResetUserPassword", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminResetUserPassword", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminResetUserPasswordRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminResetUserPassword(ctx, input.(*AdminResetUserPasswordRequest))
 		}},
 	}}
 }
