@@ -185,7 +185,7 @@ func TestCognitoUserPools(t *testing.T) {
 	}
 
 	got, err := c.GetUserPoolMfaConfig(ctx, &cip.GetUserPoolMfaConfigInput{UserPoolId: pool.Id})
-	if err != nil || !got.SoftwareTokenMfaConfiguration.Enabled {
+	if err != nil || got.SoftwareTokenMfaConfiguration == nil || !got.SoftwareTokenMfaConfiguration.Enabled {
 		t.Fatalf("mfa = %+v, %v", got, err)
 	}
 

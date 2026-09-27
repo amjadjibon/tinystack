@@ -302,7 +302,10 @@ func TestCognitoAdminAuth(t *testing.T) {
 	users := anonymousCognito(s)
 	pool := createPool(t, admin, "admin auth", &cip.CreateUserPoolInput{
 		AdminCreateUserConfig: &ciptypes.AdminCreateUserConfigType{AllowAdminCreateUserOnly: true},
-		Schema:                []ciptypes.SchemaAttributeType{{Name: aws.String("name"), Required: aws.Bool(true)}},
+		Policies: &ciptypes.UserPoolPolicyType{PasswordPolicy: &ciptypes.PasswordPolicyType{
+			MinimumLength: aws.Int32(8), PasswordHistorySize: aws.Int32(2),
+		}},
+		Schema: []ciptypes.SchemaAttributeType{{Name: aws.String("name"), Required: aws.Bool(true)}},
 	})
 	created, err := admin.CreateUserPoolClient(ctx, &cip.CreateUserPoolClientInput{
 		UserPoolId:                 pool.Id,
@@ -410,6 +413,14 @@ func TestCognitoAdminAuth(t *testing.T) {
 	got, err := admin.AdminGetUser(ctx, &cip.AdminGetUserInput{UserPoolId: pool.Id, Username: aws.String("fay")})
 	if err != nil || got.UserStatus != ciptypes.UserStatusTypeConfirmed {
 		t.Fatalf("user = %+v, %v", got, err)
+	}
+
+	// The password history covers the current and the temporary password.
+	for _, reused := range []string{"Perm4nent!", "Temp0rary!"} {
+		_, err = admin.AdminSetUserPassword(ctx, &cip.AdminSetUserPasswordInput{
+			UserPoolId: pool.Id, Username: aws.String("fay"), Password: aws.String(reused), Permanent: true,
+		})
+		code(t, err, "PasswordHistoryPolicyViolationException")
 	}
 
 	// Revoking a refresh token ends its session only.

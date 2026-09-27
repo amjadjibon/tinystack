@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    cognitoidp     = var.endpoint
     dynamodb       = var.endpoint
     ec2            = var.endpoint
     eventbridge    = var.endpoint
@@ -109,6 +110,64 @@ output "image_matches" {
 
 output "zones" {
   value = length(data.aws_availability_zones.available.names)
+}
+
+resource "aws_cognito_user_pool" "app" {
+  name                     = "app-users"
+  username_attributes      = ["email"]
+  auto_verified_attributes = ["email"]
+  tags                     = local.tags
+
+  password_policy {
+    minimum_length    = 10
+    require_lowercase = true
+    require_numbers   = true
+    require_symbols   = false
+    require_uppercase = true
+  }
+
+  schema {
+    name                = "team"
+    attribute_data_type = "String"
+    mutable             = true
+
+    string_attribute_constraints {
+      min_length = 1
+      max_length = 64
+    }
+  }
+}
+
+resource "aws_cognito_user_pool_client" "web" {
+  name                = "web"
+  user_pool_id        = aws_cognito_user_pool.app.id
+  generate_secret     = true
+  explicit_auth_flows = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+}
+
+resource "aws_cognito_user_group" "admins" {
+  name         = "admins"
+  user_pool_id = aws_cognito_user_pool.app.id
+  description  = "Administrators of ${var.team}"
+}
+
+resource "aws_cognito_user" "ana" {
+  user_pool_id   = aws_cognito_user_pool.app.id
+  username       = "ana@example.com"
+  message_action = "SUPPRESS"
+  password       = "Correct-Horse-9"
+
+  attributes = {
+    email          = "ana@example.com"
+    email_verified = true
+    team           = var.team
+  }
+}
+
+resource "aws_cognito_user_in_group" "ana" {
+  user_pool_id = aws_cognito_user_pool.app.id
+  group_name   = aws_cognito_user_group.admins.name
+  username     = aws_cognito_user.ana.username
 }
 
 resource "aws_sqs_queue" "dead" {
