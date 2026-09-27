@@ -3,6 +3,10 @@
   "commit": "52ba2565aefa81106ba8aca112e7c42176cc28a7",
   "license": "LICENSE.aws-sdk-go-v2",
   "models": {
+    "cognitoidp": {
+      "path": "codegen/sdk-codegen/aws-models/cognito-identity-provider.json",
+      "sha256": "05f1aeb9c9247fe6860d0b05b0a6ef4ec7d7ba919d3b73b430bc4928885f0602"
+    },
     "dynamodb": {
       "path": "codegen/sdk-codegen/aws-models/dynamodb.json",
       "sha256": "7e9436596b667e2e0600de9c086205b38960012028bcd625ee786a5126d0f63e"
