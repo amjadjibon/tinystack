@@ -42,6 +42,7 @@ type Server struct {
 	// internal serves TinyStack's own endpoints under /_tinystack/.
 	internal    map[string]http.Handler
 	credentials CredentialLookup
+	documents   Documents
 	health      []byte
 	cfg         config.Config
 }
@@ -49,6 +50,11 @@ type Server struct {
 // CredentialLookup returns the credentials of an access key TinyStack issued,
 // such as an IAM user's key or an STS session's, if any.
 type CredentialLookup func(ctx context.Context, accessKey string) (request.Credentials, bool, error)
+
+// Documents returns a token issuer's discovery document, such as a Cognito user
+// pool's "jwks.json" or "openid-configuration", and whether it has one.
+// endpoint is the base URL the client used.
+type Documents func(ctx context.Context, issuer, name, endpoint string) ([]byte, bool, error)
 
 // call is a request classified to a protocol and, once known, a service.
 type call struct {
@@ -121,6 +127,39 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 // before serving requests.
 func (s *Server) UseCredentials(lookup CredentialLookup) {
 	s.credentials = lookup
+}
+
+// UseDocuments serves GET /<issuer>/.well-known/<name> through documents.
+// Issuers such as Cognito pool IDs contain "_", which no S3 bucket name does,
+// so these paths never name an object. Call it before serving requests.
+func (s *Server) UseDocuments(documents Documents) {
+	s.documents = documents
+}
+
+// serveDocument serves an issuer's well-known document, reporting whether
+// the request asked for one.
+func (s *Server) serveDocument(w http.ResponseWriter, r *http.Request) bool {
+	issuer, name, ok := strings.Cut(strings.TrimPrefix(r.URL.Path, "/"), "/.well-known/")
+	if s.documents == nil || r.Method != http.MethodGet || !ok || !strings.Contains(issuer, "_") ||
+		strings.ContainsAny(issuer+name, "/") {
+		return false
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	doc, found, err := s.documents(r.Context(), issuer, name, "http://"+r.Host)
+	switch {
+	case err != nil:
+		s.logger.Error("serve document", "issuer", issuer, "name", name, "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"message":"internal error"}`))
+	case !found:
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
+	default:
+		_, _ = w.Write(doc)
+	}
+
+	return true
 }
 
 // Handle serves h at /_tinystack/<name>. Call it before serving requests.
@@ -470,6 +509,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// "_" is not valid in an S3 bucket name, so these paths never name one.
 	if h, ok := s.internal[r.URL.Path]; ok {
 		h.ServeHTTP(w, r)
+		return
+	}
+
+	if s.serveDocument(w, r) {
 		return
 	}
 
