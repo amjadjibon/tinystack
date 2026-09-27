@@ -5,6 +5,7 @@ go 1.27
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.1
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.74.1
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.69.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.43.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.336.1

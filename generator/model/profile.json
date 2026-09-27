@@ -3787,5 +3787,285 @@
         "Arn"
       ]
     }
+  },
+  "cognitoidp": {
+    "operations": [
+      "CreateUserPool",
+      "DescribeUserPool",
+      "ListUserPools",
+      "UpdateUserPool",
+      "DeleteUserPool",
+      "AddCustomAttributes",
+      "GetUserPoolMfaConfig",
+      "SetUserPoolMfaConfig",
+      "CreateUserPoolClient",
+      "DescribeUserPoolClient",
+      "ListUserPoolClients",
+      "UpdateUserPoolClient",
+      "DeleteUserPoolClient",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateUserPoolRequest": [
+        "PoolName",
+        "Policies",
+        "DeletionProtection",
+        "AutoVerifiedAttributes",
+        "SmsVerificationMessage",
+        "EmailVerificationMessage",
+        "EmailVerificationSubject",
+        "VerificationMessageTemplate",
+        "SmsAuthenticationMessage",
+        "UserAttributeUpdateSettings",
+        "MfaConfiguration",
+        "DeviceConfiguration",
+        "EmailConfiguration",
+        "SmsConfiguration",
+        "UserPoolTags",
+        "AdminCreateUserConfig",
+        "UserPoolAddOns",
+        "AccountRecoverySetting",
+        "UserPoolTier",
+        "AliasAttributes",
+        "UsernameAttributes",
+        "Schema",
+        "UsernameConfiguration"
+      ],
+      "CreateUserPoolResponse": [
+        "UserPool"
+      ],
+      "UserPoolType": [
+        "Id",
+        "Name",
+        "Arn",
+        "CreationDate",
+        "LastModifiedDate",
+        "SchemaAttributes",
+        "AliasAttributes",
+        "UsernameAttributes",
+        "UsernameConfiguration",
+        "EstimatedNumberOfUsers",
+        "Policies",
+        "DeletionProtection",
+        "AutoVerifiedAttributes",
+        "SmsVerificationMessage",
+        "EmailVerificationMessage",
+        "EmailVerificationSubject",
+        "VerificationMessageTemplate",
+        "SmsAuthenticationMessage",
+        "UserAttributeUpdateSettings",
+        "MfaConfiguration",
+        "DeviceConfiguration",
+        "EmailConfiguration",
+        "SmsConfiguration",
+        "UserPoolTags",
+        "AdminCreateUserConfig",
+        "UserPoolAddOns",
+        "AccountRecoverySetting",
+        "UserPoolTier"
+      ],
+      "UserPoolPolicyType": [
+        "PasswordPolicy"
+      ],
+      "PasswordPolicyType": [
+        "MinimumLength",
+        "RequireUppercase",
+        "RequireLowercase",
+        "RequireNumbers",
+        "RequireSymbols",
+        "TemporaryPasswordValidityDays"
+      ],
+      "SmsConfigurationType": [
+        "SnsCallerArn",
+        "ExternalId",
+        "SnsRegion"
+      ],
+      "UserPoolAddOnsType": [
+        "AdvancedSecurityMode"
+      ],
+      "DescribeUserPoolRequest": [
+        "UserPoolId"
+      ],
+      "DescribeUserPoolResponse": [
+        "UserPool"
+      ],
+      "ListUserPoolsRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListUserPoolsResponse": [
+        "UserPools",
+        "NextToken"
+      ],
+      "UserPoolDescriptionType": [
+        "Id",
+        "Name",
+        "CreationDate",
+        "LastModifiedDate"
+      ],
+      "UpdateUserPoolRequest": [
+        "UserPoolId",
+        "Policies",
+        "DeletionProtection",
+        "AutoVerifiedAttributes",
+        "SmsVerificationMessage",
+        "EmailVerificationMessage",
+        "EmailVerificationSubject",
+        "VerificationMessageTemplate",
+        "SmsAuthenticationMessage",
+        "UserAttributeUpdateSettings",
+        "MfaConfiguration",
+        "DeviceConfiguration",
+        "EmailConfiguration",
+        "SmsConfiguration",
+        "UserPoolTags",
+        "AdminCreateUserConfig",
+        "UserPoolAddOns",
+        "AccountRecoverySetting",
+        "UserPoolTier",
+        "PoolName"
+      ],
+      "UpdateUserPoolResponse": [],
+      "DeleteUserPoolRequest": [
+        "UserPoolId"
+      ],
+      "AddCustomAttributesRequest": [
+        "UserPoolId",
+        "CustomAttributes"
+      ],
+      "AddCustomAttributesResponse": [],
+      "GetUserPoolMfaConfigRequest": [
+        "UserPoolId"
+      ],
+      "GetUserPoolMfaConfigResponse": [
+        "MfaConfiguration",
+        "SoftwareTokenMfaConfiguration"
+      ],
+      "SetUserPoolMfaConfigRequest": [
+        "UserPoolId",
+        "MfaConfiguration",
+        "SoftwareTokenMfaConfiguration"
+      ],
+      "SetUserPoolMfaConfigResponse": [
+        "MfaConfiguration",
+        "SoftwareTokenMfaConfiguration"
+      ],
+      "CreateUserPoolClientRequest": [
+        "UserPoolId",
+        "ClientName",
+        "GenerateSecret",
+        "RefreshTokenValidity",
+        "AccessTokenValidity",
+        "IdTokenValidity",
+        "TokenValidityUnits",
+        "ReadAttributes",
+        "WriteAttributes",
+        "ExplicitAuthFlows",
+        "SupportedIdentityProviders",
+        "CallbackURLs",
+        "LogoutURLs",
+        "DefaultRedirectURI",
+        "AllowedOAuthFlows",
+        "AllowedOAuthScopes",
+        "AllowedOAuthFlowsUserPoolClient",
+        "PreventUserExistenceErrors",
+        "EnableTokenRevocation",
+        "EnablePropagateAdditionalUserContextData",
+        "AuthSessionValidity"
+      ],
+      "CreateUserPoolClientResponse": [
+        "UserPoolClient"
+      ],
+      "UserPoolClientType": [
+        "UserPoolId",
+        "ClientName",
+        "ClientId",
+        "ClientSecret",
+        "CreationDate",
+        "LastModifiedDate",
+        "RefreshTokenValidity",
+        "AccessTokenValidity",
+        "IdTokenValidity",
+        "TokenValidityUnits",
+        "ReadAttributes",
+        "WriteAttributes",
+        "ExplicitAuthFlows",
+        "SupportedIdentityProviders",
+        "CallbackURLs",
+        "LogoutURLs",
+        "DefaultRedirectURI",
+        "AllowedOAuthFlows",
+        "AllowedOAuthScopes",
+        "AllowedOAuthFlowsUserPoolClient",
+        "PreventUserExistenceErrors",
+        "EnableTokenRevocation",
+        "EnablePropagateAdditionalUserContextData",
+        "AuthSessionValidity"
+      ],
+      "DescribeUserPoolClientRequest": [
+        "UserPoolId",
+        "ClientId"
+      ],
+      "DescribeUserPoolClientResponse": [
+        "UserPoolClient"
+      ],
+      "ListUserPoolClientsRequest": [
+        "UserPoolId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListUserPoolClientsResponse": [
+        "UserPoolClients",
+        "NextToken"
+      ],
+      "UpdateUserPoolClientRequest": [
+        "UserPoolId",
+        "ClientId",
+        "ClientName",
+        "RefreshTokenValidity",
+        "AccessTokenValidity",
+        "IdTokenValidity",
+        "TokenValidityUnits",
+        "ReadAttributes",
+        "WriteAttributes",
+        "ExplicitAuthFlows",
+        "SupportedIdentityProviders",
+        "CallbackURLs",
+        "LogoutURLs",
+        "DefaultRedirectURI",
+        "AllowedOAuthFlows",
+        "AllowedOAuthScopes",
+        "AllowedOAuthFlowsUserPoolClient",
+        "PreventUserExistenceErrors",
+        "EnableTokenRevocation",
+        "EnablePropagateAdditionalUserContextData",
+        "AuthSessionValidity"
+      ],
+      "UpdateUserPoolClientResponse": [
+        "UserPoolClient"
+      ],
+      "DeleteUserPoolClientRequest": [
+        "UserPoolId",
+        "ClientId"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
   }
 }

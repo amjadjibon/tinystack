@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/smithy-go"
 
+	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
@@ -37,6 +38,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
+	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	compute "github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
@@ -139,6 +141,7 @@ func serverStore(
 		logsapi.Descriptor(logGroups),
 		kmsapi.Descriptor(keys),
 		ec2api.Descriptor(compute.New(store)),
+		cognitoidpapi.Descriptor(identities.New(store)),
 	)
 	if err != nil {
 		t.Fatal(err)
