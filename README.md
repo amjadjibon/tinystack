@@ -517,8 +517,15 @@ since every caller is authorized.
 | --- | --- |
 | DescribeRegions | The commercial Regions, all `opt-in-not-required`, or those named in `RegionNames`; an unknown name is `InvalidParameterValue` |
 | DescribeAvailabilityZones | Three zones per Region (`<region>a` to `c`, with IDs such as `use1-az1`), by `ZoneNames` or `ZoneIds` |
-| CreateVpc / DeleteVpc / DescribeVpcs | IPv4 `CidrBlock` from /16 to /28, `InstanceTenancy` `default` or `dedicated`, up to 5 VPCs per Region; a VPC with subnets cannot be deleted (`DependencyViolation`) |
+| CreateVpc / DeleteVpc / DescribeVpcs | IPv4 `CidrBlock` from /16 to /28, `InstanceTenancy` `default` or `dedicated`, up to 5 VPCs per Region, each with a `default` security group; a VPC with subnets or other security groups cannot be deleted (`DependencyViolation`) |
 | CreateSubnet / DeleteSubnet / DescribeSubnets | A CIDR inside the VPC's that overlaps no other subnet, in a zone given by name or ID (the first by default); the available address count leaves out AWS's five reserved addresses |
+| CreateSecurityGroup / DeleteSecurityGroup / DescribeSecurityGroups | A group in `VpcId` or the default VPC, created with an allow-all egress rule; groups are found by ID or, in the default VPC, by name; a default group, or one that another group's rules name, cannot be deleted |
+| AuthorizeSecurityGroupIngress / AuthorizeSecurityGroupEgress | One rule per IPv4 or IPv6 CIDR, prefix list, or security group of the same account, with TCP and UDP ports from 0 to 65535, ICMP types and codes, or all traffic (`-1`); a rule that exists is `InvalidPermission.Duplicate`; up to 60 rules per direction |
+| RevokeSecurityGroupIngress / RevokeSecurityGroupEgress | By permission (those that match no rule come back in `UnknownIpPermissions`) or by `SecurityGroupRuleIds` |
+| DescribeSecurityGroupRules | Every rule with its ID, by `SecurityGroupRuleIds` or the `group-id` and `security-group-rule-id` filters |
+| CreateKeyPair / ImportKeyPair | An RSA (2048-bit, PKCS#1 PEM) or ED25519 (OpenSSH) key whose private key is returned once and never stored, or an imported OpenSSH public key; fingerprints follow EC2 (SHA-1 of created RSA keys, MD5 of imported ones, SHA-256 of ED25519 keys); the `ppk` format is not supported |
+| DescribeKeyPairs / DeleteKeyPair | By `KeyNames` or `KeyPairIds`, with the public key when `IncludePublicKey` is set; deleting a missing key pair succeeds |
+| DescribeNetworkInterfaces | Always empty, since TinyStack creates no network interfaces yet |
 | CreateTags / DeleteTags / DescribeTags | Up to 50 tags on any resource by ID, all in one change; `aws:` keys are reserved; DeleteTags removes the given keys (a key with a value only while it has that value), or every tag; DescribeTags filters by `key`, `value`, `resource-id`, and `resource-type` |
 
 The first request in an account and Region creates its default VPC
