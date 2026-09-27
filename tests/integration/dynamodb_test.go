@@ -120,6 +120,8 @@ func serverStore(
 	secretsService := secrets.New(store, keys, functions, deliveries)
 	roles := principals.New(store)
 	stsService := tokens.New(store, roles)
+	ssmService := parameters.New(store, keys)
+	ssmService.UsePublicParameters(compute.PublicParameters)
 	h, err := gateway.New(
 		cfg,
 		logger,
@@ -132,7 +134,7 @@ func serverStore(
 		eventbridgeapi.Descriptor(rules),
 		iamapi.Descriptor(roles),
 		stsapi.Descriptor(stsService),
-		ssmapi.Descriptor(parameters.New(store, keys)),
+		ssmapi.Descriptor(ssmService),
 		secretsmanagerapi.Descriptor(secretsService),
 		logsapi.Descriptor(logGroups),
 		kmsapi.Descriptor(keys),

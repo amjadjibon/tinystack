@@ -65,6 +65,7 @@ def main():
                 terraform("apply", "-auto-approve")
                 assert terraform("output", "-raw", "account_id") == "000000000000"
                 assert terraform("output", "-raw", "zones") == "3"
+                assert terraform("output", "-raw", "image_matches") == "true"
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 updated = terraform("apply", "-auto-approve", team="platform")

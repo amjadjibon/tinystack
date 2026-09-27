@@ -88,6 +88,25 @@ resource "aws_key_pair" "deploy" {
   tags       = local.tags
 }
 
+data "aws_ami" "al2023" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-x86_64"]
+  }
+}
+
+data "aws_ssm_parameter" "al2023" {
+  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+}
+
+# Systems Manager's public parameter names the image DescribeImages finds.
+output "image_matches" {
+  value = data.aws_ami.al2023.id == nonsensitive(data.aws_ssm_parameter.al2023.value)
+}
+
 output "zones" {
   value = length(data.aws_availability_zones.available.names)
 }
