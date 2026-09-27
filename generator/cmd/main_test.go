@@ -372,9 +372,27 @@ func TestSensitiveOperations(t *testing.T) {
 
 	flat := strings.Join(strings.Fields(string(source)), " ")
 	for op, want := range map[string]bool{"Put": false, "Get": true, "List": false} {
-		if field := fmt.Sprintf(`Name: %q, UnitOutput: %t, Sensitive: %t`, op, op == "Put", want); !strings.Contains(
-			flat, field) {
+		field := fmt.Sprintf(`Name: %q, UnitOutput: %t, Sensitive: %t, Anonymous: false`, op, op == "Put", want)
+		if !strings.Contains(flat, field) {
 			t.Errorf("generated source lacks %s", field)
+		}
+	}
+}
+
+func TestAnonymousOperations(t *testing.T) {
+	for traits, want := range map[string]bool{
+		`{}`:                              false,
+		`{"smithy.api#optionalAuth": {}}`: true,
+		`{"smithy.api#auth": []}`:         true,
+		`{"smithy.api#auth": ["aws.auth#sigv4"]}`: false,
+	} {
+		var parsed map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(traits), &parsed); err != nil {
+			t.Fatal(err)
+		}
+
+		if got := anonymous(parsed); got != want {
+			t.Errorf("anonymous(%s) = %t, want %t", traits, got, want)
 		}
 	}
 }

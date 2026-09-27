@@ -113,6 +113,12 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 	}
 
 	if !signed {
+		// Operations such as Cognito's sign-in are called unsigned; a signed
+		// call to one is still verified.
+		if c.service != nil && c.service.Operations[c.meta.Operation].Anonymous {
+			return nil
+		}
+
 		return authError(protocol, missingToken)
 	}
 

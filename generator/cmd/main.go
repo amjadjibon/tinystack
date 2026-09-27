@@ -131,6 +131,18 @@ func (g *generator) sensitive(id string, visited map[string]bool) bool {
 	return false
 }
 
+// anonymous reports whether an operation's traits let clients call it
+// unsigned: smithy.api#optionalAuth, or an empty smithy.api#auth list.
+func anonymous(traits map[string]json.RawMessage) bool {
+	if _, ok := traits["smithy.api#optionalAuth"]; ok {
+		return true
+	}
+
+	raw, ok := traits["smithy.api#auth"]
+	var schemes []string
+	return ok && json.Unmarshal(raw, &schemes) == nil && len(schemes) == 0
+}
+
 func (g *generator) typeName(id string) (string, error) {
 	s, ok := g.model.Shapes[id]
 	if !ok {
@@ -764,13 +776,14 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 
 		fmt.Fprintf(
 			&g.out,
-			"%q:{Name:%q,UnitOutput:%t,Sensitive:%t,Bindings:%#v,NewI"+
+			"%q:{Name:%q,UnitOutput:%t,Sensitive:%t,Anonymous:%t,Bindings:%#v,NewI"+
 				"nput:func()any{return &%s{}},Invoke:func(ctx context.Context,input any)(any"+
 				",error){return api.%s(ctx,input.(*%s))}},\n",
 			op,
 			op,
 			s.Output.Target == unitShape,
 			g.sensitive(s.Input.Target, map[string]bool{}) || g.sensitive(s.Output.Target, map[string]bool{}),
+			anonymous(s.Traits),
 			bindings,
 			short(s.Input.Target),
 			op,

@@ -55,6 +55,10 @@ type Operation struct {
 	// model marks smithy.api#sensitive, such as a secret; the request
 	// inspector does not keep their bodies.
 	Sensitive bool
+	// Anonymous marks operations the model lets clients call unsigned
+	// (smithy.api#optionalAuth or an empty smithy.api#auth), such as Cognito's
+	// sign-in operations, which identify their caller by a client ID or token.
+	Anonymous bool
 }
 
 // Resource is one resource a service holds, as the resource browser shows it.
