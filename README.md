@@ -387,6 +387,11 @@ or `ssm` are reserved. Reads accept a `name:version` or `name:label` selector.
 | LabelParameterVersion / UnlabelParameterVersion | Up to 10 labels per version; labeling moves a label from another version; invalid labels are returned, not applied |
 | AddTagsToResource / RemoveTagsFromResource / ListTagsForResource | `ResourceType: Parameter`, up to 50 tags |
 
+GetParameter, GetParameters, and GetParametersByPath also read the public parameters that name EC2's images, such
+as `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` and
+`/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id` (version 1, with an ARN
+without an account).
+
 A parameter keeps its 100 newest versions: the oldest is dropped, unless it has a
 label. SecureString values use the AWS managed key `alias/aws/ssm` or a KMS key
 named by `KeyId` (key ID, key ARN, alias name, or alias ARN in the caller's account
@@ -518,14 +523,19 @@ since every caller is authorized.
 | DescribeRegions | The commercial Regions, all `opt-in-not-required`, or those named in `RegionNames`; an unknown name is `InvalidParameterValue` |
 | DescribeAvailabilityZones | Three zones per Region (`<region>a` to `c`, with IDs such as `use1-az1`), by `ZoneNames` or `ZoneIds` |
 | CreateVpc / DeleteVpc / DescribeVpcs | IPv4 `CidrBlock` from /16 to /28, `InstanceTenancy` `default` or `dedicated`, up to 5 VPCs per Region, each with a `default` security group; a VPC with subnets or other security groups cannot be deleted (`DependencyViolation`) |
-| CreateSubnet / DeleteSubnet / DescribeSubnets | A CIDR inside the VPC's that overlaps no other subnet, in a zone given by name or ID (the first by default); the available address count leaves out AWS's five reserved addresses |
-| CreateSecurityGroup / DeleteSecurityGroup / DescribeSecurityGroups | A group in `VpcId` or the default VPC, created with an allow-all egress rule; groups are found by ID or, in the default VPC, by name; a default group, or one that another group's rules name, cannot be deleted |
+| CreateSubnet / DeleteSubnet / DescribeSubnets | A CIDR inside the VPC's that overlaps no other subnet, in a zone given by name or ID (the first by default); the available address count leaves out AWS's five reserved addresses; a subnet with active instances cannot be deleted |
+| CreateSecurityGroup / DeleteSecurityGroup / DescribeSecurityGroups | A group in `VpcId` or the default VPC, created with an allow-all egress rule; groups are found by ID or, in the default VPC, by name; a default group, or one that another group's rules or an active instance use, cannot be deleted |
 | AuthorizeSecurityGroupIngress / AuthorizeSecurityGroupEgress | One rule per IPv4 or IPv6 CIDR, prefix list, or security group of the same account, with TCP and UDP ports from 0 to 65535, ICMP types and codes, or all traffic (`-1`); a rule that exists is `InvalidPermission.Duplicate`; up to 60 rules per direction |
 | RevokeSecurityGroupIngress / RevokeSecurityGroupEgress | By permission (those that match no rule come back in `UnknownIpPermissions`) or by `SecurityGroupRuleIds` |
 | DescribeSecurityGroupRules | Every rule with its ID, by `SecurityGroupRuleIds` or the `group-id` and `security-group-rule-id` filters |
 | CreateKeyPair / ImportKeyPair | An RSA (2048-bit, PKCS#1 PEM) or ED25519 (OpenSSH) key whose private key is returned once and never stored, or an imported OpenSSH public key; fingerprints follow EC2 (SHA-1 of created RSA keys, MD5 of imported ones, SHA-256 of ED25519 keys); the `ppk` format is not supported |
 | DescribeKeyPairs / DeleteKeyPair | By `KeyNames` or `KeyPairIds`, with the public key when `IncludePublicKey` is set; deleting a missing key pair succeeds |
-| DescribeNetworkInterfaces | Always empty, since TinyStack creates no network interfaces yet |
+| DescribeImages | A fixed catalog of public images in every Region: Amazon Linux 2023 (x86_64 and arm64), Amazon Linux 2, and Ubuntu 24.04 (amd64 and arm64), whose IDs depend only on the Region and name; by `ImageIds`, `Owners` (account IDs, `self`, `amazon`, `aws-marketplace`), and filters such as `name`, `architecture`, and `owner-alias` |
+| RunInstances | `MinCount` to `MaxCount` instances of a catalog image, in `SubnetId` or the default subnet of the `Placement` zone (the first by default), with `SecurityGroupIds` or `SecurityGroups` of the subnet's VPC (its default group by default), `KeyName`, `PrivateIpAddress`, `UserData`, `DisableApiTermination`, `InstanceInitiatedShutdownBehavior`, and `Monitoring`; the instance type's family and size must be known and match the image's architecture; each instance takes the next free private address of its subnet, and a public one when the subnet maps them; up to 20 active instances per Region, launching fewer than `MaxCount` rather than fewer than `MinCount`; a `ClientToken` already used returns its reservation |
+| DescribeInstances | Instances grouped by reservation, paged by instance; `InstanceIds` and `MaxResults` cannot be combined |
+| StartInstances / StopInstances / RebootInstances / TerminateInstances | Report the transitional state (`pending`, `stopping`, `shutting-down`) and then settle at once; a stopped instance loses its public address and gets a new one on start; a terminated one releases its addresses, stays visible for an hour, and cannot change again (`IncorrectInstanceState`); `DisableApiTermination` blocks termination (`OperationNotPermitted`) |
+| DescribeInstanceStatus | Running instances, whose checks always pass, or every instance with `IncludeAllInstances` (`not-applicable` when not running) |
+| DescribeNetworkInterfaces | Always empty, since TinyStack creates no network interfaces |
 | CreateTags / DeleteTags / DescribeTags | Up to 50 tags on any resource by ID, all in one change; `aws:` keys are reserved; DeleteTags removes the given keys (a key with a value only while it has that value), or every tag; DescribeTags filters by `key`, `value`, `resource-id`, and `resource-type` |
 
 The first request in an account and Region creates its default VPC
@@ -537,7 +547,9 @@ They also take `Filters`: filters are ANDed and a filter's values ORed, values
 match with `*` and `?` (escaped with a backslash), every resource supports
 `tag:<key>`, `tag-key`, and `tag-value`, and an unknown filter name is
 `InvalidParameterValue`. Create operations take `TagSpecifications` for the
-resource type they create.
+resource type they create. EC2 limits: no volumes, network interfaces, Elastic IPs, launch templates, instance
+attributes, spot or IAM instance profiles, route tables, internet gateways, or VPC attributes, so Terraform's
+`aws_instance` and `aws_vpc` cannot be applied yet.
 
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.
@@ -592,7 +604,7 @@ synchronously during PutEvents, and retries run in the background. IAM limits: n
 profiles, permissions boundaries, access key usage tracking, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, `aws:ec2:image` or other data
-types, public `/aws/service/...` parameters, shared parameters, or parameter quotas.
+types, shared parameters, or parameter quotas.
 KMS limits: no asymmetric, HMAC, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
 material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policies,
 `BatchGetSecretValue`, `GetRandomPassword`, or `SortBy`.
