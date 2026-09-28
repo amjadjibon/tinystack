@@ -27,6 +27,10 @@
       "path": "codegen/sdk-codegen/aws-models/ecs.json",
       "sha256": "c96219723d15095dd4aa668b30e9efcc092d50ea01a38cd631ee677255ba2684"
     },
+    "eks": {
+      "path": "codegen/sdk-codegen/aws-models/eks.json",
+      "sha256": "68a753313e55402162cb2187b54b4ed03ef6b997544a5adaa388e1eef3019595"
+    },
     "eventbridge": {
       "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
       "sha256": "55dc4532838b71926afff18b6ce7a11892c6f4aadc81f4036b983eea24c4a449"
