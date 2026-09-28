@@ -101,7 +101,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   ignored.
 - **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**, **services/logs**,
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
-  **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**: behavior only, with
+  **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**: behavior only, with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
   (DynamoDB items are separate records under `…/dynamodb/<table>/item/<key>`, and the table record keeps the item
@@ -204,6 +204,10 @@ a per-service `Dialect`), and delivers synchronously through
   reused), services under `…/ecs/service/<cluster>/<name>`, and tasks under `…/ecs/task/<cluster>/<ID>`. No
   container runs: `services.go` `reconcile` starts and stops task records so a service's primary deployment has its
   desired count, deleted clusters and services stay `INACTIVE`, and stopped tasks are purged after an hour.
+  EKS keeps clusters under `…/eks/cluster/<name>` and what a cluster owns under `…/eks/<kind>/<cluster>/…` (node
+  groups, Fargate profiles, add-ons, pod identity associations by ID, access entries by path-escaped principal ARN,
+  and updates, which always succeed at once and are recorded for `DescribeUpdate`). It holds the `*ec2.Service` and
+  calls `ec2.Service.Place` outside its own transactions to check subnets and security groups and learn their VPC.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
@@ -230,8 +234,8 @@ a per-service `Dialect`), and delivers synchronously through
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, plus Docker
-  Registry API calls) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, EKS over REST
+  JSON, plus Docker Registry API calls) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real

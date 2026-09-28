@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -76,7 +76,8 @@ topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, ob
 versions, and aliases, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
-clusters, capacity providers, task definitions, and services, tags
+clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
+profiles, add-ons, access entries and policy associations, and pod identity associations, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
@@ -93,6 +94,7 @@ provider "aws" {
     dynamodb       = "http://localhost:4566"
     ecr            = "http://localhost:4566"
     ecs            = "http://localhost:4566"
+    eks            = "http://localhost:4566"
     eventbridge    = "http://localhost:4566"
     iam            = "http://localhost:4566"
     kms            = "http://localhost:4566"
@@ -635,6 +637,27 @@ and Region.
 | CreateService / DescribeServices / UpdateService / DeleteService / ListServices | `REPLICA` services keep their desired count of tasks running; a new task definition, network configuration, platform version, capacity provider strategy, or `forceNewDeployment` replaces the tasks with a new primary deployment at once; a stopped task is replaced; deployment configuration defaults (200 and 100 percent, no circuit breaker); a deleted service reports `DRAINING`, then `INACTIVE` |
 | TagResource / UntagResource / ListTagsForResource | Clusters, services, task definitions, and tasks by ARN; `aws:` keys are reserved |
 
+### EKS (REST JSON)
+
+The EKS control plane API only: no Kubernetes API server runs, so `kubectl`
+cannot reach a cluster's endpoint. Clusters, node groups, Fargate profiles, and
+add-ons settle in `ACTIVE` at once, and every update succeeds when it is made.
+Subnets and security groups must exist in EC2, in one VPC.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateCluster / DescribeCluster / ListClusters / DeleteCluster | Kubernetes 1.30 to 1.35 (1.34 by default); subnets in at least two zones; endpoint access and public CIDRs, the service CIDR, control plane logging, `authenticationMode` with the creator's admin access entry, upgrade policy, zonal shift, deletion protection, secrets encryption (stored), and tags; each cluster gets an endpoint name, an OIDC issuer name, and a real self-signed certificate authority; a cluster with node groups or Fargate profiles cannot be deleted, and its add-ons, access entries, and pod identity associations go with it |
+| UpdateClusterConfig / UpdateClusterVersion / DescribeUpdate / ListUpdates | One kind of change per call (endpoint access, subnets and security groups, logging, authentication mode towards `API`, upgrade policy, zonal shift, deletion protection); versions move one minor version at a time |
+| DescribeClusterVersions | The supported versions and their support dates |
+| CreateNodegroup / DescribeNodegroup / ListNodegroups / DeleteNodegroup | EKS's defaults (`t3.medium`, AL2023, 20 GiB, 1 to 2 nodes wanting 2, `ON_DEMAND`); launch templates, labels, taints, remote access, update configuration, and tags; subnets in the cluster's VPC |
+| UpdateNodegroupConfig / UpdateNodegroupVersion | Labels, taints, scaling, and update configuration; a version up to the cluster's, a release version, or a launch template version |
+| CreateFargateProfile / DescribeFargateProfile / ListFargateProfiles / DeleteFargateProfile | Up to 5 namespace selectors with labels |
+| CreateAddon / DescribeAddon / ListAddons / UpdateAddon / DeleteAddon / DescribeAddonVersions | A catalog of `vpc-cni`, `coredns`, `kube-proxy` (whose version follows the cluster's), `aws-ebs-csi-driver`, `aws-efs-csi-driver`, `eks-pod-identity-agent`, and `amazon-cloudwatch-observability`, with service account roles and configuration values |
+| CreateAccessEntry / DescribeAccessEntry / ListAccessEntries / UpdateAccessEntry / DeleteAccessEntry | For clusters in `API` or `API_AND_CONFIG_MAP` mode; entry types, Kubernetes groups, and EKS's default user names |
+| AssociateAccessPolicy / DisassociateAccessPolicy / ListAssociatedAccessPolicies / ListAccessPolicies | EKS's five access policies with cluster or namespace scope, stored but never evaluated |
+| CreatePodIdentityAssociation / DescribePodIdentityAssociation / ListPodIdentityAssociations / UpdatePodIdentityAssociation / DeletePodIdentityAssociation | One per service account, with target roles and external IDs |
+| TagResource / UntagResource / ListTagsForResource | Every resource above by ARN |
+
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.
 Unmapped keys and unsigned requests use the default account. Signed regions take
@@ -698,7 +721,10 @@ providers, verification before attribute updates, or identity pools. ECR limits:
 mutability exclusions, registry policies, or layer garbage collection (a deleted image's layers stay until its
 repository is deleted). ECS limits: no containers run (so no logs, exit codes, or health checks), no container
 instances, load balancers, service discovery, Service Connect, placement constraints or strategies, custom
-capacity providers, task sets, `DAEMON` tasks, account settings, or execute command. STS limits: no `GetSessionToken`, federation, web identity, SAML,
+capacity providers, task sets, `DAEMON` tasks, account settings, or execute command. EKS limits: no
+Kubernetes API server, Auto Mode, Outposts, hybrid nodes, identity provider configurations, capabilities,
+insights, EKS Anywhere, add-on pod identity associations, cluster security group, log delivery to CloudWatch
+Logs, or IAM role checks. STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
