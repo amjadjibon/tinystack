@@ -148,8 +148,15 @@ func (s *Service) authenticate(
 		if err := requireFlow(c, flowAdminPassword, flow); err != nil {
 			return nil, err
 		}
-	case flow == "USER_SRP_AUTH" || flow == "CUSTOM_AUTH" || flow == "USER_AUTH":
-		return nil, invalidParameter("TinyStack does not support the %s flow; use a password flow.", flow)
+	case flow == "USER_SRP_AUTH":
+		if err := requireFlow(c, flowSRP, flow); err != nil {
+			return nil, err
+		}
+
+		return s.srpAuth(tx, scope, p, c, params)
+	case flow == "CUSTOM_AUTH" || flow == "USER_AUTH":
+		return nil, invalidParameter("TinyStack does not support the %s flow, which needs Lambda triggers or "+
+			"passwordless factors.", flow)
 	default:
 		return nil, invalidParameter("Invalid AuthFlow %s.", flow)
 	}
@@ -186,12 +193,51 @@ func (s *Service) passwordAuth(
 		return nil, hashErr
 	}
 
-	now := s.now().UTC()
 	switch {
 	case u.Disabled:
 		return nil, notAuthorized("User is disabled.")
 	case !checkPassword(u.Password, password):
 		return nil, notAuthorized("Incorrect username or password.")
+	}
+
+	return s.finishSignIn(ctx, tx, scope, p, c, u)
+}
+
+// srpAuth starts an SRP sign-in for the user USERNAME names.
+func (s *Service) srpAuth(
+	tx storage.WriteTx, scope request.Scope, p *pool, c *client, params map[string]string,
+) (*outcome, error) {
+	name := params[paramUsername]
+	if name == "" || params["SRP_A"] == "" {
+		return nil, invalidParameter("Missing required parameter USERNAME or SRP_A")
+	}
+
+	u, err := findSigningIn(tx, scope, p, c, name)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := params[paramSecretHash]
+	if hashErr := checkSecretHash(c, &hash, name, u.Username); hashErr != nil {
+		return nil, hashErr
+	}
+
+	if u.Disabled {
+		return nil, notAuthorized("User is disabled.")
+	}
+
+	return s.beginSRP(tx, scope, p, c, u, params["SRP_A"])
+}
+
+// finishSignIn signs in a user whose password checked out, unless its status
+// calls for something else first.
+func (s *Service) finishSignIn(
+	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, u *user,
+) (*outcome, error) {
+	now := s.now().UTC()
+	switch {
+	case u.Disabled:
+		return nil, notAuthorized("User is disabled.")
 	case u.Status == statusUnconfirmed:
 		return nil, awserror.New("UserNotConfirmedException", "User is not confirmed.")
 	case u.Status == statusReset:
@@ -311,8 +357,23 @@ func (s *Service) answer(
 	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, name, id *string,
 	responses map[string]string,
 ) (*outcome, error) {
-	if value(name) != challengeNewPassword {
-		return nil, invalidParameter("TinyStack answers only the %s challenge.", challengeNewPassword)
+	switch value(name) {
+	case challengeNewPassword:
+	case challengePasswordVerifier:
+		hash := responses[paramSecretHash]
+		u, err := s.checkSRP(tx, scope, p, c, responses)
+		if err != nil {
+			return nil, err
+		}
+
+		if hashErr := checkSecretHash(c, &hash, responses[paramUsername], u.Username); hashErr != nil {
+			return nil, hashErr
+		}
+
+		return s.finishSignIn(ctx, tx, scope, p, c, u)
+	default:
+		return nil, invalidParameter("TinyStack answers only the %s and %s challenges.", challengePasswordVerifier,
+			challengeNewPassword)
 	}
 
 	expired := notAuthorized("Invalid session for the user, session is expired.")

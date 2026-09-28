@@ -41,6 +41,10 @@ type user struct {
 	Username string
 	Status   string
 	Password []byte `json:",omitempty"`
+	// Salt and Verifier let the user sign in with SRP: the verifier is
+	// g^x for the password, in hex.
+	Salt     string `json:",omitempty"`
+	Verifier string `json:",omitempty"`
 	// History holds the hashes of earlier passwords the pool's password
 	// history keeps, newest first.
 	History [][]byte `json:",omitempty"`
@@ -422,6 +426,7 @@ func setPassword(p *pool, u *user, password string, permanent bool, now time.Tim
 	}
 
 	u.Password, u.PasswordExpires = hash, time.Time{}
+	u.Salt, u.Verifier = verifier(p.ID, u.Username, password)
 	delete(u.Codes, purposePassword)
 	if permanent {
 		u.Status = statusConfirmed
