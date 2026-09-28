@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"math/big"
 	"net/http"
@@ -369,6 +371,7 @@ func TestCognitoAdminAuth(t *testing.T) {
 	})
 	code(t, err, "InvalidParameterException")
 
+	// This client does not allow SRP.
 	_, err = users.InitiateAuth(ctx, &cip.InitiateAuthInput{
 		ClientId: clientID, AuthFlow: ciptypes.AuthFlowTypeUserSrpAuth,
 		AuthParameters: map[string]string{"USERNAME": "fay", "SRP_A": "1"},
@@ -488,4 +491,161 @@ func TestCognitoAdminAuth(t *testing.T) {
 	); status != http.StatusNotFound {
 		t.Fatalf("missing pool jwks = %d", status)
 	}
+}
+
+// srpClient is the client half of Cognito's SRP, written as the AWS client
+// libraries compute it.
+type srpClient struct {
+	a, bigA *big.Int
+	pool    string
+}
+
+var (
+	srpGroup, _ = new(
+		big.Int,
+	).SetString("FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B2"+
+		"2514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F4"+
+		"06B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F8365"+
+		"5D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86"+
+		"039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AAAC42DAD33170D"+
+		"04507A33A85521ABDF1CBA64ECFB850458DBEF0A8AEA71575D060C7DB3970F85A6E1E4C7ABF5AE8CDB0933D71E8C94E04A25619DCE"+
+		"E3D2261AD2EE6BF12FFA06D98A0864D87602733EC86A64521F2B18177B200CBBE117577A615D6C770988C0BAD946E208E24FA074E5"+
+		"AB3143DB5BFCE0FD108E4B82D120A93AD2CAFFFFFFFFFFFFFFFF", 16)
+	srpTwo = big.NewInt(2)
+)
+
+func srpPad(h string) string {
+	switch {
+	case len(h)%2 == 1:
+		return "0" + h
+	case strings.ContainsRune("89abcdef", rune(h[0])):
+		return "00" + h
+	}
+
+	return h
+}
+
+func srpHash(h string) *big.Int {
+	b, _ := hex.DecodeString(h)
+	sum := sha256.Sum256(b)
+	return new(big.Int).SetBytes(sum[:])
+}
+
+func newSRPClient(pool string) *srpClient {
+	a, _ := rand.Int(rand.Reader, srpGroup)
+	return &srpClient{a: a, bigA: new(big.Int).Exp(srpTwo, a, srpGroup), pool: pool}
+}
+
+// claim answers a PASSWORD_VERIFIER challenge for password.
+func (c *srpClient) claim(params map[string]string, password string) map[string]string {
+	userID, salt := params["USER_ID_FOR_SRP"], params["SALT"]
+	bigB, _ := new(big.Int).SetString(params["SRP_B"], 16)
+	k := srpHash(srpPad(srpGroup.Text(16)) + srpPad(srpTwo.Text(16)))
+	u := srpHash(srpPad(c.bigA.Text(16)) + srpPad(bigB.Text(16)))
+	_, name, _ := strings.Cut(c.pool, "_")
+	inner := sha256.Sum256([]byte(name + userID + ":" + password))
+	x := srpHash(srpPad(salt) + hex.EncodeToString(inner[:]))
+	// S = (B - k·g^x)^(a + u·x)
+	base := new(big.Int).Sub(bigB, new(big.Int).Mul(k, new(big.Int).Exp(srpTwo, x, srpGroup)))
+	base.Mod(base, srpGroup)
+	exp := new(big.Int).Add(c.a, new(big.Int).Mul(u, x))
+	s := new(big.Int).Exp(base, exp, srpGroup)
+	ikm, _ := hex.DecodeString(srpPad(s.Text(16)))
+	hkdfSalt, _ := hex.DecodeString(srpPad(u.Text(16)))
+	prk := hmac.New(sha256.New, hkdfSalt)
+	prk.Write(ikm)
+	okm := hmac.New(sha256.New, prk.Sum(nil))
+	okm.Write([]byte("Caldera Derived Key\x01"))
+	block, _ := base64.StdEncoding.DecodeString(params["SECRET_BLOCK"])
+	timestamp := "Sat Sep 7 04:05:06 UTC 2026"
+	mac := hmac.New(sha256.New, okm.Sum(nil)[:16])
+	mac.Write([]byte(name + userID))
+	mac.Write(block)
+	mac.Write([]byte(timestamp))
+	return map[string]string{
+		"USERNAME": userID, "PASSWORD_CLAIM_SECRET_BLOCK": params["SECRET_BLOCK"], "TIMESTAMP": timestamp,
+		"PASSWORD_CLAIM_SIGNATURE": base64.StdEncoding.EncodeToString(mac.Sum(nil)),
+	}
+}
+
+func TestCognitoSRP(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	admin := cognitoClient(s, "test", "us-east-1")
+	users := anonymousCognito(s)
+	pool := createPool(t, admin, "srp", &cip.CreateUserPoolInput{
+		UsernameAttributes: []ciptypes.UsernameAttributeType{ciptypes.UsernameAttributeTypeEmail},
+	})
+	poolID := aws.ToString(pool.Id)
+
+	// A client without ExplicitAuthFlows allows SRP and refreshing.
+	created, err := admin.CreateUserPoolClient(ctx, &cip.CreateUserPoolClientInput{
+		UserPoolId: pool.Id, ClientName: aws.String("spa"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clientID := created.UserPoolClient.ClientId
+	if _, err = admin.AdminCreateUser(ctx, &cip.AdminCreateUserInput{
+		UserPoolId: pool.Id, Username: aws.String("gus@example.com"), TemporaryPassword: aws.String("Temp0rary!"),
+		MessageAction: ciptypes.MessageActionTypeSuppress,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	srpSignIn := func(password string) (*cip.RespondToAuthChallengeOutput, error) {
+		client := newSRPClient(poolID)
+		started, startErr := users.InitiateAuth(ctx, &cip.InitiateAuthInput{
+			ClientId: clientID, AuthFlow: ciptypes.AuthFlowTypeUserSrpAuth,
+			AuthParameters: map[string]string{"USERNAME": "gus@example.com", "SRP_A": client.bigA.Text(16)},
+		})
+		if startErr != nil {
+			t.Fatal(startErr)
+		}
+
+		if started.ChallengeName != ciptypes.ChallengeNameTypePasswordVerifier ||
+			started.ChallengeParameters["USER_ID_FOR_SRP"] == "gus@example.com" {
+			t.Fatalf("challenge = %+v", started)
+		}
+
+		return users.RespondToAuthChallenge(ctx, &cip.RespondToAuthChallengeInput{
+			ClientId: clientID, ChallengeName: ciptypes.ChallengeNameTypePasswordVerifier,
+			ChallengeResponses: client.claim(started.ChallengeParameters, password),
+		})
+	}
+
+	_, err = srpSignIn("Wrong-Passw0rd")
+	code(t, err, "NotAuthorizedException")
+
+	// The temporary password must be replaced first.
+	answered, err := srpSignIn("Temp0rary!")
+	if err != nil || answered.ChallengeName != ciptypes.ChallengeNameTypeNewPasswordRequired {
+		t.Fatalf("answered = %+v, %v", answered, err)
+	}
+
+	if _, err = users.RespondToAuthChallenge(ctx, &cip.RespondToAuthChallengeInput{
+		ClientId: clientID, ChallengeName: ciptypes.ChallengeNameTypeNewPasswordRequired, Session: answered.Session,
+		ChallengeResponses: map[string]string{"USERNAME": "gus@example.com", "NEW_PASSWORD": "Perm4nent!"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	signedIn, err := srpSignIn("Perm4nent!")
+	if err != nil || signedIn.AuthenticationResult == nil || signedIn.AuthenticationResult.RefreshToken == nil {
+		t.Fatalf("signed in = %+v, %v", signedIn, err)
+	}
+
+	if claims := verifiedClaims(
+		t,
+		aws.ToString(signedIn.AuthenticationResult.IdToken),
+	); claims["email"] != "gus@example.com" {
+		t.Fatalf("id token = %+v", claims)
+	}
+
+	_, err = users.RespondToAuthChallenge(ctx, &cip.RespondToAuthChallengeInput{
+		ClientId: clientID, ChallengeName: ciptypes.ChallengeNameTypePasswordVerifier,
+		ChallengeResponses: map[string]string{"USERNAME": "gus@example.com", "PASSWORD_CLAIM_SECRET_BLOCK": "AAAA"},
+	})
+	code(t, err, "NotAuthorizedException")
 }
