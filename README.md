@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -74,8 +74,9 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, and aliases, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
-(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, and Cognito user pools, app
-clients, groups, and users, tags
+(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
+clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
+clusters, capacity providers, task definitions, and services, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
@@ -90,6 +91,8 @@ provider "aws" {
   endpoints {
     cognitoidp     = "http://localhost:4566"
     dynamodb       = "http://localhost:4566"
+    ecr            = "http://localhost:4566"
+    ecs            = "http://localhost:4566"
     eventbridge    = "http://localhost:4566"
     iam            = "http://localhost:4566"
     kms            = "http://localhost:4566"
@@ -134,8 +137,9 @@ curl -s http://localhost:4566/_tinystack/requests | jq '.requests[] | select(.er
 by service, operation, and HTTP status. Requests for an unknown operation have an
 empty `operation` label.
 
-`GET /_tinystack/resources` lists every queue, topic, table, bucket, function,
-event source mapping, and rule in every account and region, with its ARN, tags, and
+`GET /_tinystack/resources` lists every service's resources (queues, topics, tables, buckets, functions,
+event source mappings, rules, repositories, ECS clusters, and so on) in every account and region, each with its
+ARN, tags, and
 details: queue attributes and message counts, topic subscriptions, the table
 description, bucket object count and size, the function or mapping configuration,
 and the rule with its targets.
@@ -582,6 +586,55 @@ resource type they create. EC2 limits: no volumes, network interfaces, Elastic I
 attributes, spot or IAM instance profiles, route tables, internet gateways, or VPC attributes, so Terraform's
 `aws_instance` and `aws_vpc` cannot be applied yet.
 
+### ECR (AWS JSON 1.1, and the Docker Registry API)
+
+Repositories belong to the caller's account and Region, and their URIs name the
+endpoint the client used (`localhost:4566/<name>`), so Docker can push to them.
+Docker treats `localhost` and `127.0.0.0/8` registries as plain HTTP:
+
+```sh
+aws --endpoint-url http://localhost:4566 ecr create-repository --repository-name team/app
+aws --endpoint-url http://localhost:4566 ecr get-login-password |
+  docker login --username AWS --password-stdin localhost:4566
+docker tag app:latest localhost:4566/team/app:v1
+docker push localhost:4566/team/app:v1
+```
+
+TinyStack serves the registry API (`/v2/`) to requests that are not SigV4-signed,
+with the password from `GetAuthorizationToken` (12 hours) choosing the account and
+Region; the registry and the ECR API share the same images. An anonymous S3
+request to a bucket named `v2` is therefore the registry's.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateRepository / DescribeRepositories / DeleteRepository | Names with `/` path components, `imageTagMutability` `MUTABLE` or `IMMUTABLE`, `scanOnPush` (stored), `AES256` encryption, and tags; a repository with images is deleted only with `force`; DescribeRepositories pages with `maxResults` (up to 1000) and `nextToken` |
+| PutImageTagMutability / PutImageScanningConfiguration | Change those settings |
+| SetRepositoryPolicy / GetRepositoryPolicy / DeleteRepositoryPolicy | A JSON policy with a `Statement`, stored and returned as written, never evaluated |
+| PutLifecyclePolicy / GetLifecyclePolicy / DeleteLifecyclePolicy | Rules with `rulePriority`, `tagStatus` (`tagged` with `tagPrefixList` or `tagPatternList`, `untagged`, `any`), `imageCountMoreThan` or `sinceImagePushed` in days, and the `expire` action; the policy expires images when it is set and after every push, rather than within 24 hours, and never an image an index lists |
+| TagResource / UntagResource / ListTagsForResource | Repository tags by ARN |
+| GetAuthorizationToken | A `AWS:<password>` token for the caller's registry, with the endpoint as `proxyEndpoint` |
+| DescribeRegistry | The caller's registry, without replication |
+| InitiateLayerUpload / UploadLayerPart / CompleteLayerUpload / BatchCheckLayerAvailability | Layers uploaded in order in parts (each part within the 2 MiB request limit) and checked against their SHA-256 digest |
+| GetDownloadUrlForLayer | A registry URL for the layer whose user information carries a password that works for an hour |
+| PutImage / BatchGetImage / BatchDeleteImage | Docker schema 2 and OCI image manifests and indexes, whose layers or images must be in the repository; a tag moves between images unless tags are immutable; deleting an image's last tag deletes it; an image an index lists cannot be deleted; BatchGetImage records the pull time |
+| ListImages / DescribeImages | Filtered by `tagStatus`; image size (the layers), push and pull times, media types, and the OCI `subject` |
+
+### ECS (AWS JSON 1.1)
+
+No container runs: whatever their launch type, tasks settle in `RUNNING` or
+`STOPPED` at once, as EC2 instances do. Resources belong to the caller's account
+and Region.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateCluster / DescribeClusters / ListClusters / UpdateCluster / UpdateClusterSettings / DeleteCluster | The `default` cluster when none is named; `containerInsights`; tags; running task and active service counts; DescribeClusters returns tags and settings when `include`d; a deleted cluster is `INACTIVE` and its name can be reused; clusters with active services or running tasks cannot be deleted |
+| PutClusterCapacityProviders | `FARGATE` and `FARGATE_SPOT` with a default strategy |
+| RegisterTaskDefinition / DescribeTaskDefinition / DeregisterTaskDefinition / DeleteTaskDefinitions | Revisions that are never reused; containers with images, ports, environment, secrets, mounts, dependencies, health checks, log configuration, and limits; task sizes such as `1 vCPU` and `2 GB`; Fargate definitions need `awsvpc` and a Fargate size; ECS's defaults (essential containers, TCP ports published on the container port outside bridge mode); only `INACTIVE` revisions can be deleted |
+| ListTaskDefinitions / ListTaskDefinitionFamilies | By status and family prefix, in either order |
+| RunTask / DescribeTasks / ListTasks / StopTask | Up to 10 tasks by launch type or capacity provider strategy, with `awsvpc` network configurations, container overrides, `startedBy`, groups, tags (including propagated and ECS managed tags), and client tokens; Fargate tasks report platform version 1.4.0; stopped tasks are listed for an hour |
+| CreateService / DescribeServices / UpdateService / DeleteService / ListServices | `REPLICA` services keep their desired count of tasks running; a new task definition, network configuration, platform version, capacity provider strategy, or `forceNewDeployment` replaces the tasks with a new primary deployment at once; a stopped task is replaced; deployment configuration defaults (200 and 100 percent, no circuit breaker); a deleted service reports `DRAINING`, then `INACTIVE` |
+| TagResource / UntagResource / ListTagsForResource | Clusters, services, task definitions, and tasks by ARN; `aws:` keys are reserved |
+
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.
 Unmapped keys and unsigned requests use the default account. Signed regions take
@@ -641,7 +694,11 @@ material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Sec
 `BatchGetSecretValue`, `GetRandomPassword`, or `SortBy`.
 Cognito limits: no Lambda triggers, required MFA or MFA sign-in, custom or passwordless authentication (`CUSTOM_AUTH`,
 `USER_AUTH`), hosted UI or OAuth endpoints, resource servers, threat protection, device tracking, identity
-providers, verification before attribute updates, or identity pools. STS limits: no `GetSessionToken`, federation, web identity, SAML,
+providers, verification before attribute updates, or identity pools. ECR limits: no replication, pull-through cache, image scanning results, signing, KMS encryption, tag
+mutability exclusions, registry policies, or layer garbage collection (a deleted image's layers stay until its
+repository is deleted). ECS limits: no containers run (so no logs, exit codes, or health checks), no container
+instances, load balancers, service discovery, Service Connect, placement constraints or strategies, custom
+capacity providers, task sets, `DAEMON` tasks, account settings, or execute command. STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)

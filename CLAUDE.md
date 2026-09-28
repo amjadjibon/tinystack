@@ -101,7 +101,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   ignored.
 - **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**, **services/logs**,
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
-  **services/sts**, **services/ec2**, **services/cognitoidp**: behavior only, with
+  **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**: behavior only, with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
   (DynamoDB items are separate records under `…/dynamodb/<table>/item/<key>`, and the table record keeps the item
@@ -192,7 +192,19 @@ a per-service `Dialect`), and delivers synchronously through
   through unsigned in verify mode). Each pool lazily gets an RSA key that signs its RS256 JWTs; `Service.Documents`,
   mounted with `gateway.Server.UseDocuments`, serves `/<pool ID>/.well-known/{jwks.json,openid-configuration}`.
   Passwords are bcrypt hashes plus an SRP verifier (`srp.go`), and every code, invitation, and temporary password is
-  recorded in the `delivery.Log` after the change commits. CloudWatch Logs keeps each group under
+  recorded in the `delivery.Log` after the change commits. ECR keeps each repository under `…/ecr/repo/<name>` and the
+  images (manifest, tags, push and pull times), tag, layer, blob, and upload records it owns under
+  `…/ecr/<kind>/<path-escaped name>/…`, since names contain `/`; `lifecycle.go` applies a repository's lifecycle
+  policy in the transaction of every push and policy change. Registry passwords are the partition-wide
+  `aws/ecr/token/<SHA-256>` (account, region, expiry). The Docker Registry API is a protocol in the gateway
+  (`gateway/registry.go`, mounted with `Server.UseRegistry`), which serves `/v2/` to requests without SigV4 and calls
+  the `gateway.Registry` methods `ecr.Service` implements (`ecr/registry.go`) in the password's account and region.
+  ECS keeps clusters under `…/ecs/cluster/<name>`, task definition revisions under
+  `…/ecs/taskdef/<family>/<zero-padded revision>` (with `…/ecs/family/<family>` counting revisions, which are never
+  reused), services under `…/ecs/service/<cluster>/<name>`, and tasks under `…/ecs/task/<cluster>/<ID>`. No
+  container runs: `services.go` `reconcile` starts and stops task records so a service's primary deployment has its
+  desired count, deleted clusters and services stay `INACTIVE`, and stopped tasks are purged after an hour.
+  CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
   time order. Lambda writes every invocation's log (its own START/END/REPORT lines around the runtime's
@@ -218,7 +230,8 @@ a per-service `Dialect`), and delivers synchronously through
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, and Cognito over JSON 1.1) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, plus Docker
+  Registry API calls) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real
