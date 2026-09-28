@@ -43,6 +43,7 @@ type Server struct {
 	internal    map[string]http.Handler
 	credentials CredentialLookup
 	documents   Documents
+	registry    Registry
 	health      []byte
 	cfg         config.Config
 }
@@ -512,7 +513,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.serveDocument(w, r) {
+	if s.serveDocument(w, r) || s.serveRegistry(w, r) {
 		return
 	}
 
