@@ -4436,5 +4436,357 @@
         "IdToken"
       ]
     }
+  },
+  "ecr": {
+    "operations": [
+      "CreateRepository",
+      "DescribeRepositories",
+      "DeleteRepository",
+      "PutImageTagMutability",
+      "PutImageScanningConfiguration",
+      "SetRepositoryPolicy",
+      "GetRepositoryPolicy",
+      "DeleteRepositoryPolicy",
+      "PutLifecyclePolicy",
+      "GetLifecyclePolicy",
+      "DeleteLifecyclePolicy",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource",
+      "GetAuthorizationToken",
+      "DescribeRegistry",
+      "BatchCheckLayerAvailability",
+      "InitiateLayerUpload",
+      "UploadLayerPart",
+      "CompleteLayerUpload",
+      "GetDownloadUrlForLayer",
+      "PutImage",
+      "BatchGetImage",
+      "ListImages",
+      "DescribeImages",
+      "BatchDeleteImage"
+    ],
+    "shapes": {
+      "CreateRepositoryRequest": [
+        "registryId",
+        "repositoryName",
+        "tags",
+        "imageTagMutability",
+        "imageScanningConfiguration",
+        "encryptionConfiguration"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "ImageScanningConfiguration": [
+        "scanOnPush"
+      ],
+      "EncryptionConfiguration": [
+        "encryptionType",
+        "kmsKey"
+      ],
+      "CreateRepositoryResponse": [
+        "repository"
+      ],
+      "Repository": [
+        "repositoryArn",
+        "registryId",
+        "repositoryName",
+        "repositoryUri",
+        "createdAt",
+        "imageTagMutability",
+        "imageScanningConfiguration",
+        "encryptionConfiguration"
+      ],
+      "DescribeRepositoriesRequest": [
+        "registryId",
+        "repositoryNames",
+        "nextToken",
+        "maxResults"
+      ],
+      "DescribeRepositoriesResponse": [
+        "repositories",
+        "nextToken"
+      ],
+      "DeleteRepositoryRequest": [
+        "registryId",
+        "repositoryName",
+        "force"
+      ],
+      "DeleteRepositoryResponse": [
+        "repository"
+      ],
+      "PutImageTagMutabilityRequest": [
+        "registryId",
+        "repositoryName",
+        "imageTagMutability"
+      ],
+      "PutImageTagMutabilityResponse": [
+        "registryId",
+        "repositoryName",
+        "imageTagMutability"
+      ],
+      "PutImageScanningConfigurationRequest": [
+        "registryId",
+        "repositoryName",
+        "imageScanningConfiguration"
+      ],
+      "PutImageScanningConfigurationResponse": [
+        "registryId",
+        "repositoryName",
+        "imageScanningConfiguration"
+      ],
+      "SetRepositoryPolicyRequest": [
+        "registryId",
+        "repositoryName",
+        "policyText",
+        "force"
+      ],
+      "SetRepositoryPolicyResponse": [
+        "registryId",
+        "repositoryName",
+        "policyText"
+      ],
+      "GetRepositoryPolicyRequest": [
+        "registryId",
+        "repositoryName"
+      ],
+      "GetRepositoryPolicyResponse": [
+        "registryId",
+        "repositoryName",
+        "policyText"
+      ],
+      "DeleteRepositoryPolicyRequest": [
+        "registryId",
+        "repositoryName"
+      ],
+      "DeleteRepositoryPolicyResponse": [
+        "registryId",
+        "repositoryName",
+        "policyText"
+      ],
+      "PutLifecyclePolicyRequest": [
+        "registryId",
+        "repositoryName",
+        "lifecyclePolicyText"
+      ],
+      "PutLifecyclePolicyResponse": [
+        "registryId",
+        "repositoryName",
+        "lifecyclePolicyText"
+      ],
+      "GetLifecyclePolicyRequest": [
+        "registryId",
+        "repositoryName"
+      ],
+      "GetLifecyclePolicyResponse": [
+        "registryId",
+        "repositoryName",
+        "lifecyclePolicyText",
+        "lastEvaluatedAt"
+      ],
+      "DeleteLifecyclePolicyRequest": [
+        "registryId",
+        "repositoryName"
+      ],
+      "DeleteLifecyclePolicyResponse": [
+        "registryId",
+        "repositoryName",
+        "lifecyclePolicyText",
+        "lastEvaluatedAt"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "GetAuthorizationTokenResponse": [
+        "authorizationData"
+      ],
+      "AuthorizationData": [
+        "authorizationToken",
+        "expiresAt",
+        "proxyEndpoint"
+      ],
+      "DescribeRegistryResponse": [
+        "registryId",
+        "replicationConfiguration"
+      ],
+      "ReplicationConfiguration": [
+        "rules"
+      ],
+      "ReplicationRule": [
+        "destinations",
+        "repositoryFilters"
+      ],
+      "ReplicationDestination": [
+        "region",
+        "registryId"
+      ],
+      "RepositoryFilter": [
+        "filter",
+        "filterType"
+      ],
+      "BatchCheckLayerAvailabilityRequest": [
+        "registryId",
+        "repositoryName",
+        "layerDigests"
+      ],
+      "BatchCheckLayerAvailabilityResponse": [
+        "layers",
+        "failures"
+      ],
+      "Layer": [
+        "layerDigest",
+        "layerAvailability",
+        "layerSize",
+        "mediaType"
+      ],
+      "LayerFailure": [
+        "layerDigest",
+        "failureCode",
+        "failureReason"
+      ],
+      "InitiateLayerUploadRequest": [
+        "registryId",
+        "repositoryName"
+      ],
+      "InitiateLayerUploadResponse": [
+        "uploadId",
+        "partSize"
+      ],
+      "UploadLayerPartRequest": [
+        "registryId",
+        "repositoryName",
+        "uploadId",
+        "partFirstByte",
+        "partLastByte",
+        "layerPartBlob"
+      ],
+      "UploadLayerPartResponse": [
+        "registryId",
+        "repositoryName",
+        "uploadId",
+        "lastByteReceived"
+      ],
+      "CompleteLayerUploadRequest": [
+        "registryId",
+        "repositoryName",
+        "uploadId",
+        "layerDigests"
+      ],
+      "CompleteLayerUploadResponse": [
+        "registryId",
+        "repositoryName",
+        "uploadId",
+        "layerDigest"
+      ],
+      "GetDownloadUrlForLayerRequest": [
+        "registryId",
+        "repositoryName",
+        "layerDigest"
+      ],
+      "GetDownloadUrlForLayerResponse": [
+        "downloadUrl",
+        "layerDigest"
+      ],
+      "PutImageRequest": [
+        "registryId",
+        "repositoryName",
+        "imageManifest",
+        "imageManifestMediaType",
+        "imageTag",
+        "imageDigest"
+      ],
+      "PutImageResponse": [
+        "image"
+      ],
+      "Image": [
+        "registryId",
+        "repositoryName",
+        "imageId",
+        "imageManifest",
+        "imageManifestMediaType"
+      ],
+      "ImageIdentifier": [
+        "imageDigest",
+        "imageTag"
+      ],
+      "BatchGetImageRequest": [
+        "registryId",
+        "repositoryName",
+        "imageIds",
+        "acceptedMediaTypes"
+      ],
+      "BatchGetImageResponse": [
+        "images",
+        "failures"
+      ],
+      "ImageFailure": [
+        "imageId",
+        "failureCode",
+        "failureReason"
+      ],
+      "ListImagesRequest": [
+        "registryId",
+        "repositoryName",
+        "nextToken",
+        "maxResults",
+        "filter"
+      ],
+      "ListImagesFilter": [
+        "tagStatus"
+      ],
+      "ListImagesResponse": [
+        "imageIds",
+        "nextToken"
+      ],
+      "DescribeImagesRequest": [
+        "registryId",
+        "repositoryName",
+        "imageIds",
+        "nextToken",
+        "maxResults",
+        "filter"
+      ],
+      "DescribeImagesFilter": [
+        "tagStatus"
+      ],
+      "DescribeImagesResponse": [
+        "imageDetails",
+        "nextToken"
+      ],
+      "ImageDetail": [
+        "registryId",
+        "repositoryName",
+        "imageDigest",
+        "imageTags",
+        "imageSizeInBytes",
+        "imagePushedAt",
+        "imageManifestMediaType",
+        "artifactMediaType",
+        "lastRecordedPullTime",
+        "subjectManifestDigest"
+      ],
+      "BatchDeleteImageRequest": [
+        "registryId",
+        "repositoryName",
+        "imageIds"
+      ],
+      "BatchDeleteImageResponse": [
+        "imageIds",
+        "failures"
+      ]
+    }
   }
 }

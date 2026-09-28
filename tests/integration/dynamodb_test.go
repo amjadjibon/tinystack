@@ -24,6 +24,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
+	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -41,6 +42,7 @@ import (
 	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	compute "github.com/amjadjibon/tinystack/internal/services/ec2"
+	containers "github.com/amjadjibon/tinystack/internal/services/ecr"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -123,6 +125,7 @@ func serverStore(
 	roles := principals.New(store)
 	stsService := tokens.New(store, roles)
 	userPools := identities.New(store, deliveries)
+	repositories := containers.New(store)
 	ssmService := parameters.New(store, keys)
 	ssmService.UsePublicParameters(compute.PublicParameters)
 	h, err := gateway.New(
@@ -143,6 +146,7 @@ func serverStore(
 		kmsapi.Descriptor(keys),
 		ec2api.Descriptor(compute.New(store)),
 		cognitoidpapi.Descriptor(userPools),
+		ecrapi.Descriptor(repositories),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -150,6 +154,7 @@ func serverStore(
 
 	h.UseCredentials(stsService.Credentials)
 	h.UseDocuments(userPools.Documents)
+	h.UseRegistry(repositories)
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)

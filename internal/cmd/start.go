@@ -20,6 +20,7 @@ import (
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
+	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -37,6 +38,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
+	"github.com/amjadjibon/tinystack/internal/services/ecr"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -128,6 +130,7 @@ func newStartCommand() *cobra.Command {
 			roles := iam.New(store)
 			tokens := sts.New(store, roles)
 			identities := cognitoidp.New(store, deliveries)
+			registry := ecr.New(store)
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -149,6 +152,7 @@ func newStartCommand() *cobra.Command {
 				kmsapi.Descriptor(keys),
 				ec2api.Descriptor(ec2.New(store)),
 				cognitoidpapi.Descriptor(identities),
+				ecrapi.Descriptor(registry),
 			)
 			if err != nil {
 				return err
@@ -156,6 +160,7 @@ func newStartCommand() *cobra.Command {
 
 			handler.UseCredentials(tokens.Credentials)
 			handler.UseDocuments(identities.Documents)
+			handler.UseRegistry(registry)
 			handler.Handle("deliveries", deliveries)
 
 			var listenConfig net.ListenConfig
