@@ -4788,5 +4788,572 @@
         "failures"
       ]
     }
+  },
+  "ecs": {
+    "operations": [
+      "CreateCluster",
+      "DescribeClusters",
+      "ListClusters",
+      "UpdateCluster",
+      "UpdateClusterSettings",
+      "PutClusterCapacityProviders",
+      "DeleteCluster",
+      "RegisterTaskDefinition",
+      "DescribeTaskDefinition",
+      "DeregisterTaskDefinition",
+      "ListTaskDefinitions",
+      "ListTaskDefinitionFamilies",
+      "DeleteTaskDefinitions",
+      "CreateService",
+      "DescribeServices",
+      "UpdateService",
+      "DeleteService",
+      "ListServices",
+      "RunTask",
+      "DescribeTasks",
+      "ListTasks",
+      "StopTask",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateClusterRequest": [
+        "clusterName",
+        "tags",
+        "settings",
+        "capacityProviders",
+        "defaultCapacityProviderStrategy"
+      ],
+      "CreateClusterResponse": [
+        "cluster"
+      ],
+      "Cluster": [
+        "clusterArn",
+        "clusterName",
+        "status",
+        "registeredContainerInstancesCount",
+        "runningTasksCount",
+        "pendingTasksCount",
+        "activeServicesCount",
+        "tags",
+        "settings",
+        "capacityProviders",
+        "defaultCapacityProviderStrategy"
+      ],
+      "ClusterSetting": [
+        "name",
+        "value"
+      ],
+      "CapacityProviderStrategyItem": [
+        "capacityProvider",
+        "weight",
+        "base"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ],
+      "DescribeClustersRequest": [
+        "clusters",
+        "include"
+      ],
+      "DescribeClustersResponse": [
+        "clusters",
+        "failures"
+      ],
+      "Failure": [
+        "arn",
+        "reason",
+        "detail"
+      ],
+      "ListClustersRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "ListClustersResponse": [
+        "clusterArns",
+        "nextToken"
+      ],
+      "UpdateClusterRequest": [
+        "cluster",
+        "settings"
+      ],
+      "UpdateClusterResponse": [
+        "cluster"
+      ],
+      "UpdateClusterSettingsRequest": [
+        "cluster",
+        "settings"
+      ],
+      "UpdateClusterSettingsResponse": [
+        "cluster"
+      ],
+      "PutClusterCapacityProvidersRequest": [
+        "cluster",
+        "capacityProviders",
+        "defaultCapacityProviderStrategy"
+      ],
+      "PutClusterCapacityProvidersResponse": [
+        "cluster"
+      ],
+      "DeleteClusterRequest": [
+        "cluster"
+      ],
+      "DeleteClusterResponse": [
+        "cluster"
+      ],
+      "RegisterTaskDefinitionRequest": [
+        "family",
+        "taskRoleArn",
+        "executionRoleArn",
+        "networkMode",
+        "containerDefinitions",
+        "volumes",
+        "requiresCompatibilities",
+        "cpu",
+        "memory",
+        "tags",
+        "pidMode",
+        "ipcMode",
+        "ephemeralStorage",
+        "runtimePlatform"
+      ],
+      "RegisterTaskDefinitionResponse": [
+        "taskDefinition",
+        "tags"
+      ],
+      "TaskDefinition": [
+        "taskDefinitionArn",
+        "containerDefinitions",
+        "family",
+        "taskRoleArn",
+        "executionRoleArn",
+        "networkMode",
+        "revision",
+        "volumes",
+        "status",
+        "compatibilities",
+        "runtimePlatform",
+        "requiresCompatibilities",
+        "cpu",
+        "memory",
+        "pidMode",
+        "ipcMode",
+        "registeredAt",
+        "deregisteredAt",
+        "deleteRequestedAt",
+        "registeredBy",
+        "ephemeralStorage"
+      ],
+      "ContainerDefinition": [
+        "name",
+        "image",
+        "cpu",
+        "memory",
+        "memoryReservation",
+        "links",
+        "portMappings",
+        "essential",
+        "entryPoint",
+        "command",
+        "environment",
+        "mountPoints",
+        "volumesFrom",
+        "secrets",
+        "dependsOn",
+        "startTimeout",
+        "stopTimeout",
+        "hostname",
+        "user",
+        "workingDirectory",
+        "disableNetworking",
+        "privileged",
+        "readonlyRootFilesystem",
+        "dnsServers",
+        "dockerLabels",
+        "ulimits",
+        "logConfiguration",
+        "healthCheck"
+      ],
+      "PortMapping": [
+        "containerPort",
+        "hostPort",
+        "protocol",
+        "name",
+        "appProtocol"
+      ],
+      "KeyValuePair": [
+        "name",
+        "value"
+      ],
+      "MountPoint": [
+        "sourceVolume",
+        "containerPath",
+        "readOnly"
+      ],
+      "VolumeFrom": [
+        "sourceContainer",
+        "readOnly"
+      ],
+      "Secret": [
+        "name",
+        "valueFrom"
+      ],
+      "ContainerDependency": [
+        "containerName",
+        "condition"
+      ],
+      "Ulimit": [
+        "name",
+        "softLimit",
+        "hardLimit"
+      ],
+      "LogConfiguration": [
+        "logDriver",
+        "options"
+      ],
+      "HealthCheck": [
+        "command",
+        "interval",
+        "timeout",
+        "retries",
+        "startPeriod"
+      ],
+      "Volume": [
+        "name",
+        "host"
+      ],
+      "HostVolumeProperties": [
+        "sourcePath"
+      ],
+      "EphemeralStorage": [
+        "sizeInGiB"
+      ],
+      "RuntimePlatform": [
+        "cpuArchitecture",
+        "operatingSystemFamily"
+      ],
+      "DescribeTaskDefinitionRequest": [
+        "taskDefinition",
+        "include"
+      ],
+      "DescribeTaskDefinitionResponse": [
+        "taskDefinition",
+        "tags"
+      ],
+      "DeregisterTaskDefinitionRequest": [
+        "taskDefinition"
+      ],
+      "DeregisterTaskDefinitionResponse": [
+        "taskDefinition"
+      ],
+      "ListTaskDefinitionsRequest": [
+        "familyPrefix",
+        "status",
+        "sort",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListTaskDefinitionsResponse": [
+        "taskDefinitionArns",
+        "nextToken"
+      ],
+      "ListTaskDefinitionFamiliesRequest": [
+        "familyPrefix",
+        "status",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListTaskDefinitionFamiliesResponse": [
+        "families",
+        "nextToken"
+      ],
+      "DeleteTaskDefinitionsRequest": [
+        "taskDefinitions"
+      ],
+      "DeleteTaskDefinitionsResponse": [
+        "taskDefinitions",
+        "failures"
+      ],
+      "CreateServiceRequest": [
+        "cluster",
+        "serviceName",
+        "taskDefinition",
+        "desiredCount",
+        "clientToken",
+        "launchType",
+        "capacityProviderStrategy",
+        "platformVersion",
+        "deploymentConfiguration",
+        "networkConfiguration",
+        "healthCheckGracePeriodSeconds",
+        "schedulingStrategy",
+        "deploymentController",
+        "tags",
+        "enableECSManagedTags",
+        "propagateTags",
+        "enableExecuteCommand",
+        "availabilityZoneRebalancing",
+        "vpcLatticeConfigurations"
+      ],
+      "CreateServiceResponse": [
+        "service"
+      ],
+      "Service": [
+        "serviceArn",
+        "serviceName",
+        "clusterArn",
+        "status",
+        "desiredCount",
+        "runningCount",
+        "pendingCount",
+        "launchType",
+        "capacityProviderStrategy",
+        "platformVersion",
+        "platformFamily",
+        "taskDefinition",
+        "deploymentConfiguration",
+        "deployments",
+        "events",
+        "createdAt",
+        "networkConfiguration",
+        "healthCheckGracePeriodSeconds",
+        "schedulingStrategy",
+        "deploymentController",
+        "tags",
+        "createdBy",
+        "enableECSManagedTags",
+        "propagateTags",
+        "enableExecuteCommand",
+        "availabilityZoneRebalancing"
+      ],
+      "DeploymentConfiguration": [
+        "deploymentCircuitBreaker",
+        "maximumPercent",
+        "minimumHealthyPercent"
+      ],
+      "DeploymentCircuitBreaker": [
+        "enable",
+        "rollback"
+      ],
+      "NetworkConfiguration": [
+        "awsvpcConfiguration"
+      ],
+      "AwsVpcConfiguration": [
+        "subnets",
+        "securityGroups",
+        "assignPublicIp"
+      ],
+      "DeploymentController": [
+        "type"
+      ],
+      "Deployment": [
+        "id",
+        "status",
+        "taskDefinition",
+        "desiredCount",
+        "pendingCount",
+        "runningCount",
+        "failedTasks",
+        "createdAt",
+        "updatedAt",
+        "capacityProviderStrategy",
+        "launchType",
+        "platformVersion",
+        "platformFamily",
+        "networkConfiguration",
+        "rolloutState",
+        "rolloutStateReason"
+      ],
+      "ServiceEvent": [
+        "id",
+        "createdAt",
+        "message"
+      ],
+      "DescribeServicesRequest": [
+        "cluster",
+        "services",
+        "include"
+      ],
+      "DescribeServicesResponse": [
+        "services",
+        "failures"
+      ],
+      "UpdateServiceRequest": [
+        "cluster",
+        "service",
+        "desiredCount",
+        "taskDefinition",
+        "capacityProviderStrategy",
+        "deploymentConfiguration",
+        "networkConfiguration",
+        "platformVersion",
+        "forceNewDeployment",
+        "healthCheckGracePeriodSeconds",
+        "enableExecuteCommand",
+        "enableECSManagedTags",
+        "propagateTags",
+        "availabilityZoneRebalancing",
+        "vpcLatticeConfigurations"
+      ],
+      "UpdateServiceResponse": [
+        "service"
+      ],
+      "DeleteServiceRequest": [
+        "cluster",
+        "service",
+        "force"
+      ],
+      "DeleteServiceResponse": [
+        "service"
+      ],
+      "ListServicesRequest": [
+        "cluster",
+        "nextToken",
+        "maxResults",
+        "launchType",
+        "schedulingStrategy"
+      ],
+      "ListServicesResponse": [
+        "serviceArns",
+        "nextToken"
+      ],
+      "RunTaskRequest": [
+        "capacityProviderStrategy",
+        "cluster",
+        "count",
+        "enableECSManagedTags",
+        "enableExecuteCommand",
+        "group",
+        "launchType",
+        "networkConfiguration",
+        "overrides",
+        "platformVersion",
+        "propagateTags",
+        "startedBy",
+        "tags",
+        "taskDefinition",
+        "clientToken"
+      ],
+      "RunTaskResponse": [
+        "tasks",
+        "failures"
+      ],
+      "Task": [
+        "availabilityZone",
+        "capacityProviderName",
+        "clusterArn",
+        "connectivity",
+        "connectivityAt",
+        "containers",
+        "cpu",
+        "createdAt",
+        "desiredStatus",
+        "enableExecuteCommand",
+        "executionStoppedAt",
+        "group",
+        "healthStatus",
+        "lastStatus",
+        "launchType",
+        "memory",
+        "overrides",
+        "platformVersion",
+        "platformFamily",
+        "pullStartedAt",
+        "pullStoppedAt",
+        "startedAt",
+        "startedBy",
+        "stopCode",
+        "stoppedAt",
+        "stoppedReason",
+        "stoppingAt",
+        "tags",
+        "taskArn",
+        "taskDefinitionArn",
+        "version"
+      ],
+      "Container": [
+        "containerArn",
+        "taskArn",
+        "name",
+        "image",
+        "runtimeId",
+        "lastStatus",
+        "exitCode",
+        "reason",
+        "networkBindings",
+        "healthStatus",
+        "cpu",
+        "memory",
+        "memoryReservation"
+      ],
+      "NetworkBinding": [
+        "bindIP",
+        "containerPort",
+        "hostPort",
+        "protocol"
+      ],
+      "TaskOverride": [
+        "containerOverrides",
+        "cpu",
+        "executionRoleArn",
+        "memory",
+        "taskRoleArn"
+      ],
+      "ContainerOverride": [
+        "name",
+        "command",
+        "environment",
+        "cpu",
+        "memory",
+        "memoryReservation"
+      ],
+      "DescribeTasksRequest": [
+        "cluster",
+        "tasks",
+        "include"
+      ],
+      "DescribeTasksResponse": [
+        "tasks",
+        "failures"
+      ],
+      "ListTasksRequest": [
+        "cluster",
+        "family",
+        "nextToken",
+        "maxResults",
+        "startedBy",
+        "serviceName",
+        "desiredStatus",
+        "launchType"
+      ],
+      "ListTasksResponse": [
+        "taskArns",
+        "nextToken"
+      ],
+      "StopTaskRequest": [
+        "cluster",
+        "task",
+        "reason"
+      ],
+      "StopTaskResponse": [
+        "task"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ]
+    }
   }
 }

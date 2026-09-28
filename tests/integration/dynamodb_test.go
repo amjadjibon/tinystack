@@ -25,6 +25,7 @@ import (
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
+	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -43,6 +44,7 @@ import (
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	compute "github.com/amjadjibon/tinystack/internal/services/ec2"
 	containers "github.com/amjadjibon/tinystack/internal/services/ecr"
+	orchestration "github.com/amjadjibon/tinystack/internal/services/ecs"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -147,6 +149,7 @@ func serverStore(
 		ec2api.Descriptor(compute.New(store)),
 		cognitoidpapi.Descriptor(userPools),
 		ecrapi.Descriptor(repositories),
+		ecsapi.Descriptor(orchestration.New(store)),
 	)
 	if err != nil {
 		t.Fatal(err)
