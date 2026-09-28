@@ -22,6 +22,7 @@ provider "aws" {
     ec2            = var.endpoint
     ecr            = var.endpoint
     ecs            = var.endpoint
+    eks            = var.endpoint
     eventbridge    = var.endpoint
     iam            = var.endpoint
     kms            = var.endpoint
@@ -259,6 +260,93 @@ resource "aws_ecs_service" "web" {
     subnets         = [data.aws_subnets.default.ids[0]]
     security_groups = [aws_security_group.web.id]
   }
+}
+
+resource "aws_iam_role" "eks" {
+  name = "eks"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = ["eks.amazonaws.com", "ec2.amazonaws.com", "eks-pods.amazonaws.com"] }
+      Action    = ["sts:AssumeRole", "sts:TagSession"]
+    }]
+  })
+}
+
+resource "aws_eks_cluster" "apps" {
+  name     = "apps"
+  role_arn = aws_iam_role.eks.arn
+  tags     = local.tags
+
+  vpc_config {
+    subnet_ids = data.aws_subnets.default.ids
+  }
+
+  access_config {
+    authentication_mode = "API"
+  }
+
+  enabled_cluster_log_types = ["api", "audit"]
+}
+
+resource "aws_eks_node_group" "workers" {
+  cluster_name    = aws_eks_cluster.apps.name
+  node_group_name = "workers"
+  node_role_arn   = aws_iam_role.eks.arn
+  subnet_ids      = data.aws_subnets.default.ids
+  labels          = { team = var.team }
+  tags            = local.tags
+
+  scaling_config {
+    desired_size = 2
+    min_size     = 1
+    max_size     = 3
+  }
+}
+
+resource "aws_eks_fargate_profile" "jobs" {
+  cluster_name           = aws_eks_cluster.apps.name
+  fargate_profile_name   = "jobs"
+  pod_execution_role_arn = aws_iam_role.eks.arn
+  subnet_ids             = data.aws_subnets.default.ids
+  tags                   = local.tags
+
+  selector {
+    namespace = "jobs"
+  }
+}
+
+resource "aws_eks_addon" "coredns" {
+  cluster_name = aws_eks_cluster.apps.name
+  addon_name   = "coredns"
+  tags         = local.tags
+}
+
+resource "aws_eks_access_entry" "ops" {
+  cluster_name      = aws_eks_cluster.apps.name
+  principal_arn     = aws_iam_role.lambda.arn
+  kubernetes_groups = ["ops"]
+  tags              = local.tags
+}
+
+resource "aws_eks_access_policy_association" "ops" {
+  cluster_name  = aws_eks_cluster.apps.name
+  principal_arn = aws_eks_access_entry.ops.principal_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+
+  access_scope {
+    type       = "namespace"
+    namespaces = [var.team]
+  }
+}
+
+resource "aws_eks_pod_identity_association" "app" {
+  cluster_name    = aws_eks_cluster.apps.name
+  namespace       = "default"
+  service_account = "app"
+  role_arn        = aws_iam_role.eks.arn
+  tags            = local.tags
 }
 
 data "aws_ecr_authorization_token" "registry" {}
