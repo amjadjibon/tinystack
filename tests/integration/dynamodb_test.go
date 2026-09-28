@@ -26,6 +26,7 @@ import (
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
+	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -45,6 +46,7 @@ import (
 	compute "github.com/amjadjibon/tinystack/internal/services/ec2"
 	containers "github.com/amjadjibon/tinystack/internal/services/ecr"
 	orchestration "github.com/amjadjibon/tinystack/internal/services/ecs"
+	kubernetes "github.com/amjadjibon/tinystack/internal/services/eks"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -128,6 +130,7 @@ func serverStore(
 	stsService := tokens.New(store, roles)
 	userPools := identities.New(store, deliveries)
 	repositories := containers.New(store)
+	network := compute.New(store)
 	ssmService := parameters.New(store, keys)
 	ssmService.UsePublicParameters(compute.PublicParameters)
 	h, err := gateway.New(
@@ -146,10 +149,11 @@ func serverStore(
 		secretsmanagerapi.Descriptor(secretsService),
 		logsapi.Descriptor(logGroups),
 		kmsapi.Descriptor(keys),
-		ec2api.Descriptor(compute.New(store)),
+		ec2api.Descriptor(network),
 		cognitoidpapi.Descriptor(userPools),
 		ecrapi.Descriptor(repositories),
 		ecsapi.Descriptor(orchestration.New(store)),
+		eksapi.Descriptor(kubernetes.New(store, network)),
 	)
 	if err != nil {
 		t.Fatal(err)

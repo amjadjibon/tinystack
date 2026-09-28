@@ -22,6 +22,7 @@ import (
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
+	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -41,6 +42,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
+	"github.com/amjadjibon/tinystack/internal/services/eks"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -133,6 +135,7 @@ func newStartCommand() *cobra.Command {
 			tokens := sts.New(store, roles)
 			identities := cognitoidp.New(store, deliveries)
 			registry := ecr.New(store)
+			network := ec2.New(store)
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -152,10 +155,11 @@ func newStartCommand() *cobra.Command {
 				secretsmanagerapi.Descriptor(secrets),
 				logsapi.Descriptor(logGroups),
 				kmsapi.Descriptor(keys),
-				ec2api.Descriptor(ec2.New(store)),
+				ec2api.Descriptor(network),
 				cognitoidpapi.Descriptor(identities),
 				ecrapi.Descriptor(registry),
 				ecsapi.Descriptor(ecs.New(store)),
+				eksapi.Descriptor(eks.New(store, network)),
 			)
 			if err != nil {
 				return err

@@ -5355,5 +5355,556 @@
         "tags"
       ]
     }
+  },
+  "eks": {
+    "operations": [
+      "CreateCluster",
+      "DescribeCluster",
+      "ListClusters",
+      "DeleteCluster",
+      "UpdateClusterConfig",
+      "UpdateClusterVersion",
+      "DescribeUpdate",
+      "ListUpdates",
+      "DescribeClusterVersions",
+      "CreateNodegroup",
+      "DescribeNodegroup",
+      "ListNodegroups",
+      "DeleteNodegroup",
+      "UpdateNodegroupConfig",
+      "UpdateNodegroupVersion",
+      "CreateFargateProfile",
+      "DescribeFargateProfile",
+      "ListFargateProfiles",
+      "DeleteFargateProfile",
+      "CreateAddon",
+      "DescribeAddon",
+      "ListAddons",
+      "UpdateAddon",
+      "DeleteAddon",
+      "DescribeAddonVersions",
+      "CreateAccessEntry",
+      "DescribeAccessEntry",
+      "ListAccessEntries",
+      "UpdateAccessEntry",
+      "DeleteAccessEntry",
+      "AssociateAccessPolicy",
+      "DisassociateAccessPolicy",
+      "ListAssociatedAccessPolicies",
+      "ListAccessPolicies",
+      "CreatePodIdentityAssociation",
+      "DescribePodIdentityAssociation",
+      "ListPodIdentityAssociations",
+      "UpdatePodIdentityAssociation",
+      "DeletePodIdentityAssociation",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateClusterRequest": [
+        "name",
+        "version",
+        "roleArn",
+        "resourcesVpcConfig",
+        "kubernetesNetworkConfig",
+        "logging",
+        "clientRequestToken",
+        "tags",
+        "encryptionConfig",
+        "accessConfig",
+        "bootstrapSelfManagedAddons",
+        "upgradePolicy",
+        "zonalShiftConfig",
+        "deletionProtection"
+      ],
+      "VpcConfigRequest": [
+        "subnetIds",
+        "securityGroupIds",
+        "endpointPublicAccess",
+        "endpointPrivateAccess",
+        "publicAccessCidrs"
+      ],
+      "KubernetesNetworkConfigRequest": [
+        "serviceIpv4Cidr",
+        "ipFamily"
+      ],
+      "Logging": [
+        "clusterLogging"
+      ],
+      "LogSetup": [
+        "types",
+        "enabled"
+      ],
+      "EncryptionConfig": [
+        "resources",
+        "provider"
+      ],
+      "Provider": [
+        "keyArn"
+      ],
+      "CreateAccessConfigRequest": [
+        "bootstrapClusterCreatorAdminPermissions",
+        "authenticationMode"
+      ],
+      "UpgradePolicyRequest": [
+        "supportType"
+      ],
+      "ZonalShiftConfigRequest": [
+        "enabled"
+      ],
+      "CreateClusterResponse": [
+        "cluster"
+      ],
+      "Cluster": [
+        "name",
+        "arn",
+        "createdAt",
+        "version",
+        "endpoint",
+        "roleArn",
+        "resourcesVpcConfig",
+        "kubernetesNetworkConfig",
+        "logging",
+        "identity",
+        "status",
+        "certificateAuthority",
+        "clientRequestToken",
+        "platformVersion",
+        "tags",
+        "encryptionConfig",
+        "id",
+        "health",
+        "accessConfig",
+        "upgradePolicy",
+        "zonalShiftConfig",
+        "deletionProtection"
+      ],
+      "VpcConfigResponse": [
+        "subnetIds",
+        "securityGroupIds",
+        "vpcId",
+        "endpointPublicAccess",
+        "endpointPrivateAccess",
+        "publicAccessCidrs"
+      ],
+      "KubernetesNetworkConfigResponse": [
+        "serviceIpv4Cidr",
+        "ipFamily"
+      ],
+      "Identity": [
+        "oidc"
+      ],
+      "OIDC": [
+        "issuer"
+      ],
+      "Certificate": [
+        "data"
+      ],
+      "ClusterHealth": [
+        "issues"
+      ],
+      "ClusterIssue": [
+        "code",
+        "message",
+        "resourceIds"
+      ],
+      "AccessConfigResponse": [
+        "bootstrapClusterCreatorAdminPermissions",
+        "authenticationMode"
+      ],
+      "UpgradePolicyResponse": [
+        "supportType"
+      ],
+      "ZonalShiftConfigResponse": [
+        "enabled"
+      ],
+      "ListClustersRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "UpdateClusterConfigRequest": [
+        "name",
+        "resourcesVpcConfig",
+        "logging",
+        "clientRequestToken",
+        "accessConfig",
+        "upgradePolicy",
+        "zonalShiftConfig",
+        "deletionProtection"
+      ],
+      "UpdateAccessConfigRequest": [
+        "authenticationMode"
+      ],
+      "UpdateClusterConfigResponse": [
+        "update"
+      ],
+      "Update": [
+        "id",
+        "status",
+        "type",
+        "params",
+        "createdAt",
+        "errors"
+      ],
+      "UpdateParam": [
+        "type",
+        "value"
+      ],
+      "ErrorDetail": [
+        "errorCode",
+        "errorMessage",
+        "resourceIds"
+      ],
+      "UpdateClusterVersionRequest": [
+        "name",
+        "version",
+        "clientRequestToken",
+        "force"
+      ],
+      "UpdateClusterVersionResponse": [
+        "update"
+      ],
+      "DescribeUpdateRequest": [
+        "name",
+        "updateId",
+        "nodegroupName",
+        "addonName"
+      ],
+      "ListUpdatesRequest": [
+        "name",
+        "nodegroupName",
+        "addonName",
+        "nextToken",
+        "maxResults"
+      ],
+      "DescribeClusterVersionsRequest": [
+        "clusterType",
+        "maxResults",
+        "nextToken",
+        "defaultOnly",
+        "includeAll",
+        "clusterVersions"
+      ],
+      "DescribeClusterVersionsResponse": [
+        "nextToken",
+        "clusterVersions"
+      ],
+      "ClusterVersionInformation": [
+        "clusterVersion",
+        "clusterType",
+        "defaultPlatformVersion",
+        "defaultVersion",
+        "releaseDate",
+        "endOfStandardSupportDate",
+        "endOfExtendedSupportDate",
+        "status",
+        "versionStatus",
+        "kubernetesPatchVersion"
+      ],
+      "CreateNodegroupRequest": [
+        "clusterName",
+        "nodegroupName",
+        "scalingConfig",
+        "diskSize",
+        "subnets",
+        "instanceTypes",
+        "amiType",
+        "remoteAccess",
+        "nodeRole",
+        "labels",
+        "taints",
+        "tags",
+        "clientRequestToken",
+        "launchTemplate",
+        "updateConfig",
+        "capacityType",
+        "version",
+        "releaseVersion"
+      ],
+      "NodegroupScalingConfig": [
+        "minSize",
+        "maxSize",
+        "desiredSize"
+      ],
+      "RemoteAccessConfig": [
+        "ec2SshKey",
+        "sourceSecurityGroups"
+      ],
+      "Taint": [
+        "key",
+        "value",
+        "effect"
+      ],
+      "LaunchTemplateSpecification": [
+        "name",
+        "version",
+        "id"
+      ],
+      "NodegroupUpdateConfig": [
+        "maxUnavailable",
+        "maxUnavailablePercentage"
+      ],
+      "CreateNodegroupResponse": [
+        "nodegroup"
+      ],
+      "Nodegroup": [
+        "nodegroupName",
+        "nodegroupArn",
+        "clusterName",
+        "version",
+        "releaseVersion",
+        "createdAt",
+        "modifiedAt",
+        "status",
+        "capacityType",
+        "scalingConfig",
+        "instanceTypes",
+        "subnets",
+        "remoteAccess",
+        "amiType",
+        "nodeRole",
+        "labels",
+        "taints",
+        "resources",
+        "diskSize",
+        "health",
+        "updateConfig",
+        "launchTemplate",
+        "tags"
+      ],
+      "NodegroupResources": [
+        "autoScalingGroups",
+        "remoteAccessSecurityGroup"
+      ],
+      "AutoScalingGroup": [
+        "name"
+      ],
+      "NodegroupHealth": [
+        "issues"
+      ],
+      "Issue": [
+        "code",
+        "message",
+        "resourceIds"
+      ],
+      "UpdateNodegroupConfigRequest": [
+        "clusterName",
+        "nodegroupName",
+        "labels",
+        "taints",
+        "scalingConfig",
+        "updateConfig",
+        "clientRequestToken"
+      ],
+      "UpdateLabelsPayload": [
+        "addOrUpdateLabels",
+        "removeLabels"
+      ],
+      "UpdateTaintsPayload": [
+        "addOrUpdateTaints",
+        "removeTaints"
+      ],
+      "UpdateNodegroupVersionRequest": [
+        "clusterName",
+        "nodegroupName",
+        "version",
+        "releaseVersion",
+        "launchTemplate",
+        "force",
+        "clientRequestToken"
+      ],
+      "CreateFargateProfileRequest": [
+        "fargateProfileName",
+        "clusterName",
+        "podExecutionRoleArn",
+        "subnets",
+        "selectors",
+        "clientRequestToken",
+        "tags"
+      ],
+      "FargateProfileSelector": [
+        "namespace",
+        "labels"
+      ],
+      "FargateProfile": [
+        "fargateProfileName",
+        "fargateProfileArn",
+        "clusterName",
+        "createdAt",
+        "podExecutionRoleArn",
+        "subnets",
+        "selectors",
+        "status",
+        "tags",
+        "health"
+      ],
+      "FargateProfileHealth": [
+        "issues"
+      ],
+      "FargateProfileIssue": [
+        "code",
+        "message",
+        "resourceIds"
+      ],
+      "CreateAddonRequest": [
+        "clusterName",
+        "addonName",
+        "addonVersion",
+        "serviceAccountRoleArn",
+        "resolveConflicts",
+        "clientRequestToken",
+        "tags",
+        "configurationValues"
+      ],
+      "Addon": [
+        "addonName",
+        "clusterName",
+        "status",
+        "addonVersion",
+        "health",
+        "addonArn",
+        "createdAt",
+        "modifiedAt",
+        "serviceAccountRoleArn",
+        "tags",
+        "publisher",
+        "owner",
+        "configurationValues"
+      ],
+      "AddonHealth": [
+        "issues"
+      ],
+      "AddonIssue": [
+        "code",
+        "message",
+        "resourceIds"
+      ],
+      "UpdateAddonRequest": [
+        "clusterName",
+        "addonName",
+        "addonVersion",
+        "serviceAccountRoleArn",
+        "resolveConflicts",
+        "clientRequestToken",
+        "configurationValues"
+      ],
+      "DescribeAddonVersionsRequest": [
+        "kubernetesVersion",
+        "maxResults",
+        "nextToken",
+        "addonName",
+        "types",
+        "publishers",
+        "owners"
+      ],
+      "AddonInfo": [
+        "addonName",
+        "type",
+        "addonVersions",
+        "publisher",
+        "owner",
+        "defaultNamespace"
+      ],
+      "AddonVersionInfo": [
+        "addonVersion",
+        "architecture",
+        "computeTypes",
+        "compatibilities",
+        "requiresConfiguration",
+        "requiresIamPermissions"
+      ],
+      "Compatibility": [
+        "clusterVersion",
+        "platformVersions",
+        "defaultVersion"
+      ],
+      "CreateAccessEntryRequest": [
+        "clusterName",
+        "principalArn",
+        "kubernetesGroups",
+        "tags",
+        "clientRequestToken",
+        "username",
+        "type"
+      ],
+      "AccessEntry": [
+        "clusterName",
+        "principalArn",
+        "kubernetesGroups",
+        "accessEntryArn",
+        "createdAt",
+        "modifiedAt",
+        "tags",
+        "username",
+        "type"
+      ],
+      "UpdateAccessEntryRequest": [
+        "clusterName",
+        "principalArn",
+        "kubernetesGroups",
+        "clientRequestToken",
+        "username"
+      ],
+      "AssociateAccessPolicyRequest": [
+        "clusterName",
+        "principalArn",
+        "policyArn",
+        "accessScope"
+      ],
+      "AccessScope": [
+        "type",
+        "namespaces"
+      ],
+      "AssociatedAccessPolicy": [
+        "policyArn",
+        "accessScope",
+        "associatedAt",
+        "modifiedAt"
+      ],
+      "AccessPolicy": [
+        "name",
+        "arn"
+      ],
+      "CreatePodIdentityAssociationRequest": [
+        "clusterName",
+        "namespace",
+        "serviceAccount",
+        "roleArn",
+        "clientRequestToken",
+        "tags",
+        "disableSessionTags",
+        "targetRoleArn"
+      ],
+      "PodIdentityAssociation": [
+        "clusterName",
+        "namespace",
+        "serviceAccount",
+        "roleArn",
+        "associationArn",
+        "associationId",
+        "tags",
+        "createdAt",
+        "modifiedAt",
+        "disableSessionTags",
+        "targetRoleArn",
+        "externalId"
+      ],
+      "PodIdentityAssociationSummary": [
+        "clusterName",
+        "namespace",
+        "serviceAccount",
+        "associationArn",
+        "associationId"
+      ],
+      "UpdatePodIdentityAssociationRequest": [
+        "clusterName",
+        "associationId",
+        "roleArn",
+        "clientRequestToken",
+        "disableSessionTags",
+        "targetRoleArn"
+      ]
+    }
   }
 }
