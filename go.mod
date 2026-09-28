@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.43.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.336.1
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.66.1
+	github.com/aws/aws-sdk-go-v2/service/ecs v1.99.1
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.54.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.64.0
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.1

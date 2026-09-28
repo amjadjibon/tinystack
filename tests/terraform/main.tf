@@ -21,6 +21,7 @@ provider "aws" {
     dynamodb       = var.endpoint
     ec2            = var.endpoint
     ecr            = var.endpoint
+    ecs            = var.endpoint
     eventbridge    = var.endpoint
     iam            = var.endpoint
     kms            = var.endpoint
@@ -205,6 +206,59 @@ resource "aws_ecr_repository_policy" "app" {
       Action    = ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"]
     }]
   })
+}
+
+resource "aws_ecs_cluster" "apps" {
+  name = "apps"
+  tags = local.tags
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+}
+
+resource "aws_ecs_cluster_capacity_providers" "apps" {
+  cluster_name       = aws_ecs_cluster.apps.name
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    weight            = 1
+    base              = 1
+  }
+}
+
+# Each team's image runs as a new revision.
+resource "aws_ecs_task_definition" "web" {
+  family                   = "web"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  tags                     = local.tags
+
+  container_definitions = jsonencode([{
+    name         = "web"
+    image        = "${aws_ecr_repository.app.repository_url}:${var.team}"
+    essential    = true
+    portMappings = [{ containerPort = 8080, protocol = "tcp" }]
+    environment  = [{ name = "TEAM", value = var.team }]
+  }])
+}
+
+resource "aws_ecs_service" "web" {
+  name            = "web"
+  cluster         = aws_ecs_cluster.apps.id
+  task_definition = aws_ecs_task_definition.web.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+  tags            = local.tags
+
+  network_configuration {
+    subnets         = [data.aws_subnets.default.ids[0]]
+    security_groups = [aws_security_group.web.id]
+  }
 }
 
 data "aws_ecr_authorization_token" "registry" {}
