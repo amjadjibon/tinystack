@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, and EC2 endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -74,7 +74,8 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, and aliases, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
-(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), and IAM roles, users, groups, their inline and attached policies, and managed policies, tags
+(including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, and Cognito user pools, app
+clients, groups, and users, tags
 included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
@@ -87,6 +88,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    cognitoidp     = "http://localhost:4566"
     dynamodb       = "http://localhost:4566"
     eventbridge    = "http://localhost:4566"
     iam            = "http://localhost:4566"
@@ -140,7 +142,8 @@ and the rule with its targets.
 
 `GET /_tinystack/deliveries` lists the last 256 messages services handed to each other:
 SNS fan-out to queues and functions, S3 event notifications, EventBridge targets, each asynchronous Lambda
-attempt, and each event source mapping batch. Every record has the source and target
+attempt, each event source mapping batch, and every Cognito message (verification codes, invitations, and
+temporary passwords, which TinyStack never sends). Every record has the source and target
 ARNs, `delivered` or `failed` with the error, and the first 4 KiB of the payload. AWS
 never reports these failures to the publisher, so this is where a message that went
 nowhere shows up. `DELETE` clears the list.
@@ -512,6 +515,34 @@ The reserved `<aws.events.rule-arn>`, `<aws.events.rule-name>`,
 `<aws.events.event.json>` are also available, and unknown placeholders are left as
 written.
 
+### Cognito user pools (AWS JSON 1.1)
+
+User pools belong to the caller's account and Region. Sign-in operations
+(`SignUp`, `InitiateAuth`, `ConfirmSignUp`, `GetUser`, and the other operations the
+model marks as not needing credentials) are served unsigned even in verify mode,
+and find the pool through the app client or access token.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateUserPool / DescribeUserPool / UpdateUserPool / DeleteUserPool / ListUserPools | Password policy (with `PasswordHistorySize`), `UsernameAttributes` or `AliasAttributes`, `UsernameConfiguration`, `AutoVerifiedAttributes`, the standard schema plus custom attributes, verification and invitation messages, `AccountRecoverySetting`, `AdminCreateUserConfig`, `UserAttributeUpdateSettings`, `DeletionProtection`, and `UserPoolTags`; UpdateUserPool resets omitted settings to their defaults, as AWS does; pages of up to 60 |
+| AddCustomAttributes | Up to 50 `custom:` attributes (string or number, with constraints and mutability) |
+| GetUserPoolMfaConfig / SetUserPoolMfaConfig | `OFF`, or `OPTIONAL` with software-token MFA stored; required MFA is rejected |
+| CreateUserPoolClient / DescribeUserPoolClient / UpdateUserPoolClient / DeleteUserPoolClient / ListUserPoolClients | `GenerateSecret`, `ExplicitAuthFlows` (legacy names mapped), token validity and units, `AuthSessionValidity`, read and write attributes, `PreventUserExistenceErrors`, `EnableTokenRevocation`, and the OAuth settings (stored; there is no hosted UI) |
+| TagResource / UntagResource / ListTagsForResource | Tags on a user pool by ARN |
+| AdminCreateUser | Invites a user with a generated or given temporary password (`FORCE_CHANGE_PASSWORD`), by email or SMS, or `RESEND` / `SUPPRESS` |
+| AdminGetUser / AdminDeleteUser / ListUsers | ListUsers takes `AttributesToGet` and a `Filter` (`=` or `^=` on the documented attributes) |
+| AdminUpdateUserAttributes / AdminDeleteUserAttributes / AdminSetUserPassword / AdminEnableUser / AdminDisableUser / AdminConfirmSignUp / AdminResetUserPassword / AdminUserGlobalSignOut | Changing an email or phone number unverifies it and sends a code when the pool verifies it; a permanent password confirms the user |
+| CreateGroup / GetGroup / UpdateGroup / DeleteGroup / ListGroups / AdminAddUserToGroup / AdminRemoveUserFromGroup / AdminListGroupsForUser / ListUsersInGroup | `Precedence`, `RoleArn`, and `Description`; groups appear in the `cognito:groups` claim |
+| SignUp / ConfirmSignUp / ResendConfirmationCode / ForgotPassword / ConfirmForgotPassword | `SecretHash` for clients with a secret; codes go to the first auto-verified attribute (24 hours; password reset codes 1 hour); ConfirmSignUp's `ForceAliasCreation` moves an alias from another user |
+| InitiateAuth / AdminInitiateAuth / RespondToAuthChallenge / AdminRespondToAuthChallenge | `USER_SRP_AUTH` (with `PASSWORD_VERIFIER`), `USER_PASSWORD_AUTH`, `ADMIN_USER_PASSWORD_AUTH`, `REFRESH_TOKEN_AUTH`, and the `NEW_PASSWORD_REQUIRED` challenge; `PreventUserExistenceErrors` hides unknown users |
+| GetUser / UpdateUserAttributes / DeleteUserAttributes / GetUserAttributeVerificationCode / VerifyUserAttribute / ChangePassword / DeleteUser / GlobalSignOut / RevokeToken | With an access token; signing out or revoking ends the session's access and refresh tokens |
+
+Tokens are RS256 JWTs signed with a key per pool, with the issuer
+`<endpoint>/<pool ID>`, so `http://localhost:4566/<pool ID>/.well-known/jwks.json`
+and `.../.well-known/openid-configuration` let applications verify them locally.
+Messages are never sent: each code, invitation, and temporary password is in
+`/_tinystack/deliveries` with the destination and the message text.
+
 ### EC2 (EC2 Query)
 
 EC2 resources are records in the caller's account and Region; no virtual machine
@@ -608,7 +639,9 @@ types, shared parameters, or parameter quotas.
 KMS limits: no asymmetric, HMAC, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
 material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policies,
 `BatchGetSecretValue`, `GetRandomPassword`, or `SortBy`.
-STS limits: no `GetSessionToken`, federation, web identity, SAML,
+Cognito limits: no Lambda triggers, required MFA or MFA sign-in, custom or passwordless authentication (`CUSTOM_AUTH`,
+`USER_AUTH`), hosted UI or OAuth endpoints, resource servers, threat protection, device tracking, identity
+providers, verification before attribute updates, or identity pools. STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
