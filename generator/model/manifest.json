@@ -19,6 +19,14 @@
       "path": "codegen/sdk-codegen/aws-models/ec2.json",
       "sha256": "f76013e26489abaa79978321f1cf6afeff85bb2ac0bb684de8141cc156aa8b9f"
     },
+    "ecr": {
+      "path": "codegen/sdk-codegen/aws-models/ecr.json",
+      "sha256": "2dd2775a9298dc4c1546d49ea3ba20be8a2075b3941cbf2f7ddc0063336c3566"
+    },
+    "ecs": {
+      "path": "codegen/sdk-codegen/aws-models/ecs.json",
+      "sha256": "c96219723d15095dd4aa668b30e9efcc092d50ea01a38cd631ee677255ba2684"
+    },
     "eventbridge": {
       "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
       "sha256": "55dc4532838b71926afff18b6ce7a11892c6f4aadc81f4036b983eea24c4a449"
