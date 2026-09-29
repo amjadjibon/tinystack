@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
@@ -38,6 +39,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
@@ -138,6 +140,7 @@ func newStartCommand() *cobra.Command {
 			identities := cognitoidp.New(store, deliveries)
 			registry := ecr.New(store)
 			httpAPIs := apigatewayv2.New(store, functions, logGroups)
+			restAPIs := apigateway.New(store, functions, logGroups, identities)
 			network := ec2.New(store)
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
@@ -164,6 +167,7 @@ func newStartCommand() *cobra.Command {
 				ecsapi.Descriptor(ecs.New(store)),
 				eksapi.Descriptor(eks.New(store, network)),
 				apigatewayv2api.Descriptor(httpAPIs),
+				apigatewayapi.Descriptor(restAPIs),
 			)
 			if err != nil {
 				return err
@@ -172,7 +176,7 @@ func newStartCommand() *cobra.Command {
 			handler.UseCredentials(tokens.Credentials)
 			handler.UseDocuments(identities.Documents)
 			handler.UseRegistry(registry)
-			handler.UseAPIs(httpAPIs)
+			handler.UseAPIs(httpAPIs, restAPIs)
 			handler.Handle("deliveries", deliveries)
 
 			var listenConfig net.ListenConfig

@@ -6081,5 +6081,174 @@
         "Name"
       ]
     }
+  },
+  "apigateway": {
+    "operations": [
+      "CreateRestApi",
+      "GetRestApi",
+      "GetRestApis",
+      "UpdateRestApi",
+      "DeleteRestApi",
+      "CreateResource",
+      "GetResource",
+      "GetResources",
+      "UpdateResource",
+      "DeleteResource",
+      "PutMethod",
+      "GetMethod",
+      "UpdateMethod",
+      "DeleteMethod",
+      "PutMethodResponse",
+      "GetMethodResponse",
+      "UpdateMethodResponse",
+      "DeleteMethodResponse",
+      "PutIntegration",
+      "GetIntegration",
+      "UpdateIntegration",
+      "DeleteIntegration",
+      "PutIntegrationResponse",
+      "GetIntegrationResponse",
+      "UpdateIntegrationResponse",
+      "DeleteIntegrationResponse",
+      "CreateDeployment",
+      "GetDeployment",
+      "GetDeployments",
+      "UpdateDeployment",
+      "DeleteDeployment",
+      "CreateStage",
+      "GetStage",
+      "GetStages",
+      "UpdateStage",
+      "DeleteStage",
+      "CreateAuthorizer",
+      "GetAuthorizer",
+      "GetAuthorizers",
+      "UpdateAuthorizer",
+      "DeleteAuthorizer",
+      "TagResource",
+      "UntagResource",
+      "GetTags"
+    ],
+    "shapes": {
+      "CreateRestApiRequest": [
+        "name",
+        "description",
+        "version",
+        "binaryMediaTypes",
+        "minimumCompressionSize",
+        "apiKeySource",
+        "endpointConfiguration",
+        "policy",
+        "tags",
+        "disableExecuteApiEndpoint"
+      ],
+      "EndpointConfiguration": [
+        "types",
+        "ipAddressType"
+      ],
+      "PutMethodRequest": [
+        "restApiId",
+        "resourceId",
+        "httpMethod",
+        "authorizationType",
+        "authorizerId",
+        "apiKeyRequired",
+        "operationName",
+        "requestParameters",
+        "requestModels",
+        "authorizationScopes"
+      ],
+      "Method": [
+        "httpMethod",
+        "authorizationType",
+        "authorizerId",
+        "apiKeyRequired",
+        "operationName",
+        "requestParameters",
+        "requestModels",
+        "methodResponses",
+        "methodIntegration",
+        "authorizationScopes"
+      ],
+      "PutIntegrationRequest": [
+        "restApiId",
+        "resourceId",
+        "httpMethod",
+        "type",
+        "integrationHttpMethod",
+        "uri",
+        "connectionType",
+        "credentials",
+        "requestParameters",
+        "requestTemplates",
+        "passthroughBehavior",
+        "cacheNamespace",
+        "cacheKeyParameters",
+        "contentHandling",
+        "timeoutInMillis"
+      ],
+      "Integration": [
+        "type",
+        "httpMethod",
+        "uri",
+        "connectionType",
+        "credentials",
+        "requestParameters",
+        "requestTemplates",
+        "passthroughBehavior",
+        "contentHandling",
+        "timeoutInMillis",
+        "cacheNamespace",
+        "cacheKeyParameters",
+        "integrationResponses"
+      ],
+      "CreateDeploymentRequest": [
+        "restApiId",
+        "stageName",
+        "stageDescription",
+        "description",
+        "variables"
+      ],
+      "Deployment": [
+        "id",
+        "description",
+        "createdDate"
+      ],
+      "CreateStageRequest": [
+        "restApiId",
+        "stageName",
+        "deploymentId",
+        "description",
+        "cacheClusterEnabled",
+        "cacheClusterSize",
+        "variables",
+        "tracingEnabled",
+        "tags"
+      ],
+      "Stage": [
+        "deploymentId",
+        "stageName",
+        "description",
+        "cacheClusterEnabled",
+        "cacheClusterSize",
+        "cacheClusterStatus",
+        "methodSettings",
+        "variables",
+        "accessLogSettings",
+        "tracingEnabled",
+        "tags",
+        "createdDate",
+        "lastUpdatedDate"
+      ],
+      "PatchOperation": [
+        "op",
+        "path",
+        "value"
+      ],
+      "GetDeploymentRequest": [
+        "restApiId",
+        "deploymentId"
+      ]
+    }
   }
 }

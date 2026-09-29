@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/smithy-go"
 
+	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
@@ -42,6 +43,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
+	restapis "github.com/amjadjibon/tinystack/internal/services/apigateway"
 	apigateways "github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
@@ -134,6 +136,7 @@ func serverStore(
 	repositories := containers.New(store)
 	network := compute.New(store)
 	httpAPIs := apigateways.New(store, functions, logGroups)
+	restAPIs := restapis.New(store, functions, logGroups, userPools)
 	ssmService := parameters.New(store, keys)
 	ssmService.UsePublicParameters(compute.PublicParameters)
 	h, err := gateway.New(
@@ -158,6 +161,7 @@ func serverStore(
 		ecsapi.Descriptor(orchestration.New(store)),
 		eksapi.Descriptor(kubernetes.New(store, network)),
 		apigatewayv2api.Descriptor(httpAPIs),
+		apigatewayapi.Descriptor(restAPIs),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -166,7 +170,7 @@ func serverStore(
 	h.UseCredentials(stsService.Credentials)
 	h.UseDocuments(userPools.Documents)
 	h.UseRegistry(repositories)
-	h.UseAPIs(httpAPIs)
+	h.UseAPIs(httpAPIs, restAPIs)
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)

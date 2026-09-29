@@ -38,8 +38,11 @@ type Context struct {
 	// Resource is the resource path that matched, such as "/pets/{id}".
 	Resource string
 	// Path is the request path with the stage, as the client sent it.
-	Path       string
-	DomainName string
+	Path string
+	// ResourcePath is the path payload format 1.0 reports at its top level,
+	// when it differs from Path: a REST API's path without the stage.
+	ResourcePath string
+	DomainName   string
 }
 
 // textTypes are the content types whose bodies events carry as text.
@@ -190,8 +193,13 @@ func EventV1(r *execute.Request, c *Context, pathParameters, stageVariables map[
 		resource = c.RouteKey
 	}
 
+	path := c.Path
+	if c.ResourcePath != "" {
+		path = c.ResourcePath
+	}
+
 	event := map[string]any{
-		"version": "1.0", "resource": resource, keyPath: c.Path, "httpMethod": r.Method,
+		"version": "1.0", "resource": resource, keyPath: path, "httpMethod": r.Method,
 		"headers": last(r.Header), "multiValueHeaders": orValues(r.Header),
 		"queryStringParameters": last(r.Query), "multiValueQueryStringParameters": orValues(r.Query),
 		"requestContext": requestContext, "pathParameters": orNil(pathParameters),
