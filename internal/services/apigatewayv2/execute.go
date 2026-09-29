@@ -6,7 +6,6 @@ import (
 	"errors"
 	"maps"
 	"net/http"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -132,87 +131,33 @@ func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 	return withCors(c.api.CorsConfiguration, origin, s.integrate(ctx, c, authorizer))
 }
 
-// routeTemplate is a parsed route key.
-type routeTemplate struct {
-	method   string
-	segments []string
-}
-
-func parseRouteKey(key string) (routeTemplate, bool) {
-	method, path, ok := strings.Cut(key, " ")
-	if !ok {
-		return routeTemplate{}, false
-	}
-
-	return routeTemplate{method: method, segments: strings.Split(strings.TrimPrefix(path, "/"), "/")}, true
-}
-
-// bind matches a path's segments, returning the path parameters and each
-// segment's specificity: 2 for a literal, 1 for a parameter, 0 for a greedy
-// parameter.
-func (t routeTemplate) bind(segments []string) (params map[string]string, rank []int, ok bool) {
-	params = map[string]string{}
-	for i, seg := range t.segments {
-		name, isParam := strings.CutPrefix(seg, "{")
-		name = strings.TrimSuffix(name, "}")
-		if greedy, isGreedy := strings.CutSuffix(name, "+"); isParam && isGreedy {
-			rest := strings.Join(segments[min(i, len(segments)):], "/")
-			if rest == "" {
-				return nil, nil, false
-			}
-
-			params[greedy] = rest
-			return params, append(rank, 0), true
-		}
-
-		if i >= len(segments) {
-			return nil, nil, false
-		}
-
-		switch {
-		case isParam && segments[i] != "":
-			params[name] = segments[i]
-			rank = append(rank, 1)
-		case !isParam && segments[i] == seg:
-			rank = append(rank, 2)
-		default:
-			return nil, nil, false
-		}
-	}
-
-	return params, rank, len(segments) == len(t.segments)
-}
-
 // matchRoute picks the most specific route for a request: literal segments
 // outrank parameters, which outrank greedy parameters, and a route for the
 // method outranks ANY. $default takes what no other route matches.
 func matchRoute(routes []api.Route, method, path string) (route *api.Route, params map[string]string) {
-	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	var best *api.Route
-	var bestParams map[string]string
 	var bestRank []int
 	for i := range routes {
-		t, ok := parseRouteKey(value(routes[i].RouteKey))
-		if !ok || (t.method != method && t.method != methodAny) {
+		routeMethod, template, ok := strings.Cut(value(routes[i].RouteKey), " ")
+		if !ok || (routeMethod != method && routeMethod != methodAny) {
 			continue
 		}
 
-		params, rank, matched := t.bind(segments)
+		bound, rank, matched := proxy.Bind(template, path)
 		if !matched {
 			continue
 		}
 
-		if t.method != methodAny {
+		if routeMethod != methodAny {
 			rank = append(rank, 1)
 		}
 
-		if best == nil || slices.Compare(rank, bestRank) > 0 {
-			best, bestParams, bestRank = &routes[i], params, rank
+		if route == nil || slices.Compare(rank, bestRank) > 0 {
+			route, params, bestRank = &routes[i], bound, rank
 		}
 	}
 
-	if best != nil {
-		return best, bestParams
+	if route != nil {
+		return route, params
 	}
 
 	for i := range routes {
@@ -428,72 +373,22 @@ func eventObject(data []byte, err error) (map[string]any, error) {
 }
 
 // authorizerResult reads a Lambda authorizer's answer: a simple response
-// ({"isAuthorized": bool, "context": {...}}) or an IAM policy, which allows
-// the route when a statement allows execute-api:Invoke on it and none denies it.
+// ({"isAuthorized": bool, "context": {...}}) or an IAM policy.
 func authorizerResult(payload []byte, simple bool, routeARN string) (allowed bool, ctx map[string]any, ok bool) {
+	if !simple {
+		p, isPolicy := proxy.ReadPolicy(payload, routeARN)
+		return p.Allowed, p.Context, isPolicy
+	}
+
 	var out struct {
-		IsAuthorized   *bool          `json:"isAuthorized"`
-		Context        map[string]any `json:"context"`
-		PolicyDocument *struct {
-			Statement []struct {
-				Action   any
-				Resource any
-				Effect   string
-			}
-		} `json:"policyDocument"`
+		IsAuthorized *bool          `json:"isAuthorized"`
+		Context      map[string]any `json:"context"`
 	}
 	if json.Unmarshal(payload, &out) != nil {
 		return false, nil, false
 	}
 
-	if simple {
-		return value(out.IsAuthorized), out.Context, out.IsAuthorized != nil
-	}
-
-	if out.PolicyDocument == nil {
-		return false, nil, false
-	}
-
-	for _, st := range out.PolicyDocument.Statement {
-		if !anyMatches(st.Action, "execute-api:Invoke") || !anyMatches(st.Resource, routeARN) {
-			continue
-		}
-
-		switch st.Effect {
-		case "Deny":
-			return false, out.Context, true
-		case "Allow":
-			allowed = true
-		}
-	}
-
-	return allowed, out.Context, true
-}
-
-// anyMatches reports whether a policy's string or list of patterns, with "*"
-// and "?" wildcards, matches s.
-func anyMatches(patterns any, s string) bool {
-	var list []any
-	switch p := patterns.(type) {
-	case string:
-		list = []any{p}
-	case []any:
-		list = p
-	}
-
-	for _, p := range list {
-		if pattern, ok := p.(string); ok && wildcard(pattern).MatchString(s) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func wildcard(pattern string) *regexp.Regexp {
-	quoted := regexp.QuoteMeta(pattern)
-	quoted = strings.NewReplacer(`\*`, ".*", `\?`, ".").Replace(quoted)
-	return regexp.MustCompile("^" + quoted + "$")
+	return value(out.IsAuthorized), out.Context, out.IsAuthorized != nil
 }
 
 func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
