@@ -3,6 +3,26 @@
   "commit": "52ba2565aefa81106ba8aca112e7c42176cc28a7",
   "license": "LICENSE.aws-sdk-go-v2",
   "models": {
+    "acm": {
+      "path": "codegen/sdk-codegen/aws-models/acm.json",
+      "sha256": "fa93fbde7850011b26052855a3dfe18729f049029df9b59cabd8161c309035dc"
+    },
+    "apigateway": {
+      "path": "codegen/sdk-codegen/aws-models/api-gateway.json",
+      "sha256": "51f7bb0a8c434669394c0887bacefaefdae66994122229fbac87e6d0f1da859a"
+    },
+    "apigatewayv2": {
+      "path": "codegen/sdk-codegen/aws-models/apigatewayv2.json",
+      "sha256": "e10bcf53a23a41be2d4a255087e87effb1cf5c29756a54ae7b92fbee8d892f96"
+    },
+    "autoscaling": {
+      "path": "codegen/sdk-codegen/aws-models/auto-scaling.json",
+      "sha256": "a99be352817555cab17666710b0f383b7ab0157714255a6930da3998369ca217"
+    },
+    "cloudwatch": {
+      "path": "codegen/sdk-codegen/aws-models/cloudwatch.json",
+      "sha256": "b1abe105489d574be25364ad5cc4a67f5782f4cc6bcf6439a587625bacc9c62a"
+    },
     "cognitoidp": {
       "path": "codegen/sdk-codegen/aws-models/cognito-identity-provider.json",
       "sha256": "05f1aeb9c9247fe6860d0b05b0a6ef4ec7d7ba919d3b73b430bc4928885f0602"
@@ -31,13 +51,25 @@
       "path": "codegen/sdk-codegen/aws-models/eks.json",
       "sha256": "68a753313e55402162cb2187b54b4ed03ef6b997544a5adaa388e1eef3019595"
     },
+    "elbv2": {
+      "path": "codegen/sdk-codegen/aws-models/elastic-load-balancing-v2.json",
+      "sha256": "34547fbf1a15abc429406c1ebfe20672022fa7a9b43bdb6df73d10c345a746dc"
+    },
     "eventbridge": {
       "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
       "sha256": "55dc4532838b71926afff18b6ce7a11892c6f4aadc81f4036b983eea24c4a449"
     },
+    "firehose": {
+      "path": "codegen/sdk-codegen/aws-models/firehose.json",
+      "sha256": "ae58605d392b6571983abec05ebd3aa2884d3ab43d1b7d1dda6f30f03815f35e"
+    },
     "iam": {
       "path": "codegen/sdk-codegen/aws-models/iam.json",
       "sha256": "c0cec5eeceeffdf03f310ae41c30d072041dbc274bc5a388cad525847de1bec2"
+    },
+    "kinesis": {
+      "path": "codegen/sdk-codegen/aws-models/kinesis.json",
+      "sha256": "b3cd88f396f3591df7f1a809957379a9c8afba1e593e3eb38ee7d99afb689636"
     },
     "kms": {
       "path": "codegen/sdk-codegen/aws-models/kms.json",
@@ -51,13 +83,25 @@
       "path": "codegen/sdk-codegen/aws-models/cloudwatch-logs.json",
       "sha256": "8e51aad2fb99605ae6dfc350d5915215512f990eb1a0c16d07ef2c4e49297d77"
     },
+    "route53": {
+      "path": "codegen/sdk-codegen/aws-models/route-53.json",
+      "sha256": "49310b259a022b7f59fee7ec292ae482761aca40c61dc073f189b9170ab552d9"
+    },
     "s3": {
       "path": "codegen/sdk-codegen/aws-models/s3.json",
       "sha256": "ea4b0318e929b56b01523e7fd25e139b5646055dba96bbf6e41a79ac90522c71"
     },
+    "scheduler": {
+      "path": "codegen/sdk-codegen/aws-models/scheduler.json",
+      "sha256": "a6c0eddf260d68da0fd51213d0827d4eaaf24de80c5a8988fa86cdc9ffdbca0a"
+    },
     "secretsmanager": {
       "path": "codegen/sdk-codegen/aws-models/secrets-manager.json",
       "sha256": "b1bce4d92db3876e6811dd5900a26e4b6b9af15833425dc7a07a5e23886fa886"
+    },
+    "sfn": {
+      "path": "codegen/sdk-codegen/aws-models/sfn.json",
+      "sha256": "2ef5bf10bf1b248a34d313f6bd6334e9f03e6eebf5c35784ab714ba01cca508a"
     },
     "sns": {
       "path": "codegen/sdk-codegen/aws-models/sns.json",
