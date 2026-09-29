@@ -2167,7 +2167,10 @@
       "UpdateAlias",
       "DeleteAlias",
       "ListAliases",
-      "GetFunctionConfiguration"
+      "GetFunctionConfiguration",
+      "AddPermission",
+      "GetPolicy",
+      "RemovePermission"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -2414,6 +2417,18 @@
       ],
       "Filter": [
         "Pattern"
+      ],
+      "AddPermissionRequest": [
+        "FunctionName",
+        "StatementId",
+        "Action",
+        "Principal",
+        "SourceArn",
+        "SourceAccount",
+        "EventSourceToken",
+        "Qualifier",
+        "RevisionId",
+        "PrincipalOrgID"
       ]
     }
   },

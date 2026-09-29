@@ -300,6 +300,7 @@ func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, 
 
 		tx.Delete(scopeKey(scope, kindVersion, versionID(name, version)))
 		tx.Delete(scopeKey(scope, kindVersionCode, versionID(name, version)))
+		tx.Delete(policyKey(scope, name, version))
 		return nil
 	})
 	if err != nil {
@@ -320,7 +321,7 @@ func (s *Service) deleteFunction(ctx context.Context, scope request.Scope, name 
 
 		tx.Delete(scopeKey(scope, kindFunction, name))
 		tx.Delete(scopeKey(scope, kindCode, name))
-		for _, kind := range []string{kindVersion, kindVersionCode, kindAlias} {
+		for _, kind := range []string{kindVersion, kindVersionCode, kindAlias, kindPolicy} {
 			for _, k := range tx.Keys(scopeKey(scope, kind, name+"/")) {
 				if kind == kindVersion {
 					v, _, loadErr := loadFunction(tx, k)

@@ -307,9 +307,11 @@ func (s *Service) UpdateAlias(ctx context.Context, in *api.UpdateAliasRequest) (
 }
 
 func (s *Service) DeleteAlias(ctx context.Context, in *api.DeleteAliasRequest) (*api.DeleteAliasOutput, error) {
-	_, err := s.changeAlias(ctx, in.FunctionName, in.Name, func(storage.WriteTx, request.Scope, *alias) (bool, error) {
-		return false, nil
-	})
+	_, err := s.changeAlias(ctx, in.FunctionName, in.Name,
+		func(tx storage.WriteTx, scope request.Scope, a *alias) (bool, error) {
+			tx.Delete(policyKey(scope, a.Function, a.Name))
+			return false, nil
+		})
 	if err != nil {
 		return nil, err
 	}
