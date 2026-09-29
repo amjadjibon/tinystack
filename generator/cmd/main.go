@@ -62,11 +62,11 @@ type queryOverlay struct {
 type (
 	model     struct{ Shapes map[string]shape }
 	generator struct {
-		model     model
-		profile   serviceProfile
-		seen      map[string]bool
-		imports   map[string]bool
-		roots     map[string]bool
+		model   model
+		profile serviceProfile
+		seen    map[string]bool
+		imports map[string]bool
+		roots   map[string]bool
 		// outputs are the operations' output shapes that are no operation's
 		// input; Smithy ignores httpLabel and httpQuery on their members.
 		outputs   map[string]bool
@@ -516,7 +516,7 @@ func (g *generator) emit(id string) error {
 			}
 
 			tag := wire + ",omitempty"
-			if g.rest && httpBound(m) && !(g.outputs[id] && requestOnly(m)) {
+			if g.rest && httpBound(m) && (!g.outputs[id] || !requestOnly(m)) {
 				tag = "-"
 			}
 

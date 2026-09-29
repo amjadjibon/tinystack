@@ -94,8 +94,8 @@ const (
 	traitLabel = "smithy.api#httpLabel"
 	traitQuery = "smithy.api#httpQuery"
 	locHeader  = "header"
-	locQuery  = "query"
-	locPrefix = "prefix"
+	locQuery   = "query"
+	locPrefix  = "prefix"
 )
 
 // memberBindings locates the selected members. For inputs, modeled header and
