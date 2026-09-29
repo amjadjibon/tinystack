@@ -5921,5 +5921,165 @@
         "targetRoleArn"
       ]
     }
+  },
+  "apigatewayv2": {
+    "operations": [
+      "CreateApi",
+      "GetApi",
+      "GetApis",
+      "UpdateApi",
+      "DeleteApi",
+      "CreateRoute",
+      "GetRoute",
+      "GetRoutes",
+      "UpdateRoute",
+      "DeleteRoute",
+      "CreateIntegration",
+      "GetIntegration",
+      "GetIntegrations",
+      "UpdateIntegration",
+      "DeleteIntegration",
+      "CreateStage",
+      "GetStage",
+      "GetStages",
+      "UpdateStage",
+      "DeleteStage",
+      "CreateDeployment",
+      "GetDeployment",
+      "GetDeployments",
+      "UpdateDeployment",
+      "DeleteDeployment",
+      "CreateAuthorizer",
+      "GetAuthorizer",
+      "GetAuthorizers",
+      "UpdateAuthorizer",
+      "DeleteAuthorizer",
+      "DeleteCorsConfiguration",
+      "GetTags",
+      "TagResource",
+      "UntagResource"
+    ],
+    "shapes": {
+      "CreateApiRequest": [
+        "ApiKeySelectionExpression",
+        "CorsConfiguration",
+        "Description",
+        "DisableExecuteApiEndpoint",
+        "IpAddressType",
+        "Name",
+        "RouteSelectionExpression",
+        "Version",
+        "RouteKey",
+        "Target",
+        "ProtocolType",
+        "Tags"
+      ],
+      "UpdateApiRequest": [
+        "ApiKeySelectionExpression",
+        "ApiId",
+        "CorsConfiguration",
+        "Description",
+        "DisableExecuteApiEndpoint",
+        "IpAddressType",
+        "Name",
+        "RouteSelectionExpression",
+        "Version",
+        "RouteKey",
+        "Target"
+      ],
+      "CreateRouteRequest": [
+        "ApiId",
+        "ApiKeyRequired",
+        "AuthorizationScopes",
+        "AuthorizationType",
+        "AuthorizerId",
+        "OperationName",
+        "RouteKey",
+        "Target"
+      ],
+      "UpdateRouteRequest": [
+        "ApiId",
+        "RouteId",
+        "ApiKeyRequired",
+        "AuthorizationScopes",
+        "AuthorizationType",
+        "AuthorizerId",
+        "OperationName",
+        "RouteKey",
+        "Target"
+      ],
+      "CreateIntegrationRequest": [
+        "ApiId",
+        "ConnectionType",
+        "Description",
+        "IntegrationMethod",
+        "IntegrationType",
+        "IntegrationUri",
+        "PayloadFormatVersion",
+        "TimeoutInMillis"
+      ],
+      "UpdateIntegrationRequest": [
+        "ApiId",
+        "IntegrationId",
+        "ConnectionType",
+        "Description",
+        "IntegrationMethod",
+        "IntegrationType",
+        "IntegrationUri",
+        "PayloadFormatVersion",
+        "TimeoutInMillis"
+      ],
+      "CreateStageRequest": [
+        "ApiId",
+        "AccessLogSettings",
+        "AutoDeploy",
+        "DefaultRouteSettings",
+        "DeploymentId",
+        "Description",
+        "RouteSettings",
+        "StageName",
+        "StageVariables",
+        "Tags"
+      ],
+      "UpdateStageRequest": [
+        "ApiId",
+        "AccessLogSettings",
+        "AutoDeploy",
+        "DefaultRouteSettings",
+        "DeploymentId",
+        "Description",
+        "RouteSettings",
+        "StageName",
+        "StageVariables"
+      ],
+      "RouteSettings": [
+        "DetailedMetricsEnabled",
+        "ThrottlingBurstLimit",
+        "ThrottlingRateLimit"
+      ],
+      "CreateAuthorizerRequest": [
+        "ApiId",
+        "AuthorizerPayloadFormatVersion",
+        "AuthorizerResultTtlInSeconds",
+        "AuthorizerType",
+        "AuthorizerUri",
+        "EnableSimpleResponses",
+        "IdentitySource",
+        "JwtConfiguration",
+        "Name"
+      ],
+      "UpdateAuthorizerRequest": [
+        "ApiId",
+        "AuthorizerId",
+        "AuthorizerPayloadFormatVersion",
+        "AuthorizerResultTtlInSeconds",
+        "AuthorizerType",
+        "AuthorizerUri",
+        "EnableSimpleResponses",
+        "IdentitySource",
+        "JwtConfiguration",
+        "Name"
+      ]
+    }
   }
 }

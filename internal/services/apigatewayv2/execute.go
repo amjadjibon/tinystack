@@ -1,0 +1,617 @@
+package apigatewayv2
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"maps"
+	"net/http"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/amjadjibon/tinystack/internal/aws/execute"
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
+	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+// call is one request to an API as it runs.
+type call struct {
+	scope     request.Scope
+	req       *execute.Request
+	api       *api.Api
+	stage     *api.Stage
+	snapshot  *deployment
+	route     *api.Route
+	params    map[string]string
+	requestID string
+	// path is the request path after the stage.
+	path string
+	// authorizerError is why an authorizer failed, for access logs.
+	authorizerError string
+	// integrationError is why the integration failed, for access logs.
+	integrationError string
+	integrationCode  int
+}
+
+// Execute runs a request to the HTTP API id names: it picks the stage from
+// the first path segment (or the $default stage), matches a route of the
+// stage's deployment, runs the route's authorizer and integration, and
+// applies the API's CORS configuration.
+func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
+	c := &call{req: r, requestID: newRequestID()}
+	found := false
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		loc, ok, err := read[location](tx, indexKey(id))
+		if err != nil || !ok {
+			return err
+		}
+
+		found, c.scope = true, request.Scope{AccountID: loc.Account, Region: loc.Region}
+		if c.api, err = loadAPI(tx, c.scope, &id); err != nil {
+			return err
+		}
+
+		return c.resolveStage(tx)
+	})
+	if err != nil || !found {
+		return nil, found, err
+	}
+
+	resp := s.run(ctx, c)
+	resp.Header.Set("Apigw-Requestid", c.requestID)
+	s.accessLog(ctx, c, resp)
+	return resp, true, nil
+}
+
+func newRequestID() string {
+	return strings.ToUpper(newID(8)) + "=" // shaped like API Gateway's
+}
+
+// resolveStage picks the stage the request's first path segment names, or
+// else the $default stage, and loads its deployment.
+func (c *call) resolveStage(tx storage.ReadTx) error {
+	first, rest, _ := strings.Cut(strings.TrimPrefix(c.req.Path, "/"), "/")
+	name, path := first, "/"+rest
+	if first == defaultStage || first == "" {
+		name = ""
+	}
+
+	st, found, err := read[api.Stage](tx, owned(c.scope, kindStage, *c.api.ApiId, name))
+	if err != nil {
+		return err
+	}
+
+	if !found || name == "" {
+		name, path = defaultStage, c.req.Path
+		if st, found, err = read[api.Stage](tx, owned(c.scope, kindStage, *c.api.ApiId, name)); err != nil {
+			return err
+		}
+	}
+
+	if !found || st.DeploymentId == nil {
+		return nil
+	}
+
+	c.stage, c.path = st, path
+	c.snapshot, _, err = read[deployment](tx, owned(c.scope, kindDeployment, *c.api.ApiId, *st.DeploymentId))
+	return err
+}
+
+// run answers the request.
+func (s *Service) run(ctx context.Context, c *call) *execute.Response {
+	r := c.req
+	if value(c.api.DisableExecuteApiEndpoint) {
+		return execute.Message(http.StatusForbidden, "Forbidden")
+	}
+
+	if c.stage == nil || c.snapshot == nil {
+		return execute.Message(http.StatusNotFound, "Not Found")
+	}
+
+	origin, preflight := corsRequest(c.api.CorsConfiguration, r)
+	if preflight {
+		return preflightResponse(c.api.CorsConfiguration, origin)
+	}
+
+	c.route, c.params = matchRoute(c.snapshot.Routes, r.Method, c.path)
+	if c.route == nil {
+		return withCors(c.api.CorsConfiguration, origin, execute.Message(http.StatusNotFound, "Not Found"))
+	}
+
+	authorizer, denied := s.authorize(ctx, c)
+	if denied != nil {
+		return withCors(c.api.CorsConfiguration, origin, denied)
+	}
+
+	return withCors(c.api.CorsConfiguration, origin, s.integrate(ctx, c, authorizer))
+}
+
+// routeTemplate is a parsed route key.
+type routeTemplate struct {
+	method   string
+	segments []string
+}
+
+func parseRouteKey(key string) (routeTemplate, bool) {
+	method, path, ok := strings.Cut(key, " ")
+	if !ok {
+		return routeTemplate{}, false
+	}
+
+	return routeTemplate{method: method, segments: strings.Split(strings.TrimPrefix(path, "/"), "/")}, true
+}
+
+// bind matches a path's segments, returning the path parameters and each
+// segment's specificity: 2 for a literal, 1 for a parameter, 0 for a greedy
+// parameter.
+func (t routeTemplate) bind(segments []string) (params map[string]string, rank []int, ok bool) {
+	params = map[string]string{}
+	for i, seg := range t.segments {
+		name, isParam := strings.CutPrefix(seg, "{")
+		name = strings.TrimSuffix(name, "}")
+		if greedy, isGreedy := strings.CutSuffix(name, "+"); isParam && isGreedy {
+			rest := strings.Join(segments[min(i, len(segments)):], "/")
+			if rest == "" {
+				return nil, nil, false
+			}
+
+			params[greedy] = rest
+			return params, append(rank, 0), true
+		}
+
+		if i >= len(segments) {
+			return nil, nil, false
+		}
+
+		switch {
+		case isParam && segments[i] != "":
+			params[name] = segments[i]
+			rank = append(rank, 1)
+		case !isParam && segments[i] == seg:
+			rank = append(rank, 2)
+		default:
+			return nil, nil, false
+		}
+	}
+
+	return params, rank, len(segments) == len(t.segments)
+}
+
+// matchRoute picks the most specific route for a request: literal segments
+// outrank parameters, which outrank greedy parameters, and a route for the
+// method outranks ANY. $default takes what no other route matches.
+func matchRoute(routes []api.Route, method, path string) (route *api.Route, params map[string]string) {
+	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	var best *api.Route
+	var bestParams map[string]string
+	var bestRank []int
+	for i := range routes {
+		t, ok := parseRouteKey(value(routes[i].RouteKey))
+		if !ok || (t.method != method && t.method != methodAny) {
+			continue
+		}
+
+		params, rank, matched := t.bind(segments)
+		if !matched {
+			continue
+		}
+
+		if t.method != methodAny {
+			rank = append(rank, 1)
+		}
+
+		if best == nil || slices.Compare(rank, bestRank) > 0 {
+			best, bestParams, bestRank = &routes[i], params, rank
+		}
+	}
+
+	if best != nil {
+		return best, bestParams
+	}
+
+	for i := range routes {
+		if value(routes[i].RouteKey) == defaultRoute {
+			return &routes[i], nil
+		}
+	}
+
+	return nil, nil
+}
+
+// corsRequest returns a request's origin, if the API allows it, and whether
+// the request is a CORS preflight, which API Gateway answers itself.
+func corsRequest(cors *api.Cors, r *execute.Request) (string, bool) {
+	origin := r.Header.Get("Origin")
+	if cors == nil || origin == "" {
+		return "", false
+	}
+
+	preflight := r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != ""
+	if !slices.Contains(cors.AllowOrigins, "*") && !slices.Contains(cors.AllowOrigins, origin) {
+		return "", preflight
+	}
+
+	return origin, preflight
+}
+
+func preflightResponse(cors *api.Cors, origin string) *execute.Response {
+	resp := &execute.Response{Status: http.StatusNoContent, Header: http.Header{}}
+	if origin == "" {
+		return resp
+	}
+
+	h := resp.Header
+	h.Set("Access-Control-Allow-Origin", allowedOrigin(cors, origin))
+	if len(cors.AllowMethods) > 0 {
+		h.Set("Access-Control-Allow-Methods", strings.Join(cors.AllowMethods, ","))
+	}
+
+	if len(cors.AllowHeaders) > 0 {
+		h.Set("Access-Control-Allow-Headers", strings.Join(cors.AllowHeaders, ","))
+	}
+
+	if cors.MaxAge != nil && *cors.MaxAge >= 0 {
+		h.Set("Access-Control-Max-Age", strconv.FormatInt(*cors.MaxAge, 10))
+	}
+
+	if value(cors.AllowCredentials) {
+		h.Set("Access-Control-Allow-Credentials", "true")
+	}
+
+	return resp
+}
+
+func allowedOrigin(cors *api.Cors, origin string) string {
+	if slices.Contains(cors.AllowOrigins, "*") {
+		return "*"
+	}
+
+	return origin
+}
+
+// withCors adds the CORS headers of an allowed origin to a response,
+// replacing any the integration set.
+func withCors(cors *api.Cors, origin string, resp *execute.Response) *execute.Response {
+	if resp.Header == nil {
+		resp.Header = http.Header{}
+	}
+
+	if origin == "" {
+		return resp
+	}
+
+	resp.Header.Set("Access-Control-Allow-Origin", allowedOrigin(cors, origin))
+	if len(cors.ExposeHeaders) > 0 {
+		resp.Header.Set("Access-Control-Expose-Headers", strings.Join(cors.ExposeHeaders, ","))
+	}
+
+	if value(cors.AllowCredentials) {
+		resp.Header.Set("Access-Control-Allow-Credentials", "true")
+	}
+
+	return resp
+}
+
+// identityValue reads an identity source such as $request.header.Authorization.
+func identityValue(c *call, source string) string {
+	r := c.req
+	switch {
+	case strings.HasPrefix(source, "$request.header."):
+		return r.Header.Get(strings.TrimPrefix(source, "$request.header."))
+	case strings.HasPrefix(source, "$request.querystring."):
+		return r.Query.Get(strings.TrimPrefix(source, "$request.querystring."))
+	case strings.HasPrefix(source, "$stageVariables."):
+		return c.stage.StageVariables[strings.TrimPrefix(source, "$stageVariables.")]
+	default:
+		return contextVariable(c, nil, strings.TrimPrefix(source, "$context."))
+	}
+}
+
+// authorize runs the route's authorization and returns what integrations
+// receive as requestContext.authorizer, or the response that denies the
+// request.
+func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *execute.Response) {
+	unauthorized := execute.Message(http.StatusUnauthorized, "Unauthorized")
+	forbidden := execute.Message(http.StatusForbidden, "Forbidden")
+	switch value(c.route.AuthorizationType) {
+	case authIAM:
+		// Signatures are not verified; a SigV4-signed request is authorized.
+		if !strings.HasPrefix(c.req.Header.Get("Authorization"), "AWS4-") && c.req.Query.Get("X-Amz-Signature") == "" {
+			c.authorizerError = "Missing Authentication Token"
+			return nil, forbidden
+		}
+
+		return nil, nil
+	case authJWT:
+		a := c.snapshot.Authorizers[value(c.route.AuthorizerId)]
+		token := identityValue(c, a.IdentitySource[0])
+		if token == "" {
+			c.authorizerError = "missing token"
+			return nil, unauthorized
+		}
+
+		claims, err := s.verifier.Verify(ctx, token, value(a.JwtConfiguration.Issuer), a.JwtConfiguration.Audience)
+		if err != nil {
+			c.authorizerError = err.Error()
+			return nil, unauthorized
+		}
+
+		scopes := proxy.Scopes(claims)
+		if len(c.route.AuthorizationScopes) > 0 &&
+			!slices.ContainsFunc(
+				c.route.AuthorizationScopes,
+				func(sc string) bool { return slices.Contains(scopes, sc) },
+			) {
+			c.authorizerError = "insufficient scopes"
+			return nil, forbidden
+		}
+
+		return map[string]any{"claims": proxy.Strings(claims), "scopes": scopes}, nil
+	case authCustom:
+		return s.lambdaAuthorize(ctx, c)
+	}
+
+	return nil, nil
+}
+
+// lambdaAuthorize runs a Lambda REQUEST authorizer. Its results are not
+// cached: the function runs for every request.
+func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any, *execute.Response) {
+	a := c.snapshot.Authorizers[value(c.route.AuthorizerId)]
+	var sources []string
+	for _, source := range a.IdentitySource {
+		v := identityValue(c, source)
+		if v == "" {
+			c.authorizerError = "missing identity source " + source
+			return nil, execute.Message(http.StatusUnauthorized, "Unauthorized")
+		}
+
+		sources = append(sources, v)
+	}
+
+	routeARN := "arn:aws:execute-api:" + c.scope.Region + ":" + c.scope.AccountID + ":" + *c.api.ApiId + "/" +
+		*c.stage.StageName + "/" + c.req.Method + c.path
+	pc := c.proxyContext(nil)
+	var event map[string]any
+	var err error
+	if value(a.AuthorizerPayloadFormatVersion) == payload2 {
+		event, err = eventObject(proxy.EventV2(c.req, pc, c.params, c.stage.StageVariables))
+		event["type"], event["routeArn"], event["identitySource"] = typeRequest, routeARN, sources
+		delete(event, "body")
+		delete(event, "isBase64Encoded")
+	} else {
+		event, err = eventObject(proxy.EventV1(c.req, pc, c.params, c.stage.StageVariables))
+		event["type"], event["methodArn"] = typeRequest, routeARN
+		event["identitySource"] = strings.Join(sources, ",")
+	}
+
+	failed := execute.Message(http.StatusInternalServerError, "Internal Server Error")
+	if err != nil {
+		return nil, failed
+	}
+
+	payload, _ := json.Marshal(event)
+	arn, _ := proxy.LambdaARN(value(a.AuthorizerUri))
+	out, functionError, err := s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
+	if err != nil || functionError {
+		c.authorizerError = "authorizer function failed"
+		return nil, failed
+	}
+
+	allowed, authContext, ok := authorizerResult(out, value(a.EnableSimpleResponses), routeARN)
+	switch {
+	case !ok:
+		c.authorizerError = "invalid authorizer response"
+		return nil, failed
+	case !allowed:
+		c.authorizerError = "denied"
+		return nil, execute.Message(http.StatusForbidden, "Forbidden")
+	}
+
+	return map[string]any{"lambda": authContext}, nil
+}
+
+func eventObject(data []byte, err error) (map[string]any, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	var event map[string]any
+	err = json.Unmarshal(data, &event)
+	return event, err
+}
+
+// authorizerResult reads a Lambda authorizer's answer: a simple response
+// ({"isAuthorized": bool, "context": {...}}) or an IAM policy, which allows
+// the route when a statement allows execute-api:Invoke on it and none denies it.
+func authorizerResult(payload []byte, simple bool, routeARN string) (allowed bool, ctx map[string]any, ok bool) {
+	var out struct {
+		IsAuthorized   *bool          `json:"isAuthorized"`
+		Context        map[string]any `json:"context"`
+		PolicyDocument *struct {
+			Statement []struct {
+				Action   any
+				Resource any
+				Effect   string
+			}
+		} `json:"policyDocument"`
+	}
+	if json.Unmarshal(payload, &out) != nil {
+		return false, nil, false
+	}
+
+	if simple {
+		return value(out.IsAuthorized), out.Context, out.IsAuthorized != nil
+	}
+
+	if out.PolicyDocument == nil {
+		return false, nil, false
+	}
+
+	for _, st := range out.PolicyDocument.Statement {
+		if !anyMatches(st.Action, "execute-api:Invoke") || !anyMatches(st.Resource, routeARN) {
+			continue
+		}
+
+		switch st.Effect {
+		case "Deny":
+			return false, out.Context, true
+		case "Allow":
+			allowed = true
+		}
+	}
+
+	return allowed, out.Context, true
+}
+
+// anyMatches reports whether a policy's string or list of patterns, with "*"
+// and "?" wildcards, matches s.
+func anyMatches(patterns any, s string) bool {
+	var list []any
+	switch p := patterns.(type) {
+	case string:
+		list = []any{p}
+	case []any:
+		list = p
+	}
+
+	for _, p := range list {
+		if pattern, ok := p.(string); ok && wildcard(pattern).MatchString(s) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func wildcard(pattern string) *regexp.Regexp {
+	quoted := regexp.QuoteMeta(pattern)
+	quoted = strings.NewReplacer(`\*`, ".*", `\?`, ".").Replace(quoted)
+	return regexp.MustCompile("^" + quoted + "$")
+}
+
+func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
+	domain := c.req.Host
+	if i := strings.IndexByte(domain, ':'); i >= 0 {
+		domain = domain[:i]
+	}
+
+	resource := ""
+	if _, path, ok := strings.Cut(value(c.route.RouteKey), " "); ok {
+		resource = path
+	}
+
+	path := c.req.Path
+	return &proxy.Context{
+		Authorizer: authorizer, AccountID: c.scope.AccountID, APIID: *c.api.ApiId, Stage: *c.stage.StageName,
+		RequestID: c.requestID, RouteKey: value(c.route.RouteKey), Resource: resource, Path: path, DomainName: domain,
+	}
+}
+
+// integrate runs the route's integration.
+func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]any) *execute.Response {
+	failed := execute.Message(http.StatusInternalServerError, "Internal Server Error")
+	i, ok := c.snapshot.Integrations[integrationID(value(c.route.Target))]
+	if !ok {
+		c.integrationError = "the route has no integration"
+		return failed
+	}
+
+	timeout := time.Duration(value(i.TimeoutInMillis)) * time.Millisecond
+	uri := proxy.Substitute(value(i.IntegrationUri), c.stage.StageVariables)
+	if value(i.IntegrationType) == typeHTTP {
+		method := value(i.IntegrationMethod)
+		if method == methodAny {
+			method = c.req.Method
+		}
+
+		for name, v := range c.params {
+			uri = strings.ReplaceAll(strings.ReplaceAll(uri, "{"+name+"+}", v), "{"+name+"}", v)
+		}
+
+		if c.req.RawQuery != "" {
+			uri += map[bool]string{true: "&", false: "?"}[strings.Contains(uri, "?")] + c.req.RawQuery
+		}
+
+		resp := proxy.Forward(ctx, method, uri, c.req.Header, c.req.Body, timeout)
+		c.integrationCode = resp.Status
+		return resp
+	}
+
+	// Payload format 2.0 reports JWT claims under "jwt" and 1.0 at the top.
+	var event []byte
+	var err error
+	pc := c.proxyContext(authorizer)
+	if value(i.PayloadFormatVersion) == payload2 {
+		if authorizer != nil && authorizer["claims"] != nil {
+			pc.Authorizer = map[string]any{"jwt": authorizer}
+		}
+
+		event, err = proxy.EventV2(c.req, pc, c.params, c.stage.StageVariables)
+	} else {
+		if lambdaContext, isLambda := authorizer["lambda"].(map[string]any); isLambda {
+			pc.Authorizer = maps.Clone(lambdaContext)
+		}
+
+		event, err = proxy.EventV1(c.req, pc, c.params, c.stage.StageVariables)
+	}
+
+	if err != nil {
+		return failed
+	}
+
+	arn, _ := proxy.LambdaARN(uri)
+	out, functionError, err := s.invoke(ctx, c, arn, event, timeout)
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		c.integrationError = "timed out"
+		return execute.Message(http.StatusServiceUnavailable, "Service Unavailable")
+	case err != nil:
+		c.integrationError = err.Error()
+		return failed
+	}
+
+	c.integrationCode = http.StatusOK
+	if value(i.PayloadFormatVersion) == payload2 {
+		return proxy.ResponseV2(out, functionError)
+	}
+
+	return proxy.ResponseV1(out, functionError, http.StatusInternalServerError)
+}
+
+// invoke runs a Lambda function synchronously in its own account and region.
+func (s *Service) invoke(
+	ctx context.Context,
+	c *call,
+	arn string,
+	payload []byte,
+	timeout time.Duration,
+) (out []byte, functionError bool, err error) {
+	parts := strings.Split(arn, ":")
+	if len(parts) < 7 {
+		return nil, false, errors.New("invalid function ARN " + arn)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	ctx = request.WithMetadata(ctx, request.Metadata{
+		Scope: request.Scope{AccountID: parts[4], Region: parts[3]}, RequestID: c.requestID, Service: "apigateway",
+	})
+	resp, err := s.functions.Invoke(ctx, &lambdaapi.InvocationRequest{FunctionName: &arn, Payload: payload})
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, false, context.DeadlineExceeded
+		}
+
+		return nil, false, err
+	}
+
+	return resp.Payload, resp.FunctionError != nil, nil
+}
