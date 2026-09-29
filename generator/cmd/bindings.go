@@ -91,7 +91,9 @@ func compileBinding(
 }
 
 const (
-	locHeader = "header"
+	traitLabel = "smithy.api#httpLabel"
+	traitQuery = "smithy.api#httpQuery"
+	locHeader  = "header"
 	locQuery  = "query"
 	locPrefix = "prefix"
 )
@@ -110,12 +112,18 @@ func memberBindings(
 		bound := false
 		for trait, raw := range member.Traits {
 			location := ""
+			// Smithy ignores request-only bindings on output members, which
+			// are then document members.
+			if !input && (trait == traitLabel || trait == traitQuery) {
+				continue
+			}
+
 			switch trait {
-			case "smithy.api#httpLabel":
+			case traitLabel:
 				location = "label"
 			case "smithy.api#httpHeader":
 				location = locHeader
-			case "smithy.api#httpQuery":
+			case traitQuery:
 				location = locQuery
 			case "smithy.api#httpPayload":
 				location = "payload"

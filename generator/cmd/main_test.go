@@ -278,7 +278,8 @@ func TestRESTJSONFixture(t *testing.T) {
   "fixture#Out": {"type": "structure", "members": {
     "Status": {"target": "smithy.api#Integer", "traits": {"smithy.api#httpResponseCode": {}}},
     "At": {"target": "smithy.api#Timestamp"},
-    "Since": {"target": "fixture#Iso", "traits": {"smithy.api#jsonName": "since"}}}},
+    "Since": {"target": "fixture#Iso", "traits": {"smithy.api#jsonName": "since"}},
+    "Next": {"target": "smithy.api#String", "traits": {"smithy.api#httpQuery": "next"}}}},
   "fixture#Missing": {"type": "structure", "traits": {"smithy.api#error": "client", "smithy.api#httpError": 404},
     "members": {"Message": {"target": "smithy.api#String", "traits": {"smithy.api#jsonName": "message"}}}},
   "fixture#Iso": {"type": "timestamp", "traits": {"smithy.api#timestampFormat": "date-time"}},
@@ -301,6 +302,9 @@ func TestRESTJSONFixture(t *testing.T) {
 		`StatusCode: 200`,
 		`"Status": catalog.MemberBinding{Location: "status", Name: "Status"}`,
 		`"Mode": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Mode"}`,
+		// Smithy ignores httpQuery on output members, which are then document members.
+		`Next *string ` + "`" + `json:"Next,omitempty"` + "`",
+		`"Next": catalog.MemberBinding{Location: "document", Name: "Next"}`,
 		// REST JSON honors jsonName, and date-time timestamps are ISO 8601 text.
 		`Since *time.Time ` + "`" + `json:"since,omitempty"` + "`",
 		`"Missing": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}`,

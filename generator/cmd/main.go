@@ -67,6 +67,9 @@ type (
 		seen      map[string]bool
 		imports   map[string]bool
 		roots     map[string]bool
+		// outputs are the operations' output shapes that are no operation's
+		// input; Smithy ignores httpLabel and httpQuery on their members.
+		outputs   map[string]bool
 		namespace string
 		out       bytes.Buffer
 		query     bool
@@ -205,6 +208,14 @@ var restTraits = map[string]bool{
 	"smithy.api#httpPrefixHeaders": true,
 	"smithy.api#httpResponseCode":  true,
 	traitStreaming:                 true,
+}
+
+// requestOnly reports whether a member's only HTTP binding is a label or a
+// query parameter, which bind nothing in a response.
+func requestOnly(member reference) bool {
+	_, label := member.Traits[traitLabel]
+	_, query := member.Traits[traitQuery]
+	return label || query
 }
 
 // httpBound reports whether a member is placed in the HTTP message rather than
@@ -505,7 +516,7 @@ func (g *generator) emit(id string) error {
 			}
 
 			tag := wire + ",omitempty"
-			if g.rest && httpBound(m) {
+			if g.rest && httpBound(m) && !(g.outputs[id] && requestOnly(m)) {
 				tag = "-"
 			}
 
@@ -707,6 +718,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		seen:    map[string]bool{},
 		imports: map[string]bool{},
 		roots:   map[string]bool{},
+		outputs: map[string]bool{},
 		profile: profile,
 		query:   profile.Query != nil,
 	}
@@ -742,6 +754,16 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 	}
 
 	outputs := map[string]string{}
+	inputs := map[string]bool{}
+	for _, op := range profile.Operations {
+		s := g.model.Shapes[prefix+op]
+		inputs[s.Input.Target], g.outputs[s.Output.Target] = true, true
+	}
+
+	for id := range inputs {
+		delete(g.outputs, id)
+	}
+
 	for _, op := range profile.Operations {
 		s, ok := g.model.Shapes[prefix+op]
 		if !ok || s.Type != "operation" {
