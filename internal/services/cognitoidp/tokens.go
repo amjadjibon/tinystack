@@ -414,3 +414,49 @@ func jwks(key *rsa.PublicKey) ([]byte, error) {
 		"kty": "RSA", "n": b64.EncodeToString(key.N.Bytes()), "use": "sig",
 	}}})
 }
+
+// ErrInvalidToken means a token is malformed, was not signed by the pool,
+// or has expired.
+var ErrInvalidToken = errors.New("invalid token")
+
+// Verify checks that the user pool with ID poolID signed token, an ID or
+// access token, and that it has not expired, and returns its claims. API
+// Gateway calls it in-process for Cognito authorizers.
+func (s *Service) Verify(ctx context.Context, poolID, token string) (map[string]any, error) {
+	claims, err := claimsOf(token)
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	iss, _ := claims["iss"].(string)
+	exp, _ := claims["exp"].(float64)
+	if !strings.HasSuffix(iss, "/"+poolID) || !s.now().Before(time.Unix(int64(exp), 0)) {
+		return nil, ErrInvalidToken
+	}
+
+	region, _, _ := strings.Cut(poolID, "_")
+	var key *rsa.PrivateKey
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		account, ok := tx.Get(poolIndexKey(poolID))
+		if !ok {
+			return ErrInvalidToken
+		}
+
+		p, found, readErr := read[pool](tx, poolKey(request.Scope{AccountID: string(account), Region: region}, poolID))
+		if readErr != nil || !found || len(p.Key) == 0 {
+			return errors.Join(readErr, ErrInvalidToken)
+		}
+
+		key, _, readErr = signingKey(p)
+		return readErr
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if verify(&key.PublicKey, token) != nil {
+		return nil, ErrInvalidToken
+	}
+
+	return claims, nil
+}
