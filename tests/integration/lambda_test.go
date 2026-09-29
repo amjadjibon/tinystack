@@ -52,6 +52,25 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 		return lambda.Result{Payload: body, Log: "echo received " + string(payload) + "\n"}, err
 	case "app.fail":
 		return lambda.Result{Payload: []byte(`{"errorType":"ValueError","errorMessage":"boom"}`), Error: true}, nil
+	case "app.respond":
+		// A Lambda proxy integration's structured response carrying the event.
+		body, err := json.Marshal(map[string]any{
+			"statusCode": 201, "headers": map[string]string{"X-Handler": "respond"},
+			"cookies": []string{"flavor=oat"}, "body": string(payload),
+		})
+		return lambda.Result{Payload: body}, err
+	case "app.authorize":
+		// A Lambda authorizer's simple response: only the token "let-me-in" passes.
+		var event struct {
+			IdentitySource []string `json:"identitySource"`
+		}
+		if err := json.Unmarshal(payload, &event); err != nil {
+			return lambda.Result{}, err
+		}
+
+		allowed := len(event.IdentitySource) == 1 && event.IdentitySource[0] == "let-me-in"
+		body, err := json.Marshal(map[string]any{"isAuthorized": allowed, "context": map[string]any{"user": "fay"}})
+		return lambda.Result{Payload: body}, err
 	default:
 		return lambda.Result{Payload: []byte("null")}, nil
 	}

@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    apigatewayv2   = var.endpoint
     cognitoidp     = var.endpoint
     dynamodb       = var.endpoint
     ec2            = var.endpoint
@@ -518,6 +519,83 @@ resource "aws_cloudwatch_log_group" "echo" {
   name              = "/aws/lambda/echo"
   retention_in_days = 7
   tags              = local.tags
+}
+
+resource "aws_apigatewayv2_api" "echo" {
+  name          = "echo"
+  protocol_type = "HTTP"
+  description   = "Echo for ${var.team}"
+  tags          = local.tags
+
+  cors_configuration {
+    allow_origins = ["https://${var.team}.example"]
+    allow_methods = ["GET", "POST"]
+    max_age       = 300
+  }
+}
+
+resource "aws_apigatewayv2_integration" "echo" {
+  api_id                 = aws_apigatewayv2_api.echo.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.echo.invoke_arn
+  payload_format_version = "2.0"
+  timeout_milliseconds   = 10000
+}
+
+resource "aws_apigatewayv2_authorizer" "users" {
+  api_id           = aws_apigatewayv2_api.echo.id
+  name             = "users"
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+
+  jwt_configuration {
+    issuer   = "https://${aws_cognito_user_pool.app.endpoint}"
+    audience = [aws_cognito_user_pool_client.web.id]
+  }
+}
+
+resource "aws_apigatewayv2_route" "hello" {
+  api_id    = aws_apigatewayv2_api.echo.id
+  route_key = "GET /hello/{name}"
+  target    = "integrations/${aws_apigatewayv2_integration.echo.id}"
+}
+
+resource "aws_apigatewayv2_route" "me" {
+  api_id             = aws_apigatewayv2_api.echo.id
+  route_key          = "GET /me"
+  target             = "integrations/${aws_apigatewayv2_integration.echo.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.users.id
+}
+
+resource "aws_cloudwatch_log_group" "api" {
+  name = "/aws/apigateway/echo"
+}
+
+resource "aws_apigatewayv2_stage" "default" {
+  api_id          = aws_apigatewayv2_api.echo.id
+  name            = "$default"
+  auto_deploy     = true
+  stage_variables = { team = var.team }
+  tags            = local.tags
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api.arn
+    format          = "$context.requestId $context.routeKey $context.status"
+  }
+
+  default_route_settings {
+    throttling_burst_limit = 100
+    throttling_rate_limit  = 50
+  }
+}
+
+resource "aws_lambda_permission" "api" {
+  statement_id  = "api"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.echo.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.echo.execution_arn}/*/*"
 }
 
 resource "aws_lambda_event_source_mapping" "jobs" {
