@@ -277,9 +277,11 @@ func TestRESTJSONFixture(t *testing.T) {
     "Payload": {"target": "smithy.api#Blob", "traits": {"smithy.api#httpPayload": {}}}}},
   "fixture#Out": {"type": "structure", "members": {
     "Status": {"target": "smithy.api#Integer", "traits": {"smithy.api#httpResponseCode": {}}},
-    "At": {"target": "smithy.api#Timestamp"}}},
+    "At": {"target": "smithy.api#Timestamp"},
+    "Since": {"target": "fixture#Iso", "traits": {"smithy.api#jsonName": "since"}}}},
   "fixture#Missing": {"type": "structure", "traits": {"smithy.api#error": "client", "smithy.api#httpError": 404},
-    "members": {"Message": {"target": "smithy.api#String"}}},
+    "members": {"Message": {"target": "smithy.api#String", "traits": {"smithy.api#jsonName": "message"}}}},
+  "fixture#Iso": {"type": "timestamp", "traits": {"smithy.api#timestampFormat": "date-time"}},
   "smithy.api#String": {"type": "string"},
   "smithy.api#Blob": {"type": "blob"},
   "smithy.api#Integer": {"type": "integer"},
@@ -299,7 +301,9 @@ func TestRESTJSONFixture(t *testing.T) {
 		`StatusCode: 200`,
 		`"Status": catalog.MemberBinding{Location: "status", Name: "Status"}`,
 		`"Mode": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Mode"}`,
-		`"Missing": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}`,
+		// REST JSON honors jsonName, and date-time timestamps are ISO 8601 text.
+		`Since *time.Time ` + "`" + `json:"since,omitempty"` + "`",
+		`"Missing": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}`,
 	} {
 		// Compare without gofmt's column alignment.
 		if !strings.Contains(strings.Join(strings.Fields(string(source)), " "), want) {
@@ -400,7 +404,7 @@ func TestAnonymousOperations(t *testing.T) {
 func TestUnsupportedWireTraitsFail(t *testing.T) {
 	for _, trait := range []string{
 		"smithy.api#streaming", "smithy.api#httpHeader",
-		"smithy.api#jsonName", "smithy.api#timestampFormat",
+		"smithy.api#timestampFormat",
 		"smithy.api#xmlAttribute", "smithy.api#xmlNamespace",
 	} {
 		t.Run(trait, func(t *testing.T) {

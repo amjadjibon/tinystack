@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"go/format"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -131,6 +132,16 @@ func (g *generator) sensitive(id string, visited map[string]bool) bool {
 	return false
 }
 
+const traitTimestampFormat = "smithy.api#timestampFormat"
+
+// isoTimestamp reports whether s is a timestamp shape that the JSON protocols
+// carry as ISO 8601 text, as time.Time encodes it, instead of epoch seconds.
+func isoTimestamp(s *shape) bool {
+	var format string
+	return s.Type == "timestamp" && json.Unmarshal(s.Traits[traitTimestampFormat], &format) == nil &&
+		format == "date-time"
+}
+
 // anonymous reports whether an operation's traits let clients call it
 // unsigned: smithy.api#optionalAuth, or an empty smithy.api#auth list.
 func anonymous(traits map[string]json.RawMessage) bool {
@@ -160,7 +171,7 @@ func (g *generator) typeName(id string) (string, error) {
 		// REST XML and AWS Query carry timestamps as ISO 8601 text (REST XML
 		// also as HTTP dates), which time.Time encodes; the JSON protocols use
 		// epoch seconds.
-		if g.xml || g.queryOnly {
+		if g.xml || g.queryOnly || isoTimestamp(&s) {
 			g.imports["time"] = true
 			return "time.Time", nil
 		}
@@ -216,8 +227,7 @@ func checkTraits(traits map[string]json.RawMessage, rest bool) error {
 		}
 
 		if strings.HasPrefix(t, "smithy.api#http") || t == traitStreaming ||
-			t == "smithy.api#timestampFormat" ||
-			t == "smithy.api#jsonName" ||
+			t == traitTimestampFormat ||
 			t == "smithy.api#sparse" ||
 			t == "smithy.api#mediaType" ||
 			t == "smithy.api#xmlAttribute" ||
@@ -227,6 +237,22 @@ func checkTraits(traits map[string]json.RawMessage, rest bool) error {
 	}
 
 	return nil
+}
+
+// jsonName is a member's name in JSON documents: its jsonName trait under
+// REST JSON, which alone honors the trait, or else its member name.
+func (g *generator) jsonName(member reference, name string) (string, error) {
+	raw, ok := member.Traits["smithy.api#jsonName"]
+	if !ok || !g.rest || g.xml {
+		return name, nil
+	}
+
+	var wire string
+	if err := json.Unmarshal(raw, &wire); err != nil || wire == "" {
+		return "", fmt.Errorf("invalid jsonName %s", raw)
+	}
+
+	return wire, nil
 }
 
 func xmlName(traits map[string]json.RawMessage, fallback string) (string, error) {
@@ -408,7 +434,13 @@ func (g *generator) emit(id string) error {
 
 	g.seen[id] = true
 	s := g.model.Shapes[id]
-	if guardErr := checkTraits(s.Traits, g.rest); guardErr != nil {
+	traits := s.Traits
+	if isoTimestamp(&s) {
+		traits = maps.Clone(traits)
+		delete(traits, traitTimestampFormat)
+	}
+
+	if guardErr := checkTraits(traits, g.rest); guardErr != nil {
 		return fmt.Errorf("%s: %w", id, guardErr)
 	}
 
@@ -466,7 +498,12 @@ func (g *generator) emit(id string) error {
 				t = "*" + t
 			}
 
-			tag := n + ",omitempty"
+			wire, err := g.jsonName(m, n)
+			if err != nil {
+				return fmt.Errorf("%s.%s: %w", id, n, err)
+			}
+
+			tag := wire + ",omitempty"
 			if g.rest && httpBound(m) {
 				tag = "-"
 			}
@@ -555,9 +592,14 @@ func (g *generator) errorBindings(
 			}
 
 			if !g.xml && !g.queryOnly {
-				for member := range g.model.Shapes[ref.Target].Members {
+				for member, m := range g.model.Shapes[ref.Target].Members {
 					if strings.EqualFold(member, "message") {
-						binding.MessageMember = member
+						wire, nameErr := g.jsonName(m, member)
+						if nameErr != nil {
+							return nil, nameErr
+						}
+
+						binding.MessageMember = wire
 					}
 				}
 			}
