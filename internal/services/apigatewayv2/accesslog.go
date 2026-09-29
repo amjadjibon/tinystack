@@ -2,16 +2,12 @@ package apigatewayv2
 
 import (
 	"context"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
-	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 )
-
-// contextPattern finds $context variables in an access log format.
-var contextPattern = regexp.MustCompile(`\$context\.[A-Za-z0-9_.]+`)
 
 // contextVariable returns a $context variable's value for a request and, once
 // it is known, its response, or "" for one TinyStack does not report.
@@ -71,36 +67,20 @@ func contextVariable(c *call, resp *execute.Response, name string) string {
 	return ""
 }
 
-// logGroupScope returns the account, region, and name of the log group an
-// ARN names.
-func logGroupScope(arn string) (request.Scope, string, bool) {
-	parts := strings.SplitN(arn, ":", 7)
-	if len(parts) != 7 || parts[5] != "log-group" {
-		return request.Scope{}, "", false
-	}
-
-	return request.Scope{AccountID: parts[4], Region: parts[3]}, strings.TrimSuffix(parts[6], ":*"), true
-}
-
 // accessLog writes the stage's access log line for a request, if the stage
-// has access logging, to a stream named after the stage. Unknown variables
-// are "-", as in API Gateway.
+// has access logging, to a stream named after the stage.
 func (s *Service) accessLog(ctx context.Context, c *call, resp *execute.Response) {
 	if c.stage == nil || c.stage.AccessLogSettings == nil {
 		return
 	}
 
-	scope, group, ok := logGroupScope(value(c.stage.AccessLogSettings.DestinationArn))
+	scope, group, ok := proxy.LogGroup(value(c.stage.AccessLogSettings.DestinationArn))
 	if !ok {
 		return
 	}
 
-	line := contextPattern.ReplaceAllStringFunc(value(c.stage.AccessLogSettings.Format), func(v string) string {
-		if got := contextVariable(c, resp, strings.TrimPrefix(v, "$context.")); got != "" {
-			return got
-		}
-
-		return "-"
+	line := proxy.FormatLog(value(c.stage.AccessLogSettings.Format), func(name string) string {
+		return contextVariable(c, resp, name)
 	})
 	// A failure to log does not fail the request.
 	_ = s.logs.Append(context.WithoutCancel(ctx), scope, group, value(c.stage.StageName), []string{line})
