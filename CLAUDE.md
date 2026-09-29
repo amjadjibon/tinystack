@@ -51,7 +51,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   prefix, or for Query from the signed or host service name, falling back to the only Query service that has the
   `Action`. The gateway also validates content type, method, path and version against the operation's binding (Query
   skips the path check because SQS clients post to queue URLs), decodes input with a 2 MiB limit, and puts
-  `request.Metadata` (including `Endpoint`) into the context. REST requests match an operation by method, path labels
+  `request.Metadata` (including `Endpoint`) into the context. REST services that share a signing name (API Gateway's
+  REST and HTTP API management APIs) are told apart by whose routes match. REST requests match an operation by method, path labels
   (greedy `{Key+}`), the URI's query literals (`x-id` is optional, but must match when sent), and required headers
   (S3's CopyObject is the PUT with `x-amz-copy-source`), preferring the most specific route; presigned-URL
   parameters are removed before matching, and other unknown query parameters mean no match
@@ -83,7 +84,10 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     XML namespace from the model, EC2 Query services (EC2), whose members get `ec2:"<query key>,<XML element>"` tags
     because the two names differ (the key is the `ec2QueryName`, or the capitalized `xmlName` or member name), must not have an overlay, and get `*time.Time` timestamps (ISO 8601 on the wire), and REST XML services such as S3, whose types get
     `encoding/xml` tags (`*time.Time` timestamps) and whose bindings place members by HTTP location, and REST JSON
-    services such as Lambda (HTTP-bound members get `json:"-"`; `httpResponseCode` becomes a `status` binding).
+    services such as Lambda (HTTP-bound members get `json:"-"`; `httpResponseCode` becomes a `status` binding;
+    members take their `jsonName`, which only REST JSON honors; `httpLabel` and `httpQuery` on output members are
+    ignored, as Smithy specifies, so API Gateway's paging `position` is a body member). Timestamp shapes marked
+    `timestampFormat: date-time` become `*time.Time` (ISO 8601) under every protocol.
     Modeled header and query inputs left out of the profile become `unsupported:*` bindings, and the REST codecs answer
     `NotImplemented` when a request sets one (or, for REST JSON, sends a body field that is not whitelisted), so
     whitelist only what the service implements.
@@ -101,7 +105,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   ignored.
 - **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**, **services/logs**,
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
-  **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**: behavior only, with
+  **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
+  **services/apigateway**, **services/apigatewayv2**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
   (DynamoDB items are separate records under `…/dynamodb/<table>/item/<key>`, and the table record keeps the item
@@ -208,6 +214,21 @@ a per-service `Dialect`), and delivers synchronously through
   groups, Fargate profiles, add-ons, pod identity associations by ID, access entries by path-escaped principal ARN,
   and updates, which always succeed at once and are recorded for `DescribeUpdate`). It holds the `*ec2.Service` and
   calls `ec2.Service.Place` outside its own transactions to check subnets and security groups and learn their VPC.
+  API Gateway serves the APIs it manages at the execute-api endpoint: `gateway/execute.go` (`Server.UseAPIs`)
+  sends requests to `<API ID>.execute-api.<host>` and `/_aws/execute-api/<API ID>/...` to each `execute.Handler`
+  (`internal/aws/execute`: the request and response types) until one owns the ID. HTTP APIs (`services/apigatewayv2`)
+  keep APIs under `…/apigatewayv2/api/<ID>` and routes, integrations, authorizers, deployments, and stages under
+  `…/apigatewayv2/<kind>/<API ID>/<ID or stage name>`; REST APIs (`services/apigateway`) keep each API with its whole
+  resource tree (resources hold their methods, which hold their responses and integration) and authorizers in one
+  record, `…/apigateway/restapi/<ID>`, with deployments and stages beside it, and apply update operations' JSON
+  patches through reflection on the generated types (`patch.go`). Both find an API's account and region from the
+  partition-wide `aws/<service>/api/<ID>`, snapshot what a stage serves into its deployment (HTTP API stages with
+  `AutoDeploy` get a new deployment in the transaction of every change), and share `services/apigateway/proxy`:
+  path matching, Lambda proxy events and responses (payload formats 1.0 and 2.0), HTTP forwarding, authorizer IAM
+  policies, access log formatting, and a JWKS-backed RS256 JWT verifier for HTTP API JWT authorizers. Integrations
+  and Lambda authorizers call `lambda.Service.Invoke`, REST API Cognito authorizers call `cognitoidp.Service.Verify`,
+  and access logs go through `logs.Service.Append`, all outside transactions. Lambda keeps each function's, version's,
+  and alias's resource-based policy under `…/lambda/policy/<name>/<qualifier>` (`policy.go`), stored, never evaluated.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
@@ -234,8 +255,8 @@ a per-service `Dialect`), and delivers synchronously through
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, EKS over REST
-  JSON, plus Docker Registry API calls) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, EKS and API Gateway over REST
+  JSON, plus Docker Registry API calls and requests to API Gateway APIs) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real

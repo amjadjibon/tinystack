@@ -73,7 +73,9 @@ TinyStack client is required. The Go SDK integration suite demonstrates this.
 
 The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SNS
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
-versions, and aliases, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
+versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
+authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
+stages), SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -90,6 +92,8 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    apigateway     = "http://localhost:4566"
+    apigatewayv2   = "http://localhost:4566"
     cognitoidp     = "http://localhost:4566"
     dynamodb       = "http://localhost:4566"
     ecr            = "http://localhost:4566"
@@ -302,6 +306,7 @@ invoking them does.
 | CreateAlias / GetAlias / UpdateAlias / DeleteAlias / ListAliases | Names for `$LATEST` or a version, with a `Description` and `RoutingConfig` that sends a weighted share (0 to 1) of invocations to one other version (not with `$LATEST`); `RevisionId` preconditions; aliases in name order, optionally of one version |
 | GetFunctionCodeSigningConfig | No code signing configuration |
 | TagResource / UntagResource / ListTags | Unqualified function ARNs; also `Tags` on CreateFunction |
+| AddPermission / GetPolicy / RemovePermission | A resource-based policy per function, version, and alias, with service, account, or `*` principals and `SourceArn`, `SourceAccount`, `PrincipalOrgID`, and `EventSourceToken` conditions; stored, never evaluated, and deleted with what it belongs to |
 | Invoke | `Qualifier` (a version or alias; routed aliases pick a version per invocation, reported in `X-Amz-Executed-Version`); `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`; `LogType: Tail` returns the last 4 KB of the log), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |
 | Create/Get/Delete/ListEventSourceMappings | SQS queues and DynamoDB streams in the function's account and region, for a function, version, or alias. For queues, `BatchSize` up to 10 (up to 10,000 with a batching window); a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies. For streams, `StartingPosition` `TRIM_HORIZON` or `LATEST`, `BatchSize` up to 10,000 (100 by default), and `MaximumRetryAttempts` (-1, the default, retries forever); batches of `aws:dynamodb` records are delivered in order, a failed batch is retried and then skipped, and the mapping resumes after its last record on restart. Both take `MaximumBatchingWindowInSeconds` (0–300; the poller gathers records until the batch is full or the window after the first record ends), `FilterCriteria` (up to 5 patterns in the EventBridge syntax without wildcards, matched against each record, with a JSON SQS body matched as JSON; filtered messages are deleted and filtered stream records skipped), and `FunctionResponseTypes` `ReportBatchItemFailures` (a `batchItemFailures` response keeps only the named messages on the queue, or retries a stream from the first named record; an invalid response fails the whole batch). `UpdateEventSourceMapping` is not supported |
 
@@ -637,6 +642,62 @@ and Region.
 | CreateService / DescribeServices / UpdateService / DeleteService / ListServices | `REPLICA` services keep their desired count of tasks running; a new task definition, network configuration, platform version, capacity provider strategy, or `forceNewDeployment` replaces the tasks with a new primary deployment at once; a stopped task is replaced; deployment configuration defaults (200 and 100 percent, no circuit breaker); a deleted service reports `DRAINING`, then `INACTIVE` |
 | TagResource / UntagResource / ListTagsForResource | Clusters, services, task definitions, and tasks by ARN; `aws:` keys are reserved |
 
+### API Gateway HTTP APIs (REST JSON)
+
+APIs belong to the caller's account and Region and are served by TinyStack
+itself, at `http://<API ID>.execute-api.localhost:4566/...` (the `ApiEndpoint`
+it reports) or, without DNS, `http://localhost:4566/_aws/execute-api/<API ID>/...`.
+A named stage is the first path segment; the `$default` stage serves the rest:
+
+```sh
+curl http://localhost:4566/_aws/execute-api/abc123defg/prod/pets/42
+```
+
+| Operation | Behavior |
+| --- | --- |
+| CreateApi / GetApi / GetApis / UpdateApi / DeleteApi / DeleteCorsConfiguration | `HTTP` APIs with a description, version, CORS configuration, a disabled default endpoint, and tags; quick create with `Target` (a Lambda function or URL) and `RouteKey` adds an integration, a route, and an automatically deployed `$default` stage |
+| CreateRoute / GetRoute / GetRoutes / UpdateRoute / DeleteRoute | `$default` or `<method> <path>` keys with `{param}` and final greedy `{param+}` segments; `integrations/<ID>` targets; `NONE`, `JWT` (with scopes), `CUSTOM`, and `AWS_IAM` authorization |
+| CreateIntegration / GetIntegration / GetIntegrations / UpdateIntegration / DeleteIntegration | `AWS_PROXY` Lambda integrations (payload format 1.0 or 2.0, by function ARN or invocation URI) and `HTTP_PROXY` integrations (payload 1.0) with `${stageVariables.<name>}` and path parameters in the URI; timeouts from 50 ms to 30 s; an integration a route targets cannot be deleted |
+| CreateAuthorizer / GetAuthorizer / GetAuthorizers / UpdateAuthorizer / DeleteAuthorizer | `JWT` authorizers (issuer and audiences; RS256 tokens are verified against the issuer's JWKS, read through its OpenID discovery document, such as a TinyStack Cognito pool's) and Lambda `REQUEST` authorizers (payload 1.0 or 2.0, simple or IAM policy responses) |
+| CreateStage / GetStage / GetStages / UpdateStage / DeleteStage | Stage variables, route settings (stored), access logs, and `AutoDeploy`, which deploys every change to the API |
+| CreateDeployment / GetDeployment / GetDeployments / UpdateDeployment / DeleteDeployment | A snapshot of the routes, integrations, and authorizers that a stage serves; a deployment a stage serves cannot be deleted |
+| GetTags / TagResource / UntagResource | APIs and stages by ARN (`arn:aws:apigateway:<region>::/apis/<ID>[/stages/<name>]`) |
+
+A request runs the most specific route of its stage's deployment (literal
+segments, then parameters, then greedy parameters; a method before `ANY`;
+`$default` last), its authorizer, and its integration: Lambda functions through
+Lambda's `Invoke` with API Gateway's events and response mapping (a 2.0 function
+may return any JSON as the body), and HTTP backends over the network. APIs with
+a CORS configuration answer preflight requests and add CORS headers themselves.
+Stages with access log settings write each request's line, with `$context`
+variables, to a CloudWatch Logs group.
+
+### API Gateway REST APIs (REST JSON)
+
+REST APIs are served like HTTP APIs, at
+`http://<API ID>.execute-api.localhost:4566/<stage>/...` or
+`http://localhost:4566/_aws/execute-api/<API ID>/<stage>/...`.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateRestApi / GetRestApi / GetRestApis / UpdateRestApi / DeleteRestApi | A root resource, binary media types, `EDGE`, `REGIONAL`, or `PRIVATE` endpoint types (stored), API key source, minimum compression size, and policies (stored); tags |
+| CreateResource / GetResource / GetResources / UpdateResource / DeleteResource | Path parts with `{param}` and greedy `{param+}` variables (one variable per level); moving a resource moves its subtree; deleting deletes it; `embed=methods` |
+| PutMethod / GetMethod / UpdateMethod / DeleteMethod | `NONE`, `AWS_IAM`, `CUSTOM`, and `COGNITO_USER_POOLS` (with scopes) authorization, request parameters and models, and operation names |
+| PutMethodResponse / GetMethodResponse / UpdateMethodResponse / DeleteMethodResponse | Status codes with response parameters and models |
+| PutIntegration / GetIntegration / UpdateIntegration / DeleteIntegration | `AWS_PROXY` (Lambda invocation URIs), `HTTP_PROXY`, and `MOCK` integrations with request templates, timeouts up to 29 s, and cache namespaces |
+| PutIntegrationResponse / GetIntegrationResponse / UpdateIntegrationResponse / DeleteIntegrationResponse | Selection patterns, header mappings to declared method response headers, and templates |
+| CreateAuthorizer / GetAuthorizer / GetAuthorizers / UpdateAuthorizer / DeleteAuthorizer | Lambda `TOKEN` (with identity validation expressions) and `REQUEST` authorizers returning IAM policies, and `COGNITO_USER_POOLS` authorizers, whose tokens TinyStack's Cognito verifies |
+| CreateDeployment / GetDeployment / GetDeployments / UpdateDeployment / DeleteDeployment | A snapshot of the resource tree and authorizers, optionally creating or updating a stage; every method needs an integration |
+| CreateStage / GetStage / GetStages / UpdateStage / DeleteStage | Stage variables, method settings (`/*/*/metrics/enabled` and the like, stored), tracing and cache settings (stored), and access logs |
+| GetTags / TagResource / UntagResource | APIs and stages by ARN (`arn:aws:apigateway:<region>::/restapis/<ID>[/stages/<name>]`) |
+
+Update operations take JSON patch operations (`add`, `remove`, and `replace`) on
+the members listed above. A request runs the most specific resource with its
+method (or `ANY`) in the stage's deployment; a path with no method is answered
+`403 Missing Authentication Token`, as in API Gateway. `MOCK` integrations take
+their status from a `{"statusCode": ...}` request template and answer with the
+selected integration response's literal header values and body template.
+
 ### EKS (REST JSON)
 
 The EKS control plane API only: no Kubernetes API server runs, so `kubectl`
@@ -702,7 +763,7 @@ delivery status logging, encryption, data protection, or cross-account subscript
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than `private`,
 policies, encryption, POST uploads, lifecycle, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, `ImageConfig`, function URLs,
-concurrency settings, resource policies, or event sources other than SQS and DynamoDB
+concurrency settings, resource policy evaluation, or event sources other than SQS and DynamoDB
 streams (no bisecting, failure destinations, or `UpdateEventSourceMapping`); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
 buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, or targets other than
@@ -724,7 +785,12 @@ instances, load balancers, service discovery, Service Connect, placement constra
 capacity providers, task sets, `DAEMON` tasks, account settings, or execute command. EKS limits: no
 Kubernetes API server, Auto Mode, Outposts, hybrid nodes, identity provider configurations, capabilities,
 insights, EKS Anywhere, add-on pod identity associations, cluster security group, log delivery to CloudWatch
-Logs, or IAM role checks. STS limits: no `GetSessionToken`, federation, web identity, SAML,
+Logs, or IAM role checks. API Gateway limits: no WebSocket APIs, custom domain names, VPC links, API keys and usage plans,
+models and request validation, `AWS` and `HTTP` (non-proxy) integrations or other AWS service integrations,
+mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
+request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;
+`AWS_IAM` authorization accepts any SigV4-signed request without verifying it, and Lambda resource
+policies are not checked. STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
