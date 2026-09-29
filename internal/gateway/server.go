@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/awsjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/query"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
@@ -44,6 +46,7 @@ type Server struct {
 	credentials CredentialLookup
 	documents   Documents
 	registry    Registry
+	apis        []execute.Handler
 	health      []byte
 	cfg         config.Config
 }
@@ -238,8 +241,8 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	if target == "" {
 		// REST services are chosen by the signed or host service name; unsigned
 		// requests without a JSON target or form body fall back to S3.
-		if rest := s.restService(r); rest != nil {
-			c.meta.Protocol = restProtocol(rest)
+		if rest := s.restServices(r); len(rest) > 0 {
+			c.meta.Protocol = restProtocol(rest[0])
 		}
 	}
 
@@ -269,13 +272,20 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 		// EC2 Query is AWS Query's form request with other names and XML.
 		return c, s.classifyQuery(w, r, c, signed)
 	case catalog.RESTXML, catalog.RESTJSON:
-		c.service = s.restService(r)
-		if signed != "" && signed != c.service.SigningName {
-			return c, awserror.New("IncompleteSignatureException", "Signing service does not match the request")
+		// Services that share a signing name, such as API Gateway's REST and
+		// HTTP API management APIs, are told apart by their routes.
+		for _, service := range s.restServices(r) {
+			c.service = service
+			if signed != "" && signed != c.service.SigningName {
+				return c, awserror.New("IncompleteSignatureException", "Signing service does not match the request")
+			}
+
+			c.meta.Service = c.service.Name
+			if c.labels, err = s.restOperation(r, c); err == nil {
+				return c, nil
+			}
 		}
 
-		c.meta.Service = c.service.Name
-		c.labels, err = s.restOperation(r, c)
 		return c, err
 	}
 
@@ -381,11 +391,11 @@ func formProtocol(protocol string) bool {
 	return protocol == catalog.AWSQuery || protocol == catalog.EC2Query
 }
 
-// restService selects the REST service for a request: the one named by the
-// signed scope or regional host, or S3 for unsigned requests that are neither
-// AWS JSON nor AWS Query, since S3 is the REST service that serves anonymous
-// requests such as presigned URLs.
-func (s *Server) restService(r *http.Request) *catalog.Service {
+// restServices selects the REST services for a request, in name order: those
+// named by the signed scope or regional host, or S3 for unsigned requests that
+// are neither AWS JSON nor AWS Query, since S3 is the REST service that serves
+// anonymous requests such as presigned URLs.
+func (s *Server) restServices(r *http.Request) []*catalog.Service {
 	var m request.Metadata
 	signed, err := s.identify(r, &m)
 	name := signed
@@ -402,13 +412,15 @@ func (s *Server) restService(r *http.Request) *catalog.Service {
 		name = "s3"
 	}
 
+	var out []*catalog.Service
 	for _, service := range s.services {
 		if restProtocol(service) != "" && service.SigningName == name {
-			return service
+			out = append(out, service)
 		}
 	}
 
-	return nil
+	slices.SortFunc(out, func(a, b *catalog.Service) int { return strings.Compare(a.Name, b.Name) })
+	return out
 }
 
 func (s *Server) decode(
@@ -513,7 +525,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.serveDocument(w, r) || s.serveRegistry(w, r) {
+	if s.serveDocument(w, r) || s.serveRegistry(w, r) || s.serveAPI(w, r) {
 		return
 	}
 
