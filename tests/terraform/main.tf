@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    apigateway     = var.endpoint
     apigatewayv2   = var.endpoint
     cognitoidp     = var.endpoint
     dynamodb       = var.endpoint
@@ -588,6 +589,133 @@ resource "aws_apigatewayv2_stage" "default" {
     throttling_burst_limit = 100
     throttling_rate_limit  = 50
   }
+}
+
+resource "aws_api_gateway_rest_api" "shop" {
+  name        = "shop"
+  description = "Shop for ${var.team}"
+  tags        = local.tags
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
+}
+
+resource "aws_api_gateway_resource" "items" {
+  rest_api_id = aws_api_gateway_rest_api.shop.id
+  parent_id   = aws_api_gateway_rest_api.shop.root_resource_id
+  path_part   = "items"
+}
+
+resource "aws_api_gateway_resource" "item" {
+  rest_api_id = aws_api_gateway_rest_api.shop.id
+  parent_id   = aws_api_gateway_resource.items.id
+  path_part   = "{id}"
+}
+
+resource "aws_api_gateway_authorizer" "users" {
+  rest_api_id   = aws_api_gateway_rest_api.shop.id
+  name          = "users"
+  type          = "COGNITO_USER_POOLS"
+  provider_arns = [aws_cognito_user_pool.app.arn]
+}
+
+resource "aws_api_gateway_method" "get_item" {
+  rest_api_id        = aws_api_gateway_rest_api.shop.id
+  resource_id        = aws_api_gateway_resource.item.id
+  http_method        = "GET"
+  authorization      = "COGNITO_USER_POOLS"
+  authorizer_id      = aws_api_gateway_authorizer.users.id
+  request_parameters = { "method.request.path.id" = true }
+}
+
+resource "aws_api_gateway_integration" "get_item" {
+  rest_api_id             = aws_api_gateway_rest_api.shop.id
+  resource_id             = aws_api_gateway_resource.item.id
+  http_method             = aws_api_gateway_method.get_item.http_method
+  type                    = "AWS_PROXY"
+  integration_http_method = "POST"
+  uri                     = aws_lambda_function.echo.invoke_arn
+}
+
+resource "aws_api_gateway_method" "options_items" {
+  rest_api_id   = aws_api_gateway_rest_api.shop.id
+  resource_id   = aws_api_gateway_resource.items.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options_items" {
+  rest_api_id       = aws_api_gateway_rest_api.shop.id
+  resource_id       = aws_api_gateway_resource.items.id
+  http_method       = aws_api_gateway_method.options_items.http_method
+  type              = "MOCK"
+  request_templates = { "application/json" = jsonencode({ statusCode = 200 }) }
+}
+
+resource "aws_api_gateway_method_response" "options_items" {
+  rest_api_id         = aws_api_gateway_rest_api.shop.id
+  resource_id         = aws_api_gateway_resource.items.id
+  http_method         = aws_api_gateway_method.options_items.http_method
+  status_code         = "200"
+  response_parameters = { "method.response.header.Access-Control-Allow-Origin" = true }
+}
+
+resource "aws_api_gateway_integration_response" "options_items" {
+  rest_api_id         = aws_api_gateway_rest_api.shop.id
+  resource_id         = aws_api_gateway_resource.items.id
+  http_method         = aws_api_gateway_method.options_items.http_method
+  status_code         = aws_api_gateway_method_response.options_items.status_code
+  response_parameters = { "method.response.header.Access-Control-Allow-Origin" = "'https://${var.team}.example'" }
+  depends_on          = [aws_api_gateway_integration.options_items]
+}
+
+resource "aws_api_gateway_deployment" "shop" {
+  rest_api_id = aws_api_gateway_rest_api.shop.id
+  description = "Deployed for ${var.team}"
+
+  triggers = {
+    redeploy = sha1(jsonencode([
+      aws_api_gateway_integration.get_item.id, aws_api_gateway_integration_response.options_items.id,
+      aws_api_gateway_integration_response.options_items.response_parameters,
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_api_gateway_stage" "live" {
+  rest_api_id   = aws_api_gateway_rest_api.shop.id
+  deployment_id = aws_api_gateway_deployment.shop.id
+  stage_name    = "live"
+  variables     = { team = var.team }
+  tags          = local.tags
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api.arn
+    format          = "$context.requestId $context.resourcePath $context.status"
+  }
+}
+
+resource "aws_api_gateway_method_settings" "all" {
+  rest_api_id = aws_api_gateway_rest_api.shop.id
+  stage_name  = aws_api_gateway_stage.live.stage_name
+  method_path = "*/*"
+
+  settings {
+    metrics_enabled        = true
+    throttling_burst_limit = 50
+  }
+}
+
+resource "aws_lambda_permission" "shop" {
+  statement_id  = "shop"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.echo.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.shop.execution_arn}/*/*"
 }
 
 resource "aws_lambda_permission" "api" {

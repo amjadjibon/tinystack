@@ -71,6 +71,29 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 		allowed := len(event.IdentitySource) == 1 && event.IdentitySource[0] == "let-me-in"
 		body, err := json.Marshal(map[string]any{"isAuthorized": allowed, "context": map[string]any{"user": "fay"}})
 		return lambda.Result{Payload: body}, err
+	case "app.policy":
+		// A TOKEN authorizer's IAM policy: "allow" and "deny" decide, and any
+		// other token raises Unauthorized.
+		var event struct {
+			AuthorizationToken string `json:"authorizationToken"`
+			MethodArn          string `json:"methodArn"`
+		}
+		if err := json.Unmarshal(payload, &event); err != nil {
+			return lambda.Result{}, err
+		}
+
+		effect := map[string]string{"allow": "Allow", "deny": "Deny"}[event.AuthorizationToken]
+		if effect == "" {
+			return lambda.Result{Payload: []byte(`{"errorMessage":"Unauthorized"}`), Error: true}, nil
+		}
+
+		body, err := json.Marshal(map[string]any{
+			"principalId": "fay", "context": map[string]any{"tier": "gold"},
+			"policyDocument": map[string]any{"Version": "2012-10-17", "Statement": []map[string]any{{
+				"Action": "execute-api:Invoke", "Effect": effect, "Resource": event.MethodArn,
+			}}},
+		})
+		return lambda.Result{Payload: body}, err
 	default:
 		return lambda.Result{Payload: []byte("null")}, nil
 	}
