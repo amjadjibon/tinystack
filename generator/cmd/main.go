@@ -24,6 +24,7 @@ const (
 	shapeUnion     = "union"
 	shapeList      = "list"
 	shapeMap       = "map"
+	shapeTimestamp = "timestamp"
 	unitShape      = "smithy.api#Unit"
 )
 
@@ -137,9 +138,9 @@ const traitTimestampFormat = "smithy.api#timestampFormat"
 // isoTimestamp reports whether s is a timestamp shape that the JSON protocols
 // carry as ISO 8601 text, as time.Time encodes it, instead of epoch seconds.
 func isoTimestamp(s *shape) bool {
-	var format string
-	return s.Type == "timestamp" && json.Unmarshal(s.Traits[traitTimestampFormat], &format) == nil &&
-		format == "date-time"
+	var layout string
+	return s.Type == shapeTimestamp && json.Unmarshal(s.Traits[traitTimestampFormat], &layout) == nil &&
+		layout == "date-time"
 }
 
 // anonymous reports whether an operation's traits let clients call it
@@ -167,7 +168,7 @@ func (g *generator) typeName(id string) (string, error) {
 		return "bool", nil
 	case "integer", "long":
 		return "int64", nil
-	case "timestamp":
+	case shapeTimestamp:
 		// REST XML and AWS Query carry timestamps as ISO 8601 text (REST XML
 		// also as HTTP dates), which time.Time encodes; the JSON protocols use
 		// epoch seconds.
@@ -289,7 +290,7 @@ func (g *generator) queryTag(member reference, name string) (string, error) {
 	}
 
 	switch target.Type {
-	case "timestamp":
+	case shapeTimestamp:
 		if !g.queryOnly {
 			return "", fmt.Errorf("timestamps of AWS Query compatible JSON services are not supported")
 		}
