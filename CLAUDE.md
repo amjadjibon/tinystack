@@ -198,6 +198,8 @@ a per-service `Dialect`), and delivers synchronously through
   default VPC stays deleted. `filters.go` compiles `Filters` against the values each resource reports (whose keys are
   also the filter names it accepts), and `tags.go` finds a resource by its ID prefix (`taggable`) and rewrites only the
   `Tags` field of its record, so a new taggable kind only needs an entry there. Key pairs (`keypairs.go`) store only the public key and fingerprint; a created private key is returned once.
+  Launch templates (`launchtemplates.go`) are one record holding every version; `RunInstances` overlays the request on
+  the version it names.
   Images (`images.go`) are a fixed catalog with IDs derived from the Region and name, whose public parameters
   `ec2.PublicParameters` hands to SSM (`ssm.Service.UsePublicParameters` in `start.go`). Instances (`instances.go`)
   settle in the state an operation asks for at once, reporting the transitional state only in its response; each
