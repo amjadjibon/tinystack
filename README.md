@@ -75,7 +75,7 @@ The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SN
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
 authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
-stages), Step Functions state machines and activities, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
+stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -100,7 +100,9 @@ provider "aws" {
     ecs            = "http://localhost:4566"
     eks            = "http://localhost:4566"
     eventbridge    = "http://localhost:4566"
+    firehose       = "http://localhost:4566"
     iam            = "http://localhost:4566"
+    kinesis        = "http://localhost:4566"
     kms            = "http://localhost:4566"
     lambda         = "http://localhost:4566"
     logs           = "http://localhost:4566"
@@ -309,7 +311,7 @@ invoking them does.
 | TagResource / UntagResource / ListTags | Unqualified function ARNs; also `Tags` on CreateFunction |
 | AddPermission / GetPolicy / RemovePermission | A resource-based policy per function, version, and alias, with service, account, or `*` principals and `SourceArn`, `SourceAccount`, `PrincipalOrgID`, and `EventSourceToken` conditions; stored, never evaluated, and deleted with what it belongs to |
 | Invoke | `Qualifier` (a version or alias; routed aliases pick a version per invocation, reported in `X-Amz-Executed-Version`); `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`; `LogType: Tail` returns the last 4 KB of the log), `Event` (1 MB, runs in the background with two retries), and `DryRun`; payloads must be JSON |
-| Create/Get/Delete/ListEventSourceMappings | SQS queues and DynamoDB streams in the function's account and region, for a function, version, or alias. For queues, `BatchSize` up to 10 (up to 10,000 with a batching window); a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies. For streams, `StartingPosition` `TRIM_HORIZON` or `LATEST`, `BatchSize` up to 10,000 (100 by default), and `MaximumRetryAttempts` (-1, the default, retries forever); batches of `aws:dynamodb` records are delivered in order, a failed batch is retried and then skipped, and the mapping resumes after its last record on restart. Both take `MaximumBatchingWindowInSeconds` (0–300; the poller gathers records until the batch is full or the window after the first record ends), `FilterCriteria` (up to 5 patterns in the EventBridge syntax without wildcards, matched against each record, with a JSON SQS body matched as JSON; filtered messages are deleted and filtered stream records skipped), and `FunctionResponseTypes` `ReportBatchItemFailures` (a `batchItemFailures` response keeps only the named messages on the queue, or retries a stream from the first named record; an invalid response fails the whole batch). `UpdateEventSourceMapping` is not supported |
+| Create/Get/Delete/ListEventSourceMappings | SQS queues, DynamoDB streams, and Kinesis streams (every shard, parents before children, with each shard's position kept) in the function's account and region, for a function, version, or alias. For queues, `BatchSize` up to 10 (up to 10,000 with a batching window); a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies. For streams, `StartingPosition` `TRIM_HORIZON` or `LATEST`, `BatchSize` up to 10,000 (100 by default), and `MaximumRetryAttempts` (-1, the default, retries forever); batches of `aws:dynamodb` records are delivered in order, a failed batch is retried and then skipped, and the mapping resumes after its last record on restart. Both take `MaximumBatchingWindowInSeconds` (0–300; the poller gathers records until the batch is full or the window after the first record ends), `FilterCriteria` (up to 5 patterns in the EventBridge syntax without wildcards, matched against each record, with a JSON SQS body matched as JSON; filtered messages are deleted and filtered stream records skipped), and `FunctionResponseTypes` `ReportBatchItemFailures` (a `batchItemFailures` response keeps only the named messages on the queue, or retries a stream from the first named record; an invalid response fails the whole batch). `UpdateEventSourceMapping` is not supported |
 
 Function code gets `AWS_REGION`, the function name, memory size, and timeout,
 and the creator's access key (and its configured secret key when signatures are
@@ -727,6 +729,41 @@ function ARNs, activity ARNs, the optimized integrations `lambda:invoke`, `sqs:s
 Functions names them (`States.Timeout`, a function's `errorType`, `DynamoDB.ConditionalCheckFailedException`,
 and so on). Logging levels `ALL`, `ERROR`, and `FATAL` write events to the configured CloudWatch Logs group.
 
+### Kinesis Data Streams (AWS JSON 1.1)
+
+| Operation | Behavior |
+| --- | --- |
+| CreateStream / DeleteStream / DescribeStream / DescribeStreamSummary / ListStreams / ListShards | `PROVISIONED` streams (1 to 500 shards) and `ON_DEMAND` streams (4 shards), `ACTIVE` at once, with even hash key ranges; ListShards takes the `AFTER_SHARD_ID`, `AT_LATEST`, and trim horizon filters; a stream with consumers is deleted only with `EnforceConsumerDeletion` |
+| PutRecord / PutRecords | Records of up to 1 MiB routed by the MD5 of the partition key or an explicit hash key; PutRecords (up to 500 records, 5 MiB) reports each failed record |
+| GetShardIterator / GetRecords | `TRIM_HORIZON`, `LATEST`, `AT_SEQUENCE_NUMBER`, `AFTER_SEQUENCE_NUMBER`, and `AT_TIMESTAMP` iterators that expire after 5 minutes; up to 10,000 records or 10 MB per call, `MillisBehindLatest`, and a closed shard read to its end reports its children and no next iterator |
+| IncreaseStreamRetentionPeriod / DecreaseStreamRetentionPeriod | 24 hours to one year; older records are skipped by reads and deleted by writes |
+| UpdateShardCount / SplitShard / MergeShards / UpdateStreamMode | Resharding closes shards and opens their children at once |
+| StartStreamEncryption / StopStreamEncryption / EnableEnhancedMonitoring / DisableEnhancedMonitoring | Stored settings |
+| RegisterStreamConsumer / DescribeStreamConsumer / ListStreamConsumers / DeregisterStreamConsumer | Up to 20 consumers, `ACTIVE` at once |
+| AddTagsToStream / RemoveTagsFromStream / ListTagsForStream / TagResource / UntagResource / ListTagsForResource / DescribeLimits | Tags by stream name or ARN; limits |
+
+Lambda event source mappings read Kinesis streams too (see Lambda), and so
+can Firehose delivery streams.
+
+### Firehose (AWS JSON 1.1)
+
+Delivery streams buffer records in TinyStack and write them to S3 once their
+buffering size (1 to 128 MB) or interval (0 to 900 seconds) is reached.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateDeliveryStream / DescribeDeliveryStream / ListDeliveryStreams / DeleteDeliveryStream | `DirectPut` and `KinesisStreamAsSource` streams (reading the Kinesis stream's records after the delivery stream is created) with an S3 or extended S3 destination, `ACTIVE` at once; deleting drops the buffered records |
+| PutRecord / PutRecordBatch | Records of up to 1000 KiB, up to 500 and 4 MiB per batch, to `DirectPut` streams |
+| UpdateDestination | Changes the destination, checked against `CurrentDeliveryStreamVersionId` |
+| StartDeliveryStreamEncryption / StopDeliveryStreamEncryption | Stored settings |
+| TagDeliveryStream / UntagDeliveryStream / ListTagsForDeliveryStream | Tags |
+
+Objects are named `<prefix><yyyy/MM/dd/HH/><stream>-<version>-<time>-<ID>` (a prefix with `!{timestamp:...}`
+expressions replaces the time path), `GZIP` compressed with a `.gz` extension if asked, and joined without
+separators unless an `AppendDelimiterToRecord` processor adds them. A `Lambda` processor transforms records in
+Firehose's event format; `Dropped` records are dropped, and `ProcessingFailed` ones go, as JSON lines, under the
+error output prefix (`<prefix>processing-failed/` by default). A delivery that fails (a missing bucket) is retried.
+
 ### EKS (REST JSON)
 
 The EKS control plane API only: no Kubernetes API server runs, so `kubectl`
@@ -792,8 +829,8 @@ delivery status logging, encryption, data protection, or cross-account subscript
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than `private`,
 policies, encryption, POST uploads, lifecycle, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, `ImageConfig`, function URLs,
-concurrency settings, resource policy evaluation, or event sources other than SQS and DynamoDB
-streams (no bisecting, failure destinations, or `UpdateEventSourceMapping`); asynchronous failures are
+concurrency settings, resource policy evaluation, or event sources other than SQS, DynamoDB
+streams, and Kinesis streams (no `AT_TIMESTAMP`, parallelization factor, or tumbling windows) (no bisecting, failure destinations, or `UpdateEventSourceMapping`); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
 buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; the first delivery happens
@@ -822,7 +859,11 @@ request), throttling, caching, canary settings, client certificates, mutual TLS,
 policies are not checked. Step Functions limits: no JSONata, variables (`Assign`), distributed Map (`ItemReader`, `ResultWriter`), state
 machine versions and aliases, redrive, `TestState`, map runs, execution retention, or IAM role checks, and
 `JsonPath` filters and recursive descent are not supported; executions running when TinyStack stops are aborted when
-it starts again. STS limits: no `GetSessionToken`, federation, web identity, SAML,
+it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard`), throughput limits, resource policies,
+record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only
+S3 destinations (no Redshift, OpenSearch, Splunk, HTTP endpoint, Snowflake, or Iceberg), no MSK or database
+sources, record format conversion, dynamic partitioning, S3 backups, CloudWatch logging, or encryption.
+STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)

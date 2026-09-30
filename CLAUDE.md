@@ -106,7 +106,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 - **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**, **services/logs**,
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
-  **services/apigateway**, **services/apigatewayv2**, **services/sfn**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
+  **services/firehose**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -238,6 +239,16 @@ a per-service `Dialect`), and delivers synchronously through
   `catalog.Caller` (`internal/aws/catalog/call.go`), which `start.go` builds from every registered descriptor and hands
   over with `UseCaller`: it runs any operation in-process with parameters keyed by Go field names (the SDK's member
   names), so AWS SDK integrations cover every TinyStack operation.
+  Kinesis keeps each stream with its shards (hash ranges, parents, and a record counter) and consumers under
+  `…/kinesis/stream/<name>` and each record under `…/kinesis/record/<stream>/<shard ID>/<sequence number>`, whose
+  fixed-width decimal sequence numbers list a shard in order; resharding closes shards and opens children in one
+  transaction, and shard iterators are self-describing tokens. `kinesis.Service.Shards` and `Records` let Lambda
+  (`lambda/kinesis.go`, `UseKinesis`, called before `Resume`) and Firehose read streams in-process, parents before
+  children. Firehose keeps delivery streams under `…/firehose/stream/<name>` and buffered records under
+  `…/firehose/buffer/<name>/<zero-padded number>`; its flusher (started by `New`, stopped by `Stop`) visits the
+  partition-wide `aws/firehose/index/<account>/<region>/<name>`, reads Kinesis sources into the buffer, and delivers a
+  full or old buffer to S3 through the `catalog.Caller` (which also runs Lambda processors), deleting the records
+  only after the object is written.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
@@ -264,7 +275,7 @@ a per-service `Dialect`), and delivers synchronously through
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, EKS and API Gateway over REST
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, EKS and API Gateway over REST
   JSON, plus Docker Registry API calls and requests to API Gateway APIs) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
