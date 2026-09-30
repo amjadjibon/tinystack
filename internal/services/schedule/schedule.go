@@ -1,5 +1,6 @@
-// Package schedule parses the rate and cron schedule expressions EventBridge
-// and Secrets Manager share, and finds their fire times in UTC.
+// Package schedule parses the rate and cron schedule expressions EventBridge,
+// EventBridge Scheduler, and Secrets Manager share, and finds their fire
+// times, in UTC unless a schedule is given a time zone.
 package schedule
 
 import (
@@ -11,10 +12,26 @@ import (
 )
 
 // Schedule is a parsed schedule expression: a fixed rate or a cron
-// expression, evaluated in UTC.
+// expression, evaluated in UTC or the time zone set with In.
 type Schedule struct {
 	cron   *cron
+	loc    *time.Location
 	period time.Duration
+}
+
+// In evaluates a cron expression's fields in loc instead of UTC and returns
+// the schedule.
+func (s *Schedule) In(loc *time.Location) *Schedule {
+	s.loc = loc
+	return s
+}
+
+func (s *Schedule) location() *time.Location {
+	if s.loc == nil {
+		return time.UTC
+	}
+
+	return s.loc
 }
 
 var (
@@ -67,7 +84,7 @@ func (s *Schedule) Period() time.Duration { return s.period }
 // when a cron expression never fires again.
 func (s *Schedule) First(now time.Time) (time.Time, bool) {
 	if s.cron != nil {
-		return s.cron.next(now)
+		return s.cron.next(now, s.location())
 	}
 
 	return now.Add(s.period), true
@@ -77,7 +94,7 @@ func (s *Schedule) First(now time.Time) (time.Time, bool) {
 // due. Runs missed in between are skipped, not replayed.
 func (s *Schedule) After(due, now time.Time) (time.Time, bool) {
 	if s.cron != nil {
-		return s.cron.next(now)
+		return s.cron.next(now, s.location())
 	}
 
 	return due.Add(now.Sub(due).Truncate(s.period) + s.period), true
@@ -212,23 +229,24 @@ func (c *cron) matchesDay(t time.Time) bool {
 	return c.weekdays[int(t.Weekday())+1]
 }
 
-// next is the first minute after now that the expression matches.
-func (c *cron) next(now time.Time) (time.Time, bool) {
-	t := now.UTC().Truncate(time.Minute).Add(time.Minute)
+// next is the first minute after now that the expression matches in loc,
+// returned in UTC.
+func (c *cron) next(now time.Time, loc *time.Location) (time.Time, bool) {
+	t := now.In(loc).Truncate(time.Minute).Add(time.Minute)
 	for t.Year() <= lastYear {
 		switch {
 		case t.Year() < firstYear || !c.years[t.Year()]:
-			t = time.Date(t.Year()+1, time.January, 1, 0, 0, 0, 0, time.UTC)
+			t = time.Date(t.Year()+1, time.January, 1, 0, 0, 0, 0, loc)
 		case !c.months[int(t.Month())]:
-			t = time.Date(t.Year(), t.Month()+1, 1, 0, 0, 0, 0, time.UTC)
+			t = time.Date(t.Year(), t.Month()+1, 1, 0, 0, 0, 0, loc)
 		case !c.matchesDay(t):
-			t = time.Date(t.Year(), t.Month(), t.Day()+1, 0, 0, 0, 0, time.UTC)
+			t = time.Date(t.Year(), t.Month(), t.Day()+1, 0, 0, 0, 0, loc)
 		case !c.hours[t.Hour()]:
-			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour()+1, 0, 0, 0, time.UTC)
+			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour()+1, 0, 0, 0, loc)
 		case !c.minutes[t.Minute()]:
 			t = t.Add(time.Minute)
 		default:
-			return t, true
+			return t.UTC(), true
 		}
 	}
 

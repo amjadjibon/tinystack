@@ -75,3 +75,31 @@ func TestRateAfter(t *testing.T) {
 		t.Errorf("got %v", got)
 	}
 }
+
+func TestCronInTimeZone(t *testing.T) {
+	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		t.Skip(err)
+	}
+
+	s, err := Parse("cron(0 9 * * ? *)")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Date(2026, time.March, 14, 10, 0, 0, 0, time.UTC) // 19:00 in Tokyo
+	got, ok := s.In(tokyo).First(now)
+	if want := time.Date(
+		2026,
+		time.March,
+		15,
+		0,
+		0,
+		0,
+		0,
+		time.UTC,
+	); !ok || !got.Equal(want) ||
+		got.Location() != time.UTC {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}
