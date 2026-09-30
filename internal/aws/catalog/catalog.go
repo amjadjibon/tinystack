@@ -97,6 +97,9 @@ type Service struct {
 	XMLNamespace    string
 	Protocols       []string
 	QueryCompatible bool
+	// WrappedErrors marks REST XML services whose error bodies are wrapped in
+	// an ErrorResponse element; S3's are not.
+	WrappedErrors bool
 }
 
 func (s *Service) Supports(protocol string) bool {

@@ -83,7 +83,7 @@ func Write(w http.ResponseWriter, b *catalog.Binding, output any, head bool) {
 		}
 
 		if err != nil {
-			WriteError(w, awserror.From(err), "", head)
+			WriteError(w, awserror.From(err), "", "", head)
 			return
 		}
 
@@ -94,17 +94,33 @@ func Write(w http.ResponseWriter, b *catalog.Binding, output any, head bool) {
 	rest.Send(w, resp.Status, body, head)
 }
 
-// WriteError encodes the unwrapped S3-style REST XML error. HEAD responses
-// carry no body, so clients infer the error from the status code.
-func WriteError(w http.ResponseWriter, e *awserror.Error, requestID string, head bool) {
+// WriteError encodes a REST XML error: S3's unwrapped <Error> element, or,
+// when namespace is set, the <ErrorResponse> in namespace that wraps the
+// errors of other REST XML services such as Route 53. HEAD responses carry no
+// body, so clients infer the error from the status code.
+func WriteError(w http.ResponseWriter, e *awserror.Error, requestID, namespace string, head bool) {
 	var b bytes.Buffer
-	b.WriteString(xml.Header + "<Error><Code>")
+	b.WriteString(xml.Header)
+	if namespace != "" {
+		b.WriteString(`<ErrorResponse xmlns="`)
+		_ = xml.EscapeText(&b, []byte(namespace))
+		b.WriteString(`"><Error><Type>` + e.Fault() + "</Type><Code>")
+	} else {
+		b.WriteString("<Error><Code>")
+	}
+
 	_ = xml.EscapeText(&b, []byte(e.Code))
 	b.WriteString("</Code><Message>")
 	_ = xml.EscapeText(&b, []byte(e.Message))
-	b.WriteString("</Message><RequestId>")
-	_ = xml.EscapeText(&b, []byte(requestID))
-	b.WriteString("</RequestId></Error>")
+	if namespace != "" {
+		b.WriteString("</Message></Error><RequestId>")
+		_ = xml.EscapeText(&b, []byte(requestID))
+		b.WriteString("</RequestId></ErrorResponse>")
+	} else {
+		b.WriteString("</Message><RequestId>")
+		_ = xml.EscapeText(&b, []byte(requestID))
+		b.WriteString("</RequestId></Error>")
+	}
 	w.Header().Set("Content-Type", "application/xml")
 	w.Header().Del("Content-Length")
 	w.WriteHeader(e.StatusCode)

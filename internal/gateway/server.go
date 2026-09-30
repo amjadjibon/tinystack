@@ -574,7 +574,12 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	case catalog.EC2Query:
 		query.WriteEC2Error(w, c.meta.RequestID, e)
 	case catalog.RESTXML:
-		restxml.WriteError(w, e, c.meta.RequestID, c.head)
+		wrapped := ""
+		if c.service != nil && c.service.WrappedErrors {
+			wrapped = namespace
+		}
+
+		restxml.WriteError(w, e, c.meta.RequestID, wrapped, c.head)
 	case catalog.RESTJSON:
 		restjson.WriteError(w, e, messageMember)
 	case catalog.RPCV2CBOR:
