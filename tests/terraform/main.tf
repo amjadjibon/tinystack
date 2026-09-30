@@ -26,7 +26,9 @@ provider "aws" {
     ecs            = var.endpoint
     eks            = var.endpoint
     eventbridge    = var.endpoint
+    firehose       = var.endpoint
     iam            = var.endpoint
+    kinesis        = var.endpoint
     kms            = var.endpoint
     lambda         = var.endpoint
     logs           = var.endpoint
@@ -761,6 +763,45 @@ resource "aws_sfn_state_machine" "orders" {
     include_execution_data = true
     level                  = "ERROR"
   }
+}
+
+resource "aws_kinesis_stream" "clicks" {
+  name             = "clicks"
+  shard_count      = 2
+  retention_period = 48
+  encryption_type  = "KMS"
+  kms_key_id       = "alias/aws/kinesis"
+  tags             = local.tags
+
+  shard_level_metrics = ["IncomingBytes"]
+}
+
+resource "aws_kinesis_firehose_delivery_stream" "clicks" {
+  name        = "clicks"
+  destination = "extended_s3"
+  tags        = local.tags
+
+  kinesis_source_configuration {
+    kinesis_stream_arn = aws_kinesis_stream.clicks.arn
+    role_arn           = aws_iam_role.lambda.arn
+  }
+
+  extended_s3_configuration {
+    role_arn            = aws_iam_role.lambda.arn
+    bucket_arn          = aws_s3_bucket.assets.arn
+    prefix              = "clicks/${var.team}/"
+    error_output_prefix = "errors/"
+    buffering_interval  = 60
+    buffering_size      = 5
+    compression_format  = "GZIP"
+  }
+}
+
+resource "aws_lambda_event_source_mapping" "clicks" {
+  event_source_arn  = aws_kinesis_stream.clicks.arn
+  function_name     = aws_lambda_function.echo.arn
+  starting_position = "LATEST"
+  batch_size        = 50
 }
 
 resource "aws_lambda_event_source_mapping" "jobs" {

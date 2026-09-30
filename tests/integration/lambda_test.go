@@ -71,6 +71,33 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 		allowed := len(event.IdentitySource) == 1 && event.IdentitySource[0] == "let-me-in"
 		body, err := json.Marshal(map[string]any{"isAuthorized": allowed, "context": map[string]any{"user": "fay"}})
 		return lambda.Result{Payload: body}, err
+	case "app.firehose":
+		// A Firehose processor: records whose data is "drop" are dropped,
+		// "fail" fail, and the rest are upper-cased.
+		var event struct {
+			Records []struct {
+				RecordID string `json:"recordId"`
+				Data     []byte `json:"data"`
+			} `json:"records"`
+		}
+		if err := json.Unmarshal(payload, &event); err != nil {
+			return lambda.Result{}, err
+		}
+
+		var out []map[string]any
+		for _, r := range event.Records {
+			result := map[string]string{"drop": "Dropped", "fail": "ProcessingFailed"}[string(r.Data)]
+			if result == "" {
+				result = "Ok"
+			}
+
+			out = append(out, map[string]any{
+				"recordId": r.RecordID, "result": result, "data": []byte(strings.ToUpper(string(r.Data))),
+			})
+		}
+
+		body, err := json.Marshal(map[string]any{"records": out})
+		return lambda.Result{Payload: body}, err
 	case "app.policy":
 		// A TOKEN authorizer's IAM policy: "allow" and "deny" decide, and any
 		// other token raises Unauthorized.
