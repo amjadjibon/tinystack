@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, ACM, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, ACM, Route 53, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -75,7 +75,7 @@ The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SN
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
 authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
-stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
+stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), Route 53 hosted zones (public and private), records (including routing policies and aliases), and health checks, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -108,6 +108,7 @@ provider "aws" {
     kms            = "http://localhost:4566"
     lambda         = "http://localhost:4566"
     logs           = "http://localhost:4566"
+    route53        = "http://localhost:4566"
     s3             = "http://localhost:4566"
     secretsmanager = "http://localhost:4566"
     sfn            = "http://localhost:4566"
@@ -808,6 +809,21 @@ use, so Terraform's validation resources and Route 53 records work.
 | DeleteCertificate / UpdateCertificateOptions | Deleting; the certificate transparency option of requested certificates |
 | AddTagsToCertificate / RemoveTagsFromCertificate / ListTagsForCertificate | Tags; a tag given with a value is removed only if the value matches |
 
+### Route 53 (REST XML)
+
+Route 53 is global: hosted zones and health checks belong to an account in every Region. Changes apply at once;
+`ChangeResourceRecordSets` reports them `PENDING` and `GetChange` `INSYNC`. No DNS server answers queries.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateHostedZone / GetHostedZone / DeleteHostedZone | Public zones get four name servers and their apex `SOA` and `NS` record sets; private zones need a VPC that exists in EC2; caller references are single use; deleting fails while other record sets remain |
+| ListHostedZones / ListHostedZonesByName / GetHostedZoneCount / UpdateHostedZoneComment | Zones by ID (optionally private only) or by name with the labels reversed, with markers |
+| AssociateVPCWithHostedZone / DisassociateVPCFromHostedZone | Private zones only; the last VPC cannot be removed |
+| ChangeResourceRecordSets | Up to 1000 `CREATE`, `DELETE`, and `UPSERT` changes applied together or not at all: names are lowercased and escaped (a wildcard `*` is `\052`), `A`, `AAAA`, `TXT`/`SPF` (quoted), `MX`, and `CNAME` values are checked, a `CNAME` excludes other types at its name, deletes must match the current values, the apex `SOA` and `NS` stay, and aliases to the account's zones must target existing record sets; weighted, latency, geolocation, failover, and multivalue sets need a set identifier; `InvalidChangeBatch` lists every problem |
+| ListResourceRecordSets | Route 53's order (name with the labels reversed, type, set identifier), up to 300 per page with the next name, type, and identifier |
+| CreateHealthCheck / GetHealthCheck / ListHealthChecks / UpdateHealthCheck / DeleteHealthCheck | `HTTP`, `HTTPS`, string matching, `TCP`, calculated, and CloudWatch metric checks with AWS's defaults; updates check `HealthCheckVersion` and honor `ResetElements`; checks used by record sets cannot be deleted |
+| ChangeTagsForResource / ListTagsForResource / ListTagsForResources / GetDNSSEC | Tags of zones and health checks; DNSSEC is always `NOT_SIGNING` |
+
 ### EKS (REST JSON)
 
 The EKS control plane API only: no Kubernetes API server runs, so `kubectl`
@@ -907,7 +923,8 @@ it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard
 record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only
 S3 destinations (no Redshift, OpenSearch, Splunk, HTTP endpoint, Snowflake, or Iceberg), no MSK or database
 sources, record format conversion, dynamic partitioning, S3 backups, CloudWatch logging, or encryption.
-ACM limits: no private certificates (AWS Private CA), renewal, validation that waits for DNS records or email,
+Route 53 limits: no DNS server, health checks that probe their endpoints, traffic policies, reusable delegation sets,
+query logging, DNSSEC signing, CIDR collections, or geoproximity records. ACM limits: no private certificates (AWS Private CA), renewal, validation that waits for DNS records or email,
 `HTTP` validation, ACME, or account configuration, and only exportable certificates keep a private key.
 CloudWatch limits: no anomaly detection, Metrics Insights queries, metric streams, insight rules, log alarms, EC2 or
 Systems Manager alarm actions, alarm mute rules, or AWS namespaces (services do not publish metrics), and metric math

@@ -90,7 +90,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     services such as Lambda (HTTP-bound members get `json:"-"`; `httpResponseCode` becomes a `status` binding;
     members take their `jsonName`, which only REST JSON honors; `httpLabel` and `httpQuery` on output members are
     ignored, as Smithy specifies, so API Gateway's paging `position` is a body member). Timestamp shapes marked
-    `timestampFormat: date-time` become `*time.Time` (ISO 8601) under every protocol. Services whose model also lists
+    `timestampFormat: date-time` become `*time.Time` (ISO 8601) under every protocol. Members that target Smithy's
+    prelude shapes (`smithy.api#Integer`, as Route 53's do) map like the model's own simple shapes. Services whose model also lists
     `smithy.protocols#rpcv2Cbor` (CloudWatch) get an RPC v2 CBOR binding; their timestamp members get a
     `cbor:"timestamp"` tag (CBOR tag 1) and, when query-compatible, the `query:",timestamp"` option, which writes and
     reads the epoch-second floats as ISO 8601.
@@ -107,7 +108,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   responses without a `Result` wrapper, and the `Response/Errors` error body). The
   `query` and REST codecs are driven entirely by the generated tags and bindings; `rest` holds the HTTP bindings
   (labels, headers, query, payload, status, aws-chunked bodies) that `restxml` and `restjson` share; `restxml` writes
-  S3's unwrapped `<Error>` body (none for HEAD) and `restjson` sends `X-Amzn-ErrorType`. `rpcv2cbor` decodes CBOR
+  S3's unwrapped `<Error>` body (none for HEAD), or for other REST XML services (Route 53, whose descriptors the
+  generator marks `WrappedErrors` unless the `restXml` trait sets `noErrorWrapping`) an `<ErrorResponse>` and `restjson` sends `X-Amzn-ErrorType`. `rpcv2cbor` decodes CBOR
   through the generated JSON tags (CBOR, to a document, to JSON) and encodes outputs by reflection; errors carry
   `__type` and `message`. Unsupported input fields or parameters must fail explicitly, never be silently
   ignored.
@@ -115,7 +117,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -273,6 +275,12 @@ a per-service `Dialect`), and delivers synchronously through
   as exportable, its private key) under `…/acm/cert/<ID>` and idempotency tokens under `…/acm/token/<token>`;
   requested certificates are issued at once, signed by a certificate authority created on first use under the
   partition-wide `aws/acm/ca` (`issue.go`), and `export.go` encrypts exported keys (PBES2).
+  Route 53 (`services/route53`) is global, so it keeps records under `<account>/route53/...` with no Region: zones
+  (with their VPCs, name servers, and tags) under `zone/<ID>`, record sets under `rrset/<zone ID>/<name with the
+  labels reversed> <type> <set identifier>` (the space sorts below every stored name character, so a zone lists in
+  Route 53's order; `names.go` lowercases and escapes names), changes under `change/<ID>`, health checks under
+  `healthcheck/<ID>`, and caller references under `reference/<kind>/<reference>`. A change batch applies in one
+  transaction, and private zones check their VPCs through EC2's `DescribeVpcs` with the `catalog.Caller`.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
@@ -299,7 +307,7 @@ a per-service `Dialect`), and delivers synchronously through
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, EKS and API Gateway over REST
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS and API Gateway over REST
   JSON, plus Docker Registry API calls and requests to API Gateway APIs) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
