@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, ACM, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -75,7 +75,7 @@ The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SN
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
 authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
-stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
+stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -92,6 +92,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    acm            = "http://localhost:4566"
     apigateway     = "http://localhost:4566"
     apigatewayv2   = "http://localhost:4566"
     cloudwatch     = "http://localhost:4566"
@@ -791,6 +792,22 @@ included), then each composite alarm. A state change is recorded in the history,
 Auto Scaling policies) when actions are enabled, and sends a `CloudWatch Alarm State Change` event from `aws.cloudwatch`
 to EventBridge's default bus.
 
+### ACM (AWS JSON 1.1)
+
+Certificates belong to an account and region. Requested certificates are real X.509 server certificates, signed by
+a certificate authority that TinyStack creates once per state store (`GetCertificate` returns it as the chain), and
+are `ISSUED` at once; their validation options still report the DNS `CNAME` records or email addresses AWS would
+use, so Terraform's validation resources and Route 53 records work.
+
+| Operation | Behavior |
+| --- | --- |
+| RequestCertificate | Up to 100 names with a wildcard first label allowed, `DNS` or `EMAIL` validation, `DomainValidationOptions`, `RSA_2048`, `EC_prime256v1`, or `EC_secp384r1` keys, the certificate transparency and export options, tags, and idempotency tokens (one hour) |
+| DescribeCertificate / ListCertificates | Details, key and extended key usages; listing filters by status, key type (RSA only by default, as AWS does), and export option, sorts by creation time, and pages |
+| GetCertificate / ExportCertificate | The PEM certificate and chain; certificates requested as exportable also export their private key, encrypted with the passphrase (PKCS #8, PBES2 with AES-256-CBC) |
+| ImportCertificate | PEM certificates with a matching RSA or EC key and an optional chain; reimporting by ARN keeps the tags |
+| DeleteCertificate / UpdateCertificateOptions | Deleting; the certificate transparency option of requested certificates |
+| AddTagsToCertificate / RemoveTagsFromCertificate / ListTagsForCertificate | Tags; a tag given with a value is removed only if the value matches |
+
 ### EKS (REST JSON)
 
 The EKS control plane API only: no Kubernetes API server runs, so `kubectl`
@@ -890,6 +907,8 @@ it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard
 record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only
 S3 destinations (no Redshift, OpenSearch, Splunk, HTTP endpoint, Snowflake, or Iceberg), no MSK or database
 sources, record format conversion, dynamic partitioning, S3 backups, CloudWatch logging, or encryption.
+ACM limits: no private certificates (AWS Private CA), renewal, validation that waits for DNS records or email,
+`HTTP` validation, ACME, or account configuration, and only exportable certificates keep a private key.
 CloudWatch limits: no anomaly detection, Metrics Insights queries, metric streams, insight rules, log alarms, EC2 or
 Systems Manager alarm actions, alarm mute rules, or AWS namespaces (services do not publish metrics), and metric math
 supports only the operators and functions listed above.
