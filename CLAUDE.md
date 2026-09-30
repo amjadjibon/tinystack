@@ -39,7 +39,8 @@ Request flow: `cmd/tinystack` → `internal/cmd` (cobra; `start.go` wires everyt
 generated `catalog.Operation` → `internal/services/<service>.Service` → `internal/storage.Store`.
 
 - **gateway** (`internal/gateway/server.go`, `rest.go`): picks the protocol from headers only: `X-Amz-Target` means AWS
-  JSON (1.0 or 1.1, whichever the target prefix's service speaks); a signed or host service name that is a REST service means that service's REST protocol (REST XML for S3,
+  JSON (1.0 or 1.1, whichever the target prefix's service speaks); a `Smithy-Protocol: rpc-v2-cbor` header means Smithy
+  RPC v2 CBOR (the service is the target prefix in the `/service/<prefix>/operation/<operation>` path); a signed or host service name that is a REST service means that service's REST protocol (REST XML for S3,
   REST JSON for Lambda); otherwise a form content type means AWS Query (EC2 Query once the signed or host service, or the action, resolves
   to EC2), and an unsigned request that is neither falls
   back to S3, the REST service that serves anonymous requests. It does this before anything
@@ -50,7 +51,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   from the signed scope, then the regional host, then the configured default. The service comes from the JSON target
   prefix, or for Query from the signed or host service name, falling back to the only Query service that has the
   `Action`. The gateway also validates content type, method, path and version against the operation's binding (Query
-  skips the path check because SQS clients post to queue URLs), decodes input with a 2 MiB limit, and puts
+  skips the path check because SQS clients post to queue URLs), decodes input with a 2 MiB limit (undoing
+  a `gzip` `Content-Encoding`, which SDKs apply after signing to operations with Smithy's `requestCompression`, such as
+  CloudWatch's `PutMetricData`), and puts
   `request.Metadata` (including `Endpoint`) into the context. REST services that share a signing name (API Gateway's
   REST and HTTP API management APIs) are told apart by whose routes match. REST requests match an operation by method, path labels
   (greedy `{Key+}`), the URI's query literals (`x-id` is optional, but must match when sent), and required headers
@@ -87,27 +90,32 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     services such as Lambda (HTTP-bound members get `json:"-"`; `httpResponseCode` becomes a `status` binding;
     members take their `jsonName`, which only REST JSON honors; `httpLabel` and `httpQuery` on output members are
     ignored, as Smithy specifies, so API Gateway's paging `position` is a body member). Timestamp shapes marked
-    `timestampFormat: date-time` become `*time.Time` (ISO 8601) under every protocol.
+    `timestampFormat: date-time` become `*time.Time` (ISO 8601) under every protocol. Services whose model also lists
+    `smithy.protocols#rpcv2Cbor` (CloudWatch) get an RPC v2 CBOR binding; their timestamp members get a
+    `cbor:"timestamp"` tag (CBOR tag 1) and, when query-compatible, the `query:",timestamp"` option, which writes and
+    reads the epoch-second floats as ISO 8601.
     Modeled header and query inputs left out of the profile become `unsupported:*` bindings, and the REST codecs answer
     `NotImplemented` when a request sets one (or, for REST JSON, sends a body field that is not whitelisted), so
     whitelist only what the service implements.
 
   `TestReproducibleGeneration` fails if any committed `api.go` is stale, so run `task generate` after changing the
   generator or the profile.
-- **awserror** / **awsjson** / **query** / **rest** / **restxml** / **restjson**: services return `awserror.New(code, msg)` or
+- **awserror** / **awsjson** / **rpcv2cbor** / **query** / **rest** / **restxml** / **restjson**: services return `awserror.New(code, msg)` or
   `awserror.Validation(msg)` using the model's error shape name as the code. The gateway applies the service's error
   bindings, and each codec renders the envelope; `X-Amzn-Query-Error` is sent for query-compatible JSON services. The
   `query` codec also speaks EC2 Query (`DecodeEC2`, `WriteEC2`, `WriteEC2Error`: always-flat request lists,
   responses without a `Result` wrapper, and the `Response/Errors` error body). The
   `query` and REST codecs are driven entirely by the generated tags and bindings; `rest` holds the HTTP bindings
   (labels, headers, query, payload, status, aws-chunked bodies) that `restxml` and `restjson` share; `restxml` writes
-  S3's unwrapped `<Error>` body (none for HEAD) and `restjson` sends `X-Amzn-ErrorType`. Unsupported input fields or parameters must fail explicitly, never be silently
+  S3's unwrapped `<Error>` body (none for HEAD) and `restjson` sends `X-Amzn-ErrorType`. `rpcv2cbor` decodes CBOR
+  through the generated JSON tags (CBOR, to a document, to JSON) and encodes outputs by reflection; errors carry
+  `__type` and `message`. Unsupported input fields or parameters must fail explicitly, never be silently
   ignored.
 - **services/dynamodb**, **services/sqs**, **services/sns**, **services/s3**, **services/lambda**, **services/logs**,
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -249,6 +257,18 @@ a per-service `Dialect`), and delivers synchronously through
   partition-wide `aws/firehose/index/<account>/<region>/<name>`, reads Kinesis sources into the buffer, and delivers a
   full or old buffer to S3 through the `catalog.Caller` (which also runs Lambda processors), deleting the records
   only after the object is written.
+  CloudWatch (`services/cloudwatch`) keeps each metric (namespace, name, and sorted dimensions, keyed by their hash)
+  under `…/cloudwatch/metric/<ID>` and each data point (count, sum, minimum, maximum, and the values and counts
+  percentiles need) under `…/cloudwatch/data/<ID>/<zero-padded ms><sequence>`, deleting points older than 15 days as
+  new ones arrive; alarms (a metric or composite alarm, its tags, and the state the evaluator last computed) under
+  `…/cloudwatch/alarm/<name>`, their history under `…/cloudwatch/history/<name>/<zero-padded ms><sequence>` (30
+  days), and dashboards under `…/cloudwatch/dashboard/<name>`. `query.go` runs `GetMetricData` queries and metric math,
+  which metric alarms share, and `rule.go` parses composite alarm rules. The evaluator (started by `New`, stopped by
+  `Stop`) visits the partition-wide `aws/cloudwatch/index/<account>/<region>/<name>` every second, metric alarms
+  first, and changes an alarm's state only when its computed state changes (so a `SetAlarmState` state holds), or,
+  for a metric alarm, one period after a hand-set state. After a change commits, actions run through the
+  `catalog.Caller` (SNS `Publish`, asynchronous Lambda `Invoke`, Auto Scaling `ExecutePolicy`) and an
+  EventBridge `PutEvents` sends the state change event.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
@@ -275,7 +295,7 @@ a per-service `Dialect`), and delivers synchronously through
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, EKS and API Gateway over REST
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, EKS and API Gateway over REST
   JSON, plus Docker Registry API calls and requests to API Gateway APIs) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.

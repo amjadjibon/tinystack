@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -75,7 +75,7 @@ The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SN
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
 authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
-stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
+stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -94,6 +94,7 @@ provider "aws" {
   endpoints {
     apigateway     = "http://localhost:4566"
     apigatewayv2   = "http://localhost:4566"
+    cloudwatch     = "http://localhost:4566"
     cognitoidp     = "http://localhost:4566"
     dynamodb       = "http://localhost:4566"
     ecr            = "http://localhost:4566"
@@ -764,6 +765,32 @@ separators unless an `AppendDelimiterToRecord` processor adds them. A `Lambda` p
 Firehose's event format; `Dropped` records are dropped, and `ProcessingFailed` ones go, as JSON lines, under the
 error output prefix (`<prefix>processing-failed/` by default). A delivery that fails (a missing bucket) is retried.
 
+### CloudWatch metrics and alarms (Smithy RPC v2 CBOR, AWS JSON 1.0, and AWS Query)
+
+Metrics, alarms, and dashboards belong to an account and region. Current AWS
+SDKs speak RPC v2 CBOR; older ones and the AWS CLI use AWS JSON 1.0 or Query.
+Gzip-compressed request bodies (as SDKs send `PutMetricData`) are accepted.
+
+| Operation | Behavior |
+| --- | --- |
+| PutMetricData | Up to 1000 data points of one `Value`, `Values` with `Counts`, or `StatisticValues`, timestamped within the last two weeks and at most two hours ahead, with up to 30 dimensions and a unit; namespaces starting with `AWS/` are rejected; data points are kept 15 days |
+| GetMetricStatistics | `SampleCount`, `Average`, `Sum`, `Minimum`, and `Maximum`, and percentiles (`p0` to `p100`) of data points sent as values, by period, optionally for one unit |
+| GetMetricData | Up to 500 queries of `MetricStat` or metric math `Expression`s: numbers, query IDs, `+ - * /`, parentheses, `[a, b]` arrays, `METRICS()` and `METRICS("filter")`, and `SUM`, `AVG`, `MIN`, `MAX`, and `ABS`; newest first unless `ScanBy` is `TimestampAscending`; results past `MaxDatapoints` are cut off as `PartialData` |
+| ListMetrics | Metrics with data in the last two weeks (or three hours, with `RecentlyActive`), filtered by namespace, name, and dimensions, 500 per page |
+| PutMetricAlarm | Static thresholds on one metric or on metric math, `EvaluationPeriods`, `DatapointsToAlarm`, and every `TreatMissingData` mode; actions must be SNS topics, Lambda functions, or Auto Scaling policies; updating keeps the state and tags |
+| PutCompositeAlarm | `AlarmRule`s of `ALARM`, `OK`, and `INSUFFICIENT_DATA` of alarm names or ARNs, `AND`, `OR`, `NOT`, `TRUE`, `FALSE`, and parentheses, over alarms that exist, without cycles |
+| DescribeAlarms / DescribeAlarmsForMetric | Metric and composite alarms by names, prefix, state, action prefix, children, or parents, 1 to 100 per page |
+| DeleteAlarms / SetAlarmState / EnableAlarmActions / DisableAlarmActions | Deleting fails, deleting nothing, if any alarm is missing; a state set by hand holds until the evaluation changes, or one period passes |
+| DescribeAlarmHistory | Configuration, state, and action items for 30 days, filtered by alarm, type, item type, and dates |
+| PutDashboard / GetDashboard / ListDashboards / DeleteDashboards | Bodies must be JSON objects with a `widgets` array; widgets are not validated further |
+| TagResource / UntagResource / ListTagsForResource | Alarm and dashboard ARNs |
+
+Every second TinyStack evaluates each metric alarm over its last `EvaluationPeriods` periods (the current one
+included), then each composite alarm. A state change is recorded in the history, runs the new state's actions
+(publishing AWS's alarm notification to SNS, invoking Lambda functions asynchronously with the alarm event, or executing
+Auto Scaling policies) when actions are enabled, and sends a `CloudWatch Alarm State Change` event from `aws.cloudwatch`
+to EventBridge's default bus.
+
 ### EKS (REST JSON)
 
 The EKS control plane API only: no Kubernetes API server runs, so `kubectl`
@@ -863,6 +890,9 @@ it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard
 record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only
 S3 destinations (no Redshift, OpenSearch, Splunk, HTTP endpoint, Snowflake, or Iceberg), no MSK or database
 sources, record format conversion, dynamic partitioning, S3 backups, CloudWatch logging, or encryption.
+CloudWatch limits: no anomaly detection, Metrics Insights queries, metric streams, insight rules, log alarms, EC2 or
+Systems Manager alarm actions, alarm mute rules, or AWS namespaces (services do not publish metrics), and metric math
+supports only the operators and functions listed above.
 STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
@@ -875,12 +905,12 @@ Unsupported input fields fail explicitly instead of being silently ignored.
 ## Architecture and generation
 
 `gateway` picks the protocol from the request headers (`X-Amz-Target` for AWS JSON
-1.0 or 1.1, chosen by the target's service,
+1.0 or 1.1, chosen by the target's service, a `Smithy-Protocol: rpc-v2-cbor` header for RPC v2 CBOR,
 a form body for Query, and the signed or host service name for REST XML and REST
 JSON; unsigned requests fall back to S3), then
 resolves identity, service, and operation. REST operations are matched on
 method, path labels (including greedy `{Key+}`), and URI query literals. Generated
-catalog bindings create typed inputs; `aws/protocol/awsjson` and
+catalog bindings create typed inputs; `aws/protocol/awsjson`, `aws/protocol/rpcv2cbor`, and
 `aws/protocol/query`, `aws/protocol/restxml`, and `aws/protocol/restjson` (sharing
 the HTTP bindings in `aws/protocol/rest`) encode responses and error envelopes. Modeled error
 bindings supply Query error codes and HTTP statuses, which query-compatible JSON
