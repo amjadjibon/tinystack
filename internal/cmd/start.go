@@ -19,6 +19,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
+	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
@@ -45,6 +46,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
+	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
@@ -161,6 +163,8 @@ func newStartCommand() *cobra.Command {
 			firehoses := firehose.New(store, streams, deliveries, logger)
 			// Stop ends the flusher, which writes to the store.
 			defer firehoses.Stop()
+			monitoring := cloudwatch.New(store, logger)
+			defer monitoring.Stop()
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -188,12 +192,14 @@ func newStartCommand() *cobra.Command {
 				sfnapi.Descriptor(workflows),
 				kinesisapi.Descriptor(streams),
 				firehoseapi.Descriptor(firehoses),
+				cloudwatchapi.Descriptor(monitoring),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.
 			caller := catalog.NewCaller(services...)
 			workflows.UseCaller(caller)
 			firehoses.UseCaller(caller)
+			monitoring.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err
@@ -232,6 +238,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(secrets.Stop)
 			server.RegisterOnShutdown(workflows.Stop)
 			server.RegisterOnShutdown(firehoses.Stop)
+			server.RegisterOnShutdown(monitoring.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)

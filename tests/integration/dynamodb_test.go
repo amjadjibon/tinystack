@@ -23,6 +23,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
+	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
@@ -49,6 +50,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	restapis "github.com/amjadjibon/tinystack/internal/services/apigateway"
 	apigateways "github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
+	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	compute "github.com/amjadjibon/tinystack/internal/services/ec2"
@@ -154,6 +156,7 @@ func serverStore(
 	}
 
 	firehoses := deliverystreams.New(store, streams, deliveries, logger)
+	monitoring := cloudwatch.New(store, logger)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -179,10 +182,12 @@ func serverStore(
 		sfnapi.Descriptor(workflows),
 		kinesisapi.Descriptor(streams),
 		firehoseapi.Descriptor(firehoses),
+		cloudwatchapi.Descriptor(monitoring),
 	}
 	caller := catalog.NewCaller(services...)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
+	monitoring.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
@@ -198,6 +203,7 @@ func serverStore(
 	return s, func() {
 		workflows.Stop()
 		firehoses.Stop()
+		monitoring.Stop()
 		secretsService.Stop()
 		rules.Stop()
 		sqsService.Stop()
