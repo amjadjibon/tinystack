@@ -198,7 +198,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 			processed, ok = s.processStreamBatch(ctx, scope, &mp, all, batch)
 			outcome = resultOK
 			if !ok {
-				outcome = "PROBLEM: Function call failed"
+				outcome = resultCallFailed
 			}
 		}
 

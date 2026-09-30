@@ -29,6 +29,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -59,6 +60,8 @@ type Service struct {
 	store   storage.Store
 	queues  *sqs.Service
 	streams *dynamodb.Streams
+	// kinesis reads Kinesis streams for event source mappings; see UseKinesis.
+	kinesis *kinesis.Service
 	logs    *logs.Service
 	runtime Runtime
 	logger  *slog.Logger

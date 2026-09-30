@@ -23,14 +23,15 @@ import (
 )
 
 const (
-	maxSQSBatch     = 10
-	maxSQSWindowed  = 10000
-	mappingLimit    = 100
-	maxMappingLimit = 10000
-	pollWait        = 20
-	stateEnabled    = "Enabled"
-	stateDisabled   = "Disabled"
-	resultOK        = "OK"
+	maxSQSBatch      = 10
+	maxSQSWindowed   = 10000
+	mappingLimit     = 100
+	maxMappingLimit  = 10000
+	pollWait         = 20
+	stateEnabled     = "Enabled"
+	stateDisabled    = "Disabled"
+	resultOK         = "OK"
+	resultCallFailed = "PROBLEM: Function call failed"
 )
 
 // pollBackoff spaces polls after a failure, such as a deleted queue.
@@ -38,7 +39,8 @@ var pollBackoff = time.Second
 
 var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
-// mapping is a stored SQS queue or DynamoDB stream event source mapping.
+// mapping is a stored SQS queue, DynamoDB stream, or Kinesis stream event
+// source mapping.
 type mapping struct {
 	// MaximumRetryAttempts, StartingPosition, and Cursor, the sequence number
 	// of the last record processed, are only set for streams.
@@ -51,6 +53,9 @@ type mapping struct {
 	LastProcessingResult string
 	StartingPosition     string `json:",omitempty"`
 	Cursor               string `json:",omitempty"`
+	// Cursors are a Kinesis mapping's last records processed by shard, or
+	// "done" for a closed shard read to its end.
+	Cursors map[string]string `json:",omitempty"`
 	// Filters are the FilterCriteria patterns a record must match one of.
 	Filters        []string `json:",omitempty"`
 	BatchSize      int64
@@ -165,8 +170,10 @@ func (s *Service) CreateEventSourceMapping(
 		err = s.queueSource(ctx, m.Scope, in, mp)
 	} else if _, _, _, isStream := dynamodb.ParseStreamARN(source); isStream {
 		err = s.streamSource(ctx, m.Scope, in, mp)
+	} else if isKinesis(source) {
+		err = s.kinesisSource(ctx, m.Scope, in, mp)
 	} else {
-		err = invalid("EventSourceArn must be an SQS queue or DynamoDB stream ARN; " +
+		err = invalid("EventSourceArn must be an SQS queue, DynamoDB stream, or Kinesis stream ARN; " +
 			"other event sources are not supported")
 	}
 
@@ -424,7 +431,10 @@ func (s *Service) startPoller(scope request.Scope, mp *mapping) {
 	s.pollers[mp.UUID] = cancel
 	s.mu.Unlock()
 	poll := s.poll
-	if mp.StartingPosition != "" {
+	switch {
+	case isKinesis(mp.EventSourceArn):
+		poll = s.pollKinesis
+	case mp.StartingPosition != "":
 		poll = s.pollStream
 	}
 
@@ -571,7 +581,7 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 			done = append(done, processed...)
 			result := resultOK
 			if !ok {
-				result = "PROBLEM: Function call failed"
+				result = resultCallFailed
 			}
 
 			s.recordResult(scope, mp.UUID, result)
