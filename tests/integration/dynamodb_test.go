@@ -24,6 +24,7 @@ import (
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
+	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
@@ -54,6 +55,7 @@ import (
 	certificates "github.com/amjadjibon/tinystack/internal/services/acm"
 	restapis "github.com/amjadjibon/tinystack/internal/services/apigateway"
 	apigateways "github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
+	scalinggroups "github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
@@ -165,6 +167,7 @@ func serverStore(
 	monitoring := cloudwatch.New(store, logger)
 	dns := zones.New(store)
 	timers := schedules.New(store, logger)
+	scaling := scalinggroups.New(store, logger)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -191,6 +194,7 @@ func serverStore(
 		kinesisapi.Descriptor(streams),
 		route53api.Descriptor(dns),
 		schedulerapi.Descriptor(timers),
+		autoscalingapi.Descriptor(scaling),
 		acmapi.Descriptor(certificates.New(store)),
 		firehoseapi.Descriptor(firehoses),
 		cloudwatchapi.Descriptor(monitoring),
@@ -201,6 +205,7 @@ func serverStore(
 	monitoring.UseCaller(caller)
 	dns.UseCaller(caller)
 	timers.UseCaller(caller)
+	scaling.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
@@ -218,6 +223,7 @@ func serverStore(
 		firehoses.Stop()
 		monitoring.Stop()
 		timers.Stop()
+		scaling.Stop()
 		secretsService.Stop()
 		rules.Stop()
 		sqsService.Stop()
