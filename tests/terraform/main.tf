@@ -34,6 +34,7 @@ provider "aws" {
     kms            = var.endpoint
     lambda         = var.endpoint
     logs           = var.endpoint
+    route53        = var.endpoint
     s3             = var.endpoint
     secretsmanager = var.endpoint
     sfn            = var.endpoint
@@ -1108,5 +1109,57 @@ resource "aws_acm_certificate" "site" {
 }
 
 resource "aws_acm_certificate_validation" "site" {
-  certificate_arn = aws_acm_certificate.site.arn
+  certificate_arn         = aws_acm_certificate.site.arn
+  validation_record_fqdns = [for r in aws_route53_record.validation : r.fqdn]
+}
+
+resource "aws_route53_zone" "site" {
+  name    = "example.com"
+  comment = "Site for ${var.team}"
+  tags    = local.tags
+}
+
+resource "aws_route53_record" "validation" {
+  for_each = {
+    for o in aws_acm_certificate.site.domain_validation_options : o.domain_name => o
+  }
+
+  allow_overwrite = true
+  zone_id         = aws_route53_zone.site.zone_id
+  name            = each.value.resource_record_name
+  type            = each.value.resource_record_type
+  ttl             = 60
+  records         = [each.value.resource_record_value]
+}
+
+resource "aws_route53_health_check" "www" {
+  fqdn              = "www.example.com"
+  port              = 443
+  type              = "HTTPS"
+  resource_path     = "/health"
+  failure_threshold = 3
+  request_interval  = 30
+  tags              = local.tags
+}
+
+resource "aws_route53_record" "www" {
+  zone_id         = aws_route53_zone.site.zone_id
+  name            = "www.example.com"
+  type            = "A"
+  ttl             = 300
+  records         = ["10.0.0.1"]
+  set_identifier  = "primary"
+  health_check_id = aws_route53_health_check.www.id
+
+  failover_routing_policy {
+    type = "PRIMARY"
+  }
+}
+
+resource "aws_route53_record" "team" {
+  zone_id = aws_route53_zone.site.zone_id
+  name    = "team.example.com"
+  type    = "TXT"
+  ttl     = 300
+  records = [var.team]
 }
