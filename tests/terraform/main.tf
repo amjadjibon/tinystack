@@ -32,6 +32,7 @@ provider "aws" {
     logs           = var.endpoint
     s3             = var.endpoint
     secretsmanager = var.endpoint
+    sfn            = var.endpoint
     sns            = var.endpoint
     sqs            = var.endpoint
     ssm            = var.endpoint
@@ -724,6 +725,42 @@ resource "aws_lambda_permission" "api" {
   function_name = aws_lambda_function.echo.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.echo.execution_arn}/*/*"
+}
+
+resource "aws_sfn_activity" "review" {
+  name = "review"
+  tags = local.tags
+}
+
+resource "aws_cloudwatch_log_group" "workflow" {
+  name = "/aws/states/orders"
+}
+
+resource "aws_sfn_state_machine" "orders" {
+  name     = "orders"
+  role_arn = aws_iam_role.lambda.arn
+  tags     = local.tags
+
+  definition = jsonencode({
+    Comment = "Orders for ${var.team}"
+    StartAt = "Echo"
+    States = {
+      Echo = {
+        Type       = "Task"
+        Resource   = "arn:aws:states:::lambda:invoke"
+        Parameters = { FunctionName = aws_lambda_function.echo.arn, "Payload.$" = "$" }
+        Retry      = [{ ErrorEquals = ["States.TaskFailed"], MaxAttempts = 2 }]
+        Next       = "Review"
+      }
+      Review = { Type = "Task", Resource = aws_sfn_activity.review.id, End = true }
+    }
+  })
+
+  logging_configuration {
+    log_destination        = "${aws_cloudwatch_log_group.workflow.arn}:*"
+    include_execution_data = true
+    level                  = "ERROR"
+  }
 }
 
 resource "aws_lambda_event_source_mapping" "jobs" {
