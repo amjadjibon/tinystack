@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
@@ -32,6 +33,7 @@ import (
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
@@ -55,6 +57,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
+	"github.com/amjadjibon/tinystack/internal/services/sfn"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
@@ -142,12 +145,17 @@ func newStartCommand() *cobra.Command {
 			httpAPIs := apigatewayv2.New(store, functions, logGroups)
 			restAPIs := apigateway.New(store, functions, logGroups, identities)
 			network := ec2.New(store)
+			workflows, err := sfn.New(store, logGroups, logger)
+			if err != nil {
+				return err
+			}
+
+			// Stop ends running executions.
+			defer workflows.Stop()
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
-			handler, err := gateway.New(
-				cfg,
-				logger,
+			services := []catalog.Service{
 				dynamodbapi.Descriptor(tables),
 				dynamodbstreamsapi.Descriptor(tables.Streams()),
 				sqsapi.Descriptor(queues),
@@ -168,7 +176,11 @@ func newStartCommand() *cobra.Command {
 				eksapi.Descriptor(eks.New(store, network)),
 				apigatewayv2api.Descriptor(httpAPIs),
 				apigatewayapi.Descriptor(restAPIs),
-			)
+				sfnapi.Descriptor(workflows),
+			}
+			// Step Functions' Task states call the other services in-process.
+			workflows.UseCaller(catalog.NewCaller(services...))
+			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err
 			}
@@ -204,6 +216,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(functions.Stop)
 			server.RegisterOnShutdown(rules.Stop)
 			server.RegisterOnShutdown(secrets.Stop)
+			server.RegisterOnShutdown(workflows.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)

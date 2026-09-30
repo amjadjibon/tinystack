@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/smithy-go"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
@@ -36,6 +37,7 @@ import (
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
@@ -58,6 +60,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	secrets "github.com/amjadjibon/tinystack/internal/services/secretsmanager"
+	stepfunctions "github.com/amjadjibon/tinystack/internal/services/sfn"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
 	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
 	parameters "github.com/amjadjibon/tinystack/internal/services/ssm"
@@ -139,9 +142,12 @@ func serverStore(
 	restAPIs := restapis.New(store, functions, logGroups, userPools)
 	ssmService := parameters.New(store, keys)
 	ssmService.UsePublicParameters(compute.PublicParameters)
-	h, err := gateway.New(
-		cfg,
-		logger,
+	workflows, err := stepfunctions.New(store, logGroups, logger)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	services := []catalog.Service{
 		api.Descriptor(tables),
 		dynamodbstreamsapi.Descriptor(tables.Streams()),
 		sqsapi.Descriptor(sqsService),
@@ -162,7 +168,10 @@ func serverStore(
 		eksapi.Descriptor(kubernetes.New(store, network)),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
-	)
+		sfnapi.Descriptor(workflows),
+	}
+	workflows.UseCaller(catalog.NewCaller(services...))
+	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,6 +184,7 @@ func serverStore(
 
 	s = httptest.NewServer(h)
 	return s, func() {
+		workflows.Stop()
 		secretsService.Stop()
 		rules.Stop()
 		sqsService.Stop()

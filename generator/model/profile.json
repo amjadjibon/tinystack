@@ -6250,5 +6250,83 @@
         "deploymentId"
       ]
     }
+  },
+  "sfn": {
+    "operations": [
+      "CreateStateMachine",
+      "DescribeStateMachine",
+      "ListStateMachines",
+      "UpdateStateMachine",
+      "DeleteStateMachine",
+      "StartExecution",
+      "StartSyncExecution",
+      "DescribeExecution",
+      "ListExecutions",
+      "StopExecution",
+      "GetExecutionHistory",
+      "DescribeStateMachineForExecution",
+      "SendTaskSuccess",
+      "SendTaskFailure",
+      "SendTaskHeartbeat",
+      "CreateActivity",
+      "DescribeActivity",
+      "ListActivities",
+      "DeleteActivity",
+      "GetActivityTask",
+      "ValidateStateMachineDefinition",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource",
+      "ListStateMachineVersions"
+    ],
+    "shapes": {
+      "CreateStateMachineInput": [
+        "name",
+        "definition",
+        "roleArn",
+        "type",
+        "loggingConfiguration",
+        "tags",
+        "tracingConfiguration",
+        "publish"
+      ],
+      "UpdateStateMachineInput": [
+        "stateMachineArn",
+        "definition",
+        "roleArn",
+        "loggingConfiguration",
+        "tracingConfiguration",
+        "publish"
+      ],
+      "DescribeStateMachineInput": [
+        "stateMachineArn"
+      ],
+      "DescribeExecutionInput": [
+        "executionArn"
+      ],
+      "DescribeStateMachineForExecutionInput": [
+        "executionArn"
+      ],
+      "StartExecutionInput": [
+        "stateMachineArn",
+        "name",
+        "input"
+      ],
+      "StartSyncExecutionInput": [
+        "stateMachineArn",
+        "name",
+        "input"
+      ],
+      "ListExecutionsInput": [
+        "stateMachineArn",
+        "statusFilter",
+        "maxResults",
+        "nextToken"
+      ],
+      "CreateActivityInput": [
+        "name",
+        "tags"
+      ]
+    }
   }
 }
