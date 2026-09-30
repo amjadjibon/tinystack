@@ -6805,5 +6805,179 @@
         "HistoryData"
       ]
     }
+  },
+  "acm": {
+    "operations": [
+      "RequestCertificate",
+      "DescribeCertificate",
+      "ListCertificates",
+      "DeleteCertificate",
+      "GetCertificate",
+      "ImportCertificate",
+      "ExportCertificate",
+      "AddTagsToCertificate",
+      "RemoveTagsFromCertificate",
+      "ListTagsForCertificate",
+      "UpdateCertificateOptions"
+    ],
+    "shapes": {
+      "RequestCertificateRequest": [
+        "DomainName",
+        "ValidationMethod",
+        "SubjectAlternativeNames",
+        "IdempotencyToken",
+        "DomainValidationOptions",
+        "Options",
+        "Tags",
+        "KeyAlgorithm"
+      ],
+      "RequestCertificateResponse": [
+        "CertificateArn"
+      ],
+      "DomainValidationOption": [
+        "DomainName",
+        "ValidationDomain"
+      ],
+      "CertificateOptions": [
+        "CertificateTransparencyLoggingPreference",
+        "Export"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "DescribeCertificateRequest": [
+        "CertificateArn"
+      ],
+      "DescribeCertificateResponse": [
+        "Certificate"
+      ],
+      "CertificateDetail": [
+        "CertificateArn",
+        "DomainName",
+        "SubjectAlternativeNames",
+        "DomainValidationOptions",
+        "Serial",
+        "Subject",
+        "Issuer",
+        "CreatedAt",
+        "IssuedAt",
+        "ImportedAt",
+        "Status",
+        "NotBefore",
+        "NotAfter",
+        "KeyAlgorithm",
+        "SignatureAlgorithm",
+        "InUseBy",
+        "Type",
+        "KeyUsages",
+        "ExtendedKeyUsages",
+        "RenewalEligibility",
+        "Options"
+      ],
+      "DomainValidation": [
+        "DomainName",
+        "ValidationEmails",
+        "ValidationDomain",
+        "ValidationStatus",
+        "ResourceRecord",
+        "ValidationMethod"
+      ],
+      "ResourceRecord": [
+        "Name",
+        "Type",
+        "Value"
+      ],
+      "KeyUsage": [
+        "Name"
+      ],
+      "ExtendedKeyUsage": [
+        "Name",
+        "OID"
+      ],
+      "ListCertificatesRequest": [
+        "CertificateStatuses",
+        "Includes",
+        "NextToken",
+        "MaxItems",
+        "SortBy",
+        "SortOrder"
+      ],
+      "Filters": [
+        "keyTypes",
+        "exportOption"
+      ],
+      "ListCertificatesResponse": [
+        "NextToken",
+        "CertificateSummaryList"
+      ],
+      "CertificateSummary": [
+        "CertificateArn",
+        "DomainName",
+        "SubjectAlternativeNameSummaries",
+        "HasAdditionalSubjectAlternativeNames",
+        "Status",
+        "Type",
+        "KeyAlgorithm",
+        "KeyUsages",
+        "ExtendedKeyUsages",
+        "ExportOption",
+        "InUse",
+        "Exported",
+        "RenewalEligibility",
+        "NotBefore",
+        "NotAfter",
+        "CreatedAt",
+        "IssuedAt",
+        "ImportedAt"
+      ],
+      "DeleteCertificateRequest": [
+        "CertificateArn"
+      ],
+      "GetCertificateRequest": [
+        "CertificateArn"
+      ],
+      "GetCertificateResponse": [
+        "Certificate",
+        "CertificateChain"
+      ],
+      "ImportCertificateRequest": [
+        "CertificateArn",
+        "Certificate",
+        "PrivateKey",
+        "CertificateChain",
+        "Tags"
+      ],
+      "ImportCertificateResponse": [
+        "CertificateArn"
+      ],
+      "ExportCertificateRequest": [
+        "CertificateArn",
+        "Passphrase"
+      ],
+      "ExportCertificateResponse": [
+        "Certificate",
+        "CertificateChain",
+        "PrivateKey"
+      ],
+      "AddTagsToCertificateRequest": [
+        "CertificateArn",
+        "Tags"
+      ],
+      "RemoveTagsFromCertificateRequest": [
+        "CertificateArn",
+        "Tags"
+      ],
+      "ListTagsForCertificateRequest": [
+        "CertificateArn"
+      ],
+      "ListTagsForCertificateResponse": [
+        "Tags"
+      ],
+      "UpdateCertificateOptionsRequest": [
+        "CertificateArn",
+        "Options"
+      ]
+    }
   }
 }
