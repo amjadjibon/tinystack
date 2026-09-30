@@ -12,6 +12,8 @@ const (
 	EC2Query  = "ec2Query"
 	RESTXML   = "restXml"
 	RESTJSON  = "restJson1"
+	// RPCV2CBOR is Smithy's RPC v2 CBOR protocol.
+	RPCV2CBOR = "rpcv2Cbor"
 )
 
 type Binding struct {

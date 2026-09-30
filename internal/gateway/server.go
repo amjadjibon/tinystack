@@ -1,6 +1,8 @@
 package gateway
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -25,6 +27,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/query"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/rpcv2cbor"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/recent"
@@ -234,11 +237,15 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 		Protocol: catalog.AWSJSON10,
 	}}
 	target := r.Header.Get("X-Amz-Target")
-	if target == "" && contentType == formContentType {
+	cbor := r.Header.Get(rpcv2cbor.Header) == rpcv2cbor.Protocol
+	switch {
+	case cbor:
+		c.meta.Protocol = catalog.RPCV2CBOR
+	case target == "" && contentType == formContentType:
 		c.meta.Protocol = catalog.AWSQuery
 	}
 
-	if target == "" {
+	if target == "" && !cbor {
 		// REST services are chosen by the signed or host service name; unsigned
 		// requests without a JSON target or form body fall back to S3.
 		if rest := s.restServices(r); len(rest) > 0 {
@@ -271,6 +278,8 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	case catalog.AWSQuery:
 		// EC2 Query is AWS Query's form request with other names and XML.
 		return c, s.classifyQuery(w, r, c, signed)
+	case catalog.RPCV2CBOR:
+		return c, s.classifyCBOR(r, c, signed)
 	case catalog.RESTXML, catalog.RESTJSON:
 		// Services that share a signing name, such as API Gateway's REST and
 		// HTTP API management APIs, are told apart by their routes.
@@ -315,6 +324,32 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	return c, nil
 }
 
+// classifyCBOR resolves an RPC v2 CBOR request's service and operation from
+// its path, /service/<service shape>/operation/<operation>.
+func (s *Server) classifyCBOR(r *http.Request, c *call, signed string) error {
+	rest, ok := strings.CutPrefix(r.URL.Path, "/service/")
+	name, op, split := strings.Cut(rest, "/operation/")
+	if !ok || !split || name == "" || op == "" {
+		return awserror.New("UnknownOperationException", "The path must be /service/<service>/operation/<operation>")
+	}
+
+	for _, service := range s.services {
+		if service.TargetPrefix == name && service.Supports(catalog.RPCV2CBOR) {
+			c.service = service
+		}
+	}
+
+	switch {
+	case c.service == nil:
+		return awserror.New("UnknownOperationException", "Unknown service "+name)
+	case signed != "" && signed != c.service.SigningName:
+		return awserror.Validation("Signing service conflicts with the request path")
+	}
+
+	c.meta.Service, c.meta.Operation = c.service.Name, op
+	return nil
+}
+
 // jsonProtocol returns the AWS JSON version a service speaks, or "".
 func jsonProtocol(service *catalog.Service) string {
 	for _, protocol := range []string{catalog.AWSJSON10, catalog.AWSJSON11} {
@@ -334,7 +369,12 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 	}
 
 	c.body = body
-	if c.form, err = url.ParseQuery(string(body)); err != nil {
+	form, err := inflate(r, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	if c.form, err = url.ParseQuery(string(form)); err != nil {
 		return awserror.New("MalformedQueryString", "Request body is not valid form encoding")
 	}
 
@@ -469,7 +509,41 @@ func (s *Server) decode(
 		return op, input, query.Decode(c.form, input)
 	}
 
-	return op, input, awsjson.Decode(http.MaxBytesReader(w, r.Body, maxBody), input)
+	body, err := inflate(r, http.MaxBytesReader(w, r.Body, maxBody))
+	if err != nil {
+		return op, nil, err
+	}
+
+	if c.meta.Protocol == catalog.RPCV2CBOR {
+		return op, input, rpcv2cbor.Decode(bytes.NewReader(body), input)
+	}
+
+	return op, input, awsjson.Decode(bytes.NewReader(body), input)
+}
+
+// inflate reads a request body, undoing the gzip Content-Encoding that
+// clients apply to operations with Smithy's requestCompression trait (such as
+// CloudWatch's PutMetricData) after signing, so signatures cover the
+// compressed bytes. The decompressed body is limited to maxBody.
+func inflate(r *http.Request, body io.Reader) ([]byte, error) {
+	var err error
+	if strings.EqualFold(r.Header.Get("Content-Encoding"), "gzip") {
+		if body, err = gzip.NewReader(body); err != nil {
+			return nil, awserror.Validation("The gzip request body cannot be read: %v", err)
+		}
+
+		body = io.LimitReader(body, maxBody+1)
+	}
+
+	data, err := io.ReadAll(body)
+	switch {
+	case err != nil:
+		return nil, awserror.Validation("Cannot read request body: %v", err)
+	case len(data) > maxBody:
+		return nil, awserror.Validation("The decompressed request body is larger than %d bytes", maxBody)
+	}
+
+	return data, nil
 }
 
 func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
@@ -503,6 +577,8 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 		restxml.WriteError(w, e, c.meta.RequestID, c.head)
 	case catalog.RESTJSON:
 		restjson.WriteError(w, e, messageMember)
+	case catalog.RPCV2CBOR:
+		rpcv2cbor.WriteError(w, e)
 	default:
 		awsjson.WriteError(w, c.meta.Protocol, e, messageMember)
 	}
@@ -576,6 +652,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case catalog.RESTJSON:
 		restjson.Write(w, &binding, output)
+		return
+	case catalog.RPCV2CBOR:
+		rpcv2cbor.Write(w, status, output)
 		return
 	}
 

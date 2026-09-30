@@ -38,6 +38,9 @@ const (
 type tag struct {
 	name, element, member, key, value string
 	flat                              bool
+	// timestamp marks an epoch-seconds number that travels as an ISO 8601
+	// date-time, as the timestamps of AWS Query compatible JSON services do.
+	timestamp bool
 }
 
 func parseTag(raw, dialect string) tag {
@@ -53,6 +56,8 @@ func parseTag(raw, dialect string) tag {
 		switch k {
 		case "flat":
 			t.flat = true
+		case "timestamp":
+			t.timestamp = true
 		case "member":
 			t.member = v
 		case "key":
@@ -165,7 +170,7 @@ func (d *decoder) field(v reflect.Value, key string, tg *tag) error {
 		return nil
 	case reflect.Struct:
 		if v.Type() == timeType {
-			return d.scalar(v, key)
+			return d.scalar(v, key, false)
 		}
 
 		return d.structure(v, key)
@@ -177,7 +182,7 @@ func (d *decoder) field(v reflect.Value, key string, tg *tag) error {
 		return d.mapping(v, key, tg)
 	}
 
-	return d.scalar(v, key)
+	return d.scalar(v, key, tg.timestamp)
 }
 
 // indices returns the consecutive 1-based positions below base.
@@ -242,7 +247,7 @@ func (d *decoder) list(v reflect.Value, key string, tg *tag) error {
 
 	s := reflect.MakeSlice(v.Type(), len(idx), len(idx))
 	for i, n := range idx {
-		if guardErr := d.field(s.Index(i), base+"."+strconv.Itoa(n), &tag{}); guardErr != nil {
+		if guardErr := d.field(s.Index(i), base+"."+strconv.Itoa(n), &tag{timestamp: tg.timestamp}); guardErr != nil {
 			return guardErr
 		}
 	}
@@ -298,7 +303,7 @@ func (d *decoder) mapping(v reflect.Value, key string, tg *tag) error {
 	return nil
 }
 
-func (d *decoder) scalar(v reflect.Value, key string) error {
+func (d *decoder) scalar(v reflect.Value, key string, timestamp bool) error {
 	values, ok := d.params[key]
 	if !ok {
 		return nil
@@ -327,6 +332,16 @@ func (d *decoder) scalar(v reflect.Value, key string) error {
 
 		v.SetInt(n)
 	case reflect.Float64:
+		if timestamp {
+			ts, err := time.Parse(time.RFC3339, s)
+			if err != nil {
+				return invalid("Parameter %s must be an ISO 8601 date-time", key)
+			}
+
+			v.SetFloat(float64(ts.UnixMilli()) / 1000)
+			break
+		}
+
 		f, err := strconv.ParseFloat(s, 64)
 		if err != nil {
 			return invalid("Parameter %s must be a number", key)
@@ -504,7 +519,7 @@ func encodeField(b *bytes.Buffer, tg *tag, v reflect.Value, dialect string) {
 				name = tg.element
 			}
 
-			element(b, name, v.Index(i), dialect)
+			element(b, name, v.Index(i), dialect, tg.timestamp)
 		}
 
 		if !tg.flat {
@@ -522,8 +537,8 @@ func encodeField(b *bytes.Buffer, tg *tag, v reflect.Value, dialect string) {
 
 		for _, k := range keys {
 			open(b, entry)
-			element(b, tg.key, k, dialect)
-			element(b, tg.value, v.MapIndex(k), dialect)
+			element(b, tg.key, k, dialect, false)
+			element(b, tg.value, v.MapIndex(k), dialect, false)
 			closeTag(b, entry)
 		}
 
@@ -531,11 +546,11 @@ func encodeField(b *bytes.Buffer, tg *tag, v reflect.Value, dialect string) {
 			closeTag(b, tg.element)
 		}
 	default:
-		element(b, tg.element, v, dialect)
+		element(b, tg.element, v, dialect, tg.timestamp)
 	}
 }
 
-func element(b *bytes.Buffer, name string, v reflect.Value, dialect string) {
+func element(b *bytes.Buffer, name string, v reflect.Value, dialect string, timestamp bool) {
 	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return
@@ -560,6 +575,11 @@ func element(b *bytes.Buffer, name string, v reflect.Value, dialect string) {
 	case reflect.Int64:
 		b.WriteString(strconv.FormatInt(v.Int(), 10))
 	case reflect.Float64:
+		if timestamp {
+			b.WriteString(time.UnixMilli(int64(v.Float() * 1000)).UTC().Format("2006-01-02T15:04:05.000Z"))
+			break
+		}
+
 		b.WriteString(strconv.FormatFloat(v.Float(), 'f', -1, 64))
 	case reflect.Slice:
 		b.WriteString(base64.StdEncoding.EncodeToString(v.Bytes()))
