@@ -39,6 +39,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
@@ -66,6 +67,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	zones "github.com/amjadjibon/tinystack/internal/services/route53"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	secrets "github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	stepfunctions "github.com/amjadjibon/tinystack/internal/services/sfn"
@@ -159,6 +161,7 @@ func serverStore(
 
 	firehoses := deliverystreams.New(store, streams, deliveries, logger)
 	monitoring := cloudwatch.New(store, logger)
+	dns := zones.New(store)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -183,6 +186,7 @@ func serverStore(
 		apigatewayapi.Descriptor(restAPIs),
 		sfnapi.Descriptor(workflows),
 		kinesisapi.Descriptor(streams),
+		route53api.Descriptor(dns),
 		acmapi.Descriptor(certificates.New(store)),
 		firehoseapi.Descriptor(firehoses),
 		cloudwatchapi.Descriptor(monitoring),
@@ -191,6 +195,7 @@ func serverStore(
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
 	monitoring.UseCaller(caller)
+	dns.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)

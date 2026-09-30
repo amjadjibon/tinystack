@@ -35,6 +35,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
@@ -63,6 +64,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/route53"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/sfn"
@@ -167,6 +169,7 @@ func newStartCommand() *cobra.Command {
 			defer firehoses.Stop()
 			monitoring := cloudwatch.New(store, logger)
 			defer monitoring.Stop()
+			dns := route53.New(store)
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -193,6 +196,7 @@ func newStartCommand() *cobra.Command {
 				apigatewayapi.Descriptor(restAPIs),
 				sfnapi.Descriptor(workflows),
 				kinesisapi.Descriptor(streams),
+				route53api.Descriptor(dns),
 				acmapi.Descriptor(acm.New(store)),
 				firehoseapi.Descriptor(firehoses),
 				cloudwatchapi.Descriptor(monitoring),
@@ -203,6 +207,7 @@ func newStartCommand() *cobra.Command {
 			workflows.UseCaller(caller)
 			firehoses.UseCaller(caller)
 			monitoring.UseCaller(caller)
+			dns.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err
