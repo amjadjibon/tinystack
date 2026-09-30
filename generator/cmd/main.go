@@ -25,6 +25,13 @@ const (
 	shapeList      = "list"
 	shapeMap       = "map"
 	shapeTimestamp = "timestamp"
+	shapeString    = "string"
+	shapeBoolean   = "boolean"
+	shapeInteger   = "integer"
+	shapeLong      = "long"
+	shapeFloat     = "float"
+	shapeDouble    = "double"
+	shapeBlob      = "blob"
 	unitShape      = "smithy.api#Unit"
 )
 
@@ -78,6 +85,10 @@ type (
 		queryOnly bool
 		// ec2 marks ec2Query models, whose members get `ec2` tags.
 		ec2 bool
+		// wrapped marks REST XML models whose errors are wrapped in an
+		// ErrorResponse element (every one but S3, whose trait sets
+		// noErrorWrapping).
+		wrapped bool
 		// cbor marks models that also speak RPC v2 CBOR, whose timestamp
 		// members get `cbor:"timestamp"` tags.
 		cbor bool
@@ -168,11 +179,11 @@ func (g *generator) typeName(id string) (string, error) {
 	}
 
 	switch s.Type {
-	case "string", "enum":
+	case shapeString, "enum":
 		return "string", nil
-	case "boolean":
+	case shapeBoolean:
 		return "bool", nil
-	case "integer", "long":
+	case shapeInteger, shapeLong:
 		return "int64", nil
 	case shapeTimestamp:
 		// REST XML and AWS Query carry timestamps as ISO 8601 text (REST XML
@@ -184,9 +195,9 @@ func (g *generator) typeName(id string) (string, error) {
 		}
 
 		return "float64", nil
-	case "double", "float":
+	case shapeDouble, shapeFloat:
 		return "float64", nil
-	case "blob":
+	case shapeBlob:
 		return "[]byte", nil
 	case shapeStructure, shapeUnion:
 		return short(id), nil
@@ -515,7 +526,7 @@ func (g *generator) emit(id string) error {
 			}
 
 			kind := g.model.Shapes[m.Target].Type
-			if s.Type == shapeUnion || (kind != shapeList && kind != shapeMap && kind != "blob") {
+			if s.Type == shapeUnion || (kind != shapeList && kind != shapeMap && kind != shapeBlob) {
 				t = "*" + t
 			}
 
@@ -679,7 +690,12 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 			return nil, "", false, fmt.Errorf("restXml model needs an XML namespace")
 		}
 
-		g.rest, g.xml = true, true
+		var trait struct{ NoErrorWrapping bool }
+		if guardErr := json.Unmarshal(svc.Traits["aws.protocols#restXml"], &trait); guardErr != nil {
+			return nil, "", false, fmt.Errorf("restXml trait: %w", guardErr)
+		}
+
+		g.rest, g.xml, g.wrapped = true, true, !trait.NoErrorWrapping
 		return []string{catalog.RESTXML}, ns.URI, false, nil
 	case restJSON:
 		g.rest = true
@@ -736,6 +752,35 @@ func (g *generator) service() (string, shape, error) {
 	return id, g.model.Shapes[id], nil
 }
 
+// prelude maps the simple shapes of Smithy's prelude, which models such as
+// Route 53 target directly, to their types.
+var prelude = map[string]string{
+	"String": shapeString, "Boolean": shapeBoolean, "PrimitiveBoolean": shapeBoolean, "Integer": shapeInteger,
+	"PrimitiveInteger": shapeInteger, "Long": shapeLong, "PrimitiveLong": shapeLong, "Short": shapeInteger,
+	"PrimitiveShort": shapeInteger, "Byte": shapeInteger, "PrimitiveByte": shapeInteger, "Float": shapeFloat,
+	"PrimitiveFloat": shapeFloat, "Double": shapeDouble, "PrimitiveDouble": shapeDouble, "Timestamp": shapeTimestamp,
+	"Blob": shapeBlob,
+}
+
+// wrappedField sets catalog.Service.WrappedErrors in a descriptor, leaving
+// the descriptors of other services unchanged.
+func wrappedField(wrapped bool) string {
+	if wrapped {
+		return "WrappedErrors:true,"
+	}
+
+	return ""
+}
+
+// addPrelude adds the prelude's simple shapes that a model does not define.
+func addPrelude(shapes map[string]shape) {
+	for name, kind := range prelude {
+		if _, ok := shapes["smithy.api#"+name]; !ok {
+			shapes["smithy.api#"+name] = shape{Type: kind}
+		}
+	}
+}
+
 func generate(name string, data []byte, profile serviceProfile) ([]byte, error) {
 	g := generator{
 		seen:    map[string]bool{},
@@ -749,6 +794,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		return nil, guardErr
 	}
 
+	addPrelude(g.model.Shapes)
 	serviceID, svc, err := g.service()
 	if err != nil {
 		return nil, err
@@ -839,12 +885,13 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		"func D"+
 			"escriptor(api API) catalog.Service {return catalog.Service{Name: %q, SigningName: %q,"+
 			"Inventory:catalog.InventoryOf(api),"+
-			"TargetPrefix:%q,QueryCompatible:%t,XMLNamespace:%q,Protocols:%#v,Errors:%#v,Operations:map[stri"+
+			"TargetPrefix:%q,QueryCompatible:%t,%sXMLNamespace:%q,Protocols:%#v,Errors:%#v,Operations:map[stri"+
 			"ng]catalog.Operation{\n",
 		name,
 		sigv4.Name,
 		targetPrefix,
 		queryCompatible,
+		wrappedField(g.wrapped),
 		namespace,
 		protocols,
 		errorBindings,
