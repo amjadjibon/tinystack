@@ -6979,5 +6979,319 @@
         "Options"
       ]
     }
+  },
+  "route53": {
+    "operations": [
+      "CreateHostedZone",
+      "GetHostedZone",
+      "ListHostedZones",
+      "ListHostedZonesByName",
+      "DeleteHostedZone",
+      "UpdateHostedZoneComment",
+      "GetHostedZoneCount",
+      "AssociateVPCWithHostedZone",
+      "DisassociateVPCFromHostedZone",
+      "ChangeResourceRecordSets",
+      "ListResourceRecordSets",
+      "GetChange",
+      "ChangeTagsForResource",
+      "ListTagsForResource",
+      "ListTagsForResources",
+      "CreateHealthCheck",
+      "GetHealthCheck",
+      "ListHealthChecks",
+      "UpdateHealthCheck",
+      "DeleteHealthCheck",
+      "GetDNSSEC"
+    ],
+    "shapes": {
+      "CreateHostedZoneRequest": [
+        "Name",
+        "VPC",
+        "CallerReference",
+        "HostedZoneConfig"
+      ],
+      "CreateHostedZoneResponse": [
+        "HostedZone",
+        "ChangeInfo",
+        "DelegationSet",
+        "VPC",
+        "Location"
+      ],
+      "HostedZone": [
+        "Id",
+        "Name",
+        "CallerReference",
+        "Config",
+        "ResourceRecordSetCount"
+      ],
+      "HostedZoneConfig": [
+        "Comment",
+        "PrivateZone"
+      ],
+      "ChangeInfo": [
+        "Id",
+        "Status",
+        "SubmittedAt",
+        "Comment"
+      ],
+      "DelegationSet": [
+        "Id",
+        "CallerReference",
+        "NameServers"
+      ],
+      "VPC": [
+        "VPCRegion",
+        "VPCId"
+      ],
+      "GetHostedZoneRequest": [
+        "Id"
+      ],
+      "GetHostedZoneResponse": [
+        "HostedZone",
+        "DelegationSet",
+        "VPCs"
+      ],
+      "ListHostedZonesRequest": [
+        "Marker",
+        "MaxItems",
+        "HostedZoneType"
+      ],
+      "ListHostedZonesResponse": [
+        "HostedZones",
+        "Marker",
+        "IsTruncated",
+        "NextMarker",
+        "MaxItems"
+      ],
+      "ListHostedZonesByNameRequest": [
+        "DNSName",
+        "HostedZoneId",
+        "MaxItems"
+      ],
+      "ListHostedZonesByNameResponse": [
+        "HostedZones",
+        "DNSName",
+        "HostedZoneId",
+        "IsTruncated",
+        "NextDNSName",
+        "NextHostedZoneId",
+        "MaxItems"
+      ],
+      "DeleteHostedZoneRequest": [
+        "Id"
+      ],
+      "DeleteHostedZoneResponse": [
+        "ChangeInfo"
+      ],
+      "UpdateHostedZoneCommentRequest": [
+        "Id",
+        "Comment"
+      ],
+      "UpdateHostedZoneCommentResponse": [
+        "HostedZone"
+      ],
+      "GetHostedZoneCountResponse": [
+        "HostedZoneCount"
+      ],
+      "AssociateVPCWithHostedZoneRequest": [
+        "HostedZoneId",
+        "VPC",
+        "Comment"
+      ],
+      "AssociateVPCWithHostedZoneResponse": [
+        "ChangeInfo"
+      ],
+      "DisassociateVPCFromHostedZoneRequest": [
+        "HostedZoneId",
+        "VPC",
+        "Comment"
+      ],
+      "DisassociateVPCFromHostedZoneResponse": [
+        "ChangeInfo"
+      ],
+      "ChangeResourceRecordSetsRequest": [
+        "HostedZoneId",
+        "ChangeBatch"
+      ],
+      "ChangeResourceRecordSetsResponse": [
+        "ChangeInfo"
+      ],
+      "ChangeBatch": [
+        "Comment",
+        "Changes"
+      ],
+      "Change": [
+        "Action",
+        "ResourceRecordSet"
+      ],
+      "ResourceRecordSet": [
+        "Name",
+        "Type",
+        "SetIdentifier",
+        "Weight",
+        "Region",
+        "GeoLocation",
+        "Failover",
+        "MultiValueAnswer",
+        "TTL",
+        "ResourceRecords",
+        "AliasTarget",
+        "HealthCheckId"
+      ],
+      "ResourceRecord": [
+        "Value"
+      ],
+      "AliasTarget": [
+        "HostedZoneId",
+        "DNSName",
+        "EvaluateTargetHealth"
+      ],
+      "GeoLocation": [
+        "ContinentCode",
+        "CountryCode",
+        "SubdivisionCode"
+      ],
+      "ListResourceRecordSetsRequest": [
+        "HostedZoneId",
+        "StartRecordName",
+        "StartRecordType",
+        "StartRecordIdentifier",
+        "MaxItems"
+      ],
+      "ListResourceRecordSetsResponse": [
+        "ResourceRecordSets",
+        "IsTruncated",
+        "NextRecordName",
+        "NextRecordType",
+        "NextRecordIdentifier",
+        "MaxItems"
+      ],
+      "GetChangeRequest": [
+        "Id"
+      ],
+      "GetChangeResponse": [
+        "ChangeInfo"
+      ],
+      "ChangeTagsForResourceRequest": [
+        "ResourceType",
+        "ResourceId",
+        "AddTags",
+        "RemoveTagKeys"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceType",
+        "ResourceId"
+      ],
+      "ListTagsForResourceResponse": [
+        "ResourceTagSet"
+      ],
+      "ResourceTagSet": [
+        "ResourceType",
+        "ResourceId",
+        "Tags"
+      ],
+      "ListTagsForResourcesRequest": [
+        "ResourceType",
+        "ResourceIds"
+      ],
+      "ListTagsForResourcesResponse": [
+        "ResourceTagSets"
+      ],
+      "CreateHealthCheckRequest": [
+        "CallerReference",
+        "HealthCheckConfig"
+      ],
+      "CreateHealthCheckResponse": [
+        "HealthCheck",
+        "Location"
+      ],
+      "HealthCheck": [
+        "Id",
+        "CallerReference",
+        "HealthCheckConfig",
+        "HealthCheckVersion"
+      ],
+      "HealthCheckConfig": [
+        "IPAddress",
+        "Port",
+        "Type",
+        "ResourcePath",
+        "FullyQualifiedDomainName",
+        "SearchString",
+        "RequestInterval",
+        "FailureThreshold",
+        "MeasureLatency",
+        "Inverted",
+        "Disabled",
+        "HealthThreshold",
+        "ChildHealthChecks",
+        "EnableSNI",
+        "Regions",
+        "AlarmIdentifier",
+        "InsufficientDataHealthStatus"
+      ],
+      "AlarmIdentifier": [
+        "Region",
+        "Name"
+      ],
+      "GetHealthCheckRequest": [
+        "HealthCheckId"
+      ],
+      "GetHealthCheckResponse": [
+        "HealthCheck"
+      ],
+      "ListHealthChecksRequest": [
+        "Marker",
+        "MaxItems"
+      ],
+      "ListHealthChecksResponse": [
+        "HealthChecks",
+        "Marker",
+        "IsTruncated",
+        "NextMarker",
+        "MaxItems"
+      ],
+      "UpdateHealthCheckRequest": [
+        "HealthCheckId",
+        "HealthCheckVersion",
+        "IPAddress",
+        "Port",
+        "ResourcePath",
+        "FullyQualifiedDomainName",
+        "SearchString",
+        "FailureThreshold",
+        "Inverted",
+        "Disabled",
+        "HealthThreshold",
+        "ChildHealthChecks",
+        "EnableSNI",
+        "Regions",
+        "AlarmIdentifier",
+        "InsufficientDataHealthStatus",
+        "ResetElements"
+      ],
+      "UpdateHealthCheckResponse": [
+        "HealthCheck"
+      ],
+      "DeleteHealthCheckRequest": [
+        "HealthCheckId"
+      ],
+      "GetDNSSECRequest": [
+        "HostedZoneId"
+      ],
+      "GetDNSSECResponse": [
+        "Status",
+        "KeySigningKeys"
+      ],
+      "DNSSECStatus": [
+        "ServeSignature",
+        "StatusMessage"
+      ]
+    }
   }
 }
