@@ -27,7 +27,9 @@ import (
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
+	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
@@ -50,7 +52,9 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 	"github.com/amjadjibon/tinystack/internal/services/eks"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
+	"github.com/amjadjibon/tinystack/internal/services/firehose"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
+	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
@@ -125,6 +129,8 @@ func newStartCommand() *cobra.Command {
 			)
 			// Stop removes function containers; it must finish before exit.
 			defer functions.Stop()
+			streams := kinesis.New(store)
+			functions.UseKinesis(streams)
 			if guardErr := functions.Resume(cmd.Context()); guardErr != nil {
 				return guardErr
 			}
@@ -152,6 +158,9 @@ func newStartCommand() *cobra.Command {
 
 			// Stop ends running executions.
 			defer workflows.Stop()
+			firehoses := firehose.New(store, streams, deliveries, logger)
+			// Stop ends the flusher, which writes to the store.
+			defer firehoses.Stop()
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -177,9 +186,14 @@ func newStartCommand() *cobra.Command {
 				apigatewayv2api.Descriptor(httpAPIs),
 				apigatewayapi.Descriptor(restAPIs),
 				sfnapi.Descriptor(workflows),
+				kinesisapi.Descriptor(streams),
+				firehoseapi.Descriptor(firehoses),
 			}
-			// Step Functions' Task states call the other services in-process.
-			workflows.UseCaller(catalog.NewCaller(services...))
+			// Step Functions' Task states and Firehose's deliveries call the
+			// other services in-process.
+			caller := catalog.NewCaller(services...)
+			workflows.UseCaller(caller)
+			firehoses.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err
@@ -217,6 +231,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(rules.Stop)
 			server.RegisterOnShutdown(secrets.Stop)
 			server.RegisterOnShutdown(workflows.Stop)
+			server.RegisterOnShutdown(firehoses.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)

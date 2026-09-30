@@ -31,7 +31,9 @@ import (
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
+	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
@@ -54,7 +56,9 @@ import (
 	orchestration "github.com/amjadjibon/tinystack/internal/services/ecs"
 	kubernetes "github.com/amjadjibon/tinystack/internal/services/eks"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
+	deliverystreams "github.com/amjadjibon/tinystack/internal/services/firehose"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
+	datastreams "github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
@@ -124,6 +128,8 @@ func serverStore(
 		cfg.Identity.SecretKeys,
 		deliveries,
 	)
+	streams := datastreams.New(store)
+	functions.UseKinesis(streams)
 	if err := functions.Resume(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -147,6 +153,8 @@ func serverStore(
 		t.Fatal(err)
 	}
 
+	firehoses := deliverystreams.New(store, streams, deliveries, logger)
+
 	services := []catalog.Service{
 		api.Descriptor(tables),
 		dynamodbstreamsapi.Descriptor(tables.Streams()),
@@ -169,8 +177,12 @@ func serverStore(
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
 		sfnapi.Descriptor(workflows),
+		kinesisapi.Descriptor(streams),
+		firehoseapi.Descriptor(firehoses),
 	}
-	workflows.UseCaller(catalog.NewCaller(services...))
+	caller := catalog.NewCaller(services...)
+	workflows.UseCaller(caller)
+	firehoses.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
@@ -185,6 +197,7 @@ func serverStore(
 	s = httptest.NewServer(h)
 	return s, func() {
 		workflows.Stop()
+		firehoses.Stop()
 		secretsService.Stop()
 		rules.Stop()
 		sqsService.Stop()

@@ -6328,5 +6328,306 @@
         "tags"
       ]
     }
+  },
+  "kinesis": {
+    "operations": [
+      "CreateStream",
+      "DeleteStream",
+      "DescribeStream",
+      "DescribeStreamSummary",
+      "ListStreams",
+      "ListShards",
+      "PutRecord",
+      "PutRecords",
+      "GetShardIterator",
+      "GetRecords",
+      "IncreaseStreamRetentionPeriod",
+      "DecreaseStreamRetentionPeriod",
+      "AddTagsToStream",
+      "RemoveTagsFromStream",
+      "ListTagsForStream",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource",
+      "UpdateShardCount",
+      "SplitShard",
+      "MergeShards",
+      "StartStreamEncryption",
+      "StopStreamEncryption",
+      "RegisterStreamConsumer",
+      "DescribeStreamConsumer",
+      "ListStreamConsumers",
+      "DeregisterStreamConsumer",
+      "UpdateStreamMode",
+      "EnableEnhancedMonitoring",
+      "DisableEnhancedMonitoring",
+      "DescribeLimits"
+    ],
+    "shapes": {
+      "CreateStreamInput": [
+        "StreamName",
+        "ShardCount",
+        "StreamModeDetails",
+        "Tags"
+      ],
+      "DeleteStreamInput": [
+        "StreamName",
+        "StreamARN",
+        "EnforceConsumerDeletion"
+      ],
+      "DescribeStreamInput": [
+        "StreamName",
+        "StreamARN",
+        "Limit",
+        "ExclusiveStartShardId"
+      ],
+      "DescribeStreamSummaryInput": [
+        "StreamName",
+        "StreamARN"
+      ],
+      "ListShardsInput": [
+        "StreamName",
+        "StreamARN",
+        "NextToken",
+        "ExclusiveStartShardId",
+        "MaxResults",
+        "StreamCreationTimestamp",
+        "ShardFilter"
+      ],
+      "ShardFilter": [
+        "Type",
+        "ShardId",
+        "Timestamp"
+      ],
+      "PutRecordInput": [
+        "StreamName",
+        "StreamARN",
+        "Data",
+        "PartitionKey",
+        "ExplicitHashKey",
+        "SequenceNumberForOrdering"
+      ],
+      "PutRecordsInput": [
+        "StreamName",
+        "StreamARN",
+        "Records"
+      ],
+      "GetShardIteratorInput": [
+        "StreamName",
+        "StreamARN",
+        "ShardId",
+        "ShardIteratorType",
+        "StartingSequenceNumber",
+        "Timestamp"
+      ],
+      "GetRecordsInput": [
+        "ShardIterator",
+        "Limit",
+        "StreamARN"
+      ],
+      "IncreaseStreamRetentionPeriodInput": [
+        "StreamName",
+        "StreamARN",
+        "RetentionPeriodHours"
+      ],
+      "DecreaseStreamRetentionPeriodInput": [
+        "StreamName",
+        "StreamARN",
+        "RetentionPeriodHours"
+      ],
+      "AddTagsToStreamInput": [
+        "StreamName",
+        "StreamARN",
+        "Tags"
+      ],
+      "RemoveTagsFromStreamInput": [
+        "StreamName",
+        "StreamARN",
+        "TagKeys"
+      ],
+      "ListTagsForStreamInput": [
+        "StreamName",
+        "StreamARN",
+        "ExclusiveStartTagKey",
+        "Limit"
+      ],
+      "TagResourceInput": [
+        "Tags",
+        "ResourceARN"
+      ],
+      "UntagResourceInput": [
+        "TagKeys",
+        "ResourceARN"
+      ],
+      "ListTagsForResourceInput": [
+        "ResourceARN"
+      ],
+      "UpdateShardCountInput": [
+        "StreamName",
+        "StreamARN",
+        "TargetShardCount",
+        "ScalingType"
+      ],
+      "SplitShardInput": [
+        "StreamName",
+        "StreamARN",
+        "ShardToSplit",
+        "NewStartingHashKey"
+      ],
+      "MergeShardsInput": [
+        "StreamName",
+        "StreamARN",
+        "ShardToMerge",
+        "AdjacentShardToMerge"
+      ],
+      "StartStreamEncryptionInput": [
+        "StreamName",
+        "StreamARN",
+        "EncryptionType",
+        "KeyId"
+      ],
+      "StopStreamEncryptionInput": [
+        "StreamName",
+        "StreamARN",
+        "EncryptionType",
+        "KeyId"
+      ],
+      "RegisterStreamConsumerInput": [
+        "StreamARN",
+        "ConsumerName",
+        "Tags"
+      ],
+      "DescribeStreamConsumerInput": [
+        "StreamARN",
+        "ConsumerName",
+        "ConsumerARN"
+      ],
+      "ListStreamConsumersInput": [
+        "StreamARN",
+        "NextToken",
+        "MaxResults",
+        "StreamCreationTimestamp"
+      ],
+      "DeregisterStreamConsumerInput": [
+        "StreamARN",
+        "ConsumerName",
+        "ConsumerARN"
+      ],
+      "UpdateStreamModeInput": [
+        "StreamARN",
+        "StreamModeDetails"
+      ],
+      "EnableEnhancedMonitoringInput": [
+        "StreamName",
+        "StreamARN",
+        "ShardLevelMetrics"
+      ],
+      "DisableEnhancedMonitoringInput": [
+        "StreamName",
+        "StreamARN",
+        "ShardLevelMetrics"
+      ],
+      "ListStreamsInput": [
+        "Limit",
+        "ExclusiveStartStreamName",
+        "NextToken"
+      ]
+    }
+  },
+  "firehose": {
+    "operations": [
+      "CreateDeliveryStream",
+      "DeleteDeliveryStream",
+      "DescribeDeliveryStream",
+      "ListDeliveryStreams",
+      "PutRecord",
+      "PutRecordBatch",
+      "UpdateDestination",
+      "TagDeliveryStream",
+      "UntagDeliveryStream",
+      "ListTagsForDeliveryStream",
+      "StartDeliveryStreamEncryption",
+      "StopDeliveryStreamEncryption"
+    ],
+    "shapes": {
+      "CreateDeliveryStreamInput": [
+        "DeliveryStreamName",
+        "DeliveryStreamType",
+        "KinesisStreamSourceConfiguration",
+        "DeliveryStreamEncryptionConfigurationInput",
+        "S3DestinationConfiguration",
+        "ExtendedS3DestinationConfiguration",
+        "Tags"
+      ],
+      "S3DestinationConfiguration": [
+        "RoleARN",
+        "BucketARN",
+        "Prefix",
+        "ErrorOutputPrefix",
+        "BufferingHints",
+        "CompressionFormat",
+        "EncryptionConfiguration",
+        "CloudWatchLoggingOptions"
+      ],
+      "ExtendedS3DestinationConfiguration": [
+        "RoleARN",
+        "BucketARN",
+        "Prefix",
+        "ErrorOutputPrefix",
+        "BufferingHints",
+        "CompressionFormat",
+        "EncryptionConfiguration",
+        "CloudWatchLoggingOptions",
+        "ProcessingConfiguration",
+        "S3BackupMode",
+        "FileExtension",
+        "CustomTimeZone",
+        "DataFormatConversionConfiguration",
+        "DynamicPartitioningConfiguration"
+      ],
+      "S3DestinationUpdate": [
+        "RoleARN",
+        "BucketARN",
+        "Prefix",
+        "ErrorOutputPrefix",
+        "BufferingHints",
+        "CompressionFormat",
+        "EncryptionConfiguration",
+        "CloudWatchLoggingOptions"
+      ],
+      "ExtendedS3DestinationUpdate": [
+        "RoleARN",
+        "BucketARN",
+        "Prefix",
+        "ErrorOutputPrefix",
+        "BufferingHints",
+        "CompressionFormat",
+        "EncryptionConfiguration",
+        "CloudWatchLoggingOptions",
+        "ProcessingConfiguration",
+        "S3BackupMode",
+        "FileExtension",
+        "CustomTimeZone",
+        "DataFormatConversionConfiguration",
+        "DynamicPartitioningConfiguration"
+      ],
+      "UpdateDestinationInput": [
+        "DeliveryStreamName",
+        "CurrentDeliveryStreamVersionId",
+        "DestinationId",
+        "S3DestinationUpdate",
+        "ExtendedS3DestinationUpdate"
+      ],
+      "DeleteDeliveryStreamInput": [
+        "DeliveryStreamName",
+        "AllowForceDelete"
+      ],
+      "DataFormatConversionConfiguration": [
+        "Enabled"
+      ],
+      "DynamicPartitioningConfiguration": [
+        "Enabled"
+      ]
+    }
   }
 }
