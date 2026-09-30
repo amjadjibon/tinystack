@@ -77,7 +77,10 @@ type (
 		// never JSON.
 		queryOnly bool
 		// ec2 marks ec2Query models, whose members get `ec2` tags.
-		ec2  bool
+		ec2 bool
+		// cbor marks models that also speak RPC v2 CBOR, whose timestamp
+		// members get `cbor:"timestamp"` tags.
+		cbor bool
 		rest bool
 		xml  bool
 	}
@@ -302,12 +305,18 @@ func (g *generator) queryTag(member reference, name string) (string, error) {
 
 	switch target.Type {
 	case shapeTimestamp:
+		// AWS Query compatible JSON services keep epoch seconds, which the
+		// query codec writes as ISO 8601.
 		if !g.queryOnly {
-			return "", fmt.Errorf("timestamps of AWS Query compatible JSON services are not supported")
+			opts = append(opts, "timestamp")
 		}
 	case shapeList:
 		if nested(target.Member.Target) {
 			return "", fmt.Errorf("nested collections are not supported by the query codec")
+		}
+
+		if g.model.Shapes[target.Member.Target].Type == shapeTimestamp && !g.queryOnly {
+			opts = append(opts, "timestamp")
 		}
 
 		memberName, nameErr := xmlName(target.Member.Traits, "member")
@@ -542,6 +551,11 @@ func (g *generator) emit(id string) error {
 				return fmt.Errorf("%s.%s: %w", id, n, err)
 			}
 
+			if target := g.model.Shapes[m.Target]; g.cbor && (target.Type == shapeTimestamp ||
+				target.Type == shapeList && g.model.Shapes[target.Member.Target].Type == shapeTimestamp) {
+				queryTag += ` cbor:"timestamp"`
+			}
+
 			fmt.Fprintf(&g.out, "%s %s `json:\"%s\"%s`\n", goName(n), t, tag, queryTag)
 		}
 
@@ -636,6 +650,15 @@ func (g *generator) protocols(svc *shape) (protocols []string, namespace string,
 	_, restXML := svc.Traits["aws.protocols#restXml"]
 	_, restJSON := svc.Traits["aws.protocols#restJson1"]
 	_, ec2Protocol := svc.Traits["aws.protocols#ec2Query"]
+	_, cbor := svc.Traits["smithy.protocols#rpcv2Cbor"]
+	defer func() {
+		// AWS JSON services may also speak RPC v2 CBOR, whose clients need
+		// timestamps tagged.
+		if err == nil && cbor && (jsonProtocol || json11Protocol) {
+			protocols, g.cbor = append(protocols, catalog.RPCV2CBOR), true
+		}
+	}()
+
 	if (restXML || restJSON || ec2Protocol) && g.query {
 		return nil, "", false, fmt.Errorf("REST and EC2 Query models do not take a query overlay")
 	}

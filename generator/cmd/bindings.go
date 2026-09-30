@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -21,7 +22,7 @@ func compileBinding(
 	switch protocol {
 	case catalog.AWSQuery, catalog.EC2Query:
 		return catalog.Binding{
-			Method:      "POST",
+			Method:      http.MethodPost,
 			URI:         "/",
 			Target:      short(id),
 			Version:     version,
@@ -35,10 +36,18 @@ func compileBinding(
 		}
 
 		return catalog.Binding{
-			Method:      "POST",
+			Method:      http.MethodPost,
 			URI:         "/",
 			Target:      targetPrefix + "." + short(id),
 			ContentType: contentType,
+			StatusCode:  200,
+		}, nil
+	case catalog.RPCV2CBOR:
+		return catalog.Binding{
+			Method:      http.MethodPost,
+			URI:         "/service/" + targetPrefix + "/operation/" + short(id),
+			Target:      targetPrefix + "." + short(id),
+			ContentType: "application/cbor",
 			StatusCode:  200,
 		}, nil
 	case catalog.RESTJSON:
