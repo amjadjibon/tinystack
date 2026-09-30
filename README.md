@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, EC2 Auto Scaling, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -75,7 +75,7 @@ The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SN
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
 authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
-stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), Route 53 hosted zones (public and private), records (including routing policies and aliases), and health checks, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), EventBridge Scheduler schedule groups and schedules, EC2 launch templates, SSM parameters
+stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), Route 53 hosted zones (public and private), records (including routing policies and aliases), and health checks, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), EventBridge Scheduler schedule groups and schedules, EC2 launch templates, Auto Scaling groups, policies (including target tracking), and scheduled actions, SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -93,6 +93,7 @@ provider "aws" {
 
   endpoints {
     acm            = "http://localhost:4566"
+    autoscaling    = "http://localhost:4566"
     apigateway     = "http://localhost:4566"
     apigatewayv2   = "http://localhost:4566"
     cloudwatch     = "http://localhost:4566"
@@ -812,6 +813,29 @@ request. A failed invocation is sent to the target's SQS dead-letter queue with 
 | CreateScheduleGroup / GetScheduleGroup / ListScheduleGroups / DeleteScheduleGroup | Groups with tags; deleting a group deletes its schedules |
 | TagResource / UntagResource / ListTagsForResource | Tags of schedule groups other than `default` |
 
+### EC2 Auto Scaling (AWS Query)
+
+Groups launch real TinyStack EC2 instances from a launch template (any version, `$Default`, or `$Latest`) or a
+launch configuration, into the subnets of `VPCZoneIdentifier` or the `AvailabilityZones`, balancing zones. Every
+second, and before an operation that changes a group returns, TinyStack applies due scheduled actions, replaces
+members EC2 no longer reports running (or marked `Unhealthy`), and launches or terminates instances until the group
+has its desired capacity, recording each change as a scaling activity. Instances are `InService` at once.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateAutoScalingGroup / UpdateAutoScalingGroup | Sizes (a new minimum or maximum moves the desired capacity inside them), the launch template (checked in EC2) or configuration, subnets (checked in EC2) or zones, cooldown, health check settings, termination policies (`OldestInstance` and `NewestInstance` order scale-in; otherwise the oldest goes), scale-in protection for new instances, deletion protection, and tags that propagate to instances at launch |
+| DescribeAutoScalingGroups / DescribeAutoScalingInstances / DescribeScalingActivities | Groups by name and `tag:`, `tag-key`, and `tag-value` filters, instances, and activities newest first, with paging |
+| SetDesiredCapacity / TerminateInstanceInAutoScalingGroup / SetInstanceProtection / SetInstanceHealth | Capacity changes (honoring the cooldown when asked), terminating a member with or without a replacement, scale-in protection, and marking a member unhealthy so it is replaced |
+| SuspendProcesses / ResumeProcesses | `Launch`, `Terminate`, `HealthCheck`, `ReplaceUnhealthy`, and `ScheduledActions` are honored; the rest are recorded |
+| DeleteAutoScalingGroup | An empty group, or with `ForceDelete` one and its instances, with its policies, scheduled actions, and activities |
+| CreateLaunchConfiguration / DescribeLaunchConfigurations / DeleteLaunchConfiguration | Configurations of an EC2 image; one a group uses cannot be deleted |
+| PutScalingPolicy / DescribePolicies / DeletePolicy / ExecutePolicy | Simple scaling (with its cooldown), step scaling (by `MetricValue` and `BreachThreshold`), and `ChangeInCapacity`, `ExactCapacity`, and `PercentChangeInCapacity` adjustments; target tracking policies create their `AlarmHigh` and `AlarmLow` CloudWatch alarms, which scale to the target when they fire |
+| PutScheduledUpdateGroupAction / DescribeScheduledActions / DeleteScheduledAction | One-time actions and Unix cron recurrences in a time zone, within start and end times |
+| CreateOrUpdateTags / DeleteTags / DescribeTags | Group tags, filtered by group, key, value, and propagation |
+
+CloudWatch alarm actions execute policies honoring their cooldown and pass the alarm's latest data point and
+threshold, so step and target tracking policies scale by the metric.
+
 ### ACM (AWS JSON 1.1)
 
 Certificates belong to an account and region. Requested certificates are real X.509 server certificates, signed by
@@ -942,7 +966,9 @@ it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard
 record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only
 S3 destinations (no Redshift, OpenSearch, Splunk, HTTP endpoint, Snowflake, or Iceberg), no MSK or database
 sources, record format conversion, dynamic partitioning, S3 backups, CloudWatch logging, or encryption.
-EventBridge Scheduler limits: no retries (a failed run goes straight to its dead-letter queue), flexible
+Auto Scaling limits: no mixed instances policies, warm pools, lifecycle hooks, instance refreshes, load balancer or
+traffic source attachments, notifications, metrics collection, or predictive scaling, and instances are not tagged
+`aws:autoscaling:groupName` (tag keys starting with `aws:` are reserved). EventBridge Scheduler limits: no retries (a failed run goes straight to its dead-letter queue), flexible
 windows (a schedule runs at its time), ECS, SageMaker, or CodeBuild templated targets, or customer managed KMS keys
 (the key ARN is stored). Route 53 limits: no DNS server, health checks that probe their endpoints, traffic policies, reusable delegation sets,
 query logging, DNSSEC signing, CIDR collections, or geoproximity records. ACM limits: no private certificates (AWS Private CA), renewal, validation that waits for DNS records or email,

@@ -117,7 +117,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -290,6 +290,15 @@ a per-service `Dialect`), and delivers synchronously through
   (or, for a finished `DELETE` schedule, removes) the schedule in the transaction that claims the run, and then invokes
   the target through the `catalog.Caller`, sending failures to the target's SQS dead-letter queue. `services/schedule`
   evaluates `cron` in the schedule's time zone (`Schedule.In`).
+  EC2 Auto Scaling (`services/autoscaling`) keeps each group (its `DescribeAutoScalingGroups` settings, members,
+  subnets, cooldown, and launch retry time) under `…/autoscaling/group/<name>`, launch configurations under
+  `…/autoscaling/launch-configuration/<name>`, and policies, scheduled actions, and activities under
+  `…/autoscaling/<kind>/<group>/…` (activities by zero-padded time). Members are EC2 instances it runs and terminates
+  through the `catalog.Caller`, outside its transactions: `reconcile.go` (serialized by a mutex, run by operations
+  that change a group and by the runner, which visits the partition-wide `aws/autoscaling/index/<account>/<region>/<group>`
+  every second after applying due scheduled actions) checks members with EC2's `DescribeInstances`, launches and
+  terminates, and then records the result in one transaction. Target tracking policies create and delete their
+  CloudWatch alarms with `PutMetricAlarm` and `DeleteAlarms`; CloudWatch's alarm actions call `ExecutePolicy`.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
@@ -317,7 +326,7 @@ a per-service `Dialect`), and delivers synchronously through
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, and EventBridge Scheduler over REST
-  JSON, plus Docker Registry API calls and requests to API Gateway APIs) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  JSON, Auto Scaling over Query, plus Docker Registry API calls and requests to API Gateway APIs) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real
