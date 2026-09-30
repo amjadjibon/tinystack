@@ -41,6 +41,7 @@ import (
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -69,6 +70,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	zones "github.com/amjadjibon/tinystack/internal/services/route53"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
+	schedules "github.com/amjadjibon/tinystack/internal/services/scheduler"
 	secrets "github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	stepfunctions "github.com/amjadjibon/tinystack/internal/services/sfn"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
@@ -162,6 +164,7 @@ func serverStore(
 	firehoses := deliverystreams.New(store, streams, deliveries, logger)
 	monitoring := cloudwatch.New(store, logger)
 	dns := zones.New(store)
+	timers := schedules.New(store, logger)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -187,6 +190,7 @@ func serverStore(
 		sfnapi.Descriptor(workflows),
 		kinesisapi.Descriptor(streams),
 		route53api.Descriptor(dns),
+		schedulerapi.Descriptor(timers),
 		acmapi.Descriptor(certificates.New(store)),
 		firehoseapi.Descriptor(firehoses),
 		cloudwatchapi.Descriptor(monitoring),
@@ -196,6 +200,7 @@ func serverStore(
 	firehoses.UseCaller(caller)
 	monitoring.UseCaller(caller)
 	dns.UseCaller(caller)
+	timers.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
@@ -212,6 +217,7 @@ func serverStore(
 		workflows.Stop()
 		firehoses.Stop()
 		monitoring.Stop()
+		timers.Stop()
 		secretsService.Stop()
 		rules.Stop()
 		sqsService.Stop()

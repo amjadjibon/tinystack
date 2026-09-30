@@ -37,6 +37,7 @@ import (
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -66,6 +67,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
+	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/sfn"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
@@ -170,6 +172,8 @@ func newStartCommand() *cobra.Command {
 			monitoring := cloudwatch.New(store, logger)
 			defer monitoring.Stop()
 			dns := route53.New(store)
+			timers := scheduler.New(store, logger)
+			defer timers.Stop()
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -197,6 +201,7 @@ func newStartCommand() *cobra.Command {
 				sfnapi.Descriptor(workflows),
 				kinesisapi.Descriptor(streams),
 				route53api.Descriptor(dns),
+				schedulerapi.Descriptor(timers),
 				acmapi.Descriptor(acm.New(store)),
 				firehoseapi.Descriptor(firehoses),
 				cloudwatchapi.Descriptor(monitoring),
@@ -208,6 +213,7 @@ func newStartCommand() *cobra.Command {
 			firehoses.UseCaller(caller)
 			monitoring.UseCaller(caller)
 			dns.UseCaller(caller)
+			timers.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err
@@ -247,6 +253,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(workflows.Stop)
 			server.RegisterOnShutdown(firehoses.Stop)
 			server.RegisterOnShutdown(monitoring.Stop)
+			server.RegisterOnShutdown(timers.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)
