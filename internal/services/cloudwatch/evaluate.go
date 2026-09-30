@@ -427,8 +427,18 @@ func (s *Service) act(ctx context.Context, ch *change, arn string) error {
 	// arn:aws:autoscaling:<region>:<account>:scalingPolicy:<id>:autoScalingGroupName/<group>:policyName/<name>
 	_, group, _ := strings.Cut(arn, ":autoScalingGroupName/")
 	group, policy, _ := strings.Cut(group, ":policyName/")
-	_, err := s.caller.Call(callContext(ctx, ch.scope, "autoscaling"), "autoscaling", "ExecutePolicy",
-		map[string]any{"AutoScalingGroupName": group, "PolicyName": policy})
+	params := map[string]any{"AutoScalingGroupName": group, "PolicyName": policy, "HonorCooldown": true}
+	var reasonData struct {
+		Threshold        *float64  `json:"threshold"`
+		RecentDatapoints []float64 `json:"recentDatapoints"`
+	}
+	if json.Unmarshal([]byte(data), &reasonData) == nil && len(reasonData.RecentDatapoints) > 0 &&
+		reasonData.Threshold != nil {
+		params["MetricValue"] = reasonData.RecentDatapoints[len(reasonData.RecentDatapoints)-1]
+		params["BreachThreshold"] = *reasonData.Threshold
+	}
+
+	_, err := s.caller.Call(callContext(ctx, ch.scope, "autoscaling"), "autoscaling", "ExecutePolicy", params)
 	return err
 }
 
