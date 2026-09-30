@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    acm            = var.endpoint
     apigateway     = var.endpoint
     apigatewayv2   = var.endpoint
     cloudwatch     = var.endpoint
@@ -1092,4 +1093,20 @@ resource "aws_cloudwatch_dashboard" "main" {
       properties = { markdown = "Owned by ${var.team}" }
     }]
   })
+}
+
+resource "aws_acm_certificate" "site" {
+  domain_name               = "example.com"
+  subject_alternative_names = ["*.example.com"]
+  validation_method         = "DNS"
+  key_algorithm             = "EC_prime256v1"
+  tags                      = local.tags
+
+  options {
+    certificate_transparency_logging_preference = "ENABLED"
+  }
+}
+
+resource "aws_acm_certificate_validation" "site" {
+  certificate_arn = aws_acm_certificate.site.arn
 }
