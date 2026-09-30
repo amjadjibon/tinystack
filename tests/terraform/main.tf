@@ -1186,3 +1186,17 @@ resource "aws_scheduler_schedule" "nightly" {
     input    = jsonencode({ team = var.team })
   }
 }
+
+resource "aws_launch_template" "web" {
+  name                   = "web"
+  image_id               = data.aws_ami.al2023.id
+  instance_type          = "t3.micro"
+  update_default_version = true
+  user_data              = base64encode("#!/bin/sh\necho ${var.team}\n")
+  tags                   = local.tags
+
+  tag_specifications {
+    resource_type = "instance"
+    tags          = local.tags
+  }
+}
