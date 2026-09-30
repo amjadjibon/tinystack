@@ -22,6 +22,8 @@ const (
 	ViaEventSourceMapping = "event-source-mapping"
 	ViaS3                 = "s3"
 	ViaSecretsManager     = "secretsmanager"
+	// ViaFirehose records the objects delivery streams write.
+	ViaFirehose = "firehose"
 	// ViaCognito records the email and SMS messages a user pool would send,
 	// such as confirmation codes and temporary passwords.
 	ViaCognito = "cognito"
