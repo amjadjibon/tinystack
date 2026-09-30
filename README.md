@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, ACM, Route 53, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -75,7 +75,7 @@ The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SN
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
 authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
-stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), Route 53 hosted zones (public and private), records (including routing policies and aliases), and health checks, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
+stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), Route 53 hosted zones (public and private), records (including routing policies and aliases), and health checks, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), EventBridge Scheduler schedule groups and schedules, SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -110,6 +110,7 @@ provider "aws" {
     logs           = "http://localhost:4566"
     route53        = "http://localhost:4566"
     s3             = "http://localhost:4566"
+    scheduler      = "http://localhost:4566"
     secretsmanager = "http://localhost:4566"
     sfn            = "http://localhost:4566"
     sns            = "http://localhost:4566"
@@ -793,6 +794,22 @@ included), then each composite alarm. A state change is recorded in the history,
 Auto Scaling policies) when actions are enabled, and sends a `CloudWatch Alarm State Change` event from `aws.cloudwatch`
 to EventBridge's default bus.
 
+### EventBridge Scheduler (REST JSON)
+
+Schedules and schedule groups belong to an account and region; the `default` group always exists. Every second
+TinyStack runs each enabled schedule that is due and invokes its target in-process: Lambda functions
+(asynchronously), SQS queues (with a FIFO `MessageGroupId`), SNS topics, EventBridge buses (the target's `Source` and
+`DetailType`, with the input as the detail), Step Functions state machines, Kinesis streams, or a universal target
+(`arn:aws:scheduler:::aws-sdk:<service>:<apiAction>`), which calls any TinyStack operation with the input as its
+request. A failed invocation is sent to the target's SQS dead-letter queue with Scheduler's error attributes.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateSchedule / UpdateSchedule | `at()`, `rate()`, and `cron()` expressions in the schedule's time zone, start and end dates, `ENABLED` or `DISABLED`, flexible time windows (checked, not applied), and `ActionAfterCompletion` (`DELETE` removes a finished one-time schedule); an update replaces every setting |
+| GetSchedule / ListSchedules / DeleteSchedule | Schedules by group, name prefix, and state, in name order, with paging |
+| CreateScheduleGroup / GetScheduleGroup / ListScheduleGroups / DeleteScheduleGroup | Groups with tags; deleting a group deletes its schedules |
+| TagResource / UntagResource / ListTagsForResource | Tags of schedule groups other than `default` |
+
 ### ACM (AWS JSON 1.1)
 
 Certificates belong to an account and region. Requested certificates are real X.509 server certificates, signed by
@@ -923,7 +940,9 @@ it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard
 record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only
 S3 destinations (no Redshift, OpenSearch, Splunk, HTTP endpoint, Snowflake, or Iceberg), no MSK or database
 sources, record format conversion, dynamic partitioning, S3 backups, CloudWatch logging, or encryption.
-Route 53 limits: no DNS server, health checks that probe their endpoints, traffic policies, reusable delegation sets,
+EventBridge Scheduler limits: no retries (a failed run goes straight to its dead-letter queue), flexible
+windows (a schedule runs at its time), ECS, SageMaker, or CodeBuild templated targets, or customer managed KMS keys
+(the key ARN is stored). Route 53 limits: no DNS server, health checks that probe their endpoints, traffic policies, reusable delegation sets,
 query logging, DNSSEC signing, CIDR collections, or geoproximity records. ACM limits: no private certificates (AWS Private CA), renewal, validation that waits for DNS records or email,
 `HTTP` validation, ACME, or account configuration, and only exportable certificates keep a private key.
 CloudWatch limits: no anomaly detection, Metrics Insights queries, metric streams, insight rules, log alarms, EC2 or

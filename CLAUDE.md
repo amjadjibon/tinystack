@@ -117,7 +117,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -281,6 +281,13 @@ a per-service `Dialect`), and delivers synchronously through
   Route 53's order; `names.go` lowercases and escapes names), changes under `change/<ID>`, health checks under
   `healthcheck/<ID>`, and caller references under `reference/<kind>/<reference>`. A change batch applies in one
   transaction, and private zones check their VPCs through EC2's `DescribeVpcs` with the `catalog.Caller`.
+  EventBridge Scheduler (`services/scheduler`) keeps schedule groups under `…/scheduler/group/<name>` (the `default`
+  group is implicit) and each schedule (its `GetSchedule` output and next run) under
+  `…/scheduler/schedule/<group>/<name>`. Its runner (started by `New`, stopped by `Stop`) visits the partition-wide
+  `aws/scheduler/index/<account>/<region>/<group>/<name>` of enabled schedules with a next run every second, advances
+  (or, for a finished `DELETE` schedule, removes) the schedule in the transaction that claims the run, and then invokes
+  the target through the `catalog.Caller`, sending failures to the target's SQS dead-letter queue. `services/schedule`
+  evaluates `cron` in the schedule's time zone (`Schedule.In`).
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
@@ -307,7 +314,7 @@ a per-service `Dialect`), and delivers synchronously through
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS and API Gateway over REST
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, and EventBridge Scheduler over REST
   JSON, plus Docker Registry API calls and requests to API Gateway APIs) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
