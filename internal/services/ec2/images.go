@@ -151,7 +151,7 @@ func imageOutput(region string, img *image) api.Image {
 func imageValues(region string, img *image) values {
 	out := imageOutput(region, img)
 	return values{
-		"image-id": {*out.ImageId}, "name": {img.Name}, filterDescription: {img.Description},
+		filterImageID: {*out.ImageId}, "name": {img.Name}, filterDescription: {img.Description},
 		"architecture": {img.Architecture}, "owner-id": {img.Owner}, "owner-alias": {img.OwnerAlias},
 		filterState: {stateAvailable}, "is-public": boolValue(true), "image-type": {"machine"},
 		"root-device-name": {img.RootDevice}, "root-device-type": {"ebs"}, "virtualization-type": {"hvm"},

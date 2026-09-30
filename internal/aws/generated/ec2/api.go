@@ -490,6 +490,12 @@ type Placement struct {
 	AvailabilityZone   *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
 }
 
+type LaunchTemplateSpecification struct {
+	LaunchTemplateId   *string `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,LaunchTemplateId"`
+	LaunchTemplateName *string `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,LaunchTemplateName"`
+	Version            *string `json:"Version,omitempty" ec2:"Version,Version"`
+}
+
 type RunInstancesRequest struct {
 	ImageId                           *string                        `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
 	InstanceType                      *string                        `json:"InstanceType,omitempty" ec2:"InstanceType,InstanceType"`
@@ -508,6 +514,7 @@ type RunInstancesRequest struct {
 	InstanceInitiatedShutdownBehavior *string                        `json:"InstanceInitiatedShutdownBehavior,omitempty" ec2:"InstanceInitiatedShutdownBehavior,instanceInitiatedShutdownBehavior"`
 	PrivateIpAddress                  *string                        `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
 	ClientToken                       *string                        `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+	LaunchTemplate                    *LaunchTemplateSpecification   `json:"LaunchTemplate,omitempty" ec2:"LaunchTemplate,LaunchTemplate"`
 }
 
 type StateReason struct {
@@ -701,6 +708,207 @@ type DescribeImagesResult struct {
 	Images    []Image `json:"Images,omitempty" ec2:"ImagesSet,imagesSet,member=item"`
 }
 
+type LaunchTemplatesMonitoringRequest struct {
+	Enabled *bool `json:"Enabled,omitempty" ec2:"Enabled,Enabled"`
+}
+
+type LaunchTemplatePlacementRequest struct {
+	AvailabilityZone *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,AvailabilityZone"`
+	Tenancy          *string `json:"Tenancy,omitempty" ec2:"Tenancy,Tenancy"`
+}
+
+type LaunchTemplateIamInstanceProfileSpecificationRequest struct {
+	Arn  *string `json:"Arn,omitempty" ec2:"Arn,Arn"`
+	Name *string `json:"Name,omitempty" ec2:"Name,Name"`
+}
+
+type LaunchTemplateTagSpecificationRequest struct {
+	ResourceType *string `json:"ResourceType,omitempty" ec2:"ResourceType,ResourceType"`
+	Tags         []Tag   `json:"Tags,omitempty" ec2:"Tag,Tag,member=item"`
+}
+
+type RequestLaunchTemplateData struct {
+	ImageId                           *string                                               `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
+	InstanceType                      *string                                               `json:"InstanceType,omitempty" ec2:"InstanceType,InstanceType"`
+	KeyName                           *string                                               `json:"KeyName,omitempty" ec2:"KeyName,KeyName"`
+	SecurityGroupIds                  []string                                              `json:"SecurityGroupIds,omitempty" ec2:"SecurityGroupId,SecurityGroupId,member=SecurityGroupId"`
+	SecurityGroups                    []string                                              `json:"SecurityGroups,omitempty" ec2:"SecurityGroup,SecurityGroup,member=SecurityGroup"`
+	UserData                          *string                                               `json:"UserData,omitempty" ec2:"UserData,UserData"`
+	DisableApiTermination             *bool                                                 `json:"DisableApiTermination,omitempty" ec2:"DisableApiTermination,DisableApiTermination"`
+	InstanceInitiatedShutdownBehavior *string                                               `json:"InstanceInitiatedShutdownBehavior,omitempty" ec2:"InstanceInitiatedShutdownBehavior,InstanceInitiatedShutdownBehavior"`
+	EbsOptimized                      *bool                                                 `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,EbsOptimized"`
+	Monitoring                        *LaunchTemplatesMonitoringRequest                     `json:"Monitoring,omitempty" ec2:"Monitoring,Monitoring"`
+	Placement                         *LaunchTemplatePlacementRequest                       `json:"Placement,omitempty" ec2:"Placement,Placement"`
+	IamInstanceProfile                *LaunchTemplateIamInstanceProfileSpecificationRequest `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,IamInstanceProfile"`
+	TagSpecifications                 []LaunchTemplateTagSpecificationRequest               `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=LaunchTemplateTagSpecificationRequest"`
+}
+
+type CreateLaunchTemplateRequest struct {
+	DryRun             *bool                      `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	ClientToken        *string                    `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	LaunchTemplateName *string                    `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,LaunchTemplateName"`
+	VersionDescription *string                    `json:"VersionDescription,omitempty" ec2:"VersionDescription,VersionDescription"`
+	LaunchTemplateData *RequestLaunchTemplateData `json:"LaunchTemplateData,omitempty" ec2:"LaunchTemplateData,LaunchTemplateData"`
+	TagSpecifications  []TagSpecification         `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+}
+
+type LaunchTemplate struct {
+	LaunchTemplateId     *string    `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,launchTemplateId"`
+	LaunchTemplateName   *string    `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,launchTemplateName"`
+	CreateTime           *time.Time `json:"CreateTime,omitempty" ec2:"CreateTime,createTime"`
+	CreatedBy            *string    `json:"CreatedBy,omitempty" ec2:"CreatedBy,createdBy"`
+	DefaultVersionNumber *int64     `json:"DefaultVersionNumber,omitempty" ec2:"DefaultVersionNumber,defaultVersionNumber"`
+	LatestVersionNumber  *int64     `json:"LatestVersionNumber,omitempty" ec2:"LatestVersionNumber,latestVersionNumber"`
+	Tags                 []Tag      `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type CreateLaunchTemplateResult struct {
+	LaunchTemplate *LaunchTemplate `json:"LaunchTemplate,omitempty" ec2:"LaunchTemplate,launchTemplate"`
+}
+
+type CreateLaunchTemplateVersionRequest struct {
+	DryRun             *bool                      `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	ClientToken        *string                    `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	LaunchTemplateId   *string                    `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,LaunchTemplateId"`
+	LaunchTemplateName *string                    `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,LaunchTemplateName"`
+	SourceVersion      *string                    `json:"SourceVersion,omitempty" ec2:"SourceVersion,SourceVersion"`
+	VersionDescription *string                    `json:"VersionDescription,omitempty" ec2:"VersionDescription,VersionDescription"`
+	LaunchTemplateData *RequestLaunchTemplateData `json:"LaunchTemplateData,omitempty" ec2:"LaunchTemplateData,LaunchTemplateData"`
+}
+
+type LaunchTemplatesMonitoring struct {
+	Enabled *bool `json:"Enabled,omitempty" ec2:"Enabled,enabled"`
+}
+
+type LaunchTemplatePlacement struct {
+	AvailabilityZone *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	Tenancy          *string `json:"Tenancy,omitempty" ec2:"Tenancy,tenancy"`
+}
+
+type LaunchTemplateIamInstanceProfileSpecification struct {
+	Arn  *string `json:"Arn,omitempty" ec2:"Arn,arn"`
+	Name *string `json:"Name,omitempty" ec2:"Name,name"`
+}
+
+type LaunchTemplateTagSpecification struct {
+	ResourceType *string `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	Tags         []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type ResponseLaunchTemplateData struct {
+	ImageId                           *string                                        `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
+	InstanceType                      *string                                        `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
+	KeyName                           *string                                        `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
+	SecurityGroupIds                  []string                                       `json:"SecurityGroupIds,omitempty" ec2:"SecurityGroupIdSet,securityGroupIdSet,member=item"`
+	SecurityGroups                    []string                                       `json:"SecurityGroups,omitempty" ec2:"SecurityGroupSet,securityGroupSet,member=item"`
+	UserData                          *string                                        `json:"UserData,omitempty" ec2:"UserData,userData"`
+	DisableApiTermination             *bool                                          `json:"DisableApiTermination,omitempty" ec2:"DisableApiTermination,disableApiTermination"`
+	InstanceInitiatedShutdownBehavior *string                                        `json:"InstanceInitiatedShutdownBehavior,omitempty" ec2:"InstanceInitiatedShutdownBehavior,instanceInitiatedShutdownBehavior"`
+	EbsOptimized                      *bool                                          `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,ebsOptimized"`
+	Monitoring                        *LaunchTemplatesMonitoring                     `json:"Monitoring,omitempty" ec2:"Monitoring,monitoring"`
+	Placement                         *LaunchTemplatePlacement                       `json:"Placement,omitempty" ec2:"Placement,placement"`
+	IamInstanceProfile                *LaunchTemplateIamInstanceProfileSpecification `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
+	TagSpecifications                 []LaunchTemplateTagSpecification               `json:"TagSpecifications,omitempty" ec2:"TagSpecificationSet,tagSpecificationSet,member=item"`
+}
+
+type LaunchTemplateVersion struct {
+	LaunchTemplateId   *string                     `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,launchTemplateId"`
+	LaunchTemplateName *string                     `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,launchTemplateName"`
+	VersionNumber      *int64                      `json:"VersionNumber,omitempty" ec2:"VersionNumber,versionNumber"`
+	VersionDescription *string                     `json:"VersionDescription,omitempty" ec2:"VersionDescription,versionDescription"`
+	CreateTime         *time.Time                  `json:"CreateTime,omitempty" ec2:"CreateTime,createTime"`
+	CreatedBy          *string                     `json:"CreatedBy,omitempty" ec2:"CreatedBy,createdBy"`
+	DefaultVersion     *bool                       `json:"DefaultVersion,omitempty" ec2:"DefaultVersion,defaultVersion"`
+	LaunchTemplateData *ResponseLaunchTemplateData `json:"LaunchTemplateData,omitempty" ec2:"LaunchTemplateData,launchTemplateData"`
+}
+
+type CreateLaunchTemplateVersionResult struct {
+	LaunchTemplateVersion *LaunchTemplateVersion `json:"LaunchTemplateVersion,omitempty" ec2:"LaunchTemplateVersion,launchTemplateVersion"`
+}
+
+type DescribeLaunchTemplatesRequest struct {
+	DryRun              *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	LaunchTemplateIds   []string `json:"LaunchTemplateIds,omitempty" ec2:"LaunchTemplateId,LaunchTemplateId,member=item"`
+	LaunchTemplateNames []string `json:"LaunchTemplateNames,omitempty" ec2:"LaunchTemplateName,LaunchTemplateName,member=item"`
+	Filters             []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	NextToken           *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults          *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+}
+
+type DescribeLaunchTemplatesResult struct {
+	LaunchTemplates []LaunchTemplate `json:"LaunchTemplates,omitempty" ec2:"LaunchTemplates,launchTemplates,member=item"`
+	NextToken       *string          `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type DescribeLaunchTemplateVersionsRequest struct {
+	DryRun             *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	LaunchTemplateId   *string  `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,LaunchTemplateId"`
+	LaunchTemplateName *string  `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,LaunchTemplateName"`
+	Versions           []string `json:"Versions,omitempty" ec2:"LaunchTemplateVersion,LaunchTemplateVersion,member=item"`
+	MinVersion         *string  `json:"MinVersion,omitempty" ec2:"MinVersion,MinVersion"`
+	MaxVersion         *string  `json:"MaxVersion,omitempty" ec2:"MaxVersion,MaxVersion"`
+	NextToken          *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults         *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	Filters            []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type DescribeLaunchTemplateVersionsResult struct {
+	LaunchTemplateVersions []LaunchTemplateVersion `json:"LaunchTemplateVersions,omitempty" ec2:"LaunchTemplateVersionSet,launchTemplateVersionSet,member=item"`
+	NextToken              *string                 `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type ModifyLaunchTemplateRequest struct {
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	ClientToken        *string `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	LaunchTemplateId   *string `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,LaunchTemplateId"`
+	LaunchTemplateName *string `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,LaunchTemplateName"`
+	DefaultVersion     *string `json:"DefaultVersion,omitempty" ec2:"SetDefaultVersion,SetDefaultVersion"`
+}
+
+type ModifyLaunchTemplateResult struct {
+	LaunchTemplate *LaunchTemplate `json:"LaunchTemplate,omitempty" ec2:"LaunchTemplate,launchTemplate"`
+}
+
+type DeleteLaunchTemplateRequest struct {
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	LaunchTemplateId   *string `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,LaunchTemplateId"`
+	LaunchTemplateName *string `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,LaunchTemplateName"`
+}
+
+type DeleteLaunchTemplateResult struct {
+	LaunchTemplate *LaunchTemplate `json:"LaunchTemplate,omitempty" ec2:"LaunchTemplate,launchTemplate"`
+}
+
+type DeleteLaunchTemplateVersionsRequest struct {
+	DryRun             *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	LaunchTemplateId   *string  `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,LaunchTemplateId"`
+	LaunchTemplateName *string  `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,LaunchTemplateName"`
+	Versions           []string `json:"Versions,omitempty" ec2:"LaunchTemplateVersion,LaunchTemplateVersion,member=item"`
+}
+
+type DeleteLaunchTemplateVersionsResponseSuccessItem struct {
+	LaunchTemplateId   *string `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,launchTemplateId"`
+	LaunchTemplateName *string `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,launchTemplateName"`
+	VersionNumber      *int64  `json:"VersionNumber,omitempty" ec2:"VersionNumber,versionNumber"`
+}
+
+type ResponseError struct {
+	Code    *string `json:"Code,omitempty" ec2:"Code,code"`
+	Message *string `json:"Message,omitempty" ec2:"Message,message"`
+}
+
+type DeleteLaunchTemplateVersionsResponseErrorItem struct {
+	LaunchTemplateId   *string        `json:"LaunchTemplateId,omitempty" ec2:"LaunchTemplateId,launchTemplateId"`
+	LaunchTemplateName *string        `json:"LaunchTemplateName,omitempty" ec2:"LaunchTemplateName,launchTemplateName"`
+	VersionNumber      *int64         `json:"VersionNumber,omitempty" ec2:"VersionNumber,versionNumber"`
+	ResponseError      *ResponseError `json:"ResponseError,omitempty" ec2:"ResponseError,responseError"`
+}
+
+type DeleteLaunchTemplateVersionsResult struct {
+	SuccessfullyDeletedLaunchTemplateVersions   []DeleteLaunchTemplateVersionsResponseSuccessItem `json:"SuccessfullyDeletedLaunchTemplateVersions,omitempty" ec2:"SuccessfullyDeletedLaunchTemplateVersionSet,successfullyDeletedLaunchTemplateVersionSet,member=item"`
+	UnsuccessfullyDeletedLaunchTemplateVersions []DeleteLaunchTemplateVersionsResponseErrorItem   `json:"UnsuccessfullyDeletedLaunchTemplateVersions,omitempty" ec2:"UnsuccessfullyDeletedLaunchTemplateVersionSet,unsuccessfullyDeletedLaunchTemplateVersionSet,member=item"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -734,6 +942,13 @@ type API interface {
 	TerminateInstances(context.Context, *TerminateInstancesRequest) (*TerminateInstancesResult, error)
 	DescribeInstanceStatus(context.Context, *DescribeInstanceStatusRequest) (*DescribeInstanceStatusResult, error)
 	DescribeImages(context.Context, *DescribeImagesRequest) (*DescribeImagesResult, error)
+	CreateLaunchTemplate(context.Context, *CreateLaunchTemplateRequest) (*CreateLaunchTemplateResult, error)
+	CreateLaunchTemplateVersion(context.Context, *CreateLaunchTemplateVersionRequest) (*CreateLaunchTemplateVersionResult, error)
+	DescribeLaunchTemplates(context.Context, *DescribeLaunchTemplatesRequest) (*DescribeLaunchTemplatesResult, error)
+	DescribeLaunchTemplateVersions(context.Context, *DescribeLaunchTemplateVersionsRequest) (*DescribeLaunchTemplateVersionsResult, error)
+	ModifyLaunchTemplate(context.Context, *ModifyLaunchTemplateRequest) (*ModifyLaunchTemplateResult, error)
+	DeleteLaunchTemplate(context.Context, *DeleteLaunchTemplateRequest) (*DeleteLaunchTemplateResult, error)
+	DeleteLaunchTemplateVersions(context.Context, *DeleteLaunchTemplateVersionsRequest) (*DeleteLaunchTemplateVersionsResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -833,6 +1048,27 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeImages": {Name: "DescribeImages", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeImages", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeImagesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeImages(ctx, input.(*DescribeImagesRequest))
+		}},
+		"CreateLaunchTemplate": {Name: "CreateLaunchTemplate", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateLaunchTemplate", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateLaunchTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateLaunchTemplate(ctx, input.(*CreateLaunchTemplateRequest))
+		}},
+		"CreateLaunchTemplateVersion": {Name: "CreateLaunchTemplateVersion", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateLaunchTemplateVersion", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateLaunchTemplateVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateLaunchTemplateVersion(ctx, input.(*CreateLaunchTemplateVersionRequest))
+		}},
+		"DescribeLaunchTemplates": {Name: "DescribeLaunchTemplates", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeLaunchTemplates", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeLaunchTemplatesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeLaunchTemplates(ctx, input.(*DescribeLaunchTemplatesRequest))
+		}},
+		"DescribeLaunchTemplateVersions": {Name: "DescribeLaunchTemplateVersions", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeLaunchTemplateVersions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeLaunchTemplateVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeLaunchTemplateVersions(ctx, input.(*DescribeLaunchTemplateVersionsRequest))
+		}},
+		"ModifyLaunchTemplate": {Name: "ModifyLaunchTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyLaunchTemplate", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyLaunchTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyLaunchTemplate(ctx, input.(*ModifyLaunchTemplateRequest))
+		}},
+		"DeleteLaunchTemplate": {Name: "DeleteLaunchTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteLaunchTemplate", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteLaunchTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteLaunchTemplate(ctx, input.(*DeleteLaunchTemplateRequest))
+		}},
+		"DeleteLaunchTemplateVersions": {Name: "DeleteLaunchTemplateVersions", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteLaunchTemplateVersions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteLaunchTemplateVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteLaunchTemplateVersions(ctx, input.(*DeleteLaunchTemplateVersionsRequest))
 		}},
 	}}
 }

@@ -32,6 +32,7 @@ var taggable = map[string]taggableKind{
 	"sg":     {kind: kindSecurityGroup, resourceType: "security-group", missing: groupNotFound},
 	"key":    {kind: kindKeyPair, resourceType: "key-pair", missing: keyPairIDNotFound},
 	"i":      {kind: kindInstance, resourceType: kindInstance, missing: instanceNotFound},
+	"lt":     {kind: kindLaunchTemplate, resourceType: kindLaunchTemplate, missing: templateIDNotFound},
 }
 
 // taggableByID returns the resource type of an ID.

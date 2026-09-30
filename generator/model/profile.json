@@ -469,7 +469,14 @@
       "RebootInstances",
       "TerminateInstances",
       "DescribeInstanceStatus",
-      "DescribeImages"
+      "DescribeImages",
+      "CreateLaunchTemplate",
+      "CreateLaunchTemplateVersion",
+      "DescribeLaunchTemplates",
+      "DescribeLaunchTemplateVersions",
+      "ModifyLaunchTemplate",
+      "DeleteLaunchTemplate",
+      "DeleteLaunchTemplateVersions"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -888,7 +895,8 @@
         "DisableApiTermination",
         "InstanceInitiatedShutdownBehavior",
         "PrivateIpAddress",
-        "ClientToken"
+        "ClientToken",
+        "LaunchTemplate"
       ],
       "RunInstancesMonitoringEnabled": [
         "Enabled"
@@ -1061,6 +1069,183 @@
         "VolumeSize",
         "VolumeType",
         "Encrypted"
+      ],
+      "CreateLaunchTemplateRequest": [
+        "DryRun",
+        "ClientToken",
+        "LaunchTemplateName",
+        "VersionDescription",
+        "LaunchTemplateData",
+        "TagSpecifications"
+      ],
+      "CreateLaunchTemplateResult": [
+        "LaunchTemplate"
+      ],
+      "LaunchTemplate": [
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "CreateTime",
+        "CreatedBy",
+        "DefaultVersionNumber",
+        "LatestVersionNumber",
+        "Tags"
+      ],
+      "RequestLaunchTemplateData": [
+        "ImageId",
+        "InstanceType",
+        "KeyName",
+        "SecurityGroupIds",
+        "SecurityGroups",
+        "UserData",
+        "DisableApiTermination",
+        "InstanceInitiatedShutdownBehavior",
+        "EbsOptimized",
+        "Monitoring",
+        "Placement",
+        "IamInstanceProfile",
+        "TagSpecifications"
+      ],
+      "ResponseLaunchTemplateData": [
+        "ImageId",
+        "InstanceType",
+        "KeyName",
+        "SecurityGroupIds",
+        "SecurityGroups",
+        "UserData",
+        "DisableApiTermination",
+        "InstanceInitiatedShutdownBehavior",
+        "EbsOptimized",
+        "Monitoring",
+        "Placement",
+        "IamInstanceProfile",
+        "TagSpecifications"
+      ],
+      "LaunchTemplateVersion": [
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "VersionNumber",
+        "VersionDescription",
+        "CreateTime",
+        "CreatedBy",
+        "DefaultVersion",
+        "LaunchTemplateData"
+      ],
+      "CreateLaunchTemplateVersionRequest": [
+        "DryRun",
+        "ClientToken",
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "SourceVersion",
+        "VersionDescription",
+        "LaunchTemplateData"
+      ],
+      "CreateLaunchTemplateVersionResult": [
+        "LaunchTemplateVersion"
+      ],
+      "DescribeLaunchTemplatesRequest": [
+        "DryRun",
+        "LaunchTemplateIds",
+        "LaunchTemplateNames",
+        "Filters",
+        "NextToken",
+        "MaxResults"
+      ],
+      "DescribeLaunchTemplatesResult": [
+        "LaunchTemplates",
+        "NextToken"
+      ],
+      "DescribeLaunchTemplateVersionsRequest": [
+        "DryRun",
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "Versions",
+        "MinVersion",
+        "MaxVersion",
+        "NextToken",
+        "MaxResults",
+        "Filters"
+      ],
+      "DescribeLaunchTemplateVersionsResult": [
+        "LaunchTemplateVersions",
+        "NextToken"
+      ],
+      "ModifyLaunchTemplateRequest": [
+        "DryRun",
+        "ClientToken",
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "DefaultVersion"
+      ],
+      "ModifyLaunchTemplateResult": [
+        "LaunchTemplate"
+      ],
+      "DeleteLaunchTemplateRequest": [
+        "DryRun",
+        "LaunchTemplateId",
+        "LaunchTemplateName"
+      ],
+      "DeleteLaunchTemplateResult": [
+        "LaunchTemplate"
+      ],
+      "DeleteLaunchTemplateVersionsRequest": [
+        "DryRun",
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "Versions"
+      ],
+      "DeleteLaunchTemplateVersionsResult": [
+        "SuccessfullyDeletedLaunchTemplateVersions",
+        "UnsuccessfullyDeletedLaunchTemplateVersions"
+      ],
+      "DeleteLaunchTemplateVersionsResponseSuccessItem": [
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "VersionNumber"
+      ],
+      "DeleteLaunchTemplateVersionsResponseErrorItem": [
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "VersionNumber",
+        "ResponseError"
+      ],
+      "ResponseError": [
+        "Code",
+        "Message"
+      ],
+      "LaunchTemplateSpecification": [
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "Version"
+      ],
+      "LaunchTemplateTagSpecificationRequest": [
+        "ResourceType",
+        "Tags"
+      ],
+      "LaunchTemplateTagSpecification": [
+        "ResourceType",
+        "Tags"
+      ],
+      "LaunchTemplatesMonitoringRequest": [
+        "Enabled"
+      ],
+      "LaunchTemplatesMonitoring": [
+        "Enabled"
+      ],
+      "LaunchTemplatePlacementRequest": [
+        "AvailabilityZone",
+        "Tenancy"
+      ],
+      "LaunchTemplatePlacement": [
+        "AvailabilityZone",
+        "Tenancy"
+      ],
+      "LaunchTemplateIamInstanceProfileSpecificationRequest": [
+        "Arn",
+        "Name"
+      ],
+      "LaunchTemplateIamInstanceProfileSpecification": [
+        "Arn",
+        "Name"
       ]
     }
   },

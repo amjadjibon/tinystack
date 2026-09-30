@@ -22,6 +22,8 @@ const (
 	defaultInstanceType = "m1.small"
 	maxInstances        = 20
 	maxUserData         = 16 * 1024
+	shutdownStop        = "stop"
+	shutdownTerminate   = "terminate"
 	// terminatedFor is how long a terminated instance stays visible.
 	terminatedFor = time.Hour
 
@@ -203,7 +205,7 @@ func instanceValues(scope request.Scope, i *instance) values {
 	v := values{
 		"instance-id": {i.ID}, "instance-state-name": {i.State},
 		"instance-state-code": {strconv.FormatInt(stateCodes[i.State], 10)}, "instance-type": {i.Type},
-		"image-id": {i.ImageID}, "key-name": {i.KeyName}, filterSubnetID: {value(out.SubnetId)},
+		filterImageID: {i.ImageID}, "key-name": {i.KeyName}, filterSubnetID: {value(out.SubnetId)},
 		filterVPCID: {value(out.VpcId)}, filterZone: {i.Zone}, "private-ip-address": {i.PrivateIP},
 		"ip-address": {i.PublicIP}, "private-dns-name": {*out.PrivateDnsName}, "dns-name": {*out.PublicDnsName},
 		"reservation-id": {i.Reservation}, "launch-index": {strconv.FormatInt(i.LaunchIndex, 10)},
@@ -274,7 +276,7 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 			"match the architecture '%s' of the specified AMI.", l.arch, img.Architecture))
 	}
 
-	l.img, l.tenancy, l.shutdown = img, tenancyDefault, "stop"
+	l.img, l.tenancy, l.shutdown = img, tenancyDefault, shutdownStop
 	if in.Placement != nil && in.Placement.Tenancy != nil {
 		l.tenancy = *in.Placement.Tenancy
 	}
@@ -287,7 +289,7 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 		l.shutdown = *in.InstanceInitiatedShutdownBehavior
 	}
 
-	if l.shutdown != "stop" && l.shutdown != "terminate" {
+	if l.shutdown != shutdownStop && l.shutdown != shutdownTerminate {
 		return nil, invalidParameter(fmt.Sprintf(
 			"Value (%s) for parameter instanceInitiatedShutdownBehavior is invalid.", l.shutdown))
 	}
@@ -469,6 +471,10 @@ func reservation(scope request.Scope, id string, instances []api.Instance) *api.
 func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest) (*api.Reservation, error) {
 	m, err := caller(ctx, in.DryRun)
 	if err != nil {
+		return nil, err
+	}
+
+	if in, err = s.launchTemplateRequest(ctx, in); err != nil {
 		return nil, err
 	}
 

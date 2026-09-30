@@ -26,6 +26,7 @@ const (
 	filterZone        = "availability-zone"
 	filterSubnetID    = "subnet-id"
 	filterDescription = "description"
+	filterImageID     = "image-id"
 	tenancyDefault    = "default"
 	minPrefixLength   = 16
 	maxPrefixLength   = 28
