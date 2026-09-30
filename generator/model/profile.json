@@ -7668,5 +7668,428 @@
         "Tags"
       ]
     }
+  },
+  "autoscaling": {
+    "operations": [
+      "CreateAutoScalingGroup",
+      "UpdateAutoScalingGroup",
+      "DeleteAutoScalingGroup",
+      "DescribeAutoScalingGroups",
+      "SetDesiredCapacity",
+      "DescribeAutoScalingInstances",
+      "TerminateInstanceInAutoScalingGroup",
+      "SetInstanceProtection",
+      "SetInstanceHealth",
+      "SuspendProcesses",
+      "ResumeProcesses",
+      "DescribeScalingActivities",
+      "CreateLaunchConfiguration",
+      "DescribeLaunchConfigurations",
+      "DeleteLaunchConfiguration",
+      "PutScalingPolicy",
+      "DescribePolicies",
+      "DeletePolicy",
+      "ExecutePolicy",
+      "PutScheduledUpdateGroupAction",
+      "DescribeScheduledActions",
+      "DeleteScheduledAction",
+      "CreateOrUpdateTags",
+      "DeleteTags",
+      "DescribeTags"
+    ],
+    "shapes": {
+      "CreateAutoScalingGroupType": [
+        "AutoScalingGroupName",
+        "LaunchConfigurationName",
+        "LaunchTemplate",
+        "MinSize",
+        "MaxSize",
+        "DesiredCapacity",
+        "DefaultCooldown",
+        "AvailabilityZones",
+        "HealthCheckType",
+        "HealthCheckGracePeriod",
+        "VPCZoneIdentifier",
+        "TerminationPolicies",
+        "NewInstancesProtectedFromScaleIn",
+        "CapacityRebalance",
+        "ServiceLinkedRoleARN",
+        "MaxInstanceLifetime",
+        "Context",
+        "DefaultInstanceWarmup",
+        "DeletionProtection",
+        "Tags",
+        "AvailabilityZoneDistribution"
+      ],
+      "UpdateAutoScalingGroupType": [
+        "AutoScalingGroupName",
+        "LaunchConfigurationName",
+        "LaunchTemplate",
+        "MinSize",
+        "MaxSize",
+        "DesiredCapacity",
+        "DefaultCooldown",
+        "AvailabilityZones",
+        "HealthCheckType",
+        "HealthCheckGracePeriod",
+        "VPCZoneIdentifier",
+        "TerminationPolicies",
+        "NewInstancesProtectedFromScaleIn",
+        "CapacityRebalance",
+        "ServiceLinkedRoleARN",
+        "MaxInstanceLifetime",
+        "Context",
+        "DefaultInstanceWarmup",
+        "DeletionProtection",
+        "AvailabilityZoneDistribution"
+      ],
+      "DeleteAutoScalingGroupType": [
+        "AutoScalingGroupName",
+        "ForceDelete"
+      ],
+      "AutoScalingGroupNamesType": [
+        "AutoScalingGroupNames",
+        "IncludeInstances",
+        "NextToken",
+        "MaxRecords",
+        "Filters"
+      ],
+      "AutoScalingGroupsType": [
+        "AutoScalingGroups",
+        "NextToken"
+      ],
+      "AutoScalingGroup": [
+        "AutoScalingGroupName",
+        "AutoScalingGroupARN",
+        "LaunchConfigurationName",
+        "LaunchTemplate",
+        "MinSize",
+        "MaxSize",
+        "DesiredCapacity",
+        "DefaultCooldown",
+        "AvailabilityZones",
+        "LoadBalancerNames",
+        "TargetGroupARNs",
+        "HealthCheckType",
+        "HealthCheckGracePeriod",
+        "Instances",
+        "CreatedTime",
+        "SuspendedProcesses",
+        "VPCZoneIdentifier",
+        "EnabledMetrics",
+        "Status",
+        "Tags",
+        "TerminationPolicies",
+        "NewInstancesProtectedFromScaleIn",
+        "ServiceLinkedRoleARN",
+        "MaxInstanceLifetime",
+        "CapacityRebalance",
+        "Context",
+        "DefaultInstanceWarmup",
+        "DeletionProtection",
+        "AvailabilityZoneDistribution"
+      ],
+      "Instance": [
+        "InstanceId",
+        "InstanceType",
+        "AvailabilityZone",
+        "LifecycleState",
+        "HealthStatus",
+        "LaunchConfigurationName",
+        "LaunchTemplate",
+        "ImageId",
+        "ProtectedFromScaleIn"
+      ],
+      "LaunchTemplateSpecification": [
+        "LaunchTemplateId",
+        "LaunchTemplateName",
+        "Version"
+      ],
+      "SuspendedProcess": [
+        "ProcessName",
+        "SuspensionReason"
+      ],
+      "EnabledMetric": [
+        "Metric",
+        "Granularity"
+      ],
+      "TagDescription": [
+        "ResourceId",
+        "ResourceType",
+        "Key",
+        "Value",
+        "PropagateAtLaunch"
+      ],
+      "Tag": [
+        "ResourceId",
+        "ResourceType",
+        "Key",
+        "Value",
+        "PropagateAtLaunch"
+      ],
+      "Filter": [
+        "Name",
+        "Values"
+      ],
+      "SetDesiredCapacityType": [
+        "AutoScalingGroupName",
+        "DesiredCapacity",
+        "HonorCooldown"
+      ],
+      "DescribeAutoScalingInstancesType": [
+        "InstanceIds",
+        "MaxRecords",
+        "NextToken"
+      ],
+      "AutoScalingInstancesType": [
+        "AutoScalingInstances",
+        "NextToken"
+      ],
+      "AutoScalingInstanceDetails": [
+        "InstanceId",
+        "InstanceType",
+        "AutoScalingGroupName",
+        "AvailabilityZone",
+        "LifecycleState",
+        "HealthStatus",
+        "LaunchConfigurationName",
+        "LaunchTemplate",
+        "ImageId",
+        "ProtectedFromScaleIn"
+      ],
+      "TerminateInstanceInAutoScalingGroupType": [
+        "InstanceId",
+        "ShouldDecrementDesiredCapacity"
+      ],
+      "ActivityType": [
+        "Activity"
+      ],
+      "Activity": [
+        "ActivityId",
+        "AutoScalingGroupName",
+        "Description",
+        "Cause",
+        "StartTime",
+        "EndTime",
+        "StatusCode",
+        "StatusMessage",
+        "Progress",
+        "Details",
+        "AutoScalingGroupARN"
+      ],
+      "SetInstanceProtectionQuery": [
+        "InstanceIds",
+        "AutoScalingGroupName",
+        "ProtectedFromScaleIn"
+      ],
+      "SetInstanceProtectionAnswer": [],
+      "SetInstanceHealthQuery": [
+        "InstanceId",
+        "HealthStatus",
+        "ShouldRespectGracePeriod"
+      ],
+      "ScalingProcessQuery": [
+        "AutoScalingGroupName",
+        "ScalingProcesses"
+      ],
+      "DescribeScalingActivitiesType": [
+        "ActivityIds",
+        "AutoScalingGroupName",
+        "MaxRecords",
+        "NextToken"
+      ],
+      "ActivitiesType": [
+        "Activities",
+        "NextToken"
+      ],
+      "CreateLaunchConfigurationType": [
+        "LaunchConfigurationName",
+        "ImageId",
+        "KeyName",
+        "SecurityGroups",
+        "UserData",
+        "InstanceType",
+        "InstanceMonitoring",
+        "IamInstanceProfile",
+        "EbsOptimized",
+        "AssociatePublicIpAddress",
+        "PlacementTenancy"
+      ],
+      "LaunchConfiguration": [
+        "LaunchConfigurationName",
+        "LaunchConfigurationARN",
+        "ImageId",
+        "KeyName",
+        "SecurityGroups",
+        "UserData",
+        "InstanceType",
+        "InstanceMonitoring",
+        "IamInstanceProfile",
+        "CreatedTime",
+        "EbsOptimized",
+        "AssociatePublicIpAddress",
+        "PlacementTenancy"
+      ],
+      "InstanceMonitoring": [
+        "Enabled"
+      ],
+      "LaunchConfigurationNamesType": [
+        "LaunchConfigurationNames",
+        "NextToken",
+        "MaxRecords"
+      ],
+      "LaunchConfigurationsType": [
+        "LaunchConfigurations",
+        "NextToken"
+      ],
+      "LaunchConfigurationNameType": [
+        "LaunchConfigurationName"
+      ],
+      "PutScalingPolicyType": [
+        "AutoScalingGroupName",
+        "PolicyName",
+        "PolicyType",
+        "AdjustmentType",
+        "MinAdjustmentMagnitude",
+        "ScalingAdjustment",
+        "Cooldown",
+        "MetricAggregationType",
+        "StepAdjustments",
+        "EstimatedInstanceWarmup",
+        "TargetTrackingConfiguration",
+        "Enabled"
+      ],
+      "PolicyARNType": [
+        "PolicyARN",
+        "Alarms"
+      ],
+      "ScalingPolicy": [
+        "AutoScalingGroupName",
+        "PolicyName",
+        "PolicyARN",
+        "PolicyType",
+        "AdjustmentType",
+        "MinAdjustmentMagnitude",
+        "ScalingAdjustment",
+        "Cooldown",
+        "StepAdjustments",
+        "MetricAggregationType",
+        "EstimatedInstanceWarmup",
+        "Alarms",
+        "TargetTrackingConfiguration",
+        "Enabled"
+      ],
+      "StepAdjustment": [
+        "MetricIntervalLowerBound",
+        "MetricIntervalUpperBound",
+        "ScalingAdjustment"
+      ],
+      "TargetTrackingConfiguration": [
+        "PredefinedMetricSpecification",
+        "CustomizedMetricSpecification",
+        "TargetValue",
+        "DisableScaleIn"
+      ],
+      "PredefinedMetricSpecification": [
+        "PredefinedMetricType",
+        "ResourceLabel"
+      ],
+      "CustomizedMetricSpecification": [
+        "MetricName",
+        "Namespace",
+        "Dimensions",
+        "Statistic",
+        "Unit"
+      ],
+      "MetricDimension": [
+        "Name",
+        "Value"
+      ],
+      "Alarm": [
+        "AlarmName",
+        "AlarmARN"
+      ],
+      "DescribePoliciesType": [
+        "AutoScalingGroupName",
+        "PolicyNames",
+        "PolicyTypes",
+        "NextToken",
+        "MaxRecords"
+      ],
+      "PoliciesType": [
+        "ScalingPolicies",
+        "NextToken"
+      ],
+      "DeletePolicyType": [
+        "AutoScalingGroupName",
+        "PolicyName"
+      ],
+      "ExecutePolicyType": [
+        "AutoScalingGroupName",
+        "PolicyName",
+        "HonorCooldown",
+        "MetricValue",
+        "BreachThreshold"
+      ],
+      "PutScheduledUpdateGroupActionType": [
+        "AutoScalingGroupName",
+        "ScheduledActionName",
+        "Time",
+        "StartTime",
+        "EndTime",
+        "Recurrence",
+        "MinSize",
+        "MaxSize",
+        "DesiredCapacity",
+        "TimeZone"
+      ],
+      "ScheduledUpdateGroupAction": [
+        "AutoScalingGroupName",
+        "ScheduledActionName",
+        "ScheduledActionARN",
+        "Time",
+        "StartTime",
+        "EndTime",
+        "Recurrence",
+        "MinSize",
+        "MaxSize",
+        "DesiredCapacity",
+        "TimeZone"
+      ],
+      "DescribeScheduledActionsType": [
+        "AutoScalingGroupName",
+        "ScheduledActionNames",
+        "StartTime",
+        "EndTime",
+        "NextToken",
+        "MaxRecords"
+      ],
+      "ScheduledActionsType": [
+        "ScheduledUpdateGroupActions",
+        "NextToken"
+      ],
+      "DeleteScheduledActionType": [
+        "AutoScalingGroupName",
+        "ScheduledActionName"
+      ],
+      "CreateOrUpdateTagsType": [
+        "Tags"
+      ],
+      "DeleteTagsType": [
+        "Tags"
+      ],
+      "DescribeTagsType": [
+        "Filters",
+        "NextToken",
+        "MaxRecords"
+      ],
+      "TagsType": [
+        "Tags",
+        "NextToken"
+      ],
+      "AvailabilityZoneDistribution": [
+        "CapacityDistributionStrategy"
+      ]
+    }
   }
 }
