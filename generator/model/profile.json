@@ -7293,5 +7293,195 @@
         "StatusMessage"
       ]
     }
+  },
+  "scheduler": {
+    "operations": [
+      "CreateSchedule",
+      "GetSchedule",
+      "UpdateSchedule",
+      "DeleteSchedule",
+      "ListSchedules",
+      "CreateScheduleGroup",
+      "GetScheduleGroup",
+      "DeleteScheduleGroup",
+      "ListScheduleGroups",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateScheduleInput": [
+        "Name",
+        "GroupName",
+        "ScheduleExpression",
+        "StartDate",
+        "EndDate",
+        "Description",
+        "ScheduleExpressionTimezone",
+        "State",
+        "KmsKeyArn",
+        "Target",
+        "FlexibleTimeWindow",
+        "ClientToken",
+        "ActionAfterCompletion"
+      ],
+      "CreateScheduleOutput": [
+        "ScheduleArn"
+      ],
+      "UpdateScheduleInput": [
+        "Name",
+        "GroupName",
+        "ScheduleExpression",
+        "StartDate",
+        "EndDate",
+        "Description",
+        "ScheduleExpressionTimezone",
+        "State",
+        "KmsKeyArn",
+        "Target",
+        "FlexibleTimeWindow",
+        "ClientToken",
+        "ActionAfterCompletion"
+      ],
+      "UpdateScheduleOutput": [
+        "ScheduleArn"
+      ],
+      "Target": [
+        "Arn",
+        "RoleArn",
+        "DeadLetterConfig",
+        "RetryPolicy",
+        "Input",
+        "EventBridgeParameters",
+        "KinesisParameters",
+        "SqsParameters"
+      ],
+      "DeadLetterConfig": [
+        "Arn"
+      ],
+      "RetryPolicy": [
+        "MaximumEventAgeInSeconds",
+        "MaximumRetryAttempts"
+      ],
+      "EventBridgeParameters": [
+        "DetailType",
+        "Source"
+      ],
+      "KinesisParameters": [
+        "PartitionKey"
+      ],
+      "SqsParameters": [
+        "MessageGroupId"
+      ],
+      "FlexibleTimeWindow": [
+        "Mode",
+        "MaximumWindowInMinutes"
+      ],
+      "GetScheduleInput": [
+        "Name",
+        "GroupName"
+      ],
+      "GetScheduleOutput": [
+        "Arn",
+        "GroupName",
+        "Name",
+        "ScheduleExpression",
+        "StartDate",
+        "EndDate",
+        "Description",
+        "ScheduleExpressionTimezone",
+        "State",
+        "CreationDate",
+        "LastModificationDate",
+        "KmsKeyArn",
+        "Target",
+        "FlexibleTimeWindow",
+        "ActionAfterCompletion"
+      ],
+      "DeleteScheduleInput": [
+        "Name",
+        "GroupName",
+        "ClientToken"
+      ],
+      "ListSchedulesInput": [
+        "GroupName",
+        "NamePrefix",
+        "State",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListSchedulesOutput": [
+        "NextToken",
+        "Schedules"
+      ],
+      "ScheduleSummary": [
+        "Arn",
+        "Name",
+        "GroupName",
+        "State",
+        "CreationDate",
+        "LastModificationDate",
+        "Target"
+      ],
+      "TargetSummary": [
+        "Arn"
+      ],
+      "CreateScheduleGroupInput": [
+        "Name",
+        "Tags",
+        "ClientToken"
+      ],
+      "CreateScheduleGroupOutput": [
+        "ScheduleGroupArn"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "GetScheduleGroupInput": [
+        "Name"
+      ],
+      "GetScheduleGroupOutput": [
+        "Arn",
+        "Name",
+        "State",
+        "CreationDate",
+        "LastModificationDate"
+      ],
+      "DeleteScheduleGroupInput": [
+        "Name",
+        "ClientToken"
+      ],
+      "ListScheduleGroupsInput": [
+        "NamePrefix",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListScheduleGroupsOutput": [
+        "NextToken",
+        "ScheduleGroups"
+      ],
+      "ScheduleGroupSummary": [
+        "Arn",
+        "Name",
+        "State",
+        "CreationDate",
+        "LastModificationDate"
+      ],
+      "TagResourceInput": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceInput": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "ListTagsForResourceInput": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "Tags"
+      ]
+    }
   }
 }
