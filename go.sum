@@ -12,6 +12,8 @@ github.com/aws/aws-sdk-go-v2/service/apigateway v1.50.0 h1:qqmEcIHue+Qj2+JpmbJiB
 github.com/aws/aws-sdk-go-v2/service/apigateway v1.50.0/go.mod h1:vohdhhN7O8YZl/zdlHuso9wV8Z3PRLlF98asxJAVVds=
 github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.44.0 h1:+PUmMN8TCOMwE5sk/fblfq9rBDhFpcS0tVub1jEifmU=
 github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.44.0/go.mod h1:gy2IdCAIthzCjcS6WsPsW2GD+64llLAC3d3XOIH8p7g=
+github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.73.0 h1:OP6MlUKPwRwYJulM6brj+OdQzjbcSpVBujPi7GRagng=
+github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.73.0/go.mod h1:7PauoCasn/NoAuZYkmRbZ8TjFJ4dr0i2SX4v64hfcBQ=
 github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.1 h1:+pie8Q5EQoy2FvLb9zeoWabVC+Pfzyba4wwm7jgKyLc=
 github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.1/go.mod h1:exErhqgSxrpHC1W1zKuAPcol+xft1vq6/HNmq2xBA4o=
 github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.74.1 h1:Wy5HBm3TF/rxjEo9IFhrSB3s+i82CBMfsZ9yLdPZCX0=

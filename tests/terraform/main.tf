@@ -19,6 +19,7 @@ provider "aws" {
   endpoints {
     apigateway     = var.endpoint
     apigatewayv2   = var.endpoint
+    cloudwatch     = var.endpoint
     cognitoidp     = var.endpoint
     dynamodb       = var.endpoint
     ec2            = var.endpoint
@@ -1022,4 +1023,73 @@ resource "aws_kms_key" "data" {
 resource "aws_kms_alias" "data" {
   name          = "alias/data"
   target_key_id = aws_kms_key.data.key_id
+}
+
+resource "aws_cloudwatch_metric_alarm" "errors" {
+  alarm_name          = "errors"
+  alarm_description   = "Errors for ${var.team}"
+  namespace           = "App"
+  metric_name         = "Errors"
+  dimensions          = { Service = "api" }
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 2
+  datapoints_to_alarm = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  tags                = local.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "error_rate" {
+  alarm_name          = "error-rate"
+  evaluation_periods  = 1
+  threshold           = 5
+  comparison_operator = "GreaterThanThreshold"
+
+  metric_query {
+    id          = "rate"
+    expression  = "errors / requests * 100"
+    label       = "Error rate"
+    return_data = true
+  }
+
+  metric_query {
+    id = "errors"
+    metric {
+      namespace   = "App"
+      metric_name = "Errors"
+      period      = 60
+      stat        = "Sum"
+    }
+  }
+
+  metric_query {
+    id = "requests"
+    metric {
+      namespace   = "App"
+      metric_name = "Requests"
+      period      = 60
+      stat        = "Sum"
+    }
+  }
+}
+
+resource "aws_cloudwatch_composite_alarm" "service" {
+  alarm_name        = "service"
+  alarm_description = "Service health for ${var.team}"
+  alarm_rule        = "ALARM(${aws_cloudwatch_metric_alarm.errors.alarm_name}) OR ALARM(${aws_cloudwatch_metric_alarm.error_rate.alarm_name})"
+  alarm_actions     = [aws_sns_topic.alerts.arn]
+  tags              = local.tags
+}
+
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = "main"
+  dashboard_body = jsonencode({
+    widgets = [{
+      type = "text", x = 0, y = 0, width = 6, height = 3
+      properties = { markdown = "Owned by ${var.team}" }
+    }]
+  })
 }
