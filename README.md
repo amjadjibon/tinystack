@@ -75,7 +75,7 @@ The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SN
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
 authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
-stages), SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
+stages), Step Functions state machines and activities, SQS and DynamoDB stream event source mappings, S3 bucket notifications, CloudWatch log groups, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -106,6 +106,7 @@ provider "aws" {
     logs           = "http://localhost:4566"
     s3             = "http://localhost:4566"
     secretsmanager = "http://localhost:4566"
+    sfn            = "http://localhost:4566"
     sns            = "http://localhost:4566"
     sqs            = "http://localhost:4566"
     ssm            = "http://localhost:4566"
@@ -698,6 +699,34 @@ method (or `ANY`) in the stage's deployment; a path with no method is answered
 their status from a `{"statusCode": ...}` request template and answer with the
 selected integration response's literal header values and body template.
 
+### Step Functions (AWS JSON 1.0)
+
+Executions run inside TinyStack. Task states call Lambda functions,
+activities, and other TinyStack services in-process, never over the network.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateStateMachine / DescribeStateMachine / ListStateMachines / UpdateStateMachine / DeleteStateMachine | `STANDARD` and `EXPRESS` state machines; definitions are validated (states, transitions, paths, choice rules, and resources); logging configurations and tracing; tags; creating the same state machine again returns it; deleting one stops its running executions and deletes its executions |
+| ValidateStateMachineDefinition | The same checks, as diagnostics |
+| StartExecution / StartSyncExecution / DescribeExecution / ListExecutions / StopExecution / DescribeStateMachineForExecution | Executions of standard state machines run in the background and keep their history; starting a running execution again with the same name and input returns it; express state machines run synchronously with StartSyncExecution (the SDK sends it to a `sync-` host prefix, so disable host prefixes when you call a local endpoint); executions are listed newest first by status |
+| GetExecutionHistory | Execution, state, task, Lambda, activity, Parallel, and Map events, in either order, with or without input and output |
+| CreateActivity / DescribeActivity / ListActivities / DeleteActivity / GetActivityTask | Activities whose tasks workers take (GetActivityTask waits up to a minute) |
+| SendTaskSuccess / SendTaskFailure / SendTaskHeartbeat | Complete the tasks of `.waitForTaskToken` integrations and activities |
+| ListStateMachineVersions | No versions |
+| TagResource / UntagResource / ListTagsForResource | State machines and activities |
+
+Definitions use the JSONPath query language: `Pass`, `Task`, `Choice` (every comparison, `And`, `Or`, `Not`),
+`Wait`, `Succeed`, `Fail`, `Parallel`, and inline `Map` states (`ItemsPath`, `ItemSelector`, `MaxConcurrency`),
+with `InputPath`, `Parameters`, `ResultSelector`, `ResultPath`, and `OutputPath`, the context object (`$$`), every
+intrinsic function (`States.Format`, `States.Array`, `States.MathAdd`, `States.UUID`, and the rest), `Retry` (with
+backoff, maximum delays, and jitter), `Catch`, and `TimeoutSeconds` and `HeartbeatSeconds`. Task resources are Lambda
+function ARNs, activity ARNs, the optimized integrations `lambda:invoke`, `sqs:sendMessage`, `sns:publish`,
+`dynamodb:getItem`/`putItem`/`updateItem`/`deleteItem`, `events:putEvents`, and `states:startExecution` (with
+`.sync`, `.sync:2`, and `.waitForTaskToken` where Step Functions allows them), and AWS SDK integrations
+(`arn:aws:states:::aws-sdk:<service>:<action>`) for every operation TinyStack implements. Errors are named as Step
+Functions names them (`States.Timeout`, a function's `errorType`, `DynamoDB.ConditionalCheckFailedException`,
+and so on). Logging levels `ALL`, `ERROR`, and `FATAL` write events to the configured CloudWatch Logs group.
+
 ### EKS (REST JSON)
 
 The EKS control plane API only: no Kubernetes API server runs, so `kubectl`
@@ -790,7 +819,10 @@ models and request validation, `AWS` and `HTTP` (non-proxy) integrations or othe
 mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;
 `AWS_IAM` authorization accepts any SigV4-signed request without verifying it, and Lambda resource
-policies are not checked. STS limits: no `GetSessionToken`, federation, web identity, SAML,
+policies are not checked. Step Functions limits: no JSONata, variables (`Assign`), distributed Map (`ItemReader`, `ResultWriter`), state
+machine versions and aliases, redrive, `TestState`, map runs, execution retention, or IAM role checks, and
+`JsonPath` filters and recursive descent are not supported; executions running when TinyStack stops are aborted when
+it starts again. STS limits: no `GetSessionToken`, federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
