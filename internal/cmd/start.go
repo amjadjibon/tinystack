@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
@@ -44,6 +45,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
+	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
@@ -191,6 +193,7 @@ func newStartCommand() *cobra.Command {
 				apigatewayapi.Descriptor(restAPIs),
 				sfnapi.Descriptor(workflows),
 				kinesisapi.Descriptor(streams),
+				acmapi.Descriptor(acm.New(store)),
 				firehoseapi.Descriptor(firehoses),
 				cloudwatchapi.Descriptor(monitoring),
 			}
