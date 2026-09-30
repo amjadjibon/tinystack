@@ -36,6 +36,7 @@ provider "aws" {
     logs           = var.endpoint
     route53        = var.endpoint
     s3             = var.endpoint
+    scheduler      = var.endpoint
     secretsmanager = var.endpoint
     sfn            = var.endpoint
     sns            = var.endpoint
@@ -1162,4 +1163,26 @@ resource "aws_route53_record" "team" {
   type    = "TXT"
   ttl     = 300
   records = [var.team]
+}
+
+resource "aws_scheduler_schedule_group" "jobs" {
+  name = "jobs"
+  tags = local.tags
+}
+
+resource "aws_scheduler_schedule" "nightly" {
+  name                         = "nightly"
+  group_name                   = aws_scheduler_schedule_group.jobs.name
+  schedule_expression          = "cron(0 2 * * ? *)"
+  schedule_expression_timezone = "Europe/Berlin"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = aws_sqs_queue.dead.arn
+    role_arn = aws_iam_role.lambda.arn
+    input    = jsonencode({ team = var.team })
+  }
 }
