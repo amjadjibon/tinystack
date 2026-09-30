@@ -18,6 +18,7 @@ provider "aws" {
 
   endpoints {
     acm            = var.endpoint
+    autoscaling    = var.endpoint
     apigateway     = var.endpoint
     apigatewayv2   = var.endpoint
     cloudwatch     = var.endpoint
@@ -1199,4 +1200,55 @@ resource "aws_launch_template" "web" {
     resource_type = "instance"
     tags          = local.tags
   }
+}
+
+resource "aws_autoscaling_group" "web" {
+  name               = "web"
+  min_size           = 1
+  max_size           = 3
+  desired_capacity   = 2
+  availability_zones = ["us-east-1a", "us-east-1b"]
+
+  launch_template {
+    id      = aws_launch_template.web.id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "team"
+    value               = var.team
+    propagate_at_launch = true
+  }
+}
+
+resource "aws_autoscaling_policy" "up" {
+  name                   = "up"
+  autoscaling_group_name = aws_autoscaling_group.web.name
+  adjustment_type        = "ChangeInCapacity"
+  scaling_adjustment     = 1
+  cooldown               = 120
+}
+
+resource "aws_autoscaling_policy" "cpu" {
+  name                   = "cpu"
+  autoscaling_group_name = aws_autoscaling_group.web.name
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    target_value = var.team == "platform" ? 60 : 50
+
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+  }
+}
+
+resource "aws_autoscaling_schedule" "night" {
+  scheduled_action_name  = "night"
+  autoscaling_group_name = aws_autoscaling_group.web.name
+  recurrence             = "0 22 * * *"
+  time_zone              = "Europe/Berlin"
+  min_size               = 1
+  max_size               = 3
+  desired_capacity       = 1
 }
