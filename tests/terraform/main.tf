@@ -21,6 +21,7 @@ provider "aws" {
     autoscaling    = var.endpoint
     apigateway     = var.endpoint
     apigatewayv2   = var.endpoint
+    cloudformation = var.endpoint
     cloudwatch     = var.endpoint
     cognitoidp     = var.endpoint
     dynamodb       = var.endpoint
@@ -1355,4 +1356,36 @@ resource "aws_lb_listener_rule" "api" {
       values = ["/api/*"]
     }
   }
+}
+
+# A stack whose parameter and tags follow the team, so an update changes its
+# queue's tags and its parameter's value in place.
+resource "aws_cloudformation_stack" "app" {
+  name       = "tinystack-app"
+  parameters = { Team = var.team }
+  tags       = local.tags
+
+  template_body = jsonencode({
+    Parameters = {
+      Team = { Type = "String" }
+    }
+    Resources = {
+      Queue = {
+        Type       = "AWS::SQS::Queue"
+        Properties = { Tags = [{ Key = "team", Value = { Ref = "Team" } }] }
+      }
+      Parameter = {
+        Type       = "AWS::SSM::Parameter"
+        Properties = { Type = "String", Value = { "Fn::Sub" = "team-$${Team}" } }
+      }
+    }
+    Outputs = {
+      QueueUrl  = { Value = { Ref = "Queue" } }
+      Parameter = { Value = { "Fn::GetAtt" = ["Parameter", "Value"] } }
+    }
+  })
+}
+
+output "stack_parameter" {
+  value = aws_cloudformation_stack.app.outputs["Parameter"]
 }
