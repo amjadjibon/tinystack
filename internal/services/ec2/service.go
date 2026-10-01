@@ -16,8 +16,9 @@ import (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
-	now   func() time.Time
+	store    storage.Store
+	now      func() time.Time
+	profiles InstanceProfiles
 }
 
 func New(store storage.Store) *Service {

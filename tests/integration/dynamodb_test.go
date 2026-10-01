@@ -156,6 +156,7 @@ func serverStore(
 	userPools := identities.New(store, deliveries)
 	repositories := containers.New(store)
 	network := compute.New(store)
+	network.UseInstanceProfiles(roles.InstanceProfileOf)
 	httpAPIs := apigateways.New(store, functions, logGroups)
 	restAPIs := restapis.New(store, functions, logGroups, userPools)
 	ssmService := parameters.New(store, keys)

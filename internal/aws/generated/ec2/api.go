@@ -496,25 +496,31 @@ type LaunchTemplateSpecification struct {
 	Version            *string `json:"Version,omitempty" ec2:"Version,Version"`
 }
 
+type IamInstanceProfileSpecification struct {
+	Arn  *string `json:"Arn,omitempty" ec2:"Arn,arn"`
+	Name *string `json:"Name,omitempty" ec2:"Name,name"`
+}
+
 type RunInstancesRequest struct {
-	ImageId                           *string                        `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
-	InstanceType                      *string                        `json:"InstanceType,omitempty" ec2:"InstanceType,InstanceType"`
-	KeyName                           *string                        `json:"KeyName,omitempty" ec2:"KeyName,KeyName"`
-	MaxCount                          *int64                         `json:"MaxCount,omitempty" ec2:"MaxCount,MaxCount"`
-	MinCount                          *int64                         `json:"MinCount,omitempty" ec2:"MinCount,MinCount"`
-	Monitoring                        *RunInstancesMonitoringEnabled `json:"Monitoring,omitempty" ec2:"Monitoring,Monitoring"`
-	Placement                         *Placement                     `json:"Placement,omitempty" ec2:"Placement,Placement"`
-	SecurityGroupIds                  []string                       `json:"SecurityGroupIds,omitempty" ec2:"SecurityGroupId,SecurityGroupId,member=SecurityGroupId"`
-	SecurityGroups                    []string                       `json:"SecurityGroups,omitempty" ec2:"SecurityGroup,SecurityGroup,member=SecurityGroup"`
-	SubnetId                          *string                        `json:"SubnetId,omitempty" ec2:"SubnetId,SubnetId"`
-	UserData                          *string                        `json:"UserData,omitempty" ec2:"UserData,UserData"`
-	TagSpecifications                 []TagSpecification             `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
-	DryRun                            *bool                          `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
-	DisableApiTermination             *bool                          `json:"DisableApiTermination,omitempty" ec2:"DisableApiTermination,disableApiTermination"`
-	InstanceInitiatedShutdownBehavior *string                        `json:"InstanceInitiatedShutdownBehavior,omitempty" ec2:"InstanceInitiatedShutdownBehavior,instanceInitiatedShutdownBehavior"`
-	PrivateIpAddress                  *string                        `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
-	ClientToken                       *string                        `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
-	LaunchTemplate                    *LaunchTemplateSpecification   `json:"LaunchTemplate,omitempty" ec2:"LaunchTemplate,LaunchTemplate"`
+	ImageId                           *string                          `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
+	InstanceType                      *string                          `json:"InstanceType,omitempty" ec2:"InstanceType,InstanceType"`
+	KeyName                           *string                          `json:"KeyName,omitempty" ec2:"KeyName,KeyName"`
+	MaxCount                          *int64                           `json:"MaxCount,omitempty" ec2:"MaxCount,MaxCount"`
+	MinCount                          *int64                           `json:"MinCount,omitempty" ec2:"MinCount,MinCount"`
+	Monitoring                        *RunInstancesMonitoringEnabled   `json:"Monitoring,omitempty" ec2:"Monitoring,Monitoring"`
+	Placement                         *Placement                       `json:"Placement,omitempty" ec2:"Placement,Placement"`
+	SecurityGroupIds                  []string                         `json:"SecurityGroupIds,omitempty" ec2:"SecurityGroupId,SecurityGroupId,member=SecurityGroupId"`
+	SecurityGroups                    []string                         `json:"SecurityGroups,omitempty" ec2:"SecurityGroup,SecurityGroup,member=SecurityGroup"`
+	SubnetId                          *string                          `json:"SubnetId,omitempty" ec2:"SubnetId,SubnetId"`
+	UserData                          *string                          `json:"UserData,omitempty" ec2:"UserData,UserData"`
+	TagSpecifications                 []TagSpecification               `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun                            *bool                            `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	DisableApiTermination             *bool                            `json:"DisableApiTermination,omitempty" ec2:"DisableApiTermination,disableApiTermination"`
+	InstanceInitiatedShutdownBehavior *string                          `json:"InstanceInitiatedShutdownBehavior,omitempty" ec2:"InstanceInitiatedShutdownBehavior,instanceInitiatedShutdownBehavior"`
+	PrivateIpAddress                  *string                          `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	ClientToken                       *string                          `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+	LaunchTemplate                    *LaunchTemplateSpecification     `json:"LaunchTemplate,omitempty" ec2:"LaunchTemplate,LaunchTemplate"`
+	IamInstanceProfile                *IamInstanceProfileSpecification `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
 }
 
 type StateReason struct {
@@ -531,37 +537,43 @@ type Monitoring struct {
 	State *string `json:"State,omitempty" ec2:"State,state"`
 }
 
+type IamInstanceProfile struct {
+	Arn *string `json:"Arn,omitempty" ec2:"Arn,arn"`
+	Id  *string `json:"Id,omitempty" ec2:"Id,id"`
+}
+
 type Instance struct {
-	Architecture          *string           `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
-	ClientToken           *string           `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
-	EbsOptimized          *bool             `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,ebsOptimized"`
-	EnaSupport            *bool             `json:"EnaSupport,omitempty" ec2:"EnaSupport,enaSupport"`
-	Hypervisor            *string           `json:"Hypervisor,omitempty" ec2:"Hypervisor,hypervisor"`
-	RootDeviceName        *string           `json:"RootDeviceName,omitempty" ec2:"RootDeviceName,rootDeviceName"`
-	RootDeviceType        *string           `json:"RootDeviceType,omitempty" ec2:"RootDeviceType,rootDeviceType"`
-	SecurityGroups        []GroupIdentifier `json:"SecurityGroups,omitempty" ec2:"GroupSet,groupSet,member=item"`
-	SourceDestCheck       *bool             `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
-	StateReason           *StateReason      `json:"StateReason,omitempty" ec2:"StateReason,stateReason"`
-	Tags                  []Tag             `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
-	VirtualizationType    *string           `json:"VirtualizationType,omitempty" ec2:"VirtualizationType,virtualizationType"`
-	PlatformDetails       *string           `json:"PlatformDetails,omitempty" ec2:"PlatformDetails,platformDetails"`
-	UsageOperation        *string           `json:"UsageOperation,omitempty" ec2:"UsageOperation,usageOperation"`
-	InstanceId            *string           `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
-	ImageId               *string           `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
-	State                 *InstanceState    `json:"State,omitempty" ec2:"InstanceState,instanceState"`
-	PrivateDnsName        *string           `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
-	PublicDnsName         *string           `json:"PublicDnsName,omitempty" ec2:"DnsName,dnsName"`
-	StateTransitionReason *string           `json:"StateTransitionReason,omitempty" ec2:"Reason,reason"`
-	KeyName               *string           `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
-	AmiLaunchIndex        *int64            `json:"AmiLaunchIndex,omitempty" ec2:"AmiLaunchIndex,amiLaunchIndex"`
-	InstanceType          *string           `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
-	LaunchTime            *time.Time        `json:"LaunchTime,omitempty" ec2:"LaunchTime,launchTime"`
-	Placement             *Placement        `json:"Placement,omitempty" ec2:"Placement,placement"`
-	Monitoring            *Monitoring       `json:"Monitoring,omitempty" ec2:"Monitoring,monitoring"`
-	SubnetId              *string           `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
-	VpcId                 *string           `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
-	PrivateIpAddress      *string           `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
-	PublicIpAddress       *string           `json:"PublicIpAddress,omitempty" ec2:"IpAddress,ipAddress"`
+	Architecture          *string             `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
+	ClientToken           *string             `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+	EbsOptimized          *bool               `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,ebsOptimized"`
+	EnaSupport            *bool               `json:"EnaSupport,omitempty" ec2:"EnaSupport,enaSupport"`
+	Hypervisor            *string             `json:"Hypervisor,omitempty" ec2:"Hypervisor,hypervisor"`
+	RootDeviceName        *string             `json:"RootDeviceName,omitempty" ec2:"RootDeviceName,rootDeviceName"`
+	RootDeviceType        *string             `json:"RootDeviceType,omitempty" ec2:"RootDeviceType,rootDeviceType"`
+	SecurityGroups        []GroupIdentifier   `json:"SecurityGroups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	SourceDestCheck       *bool               `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	StateReason           *StateReason        `json:"StateReason,omitempty" ec2:"StateReason,stateReason"`
+	Tags                  []Tag               `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VirtualizationType    *string             `json:"VirtualizationType,omitempty" ec2:"VirtualizationType,virtualizationType"`
+	PlatformDetails       *string             `json:"PlatformDetails,omitempty" ec2:"PlatformDetails,platformDetails"`
+	UsageOperation        *string             `json:"UsageOperation,omitempty" ec2:"UsageOperation,usageOperation"`
+	InstanceId            *string             `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	ImageId               *string             `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
+	State                 *InstanceState      `json:"State,omitempty" ec2:"InstanceState,instanceState"`
+	PrivateDnsName        *string             `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
+	PublicDnsName         *string             `json:"PublicDnsName,omitempty" ec2:"DnsName,dnsName"`
+	StateTransitionReason *string             `json:"StateTransitionReason,omitempty" ec2:"Reason,reason"`
+	KeyName               *string             `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
+	AmiLaunchIndex        *int64              `json:"AmiLaunchIndex,omitempty" ec2:"AmiLaunchIndex,amiLaunchIndex"`
+	InstanceType          *string             `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
+	LaunchTime            *time.Time          `json:"LaunchTime,omitempty" ec2:"LaunchTime,launchTime"`
+	Placement             *Placement          `json:"Placement,omitempty" ec2:"Placement,placement"`
+	Monitoring            *Monitoring         `json:"Monitoring,omitempty" ec2:"Monitoring,monitoring"`
+	SubnetId              *string             `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	VpcId                 *string             `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	PrivateIpAddress      *string             `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	PublicIpAddress       *string             `json:"PublicIpAddress,omitempty" ec2:"IpAddress,ipAddress"`
+	IamInstanceProfile    *IamInstanceProfile `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
 }
 
 type Reservation struct {
@@ -909,6 +921,52 @@ type DeleteLaunchTemplateVersionsResult struct {
 	UnsuccessfullyDeletedLaunchTemplateVersions []DeleteLaunchTemplateVersionsResponseErrorItem   `json:"UnsuccessfullyDeletedLaunchTemplateVersions,omitempty" ec2:"UnsuccessfullyDeletedLaunchTemplateVersionSet,unsuccessfullyDeletedLaunchTemplateVersionSet,member=item"`
 }
 
+type AssociateIamInstanceProfileRequest struct {
+	IamInstanceProfile *IamInstanceProfileSpecification `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,IamInstanceProfile"`
+	InstanceId         *string                          `json:"InstanceId,omitempty" ec2:"InstanceId,InstanceId"`
+}
+
+type IamInstanceProfileAssociation struct {
+	AssociationId      *string             `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	InstanceId         *string             `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	IamInstanceProfile *IamInstanceProfile `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
+	State              *string             `json:"State,omitempty" ec2:"State,state"`
+	Timestamp          *time.Time          `json:"Timestamp,omitempty" ec2:"Timestamp,timestamp"`
+}
+
+type AssociateIamInstanceProfileResult struct {
+	IamInstanceProfileAssociation *IamInstanceProfileAssociation `json:"IamInstanceProfileAssociation,omitempty" ec2:"IamInstanceProfileAssociation,iamInstanceProfileAssociation"`
+}
+
+type DescribeIamInstanceProfileAssociationsRequest struct {
+	AssociationIds []string `json:"AssociationIds,omitempty" ec2:"AssociationId,AssociationId,member=AssociationId"`
+	Filters        []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults     *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken      *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type DescribeIamInstanceProfileAssociationsResult struct {
+	IamInstanceProfileAssociations []IamInstanceProfileAssociation `json:"IamInstanceProfileAssociations,omitempty" ec2:"IamInstanceProfileAssociationSet,iamInstanceProfileAssociationSet,member=item"`
+	NextToken                      *string                         `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type DisassociateIamInstanceProfileRequest struct {
+	AssociationId *string `json:"AssociationId,omitempty" ec2:"AssociationId,AssociationId"`
+}
+
+type DisassociateIamInstanceProfileResult struct {
+	IamInstanceProfileAssociation *IamInstanceProfileAssociation `json:"IamInstanceProfileAssociation,omitempty" ec2:"IamInstanceProfileAssociation,iamInstanceProfileAssociation"`
+}
+
+type ReplaceIamInstanceProfileAssociationRequest struct {
+	IamInstanceProfile *IamInstanceProfileSpecification `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,IamInstanceProfile"`
+	AssociationId      *string                          `json:"AssociationId,omitempty" ec2:"AssociationId,AssociationId"`
+}
+
+type ReplaceIamInstanceProfileAssociationResult struct {
+	IamInstanceProfileAssociation *IamInstanceProfileAssociation `json:"IamInstanceProfileAssociation,omitempty" ec2:"IamInstanceProfileAssociation,iamInstanceProfileAssociation"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -949,6 +1007,10 @@ type API interface {
 	ModifyLaunchTemplate(context.Context, *ModifyLaunchTemplateRequest) (*ModifyLaunchTemplateResult, error)
 	DeleteLaunchTemplate(context.Context, *DeleteLaunchTemplateRequest) (*DeleteLaunchTemplateResult, error)
 	DeleteLaunchTemplateVersions(context.Context, *DeleteLaunchTemplateVersionsRequest) (*DeleteLaunchTemplateVersionsResult, error)
+	AssociateIamInstanceProfile(context.Context, *AssociateIamInstanceProfileRequest) (*AssociateIamInstanceProfileResult, error)
+	DescribeIamInstanceProfileAssociations(context.Context, *DescribeIamInstanceProfileAssociationsRequest) (*DescribeIamInstanceProfileAssociationsResult, error)
+	DisassociateIamInstanceProfile(context.Context, *DisassociateIamInstanceProfileRequest) (*DisassociateIamInstanceProfileResult, error)
+	ReplaceIamInstanceProfileAssociation(context.Context, *ReplaceIamInstanceProfileAssociationRequest) (*ReplaceIamInstanceProfileAssociationResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1069,6 +1131,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteLaunchTemplateVersions": {Name: "DeleteLaunchTemplateVersions", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteLaunchTemplateVersions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteLaunchTemplateVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteLaunchTemplateVersions(ctx, input.(*DeleteLaunchTemplateVersionsRequest))
+		}},
+		"AssociateIamInstanceProfile": {Name: "AssociateIamInstanceProfile", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssociateIamInstanceProfile", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssociateIamInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateIamInstanceProfile(ctx, input.(*AssociateIamInstanceProfileRequest))
+		}},
+		"DescribeIamInstanceProfileAssociations": {Name: "DescribeIamInstanceProfileAssociations", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeIamInstanceProfileAssociations", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeIamInstanceProfileAssociationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeIamInstanceProfileAssociations(ctx, input.(*DescribeIamInstanceProfileAssociationsRequest))
+		}},
+		"DisassociateIamInstanceProfile": {Name: "DisassociateIamInstanceProfile", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DisassociateIamInstanceProfile", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DisassociateIamInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisassociateIamInstanceProfile(ctx, input.(*DisassociateIamInstanceProfileRequest))
+		}},
+		"ReplaceIamInstanceProfileAssociation": {Name: "ReplaceIamInstanceProfileAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReplaceIamInstanceProfileAssociation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReplaceIamInstanceProfileAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReplaceIamInstanceProfileAssociation(ctx, input.(*ReplaceIamInstanceProfileAssociationRequest))
 		}},
 	}}
 }

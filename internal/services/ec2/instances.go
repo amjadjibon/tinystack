@@ -57,6 +57,8 @@ var (
 // each state its operations ask for at once, and the operation reports the
 // transitional state (pending, stopping, shutting-down) on the way.
 type instance struct {
+	// Profile is the instance's IAM instance profile association, if any.
+	Profile     *profileAssociation `json:",omitempty"`
 	LaunchTime  time.Time
 	Changed     time.Time         // when State last changed
 	Tags        map[string]string `json:",omitempty"`
@@ -180,6 +182,10 @@ func instanceOutput(scope request.Scope, i *instance, state string) api.Instance
 	}
 	for _, g := range i.Groups {
 		out.SecurityGroups = append(out.SecurityGroups, api.GroupIdentifier{GroupId: new(g.ID), GroupName: new(g.Name)})
+	}
+
+	if i.Profile != nil && i.active() {
+		out.IamInstanceProfile = &api.IamInstanceProfile{Arn: new(i.Profile.ARN), Id: new(i.Profile.ProfileID)}
 	}
 
 	out.KeyName, out.ClientToken = optional(i.KeyName), optional(i.ClientToken)
@@ -483,6 +489,13 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 		return nil, err
 	}
 
+	var profile *profileAssociation
+	if in.IamInstanceProfile != nil {
+		if profile, err = s.resolveProfile(ctx, in.IamInstanceProfile); err != nil {
+			return nil, err
+		}
+	}
+
 	now, token := s.now().UTC(), value(in.ClientToken)
 	var out *api.Reservation
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
@@ -548,6 +561,11 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				RootDevice: l.img.RootDevice, LaunchIndex: n, NoTerminate: value(in.DisableApiTermination),
 				Monitoring: in.Monitoring != nil && value(in.Monitoring.Enabled), Groups: groups, Tags: l.tags,
 				LaunchTime: now, Changed: now,
+			}
+			if profile != nil {
+				i.Profile = &profileAssociation{
+					Since: now, ID: newID("iip-assoc"), ARN: profile.ARN, ProfileID: profile.ProfileID,
+				}
 			}
 
 			ip, ipErr := ips.take(value(in.PrivateIpAddress))

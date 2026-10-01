@@ -566,9 +566,10 @@ func withTemplate(tx storage.ReadTx, scope request.Scope, in *api.RunInstancesRe
 		return nil, err
 	}
 
-	// RunInstances does not take these; instances do not record them.
+	// RunInstances does not take EbsOptimized, and instance tags are merged
+	// below.
 	out := &api.RunInstancesRequest{}
-	err = overlay(v.Data, in, out, "EbsOptimized", "IamInstanceProfile", "TagSpecifications")
+	err = overlay(v.Data, in, out, "EbsOptimized", "TagSpecifications")
 	if err != nil {
 		return nil, err
 	}

@@ -165,6 +165,7 @@ func newStartCommand() *cobra.Command {
 			httpAPIs := apigatewayv2.New(store, functions, logGroups)
 			restAPIs := apigateway.New(store, functions, logGroups, identities)
 			network := ec2.New(store)
+			network.UseInstanceProfiles(roles.InstanceProfileOf)
 			workflows, err := sfn.New(store, logGroups, logger)
 			if err != nil {
 				return err
