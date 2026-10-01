@@ -476,7 +476,11 @@
       "DescribeLaunchTemplateVersions",
       "ModifyLaunchTemplate",
       "DeleteLaunchTemplate",
-      "DeleteLaunchTemplateVersions"
+      "DeleteLaunchTemplateVersions",
+      "AssociateIamInstanceProfile",
+      "DescribeIamInstanceProfileAssociations",
+      "DisassociateIamInstanceProfile",
+      "ReplaceIamInstanceProfileAssociation"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -896,7 +900,8 @@
         "InstanceInitiatedShutdownBehavior",
         "PrivateIpAddress",
         "ClientToken",
-        "LaunchTemplate"
+        "LaunchTemplate",
+        "IamInstanceProfile"
       ],
       "RunInstancesMonitoringEnabled": [
         "Enabled"
@@ -942,7 +947,8 @@
         "SubnetId",
         "VpcId",
         "PrivateIpAddress",
-        "PublicIpAddress"
+        "PublicIpAddress",
+        "IamInstanceProfile"
       ],
       "InstanceState": [
         "Code",
@@ -1246,6 +1252,51 @@
       "LaunchTemplateIamInstanceProfileSpecification": [
         "Arn",
         "Name"
+      ],
+      "IamInstanceProfileSpecification": [
+        "Arn",
+        "Name"
+      ],
+      "IamInstanceProfile": [
+        "Arn",
+        "Id"
+      ],
+      "IamInstanceProfileAssociation": [
+        "AssociationId",
+        "InstanceId",
+        "IamInstanceProfile",
+        "State",
+        "Timestamp"
+      ],
+      "AssociateIamInstanceProfileRequest": [
+        "IamInstanceProfile",
+        "InstanceId"
+      ],
+      "AssociateIamInstanceProfileResult": [
+        "IamInstanceProfileAssociation"
+      ],
+      "DescribeIamInstanceProfileAssociationsRequest": [
+        "AssociationIds",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeIamInstanceProfileAssociationsResult": [
+        "IamInstanceProfileAssociations",
+        "NextToken"
+      ],
+      "DisassociateIamInstanceProfileRequest": [
+        "AssociationId"
+      ],
+      "DisassociateIamInstanceProfileResult": [
+        "IamInstanceProfileAssociation"
+      ],
+      "ReplaceIamInstanceProfileAssociationRequest": [
+        "IamInstanceProfile",
+        "AssociationId"
+      ],
+      "ReplaceIamInstanceProfileAssociationResult": [
+        "IamInstanceProfileAssociation"
       ]
     }
   },
@@ -1511,6 +1562,15 @@
       "DetachRolePolicy",
       "ListAttachedRolePolicies",
       "ListInstanceProfilesForRole",
+      "CreateInstanceProfile",
+      "GetInstanceProfile",
+      "DeleteInstanceProfile",
+      "ListInstanceProfiles",
+      "AddRoleToInstanceProfile",
+      "RemoveRoleFromInstanceProfile",
+      "TagInstanceProfile",
+      "UntagInstanceProfile",
+      "ListInstanceProfileTags",
       "CreatePolicy",
       "GetPolicy",
       "DeletePolicy",
@@ -1798,7 +1858,8 @@
         "InstanceProfileId",
         "Arn",
         "CreateDate",
-        "Roles"
+        "Roles",
+        "Tags"
       ],
       "Tag": [
         "Key",
@@ -2071,6 +2132,59 @@
       ],
       "ListAttachedGroupPoliciesResponse": [
         "AttachedPolicies",
+        "IsTruncated",
+        "Marker"
+      ],
+      "CreateInstanceProfileRequest": [
+        "InstanceProfileName",
+        "Path",
+        "Tags"
+      ],
+      "CreateInstanceProfileResponse": [
+        "InstanceProfile"
+      ],
+      "GetInstanceProfileRequest": [
+        "InstanceProfileName"
+      ],
+      "GetInstanceProfileResponse": [
+        "InstanceProfile"
+      ],
+      "DeleteInstanceProfileRequest": [
+        "InstanceProfileName"
+      ],
+      "ListInstanceProfilesRequest": [
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListInstanceProfilesResponse": [
+        "InstanceProfiles",
+        "IsTruncated",
+        "Marker"
+      ],
+      "AddRoleToInstanceProfileRequest": [
+        "InstanceProfileName",
+        "RoleName"
+      ],
+      "RemoveRoleFromInstanceProfileRequest": [
+        "InstanceProfileName",
+        "RoleName"
+      ],
+      "TagInstanceProfileRequest": [
+        "InstanceProfileName",
+        "Tags"
+      ],
+      "UntagInstanceProfileRequest": [
+        "InstanceProfileName",
+        "TagKeys"
+      ],
+      "ListInstanceProfileTagsRequest": [
+        "InstanceProfileName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListInstanceProfileTagsResponse": [
+        "Tags",
         "IsTruncated",
         "Marker"
       ]

@@ -197,12 +197,89 @@ type InstanceProfile struct {
 	Arn                 *string    `json:"Arn,omitempty" query:"Arn"`
 	CreateDate          *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
 	Roles               []Role     `json:"Roles,omitempty" query:"Roles"`
+	Tags                []Tag      `json:"Tags,omitempty" query:"Tags"`
 }
 
 type ListInstanceProfilesForRoleResponse struct {
 	InstanceProfiles []InstanceProfile `json:"InstanceProfiles,omitempty" query:"InstanceProfiles"`
 	IsTruncated      *bool             `json:"IsTruncated,omitempty" query:"IsTruncated"`
 	Marker           *string           `json:"Marker,omitempty" query:"Marker"`
+}
+
+type CreateInstanceProfileRequest struct {
+	InstanceProfileName *string `json:"InstanceProfileName,omitempty" query:"InstanceProfileName"`
+	Path                *string `json:"Path,omitempty" query:"Path"`
+	Tags                []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type CreateInstanceProfileResponse struct {
+	InstanceProfile *InstanceProfile `json:"InstanceProfile,omitempty" query:"InstanceProfile"`
+}
+
+type GetInstanceProfileRequest struct {
+	InstanceProfileName *string `json:"InstanceProfileName,omitempty" query:"InstanceProfileName"`
+}
+
+type GetInstanceProfileResponse struct {
+	InstanceProfile *InstanceProfile `json:"InstanceProfile,omitempty" query:"InstanceProfile"`
+}
+
+type DeleteInstanceProfileOutput struct{}
+
+type DeleteInstanceProfileRequest struct {
+	InstanceProfileName *string `json:"InstanceProfileName,omitempty" query:"InstanceProfileName"`
+}
+
+type ListInstanceProfilesRequest struct {
+	PathPrefix *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
+	Marker     *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems   *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListInstanceProfilesResponse struct {
+	InstanceProfiles []InstanceProfile `json:"InstanceProfiles,omitempty" query:"InstanceProfiles"`
+	IsTruncated      *bool             `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker           *string           `json:"Marker,omitempty" query:"Marker"`
+}
+
+type AddRoleToInstanceProfileOutput struct{}
+
+type AddRoleToInstanceProfileRequest struct {
+	InstanceProfileName *string `json:"InstanceProfileName,omitempty" query:"InstanceProfileName"`
+	RoleName            *string `json:"RoleName,omitempty" query:"RoleName"`
+}
+
+type RemoveRoleFromInstanceProfileOutput struct{}
+
+type RemoveRoleFromInstanceProfileRequest struct {
+	InstanceProfileName *string `json:"InstanceProfileName,omitempty" query:"InstanceProfileName"`
+	RoleName            *string `json:"RoleName,omitempty" query:"RoleName"`
+}
+
+type TagInstanceProfileOutput struct{}
+
+type TagInstanceProfileRequest struct {
+	InstanceProfileName *string `json:"InstanceProfileName,omitempty" query:"InstanceProfileName"`
+	Tags                []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type UntagInstanceProfileOutput struct{}
+
+type UntagInstanceProfileRequest struct {
+	InstanceProfileName *string  `json:"InstanceProfileName,omitempty" query:"InstanceProfileName"`
+	TagKeys             []string `json:"TagKeys,omitempty" query:"TagKeys"`
+}
+
+type ListInstanceProfileTagsRequest struct {
+	InstanceProfileName *string `json:"InstanceProfileName,omitempty" query:"InstanceProfileName"`
+	Marker              *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems            *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListInstanceProfileTagsResponse struct {
+	Tags        []Tag   `json:"Tags,omitempty" query:"Tags"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
 }
 
 type CreatePolicyRequest struct {
@@ -713,6 +790,15 @@ type API interface {
 	DetachRolePolicy(context.Context, *DetachRolePolicyRequest) (*DetachRolePolicyOutput, error)
 	ListAttachedRolePolicies(context.Context, *ListAttachedRolePoliciesRequest) (*ListAttachedRolePoliciesResponse, error)
 	ListInstanceProfilesForRole(context.Context, *ListInstanceProfilesForRoleRequest) (*ListInstanceProfilesForRoleResponse, error)
+	CreateInstanceProfile(context.Context, *CreateInstanceProfileRequest) (*CreateInstanceProfileResponse, error)
+	GetInstanceProfile(context.Context, *GetInstanceProfileRequest) (*GetInstanceProfileResponse, error)
+	DeleteInstanceProfile(context.Context, *DeleteInstanceProfileRequest) (*DeleteInstanceProfileOutput, error)
+	ListInstanceProfiles(context.Context, *ListInstanceProfilesRequest) (*ListInstanceProfilesResponse, error)
+	AddRoleToInstanceProfile(context.Context, *AddRoleToInstanceProfileRequest) (*AddRoleToInstanceProfileOutput, error)
+	RemoveRoleFromInstanceProfile(context.Context, *RemoveRoleFromInstanceProfileRequest) (*RemoveRoleFromInstanceProfileOutput, error)
+	TagInstanceProfile(context.Context, *TagInstanceProfileRequest) (*TagInstanceProfileOutput, error)
+	UntagInstanceProfile(context.Context, *UntagInstanceProfileRequest) (*UntagInstanceProfileOutput, error)
+	ListInstanceProfileTags(context.Context, *ListInstanceProfileTagsRequest) (*ListInstanceProfileTagsResponse, error)
 	CreatePolicy(context.Context, *CreatePolicyRequest) (*CreatePolicyResponse, error)
 	GetPolicy(context.Context, *GetPolicyRequest) (*GetPolicyResponse, error)
 	DeletePolicy(context.Context, *DeletePolicyRequest) (*DeletePolicyOutput, error)
@@ -813,6 +899,33 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListInstanceProfilesForRole": {Name: "ListInstanceProfilesForRole", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListInstanceProfilesForRole", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListInstanceProfilesForRoleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListInstanceProfilesForRole(ctx, input.(*ListInstanceProfilesForRoleRequest))
+		}},
+		"CreateInstanceProfile": {Name: "CreateInstanceProfile", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateInstanceProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateInstanceProfile(ctx, input.(*CreateInstanceProfileRequest))
+		}},
+		"GetInstanceProfile": {Name: "GetInstanceProfile", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetInstanceProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetInstanceProfile(ctx, input.(*GetInstanceProfileRequest))
+		}},
+		"DeleteInstanceProfile": {Name: "DeleteInstanceProfile", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteInstanceProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteInstanceProfile(ctx, input.(*DeleteInstanceProfileRequest))
+		}},
+		"ListInstanceProfiles": {Name: "ListInstanceProfiles", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListInstanceProfiles", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListInstanceProfilesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListInstanceProfiles(ctx, input.(*ListInstanceProfilesRequest))
+		}},
+		"AddRoleToInstanceProfile": {Name: "AddRoleToInstanceProfile", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AddRoleToInstanceProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AddRoleToInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AddRoleToInstanceProfile(ctx, input.(*AddRoleToInstanceProfileRequest))
+		}},
+		"RemoveRoleFromInstanceProfile": {Name: "RemoveRoleFromInstanceProfile", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RemoveRoleFromInstanceProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RemoveRoleFromInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemoveRoleFromInstanceProfile(ctx, input.(*RemoveRoleFromInstanceProfileRequest))
+		}},
+		"TagInstanceProfile": {Name: "TagInstanceProfile", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TagInstanceProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TagInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagInstanceProfile(ctx, input.(*TagInstanceProfileRequest))
+		}},
+		"UntagInstanceProfile": {Name: "UntagInstanceProfile", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UntagInstanceProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UntagInstanceProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagInstanceProfile(ctx, input.(*UntagInstanceProfileRequest))
+		}},
+		"ListInstanceProfileTags": {Name: "ListInstanceProfileTags", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListInstanceProfileTags", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListInstanceProfileTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListInstanceProfileTags(ctx, input.(*ListInstanceProfileTagsRequest))
 		}},
 		"CreatePolicy": {Name: "CreatePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreatePolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreatePolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreatePolicy(ctx, input.(*CreatePolicyRequest))

@@ -198,6 +198,14 @@ func (s *Service) DeleteRole(ctx context.Context, in *api.DeleteRoleRequest) (*a
 			return conflict
 		}
 
+		profiles, listErr := profilesWithRole(tx, m.AccountID, r.Name)
+		switch {
+		case listErr != nil:
+			return listErr
+		case len(profiles) > 0:
+			return deleteConflict("Cannot delete entity, must remove roles from instance profile first.")
+		}
+
 		tx.Delete(rk)
 		return nil
 	})
@@ -435,24 +443,4 @@ func (s *Service) ListAttachedRolePolicies(
 	}
 
 	return &api.ListAttachedRolePoliciesResponse{AttachedPolicies: policies, IsTruncated: truncated, Marker: next}, nil
-}
-
-// ListInstanceProfilesForRole always lists nothing: TinyStack does not model
-// instance profiles, so no role can belong to one.
-func (s *Service) ListInstanceProfilesForRole(
-	ctx context.Context,
-	in *api.ListInstanceProfilesForRoleRequest,
-) (*api.ListInstanceProfilesForRoleResponse, error) {
-	err := s.viewRole(ctx, in.RoleName, func(string, *role) error {
-		_, _, _, err := page([]string{}, func(n string) string { return n }, in.Marker, in.MaxItems)
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &api.ListInstanceProfilesForRoleResponse{
-		InstanceProfiles: []api.InstanceProfile{},
-		IsTruncated:      new(false),
-	}, nil
 }

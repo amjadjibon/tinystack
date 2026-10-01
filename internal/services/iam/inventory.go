@@ -11,9 +11,9 @@ import (
 // detailPath is the resource detail that holds an entity's IAM path.
 const detailPath = "Path"
 
-// Resources lists every role, managed policy, user, and group, for the resource
-// browser. IAM is global, so resources have no region. Access key secrets are
-// never listed.
+// Resources lists every role, managed policy, user, group, and instance profile,
+// for the resource browser. IAM is global, so resources have no region. Access
+// key secrets are never listed.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -68,6 +68,16 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				out = append(out, catalog.Resource{
 					Type: kindUser, Account: account, Name: u.Name, ARN: userARN(account, u), Tags: u.Tags,
 					Details: u.details(map[string]any{detailPath: u.Path, "UserId": u.ID, "AccessKeyIds": u.Keys}),
+				})
+			case kindProfile:
+				p, _, err := read[profile](tx, k)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: kindProfile, Account: account, Name: p.Name, ARN: profileARN(account, p), Tags: p.Tags,
+					Details: map[string]any{detailPath: p.Path, "InstanceProfileId": p.ID, "Role": p.Role},
 				})
 			case kindGroup:
 				g, _, err := read[group](tx, k)
