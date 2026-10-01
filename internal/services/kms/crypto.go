@@ -122,6 +122,10 @@ func (s *Service) encrypting(
 			return usableErr
 		}
 
+		if usageErr := k.requireUsage(scope, encryptDecrypt); usageErr != nil {
+			return usageErr
+		}
+
 		return fn(scope, k)
 	})
 }

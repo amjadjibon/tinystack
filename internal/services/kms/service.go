@@ -1,15 +1,18 @@
-// Package kms implements symmetric KMS keys, aliases, and envelope encryption,
-// without HTTP dependencies. Keys and aliases belong to an account and region:
+// Package kms implements symmetric encryption and HMAC KMS keys, aliases,
+// envelope encryption, data key pairs, and MACs, without HTTP dependencies.
+// Keys and aliases belong to an account and region:
 //
 //	<scope>/kms/key/<key ID>
 //	<scope>/kms/alias/<name without the alias/ prefix>
 //
-// Each key record holds its 256-bit key material, which is never rotated.
+// Each key record holds its key material (256 bits for encryption keys, the
+// HMAC length for HMAC keys), which is never rotated.
 // Policies are stored, never evaluated. A key past its scheduled deletion date
 // is treated as gone.
 package kms
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -34,6 +37,7 @@ const (
 	statePendingDeletion = "PendingDeletion"
 	symmetricDefault     = "SYMMETRIC_DEFAULT"
 	encryptDecrypt       = "ENCRYPT_DECRYPT"
+	generateVerifyMAC    = "GENERATE_VERIFY_MAC"
 	originKMS            = "AWS_KMS"
 	defaultPolicyName    = "default"
 	maxDescription       = 8192
@@ -59,8 +63,11 @@ type key struct {
 	Description string
 	Policy      string
 	State       string
-	Material    []byte
-	Created     int64
+	// Spec and Usage are empty for symmetric encryption keys.
+	Spec     string `json:",omitempty"`
+	Usage    string `json:",omitempty"`
+	Material []byte
+	Created  int64
 	// DeletionDate and PendingDays are set while the key is pending deletion.
 	DeletionDate int64 `json:",omitempty"`
 	PendingDays  int64 `json:",omitempty"`
@@ -146,6 +153,19 @@ func write(tx storage.WriteTx, k string, v any) error {
 	return nil
 }
 
+func (k *key) spec() string  { return cmp.Or(k.Spec, symmetricDefault) }
+func (k *key) usage() string { return cmp.Or(k.Usage, encryptDecrypt) }
+
+// requireUsage fails unless the key has the usage an operation needs.
+func (k *key) requireUsage(scope request.Scope, usage string) error {
+	if k.usage() != usage {
+		return awserror.New("InvalidKeyUsageException", keyARN(scope, k.ID)+" key usage is "+k.usage()+
+			" which is not valid for this operation.")
+	}
+
+	return nil
+}
+
 // deleted reports whether the key's scheduled deletion date has passed.
 func (k *key) deleted(now time.Time) bool {
 	return k.State == statePendingDeletion && now.UnixMilli() >= k.DeletionDate
@@ -181,15 +201,20 @@ func (k *key) metadata(scope request.Scope) *api.KeyMetadata {
 		CreationDate:          seconds(k.Created),
 		Enabled:               new(k.State == stateEnabled),
 		Description:           new(k.Description),
-		KeyUsage:              new(encryptDecrypt),
+		KeyUsage:              new(k.usage()),
 		KeyState:              new(k.State),
 		Origin:                new(originKMS),
 		KeyManager:            new("CUSTOMER"),
-		CustomerMasterKeySpec: new(symmetricDefault),
-		KeySpec:               new(symmetricDefault),
-		EncryptionAlgorithms:  []string{symmetricDefault},
+		CustomerMasterKeySpec: new(k.spec()),
+		KeySpec:               new(k.spec()),
 		MultiRegion:           new(false),
 	}
+	if mac, ok := macKeys[k.spec()]; ok {
+		m.MacAlgorithms = []string{mac.algorithm}
+	} else {
+		m.EncryptionAlgorithms = []string{symmetricDefault}
+	}
+
 	if k.State == statePendingDeletion {
 		m.DeletionDate = seconds(k.DeletionDate)
 		m.PendingDeletionWindowInDays = new(k.PendingDays)
@@ -309,7 +334,11 @@ func (s *Service) Check(ctx context.Context, scope request.Scope, ref string) er
 			return err
 		}
 
-		return k.usable(scope)
+		if usableErr := k.usable(scope); usableErr != nil {
+			return usableErr
+		}
+
+		return k.requireUsage(scope, encryptDecrypt)
 	})
 }
 
@@ -390,29 +419,36 @@ func defaultPolicy(scope request.Scope) string {
 }
 
 // checkKeySpec accepts only what TinyStack implements: symmetric encryption
-// keys that KMS generates, in one region.
-func checkKeySpec(in *api.CreateKeyRequest) error {
+// and HMAC keys that KMS generates, in one region. It returns the key's spec
+// and usage as the record stores them, empty for symmetric encryption.
+func checkKeySpec(in *api.CreateKeyRequest) (spec, usage string, err error) {
 	if in.KeySpec != nil && in.CustomerMasterKeySpec != nil {
-		return awserror.Validation("You cannot specify KeySpec and CustomerMasterKeySpec in the same request.")
+		return "", "", awserror.Validation("You cannot specify KeySpec and CustomerMasterKeySpec in the same " +
+			"request.")
 	}
 
-	spec := value(in.KeySpec)
-	if spec == "" {
-		spec = value(in.CustomerMasterKeySpec)
-	}
-
+	spec = cmp.Or(value(in.KeySpec), value(in.CustomerMasterKeySpec), symmetricDefault)
+	usage = value(in.KeyUsage)
+	_, isMAC := macKeys[spec]
 	switch {
-	case spec != "" && spec != symmetricDefault:
-		return unsupported("TinyStack supports only %s keys, not %s.", symmetricDefault, spec)
-	case in.KeyUsage != nil && *in.KeyUsage != encryptDecrypt:
-		return unsupported("TinyStack supports only %s keys, not %s.", encryptDecrypt, *in.KeyUsage)
+	case isMAC && usage != generateVerifyMAC:
+		return "", "", awserror.Validation("HMAC keys must have the %s key usage.", generateVerifyMAC)
+	case !isMAC && spec != symmetricDefault:
+		return "", "", unsupported("TinyStack supports only %s and HMAC keys, not %s.", symmetricDefault, spec)
+	case usage != "" && usage != encryptDecrypt && usage != generateVerifyMAC:
+		return "", "", unsupported("TinyStack supports only %s and %s keys, not %s.", encryptDecrypt,
+			generateVerifyMAC, usage)
+	case !isMAC && usage == generateVerifyMAC:
+		return "", "", awserror.Validation("%s keys must have the %s key usage.", symmetricDefault, encryptDecrypt)
 	case in.Origin != nil && *in.Origin != originKMS:
-		return unsupported("TinyStack supports only %s key material, not %s.", originKMS, *in.Origin)
+		return "", "", unsupported("TinyStack supports only %s key material, not %s.", originKMS, *in.Origin)
 	case value(in.MultiRegion):
-		return unsupported("TinyStack does not support multi-Region keys.")
+		return "", "", unsupported("TinyStack does not support multi-Region keys.")
+	case !isMAC:
+		return "", "", nil
 	}
 
-	return nil
+	return spec, usage, nil
 }
 
 func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api.CreateKeyResponse, error) {
@@ -421,8 +457,9 @@ func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api
 		return nil, err
 	}
 
-	if guardErr := checkKeySpec(in); guardErr != nil {
-		return nil, guardErr
+	spec, usage, err := checkKeySpec(in)
+	if err != nil {
+		return nil, err
 	}
 
 	if guardErr := checkDescription(in.Description); guardErr != nil {
@@ -445,9 +482,14 @@ func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api
 		return nil, tagError(tagErr)
 	}
 
+	size := 32
+	if mac, ok := macKeys[spec]; ok {
+		size = mac.size
+	}
+
 	k := &key{
 		Tags: tags, ID: newKeyID(), Description: value(in.Description), Policy: policy, State: stateEnabled,
-		Material: make([]byte, 32), Created: s.now().UnixMilli(),
+		Material: make([]byte, size), Created: s.now().UnixMilli(), Spec: spec, Usage: usage,
 	}
 	_, _ = rand.Read(k.Material)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -737,6 +779,10 @@ func (s *Service) EnableKeyRotation(
 	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
 		if usableErr := k.usable(scope); usableErr != nil {
 			return usableErr
+		}
+
+		if k.spec() != symmetricDefault {
+			return unsupported("%s does not support automatic key rotation.", keyARN(scope, k.ID))
 		}
 
 		if k.RotationDays == 0 {

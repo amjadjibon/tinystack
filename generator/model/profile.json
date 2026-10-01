@@ -2103,7 +2103,11 @@
       "Decrypt",
       "GenerateDataKey",
       "GenerateDataKeyWithoutPlaintext",
-      "GenerateRandom"
+      "GenerateRandom",
+      "GenerateDataKeyPair",
+      "GenerateDataKeyPairWithoutPlaintext",
+      "GenerateMac",
+      "VerifyMac"
     ],
     "shapes": {
       "CreateKeyRequest": [
@@ -2142,7 +2146,8 @@
         "KeySpec",
         "EncryptionAlgorithms",
         "MultiRegion",
-        "PendingDeletionWindowInDays"
+        "PendingDeletionWindowInDays",
+        "MacAlgorithms"
       ],
       "ListKeysRequest": [
         "Limit",
@@ -2325,6 +2330,54 @@
       ],
       "GenerateRandomResponse": [
         "Plaintext"
+      ],
+      "GenerateDataKeyPairRequest": [
+        "EncryptionContext",
+        "KeyId",
+        "KeyPairSpec",
+        "DryRun"
+      ],
+      "GenerateDataKeyPairResponse": [
+        "PrivateKeyCiphertextBlob",
+        "PrivateKeyPlaintext",
+        "PublicKey",
+        "KeyId",
+        "KeyPairSpec"
+      ],
+      "GenerateDataKeyPairWithoutPlaintextRequest": [
+        "EncryptionContext",
+        "KeyId",
+        "KeyPairSpec",
+        "DryRun"
+      ],
+      "GenerateDataKeyPairWithoutPlaintextResponse": [
+        "PrivateKeyCiphertextBlob",
+        "PublicKey",
+        "KeyId",
+        "KeyPairSpec"
+      ],
+      "GenerateMacRequest": [
+        "Message",
+        "KeyId",
+        "MacAlgorithm",
+        "DryRun"
+      ],
+      "GenerateMacResponse": [
+        "Mac",
+        "MacAlgorithm",
+        "KeyId"
+      ],
+      "VerifyMacRequest": [
+        "Message",
+        "KeyId",
+        "MacAlgorithm",
+        "Mac",
+        "DryRun"
+      ],
+      "VerifyMacResponse": [
+        "KeyId",
+        "MacValid",
+        "MacAlgorithm"
       ]
     }
   },
