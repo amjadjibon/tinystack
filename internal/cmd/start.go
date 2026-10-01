@@ -148,6 +148,8 @@ func newStartCommand() *cobra.Command {
 			}
 
 			topics := sns.New(store, queues, functions, deliveries)
+			// Stop ends HTTP deliveries in flight.
+			defer topics.Stop()
 			rules := eventbridge.New(store, queues, topics, functions, deliveries)
 			// Stop ends the scheduler, which writes to the store.
 			defer rules.Stop()
@@ -258,6 +260,7 @@ func newStartCommand() *cobra.Command {
 			}
 
 			server.RegisterOnShutdown(queues.Stop)
+			server.RegisterOnShutdown(topics.Stop)
 			server.RegisterOnShutdown(tables.Stop)
 			server.RegisterOnShutdown(functions.Stop)
 			server.RegisterOnShutdown(rules.Stop)

@@ -174,8 +174,8 @@ func (s *Service) GetSubscriptionAttributes(
 		"Protocol":                     sub.Protocol,
 		"Endpoint":                     sub.Endpoint,
 		attrRaw:                        strconv.FormatBool(sub.Raw),
-		"ConfirmationWasAuthenticated": strconv.FormatBool(true),
-		"PendingConfirmation":          strconv.FormatBool(false),
+		"ConfirmationWasAuthenticated": strconv.FormatBool(!sub.Pending),
+		"PendingConfirmation":          strconv.FormatBool(sub.Pending),
 	}
 	if sub.FilterPolicy != "" {
 		attributes[attrFilterPolicy] = sub.FilterPolicy

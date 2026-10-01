@@ -61,8 +61,8 @@ func (sub *subscription) set(name, v string) error {
 
 // check validates the combination of a subscription's attributes.
 func (sub *subscription) check() error {
-	if sub.Raw && sub.Protocol == protocolLambda {
-		return invalid("Delivery protocol [lambda] does not support raw message delivery.")
+	if sub.Raw && sub.Protocol != protocolSQS && sub.Protocol != protocolHTTP && sub.Protocol != protocolHTTPS {
+		return invalid("Delivery protocol [%s] does not support raw message delivery.", sub.Protocol)
 	}
 
 	if sub.FilterPolicy == "" {

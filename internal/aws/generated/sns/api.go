@@ -52,6 +52,15 @@ type SubscribeResponse struct {
 	SubscriptionArn *string `json:"SubscriptionArn,omitempty" query:"SubscriptionArn"`
 }
 
+type ConfirmSubscriptionInput struct {
+	TopicArn *string `json:"TopicArn,omitempty" query:"TopicArn"`
+	Token    *string `json:"Token,omitempty" query:"Token"`
+}
+
+type ConfirmSubscriptionResponse struct {
+	SubscriptionArn *string `json:"SubscriptionArn,omitempty" query:"SubscriptionArn"`
+}
+
 type UnsubscribeOutput struct{}
 
 type UnsubscribeInput struct {
@@ -164,6 +173,7 @@ type API interface {
 	DeleteTopic(context.Context, *DeleteTopicInput) (*DeleteTopicOutput, error)
 	ListTopics(context.Context, *ListTopicsInput) (*ListTopicsResponse, error)
 	Subscribe(context.Context, *SubscribeInput) (*SubscribeResponse, error)
+	ConfirmSubscription(context.Context, *ConfirmSubscriptionInput) (*ConfirmSubscriptionResponse, error)
 	Unsubscribe(context.Context, *UnsubscribeInput) (*UnsubscribeOutput, error)
 	ListSubscriptions(context.Context, *ListSubscriptionsInput) (*ListSubscriptionsResponse, error)
 	ListSubscriptionsByTopic(context.Context, *ListSubscriptionsByTopicInput) (*ListSubscriptionsByTopicResponse, error)
@@ -189,6 +199,9 @@ func Descriptor(api API) catalog.Service {
 			return api.ListTopics(ctx, input.(*ListTopicsInput))
 		}},
 		"Subscribe": {Name: "Subscribe", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Subscribe", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SubscribeInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Subscribe(ctx, input.(*SubscribeInput)) }},
+		"ConfirmSubscription": {Name: "ConfirmSubscription", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ConfirmSubscription", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ConfirmSubscriptionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ConfirmSubscription(ctx, input.(*ConfirmSubscriptionInput))
+		}},
 		"Unsubscribe": {Name: "Unsubscribe", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Unsubscribe", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UnsubscribeInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.Unsubscribe(ctx, input.(*UnsubscribeInput))
 		}},

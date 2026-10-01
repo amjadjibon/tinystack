@@ -3438,6 +3438,7 @@
       "DeleteTopic",
       "ListTopics",
       "Subscribe",
+      "ConfirmSubscription",
       "Unsubscribe",
       "ListSubscriptions",
       "ListSubscriptionsByTopic",
@@ -3561,6 +3562,13 @@
       ],
       "ListTagsForResourceResponse": [
         "Tags"
+      ],
+      "ConfirmSubscriptionInput": [
+        "TopicArn",
+        "Token"
+      ],
+      "ConfirmSubscriptionResponse": [
+        "SubscriptionArn"
       ]
     }
   },

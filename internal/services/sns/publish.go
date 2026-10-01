@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	maxMessage    = 262144
-	maxSubject    = 100
-	maxAttributes = 10
+	timestampFormat = "2006-01-02T15:04:05.000Z"
+	maxMessage      = 262144
+	maxSubject      = 100
+	maxAttributes   = 10
 )
 
 var attributeName = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,256}$`)
@@ -199,7 +200,7 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		MessageID: id,
 		TopicArn:  arn,
 		Subject:   value(in.Subject),
-		Timestamp: s.now().UTC().Format("2006-01-02T15:04:05.000Z"),
+		Timestamp: s.now().UTC().Format(timestampFormat),
 	}
 
 	for name, a := range in.MessageAttributes {
@@ -217,6 +218,10 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 
 	for i := range subs {
 		sub := &subs[i]
+		if sub.Pending {
+			continue
+		}
+
 		subARN := arn + ":" + sub.ID
 		envelope.Message = textFor(sub.Protocol)
 		accepted, filterErr := sub.accepts(in.MessageAttributes, envelope.Message)
@@ -232,6 +237,14 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		envelope.UnsubscribeURL = m.Endpoint + "/?Action=Unsubscribe&SubscriptionArn=" + url.QueryEscape(subARN)
 		// As in SNS, a failed delivery (such as a deleted queue or function)
 		// does not fail Publish; the delivery log records it.
+		if confirmable(sub.Protocol) {
+			if deliverErr := s.deliverEndpoint(sub, subARN, &envelope); deliverErr != nil {
+				return nil, deliverErr
+			}
+
+			continue
+		}
+
 		if sub.Protocol == protocolLambda {
 			event, encodeErr := json.Marshal(lambdaEvent{Records: []lambdaRecord{{
 				EventSource:          "aws:sns",

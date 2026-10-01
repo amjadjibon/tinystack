@@ -232,6 +232,7 @@ func serverStore(
 		scaling.Stop()
 		secretsService.Stop()
 		rules.Stop()
+		snsService.Stop()
 		sqsService.Stop()
 		functions.Stop()
 		tables.Stop()

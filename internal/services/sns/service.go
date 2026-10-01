@@ -1,6 +1,7 @@
-// Package sns implements standard SNS topics with SQS and Lambda subscriptions,
-// without HTTP dependencies. Deliveries call the SQS and Lambda services
-// in-process.
+// Package sns implements standard SNS topics with SQS, Lambda, HTTP, HTTPS,
+// and email subscriptions. Deliveries call the SQS and Lambda services
+// in-process, post to HTTP endpoints through the shared outbound proxy, and
+// record email in the delivery log.
 package sns
 
 import (
@@ -14,6 +15,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -44,23 +46,52 @@ type Service struct {
 	functions  *lambda.Service
 	deliveries *delivery.Log
 	now        func() time.Time
+	// ctx is the context of HTTP deliveries, which run in the background
+	// until Stop.
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
+// New returns SNS. Call Stop to end HTTP deliveries in flight.
 func New(store storage.Store, queues *sqs.Service, functions *lambda.Service, deliveries *delivery.Log) *Service {
-	return &Service{store: store, queues: queues, functions: functions, deliveries: deliveries, now: time.Now}
+	ctx, cancel := context.WithCancel(context.Background())
+	return &Service{
+		store: store, queues: queues, functions: functions, deliveries: deliveries, now: time.Now, ctx: ctx,
+		cancel: cancel,
+	}
 }
 
-// subscription is a confirmed SQS or Lambda subscription. These endpoints are
-// confirmed immediately, as AWS does for resources in the subscriber's account.
-// FilterPolicyScope is empty for the default, MessageAttributes.
+// Stop cancels HTTP deliveries in flight and waits for them to end.
+func (s *Service) Stop() {
+	s.cancel()
+	s.wg.Wait()
+}
+
+// subscription is a topic's subscription. SQS and Lambda subscriptions are
+// confirmed immediately, as AWS does for resources in the subscriber's
+// account; HTTP, HTTPS, and email ones are Pending until ConfirmSubscription
+// presents their Token. FilterPolicyScope is empty for the default,
+// MessageAttributes.
 type subscription struct {
 	ID                string
 	Protocol          string
 	Endpoint          string
 	Owner             string
+	Token             string `json:",omitempty"`
 	FilterPolicy      string `json:",omitempty"`
 	FilterPolicyScope string `json:",omitempty"`
 	Raw               bool   `json:",omitempty"`
+	Pending           bool   `json:",omitempty"`
+}
+
+// arn is the subscription's ARN as list operations report it.
+func (sub *subscription) arn(topicARN string) string {
+	if sub.Pending {
+		return "PendingConfirmation"
+	}
+
+	return topicARN + ":" + sub.ID
 }
 
 type topic struct {
@@ -111,6 +142,22 @@ func keyARN(key string) string {
 	return "arn:aws:sns:" + parts[1] + ":" + parts[0] + ":" + parts[3]
 }
 
+// parseARN splits a topic ARN, or a subscription ARN when sub is true.
+func parseARN(arn *string, sub bool) ([]string, error) {
+	name, want := attrTopicArn, 6
+	if sub {
+		name, want = "SubscriptionArn", 7
+	}
+
+	parts := strings.Split(value(arn), ":")
+	if len(parts) != want || parts[0] != arnScheme || parts[2] != "sns" || parts[3] == "" ||
+		!accountID.MatchString(parts[4]) || !topicName.MatchString(parts[5]) || (sub && parts[6] == "") {
+		return nil, invalid("%s", name)
+	}
+
+	return parts, nil
+}
+
 // resolve maps a topic ARN, or a subscription ARN when sub is true, to the
 // topic's storage key and the subscription ID. Topics outside the caller's
 // account and region do not exist for the caller.
@@ -120,15 +167,9 @@ func resolve(ctx context.Context, arn *string, sub bool) (key, id string, err er
 		return "", "", err
 	}
 
-	name, want := attrTopicArn, 6
-	if sub {
-		name, want = "SubscriptionArn", 7
-	}
-
-	parts := strings.Split(value(arn), ":")
-	if len(parts) != want || parts[0] != arnScheme || parts[2] != "sns" || parts[3] == "" ||
-		!accountID.MatchString(parts[4]) || !topicName.MatchString(parts[5]) || (sub && parts[6] == "") {
-		return "", "", invalid("%s", name)
+	parts, err := parseARN(arn, sub)
+	if err != nil {
+		return "", "", err
 	}
 
 	if parts[3] != m.Region || parts[4] != m.AccountID {
@@ -140,6 +181,16 @@ func resolve(ctx context.Context, arn *string, sub bool) (key, id string, err er
 	}
 
 	return topicKey(m, parts[5]), id, nil
+}
+
+// topicKeyOf maps a topic ARN to its storage key in any account and region.
+func topicKeyOf(arn *string) (string, error) {
+	parts, err := parseARN(arn, false)
+	if err != nil {
+		return "", err
+	}
+
+	return parts[4] + "/" + parts[3] + "/sns/" + parts[5], nil
 }
 
 func newID() string {
@@ -332,26 +383,15 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 	}
 
 	protocol, endpoint := value(in.Protocol), value(in.Endpoint)
-	parts := strings.Split(endpoint, ":")
-	switch protocol {
-	case protocolSQS:
-		if len(parts) != 6 || parts[0] != arnScheme || parts[2] != protocolSQS || parts[3] == "" || parts[5] == "" {
-			return nil, invalid("SQS endpoint ARN")
-		}
-	case protocolLambda:
-		if len(parts) < 7 || len(parts) > 8 || parts[0] != arnScheme || parts[2] != protocolLambda ||
-			parts[3] == "" || parts[5] != "function" || parts[6] == "" {
-			return nil, invalid("Lambda endpoint ARN")
-		}
-	default:
-		return nil, invalid("Protocol %q is not supported; only sqs and lambda subscriptions are", protocol)
-	}
-	// Cross-account delivery needs a resource policy, which TinyStack does not model.
-	if parts[4] != m.AccountID {
-		return nil, invalid("The endpoint must be in the subscriber's account")
+	if guardErr := checkSubscriber(protocol, endpoint, m.AccountID); guardErr != nil {
+		return nil, guardErr
 	}
 
 	sub := subscription{ID: newID(), Protocol: protocol, Endpoint: endpoint, Owner: m.AccountID}
+	if confirmable(protocol) {
+		sub.Pending, sub.Token = true, newToken()
+	}
+
 	for k, v := range in.Attributes {
 		if guardErr := sub.set(k, v); guardErr != nil {
 			return nil, guardErr
@@ -387,7 +427,49 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 		return nil, err
 	}
 
+	// A pending subscription's confirmation request goes out again each time
+	// it is subscribed.
+	if sub.Pending {
+		if confirmErr := s.requestConfirmation(m.Endpoint, keyARN(key), &sub); confirmErr != nil {
+			return nil, confirmErr
+		}
+
+		if !value(in.ReturnSubscriptionArn) {
+			return &api.SubscribeResponse{SubscriptionArn: new(pendingARN)}, nil
+		}
+	}
+
 	return &api.SubscribeResponse{SubscriptionArn: new(keyARN(key) + ":" + sub.ID)}, nil
+}
+
+// checkSubscriber checks a subscription's protocol and endpoint: SQS queues and
+// Lambda functions in the subscriber's account (cross-account delivery needs a
+// resource policy, which TinyStack does not model), HTTP and HTTPS URLs, and
+// email addresses.
+func checkSubscriber(protocol, endpoint, account string) error {
+	parts := strings.Split(endpoint, ":")
+	switch protocol {
+	case protocolSQS:
+		if len(parts) != 6 || parts[0] != arnScheme || parts[2] != protocolSQS || parts[3] == "" || parts[5] == "" {
+			return invalid("SQS endpoint ARN")
+		}
+	case protocolLambda:
+		if len(parts) < 7 || len(parts) > 8 || parts[0] != arnScheme || parts[2] != protocolLambda ||
+			parts[3] == "" || parts[5] != "function" || parts[6] == "" {
+			return invalid("Lambda endpoint ARN")
+		}
+	case protocolHTTP, protocolHTTPS, protocolEmail, protocolEmailJSON:
+		return checkEndpoint(protocol, endpoint)
+	default:
+		return invalid("Protocol %q is not supported; only sqs, lambda, http, https, email, and email-json "+
+			"subscriptions are", protocol)
+	}
+
+	if parts[4] != account {
+		return invalid("The endpoint must be in the subscriber's account")
+	}
+
+	return nil
 }
 
 func (s *Service) Unsubscribe(ctx context.Context, in *api.UnsubscribeInput) (*api.UnsubscribeOutput, error) {
@@ -431,7 +513,7 @@ func subscriptions(tx storage.ReadTx, keys []string) (map[string]api.Subscriptio
 		arn := keyARN(key)
 		for _, sub := range t.Subscriptions {
 			out[arn+":"+sub.ID] = api.Subscription{
-				SubscriptionArn: new(arn + ":" + sub.ID),
+				SubscriptionArn: new(sub.arn(arn)),
 				Owner:           new(sub.Owner),
 				Protocol:        new(sub.Protocol),
 				Endpoint:        new(sub.Endpoint),
