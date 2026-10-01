@@ -19,3 +19,6 @@ storage:
 ecs:
   # records keeps ECS tasks as records; docker also runs their containers.
   containers: records
+eks:
+  # records keeps EKS clusters as records; k3s also runs their API servers.
+  clusters: records

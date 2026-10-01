@@ -27,6 +27,8 @@ func TestLoad(t *testing.T) {
 		{"bad storage mode", "storage:\n  mode: disk", false},
 		{"docker containers", "ecs:\n  containers: docker", true},
 		{"bad containers", "ecs:\n  containers: podman", false},
+		{"k3s clusters", "eks:\n  clusters: k3s", true},
+		{"bad clusters", "eks:\n  clusters: kind", false},
 		{"port", "server:\n  port: 0", false},
 		{"documents", "{}\n---\n{}", false},
 	} {

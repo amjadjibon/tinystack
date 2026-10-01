@@ -33,6 +33,13 @@ const (
 	ContainersDocker  = "docker"
 )
 
+// EKS cluster modes: records keeps clusters as records only; k3s also runs each
+// cluster's Kubernetes API server in a k3s container.
+const (
+	ClustersRecords = "records"
+	ClustersK3s     = "k3s"
+)
+
 type Config struct {
 	Identity struct {
 		Accounts   map[string]string `yaml:"accounts"`
@@ -50,6 +57,9 @@ type Config struct {
 	ECS struct {
 		Containers string `yaml:"containers"`
 	} `yaml:"ecs"`
+	EKS struct {
+		Clusters string `yaml:"clusters"`
+	} `yaml:"eks"`
 	Server struct {
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
@@ -67,6 +77,7 @@ func Default() Config {
 	c.Identity.Mode = IdentityParse
 	c.Identity.Accounts = map[string]string{}
 	c.ECS.Containers = ContainersRecords
+	c.EKS.Clusters = ClustersRecords
 	return c
 }
 
@@ -146,6 +157,10 @@ func (c *Config) Validate() error {
 
 	if c.ECS.Containers != ContainersRecords && c.ECS.Containers != ContainersDocker {
 		return fmt.Errorf("ecs.containers must be records or docker")
+	}
+
+	if c.EKS.Clusters != ClustersRecords && c.EKS.Clusters != ClustersK3s {
+		return fmt.Errorf("eks.clusters must be records or k3s")
 	}
 
 	return nil
