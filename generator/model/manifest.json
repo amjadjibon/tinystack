@@ -19,6 +19,10 @@
       "path": "codegen/sdk-codegen/aws-models/auto-scaling.json",
       "sha256": "a99be352817555cab17666710b0f383b7ab0157714255a6930da3998369ca217"
     },
+    "cloudformation": {
+      "path": "codegen/sdk-codegen/aws-models/cloudformation.json",
+      "sha256": "79c020de8f73461d5f277d0a868894413cb8ceca4c60ca6887f848fc8b04456f"
+    },
     "cloudwatch": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch.json",
       "sha256": "b1abe105489d574be25364ad5cc4a67f5782f4cc6bcf6439a587625bacc9c62a"
