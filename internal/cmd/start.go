@@ -59,6 +59,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
+	ecsdocker "github.com/amjadjibon/tinystack/internal/services/ecs/docker"
 	"github.com/amjadjibon/tinystack/internal/services/eks"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
@@ -162,6 +163,13 @@ func newStartCommand() *cobra.Command {
 			tokens := sts.New(store, roles)
 			identities := cognitoidp.New(store, deliveries)
 			registry := ecr.New(store)
+			containers := ecs.New(store)
+			if cfg.ECS.Containers == config.ContainersDocker {
+				containers.UseRuntime(ecsdocker.New(), logGroups.Append, logger)
+			}
+
+			// Stop ends the task runner and removes task containers.
+			defer containers.Stop()
 			httpAPIs := apigatewayv2.New(store, functions, logGroups)
 			restAPIs := apigateway.New(store, functions, logGroups, identities)
 			network := ec2.New(store)
@@ -204,7 +212,7 @@ func newStartCommand() *cobra.Command {
 				ec2api.Descriptor(network),
 				cognitoidpapi.Descriptor(identities),
 				ecrapi.Descriptor(registry),
-				ecsapi.Descriptor(ecs.New(store)),
+				ecsapi.Descriptor(containers),
 				eksapi.Descriptor(eks.New(store, network)),
 				apigatewayv2api.Descriptor(httpAPIs),
 				apigatewayapi.Descriptor(restAPIs),
@@ -271,6 +279,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(monitoring.Stop)
 			server.RegisterOnShutdown(timers.Stop)
 			server.RegisterOnShutdown(scaling.Stop)
+			server.RegisterOnShutdown(containers.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)

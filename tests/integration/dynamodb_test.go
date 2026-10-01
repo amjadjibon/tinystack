@@ -172,6 +172,7 @@ func serverStore(
 	timers := schedules.New(store, logger)
 	scaling := scalinggroups.New(store, logger)
 	balancers := loadbalancers.New(store, logger)
+	tasks := orchestration.New(store)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -190,7 +191,7 @@ func serverStore(
 		ec2api.Descriptor(network),
 		cognitoidpapi.Descriptor(userPools),
 		ecrapi.Descriptor(repositories),
-		ecsapi.Descriptor(orchestration.New(store)),
+		ecsapi.Descriptor(tasks),
 		eksapi.Descriptor(kubernetes.New(store, network)),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
@@ -231,6 +232,7 @@ func serverStore(
 		monitoring.Stop()
 		timers.Stop()
 		scaling.Stop()
+		tasks.Stop()
 		secretsService.Stop()
 		rules.Stop()
 		snsService.Stop()
