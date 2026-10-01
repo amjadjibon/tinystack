@@ -240,8 +240,9 @@ func status(v any) (int, bool) {
 	return 0, false
 }
 
-// structured decodes a function's response and applies it.
-func structured(payload []byte) (*execute.Response, bool) {
+// Structured decodes a function's structured response (statusCode, headers,
+// multiValueHeaders, cookies, body, and isBase64Encoded) and applies it.
+func Structured(payload []byte) (*execute.Response, bool) {
 	var r response
 	if json.Unmarshal(payload, &r) != nil {
 		return nil, false
@@ -304,7 +305,7 @@ func ResponseV2(payload []byte, functionError bool) *execute.Response {
 	if len(trimmed) > 0 && trimmed[0] == '{' {
 		var probe map[string]json.RawMessage
 		if json.Unmarshal(trimmed, &probe) == nil && probe["statusCode"] != nil {
-			if out, ok := structured(trimmed); ok {
+			if out, ok := Structured(trimmed); ok {
 				return out
 			}
 
@@ -329,7 +330,7 @@ func ResponseV1(payload []byte, functionError bool, failure int) *execute.Respon
 		return execute.Message(failure, message)
 	}
 
-	if out, ok := structured(payload); ok {
+	if out, ok := Structured(payload); ok {
 		return out
 	}
 

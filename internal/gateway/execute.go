@@ -27,6 +27,41 @@ func (s *Server) UseAPIs(handlers ...execute.Handler) {
 	s.apis = append(s.apis, handlers...)
 }
 
+// elbPath is the path prefix that addresses a load balancer by the first label
+// of its DNS name: /_aws/elb/<label>/..., or /_aws/elb/<label>:<port>/... for
+// the listener on that port.
+const elbPath = "/_aws/elb/"
+
+// UseLoadBalancers serves the load balancers Elastic Load Balancing runs:
+// requests to their DNS names (<label>.<region>.elb.amazonaws.com,
+// <label>.elb.<region>.amazonaws.com, or <label>.elb.localhost:4566), or to
+// /_aws/elb/<label>/... on any host. Call it before serving requests.
+func (s *Server) UseLoadBalancers(handler execute.Handler) {
+	s.balancers = handler
+}
+
+// elbTarget returns the load balancer a request addresses and the path after
+// it, if the request is to one.
+func elbTarget(r *http.Request) (label, path, endpoint string, ok bool) {
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+
+	if sub, rest, found := strings.Cut(host, "."); found && sub != "" &&
+		(strings.HasPrefix(rest, "elb.") || strings.Contains(rest, ".elb.")) {
+		return sub, r.URL.Path, "http://" + r.Host, true
+	}
+
+	rest, found := strings.CutPrefix(r.URL.Path, elbPath)
+	if !found {
+		return "", "", "", false
+	}
+
+	label, path, _ = strings.Cut(rest, "/")
+	return label, "/" + path, "http://" + r.Host + elbPath + label, label != ""
+}
+
 // executeTarget returns the API a request addresses and the path after it,
 // if the request is to an API.
 func executeTarget(r *http.Request) (id, path, endpoint string, ok bool) {
@@ -48,10 +83,17 @@ func executeTarget(r *http.Request) (id, path, endpoint string, ok bool) {
 	return id, "/" + path, "http://" + r.Host + executePath + id, id != ""
 }
 
-// serveAPI runs a request to an API, reporting whether the request was one.
+// serveAPI runs a request to an API or a load balancer, reporting whether the
+// request was one.
 func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	id, path, endpoint, ok := executeTarget(r)
-	if !ok || len(s.apis) == 0 {
+	handlers := s.apis
+	if !ok && s.balancers != nil {
+		id, path, endpoint, ok = elbTarget(r)
+		handlers = []execute.Handler{s.balancers}
+	}
+
+	if !ok || len(handlers) == 0 {
 		return false
 	}
 
@@ -71,7 +113,7 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		RawQuery: r.URL.RawQuery, Host: r.Host, Endpoint: endpoint, SourceIP: sourceIP, Protocol: r.Proto,
 		Body: body,
 	}
-	for _, h := range s.apis {
+	for _, h := range handlers {
 		resp, found, execErr := h.Execute(r.Context(), id, req)
 		if execErr != nil {
 			s.logger.Warn("api request failed", "api", id, "path", path, "error", execErr)

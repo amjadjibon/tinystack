@@ -50,6 +50,7 @@ type Server struct {
 	documents   Documents
 	registry    Registry
 	apis        []execute.Handler
+	balancers   execute.Handler
 	health      []byte
 	cfg         config.Config
 }
