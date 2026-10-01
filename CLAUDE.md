@@ -190,7 +190,8 @@ a per-service `Dialect`), and delivers synchronously through
   names, so a user's groups are found by reading the groups. Users also hold their access key IDs; each key (secret, status, owner) is in the
   partition-wide `aws/iam/access-key/<key ID>`, which `iam.Service.AccessKey` reads. STS
   `AssumeRole` checks the role's trust policy (`sts/trust.go`, a documented subset) through `iam.Service.RoleByARN`
-  and stores each session under the partition-wide `aws/sts/session/<access key>`; `sts.Service.Credentials` (the
+  and stores each session under the partition-wide `aws/sts/session/<access key>` (where `GetSessionToken` also stores
+  sessions that act as the calling user, with no role); `sts.Service.Credentials` (the
   gateway's credential lookup) resolves those sessions and then active IAM access keys, and `GetCallerIdentity`
   reports the session, the IAM user, or the gateway-resolved account's root user. EC2 keeps each resource under
   `…/ec2/<kind>/<resource ID>` (`resources.go` holds the shared record, ID-selection, and paging helpers); the first

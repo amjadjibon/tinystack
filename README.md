@@ -384,6 +384,7 @@ Policy documents must be JSON objects with a `Statement`.
 | --- | --- |
 | GetCallerIdentity | The caller's account (from `identity.accounts`, or the default account for unmapped keys and unsigned requests) and its root user ARN, the IAM user for an IAM access key, or the role session for temporary credentials |
 | AssumeRole | Temporary credentials for a role in any account (`RoleArn`, `RoleSessionName`, `DurationSeconds` from 900 seconds up to the role's `MaxSessionDuration`, `ExternalId`); a session assuming another role is limited to one hour |
+| GetSessionToken | Temporary credentials that act as the calling IAM user (12 hours by default, 15 minutes to 36 hours) or root user (at most one hour); session credentials cannot ask for another |
 
 AssumeRole checks the role's trust policy: an `Allow` for `sts:AssumeRole` (wildcards
 allowed) whose `AWS` principal is `*`, the caller's account ID or root ARN, the
@@ -1012,7 +1013,7 @@ query logging, DNSSEC signing, CIDR collections, or geoproximity records. ACM li
 CloudWatch limits: no anomaly detection, Metrics Insights queries, metric streams, insight rules, log alarms, EC2 or
 Systems Manager alarm actions, alarm mute rules, or AWS namespaces (services do not publish metrics), and metric math
 supports only the operators and functions listed above.
-STS limits: no `GetSessionToken`, federation, web identity, SAML,
+STS limits: no MFA (`SerialNumber` and `TokenCode`), federation, web identity, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
