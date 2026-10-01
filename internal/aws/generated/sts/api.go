@@ -40,9 +40,18 @@ type GetCallerIdentityResponse struct {
 	Arn     *string `json:"Arn,omitempty" query:"Arn"`
 }
 
+type GetSessionTokenRequest struct {
+	DurationSeconds *int64 `json:"DurationSeconds,omitempty" query:"DurationSeconds"`
+}
+
+type GetSessionTokenResponse struct {
+	Credentials *Credentials `json:"Credentials,omitempty" query:"Credentials"`
+}
+
 type API interface {
 	AssumeRole(context.Context, *AssumeRoleRequest) (*AssumeRoleResponse, error)
 	GetCallerIdentity(context.Context, *GetCallerIdentityRequest) (*GetCallerIdentityResponse, error)
+	GetSessionToken(context.Context, *GetSessionTokenRequest) (*GetSessionTokenResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -52,6 +61,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetCallerIdentity": {Name: "GetCallerIdentity", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetCallerIdentity", Version: "2011-06-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetCallerIdentityRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetCallerIdentity(ctx, input.(*GetCallerIdentityRequest))
+		}},
+		"GetSessionToken": {Name: "GetSessionToken", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetSessionToken", Version: "2011-06-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetSessionTokenRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSessionToken(ctx, input.(*GetSessionTokenRequest))
 		}},
 	}}
 }

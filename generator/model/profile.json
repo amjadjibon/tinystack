@@ -3957,7 +3957,8 @@
   "sts": {
     "operations": [
       "AssumeRole",
-      "GetCallerIdentity"
+      "GetCallerIdentity",
+      "GetSessionToken"
     ],
     "shapes": {
       "AssumeRoleRequest": [
@@ -3985,6 +3986,12 @@
         "UserId",
         "Account",
         "Arn"
+      ],
+      "GetSessionTokenRequest": [
+        "DurationSeconds"
+      ],
+      "GetSessionTokenResponse": [
+        "Credentials"
       ]
     }
   },

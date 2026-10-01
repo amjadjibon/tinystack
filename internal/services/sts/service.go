@@ -1,7 +1,8 @@
 // Package sts implements the AWS Security Token Service without HTTP
 // dependencies. Callers are identified by the account the gateway resolved for
 // their access key: a configured key is that account's root user, an IAM
-// access key is its user, and a key that AssumeRole issued is its role session.
+// access key is its user, a key that AssumeRole issued is its role session,
+// and a key that GetSessionToken issued is the user that asked for it.
 package sts
 
 import (
@@ -32,6 +33,11 @@ const (
 	// chainedDuration caps sessions that a role session assumes.
 	chainedDuration = 3600
 	maxDuration     = 43200
+	// Session tokens last 12 hours by default and at most 36, or one hour for
+	// the root user.
+	userTokenDuration = 43200
+	maxTokenDuration  = 129600
+	rootTokenDuration = 3600
 )
 
 var (
@@ -52,20 +58,37 @@ func New(store storage.Store, roles *iam.Service) *Service {
 	return &Service{store: store, roles: roles, now: time.Now}
 }
 
-// session is a stored AssumeRole result.
+// session is a stored AssumeRole or GetSessionToken result: a role session,
+// or else the user's.
 type session struct {
 	AccountID string
 	Secret    string
 	Token     string
-	RoleARN   string
-	RoleName  string
-	RoleID    string
-	Name      string
-	Expires   int64 // Unix seconds
+	RoleARN   string `json:",omitempty"`
+	RoleName  string `json:",omitempty"`
+	RoleID    string `json:",omitempty"`
+	Name      string `json:",omitempty"`
+	UserARN   string `json:",omitempty"`
+	UserID    string `json:",omitempty"`
+	Expires   int64  // Unix seconds
 }
 
+func (s *session) role() bool { return s.RoleARN != "" }
+
 func (s *session) arn() string {
+	if !s.role() {
+		return s.UserARN
+	}
+
 	return "arn:aws:sts::" + s.AccountID + ":assumed-role/" + s.RoleName + "/" + s.Name
+}
+
+func (s *session) id() string {
+	if !s.role() {
+		return s.UserID
+	}
+
+	return s.RoleID + ":" + s.Name
 }
 
 func identity(ctx context.Context) (request.Metadata, error) {
@@ -183,7 +206,7 @@ func (s *Service) GetCallerIdentity(
 			return lookupErr
 		}
 
-		out.UserId = new(current.RoleID + ":" + current.Name)
+		out.UserId = new(current.id())
 		out.Arn = new(current.arn())
 		return nil
 	})
@@ -216,15 +239,18 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 	now := s.now()
 	var out *api.AssumeRoleResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		current, chained, lookupErr := callerSession(tx, &m)
+		current, inSession, lookupErr := callerSession(tx, &m)
 		if lookupErr != nil {
 			return lookupErr
 		}
 
+		chained := inSession && current.role()
 		c := caller{account: m.AccountID, arns: []string{rootARN(m.AccountID)}}
 		switch {
 		case chained:
 			c.arns = append(c.arns, current.RoleARN, current.arn())
+		case inSession && current.UserARN != rootARN(m.AccountID):
+			c.arns = append(c.arns, current.UserARN)
 		case isUser:
 			c.arns = append(c.arns, key.UserARN)
 		}
@@ -238,37 +264,19 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 			return durationErr
 		}
 
-		if pruneErr := prune(tx, now); pruneErr != nil {
-			return pruneErr
-		}
-
 		issued := &session{
-			AccountID: role.Account,
-			Secret:    base64.StdEncoding.EncodeToString(random(30)),
-			Token:     base64.StdEncoding.EncodeToString(random(96)),
-			RoleARN:   role.ARN,
-			RoleName:  role.Name,
-			RoleID:    role.ID,
-			Name:      *in.RoleSessionName,
-			Expires:   now.Add(duration).Unix(),
+			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID,
+			Name: *in.RoleSessionName, Expires: now.Add(duration).Unix(),
 		}
-		accessKey := "ASIA" + base32.StdEncoding.EncodeToString(random(10))
-		// #nosec G117 -- the gateway verifies the session's signatures with its stored secret.
-		data, marshalErr := json.Marshal(issued)
-		if marshalErr != nil {
-			return marshalErr
+		credentials, issueErr := issue(tx, issued, now)
+		if issueErr != nil {
+			return issueErr
 		}
 
-		tx.Put(sessionPrefix+accessKey, data)
 		out = &api.AssumeRoleResponse{
-			Credentials: &api.Credentials{
-				AccessKeyId:     new(accessKey),
-				SecretAccessKey: new(issued.Secret),
-				SessionToken:    new(issued.Token),
-				Expiration:      new(time.Unix(issued.Expires, 0).UTC()),
-			},
+			Credentials: credentials,
 			AssumedRoleUser: &api.AssumedRoleUser{
-				AssumedRoleId: new(issued.RoleID + ":" + issued.Name),
+				AssumedRoleId: new(issued.id()),
 				Arn:           new(issued.arn()),
 			},
 		}
@@ -277,6 +285,93 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 	})
 
 	return out, err
+}
+
+// GetSessionToken issues temporary credentials that act as the caller: an
+// IAM user or the account's root user.
+func (s *Service) GetSessionToken(
+	ctx context.Context,
+	in *api.GetSessionTokenRequest,
+) (*api.GetSessionTokenResponse, error) {
+	m, err := identity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	key, isUser, err := s.callerUser(ctx, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	issued := &session{AccountID: m.AccountID, UserARN: rootARN(m.AccountID), UserID: m.AccountID}
+	seconds, limit := int64(rootTokenDuration), int64(rootTokenDuration)
+	if isUser {
+		issued.UserARN, issued.UserID = key.UserARN, key.UserID
+		seconds, limit = userTokenDuration, maxTokenDuration
+	}
+
+	if in.DurationSeconds != nil {
+		seconds = *in.DurationSeconds
+	}
+
+	switch {
+	case seconds < minDuration || seconds > maxTokenDuration:
+		return nil, validation("1 validation error detected: Value at 'durationSeconds' failed to satisfy "+
+			"constraint: Member must have value between %d and %d", minDuration, maxTokenDuration)
+	case seconds > limit:
+		seconds = limit
+	}
+
+	now := s.now()
+	var out *api.GetSessionTokenResponse
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		_, inSession, lookupErr := callerSession(tx, &m)
+		switch {
+		case lookupErr != nil:
+			return lookupErr
+		case inSession:
+			return &awserror.Error{
+				Code: "AccessDenied", Message: "Cannot call GetSessionToken with session credentials",
+				StatusCode: http.StatusForbidden,
+			}
+		}
+
+		issued.Expires = now.Add(time.Duration(seconds) * time.Second).Unix()
+		credentials, issueErr := issue(tx, issued, now)
+		if issueErr != nil {
+			return issueErr
+		}
+
+		out = &api.GetSessionTokenResponse{Credentials: credentials}
+		return nil
+	})
+
+	return out, err
+}
+
+// issue stores a new session under a new access key, removing expired ones,
+// and returns its credentials.
+func issue(tx storage.WriteTx, issued *session, now time.Time) (*api.Credentials, error) {
+	if err := prune(tx, now); err != nil {
+		return nil, err
+	}
+
+	issued.Secret = base64.StdEncoding.EncodeToString(random(30))
+	issued.Token = base64.StdEncoding.EncodeToString(random(96))
+	accessKey := "ASIA" + base32.StdEncoding.EncodeToString(random(10))
+	// #nosec G117 -- the gateway verifies the session's signatures with its stored secret.
+	data, err := json.Marshal(issued)
+	if err != nil {
+		return nil, err
+	}
+
+	tx.Put(sessionPrefix+accessKey, data)
+	return &api.Credentials{
+		AccessKeyId:     new(accessKey),
+		SecretAccessKey: new(issued.Secret),
+		SessionToken:    new(issued.Token),
+		Expiration:      new(time.Unix(issued.Expires, 0).UTC()),
+	}, nil
 }
 
 func value(p *string) string {
