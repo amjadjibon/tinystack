@@ -103,6 +103,111 @@ func init() {
 			return err
 		},
 	})
+	register("AWS::Lambda::Version", &resourceType{
+		properties: []string{memberFunctionName, memberDescription, "CodeSha256"},
+		attributes: []string{"Version", "FunctionArn"},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			out, err := c.call(ctx, "lambda", "PublishVersion",
+				pick(map[string]any{}, p, memberFunctionName, memberDescription, "CodeSha256"))
+			if err != nil {
+				return "", nil, err
+			}
+
+			arn := outText(out, "FunctionArn")
+			return arn, map[string]any{"Version": outText(out, "Version"), "FunctionArn": arn}, nil
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "lambda", "DeleteFunction", map[string]any{
+				memberFunctionName: props(r.Properties).str(memberFunctionName),
+				"Qualifier":        outText(r.Attributes, "Version"),
+			})
+			if gone(err, "ResourceNotFoundException") {
+				return nil
+			}
+
+			return err
+		},
+	})
+	register("AWS::Lambda::Alias", &resourceType{
+		properties: []string{
+			memberFunctionName,
+			memberName,
+			memberFunctionVersion,
+			memberDescription,
+			memberRoutingConfig,
+		},
+		attributes: []string{"AliasArn"},
+		replace:    []string{memberFunctionName, memberName},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			params, err := aliasInput(p)
+			if err != nil {
+				return "", nil, err
+			}
+
+			out, err := c.call(ctx, "lambda", "CreateAlias", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			arn := outText(out, "AliasArn")
+			return arn, map[string]any{"AliasArn": arn}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			params, err := aliasInput(p)
+			if err != nil {
+				return nil, err
+			}
+
+			if !p.has(memberDescription) {
+				params[memberDescription] = ""
+			}
+
+			if !p.has(memberRoutingConfig) {
+				params[memberRoutingConfig] = map[string]any{memberAdditionalVersionWeights: map[string]any{}}
+			}
+
+			_, err = c.call(ctx, "lambda", "UpdateAlias", params)
+			return r.Attributes, err
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			p := props(r.Properties)
+			_, err := c.call(ctx, "lambda", "DeleteAlias", map[string]any{
+				memberFunctionName: p.str(memberFunctionName), memberName: p.str(memberName),
+			})
+			if gone(err, "ResourceNotFoundException") {
+				return nil
+			}
+
+			return err
+		},
+	})
+}
+
+// aliasInput renders an alias's properties as CreateAlias's input:
+// RoutingConfig's list of version weights becomes Lambda's map.
+func aliasInput(p props) (map[string]any, error) {
+	params := pick(map[string]any{}, p, memberFunctionName, memberName, memberFunctionVersion, memberDescription)
+	routing, ok := p[memberRoutingConfig].(map[string]any)
+	if !ok {
+		return params, nil
+	}
+
+	weights := map[string]any{}
+	for k, v := range routing {
+		if k != memberAdditionalVersionWeights {
+			return nil, validation("TinyStack does not support the %s property of RoutingConfig", k)
+		}
+
+		list, _ := v.([]any)
+		for _, el := range list {
+			m, _ := el.(map[string]any)
+			w := props(m)
+			weights[w.str(memberFunctionVersion)] = w["FunctionWeight"]
+		}
+	}
+
+	params[memberRoutingConfig] = map[string]any{memberAdditionalVersionWeights: weights}
+	return params, nil
 }
 
 // code renders a function's Code property as Lambda's: inline ZipFile source

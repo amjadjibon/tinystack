@@ -64,6 +64,41 @@ const (
 	memberTopicName                 = "TopicName"
 	memberTopicArn                  = "TopicArn"
 	memberValue                     = "Value"
+	memberCidrIP                    = "CidrIp"
+	memberCidrIPv6                  = "CidrIpv6"
+	memberIPProtocol                = "IpProtocol"
+	memberCidrBlock                 = "CidrBlock"
+	memberVpcID                     = "VpcId"
+	memberAvailabilityZone          = "AvailabilityZone"
+	memberGroupName                 = "GroupName"
+	memberGroupID                   = "GroupId"
+	memberCluster                   = "Cluster"
+	memberClusterName               = "ClusterName"
+	memberRepositoryName            = "RepositoryName"
+	memberStreamName                = "StreamName"
+	memberStateMachineArn           = "StateMachineArn"
+	memberPolicyDocument            = "PolicyDocument"
+	memberPolicyArn                 = "PolicyArn"
+	memberFunctionVersion           = "FunctionVersion"
+	memberRoutingConfig             = "RoutingConfig"
+	memberResourceARN               = "ResourceARN"
+	memberDefinition                = "Definition"
+	memberLoggingConfiguration      = "LoggingConfiguration"
+	memberTracingConfiguration      = "TracingConfiguration"
+	memberRoleArn                   = "RoleArn"
+	memberServiceName               = "ServiceName"
+	memberPath                      = "Path"
+	memberDefaultVersionID          = "DefaultVersionId"
+	memberAdditionalVersionWeights  = "AdditionalVersionWeights"
+	memberSubnetID                  = "SubnetId"
+	memberAlarmName                 = "AlarmName"
+	keyResources                    = "Resources"
+	propertyRoles                   = "Roles"
+	propertyUsers                   = "Users"
+	propertyGroups                  = "Groups"
+	propertyManagedPolicyName       = "ManagedPolicyName"
+	propertyStateMachineName        = "StateMachineName"
+	memberPolicyID                  = "PolicyId"
 )
 
 // resourceType implements a CloudFormation resource type with the operations
@@ -106,6 +141,13 @@ func (t *resourceType) replaces(old, p props) bool {
 	}
 
 	return false
+}
+
+// createsFirst reports whether going from old to p creates the replacement
+// before deleting the old resource, as CloudFormation does. A replacement
+// with the old resource's name cannot exist beside it, so it is deleted first.
+func (t *resourceType) createsFirst(old, p props) bool {
+	return t.name == "" || p.str(t.name) == "" || p.str(t.name) != old.str(t.name)
 }
 
 // client calls other services for one stack resource.

@@ -22,6 +22,11 @@ const (
 	stepCreate  = "create"
 	stepUpdate  = "update"
 	stepReplace = "replace"
+	// stepSwap creates a resource's replacement; the old one is deleted
+	// during cleanup.
+	stepSwap = "swap"
+	// stepDiscard deletes a resource an update replaced.
+	stepDiscard = "discard"
 	stepRemove  = "remove"
 	// stepRetain leaves a resource out of the stack without deleting it.
 	stepRetain = "retain"
@@ -257,6 +262,9 @@ func (s *Service) planApply(tx storage.ReadTx, scope request.Scope, st *stack) s
 			continue
 		case types[decl.Type].replaces(r.Properties, p):
 			next.kind = stepReplace
+			if types[decl.Type].createsFirst(r.Properties, p) {
+				next.kind = stepSwap
+			}
 		default:
 			next.kind = stepUpdate
 		}
@@ -277,6 +285,11 @@ func (s *Service) planApply(tx storage.ReadTx, scope request.Scope, st *stack) s
 // planRemove finds a resource to delete that no remaining resource depends
 // on: during cleanup, one the template no longer has; otherwise, any.
 func (s *Service) planRemove(tx storage.ReadTx, scope request.Scope, st *stack) step {
+	if len(st.Replaced) > 0 {
+		old := st.Replaced[0]
+		return step{kind: stepDiscard, logical: old.Logical, typ: old.Resource.Type}
+	}
+
 	keep := map[string]bool{}
 	if st.Op.Phase == phaseCleanup {
 		keep = kept(tx, scope, st)
@@ -362,8 +375,10 @@ func (s *Service) perform(
 	c := &client{caller: s.caller, scope: scope, endpoint: st.Endpoint, stack: st.Name, logical: next.logical}
 	r := st.Resources[next.logical]
 	switch next.kind {
-	case stepCreate:
+	case stepCreate, stepSwap:
 		return types[next.typ].create(s.ctx, c, next.props)
+	case stepDiscard:
+		return "", nil, types[next.typ].remove(s.ctx, c, st.Replaced[0].Resource)
 	case stepUpdate:
 		attributes, err := types[next.typ].update(s.ctx, c, r, next.props)
 		return r.Physical, attributes, err
@@ -394,6 +409,11 @@ const (
 
 // start records that a step is starting.
 func (s *Service) start(tx storage.WriteTx, scope request.Scope, st *stack, next *step) error {
+	if next.kind == stepDiscard {
+		old := st.Replaced[0].Resource
+		return s.event(tx, scope, st, next.logical, old.Physical, old.Type, statusDeleteInProgress, "", nil)
+	}
+
 	r := st.Resources[next.logical]
 	status, reason := statusUpdateInProgress, ""
 	switch next.kind {
@@ -403,7 +423,7 @@ func (s *Service) start(tx storage.WriteTx, scope request.Scope, st *stack, next
 			r = &resource{Type: next.typ}
 			st.Resources[next.logical] = r
 		}
-	case stepReplace:
+	case stepReplace, stepSwap:
 		reason = "Requested update requires the creation of a new physical resource; hence creating one."
 	case stepRemove:
 		status = statusDeleteInProgress
@@ -418,6 +438,10 @@ func (s *Service) record(
 	tx storage.WriteTx, scope request.Scope, st *stack, next *step, physical string, attributes map[string]any,
 	failure error,
 ) error {
+	if next.kind == stepDiscard {
+		return s.discarded(tx, scope, st, failure)
+	}
+
 	r := st.Resources[next.logical]
 	if r == nil {
 		return nil
@@ -439,10 +463,15 @@ func (s *Service) record(
 
 	now := s.now()
 	switch next.kind {
-	case stepCreate, stepUpdate:
+	case stepCreate, stepUpdate, stepSwap:
 		status := statusCreateComplete
-		if next.kind == stepUpdate {
+		if next.kind != stepCreate {
 			status = statusUpdateComplete
+		}
+
+		if next.kind == stepSwap && physical != r.Physical && next.decl.UpdateReplacePolicy != policyRetain {
+			old := *r
+			st.Replaced = append(st.Replaced, &replaced{Logical: next.logical, Resource: &old})
 		}
 
 		r.Type, r.Physical, r.Status, r.Reason, r.Updated = next.typ, physical, status, "", now
@@ -457,6 +486,31 @@ func (s *Service) record(
 		delete(st.Resources, next.logical)
 		return s.event(tx, scope, st, next.logical, r.Physical, r.Type, statusDeleteComplete, "", nil)
 	}
+}
+
+// discarded records the deletion of the first resource an update replaced.
+// A failure fails a stack's deletion; during cleanup, the resource is left
+// behind, as with the resources the template no longer has.
+func (s *Service) discarded(tx storage.WriteTx, scope request.Scope, st *stack, failure error) error {
+	old := st.Replaced[0]
+	if failure != nil && st.Op.Phase == phaseRemove {
+		reason := failureReason(failure)
+		if err := s.event(
+			tx, scope, st, old.Logical, old.Resource.Physical, old.Resource.Type, statusDeleteFailed, reason, nil,
+		); err != nil {
+			return err
+		}
+
+		return s.fail(tx, scope, st, old.Logical, reason)
+	}
+
+	st.Replaced = st.Replaced[1:]
+	status, reason := statusDeleteComplete, ""
+	if failure != nil {
+		status, reason = statusDeleteFailed, failureReason(failure)
+	}
+
+	return s.event(tx, scope, st, old.Logical, old.Resource.Physical, old.Resource.Type, status, reason, nil)
 }
 
 // failureReason describes why a service call failed: its error code and

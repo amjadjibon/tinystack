@@ -15,7 +15,7 @@ func init() {
 		name: memberRoleName,
 		properties: []string{
 			memberRoleName,
-			"Path",
+			memberPath,
 			"AssumeRolePolicyDocument",
 			memberDescription,
 			"MaxSessionDuration",
@@ -24,7 +24,7 @@ func init() {
 			memberTags,
 		},
 		attributes: []string{memberArn, "RoleId"},
-		replace:    []string{memberRoleName, "Path"},
+		replace:    []string{memberRoleName, memberPath},
 		iam:        true,
 		create:     createRole,
 		update:     updateRole,
@@ -104,7 +104,7 @@ func init() {
 
 func createRole(ctx context.Context, c *client, p props) (physical string, attributes map[string]any, err error) {
 	name := c.nameOf(p, memberRoleName, 64)
-	params := pick(map[string]any{memberRoleName: name}, p, "Path", memberDescription, "MaxSessionDuration")
+	params := pick(map[string]any{memberRoleName: name}, p, memberPath, memberDescription, "MaxSessionDuration")
 	params["AssumeRolePolicyDocument"] = p.document("AssumeRolePolicyDocument")
 	if tags := p.tags(); len(tags) > 0 {
 		params[memberTags] = tagList(tags, memberKey, memberValue)

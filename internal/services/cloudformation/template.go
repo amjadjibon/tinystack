@@ -72,7 +72,7 @@ type outputDecl struct {
 var (
 	sections = []string{
 		"AWSTemplateFormatVersion", memberDescription, "Metadata", "Parameters", "Mappings", "Conditions",
-		"Transform", "Resources", "Outputs",
+		"Transform", keyResources, "Outputs",
 	}
 	resourceAttributes = []string{
 		memberType, "Properties", "DependsOn", keyCondition, "DeletionPolicy", "UpdateReplacePolicy", "Metadata",
@@ -290,7 +290,7 @@ func parse(body string) (*template, error) {
 		return nil, err
 	}
 
-	err = t.parseResources(doc["Resources"])
+	err = t.parseResources(doc[keyResources])
 	if err != nil {
 		return nil, err
 	}
@@ -907,27 +907,34 @@ func (t *template) sort() error {
 
 // capabilities returns the capabilities a template needs and why.
 func (t *template) capabilities() (required []string, reason string) {
-	iam, named := false, false
+	named := false
+	var iam []string
 	for _, r := range t.Resources {
 		typ := types[r.Type]
 		if !typ.iam {
 			continue
 		}
 
-		iam = true
+		if !slices.Contains(iam, r.Type) {
+			iam = append(iam, r.Type)
+		}
+
 		if typ.name != "" && r.Properties[typ.name] != nil {
 			named = true
 		}
 	}
 
-	switch {
-	case named:
-		return []string{"CAPABILITY_NAMED_IAM"}, "The following resource(s) require capabilities: [AWS::IAM::Role]"
-	case iam:
-		return []string{capabilityIAM}, "The following resource(s) require capabilities: [AWS::IAM::Role]"
-	default:
+	if len(iam) == 0 {
 		return nil, ""
 	}
+
+	slices.Sort(iam)
+	reason = "The following resource(s) require capabilities: [" + strings.Join(iam, ", ") + "]"
+	if named {
+		return []string{"CAPABILITY_NAMED_IAM"}, reason
+	}
+
+	return []string{capabilityIAM}, reason
 }
 
 // requireCapabilities checks that given acknowledges what t needs.

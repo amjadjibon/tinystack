@@ -127,6 +127,9 @@ type stack struct {
 	Tags         []tag
 	Capabilities []string
 	Outputs      []output
+	// Replaced are the resources updates replaced, which the next cleanup
+	// or the stack's deletion deletes.
+	Replaced []*replaced `json:",omitempty"`
 	// Imports are the exports the stack's template imports.
 	Imports         []string
 	Timeout         int64 `json:",omitempty"`
@@ -187,6 +190,12 @@ type resource struct {
 	Policy string `json:",omitempty"`
 	// Deps are the resources it depends on, which are deleted after it.
 	Deps []string `json:",omitempty"`
+}
+
+// replaced is a resource an update replaced.
+type replaced struct {
+	Resource *resource
+	Logical  string
 }
 
 type parameter struct {
