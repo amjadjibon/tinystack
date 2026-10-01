@@ -1,12 +1,15 @@
 // Package eks implements the Amazon EKS control plane API without HTTP
-// dependencies. No Kubernetes API server runs: clusters, node groups, Fargate
-// profiles, and add-ons settle in ACTIVE at once, and every update succeeds
-// when it is made. Resources belong to an account and region:
+// dependencies. Without a Runtime no Kubernetes API server runs: clusters, node
+// groups, Fargate profiles, and add-ons settle in ACTIVE at once, and every
+// update succeeds when it is made. With one (UseRuntime), clusters start
+// CREATING and a runner starts their API servers (runtime.go), which the
+// gateway serves through APIServer. Resources belong to an account and region:
 //
 //	<scope>/eks/cluster/<name>
 //	<scope>/eks/<kind>/<cluster>/<name>   (nodegroup, fargate, addon, pod-identity by ID)
 //	<scope>/eks/access/<cluster>/<path-escaped principal ARN>
 //	<scope>/eks/update/<cluster>/<update ID>
+//	aws/eks/index/<endpoint ID>          (clusters the runner owns)
 //
 // Subnets and security groups are EC2's, checked through ec2.Service.Place.
 package eks
@@ -50,6 +53,8 @@ type Service struct {
 	// network places clusters and node groups in EC2's subnets.
 	network *ec2.Service
 	now     func() time.Time
+	// runner runs API servers once UseRuntime is called.
+	runner *runner
 }
 
 func New(store storage.Store, network *ec2.Service) *Service {

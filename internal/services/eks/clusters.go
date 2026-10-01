@@ -63,18 +63,20 @@ type cluster struct {
 	Network api.KubernetesNetworkConfigResponse
 	Tags    map[string]string
 	// ZonalShift is reported only once it is configured.
-	ZonalShift         *bool
-	Status             string
-	Authority          string
-	Version            string
-	RoleArn            string
-	Name               string
-	Token              string
-	Endpoint           string
-	ID                 string
-	AuthMode           string
-	Support            string
-	Vpc                api.VpcConfigResponse
+	ZonalShift *bool
+	Status     string
+	Authority  string
+	Version    string
+	RoleArn    string
+	Name       string
+	Token      string
+	Endpoint   string
+	ID         string
+	AuthMode   string
+	Support    string
+	Vpc        api.VpcConfigResponse
+	// Server is the API server the runner started, if any.
+	Server             *Server `json:",omitempty"`
 	Logging            []string
 	Encryption         []api.EncryptionConfig
 	Bootstrap          bool
@@ -235,6 +237,10 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 			return nil
 		case ok:
 			return inUse("Cluster already exists with name: %s", c.Name)
+		}
+
+		if serveErr := s.serve(tx, scope, c); serveErr != nil {
+			return serveErr
 		}
 
 		// The cluster's creator gets an admin access entry.
@@ -695,6 +701,10 @@ func (s *Service) UpdateClusterVersion(
 		c, loadErr := loadCluster(tx, scope, in.Name)
 		if loadErr != nil {
 			return loadErr
+		}
+
+		if s.runner != nil {
+			return invalidRequest("The Kubernetes API servers TinyStack runs keep the version they started with.")
 		}
 
 		if to := versionIndex(value(in.Version)); to < 0 || to != versionIndex(c.Version)+1 {
