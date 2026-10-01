@@ -28,6 +28,7 @@ provider "aws" {
     ecr            = var.endpoint
     ecs            = var.endpoint
     eks            = var.endpoint
+    elbv2          = var.endpoint
     eventbridge    = var.endpoint
     firehose       = var.endpoint
     iam            = var.endpoint
@@ -1251,4 +1252,64 @@ resource "aws_autoscaling_schedule" "night" {
   min_size               = 1
   max_size               = 3
   desired_capacity       = 1
+}
+
+resource "aws_lb" "web" {
+  name               = "web"
+  load_balancer_type = "application"
+  subnets            = slice(data.aws_subnets.default.ids, 0, 2)
+  tags               = local.tags
+}
+
+resource "aws_lb_target_group" "web" {
+  name        = "web"
+  port        = 80
+  protocol    = "HTTP"
+  target_type = "ip"
+  vpc_id      = aws_lb.web.vpc_id
+  tags        = local.tags
+
+  health_check {
+    path = "/health"
+  }
+}
+
+resource "aws_lb_target_group_attachment" "web" {
+  target_group_arn = aws_lb_target_group.web.arn
+  target_id        = "172.31.0.10"
+  port             = 80
+}
+
+resource "aws_lb_listener" "web" {
+  load_balancer_arn = aws_lb.web.arn
+  port              = 80
+  protocol          = "HTTP"
+  tags              = local.tags
+
+  default_action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/plain"
+      message_body = var.team
+      status_code  = "404"
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.web.arn
+  priority     = 10
+  tags         = local.tags
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.web.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/*"]
+    }
+  }
 }
