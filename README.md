@@ -919,6 +919,7 @@ Subnets and security groups must exist in EC2, in one VPC.
 | CreateAccessEntry / DescribeAccessEntry / ListAccessEntries / UpdateAccessEntry / DeleteAccessEntry | For clusters in `API` or `API_AND_CONFIG_MAP` mode; entry types, Kubernetes groups, and EKS's default user names |
 | AssociateAccessPolicy / DisassociateAccessPolicy / ListAssociatedAccessPolicies / ListAccessPolicies | EKS's five access policies with cluster or namespace scope, stored but never evaluated |
 | CreatePodIdentityAssociation / DescribePodIdentityAssociation / ListPodIdentityAssociations / UpdatePodIdentityAssociation / DeletePodIdentityAssociation | One per service account, with target roles and external IDs |
+| AssociateIdentityProviderConfig / DescribeIdentityProviderConfig / ListIdentityProviderConfigs / DisassociateIdentityProviderConfig | One OIDC identity provider per cluster (an `https` issuer, client ID, claims and prefixes, and required claims), `ACTIVE` at once, recorded as updates, with tags |
 | TagResource / UntagResource / ListTagsForResource | Every resource above by ARN |
 
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
@@ -985,7 +986,7 @@ mutability exclusions, registry policies, or layer garbage collection (a deleted
 repository is deleted). ECS limits: no containers run (so no logs, exit codes, or health checks), no container
 instances, load balancers, service discovery, Service Connect, placement constraints or strategies, custom
 capacity providers, task sets, `DAEMON` tasks, account settings, or execute command. EKS limits: no
-Kubernetes API server, Auto Mode, Outposts, hybrid nodes, identity provider configurations, capabilities,
+Kubernetes API server, Auto Mode, Outposts, hybrid nodes, capabilities,
 insights, EKS Anywhere, add-on pod identity associations, cluster security group, log delivery to CloudWatch
 Logs, or IAM role checks. API Gateway limits: no WebSocket APIs, custom domain names, VPC links, API keys and usage plans,
 models and request validation, `AWS` and `HTTP` (non-proxy) integrations or other AWS service integrations,

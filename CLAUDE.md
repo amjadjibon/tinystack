@@ -225,7 +225,7 @@ a per-service `Dialect`), and delivers synchronously through
   container runs: `services.go` `reconcile` starts and stops task records so a service's primary deployment has its
   desired count, deleted clusters and services stay `INACTIVE`, and stopped tasks are purged after an hour.
   EKS keeps clusters under `…/eks/cluster/<name>` and what a cluster owns under `…/eks/<kind>/<cluster>/…` (node
-  groups, Fargate profiles, add-ons, pod identity associations by ID, access entries by path-escaped principal ARN,
+  groups, Fargate profiles, add-ons, pod identity associations by ID, OIDC identity provider configs by name, access entries by path-escaped principal ARN,
   and updates, which always succeed at once and are recorded for `DescribeUpdate`). It holds the `*ec2.Service` and
   calls `ec2.Service.Place` outside its own transactions to check subnets and security groups and learn their VPC.
   API Gateway serves the APIs it manages at the execute-api endpoint: `gateway/execute.go` (`Server.UseAPIs`)
