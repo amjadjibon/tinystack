@@ -8091,5 +8091,503 @@
         "CapacityDistributionStrategy"
       ]
     }
+  },
+  "elbv2": {
+    "operations": [
+      "CreateLoadBalancer",
+      "DescribeLoadBalancers",
+      "DeleteLoadBalancer",
+      "DescribeLoadBalancerAttributes",
+      "ModifyLoadBalancerAttributes",
+      "SetSecurityGroups",
+      "SetSubnets",
+      "CreateTargetGroup",
+      "DescribeTargetGroups",
+      "ModifyTargetGroup",
+      "DeleteTargetGroup",
+      "DescribeTargetGroupAttributes",
+      "ModifyTargetGroupAttributes",
+      "RegisterTargets",
+      "DeregisterTargets",
+      "DescribeTargetHealth",
+      "CreateListener",
+      "DescribeListeners",
+      "ModifyListener",
+      "DeleteListener",
+      "DescribeListenerAttributes",
+      "ModifyListenerAttributes",
+      "AddListenerCertificates",
+      "DescribeListenerCertificates",
+      "RemoveListenerCertificates",
+      "CreateRule",
+      "DescribeRules",
+      "ModifyRule",
+      "DeleteRule",
+      "SetRulePriorities",
+      "AddTags",
+      "RemoveTags",
+      "DescribeTags",
+      "DescribeSSLPolicies"
+    ],
+    "shapes": {
+      "CreateLoadBalancerInput": [
+        "Name",
+        "Subnets",
+        "SubnetMappings",
+        "SecurityGroups",
+        "Scheme",
+        "Tags",
+        "Type",
+        "IpAddressType"
+      ],
+      "CreateLoadBalancerOutput": [
+        "LoadBalancers"
+      ],
+      "LoadBalancer": [
+        "LoadBalancerArn",
+        "DNSName",
+        "CanonicalHostedZoneId",
+        "CreatedTime",
+        "LoadBalancerName",
+        "Scheme",
+        "VpcId",
+        "State",
+        "Type",
+        "AvailabilityZones",
+        "SecurityGroups",
+        "IpAddressType"
+      ],
+      "LoadBalancerState": [
+        "Code",
+        "Reason"
+      ],
+      "AvailabilityZone": [
+        "ZoneName",
+        "SubnetId",
+        "LoadBalancerAddresses"
+      ],
+      "LoadBalancerAddress": [
+        "IpAddress",
+        "PrivateIPv4Address"
+      ],
+      "SubnetMapping": [
+        "SubnetId"
+      ],
+      "DescribeLoadBalancersInput": [
+        "LoadBalancerArns",
+        "Names",
+        "Marker",
+        "PageSize"
+      ],
+      "DescribeLoadBalancersOutput": [
+        "LoadBalancers",
+        "NextMarker"
+      ],
+      "DeleteLoadBalancerInput": [
+        "LoadBalancerArn"
+      ],
+      "DescribeLoadBalancerAttributesInput": [
+        "LoadBalancerArn"
+      ],
+      "DescribeLoadBalancerAttributesOutput": [
+        "Attributes"
+      ],
+      "ModifyLoadBalancerAttributesInput": [
+        "LoadBalancerArn",
+        "Attributes"
+      ],
+      "ModifyLoadBalancerAttributesOutput": [
+        "Attributes"
+      ],
+      "LoadBalancerAttribute": [
+        "Key",
+        "Value"
+      ],
+      "SetSecurityGroupsInput": [
+        "LoadBalancerArn",
+        "SecurityGroups"
+      ],
+      "SetSecurityGroupsOutput": [
+        "SecurityGroupIds"
+      ],
+      "SetSubnetsInput": [
+        "LoadBalancerArn",
+        "Subnets",
+        "SubnetMappings"
+      ],
+      "SetSubnetsOutput": [
+        "AvailabilityZones",
+        "IpAddressType"
+      ],
+      "CreateTargetGroupInput": [
+        "Name",
+        "Protocol",
+        "ProtocolVersion",
+        "Port",
+        "VpcId",
+        "HealthCheckProtocol",
+        "HealthCheckPort",
+        "HealthCheckEnabled",
+        "HealthCheckPath",
+        "HealthCheckIntervalSeconds",
+        "HealthCheckTimeoutSeconds",
+        "HealthyThresholdCount",
+        "UnhealthyThresholdCount",
+        "Matcher",
+        "TargetType",
+        "Tags",
+        "IpAddressType"
+      ],
+      "CreateTargetGroupOutput": [
+        "TargetGroups"
+      ],
+      "TargetGroup": [
+        "TargetGroupArn",
+        "TargetGroupName",
+        "Protocol",
+        "Port",
+        "VpcId",
+        "HealthCheckProtocol",
+        "HealthCheckPort",
+        "HealthCheckEnabled",
+        "HealthCheckPath",
+        "HealthCheckIntervalSeconds",
+        "HealthCheckTimeoutSeconds",
+        "HealthyThresholdCount",
+        "UnhealthyThresholdCount",
+        "Matcher",
+        "LoadBalancerArns",
+        "TargetType",
+        "ProtocolVersion",
+        "IpAddressType"
+      ],
+      "Matcher": [
+        "HttpCode",
+        "GrpcCode"
+      ],
+      "ModifyTargetGroupInput": [
+        "TargetGroupArn",
+        "HealthCheckProtocol",
+        "HealthCheckPort",
+        "HealthCheckEnabled",
+        "HealthCheckPath",
+        "HealthCheckIntervalSeconds",
+        "HealthCheckTimeoutSeconds",
+        "HealthyThresholdCount",
+        "UnhealthyThresholdCount",
+        "Matcher"
+      ],
+      "ModifyTargetGroupOutput": [
+        "TargetGroups"
+      ],
+      "DescribeTargetGroupsInput": [
+        "LoadBalancerArn",
+        "TargetGroupArns",
+        "Names",
+        "Marker",
+        "PageSize"
+      ],
+      "DescribeTargetGroupsOutput": [
+        "TargetGroups",
+        "NextMarker"
+      ],
+      "DeleteTargetGroupInput": [
+        "TargetGroupArn"
+      ],
+      "DescribeTargetGroupAttributesInput": [
+        "TargetGroupArn"
+      ],
+      "DescribeTargetGroupAttributesOutput": [
+        "Attributes"
+      ],
+      "ModifyTargetGroupAttributesInput": [
+        "TargetGroupArn",
+        "Attributes"
+      ],
+      "ModifyTargetGroupAttributesOutput": [
+        "Attributes"
+      ],
+      "TargetGroupAttribute": [
+        "Key",
+        "Value"
+      ],
+      "RegisterTargetsInput": [
+        "TargetGroupArn",
+        "Targets"
+      ],
+      "RegisterTargetsOutput": [],
+      "DeregisterTargetsInput": [
+        "TargetGroupArn",
+        "Targets"
+      ],
+      "DeregisterTargetsOutput": [],
+      "TargetDescription": [
+        "Id",
+        "Port",
+        "AvailabilityZone"
+      ],
+      "DescribeTargetHealthInput": [
+        "TargetGroupArn",
+        "Targets"
+      ],
+      "DescribeTargetHealthOutput": [
+        "TargetHealthDescriptions"
+      ],
+      "TargetHealthDescription": [
+        "Target",
+        "HealthCheckPort",
+        "TargetHealth"
+      ],
+      "TargetHealth": [
+        "State",
+        "Reason",
+        "Description"
+      ],
+      "CreateListenerInput": [
+        "LoadBalancerArn",
+        "Protocol",
+        "Port",
+        "SslPolicy",
+        "Certificates",
+        "DefaultActions",
+        "AlpnPolicy",
+        "Tags"
+      ],
+      "CreateListenerOutput": [
+        "Listeners"
+      ],
+      "Listener": [
+        "ListenerArn",
+        "LoadBalancerArn",
+        "Port",
+        "Protocol",
+        "Certificates",
+        "SslPolicy",
+        "DefaultActions",
+        "AlpnPolicy"
+      ],
+      "Certificate": [
+        "CertificateArn",
+        "IsDefault"
+      ],
+      "Action": [
+        "Type",
+        "TargetGroupArn",
+        "Order",
+        "RedirectConfig",
+        "FixedResponseConfig",
+        "ForwardConfig"
+      ],
+      "ForwardActionConfig": [
+        "TargetGroups",
+        "TargetGroupStickinessConfig"
+      ],
+      "TargetGroupTuple": [
+        "TargetGroupArn",
+        "Weight"
+      ],
+      "TargetGroupStickinessConfig": [
+        "Enabled",
+        "DurationSeconds"
+      ],
+      "RedirectActionConfig": [
+        "Protocol",
+        "Port",
+        "Host",
+        "Path",
+        "Query",
+        "StatusCode"
+      ],
+      "FixedResponseActionConfig": [
+        "MessageBody",
+        "StatusCode",
+        "ContentType"
+      ],
+      "ModifyListenerInput": [
+        "ListenerArn",
+        "Port",
+        "Protocol",
+        "SslPolicy",
+        "Certificates",
+        "DefaultActions",
+        "AlpnPolicy"
+      ],
+      "ModifyListenerOutput": [
+        "Listeners"
+      ],
+      "DescribeListenersInput": [
+        "LoadBalancerArn",
+        "ListenerArns",
+        "Marker",
+        "PageSize"
+      ],
+      "DescribeListenersOutput": [
+        "Listeners",
+        "NextMarker"
+      ],
+      "DeleteListenerInput": [
+        "ListenerArn"
+      ],
+      "DescribeListenerAttributesInput": [
+        "ListenerArn"
+      ],
+      "DescribeListenerAttributesOutput": [
+        "Attributes"
+      ],
+      "ModifyListenerAttributesInput": [
+        "ListenerArn",
+        "Attributes"
+      ],
+      "ModifyListenerAttributesOutput": [
+        "Attributes"
+      ],
+      "ListenerAttribute": [
+        "Key",
+        "Value"
+      ],
+      "AddListenerCertificatesInput": [
+        "ListenerArn",
+        "Certificates"
+      ],
+      "AddListenerCertificatesOutput": [
+        "Certificates"
+      ],
+      "DescribeListenerCertificatesInput": [
+        "ListenerArn",
+        "Marker",
+        "PageSize"
+      ],
+      "DescribeListenerCertificatesOutput": [
+        "Certificates",
+        "NextMarker"
+      ],
+      "RemoveListenerCertificatesInput": [
+        "ListenerArn",
+        "Certificates"
+      ],
+      "CreateRuleInput": [
+        "ListenerArn",
+        "Conditions",
+        "Priority",
+        "Actions",
+        "Tags"
+      ],
+      "CreateRuleOutput": [
+        "Rules"
+      ],
+      "Rule": [
+        "RuleArn",
+        "Priority",
+        "Conditions",
+        "Actions",
+        "IsDefault"
+      ],
+      "RuleCondition": [
+        "Field",
+        "Values",
+        "HostHeaderConfig",
+        "PathPatternConfig",
+        "HttpHeaderConfig",
+        "QueryStringConfig",
+        "HttpRequestMethodConfig",
+        "SourceIpConfig"
+      ],
+      "HostHeaderConditionConfig": [
+        "Values"
+      ],
+      "PathPatternConditionConfig": [
+        "Values"
+      ],
+      "HttpHeaderConditionConfig": [
+        "HttpHeaderName",
+        "Values"
+      ],
+      "QueryStringConditionConfig": [
+        "Values"
+      ],
+      "QueryStringKeyValuePair": [
+        "Key",
+        "Value"
+      ],
+      "HttpRequestMethodConditionConfig": [
+        "Values"
+      ],
+      "SourceIpConditionConfig": [
+        "Values"
+      ],
+      "ModifyRuleInput": [
+        "RuleArn",
+        "Conditions",
+        "Actions"
+      ],
+      "ModifyRuleOutput": [
+        "Rules"
+      ],
+      "DescribeRulesInput": [
+        "ListenerArn",
+        "RuleArns",
+        "Marker",
+        "PageSize"
+      ],
+      "DescribeRulesOutput": [
+        "Rules",
+        "NextMarker"
+      ],
+      "DeleteRuleInput": [
+        "RuleArn"
+      ],
+      "SetRulePrioritiesInput": [
+        "RulePriorities"
+      ],
+      "RulePriorityPair": [
+        "RuleArn",
+        "Priority"
+      ],
+      "SetRulePrioritiesOutput": [
+        "Rules"
+      ],
+      "AddTagsInput": [
+        "ResourceArns",
+        "Tags"
+      ],
+      "RemoveTagsInput": [
+        "ResourceArns",
+        "TagKeys"
+      ],
+      "DescribeTagsInput": [
+        "ResourceArns"
+      ],
+      "DescribeTagsOutput": [
+        "TagDescriptions"
+      ],
+      "TagDescription": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "DescribeSSLPoliciesInput": [
+        "Names",
+        "Marker",
+        "PageSize",
+        "LoadBalancerType"
+      ],
+      "DescribeSSLPoliciesOutput": [
+        "SslPolicies",
+        "NextMarker"
+      ],
+      "SslPolicy": [
+        "SslProtocols",
+        "Ciphers",
+        "Name",
+        "SupportedLoadBalancerTypes"
+      ],
+      "Cipher": [
+        "Name",
+        "Priority"
+      ]
+    }
   }
 }
