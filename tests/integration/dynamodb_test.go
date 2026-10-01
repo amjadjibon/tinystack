@@ -25,6 +25,7 @@ import (
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
+	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
@@ -57,6 +58,7 @@ import (
 	restapis "github.com/amjadjibon/tinystack/internal/services/apigateway"
 	apigateways "github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	scalinggroups "github.com/amjadjibon/tinystack/internal/services/autoscaling"
+	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
@@ -173,6 +175,7 @@ func serverStore(
 	scaling := scalinggroups.New(store, logger)
 	balancers := loadbalancers.New(store, logger)
 	tasks := orchestration.New(store)
+	stacks := cloudformation.New(store, logger)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -204,6 +207,7 @@ func serverStore(
 		acmapi.Descriptor(certificates.New(store)),
 		firehoseapi.Descriptor(firehoses),
 		cloudwatchapi.Descriptor(monitoring),
+		cloudformationapi.Descriptor(stacks),
 	}
 	caller := catalog.NewCaller(services...)
 	workflows.UseCaller(caller)
@@ -213,6 +217,7 @@ func serverStore(
 	timers.UseCaller(caller)
 	scaling.UseCaller(caller)
 	balancers.UseCaller(caller)
+	stacks.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
@@ -227,6 +232,7 @@ func serverStore(
 
 	s = httptest.NewServer(h)
 	return s, func() {
+		stacks.Stop()
 		workflows.Stop()
 		firehoses.Stop()
 		monitoring.Stop()

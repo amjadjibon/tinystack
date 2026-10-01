@@ -21,6 +21,7 @@ import (
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
+	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
@@ -53,6 +54,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
+	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
@@ -196,6 +198,9 @@ func newStartCommand() *cobra.Command {
 			scaling := autoscaling.New(store, logger)
 			defer scaling.Stop()
 			balancers := elbv2.New(store, logger)
+			stacks := cloudformation.New(store, logger)
+			// Stop ends the stack runner, which writes to the store.
+			defer stacks.Stop()
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -229,6 +234,7 @@ func newStartCommand() *cobra.Command {
 				acmapi.Descriptor(acm.New(store)),
 				firehoseapi.Descriptor(firehoses),
 				cloudwatchapi.Descriptor(monitoring),
+				cloudformationapi.Descriptor(stacks),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.
@@ -240,6 +246,9 @@ func newStartCommand() *cobra.Command {
 			timers.UseCaller(caller)
 			scaling.UseCaller(caller)
 			balancers.UseCaller(caller)
+			// CloudFormation manages stack resources with the other
+			// services' operations.
+			stacks.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err
@@ -295,6 +304,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(scaling.Stop)
 			server.RegisterOnShutdown(containers.Stop)
 			server.RegisterOnShutdown(kube.Stop)
+			server.RegisterOnShutdown(stacks.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)
