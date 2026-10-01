@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -20,6 +21,9 @@ import (
 // part.
 type Caller struct {
 	services map[string]*Service
+	// lenient takes text for numbers and booleans, and numbers and booleans
+	// for text, as CloudFormation templates write them.
+	lenient bool
 }
 
 // NewCaller returns a Caller for services, found by their names.
@@ -31,6 +35,11 @@ func NewCaller(services ...Service) *Caller {
 
 	return c
 }
+
+// Lenient returns a Caller for the same services that converts scalars as
+// CloudFormation does: "5" sets a number, "true" a boolean, and 5 or true a
+// string.
+func (c *Caller) Lenient() *Caller { return &Caller{services: c.services, lenient: true} }
 
 // Call runs operation of the service named service with params in ctx, which
 // carries the caller's request metadata. It reports an unknown service or
@@ -50,7 +59,7 @@ func (c *Caller) Call(ctx context.Context, service, operation string, params map
 	}
 
 	input := op.NewInput()
-	if err := assign(reflect.ValueOf(input).Elem(), params, operation); err != nil {
+	if err := (assigner{lenient: c.lenient}).assign(reflect.ValueOf(input).Elem(), params, operation); err != nil {
 		return nil, awserror.Validation("%s", err.Error())
 	}
 
@@ -69,8 +78,11 @@ func (c *Caller) Call(ctx context.Context, service, operation string, params map
 
 var timeType = reflect.TypeFor[time.Time]()
 
+// assigner sets generated values from JSON-like ones.
+type assigner struct{ lenient bool }
+
 // assign sets dst, a generated type, from a JSON-like value.
-func assign(dst reflect.Value, src any, path string) error {
+func (a assigner) assign(dst reflect.Value, src any, path string) error {
 	if src == nil {
 		return nil
 	}
@@ -79,7 +91,7 @@ func assign(dst reflect.Value, src any, path string) error {
 	switch dst.Kind() {
 	case reflect.Pointer:
 		elem := reflect.New(dst.Type().Elem())
-		if err := assign(elem.Elem(), src, path); err != nil {
+		if err := a.assign(elem.Elem(), src, path); err != nil {
 			return err
 		}
 
@@ -100,7 +112,7 @@ func assign(dst reflect.Value, src any, path string) error {
 				return fmt.Errorf("%s: TinyStack does not support the %s member", path, name)
 			}
 
-			if err := assign(f, v, path+"."+name); err != nil {
+			if err := a.assign(f, v, path+"."+name); err != nil {
 				return err
 			}
 		}
@@ -116,7 +128,7 @@ func assign(dst reflect.Value, src any, path string) error {
 
 		out := reflect.MakeSlice(dst.Type(), len(list), len(list))
 		for i, v := range list {
-			if err := assign(out.Index(i), v, fmt.Sprintf("%s[%d]", path, i)); err != nil {
+			if err := a.assign(out.Index(i), v, fmt.Sprintf("%s[%d]", path, i)); err != nil {
 				return err
 			}
 		}
@@ -131,7 +143,7 @@ func assign(dst reflect.Value, src any, path string) error {
 		out := reflect.MakeMapWithSize(dst.Type(), len(entries))
 		for k, v := range entries {
 			elem := reflect.New(dst.Type().Elem()).Elem()
-			if err := assign(elem, v, path+"."+k); err != nil {
+			if err := a.assign(elem, v, path+"."+k); err != nil {
 				return err
 			}
 
@@ -140,10 +152,43 @@ func assign(dst reflect.Value, src any, path string) error {
 
 		dst.Set(out)
 	default:
-		return assignScalar(dst, src, mismatch)
+		return assignScalar(dst, a.convert(dst.Kind(), src), mismatch)
 	}
 
 	return nil
+}
+
+// convert turns a lenient caller's scalar into the kind dst holds, leaving
+// anything it cannot convert for assignScalar to reject.
+func (a assigner) convert(kind reflect.Kind, src any) any {
+	if !a.lenient {
+		return src
+	}
+
+	switch v := src.(type) {
+	case string:
+		switch kind {
+		case reflect.Bool:
+			if b, err := strconv.ParseBool(v); err == nil {
+				return b
+			}
+		case reflect.Int64, reflect.Float64:
+			if n, err := strconv.ParseFloat(v, 64); err == nil {
+				return n
+			}
+		default:
+		}
+	case float64:
+		if kind == reflect.String {
+			return strconv.FormatFloat(v, 'f', -1, 64)
+		}
+	case bool:
+		if kind == reflect.String {
+			return strconv.FormatBool(v)
+		}
+	}
+
+	return src
 }
 
 func assignScalar(dst reflect.Value, src any, mismatch error) error {
