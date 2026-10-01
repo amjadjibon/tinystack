@@ -3808,7 +3808,8 @@
         "MessageAttributeNames",
         "MaxNumberOfMessages",
         "VisibilityTimeout",
-        "WaitTimeSeconds"
+        "WaitTimeSeconds",
+        "ReceiveRequestAttemptId"
       ],
       "Message": [
         "MessageId",

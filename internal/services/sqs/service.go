@@ -33,6 +33,8 @@ const (
 	attrKmsMasterKeyID            = "KmsMasterKeyId"
 	attrKmsDataKeyReusePeriod     = "KmsDataKeyReusePeriodSeconds"
 	attrSqsManagedSseEnabled      = "SqsManagedSseEnabled"
+	attrDeduplicationScope        = "DeduplicationScope"
+	attrFifoThroughputLimit       = "FifoThroughputLimit"
 )
 
 var _ api.API = (*Service)(nil)
@@ -107,24 +109,28 @@ type settings struct {
 	// KmsMasterKeyID turns on SSE-KMS; KmsDataKeyReusePeriodSeconds applies
 	// only then, and zero means the default. Without a KMS key, the queue uses
 	// SSE-SQS unless SqsManagedSseDisabled.
-	KmsMasterKeyID                string `json:",omitempty"`
-	KmsDataKeyReusePeriodSeconds  int64  `json:",omitempty"`
-	MaxReceiveCount               int64  `json:",omitempty"`
-	DelaySeconds                  int64
+	KmsMasterKeyID string `json:",omitempty"`
+	// DeduplicationScope and FifoThroughputLimit are set on FIFO queues only.
+	FifoThroughputLimit           string `json:",omitempty"`
+	DeduplicationScope            string `json:",omitempty"`
 	VisibilityTimeout             int64
+	DelaySeconds                  int64
 	MaximumMessageSize            int64
 	MessageRetentionPeriod        int64
 	ReceiveMessageWaitTimeSeconds int64
-	FifoQueue                     bool `json:",omitempty"`
-	ContentBasedDeduplication     bool `json:",omitempty"`
-	SqsManagedSseDisabled         bool `json:",omitempty"`
+	MaxReceiveCount               int64 `json:",omitempty"`
+	KmsDataKeyReusePeriodSeconds  int64 `json:",omitempty"`
+	FifoQueue                     bool  `json:",omitempty"`
+	ContentBasedDeduplication     bool  `json:",omitempty"`
+	SqsManagedSseDisabled         bool  `json:",omitempty"`
 }
 
-// queue is one stored queue. FIFO queues also keep the deduplication window
-// and the last sequence number.
+// queue is one stored queue. FIFO queues also keep the deduplication window,
+// the receive attempts that can be retried, and the last sequence number.
 type queue struct {
-	Dedup        map[string]dedup  `json:",omitempty"`
-	Tags         map[string]string `json:",omitempty"`
+	Dedup        map[string]dedup   `json:",omitempty"`
+	Attempts     map[string]attempt `json:",omitempty"`
+	Tags         map[string]string  `json:",omitempty"`
 	Messages     []message
 	Settings     settings
 	CreatedAt    int64
@@ -307,6 +313,12 @@ func (st *settings) apply(attributes map[string]string) error {
 			}
 
 			continue
+		case attrDeduplicationScope, attrFifoThroughputLimit:
+			if guardErr := st.throughput(name, attributes[name]); guardErr != nil {
+				return guardErr
+			}
+
+			continue
 		case attrSqsManagedSseEnabled:
 			v, err := parseBool(name, attributes[name])
 			if err != nil {
@@ -371,7 +383,7 @@ func (st *settings) apply(attributes map[string]string) error {
 		return awserror.New("InvalidAttributeName", "ContentBasedDeduplication is only supported for FIFO queues.")
 	}
 
-	return nil
+	return st.checkThroughput()
 }
 
 func (s *Service) CreateQueue(ctx context.Context, in *api.CreateQueueRequest) (*api.CreateQueueResult, error) {

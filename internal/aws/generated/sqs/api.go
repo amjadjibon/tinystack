@@ -71,6 +71,7 @@ type ReceiveMessageRequest struct {
 	MaxNumberOfMessages         *int64   `json:"MaxNumberOfMessages,omitempty" query:"MaxNumberOfMessages"`
 	VisibilityTimeout           *int64   `json:"VisibilityTimeout,omitempty" query:"VisibilityTimeout"`
 	WaitTimeSeconds             *int64   `json:"WaitTimeSeconds,omitempty" query:"WaitTimeSeconds"`
+	ReceiveRequestAttemptId     *string  `json:"ReceiveRequestAttemptId,omitempty" query:"ReceiveRequestAttemptId"`
 }
 
 type Message struct {

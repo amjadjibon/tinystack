@@ -23,6 +23,8 @@ var optionalAttributes = map[string]bool{
 	attrRedriveAllowPolicy:        true,
 	attrFifoQueue:                 true,
 	attrContentBasedDeduplication: true,
+	attrDeduplicationScope:        true,
+	attrFifoThroughputLimit:       true,
 	attrKmsMasterKeyID:            true,
 	attrKmsDataKeyReusePeriod:     true,
 }

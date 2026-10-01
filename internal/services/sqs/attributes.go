@@ -123,6 +123,8 @@ func (q *queue) attributes(key string, now int64) map[string]string {
 	if st.FifoQueue {
 		out[attrFifoQueue] = strconv.FormatBool(st.FifoQueue)
 		out[attrContentBasedDeduplication] = strconv.FormatBool(st.ContentBasedDeduplication)
+		out[attrDeduplicationScope] = st.DeduplicationScope
+		out[attrFifoThroughputLimit] = st.FifoThroughputLimit
 	}
 
 	out[attrSqsManagedSseEnabled] = strconv.FormatBool(st.KmsMasterKeyID == "" && !st.SqsManagedSseDisabled)

@@ -399,8 +399,10 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 type receiveOptions struct {
 	visibility *int64
 	system     map[string]bool
-	filter     []string
-	limit      int
+	// attempt is the ReceiveRequestAttemptId, which FIFO queues honor.
+	attempt string
+	filter  []string
+	limit   int
 }
 
 // claimed is one atomic receive attempt; next is when the earliest in-flight
@@ -532,8 +534,23 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 			visibility = *opts.visibility
 		}
 
+		attempt := opts.attempt
+		if !q.Settings.FifoQueue {
+			attempt = ""
+		}
+
+		q.forgetAttempts(now)
+		if retried, ok := q.retry(attempt, now, visibility); ok {
+			for _, msg := range retried {
+				c.messages = append(c.messages, render(msg, opts))
+			}
+
+			return save(tx, key, q)
+		}
+
 		dlq := deadLetter{source: keyARN(key)}
 		blocked := q.inFlightGroups(now)
+		var receipts []string
 		kept := q.Messages[:0]
 		for i := range q.Messages {
 			msg := q.Messages[i]
@@ -566,11 +583,16 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 
 			msg.VisibleAt = now + visibility*1000
 			msg.Receipt = rand.Text()
+			receipts = append(receipts, msg.Receipt)
 			c.messages = append(c.messages, render(&msg, opts))
 			kept = append(kept, msg)
 		}
 
 		q.Messages = kept
+		if attempt != "" && len(receipts) > 0 {
+			q.remember(attempt, receipts, now)
+		}
+
 		if dlq.queue != nil {
 			if saveErr := save(tx, dlq.key, dlq.queue); saveErr != nil {
 				return saveErr
@@ -611,11 +633,17 @@ func (s *Service) ReceiveMessage(
 		}
 	}
 
+	if id := in.ReceiveRequestAttemptId; id != nil && !fifoID.MatchString(*id) {
+		return nil, invalid("Value %s for parameter ReceiveRequestAttemptId is invalid. Reason: It must be 1 to "+
+			"128 printable ASCII characters.", *id)
+	}
+
 	opts := &receiveOptions{
 		limit:      int(value(in.MaxNumberOfMessages)),
 		visibility: in.VisibilityTimeout,
 		system:     map[string]bool{},
 		filter:     in.MessageAttributeNames,
+		attempt:    value(in.ReceiveRequestAttemptId),
 	}
 
 	if opts.limit == 0 {
