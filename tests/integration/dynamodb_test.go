@@ -33,6 +33,7 @@ import (
 	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
+	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
@@ -63,6 +64,7 @@ import (
 	containers "github.com/amjadjibon/tinystack/internal/services/ecr"
 	orchestration "github.com/amjadjibon/tinystack/internal/services/ecs"
 	kubernetes "github.com/amjadjibon/tinystack/internal/services/eks"
+	loadbalancers "github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	deliverystreams "github.com/amjadjibon/tinystack/internal/services/firehose"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
@@ -168,6 +170,7 @@ func serverStore(
 	dns := zones.New(store)
 	timers := schedules.New(store, logger)
 	scaling := scalinggroups.New(store, logger)
+	balancers := loadbalancers.New(store, logger)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -195,6 +198,7 @@ func serverStore(
 		route53api.Descriptor(dns),
 		schedulerapi.Descriptor(timers),
 		autoscalingapi.Descriptor(scaling),
+		elbv2api.Descriptor(balancers),
 		acmapi.Descriptor(certificates.New(store)),
 		firehoseapi.Descriptor(firehoses),
 		cloudwatchapi.Descriptor(monitoring),
@@ -206,6 +210,7 @@ func serverStore(
 	dns.UseCaller(caller)
 	timers.UseCaller(caller)
 	scaling.UseCaller(caller)
+	balancers.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
@@ -215,6 +220,7 @@ func serverStore(
 	h.UseDocuments(userPools.Documents)
 	h.UseRegistry(repositories)
 	h.UseAPIs(httpAPIs, restAPIs)
+	h.UseLoadBalancers(balancers)
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)

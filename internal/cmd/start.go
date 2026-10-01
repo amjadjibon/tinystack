@@ -29,6 +29,7 @@ import (
 	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
+	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
@@ -59,6 +60,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 	"github.com/amjadjibon/tinystack/internal/services/eks"
+	"github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
@@ -178,6 +180,7 @@ func newStartCommand() *cobra.Command {
 			defer timers.Stop()
 			scaling := autoscaling.New(store, logger)
 			defer scaling.Stop()
+			balancers := elbv2.New(store, logger)
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -207,6 +210,7 @@ func newStartCommand() *cobra.Command {
 				route53api.Descriptor(dns),
 				schedulerapi.Descriptor(timers),
 				autoscalingapi.Descriptor(scaling),
+				elbv2api.Descriptor(balancers),
 				acmapi.Descriptor(acm.New(store)),
 				firehoseapi.Descriptor(firehoses),
 				cloudwatchapi.Descriptor(monitoring),
@@ -220,6 +224,7 @@ func newStartCommand() *cobra.Command {
 			dns.UseCaller(caller)
 			timers.UseCaller(caller)
 			scaling.UseCaller(caller)
+			balancers.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err
@@ -229,6 +234,7 @@ func newStartCommand() *cobra.Command {
 			handler.UseDocuments(identities.Documents)
 			handler.UseRegistry(registry)
 			handler.UseAPIs(httpAPIs, restAPIs)
+			handler.UseLoadBalancers(balancers)
 			handler.Handle("deliveries", deliveries)
 
 			var listenConfig net.ListenConfig
