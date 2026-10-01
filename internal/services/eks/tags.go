@@ -42,7 +42,8 @@ func resourceNotFound() error {
 }
 
 // taggable finds the resource an ARN names: a cluster, node group, Fargate
-// profile, add-on, access entry, or pod identity association.
+// profile, add-on, access entry, pod identity association, or identity provider
+// config.
 func taggable(tx storage.ReadTx, scope request.Scope, resourceARN string) (*tagged, error) {
 	rest, ok := strings.CutPrefix(resourceARN, arn(scope, ""))
 	if !ok {
@@ -80,6 +81,15 @@ func taggable(tx storage.ReadTx, scope request.Scope, resourceARN string) (*tagg
 		return taggedRecord(tx, associationKey(scope, clusterName, name), resourceARN,
 			func(a *association) (string, *map[string]string) {
 				return *a.Association.AssociationArn, &a.Association.Tags
+			})
+	case "identityproviderconfig":
+		if len(parts) != 5 || parts[2] != typeOIDC {
+			return nil, resourceNotFound()
+		}
+
+		return taggedRecord(tx, identityProviderKey(scope, clusterName, parts[3]), resourceARN,
+			func(p *identityProvider) (string, *map[string]string) {
+				return *p.Config.IdentityProviderConfigArn, &p.Config.Tags
 			})
 	case "access-entry":
 		entries, err := records[accessEntry](tx, prefix(scope, "access")+clusterName+"/")

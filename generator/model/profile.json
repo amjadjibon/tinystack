@@ -5606,7 +5606,11 @@
       "DeletePodIdentityAssociation",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "AssociateIdentityProviderConfig",
+      "DescribeIdentityProviderConfig",
+      "ListIdentityProviderConfigs",
+      "DisassociateIdentityProviderConfig"
     ],
     "shapes": {
       "CreateClusterRequest": [
@@ -6111,6 +6115,71 @@
         "clientRequestToken",
         "disableSessionTags",
         "targetRoleArn"
+      ],
+      "AssociateIdentityProviderConfigRequest": [
+        "clusterName",
+        "oidc",
+        "tags",
+        "clientRequestToken"
+      ],
+      "AssociateIdentityProviderConfigResponse": [
+        "update",
+        "tags"
+      ],
+      "OidcIdentityProviderConfigRequest": [
+        "identityProviderConfigName",
+        "issuerUrl",
+        "clientId",
+        "usernameClaim",
+        "usernamePrefix",
+        "groupsClaim",
+        "groupsPrefix",
+        "requiredClaims"
+      ],
+      "DescribeIdentityProviderConfigRequest": [
+        "clusterName",
+        "identityProviderConfig"
+      ],
+      "DescribeIdentityProviderConfigResponse": [
+        "identityProviderConfig"
+      ],
+      "IdentityProviderConfigResponse": [
+        "oidc"
+      ],
+      "OidcIdentityProviderConfig": [
+        "identityProviderConfigName",
+        "identityProviderConfigArn",
+        "clusterName",
+        "issuerUrl",
+        "clientId",
+        "usernameClaim",
+        "usernamePrefix",
+        "groupsClaim",
+        "groupsPrefix",
+        "requiredClaims",
+        "tags",
+        "status"
+      ],
+      "IdentityProviderConfig": [
+        "type",
+        "name"
+      ],
+      "ListIdentityProviderConfigsRequest": [
+        "clusterName",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListIdentityProviderConfigsResponse": [
+        "identityProviderConfigs",
+        "nextToken"
+      ],
+      "DisassociateIdentityProviderConfigRequest": [
+        "clusterName",
+        "identityProviderConfig",
+        "clientRequestToken"
+      ],
+      "DisassociateIdentityProviderConfigResponse": [
+        "update"
       ]
     }
   },

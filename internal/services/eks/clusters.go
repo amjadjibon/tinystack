@@ -445,10 +445,13 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest)
 }
 
 // clusterKinds are the kinds of records a cluster owns, deleted with it.
-var clusterKinds = []string{kindNodegroup, kindFargate, kindAddon, "access", "pod-identity", "update"}
+var clusterKinds = []string{
+	kindNodegroup, kindFargate, kindAddon, "access", "pod-identity", kindIdentityProvider, "update",
+}
 
 // DeleteCluster deletes a cluster without node groups or Fargate profiles,
-// with its add-ons, access entries, and pod identity associations.
+// with its add-ons, access entries, pod identity associations, and identity
+// provider configs.
 func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterRequest) (*api.DeleteClusterResponse, error) {
 	scope, err := identity(ctx)
 	if err != nil {

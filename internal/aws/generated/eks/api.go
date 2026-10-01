@@ -868,6 +868,83 @@ type ListTagsForResourceResponse struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
+type OidcIdentityProviderConfigRequest struct {
+	IdentityProviderConfigName *string           `json:"identityProviderConfigName,omitempty"`
+	IssuerUrl                  *string           `json:"issuerUrl,omitempty"`
+	ClientId                   *string           `json:"clientId,omitempty"`
+	UsernameClaim              *string           `json:"usernameClaim,omitempty"`
+	UsernamePrefix             *string           `json:"usernamePrefix,omitempty"`
+	GroupsClaim                *string           `json:"groupsClaim,omitempty"`
+	GroupsPrefix               *string           `json:"groupsPrefix,omitempty"`
+	RequiredClaims             map[string]string `json:"requiredClaims,omitempty"`
+}
+
+type AssociateIdentityProviderConfigRequest struct {
+	ClusterName        *string                            `json:"-"`
+	Oidc               *OidcIdentityProviderConfigRequest `json:"oidc,omitempty"`
+	Tags               map[string]string                  `json:"tags,omitempty"`
+	ClientRequestToken *string                            `json:"clientRequestToken,omitempty"`
+}
+
+type AssociateIdentityProviderConfigResponse struct {
+	Update *Update           `json:"update,omitempty"`
+	Tags   map[string]string `json:"tags,omitempty"`
+}
+
+type IdentityProviderConfig struct {
+	Type *string `json:"type,omitempty"`
+	Name *string `json:"name,omitempty"`
+}
+
+type DescribeIdentityProviderConfigRequest struct {
+	ClusterName            *string                 `json:"-"`
+	IdentityProviderConfig *IdentityProviderConfig `json:"identityProviderConfig,omitempty"`
+}
+
+type OidcIdentityProviderConfig struct {
+	IdentityProviderConfigName *string           `json:"identityProviderConfigName,omitempty"`
+	IdentityProviderConfigArn  *string           `json:"identityProviderConfigArn,omitempty"`
+	ClusterName                *string           `json:"clusterName,omitempty"`
+	IssuerUrl                  *string           `json:"issuerUrl,omitempty"`
+	ClientId                   *string           `json:"clientId,omitempty"`
+	UsernameClaim              *string           `json:"usernameClaim,omitempty"`
+	UsernamePrefix             *string           `json:"usernamePrefix,omitempty"`
+	GroupsClaim                *string           `json:"groupsClaim,omitempty"`
+	GroupsPrefix               *string           `json:"groupsPrefix,omitempty"`
+	RequiredClaims             map[string]string `json:"requiredClaims,omitempty"`
+	Tags                       map[string]string `json:"tags,omitempty"`
+	Status                     *string           `json:"status,omitempty"`
+}
+
+type IdentityProviderConfigResponse struct {
+	Oidc *OidcIdentityProviderConfig `json:"oidc,omitempty"`
+}
+
+type DescribeIdentityProviderConfigResponse struct {
+	IdentityProviderConfig *IdentityProviderConfigResponse `json:"identityProviderConfig,omitempty"`
+}
+
+type ListIdentityProviderConfigsRequest struct {
+	ClusterName *string `json:"-"`
+	MaxResults  *int64  `json:"-"`
+	NextToken   *string `json:"-"`
+}
+
+type ListIdentityProviderConfigsResponse struct {
+	IdentityProviderConfigs []IdentityProviderConfig `json:"identityProviderConfigs,omitempty"`
+	NextToken               *string                  `json:"nextToken,omitempty"`
+}
+
+type DisassociateIdentityProviderConfigRequest struct {
+	ClusterName            *string                 `json:"-"`
+	IdentityProviderConfig *IdentityProviderConfig `json:"identityProviderConfig,omitempty"`
+	ClientRequestToken     *string                 `json:"clientRequestToken,omitempty"`
+}
+
+type DisassociateIdentityProviderConfigResponse struct {
+	Update *Update `json:"update,omitempty"`
+}
+
 type API interface {
 	CreateCluster(context.Context, *CreateClusterRequest) (*CreateClusterResponse, error)
 	DescribeCluster(context.Context, *DescribeClusterRequest) (*DescribeClusterResponse, error)
@@ -911,6 +988,10 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	AssociateIdentityProviderConfig(context.Context, *AssociateIdentityProviderConfigRequest) (*AssociateIdentityProviderConfigResponse, error)
+	DescribeIdentityProviderConfig(context.Context, *DescribeIdentityProviderConfigRequest) (*DescribeIdentityProviderConfigResponse, error)
+	ListIdentityProviderConfigs(context.Context, *ListIdentityProviderConfigsRequest) (*ListIdentityProviderConfigsResponse, error)
+	DisassociateIdentityProviderConfig(context.Context, *DisassociateIdentityProviderConfigRequest) (*DisassociateIdentityProviderConfigResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1040,6 +1121,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn"}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "tags"}}, Method: "GET", URI: "/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"AssociateIdentityProviderConfig": {Name: "AssociateIdentityProviderConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClientRequestToken": catalog.MemberBinding{Location: "document", Name: "clientRequestToken"}, "ClusterName": catalog.MemberBinding{Location: "label", Name: "clusterName"}, "Oidc": catalog.MemberBinding{Location: "document", Name: "oidc"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Update": catalog.MemberBinding{Location: "document", Name: "update"}}, Method: "POST", URI: "/clusters/{clusterName}/identity-provider-configs/associate", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &AssociateIdentityProviderConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateIdentityProviderConfig(ctx, input.(*AssociateIdentityProviderConfigRequest))
+		}},
+		"DescribeIdentityProviderConfig": {Name: "DescribeIdentityProviderConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterName": catalog.MemberBinding{Location: "label", Name: "clusterName"}, "IdentityProviderConfig": catalog.MemberBinding{Location: "document", Name: "identityProviderConfig"}}, Output: map[string]catalog.MemberBinding{"IdentityProviderConfig": catalog.MemberBinding{Location: "document", Name: "identityProviderConfig"}}, Method: "POST", URI: "/clusters/{clusterName}/identity-provider-configs/describe", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeIdentityProviderConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeIdentityProviderConfig(ctx, input.(*DescribeIdentityProviderConfigRequest))
+		}},
+		"ListIdentityProviderConfigs": {Name: "ListIdentityProviderConfigs", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterName": catalog.MemberBinding{Location: "label", Name: "clusterName"}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}}, Output: map[string]catalog.MemberBinding{"IdentityProviderConfigs": catalog.MemberBinding{Location: "document", Name: "identityProviderConfigs"}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}}, Method: "GET", URI: "/clusters/{clusterName}/identity-provider-configs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListIdentityProviderConfigsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListIdentityProviderConfigs(ctx, input.(*ListIdentityProviderConfigsRequest))
+		}},
+		"DisassociateIdentityProviderConfig": {Name: "DisassociateIdentityProviderConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClientRequestToken": catalog.MemberBinding{Location: "document", Name: "clientRequestToken"}, "ClusterName": catalog.MemberBinding{Location: "label", Name: "clusterName"}, "IdentityProviderConfig": catalog.MemberBinding{Location: "document", Name: "identityProviderConfig"}}, Output: map[string]catalog.MemberBinding{"Update": catalog.MemberBinding{Location: "document", Name: "update"}}, Method: "POST", URI: "/clusters/{clusterName}/identity-provider-configs/disassociate", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DisassociateIdentityProviderConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisassociateIdentityProviderConfig(ctx, input.(*DisassociateIdentityProviderConfigRequest))
 		}},
 	}}
 }
