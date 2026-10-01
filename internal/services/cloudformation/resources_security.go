@@ -236,7 +236,7 @@ func removeRole(ctx context.Context, c *client, r *resource) error {
 func createKey(ctx context.Context, c *client, p props) (physical string, attributes map[string]any, err error) {
 	params := pick(map[string]any{}, p, memberDescription, "KeySpec", "KeyUsage")
 	if p.has("KeyPolicy") {
-		params["Policy"] = p.document("KeyPolicy")
+		params[memberPolicy] = p.document("KeyPolicy")
 	}
 
 	if tags := p.tags(); len(tags) > 0 {
@@ -291,7 +291,7 @@ func updateKey(ctx context.Context, c *client, r *resource, p props) (map[string
 
 	if p.changed(old, "KeyPolicy") && p.has("KeyPolicy") {
 		if _, err := c.call(ctx, "kms", "PutKeyPolicy", map[string]any{
-			memberKeyID: r.Physical, memberPolicyName: nameDefault, "Policy": p.document("KeyPolicy"),
+			memberKeyID: r.Physical, memberPolicyName: nameDefault, memberPolicy: p.document("KeyPolicy"),
 		}); err != nil {
 			return nil, err
 		}

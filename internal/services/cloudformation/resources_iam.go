@@ -73,7 +73,7 @@ func attach(ctx context.Context, c *client, arn string, old, p props) error {
 				continue
 			}
 
-			if _, err := c.call(ctx, "iam", "Detach"+k.kind+"Policy", map[string]any{
+			if _, err := c.call(ctx, "iam", "Detach"+k.kind+memberPolicy, map[string]any{
 				k.member: name, memberPolicyArn: arn,
 			}); err != nil && !gone(err, "NoSuchEntityException") {
 				return err
@@ -85,7 +85,7 @@ func attach(ctx context.Context, c *client, arn string, old, p props) error {
 				continue
 			}
 
-			if _, err := c.call(ctx, "iam", "Attach"+k.kind+"Policy", map[string]any{
+			if _, err := c.call(ctx, "iam", "Attach"+k.kind+memberPolicy, map[string]any{
 				k.member: name, memberPolicyArn: arn,
 			}); err != nil {
 				return err
@@ -107,10 +107,10 @@ func createManagedPolicy(
 		return "", nil, err
 	}
 
-	arn := outText(out, "Policy", memberArn)
+	arn := outText(out, memberPolicy, memberArn)
 	attributes = map[string]any{
-		memberPolicyArn: arn, memberPolicyID: outText(out, "Policy", memberPolicyID),
-		memberDefaultVersionID: outText(out, "Policy", memberDefaultVersionID),
+		memberPolicyArn: arn, memberPolicyID: outText(out, memberPolicy, memberPolicyID),
+		memberDefaultVersionID: outText(out, memberPolicy, memberDefaultVersionID),
 	}
 	return arn, attributes, attach(ctx, c, arn, props{}, p)
 }
@@ -221,7 +221,7 @@ func inlinePolicy(ctx context.Context, c *client, old, p props) error {
 				continue
 			}
 
-			if _, err := c.call(ctx, "iam", "Delete"+k.kind+"Policy", map[string]any{
+			if _, err := c.call(ctx, "iam", "Delete"+k.kind+memberPolicy, map[string]any{
 				k.member: name, memberPolicyName: old.str(memberPolicyName),
 			}); err != nil && !gone(err, "NoSuchEntityException") {
 				return err
@@ -233,7 +233,7 @@ func inlinePolicy(ctx context.Context, c *client, old, p props) error {
 				continue
 			}
 
-			if _, err := c.call(ctx, "iam", "Put"+k.kind+"Policy", map[string]any{
+			if _, err := c.call(ctx, "iam", "Put"+k.kind+memberPolicy, map[string]any{
 				k.member: name, memberPolicyName: p.str(memberPolicyName), memberPolicyDocument: document,
 			}); err != nil {
 				return err

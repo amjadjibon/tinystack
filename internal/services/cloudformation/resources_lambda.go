@@ -105,7 +105,7 @@ func init() {
 	})
 	register("AWS::Lambda::Version", &resourceType{
 		properties: []string{memberFunctionName, memberDescription, "CodeSha256"},
-		attributes: []string{"Version", "FunctionArn"},
+		attributes: []string{memberVersion, "FunctionArn"},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
 			out, err := c.call(ctx, "lambda", "PublishVersion",
 				pick(map[string]any{}, p, memberFunctionName, memberDescription, "CodeSha256"))
@@ -114,12 +114,12 @@ func init() {
 			}
 
 			arn := outText(out, "FunctionArn")
-			return arn, map[string]any{"Version": outText(out, "Version"), "FunctionArn": arn}, nil
+			return arn, map[string]any{memberVersion: outText(out, memberVersion), "FunctionArn": arn}, nil
 		},
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, "lambda", "DeleteFunction", map[string]any{
 				memberFunctionName: props(r.Properties).str(memberFunctionName),
-				"Qualifier":        outText(r.Attributes, "Version"),
+				"Qualifier":        outText(r.Attributes, memberVersion),
 			})
 			if gone(err, "ResourceNotFoundException") {
 				return nil
@@ -285,7 +285,7 @@ func updateFunction(ctx context.Context, c *client, r *resource, p props) (map[s
 		case p.has(k):
 			settings[k] = p[k]
 		case k == "Environment":
-			settings[k] = map[string]any{"Variables": map[string]any{}}
+			settings[k] = map[string]any{memberVariables: map[string]any{}}
 		case k == memberDescription:
 			settings[k] = ""
 		}

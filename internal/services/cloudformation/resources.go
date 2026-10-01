@@ -99,6 +99,22 @@ const (
 	propertyManagedPolicyName       = "ManagedPolicyName"
 	propertyStateMachineName        = "StateMachineName"
 	memberPolicyID                  = "PolicyId"
+	memberRestAPIID                 = "RestApiId"
+	memberDeploymentID              = "DeploymentId"
+	memberDisableExecuteAPIEndpoint = "DisableExecuteApiEndpoint"
+	memberStageName                 = "StageName"
+	memberAuthorizerID              = "AuthorizerId"
+	memberHTTPMethod                = "HttpMethod"
+	memberStatusCode                = "StatusCode"
+	memberAPIID                     = "ApiId"
+	memberAuthorizerResultTTL       = "AuthorizerResultTtlInSeconds"
+	memberAuthorizerURI             = "AuthorizerUri"
+	memberIdentitySource            = "IdentitySource"
+	memberPolicy                    = "Policy"
+	memberProtocolType              = "ProtocolType"
+	memberResourceID                = "ResourceId"
+	memberVariables                 = "Variables"
+	memberVersion                   = "Version"
 )
 
 // resourceType implements a CloudFormation resource type with the operations

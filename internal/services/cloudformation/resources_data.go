@@ -79,7 +79,7 @@ func init() {
 			}
 
 			err := retag(ctx, c, r.Properties, p, &tagger{
-				target:  map[string]any{"ResourceType": "Parameter", "ResourceId": r.Physical},
+				target:  map[string]any{"ResourceType": "Parameter", memberResourceID: r.Physical},
 				service: "ssm",
 				tag:     "AddTagsToResource",
 				untag:   "RemoveTagsFromResource",
