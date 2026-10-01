@@ -141,7 +141,11 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   mover (started by `New`, ended by `Stop`, also deferred in `start.go`) moves each running task's next batch in one
   `Update`. SNS holds a
   `*sqs.Service` and delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its
-  subscriptions, and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
+  subscriptions, and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. HTTP, HTTPS, and
+  email subscriptions (`sns/endpoints.go`) are pending until `ConfirmSubscription` presents their token; HTTP
+  deliveries are `proxy.Forward` POSTs on the service's context in the background (`Stop`, deferred and a shutdown
+  hook in `start.go`, ends them), and email is recorded in the `delivery.Log`. The gateway also takes AWS Query
+  requests as a `GET /?Action=…` (`queryGET`), which is how a subscription's `SubscribeURL` confirms it. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
   in the same transaction as the regional bucket record; objects are `…/s3/<bucket>/o/<key>` (metadata) plus
   `…/s3/<bucket>/d/<key>` (bytes); the metadata record holds the object's tags. Those are always the current version:
   in a versioned bucket (`versions.go`), older versions and delete markers are kept newest first in the key's history

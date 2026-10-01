@@ -234,18 +234,20 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 ### SNS (AWS Query)
 
-Standard topics that fan out to SQS queues and Lambda functions in-process.
+Standard topics that fan out to SQS queues and Lambda functions in-process, POST to HTTP and HTTPS endpoints, and
+record email in `/_tinystack/deliveries` (no mail is sent).
 
 | Operation | Behavior |
 | --- | --- |
 | CreateTopic | Idempotent for identical attributes; `DisplayName`, the `*FeedbackSampleRate` attributes, and `Tags` |
 | GetTopicAttributes / SetTopicAttributes | The writable attributes above plus `TopicArn`, `Owner`, subscription counts, and the default owner-only `Policy`; delivery status sample rates are stored, but nothing is logged |
-| GetSubscriptionAttributes / SetSubscriptionAttributes | Endpoint, protocol, owner, `RawMessageDelivery`, `FilterPolicy`, and `FilterPolicyScope` |
+| GetSubscriptionAttributes / SetSubscriptionAttributes | Endpoint, protocol, owner, `PendingConfirmation`, `RawMessageDelivery`, `FilterPolicy`, and `FilterPolicyScope` |
 | TagResource / UntagResource / ListTagsForResource | Topic ARNs |
 | DeleteTopic | Removes the topic and its subscriptions; deleting a missing topic succeeds |
 | ListTopics / ListSubscriptions / ListSubscriptionsByTopic | Account/region isolation, 100 per page with `NextToken` |
-| Subscribe / Unsubscribe | `sqs` (queue ARN) and `lambda` (function ARN) protocols with endpoints in the subscriber's account, confirmed at once; `RawMessageDelivery` for queues; `FilterPolicy` and `FilterPolicyScope`; subscribing twice with the same attributes returns the existing subscription |
-| Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus optional `sqs` and `lambda` texts); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; each subscribed function is invoked asynchronously with an `aws:sns` event; subscriptions whose filter policy rejects the message are skipped; a failed delivery does not fail Publish |
+| Subscribe / Unsubscribe | `sqs` (queue ARN) and `lambda` (function ARN) protocols with endpoints in the subscriber's account, confirmed at once; `http`, `https`, `email`, and `email-json` subscriptions, which wait for confirmation (Subscribe returns `pending confirmation` unless `ReturnSubscriptionArn` is set, and lists show `PendingConfirmation`); `RawMessageDelivery` for queues and HTTP endpoints; `FilterPolicy` and `FilterPolicyScope`; subscribing twice with the same attributes returns the existing subscription (and sends a pending one's confirmation request again) |
+| ConfirmSubscription | Confirms a pending subscription with the token from its confirmation request: an HTTP endpoint receives a `SubscriptionConfirmation` POST, and an email subscription's request is in the delivery log; its `SubscribeURL` is an unsigned `GET /?Action=ConfirmSubscription&TopicArn=…&Token=…` on TinyStack (signed in `verify` mode) |
+| Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus optional `sqs` and `lambda` texts); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; each subscribed function is invoked asynchronously with an `aws:sns` event; each confirmed HTTP endpoint receives a POST in the background with SNS's `x-amz-sns-*` headers (a response other than 2XX is a failed delivery, not retried); each confirmed `email` subscription gets the text and `email-json` the envelope in the delivery log; subscriptions whose filter policy rejects the message are skipped; a failed delivery does not fail Publish |
 
 Filter policies use the EventBridge pattern syntax without `wildcard`: exact
 values, `prefix`, `suffix`, `equals-ignore-case`, `anything-but`, `numeric`
@@ -961,7 +963,7 @@ parallel scans, PartiQL, Kinesis streaming, stream shard splits, backups, or cap
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
 message groups on standard queues, message move tasks for FIFO queues,
-or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: only `sqs` and `lambda` subscriptions; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
+or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `sms`, `application`, or `firehose` subscriptions, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than `private`,
 policies, encryption, POST uploads, lifecycle, or stored checksums on
