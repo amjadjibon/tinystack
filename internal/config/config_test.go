@@ -25,6 +25,8 @@ func TestLoad(t *testing.T) {
 		{"persistent without path", "storage:\n  mode: persistent", false},
 		{"memory with path", "storage:\n  path: /tmp/tinystack", false},
 		{"bad storage mode", "storage:\n  mode: disk", false},
+		{"docker containers", "ecs:\n  containers: docker", true},
+		{"bad containers", "ecs:\n  containers: podman", false},
 		{"port", "server:\n  port: 0", false},
 		{"documents", "{}\n---\n{}", false},
 	} {

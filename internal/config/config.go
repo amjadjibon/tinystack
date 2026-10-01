@@ -26,6 +26,13 @@ const (
 	StoragePersistent = "persistent"
 )
 
+// ECS container modes: records keeps tasks as records only; docker also runs
+// each task's containers with the docker CLI.
+const (
+	ContainersRecords = "records"
+	ContainersDocker  = "docker"
+)
+
 type Config struct {
 	Identity struct {
 		Accounts   map[string]string `yaml:"accounts"`
@@ -40,6 +47,9 @@ type Config struct {
 		Mode string `yaml:"mode"`
 		Path string `yaml:"path"`
 	} `yaml:"storage"`
+	ECS struct {
+		Containers string `yaml:"containers"`
+	} `yaml:"ecs"`
 	Server struct {
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
@@ -56,6 +66,7 @@ func Default() Config {
 	c.Storage.Mode = StorageMemory
 	c.Identity.Mode = IdentityParse
 	c.Identity.Accounts = map[string]string{}
+	c.ECS.Containers = ContainersRecords
 	return c
 }
 
@@ -131,6 +142,10 @@ func (c *Config) Validate() error {
 		}
 	default:
 		return fmt.Errorf("storage.mode must be memory or persistent")
+	}
+
+	if c.ECS.Containers != ContainersRecords && c.ECS.Containers != ContainersDocker {
+		return fmt.Errorf("ecs.containers must be records or docker")
 	}
 
 	return nil

@@ -16,3 +16,6 @@ storage:
   mode: memory
   # mode: persistent
   # path: ~/.tinystack
+ecs:
+  # records keeps ECS tasks as records; docker also runs their containers.
+  containers: records
