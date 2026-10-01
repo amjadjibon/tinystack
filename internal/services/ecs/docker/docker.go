@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 )
 
@@ -35,19 +36,6 @@ type Runtime struct {
 
 func New() *Runtime {
 	return &Runtime{started: map[string]bool{}}
-}
-
-// docker runs one docker CLI command and returns its standard output.
-func docker(ctx context.Context, args ...string) (string, error) {
-	// #nosec G204 -- arguments are built from validated task definitions.
-	cmd := exec.CommandContext(ctx, "docker", args...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("docker %s: %w: %s", args[0], err, strings.TrimSpace(stderr.String()))
-	}
-
-	return strings.TrimSpace(stdout.String()), nil
 }
 
 func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Started, error) {
@@ -92,7 +80,7 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 		return ecs.Started{}, fmt.Errorf("runtime is closed")
 	}
 
-	id, err := docker(ctx, append(append(args, "--", spec.Image), command...)...)
+	id, err := dockercli.Run(ctx, nil, append(append(args, "--", spec.Image), command...)...)
 	if err != nil {
 		return ecs.Started{}, err
 	}
@@ -123,7 +111,7 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 
 // hostPort returns the host port a container port is published on.
 func hostPort(ctx context.Context, id string, p ecs.PortSpec) (int64, error) {
-	out, err := docker(ctx, "port", id, strconv.FormatInt(p.Container, 10)+"/"+p.Protocol)
+	out, err := dockercli.Run(ctx, nil, "port", id, strconv.FormatInt(p.Container, 10)+"/"+p.Protocol)
 	if err != nil {
 		return 0, err
 	}
@@ -139,9 +127,9 @@ func hostPort(ctx context.Context, id string, p ecs.PortSpec) (int64, error) {
 }
 
 func (r *Runtime) State(ctx context.Context, id string) (exited bool, code int64, err error) {
-	out, err := docker(ctx, "inspect", "--format", "{{.State.Running}} {{.State.ExitCode}}", id)
+	out, err := dockercli.Run(ctx, nil, "inspect", "--format", "{{.State.Running}} {{.State.ExitCode}}", id)
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "no such") {
+		if dockercli.Gone(err) {
 			return false, 0, ecs.ErrGone
 		}
 
@@ -193,7 +181,7 @@ func (r *Runtime) Logs(ctx context.Context, id string, since time.Time) ([]ecs.L
 func (r *Runtime) Remove(ctx context.Context, id string) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), removeTimeout)
 	defer cancel()
-	_, _ = docker(ctx, "rm", "-f", id)
+	_, _ = dockercli.Run(ctx, nil, "rm", "-f", id)
 	r.mu.Lock()
 	delete(r.started, id)
 	r.mu.Unlock()

@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 )
 
@@ -67,26 +68,12 @@ func New() *Runtime {
 	return &Runtime{pools: map[string]*pool{}, client: &http.Client{}}
 }
 
-// docker runs one docker CLI command.
-func docker(ctx context.Context, stdin io.Reader, args ...string) (string, error) {
-	// #nosec G204 -- arguments are built from validated function configuration.
-	cmd := exec.CommandContext(ctx, "docker", args...)
-	cmd.Stdin = stdin
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("docker %s: %w: %s", args[0], err, strings.TrimSpace(stderr.String()))
-	}
-
-	return strings.TrimSpace(stdout.String()), nil
-}
-
 // remove deletes a container. It outlives the caller's cancellation, since a
 // container must be removed even when its invocation was abandoned.
 func remove(ctx context.Context, c *container) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
-	_, _ = docker(ctx, nil, "rm", "-f", c.id)
+	_, _ = dockercli.Run(ctx, nil, "rm", "-f", c.id)
 }
 
 // acquire takes an idle container of the function's current revision or
@@ -224,7 +211,7 @@ func start(ctx context.Context, client *http.Client, fn *lambda.Function) (*cont
 		args = append(args, fn.Handler)
 	}
 
-	id, err := docker(ctx, nil, args...)
+	id, err := dockercli.Run(ctx, nil, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -240,16 +227,16 @@ func start(ctx context.Context, client *http.Client, fn *lambda.Function) (*cont
 
 func (c *container) boot(ctx context.Context, client *http.Client, code io.Reader) error {
 	if code != nil {
-		if _, err := docker(ctx, code, "cp", "-", c.id+":/var/task"); err != nil {
+		if _, err := dockercli.Run(ctx, code, "cp", "-", c.id+":/var/task"); err != nil {
 			return err
 		}
 	}
 
-	if _, err := docker(ctx, nil, "start", c.id); err != nil {
+	if _, err := dockercli.Run(ctx, nil, "start", c.id); err != nil {
 		return err
 	}
 
-	ports, err := docker(ctx, nil, "port", c.id, "8080/tcp")
+	ports, err := dockercli.Run(ctx, nil, "port", c.id, "8080/tcp")
 	if err != nil {
 		return err
 	}
