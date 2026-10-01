@@ -100,8 +100,11 @@ func (c *cluster) output(tx storage.ReadTx, scope request.Scope, include []strin
 	}
 
 	for _, t := range tasks {
-		if t.Last == running {
+		switch t.Last {
+		case running:
 			*out.RunningTasksCount++
+		case pending:
+			*out.PendingTasksCount++
 		}
 	}
 
@@ -438,7 +441,7 @@ func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterReques
 		case *described.ActiveServicesCount > 0:
 			return awserror.New("ClusterContainsServicesException", "The Cluster cannot be deleted while Services are "+
 				"active.")
-		case *described.RunningTasksCount > 0:
+		case *described.RunningTasksCount > 0, *described.PendingTasksCount > 0:
 			return awserror.New(
 				"ClusterContainsTasksException",
 				"The Cluster cannot be deleted while Tasks are active.",

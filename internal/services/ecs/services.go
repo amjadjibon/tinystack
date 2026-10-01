@@ -212,17 +212,21 @@ func (s *Service) reconcile(tx storage.WriteTx, scope request.Scope, c *cluster,
 	return write(tx, serviceKey(scope, c.Name, svc.Name), svc)
 }
 
-// output describes svc with its running task count.
+// output describes svc with its running and pending task counts.
 func (svc *ecsService) output(tx storage.ReadTx, scope request.Scope, include []string) (api.Service, error) {
 	tasks, err := records[task](tx, taskPrefix(scope, svc.Cluster))
 	if err != nil {
 		return api.Service{}, err
 	}
 
-	var runningTasks int64
+	var runningTasks, pendingTasks int64
 	for _, t := range tasks {
-		if t.Service == svc.Name && t.Last == running && svc.Status == active {
+		switch {
+		case t.Service != svc.Name || svc.Status != active:
+		case t.Last == running:
 			runningTasks++
+		case t.Last == pending:
+			pendingTasks++
 		}
 	}
 
@@ -233,7 +237,7 @@ func (svc *ecsService) output(tx storage.ReadTx, scope request.Scope, include []
 		Status:                  new(svc.Status),
 		DesiredCount:            new(svc.Desired),
 		RunningCount:            new(runningTasks),
-		PendingCount:            new(int64(0)),
+		PendingCount:            new(pendingTasks),
 		TaskDefinition:          new(svc.Definition),
 		DeploymentConfiguration: svc.Configuration,
 		Deployments:             svc.Deployments,

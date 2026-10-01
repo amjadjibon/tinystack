@@ -270,6 +270,12 @@ func (s *Service) start(tx storage.WriteTx, scope request.Scope, c *cluster, def
 		t.Cpu, t.Memory = overridden(o.Cpu, t.Cpu), overridden(o.Memory, t.Memory)
 	}
 
+	// With a runtime, the runner starts the task's containers.
+	if s.runtime != nil {
+		t.Last = pending
+		tx.Put(indexKey(scope, c.Name, t.ID), nil)
+	}
+
 	for i := range def.Def.ContainerDefinitions {
 		t.Containers = append(t.Containers, container(scope, t, &def.Def.ContainerDefinitions[i]))
 	}
@@ -286,13 +292,13 @@ func overridden(override *string, current string) string {
 	return strconv.FormatInt(n, 10)
 }
 
-// container describes a running container of d in t.
+// container describes a container of d in t, in t's status. A pending
+// container has no runtime ID or network bindings until the runner starts it.
 func container(scope request.Scope, t *task, d *api.ContainerDefinition) api.Container {
 	c := api.Container{
 		ContainerArn: new(arn(scope, "container/"+t.Cluster+"/"+t.ID+"/"+newUUID())),
 		TaskArn:      new(taskARN(scope, t.Cluster, t.ID)), Name: d.Name, Image: d.Image,
-		RuntimeId: new(t.ID + "-" + digits(10)), LastStatus: new(running),
-		HealthStatus: new("UNKNOWN"), Cpu: new(strconv.FormatInt(value(d.Cpu), 10)),
+		LastStatus: new(t.Last), HealthStatus: new("UNKNOWN"), Cpu: new(strconv.FormatInt(value(d.Cpu), 10)),
 		NetworkBindings: []api.NetworkBinding{},
 	}
 	if d.HealthCheck != nil {
@@ -307,6 +313,11 @@ func container(scope request.Scope, t *task, d *api.ContainerDefinition) api.Con
 		c.MemoryReservation = new(strconv.FormatInt(*d.MemoryReservation, 10))
 	}
 
+	if t.Last == pending {
+		return c
+	}
+
+	c.RuntimeId = new(t.ID + "-" + digits(10))
 	// Tasks on awsvpc networks get addresses, not host bindings.
 	if t.Network != nil {
 		return c
@@ -339,8 +350,14 @@ func (s *Service) stop(tx storage.WriteTx, scope request.Scope, t *task, code, r
 	t.Stopped = s.now().UTC()
 	t.Version++
 	for i := range t.Containers {
-		t.Containers[i].LastStatus = new(stopped)
-		t.Containers[i].ExitCode = new(int64(0))
+		c := &t.Containers[i]
+		// Containers that never started, or whose exit the runner recorded,
+		// keep their exit code.
+		if value(c.LastStatus) == running {
+			c.ExitCode = new(int64(0))
+		}
+
+		c.LastStatus = new(stopped)
 	}
 
 	return write(tx, taskKey(scope, t.Cluster, t.ID), t)
@@ -361,6 +378,20 @@ func (s *Service) purge(tx storage.WriteTx, scope request.Scope, clusterName str
 	}
 
 	return nil
+}
+
+// replace lets the service that started t, if any, replace it.
+func (s *Service) replace(tx storage.WriteTx, scope request.Scope, c *cluster, t *task) error {
+	if t.Service == "" {
+		return nil
+	}
+
+	svc, ok, err := read[ecsService](tx, serviceKey(scope, c.Name, t.Service))
+	if err != nil || !ok || svc.Status != active {
+		return err
+	}
+
+	return s.reconcile(tx, scope, c, svc)
 }
 
 func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.RunTaskResponse, error) {
@@ -627,13 +658,7 @@ func (s *Service) StopTask(ctx context.Context, in *api.StopTaskRequest) (*api.S
 		}
 
 		out = t.output(scope, []string{fieldTags})
-		// A service replaces the tasks it loses.
-		svc, ok, readErr := read[ecsService](tx, serviceKey(scope, c.Name, t.Service))
-		if readErr != nil || !ok || svc.Status != active {
-			return readErr
-		}
-
-		return s.reconcile(tx, scope, c, svc)
+		return s.replace(tx, scope, c, t)
 	})
 	if err != nil {
 		return nil, err

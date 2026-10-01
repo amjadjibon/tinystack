@@ -1,13 +1,16 @@
 // Package ecs implements Amazon Elastic Container Service without HTTP
-// dependencies. No container runs: a task settles in the state an operation
-// asks for at once, and a service keeps its desired count of running tasks
-// as records. Resources belong to an account and region:
+// dependencies. Without a Runtime no container runs: a task settles in the
+// state an operation asks for at once, and a service keeps its desired count of
+// running tasks as records. With one (UseRuntime), tasks start PENDING and a
+// runner starts their containers (runtime.go). Resources belong to an account
+// and region:
 //
 //	<scope>/ecs/cluster/<name>
 //	<scope>/ecs/family/<family>                          (the next revision)
 //	<scope>/ecs/taskdef/<family>/<zero-padded revision>
 //	<scope>/ecs/service/<cluster>/<name>
 //	<scope>/ecs/task/<cluster>/<task ID>
+//	aws/ecs/index/<account>/<region>/<cluster>/<task ID>  (tasks the runner owns)
 //
 // Deleted clusters and services stay as INACTIVE records, as AWS reports them,
 // and a name can be reused; stopped tasks are listed for an hour.
@@ -20,9 +23,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -47,12 +52,39 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
-	now   func() time.Time
+	ctx       context.Context
+	store     storage.Store
+	runtime   Runtime
+	writeLogs LogWriter
+	logger    *slog.Logger
+	now       func() time.Time
+	cancel    context.CancelFunc
+	// busy holds the index keys the runner is advancing, and cursors the time
+	// of the last log line shipped from each container.
+	busy    map[string]bool
+	cursors map[string]time.Time
+	wg      sync.WaitGroup
+	mu      sync.Mutex
+	once    sync.Once
 }
 
 func New(store storage.Store) *Service {
-	return &Service{store: store, now: time.Now}
+	ctx, cancel := context.WithCancel(context.Background())
+	return &Service{
+		ctx: ctx, cancel: cancel, store: store, now: time.Now, busy: map[string]bool{},
+		cursors: map[string]time.Time{},
+	}
+}
+
+// Stop ends the runner and removes every container the runtime started.
+func (s *Service) Stop() {
+	s.once.Do(func() {
+		s.cancel()
+		s.wg.Wait()
+		if s.runtime != nil {
+			s.runtime.Close()
+		}
+	})
 }
 
 func invalidParameter(format string, args ...any) error {
