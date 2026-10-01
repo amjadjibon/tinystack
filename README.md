@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, EC2 Auto Scaling, Elastic Load Balancing (application and network load balancers), ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, EC2 Auto Scaling, Elastic Load Balancing (application and network load balancers), ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, Kinesis, Firehose, CloudFormation, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -79,8 +79,8 @@ stages), Step Functions state machines and activities, Kinesis streams, Firehose
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
-profiles, add-ons, access entries and policy associations, and pod identity associations, tags
-included. The provider validates its
+profiles, add-ons, access entries and policy associations, and pod identity associations, and CloudFormation
+stacks, tags included. The provider validates its
 credentials and reads the account ID through STS. Skip the calls to services
 TinyStack does not have:
 
@@ -96,6 +96,7 @@ provider "aws" {
     autoscaling    = "http://localhost:4566"
     apigateway     = "http://localhost:4566"
     apigatewayv2   = "http://localhost:4566"
+    cloudformation = "http://localhost:4566"
     cloudwatch     = "http://localhost:4566"
     cognitoidp     = "http://localhost:4566"
     dynamodb       = "http://localhost:4566"
@@ -978,6 +979,48 @@ reloads afresh.
 | AssociateIdentityProviderConfig / DescribeIdentityProviderConfig / ListIdentityProviderConfigs / DisassociateIdentityProviderConfig | One OIDC identity provider per cluster (an `https` issuer, client ID, claims and prefixes, and required claims), `ACTIVE` at once, recorded as updates, with tags |
 | TagResource / UntagResource / ListTagsForResource | Every resource above by ARN |
 
+### CloudFormation (AWS Query)
+
+Stacks create, update, and delete real TinyStack resources: a runner applies a
+template one resource at a time, in dependency order, by calling the owning
+service's operations in-process, so a stack's queue is an SQS queue every other
+client sees. Stacks move through CloudFormation's states (`CREATE_IN_PROGRESS`,
+`UPDATE_COMPLETE_CLEANUP_IN_PROGRESS`, `ROLLBACK_COMPLETE`, ...), usually within a
+second or two, and record an event for every transition. A failed create rolls
+back (or, with `OnFailure: DO_NOTHING` or `DisableRollback`, stops at
+`CREATE_FAILED`), and a failed update rolls back to the previous template.
+Resources whose replacement properties change are deleted and created again.
+Deleted stacks are listed for 90 days.
+
+Templates are JSON or YAML (with the short `!Ref` forms) with `Parameters`
+(`String`, `Number`, lists, `AWS::SSM::Parameter::Value<...>`, and AWS-specific
+types, with their constraints and `NoEcho`), `Mappings`, `Conditions`,
+`Resources` (`DependsOn`, `Condition`, `Metadata`, and the `Delete`, `Retain`,
+and `RetainExceptOnCreate` deletion and update-replace policies), and `Outputs`
+with exports. The intrinsic functions are `Ref` (with the pseudo parameters),
+`Fn::GetAtt`, `Fn::Sub`, `Fn::Join`, `Fn::Select`, `Fn::Split`, `Fn::If`,
+`Fn::Equals`, `Fn::Not`, `Fn::And`, `Fn::Or`, `Fn::FindInMap`, `Fn::GetAZs`,
+`Fn::ImportValue`, `Fn::Base64`, and `Condition`. The resource types are:
+
+| Resource type | Properties |
+| --- | --- |
+| `AWS::SQS::Queue`, `AWS::SNS::Topic`, `AWS::SNS::Subscription` | Queue and topic attributes, FIFO, redrive, KMS keys, filter policies, raw delivery, and tags |
+| `AWS::S3::Bucket` | Name, versioning, and tags |
+| `AWS::DynamoDB::Table` | Keys, billing mode and throughput, indexes (fixed after creation), streams, TTL, and tags |
+| `AWS::SSM::Parameter`, `AWS::Logs::LogGroup` | Parameter type, value, tier, and tags; log group retention, class, and tags |
+| `AWS::Lambda::Function`, `AWS::Lambda::Permission`, `AWS::Lambda::EventSourceMapping` | Inline `ZipFile` (as `index.js` or `index.py`) or S3 code, configuration, and tags; permissions; mappings from queues and streams |
+| `AWS::IAM::Role` | Trust policy, inline and managed policies, path, and tags (needs `CAPABILITY_IAM`, or `CAPABILITY_NAMED_IAM` with a `RoleName`) |
+| `AWS::KMS::Key`, `AWS::KMS::Alias`, `AWS::SecretsManager::Secret` | Key spec, usage, policy, rotation, and tags; aliases; secrets with a value or `GenerateSecretString`, a KMS key, and tags |
+| `AWS::Events::Rule` | Event patterns and schedules on any bus, state, and targets |
+
+| Operation | Behavior |
+| --- | --- |
+| CreateStack / UpdateStack / DeleteStack | `TemplateBody` or a `TemplateURL` in TinyStack's S3, parameters (with `UsePreviousValue`), capabilities, tags, `OnFailure`, `DisableRollback`, `TimeoutInMinutes`, client request tokens, termination protection, and `RetainResources` for stacks in `DELETE_FAILED`; exports in use cannot be removed |
+| DescribeStacks / ListStacks / GetTemplate / GetTemplateSummary / ValidateTemplate | Parameters (`NoEcho` values masked), outputs, capabilities and the reason they are needed, and deleted stacks by ID |
+| DescribeStackEvents / DescribeStackResource / DescribeStackResources / ListStackResources | Every transition with its reason; resources by logical or physical ID |
+| CreateChangeSet / DescribeChangeSet / ExecuteChangeSet / DeleteChangeSet / ListChangeSets | `CREATE` (a `REVIEW_IN_PROGRESS` stack) and `UPDATE` change sets listing each resource's `Add`, `Modify` (with replacement), or `Remove`; a change set without changes fails as CloudFormation's does, which is how `aws cloudformation deploy` sees an unchanged template |
+| ListExports / ListImports / UpdateTerminationProtection | Exports across the Region's stacks and the stacks importing them |
+
 By default (`identity.mode: parse`) SigV4 credential scopes are parsed without
 verifying signatures. `identity.accounts` maps access keys to 12-digit account IDs.
 Unmapped keys and unsigned requests use the default account. Signed regions take
@@ -1046,7 +1089,11 @@ capacity providers, task sets, `DAEMON` tasks, account settings, or execute comm
 Kubernetes API server runs only with `eks.clusters: k3s` (with every principal in the account as its administrator, and
 no version upgrades or state across restarts), no Auto Mode, Outposts, hybrid nodes, capabilities,
 insights, EKS Anywhere, add-on pod identity associations, cluster security group, log delivery to CloudWatch
-Logs, or IAM role checks. API Gateway limits: no WebSocket APIs, custom domain names, VPC links, API keys and usage plans,
+Logs, or IAM role checks. CloudFormation limits: only the resource types above (others are rejected when the
+template is validated, as are unknown properties and attributes), no transforms (`AWS::Serverless`, macros),
+nested stacks, custom resources, `Fn::Transform`, `Fn::Cidr`, `Fn::GetStackOutput`, stack sets, imports, drift
+detection, stack policies, notifications, creation or update policies, `Snapshot` deletion policies, or service
+roles (`RoleARN` is stored), and IAM capabilities are checked but not evaluated. API Gateway limits: no WebSocket APIs, custom domain names, VPC links, API keys and usage plans,
 models and request validation, `AWS` and `HTTP` (non-proxy) integrations or other AWS service integrations,
 mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;

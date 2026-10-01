@@ -117,7 +117,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -331,6 +331,19 @@ a per-service `Dialect`), and delivers synchronously through
   after the first contain `elb`, and `/_aws/elb/<label>[:<port>]/...`), evaluating a listener's rules and answering
   with a fixed response, a redirect, a Lambda invocation (through the caller) with the ALB event, or
   `proxy.Forward` to an IP target.
+  CloudFormation (`services/cloudformation`) keeps each stack (template, parameters, outputs, resources with their
+  physical IDs and properties, and the operation in progress, which holds the previous template for an update's
+  rollback) under `…/cloudformation/stack/<name>`, deleted stacks under `…/cloudformation/deleted/<stack UUID>` (90
+  days), events under `…/cloudformation/event/<stack UUID>/<zero-padded number>`, change sets under
+  `…/cloudformation/changeset/<stack>/<name>`, and exports under `…/cloudformation/export/<name>`. `template.go` decodes
+  JSON or YAML (short forms become long ones), validates the whole template (sections, parameters, resource types and
+  their properties and attributes from the registry in `resources*.go`, functions, and a dependency cycle check), and
+  orders resources; `evaluate.go` evaluates parameters, conditions, and functions. The runner (`run.go`, started by
+  `UseCaller` with the caller in `Lenient` mode, which converts scalars as CloudFormation does, and stopped by `Stop`)
+  visits the partition-wide `aws/cloudformation/index/<account>/<region>/<stack>` every second and when an operation
+  commits: it plans a stack's next step in a `View`, calls the owning service through the `catalog.Caller` outside
+  transactions, and records the result in a transaction that outlives the service's context. Each step changes one
+  resource (a replacement is a delete and then a create), in dependency order and its reverse for cleanup and deletes.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
@@ -358,7 +371,7 @@ a per-service `Dialect`), and delivers synchronously through
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, and EventBridge Scheduler over REST
-  JSON, Auto Scaling and Elastic Load Balancing over Query, plus Docker Registry API calls and requests to API Gateway APIs and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  JSON, Auto Scaling, Elastic Load Balancing, and CloudFormation over Query, plus Docker Registry API calls and requests to API Gateway APIs and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real
