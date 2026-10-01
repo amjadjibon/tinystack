@@ -360,6 +360,18 @@ resource "aws_eks_pod_identity_association" "app" {
   tags            = local.tags
 }
 
+resource "aws_eks_identity_provider_config" "google" {
+  cluster_name = aws_eks_cluster.apps.name
+  tags         = local.tags
+
+  oidc {
+    identity_provider_config_name = "google"
+    issuer_url                    = "https://accounts.google.com"
+    client_id                     = "tinystack"
+    groups_claim                  = "groups"
+  }
+}
+
 data "aws_ecr_authorization_token" "registry" {}
 
 output "registry_user" {

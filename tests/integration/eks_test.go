@@ -583,3 +583,92 @@ func TestEKSAddonsAccessAndIdentity(t *testing.T) {
 		code(t, err, "BadRequestException")
 	})
 }
+
+func TestEKSIdentityProviderConfigs(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	c := eksClient(s, "us-east-1")
+	_, subnets := defaultSubnets(ctx, t, s)
+	createEKSCluster(ctx, t, c, subnets, "apps", "")
+	cluster := aws.String("apps")
+	ref := &ekstypes.IdentityProviderConfig{Type: aws.String("oidc"), Name: aws.String("google")}
+
+	_, err := c.AssociateIdentityProviderConfig(ctx, &eks.AssociateIdentityProviderConfigInput{
+		ClusterName: cluster, Oidc: &ekstypes.OidcIdentityProviderConfigRequest{
+			IdentityProviderConfigName: aws.String("google"), IssuerUrl: aws.String("http://accounts.google.com"),
+			ClientId: aws.String("client"),
+		},
+	})
+	code(t, err, "InvalidParameterException")
+
+	associated, err := c.AssociateIdentityProviderConfig(ctx, &eks.AssociateIdentityProviderConfigInput{
+		ClusterName: cluster, Tags: map[string]string{"team": "core"},
+		Oidc: &ekstypes.OidcIdentityProviderConfigRequest{
+			IdentityProviderConfigName: aws.String("google"), IssuerUrl: aws.String("https://accounts.google.com"),
+			ClientId: aws.String("client"), GroupsClaim: aws.String("groups"),
+			RequiredClaims: map[string]string{"hd": "example.com"},
+		},
+	})
+	if err != nil || associated.Update.Type != ekstypes.UpdateTypeAssociateIdentityProviderConfig ||
+		associated.Update.Status != ekstypes.UpdateStatusSuccessful || associated.Tags["team"] != "core" {
+		t.Fatalf("associate = %+v, %v", associated, err)
+	}
+
+	_, err = c.AssociateIdentityProviderConfig(ctx, &eks.AssociateIdentityProviderConfigInput{
+		ClusterName: cluster, Oidc: &ekstypes.OidcIdentityProviderConfigRequest{
+			IdentityProviderConfigName: aws.String("okta"), IssuerUrl: aws.String("https://example.okta.com"),
+			ClientId: aws.String("client"),
+		},
+	})
+	code(t, err, "ResourceInUseException")
+
+	described, err := c.DescribeIdentityProviderConfig(ctx, &eks.DescribeIdentityProviderConfigInput{
+		ClusterName: cluster, IdentityProviderConfig: ref,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	oidc := described.IdentityProviderConfig.Oidc
+	if oidc.Status != ekstypes.ConfigStatusActive || oidc.UsernameClaim != nil ||
+		aws.ToString(oidc.GroupsClaim) != "groups" || oidc.RequiredClaims["hd"] != "example.com" ||
+		!strings.Contains(aws.ToString(oidc.IdentityProviderConfigArn), ":identityproviderconfig/apps/oidc/google/") {
+		t.Fatalf("config = %+v", oidc)
+	}
+
+	arn := oidc.IdentityProviderConfigArn
+	if _, err = c.TagResource(ctx, &eks.TagResourceInput{
+		ResourceArn: arn, Tags: map[string]string{"env": "dev"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	tags, err := c.ListTagsForResource(ctx, &eks.ListTagsForResourceInput{ResourceArn: arn})
+	if err != nil || len(tags.Tags) != 2 {
+		t.Fatalf("tags = %+v, %v", tags, err)
+	}
+
+	listed, err := c.ListIdentityProviderConfigs(ctx, &eks.ListIdentityProviderConfigsInput{ClusterName: cluster})
+	if err != nil || len(listed.IdentityProviderConfigs) != 1 ||
+		aws.ToString(listed.IdentityProviderConfigs[0].Name) != "google" {
+		t.Fatalf("list = %+v, %v", listed, err)
+	}
+
+	// Configs belong to a cluster in one Region.
+	_, err = eksClient(s, "eu-west-1").ListIdentityProviderConfigs(ctx, &eks.ListIdentityProviderConfigsInput{
+		ClusterName: cluster,
+	})
+	code(t, err, "ResourceNotFoundException")
+
+	removed, err := c.DisassociateIdentityProviderConfig(ctx, &eks.DisassociateIdentityProviderConfigInput{
+		ClusterName: cluster, IdentityProviderConfig: ref,
+	})
+	if err != nil || removed.Update.Type != ekstypes.UpdateTypeDisassociateIdentityProviderConfig {
+		t.Fatalf("disassociate = %+v, %v", removed, err)
+	}
+
+	_, err = c.DescribeIdentityProviderConfig(ctx, &eks.DescribeIdentityProviderConfigInput{
+		ClusterName: cluster, IdentityProviderConfig: ref,
+	})
+	code(t, err, "ResourceNotFoundException")
+}
