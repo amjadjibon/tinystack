@@ -1021,6 +1021,8 @@ with exports. The intrinsic functions are `Ref` (with the pseudo parameters),
 | `AWS::StepFunctions::StateMachine`, `AWS::StepFunctions::Activity` | `Definition` objects or `DefinitionString` with `DefinitionSubstitutions`, role, logging, tracing, and tags; activities |
 | `AWS::Kinesis::Stream` | Shard count (resharded uniformly), on-demand mode, retention, encryption, and tags |
 | `AWS::CloudWatch::Alarm` | Metric and metric math alarms with their actions and tags |
+| `AWS::ApiGateway::RestApi`, `Resource`, `Method`, `Deployment`, `Stage`, `Authorizer` | REST APIs (no OpenAPI `Body`) changed in place with patch operations; methods with their integration, method and integration responses (a changed method is put again); deployments that create or move a stage; stage variables and tags; authorizers |
+| `AWS::ApiGatewayV2::Api`, `Integration`, `Route`, `Stage`, `Deployment`, `Authorizer` | HTTP APIs with CORS and tags (no OpenAPI `Body`), integrations, routes, auto-deploying stages, deployments, and JWT and Lambda authorizers |
 
 | Operation | Behavior |
 | --- | --- |
