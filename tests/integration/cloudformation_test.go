@@ -694,8 +694,8 @@ func TestCloudFormationTemplates(t *testing.T) {
 	c := cfnClient(s)
 	for _, tc := range []struct{ name, body, message string }{
 		{
-			"resource type", `{"Resources": {"Vpc": {"Type": "AWS::EC2::VPC"}}}`,
-			"TinyStack does not support these resource types: [AWS::EC2::VPC]",
+			"resource type", `{"Resources": {"Vpc": {"Type": "AWS::EC2::NatGateway"}}}`,
+			"TinyStack does not support these resource types: [AWS::EC2::NatGateway]",
 		},
 		{
 			"property", `{"Resources": {"Q": {"Type": "AWS::SQS::Queue", "Properties": {"Policy": "x"}}}}`,
