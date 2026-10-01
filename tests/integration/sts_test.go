@@ -290,3 +290,63 @@ func TestSTSSessionsPersist(t *testing.T) {
 		t.Fatalf("got %+v, %v", me, err)
 	}
 }
+
+func TestSTSGetSessionToken(t *testing.T) {
+	cfg := testConfig()
+	cfg.Identity.Mode = "verify"
+	cfg.Identity.SecretKeys = map[string]string{"test": "test"}
+	s := serverConfig(t, cfg, &fakeRuntime{})
+	ctx := context.Background()
+
+	// The root user's session lasts at most an hour and acts as the root user.
+	rootToken, err := stsClient(s, "test", "test").GetSessionToken(ctx, &sts.GetSessionTokenInput{
+		DurationSeconds: aws.Int32(7200),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if left := time.Until(aws.ToTime(rootToken.Credentials.Expiration)); left > time.Hour || left < 59*time.Minute {
+		t.Fatalf("root session lasts %v", left)
+	}
+
+	me, err := sessionClient(s, rootToken.Credentials).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil || aws.ToString(me.Arn) != "arn:aws:iam::000000000000:root" {
+		t.Fatalf("got %+v, %v", me, err)
+	}
+
+	_, err = sessionClient(s, rootToken.Credentials).GetSessionToken(ctx, &sts.GetSessionTokenInput{})
+	wantCode(t, err, "AccessDenied")
+
+	_, err = stsClient(s, "test", "test").GetSessionToken(ctx, &sts.GetSessionTokenInput{
+		DurationSeconds: aws.Int32(600),
+	})
+	wantCode(t, err, "ValidationError")
+
+	// An IAM user's session lasts 12 hours by default and acts as the user.
+	root := iamClient(s, "test", "us-east-1")
+	if _, err = root.CreateUser(ctx, &iam.CreateUserInput{UserName: aws.String("alice")}); err != nil {
+		t.Fatal(err)
+	}
+
+	created, err := root.CreateAccessKey(ctx, &iam.CreateAccessKeyInput{UserName: aws.String("alice")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	alice := stsClient(s, aws.ToString(created.AccessKey.AccessKeyId), aws.ToString(created.AccessKey.SecretAccessKey))
+	userToken, err := alice.GetSessionToken(ctx, &sts.GetSessionTokenInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if left := time.Until(aws.ToTime(userToken.Credentials.Expiration)); left > 12*time.Hour || left < 11*time.Hour {
+		t.Fatalf("user session lasts %v", left)
+	}
+
+	me, err = sessionClient(s, userToken.Credentials).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil || aws.ToString(me.Arn) != "arn:aws:iam::000000000000:user/alice" ||
+		!strings.HasPrefix(aws.ToString(me.UserId), "AIDA") {
+		t.Fatalf("got %+v, %v", me, err)
+	}
+}
