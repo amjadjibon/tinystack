@@ -467,22 +467,24 @@ metadata.
 
 ### KMS (AWS JSON 1.1)
 
-Symmetric encryption keys (`SYMMETRIC_DEFAULT`, `ENCRYPT_DECRYPT`) belong to an
-account and region, and are named by key ID, key ARN, alias name, or alias ARN
+Symmetric encryption keys (`SYMMETRIC_DEFAULT`, `ENCRYPT_DECRYPT`) and HMAC keys (`HMAC_224` to `HMAC_512`,
+`GENERATE_VERIFY_MAC`) belong to an account and region, and are named by key ID, key ARN, alias name, or alias ARN
 wherever KMS accepts an alias.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateKey | `Description`, `Policy` (or the default policy that delegates to IAM), and `Tags`; other key specs, key usages, origins, and multi-Region keys return `UnsupportedOperationException` |
+| CreateKey | `Description`, `Policy` (or the default policy that delegates to IAM), `Tags`, and an HMAC `KeySpec` with the `GENERATE_VERIFY_MAC` usage; other key specs, key usages, origins, and multi-Region keys return `UnsupportedOperationException` |
 | DescribeKey / ListKeys | Key metadata; keys in ID order with `Limit` and `Marker` |
 | EnableKey / DisableKey / UpdateKeyDescription | A disabled key cannot encrypt or decrypt |
 | ScheduleKeyDeletion / CancelKeyDeletion | A pending window of 7 to 30 days (30 by default); a key pending deletion is described but not usable, and cancelling leaves it disabled |
 | GetKeyPolicy / PutKeyPolicy / ListKeyPolicies | The one `default` policy; any JSON object is accepted |
-| GetKeyRotationStatus / EnableKeyRotation / DisableKeyRotation | A rotation period of 90 to 2560 days (365 by default) |
+| GetKeyRotationStatus / EnableKeyRotation / DisableKeyRotation | A rotation period of 90 to 2560 days (365 by default), for symmetric encryption keys |
 | CreateAlias / UpdateAlias / DeleteAlias / ListAliases | `alias/` names (not `alias/aws/`), in name order, optionally for one key |
 | TagResource / UntagResource / ListResourceTags | Up to 50 tags |
 | Encrypt / Decrypt | Up to 4 KB of plaintext, `EncryptionContext`, and `DryRun`; the ciphertext names its key, so `Decrypt` needs no `KeyId`, and a `KeyId` that names another key fails with `IncorrectKeyException` |
 | GenerateDataKey / GenerateDataKeyWithoutPlaintext | `KeySpec` `AES_256` or `AES_128`, or `NumberOfBytes` up to 1024 |
+| GenerateDataKeyPair / GenerateDataKeyPairWithoutPlaintext | `RSA_2048`, `RSA_3072`, `RSA_4096`, `ECC_NIST_P256`, `ECC_NIST_P384`, and `ECC_NIST_P521` pairs: a PKCS #8 private key sealed under a symmetric key (`Decrypt` opens it) and an X.509 public key, both DER |
+| GenerateMac / VerifyMac | HMAC over up to 4 KB with the key's one algorithm (`HMAC_SHA_256` for an `HMAC_256` key); a MAC that does not match fails with `KMSInvalidMacException` |
 | GenerateRandom | Up to 1024 bytes |
 
 Ciphertexts are AES-256-GCM under key material that is stored with the key, as
@@ -978,7 +980,8 @@ profiles, permissions boundaries, access key usage tracking, or policy evaluatio
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, `aws:ec2:image` or other data
 types, shared parameters, or parameter quotas.
-KMS limits: no asymmetric, HMAC, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
+KMS limits: no asymmetric keys (so no `Sign`, `Verify`, or `DeriveSharedSecret`), `ECC_SECG_P256K1` or SM2 data key
+pairs, `Recipient` attestation, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
 material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policies,
 `BatchGetSecretValue`, `GetRandomPassword`, or `SortBy`.
 Cognito limits: no Lambda triggers, required MFA or MFA sign-in, custom or passwordless authentication (`CUSTOM_AUTH`,

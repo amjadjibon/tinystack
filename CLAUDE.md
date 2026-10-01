@@ -183,9 +183,9 @@ a per-service `Dialect`), and delivers synchronously through
   its scheduler (stopped by `Stop`, deferred and a shutdown hook in `start.go`) reads the partition-wide
   `aws/secretsmanager/rotation/<account>/<region>/<name>` index and moves a secret's next rotation time in the
   transaction that claims it. Schedule expressions (`rate`, `cron`) are parsed by the shared `services/schedule`. KMS keeps each key (its AES-256
-  material, state, policy, and tags) under `…/kms/key/<key ID>` and each alias under `…/kms/alias/<name>`; a
-  ciphertext starts with the ID of the key that sealed it (`kms/crypto.go`), and a key past its deletion date is
-  treated as gone. SSM, Secrets Manager, and SQS hold the `*kms.Service` and call `kms.Service.Check` outside
+  or HMAC material, spec and usage, state, policy, and tags) under `…/kms/key/<key ID>` and each alias under
+  `…/kms/alias/<name>`; a ciphertext starts with the ID of the key that sealed it (`kms/crypto.go`), HMAC keys and
+  data key pairs are in `kms/mac.go`, and a key past its deletion date is treated as gone. SSM, Secrets Manager, and SQS hold the `*kms.Service` and call `kms.Service.Check` outside
   their own transactions to require a usable customer managed key, translating KMS's error into their own codes. IAM is account-wide, so its roles,
   users, groups, and managed policies live under `<account>/iam/<kind>/<lowercased name>` with no region (names are
   case-insensitive); each role, user, and group record embeds its `permissions` (inline policies and attached ARNs;
