@@ -220,12 +220,12 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy`, `RedriveAllowPolicy` (`allowAll`, `denyAll`, or `byQueue` with up to 10 source queue ARNs, checked when a queue names its dead-letter queue), `FifoQueue` (`.fifo` names), `ContentBasedDeduplication`, and encryption: `SqsManagedSseEnabled` (on by default) or `KmsMasterKeyId` with `KmsDataKeyReusePeriodSeconds` (60 to 86,400, 300 by default) |
+| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy`, `RedriveAllowPolicy` (`allowAll`, `denyAll`, or `byQueue` with up to 10 source queue ARNs, checked when a queue names its dead-letter queue), `FifoQueue` (`.fifo` names), `ContentBasedDeduplication`, `DeduplicationScope` (`queue` or `messageGroup`) and `FifoThroughputLimit` (`perQueue`, or `perMessageGroupId` with the `messageGroup` scope) for FIFO queues, and encryption: `SqsManagedSseEnabled` (on by default) or `KmsMasterKeyId` with `KmsDataKeyReusePeriodSeconds` (60 to 86,400, 300 by default) |
 | GetQueueAttributes / SetQueueAttributes | The writable attributes above plus `QueueArn`, message counts, and created/modified timestamps; unsupported names fail |
 | GetQueueUrl / DeleteQueue | Queue URLs are `<endpoint>/<account>/<name>`; the host part is ignored on input |
 | ListQueues | Name prefix, `MaxResults`, and `NextToken` |
 | SendMessage | Body character and size checks, per-message `DelaySeconds` (standard queues), message attributes, body and attribute MD5s; FIFO queues require `MessageGroupId`, deduplicate by ID or body hash for 5 minutes, and return a `SequenceNumber` |
-| ReceiveMessage | Up to 10 messages, visibility override, long polling up to 20 s, system and message attribute selection; a message received `maxReceiveCount` times moves to the dead-letter queue (same account and region) on its next receive, where it reports its source in `DeadLetterQueueSourceArn`; FIFO queues deliver each group in order and hold a group while one of its messages is in flight |
+| ReceiveMessage | Up to 10 messages, visibility override, long polling up to 20 s, system and message attribute selection; a message received `maxReceiveCount` times moves to the dead-letter queue (same account and region) on its next receive, where it reports its source in `DeadLetterQueueSourceArn`; FIFO queues deliver each group in order and hold a group while one of its messages is in flight, and a receive retried with the same `ReceiveRequestAttemptId` within 5 minutes returns the same messages and receipt handles (restarting their visibility timeout) while they are all still in flight |
 | DeleteMessage / ChangeMessageVisibility | Receipt handles change on each receive; a stale handle deletes nothing |
 | SendMessageBatch / DeleteMessageBatch / ChangeMessageVisibilityBatch | Up to 10 entries with distinct IDs in one transaction; each entry succeeds or fails on its own; batch sends are limited to 1 MiB in total |
 | TagQueue / UntagQueue / ListQueueTags | Also `tags` on CreateQueue |
@@ -966,7 +966,7 @@ DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesT
 parallel scans, PartiQL, Kinesis streaming, stream shard splits, backups, or capacity accounting/throttling (batch writes never return
 `UnprocessedItems`), and index queries scan the whole table. Expressions
 support every documented comparator and function, but reserved words are accepted as attribute names.
-SQS limits: no high-throughput FIFO settings (`DeduplicationScope`, `FifoThroughputLimit`), `ReceiveRequestAttemptId`,
+SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),
 message groups on standard queues, message move tasks for FIFO queues,
 or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `sms`, `application`, or `firehose` subscriptions, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
