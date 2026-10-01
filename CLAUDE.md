@@ -15,7 +15,7 @@ task lint       # go vet + golangci-lint (installed separately)
 task generate   # go generate ./... — regenerates internal/aws/generated/<service>/api.go
 task models:sync -- -ref main [-add name[=file.json]]  # vendor models + license at an aws-sdk-go-v2 ref, update manifest, generate
 task smoke      # python3 tests/awscli/smoke.py — needs Python 3 and the AWS CLI (invokes Lambda if Docker is up)
-task test:docker # runs Lambda functions and ECS containers in real containers (TINYSTACK_DOCKER_TESTS=1)
+task test:docker # runs Lambda functions, ECS containers, and an EKS k3s cluster for real (TINYSTACK_DOCKER_TESTS=1)
 task test:terraform # python3 tests/terraform/terraform.py — applies, updates, destroys tests/terraform/main.tf (needs Terraform)
 task all        # generate, lint, test, build
 ```
@@ -240,6 +240,15 @@ a per-service `Dialect`), and delivers synchronously through
   groups, Fargate profiles, add-ons, pod identity associations by ID, OIDC identity provider configs by name, access entries by path-escaped principal ARN,
   and updates, which always succeed at once and are recorded for `DescribeUpdate`). It holds the `*ec2.Service` and
   calls `ec2.Service.Place` outside its own transactions to check subnets and security groups and learn their VPC.
+  With `eks.clusters: k3s`, `start.go` calls `UseRuntime` with `services/eks/k3s` after building the gateway: new
+  clusters are `CREATING` and indexed under the partition-wide `aws/eks/index/<endpoint ID>` (account, Region, name,
+  and the runtime's server ID, which outlives a deleted cluster's record), and the runner (`runtime.go`, stopped by
+  `Stop`) starts a server for each cluster without a running one, records its endpoint and CA, and removes the servers
+  of deleted clusters. The k3s runtime runs a privileged k3s container per cluster and serves each endpoint itself:
+  an HTTPS listener on 127.0.0.1 with a certificate from its own CA that checks EKS tokens with
+  `gateway.Server.KubernetesAccount` (`gateway/kubernetes.go`: the presigned STS URL `aws eks get-token` makes,
+  resolved and, in verify mode, verified like SigV4 requests) and reverse-proxies as k3s's administrator. The container runtimes (`services/lambda/docker`, `services/ecs/docker`,
+  and `services/eks/k3s`) share the docker CLI helper in `services/dockercli`.
   API Gateway serves the APIs it manages at the execute-api endpoint: `gateway/execute.go` (`Server.UseAPIs`)
   sends requests to `<API ID>.execute-api.<host>` and `/_aws/execute-api/<API ID>/...` to each `execute.Handler`
   (`internal/aws/execute`: the request and response types) until one owns the ID. HTTP APIs (`services/apigatewayv2`)

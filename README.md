@@ -930,10 +930,38 @@ Route 53 is global: hosted zones and health checks belong to an account in every
 
 ### EKS (REST JSON)
 
-The EKS control plane API only: no Kubernetes API server runs, so `kubectl`
-cannot reach a cluster's endpoint. Clusters, node groups, Fargate profiles, and
-add-ons settle in `ACTIVE` at once, and every update succeeds when it is made.
-Subnets and security groups must exist in EC2, in one VPC.
+By default, the EKS control plane API only: no Kubernetes API server runs, so
+`kubectl` cannot reach a cluster's endpoint. Clusters, node groups, Fargate
+profiles, and add-ons settle in `ACTIVE` at once, and every update succeeds when
+it is made. Subnets and security groups must exist in EC2, in one VPC.
+
+To run a real Kubernetes API server for each cluster, set
+
+```yaml
+eks:
+  clusters: k3s
+```
+
+Then a cluster is `CREATING` until TinyStack has started a privileged
+`rancher/k3s` container for it (one node that runs pods; a cached image starts in
+about 15 seconds) and `ACTIVE` once its API server is ready. Its endpoint is an
+HTTPS listener on `127.0.0.1`, and its certificate authority is the one that
+listener's certificate chains to, so the usual flow works:
+
+```sh
+aws eks update-kubeconfig --name demo
+kubectl get nodes
+```
+
+The endpoint accepts the tokens `aws eks get-token` makes (checked like any
+SigV4 request, and in `identity.mode: verify` signed by a known key for that
+cluster within 15 minutes), and any principal in the cluster's account acts as
+the cluster's administrator: access entries and access policies are stored,
+never enforced. Node groups and Fargate profiles stay records. A cluster keeps
+the Kubernetes version it started with (`UpdateClusterVersion` fails), and its
+Kubernetes state lasts as long as its container: deleting the cluster or
+stopping TinyStack removes it, and a restarted TinyStack starts the clusters it
+reloads afresh.
 
 | Operation | Behavior |
 | --- | --- |
@@ -1014,8 +1042,9 @@ mutability exclusions, registry policies, or layer garbage collection (a deleted
 repository is deleted). ECS limits: containers run only with `ecs.containers: docker` (no health checks, secrets, volumes, container
 dependencies, links, task networking, or resource limits), no container
 instances, load balancers, service discovery, Service Connect, placement constraints or strategies, custom
-capacity providers, task sets, `DAEMON` tasks, account settings, or execute command. EKS limits: no
-Kubernetes API server, Auto Mode, Outposts, hybrid nodes, capabilities,
+capacity providers, task sets, `DAEMON` tasks, account settings, or execute command. EKS limits: a
+Kubernetes API server runs only with `eks.clusters: k3s` (with every principal in the account as its administrator, and
+no version upgrades or state across restarts), no Auto Mode, Outposts, hybrid nodes, capabilities,
 insights, EKS Anywhere, add-on pod identity associations, cluster security group, log delivery to CloudWatch
 Logs, or IAM role checks. API Gateway limits: no WebSocket APIs, custom domain names, VPC links, API keys and usage plans,
 models and request validation, `AWS` and `HTTP` (non-proxy) integrations or other AWS service integrations,
@@ -1076,7 +1105,8 @@ SQS by calling the SQS service directly, never over HTTP, and to Lambda through
 the Lambda service's asynchronous invoke. Lambda event source mappings read SQS
 the same way, and EventBridge delivers to SQS, SNS, and Lambda targets through
 those services. `services/lambda` runs code through a `Runtime`; `services/lambda/docker`
-implements it with the docker CLI, as `services/ecs/docker` implements ECS's `Runtime`.
+implements it with the docker CLI, as `services/ecs/docker` implements ECS's `Runtime` and `services/eks/k3s`
+EKS's.
 
 The pinned upstream Smithy models, checksums, and license live in `generator/model`.
 `profile.json` selects each service's operations and implemented fields; its
@@ -1101,7 +1131,7 @@ task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
 task models:sync -- -ref main   # Re-vendor the pinned Smithy models from aws-sdk-go-v2, then regenerate
 task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, SSM, Secrets Manager, IAM, STS, Lambda), verify graceful shutdown
-task test:docker # Run Lambda functions and ECS containers for real (needs Docker; pulls python:3.14 and busybox)
+task test:docker # Run Lambda functions, ECS containers, and an EKS cluster for real (needs Docker; pulls python:3.14, busybox, and rancher/k3s)
 task test:terraform # Apply, update, and destroy tests/terraform/main.tf with Terraform
 ```
 
