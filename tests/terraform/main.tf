@@ -1044,6 +1044,14 @@ resource "aws_kms_key" "data" {
   tags                    = local.tags
 }
 
+resource "aws_kms_key" "mac" {
+  description              = "Webhook signatures"
+  key_usage                = "GENERATE_VERIFY_MAC"
+  customer_master_key_spec = "HMAC_256"
+  deletion_window_in_days  = 7
+  tags                     = local.tags
+}
+
 resource "aws_kms_alias" "data" {
   name          = "alias/data"
   target_key_id = aws_kms_key.data.key_id
