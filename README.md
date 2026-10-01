@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, EC2 Auto Scaling, ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, EC2 Auto Scaling, Elastic Load Balancing (application and network load balancers), ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, Kinesis, Firehose, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -75,7 +75,7 @@ The `hashicorp/aws` provider (v5) can create, update, and destroy SQS queues, SN
 topics and subscriptions, DynamoDB tables (with streams and TTL), S3 buckets, objects (with tags), and object copies, Lambda functions,
 versions, aliases, and permissions, API Gateway REST APIs (resources, methods, integrations and their responses,
 authorizers, deployments, stages, and method settings) and HTTP APIs (integrations, routes, authorizers, and
-stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), Route 53 hosted zones (public and private), records (including routing policies and aliases), and health checks, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), EventBridge Scheduler schedule groups and schedules, EC2 launch templates, Auto Scaling groups, policies (including target tracking), and scheduled actions, SSM parameters
+stages), Step Functions state machines and activities, Kinesis streams, Firehose delivery streams to S3, SQS, DynamoDB stream, and Kinesis event source mappings, S3 bucket notifications, CloudWatch log groups, metric alarms, composite alarms, and dashboards, ACM certificates (requested and validated), Route 53 hosted zones (public and private), records (including routing policies and aliases), and health checks, EventBridge buses, rules (including scheduled rules), and targets (with input transformers), EventBridge Scheduler schedule groups and schedules, EC2 launch templates, Auto Scaling groups, policies (including target tracking), and scheduled actions, load balancers, target groups and their attachments, listeners, and listener rules, SSM parameters
 (including SecureString), Secrets Manager secrets and versions, KMS keys and aliases (also as the keys of parameters, secrets, and queues), IAM roles, users, groups, their inline and attached policies, and managed policies, Cognito user pools, app
 clients, groups, and users, ECR repositories with their lifecycle and repository policies, and ECS
 clusters, capacity providers, task definitions, and services, and EKS clusters, node groups, Fargate
@@ -102,6 +102,7 @@ provider "aws" {
     ecr            = "http://localhost:4566"
     ecs            = "http://localhost:4566"
     eks            = "http://localhost:4566"
+    elbv2          = "http://localhost:4566"
     eventbridge    = "http://localhost:4566"
     firehose       = "http://localhost:4566"
     iam            = "http://localhost:4566"
@@ -836,6 +837,37 @@ has its desired capacity, recording each change as a scaling activity. Instances
 CloudWatch alarm actions execute policies honoring their cooldown and pass the alarm's latest data point and
 threshold, so step and target tracking policies scale by the metric.
 
+### Elastic Load Balancing (AWS Query)
+
+Load balancers, target groups, listeners, and rules belong to an account and region. Subnets, security groups,
+instances, ACM certificates, and Lambda functions are checked in TinyStack's other services. Application load
+balancers also serve HTTP: a request to a load balancer's DNS name (point it at TinyStack, as
+`<name>-<digits>.us-east-1.elb.amazonaws.com` or `<label>.elb.localhost:4566`) or, without DNS, to
+`http://localhost:4566/_aws/elb/<first label of the DNS name>/...` reaches the listener on port 80 (or the one on
+the lowest port; `/_aws/elb/<label>:<port>/...` picks another). TinyStack evaluates its rules in priority order and
+answers with a fixed response, a redirect, or the response of a forwarded target group, picked by weight: a Lambda
+function, invoked with the Application Load Balancer event (with multi-value headers when the target group's
+`lambda.multi_value_headers.enabled` is set), or an IP target, picked in turn, which receives the request with
+`X-Forwarded-For`, `X-Forwarded-Proto`, and `X-Forwarded-Port`. A target group with no targets answers 503.
+
+```sh
+curl http://localhost:4566/_aws/elb/web-1234567890/api/items
+```
+
+| Operation | Behavior |
+| --- | --- |
+| CreateLoadBalancer / DescribeLoadBalancers / DeleteLoadBalancer | Application and network load balancers in subnets of one VPC (an application load balancer needs two zones), with security groups (the VPC's default group otherwise), schemes, IP address types, and tags; creating one again with the same settings returns it, and deletion protection blocks deletes |
+| DescribeLoadBalancerAttributes / ModifyLoadBalancerAttributes / SetSecurityGroups / SetSubnets | Every attribute AWS reports, with defaults; `idle_timeout.timeout_seconds` bounds forwarded requests |
+| CreateTargetGroup / DescribeTargetGroups / ModifyTargetGroup / DeleteTargetGroup | `instance`, `ip`, and `lambda` target groups with health check settings and their defaults; one a listener or rule uses cannot be deleted |
+| DescribeTargetGroupAttributes / ModifyTargetGroupAttributes | Every attribute AWS reports for the target type |
+| RegisterTargets / DeregisterTargets / DescribeTargetHealth | Instances (checked in EC2: running, in the target group's VPC), IP addresses, and one Lambda function; no health checks run, so targets a listener uses are `healthy` (instances only while running) |
+| CreateListener / DescribeListeners / ModifyListener / DeleteListener | `HTTP` and `HTTPS` listeners on application load balancers and `TCP`, `TLS`, `UDP`, and `TCP_UDP` on network ones, with certificates, SSL policies, ALPN policies, and forward (weighted target groups), redirect, and fixed-response default actions |
+| DescribeListenerAttributes / ModifyListenerAttributes | Every attribute AWS reports |
+| AddListenerCertificates / DescribeListenerCertificates / RemoveListenerCertificates | Extra certificates of secure listeners |
+| CreateRule / DescribeRules / ModifyRule / DeleteRule / SetRulePriorities | Rules with `host-header`, `path-pattern`, `http-header`, `http-request-method`, `query-string`, and `source-ip` conditions (with `*` and `?` wildcards) and the listener's default rule |
+| AddTags / RemoveTags / DescribeTags | Tags of load balancers, target groups, listeners, and rules |
+| DescribeSSLPolicies | The `ELBSecurityPolicy-2016-08`, `-TLS-1-2-2017-01`, `-FS-1-2-Res-2020-10`, and TLS 1.3 policies |
+
 ### ACM (AWS JSON 1.1)
 
 Certificates belong to an account and region. Requested certificates are real X.509 server certificates, signed by
@@ -968,7 +1000,11 @@ S3 destinations (no Redshift, OpenSearch, Splunk, HTTP endpoint, Snowflake, or I
 sources, record format conversion, dynamic partitioning, S3 backups, CloudWatch logging, or encryption.
 Auto Scaling limits: no mixed instances policies, warm pools, lifecycle hooks, instance refreshes, load balancer or
 traffic source attachments, notifications, metrics collection, or predictive scaling, and instances are not tagged
-`aws:autoscaling:groupName` (tag keys starting with `aws:` are reserved). EventBridge Scheduler limits: no retries (a failed run goes straight to its dead-letter queue), flexible
+`aws:autoscaling:groupName` (tag keys starting with `aws:` are reserved). Elastic Load Balancing limits: no Gateway
+load balancers, TLS termination (HTTPS listeners are served over plain HTTP), raw TCP or UDP (network load balancers
+forward HTTP requests only), health
+checks, stickiness, authenticate actions, trust stores, capacity reservations, or access logs (the attributes are
+stored), and instance targets cannot answer (instances run no software). EventBridge Scheduler limits: no retries (a failed run goes straight to its dead-letter queue), flexible
 windows (a schedule runs at its time), ECS, SageMaker, or CodeBuild templated targets, or customer managed KMS keys
 (the key ARN is stored). Route 53 limits: no DNS server, health checks that probe their endpoints, traffic policies, reusable delegation sets,
 query logging, DNSSEC signing, CIDR collections, or geoproximity records. ACM limits: no private certificates (AWS Private CA), renewal, validation that waits for DNS records or email,
