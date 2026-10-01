@@ -61,6 +61,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 	ecsdocker "github.com/amjadjibon/tinystack/internal/services/ecs/docker"
 	"github.com/amjadjibon/tinystack/internal/services/eks"
+	"github.com/amjadjibon/tinystack/internal/services/eks/k3s"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
@@ -174,6 +175,9 @@ func newStartCommand() *cobra.Command {
 			restAPIs := apigateway.New(store, functions, logGroups, identities)
 			network := ec2.New(store)
 			network.UseInstanceProfiles(roles.InstanceProfileOf)
+			kube := eks.New(store, network)
+			// Stop ends the cluster runner and removes k3s containers.
+			defer kube.Stop()
 			workflows, err := sfn.New(store, logGroups, logger)
 			if err != nil {
 				return err
@@ -213,7 +217,7 @@ func newStartCommand() *cobra.Command {
 				cognitoidpapi.Descriptor(identities),
 				ecrapi.Descriptor(registry),
 				ecsapi.Descriptor(containers),
-				eksapi.Descriptor(eks.New(store, network)),
+				eksapi.Descriptor(kube),
 				apigatewayv2api.Descriptor(httpAPIs),
 				apigatewayapi.Descriptor(restAPIs),
 				sfnapi.Descriptor(workflows),
@@ -246,6 +250,16 @@ func newStartCommand() *cobra.Command {
 			handler.UseRegistry(registry)
 			handler.UseAPIs(httpAPIs, restAPIs)
 			handler.UseLoadBalancers(balancers)
+			if cfg.EKS.Clusters == config.ClustersK3s {
+				// Cluster endpoints accept the EKS tokens the gateway's
+				// credentials sign.
+				clusters, k3sErr := k3s.New(handler.KubernetesAccount, logger)
+				if k3sErr != nil {
+					return k3sErr
+				}
+
+				kube.UseRuntime(clusters, logger)
+			}
 			handler.Handle("deliveries", deliveries)
 
 			var listenConfig net.ListenConfig
@@ -280,6 +294,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(timers.Stop)
 			server.RegisterOnShutdown(scaling.Stop)
 			server.RegisterOnShutdown(containers.Stop)
+			server.RegisterOnShutdown(kube.Stop)
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)
