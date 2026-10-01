@@ -15,7 +15,7 @@ task lint       # go vet + golangci-lint (installed separately)
 task generate   # go generate ./... — regenerates internal/aws/generated/<service>/api.go
 task models:sync -- -ref main [-add name[=file.json]]  # vendor models + license at an aws-sdk-go-v2 ref, update manifest, generate
 task smoke      # python3 tests/awscli/smoke.py — needs Python 3 and the AWS CLI (invokes Lambda if Docker is up)
-task test:docker # runs Lambda functions in real containers (TINYSTACK_DOCKER_TESTS=1)
+task test:docker # runs Lambda functions and ECS containers in real containers (TINYSTACK_DOCKER_TESTS=1)
 task test:terraform # python3 tests/terraform/terraform.py — applies, updates, destroys tests/terraform/main.tf (needs Terraform)
 task all        # generate, lint, test, build
 ```
@@ -227,9 +227,15 @@ a per-service `Dialect`), and delivers synchronously through
   the `gateway.Registry` methods `ecr.Service` implements (`ecr/registry.go`) in the password's account and region.
   ECS keeps clusters under `…/ecs/cluster/<name>`, task definition revisions under
   `…/ecs/taskdef/<family>/<zero-padded revision>` (with `…/ecs/family/<family>` counting revisions, which are never
-  reused), services under `…/ecs/service/<cluster>/<name>`, and tasks under `…/ecs/task/<cluster>/<ID>`. No
-  container runs: `services.go` `reconcile` starts and stops task records so a service's primary deployment has its
-  desired count, deleted clusters and services stay `INACTIVE`, and stopped tasks are purged after an hour.
+  reused), services under `…/ecs/service/<cluster>/<name>`, and tasks under `…/ecs/task/<cluster>/<ID>`.
+  `services.go` `reconcile` starts and stops task records so a service's primary deployment has its desired count,
+  deleted clusters and services stay `INACTIVE`, and stopped tasks are purged after an hour. Without a runtime no
+  container runs; with `ecs.containers: docker`, `start.go` calls `UseRuntime` (`services/ecs/docker`, the docker
+  CLI, and `logs.Service.Append`), tasks start `PENDING` and are indexed under the partition-wide
+  `aws/ecs/index/<account>/<region>/<cluster>/<task ID>`, and the runner (`runtime.go`, stopped by `Stop`, deferred
+  and a shutdown hook in `start.go`) visits each every second outside transactions: it starts a pending task's
+  containers and records their IDs and host ports, ships `awslogs` output (cursors in memory), stops the task when an
+  essential container exits (and lets its service replace it), and removes a stopped task's containers.
   EKS keeps clusters under `…/eks/cluster/<name>` and what a cluster owns under `…/eks/<kind>/<cluster>/…` (node
   groups, Fargate profiles, add-ons, pod identity associations by ID, OIDC identity provider configs by name, access entries by path-escaped principal ARN,
   and updates, which always succeed at once and are recorded for `DescribeUpdate`). It holds the `*ec2.Service` and

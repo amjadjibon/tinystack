@@ -647,13 +647,34 @@ request to a bucket named `v2` is therefore the registry's.
 
 ### ECS (AWS JSON 1.1)
 
-No container runs: whatever their launch type, tasks settle in `RUNNING` or
-`STOPPED` at once, as EC2 instances do. Resources belong to the caller's account
-and Region.
+By default no container runs: whatever their launch type, tasks settle in
+`RUNNING` or `STOPPED` at once, as EC2 instances do. To run them, set
+
+```yaml
+ecs:
+  containers: docker
+```
+
+Then tasks start `PENDING`, and within a second TinyStack starts each container
+with the docker CLI (its image, entry point, command, environment and container
+overrides, working directory, and user, plus `AWS_REGION`), publishes its ports
+on `127.0.0.1` (a bridge or host mode `hostPort`, or else a free port, which
+`networkBindings` reports, for every network mode), and marks the task
+`RUNNING`. A container that fails to start stops its task with
+`TaskFailedToStart`; when an essential container exits, the task stops with
+`EssentialContainerExited` and the containers' exit codes, and a service
+replaces it. Containers with the `awslogs` driver write to their
+`awslogs-group` (and `awslogs-region`), in the stream
+`<awslogs-stream-prefix>/<container>/<task ID>` (or the container's ID without a
+prefix). Stopped tasks' containers, and all of them when TinyStack shuts down,
+are removed. Each container is its own Docker container, so containers of a
+task do not share `localhost`; definitions with secrets, volumes, dependencies,
+or links fail to start. To run images from TinyStack's ECR registry, `docker
+login` to it first. Resources belong to the caller's account and Region.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateCluster / DescribeClusters / ListClusters / UpdateCluster / UpdateClusterSettings / DeleteCluster | The `default` cluster when none is named; `containerInsights`; tags; running task and active service counts; DescribeClusters returns tags and settings when `include`d; a deleted cluster is `INACTIVE` and its name can be reused; clusters with active services or running tasks cannot be deleted |
+| CreateCluster / DescribeClusters / ListClusters / UpdateCluster / UpdateClusterSettings / DeleteCluster | The `default` cluster when none is named; `containerInsights`; tags; running and pending task and active service counts; DescribeClusters returns tags and settings when `include`d; a deleted cluster is `INACTIVE` and its name can be reused; clusters with active services or running or pending tasks cannot be deleted |
 | PutClusterCapacityProviders | `FARGATE` and `FARGATE_SPOT` with a default strategy |
 | RegisterTaskDefinition / DescribeTaskDefinition / DeregisterTaskDefinition / DeleteTaskDefinitions | Revisions that are never reused; containers with images, ports, environment, secrets, mounts, dependencies, health checks, log configuration, and limits; task sizes such as `1 vCPU` and `2 GB`; Fargate definitions need `awsvpc` and a Fargate size; ECS's defaults (essential containers, TCP ports published on the container port outside bridge mode); only `INACTIVE` revisions can be deleted |
 | ListTaskDefinitions / ListTaskDefinitionFamilies | By status and family prefix, in either order |
@@ -990,7 +1011,8 @@ Cognito limits: no Lambda triggers, required MFA or MFA sign-in, custom or passw
 `USER_AUTH`), hosted UI or OAuth endpoints, resource servers, threat protection, device tracking, identity
 providers, verification before attribute updates, or identity pools. ECR limits: no replication, pull-through cache, image scanning results, signing, KMS encryption, tag
 mutability exclusions, registry policies, or layer garbage collection (a deleted image's layers stay until its
-repository is deleted). ECS limits: no containers run (so no logs, exit codes, or health checks), no container
+repository is deleted). ECS limits: containers run only with `ecs.containers: docker` (no health checks, secrets, volumes, container
+dependencies, links, task networking, or resource limits), no container
 instances, load balancers, service discovery, Service Connect, placement constraints or strategies, custom
 capacity providers, task sets, `DAEMON` tasks, account settings, or execute command. EKS limits: no
 Kubernetes API server, Auto Mode, Outposts, hybrid nodes, capabilities,
@@ -1054,7 +1076,7 @@ SQS by calling the SQS service directly, never over HTTP, and to Lambda through
 the Lambda service's asynchronous invoke. Lambda event source mappings read SQS
 the same way, and EventBridge delivers to SQS, SNS, and Lambda targets through
 those services. `services/lambda` runs code through a `Runtime`; `services/lambda/docker`
-implements it with the docker CLI.
+implements it with the docker CLI, as `services/ecs/docker` implements ECS's `Runtime`.
 
 The pinned upstream Smithy models, checksums, and license live in `generator/model`.
 `profile.json` selects each service's operations and implemented fields; its
@@ -1079,7 +1101,7 @@ task lint       # go vet and golangci-lint (install golangci-lint separately)
 task generate   # Regenerate pinned API types and descriptors
 task models:sync -- -ref main   # Re-vendor the pinned Smithy models from aws-sdk-go-v2, then regenerate
 task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, SSM, Secrets Manager, IAM, STS, Lambda), verify graceful shutdown
-task test:docker # Run Lambda functions in real containers (needs Docker; pulls python:3.14)
+task test:docker # Run Lambda functions and ECS containers for real (needs Docker; pulls python:3.14 and busybox)
 task test:terraform # Apply, update, and destroy tests/terraform/main.tf with Terraform
 ```
 
