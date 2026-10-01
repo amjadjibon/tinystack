@@ -343,7 +343,9 @@ a per-service `Dialect`), and delivers synchronously through
   visits the partition-wide `aws/cloudformation/index/<account>/<region>/<stack>` every second and when an operation
   commits: it plans a stack's next step in a `View`, calls the owning service through the `catalog.Caller` outside
   transactions, and records the result in a transaction that outlives the service's context. Each step changes one
-  resource (a replacement is a delete and then a create), in dependency order and its reverse for cleanup and deletes.
+  resource, in dependency order and its reverse for cleanup and deletes. A replacement creates the new resource first
+  and keeps the old one in the stack's `Replaced`, which the next cleanup or delete removes first; a replacement that
+  keeps a custom name (`resourceType.createsFirst`) is a delete and then a create.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in

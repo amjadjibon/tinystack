@@ -989,7 +989,9 @@ client sees. Stacks move through CloudFormation's states (`CREATE_IN_PROGRESS`,
 second or two, and record an event for every transition. A failed create rolls
 back (or, with `OnFailure: DO_NOTHING` or `DisableRollback`, stops at
 `CREATE_FAILED`), and a failed update rolls back to the previous template.
-Resources whose replacement properties change are deleted and created again.
+A resource whose replacement properties change is replaced: the replacement
+is created first and the old resource deleted during cleanup (or, when the
+replacement keeps a custom name, which cannot exist twice, deleted first).
 Deleted stacks are listed for 90 days.
 
 Templates are JSON or YAML (with the short `!Ref` forms) with `Parameters`
@@ -1009,9 +1011,16 @@ with exports. The intrinsic functions are `Ref` (with the pseudo parameters),
 | `AWS::DynamoDB::Table` | Keys, billing mode and throughput, indexes (fixed after creation), streams, TTL, and tags |
 | `AWS::SSM::Parameter`, `AWS::Logs::LogGroup` | Parameter type, value, tier, and tags; log group retention, class, and tags |
 | `AWS::Lambda::Function`, `AWS::Lambda::Permission`, `AWS::Lambda::EventSourceMapping` | Inline `ZipFile` (as `index.js` or `index.py`) or S3 code, configuration, and tags; permissions; mappings from queues and streams |
-| `AWS::IAM::Role` | Trust policy, inline and managed policies, path, and tags (needs `CAPABILITY_IAM`, or `CAPABILITY_NAMED_IAM` with a `RoleName`) |
+| `AWS::IAM::Role`, `AWS::IAM::ManagedPolicy`, `AWS::IAM::Policy` | Trust policy, inline and managed policies, path, and tags; managed policy documents (as new default versions) and inline policies attached to roles, users, and groups (all need `CAPABILITY_IAM`, or `CAPABILITY_NAMED_IAM` with a custom name) |
 | `AWS::KMS::Key`, `AWS::KMS::Alias`, `AWS::SecretsManager::Secret` | Key spec, usage, policy, rotation, and tags; aliases; secrets with a value or `GenerateSecretString`, a KMS key, and tags |
-| `AWS::Events::Rule` | Event patterns and schedules on any bus, state, and targets |
+| `AWS::Events::Rule`, `AWS::Events::EventBus` | Event patterns and schedules on any bus, state, and targets; custom buses with a description and tags |
+| `AWS::Lambda::Version`, `AWS::Lambda::Alias` | Published versions (a code change publishes a new one, and the old one is deleted during cleanup); aliases with weighted routing |
+| `AWS::EC2::VPC`, `AWS::EC2::Subnet`, `AWS::EC2::SecurityGroup` | CIDR blocks, tenancy, Availability Zones, and tags; security group ingress and egress rules (CIDR, security group, and prefix list peers), changed rule by rule |
+| `AWS::ECR::Repository` | Tag mutability, scanning, encryption, lifecycle and repository policies, `EmptyOnDelete`, and tags |
+| `AWS::ECS::Cluster`, `AWS::ECS::TaskDefinition`, `AWS::ECS::Service` | Cluster settings and capacity providers; task definitions (any change registers a new revision); services with deployments, networking, and desired counts updated in place |
+| `AWS::StepFunctions::StateMachine`, `AWS::StepFunctions::Activity` | `Definition` objects or `DefinitionString` with `DefinitionSubstitutions`, role, logging, tracing, and tags; activities |
+| `AWS::Kinesis::Stream` | Shard count (resharded uniformly), on-demand mode, retention, encryption, and tags |
+| `AWS::CloudWatch::Alarm` | Metric and metric math alarms with their actions and tags |
 
 | Operation | Behavior |
 | --- | --- |
