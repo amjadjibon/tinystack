@@ -285,6 +285,13 @@ resource "aws_iam_role" "eks" {
   })
 }
 
+resource "aws_iam_instance_profile" "nodes" {
+  name = "nodes"
+  path = "/eks/"
+  role = aws_iam_role.eks.name
+  tags = local.tags
+}
+
 resource "aws_eks_cluster" "apps" {
   name     = "apps"
   role_arn = aws_iam_role.eks.arn
