@@ -483,6 +483,15 @@ resource "aws_sqs_queue" "uploads" {
   name = "uploads"
 }
 
+resource "aws_sqs_queue" "orders" {
+  name                        = "orders.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = true
+  deduplication_scope         = "messageGroup"
+  fifo_throughput_limit       = "perMessageGroupId"
+  tags                        = local.tags
+}
+
 resource "aws_s3_bucket_notification" "assets" {
   bucket      = aws_s3_bucket.assets.id
   eventbridge = true
