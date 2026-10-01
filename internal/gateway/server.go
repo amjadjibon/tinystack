@@ -242,7 +242,7 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	switch {
 	case cbor:
 		c.meta.Protocol = catalog.RPCV2CBOR
-	case target == "" && contentType == formContentType:
+	case target == "" && (contentType == formContentType || queryGET(r)):
 		c.meta.Protocol = catalog.AWSQuery
 	}
 
@@ -375,6 +375,10 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 		return err
 	}
 
+	if queryGET(r) {
+		form = []byte(r.URL.RawQuery)
+	}
+
 	if c.form, err = url.ParseQuery(string(form)); err != nil {
 		return awserror.New("MalformedQueryString", "Request body is not valid form encoding")
 	}
@@ -421,6 +425,13 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 	return nil
 }
 
+// queryGET reports whether a request is an AWS Query request sent as a GET to
+// "/" with its parameters in the URL, such as the SubscribeURL in an SNS
+// subscription confirmation.
+func queryGET(r *http.Request) bool {
+	return r.Method == http.MethodGet && r.URL.Path == "/" && r.URL.Query().Get("Action") != ""
+}
+
 // isQuery reports whether a service takes form requests: AWS Query or EC2
 // Query.
 func isQuery(service *catalog.Service) bool {
@@ -445,7 +456,7 @@ func (s *Server) restServices(r *http.Request) []*catalog.Service {
 	}
 
 	contentType, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	if name == "" && (err != nil || contentType == formContentType) {
+	if name == "" && (err != nil || contentType == formContentType || queryGET(r)) {
 		return nil
 	}
 
@@ -488,12 +499,14 @@ func (s *Server) decode(
 	}
 
 	binding, supported := op.Bindings[c.meta.Protocol]
-	if !supported || contentType != binding.ContentType {
+	// An AWS Query request may also be a GET with its parameters in the URL.
+	get := c.meta.Protocol == catalog.AWSQuery && queryGET(r)
+	if !supported || (contentType != binding.ContentType && !get) {
 		return op, nil, awserror.Validation("Unsupported content type for this operation")
 	}
 	// Query clients may post to a resource URL such as an SQS queue URL.
 	pathOK := formProtocol(c.meta.Protocol) || r.URL.Path == binding.URI
-	if r.Method != binding.Method || !pathOK || r.URL.RawQuery != "" {
+	if !get && (r.Method != binding.Method || !pathOK || r.URL.RawQuery != "") {
 		return op, nil, awserror.Validation("Unexpected method, path, or query parameters")
 	}
 
