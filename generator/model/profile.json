@@ -8841,5 +8841,383 @@
         "Priority"
       ]
     }
+  },
+  "cloudformation": {
+    "operations": [
+      "CreateStack",
+      "UpdateStack",
+      "DeleteStack",
+      "DescribeStacks",
+      "ListStacks",
+      "GetTemplate",
+      "GetTemplateSummary",
+      "ValidateTemplate",
+      "DescribeStackEvents",
+      "DescribeStackResource",
+      "DescribeStackResources",
+      "ListStackResources",
+      "ListExports",
+      "ListImports",
+      "UpdateTerminationProtection",
+      "CreateChangeSet",
+      "DescribeChangeSet",
+      "ExecuteChangeSet",
+      "DeleteChangeSet",
+      "ListChangeSets"
+    ],
+    "shapes": {
+      "CreateStackInput": [
+        "StackName",
+        "TemplateBody",
+        "TemplateURL",
+        "Parameters",
+        "DisableRollback",
+        "TimeoutInMinutes",
+        "Capabilities",
+        "RoleARN",
+        "OnFailure",
+        "Tags",
+        "ClientRequestToken",
+        "EnableTerminationProtection"
+      ],
+      "CreateStackOutput": [
+        "StackId"
+      ],
+      "UpdateStackInput": [
+        "StackName",
+        "TemplateBody",
+        "TemplateURL",
+        "UsePreviousTemplate",
+        "Parameters",
+        "Capabilities",
+        "RoleARN",
+        "Tags",
+        "DisableRollback",
+        "ClientRequestToken"
+      ],
+      "UpdateStackOutput": [
+        "StackId"
+      ],
+      "DeleteStackInput": [
+        "StackName",
+        "RetainResources",
+        "RoleARN",
+        "ClientRequestToken"
+      ],
+      "DescribeStacksInput": [
+        "StackName",
+        "NextToken"
+      ],
+      "DescribeStacksOutput": [
+        "Stacks",
+        "NextToken"
+      ],
+      "Stack": [
+        "StackId",
+        "StackName",
+        "ChangeSetId",
+        "Description",
+        "Parameters",
+        "CreationTime",
+        "DeletionTime",
+        "LastUpdatedTime",
+        "StackStatus",
+        "StackStatusReason",
+        "DisableRollback",
+        "TimeoutInMinutes",
+        "Capabilities",
+        "Outputs",
+        "RoleARN",
+        "Tags",
+        "EnableTerminationProtection",
+        "DriftInformation"
+      ],
+      "Parameter": [
+        "ParameterKey",
+        "ParameterValue",
+        "UsePreviousValue",
+        "ResolvedValue"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "Output": [
+        "OutputKey",
+        "OutputValue",
+        "Description",
+        "ExportName"
+      ],
+      "StackDriftInformation": [
+        "StackDriftStatus"
+      ],
+      "ListStacksInput": [
+        "NextToken",
+        "StackStatusFilter"
+      ],
+      "ListStacksOutput": [
+        "StackSummaries",
+        "NextToken"
+      ],
+      "StackSummary": [
+        "StackId",
+        "StackName",
+        "TemplateDescription",
+        "CreationTime",
+        "LastUpdatedTime",
+        "DeletionTime",
+        "StackStatus",
+        "StackStatusReason",
+        "DriftInformation"
+      ],
+      "StackDriftInformationSummary": [
+        "StackDriftStatus"
+      ],
+      "GetTemplateInput": [
+        "StackName",
+        "ChangeSetName",
+        "TemplateStage"
+      ],
+      "GetTemplateOutput": [
+        "TemplateBody",
+        "StagesAvailable"
+      ],
+      "GetTemplateSummaryInput": [
+        "TemplateBody",
+        "TemplateURL",
+        "StackName"
+      ],
+      "GetTemplateSummaryOutput": [
+        "Parameters",
+        "Description",
+        "Capabilities",
+        "CapabilitiesReason",
+        "ResourceTypes",
+        "Version",
+        "Metadata",
+        "DeclaredTransforms"
+      ],
+      "ParameterDeclaration": [
+        "ParameterKey",
+        "DefaultValue",
+        "ParameterType",
+        "NoEcho",
+        "Description",
+        "ParameterConstraints"
+      ],
+      "ParameterConstraints": [
+        "AllowedValues"
+      ],
+      "ValidateTemplateInput": [
+        "TemplateBody",
+        "TemplateURL"
+      ],
+      "ValidateTemplateOutput": [
+        "Parameters",
+        "Description",
+        "Capabilities",
+        "CapabilitiesReason",
+        "DeclaredTransforms"
+      ],
+      "TemplateParameter": [
+        "ParameterKey",
+        "DefaultValue",
+        "NoEcho",
+        "Description"
+      ],
+      "DescribeStackEventsInput": [
+        "StackName",
+        "NextToken"
+      ],
+      "DescribeStackEventsOutput": [
+        "StackEvents",
+        "NextToken"
+      ],
+      "StackEvent": [
+        "StackId",
+        "EventId",
+        "StackName",
+        "LogicalResourceId",
+        "PhysicalResourceId",
+        "ResourceType",
+        "Timestamp",
+        "ResourceStatus",
+        "ResourceStatusReason",
+        "ResourceProperties",
+        "ClientRequestToken"
+      ],
+      "DescribeStackResourceInput": [
+        "StackName",
+        "LogicalResourceId"
+      ],
+      "DescribeStackResourceOutput": [
+        "StackResourceDetail"
+      ],
+      "StackResourceDetail": [
+        "StackName",
+        "StackId",
+        "LogicalResourceId",
+        "PhysicalResourceId",
+        "ResourceType",
+        "LastUpdatedTimestamp",
+        "ResourceStatus",
+        "ResourceStatusReason",
+        "Description",
+        "Metadata",
+        "DriftInformation"
+      ],
+      "StackResourceDriftInformation": [
+        "StackResourceDriftStatus"
+      ],
+      "DescribeStackResourcesInput": [
+        "StackName",
+        "LogicalResourceId",
+        "PhysicalResourceId"
+      ],
+      "DescribeStackResourcesOutput": [
+        "StackResources"
+      ],
+      "StackResource": [
+        "StackName",
+        "StackId",
+        "LogicalResourceId",
+        "PhysicalResourceId",
+        "ResourceType",
+        "Timestamp",
+        "ResourceStatus",
+        "ResourceStatusReason",
+        "Description",
+        "DriftInformation"
+      ],
+      "ListStackResourcesInput": [
+        "StackName",
+        "NextToken"
+      ],
+      "ListStackResourcesOutput": [
+        "StackResourceSummaries",
+        "NextToken"
+      ],
+      "StackResourceSummary": [
+        "LogicalResourceId",
+        "PhysicalResourceId",
+        "ResourceType",
+        "LastUpdatedTimestamp",
+        "ResourceStatus",
+        "ResourceStatusReason",
+        "DriftInformation"
+      ],
+      "StackResourceDriftInformationSummary": [
+        "StackResourceDriftStatus"
+      ],
+      "ListExportsInput": [
+        "NextToken"
+      ],
+      "ListExportsOutput": [
+        "Exports",
+        "NextToken"
+      ],
+      "Export": [
+        "ExportingStackId",
+        "Name",
+        "Value"
+      ],
+      "ListImportsInput": [
+        "ExportName",
+        "NextToken"
+      ],
+      "ListImportsOutput": [
+        "Imports",
+        "NextToken"
+      ],
+      "UpdateTerminationProtectionInput": [
+        "EnableTerminationProtection",
+        "StackName"
+      ],
+      "UpdateTerminationProtectionOutput": [
+        "StackId"
+      ],
+      "CreateChangeSetInput": [
+        "StackName",
+        "TemplateBody",
+        "TemplateURL",
+        "UsePreviousTemplate",
+        "Parameters",
+        "Capabilities",
+        "RoleARN",
+        "Tags",
+        "ChangeSetName",
+        "ClientToken",
+        "Description",
+        "ChangeSetType",
+        "OnStackFailure"
+      ],
+      "CreateChangeSetOutput": [
+        "Id",
+        "StackId"
+      ],
+      "DescribeChangeSetInput": [
+        "ChangeSetName",
+        "StackName",
+        "NextToken"
+      ],
+      "DescribeChangeSetOutput": [
+        "ChangeSetName",
+        "ChangeSetId",
+        "StackId",
+        "StackName",
+        "Description",
+        "Parameters",
+        "CreationTime",
+        "ExecutionStatus",
+        "Status",
+        "StatusReason",
+        "Capabilities",
+        "Tags",
+        "Changes",
+        "NextToken",
+        "OnStackFailure"
+      ],
+      "Change": [
+        "Type",
+        "ResourceChange"
+      ],
+      "ResourceChange": [
+        "Action",
+        "LogicalResourceId",
+        "PhysicalResourceId",
+        "ResourceType",
+        "Replacement",
+        "Scope"
+      ],
+      "ExecuteChangeSetInput": [
+        "ChangeSetName",
+        "StackName",
+        "ClientRequestToken",
+        "DisableRollback"
+      ],
+      "DeleteChangeSetInput": [
+        "ChangeSetName",
+        "StackName"
+      ],
+      "ListChangeSetsInput": [
+        "StackName",
+        "NextToken"
+      ],
+      "ListChangeSetsOutput": [
+        "Summaries",
+        "NextToken"
+      ],
+      "ChangeSetSummary": [
+        "StackId",
+        "StackName",
+        "ChangeSetId",
+        "ChangeSetName",
+        "ExecutionStatus",
+        "Status",
+        "StatusReason",
+        "CreationTime",
+        "Description"
+      ]
+    }
   }
 }
