@@ -362,7 +362,9 @@ never evaluated.
 | CreatePolicy / GetPolicy / ListPolicies / DeletePolicy | Paths, descriptions, tags, and attachment counts; `Scope`, `OnlyAttached`, and `PathPrefix`; attached policies, and policies with non-default versions, cannot be deleted |
 | CreatePolicyVersion / GetPolicyVersion / ListPolicyVersions / DeletePolicyVersion / SetDefaultPolicyVersion | Up to 5 versions; the default version cannot be deleted |
 | TagPolicy / UntagPolicy / ListPolicyTags | Up to 50 tags |
-| ListInstanceProfilesForRole | Always empty: instance profiles are not modeled |
+| CreateInstanceProfile / GetInstanceProfile / ListInstanceProfiles / ListInstanceProfilesForRole / DeleteInstanceProfile | Paths and tags; names are case-insensitive; a profile that holds a role cannot be deleted, nor a role that is in a profile |
+| AddRoleToInstanceProfile / RemoveRoleFromInstanceProfile | At most one role per profile (`LimitExceeded`) |
+| TagInstanceProfile / UntagInstanceProfile / ListInstanceProfileTags | Up to 50 tags |
 | CreateUser / GetUser / ListUsers / UpdateUser / DeleteUser | Paths and `Tags`; names are case-insensitive; GetUser without a name describes the calling IAM user, or the root user; UpdateUser renames (keeping the user's ID, keys, policies, and groups) or moves a user; a user with access keys, policies, or groups cannot be deleted |
 | TagUser / UntagUser / ListUserTags | Up to 50 tags |
 | PutUserPolicy / GetUserPolicy / ListUserPolicies / DeleteUserPolicy | Inline user policies |
@@ -587,12 +589,13 @@ since every caller is authorized.
 | CreateKeyPair / ImportKeyPair | An RSA (2048-bit, PKCS#1 PEM) or ED25519 (OpenSSH) key whose private key is returned once and never stored, or an imported OpenSSH public key; fingerprints follow EC2 (SHA-1 of created RSA keys, MD5 of imported ones, SHA-256 of ED25519 keys); the `ppk` format is not supported |
 | DescribeKeyPairs / DeleteKeyPair | By `KeyNames` or `KeyPairIds`, with the public key when `IncludePublicKey` is set; deleting a missing key pair succeeds |
 | DescribeImages | A fixed catalog of public images in every Region: Amazon Linux 2023 (x86_64 and arm64), Amazon Linux 2, and Ubuntu 24.04 (amd64 and arm64), whose IDs depend only on the Region and name; by `ImageIds`, `Owners` (account IDs, `self`, `amazon`, `aws-marketplace`), and filters such as `name`, `architecture`, and `owner-alias` |
-| RunInstances | `MinCount` to `MaxCount` instances of a catalog image, in `SubnetId` or the default subnet of the `Placement` zone (the first by default), with `SecurityGroupIds` or `SecurityGroups` of the subnet's VPC (its default group by default), `KeyName`, `PrivateIpAddress`, `UserData`, `DisableApiTermination`, `InstanceInitiatedShutdownBehavior`, and `Monitoring`, or a `LaunchTemplate` version whose settings fill in what the request leaves out; the instance type's family and size must be known and match the image's architecture; each instance takes the next free private address of its subnet, and a public one when the subnet maps them; up to 20 active instances per Region, launching fewer than `MaxCount` rather than fewer than `MinCount`; a `ClientToken` already used returns its reservation |
+| RunInstances | `MinCount` to `MaxCount` instances of a catalog image, in `SubnetId` or the default subnet of the `Placement` zone (the first by default), with `SecurityGroupIds` or `SecurityGroups` of the subnet's VPC (its default group by default), `KeyName`, `PrivateIpAddress`, `UserData`, `IamInstanceProfile` (by name or ARN, checked in IAM), `DisableApiTermination`, `InstanceInitiatedShutdownBehavior`, and `Monitoring`, or a `LaunchTemplate` version whose settings fill in what the request leaves out; the instance type's family and size must be known and match the image's architecture; each instance takes the next free private address of its subnet, and a public one when the subnet maps them; up to 20 active instances per Region, launching fewer than `MaxCount` rather than fewer than `MinCount`; a `ClientToken` already used returns its reservation |
 | CreateLaunchTemplate / CreateLaunchTemplateVersion / ModifyLaunchTemplate | Templates of an image, instance type, key pair, security groups, user data, placement, monitoring, instance profile, and instance tags; a version based on `SourceVersion` keeps what it does not set, and `ModifyLaunchTemplate` sets the default version |
 | DescribeLaunchTemplates / DescribeLaunchTemplateVersions / DeleteLaunchTemplate / DeleteLaunchTemplateVersions | By ID, name, and filters; versions newest first or by number, `$Latest`, or `$Default`; the default version cannot be deleted |
 | DescribeInstances | Instances grouped by reservation, paged by instance; `InstanceIds` and `MaxResults` cannot be combined |
 | StartInstances / StopInstances / RebootInstances / TerminateInstances | Report the transitional state (`pending`, `stopping`, `shutting-down`) and then settle at once; a stopped instance loses its public address and gets a new one on start; a terminated one releases its addresses, stays visible for an hour, and cannot change again (`IncorrectInstanceState`); `DisableApiTermination` blocks termination (`OperationNotPermitted`) |
 | DescribeInstanceStatus | Running instances, whose checks always pass, or every instance with `IncludeAllInstances` (`not-applicable` when not running) |
+| AssociateIamInstanceProfile / DescribeIamInstanceProfileAssociations / ReplaceIamInstanceProfileAssociation / DisassociateIamInstanceProfile | One IAM instance profile per running or stopped instance, associated at once (`associated`; `disassociating` is reported and the association is gone); filters `instance-id` and `state` |
 | DescribeNetworkInterfaces | Always empty, since TinyStack creates no network interfaces |
 | CreateTags / DeleteTags / DescribeTags | Up to 50 tags on any resource by ID, all in one change; `aws:` keys are reserved; DeleteTags removes the given keys (a key with a value only while it has that value), or every tag; DescribeTags filters by `key`, `value`, `resource-id`, and `resource-type` |
 
@@ -606,7 +609,7 @@ match with `*` and `?` (escaped with a backslash), every resource supports
 `tag:<key>`, `tag-key`, and `tag-value`, and an unknown filter name is
 `InvalidParameterValue`. Create operations take `TagSpecifications` for the
 resource type they create. EC2 limits: no volumes, network interfaces, Elastic IPs, instance
-attributes, spot or IAM instance profiles, route tables, internet gateways, or VPC attributes, so Terraform's
+attributes, spot instances, route tables, internet gateways, or VPC attributes, so Terraform's
 `aws_instance` and `aws_vpc` cannot be applied yet.
 
 ### ECR (AWS JSON 1.1, and the Docker Registry API)
@@ -975,8 +978,7 @@ streams, and Kinesis streams (no `AT_TIMESTAMP`, parallelization factor, or tumb
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
 buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; the first delivery happens
-synchronously during PutEvents, and retries run in the background. IAM limits: no root access keys, login profiles, instance
-profiles, permissions boundaries, access key usage tracking, or policy evaluation, and AWS managed policies
+synchronously during PutEvents, and retries run in the background. IAM limits: no root access keys, login profiles, permissions boundaries, access key usage tracking, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, `aws:ec2:image` or other data
 types, shared parameters, or parameter quotas.
