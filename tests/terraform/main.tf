@@ -418,6 +418,13 @@ resource "aws_sns_topic_subscription" "jobs" {
   filter_policy        = jsonencode({ team = [var.team] })
 }
 
+resource "aws_sns_topic_subscription" "oncall" {
+  topic_arn     = aws_sns_topic.alerts.arn
+  protocol      = "email"
+  endpoint      = "oncall@example.com"
+  filter_policy = jsonencode({ team = [var.team] })
+}
+
 resource "aws_dynamodb_table" "users" {
   name         = "users"
   billing_mode = "PAY_PER_REQUEST"

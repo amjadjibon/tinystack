@@ -87,7 +87,8 @@ func TestSNSTopicsAndSubscriptions(t *testing.T) {
 	}
 
 	for _, in := range []*sns.SubscribeInput{
-		{TopicArn: topicARN, Protocol: aws.String("http"), Endpoint: aws.String("http://example.com")},
+		{TopicArn: topicARN, Protocol: aws.String("http"), Endpoint: aws.String("https://example.com")},
+		{TopicArn: topicARN, Protocol: aws.String("sms"), Endpoint: aws.String("+15555550100")},
 		{TopicArn: topicARN, Protocol: aws.String("sqs"), Endpoint: aws.String("not-an-arn")},
 		{TopicArn: topicARN, Protocol: aws.String("sqs"), Endpoint: aws.String("arn:aws:sqs:us-east-1:111111111111:x")},
 	} {
