@@ -453,8 +453,7 @@ func (s *Service) DeleteObjects(ctx context.Context, in *api.DeleteObjectsReques
 	}
 
 	if in.Delete == nil || len(in.Delete.Objects) == 0 || len(in.Delete.Objects) > maxDeletes {
-		return nil, fail(http.StatusBadRequest, "MalformedXML",
-			"The XML you provided was not well-formed or did not validate against our published schema")
+		return nil, malformedXML()
 	}
 
 	var cfg *api.NotificationConfiguration

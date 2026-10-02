@@ -2991,7 +2991,10 @@
       "DeleteBucketOwnershipControls",
       "PutPublicAccessBlock",
       "GetPublicAccessBlock",
-      "DeletePublicAccessBlock"
+      "DeletePublicAccessBlock",
+      "PutBucketLifecycleConfiguration",
+      "GetBucketLifecycleConfiguration",
+      "DeleteBucketLifecycle"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -3573,6 +3576,77 @@
         "PublicAccessBlockConfiguration"
       ],
       "DeletePublicAccessBlockRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "PutBucketLifecycleConfigurationRequest": [
+        "Bucket",
+        "ChecksumAlgorithm",
+        "LifecycleConfiguration",
+        "ExpectedBucketOwner",
+        "TransitionDefaultMinimumObjectSize"
+      ],
+      "PutBucketLifecycleConfigurationOutput": [
+        "TransitionDefaultMinimumObjectSize"
+      ],
+      "BucketLifecycleConfiguration": [
+        "Rules"
+      ],
+      "LifecycleRule": [
+        "Expiration",
+        "ID",
+        "Prefix",
+        "Filter",
+        "Status",
+        "Transitions",
+        "NoncurrentVersionTransitions",
+        "NoncurrentVersionExpiration",
+        "AbortIncompleteMultipartUpload"
+      ],
+      "LifecycleExpiration": [
+        "Date",
+        "Days",
+        "ExpiredObjectDeleteMarker"
+      ],
+      "LifecycleRuleFilter": [
+        "Prefix",
+        "Tag",
+        "ObjectSizeGreaterThan",
+        "ObjectSizeLessThan",
+        "And"
+      ],
+      "LifecycleRuleAndOperator": [
+        "Prefix",
+        "Tags",
+        "ObjectSizeGreaterThan",
+        "ObjectSizeLessThan"
+      ],
+      "Transition": [
+        "Date",
+        "Days",
+        "StorageClass"
+      ],
+      "NoncurrentVersionTransition": [
+        "NoncurrentDays",
+        "StorageClass",
+        "NewerNoncurrentVersions"
+      ],
+      "NoncurrentVersionExpiration": [
+        "NoncurrentDays",
+        "NewerNoncurrentVersions"
+      ],
+      "AbortIncompleteMultipartUpload": [
+        "DaysAfterInitiation"
+      ],
+      "GetBucketLifecycleConfigurationRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketLifecycleConfigurationOutput": [
+        "Rules",
+        "TransitionDefaultMinimumObjectSize"
+      ],
+      "DeleteBucketLifecycleRequest": [
         "Bucket",
         "ExpectedBucketOwner"
       ]

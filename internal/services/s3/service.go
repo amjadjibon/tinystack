@@ -86,6 +86,7 @@ type bucketMeta struct {
 	// objects as sent. Nil means SSE-S3.
 	Encryption        *api.ServerSideEncryptionConfiguration `json:",omitempty"`
 	PublicAccessBlock *api.PublicAccessBlockConfiguration    `json:",omitempty"`
+	Lifecycle         *lifecycle                             `json:",omitempty"`
 	// Versioning is "", "Enabled", or "Suspended".
 	Versioning string `json:",omitempty"`
 	// Policy is the bucket policy, stored as sent and never evaluated.
@@ -108,6 +109,11 @@ func value[T any](p *T) (v T) {
 // status from the generated error bindings instead.
 func fail(status int, code, message string) error {
 	return &awserror.Error{Code: code, Message: message, StatusCode: status}
+}
+
+func malformedXML() error {
+	return fail(http.StatusBadRequest, "MalformedXML",
+		"The XML you provided was not well-formed or did not validate against our published schema")
 }
 
 func noSuchBucket() error { return awserror.New("NoSuchBucket", "The specified bucket does not exist") }

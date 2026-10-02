@@ -463,3 +463,86 @@ func TestS3BucketAccess(t *testing.T) {
 		t.Fatalf("deleted block: %s %d %v", code, status, err)
 	}
 }
+
+func TestS3BucketLifecycle(t *testing.T) {
+	c := s3Client(server(t), "test", "us-east-1")
+	ctx := context.Background()
+	if _, err := c.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("logs")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := c.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
+		Bucket: aws.String("logs"),
+	})
+	if code, status := s3Code(err); code != "NoSuchLifecycleConfiguration" || status != 404 {
+		t.Fatalf("no configuration: %s %d %v", code, status, err)
+	}
+
+	put := func(rules ...s3types.LifecycleRule) error {
+		_, putErr := c.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
+			Bucket:                 aws.String("logs"),
+			LifecycleConfiguration: &s3types.BucketLifecycleConfiguration{Rules: rules},
+		})
+		return putErr
+	}
+
+	expire := s3types.LifecycleRule{
+		ID: aws.String("expire"), Status: s3types.ExpirationStatusEnabled,
+		Filter:     &s3types.LifecycleRuleFilter{Prefix: aws.String("tmp/")},
+		Expiration: &s3types.LifecycleExpiration{Days: aws.Int32(7)},
+		Transitions: []s3types.Transition{{
+			Days: aws.Int32(1), StorageClass: s3types.TransitionStorageClassStandardIa,
+		}},
+		AbortIncompleteMultipartUpload: &s3types.AbortIncompleteMultipartUpload{DaysAfterInitiation: aws.Int32(2)},
+	}
+	tagged := s3types.LifecycleRule{
+		ID: aws.String("tagged"), Status: s3types.ExpirationStatusDisabled,
+		Filter: &s3types.LifecycleRuleFilter{And: &s3types.LifecycleRuleAndOperator{
+			Prefix: aws.String("data/"), Tags: []s3types.Tag{{Key: aws.String("keep"), Value: aws.String("no")}},
+		}},
+		NoncurrentVersionExpiration: &s3types.NoncurrentVersionExpiration{NoncurrentDays: aws.Int32(30)},
+	}
+	if err = put(expire, tagged); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := c.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
+		Bucket: aws.String("logs"),
+	})
+	if err != nil || len(got.Rules) != 2 || aws.ToInt32(got.Rules[0].Expiration.Days) != 7 ||
+		aws.ToString(got.Rules[0].Filter.Prefix) != "tmp/" ||
+		got.Rules[0].Transitions[0].StorageClass != s3types.TransitionStorageClassStandardIa ||
+		len(got.Rules[1].Filter.And.Tags) != 1 ||
+		got.TransitionDefaultMinimumObjectSize != s3types.TransitionDefaultMinimumObjectSizeAllStorageClasses128k {
+		t.Fatalf("%+v %v", got, err)
+	}
+
+	for _, bad := range []s3types.LifecycleRule{
+		{ID: aws.String("none"), Status: s3types.ExpirationStatusEnabled, Filter: &s3types.LifecycleRuleFilter{}},
+		{
+			ID: aws.String("zero"), Status: s3types.ExpirationStatusEnabled, Filter: &s3types.LifecycleRuleFilter{},
+			Expiration: &s3types.LifecycleExpiration{Days: aws.Int32(0)},
+		},
+		expire, // the same ID twice
+	} {
+		rules := []s3types.LifecycleRule{bad}
+		if aws.ToString(bad.ID) == "expire" {
+			rules = append(rules, expire)
+		}
+
+		if code, _ := s3Code(put(rules...)); code != "InvalidArgument" {
+			t.Fatalf("%s was accepted", aws.ToString(bad.ID))
+		}
+	}
+
+	if _, err = c.DeleteBucketLifecycle(ctx, &s3.DeleteBucketLifecycleInput{Bucket: aws.String("logs")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
+		Bucket: aws.String("logs"),
+	})
+	if code, _ := s3Code(err); code != "NoSuchLifecycleConfiguration" {
+		t.Fatalf("deleted: %v", err)
+	}
+}

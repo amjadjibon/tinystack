@@ -27,8 +27,7 @@ func (s *Service) PutBucketOwnershipControls(
 ) (*api.PutBucketOwnershipControlsOutput, error) {
 	c := in.OwnershipControls
 	if c == nil || len(c.Rules) != 1 || !ownerships[value(c.Rules[0].ObjectOwnership)] {
-		return nil, fail(http.StatusBadRequest, "MalformedXML",
-			"The XML you provided was not well-formed or did not validate against our published schema")
+		return nil, malformedXML()
 	}
 
 	err := s.updateBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) {
@@ -81,8 +80,7 @@ func (s *Service) PutPublicAccessBlock(
 ) (*api.PutPublicAccessBlockOutput, error) {
 	c := in.PublicAccessBlockConfiguration
 	if c == nil {
-		return nil, fail(http.StatusBadRequest, "MalformedXML",
-			"The XML you provided was not well-formed or did not validate against our published schema")
+		return nil, malformedXML()
 	}
 
 	err := s.updateBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) {

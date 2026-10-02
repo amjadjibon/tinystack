@@ -2,7 +2,6 @@ package s3
 
 import (
 	"context"
-	"net/http"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 )
@@ -21,22 +20,20 @@ func defaultEncryption() *api.ServerSideEncryptionConfiguration {
 // checkEncryption validates a default encryption configuration: one rule
 // naming an algorithm, with a KMS key only for KMS encryption.
 func checkEncryption(cfg *api.ServerSideEncryptionConfiguration) error {
-	malformed := fail(http.StatusBadRequest, "MalformedXML",
-		"The XML you provided was not well-formed or did not validate against our published schema")
 	if cfg == nil || len(cfg.Rules) != 1 || cfg.Rules[0].ApplyServerSideEncryptionByDefault == nil {
-		return malformed
+		return malformedXML()
 	}
 
 	d := cfg.Rules[0].ApplyServerSideEncryptionByDefault
 	switch value(d.SSEAlgorithm) {
 	case sseS3:
 		if d.KMSMasterKeyID != nil {
-			return fail(http.StatusBadRequest, "InvalidArgument",
+			return invalidArgument(
 				"a KMSMasterKeyID is not applicable if the default sse algorithm is not aws:kms or aws:kms:dsse")
 		}
 	case "aws:kms", "aws:kms:dsse":
 	default:
-		return malformed
+		return malformedXML()
 	}
 
 	return nil

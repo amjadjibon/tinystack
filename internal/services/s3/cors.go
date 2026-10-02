@@ -21,16 +21,14 @@ var corsMethods = map[string]bool{
 // checkCORS validates a CORS configuration: every rule needs origins and
 // methods S3 knows, and an origin or header may hold at most one "*".
 func checkCORS(cfg *api.CORSConfiguration) error {
-	malformed := fail(http.StatusBadRequest, "MalformedXML",
-		"The XML you provided was not well-formed or did not validate against our published schema")
 	if cfg == nil || len(cfg.CORSRules) == 0 || len(cfg.CORSRules) > maxCORSRules {
-		return malformed
+		return malformedXML()
 	}
 
 	for i := range cfg.CORSRules {
 		r := &cfg.CORSRules[i]
 		if len(r.AllowedOrigins) == 0 || len(r.AllowedMethods) == 0 || value(r.MaxAgeSeconds) < 0 {
-			return malformed
+			return malformedXML()
 		}
 
 		for _, m := range r.AllowedMethods {

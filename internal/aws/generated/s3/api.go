@@ -780,6 +780,94 @@ type DeletePublicAccessBlockRequest struct {
 	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
+type LifecycleExpiration struct {
+	Date                      *time.Time `json:"Date,omitempty" xml:"Date,omitempty"`
+	Days                      *int64     `json:"Days,omitempty" xml:"Days,omitempty"`
+	ExpiredObjectDeleteMarker *bool      `json:"ExpiredObjectDeleteMarker,omitempty" xml:"ExpiredObjectDeleteMarker,omitempty"`
+}
+
+type LifecycleRuleAndOperator struct {
+	Prefix                *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tags                  []Tag   `json:"Tags,omitempty" xml:"Tag,omitempty"`
+	ObjectSizeGreaterThan *int64  `json:"ObjectSizeGreaterThan,omitempty" xml:"ObjectSizeGreaterThan,omitempty"`
+	ObjectSizeLessThan    *int64  `json:"ObjectSizeLessThan,omitempty" xml:"ObjectSizeLessThan,omitempty"`
+}
+
+type LifecycleRuleFilter struct {
+	Prefix                *string                   `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tag                   *Tag                      `json:"Tag,omitempty" xml:"Tag,omitempty"`
+	ObjectSizeGreaterThan *int64                    `json:"ObjectSizeGreaterThan,omitempty" xml:"ObjectSizeGreaterThan,omitempty"`
+	ObjectSizeLessThan    *int64                    `json:"ObjectSizeLessThan,omitempty" xml:"ObjectSizeLessThan,omitempty"`
+	And                   *LifecycleRuleAndOperator `json:"And,omitempty" xml:"And,omitempty"`
+}
+
+type Transition struct {
+	Date         *time.Time `json:"Date,omitempty" xml:"Date,omitempty"`
+	Days         *int64     `json:"Days,omitempty" xml:"Days,omitempty"`
+	StorageClass *string    `json:"StorageClass,omitempty" xml:"StorageClass,omitempty"`
+}
+
+type NoncurrentVersionTransition struct {
+	NoncurrentDays          *int64  `json:"NoncurrentDays,omitempty" xml:"NoncurrentDays,omitempty"`
+	StorageClass            *string `json:"StorageClass,omitempty" xml:"StorageClass,omitempty"`
+	NewerNoncurrentVersions *int64  `json:"NewerNoncurrentVersions,omitempty" xml:"NewerNoncurrentVersions,omitempty"`
+}
+
+type NoncurrentVersionExpiration struct {
+	NoncurrentDays          *int64 `json:"NoncurrentDays,omitempty" xml:"NoncurrentDays,omitempty"`
+	NewerNoncurrentVersions *int64 `json:"NewerNoncurrentVersions,omitempty" xml:"NewerNoncurrentVersions,omitempty"`
+}
+
+type AbortIncompleteMultipartUpload struct {
+	DaysAfterInitiation *int64 `json:"DaysAfterInitiation,omitempty" xml:"DaysAfterInitiation,omitempty"`
+}
+
+type LifecycleRule struct {
+	Expiration                     *LifecycleExpiration            `json:"Expiration,omitempty" xml:"Expiration,omitempty"`
+	ID                             *string                         `json:"ID,omitempty" xml:"ID,omitempty"`
+	Prefix                         *string                         `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Filter                         *LifecycleRuleFilter            `json:"Filter,omitempty" xml:"Filter,omitempty"`
+	Status                         *string                         `json:"Status,omitempty" xml:"Status,omitempty"`
+	Transitions                    []Transition                    `json:"Transitions,omitempty" xml:"Transition,omitempty"`
+	NoncurrentVersionTransitions   []NoncurrentVersionTransition   `json:"NoncurrentVersionTransitions,omitempty" xml:"NoncurrentVersionTransition,omitempty"`
+	NoncurrentVersionExpiration    *NoncurrentVersionExpiration    `json:"NoncurrentVersionExpiration,omitempty" xml:"NoncurrentVersionExpiration,omitempty"`
+	AbortIncompleteMultipartUpload *AbortIncompleteMultipartUpload `json:"AbortIncompleteMultipartUpload,omitempty" xml:"AbortIncompleteMultipartUpload,omitempty"`
+}
+
+type BucketLifecycleConfiguration struct {
+	Rules []LifecycleRule `json:"Rules,omitempty" xml:"Rule,omitempty"`
+}
+
+type PutBucketLifecycleConfigurationRequest struct {
+	Bucket                             *string                       `json:"-" xml:"-"`
+	ChecksumAlgorithm                  *string                       `json:"-" xml:"-"`
+	LifecycleConfiguration             *BucketLifecycleConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner                *string                       `json:"-" xml:"-"`
+	TransitionDefaultMinimumObjectSize *string                       `json:"-" xml:"-"`
+}
+
+type PutBucketLifecycleConfigurationOutput struct {
+	TransitionDefaultMinimumObjectSize *string `json:"-" xml:"-"`
+}
+
+type GetBucketLifecycleConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketLifecycleConfigurationOutput struct {
+	XMLName                            xml.Name        `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ LifecycleConfiguration"`
+	Rules                              []LifecycleRule `json:"Rules,omitempty" xml:"Rule,omitempty"`
+	TransitionDefaultMinimumObjectSize *string         `json:"-" xml:"-"`
+}
+
+type DeleteBucketLifecycleOutput struct{}
+
+type DeleteBucketLifecycleRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -826,6 +914,9 @@ type API interface {
 	PutPublicAccessBlock(context.Context, *PutPublicAccessBlockRequest) (*PutPublicAccessBlockOutput, error)
 	GetPublicAccessBlock(context.Context, *GetPublicAccessBlockRequest) (*GetPublicAccessBlockOutput, error)
 	DeletePublicAccessBlock(context.Context, *DeletePublicAccessBlockRequest) (*DeletePublicAccessBlockOutput, error)
+	PutBucketLifecycleConfiguration(context.Context, *PutBucketLifecycleConfigurationRequest) (*PutBucketLifecycleConfigurationOutput, error)
+	GetBucketLifecycleConfiguration(context.Context, *GetBucketLifecycleConfigurationRequest) (*GetBucketLifecycleConfigurationOutput, error)
+	DeleteBucketLifecycle(context.Context, *DeleteBucketLifecycleRequest) (*DeleteBucketLifecycleOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -964,6 +1055,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeletePublicAccessBlock": {Name: "DeletePublicAccessBlock", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?publicAccessBlock", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeletePublicAccessBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeletePublicAccessBlock(ctx, input.(*DeletePublicAccessBlockRequest))
+		}},
+		"PutBucketLifecycleConfiguration": {Name: "PutBucketLifecycleConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "LifecycleConfiguration": catalog.MemberBinding{Location: "payload", Name: "LifecycleConfiguration"}, "TransitionDefaultMinimumObjectSize": catalog.MemberBinding{Location: "header", Name: "x-amz-transition-default-minimum-object-size"}}, Output: map[string]catalog.MemberBinding{"TransitionDefaultMinimumObjectSize": catalog.MemberBinding{Location: "header", Name: "x-amz-transition-default-minimum-object-size"}}, Method: "PUT", URI: "/{Bucket}?lifecycle", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketLifecycleConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketLifecycleConfiguration(ctx, input.(*PutBucketLifecycleConfigurationRequest))
+		}},
+		"GetBucketLifecycleConfiguration": {Name: "GetBucketLifecycleConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"Rules": catalog.MemberBinding{Location: "document", Name: "Rules"}, "TransitionDefaultMinimumObjectSize": catalog.MemberBinding{Location: "header", Name: "x-amz-transition-default-minimum-object-size"}}, Method: "GET", URI: "/{Bucket}?lifecycle", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketLifecycleConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketLifecycleConfiguration(ctx, input.(*GetBucketLifecycleConfigurationRequest))
+		}},
+		"DeleteBucketLifecycle": {Name: "DeleteBucketLifecycle", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?lifecycle", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketLifecycleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketLifecycle(ctx, input.(*DeleteBucketLifecycleRequest))
 		}},
 	}}
 }
