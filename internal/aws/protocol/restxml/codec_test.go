@@ -76,3 +76,19 @@ func TestDecodeXMLRejectsUnknownElements(t *testing.T) {
 		t.Fatal("malformed XML accepted")
 	}
 }
+
+func TestDecodeChecksContentMD5(t *testing.T) {
+	for digest, code := range map[string]string{
+		"jXd/OF09/siBXSD3SWAm3A==": "", // MD5("data")
+		"AAAAAAAAAAAAAAAAAAAAAA==": "BadDigest",
+		"not base64":               "InvalidDigest",
+	} {
+		r := httptest.NewRequest(http.MethodPut, "/b/k", strings.NewReader("data"))
+		r.Header.Set("Content-MD5", digest)
+		err := Decode(r, &binding, nil, []byte("data"), &input{})
+		var e *awserror.Error
+		if (code == "" && err != nil) || (code != "" && (!errors.As(err, &e) || e.Code != code)) {
+			t.Fatalf("%s: %v", digest, err)
+		}
+	}
+}

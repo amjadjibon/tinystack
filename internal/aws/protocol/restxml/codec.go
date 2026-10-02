@@ -5,6 +5,8 @@ package restxml
 
 import (
 	"bytes"
+	"crypto/md5" // #nosec G501 -- Content-MD5 is the protocol's digest.
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -18,8 +20,25 @@ import (
 )
 
 // Decode fills input from the request. labels holds the decoded URI labels and
-// body the request payload. Modeled inputs the service does not implement fail.
+// body the request payload. Modeled inputs the service does not implement fail,
+// and so does a payload that does not match its Content-MD5.
 func Decode(r *http.Request, b *catalog.Binding, labels map[string]string, body []byte, input any) error {
+	if digest := r.Header.Get("Content-MD5"); digest != "" {
+		want, err := base64.StdEncoding.DecodeString(digest)
+		if err != nil || len(want) != md5.Size {
+			return &awserror.Error{
+				Code: "InvalidDigest", Message: "The Content-MD5 you specified was invalid.", StatusCode: 400,
+			}
+		}
+
+		if got := md5.Sum(body); !bytes.Equal(got[:], want) { // #nosec G401 -- the protocol's digest.
+			return &awserror.Error{
+				Code: "BadDigest", Message: "The Content-MD5 you specified did not match what we received.",
+				StatusCode: 400,
+			}
+		}
+	}
+
 	return rest.Decode(r, b, labels, body, input, decodeXML)
 }
 
