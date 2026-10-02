@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DeliveriesRouteImport } from './routes/deliveries'
+import { Route as MetricsRouteImport } from './routes/metrics'
+import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ServicesServiceIndexRouteImport } from './routes/services/$service.index'
 import { Route as ServicesServiceResourceRouteImport } from './routes/services/$service.resource'
@@ -17,6 +20,21 @@ import { Route as ServicesServiceResourceRouteImport } from './routes/services/$
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveriesRoute = DeliveriesRouteImport.update({
+  id: '/deliveries',
+  path: '/deliveries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetricsRoute = MetricsRouteImport.update({
+  id: '/metrics',
+  path: '/metrics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestsRoute = RequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResourcesRoute = ResourcesRouteImport.update({
@@ -37,12 +55,18 @@ const ServicesServiceResourceRoute = ServicesServiceResourceRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/deliveries': typeof DeliveriesRoute
+  '/metrics': typeof MetricsRoute
+  '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service/': typeof ServicesServiceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/deliveries': typeof DeliveriesRoute
+  '/metrics': typeof MetricsRoute
+  '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service': typeof ServicesServiceIndexRoute
@@ -50,6 +74,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/deliveries': typeof DeliveriesRoute
+  '/metrics': typeof MetricsRoute
+  '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service/': typeof ServicesServiceIndexRoute
@@ -57,12 +84,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/resources' | '/services/$service/resource' | '/services/$service/'
+    | '/'
+    | '/deliveries'
+    | '/metrics'
+    | '/requests'
+    | '/resources'
+    | '/services/$service/resource'
+    | '/services/$service/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/resources' | '/services/$service/resource' | '/services/$service'
+  to:
+    | '/'
+    | '/deliveries'
+    | '/metrics'
+    | '/requests'
+    | '/resources'
+    | '/services/$service/resource'
+    | '/services/$service'
   id:
     | '__root__'
     | '/'
+    | '/deliveries'
+    | '/metrics'
+    | '/requests'
     | '/resources'
     | '/services/$service/resource'
     | '/services/$service/'
@@ -70,6 +113,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DeliveriesRoute: typeof DeliveriesRoute
+  MetricsRoute: typeof MetricsRoute
+  RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
   ServicesServiceResourceRoute: typeof ServicesServiceResourceRoute
   ServicesServiceIndexRoute: typeof ServicesServiceIndexRoute
@@ -82,6 +128,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deliveries': {
+      id: '/deliveries'
+      path: '/deliveries'
+      fullPath: '/deliveries'
+      preLoaderRoute: typeof DeliveriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/metrics': {
+      id: '/metrics'
+      path: '/metrics'
+      fullPath: '/metrics'
+      preLoaderRoute: typeof MetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/requests': {
+      id: '/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof RequestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/resources': {
@@ -110,6 +177,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DeliveriesRoute: DeliveriesRoute,
+  MetricsRoute: MetricsRoute,
+  RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
   ServicesServiceResourceRoute: ServicesServiceResourceRoute,
   ServicesServiceIndexRoute: ServicesServiceIndexRoute,
