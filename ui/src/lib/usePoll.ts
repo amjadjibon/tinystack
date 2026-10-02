@@ -7,8 +7,9 @@ export type Poll<T> = {
 	reload: () => void;
 };
 
-// usePoll loads fetcher now and then every intervalMs (never when it is 0),
-// keeping the last good data while a later load fails.
+// usePoll loads fetcher now and then every intervalMs (never when it is 0)
+// while the page is visible, reloading as soon as it is shown again. It keeps
+// the last good data while a later load fails.
 export function usePoll<T>(
 	fetcher: () => Promise<T>,
 	intervalMs = 5000,
@@ -34,8 +35,17 @@ export function usePoll<T>(
 		reload();
 		if (intervalMs <= 0) return;
 
-		const timer = setInterval(reload, intervalMs);
-		return () => clearInterval(timer);
+		const timer = setInterval(() => {
+			if (document.visibilityState === "visible") reload();
+		}, intervalMs);
+		const onVisible = () => {
+			if (document.visibilityState === "visible") reload();
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		return () => {
+			clearInterval(timer);
+			document.removeEventListener("visibilitychange", onVisible);
+		};
 	}, [reload, intervalMs]);
 
 	return { data, error, loading, reload };
