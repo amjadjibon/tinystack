@@ -2994,7 +2994,10 @@
       "DeletePublicAccessBlock",
       "PutBucketLifecycleConfiguration",
       "GetBucketLifecycleConfiguration",
-      "DeleteBucketLifecycle"
+      "DeleteBucketLifecycle",
+      "PutBucketWebsite",
+      "GetBucketWebsite",
+      "DeleteBucketWebsite"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -3647,6 +3650,58 @@
         "TransitionDefaultMinimumObjectSize"
       ],
       "DeleteBucketLifecycleRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "PutBucketWebsiteRequest": [
+        "Bucket",
+        "ContentMD5",
+        "ChecksumAlgorithm",
+        "WebsiteConfiguration",
+        "ExpectedBucketOwner"
+      ],
+      "WebsiteConfiguration": [
+        "ErrorDocument",
+        "IndexDocument",
+        "RedirectAllRequestsTo",
+        "RoutingRules"
+      ],
+      "ErrorDocument": [
+        "Key"
+      ],
+      "IndexDocument": [
+        "Suffix"
+      ],
+      "RedirectAllRequestsTo": [
+        "HostName",
+        "Protocol"
+      ],
+      "RoutingRule": [
+        "Condition",
+        "Redirect"
+      ],
+      "Condition": [
+        "HttpErrorCodeReturnedEquals",
+        "KeyPrefixEquals"
+      ],
+      "Redirect": [
+        "HostName",
+        "HttpRedirectCode",
+        "Protocol",
+        "ReplaceKeyPrefixWith",
+        "ReplaceKeyWith"
+      ],
+      "GetBucketWebsiteRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketWebsiteOutput": [
+        "RedirectAllRequestsTo",
+        "IndexDocument",
+        "ErrorDocument",
+        "RoutingRules"
+      ],
+      "DeleteBucketWebsiteRequest": [
         "Bucket",
         "ExpectedBucketOwner"
       ]

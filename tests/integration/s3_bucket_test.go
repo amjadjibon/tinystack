@@ -546,3 +546,64 @@ func TestS3BucketLifecycle(t *testing.T) {
 		t.Fatalf("deleted: %v", err)
 	}
 }
+
+func TestS3BucketWebsite(t *testing.T) {
+	c := s3Client(server(t), "test", "us-east-1")
+	ctx := context.Background()
+	if _, err := c.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("pages")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := c.GetBucketWebsite(ctx, &s3.GetBucketWebsiteInput{Bucket: aws.String("pages")})
+	if code, status := s3Code(err); code != "NoSuchWebsiteConfiguration" || status != 404 {
+		t.Fatalf("no configuration: %s %d %v", code, status, err)
+	}
+
+	put := func(cfg *s3types.WebsiteConfiguration) error {
+		_, putErr := c.PutBucketWebsite(ctx, &s3.PutBucketWebsiteInput{
+			Bucket: aws.String("pages"), WebsiteConfiguration: cfg,
+		})
+		return putErr
+	}
+
+	err = put(&s3types.WebsiteConfiguration{
+		IndexDocument: &s3types.IndexDocument{Suffix: aws.String("index.html")},
+		ErrorDocument: &s3types.ErrorDocument{Key: aws.String("404.html")},
+		RoutingRules: []s3types.RoutingRule{{
+			Condition: &s3types.Condition{KeyPrefixEquals: aws.String("docs/")},
+			Redirect:  &s3types.Redirect{ReplaceKeyPrefixWith: aws.String("documents/")},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := c.GetBucketWebsite(ctx, &s3.GetBucketWebsiteInput{Bucket: aws.String("pages")})
+	if err != nil || aws.ToString(got.IndexDocument.Suffix) != "index.html" ||
+		aws.ToString(got.ErrorDocument.Key) != "404.html" || len(got.RoutingRules) != 1 ||
+		aws.ToString(got.RoutingRules[0].Redirect.ReplaceKeyPrefixWith) != "documents/" {
+		t.Fatalf("%+v %v", got, err)
+	}
+
+	for _, bad := range []*s3types.WebsiteConfiguration{
+		{ErrorDocument: &s3types.ErrorDocument{Key: aws.String("404.html")}},
+		{IndexDocument: &s3types.IndexDocument{Suffix: aws.String("a/index.html")}},
+		{
+			IndexDocument:         &s3types.IndexDocument{Suffix: aws.String("index.html")},
+			RedirectAllRequestsTo: &s3types.RedirectAllRequestsTo{HostName: aws.String("example.com")},
+		},
+	} {
+		if code, _ := s3Code(put(bad)); code != "InvalidArgument" {
+			t.Fatalf("%+v was accepted", bad)
+		}
+	}
+
+	if _, err = c.DeleteBucketWebsite(ctx, &s3.DeleteBucketWebsiteInput{Bucket: aws.String("pages")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.GetBucketWebsite(ctx, &s3.GetBucketWebsiteInput{Bucket: aws.String("pages")})
+	if code, _ := s3Code(err); code != "NoSuchWebsiteConfiguration" {
+		t.Fatalf("deleted: %v", err)
+	}
+}

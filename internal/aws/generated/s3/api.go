@@ -868,6 +868,74 @@ type DeleteBucketLifecycleRequest struct {
 	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
+type PutBucketWebsiteOutput struct{}
+
+type ErrorDocument struct {
+	Key *string `json:"Key,omitempty" xml:"Key,omitempty"`
+}
+
+type IndexDocument struct {
+	Suffix *string `json:"Suffix,omitempty" xml:"Suffix,omitempty"`
+}
+
+type RedirectAllRequestsTo struct {
+	HostName *string `json:"HostName,omitempty" xml:"HostName,omitempty"`
+	Protocol *string `json:"Protocol,omitempty" xml:"Protocol,omitempty"`
+}
+
+type Condition struct {
+	HttpErrorCodeReturnedEquals *string `json:"HttpErrorCodeReturnedEquals,omitempty" xml:"HttpErrorCodeReturnedEquals,omitempty"`
+	KeyPrefixEquals             *string `json:"KeyPrefixEquals,omitempty" xml:"KeyPrefixEquals,omitempty"`
+}
+
+type Redirect struct {
+	HostName             *string `json:"HostName,omitempty" xml:"HostName,omitempty"`
+	HttpRedirectCode     *string `json:"HttpRedirectCode,omitempty" xml:"HttpRedirectCode,omitempty"`
+	Protocol             *string `json:"Protocol,omitempty" xml:"Protocol,omitempty"`
+	ReplaceKeyPrefixWith *string `json:"ReplaceKeyPrefixWith,omitempty" xml:"ReplaceKeyPrefixWith,omitempty"`
+	ReplaceKeyWith       *string `json:"ReplaceKeyWith,omitempty" xml:"ReplaceKeyWith,omitempty"`
+}
+
+type RoutingRule struct {
+	Condition *Condition `json:"Condition,omitempty" xml:"Condition,omitempty"`
+	Redirect  *Redirect  `json:"Redirect,omitempty" xml:"Redirect,omitempty"`
+}
+
+type WebsiteConfiguration struct {
+	ErrorDocument         *ErrorDocument         `json:"ErrorDocument,omitempty" xml:"ErrorDocument,omitempty"`
+	IndexDocument         *IndexDocument         `json:"IndexDocument,omitempty" xml:"IndexDocument,omitempty"`
+	RedirectAllRequestsTo *RedirectAllRequestsTo `json:"RedirectAllRequestsTo,omitempty" xml:"RedirectAllRequestsTo,omitempty"`
+	RoutingRules          []RoutingRule          `json:"RoutingRules,omitempty" xml:"RoutingRules>RoutingRule,omitempty"`
+}
+
+type PutBucketWebsiteRequest struct {
+	Bucket               *string               `json:"-" xml:"-"`
+	ContentMD5           *string               `json:"-" xml:"-"`
+	ChecksumAlgorithm    *string               `json:"-" xml:"-"`
+	WebsiteConfiguration *WebsiteConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner  *string               `json:"-" xml:"-"`
+}
+
+type GetBucketWebsiteRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketWebsiteOutput struct {
+	XMLName               xml.Name               `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ WebsiteConfiguration"`
+	RedirectAllRequestsTo *RedirectAllRequestsTo `json:"RedirectAllRequestsTo,omitempty" xml:"RedirectAllRequestsTo,omitempty"`
+	IndexDocument         *IndexDocument         `json:"IndexDocument,omitempty" xml:"IndexDocument,omitempty"`
+	ErrorDocument         *ErrorDocument         `json:"ErrorDocument,omitempty" xml:"ErrorDocument,omitempty"`
+	RoutingRules          []RoutingRule          `json:"RoutingRules,omitempty" xml:"RoutingRules>RoutingRule,omitempty"`
+}
+
+type DeleteBucketWebsiteOutput struct{}
+
+type DeleteBucketWebsiteRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -917,6 +985,9 @@ type API interface {
 	PutBucketLifecycleConfiguration(context.Context, *PutBucketLifecycleConfigurationRequest) (*PutBucketLifecycleConfigurationOutput, error)
 	GetBucketLifecycleConfiguration(context.Context, *GetBucketLifecycleConfigurationRequest) (*GetBucketLifecycleConfigurationOutput, error)
 	DeleteBucketLifecycle(context.Context, *DeleteBucketLifecycleRequest) (*DeleteBucketLifecycleOutput, error)
+	PutBucketWebsite(context.Context, *PutBucketWebsiteRequest) (*PutBucketWebsiteOutput, error)
+	GetBucketWebsite(context.Context, *GetBucketWebsiteRequest) (*GetBucketWebsiteOutput, error)
+	DeleteBucketWebsite(context.Context, *DeleteBucketWebsiteRequest) (*DeleteBucketWebsiteOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1064,6 +1135,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteBucketLifecycle": {Name: "DeleteBucketLifecycle", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?lifecycle", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketLifecycleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteBucketLifecycle(ctx, input.(*DeleteBucketLifecycleRequest))
+		}},
+		"PutBucketWebsite": {Name: "PutBucketWebsite", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "WebsiteConfiguration": catalog.MemberBinding{Location: "payload", Name: "WebsiteConfiguration"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?website", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketWebsiteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketWebsite(ctx, input.(*PutBucketWebsiteRequest))
+		}},
+		"GetBucketWebsite": {Name: "GetBucketWebsite", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"ErrorDocument": catalog.MemberBinding{Location: "document", Name: "ErrorDocument"}, "IndexDocument": catalog.MemberBinding{Location: "document", Name: "IndexDocument"}, "RedirectAllRequestsTo": catalog.MemberBinding{Location: "document", Name: "RedirectAllRequestsTo"}, "RoutingRules": catalog.MemberBinding{Location: "document", Name: "RoutingRules"}}, Method: "GET", URI: "/{Bucket}?website", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketWebsiteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketWebsite(ctx, input.(*GetBucketWebsiteRequest))
+		}},
+		"DeleteBucketWebsite": {Name: "DeleteBucketWebsite", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?website", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketWebsiteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketWebsite(ctx, input.(*DeleteBucketWebsiteRequest))
 		}},
 	}}
 }

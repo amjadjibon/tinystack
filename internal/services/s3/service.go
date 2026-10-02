@@ -87,6 +87,7 @@ type bucketMeta struct {
 	Encryption        *api.ServerSideEncryptionConfiguration `json:",omitempty"`
 	PublicAccessBlock *api.PublicAccessBlockConfiguration    `json:",omitempty"`
 	Lifecycle         *lifecycle                             `json:",omitempty"`
+	Website           *api.WebsiteConfiguration              `json:",omitempty"`
 	// Versioning is "", "Enabled", or "Suspended".
 	Versioning string `json:",omitempty"`
 	// Policy is the bucket policy, stored as sent and never evaluated.
