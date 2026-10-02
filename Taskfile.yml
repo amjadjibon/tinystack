@@ -11,6 +11,7 @@ tasks:
       - task lint
       - task test
       - task build
+      - task ui:check
 
   build:
     desc: "Build bin/tinystack with the web console built in (needs Node.js and pnpm)"
