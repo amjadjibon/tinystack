@@ -44,6 +44,10 @@ tasks:
     cmds:
       - python3 tests/terraform/terraform.py
 
+  test:sam:
+    cmds:
+      - python3 tests/sam/sam.py
+
   clean:
     cmds:
       - rm -rf bin

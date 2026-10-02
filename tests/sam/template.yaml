@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: The SAM application tests/sam/sam.py deploys, updates, and deletes with the sam CLI.
+Parameters:
+  Greeting: {Type: String, Default: hello}
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 10
+    Environment:
+      Variables:
+        GREETING: !Ref Greeting
+        TABLE: !Ref Orders
+Resources:
+  Orders:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey: {Name: orderId, Type: String}
+  Jobs: {Type: AWS::SQS::Queue}
+  Api:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: app/
+      Handler: app.handler
+      AutoPublishAlias: live
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref Orders}
+      Events:
+        Rest:
+          Type: Api
+          Properties: {Path: "/orders/{id}", Method: get}
+        Http:
+          Type: HttpApi
+          Properties: {Path: /orders, Method: GET}
+        Messages:
+          Type: SQS
+          Properties: {Queue: !GetAtt Jobs.Arn, BatchSize: 5}
+Outputs:
+  RestApi: {Value: !Ref ServerlessRestApi}
+  HttpApi: {Value: !Ref ServerlessHttpApi}
+  Alias: {Value: !Ref Api.Alias}
+  Table: {Value: !Ref Orders}
