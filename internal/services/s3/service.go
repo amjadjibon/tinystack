@@ -82,6 +82,9 @@ type bucketIndex struct {
 type bucketMeta struct {
 	Tags          map[string]string              `json:",omitempty"`
 	Notifications *api.NotificationConfiguration `json:",omitempty"`
+	// Encryption is the default encryption, stored only: TinyStack keeps
+	// objects as sent. Nil means SSE-S3.
+	Encryption *api.ServerSideEncryptionConfiguration `json:",omitempty"`
 	// Versioning is "", "Enabled", or "Suspended".
 	Versioning string `json:",omitempty"`
 	// Policy is the bucket policy, stored as sent and never evaluated.

@@ -673,6 +673,46 @@ type DeleteBucketCorsRequest struct {
 	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
+type PutBucketEncryptionOutput struct{}
+
+type ServerSideEncryptionByDefault struct {
+	SSEAlgorithm   *string `json:"SSEAlgorithm,omitempty" xml:"SSEAlgorithm,omitempty"`
+	KMSMasterKeyID *string `json:"KMSMasterKeyID,omitempty" xml:"KMSMasterKeyID,omitempty"`
+}
+
+type ServerSideEncryptionRule struct {
+	ApplyServerSideEncryptionByDefault *ServerSideEncryptionByDefault `json:"ApplyServerSideEncryptionByDefault,omitempty" xml:"ApplyServerSideEncryptionByDefault,omitempty"`
+	BucketKeyEnabled                   *bool                          `json:"BucketKeyEnabled,omitempty" xml:"BucketKeyEnabled,omitempty"`
+}
+
+type ServerSideEncryptionConfiguration struct {
+	Rules []ServerSideEncryptionRule `json:"Rules,omitempty" xml:"Rule,omitempty"`
+}
+
+type PutBucketEncryptionRequest struct {
+	Bucket                            *string                            `json:"-" xml:"-"`
+	ContentMD5                        *string                            `json:"-" xml:"-"`
+	ChecksumAlgorithm                 *string                            `json:"-" xml:"-"`
+	ServerSideEncryptionConfiguration *ServerSideEncryptionConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner               *string                            `json:"-" xml:"-"`
+}
+
+type GetBucketEncryptionRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketEncryptionOutput struct {
+	ServerSideEncryptionConfiguration *ServerSideEncryptionConfiguration `json:"-" xml:"-"`
+}
+
+type DeleteBucketEncryptionOutput struct{}
+
+type DeleteBucketEncryptionRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -710,6 +750,9 @@ type API interface {
 	PutBucketCors(context.Context, *PutBucketCorsRequest) (*PutBucketCorsOutput, error)
 	GetBucketCors(context.Context, *GetBucketCorsRequest) (*GetBucketCorsOutput, error)
 	DeleteBucketCors(context.Context, *DeleteBucketCorsRequest) (*DeleteBucketCorsOutput, error)
+	PutBucketEncryption(context.Context, *PutBucketEncryptionRequest) (*PutBucketEncryptionOutput, error)
+	GetBucketEncryption(context.Context, *GetBucketEncryptionRequest) (*GetBucketEncryptionOutput, error)
+	DeleteBucketEncryption(context.Context, *DeleteBucketEncryptionRequest) (*DeleteBucketEncryptionOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -821,6 +864,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteBucketCors": {Name: "DeleteBucketCors", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?cors", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketCorsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteBucketCors(ctx, input.(*DeleteBucketCorsRequest))
+		}},
+		"PutBucketEncryption": {Name: "PutBucketEncryption", UnitOutput: true, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "ServerSideEncryptionConfiguration": catalog.MemberBinding{Location: "payload", Name: "ServerSideEncryptionConfiguration"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?encryption", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketEncryptionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketEncryption(ctx, input.(*PutBucketEncryptionRequest))
+		}},
+		"GetBucketEncryption": {Name: "GetBucketEncryption", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"ServerSideEncryptionConfiguration": catalog.MemberBinding{Location: "payload", Name: "ServerSideEncryptionConfiguration"}}, Method: "GET", URI: "/{Bucket}?encryption", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketEncryptionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketEncryption(ctx, input.(*GetBucketEncryptionRequest))
+		}},
+		"DeleteBucketEncryption": {Name: "DeleteBucketEncryption", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?encryption", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketEncryptionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketEncryption(ctx, input.(*DeleteBucketEncryptionRequest))
 		}},
 	}}
 }

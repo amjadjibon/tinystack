@@ -317,3 +317,64 @@ func TestS3BucketCors(t *testing.T) {
 		t.Fatalf("no configuration: %d", resp.StatusCode)
 	}
 }
+
+func TestS3BucketEncryption(t *testing.T) {
+	c := s3Client(server(t), "test", "us-east-1")
+	ctx := context.Background()
+	if _, err := c.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("vault")}); err != nil {
+		t.Fatal(err)
+	}
+
+	algorithm := func() (s3types.ServerSideEncryption, string) {
+		t.Helper()
+		out, err := c.GetBucketEncryption(ctx, &s3.GetBucketEncryptionInput{Bucket: aws.String("vault")})
+		if err != nil || len(out.ServerSideEncryptionConfiguration.Rules) != 1 {
+			t.Fatalf("%+v %v", out, err)
+		}
+
+		d := out.ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault
+		return d.SSEAlgorithm, aws.ToString(d.KMSMasterKeyID)
+	}
+
+	if got, _ := algorithm(); got != s3types.ServerSideEncryptionAes256 {
+		t.Fatalf("default: %s", got)
+	}
+
+	encrypt := func(algorithm s3types.ServerSideEncryption) error {
+		_, err := c.PutBucketEncryption(ctx, &s3.PutBucketEncryptionInput{
+			Bucket: aws.String("vault"),
+			ServerSideEncryptionConfiguration: &s3types.ServerSideEncryptionConfiguration{
+				Rules: []s3types.ServerSideEncryptionRule{{
+					ApplyServerSideEncryptionByDefault: &s3types.ServerSideEncryptionByDefault{
+						SSEAlgorithm: algorithm, KMSMasterKeyID: aws.String("alias/app"),
+					},
+					BucketKeyEnabled: aws.Bool(true),
+				}},
+			},
+		})
+		return err
+	}
+
+	if err := encrypt(s3types.ServerSideEncryptionAwsKms); err != nil {
+		t.Fatal(err)
+	}
+
+	if got, key := algorithm(); got != s3types.ServerSideEncryptionAwsKms || key != "alias/app" {
+		t.Fatalf("KMS: %s %s", got, key)
+	}
+
+	if code, _ := s3Code(encrypt(s3types.ServerSideEncryptionAes256)); code != "InvalidArgument" {
+		t.Fatal("SSE-S3 took a KMS key")
+	}
+
+	if _, err := c.DeleteBucketEncryption(
+		ctx,
+		&s3.DeleteBucketEncryptionInput{Bucket: aws.String("vault")},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	if got, _ := algorithm(); got != s3types.ServerSideEncryptionAes256 {
+		t.Fatalf("deleted: %s", got)
+	}
+}

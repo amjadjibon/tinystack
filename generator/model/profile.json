@@ -2982,7 +2982,10 @@
       "GetBucketPolicyStatus",
       "PutBucketCors",
       "GetBucketCors",
-      "DeleteBucketCors"
+      "DeleteBucketCors",
+      "PutBucketEncryption",
+      "GetBucketEncryption",
+      "DeleteBucketEncryption"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -3487,6 +3490,35 @@
         "CORSRules"
       ],
       "DeleteBucketCorsRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "PutBucketEncryptionRequest": [
+        "Bucket",
+        "ContentMD5",
+        "ChecksumAlgorithm",
+        "ServerSideEncryptionConfiguration",
+        "ExpectedBucketOwner"
+      ],
+      "ServerSideEncryptionConfiguration": [
+        "Rules"
+      ],
+      "ServerSideEncryptionRule": [
+        "ApplyServerSideEncryptionByDefault",
+        "BucketKeyEnabled"
+      ],
+      "ServerSideEncryptionByDefault": [
+        "SSEAlgorithm",
+        "KMSMasterKeyID"
+      ],
+      "GetBucketEncryptionRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketEncryptionOutput": [
+        "ServerSideEncryptionConfiguration"
+      ],
+      "DeleteBucketEncryptionRequest": [
         "Bucket",
         "ExpectedBucketOwner"
       ]
