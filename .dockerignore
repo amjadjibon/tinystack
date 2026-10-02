@@ -2,7 +2,10 @@
 .claude
 .code-review-graph
 bin
-ui
 docs
 tests
 **/node_modules
+ui/dist
+ui/.tanstack
+ui/.output
+ui/.nitro

@@ -13,14 +13,7 @@ services:
       - tinystack-data:/data
     ports:
       - "4566:4566"
-
-  tinystack-ui:
-    build: ./ui
-    ports:
       - "4567:4567"
-    depends_on:
-      tinystack:
-        condition: service_healthy
 
 configs:
   tinystack:

@@ -13,8 +13,16 @@ tasks:
       - task build
 
   build:
+    desc: "Build bin/tinystack with the web console built in (needs Node.js and pnpm)"
+    deps: [ui:build]
     cmds:
-      - go build -o bin/tinystack ./cmd/tinystack
+      - go build -tags console -o bin/tinystack ./cmd/tinystack
+
+  build:noui:
+    desc: "Build bin/tinystack-noui without the web console (needs only Go)"
+    cmds:
+      - go build -o bin/tinystack-noui ./cmd/tinystack
+
   test:
     cmds:
       - go test -race -count=1 -v ./...
@@ -60,7 +68,7 @@ tasks:
       - pnpm install --frozen-lockfile
 
   ui:dev:
-    desc: "Run the console dev server on :4567 (TINYSTACK_URL defaults to http://127.0.0.1:4566)"
+    desc: "Run the console dev server on :4568 (TINYSTACK_URL defaults to http://127.0.0.1:4566)"
     dir: ui
     deps: [ui:install]
     cmds:
@@ -82,7 +90,7 @@ tasks:
       - pnpm exec tsc --noEmit
 
   up:
-    desc: "Run TinyStack (:4566) and the console (:4567) with Docker Compose"
+    desc: "Run TinyStack (:4566, console on :4567) with Docker Compose"
     cmds:
       - docker compose up --build {{.CLI_ARGS}}
 
