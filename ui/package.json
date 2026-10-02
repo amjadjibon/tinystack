@@ -15,14 +15,15 @@
     "check": "biome check"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.18",
+    "@cloudscape-design/collection-hooks": "^1.0.110",
+    "@cloudscape-design/components": "^3.0.1391",
+    "@cloudscape-design/global-styles": "^1.0.71",
     "@tanstack/react-devtools": "0.10.13",
     "@tanstack/react-router": "1.170.41",
     "@tanstack/react-router-devtools": "1.167.2",
     "@tanstack/react-start": "1.168.60",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "tailwindcss": "^4.1.18"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
