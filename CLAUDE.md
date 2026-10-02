@@ -19,6 +19,7 @@ task test:docker # runs Lambda functions, ECS containers, and an EKS k3s cluster
 task test:terraform # python3 tests/terraform/terraform.py — applies, updates, destroys tests/terraform/main.tf (needs Terraform)
 task test:sam   # python3 tests/sam/sam.py — sam deploy, redeploy, and sam delete of tests/sam/template.yaml (needs the SAM CLI)
 task all        # generate, lint, test, build
+docker compose up --build  # TinyStack on :4566 and the console (ui/) on :4567
 ```
 
 Run a single test: `go test -race ./tests/integration -run TestName` (or any package path).

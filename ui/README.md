@@ -16,7 +16,7 @@ It only reads TinyStack's own endpoints (`/_tinystack/health`, `resources`, `req
 ```sh
 ../bin/tinystack start            # TinyStack on 127.0.0.1:4566
 pnpm install
-pnpm dev                          # http://localhost:3000
+pnpm dev                          # http://localhost:4567
 ```
 
 The dev server proxies `/_tinystack` to `TINYSTACK_URL` (default `http://127.0.0.1:4566`).
@@ -25,3 +25,9 @@ The dev server proxies `/_tinystack` to `TINYSTACK_URL` (default `http://127.0.0
 pnpm check                        # Biome lint and format
 pnpm build                        # static single-page app in dist/client (_shell.html)
 ```
+
+## Docker
+
+From the repository root, `docker compose up --build` runs TinyStack on `http://localhost:4566` and the
+console on `http://localhost:4567`, where nginx serves the build and proxies `/_tinystack` to TinyStack.
+TinyStack keeps its state in the `tinystack-data` volume (`docker compose down -v` resets it).
