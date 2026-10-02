@@ -31,6 +31,9 @@ var timeType = reflect.TypeFor[time.Time]()
 const (
 	queryKey = "query"
 	ec2Key   = "ec2"
+	// isoMillis is how AWS Query and EC2 Query write timestamps: ISO 8601
+	// in UTC with milliseconds.
+	isoMillis = "2006-01-02T15:04:05.000Z"
 )
 
 // tag is a member's wire names: name is its query key and element its XML
@@ -563,7 +566,7 @@ func element(b *bytes.Buffer, name string, v reflect.Value, dialect string, time
 	switch v.Kind() {
 	case reflect.Struct:
 		if ts, ok := v.Interface().(time.Time); ok {
-			b.WriteString(ts.UTC().Format(time.RFC3339))
+			b.WriteString(ts.UTC().Format(isoMillis))
 			break
 		}
 
@@ -576,7 +579,7 @@ func element(b *bytes.Buffer, name string, v reflect.Value, dialect string, time
 		b.WriteString(strconv.FormatInt(v.Int(), 10))
 	case reflect.Float64:
 		if timestamp {
-			b.WriteString(time.UnixMilli(int64(v.Float() * 1000)).UTC().Format("2006-01-02T15:04:05.000Z"))
+			b.WriteString(time.UnixMilli(int64(v.Float() * 1000)).UTC().Format(isoMillis))
 			break
 		}
 

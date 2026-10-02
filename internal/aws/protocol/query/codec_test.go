@@ -108,7 +108,7 @@ func TestWrite(t *testing.T) {
 		At:    &at,
 	})
 	want := `<?xml version="1.0" encoding="UTF-8"?>` + "\n" +
-		`<OpResponse xmlns="urn:ns"><OpResult><Name>a&lt;b</Name><At>2024-05-06T06:08:09Z</At><Ids><Id>x</Id></Ids>` +
+		`<OpResponse xmlns="urn:ns"><OpResult><Name>a&lt;b</Name><At>2024-05-06T06:08:09.000Z</At><Ids><Id>x</Id></Ids>` +
 		`<Item><Label>a&lt;b</Label></Item>` +
 		`<Tags><entry><key>a</key><value>1</value></entry><entry><key>b</key><value>2</value></entry></Tags>` +
 		`<Attr><Name>k</Name><Value><Blob>AAE=</Blob></Value></Attr></OpResult>` +
