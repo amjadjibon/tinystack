@@ -166,7 +166,10 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   modeled ones take it from the generated bindings. Lambda stores functions under `…/lambda/function/<name>`, code
   under `…/lambda/code/<name>`, published versions under `…/lambda/version/<name>/<zero-padded number>` (code under
   `…/lambda/version-code/…`), aliases under `…/lambda/alias/<name>/<alias>`, and event source mappings under
-  `…/lambda/mapping/<uuid>`; code from S3 is copied in through the `ObjectReader` that `start.go` registers with
+  `…/lambda/mapping/<uuid>`, layer versions under `…/lambda/layer/<name>/<zero-padded number>` (packages under
+  `…/lambda/layer-code/…`, the last number under `…/lambda/layer-head/<name>`), reserved concurrency under
+  `…/lambda/reserved/<name>` (enforced in memory by `concurrency.go`), and provisioned concurrency under
+  `…/lambda/provisioned/<name>/<qualifier>`; code from S3 is copied in through the `ObjectReader` that `start.go` registers with
   `UseObjects` (`s3.Service.Object`; S3 notifies Lambda, so Lambda cannot hold S3 directly); `versions.go` resolves a qualifier to the record and code an operation uses; it runs code only through
   the `lambda.Runtime` interface (`services/lambda/docker` uses the docker CLI, copying code in with `docker cp` and
   pooling warm containers that run the AWS base images' Runtime Interface Emulator). Pollers and async invocations

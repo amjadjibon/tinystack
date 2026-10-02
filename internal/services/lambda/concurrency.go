@@ -325,7 +325,7 @@ func (s *Service) ListProvisionedConcurrencyConfigs(
 		return nil, err
 	}
 
-	limit, err := pageSize(in.MaxItems, listLimit, listLimit)
+	limit, err := pageSize(in.MaxItems, listLimit)
 	if err != nil {
 		return nil, err
 	}

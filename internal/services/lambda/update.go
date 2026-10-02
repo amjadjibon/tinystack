@@ -36,7 +36,29 @@ func (s *Service) UpdateFunctionConfiguration(
 	ctx context.Context,
 	in *api.UpdateFunctionConfigurationRequest,
 ) (*api.FunctionConfiguration, error) {
+	m, err := identity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Layers are resolved first, outside the update's transaction; an empty
+	// list removes them.
+	var layers []functionLayer
+	if in.Layers != nil {
+		if layers, err = s.functionLayers(ctx, &m, in.Layers); err != nil {
+			return nil, err
+		}
+	}
+
 	return s.update(ctx, in.FunctionName, in.RevisionId, false, false, func(fn *function) ([]byte, error) {
+		if in.Layers != nil {
+			if len(layers) > 0 && fn.PackageType == packageImage {
+				return nil, invalid("Layers are not supported for Image functions")
+			}
+
+			fn.Layers = layers
+		}
+
 		return nil, fn.configure(&settings{
 			Role:        in.Role,
 			Handler:     in.Handler,

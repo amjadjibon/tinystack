@@ -25,7 +25,10 @@ type Function struct {
 	// an environment started for a different revision.
 	Revision string
 	// Code is the deployment package of Zip functions.
-	Code       []byte
+	Code []byte
+	// Layers are the packages of the function's layers, in order; each is
+	// extracted into /opt over the ones before it.
+	Layers     [][]byte
 	Timeout    time.Duration
 	MemorySize int64
 }

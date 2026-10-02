@@ -323,7 +323,7 @@ func (s *Service) DeleteAlias(ctx context.Context, in *api.DeleteAliasRequest) (
 // ListAliases lists a function's aliases in name order, or those of one
 // version.
 func (s *Service) ListAliases(ctx context.Context, in *api.ListAliasesRequest) (*api.ListAliasesResponse, error) {
-	limit, err := pageSize(in.MaxItems, listLimit, maxVersionItems)
+	limit, err := pageSize(in.MaxItems, maxVersionItems)
 	if err != nil {
 		return nil, err
 	}

@@ -2529,7 +2529,13 @@
       "PutProvisionedConcurrencyConfig",
       "GetProvisionedConcurrencyConfig",
       "ListProvisionedConcurrencyConfigs",
-      "DeleteProvisionedConcurrencyConfig"
+      "DeleteProvisionedConcurrencyConfig",
+      "PublishLayerVersion",
+      "GetLayerVersion",
+      "GetLayerVersionByArn",
+      "ListLayers",
+      "ListLayerVersions",
+      "DeleteLayerVersion"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -2545,7 +2551,8 @@
         "Environment",
         "Architectures",
         "Tags",
-        "Publish"
+        "Publish",
+        "Layers"
       ],
       "FunctionCode": [
         "ZipFile",
@@ -2575,7 +2582,8 @@
         "PackageType",
         "Architectures",
         "RevisionId",
-        "LastUpdateStatus"
+        "LastUpdateStatus",
+        "Layers"
       ],
       "EnvironmentResponse": [
         "Variables"
@@ -2716,7 +2724,8 @@
         "MemorySize",
         "Environment",
         "Runtime",
-        "RevisionId"
+        "RevisionId",
+        "Layers"
       ],
       "PublishVersionRequest": [
         "FunctionName",
@@ -2849,6 +2858,96 @@
       "DeleteProvisionedConcurrencyConfigRequest": [
         "FunctionName",
         "Qualifier"
+      ],
+      "PublishLayerVersionRequest": [
+        "LayerName",
+        "Description",
+        "Content",
+        "CompatibleArchitectures",
+        "CompatibleRuntimes",
+        "LicenseInfo"
+      ],
+      "LayerVersionContentInput": [
+        "S3Bucket",
+        "S3Key",
+        "S3ObjectVersion",
+        "ZipFile"
+      ],
+      "PublishLayerVersionResponse": [
+        "Content",
+        "LayerArn",
+        "LayerVersionArn",
+        "Description",
+        "CreatedDate",
+        "Version",
+        "CompatibleArchitectures",
+        "CompatibleRuntimes",
+        "LicenseInfo"
+      ],
+      "LayerVersionContentOutput": [
+        "CodeSha256",
+        "CodeSize"
+      ],
+      "GetLayerVersionRequest": [
+        "LayerName",
+        "VersionNumber"
+      ],
+      "GetLayerVersionResponse": [
+        "Content",
+        "LayerArn",
+        "LayerVersionArn",
+        "Description",
+        "CreatedDate",
+        "Version",
+        "CompatibleArchitectures",
+        "CompatibleRuntimes",
+        "LicenseInfo"
+      ],
+      "GetLayerVersionByArnRequest": [
+        "Arn"
+      ],
+      "ListLayersRequest": [
+        "CompatibleArchitecture",
+        "CompatibleRuntime",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListLayersResponse": [
+        "NextMarker",
+        "Layers"
+      ],
+      "LayersListItem": [
+        "LayerName",
+        "LayerArn",
+        "LatestMatchingVersion"
+      ],
+      "LayerVersionsListItem": [
+        "LayerVersionArn",
+        "Version",
+        "Description",
+        "CreatedDate",
+        "CompatibleArchitectures",
+        "CompatibleRuntimes",
+        "LicenseInfo"
+      ],
+      "ListLayerVersionsRequest": [
+        "CompatibleArchitecture",
+        "CompatibleRuntime",
+        "LayerName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListLayerVersionsResponse": [
+        "NextMarker",
+        "LayerVersions"
+      ],
+      "DeleteLayerVersionRequest": [
+        "LayerName",
+        "VersionNumber"
+      ],
+      "Layer": [
+        "Arn",
+        "CodeSize"
       ]
     }
   },

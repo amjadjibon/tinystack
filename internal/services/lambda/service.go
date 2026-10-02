@@ -40,6 +40,8 @@ const (
 	latest         = "$LATEST"
 	packageZip     = "Zip"
 	packageImage   = "Image"
+	archX86        = "x86_64"
+	archARM        = "arm64"
 	defaultTimeout = 3
 	maxTimeout     = 900
 	defaultMemory  = 128
@@ -203,6 +205,8 @@ type function struct {
 	// RevisionID changes with every update of the code or configuration.
 	RevisionID string `json:",omitempty"`
 	AccessKey  string `json:",omitempty"`
+	// Layers are the layer versions the function uses, in order.
+	Layers     []functionLayer `json:",omitempty"`
 	CodeSize   int64
 	Timeout    int64
 	MemorySize int64
@@ -238,6 +242,10 @@ func invalid(format string, args ...any) error {
 
 func notFound(what string) error {
 	return awserror.New("ResourceNotFoundException", what+" not found")
+}
+
+func accessDenied(message string) error {
+	return &awserror.Error{Code: "AccessDeniedException", Message: message, StatusCode: http.StatusForbidden}
 }
 
 func conflict(message string) error { return awserror.New("ResourceConflictException", message) }
@@ -318,11 +326,7 @@ func resolveName(m request.Metadata, raw string) (name, qualifier string, err er
 		}
 
 		if parts[4] != m.AccountID {
-			return "", "", &awserror.Error{
-				Code:       "AccessDeniedException",
-				Message:    "The function belongs to another account",
-				StatusCode: http.StatusForbidden,
-			}
+			return "", "", accessDenied("The function belongs to another account")
 		}
 
 		name = parts[6]
@@ -331,11 +335,7 @@ func resolveName(m request.Metadata, raw string) (name, qualifier string, err er
 		}
 	case len(parts) >= 3 && len(parts) <= 4 && accountID.MatchString(parts[0]) && parts[1] == "function":
 		if parts[0] != m.AccountID {
-			return "", "", &awserror.Error{
-				Code:       "AccessDeniedException",
-				Message:    "The function belongs to another account",
-				StatusCode: http.StatusForbidden,
-			}
+			return "", "", accessDenied("The function belongs to another account")
 		}
 
 		name = parts[2]
@@ -431,7 +431,7 @@ func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration
 		State:            new("Active"),
 		LastUpdateStatus: new("Successful"),
 		PackageType:      new(fn.PackageType),
-		Architectures:    []string{"x86_64"},
+		Architectures:    []string{archX86},
 	}
 
 	if fn.Runtime != "" {
@@ -448,6 +448,10 @@ func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration
 
 	if len(fn.Environment) > 0 {
 		cfg.Environment = &api.EnvironmentResponse{Variables: fn.Environment}
+	}
+
+	for _, l := range fn.Layers {
+		cfg.Layers = append(cfg.Layers, api.Layer{Arn: new(l.ARN), CodeSize: new(l.CodeSize)})
 	}
 
 	return cfg
@@ -592,7 +596,7 @@ func (fn *function) setArchitecture(architectures []string) error {
 	switch {
 	case len(architectures) > 1:
 		return invalid("Architectures must hold one architecture")
-	case len(architectures) == 1 && architectures[0] != "x86_64" && architectures[0] != "arm64":
+	case len(architectures) == 1 && architectures[0] != archX86 && architectures[0] != archARM:
 		return invalid("Architecture %s is not supported", architectures[0])
 	case len(architectures) == 1:
 		fn.Architecture = architectures[0]
@@ -707,6 +711,10 @@ func (s *Service) CreateFunction(
 
 	fn, code, err := newFunction(in, zipFile)
 	if err != nil {
+		return nil, err
+	}
+
+	if fn.Layers, err = s.layersOf(ctx, &m, fn, in.Layers); err != nil {
 		return nil, err
 	}
 

@@ -40,6 +40,7 @@ var retryDelay = time.Second
 func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualifier string) (*Function, error) {
 	var fn *function
 	var code []byte
+	var layers [][]byte
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var codeKey string
 		var loadErr error
@@ -48,7 +49,8 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 		}
 
 		code, _ = tx.Get(codeKey)
-		return nil
+		layers, loadErr = layerCode(tx, &request.Metadata{Scope: scope}, fn.Layers)
+		return loadErr
 	})
 	if err != nil {
 		return nil, err
@@ -92,6 +94,7 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 		Architecture: fn.Architecture,
 		Revision:     fn.CodeSha256 + "/" + fn.LastModified + "/" + fn.RevisionID,
 		Code:         code,
+		Layers:       layers,
 		Timeout:      time.Duration(fn.Timeout) * time.Second,
 		MemorySize:   fn.MemorySize,
 	}, nil

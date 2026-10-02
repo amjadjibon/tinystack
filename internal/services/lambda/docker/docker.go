@@ -192,6 +192,7 @@ func start(ctx context.Context, client *http.Client, fn *lambda.Function) (*cont
 	}
 
 	var code io.Reader
+	var layers []io.Reader
 	if fn.PackageType == "Zip" {
 		var ok bool
 		if image, ok = lambda.Image(fn.Runtime); !ok {
@@ -204,6 +205,13 @@ func start(ctx context.Context, client *http.Client, fn *lambda.Function) (*cont
 		}
 
 		code = archive
+		for _, layer := range fn.Layers {
+			if archive, err = tarball(layer); err != nil {
+				return nil, err
+			}
+
+			layers = append(layers, archive)
+		}
 	}
 
 	args = append(args, image)
@@ -217,7 +225,7 @@ func start(ctx context.Context, client *http.Client, fn *lambda.Function) (*cont
 	}
 
 	c := &container{id: id}
-	if err = c.boot(ctx, client, code); err != nil {
+	if err = c.boot(ctx, client, code, layers); err != nil {
 		remove(ctx, c)
 		return nil, err
 	}
@@ -225,7 +233,15 @@ func start(ctx context.Context, client *http.Client, fn *lambda.Function) (*cont
 	return c, nil
 }
 
-func (c *container) boot(ctx context.Context, client *http.Client, code io.Reader) error {
+// boot copies the layers into /opt, in order, and the code into /var/task,
+// and starts the container.
+func (c *container) boot(ctx context.Context, client *http.Client, code io.Reader, layers []io.Reader) error {
+	for _, layer := range layers {
+		if _, err := dockercli.Run(ctx, layer, "cp", "-", c.id+":/opt"); err != nil {
+			return err
+		}
+	}
+
 	if code != nil {
 		if _, err := dockercli.Run(ctx, code, "cp", "-", c.id+":/var/task"); err != nil {
 			return err

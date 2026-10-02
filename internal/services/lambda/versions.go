@@ -183,10 +183,10 @@ func revisionMismatch() error {
 		"Revision Id. Call the GetFunction/GetAlias API to retrieve the latest Revision Id")
 }
 
-// pageSize validates MaxItems.
-func pageSize(maxItems *int64, fallback, most int64) (int64, error) {
+// pageSize validates MaxItems, which defaults to 50.
+func pageSize(maxItems *int64, most int64) (int64, error) {
 	if maxItems == nil {
-		return fallback, nil
+		return listLimit, nil
 	}
 
 	if *maxItems < 1 || *maxItems > most {
@@ -202,7 +202,7 @@ func (s *Service) ListVersionsByFunction(
 	ctx context.Context,
 	in *api.ListVersionsByFunctionRequest,
 ) (*api.ListVersionsByFunctionResponse, error) {
-	limit, err := pageSize(in.MaxItems, listLimit, maxVersionItems)
+	limit, err := pageSize(in.MaxItems, maxVersionItems)
 	if err != nil {
 		return nil, err
 	}
