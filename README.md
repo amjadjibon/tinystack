@@ -1207,10 +1207,12 @@ task models:sync -- -ref main   # Re-vendor the pinned Smithy models from aws-sd
 task smoke      # Build/start, run installed AWS CLI (DynamoDB, SQS, SNS, S3, EventBridge, SSM, Secrets Manager, IAM, STS, Lambda), verify graceful shutdown
 task test:docker # Run Lambda functions, ECS containers, and an EKS cluster for real (needs Docker; pulls python:3.14, busybox, and rancher/k3s)
 task test:terraform # Apply, update, and destroy tests/terraform/main.tf with Terraform
+task test:sam   # Deploy, update, and delete tests/sam/template.yaml with the SAM CLI
 ```
 
 Tasks run with [Task](https://taskfile.dev). The tests use local ephemeral ports
 and do not contact AWS; Lambda tests use an in-process runtime. The smoke test
 also requires Python 3 and the AWS CLI, and invokes a function when Docker is available.
 The Terraform test requires Python 3, Terraform, and network access to download the
-`hashicorp/aws` provider.
+`hashicorp/aws` provider. The SAM test requires Python 3, the SAM CLI, and the AWS CLI,
+and calls the deployed APIs when Docker is available.

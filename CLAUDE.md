@@ -17,6 +17,7 @@ task models:sync -- -ref main [-add name[=file.json]]  # vendor models + license
 task smoke      # python3 tests/awscli/smoke.py — needs Python 3 and the AWS CLI (invokes Lambda if Docker is up)
 task test:docker # runs Lambda functions, ECS containers, and an EKS k3s cluster for real (TINYSTACK_DOCKER_TESTS=1)
 task test:terraform # python3 tests/terraform/terraform.py — applies, updates, destroys tests/terraform/main.tf (needs Terraform)
+task test:sam   # python3 tests/sam/sam.py — sam deploy, redeploy, and sam delete of tests/sam/template.yaml (needs the SAM CLI)
 task all        # generate, lint, test, build
 ```
 
@@ -381,6 +382,8 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real
   `hashicorp/aws` provider against a built server in verify mode; it downloads the provider. When the provider needs a
   new call, add it to that config and to `tests/integration/tags_test.go`-style SDK coverage.
+- `tests/sam` (`task test:sam`, opt-in) deploys `template.yaml` with the real SAM CLI (`sam deploy --s3-bucket`),
+  redeploys new code and a new parameter, and runs `sam delete`; it calls the APIs only when Docker is up.
 - Tests use ephemeral local ports and never contact AWS.
 
 ## Lint/style
