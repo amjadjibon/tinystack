@@ -1,0 +1,33 @@
+# docker compose up --build
+#   TinyStack: http://localhost:4566 (AWS endpoint)
+#   Console:   http://localhost:4567
+# State lives in the tinystack-data volume; docker compose down -v resets it.
+services:
+  tinystack:
+    build: .
+    command: ["start", "--host", "0.0.0.0", "--port", "4566", "--config", "/etc/tinystack.yaml"]
+    configs:
+      - source: tinystack
+        target: /etc/tinystack.yaml
+    volumes:
+      - tinystack-data:/data
+    ports:
+      - "4566:4566"
+
+  tinystack-ui:
+    build: ./ui
+    ports:
+      - "4567:4567"
+    depends_on:
+      tinystack:
+        condition: service_healthy
+
+configs:
+  tinystack:
+    content: |
+      storage:
+        mode: persistent
+        path: /data
+
+volumes:
+  tinystack-data:
