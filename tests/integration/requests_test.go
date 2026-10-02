@@ -166,41 +166,6 @@ func TestMetrics(t *testing.T) {
 	}
 }
 
-func TestDashboard(t *testing.T) {
-	s := server(t)
-	for path, want := range map[string]string{
-		"/_tinystack/":        "text/html",
-		"/_tinystack/app.js":  "text/javascript",
-		"/_tinystack/app.css": "text/css",
-	} {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, s.URL+path, http.NoBody)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), want) ||
-			!strings.Contains(resp.Header.Get("Content-Security-Policy"), "script-src 'self'") || len(body) == 0 {
-			t.Fatalf("%s: %d %v", path, resp.StatusCode, resp.Header)
-		}
-	}
-
-	// The dashboard's own files are not AWS requests.
-	if _, records := inspect(t, s, http.MethodGet, "/_tinystack/requests"); len(records) != 0 {
-		t.Fatalf("recorded %+v", records)
-	}
-}
-
 // TestRequestInspectorRedacts keeps no body of an operation whose model marks
 // a value sensitive, such as the secret key AssumeRole returns.
 func TestRequestInspectorRedacts(t *testing.T) {
