@@ -36,6 +36,8 @@ var origin = strings.Repeat("0", 2*positionDigits)
 
 // event is one stored log event.
 type event struct {
+	// ID is the event's ID, its position in the stream; it is not stored.
+	ID        string `json:"-"`
 	Message   string
 	Timestamp int64
 	Ingestion int64
@@ -70,7 +72,8 @@ func (g *group) cutoff(now time.Time) int64 {
 
 // ingest appends events, already in chronological order, to st in g, first
 // dropping st's expired events. It returns what it rejected as too old,
-// expired, or too new, as PutLogEvents reports it.
+// expired, or too new, as PutLogEvents reports it, and what it appended, for
+// g's subscription filters.
 func ingest(
 	tx storage.WriteTx,
 	scope request.Scope,
@@ -78,7 +81,7 @@ func ingest(
 	st *stream,
 	events []api.InputLogEvent,
 	now time.Time,
-) (*api.RejectedLogEventsInfo, error) {
+) (*api.RejectedLogEventsInfo, *delivered, error) {
 	cutoff := g.cutoff(now)
 	for _, key := range tx.Keys(eventPrefix(scope, g.Name, st.Name)) {
 		if timestampOf(key) >= cutoff {
@@ -87,7 +90,7 @@ func ingest(
 
 		e, _, err := read[event](tx, key)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		g.StoredBytes -= int64(len(e.Message))
@@ -103,6 +106,7 @@ func ingest(
 		set(rejected)
 	}
 
+	accepted := &delivered{scope: scope, group: g, stream: st.Name}
 	ingestion := now.UnixMilli()
 	tooOld, tooNew := now.Add(-maxAge).UnixMilli(), now.Add(maxFuture).UnixMilli()
 	for i, e := range events {
@@ -123,10 +127,13 @@ func ingest(
 			continue
 		}
 
-		key := eventPrefix(scope, g.Name, st.Name) + position(ts, st.Seq)
-		if err := write(tx, key, &event{Message: *e.Message, Timestamp: ts, Ingestion: ingestion}); err != nil {
-			return nil, err
+		id := position(ts, st.Seq)
+		appended := event{ID: id, Message: *e.Message, Timestamp: ts, Ingestion: ingestion}
+		if err := write(tx, eventPrefix(scope, g.Name, st.Name)+id, &appended); err != nil {
+			return nil, nil, err
 		}
+
+		accepted.events = append(accepted.events, appended)
 
 		st.Seq++
 		g.StoredBytes += int64(len(*e.Message))
@@ -142,10 +149,10 @@ func ingest(
 	}
 
 	if err := write(tx, streamKey(scope, g.Name, st.Name), st); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return rejected, write(tx, groupKey(scope, g.Name), g)
+	return rejected, accepted, write(tx, groupKey(scope, g.Name), g)
 }
 
 // checkBatch validates a PutLogEvents batch.
@@ -207,6 +214,7 @@ func (s *Service) PutLogEvents(
 	}
 
 	out := &api.PutLogEventsResponse{}
+	var accepted *delivered
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		g, loadErr := loadGroup(tx, scope, *in.LogGroupName)
 		if loadErr != nil {
@@ -218,8 +226,8 @@ func (s *Service) PutLogEvents(
 			return loadErr
 		}
 
-		rejected, ingestErr := ingest(tx, scope, g, st, in.LogEvents, s.now())
-		out.RejectedLogEventsInfo = rejected
+		rejected, appended, ingestErr := ingest(tx, scope, g, st, in.LogEvents, s.now())
+		out.RejectedLogEventsInfo, accepted = rejected, appended
 		out.NextSequenceToken = new(strconv.FormatInt(st.Seq, 10))
 		return ingestErr
 	})
@@ -227,6 +235,7 @@ func (s *Service) PutLogEvents(
 		return nil, err
 	}
 
+	s.forward(ctx, accepted)
 	return out, nil
 }
 
@@ -251,7 +260,8 @@ func (s *Service) Append(
 		return nil
 	}
 
-	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+	var accepted *delivered
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		g, found, err := read[group](tx, groupKey(scope, groupName))
 		if err != nil {
 			return err
@@ -273,9 +283,15 @@ func (s *Service) Append(
 			st = &stream{Name: streamName, Created: now.UnixMilli()}
 		}
 
-		_, err = ingest(tx, scope, g, st, events, now)
+		_, accepted, err = ingest(tx, scope, g, st, events, now)
 		return err
 	})
+	if err != nil {
+		return err
+	}
+
+	s.forward(ctx, accepted)
+	return nil
 }
 
 // timeRange checks a request's startTime and endTime; endTime is exclusive.

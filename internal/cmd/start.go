@@ -257,6 +257,8 @@ func newStartCommand() *cobra.Command {
 			// CloudFormation manages stack resources with the other
 			// services' operations.
 			stacks.UseCaller(caller)
+			// Subscription filters deliver to Lambda, Kinesis, and Firehose.
+			logGroups.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err

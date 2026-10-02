@@ -373,6 +373,7 @@ Log groups belong to an account and region.
 | PutLogEvents | Up to 10,000 chronological events and 1 MB spanning at most 24 hours; events older than 14 days, past the retention period, or more than 2 hours ahead are skipped and reported in `rejectedLogEventsInfo`; `sequenceToken` is ignored, as it is by AWS |
 | GetLogEvents | Time order with `startTime` and `endTime`; the latest events first unless `startFromHead`; `nextForwardToken` and `nextBackwardToken`, which come back unchanged at the end of the stream |
 | FilterLogEvents | Every stream, `logStreamNames`, or a `logStreamNamePrefix`, interleaved in time order, with `nextToken`; filter patterns of terms, `"quoted phrases"`, `-excluded` terms, and `?alternatives` (JSON, space-delimited, and regular expression patterns are rejected) |
+| PutSubscriptionFilter / DescribeSubscriptionFilters / DeleteSubscriptionFilter | Up to two filters per group, each with a filter pattern (as FilterLogEvents takes) and a Lambda function, Kinesis stream, or Firehose delivery stream; after each write (PutLogEvents, or a Lambda function's log), the events a filter matches are delivered as a gzipped `DATA_MESSAGE`: asynchronously invoking the function with an `awslogs` event, or as one record (partition key: the log stream); `roleArn` is stored only, and a failed delivery is logged and dropped |
 | TagResource / UntagResource / ListTagsForResource | Log group ARNs, with or without `:*` |
 
 ### IAM (AWS Query)

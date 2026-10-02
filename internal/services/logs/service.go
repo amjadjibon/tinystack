@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -41,7 +42,9 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store storage.Store
-	now   func() time.Time
+	// caller delivers to subscription filters' destinations; see UseCaller.
+	caller *catalog.Caller
+	now    func() time.Time
 }
 
 func New(store storage.Store) *Service {
@@ -52,11 +55,12 @@ func New(store storage.Store) *Service {
 type group struct {
 	Tags map[string]string `json:",omitempty"`
 	// Retention is the retention policy in days; nil keeps events forever.
-	Retention   *int64 `json:",omitempty"`
-	Name        string
-	Class       string
-	Created     int64 // Unix milliseconds
-	StoredBytes int64
+	Retention     *int64 `json:",omitempty"`
+	Name          string
+	Class         string
+	Subscriptions []subscription `json:",omitempty"`
+	Created       int64          // Unix milliseconds
+	StoredBytes   int64
 }
 
 var (

@@ -3094,7 +3094,10 @@
       "FilterLogEvents",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "PutSubscriptionFilter",
+      "DescribeSubscriptionFilters",
+      "DeleteSubscriptionFilter"
     ],
     "shapes": {
       "CreateLogGroupRequest": [
@@ -3237,6 +3240,37 @@
       ],
       "ListTagsForResourceResponse": [
         "tags"
+      ],
+      "PutSubscriptionFilterRequest": [
+        "logGroupName",
+        "filterName",
+        "filterPattern",
+        "destinationArn",
+        "roleArn",
+        "distribution"
+      ],
+      "DescribeSubscriptionFiltersRequest": [
+        "logGroupName",
+        "filterNamePrefix",
+        "nextToken",
+        "limit"
+      ],
+      "DescribeSubscriptionFiltersResponse": [
+        "subscriptionFilters",
+        "nextToken"
+      ],
+      "SubscriptionFilter": [
+        "filterName",
+        "logGroupName",
+        "filterPattern",
+        "destinationArn",
+        "roleArn",
+        "distribution",
+        "creationTime"
+      ],
+      "DeleteSubscriptionFilterRequest": [
+        "logGroupName",
+        "filterName"
       ]
     }
   },

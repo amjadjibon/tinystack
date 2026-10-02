@@ -189,6 +189,46 @@ type ListTagsForResourceResponse struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
+type PutSubscriptionFilterOutput struct{}
+
+type PutSubscriptionFilterRequest struct {
+	LogGroupName   *string `json:"logGroupName,omitempty"`
+	FilterName     *string `json:"filterName,omitempty"`
+	FilterPattern  *string `json:"filterPattern,omitempty"`
+	DestinationArn *string `json:"destinationArn,omitempty"`
+	RoleArn        *string `json:"roleArn,omitempty"`
+	Distribution   *string `json:"distribution,omitempty"`
+}
+
+type DescribeSubscriptionFiltersRequest struct {
+	LogGroupName     *string `json:"logGroupName,omitempty"`
+	FilterNamePrefix *string `json:"filterNamePrefix,omitempty"`
+	NextToken        *string `json:"nextToken,omitempty"`
+	Limit            *int64  `json:"limit,omitempty"`
+}
+
+type SubscriptionFilter struct {
+	FilterName     *string `json:"filterName,omitempty"`
+	LogGroupName   *string `json:"logGroupName,omitempty"`
+	FilterPattern  *string `json:"filterPattern,omitempty"`
+	DestinationArn *string `json:"destinationArn,omitempty"`
+	RoleArn        *string `json:"roleArn,omitempty"`
+	Distribution   *string `json:"distribution,omitempty"`
+	CreationTime   *int64  `json:"creationTime,omitempty"`
+}
+
+type DescribeSubscriptionFiltersResponse struct {
+	SubscriptionFilters []SubscriptionFilter `json:"subscriptionFilters,omitempty"`
+	NextToken           *string              `json:"nextToken,omitempty"`
+}
+
+type DeleteSubscriptionFilterOutput struct{}
+
+type DeleteSubscriptionFilterRequest struct {
+	LogGroupName *string `json:"logGroupName,omitempty"`
+	FilterName   *string `json:"filterName,omitempty"`
+}
+
 type API interface {
 	CreateLogGroup(context.Context, *CreateLogGroupRequest) (*CreateLogGroupOutput, error)
 	DeleteLogGroup(context.Context, *DeleteLogGroupRequest) (*DeleteLogGroupOutput, error)
@@ -204,10 +244,13 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceOutput, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceOutput, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	PutSubscriptionFilter(context.Context, *PutSubscriptionFilterRequest) (*PutSubscriptionFilterOutput, error)
+	DescribeSubscriptionFilters(context.Context, *DescribeSubscriptionFiltersRequest) (*DescribeSubscriptionFiltersResponse, error)
+	DeleteSubscriptionFilter(context.Context, *DeleteSubscriptionFilterRequest) (*DeleteSubscriptionFilterOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "logs", SigningName: "logs", Inventory: catalog.InventoryOf(api), TargetPrefix: "Logs_20140328", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"DataAlreadyAcceptedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSequenceTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationAbortedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnrecognizedClientException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "logs", SigningName: "logs", Inventory: catalog.InventoryOf(api), TargetPrefix: "Logs_20140328", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"DataAlreadyAcceptedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSequenceTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationAbortedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnrecognizedClientException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateLogGroup": {Name: "CreateLogGroup", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.CreateLogGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateLogGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateLogGroup(ctx, input.(*CreateLogGroupRequest))
 		}},
@@ -249,6 +292,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"PutSubscriptionFilter": {Name: "PutSubscriptionFilter", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.PutSubscriptionFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutSubscriptionFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutSubscriptionFilter(ctx, input.(*PutSubscriptionFilterRequest))
+		}},
+		"DescribeSubscriptionFilters": {Name: "DescribeSubscriptionFilters", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.DescribeSubscriptionFilters", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeSubscriptionFiltersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeSubscriptionFilters(ctx, input.(*DescribeSubscriptionFiltersRequest))
+		}},
+		"DeleteSubscriptionFilter": {Name: "DeleteSubscriptionFilter", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.DeleteSubscriptionFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteSubscriptionFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteSubscriptionFilter(ctx, input.(*DeleteSubscriptionFilterRequest))
 		}},
 	}}
 }
