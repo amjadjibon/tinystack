@@ -51,6 +51,10 @@ type Service struct {
 	store storage.Store
 	roles *iam.Service
 	now   func() time.Time
+	// accounts maps the configured access keys to their accounts, and
+	// fallback is the account of the others; see UseAccounts.
+	accounts map[string]string
+	fallback string
 }
 
 // New returns STS. roles resolves the roles that AssumeRole assumes.
@@ -245,7 +249,10 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 		}
 
 		chained := inSession && current.role()
-		c := caller{account: m.AccountID, arns: []string{rootARN(m.AccountID)}}
+		c := caller{
+			account: m.AccountID, arns: []string{rootARN(m.AccountID)}, action: "sts:AssumeRole",
+			context: map[string]string{"sts:externalid": value(in.ExternalId)},
+		}
 		switch {
 		case chained:
 			c.arns = append(c.arns, current.RoleARN, current.arn())
@@ -255,7 +262,7 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 			c.arns = append(c.arns, key.UserARN)
 		}
 
-		if !exists || !trusts(role.TrustPolicy, c, value(in.ExternalId)) {
+		if !exists || !trusts(role.TrustPolicy, &c) {
 			return accessDenied(c.arns[len(c.arns)-1], *in.RoleArn)
 		}
 
@@ -330,10 +337,7 @@ func (s *Service) GetSessionToken(
 		case lookupErr != nil:
 			return lookupErr
 		case inSession:
-			return &awserror.Error{
-				Code: "AccessDenied", Message: "Cannot call GetSessionToken with session credentials",
-				StatusCode: http.StatusForbidden,
-			}
+			return denied("Cannot call GetSessionToken with session credentials")
 		}
 
 		issued.Expires = now.Add(time.Duration(seconds) * time.Second).Unix()
@@ -424,13 +428,13 @@ func sessionDuration(requested *int64, roleMax int64, chained bool) (time.Durati
 	return time.Duration(seconds) * time.Second, nil
 }
 
+func denied(message string) error {
+	return &awserror.Error{Code: "AccessDenied", Message: message, StatusCode: http.StatusForbidden}
+}
+
 func accessDenied(callerARN, roleARN string) error {
-	return &awserror.Error{
-		Code: "AccessDenied",
-		Message: fmt.Sprintf("User: %s is not authorized to perform: sts:AssumeRole on resource: %s",
-			callerARN, roleARN),
-		StatusCode: http.StatusForbidden,
-	}
+	return denied(fmt.Sprintf("User: %s is not authorized to perform: sts:AssumeRole on resource: %s",
+		callerARN, roleARN))
 }
 
 // prune deletes the sessions that have expired by now.

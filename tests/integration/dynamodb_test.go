@@ -155,6 +155,7 @@ func serverStore(
 	secretsService := secrets.New(store, keys, functions, deliveries)
 	roles := principals.New(store)
 	stsService := tokens.New(store, roles)
+	stsService.UseAccounts(cfg.Identity.Accounts, cfg.Defaults.Account)
 	userPools := identities.New(store, deliveries)
 	repositories := containers.New(store)
 	network := compute.New(store)

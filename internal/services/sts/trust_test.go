@@ -75,7 +75,56 @@ func TestTrusts(t *testing.T) {
 		},
 		{"malformed", `{"Statement":"nope"}`, "", root, false},
 	} {
-		if got := trusts(tc.document, tc.caller, tc.externalID); got != tc.want {
+		c := tc.caller
+		c.action, c.context = "sts:AssumeRole", map[string]string{"sts:externalid": tc.externalID}
+		if got := trusts(tc.document, &c); got != tc.want {
+			t.Errorf("%s: got %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestTrustsWebIdentity(t *testing.T) {
+	provider := "arn:aws:iam::111111111111:oidc-provider/token.actions.githubusercontent.com"
+	c := caller{
+		account: "111111111111", federated: provider, action: "sts:AssumeRoleWithWebIdentity",
+		context: map[string]string{
+			"token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+			"token.actions.githubusercontent.com:sub": "repo:acme/app:ref:refs/heads/main",
+		},
+	}
+	allow := `{"Effect":"Allow","Principal":{"Federated":"` + provider + `"},"Action":"sts:AssumeRoleWithWebIdentity"`
+	for _, tc := range []struct {
+		name, document string
+		want           bool
+	}{
+		{"provider", `{"Statement":` + allow + `}}`, true},
+		{
+			"subject pattern",
+			`{"Statement":` + allow + `,"Condition":{"StringEquals":{"token.actions.githubusercontent.com:aud":` +
+				`"sts.amazonaws.com"},"StringLike":{"token.actions.githubusercontent.com:sub":"repo:acme/app:*"}}}}`,
+			true,
+		},
+		{
+			"other repository",
+			`{"Statement":` + allow + `,"Condition":{"StringLike":{"token.actions.githubusercontent.com:sub":` +
+				`"repo:acme/other:*"}}}}`,
+			false,
+		},
+		{
+			"other provider",
+			`{"Statement":{"Effect":"Allow","Principal":{"Federated":"arn:aws:iam::111111111111:oidc-provider/x"},` +
+				`"Action":"sts:AssumeRoleWithWebIdentity"}}`,
+			false,
+		},
+		{
+			"AWS principal",
+			`{"Statement":{"Effect":"Allow","Principal":{"AWS":"111111111111"},` +
+				`"Action":"sts:AssumeRoleWithWebIdentity"}}`,
+			false,
+		},
+		{"AssumeRole only", `{"Statement":{"Effect":"Allow","Principal":"*","Action":"sts:AssumeRole"}}`, false},
+	} {
+		if got := trusts(tc.document, &c); got != tc.want {
 			t.Errorf("%s: got %v, want %v", tc.name, got, tc.want)
 		}
 	}

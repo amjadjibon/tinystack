@@ -4807,7 +4807,9 @@
     "operations": [
       "AssumeRole",
       "GetCallerIdentity",
-      "GetSessionToken"
+      "GetSessionToken",
+      "AssumeRoleWithWebIdentity",
+      "GetAccessKeyInfo"
     ],
     "shapes": {
       "AssumeRoleRequest": [
@@ -4841,6 +4843,25 @@
       ],
       "GetSessionTokenResponse": [
         "Credentials"
+      ],
+      "AssumeRoleWithWebIdentityRequest": [
+        "RoleArn",
+        "RoleSessionName",
+        "WebIdentityToken",
+        "DurationSeconds"
+      ],
+      "AssumeRoleWithWebIdentityResponse": [
+        "Credentials",
+        "SubjectFromWebIdentityToken",
+        "AssumedRoleUser",
+        "Provider",
+        "Audience"
+      ],
+      "GetAccessKeyInfoRequest": [
+        "AccessKeyId"
+      ],
+      "GetAccessKeyInfoResponse": [
+        "Account"
       ]
     }
   },

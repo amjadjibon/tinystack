@@ -210,7 +210,9 @@ a per-service `Dialect`), and delivers synchronously through
   names, so a user's groups are found by reading the groups. OpenID Connect providers are `<account>/iam/oidc-provider/<URL without the scheme>`, which STS reads through
   `iam.Service.OIDCProvider`. Users also hold their access key IDs; each key (secret, status, owner) is in the
   partition-wide `aws/iam/access-key/<key ID>`, which `iam.Service.AccessKey` reads. STS
-  `AssumeRole` checks the role's trust policy (`sts/trust.go`, a documented subset) through `iam.Service.RoleByARN`
+  `AssumeRole` and `AssumeRoleWithWebIdentity` (`sts/web.go`, which finds the token issuer's provider through
+  `iam.Service.OIDCProvider` and does not verify token signatures) check the role's trust policy (`sts/trust.go`, a
+  documented subset) through `iam.Service.RoleByARN`
   and stores each session under the partition-wide `aws/sts/session/<access key>` (where `GetSessionToken` also stores
   sessions that act as the calling user, with no role); `sts.Service.Credentials` (the
   gateway's credential lookup) resolves those sessions and then active IAM access keys, and `GetCallerIdentity`
