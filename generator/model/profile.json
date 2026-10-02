@@ -2975,7 +2975,11 @@
       "GetBucketVersioning",
       "ListObjectVersions",
       "DeleteObjects",
-      "GetBucketLocation"
+      "GetBucketLocation",
+      "PutBucketPolicy",
+      "GetBucketPolicy",
+      "DeleteBucketPolicy",
+      "GetBucketPolicyStatus"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -3425,6 +3429,34 @@
       ],
       "GetBucketLocationOutput": [
         "LocationConstraint"
+      ],
+      "PutBucketPolicyRequest": [
+        "Bucket",
+        "ContentMD5",
+        "ChecksumAlgorithm",
+        "Policy",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketPolicyRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketPolicyOutput": [
+        "Policy"
+      ],
+      "DeleteBucketPolicyRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketPolicyStatusRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketPolicyStatusOutput": [
+        "PolicyStatus"
+      ],
+      "PolicyStatus": [
+        "IsPublic"
       ]
     }
   },

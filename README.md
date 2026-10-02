@@ -278,6 +278,8 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | PutBucketTagging / GetBucketTagging / DeleteBucketTagging | The whole tag set is replaced; `NoSuchTagSet` when there is none |
 | HeadBucket / DeleteBucket | `x-amz-bucket-region`; deleting requires an empty bucket, with no versions or delete markers left |
 | GetBucketLocation | The bucket's Region (empty for us-east-1), answered from any Region |
+| PutBucketPolicy / GetBucketPolicy / DeleteBucketPolicy | A JSON policy up to 20 KiB with at least one statement (`MalformedPolicy` otherwise), stored as sent and never evaluated; `NoSuchBucketPolicy` when there is none |
+| GetBucketPolicyStatus | Public when a statement allows every principal (`*`) without conditions |
 | PutBucketVersioning / GetBucketVersioning | `Enabled` or `Suspended` (versioning cannot be turned off once enabled); MFA delete is not supported |
 | ListObjectVersions | Every version and delete marker in key order, newest first within a key, with `IsLatest`; prefix, delimiter and common prefixes, `max-keys`, `key-marker` and `version-id-marker`, `encoding-type=url`; objects written before versioning are `null` versions |
 | ListBuckets | The caller's buckets in every region; prefix, region filter, and continuation token |
@@ -290,6 +292,9 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | ListObjectsV2 | Prefix, delimiter and common prefixes, `max-keys`, continuation token, `start-after`, `encoding-type=url` |
 | Multipart uploads | Create, upload parts, list parts/uploads, complete, and abort; completion validates ordered part ETags and 5 MiB nonfinal parts, then atomically installs an object up to 64 MiB |
 | PutBucketNotificationConfiguration / GetBucketNotificationConfiguration | SQS (standard), SNS, and Lambda destinations in the bucket's region for `s3:ObjectCreated:*` and `s3:ObjectRemoved:*` events, with prefix and suffix filters, plus `EventBridgeConfiguration`; overlapping configurations are rejected; unless `SkipDestinationValidation`, queues and topics get an `s3:TestEvent` and functions must exist |
+
+A `Content-MD5` header must match the request body (`BadDigest`) on every
+operation.
 
 Another account's bucket answers `AccessDenied` (403), and a bucket in another
 region answers `PermanentRedirect` (301).

@@ -287,9 +287,16 @@ func setScalar(f reflect.Value, s, name string) error {
 	return nil
 }
 
+// setPayload sets a payload member: a blob or string takes the raw body, and a
+// structure is decoded from it.
 func setPayload(f reflect.Value, body []byte, document func([]byte, any) error) error {
 	if f.Kind() == reflect.Slice {
 		f.SetBytes(body)
+		return nil
+	}
+
+	if len(body) > 0 && f.Type().Elem().Kind() == reflect.String {
+		f.Set(reflect.ValueOf(new(string(body))))
 		return nil
 	}
 
@@ -355,6 +362,8 @@ func Encode(w http.ResponseWriter, b *catalog.Binding, output any) Response {
 			switch {
 			case f.Kind() == reflect.Slice:
 				resp.Payload = f.Bytes()
+			case f.Kind() == reflect.Pointer && !f.IsNil() && f.Elem().Kind() == reflect.String:
+				resp.Payload = []byte(f.Elem().String())
 			case f.Kind() == reflect.Pointer && !f.IsNil():
 				resp.Structure, resp.StructureName = f.Interface(), mb.Name
 			}

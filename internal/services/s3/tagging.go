@@ -98,21 +98,7 @@ func (s *Service) GetBucketTagging(
 	ctx context.Context,
 	in *api.GetBucketTaggingRequest,
 ) (*api.GetBucketTaggingOutput, error) {
-	m, err := identity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var meta bucketMeta
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
-		if resolveErr != nil {
-			return resolveErr
-		}
-
-		_, readErr := readJSON(tx, key, &meta)
-		return readErr
-	})
+	meta, err := s.bucket(ctx, in.Bucket, in.ExpectedBucketOwner)
 	if err != nil {
 		return nil, err
 	}

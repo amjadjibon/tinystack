@@ -146,3 +146,63 @@ func TestS3GetBucketLocation(t *testing.T) {
 		t.Fatalf("missing bucket: %v", err)
 	}
 }
+
+func TestS3BucketPolicy(t *testing.T) {
+	c := s3Client(server(t), "test", "us-east-1")
+	ctx := context.Background()
+	if _, err := c.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("site")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := c.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String("site")})
+	if code, status := s3Code(err); code != "NoSuchBucketPolicy" || status != 404 {
+		t.Fatalf("no policy: %s %d %v", code, status, err)
+	}
+
+	policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*",` +
+		`"Action":"s3:GetObject","Resource":"arn:aws:s3:::site/*"}]}`
+	if _, err = c.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+		Bucket: aws.String("site"), Policy: aws.String(policy),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := c.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String("site")})
+	if err != nil || aws.ToString(got.Policy) != policy {
+		t.Fatalf("%+v %v", got, err)
+	}
+
+	status, err := c.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{Bucket: aws.String("site")})
+	if err != nil || !aws.ToBool(status.PolicyStatus.IsPublic) {
+		t.Fatalf("status: %+v %v", status, err)
+	}
+
+	private := `{"Statement":{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::000000000000:root"},` +
+		`"Action":"s3:*","Resource":"*"}}`
+	if _, err = c.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+		Bucket: aws.String("site"), Policy: aws.String(private),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	status, err = c.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{Bucket: aws.String("site")})
+	if err != nil || aws.ToBool(status.PolicyStatus.IsPublic) {
+		t.Fatalf("private status: %+v %v", status, err)
+	}
+
+	for _, bad := range []string{"not json", `{"Version":"2012-10-17"}`, `{"Statement":[]}`} {
+		_, err = c.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{Bucket: aws.String("site"), Policy: aws.String(bad)})
+		if code, _ := s3Code(err); code != "MalformedPolicy" {
+			t.Fatalf("%s: %v", bad, err)
+		}
+	}
+
+	if _, err = c.DeleteBucketPolicy(ctx, &s3.DeleteBucketPolicyInput{Bucket: aws.String("site")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String("site")})
+	if code, _ := s3Code(err); code != "NoSuchBucketPolicy" {
+		t.Fatalf("deleted: %v", err)
+	}
+}

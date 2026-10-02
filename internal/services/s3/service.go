@@ -84,7 +84,9 @@ type bucketMeta struct {
 	Notifications *api.NotificationConfiguration `json:",omitempty"`
 	// Versioning is "", "Enabled", or "Suspended".
 	Versioning string `json:",omitempty"`
-	CreatedAt  int64
+	// Policy is the bucket policy, stored as sent and never evaluated.
+	Policy    string `json:",omitempty"`
+	CreatedAt int64
 }
 
 func value[T any](p *T) (v T) {

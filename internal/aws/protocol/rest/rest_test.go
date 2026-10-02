@@ -66,3 +66,23 @@ func TestReadBodyDecodesAWSChunked(t *testing.T) {
 		}
 	}
 }
+
+func TestStringPayload(t *testing.T) {
+	type policy struct {
+		Policy *string `json:"-"`
+	}
+
+	b := &catalog.Binding{
+		Input:  map[string]catalog.MemberBinding{"Policy": {Location: locationPayload, Name: "Policy"}},
+		Output: map[string]catalog.MemberBinding{"Policy": {Location: locationPayload, Name: "Policy"}},
+	}
+	var in policy
+	r := httptest.NewRequest(http.MethodPut, "/b?policy", http.NoBody)
+	if err := Decode(r, b, nil, []byte(`{"a":1}`), &in, nil); err != nil || *in.Policy != `{"a":1}` {
+		t.Fatalf("%v %+v", err, in)
+	}
+
+	if resp := Encode(httptest.NewRecorder(), b, &in); string(resp.Payload) != `{"a":1}` || resp.Structure != nil {
+		t.Fatalf("%+v", resp)
+	}
+}

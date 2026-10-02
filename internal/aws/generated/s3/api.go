@@ -594,6 +594,45 @@ type GetBucketLocationOutput struct {
 	LocationConstraint *string  `json:"LocationConstraint,omitempty" xml:",chardata"`
 }
 
+type PutBucketPolicyOutput struct{}
+
+type PutBucketPolicyRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ContentMD5          *string `json:"-" xml:"-"`
+	ChecksumAlgorithm   *string `json:"-" xml:"-"`
+	Policy              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketPolicyRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketPolicyOutput struct {
+	Policy *string `json:"-" xml:"-"`
+}
+
+type DeleteBucketPolicyOutput struct{}
+
+type DeleteBucketPolicyRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketPolicyStatusRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type PolicyStatus struct {
+	IsPublic *bool `json:"IsPublic,omitempty" xml:"IsPublic,omitempty"`
+}
+
+type GetBucketPolicyStatusOutput struct {
+	PolicyStatus *PolicyStatus `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -624,6 +663,10 @@ type API interface {
 	ListObjectVersions(context.Context, *ListObjectVersionsRequest) (*ListObjectVersionsOutput, error)
 	DeleteObjects(context.Context, *DeleteObjectsRequest) (*DeleteObjectsOutput, error)
 	GetBucketLocation(context.Context, *GetBucketLocationRequest) (*GetBucketLocationOutput, error)
+	PutBucketPolicy(context.Context, *PutBucketPolicyRequest) (*PutBucketPolicyOutput, error)
+	GetBucketPolicy(context.Context, *GetBucketPolicyRequest) (*GetBucketPolicyOutput, error)
+	DeleteBucketPolicy(context.Context, *DeleteBucketPolicyRequest) (*DeleteBucketPolicyOutput, error)
+	GetBucketPolicyStatus(context.Context, *GetBucketPolicyStatusRequest) (*GetBucketPolicyStatusOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -714,6 +757,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetBucketLocation": {Name: "GetBucketLocation", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"LocationConstraint": catalog.MemberBinding{Location: "document", Name: "LocationConstraint"}}, Method: "GET", URI: "/{Bucket}?location", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketLocationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetBucketLocation(ctx, input.(*GetBucketLocationRequest))
+		}},
+		"PutBucketPolicy": {Name: "PutBucketPolicy", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ConfirmRemoveSelfBucketAccess": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-confirm-remove-self-bucket-access"}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "Policy": catalog.MemberBinding{Location: "payload", Name: "Policy"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?policy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketPolicy(ctx, input.(*PutBucketPolicyRequest))
+		}},
+		"GetBucketPolicy": {Name: "GetBucketPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"Policy": catalog.MemberBinding{Location: "payload", Name: "Policy"}}, Method: "GET", URI: "/{Bucket}?policy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketPolicy(ctx, input.(*GetBucketPolicyRequest))
+		}},
+		"DeleteBucketPolicy": {Name: "DeleteBucketPolicy", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?policy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketPolicy(ctx, input.(*DeleteBucketPolicyRequest))
+		}},
+		"GetBucketPolicyStatus": {Name: "GetBucketPolicyStatus", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"PolicyStatus": catalog.MemberBinding{Location: "payload", Name: "PolicyStatus"}}, Method: "GET", URI: "/{Bucket}?policyStatus", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketPolicyStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketPolicyStatus(ctx, input.(*GetBucketPolicyStatusRequest))
 		}},
 	}}
 }
