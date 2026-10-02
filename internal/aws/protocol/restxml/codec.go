@@ -106,7 +106,10 @@ func Write(w http.ResponseWriter, b *catalog.Binding, output any, head bool) {
 			return
 		}
 
-		body = append([]byte(xml.Header), encoded.Bytes()...)
+		// encoding/xml invents namespace prefixes; XML Schema instance
+		// attributes, such as a grantee's xsi:type, take their usual prefix.
+		xsi := bytes.ReplaceAll(encoded.Bytes(), []byte("_XMLSchema-instance"), []byte("xsi"))
+		body = append([]byte(xml.Header), xsi...)
 		w.Header().Set("Content-Type", "application/xml")
 	}
 

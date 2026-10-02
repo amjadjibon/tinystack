@@ -95,7 +95,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
     `awsQueryCompatible` ones, which need the `query` overlay), AWS JSON 1.1 services such as EventBridge, and pure AWS Query services such as SNS, IAM, and STS, which take their
     XML namespace from the model, EC2 Query services (EC2), whose members get `ec2:"<query key>,<XML element>"` tags
     because the two names differ (the key is the `ec2QueryName`, or the capitalized `xmlName` or member name), must not have an overlay, and get `*time.Time` timestamps (ISO 8601 on the wire), and REST XML services such as S3, whose types get
-    `encoding/xml` tags (`*time.Time` timestamps) and whose bindings place members by HTTP location, and REST JSON
+    `encoding/xml` tags (`*time.Time` timestamps; `xmlAttribute` members become attributes, named by URI when
+    prefixed with one a member's `xmlNamespace` declares, such as S3's `xsi:type`) and whose bindings place members by HTTP location, and REST JSON
     services such as Lambda (HTTP-bound members get `json:"-"`; `httpResponseCode` becomes a `status` binding;
     members take their `jsonName`, which only REST JSON honors; `httpLabel` and `httpQuery` on output members are
     ignored, as Smithy specifies, so API Gateway's paging `position` is a body member). Timestamp shapes marked

@@ -237,7 +237,11 @@ func TestRESTXMLFixture(t *testing.T) {
   "fixture#NameList": {"type": "list",
     "member": {"target": "smithy.api#String", "traits": {"smithy.api#xmlName": "Name"}}},
   "fixture#MetaMap": {"type": "map", "key": {"target": "smithy.api#String"}, "value": {"target": "smithy.api#String"}},
-  "fixture#Item": {"type": "structure", "members": {"When": {"target": "smithy.api#Timestamp"}}},
+  "fixture#Item": {"type": "structure", "members": {"When": {"target": "smithy.api#Timestamp"},
+    "Grantee": {"target": "fixture#Grantee", "traits": {
+      "smithy.api#xmlNamespace": {"uri": "http://www.w3.org/2001/XMLSchema-instance", "prefix": "xsi"}}}}},
+  "fixture#Grantee": {"type": "structure", "members": {"Type": {"target": "smithy.api#String", "traits": {
+    "smithy.api#xmlAttribute": {}, "smithy.api#xmlName": "xsi:type"}}}},
   "smithy.api#String": {"type": "string"},
   "smithy.api#Timestamp": {"type": "timestamp"}
 }}`
@@ -256,6 +260,7 @@ func TestRESTXMLFixture(t *testing.T) {
 		`"Owner": catalog.MemberBinding{Location: "unsupported:header", Name: "x-owner"}`,
 		`"Meta": catalog.MemberBinding{Location: "prefix", Name: "x-meta-"}`,
 		`URI: "/{Bucket}?list"`,
+		`xml:"http://www.w3.org/2001/XMLSchema-instance type,attr,omitempty"`,
 	} {
 		// Compare without gofmt's column alignment.
 		if !strings.Contains(strings.Join(strings.Fields(string(source)), " "), want) {

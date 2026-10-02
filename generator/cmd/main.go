@@ -76,7 +76,10 @@ type (
 		roots   map[string]bool
 		// outputs are the operations' output shapes that are no operation's
 		// input; Smithy ignores httpLabel and httpQuery on their members.
-		outputs   map[string]bool
+		outputs map[string]bool
+		// prefixes maps the XML namespace prefixes that REST XML members
+		// declare to their URIs, for prefixed attribute names.
+		prefixes  map[string]string
 		namespace string
 		out       bytes.Buffer
 		query     bool
@@ -265,6 +268,29 @@ func checkTraits(traits map[string]json.RawMessage, rest bool) error {
 	return nil
 }
 
+// xmlMemberTraits returns a member's traits without the REST XML traits the
+// codec implements on members: xmlAttribute, and an xmlNamespace that declares
+// a prefix, which it records for prefixed attribute names.
+func (g *generator) xmlMemberTraits(traits map[string]json.RawMessage) (map[string]json.RawMessage, error) {
+	if !g.xml {
+		return traits, nil
+	}
+
+	traits = maps.Clone(traits)
+	delete(traits, "smithy.api#xmlAttribute")
+	if raw, ok := traits["smithy.api#xmlNamespace"]; ok {
+		var ns struct{ URI, Prefix string }
+		if err := json.Unmarshal(raw, &ns); err != nil || ns.URI == "" || ns.Prefix == "" {
+			return nil, fmt.Errorf("unsupported member xmlNamespace %s", raw)
+		}
+
+		g.prefixes[ns.Prefix] = ns.URI
+		delete(traits, "smithy.api#xmlNamespace")
+	}
+
+	return traits, nil
+}
+
 // jsonName is a member's name in JSON documents: its jsonName trait under
 // REST JSON, which alone honors the trait, or else its member name.
 func (g *generator) jsonName(member reference, name string) (string, error) {
@@ -412,6 +438,20 @@ func (g *generator) xmlTag(member reference, name string) (string, error) {
 		return "", err
 	}
 
+	if _, attr := member.Traits["smithy.api#xmlAttribute"]; attr {
+		// encoding/xml names an attribute in a namespace by its URI.
+		if prefix, local, ok := strings.Cut(wire, ":"); ok {
+			uri, declared := g.prefixes[prefix]
+			if !declared {
+				return "", fmt.Errorf("undeclared XML namespace prefix %s", prefix)
+			}
+
+			wire = uri + " " + local
+		}
+
+		return ` xml:"` + wire + `,attr,omitempty"`, nil
+	}
+
 	target := g.model.Shapes[member.Target]
 	switch target.Type {
 	case shapeMap:
@@ -499,12 +539,17 @@ func (g *generator) emit(id string) error {
 				return fmt.Errorf("unknown field %s.%s", id, n)
 			}
 
-			if guardErr := checkTraits(m.Traits, g.rest); guardErr != nil {
-				return guardErr
+			traits, guardErr := g.xmlMemberTraits(m.Traits)
+			if guardErr != nil {
+				return fmt.Errorf("%s.%s: %w", id, n, guardErr)
 			}
 
-			if guardErr := g.emit(m.Target); guardErr != nil {
-				return guardErr
+			if checkErr := checkTraits(traits, g.rest); checkErr != nil {
+				return checkErr
+			}
+
+			if emitErr := g.emit(m.Target); emitErr != nil {
+				return emitErr
 			}
 		}
 
@@ -789,12 +834,13 @@ func addPrelude(shapes map[string]shape) {
 
 func generate(name string, data []byte, profile serviceProfile) ([]byte, error) {
 	g := generator{
-		seen:    map[string]bool{},
-		imports: map[string]bool{},
-		roots:   map[string]bool{},
-		outputs: map[string]bool{},
-		profile: profile,
-		query:   profile.Query != nil,
+		seen:     map[string]bool{},
+		imports:  map[string]bool{},
+		roots:    map[string]bool{},
+		outputs:  map[string]bool{},
+		prefixes: map[string]string{},
+		profile:  profile,
+		query:    profile.Query != nil,
 	}
 	if guardErr := json.Unmarshal(data, &g.model); guardErr != nil {
 		return nil, guardErr
