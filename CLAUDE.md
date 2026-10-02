@@ -207,7 +207,8 @@ a per-service `Dialect`), and delivers synchronously through
   case-insensitive); each role, user, and group record embeds its `permissions` (inline policies and attached ARNs;
   `permissions.go` implements the policy operations once for all three), and attaching updates the policy's
   attachment count in the same transaction. Policies are stored, never evaluated. A group record holds its members'
-  names, so a user's groups are found by reading the groups. Users also hold their access key IDs; each key (secret, status, owner) is in the
+  names, so a user's groups are found by reading the groups. OpenID Connect providers are `<account>/iam/oidc-provider/<URL without the scheme>`, which STS reads through
+  `iam.Service.OIDCProvider`. Users also hold their access key IDs; each key (secret, status, owner) is in the
   partition-wide `aws/iam/access-key/<key ID>`, which `iam.Service.AccessKey` reads. STS
   `AssumeRole` checks the role's trust policy (`sts/trust.go`, a documented subset) through `iam.Service.RoleByARN`
   and stores each session under the partition-wide `aws/sts/session/<access key>` (where `GetSessionToken` also stores

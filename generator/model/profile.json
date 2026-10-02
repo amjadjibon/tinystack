@@ -1617,7 +1617,14 @@
       "ListGroupPolicies",
       "AttachGroupPolicy",
       "DetachGroupPolicy",
-      "ListAttachedGroupPolicies"
+      "ListAttachedGroupPolicies",
+      "CreateOpenIDConnectProvider",
+      "GetOpenIDConnectProvider",
+      "ListOpenIDConnectProviders",
+      "DeleteOpenIDConnectProvider",
+      "AddClientIDToOpenIDConnectProvider",
+      "RemoveClientIDFromOpenIDConnectProvider",
+      "UpdateOpenIDConnectProviderThumbprint"
     ],
     "shapes": {
       "CreateRoleRequest": [
@@ -2187,6 +2194,48 @@
         "Tags",
         "IsTruncated",
         "Marker"
+      ],
+      "CreateOpenIDConnectProviderRequest": [
+        "Url",
+        "ClientIDList",
+        "ThumbprintList",
+        "Tags"
+      ],
+      "CreateOpenIDConnectProviderResponse": [
+        "OpenIDConnectProviderArn",
+        "Tags"
+      ],
+      "GetOpenIDConnectProviderRequest": [
+        "OpenIDConnectProviderArn"
+      ],
+      "GetOpenIDConnectProviderResponse": [
+        "Url",
+        "ClientIDList",
+        "ThumbprintList",
+        "CreateDate",
+        "Tags"
+      ],
+      "ListOpenIDConnectProvidersRequest": [],
+      "ListOpenIDConnectProvidersResponse": [
+        "OpenIDConnectProviderList"
+      ],
+      "OpenIDConnectProviderListEntry": [
+        "Arn"
+      ],
+      "DeleteOpenIDConnectProviderRequest": [
+        "OpenIDConnectProviderArn"
+      ],
+      "AddClientIDToOpenIDConnectProviderRequest": [
+        "OpenIDConnectProviderArn",
+        "ClientID"
+      ],
+      "RemoveClientIDFromOpenIDConnectProviderRequest": [
+        "OpenIDConnectProviderArn",
+        "ClientID"
+      ],
+      "UpdateOpenIDConnectProviderThumbprintRequest": [
+        "OpenIDConnectProviderArn",
+        "ThumbprintList"
       ]
     }
   },

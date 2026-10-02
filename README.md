@@ -394,6 +394,8 @@ never evaluated.
 | CreateInstanceProfile / GetInstanceProfile / ListInstanceProfiles / ListInstanceProfilesForRole / DeleteInstanceProfile | Paths and tags; names are case-insensitive; a profile that holds a role cannot be deleted, nor a role that is in a profile |
 | AddRoleToInstanceProfile / RemoveRoleFromInstanceProfile | At most one role per profile (`LimitExceeded`) |
 | TagInstanceProfile / UntagInstanceProfile / ListInstanceProfileTags | Up to 50 tags |
+| CreateOpenIDConnectProvider / GetOpenIDConnectProvider / ListOpenIDConnectProviders / DeleteOpenIDConnectProvider | HTTPS URLs (one provider per URL, named by the URL without its scheme), up to 100 client IDs, up to 5 thumbprints (40 hexadecimal characters, optional and never checked), and tags; STS `AssumeRoleWithWebIdentity` accepts tokens from them |
+| AddClientIDToOpenIDConnectProvider / RemoveClientIDFromOpenIDConnectProvider / UpdateOpenIDConnectProviderThumbprint | Change a provider's client IDs and thumbprints |
 | CreateUser / GetUser / ListUsers / UpdateUser / DeleteUser | Paths and `Tags`; names are case-insensitive; GetUser without a name describes the calling IAM user, or the root user; UpdateUser renames (keeping the user's ID, keys, policies, and groups) or moves a user; a user with access keys, policies, or groups cannot be deleted |
 | TagUser / UntagUser / ListUserTags | Up to 50 tags |
 | PutUserPolicy / GetUserPolicy / ListUserPolicies / DeleteUserPolicy | Inline user policies |

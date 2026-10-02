@@ -771,6 +771,68 @@ type ListAttachedGroupPoliciesResponse struct {
 	Marker           *string          `json:"Marker,omitempty" query:"Marker"`
 }
 
+type CreateOpenIDConnectProviderRequest struct {
+	Url            *string  `json:"Url,omitempty" query:"Url"`
+	ClientIDList   []string `json:"ClientIDList,omitempty" query:"ClientIDList"`
+	ThumbprintList []string `json:"ThumbprintList,omitempty" query:"ThumbprintList"`
+	Tags           []Tag    `json:"Tags,omitempty" query:"Tags"`
+}
+
+type CreateOpenIDConnectProviderResponse struct {
+	OpenIDConnectProviderArn *string `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+	Tags                     []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type GetOpenIDConnectProviderRequest struct {
+	OpenIDConnectProviderArn *string `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+}
+
+type GetOpenIDConnectProviderResponse struct {
+	Url            *string    `json:"Url,omitempty" query:"Url"`
+	ClientIDList   []string   `json:"ClientIDList,omitempty" query:"ClientIDList"`
+	ThumbprintList []string   `json:"ThumbprintList,omitempty" query:"ThumbprintList"`
+	CreateDate     *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+	Tags           []Tag      `json:"Tags,omitempty" query:"Tags"`
+}
+
+type ListOpenIDConnectProvidersRequest struct {
+}
+
+type OpenIDConnectProviderListEntry struct {
+	Arn *string `json:"Arn,omitempty" query:"Arn"`
+}
+
+type ListOpenIDConnectProvidersResponse struct {
+	OpenIDConnectProviderList []OpenIDConnectProviderListEntry `json:"OpenIDConnectProviderList,omitempty" query:"OpenIDConnectProviderList"`
+}
+
+type DeleteOpenIDConnectProviderOutput struct{}
+
+type DeleteOpenIDConnectProviderRequest struct {
+	OpenIDConnectProviderArn *string `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+}
+
+type AddClientIDToOpenIDConnectProviderOutput struct{}
+
+type AddClientIDToOpenIDConnectProviderRequest struct {
+	OpenIDConnectProviderArn *string `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+	ClientID                 *string `json:"ClientID,omitempty" query:"ClientID"`
+}
+
+type RemoveClientIDFromOpenIDConnectProviderOutput struct{}
+
+type RemoveClientIDFromOpenIDConnectProviderRequest struct {
+	OpenIDConnectProviderArn *string `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+	ClientID                 *string `json:"ClientID,omitempty" query:"ClientID"`
+}
+
+type UpdateOpenIDConnectProviderThumbprintOutput struct{}
+
+type UpdateOpenIDConnectProviderThumbprintRequest struct {
+	OpenIDConnectProviderArn *string  `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+	ThumbprintList           []string `json:"ThumbprintList,omitempty" query:"ThumbprintList"`
+}
+
 type API interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
@@ -846,10 +908,17 @@ type API interface {
 	AttachGroupPolicy(context.Context, *AttachGroupPolicyRequest) (*AttachGroupPolicyOutput, error)
 	DetachGroupPolicy(context.Context, *DetachGroupPolicyRequest) (*DetachGroupPolicyOutput, error)
 	ListAttachedGroupPolicies(context.Context, *ListAttachedGroupPoliciesRequest) (*ListAttachedGroupPoliciesResponse, error)
+	CreateOpenIDConnectProvider(context.Context, *CreateOpenIDConnectProviderRequest) (*CreateOpenIDConnectProviderResponse, error)
+	GetOpenIDConnectProvider(context.Context, *GetOpenIDConnectProviderRequest) (*GetOpenIDConnectProviderResponse, error)
+	ListOpenIDConnectProviders(context.Context, *ListOpenIDConnectProvidersRequest) (*ListOpenIDConnectProvidersResponse, error)
+	DeleteOpenIDConnectProvider(context.Context, *DeleteOpenIDConnectProviderRequest) (*DeleteOpenIDConnectProviderOutput, error)
+	AddClientIDToOpenIDConnectProvider(context.Context, *AddClientIDToOpenIDConnectProviderRequest) (*AddClientIDToOpenIDConnectProviderOutput, error)
+	RemoveClientIDFromOpenIDConnectProvider(context.Context, *RemoveClientIDFromOpenIDConnectProviderRequest) (*RemoveClientIDFromOpenIDConnectProviderOutput, error)
+	UpdateOpenIDConnectProviderThumbprint(context.Context, *UpdateOpenIDConnectProviderThumbprintRequest) (*UpdateOpenIDConnectProviderThumbprintOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iam", SigningName: "iam", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://iam.amazonaws.com/doc/2010-05-08/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModification", MessageMember: "", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "DeleteConflict", MessageMember: "", StatusCode: 409}, "EntityAlreadyExistsException": catalog.ErrorBinding{QueryCode: "EntityAlreadyExists", MessageMember: "", StatusCode: 409}, "EntityTemporarilyUnmodifiableException": catalog.ErrorBinding{QueryCode: "EntityTemporarilyUnmodifiable", MessageMember: "", StatusCode: 409}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "InvalidInput", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "", StatusCode: 409}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "NoSuchEntityException": catalog.ErrorBinding{QueryCode: "NoSuchEntity", MessageMember: "", StatusCode: 404}, "PolicyNotAttachableException": catalog.ErrorBinding{QueryCode: "PolicyNotAttachable", MessageMember: "", StatusCode: 400}, "ServiceFailureException": catalog.ErrorBinding{QueryCode: "ServiceFailure", MessageMember: "", StatusCode: 500}, "UnmodifiableEntityException": catalog.ErrorBinding{QueryCode: "UnmodifiableEntity", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iam", SigningName: "iam", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://iam.amazonaws.com/doc/2010-05-08/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModification", MessageMember: "", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "DeleteConflict", MessageMember: "", StatusCode: 409}, "EntityAlreadyExistsException": catalog.ErrorBinding{QueryCode: "EntityAlreadyExists", MessageMember: "", StatusCode: 409}, "EntityTemporarilyUnmodifiableException": catalog.ErrorBinding{QueryCode: "EntityTemporarilyUnmodifiable", MessageMember: "", StatusCode: 409}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "InvalidInput", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "", StatusCode: 409}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "NoSuchEntityException": catalog.ErrorBinding{QueryCode: "NoSuchEntity", MessageMember: "", StatusCode: 404}, "OpenIdIdpCommunicationErrorException": catalog.ErrorBinding{QueryCode: "OpenIdIdpCommunicationError", MessageMember: "", StatusCode: 400}, "PolicyNotAttachableException": catalog.ErrorBinding{QueryCode: "PolicyNotAttachable", MessageMember: "", StatusCode: 400}, "ServiceFailureException": catalog.ErrorBinding{QueryCode: "ServiceFailure", MessageMember: "", StatusCode: 500}, "UnmodifiableEntityException": catalog.ErrorBinding{QueryCode: "UnmodifiableEntity", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateRole": {Name: "CreateRole", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateRole", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateRoleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateRole(ctx, input.(*CreateRoleRequest))
 		}},
@@ -1061,6 +1130,27 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListAttachedGroupPolicies": {Name: "ListAttachedGroupPolicies", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListAttachedGroupPolicies", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListAttachedGroupPoliciesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListAttachedGroupPolicies(ctx, input.(*ListAttachedGroupPoliciesRequest))
+		}},
+		"CreateOpenIDConnectProvider": {Name: "CreateOpenIDConnectProvider", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateOpenIDConnectProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateOpenIDConnectProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateOpenIDConnectProvider(ctx, input.(*CreateOpenIDConnectProviderRequest))
+		}},
+		"GetOpenIDConnectProvider": {Name: "GetOpenIDConnectProvider", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetOpenIDConnectProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetOpenIDConnectProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetOpenIDConnectProvider(ctx, input.(*GetOpenIDConnectProviderRequest))
+		}},
+		"ListOpenIDConnectProviders": {Name: "ListOpenIDConnectProviders", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListOpenIDConnectProviders", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListOpenIDConnectProvidersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListOpenIDConnectProviders(ctx, input.(*ListOpenIDConnectProvidersRequest))
+		}},
+		"DeleteOpenIDConnectProvider": {Name: "DeleteOpenIDConnectProvider", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteOpenIDConnectProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteOpenIDConnectProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteOpenIDConnectProvider(ctx, input.(*DeleteOpenIDConnectProviderRequest))
+		}},
+		"AddClientIDToOpenIDConnectProvider": {Name: "AddClientIDToOpenIDConnectProvider", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AddClientIDToOpenIDConnectProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AddClientIDToOpenIDConnectProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AddClientIDToOpenIDConnectProvider(ctx, input.(*AddClientIDToOpenIDConnectProviderRequest))
+		}},
+		"RemoveClientIDFromOpenIDConnectProvider": {Name: "RemoveClientIDFromOpenIDConnectProvider", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RemoveClientIDFromOpenIDConnectProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RemoveClientIDFromOpenIDConnectProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemoveClientIDFromOpenIDConnectProvider(ctx, input.(*RemoveClientIDFromOpenIDConnectProviderRequest))
+		}},
+		"UpdateOpenIDConnectProviderThumbprint": {Name: "UpdateOpenIDConnectProviderThumbprint", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateOpenIDConnectProviderThumbprint", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateOpenIDConnectProviderThumbprintRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateOpenIDConnectProviderThumbprint(ctx, input.(*UpdateOpenIDConnectProviderThumbprintRequest))
 		}},
 	}}
 }
