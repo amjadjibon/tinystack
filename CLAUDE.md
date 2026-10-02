@@ -9,7 +9,8 @@ TinyStack is a single Go binary that serves a local aws endpoint for development
 Tasks use [Task](https://taskfile.dev) (`Taskfile.yml`):
 
 ```sh
-task build      # go build -o bin/tinystack ./cmd/tinystack
+task build      # builds the console (ui/), then go build -tags console -o bin/tinystack ./cmd/tinystack
+task build:noui # go build -o bin/tinystack-noui ./cmd/tinystack: no console, needs only Go (Docker: --target noui)
 task test       # go test -race ./...
 task lint       # go vet + golangci-lint (installed separately)
 task generate   # go generate ./... — regenerates internal/aws/generated/<service>/api.go
@@ -19,13 +20,14 @@ task test:docker # runs Lambda functions, ECS containers, and an EKS k3s cluster
 task test:terraform # python3 tests/terraform/terraform.py — applies, updates, destroys tests/terraform/main.tf (needs Terraform)
 task test:sam   # python3 tests/sam/sam.py — sam deploy, redeploy, and sam delete of tests/sam/template.yaml (needs the SAM CLI)
 task all        # generate, lint, test, build
-task ui:dev     # console (ui/) dev server on :4567, proxying /_tinystack to TINYSTACK_URL (default :4566)
+task ui:dev     # console (ui/) dev server on :4568, proxying /_tinystack to TINYSTACK_URL (default :4566)
 task ui:check   # Biome lint/format and tsc for the console; task ui:build builds ui/dist/client
-task up         # docker compose up --build: TinyStack on :4566 and the console on :4567 (task down [-- -v])
+task up         # docker compose up --build: TinyStack on :4566, its console on :4567 (task down [-- -v])
 ```
 
 Run a single test: `go test -race ./tests/integration -run TestName` (or any package path).
-Run the server: `./bin/tinystack start [--host H] [--port P] [--config examples/tinystack.yaml]` (default `127.0.0.1:4566`).
+Run the server: `./bin/tinystack start [--host H] [--port P] [--console-port C] [--config examples/tinystack.yaml]`
+(default `127.0.0.1:4566`, console on `4567`, `0` turns it off).
 `GET /_tinystack/health` lists the registered services.
 `GET /_tinystack/requests` lists the last 256 requests with truncated bodies (`gateway/requests.go`), redacting both
 bodies of operations the generator marks `Sensitive` (a generated member is `smithy.api#sensitive`); `DELETE`
@@ -34,8 +36,11 @@ clears them. `GET /_tinystack/metrics` serves Prometheus counters by service, op
 `GET /_tinystack/resources` lists resources from each service's `Resources` method (`catalog.Inventory`; the generated
 `Descriptor` picks it up, so a service's `inventory.go` is all a new service needs).
 `GET /_tinystack/deliveries` is the `delivery.Log` that SNS, S3, EventBridge, and Lambda record every in-process delivery
-in; `start.go` mounts it with `gateway.Handle`. Both logs keep their entries in `recent.Log`. `GET /_tinystack/` is the dashboard: static files embedded from
-`gateway/dashboard/` that only read those endpoints and write every value with `textContent` (strict CSP, no build step).
+in; `start.go` mounts it with `gateway.Handle`. Both logs keep their entries in `recent.Log`. The web console is the
+Cloudscape app in `ui/` (TanStack Start in SPA mode, pnpm, Biome). `ui/console.go` embeds `ui/dist/client` only with
+the `console` build tag (`task build`); without it (`task build:noui`) `ui.Files()` is nil and `start` serves no console.
+`start.go` serves it on its own listener (`server.console_port`, default 4567) through `internal/console`, which sends
+`/_tinystack/` paths to `gateway.Server.Internal()` and every path that names no file to `_shell.html`.
 
 ## Architecture
 

@@ -7,14 +7,22 @@ A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda
 Requires Go 1.27 or newer.
 
 ```sh
-go build -o bin/tinystack ./cmd/tinystack
+task build            # bin/tinystack with the web console built in (needs Node.js and pnpm)
+task build:noui       # bin/tinystack-noui without the console (needs only Go)
 ./bin/tinystack start
 ```
 
-The server listens on `http://127.0.0.1:4566`. It runs in the foreground and drains
-HTTP requests on SIGINT or SIGTERM. By default all state is in memory and disappears
-on exit. Use `--host`, `--port`, or `--config examples/tinystack.yaml` to change settings.
-Health is available at `GET /_tinystack/health`.
+The server listens on `http://127.0.0.1:4566`, and the web console on
+`http://127.0.0.1:4567`. It runs in the foreground and drains HTTP requests on SIGINT
+or SIGTERM. By default all state is in memory and disappears on exit. Use `--host`,
+`--port`, `--console-port` (`0` turns the console off), or
+`--config examples/tinystack.yaml` to change settings. Health is available at
+`GET /_tinystack/health`. The build without the console (`task build:noui`, or a plain
+`go build ./cmd/tinystack`) is the same server and only serves port 4566.
+
+`docker compose up --build` (`task up`) runs the console build in a container on both
+ports and keeps its state in the `tinystack-data` volume (`task down -- -v` resets it).
+`docker build --target noui .` builds the image without the console.
 
 To keep state across restarts, set a persistent storage directory (`~` expands to
 your home directory):
@@ -131,10 +139,11 @@ working example.
 
 ### Dashboard and diagnostics
 
-Open `http://localhost:4566/_tinystack/` for a dashboard of recent requests,
-deliveries, resources, and metrics. It refreshes live, filters every table, and shows
-request and response bodies, payloads, and resource details when you click a row. It
-reads only the JSON endpoints below, which scripts can use directly.
+Open `http://localhost:4567` for the web console (`ui/`, built in by `task build`),
+which looks like the AWS console: every service and its resources, resource details,
+and live, filterable tables of recent requests, deliveries, and metrics with request
+and response bodies. It reads only the JSON endpoints below, which scripts can use
+directly; the console's port serves them too.
 
 `GET /_tinystack/requests` lists the last 256 AWS requests, newest first: time,
 request ID, method, path, service, operation, protocol, account, region, status,

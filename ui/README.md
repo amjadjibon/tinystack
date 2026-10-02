@@ -11,24 +11,21 @@ It only reads TinyStack's own endpoints (`/_tinystack/health`, `resources`, `req
 - **Resource detail**: summary, configuration, tags, and raw JSON
 - **Request inspector**, **Deliveries**, **Metrics**: live tables with a details split panel
 
+## Build
+
+`task build` builds this app and embeds `dist/client` in `bin/tinystack` (the `console` build tag,
+`console.go`), which serves it on `http://localhost:4567` (`--console-port`, `0` turns it off)
+along with the `/_tinystack` endpoints. `task up` does the same in Docker. `task build:noui`
+(`docker build --target noui .`) builds TinyStack without it.
+
 ## Develop
 
 From the repository root:
 
 ```sh
-task build && ./bin/tinystack start   # TinyStack on 127.0.0.1:4566
-task ui:dev                           # http://localhost:4567 (installs dependencies first)
+task build:noui && ./bin/tinystack-noui start   # TinyStack on :4566, no built-in console
+task ui:dev                           # http://localhost:4568 with hot reload (installs dependencies first)
+task ui:check                         # Biome lint and format, and tsc
 ```
 
 The dev server proxies `/_tinystack` to `TINYSTACK_URL` (default `http://127.0.0.1:4566`).
-
-```sh
-task ui:check                         # Biome lint and format, and tsc
-task ui:build                         # static single-page app in ui/dist/client (_shell.html)
-```
-
-## Docker
-
-`task up` (`docker compose up --build`) runs TinyStack on `http://localhost:4566` and the
-console on `http://localhost:4567`, where nginx serves the build and proxies `/_tinystack` to TinyStack.
-TinyStack keeps its state in the `tinystack-data` volume (`task down -- -v` resets it).
