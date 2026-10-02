@@ -713,6 +713,73 @@ type DeleteBucketEncryptionRequest struct {
 	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
+type PutBucketOwnershipControlsOutput struct{}
+
+type OwnershipControlsRule struct {
+	ObjectOwnership *string `json:"ObjectOwnership,omitempty" xml:"ObjectOwnership,omitempty"`
+}
+
+type OwnershipControls struct {
+	Rules []OwnershipControlsRule `json:"Rules,omitempty" xml:"Rule,omitempty"`
+}
+
+type PutBucketOwnershipControlsRequest struct {
+	Bucket              *string            `json:"-" xml:"-"`
+	ContentMD5          *string            `json:"-" xml:"-"`
+	ExpectedBucketOwner *string            `json:"-" xml:"-"`
+	OwnershipControls   *OwnershipControls `json:"-" xml:"-"`
+	ChecksumAlgorithm   *string            `json:"-" xml:"-"`
+}
+
+type GetBucketOwnershipControlsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketOwnershipControlsOutput struct {
+	OwnershipControls *OwnershipControls `json:"-" xml:"-"`
+}
+
+type DeleteBucketOwnershipControlsOutput struct{}
+
+type DeleteBucketOwnershipControlsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type PutPublicAccessBlockOutput struct{}
+
+type PublicAccessBlockConfiguration struct {
+	BlockPublicAcls       *bool `json:"BlockPublicAcls,omitempty" xml:"BlockPublicAcls,omitempty"`
+	IgnorePublicAcls      *bool `json:"IgnorePublicAcls,omitempty" xml:"IgnorePublicAcls,omitempty"`
+	BlockPublicPolicy     *bool `json:"BlockPublicPolicy,omitempty" xml:"BlockPublicPolicy,omitempty"`
+	RestrictPublicBuckets *bool `json:"RestrictPublicBuckets,omitempty" xml:"RestrictPublicBuckets,omitempty"`
+}
+
+type PutPublicAccessBlockRequest struct {
+	Bucket                         *string                         `json:"-" xml:"-"`
+	ContentMD5                     *string                         `json:"-" xml:"-"`
+	ChecksumAlgorithm              *string                         `json:"-" xml:"-"`
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner            *string                         `json:"-" xml:"-"`
+}
+
+type GetPublicAccessBlockRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetPublicAccessBlockOutput struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"-" xml:"-"`
+}
+
+type DeletePublicAccessBlockOutput struct{}
+
+type DeletePublicAccessBlockRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -753,6 +820,12 @@ type API interface {
 	PutBucketEncryption(context.Context, *PutBucketEncryptionRequest) (*PutBucketEncryptionOutput, error)
 	GetBucketEncryption(context.Context, *GetBucketEncryptionRequest) (*GetBucketEncryptionOutput, error)
 	DeleteBucketEncryption(context.Context, *DeleteBucketEncryptionRequest) (*DeleteBucketEncryptionOutput, error)
+	PutBucketOwnershipControls(context.Context, *PutBucketOwnershipControlsRequest) (*PutBucketOwnershipControlsOutput, error)
+	GetBucketOwnershipControls(context.Context, *GetBucketOwnershipControlsRequest) (*GetBucketOwnershipControlsOutput, error)
+	DeleteBucketOwnershipControls(context.Context, *DeleteBucketOwnershipControlsRequest) (*DeleteBucketOwnershipControlsOutput, error)
+	PutPublicAccessBlock(context.Context, *PutPublicAccessBlockRequest) (*PutPublicAccessBlockOutput, error)
+	GetPublicAccessBlock(context.Context, *GetPublicAccessBlockRequest) (*GetPublicAccessBlockOutput, error)
+	DeletePublicAccessBlock(context.Context, *DeletePublicAccessBlockRequest) (*DeletePublicAccessBlockOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -873,6 +946,24 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteBucketEncryption": {Name: "DeleteBucketEncryption", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?encryption", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketEncryptionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteBucketEncryption(ctx, input.(*DeleteBucketEncryptionRequest))
+		}},
+		"PutBucketOwnershipControls": {Name: "PutBucketOwnershipControls", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "OwnershipControls": catalog.MemberBinding{Location: "payload", Name: "OwnershipControls"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?ownershipControls", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketOwnershipControlsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketOwnershipControls(ctx, input.(*PutBucketOwnershipControlsRequest))
+		}},
+		"GetBucketOwnershipControls": {Name: "GetBucketOwnershipControls", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"OwnershipControls": catalog.MemberBinding{Location: "payload", Name: "OwnershipControls"}}, Method: "GET", URI: "/{Bucket}?ownershipControls", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketOwnershipControlsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketOwnershipControls(ctx, input.(*GetBucketOwnershipControlsRequest))
+		}},
+		"DeleteBucketOwnershipControls": {Name: "DeleteBucketOwnershipControls", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?ownershipControls", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketOwnershipControlsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketOwnershipControls(ctx, input.(*DeleteBucketOwnershipControlsRequest))
+		}},
+		"PutPublicAccessBlock": {Name: "PutPublicAccessBlock", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "PublicAccessBlockConfiguration": catalog.MemberBinding{Location: "payload", Name: "PublicAccessBlockConfiguration"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?publicAccessBlock", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutPublicAccessBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutPublicAccessBlock(ctx, input.(*PutPublicAccessBlockRequest))
+		}},
+		"GetPublicAccessBlock": {Name: "GetPublicAccessBlock", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"PublicAccessBlockConfiguration": catalog.MemberBinding{Location: "payload", Name: "PublicAccessBlockConfiguration"}}, Method: "GET", URI: "/{Bucket}?publicAccessBlock", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetPublicAccessBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetPublicAccessBlock(ctx, input.(*GetPublicAccessBlockRequest))
+		}},
+		"DeletePublicAccessBlock": {Name: "DeletePublicAccessBlock", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?publicAccessBlock", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeletePublicAccessBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeletePublicAccessBlock(ctx, input.(*DeletePublicAccessBlockRequest))
 		}},
 	}}
 }

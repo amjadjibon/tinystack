@@ -115,11 +115,20 @@ func (s *Service) PutBucketPolicy(
 	in *api.PutBucketPolicyRequest,
 ) (*api.PutBucketPolicyOutput, error) {
 	policy := value(in.Policy)
-	if _, err := parsePolicy(policy); err != nil {
+	statements, err := parsePolicy(policy)
+	if err != nil {
 		return nil, err
 	}
 
-	err := s.updateBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) { meta.Policy = policy })
+	err = s.editBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) error {
+		if b := meta.PublicAccessBlock; b != nil && value(b.BlockPublicPolicy) && public(statements) {
+			return fail(http.StatusForbidden, "AccessDenied", "User is not authorized to perform: s3:PutBucketPolicy "+
+				"on resource because public policies are blocked by the BlockPublicPolicy block public access setting.")
+		}
+
+		meta.Policy = policy
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -175,10 +184,16 @@ func (s *Service) GetBucketPolicyStatus(
 		return nil, err
 	}
 
-	public := false
+	return &api.GetBucketPolicyStatusOutput{PolicyStatus: &api.PolicyStatus{IsPublic: new(public(statements))}}, nil
+}
+
+// public reports whether a policy allows everyone.
+func public(statements []statement) bool {
 	for i := range statements {
-		public = public || statements[i].public()
+		if statements[i].public() {
+			return true
+		}
 	}
 
-	return &api.GetBucketPolicyStatusOutput{PolicyStatus: &api.PolicyStatus{IsPublic: new(public)}}, nil
+	return false
 }

@@ -162,6 +162,18 @@ func TestS3BucketPolicy(t *testing.T) {
 
 	policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*",` +
 		`"Action":"s3:GetObject","Resource":"arn:aws:s3:::site/*"}]}`
+	// A new bucket blocks public policies.
+	_, err = c.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{Bucket: aws.String("site"), Policy: aws.String(policy)})
+	if code, status := s3Code(err); code != "AccessDenied" || status != 403 {
+		t.Fatalf("blocked: %s %d %v", code, status, err)
+	}
+
+	if _, err = c.DeletePublicAccessBlock(ctx, &s3.DeletePublicAccessBlockInput{
+		Bucket: aws.String("site"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
 	if _, err = c.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
 		Bucket: aws.String("site"), Policy: aws.String(policy),
 	}); err != nil {
@@ -376,5 +388,78 @@ func TestS3BucketEncryption(t *testing.T) {
 
 	if got, _ := algorithm(); got != s3types.ServerSideEncryptionAes256 {
 		t.Fatalf("deleted: %s", got)
+	}
+}
+
+func TestS3BucketAccess(t *testing.T) {
+	c := s3Client(server(t), "test", "us-east-1")
+	ctx := context.Background()
+	if _, err := c.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("locked")}); err != nil {
+		t.Fatal(err)
+	}
+
+	ownership, err := c.GetBucketOwnershipControls(ctx, &s3.GetBucketOwnershipControlsInput{
+		Bucket: aws.String("locked"),
+	})
+	if err != nil || len(ownership.OwnershipControls.Rules) != 1 ||
+		ownership.OwnershipControls.Rules[0].ObjectOwnership != s3types.ObjectOwnershipBucketOwnerEnforced {
+		t.Fatalf("new bucket ownership: %+v %v", ownership, err)
+	}
+
+	block, err := c.GetPublicAccessBlock(ctx, &s3.GetPublicAccessBlockInput{Bucket: aws.String("locked")})
+	if err != nil || !aws.ToBool(block.PublicAccessBlockConfiguration.BlockPublicPolicy) ||
+		!aws.ToBool(block.PublicAccessBlockConfiguration.RestrictPublicBuckets) {
+		t.Fatalf("new bucket block: %+v %v", block, err)
+	}
+
+	if _, err = c.PutBucketOwnershipControls(ctx, &s3.PutBucketOwnershipControlsInput{
+		Bucket: aws.String("locked"),
+		OwnershipControls: &s3types.OwnershipControls{Rules: []s3types.OwnershipControlsRule{{
+			ObjectOwnership: s3types.ObjectOwnershipObjectWriter,
+		}}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	ownership, err = c.GetBucketOwnershipControls(ctx, &s3.GetBucketOwnershipControlsInput{
+		Bucket: aws.String("locked"),
+	})
+	if err != nil || ownership.OwnershipControls.Rules[0].ObjectOwnership != s3types.ObjectOwnershipObjectWriter {
+		t.Fatalf("ownership: %+v %v", ownership, err)
+	}
+
+	if _, err = c.DeleteBucketOwnershipControls(ctx, &s3.DeleteBucketOwnershipControlsInput{
+		Bucket: aws.String("locked"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.GetBucketOwnershipControls(ctx, &s3.GetBucketOwnershipControlsInput{Bucket: aws.String("locked")})
+	if code, status := s3Code(err); code != "OwnershipControlsNotFoundError" || status != 404 {
+		t.Fatalf("deleted ownership: %s %d %v", code, status, err)
+	}
+
+	if _, err = c.PutPublicAccessBlock(ctx, &s3.PutPublicAccessBlockInput{
+		Bucket:                         aws.String("locked"),
+		PublicAccessBlockConfiguration: &s3types.PublicAccessBlockConfiguration{BlockPublicAcls: aws.Bool(true)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	block, err = c.GetPublicAccessBlock(ctx, &s3.GetPublicAccessBlockInput{Bucket: aws.String("locked")})
+	if err != nil || !aws.ToBool(block.PublicAccessBlockConfiguration.BlockPublicAcls) ||
+		aws.ToBool(block.PublicAccessBlockConfiguration.BlockPublicPolicy) {
+		t.Fatalf("block: %+v %v", block, err)
+	}
+
+	if _, err = c.DeletePublicAccessBlock(ctx, &s3.DeletePublicAccessBlockInput{
+		Bucket: aws.String("locked"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.GetPublicAccessBlock(ctx, &s3.GetPublicAccessBlockInput{Bucket: aws.String("locked")})
+	if code, status := s3Code(err); code != "NoSuchPublicAccessBlockConfiguration" || status != 404 {
+		t.Fatalf("deleted block: %s %d %v", code, status, err)
 	}
 }

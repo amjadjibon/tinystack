@@ -84,11 +84,14 @@ type bucketMeta struct {
 	Notifications *api.NotificationConfiguration `json:",omitempty"`
 	// Encryption is the default encryption, stored only: TinyStack keeps
 	// objects as sent. Nil means SSE-S3.
-	Encryption *api.ServerSideEncryptionConfiguration `json:",omitempty"`
+	Encryption        *api.ServerSideEncryptionConfiguration `json:",omitempty"`
+	PublicAccessBlock *api.PublicAccessBlockConfiguration    `json:",omitempty"`
 	// Versioning is "", "Enabled", or "Suspended".
 	Versioning string `json:",omitempty"`
 	// Policy is the bucket policy, stored as sent and never evaluated.
-	Policy    string         `json:",omitempty"`
+	Policy string `json:",omitempty"`
+	// Ownership is the ObjectOwnership setting, if the bucket has one.
+	Ownership string         `json:",omitempty"`
 	CORS      []api.CORSRule `json:",omitempty"`
 	CreatedAt int64
 }
@@ -260,7 +263,9 @@ func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest)
 			return guardErr
 		}
 
-		return writeJSON(tx, m.AccountID+"/"+m.Region+"/s3/"+name, &bucketMeta{CreatedAt: now})
+		meta := bucketMeta{CreatedAt: now}
+		newBucketAccess(&meta)
+		return writeJSON(tx, m.AccountID+"/"+m.Region+"/s3/"+name, &meta)
 	})
 	if err != nil {
 		return nil, err

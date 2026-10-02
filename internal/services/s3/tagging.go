@@ -44,6 +44,15 @@ func bucketTags(in *api.Tagging) (map[string]string, error) {
 
 // updateBucket applies fn to the caller's bucket metadata and saves it.
 func (s *Service) updateBucket(ctx context.Context, bucket, owner *string, fn func(*bucketMeta)) error {
+	return s.editBucket(ctx, bucket, owner, func(meta *bucketMeta) error {
+		fn(meta)
+		return nil
+	})
+}
+
+// editBucket applies fn to the caller's bucket metadata and saves it, unless
+// fn fails.
+func (s *Service) editBucket(ctx context.Context, bucket, owner *string, fn func(*bucketMeta) error) error {
 	m, err := identity(ctx)
 	if err != nil {
 		return err
@@ -60,7 +69,10 @@ func (s *Service) updateBucket(ctx context.Context, bucket, owner *string, fn fu
 			return readErr
 		}
 
-		fn(&meta)
+		if fnErr := fn(&meta); fnErr != nil {
+			return fnErr
+		}
+
 		return writeJSON(tx, key, &meta)
 	})
 }
