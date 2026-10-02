@@ -48,6 +48,49 @@ tasks:
     cmds:
       - python3 tests/sam/sam.py
 
+  ui:install:
+    desc: "Install the console's dependencies"
+    dir: ui
+    sources:
+      - package.json
+      - pnpm-lock.yaml
+    generates:
+      - node_modules/.modules.yaml
+    cmds:
+      - pnpm install --frozen-lockfile
+
+  ui:dev:
+    desc: "Run the console dev server on :4567 (TINYSTACK_URL defaults to http://127.0.0.1:4566)"
+    dir: ui
+    deps: [ui:install]
+    cmds:
+      - pnpm dev
+
+  ui:build:
+    desc: "Build the console into ui/dist/client"
+    dir: ui
+    deps: [ui:install]
+    cmds:
+      - pnpm build
+
+  ui:check:
+    desc: "Lint, format-check, and typecheck the console"
+    dir: ui
+    deps: [ui:install]
+    cmds:
+      - pnpm check
+      - pnpm exec tsc --noEmit
+
+  up:
+    desc: "Run TinyStack (:4566) and the console (:4567) with Docker Compose"
+    cmds:
+      - docker compose up --build {{.CLI_ARGS}}
+
+  down:
+    desc: "Stop the Docker Compose stack (task down -- -v also deletes its state)"
+    cmds:
+      - docker compose down {{.CLI_ARGS}}
+
   clean:
     cmds:
       - rm -rf bin
