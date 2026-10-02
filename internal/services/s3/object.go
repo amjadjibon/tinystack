@@ -440,6 +440,136 @@ func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest)
 	return out, nil
 }
 
+// maxDeletes is how many objects one DeleteObjects request may name.
+const maxDeletes = 1000
+
+// DeleteObjects deletes each named object or version as DeleteObject does, in
+// one transaction. A key that is not valid is reported in Errors; Quiet leaves
+// the deleted objects out of the response.
+func (s *Service) DeleteObjects(ctx context.Context, in *api.DeleteObjectsRequest) (*api.DeleteObjectsOutput, error) {
+	m, err := identity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if in.Delete == nil || len(in.Delete.Objects) == 0 || len(in.Delete.Objects) > maxDeletes {
+		return nil, fail(http.StatusBadRequest, "MalformedXML",
+			"The XML you provided was not well-formed or did not validate against our published schema")
+	}
+
+	var cfg *api.NotificationConfiguration
+	var events []objectEvent
+	out := &api.DeleteObjectsOutput{}
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
+		if resolveErr != nil {
+			return resolveErr
+		}
+
+		now := s.now().UnixMilli()
+		for _, o := range in.Delete.Objects {
+			if keyErr := validKey(o.Key); keyErr != nil {
+				e := awserror.From(keyErr)
+				out.Errors = append(out.Errors, api.Error{
+					Key: o.Key, VersionId: o.VersionId, Code: new(e.Code), Message: new(e.Message),
+				})
+
+				continue
+			}
+
+			var r removal
+			var deleteErr error
+			if o.VersionId != nil {
+				r, deleteErr = deleteVersion(tx, key, *o.Key, *o.VersionId)
+			} else {
+				r, deleteErr = deleteCurrent(tx, key, *o.Key, now)
+			}
+
+			if deleteErr != nil {
+				return deleteErr
+			}
+
+			deleted := api.DeletedObject{Key: o.Key, VersionId: o.VersionId}
+			if r.marker {
+				deleted.DeleteMarker = new(true)
+				if o.VersionId == nil {
+					deleted.DeleteMarkerVersionId = new(r.version)
+				}
+			}
+
+			if !value(in.Delete.Quiet) {
+				out.Deleted = append(out.Deleted, deleted)
+			}
+
+			if r.removed {
+				e := objectEvent{
+					name: "ObjectRemoved:Delete", reason: "DeleteObjects", bucket: *in.Bucket,
+					key: *o.Key, version: r.version,
+				}
+				if r.marker && o.VersionId == nil {
+					e.name = "ObjectRemoved:DeleteMarkerCreated"
+				}
+
+				events = append(events, e)
+			}
+		}
+
+		if len(events) == 0 {
+			return nil
+		}
+
+		var readErr error
+		cfg, readErr = notifications(tx, key)
+		return readErr
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, e := range events {
+		s.notify(ctx, m, cfg, e)
+	}
+
+	return out, nil
+}
+
+// GetBucketLocation returns the bucket's Region, which is empty for us-east-1.
+// Clients ask it to find a bucket's Region, so it answers from any Region.
+func (s *Service) GetBucketLocation(
+	ctx context.Context,
+	in *api.GetBucketLocationRequest,
+) (*api.GetBucketLocationOutput, error) {
+	m, err := identity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var index bucketIndex
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		found, readErr := readJSON(tx, indexPrefix+value(in.Bucket), &index)
+		switch {
+		case readErr != nil:
+			return readErr
+		case !found:
+			return noSuchBucket()
+		case index.Account != m.AccountID || (in.ExpectedBucketOwner != nil && *in.ExpectedBucketOwner != m.AccountID):
+			return accessDenied()
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	out := &api.GetBucketLocationOutput{}
+	if index.Region != defaultRegion {
+		out.LocationConstraint = new(index.Region)
+	}
+
+	return out, nil
+}
+
 // listing is one ListObjectsV2 page before encoding.
 type listing struct {
 	last     string

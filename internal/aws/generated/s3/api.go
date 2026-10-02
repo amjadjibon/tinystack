@@ -547,6 +547,53 @@ type ListObjectVersionsOutput struct {
 	EncodingType        *string             `json:"EncodingType,omitempty" xml:"EncodingType,omitempty"`
 }
 
+type ObjectIdentifier struct {
+	Key       *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	VersionId *string `json:"VersionId,omitempty" xml:"VersionId,omitempty"`
+}
+
+type Delete struct {
+	Objects []ObjectIdentifier `json:"Objects,omitempty" xml:"Object,omitempty"`
+	Quiet   *bool              `json:"Quiet,omitempty" xml:"Quiet,omitempty"`
+}
+
+type DeleteObjectsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Delete              *Delete `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+	ChecksumAlgorithm   *string `json:"-" xml:"-"`
+}
+
+type DeletedObject struct {
+	Key                   *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	VersionId             *string `json:"VersionId,omitempty" xml:"VersionId,omitempty"`
+	DeleteMarker          *bool   `json:"DeleteMarker,omitempty" xml:"DeleteMarker,omitempty"`
+	DeleteMarkerVersionId *string `json:"DeleteMarkerVersionId,omitempty" xml:"DeleteMarkerVersionId,omitempty"`
+}
+
+type Error struct {
+	Key       *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	VersionId *string `json:"VersionId,omitempty" xml:"VersionId,omitempty"`
+	Code      *string `json:"Code,omitempty" xml:"Code,omitempty"`
+	Message   *string `json:"Message,omitempty" xml:"Message,omitempty"`
+}
+
+type DeleteObjectsOutput struct {
+	XMLName xml.Name        `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ DeleteResult"`
+	Deleted []DeletedObject `json:"Deleted,omitempty" xml:"Deleted,omitempty"`
+	Errors  []Error         `json:"Errors,omitempty" xml:"Error,omitempty"`
+}
+
+type GetBucketLocationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketLocationOutput struct {
+	XMLName            xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ LocationConstraint"`
+	LocationConstraint *string  `json:"LocationConstraint,omitempty" xml:",chardata"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -575,6 +622,8 @@ type API interface {
 	PutBucketVersioning(context.Context, *PutBucketVersioningRequest) (*PutBucketVersioningOutput, error)
 	GetBucketVersioning(context.Context, *GetBucketVersioningRequest) (*GetBucketVersioningOutput, error)
 	ListObjectVersions(context.Context, *ListObjectVersionsRequest) (*ListObjectVersionsOutput, error)
+	DeleteObjects(context.Context, *DeleteObjectsRequest) (*DeleteObjectsOutput, error)
+	GetBucketLocation(context.Context, *GetBucketLocationRequest) (*GetBucketLocationOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -659,6 +708,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListObjectVersions": {Name: "ListObjectVersions", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "Delimiter": catalog.MemberBinding{Location: "query", Name: "delimiter"}, "EncodingType": catalog.MemberBinding{Location: "query", Name: "encoding-type"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "KeyMarker": catalog.MemberBinding{Location: "query", Name: "key-marker"}, "MaxKeys": catalog.MemberBinding{Location: "query", Name: "max-keys"}, "OptionalObjectAttributes": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-optional-object-attributes"}, "Prefix": catalog.MemberBinding{Location: "query", Name: "prefix"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer"}, "VersionIdMarker": catalog.MemberBinding{Location: "query", Name: "version-id-marker"}}, Output: map[string]catalog.MemberBinding{"CommonPrefixes": catalog.MemberBinding{Location: "document", Name: "CommonPrefixes"}, "DeleteMarkers": catalog.MemberBinding{Location: "document", Name: "DeleteMarkers"}, "Delimiter": catalog.MemberBinding{Location: "document", Name: "Delimiter"}, "EncodingType": catalog.MemberBinding{Location: "document", Name: "EncodingType"}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated"}, "KeyMarker": catalog.MemberBinding{Location: "document", Name: "KeyMarker"}, "MaxKeys": catalog.MemberBinding{Location: "document", Name: "MaxKeys"}, "Name": catalog.MemberBinding{Location: "document", Name: "Name"}, "NextKeyMarker": catalog.MemberBinding{Location: "document", Name: "NextKeyMarker"}, "NextVersionIdMarker": catalog.MemberBinding{Location: "document", Name: "NextVersionIdMarker"}, "Prefix": catalog.MemberBinding{Location: "document", Name: "Prefix"}, "VersionIdMarker": catalog.MemberBinding{Location: "document", Name: "VersionIdMarker"}, "Versions": catalog.MemberBinding{Location: "document", Name: "Versions"}}, Method: "GET", URI: "/{Bucket}?versions", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListObjectVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListObjectVersions(ctx, input.(*ListObjectVersionsRequest))
+		}},
+		"DeleteObjects": {Name: "DeleteObjects", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "BypassGovernanceRetention": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bypass-governance-retention"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "Delete": catalog.MemberBinding{Location: "payload", Name: "Delete"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "MFA": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-mfa"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer"}}, Output: map[string]catalog.MemberBinding{"Deleted": catalog.MemberBinding{Location: "document", Name: "Deleted"}, "Errors": catalog.MemberBinding{Location: "document", Name: "Errors"}}, Method: "POST", URI: "/{Bucket}?delete", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &DeleteObjectsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteObjects(ctx, input.(*DeleteObjectsRequest))
+		}},
+		"GetBucketLocation": {Name: "GetBucketLocation", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"LocationConstraint": catalog.MemberBinding{Location: "document", Name: "LocationConstraint"}}, Method: "GET", URI: "/{Bucket}?location", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketLocationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketLocation(ctx, input.(*GetBucketLocationRequest))
 		}},
 	}}
 }

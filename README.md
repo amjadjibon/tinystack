@@ -277,6 +277,7 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | CreateBucket | General purpose naming rules; `LocationConstraint` must match the request region (none in us-east-1); names are unique across accounts and regions; only the `private` canned ACL |
 | PutBucketTagging / GetBucketTagging / DeleteBucketTagging | The whole tag set is replaced; `NoSuchTagSet` when there is none |
 | HeadBucket / DeleteBucket | `x-amz-bucket-region`; deleting requires an empty bucket, with no versions or delete markers left |
+| GetBucketLocation | The bucket's Region (empty for us-east-1), answered from any Region |
 | PutBucketVersioning / GetBucketVersioning | `Enabled` or `Suspended` (versioning cannot be turned off once enabled); MFA delete is not supported |
 | ListObjectVersions | Every version and delete marker in key order, newest first within a key, with `IsLatest`; prefix, delimiter and common prefixes, `max-keys`, `key-marker` and `version-id-marker`, `encoding-type=url`; objects written before versioning are `null` versions |
 | ListBuckets | The caller's buckets in every region; prefix, region filter, and continuation token |
@@ -285,6 +286,7 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | CopyObject | Copies within and between the caller's buckets in any region (`x-amz-copy-source`, URL-encoded, with an optional `versionId`); `MetadataDirective` and `TaggingDirective` (`COPY` by default, or `REPLACE` with `Metadata`, `ContentType`, and `Tagging`); `CopySourceIfMatch` and `CopySourceIfNoneMatch`; copying an object onto itself must replace something; notifies `s3:ObjectCreated:Copy` |
 | PutObjectTagging / GetObjectTagging / DeleteObjectTagging | Up to 10 tags per object version (`versionId`), replaced as a whole; also the `x-amz-tagging` header on PutObject and CopyObject, and `x-amz-tagging-count` on GetObject |
 | DeleteObject | Deleting a missing key succeeds (and removes its tags); in a versioned bucket it adds a delete marker instead, and `versionId` deletes one version (or marker) for good, making the next newest version current |
+| DeleteObjects | Up to 1000 keys or versions, each deleted as DeleteObject does, in one transaction; `Quiet` reports only errors; each removal is notified |
 | ListObjectsV2 | Prefix, delimiter and common prefixes, `max-keys`, continuation token, `start-after`, `encoding-type=url` |
 | Multipart uploads | Create, upload parts, list parts/uploads, complete, and abort; completion validates ordered part ETags and 5 MiB nonfinal parts, then atomically installs an object up to 64 MiB |
 | PutBucketNotificationConfiguration / GetBucketNotificationConfiguration | SQS (standard), SNS, and Lambda destinations in the bucket's region for `s3:ObjectCreated:*` and `s3:ObjectRemoved:*` events, with prefix and suffix filters, plus `EventBridgeConfiguration`; overlapping configurations are rejected; unless `SkipDestinationValidation`, queues and topics get an `s3:TestEvent` and functions must exist |

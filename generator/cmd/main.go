@@ -562,6 +562,12 @@ func (g *generator) emit(id string) error {
 				return fmt.Errorf("%s.%s: %w", id, n, err)
 			}
 
+			// S3 sends the location as the text of the root element, which
+			// every SDK reads with a customization.
+			if g.xml && short(id) == "GetBucketLocationOutput" && n == "LocationConstraint" {
+				queryTag = ` xml:",chardata"`
+			}
+
 			if target := g.model.Shapes[m.Target]; g.cbor && (target.Type == shapeTimestamp ||
 				target.Type == shapeList && g.model.Shapes[target.Member.Target].Type == shapeTimestamp) {
 				queryTag += ` cbor:"timestamp"`

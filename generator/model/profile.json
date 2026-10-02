@@ -2973,7 +2973,9 @@
       "DeleteObjectTagging",
       "PutBucketVersioning",
       "GetBucketVersioning",
-      "ListObjectVersions"
+      "ListObjectVersions",
+      "DeleteObjects",
+      "GetBucketLocation"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -3386,6 +3388,43 @@
         "VersionId",
         "IsLatest",
         "LastModified"
+      ],
+      "DeleteObjectsRequest": [
+        "Bucket",
+        "Delete",
+        "ExpectedBucketOwner",
+        "ChecksumAlgorithm"
+      ],
+      "Delete": [
+        "Objects",
+        "Quiet"
+      ],
+      "ObjectIdentifier": [
+        "Key",
+        "VersionId"
+      ],
+      "DeleteObjectsOutput": [
+        "Deleted",
+        "Errors"
+      ],
+      "DeletedObject": [
+        "Key",
+        "VersionId",
+        "DeleteMarker",
+        "DeleteMarkerVersionId"
+      ],
+      "Error": [
+        "Key",
+        "VersionId",
+        "Code",
+        "Message"
+      ],
+      "GetBucketLocationRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketLocationOutput": [
+        "LocationConstraint"
       ]
     }
   },
