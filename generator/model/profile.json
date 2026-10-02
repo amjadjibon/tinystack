@@ -3097,7 +3097,11 @@
       "ListTagsForResource",
       "PutSubscriptionFilter",
       "DescribeSubscriptionFilters",
-      "DeleteSubscriptionFilter"
+      "DeleteSubscriptionFilter",
+      "PutMetricFilter",
+      "DescribeMetricFilters",
+      "DeleteMetricFilter",
+      "TestMetricFilter"
     ],
     "shapes": {
       "CreateLogGroupRequest": [
@@ -3271,6 +3275,55 @@
       "DeleteSubscriptionFilterRequest": [
         "logGroupName",
         "filterName"
+      ],
+      "PutMetricFilterRequest": [
+        "logGroupName",
+        "filterName",
+        "filterPattern",
+        "metricTransformations"
+      ],
+      "MetricTransformation": [
+        "metricName",
+        "metricNamespace",
+        "metricValue",
+        "defaultValue",
+        "dimensions",
+        "unit"
+      ],
+      "DescribeMetricFiltersRequest": [
+        "logGroupName",
+        "filterNamePrefix",
+        "nextToken",
+        "limit",
+        "metricName",
+        "metricNamespace"
+      ],
+      "DescribeMetricFiltersResponse": [
+        "metricFilters",
+        "nextToken"
+      ],
+      "MetricFilter": [
+        "filterName",
+        "filterPattern",
+        "metricTransformations",
+        "creationTime",
+        "logGroupName"
+      ],
+      "DeleteMetricFilterRequest": [
+        "logGroupName",
+        "filterName"
+      ],
+      "TestMetricFilterRequest": [
+        "filterPattern",
+        "logEventMessages"
+      ],
+      "TestMetricFilterResponse": [
+        "matches"
+      ],
+      "MetricFilterMatchRecord": [
+        "eventNumber",
+        "eventMessage",
+        "extractedValues"
       ]
     }
   },

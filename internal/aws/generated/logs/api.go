@@ -229,6 +229,68 @@ type DeleteSubscriptionFilterRequest struct {
 	FilterName   *string `json:"filterName,omitempty"`
 }
 
+type PutMetricFilterOutput struct{}
+
+type MetricTransformation struct {
+	MetricName      *string           `json:"metricName,omitempty"`
+	MetricNamespace *string           `json:"metricNamespace,omitempty"`
+	MetricValue     *string           `json:"metricValue,omitempty"`
+	DefaultValue    *float64          `json:"defaultValue,omitempty"`
+	Dimensions      map[string]string `json:"dimensions,omitempty"`
+	Unit            *string           `json:"unit,omitempty"`
+}
+
+type PutMetricFilterRequest struct {
+	LogGroupName          *string                `json:"logGroupName,omitempty"`
+	FilterName            *string                `json:"filterName,omitempty"`
+	FilterPattern         *string                `json:"filterPattern,omitempty"`
+	MetricTransformations []MetricTransformation `json:"metricTransformations,omitempty"`
+}
+
+type DescribeMetricFiltersRequest struct {
+	LogGroupName     *string `json:"logGroupName,omitempty"`
+	FilterNamePrefix *string `json:"filterNamePrefix,omitempty"`
+	NextToken        *string `json:"nextToken,omitempty"`
+	Limit            *int64  `json:"limit,omitempty"`
+	MetricName       *string `json:"metricName,omitempty"`
+	MetricNamespace  *string `json:"metricNamespace,omitempty"`
+}
+
+type MetricFilter struct {
+	FilterName            *string                `json:"filterName,omitempty"`
+	FilterPattern         *string                `json:"filterPattern,omitempty"`
+	MetricTransformations []MetricTransformation `json:"metricTransformations,omitempty"`
+	CreationTime          *int64                 `json:"creationTime,omitempty"`
+	LogGroupName          *string                `json:"logGroupName,omitempty"`
+}
+
+type DescribeMetricFiltersResponse struct {
+	MetricFilters []MetricFilter `json:"metricFilters,omitempty"`
+	NextToken     *string        `json:"nextToken,omitempty"`
+}
+
+type DeleteMetricFilterOutput struct{}
+
+type DeleteMetricFilterRequest struct {
+	LogGroupName *string `json:"logGroupName,omitempty"`
+	FilterName   *string `json:"filterName,omitempty"`
+}
+
+type TestMetricFilterRequest struct {
+	FilterPattern    *string  `json:"filterPattern,omitempty"`
+	LogEventMessages []string `json:"logEventMessages,omitempty"`
+}
+
+type MetricFilterMatchRecord struct {
+	EventNumber     *int64            `json:"eventNumber,omitempty"`
+	EventMessage    *string           `json:"eventMessage,omitempty"`
+	ExtractedValues map[string]string `json:"extractedValues,omitempty"`
+}
+
+type TestMetricFilterResponse struct {
+	Matches []MetricFilterMatchRecord `json:"matches,omitempty"`
+}
+
 type API interface {
 	CreateLogGroup(context.Context, *CreateLogGroupRequest) (*CreateLogGroupOutput, error)
 	DeleteLogGroup(context.Context, *DeleteLogGroupRequest) (*DeleteLogGroupOutput, error)
@@ -247,6 +309,10 @@ type API interface {
 	PutSubscriptionFilter(context.Context, *PutSubscriptionFilterRequest) (*PutSubscriptionFilterOutput, error)
 	DescribeSubscriptionFilters(context.Context, *DescribeSubscriptionFiltersRequest) (*DescribeSubscriptionFiltersResponse, error)
 	DeleteSubscriptionFilter(context.Context, *DeleteSubscriptionFilterRequest) (*DeleteSubscriptionFilterOutput, error)
+	PutMetricFilter(context.Context, *PutMetricFilterRequest) (*PutMetricFilterOutput, error)
+	DescribeMetricFilters(context.Context, *DescribeMetricFiltersRequest) (*DescribeMetricFiltersResponse, error)
+	DeleteMetricFilter(context.Context, *DeleteMetricFilterRequest) (*DeleteMetricFilterOutput, error)
+	TestMetricFilter(context.Context, *TestMetricFilterRequest) (*TestMetricFilterResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -301,6 +367,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteSubscriptionFilter": {Name: "DeleteSubscriptionFilter", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.DeleteSubscriptionFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteSubscriptionFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteSubscriptionFilter(ctx, input.(*DeleteSubscriptionFilterRequest))
+		}},
+		"PutMetricFilter": {Name: "PutMetricFilter", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.PutMetricFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutMetricFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutMetricFilter(ctx, input.(*PutMetricFilterRequest))
+		}},
+		"DescribeMetricFilters": {Name: "DescribeMetricFilters", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.DescribeMetricFilters", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeMetricFiltersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeMetricFilters(ctx, input.(*DescribeMetricFiltersRequest))
+		}},
+		"DeleteMetricFilter": {Name: "DeleteMetricFilter", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.DeleteMetricFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteMetricFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteMetricFilter(ctx, input.(*DeleteMetricFilterRequest))
+		}},
+		"TestMetricFilter": {Name: "TestMetricFilter", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.TestMetricFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TestMetricFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TestMetricFilter(ctx, input.(*TestMetricFilterRequest))
 		}},
 	}}
 }

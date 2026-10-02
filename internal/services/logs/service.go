@@ -59,6 +59,7 @@ type group struct {
 	Name          string
 	Class         string
 	Subscriptions []subscription `json:",omitempty"`
+	MetricFilters []metricFilter `json:",omitempty"`
 	Created       int64          // Unix milliseconds
 	StoredBytes   int64
 }

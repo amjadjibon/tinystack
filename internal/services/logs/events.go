@@ -236,6 +236,7 @@ func (s *Service) PutLogEvents(
 	}
 
 	s.forward(ctx, accepted)
+	s.measure(ctx, accepted)
 	return out, nil
 }
 
@@ -291,6 +292,7 @@ func (s *Service) Append(
 	}
 
 	s.forward(ctx, accepted)
+	s.measure(ctx, accepted)
 	return nil
 }
 
