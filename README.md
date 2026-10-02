@@ -1024,6 +1024,21 @@ with exports. The intrinsic functions are `Ref` (with the pseudo parameters),
 | `AWS::ApiGateway::RestApi`, `Resource`, `Method`, `Deployment`, `Stage`, `Authorizer` | REST APIs (no OpenAPI `Body`) changed in place with patch operations; methods with their integration, method and integration responses (a changed method is put again); deployments that create or move a stage; stage variables and tags; authorizers |
 | `AWS::ApiGatewayV2::Api`, `Integration`, `Route`, `Stage`, `Deployment`, `Authorizer` | HTTP APIs with CORS and tags (no OpenAPI `Body`), integrations, routes, auto-deploying stages, deployments, and JWT and Lambda authorizers |
 
+Templates with `Transform: AWS::Serverless-2016-10-31` are expanded as AWS SAM
+expands them, with `Globals` and SAM's logical IDs (`<Function>Role`,
+`ServerlessRestApiProdStage`, ...), so `sam deploy --s3-bucket <bucket>` creates,
+updates, and deletes SAM applications (`--resolve-s3` needs bucket policies, which S3
+lacks). `GetTemplate` with `TemplateStage: Processed` returns the expansion, and
+`CreateStack` and `UpdateStack` need `CAPABILITY_AUTO_EXPAND` (change sets do not).
+
+| SAM resource type | Expansion |
+| --- | --- |
+| `AWS::Serverless::Function` | A function with packaged `CodeUri`, `InlineCode`, or `ImageUri`; a role with `AWSLambdaBasicExecutionRole`, `Policies` (managed policy names and ARNs, documents, and common policy templates such as `DynamoDBCrudPolicy`, `S3ReadPolicy`, `SQSPollerPolicy`, and `LambdaInvokePolicy`), and each polled event source's execution role; `AutoPublishAlias` (a version named for the code, retained when replaced, and an alias, which `Ref <Function>.Alias` names); and `Api`, `HttpApi`, `SQS`, `Kinesis`, `DynamoDB`, `SNS`, `Schedule`, `EventBridgeRule`, and `CloudWatchEvent` events |
+| `AWS::Serverless::Api` | A REST API (the implicit `ServerlessRestApi` for events that name none) with resources and Lambda proxy methods for its events, a deployment named for its routes, and a stage (`Prod` for the implicit API) |
+| `AWS::Serverless::HttpApi` | An HTTP API (the implicit `ServerlessHttpApi`) with CORS, its events' integrations and routes, and an auto-deploying stage (`$default` unless named) |
+| `AWS::Serverless::SimpleTable` | An on-demand or provisioned table with a single partition key |
+| `AWS::Serverless::StateMachine` | A state machine with a `Definition`, substitutions, logging, tracing, and a role from `Policies` |
+
 | Operation | Behavior |
 | --- | --- |
 | CreateStack / UpdateStack / DeleteStack | `TemplateBody` or a `TemplateURL` in TinyStack's S3, parameters (with `UsePreviousValue`), capabilities, tags, `OnFailure`, `DisableRollback`, `TimeoutInMinutes`, client request tokens, termination protection, and `RetainResources` for stacks in `DELETE_FAILED`; exports in use cannot be removed |
@@ -1074,7 +1089,7 @@ message groups on standard queues, message move tasks for FIFO queues,
 or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `sms`, `application`, or `firehose` subscriptions, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than `private`,
-policies, encryption, POST uploads, lifecycle, or stored checksums on
+policies, encryption (other than the `AES256` header, which every object has), POST uploads, lifecycle, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, `ImageConfig`, function URLs,
 concurrency settings, resource policy evaluation, or event sources other than SQS, DynamoDB
 streams, and Kinesis streams (no `AT_TIMESTAMP`, parallelization factor, or tumbling windows) (no bisecting, failure destinations, or `UpdateEventSourceMapping`); asynchronous failures are
@@ -1101,8 +1116,9 @@ Kubernetes API server runs only with `eks.clusters: k3s` (with every principal i
 no version upgrades or state across restarts), no Auto Mode, Outposts, hybrid nodes, capabilities,
 insights, EKS Anywhere, add-on pod identity associations, cluster security group, log delivery to CloudWatch
 Logs, or IAM role checks. CloudFormation limits: only the resource types above (others are rejected when the
-template is validated, as are unknown properties and attributes), no transforms (`AWS::Serverless`, macros),
-nested stacks, custom resources, `Fn::Transform`, `Fn::Cidr`, `Fn::GetStackOutput`, stack sets, imports, drift
+template is validated, as are unknown properties and attributes), no transforms other than SAM (no macros
+or `AWS::Include`; SAM without `Auth`, `Cors` on REST APIs, OpenAPI definitions, layers, `DeploymentPreference`,
+S3 events, or `AWS::Serverless::Application`), nested stacks, custom resources, `Fn::Transform`, `Fn::Cidr`, `Fn::GetStackOutput`, stack sets, imports, drift
 detection, stack policies, notifications, creation or update policies, `Snapshot` deletion policies, or service
 roles (`RoleARN` is stored), and IAM capabilities are checked but not evaluated. API Gateway limits: no WebSocket APIs, custom domain names, VPC links, API keys and usage plans,
 models and request validation, `AWS` and `HTTP` (non-proxy) integrations or other AWS service integrations,

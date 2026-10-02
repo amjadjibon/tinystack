@@ -345,7 +345,9 @@ a per-service `Dialect`), and delivers synchronously through
   transactions, and records the result in a transaction that outlives the service's context. Each step changes one
   resource, in dependency order and its reverse for cleanup and deletes. A replacement creates the new resource first
   and keeps the old one in the stack's `Replaced`, which the next cleanup or delete removes first; a replacement that
-  keeps a custom name (`resourceType.createsFirst`) is a delete and then a create.
+  keeps a custom name (`resourceType.createsFirst`) is a delete and then a create. `parse` expands the SAM transform first (`serverless.go`,
+`expand`): the stored template is the original, and every parse expands it again, deterministically, into the
+registered types; `processed` renders the expansion for `GetTemplate`.
   CloudWatch Logs keeps each group under
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
