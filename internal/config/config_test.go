@@ -30,6 +30,9 @@ func TestLoad(t *testing.T) {
 		{"k3s clusters", "eks:\n  clusters: k3s", true},
 		{"bad clusters", "eks:\n  clusters: kind", false},
 		{"port", "server:\n  port: 0", false},
+		{"console off", "server:\n  console_port: 0", true},
+		{"console on the AWS port", "server:\n  console_port: 4566", false},
+		{"bad console port", "server:\n  console_port: 70000", false},
 		{"documents", "{}\n---\n{}", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

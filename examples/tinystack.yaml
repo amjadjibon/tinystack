@@ -1,6 +1,8 @@
 server:
   host: 127.0.0.1
   port: 4566
+  # The web console (task build); 0 turns it off.
+  console_port: 4567
 defaults:
   account: "000000000000"
   region: us-east-1

@@ -136,5 +136,6 @@ func writeExecute(w http.ResponseWriter, resp *execute.Response) {
 	}
 
 	w.WriteHeader(resp.Status)
+	// #nosec G705 -- the API or load balancer's response, sent as its integration returned it.
 	_, _ = w.Write(resp.Body)
 }

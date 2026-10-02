@@ -63,6 +63,8 @@ type Config struct {
 	Server struct {
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
+		// ConsolePort serves the web console on Host; 0 turns it off.
+		ConsolePort int `yaml:"console_port"`
 	} `yaml:"server"`
 }
 
@@ -71,6 +73,7 @@ func Default() Config {
 	var c Config
 	c.Server.Host = "127.0.0.1"
 	c.Server.Port = 4566
+	c.Server.ConsolePort = 4567
 	c.Defaults.Account = "000000000000"
 	c.Defaults.Region = "us-east-1"
 	c.Storage.Mode = StorageMemory
@@ -140,6 +143,10 @@ func (c *Config) Validate() error {
 
 	if c.Defaults.Region == "" || c.Server.Host == "" || c.Server.Port < 1 || c.Server.Port > 65535 {
 		return fmt.Errorf("host, region, and a port between 1 and 65535 are required")
+	}
+
+	if c.Server.ConsolePort < 0 || c.Server.ConsolePort > 65535 || c.Server.ConsolePort == c.Server.Port {
+		return fmt.Errorf("server.console_port must be 0 or another port up to 65535")
 	}
 
 	switch c.Storage.Mode {

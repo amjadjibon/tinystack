@@ -175,6 +175,20 @@ func (s *Server) Handle(name string, h http.Handler) {
 	s.internal["/_tinystack/"+name] = h
 }
 
+// Internal serves only TinyStack's own /_tinystack/ endpoints, answering 404
+// for every other path, for the console's listener.
+func (s *Server) Internal() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h, ok := s.internal[r.URL.Path]
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	})
+}
+
 // identify resolves the caller scope from the host and SigV4 credential scope,
 // returning the signed service name. authenticate verifies the signature.
 func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) {

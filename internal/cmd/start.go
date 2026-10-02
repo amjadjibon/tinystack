@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -48,6 +49,7 @@ import (
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/console"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/services/acm"
@@ -85,11 +87,12 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 	"github.com/amjadjibon/tinystack/internal/storage/sqlite"
+	"github.com/amjadjibon/tinystack/ui"
 )
 
 func newStartCommand() *cobra.Command {
 	var configPath, host string
-	var port int
+	var port, consolePort int
 	start := &cobra.Command{
 		Use:   "start",
 		Short: "Run the local AWS endpoint in the foreground",
@@ -105,6 +108,10 @@ func newStartCommand() *cobra.Command {
 
 			if cmd.Flags().Changed("port") {
 				cfg.Server.Port = port
+			}
+
+			if cmd.Flags().Changed("console-port") {
+				cfg.Server.ConsolePort = consolePort
 			}
 
 			if guardErr := cfg.Validate(); guardErr != nil {
@@ -305,6 +312,29 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(containers.Stop)
 			server.RegisterOnShutdown(kube.Stop)
 			server.RegisterOnShutdown(stacks.Stop)
+			// The console has its own listener, so its pages never reach the
+			// AWS protocol classification.
+			var consoleServer *http.Server
+			consoleDone := make(chan error, 1)
+			if files := ui.Files(); cfg.Server.ConsolePort != 0 && files == nil {
+				logger.Info("this build has no web console; task build adds it")
+			} else if cfg.Server.ConsolePort != 0 {
+				var consoleListener net.Listener
+				consoleServer, consoleListener, err = newConsole(
+					cmd.Context(),
+					net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.ConsolePort)),
+					files,
+					handler.Internal(),
+				)
+				if err != nil {
+					_ = listener.Close()
+					return err
+				}
+
+				go func() { consoleDone <- consoleServer.Serve(consoleListener) }()
+				logger.Info("console ready", "url", "http://"+consoleListener.Addr().String())
+			}
+
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
 			done := make(chan error, 1)
@@ -325,11 +355,17 @@ func newStartCommand() *cobra.Command {
 				}
 
 				return err
+			case err = <-consoleDone:
+				return err
 			case <-ctx.Done():
 			}
 
 			shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
+			if consoleServer != nil {
+				_ = consoleServer.Shutdown(shutdown)
+			}
+
 			if guardErr := server.Shutdown(shutdown); guardErr != nil {
 				closeErr := server.Close()
 				return errors.Join(guardErr, closeErr)
@@ -347,11 +383,38 @@ func newStartCommand() *cobra.Command {
 	start.Flags().StringVar(&configPath, "config", "", "YAML configuration path")
 	start.Flags().StringVar(&host, "host", "127.0.0.1", "listen host")
 	start.Flags().IntVar(&port, "port", 4566, "listen port")
+	start.Flags().IntVar(&consolePort, "console-port", 4567, "web console port (0 turns it off)")
 	return start
 }
 
 // openStore returns the store the storage mode selects, keeping persistent
 // state in dir, and the function that releases it.
+// newConsole listens on address and returns the server for the console's
+// files and TinyStack's own endpoints.
+func newConsole(
+	ctx context.Context, address string, files fs.FS, api http.Handler,
+) (*http.Server, net.Listener, error) {
+	h, err := console.Handler(files, api)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var listenConfig net.ListenConfig
+	listener, err := listenConfig.Listen(ctx, "tcp", address)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	server := &http.Server{
+		Handler:           h,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	return server, listener, nil
+}
+
 func openStore(ctx context.Context, mode, dir string) (storage.Store, func() error, error) {
 	if mode == config.StorageMemory {
 		return &memory.Store{}, func() error { return nil }, nil
