@@ -67,9 +67,14 @@ func init() {
 		},
 	})
 	register("AWS::SNS::Subscription", &resourceType{
-		properties: append(slices.Sorted(maps.Keys(subscriptionAttributes)), memberTopicArn, "Protocol", "Endpoint"),
+		properties: append(
+			slices.Sorted(maps.Keys(subscriptionAttributes)),
+			memberTopicArn,
+			propertyProtocol,
+			propertyEndpoint,
+		),
 		attributes: []string{memberArn},
-		replace:    []string{memberTopicArn, "Protocol", "Endpoint"},
+		replace:    []string{memberTopicArn, propertyProtocol, propertyEndpoint},
 		create:     createSubscription,
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 			err := setAttributes(ctx, c, "SetSubscriptionAttributes", "SubscriptionArn", r, p, subscriptionAttributes)
@@ -236,7 +241,7 @@ func setAttributes(
 		}
 
 		if _, err := c.call(ctx, "sns", operation, map[string]any{
-			arnMember: r.Physical, "AttributeName": k, "AttributeValue": v,
+			arnMember: r.Physical, memberAttributeName: k, "AttributeValue": v,
 		}); err != nil {
 			return err
 		}
@@ -258,8 +263,13 @@ func createSubscription(
 	}
 
 	out, err := c.call(ctx, "sns", "Subscribe", map[string]any{
-		memberTopicArn: p.str(memberTopicArn), "Protocol": p.str("Protocol"), "Endpoint": p.str("Endpoint"),
-		memberAttributes: attributes, "ReturnSubscriptionArn": true,
+		memberTopicArn: p.str(
+			memberTopicArn,
+		),
+		propertyProtocol:        p.str(propertyProtocol),
+		propertyEndpoint:        p.str(propertyEndpoint),
+		memberAttributes:        attributes,
+		"ReturnSubscriptionArn": true,
 	})
 	if err != nil {
 		return "", nil, err

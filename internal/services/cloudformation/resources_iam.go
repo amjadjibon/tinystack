@@ -10,7 +10,7 @@ import (
 // property naming them, their member name, and the suffix of their
 // operations (AttachRolePolicy, PutUserPolicy).
 var principals = []struct{ property, member, kind string }{
-	{propertyRoles, memberRoleName, "Role"},
+	{propertyRoles, memberRoleName, propertyRole},
 	{propertyUsers, "UserName", "User"},
 	{propertyGroups, memberGroupName, "Group"},
 }

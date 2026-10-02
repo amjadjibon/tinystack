@@ -12,16 +12,16 @@ func init() {
 		name: memberName,
 		properties: []string{
 			memberName,
-			"EventBusName",
+			memberEventBusName,
 			"EventPattern",
 			"ScheduleExpression",
-			"State",
+			propertyState,
 			memberDescription,
 			"RoleArn",
-			"Targets",
+			propertyTargets,
 		},
 		attributes: []string{memberArn},
-		replace:    []string{memberName, "EventBusName"},
+		replace:    []string{memberName, memberEventBusName},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
 			name := c.nameOf(p, memberName, 64)
 			arn, err := putRule(ctx, c, name, props{}, p)
@@ -30,7 +30,7 @@ func init() {
 			}
 
 			id := name
-			if bus := p.str("EventBusName"); bus != "" && bus != nameDefault {
+			if bus := p.str(memberEventBusName); bus != "" && bus != nameDefault {
 				id = bus + "|" + name
 			}
 
@@ -53,7 +53,7 @@ func init() {
 
 			params := map[string]any{memberName: name}
 			if bus != "" {
-				params["EventBusName"] = bus
+				params[memberEventBusName] = bus
 			}
 
 			_, err := c.call(ctx, "eventbridge", "DeleteRule", params)
@@ -77,7 +77,14 @@ func ruleName(id string) (bus, name string) {
 
 // putRule creates or changes a rule and its targets and returns its ARN.
 func putRule(ctx context.Context, c *client, name string, old, p props) (string, error) {
-	params := pick(map[string]any{memberName: name}, p, "EventBusName", "ScheduleExpression", "State", "RoleArn")
+	params := pick(
+		map[string]any{memberName: name},
+		p,
+		memberEventBusName,
+		"ScheduleExpression",
+		propertyState,
+		"RoleArn",
+	)
 	params[memberDescription] = p.str(memberDescription)
 	if p.has("EventPattern") {
 		params["EventPattern"] = p.document("EventPattern")
@@ -88,7 +95,7 @@ func putRule(ctx context.Context, c *client, name string, old, p props) (string,
 		return "", err
 	}
 
-	bus := p.str("EventBusName")
+	bus := p.str(memberEventBusName)
 	if bus == nameDefault {
 		bus = ""
 	}
@@ -100,7 +107,7 @@ func putRule(ctx context.Context, c *client, name string, old, p props) (string,
 func retarget(ctx context.Context, c *client, bus, name string, old, p props) error {
 	ids := func(q props) []any {
 		var out []any
-		for _, t := range q.list("Targets") {
+		for _, t := range q.list(propertyTargets) {
 			m, _ := t.(map[string]any)
 			out = append(out, scalarText(m["Id"]))
 		}
@@ -119,7 +126,7 @@ func retarget(ctx context.Context, c *client, bus, name string, old, p props) er
 	if len(removed) > 0 {
 		params := map[string]any{"Rule": name, "Ids": removed}
 		if bus != "" {
-			params["EventBusName"] = bus
+			params[memberEventBusName] = bus
 		}
 
 		if _, err := c.call(ctx, "eventbridge", "RemoveTargets", params); err != nil {
@@ -127,13 +134,13 @@ func retarget(ctx context.Context, c *client, bus, name string, old, p props) er
 		}
 	}
 
-	if len(wanted) == 0 || !p.changed(old, "Targets") {
+	if len(wanted) == 0 || !p.changed(old, propertyTargets) {
 		return nil
 	}
 
-	params := map[string]any{"Rule": name, "Targets": p["Targets"]}
+	params := map[string]any{"Rule": name, propertyTargets: p[propertyTargets]}
 	if bus != "" {
-		params["EventBusName"] = bus
+		params[memberEventBusName] = bus
 	}
 
 	out, err := c.call(ctx, "eventbridge", "PutTargets", params)

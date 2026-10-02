@@ -73,7 +73,7 @@ func init() {
 		},
 		create: createService,
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
-			params := pick(map[string]any{memberCluster: clusterOf(p), "Service": r.Physical}, p, serviceSettings...)
+			params := pick(map[string]any{memberCluster: clusterOf(p), keyService: r.Physical}, p, serviceSettings...)
 			if _, err := c.call(ctx, "ecs", "UpdateService", params); err != nil {
 				return nil, err
 			}
@@ -85,7 +85,7 @@ func init() {
 		},
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, "ecs", "DeleteService", map[string]any{
-				memberCluster: clusterOf(r.Properties), "Service": r.Physical, "Force": true,
+				memberCluster: clusterOf(r.Properties), keyService: r.Physical, "Force": true,
 			})
 			if gone(err, "ServiceNotFoundException", "ClusterNotFoundException") {
 				return nil
@@ -219,7 +219,7 @@ func createService(ctx context.Context, c *client, p props) (physical string, at
 		return "", nil, err
 	}
 
-	arn := outText(out, "Service", "ServiceArn")
+	arn := outText(out, keyService, "ServiceArn")
 	return arn, map[string]any{memberName: name, "ServiceArn": arn}, nil
 }
 

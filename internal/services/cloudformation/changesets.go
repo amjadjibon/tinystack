@@ -252,7 +252,7 @@ func changes(st *stack, body string, params []parameter) []api.Change {
 		}
 
 		if value(change.Action) == "Modify" {
-			change.Scope = []string{"Properties"}
+			change.Scope = []string{keyProperties}
 		}
 
 		out = append(out, api.Change{Type: ptr("Resource"), ResourceChange: &change})

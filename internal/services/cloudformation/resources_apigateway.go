@@ -15,8 +15,8 @@ var (
 	restAPIFields = []patchField{
 		{memberName, "/name"},
 		{memberDescription, "/description"},
-		{"BinaryMediaTypes", "/binaryMediaTypes"},
-		{"MinimumCompressionSize", "/minimumCompressionSize"},
+		{propertyBinaryMediaTypes, "/binaryMediaTypes"},
+		{propertyMinimumCompressionSize, "/minimumCompressionSize"},
 		{"ApiKeySourceType", "/apiKeySource"},
 		{memberPolicy, "/policy"},
 		{memberDisableExecuteAPIEndpoint, "/disableExecuteApiEndpoint"},
@@ -43,7 +43,12 @@ var (
 	// methodProperties are the AWS::ApiGateway::Method properties PutMethod
 	// takes by the same names.
 	methodProperties = []string{
-		"AuthorizationType", "AuthorizerId", "ApiKeyRequired", "OperationName", "RequestParameters", "RequestModels",
+		propertyAuthorizationType,
+		"AuthorizerId",
+		"ApiKeyRequired",
+		"OperationName",
+		"RequestParameters",
+		"RequestModels",
 		"AuthorizationScopes",
 	}
 	// integrationProperties are the members of a method's Integration that
@@ -51,18 +56,18 @@ var (
 	integrationProperties = []string{
 		memberType, "IntegrationHttpMethod", "Uri", "ConnectionType", "Credentials", "RequestParameters",
 		"RequestTemplates", "PassthroughBehavior", "CacheNamespace", "CacheKeyParameters", "ContentHandling",
-		"TimeoutInMillis",
+		propertyTimeoutInMillis,
 	}
 )
 
 func init() {
 	register("AWS::ApiGateway::RestApi", &resourceType{
 		properties: []string{
-			memberName, memberDescription, "BinaryMediaTypes", "MinimumCompressionSize", "ApiKeySourceType",
-			"EndpointConfiguration", memberPolicy, memberDisableExecuteAPIEndpoint, memberTags,
+			memberName, memberDescription, propertyBinaryMediaTypes, propertyMinimumCompressionSize, "ApiKeySourceType",
+			propertyEndpointConfiguration, memberPolicy, memberDisableExecuteAPIEndpoint, memberTags,
 		},
 		attributes: []string{memberRestAPIID, "RootResourceId"},
-		replace:    []string{"EndpointConfiguration"},
+		replace:    []string{propertyEndpointConfiguration},
 		create:     createRestAPI,
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 			if err := patchRest(ctx, c, "UpdateRestApi", map[string]any{memberRestAPIID: r.Physical},
@@ -78,12 +83,12 @@ func init() {
 		},
 	})
 	register("AWS::ApiGateway::Resource", &resourceType{
-		properties: []string{memberRestAPIID, "ParentId", "PathPart"},
+		properties: []string{memberRestAPIID, propertyParentID, propertyPathPart},
 		attributes: []string{memberResourceID},
 		replace:    []string{memberRestAPIID},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
 			out, err := c.call(ctx, "apigateway", "CreateResource",
-				pick(map[string]any{}, p, memberRestAPIID, "ParentId", "PathPart"))
+				pick(map[string]any{}, p, memberRestAPIID, propertyParentID, propertyPathPart))
 			if err != nil {
 				return "", nil, err
 			}
@@ -94,7 +99,7 @@ func init() {
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 			return r.Attributes, patchRest(ctx, c, "UpdateResource", map[string]any{
 				memberRestAPIID: p.str(memberRestAPIID), memberResourceID: r.Physical,
-			}, patches(r.Properties, p, []patchField{{"ParentId", "/parentId"}, {"PathPart", "/pathPart"}}))
+			}, patches(r.Properties, p, []patchField{{propertyParentID, "/parentId"}, {propertyPathPart, "/pathPart"}}))
 		},
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, "apigateway", "DeleteResource", map[string]any{
@@ -231,8 +236,16 @@ func restTagger(c *client, path string) *tagger {
 }
 
 func createRestAPI(ctx context.Context, c *client, p props) (physical string, attributes map[string]any, err error) {
-	params := pick(map[string]any{}, p, memberName, memberDescription, "BinaryMediaTypes", "MinimumCompressionSize",
-		"EndpointConfiguration", memberDisableExecuteAPIEndpoint)
+	params := pick(
+		map[string]any{},
+		p,
+		memberName,
+		memberDescription,
+		propertyBinaryMediaTypes,
+		propertyMinimumCompressionSize,
+		propertyEndpointConfiguration,
+		memberDisableExecuteAPIEndpoint,
+	)
 	if p.has("ApiKeySourceType") {
 		params["ApiKeySource"] = p.str("ApiKeySourceType")
 	}

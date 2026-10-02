@@ -228,6 +228,11 @@ func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*a
 		return nil, err
 	}
 
+	err = t.requireExpand(in.Capabilities)
+	if err != nil {
+		return nil, err
+	}
+
 	failure, err := onFailure(in.OnFailure, in.DisableRollback)
 	if err != nil {
 		return nil, err
@@ -351,6 +356,11 @@ func (s *Service) UpdateStack(ctx context.Context, in *api.UpdateStackInput) (*a
 
 	t, body, params, err := s.revise(ctx, m, st, in.TemplateBody, in.TemplateURL, in.UsePreviousTemplate,
 		in.Parameters, in.Capabilities)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.requireExpand(in.Capabilities)
 	if err != nil {
 		return nil, err
 	}
@@ -682,7 +692,7 @@ func (s *Service) GetTemplate(ctx context.Context, in *api.GetTemplateInput) (*a
 		return nil, err
 	}
 
-	if stage := value(in.TemplateStage); stage != "" && stage != "Original" && stage != "Processed" {
+	if stage := value(in.TemplateStage); stage != "" && stage != "Original" && stage != stageProcessed {
 		return nil, validation("Invalid TemplateStage %s", stage)
 	}
 
@@ -714,7 +724,11 @@ func (s *Service) GetTemplate(ctx context.Context, in *api.GetTemplateInput) (*a
 		return nil, err
 	}
 
-	return &api.GetTemplateOutput{TemplateBody: &body, StagesAvailable: []string{"Original", "Processed"}}, nil
+	if value(in.TemplateStage) == stageProcessed {
+		body = processed(body)
+	}
+
+	return &api.GetTemplateOutput{TemplateBody: &body, StagesAvailable: []string{"Original", stageProcessed}}, nil
 }
 
 func (s *Service) ValidateTemplate(
@@ -735,7 +749,9 @@ func (s *Service) ValidateTemplate(
 		return nil, err
 	}
 
-	out := &api.ValidateTemplateOutput{Parameters: []api.TemplateParameter{}}
+	out := &api.ValidateTemplateOutput{
+		Parameters: []api.TemplateParameter{}, DeclaredTransforms: append([]string{}, t.Transforms...),
+	}
 	if t.Description != "" {
 		out.Description = &t.Description
 	}
@@ -787,7 +803,9 @@ func (s *Service) GetTemplateSummary(
 	}
 
 	out := &api.GetTemplateSummaryOutput{
-		Parameters: []api.ParameterDeclaration{}, ResourceTypes: resourceTypes(t), DeclaredTransforms: []string{},
+		Parameters:         []api.ParameterDeclaration{},
+		ResourceTypes:      resourceTypes(t),
+		DeclaredTransforms: append([]string{}, t.Transforms...),
 	}
 	if t.Description != "" {
 		out.Description = &t.Description

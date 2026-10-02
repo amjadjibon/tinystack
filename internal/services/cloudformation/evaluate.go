@@ -186,7 +186,7 @@ func (e *evaluator) function(fn string, arg any) (any, error) {
 
 	list, _ := args.([]any)
 	switch fn {
-	case "Fn::Join":
+	case fnJoin:
 		return join(list)
 	case "Fn::Select":
 		return selectOf(list)
@@ -642,7 +642,7 @@ func checkParameter(k string, decl *parameterDecl, v string) error {
 			return invalid(fmt.Sprintf("cannot contain more than %v characters", *decl.MaxLength))
 		}
 
-		if decl.Type != "Number" && decl.Type != "List<Number>" {
+		if decl.Type != typeNumber && decl.Type != "List<Number>" {
 			continue
 		}
 

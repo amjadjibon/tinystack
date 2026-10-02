@@ -26,17 +26,17 @@ func init() {
 		name: propertyStateMachineName,
 		properties: []string{
 			propertyStateMachineName,
-			"StateMachineType",
+			propertyStateMachineType,
 			memberDefinition,
 			"DefinitionString",
-			"DefinitionSubstitutions",
+			propertyDefinitionSubstitutions,
 			memberRoleArn,
 			memberLoggingConfiguration,
 			memberTracingConfiguration,
 			memberTags,
 		},
 		attributes: []string{memberArn, memberName},
-		replace:    []string{propertyStateMachineName, "StateMachineType"},
+		replace:    []string{propertyStateMachineName, propertyStateMachineType},
 		create:     createStateMachine,
 		update:     updateStateMachine,
 		remove: func(ctx context.Context, c *client, r *resource) error {
@@ -205,7 +205,7 @@ func definition(p props) (string, error) {
 		return "", validation("A state machine needs a Definition or a DefinitionString")
 	}
 
-	substitutions, _ := p["DefinitionSubstitutions"].(map[string]any)
+	substitutions, _ := p[propertyDefinitionSubstitutions].(map[string]any)
 	for _, k := range slices.Sorted(maps.Keys(substitutions)) {
 		text = strings.ReplaceAll(text, "${"+k+"}", scalarText(substitutions[k]))
 	}
@@ -224,8 +224,8 @@ func createStateMachine(
 	name := c.nameOf(p, propertyStateMachineName, 80)
 	params := pick(map[string]any{memberName: name, memberDefinition: text}, p,
 		memberRoleArn, memberLoggingConfiguration, memberTracingConfiguration)
-	if p.has("StateMachineType") {
-		params[memberType] = p.str("StateMachineType")
+	if p.has(propertyStateMachineType) {
+		params[memberType] = p.str(propertyStateMachineType)
 	}
 
 	if tags := p.tags(); len(tags) > 0 {
@@ -245,7 +245,7 @@ func updateStateMachine(ctx context.Context, c *client, r *resource, p props) (m
 	old := props(r.Properties)
 	changed := false
 	for _, k := range []string{
-		memberDefinition, "DefinitionString", "DefinitionSubstitutions", memberRoleArn, memberLoggingConfiguration,
+		memberDefinition, "DefinitionString", propertyDefinitionSubstitutions, memberRoleArn, memberLoggingConfiguration,
 		memberTracingConfiguration,
 	} {
 		changed = changed || p.changed(old, k)

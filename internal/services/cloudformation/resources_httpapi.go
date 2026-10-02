@@ -10,14 +10,19 @@ var (
 	// CreateApi takes.
 	httpAPIProperties = []string{
 		memberName, memberDescription, "CorsConfiguration", "RouteSelectionExpression", "ApiKeySelectionExpression",
-		memberDisableExecuteAPIEndpoint, memberVersion, "Target", "RouteKey", "IpAddressType",
+		memberDisableExecuteAPIEndpoint, memberVersion, propertyTarget, propertyRouteKey, "IpAddressType",
 	}
 	httpIntegrationProperties = []string{
-		"IntegrationType", "IntegrationUri", "IntegrationMethod", "PayloadFormatVersion", "TimeoutInMillis",
+		"IntegrationType", "IntegrationUri", "IntegrationMethod", propertyPayloadFormatVersion, propertyTimeoutInMillis,
 		"ConnectionType", memberDescription,
 	}
 	httpRouteProperties = []string{
-		"RouteKey", "Target", "AuthorizationType", memberAuthorizerID, "AuthorizationScopes", "ApiKeyRequired",
+		propertyRouteKey,
+		propertyTarget,
+		propertyAuthorizationType,
+		memberAuthorizerID,
+		"AuthorizationScopes",
+		"ApiKeyRequired",
 		"OperationName",
 	}
 	httpStageProperties = []string{

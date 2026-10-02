@@ -28,10 +28,10 @@ func init() {
 		name: memberTableName,
 		properties: []string{
 			memberTableName,
-			"AttributeDefinitions",
-			"KeySchema",
-			"BillingMode",
-			"ProvisionedThroughput",
+			propertyAttributeDefinitions,
+			propertyKeySchema,
+			propertyBillingMode,
+			propertyProvisionedThroughput,
 			"GlobalSecondaryIndexes",
 			"LocalSecondaryIndexes",
 			"StreamSpecification",
@@ -39,7 +39,7 @@ func init() {
 			memberTags,
 		},
 		attributes: []string{memberArn, memberStreamArn},
-		replace:    []string{memberTableName, "KeySchema", "LocalSecondaryIndexes"},
+		replace:    []string{memberTableName, propertyKeySchema, "LocalSecondaryIndexes"},
 		create:     createTable,
 		update:     updateTable,
 		remove: func(ctx context.Context, c *client, r *resource) error {
@@ -184,9 +184,16 @@ func configureBucket(ctx context.Context, c *client, name string, old, p props) 
 
 func createTable(ctx context.Context, c *client, p props) (physical string, attributes map[string]any, err error) {
 	name := c.nameOf(p, memberTableName, 255)
-	params := pick(map[string]any{memberTableName: name}, p,
-		"AttributeDefinitions", "KeySchema", "BillingMode", "ProvisionedThroughput", "GlobalSecondaryIndexes",
-		"LocalSecondaryIndexes")
+	params := pick(
+		map[string]any{memberTableName: name},
+		p,
+		propertyAttributeDefinitions,
+		propertyKeySchema,
+		propertyBillingMode,
+		propertyProvisionedThroughput,
+		"GlobalSecondaryIndexes",
+		"LocalSecondaryIndexes",
+	)
 	if spec, ok := p["StreamSpecification"].(map[string]any); ok {
 		params["StreamSpecification"] = map[string]any{
 			memberStreamEnabled: true,
@@ -216,7 +223,10 @@ func createTable(ctx context.Context, c *client, p props) (physical string, attr
 
 func updateTable(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 	old := props(r.Properties)
-	for _, k := range []string{"AttributeDefinitions", "BillingMode", "ProvisionedThroughput", "GlobalSecondaryIndexes"} {
+	fixed := []string{
+		propertyAttributeDefinitions, propertyBillingMode, propertyProvisionedThroughput, "GlobalSecondaryIndexes",
+	}
+	for _, k := range fixed {
 		if p.changed(old, k) {
 			return nil, validation("TinyStack cannot update the %s of an AWS::DynamoDB::Table in place", k)
 		}
@@ -265,7 +275,7 @@ func timeToLive(ctx context.Context, c *client, name string, old, p props) error
 	spec, _ := p["TimeToLiveSpecification"].(map[string]any)
 	if spec == nil {
 		previous, _ := old["TimeToLiveSpecification"].(map[string]any)
-		spec = map[string]any{"AttributeName": previous["AttributeName"], memberEnabled: false}
+		spec = map[string]any{memberAttributeName: previous[memberAttributeName], memberEnabled: false}
 	}
 
 	_, err := c.call(ctx, "dynamodb", "UpdateTimeToLive", map[string]any{

@@ -9,15 +9,23 @@ import (
 
 // functionSettings are the AWS::Lambda::Function properties
 // UpdateFunctionConfiguration changes.
-var functionSettings = []string{"Role", "Handler", memberDescription, "Timeout", "MemorySize", "Environment", "Runtime"}
+var functionSettings = []string{
+	propertyRole,
+	"Handler",
+	memberDescription,
+	"Timeout",
+	"MemorySize",
+	propertyEnvironment,
+	"Runtime",
+}
 
 func init() {
 	register("AWS::Lambda::Function", &resourceType{
 		name: memberFunctionName,
-		properties: append([]string{memberFunctionName, "Code", "PackageType", "Architectures", memberTags},
+		properties: append([]string{memberFunctionName, "Code", propertyPackageType, "Architectures", memberTags},
 			functionSettings...),
 		attributes: []string{memberArn},
-		replace:    []string{memberFunctionName, "PackageType"},
+		replace:    []string{memberFunctionName, propertyPackageType},
 		create:     createFunction,
 		update:     updateFunction,
 		remove: func(ctx context.Context, c *client, r *resource) error {
@@ -32,8 +40,8 @@ func init() {
 	register("AWS::Lambda::Permission", &resourceType{
 		properties: []string{
 			memberFunctionName,
-			"Action",
-			"Principal",
+			propertyAction,
+			propertyPrincipal,
 			"SourceArn",
 			"SourceAccount",
 			"PrincipalOrgID",
@@ -45,8 +53,8 @@ func init() {
 				map[string]any{"StatementId": id},
 				p,
 				memberFunctionName,
-				"Action",
-				"Principal",
+				propertyAction,
+				propertyPrincipal,
 				"SourceArn",
 				"SourceAccount",
 				"PrincipalOrgID",
@@ -73,19 +81,29 @@ func init() {
 		properties: []string{
 			"EventSourceArn",
 			memberFunctionName,
-			"BatchSize",
+			propertyBatchSize,
 			memberEnabled,
 			"StartingPosition",
-			"MaximumBatchingWindowInSeconds",
+			propertyMaximumBatchingWindow,
 			"MaximumRetryAttempts",
-			"FilterCriteria",
-			"FunctionResponseTypes",
+			propertyFilterCriteria,
+			propertyFunctionResponseTypes,
 		},
 		attributes: []string{"Id", "EventSourceMappingArn"},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
-			out, err := c.call(ctx, "lambda", "CreateEventSourceMapping", pick(map[string]any{}, p,
-				"EventSourceArn", memberFunctionName, "BatchSize", memberEnabled, "StartingPosition",
-				"MaximumBatchingWindowInSeconds", "MaximumRetryAttempts", "FilterCriteria", "FunctionResponseTypes"))
+			out, err := c.call(ctx, "lambda", "CreateEventSourceMapping", pick(
+				map[string]any{},
+				p,
+				"EventSourceArn",
+				memberFunctionName,
+				propertyBatchSize,
+				memberEnabled,
+				"StartingPosition",
+				propertyMaximumBatchingWindow,
+				"MaximumRetryAttempts",
+				propertyFilterCriteria,
+				propertyFunctionResponseTypes,
+			))
 			if err != nil {
 				return "", nil, err
 			}
@@ -258,7 +276,7 @@ func createFunction(ctx context.Context, c *client, p props) (physical string, a
 	}
 
 	params := pick(map[string]any{memberFunctionName: name, "Code": source}, p, functionSettings...)
-	pick(params, p, "PackageType", "Architectures")
+	pick(params, p, propertyPackageType, "Architectures")
 	if tags := p.tags(); len(tags) > 0 {
 		params[memberTags] = tagMap(tags)
 	}
@@ -284,7 +302,7 @@ func updateFunction(ctx context.Context, c *client, r *resource, p props) (map[s
 		switch {
 		case p.has(k):
 			settings[k] = p[k]
-		case k == "Environment":
+		case k == propertyEnvironment:
 			settings[k] = map[string]any{memberVariables: map[string]any{}}
 		case k == memberDescription:
 			settings[k] = ""

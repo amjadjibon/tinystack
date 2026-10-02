@@ -16,7 +16,7 @@ func init() {
 		properties: []string{
 			memberRoleName,
 			memberPath,
-			"AssumeRolePolicyDocument",
+			propertyAssumeRolePolicyDocument,
 			memberDescription,
 			"MaxSessionDuration",
 			"ManagedPolicyArns",
@@ -105,7 +105,7 @@ func init() {
 func createRole(ctx context.Context, c *client, p props) (physical string, attributes map[string]any, err error) {
 	name := c.nameOf(p, memberRoleName, 64)
 	params := pick(map[string]any{memberRoleName: name}, p, memberPath, memberDescription, "MaxSessionDuration")
-	params["AssumeRolePolicyDocument"] = p.document("AssumeRolePolicyDocument")
+	params[propertyAssumeRolePolicyDocument] = p.document(propertyAssumeRolePolicyDocument)
 	if tags := p.tags(); len(tags) > 0 {
 		params[memberTags] = tagList(tags, memberKey, memberValue)
 	}
@@ -115,15 +115,18 @@ func createRole(ctx context.Context, c *client, p props) (physical string, attri
 		return "", nil, err
 	}
 
-	attributes = map[string]any{memberArn: outText(out, "Role", memberArn), "RoleId": outText(out, "Role", "RoleId")}
+	attributes = map[string]any{
+		memberArn: outText(out, propertyRole, memberArn),
+		"RoleId":  outText(out, propertyRole, "RoleId"),
+	}
 	return name, attributes, rolePolicies(ctx, c, name, props{}, p)
 }
 
 func updateRole(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 	old := props(r.Properties)
-	if p.changed(old, "AssumeRolePolicyDocument") {
+	if p.changed(old, propertyAssumeRolePolicyDocument) {
 		if _, err := c.call(ctx, "iam", "UpdateAssumeRolePolicy", map[string]any{
-			memberRoleName: r.Physical, "PolicyDocument": p.document("AssumeRolePolicyDocument"),
+			memberRoleName: r.Physical, "PolicyDocument": p.document(propertyAssumeRolePolicyDocument),
 		}); err != nil {
 			return nil, err
 		}

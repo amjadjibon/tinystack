@@ -75,7 +75,7 @@ var (
 		"Transform", keyResources, "Outputs",
 	}
 	resourceAttributes = []string{
-		memberType, "Properties", "DependsOn", keyCondition, "DeletionPolicy", "UpdateReplacePolicy", "Metadata",
+		memberType, keyProperties, "DependsOn", keyCondition, "DeletionPolicy", "UpdateReplacePolicy", "Metadata",
 	}
 	parameterAttributes = []string{
 		memberType, "Default", memberDescription, "NoEcho", "AllowedValues", "AllowedPattern", "MinLength", "MaxLength",
@@ -84,7 +84,7 @@ var (
 	logicalID = regexp.MustCompile(`^[A-Za-z0-9]+$`)
 	// functions are the intrinsic functions TinyStack evaluates.
 	functions = []string{
-		fnRef, fnGetAtt, fnSub, "Fn::Join", "Fn::Select", "Fn::Split", fnIf, "Fn::Equals", fnNot,
+		fnRef, fnGetAtt, fnSub, fnJoin, "Fn::Select", "Fn::Split", fnIf, "Fn::Equals", fnNot,
 		fnAnd, "Fn::Or", "Fn::FindInMap", fnGetAZs, "Fn::ImportValue", fnBase64, keyCondition,
 	}
 )
@@ -247,6 +247,15 @@ func parse(body string) (*template, error) {
 		return nil, err
 	}
 
+	transforms, err := stringList(doc["Transform"], "Transform")
+	if err != nil {
+		return nil, err
+	}
+
+	if doc, err = transform(doc, transforms); err != nil {
+		return nil, err
+	}
+
 	for k := range doc {
 		if !slices.Contains(sections, k) {
 			return nil, formatError("Invalid template property or properties [%s]", k)
@@ -255,7 +264,7 @@ func parse(body string) (*template, error) {
 
 	t := &template{
 		Metadata: doc["Metadata"], Parameters: map[string]*parameterDecl{}, Resources: map[string]*resourceDecl{},
-		Outputs: map[string]*outputDecl{},
+		Outputs: map[string]*outputDecl{}, Transforms: transforms,
 	}
 	if t.Version, err = text(doc["AWSTemplateFormatVersion"], "AWSTemplateFormatVersion"); err != nil {
 		return nil, err
@@ -267,14 +276,6 @@ func parse(body string) (*template, error) {
 
 	if t.Description, err = text(doc[memberDescription], memberDescription); err != nil {
 		return nil, err
-	}
-
-	if t.Transforms, err = stringList(doc["Transform"], "Transform"); err != nil {
-		return nil, err
-	}
-
-	if len(t.Transforms) > 0 {
-		return nil, validation("TinyStack does not support template transforms: [%s]", strings.Join(t.Transforms, ", "))
 	}
 
 	if t.Mappings, err = object(doc["Mappings"], "Mappings"); err != nil {
@@ -466,7 +467,7 @@ func parameterOf(name string, decl map[string]any) (*parameterDecl, error) {
 // Manager parameter names.
 func supportedParameterType(t string) bool {
 	switch {
-	case t == "String", t == "Number", t == "CommaDelimitedList", t == "List<Number>",
+	case t == typeString, t == typeNumber, t == "CommaDelimitedList", t == "List<Number>",
 		t == "AWS::SSM::Parameter::Value<String>", t == "AWS::SSM::Parameter::Value<List<String>>",
 		t == "AWS::SSM::Parameter::Value<CommaDelimitedList>", t == "AWS::SSM::Parameter::Name":
 		return true
@@ -560,7 +561,7 @@ func resourceOf(name string, decl map[string]any) (*resourceDecl, error) {
 		return nil, formatError("[/Resources/%s] Every Resources object must contain a Type member.", name)
 	}
 
-	if r.Properties, err = object(decl["Properties"], "Properties"); err != nil {
+	if r.Properties, err = object(decl[keyProperties], keyProperties); err != nil {
 		return nil, formatError("[/Resources/%s/Properties] Properties must be an object", name)
 	}
 
@@ -937,10 +938,20 @@ func (t *template) capabilities() (required []string, reason string) {
 	return []string{capabilityIAM}, reason
 }
 
+// requireExpand checks that given acknowledges t's transforms, which
+// CreateStack and UpdateStack require; change sets show the expansion.
+func (t *template) requireExpand(given []string) error {
+	if len(t.Transforms) > 0 && !slices.Contains(given, capabilityAutoExpand) {
+		return insufficientCapabilities(capabilityAutoExpand)
+	}
+
+	return nil
+}
+
 // requireCapabilities checks that given acknowledges what t needs.
 func (t *template) requireCapabilities(given []string) error {
 	for _, c := range given {
-		if !slices.Contains([]string{capabilityIAM, "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"}, c) {
+		if !slices.Contains([]string{capabilityIAM, "CAPABILITY_NAMED_IAM", capabilityAutoExpand}, c) {
 			return validation("Invalid capability %s", c)
 		}
 	}
