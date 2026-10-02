@@ -264,6 +264,7 @@ func newStartCommand() *cobra.Command {
 			handler.UseCredentials(tokens.Credentials)
 			handler.UseDocuments(identities.Documents)
 			handler.UseRegistry(registry)
+			handler.UseCORS(buckets.CORS)
 			handler.UseAPIs(httpAPIs, restAPIs)
 			handler.UseLoadBalancers(balancers)
 			if cfg.EKS.Clusters == config.ClustersK3s {

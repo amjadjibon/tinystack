@@ -226,6 +226,7 @@ func serverStore(
 	h.UseCredentials(stsService.Credentials)
 	h.UseDocuments(userPools.Documents)
 	h.UseRegistry(repositories)
+	h.UseCORS(objects.CORS)
 	h.UseAPIs(httpAPIs, restAPIs)
 	h.UseLoadBalancers(balancers)
 	h.Handle("deliveries", deliveries)

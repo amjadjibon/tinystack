@@ -279,6 +279,7 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | HeadBucket / DeleteBucket | `x-amz-bucket-region`; deleting requires an empty bucket, with no versions or delete markers left |
 | GetBucketLocation | The bucket's Region (empty for us-east-1), answered from any Region |
 | PutBucketPolicy / GetBucketPolicy / DeleteBucketPolicy | A JSON policy up to 20 KiB with at least one statement (`MalformedPolicy` otherwise), stored as sent and never evaluated; `NoSuchBucketPolicy` when there is none |
+| PutBucketCors / GetBucketCors / DeleteBucketCors | Up to 100 rules, each with origins and `GET`, `PUT`, `HEAD`, `POST`, or `DELETE` methods (one `*` per origin or header); `NoSuchCORSConfiguration` when there is none. TinyStack serves them: an `OPTIONS` preflight to a bucket gets the first matching rule's `Access-Control-*` headers (403 when no rule allows it), and S3 requests with an `Origin` get them too |
 | GetBucketPolicyStatus | Public when a statement allows every principal (`*`) without conditions |
 | PutBucketVersioning / GetBucketVersioning | `Enabled` or `Suspended` (versioning cannot be turned off once enabled); MFA delete is not supported |
 | ListObjectVersions | Every version and delete marker in key order, newest first within a key, with `IsLatest`; prefix, delimiter and common prefixes, `max-keys`, `key-marker` and `version-id-marker`, `encoding-type=url`; objects written before versioning are `null` versions |

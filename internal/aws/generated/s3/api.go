@@ -633,6 +633,46 @@ type GetBucketPolicyStatusOutput struct {
 	PolicyStatus *PolicyStatus `json:"-" xml:"-"`
 }
 
+type PutBucketCorsOutput struct{}
+
+type CORSRule struct {
+	ID             *string  `json:"ID,omitempty" xml:"ID,omitempty"`
+	AllowedHeaders []string `json:"AllowedHeaders,omitempty" xml:"AllowedHeader,omitempty"`
+	AllowedMethods []string `json:"AllowedMethods,omitempty" xml:"AllowedMethod,omitempty"`
+	AllowedOrigins []string `json:"AllowedOrigins,omitempty" xml:"AllowedOrigin,omitempty"`
+	ExposeHeaders  []string `json:"ExposeHeaders,omitempty" xml:"ExposeHeader,omitempty"`
+	MaxAgeSeconds  *int64   `json:"MaxAgeSeconds,omitempty" xml:"MaxAgeSeconds,omitempty"`
+}
+
+type CORSConfiguration struct {
+	CORSRules []CORSRule `json:"CORSRules,omitempty" xml:"CORSRule,omitempty"`
+}
+
+type PutBucketCorsRequest struct {
+	Bucket              *string            `json:"-" xml:"-"`
+	CORSConfiguration   *CORSConfiguration `json:"-" xml:"-"`
+	ContentMD5          *string            `json:"-" xml:"-"`
+	ChecksumAlgorithm   *string            `json:"-" xml:"-"`
+	ExpectedBucketOwner *string            `json:"-" xml:"-"`
+}
+
+type GetBucketCorsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketCorsOutput struct {
+	XMLName   xml.Name   `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ CORSConfiguration"`
+	CORSRules []CORSRule `json:"CORSRules,omitempty" xml:"CORSRule,omitempty"`
+}
+
+type DeleteBucketCorsOutput struct{}
+
+type DeleteBucketCorsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -667,6 +707,9 @@ type API interface {
 	GetBucketPolicy(context.Context, *GetBucketPolicyRequest) (*GetBucketPolicyOutput, error)
 	DeleteBucketPolicy(context.Context, *DeleteBucketPolicyRequest) (*DeleteBucketPolicyOutput, error)
 	GetBucketPolicyStatus(context.Context, *GetBucketPolicyStatusRequest) (*GetBucketPolicyStatusOutput, error)
+	PutBucketCors(context.Context, *PutBucketCorsRequest) (*PutBucketCorsOutput, error)
+	GetBucketCors(context.Context, *GetBucketCorsRequest) (*GetBucketCorsOutput, error)
+	DeleteBucketCors(context.Context, *DeleteBucketCorsRequest) (*DeleteBucketCorsOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -769,6 +812,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetBucketPolicyStatus": {Name: "GetBucketPolicyStatus", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"PolicyStatus": catalog.MemberBinding{Location: "payload", Name: "PolicyStatus"}}, Method: "GET", URI: "/{Bucket}?policyStatus", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketPolicyStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetBucketPolicyStatus(ctx, input.(*GetBucketPolicyStatusRequest))
+		}},
+		"PutBucketCors": {Name: "PutBucketCors", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "CORSConfiguration": catalog.MemberBinding{Location: "payload", Name: "CORSConfiguration"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?cors", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketCorsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketCors(ctx, input.(*PutBucketCorsRequest))
+		}},
+		"GetBucketCors": {Name: "GetBucketCors", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"CORSRules": catalog.MemberBinding{Location: "document", Name: "CORSRules"}}, Method: "GET", URI: "/{Bucket}?cors", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketCorsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketCors(ctx, input.(*GetBucketCorsRequest))
+		}},
+		"DeleteBucketCors": {Name: "DeleteBucketCors", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?cors", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketCorsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketCors(ctx, input.(*DeleteBucketCorsRequest))
 		}},
 	}}
 }

@@ -2979,7 +2979,10 @@
       "PutBucketPolicy",
       "GetBucketPolicy",
       "DeleteBucketPolicy",
-      "GetBucketPolicyStatus"
+      "GetBucketPolicyStatus",
+      "PutBucketCors",
+      "GetBucketCors",
+      "DeleteBucketCors"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -3457,6 +3460,35 @@
       ],
       "PolicyStatus": [
         "IsPublic"
+      ],
+      "PutBucketCorsRequest": [
+        "Bucket",
+        "CORSConfiguration",
+        "ContentMD5",
+        "ChecksumAlgorithm",
+        "ExpectedBucketOwner"
+      ],
+      "CORSConfiguration": [
+        "CORSRules"
+      ],
+      "CORSRule": [
+        "ID",
+        "AllowedHeaders",
+        "AllowedMethods",
+        "AllowedOrigins",
+        "ExposeHeaders",
+        "MaxAgeSeconds"
+      ],
+      "GetBucketCorsRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketCorsOutput": [
+        "CORSRules"
+      ],
+      "DeleteBucketCorsRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
       ]
     }
   },

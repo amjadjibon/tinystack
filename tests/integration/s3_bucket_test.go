@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -204,5 +205,115 @@ func TestS3BucketPolicy(t *testing.T) {
 	_, err = c.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: aws.String("site")})
 	if code, _ := s3Code(err); code != "NoSuchBucketPolicy" {
 		t.Fatalf("deleted: %v", err)
+	}
+}
+
+// preflight sends a browser's CORS preflight for a PUT to the web bucket.
+func preflight(t *testing.T, url, origin, headers string) *http.Response {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodOptions, url+"/web/upload.txt", http.NoBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Origin", origin)
+	req.Header.Set("Access-Control-Request-Method", "PUT")
+	req.Header.Set("Access-Control-Request-Headers", headers)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_ = resp.Body.Close()
+	return resp
+}
+
+func TestS3BucketCors(t *testing.T) {
+	s := server(t)
+	c := s3Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	if _, err := c.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("web")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := c.GetBucketCors(ctx, &s3.GetBucketCorsInput{Bucket: aws.String("web")})
+	if code, status := s3Code(err); code != "NoSuchCORSConfiguration" || status != 404 {
+		t.Fatalf("no configuration: %s %d %v", code, status, err)
+	}
+
+	rule := s3types.CORSRule{
+		ID: aws.String("uploads"), AllowedOrigins: []string{"http://localhost:3000"},
+		AllowedMethods: []string{"GET", "PUT"}, AllowedHeaders: []string{"*"}, ExposeHeaders: []string{"ETag"},
+		MaxAgeSeconds: aws.Int32(600),
+	}
+	if _, err = c.PutBucketCors(ctx, &s3.PutBucketCorsInput{
+		Bucket: aws.String("web"), CORSConfiguration: &s3types.CORSConfiguration{CORSRules: []s3types.CORSRule{rule}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := c.GetBucketCors(ctx, &s3.GetBucketCorsInput{Bucket: aws.String("web")})
+	if err != nil || len(got.CORSRules) != 1 || aws.ToString(got.CORSRules[0].ID) != "uploads" ||
+		len(got.CORSRules[0].AllowedMethods) != 2 || aws.ToInt32(got.CORSRules[0].MaxAgeSeconds) != 600 {
+		t.Fatalf("%+v %v", got, err)
+	}
+
+	resp := preflight(t, s.URL, "http://localhost:3000", "Content-Type, X-Amz-Meta-Owner")
+	if resp.StatusCode != http.StatusOK ||
+		resp.Header.Get("Access-Control-Allow-Origin") != "http://localhost:3000" ||
+		resp.Header.Get("Access-Control-Allow-Methods") != "GET, PUT" ||
+		resp.Header.Get("Access-Control-Allow-Headers") != "content-type, x-amz-meta-owner" ||
+		resp.Header.Get("Access-Control-Max-Age") != "600" {
+		t.Fatalf("preflight: %d %v", resp.StatusCode, resp.Header)
+	}
+
+	if resp = preflight(t, s.URL, "http://evil.example", ""); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("another origin: %d %v", resp.StatusCode, resp.Header)
+	}
+
+	putObject(t, c, "web", "upload.txt", "x", nil)
+	req, err := http.NewRequest(http.MethodGet, s.URL+"/web/upload.txt", http.NoBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Origin", "http://localhost:3000")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK || resp.Header.Get("Access-Control-Allow-Origin") != "http://localhost:3000" ||
+		resp.Header.Get("Access-Control-Expose-Headers") != "ETag" {
+		t.Fatalf("GET: %d %v", resp.StatusCode, resp.Header)
+	}
+
+	for _, bad := range []s3types.CORSRule{
+		{AllowedOrigins: []string{"*"}, AllowedMethods: []string{"PATCH"}},
+		{AllowedOrigins: []string{"http://*.*.example"}, AllowedMethods: []string{"GET"}},
+	} {
+		_, err = c.PutBucketCors(ctx, &s3.PutBucketCorsInput{
+			Bucket: aws.String(
+				"web",
+			),
+			CORSConfiguration: &s3types.CORSConfiguration{CORSRules: []s3types.CORSRule{bad}},
+		})
+		if code, _ := s3Code(err); code != "InvalidRequest" {
+			t.Fatalf("%+v: %v", bad, err)
+		}
+	}
+
+	if _, err = c.DeleteBucketCors(ctx, &s3.DeleteBucketCorsInput{Bucket: aws.String("web")}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.GetBucketCors(ctx, &s3.GetBucketCorsInput{Bucket: aws.String("web")})
+	if code, _ := s3Code(err); code != "NoSuchCORSConfiguration" {
+		t.Fatalf("deleted: %v", err)
+	}
+
+	if resp = preflight(t, s.URL, "http://localhost:3000", ""); resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("no configuration: %d", resp.StatusCode)
 	}
 }

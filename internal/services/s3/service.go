@@ -85,7 +85,8 @@ type bucketMeta struct {
 	// Versioning is "", "Enabled", or "Suspended".
 	Versioning string `json:",omitempty"`
 	// Policy is the bucket policy, stored as sent and never evaluated.
-	Policy    string `json:",omitempty"`
+	Policy    string         `json:",omitempty"`
+	CORS      []api.CORSRule `json:",omitempty"`
 	CreatedAt int64
 }
 

@@ -49,6 +49,7 @@ type Server struct {
 	credentials CredentialLookup
 	documents   Documents
 	registry    Registry
+	cors        CORS
 	apis        []execute.Handler
 	balancers   execute.Handler
 	health      []byte
@@ -630,7 +631,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.serveDocument(w, r) || s.serveRegistry(w, r) || s.serveAPI(w, r) {
+	if s.serveDocument(w, r) || s.serveRegistry(w, r) || s.serveAPI(w, r) || s.servePreflight(w, r) {
 		return
 	}
 
@@ -653,6 +654,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if err == nil {
+		s.addCORS(w, r, c)
 		err = s.authenticate(w, r, c)
 	}
 

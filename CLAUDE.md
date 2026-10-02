@@ -160,7 +160,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   in a versioned bucket (`versions.go`), older versions and delete markers are kept newest first in the key's history
   record `…/s3/<bucket>/v/<key>`, with each noncurrent version's bytes under `…/s3/<bucket>/b/<version ID>/<key>`. The bucket record also holds its notification configuration, which object writes
   read in their transaction and deliver after commit (`notification.go`) through `sqs.Service.Deliver`,
-  `sns.Service.Publish`, `lambda.Service.InvokeAsync`, and `eventbridge.Service.PutEvents`. Unmodeled S3 errors carry their own HTTP status (`&awserror.Error{StatusCode: …}`);
+  `sns.Service.Publish`, `lambda.Service.InvokeAsync`, and `eventbridge.Service.PutEvents`. A bucket's CORS rules are served by the gateway (`gateway/cors.go`, `Server.UseCORS` with
+  `s3.Service.CORS`): it answers unsigned `OPTIONS` preflights and adds the headers to S3 responses. Unmodeled S3 errors carry their own HTTP status (`&awserror.Error{StatusCode: …}`);
   modeled ones take it from the generated bindings. Lambda stores functions under `…/lambda/function/<name>`, code
   under `…/lambda/code/<name>`, published versions under `…/lambda/version/<name>/<zero-padded number>` (code under
   `…/lambda/version-code/…`), aliases under `…/lambda/alias/<name>/<alias>`, and event source mappings under
