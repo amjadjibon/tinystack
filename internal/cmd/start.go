@@ -267,6 +267,7 @@ func newStartCommand() *cobra.Command {
 			handler.UseCORS(buckets.CORS)
 			handler.UseAPIs(httpAPIs, restAPIs)
 			handler.UseLoadBalancers(balancers)
+			handler.UseFunctionURLs(functions.URLs())
 			if cfg.EKS.Clusters == config.ClustersK3s {
 				// Cluster endpoints accept the EKS tokens the gateway's
 				// credentials sign.

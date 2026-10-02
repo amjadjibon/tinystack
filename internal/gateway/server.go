@@ -52,8 +52,10 @@ type Server struct {
 	cors        CORS
 	apis        []execute.Handler
 	balancers   execute.Handler
-	health      []byte
-	cfg         config.Config
+	// functionURLs serves Lambda function URLs; see UseFunctionURLs.
+	functionURLs execute.Handler
+	health       []byte
+	cfg          config.Config
 }
 
 // CredentialLookup returns the credentials of an access key TinyStack issued,

@@ -229,6 +229,7 @@ func serverStore(
 	h.UseCORS(objects.CORS)
 	h.UseAPIs(httpAPIs, restAPIs)
 	h.UseLoadBalancers(balancers)
+	h.UseFunctionURLs(functions.URLs())
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)

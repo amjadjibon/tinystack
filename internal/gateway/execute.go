@@ -40,6 +40,35 @@ func (s *Server) UseLoadBalancers(handler execute.Handler) {
 	s.balancers = handler
 }
 
+// lambdaURLPath is the path prefix that addresses a Lambda function URL by
+// its ID: /_aws/lambda-url/<URL ID>/...
+const lambdaURLPath = "/_aws/lambda-url/"
+
+// UseFunctionURLs serves Lambda function URLs: requests to
+// <URL ID>.lambda-url.<region>.<host> (such as
+// abc.lambda-url.us-east-1.localhost:4566 or abc.lambda-url.us-east-1.on.aws),
+// or to /_aws/lambda-url/<URL ID>/... on any host. Call it before serving
+// requests.
+func (s *Server) UseFunctionURLs(handler execute.Handler) {
+	s.functionURLs = handler
+}
+
+// lambdaURLTarget returns the function URL a request addresses and the path
+// after it, if the request is to one.
+func lambdaURLTarget(r *http.Request) (id, path, endpoint string, ok bool) {
+	if sub, _, found := strings.Cut(r.Host, ".lambda-url."); found && sub != "" && !strings.Contains(sub, ".") {
+		return sub, r.URL.Path, "http://" + r.Host, true
+	}
+
+	rest, found := strings.CutPrefix(r.URL.Path, lambdaURLPath)
+	if !found {
+		return "", "", "", false
+	}
+
+	id, path, _ = strings.Cut(rest, "/")
+	return id, "/" + path, "http://" + r.Host + lambdaURLPath + id, id != ""
+}
+
 // elbTarget returns the load balancer a request addresses and the path after
 // it, if the request is to one.
 func elbTarget(r *http.Request) (label, path, endpoint string, ok bool) {
@@ -83,14 +112,19 @@ func executeTarget(r *http.Request) (id, path, endpoint string, ok bool) {
 	return id, "/" + path, "http://" + r.Host + executePath + id, id != ""
 }
 
-// serveAPI runs a request to an API or a load balancer, reporting whether the
-// request was one.
+// serveAPI runs a request to an API, a load balancer, or a function URL,
+// reporting whether the request was one.
 func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	id, path, endpoint, ok := executeTarget(r)
 	handlers := s.apis
 	if !ok && s.balancers != nil {
 		id, path, endpoint, ok = elbTarget(r)
 		handlers = []execute.Handler{s.balancers}
+	}
+
+	if !ok && s.functionURLs != nil {
+		id, path, endpoint, ok = lambdaURLTarget(r)
+		handlers = []execute.Handler{s.functionURLs}
 	}
 
 	if !ok || len(handlers) == 0 {

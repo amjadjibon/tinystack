@@ -523,6 +523,93 @@ type DeleteLayerVersionRequest struct {
 	VersionNumber *int64  `json:"-"`
 }
 
+type Cors struct {
+	AllowCredentials *bool    `json:"AllowCredentials,omitempty"`
+	AllowHeaders     []string `json:"AllowHeaders,omitempty"`
+	AllowMethods     []string `json:"AllowMethods,omitempty"`
+	AllowOrigins     []string `json:"AllowOrigins,omitempty"`
+	ExposeHeaders    []string `json:"ExposeHeaders,omitempty"`
+	MaxAge           *int64   `json:"MaxAge,omitempty"`
+}
+
+type CreateFunctionUrlConfigRequest struct {
+	FunctionName *string `json:"-"`
+	Qualifier    *string `json:"-"`
+	AuthType     *string `json:"AuthType,omitempty"`
+	Cors         *Cors   `json:"Cors,omitempty"`
+	InvokeMode   *string `json:"InvokeMode,omitempty"`
+}
+
+type CreateFunctionUrlConfigResponse struct {
+	FunctionUrl  *string `json:"FunctionUrl,omitempty"`
+	FunctionArn  *string `json:"FunctionArn,omitempty"`
+	AuthType     *string `json:"AuthType,omitempty"`
+	Cors         *Cors   `json:"Cors,omitempty"`
+	CreationTime *string `json:"CreationTime,omitempty"`
+	InvokeMode   *string `json:"InvokeMode,omitempty"`
+}
+
+type GetFunctionUrlConfigRequest struct {
+	FunctionName *string `json:"-"`
+	Qualifier    *string `json:"-"`
+}
+
+type GetFunctionUrlConfigResponse struct {
+	FunctionUrl      *string `json:"FunctionUrl,omitempty"`
+	FunctionArn      *string `json:"FunctionArn,omitempty"`
+	AuthType         *string `json:"AuthType,omitempty"`
+	Cors             *Cors   `json:"Cors,omitempty"`
+	CreationTime     *string `json:"CreationTime,omitempty"`
+	LastModifiedTime *string `json:"LastModifiedTime,omitempty"`
+	InvokeMode       *string `json:"InvokeMode,omitempty"`
+}
+
+type UpdateFunctionUrlConfigRequest struct {
+	FunctionName *string `json:"-"`
+	Qualifier    *string `json:"-"`
+	AuthType     *string `json:"AuthType,omitempty"`
+	Cors         *Cors   `json:"Cors,omitempty"`
+	InvokeMode   *string `json:"InvokeMode,omitempty"`
+}
+
+type UpdateFunctionUrlConfigResponse struct {
+	FunctionUrl      *string `json:"FunctionUrl,omitempty"`
+	FunctionArn      *string `json:"FunctionArn,omitempty"`
+	AuthType         *string `json:"AuthType,omitempty"`
+	Cors             *Cors   `json:"Cors,omitempty"`
+	CreationTime     *string `json:"CreationTime,omitempty"`
+	LastModifiedTime *string `json:"LastModifiedTime,omitempty"`
+	InvokeMode       *string `json:"InvokeMode,omitempty"`
+}
+
+type ListFunctionUrlConfigsRequest struct {
+	FunctionName *string `json:"-"`
+	Marker       *string `json:"-"`
+	MaxItems     *int64  `json:"-"`
+}
+
+type FunctionUrlConfig struct {
+	FunctionUrl      *string `json:"FunctionUrl,omitempty"`
+	FunctionArn      *string `json:"FunctionArn,omitempty"`
+	CreationTime     *string `json:"CreationTime,omitempty"`
+	LastModifiedTime *string `json:"LastModifiedTime,omitempty"`
+	Cors             *Cors   `json:"Cors,omitempty"`
+	AuthType         *string `json:"AuthType,omitempty"`
+	InvokeMode       *string `json:"InvokeMode,omitempty"`
+}
+
+type ListFunctionUrlConfigsResponse struct {
+	FunctionUrlConfigs []FunctionUrlConfig `json:"FunctionUrlConfigs,omitempty"`
+	NextMarker         *string             `json:"NextMarker,omitempty"`
+}
+
+type DeleteFunctionUrlConfigOutput struct{}
+
+type DeleteFunctionUrlConfigRequest struct {
+	FunctionName *string `json:"-"`
+	Qualifier    *string `json:"-"`
+}
+
 type API interface {
 	CreateFunction(context.Context, *CreateFunctionRequest) (*FunctionConfiguration, error)
 	GetFunction(context.Context, *GetFunctionRequest) (*GetFunctionResponse, error)
@@ -563,6 +650,11 @@ type API interface {
 	ListLayers(context.Context, *ListLayersRequest) (*ListLayersResponse, error)
 	ListLayerVersions(context.Context, *ListLayerVersionsRequest) (*ListLayerVersionsResponse, error)
 	DeleteLayerVersion(context.Context, *DeleteLayerVersionRequest) (*DeleteLayerVersionOutput, error)
+	CreateFunctionUrlConfig(context.Context, *CreateFunctionUrlConfigRequest) (*CreateFunctionUrlConfigResponse, error)
+	GetFunctionUrlConfig(context.Context, *GetFunctionUrlConfigRequest) (*GetFunctionUrlConfigResponse, error)
+	UpdateFunctionUrlConfig(context.Context, *UpdateFunctionUrlConfigRequest) (*UpdateFunctionUrlConfigResponse, error)
+	ListFunctionUrlConfigs(context.Context, *ListFunctionUrlConfigsRequest) (*ListFunctionUrlConfigsResponse, error)
+	DeleteFunctionUrlConfig(context.Context, *DeleteFunctionUrlConfigRequest) (*DeleteFunctionUrlConfigOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -677,6 +769,21 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteLayerVersion": {Name: "DeleteLayerVersion", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"LayerName": catalog.MemberBinding{Location: "label", Name: "LayerName"}, "VersionNumber": catalog.MemberBinding{Location: "label", Name: "VersionNumber"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2018-10-31/layers/{LayerName}/versions/{VersionNumber}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteLayerVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteLayerVersion(ctx, input.(*DeleteLayerVersionRequest))
+		}},
+		"CreateFunctionUrlConfig": {Name: "CreateFunctionUrlConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "AuthType"}, "Cors": catalog.MemberBinding{Location: "document", Name: "Cors"}, "FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "InvokeMode": catalog.MemberBinding{Location: "document", Name: "InvokeMode"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "AuthType"}, "Cors": catalog.MemberBinding{Location: "document", Name: "Cors"}, "CreationTime": catalog.MemberBinding{Location: "document", Name: "CreationTime"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "FunctionUrl": catalog.MemberBinding{Location: "document", Name: "FunctionUrl"}, "InvokeMode": catalog.MemberBinding{Location: "document", Name: "InvokeMode"}}, Method: "POST", URI: "/2021-10-31/functions/{FunctionName}/url", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateFunctionUrlConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateFunctionUrlConfig(ctx, input.(*CreateFunctionUrlConfigRequest))
+		}},
+		"GetFunctionUrlConfig": {Name: "GetFunctionUrlConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "AuthType"}, "Cors": catalog.MemberBinding{Location: "document", Name: "Cors"}, "CreationTime": catalog.MemberBinding{Location: "document", Name: "CreationTime"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "FunctionUrl": catalog.MemberBinding{Location: "document", Name: "FunctionUrl"}, "InvokeMode": catalog.MemberBinding{Location: "document", Name: "InvokeMode"}, "LastModifiedTime": catalog.MemberBinding{Location: "document", Name: "LastModifiedTime"}}, Method: "GET", URI: "/2021-10-31/functions/{FunctionName}/url", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetFunctionUrlConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetFunctionUrlConfig(ctx, input.(*GetFunctionUrlConfigRequest))
+		}},
+		"UpdateFunctionUrlConfig": {Name: "UpdateFunctionUrlConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "AuthType"}, "Cors": catalog.MemberBinding{Location: "document", Name: "Cors"}, "FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "InvokeMode": catalog.MemberBinding{Location: "document", Name: "InvokeMode"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "AuthType"}, "Cors": catalog.MemberBinding{Location: "document", Name: "Cors"}, "CreationTime": catalog.MemberBinding{Location: "document", Name: "CreationTime"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "FunctionUrl": catalog.MemberBinding{Location: "document", Name: "FunctionUrl"}, "InvokeMode": catalog.MemberBinding{Location: "document", Name: "InvokeMode"}, "LastModifiedTime": catalog.MemberBinding{Location: "document", Name: "LastModifiedTime"}}, Method: "PUT", URI: "/2021-10-31/functions/{FunctionName}/url", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateFunctionUrlConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateFunctionUrlConfig(ctx, input.(*UpdateFunctionUrlConfigRequest))
+		}},
+		"ListFunctionUrlConfigs": {Name: "ListFunctionUrlConfigs", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Marker": catalog.MemberBinding{Location: "query", Name: "Marker"}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems"}}, Output: map[string]catalog.MemberBinding{"FunctionUrlConfigs": catalog.MemberBinding{Location: "document", Name: "FunctionUrlConfigs"}, "NextMarker": catalog.MemberBinding{Location: "document", Name: "NextMarker"}}, Method: "GET", URI: "/2021-10-31/functions/{FunctionName}/urls", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListFunctionUrlConfigsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListFunctionUrlConfigs(ctx, input.(*ListFunctionUrlConfigsRequest))
+		}},
+		"DeleteFunctionUrlConfig": {Name: "DeleteFunctionUrlConfig", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2021-10-31/functions/{FunctionName}/url", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteFunctionUrlConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteFunctionUrlConfig(ctx, input.(*DeleteFunctionUrlConfigRequest))
 		}},
 	}}
 }

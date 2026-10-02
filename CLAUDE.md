@@ -169,7 +169,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `…/lambda/mapping/<uuid>`, layer versions under `…/lambda/layer/<name>/<zero-padded number>` (packages under
   `…/lambda/layer-code/…`, the last number under `…/lambda/layer-head/<name>`), reserved concurrency under
   `…/lambda/reserved/<name>` (enforced in memory by `concurrency.go`), and provisioned concurrency under
-  `…/lambda/provisioned/<name>/<qualifier>`; code from S3 is copied in through the `ObjectReader` that `start.go` registers with
+  `…/lambda/provisioned/<name>/<qualifier>`, and function URLs under `…/lambda/url/<name>/<qualifier>` (found from
+  the partition-wide `aws/lambda/url/<URL ID>`; `urls.go` is the `execute.Handler` that `Server.UseFunctionURLs`
+  serves, building events with `services/apigateway/proxy`); code from S3 is copied in through the `ObjectReader` that `start.go` registers with
   `UseObjects` (`s3.Service.Object`; S3 notifies Lambda, so Lambda cannot hold S3 directly); `versions.go` resolves a qualifier to the record and code an operation uses; it runs code only through
   the `lambda.Runtime` interface (`services/lambda/docker` uses the docker CLI, copying code in with `docker cp` and
   pooling warm containers that run the AWS base images' Runtime Interface Emulator). Pollers and async invocations

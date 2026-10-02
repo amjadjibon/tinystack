@@ -2535,7 +2535,12 @@
       "GetLayerVersionByArn",
       "ListLayers",
       "ListLayerVersions",
-      "DeleteLayerVersion"
+      "DeleteLayerVersion",
+      "CreateFunctionUrlConfig",
+      "GetFunctionUrlConfig",
+      "UpdateFunctionUrlConfig",
+      "ListFunctionUrlConfigs",
+      "DeleteFunctionUrlConfig"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -2948,6 +2953,80 @@
       "Layer": [
         "Arn",
         "CodeSize"
+      ],
+      "CreateFunctionUrlConfigRequest": [
+        "FunctionName",
+        "Qualifier",
+        "AuthType",
+        "Cors",
+        "InvokeMode"
+      ],
+      "Cors": [
+        "AllowCredentials",
+        "AllowHeaders",
+        "AllowMethods",
+        "AllowOrigins",
+        "ExposeHeaders",
+        "MaxAge"
+      ],
+      "CreateFunctionUrlConfigResponse": [
+        "FunctionUrl",
+        "FunctionArn",
+        "AuthType",
+        "Cors",
+        "CreationTime",
+        "InvokeMode"
+      ],
+      "GetFunctionUrlConfigRequest": [
+        "FunctionName",
+        "Qualifier"
+      ],
+      "GetFunctionUrlConfigResponse": [
+        "FunctionUrl",
+        "FunctionArn",
+        "AuthType",
+        "Cors",
+        "CreationTime",
+        "LastModifiedTime",
+        "InvokeMode"
+      ],
+      "UpdateFunctionUrlConfigRequest": [
+        "FunctionName",
+        "Qualifier",
+        "AuthType",
+        "Cors",
+        "InvokeMode"
+      ],
+      "UpdateFunctionUrlConfigResponse": [
+        "FunctionUrl",
+        "FunctionArn",
+        "AuthType",
+        "Cors",
+        "CreationTime",
+        "LastModifiedTime",
+        "InvokeMode"
+      ],
+      "ListFunctionUrlConfigsRequest": [
+        "FunctionName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListFunctionUrlConfigsResponse": [
+        "FunctionUrlConfigs",
+        "NextMarker"
+      ],
+      "FunctionUrlConfig": [
+        "FunctionUrl",
+        "FunctionArn",
+        "CreationTime",
+        "LastModifiedTime",
+        "Cors",
+        "AuthType",
+        "InvokeMode"
+      ],
+      "DeleteFunctionUrlConfigRequest": [
+        "FunctionName",
+        "Qualifier"
       ]
     }
   },
