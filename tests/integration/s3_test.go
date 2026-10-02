@@ -248,6 +248,24 @@ func TestS3Objects(t *testing.T) {
 		t.Fatal("unsupported storage class accepted")
 	}
 
+	// Every object is encrypted with S3's AES256 keys, which clients such as
+	// sam deploy ask for; KMS encryption is not supported.
+	if _, err = c.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: bucket, Key: aws.String("sse"), Body: strings.NewReader("x"),
+		ServerSideEncryption: s3types.ServerSideEncryptionAes256,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: bucket, Key: aws.String("sse"), Body: strings.NewReader("x"),
+		ServerSideEncryption: s3types.ServerSideEncryptionAwsKms,
+	}); err == nil {
+		t.Fatal("KMS encryption accepted")
+	} else if code, _ := s3Code(err); code != "NotImplemented" {
+		t.Fatal(err)
+	}
+
 	if _, err = c.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: bucket, Key: aws.String("x"), Body: strings.NewReader("x"), ACL: s3types.ObjectCannedACLPublicRead,
 	}); err == nil {
