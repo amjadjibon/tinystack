@@ -143,6 +143,10 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		)
 	}
 
+	if sseErr := encryption(in.ServerSideEncryption); sseErr != nil {
+		return nil, sseErr
+	}
+
 	if n := value(in.IfNoneMatch); n != "" && n != "*" {
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "If-None-Match only supports *")
 	}
@@ -589,4 +593,18 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 	}
 
 	return out, nil
+}
+
+// encryption checks a write's server-side encryption: S3 encrypts every
+// object with AES256 keys it manages, the only kind TinyStack supports.
+func encryption(sse *string) error {
+	if v := value(sse); v != "" && v != "AES256" {
+		return fail(
+			http.StatusNotImplemented,
+			"NotImplemented",
+			"TinyStack only supports AES256 server-side encryption",
+		)
+	}
+
+	return nil
 }

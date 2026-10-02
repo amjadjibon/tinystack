@@ -3028,6 +3028,7 @@
         "ContentMD5",
         "Metadata",
         "StorageClass",
+        "ServerSideEncryption",
         "IfMatch",
         "IfNoneMatch",
         "ExpectedBucketOwner",
@@ -3158,6 +3159,7 @@
         "ContentType",
         "Metadata",
         "StorageClass",
+        "ServerSideEncryption",
         "ExpectedBucketOwner"
       ],
       "CreateMultipartUploadOutput": [
@@ -3285,6 +3287,7 @@
         "TaggingDirective",
         "Tagging",
         "StorageClass",
+        "ServerSideEncryption",
         "ExpectedBucketOwner",
         "ExpectedSourceBucketOwner"
       ],

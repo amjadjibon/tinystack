@@ -83,6 +83,9 @@ func (s *Service) CreateMultipartUpload(
 	if c := value(in.StorageClass); c != "" && c != storageStandard {
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "Only STANDARD storage is supported")
 	}
+	if sseErr := encryption(in.ServerSideEncryption); sseErr != nil {
+		return nil, sseErr
+	}
 	metadataSize := 0
 	for k, v := range in.Metadata {
 		metadataSize += len(k) + len(v)

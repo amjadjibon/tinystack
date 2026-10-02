@@ -110,6 +110,10 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		)
 	}
 
+	if sseErr := encryption(in.ServerSideEncryption); sseErr != nil {
+		return nil, sseErr
+	}
+
 	metadataDirective, err := directive(in.MetadataDirective, "metadata")
 	if err != nil {
 		return nil, err
