@@ -707,8 +707,8 @@ func TestCloudFormationTemplates(t *testing.T) {
 			"TinyStack does not support the intrinsic function Fn::Cidr (/Resources/Q)",
 		},
 		{
-			"transform", "Transform: AWS::Serverless-2016-10-31\nResources:\n  Q: {Type: AWS::SQS::Queue}\n",
-			"TinyStack does not support template transforms: [AWS::Serverless-2016-10-31]",
+			"transform", "Transform: AWS::LanguageExtensions\nResources:\n  Q: {Type: AWS::SQS::Queue}\n",
+			"TinyStack does not support template transforms: [AWS::LanguageExtensions]",
 		},
 		{
 			"cycle", `{"Resources": {
