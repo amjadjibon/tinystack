@@ -139,14 +139,15 @@ func compareThreshold(op string, v, threshold float64) bool {
 }
 
 // decideMetric computes a metric alarm's state from its last
-// EvaluationPeriods periods, the current one included. An empty state
-// means the state stays as it is.
+// EvaluationPeriods periods, the current one included once it has data: until
+// then it is still being reported, so the periods before it are evaluated. An
+// empty state means the state stays as it is.
 func decideMetric(tx storage.ReadTx, scope request.Scope, m *api.MetricAlarm, now time.Time,
 ) (state, reason, data string, err error) {
 	p := period(m)
 	n := value(m.EvaluationPeriods)
 	end := (now.Unix()/p + 1) * p
-	start := end - n*p
+	start := end - (n+1)*p
 	var got *series
 	if m.Metrics != nil {
 		all, runErr := run(tx, scope, m.Metrics, time.Unix(start, 0), time.Unix(end, 0))
@@ -174,6 +175,11 @@ func decideMetric(tx storage.ReadTx, scope request.Scope, m *api.MetricAlarm, no
 		}
 	}
 
+	if _, ok := got.points[end-p]; !ok {
+		end -= p
+	}
+
+	start = end - n*p
 	treat := value(m.TreatMissingData)
 	threshold, op := value(m.Threshold), value(m.ComparisonOperator)
 	needed := value(m.DatapointsToAlarm)
