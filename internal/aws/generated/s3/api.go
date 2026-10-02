@@ -936,6 +936,76 @@ type DeleteBucketWebsiteRequest struct {
 	ExpectedBucketOwner *string `json:"-" xml:"-"`
 }
 
+type GetBucketAclRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type Grantee struct {
+	DisplayName  *string `json:"DisplayName,omitempty" xml:"DisplayName,omitempty"`
+	EmailAddress *string `json:"EmailAddress,omitempty" xml:"EmailAddress,omitempty"`
+	ID           *string `json:"ID,omitempty" xml:"ID,omitempty"`
+	URI          *string `json:"URI,omitempty" xml:"URI,omitempty"`
+	Type         *string `json:"Type,omitempty" xml:"http://www.w3.org/2001/XMLSchema-instance type,attr,omitempty"`
+}
+
+type Grant struct {
+	Grantee    *Grantee `json:"Grantee,omitempty" xml:"Grantee,omitempty"`
+	Permission *string  `json:"Permission,omitempty" xml:"Permission,omitempty"`
+}
+
+type GetBucketAclOutput struct {
+	XMLName xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ AccessControlPolicy"`
+	Owner   *Owner   `json:"Owner,omitempty" xml:"Owner,omitempty"`
+	Grants  []Grant  `json:"Grants,omitempty" xml:"AccessControlList>Grant,omitempty"`
+}
+
+type PutBucketAclOutput struct{}
+
+type AccessControlPolicy struct {
+	Grants []Grant `json:"Grants,omitempty" xml:"AccessControlList>Grant,omitempty"`
+	Owner  *Owner  `json:"Owner,omitempty" xml:"Owner,omitempty"`
+}
+
+type PutBucketAclRequest struct {
+	ACL                 *string              `json:"-" xml:"-"`
+	AccessControlPolicy *AccessControlPolicy `json:"-" xml:"-"`
+	Bucket              *string              `json:"-" xml:"-"`
+	ContentMD5          *string              `json:"-" xml:"-"`
+	ChecksumAlgorithm   *string              `json:"-" xml:"-"`
+	GrantFullControl    *string              `json:"-" xml:"-"`
+	ExpectedBucketOwner *string              `json:"-" xml:"-"`
+}
+
+type GetObjectAclRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Key                 *string `json:"-" xml:"-"`
+	VersionId           *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetObjectAclOutput struct {
+	XMLName xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ AccessControlPolicy"`
+	Owner   *Owner   `json:"Owner,omitempty" xml:"Owner,omitempty"`
+	Grants  []Grant  `json:"Grants,omitempty" xml:"AccessControlList>Grant,omitempty"`
+}
+
+type PutObjectAclRequest struct {
+	ACL                 *string              `json:"-" xml:"-"`
+	AccessControlPolicy *AccessControlPolicy `json:"-" xml:"-"`
+	Bucket              *string              `json:"-" xml:"-"`
+	ContentMD5          *string              `json:"-" xml:"-"`
+	ChecksumAlgorithm   *string              `json:"-" xml:"-"`
+	GrantFullControl    *string              `json:"-" xml:"-"`
+	Key                 *string              `json:"-" xml:"-"`
+	VersionId           *string              `json:"-" xml:"-"`
+	ExpectedBucketOwner *string              `json:"-" xml:"-"`
+}
+
+type PutObjectAclOutput struct {
+	RequestCharged *string `json:"-" xml:"-"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -988,6 +1058,10 @@ type API interface {
 	PutBucketWebsite(context.Context, *PutBucketWebsiteRequest) (*PutBucketWebsiteOutput, error)
 	GetBucketWebsite(context.Context, *GetBucketWebsiteRequest) (*GetBucketWebsiteOutput, error)
 	DeleteBucketWebsite(context.Context, *DeleteBucketWebsiteRequest) (*DeleteBucketWebsiteOutput, error)
+	GetBucketAcl(context.Context, *GetBucketAclRequest) (*GetBucketAclOutput, error)
+	PutBucketAcl(context.Context, *PutBucketAclRequest) (*PutBucketAclOutput, error)
+	GetObjectAcl(context.Context, *GetObjectAclRequest) (*GetObjectAclOutput, error)
+	PutObjectAcl(context.Context, *PutObjectAclRequest) (*PutObjectAclOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1144,6 +1218,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteBucketWebsite": {Name: "DeleteBucketWebsite", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?website", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketWebsiteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteBucketWebsite(ctx, input.(*DeleteBucketWebsiteRequest))
+		}},
+		"GetBucketAcl": {Name: "GetBucketAcl", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}}, Output: map[string]catalog.MemberBinding{"Grants": catalog.MemberBinding{Location: "document", Name: "Grants"}, "Owner": catalog.MemberBinding{Location: "document", Name: "Owner"}}, Method: "GET", URI: "/{Bucket}?acl", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketAclRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketAcl(ctx, input.(*GetBucketAclRequest))
+		}},
+		"PutBucketAcl": {Name: "PutBucketAcl", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "header", Name: "x-amz-acl"}, "AccessControlPolicy": catalog.MemberBinding{Location: "payload", Name: "AccessControlPolicy"}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "GrantFullControl": catalog.MemberBinding{Location: "header", Name: "x-amz-grant-full-control"}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read"}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp"}, "GrantWrite": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write"}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?acl", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketAclRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketAcl(ctx, input.(*PutBucketAclRequest))
+		}},
+		"GetObjectAcl": {Name: "GetObjectAcl", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "Key": catalog.MemberBinding{Location: "label", Name: "Key"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer"}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId"}}, Output: map[string]catalog.MemberBinding{"Grants": catalog.MemberBinding{Location: "document", Name: "Grants"}, "Owner": catalog.MemberBinding{Location: "document", Name: "Owner"}}, Method: "GET", URI: "/{Bucket}/{Key+}?acl", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetObjectAclRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetObjectAcl(ctx, input.(*GetObjectAclRequest))
+		}},
+		"PutObjectAcl": {Name: "PutObjectAcl", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "header", Name: "x-amz-acl"}, "AccessControlPolicy": catalog.MemberBinding{Location: "payload", Name: "AccessControlPolicy"}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket"}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm"}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5"}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner"}, "GrantFullControl": catalog.MemberBinding{Location: "header", Name: "x-amz-grant-full-control"}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read"}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp"}, "GrantWrite": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write"}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp"}, "Key": catalog.MemberBinding{Location: "label", Name: "Key"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer"}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId"}}, Output: map[string]catalog.MemberBinding{"RequestCharged": catalog.MemberBinding{Location: "header", Name: "x-amz-request-charged"}}, Method: "PUT", URI: "/{Bucket}/{Key+}?acl", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutObjectAclRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutObjectAcl(ctx, input.(*PutObjectAclRequest))
 		}},
 	}}
 }

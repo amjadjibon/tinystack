@@ -3,7 +3,9 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -605,5 +607,78 @@ func TestS3BucketWebsite(t *testing.T) {
 	_, err = c.GetBucketWebsite(ctx, &s3.GetBucketWebsiteInput{Bucket: aws.String("pages")})
 	if code, _ := s3Code(err); code != "NoSuchWebsiteConfiguration" {
 		t.Fatalf("deleted: %v", err)
+	}
+}
+
+func TestS3ACLs(t *testing.T) {
+	s := server(t)
+	c := s3Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	if _, err := c.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("acl")}); err != nil {
+		t.Fatal(err)
+	}
+
+	putObject(t, c, "acl", "a.txt", "x", nil)
+	bucket, err := c.GetBucketAcl(ctx, &s3.GetBucketAclInput{Bucket: aws.String("acl")})
+	if err != nil || len(bucket.Grants) != 1 || bucket.Grants[0].Permission != s3types.PermissionFullControl ||
+		aws.ToString(bucket.Grants[0].Grantee.ID) != aws.ToString(bucket.Owner.ID) {
+		t.Fatalf("bucket: %+v %v", bucket, err)
+	}
+
+	object, err := c.GetObjectAcl(ctx, &s3.GetObjectAclInput{Bucket: aws.String("acl"), Key: aws.String("a.txt")})
+	if err != nil || len(object.Grants) != 1 || aws.ToString(object.Owner.ID) != aws.ToString(bucket.Owner.ID) {
+		t.Fatalf("object: %+v %v", object, err)
+	}
+
+	owner := aws.ToString(bucket.Owner.ID)
+	policy := &s3types.AccessControlPolicy{
+		Owner: &s3types.Owner{ID: aws.String(owner)},
+		Grants: []s3types.Grant{{
+			Grantee:    &s3types.Grantee{ID: aws.String(owner), Type: s3types.TypeCanonicalUser},
+			Permission: s3types.PermissionFullControl,
+		}},
+	}
+	if _, err = c.PutBucketAcl(ctx, &s3.PutBucketAclInput{
+		Bucket: aws.String("acl"), AccessControlPolicy: policy,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.PutObjectAcl(ctx, &s3.PutObjectAclInput{
+		Bucket: aws.String("acl"), Key: aws.String("a.txt"), ACL: s3types.ObjectCannedACLBucketOwnerFullControl,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// A new bucket has ACLs disabled.
+	_, err = c.PutBucketAcl(ctx, &s3.PutBucketAclInput{
+		Bucket: aws.String("acl"), ACL: s3types.BucketCannedACLPublicRead,
+	})
+	if code, status := s3Code(err); code != "AccessControlListNotSupported" || status != 400 {
+		t.Fatalf("public: %s %d %v", code, status, err)
+	}
+
+	_, err = c.GetObjectAcl(ctx, &s3.GetObjectAclInput{Bucket: aws.String("acl"), Key: aws.String("missing")})
+	if code, _ := s3Code(err); code != "NoSuchKey" {
+		t.Fatalf("missing object: %v", err)
+	}
+
+	// The grantee's type is the xsi:type attribute, in its namespace.
+	req, err := http.NewRequest(http.MethodGet, s.URL+"/acl?acl", http.NoBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if err != nil ||
+		!strings.Contains(string(body), `<Grantee xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" `+
+			`xsi:type="CanonicalUser">`) {
+		t.Fatalf("%s %v", body, err)
 	}
 }

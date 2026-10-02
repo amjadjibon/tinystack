@@ -2997,7 +2997,11 @@
       "DeleteBucketLifecycle",
       "PutBucketWebsite",
       "GetBucketWebsite",
-      "DeleteBucketWebsite"
+      "DeleteBucketWebsite",
+      "GetBucketAcl",
+      "PutBucketAcl",
+      "GetObjectAcl",
+      "PutObjectAcl"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -3703,6 +3707,59 @@
       ],
       "DeleteBucketWebsiteRequest": [
         "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketAclRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketAclOutput": [
+        "Owner",
+        "Grants"
+      ],
+      "Grant": [
+        "Grantee",
+        "Permission"
+      ],
+      "Grantee": [
+        "DisplayName",
+        "EmailAddress",
+        "ID",
+        "URI",
+        "Type"
+      ],
+      "AccessControlPolicy": [
+        "Grants",
+        "Owner"
+      ],
+      "PutBucketAclRequest": [
+        "ACL",
+        "AccessControlPolicy",
+        "Bucket",
+        "ContentMD5",
+        "ChecksumAlgorithm",
+        "GrantFullControl",
+        "ExpectedBucketOwner"
+      ],
+      "GetObjectAclRequest": [
+        "Bucket",
+        "Key",
+        "VersionId",
+        "ExpectedBucketOwner"
+      ],
+      "GetObjectAclOutput": [
+        "Owner",
+        "Grants"
+      ],
+      "PutObjectAclRequest": [
+        "ACL",
+        "AccessControlPolicy",
+        "Bucket",
+        "ContentMD5",
+        "ChecksumAlgorithm",
+        "GrantFullControl",
+        "Key",
+        "VersionId",
         "ExpectedBucketOwner"
       ]
     }
