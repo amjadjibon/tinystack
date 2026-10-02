@@ -2522,7 +2522,14 @@
       "GetFunctionConfiguration",
       "AddPermission",
       "GetPolicy",
-      "RemovePermission"
+      "RemovePermission",
+      "PutFunctionConcurrency",
+      "GetFunctionConcurrency",
+      "DeleteFunctionConcurrency",
+      "PutProvisionedConcurrencyConfig",
+      "GetProvisionedConcurrencyConfig",
+      "ListProvisionedConcurrencyConfigs",
+      "DeleteProvisionedConcurrencyConfig"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -2580,7 +2587,8 @@
       "GetFunctionResponse": [
         "Configuration",
         "Code",
-        "Tags"
+        "Tags",
+        "Concurrency"
       ],
       "FunctionCodeLocation": [
         "RepositoryType",
@@ -2781,6 +2789,66 @@
         "Qualifier",
         "RevisionId",
         "PrincipalOrgID"
+      ],
+      "PutFunctionConcurrencyRequest": [
+        "FunctionName",
+        "ReservedConcurrentExecutions"
+      ],
+      "Concurrency": [
+        "ReservedConcurrentExecutions"
+      ],
+      "GetFunctionConcurrencyRequest": [
+        "FunctionName"
+      ],
+      "GetFunctionConcurrencyResponse": [
+        "ReservedConcurrentExecutions"
+      ],
+      "DeleteFunctionConcurrencyRequest": [
+        "FunctionName"
+      ],
+      "PutProvisionedConcurrencyConfigRequest": [
+        "FunctionName",
+        "Qualifier",
+        "ProvisionedConcurrentExecutions"
+      ],
+      "PutProvisionedConcurrencyConfigResponse": [
+        "RequestedProvisionedConcurrentExecutions",
+        "AllocatedProvisionedConcurrentExecutions",
+        "AvailableProvisionedConcurrentExecutions",
+        "Status",
+        "LastModified"
+      ],
+      "GetProvisionedConcurrencyConfigRequest": [
+        "FunctionName",
+        "Qualifier"
+      ],
+      "GetProvisionedConcurrencyConfigResponse": [
+        "RequestedProvisionedConcurrentExecutions",
+        "AvailableProvisionedConcurrentExecutions",
+        "AllocatedProvisionedConcurrentExecutions",
+        "Status",
+        "LastModified"
+      ],
+      "ListProvisionedConcurrencyConfigsRequest": [
+        "FunctionName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListProvisionedConcurrencyConfigsResponse": [
+        "ProvisionedConcurrencyConfigs",
+        "NextMarker"
+      ],
+      "ProvisionedConcurrencyConfigListItem": [
+        "FunctionArn",
+        "RequestedProvisionedConcurrentExecutions",
+        "AvailableProvisionedConcurrentExecutions",
+        "AllocatedProvisionedConcurrentExecutions",
+        "Status",
+        "LastModified"
+      ],
+      "DeleteProvisionedConcurrencyConfigRequest": [
+        "FunctionName",
+        "Qualifier"
       ]
     }
   },

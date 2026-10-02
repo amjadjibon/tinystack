@@ -310,6 +310,7 @@ func (s *Service) DeleteAlias(ctx context.Context, in *api.DeleteAliasRequest) (
 	_, err := s.changeAlias(ctx, in.FunctionName, in.Name,
 		func(tx storage.WriteTx, scope request.Scope, a *alias) (bool, error) {
 			tx.Delete(policyKey(scope, a.Function, a.Name))
+			tx.Delete(provisionedKey(scope, a.Function, a.Name))
 			return false, nil
 		})
 	if err != nil {

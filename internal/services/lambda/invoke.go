@@ -111,6 +111,12 @@ func (s *Service) run(
 		return Result{}, "", "", err
 	}
 
+	release, err := s.acquire(ctx, scope, name)
+	if err != nil {
+		return Result{}, "", "", err
+	}
+
+	defer release()
 	started := time.Now()
 	result, err = s.runtime.Invoke(ctx, fn, payload)
 	if err != nil {

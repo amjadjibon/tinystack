@@ -77,8 +77,12 @@ type Service struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	pollers map[string]context.CancelFunc
+	// running counts each function's invocations in flight, which its
+	// reserved concurrency caps; slots guards it.
+	running map[string]int
 	wg      sync.WaitGroup
 	mu      sync.Mutex
+	slots   sync.Mutex
 	stop    sync.Once
 }
 
@@ -114,6 +118,7 @@ func New(
 		ctx:        ctx,
 		cancel:     cancel,
 		pollers:    map[string]context.CancelFunc{},
+		running:    map[string]int{},
 	}
 }
 
@@ -384,6 +389,20 @@ func loadFunction(tx storage.ReadTx, key string) (*function, bool, error) {
 	}
 
 	return &fn, true, nil
+}
+
+// readJSON decodes the record under key into v, reporting whether there is one.
+func readJSON(tx storage.ReadTx, key string, v any) (bool, error) {
+	data, ok := tx.Get(key)
+	if !ok {
+		return false, nil
+	}
+
+	if err := json.Unmarshal(data, v); err != nil {
+		return false, fmt.Errorf("decode %s: %w", key, err)
+	}
+
+	return true, nil
 }
 
 func writeJSON(tx storage.WriteTx, key string, v any) error {
@@ -788,6 +807,18 @@ func (s *Service) GetFunction(ctx context.Context, in *api.GetFunctionRequest) (
 	}
 	if fn.PackageType == packageImage {
 		out.Code = &api.FunctionCodeLocation{RepositoryType: new("ECR"), ImageUri: new(fn.ImageURI)}
+	}
+
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		n, ok, readErr := reservedConcurrency(tx, m.Scope, fn.Name)
+		if ok {
+			out.Concurrency = &api.Concurrency{ReservedConcurrentExecutions: new(n)}
+		}
+
+		return readErr
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return out, nil
