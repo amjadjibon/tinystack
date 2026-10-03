@@ -291,6 +291,69 @@ type TestMetricFilterResponse struct {
 	Matches []MetricFilterMatchRecord `json:"matches,omitempty"`
 }
 
+type StartQueryRequest struct {
+	LogGroupName        *string  `json:"logGroupName,omitempty"`
+	LogGroupNames       []string `json:"logGroupNames,omitempty"`
+	LogGroupIdentifiers []string `json:"logGroupIdentifiers,omitempty"`
+	StartTime           *int64   `json:"startTime,omitempty"`
+	EndTime             *int64   `json:"endTime,omitempty"`
+	QueryString         *string  `json:"queryString,omitempty"`
+	Limit               *int64   `json:"limit,omitempty"`
+}
+
+type StartQueryResponse struct {
+	QueryId *string `json:"queryId,omitempty"`
+}
+
+type GetQueryResultsRequest struct {
+	QueryId *string `json:"queryId,omitempty"`
+}
+
+type ResultField struct {
+	Field *string `json:"field,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+type QueryStatistics struct {
+	RecordsMatched *float64 `json:"recordsMatched,omitempty"`
+	RecordsScanned *float64 `json:"recordsScanned,omitempty"`
+	BytesScanned   *float64 `json:"bytesScanned,omitempty"`
+}
+
+type GetQueryResultsResponse struct {
+	Results    [][]ResultField  `json:"results,omitempty"`
+	Statistics *QueryStatistics `json:"statistics,omitempty"`
+	Status     *string          `json:"status,omitempty"`
+}
+
+type StopQueryRequest struct {
+	QueryId *string `json:"queryId,omitempty"`
+}
+
+type StopQueryResponse struct {
+	Success *bool `json:"success,omitempty"`
+}
+
+type DescribeQueriesRequest struct {
+	LogGroupName *string `json:"logGroupName,omitempty"`
+	Status       *string `json:"status,omitempty"`
+	MaxResults   *int64  `json:"maxResults,omitempty"`
+	NextToken    *string `json:"nextToken,omitempty"`
+}
+
+type QueryInfo struct {
+	QueryId      *string `json:"queryId,omitempty"`
+	QueryString  *string `json:"queryString,omitempty"`
+	Status       *string `json:"status,omitempty"`
+	CreateTime   *int64  `json:"createTime,omitempty"`
+	LogGroupName *string `json:"logGroupName,omitempty"`
+}
+
+type DescribeQueriesResponse struct {
+	Queries   []QueryInfo `json:"queries,omitempty"`
+	NextToken *string     `json:"nextToken,omitempty"`
+}
+
 type API interface {
 	CreateLogGroup(context.Context, *CreateLogGroupRequest) (*CreateLogGroupOutput, error)
 	DeleteLogGroup(context.Context, *DeleteLogGroupRequest) (*DeleteLogGroupOutput, error)
@@ -313,10 +376,14 @@ type API interface {
 	DescribeMetricFilters(context.Context, *DescribeMetricFiltersRequest) (*DescribeMetricFiltersResponse, error)
 	DeleteMetricFilter(context.Context, *DeleteMetricFilterRequest) (*DeleteMetricFilterOutput, error)
 	TestMetricFilter(context.Context, *TestMetricFilterRequest) (*TestMetricFilterResponse, error)
+	StartQuery(context.Context, *StartQueryRequest) (*StartQueryResponse, error)
+	GetQueryResults(context.Context, *GetQueryResultsRequest) (*GetQueryResultsResponse, error)
+	StopQuery(context.Context, *StopQueryRequest) (*StopQueryResponse, error)
+	DescribeQueries(context.Context, *DescribeQueriesRequest) (*DescribeQueriesResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "logs", SigningName: "logs", Inventory: catalog.InventoryOf(api), TargetPrefix: "Logs_20140328", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"DataAlreadyAcceptedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSequenceTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationAbortedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnrecognizedClientException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "logs", SigningName: "logs", Inventory: catalog.InventoryOf(api), TargetPrefix: "Logs_20140328", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"DataAlreadyAcceptedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSequenceTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MalformedQueryException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationAbortedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnrecognizedClientException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateLogGroup": {Name: "CreateLogGroup", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.CreateLogGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateLogGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateLogGroup(ctx, input.(*CreateLogGroupRequest))
 		}},
@@ -379,6 +446,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"TestMetricFilter": {Name: "TestMetricFilter", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.TestMetricFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TestMetricFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.TestMetricFilter(ctx, input.(*TestMetricFilterRequest))
+		}},
+		"StartQuery": {Name: "StartQuery", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.StartQuery", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartQueryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartQuery(ctx, input.(*StartQueryRequest))
+		}},
+		"GetQueryResults": {Name: "GetQueryResults", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.GetQueryResults", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetQueryResultsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetQueryResults(ctx, input.(*GetQueryResultsRequest))
+		}},
+		"StopQuery": {Name: "StopQuery", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.StopQuery", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopQueryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StopQuery(ctx, input.(*StopQueryRequest))
+		}},
+		"DescribeQueries": {Name: "DescribeQueries", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Logs_20140328.DescribeQueries", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeQueriesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeQueries(ctx, input.(*DescribeQueriesRequest))
 		}},
 	}}
 }

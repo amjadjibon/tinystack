@@ -3101,7 +3101,11 @@
       "PutMetricFilter",
       "DescribeMetricFilters",
       "DeleteMetricFilter",
-      "TestMetricFilter"
+      "TestMetricFilter",
+      "StartQuery",
+      "GetQueryResults",
+      "StopQuery",
+      "DescribeQueries"
     ],
     "shapes": {
       "CreateLogGroupRequest": [
@@ -3324,6 +3328,58 @@
         "eventNumber",
         "eventMessage",
         "extractedValues"
+      ],
+      "StartQueryRequest": [
+        "logGroupName",
+        "logGroupNames",
+        "logGroupIdentifiers",
+        "startTime",
+        "endTime",
+        "queryString",
+        "limit"
+      ],
+      "StartQueryResponse": [
+        "queryId"
+      ],
+      "GetQueryResultsRequest": [
+        "queryId"
+      ],
+      "GetQueryResultsResponse": [
+        "results",
+        "statistics",
+        "status"
+      ],
+      "ResultField": [
+        "field",
+        "value"
+      ],
+      "QueryStatistics": [
+        "recordsMatched",
+        "recordsScanned",
+        "bytesScanned"
+      ],
+      "StopQueryRequest": [
+        "queryId"
+      ],
+      "StopQueryResponse": [
+        "success"
+      ],
+      "DescribeQueriesRequest": [
+        "logGroupName",
+        "status",
+        "maxResults",
+        "nextToken"
+      ],
+      "DescribeQueriesResponse": [
+        "queries",
+        "nextToken"
+      ],
+      "QueryInfo": [
+        "queryId",
+        "queryString",
+        "status",
+        "createTime",
+        "logGroupName"
       ]
     }
   },

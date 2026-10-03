@@ -371,7 +371,9 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `…/logs/group/<name>`, streams under `…/logs/stream/<encoded group>/<name>`, and each event under
   `…/logs/event/<encoded group>/<encoded stream>/<zero-padded timestamp><sequence>`, so a stream's events list in
   time order. A group's record holds its subscription and metric filters, and each write hands the events it appended to
-  them after it commits (`subscriptions.go` and `metrics.go`, through the `catalog.Caller`). Lambda writes every invocation's log (its own START/END/REPORT lines around the runtime's
+  them after it commits (`subscriptions.go` and `metrics.go`, through the `catalog.Caller`). Logs Insights queries
+  (`insights.go` parses and runs the query language) run to completion inside `StartQuery`, which stores the results
+  under `…/logs/query/<ID>` for `GetQueryResults` (`queries.go`). Lambda writes every invocation's log (its own START/END/REPORT lines around the runtime's
   `Result.Log`) through `logs.Service.Append`, which creates `/aws/lambda/<name>` and the stream on first use; the
   docker runtime reads the container's output with `docker logs` after each invocation.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
