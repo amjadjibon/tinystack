@@ -4525,7 +4525,9 @@
       "UntagResource",
       "GetResourcePolicy",
       "RotateSecret",
-      "CancelRotateSecret"
+      "CancelRotateSecret",
+      "GetRandomPassword",
+      "BatchGetSecretValue"
     ],
     "shapes": {
       "CreateSecretRequest": [
@@ -4719,6 +4721,44 @@
         "AutomaticallyAfterDays",
         "Duration",
         "ScheduleExpression"
+      ],
+      "GetRandomPasswordRequest": [
+        "PasswordLength",
+        "ExcludeCharacters",
+        "ExcludeNumbers",
+        "ExcludePunctuation",
+        "ExcludeUppercase",
+        "ExcludeLowercase",
+        "IncludeSpace",
+        "RequireEachIncludedType"
+      ],
+      "GetRandomPasswordResponse": [
+        "RandomPassword"
+      ],
+      "BatchGetSecretValueRequest": [
+        "SecretIdList",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "BatchGetSecretValueResponse": [
+        "SecretValues",
+        "NextToken",
+        "Errors"
+      ],
+      "SecretValueEntry": [
+        "ARN",
+        "Name",
+        "VersionId",
+        "SecretBinary",
+        "SecretString",
+        "VersionStages",
+        "CreatedDate"
+      ],
+      "APIErrorType": [
+        "SecretId",
+        "ErrorCode",
+        "Message"
       ]
     }
   },

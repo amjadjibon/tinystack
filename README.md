@@ -488,6 +488,8 @@ without the random six-character suffix.
 | UpdateSecret | Description, `KmsKeyId`, and a value as a new `AWSCURRENT` version |
 | PutSecretValue | A new version, labeled `AWSCURRENT` unless `VersionStages` says otherwise; moving `AWSCURRENT` labels the old version `AWSPREVIOUS`; a repeated `ClientRequestToken` is idempotent for the same value and fails for another |
 | GetSecretValue | The version `VersionId` and/or `VersionStage` select (`AWSCURRENT` by default) |
+| BatchGetSecretValue | The current values of up to 20 secrets named by `SecretIdList`, or of the secrets `Filters` match (as ListSecrets filters them, with `MaxResults` up to 20 and `NextToken`); a secret that cannot be read (missing, without a value, or with an unusable key) is reported in `Errors` |
+| GetRandomPassword | `PasswordLength` (1–4096, 32 by default) from lowercase, uppercase, numbers, and punctuation, less any `Exclude*` type and `ExcludeCharacters`, plus a space with `IncludeSpace`; `RequireEachIncludedType` (on by default) puts at least one character of each remaining type in |
 | ListSecretVersionIds | Labeled versions, or every version with `IncludeDeprecated`, in creation order |
 | UpdateSecretVersionStage | Moves or removes a label; a label another version has moves only when `RemoveFromVersionId` names it, and `AWSCURRENT` can only move |
 | DeleteSecret / RestoreSecret | A recovery window of 7 to 30 days (30 by default) blocks reading and changing the secret and its name until restored; `ForceDeleteWithoutRecovery` deletes at once |
@@ -1149,7 +1151,7 @@ types, shared parameters, or parameter quotas.
 KMS limits: no asymmetric keys (so no `Sign`, `Verify`, or `DeriveSharedSecret`), `ECC_SECG_P256K1` or SM2 data key
 pairs, `Recipient` attestation, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
 material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policies,
-`BatchGetSecretValue`, `GetRandomPassword`, or `SortBy`.
+or `SortBy`.
 Cognito limits: no Lambda triggers, required MFA or MFA sign-in, custom or passwordless authentication (`CUSTOM_AUTH`,
 `USER_AUTH`), hosted UI or OAuth endpoints, resource servers, threat protection, device tracking, identity
 providers, verification before attribute updates, or identity pools. ECR limits: no replication, pull-through cache, image scanning results, signing, KMS encryption, tag

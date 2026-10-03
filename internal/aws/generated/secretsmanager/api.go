@@ -235,6 +235,50 @@ type CancelRotateSecretResponse struct {
 	VersionId *string `json:"VersionId,omitempty"`
 }
 
+type GetRandomPasswordRequest struct {
+	PasswordLength          *int64  `json:"PasswordLength,omitempty"`
+	ExcludeCharacters       *string `json:"ExcludeCharacters,omitempty"`
+	ExcludeNumbers          *bool   `json:"ExcludeNumbers,omitempty"`
+	ExcludePunctuation      *bool   `json:"ExcludePunctuation,omitempty"`
+	ExcludeUppercase        *bool   `json:"ExcludeUppercase,omitempty"`
+	ExcludeLowercase        *bool   `json:"ExcludeLowercase,omitempty"`
+	IncludeSpace            *bool   `json:"IncludeSpace,omitempty"`
+	RequireEachIncludedType *bool   `json:"RequireEachIncludedType,omitempty"`
+}
+
+type GetRandomPasswordResponse struct {
+	RandomPassword *string `json:"RandomPassword,omitempty"`
+}
+
+type BatchGetSecretValueRequest struct {
+	SecretIdList []string `json:"SecretIdList,omitempty"`
+	Filters      []Filter `json:"Filters,omitempty"`
+	MaxResults   *int64   `json:"MaxResults,omitempty"`
+	NextToken    *string  `json:"NextToken,omitempty"`
+}
+
+type SecretValueEntry struct {
+	ARN           *string  `json:"ARN,omitempty"`
+	Name          *string  `json:"Name,omitempty"`
+	VersionId     *string  `json:"VersionId,omitempty"`
+	SecretBinary  []byte   `json:"SecretBinary,omitempty"`
+	SecretString  *string  `json:"SecretString,omitempty"`
+	VersionStages []string `json:"VersionStages,omitempty"`
+	CreatedDate   *float64 `json:"CreatedDate,omitempty"`
+}
+
+type APIErrorType struct {
+	SecretId  *string `json:"SecretId,omitempty"`
+	ErrorCode *string `json:"ErrorCode,omitempty"`
+	Message   *string `json:"Message,omitempty"`
+}
+
+type BatchGetSecretValueResponse struct {
+	SecretValues []SecretValueEntry `json:"SecretValues,omitempty"`
+	NextToken    *string            `json:"NextToken,omitempty"`
+	Errors       []APIErrorType     `json:"Errors,omitempty"`
+}
+
 type API interface {
 	CreateSecret(context.Context, *CreateSecretRequest) (*CreateSecretResponse, error)
 	DescribeSecret(context.Context, *DescribeSecretRequest) (*DescribeSecretResponse, error)
@@ -251,6 +295,8 @@ type API interface {
 	GetResourcePolicy(context.Context, *GetResourcePolicyRequest) (*GetResourcePolicyResponse, error)
 	RotateSecret(context.Context, *RotateSecretRequest) (*RotateSecretResponse, error)
 	CancelRotateSecret(context.Context, *CancelRotateSecretRequest) (*CancelRotateSecretResponse, error)
+	GetRandomPassword(context.Context, *GetRandomPasswordRequest) (*GetRandomPasswordResponse, error)
+	BatchGetSecretValue(context.Context, *BatchGetSecretValueRequest) (*BatchGetSecretValueResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -299,6 +345,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"CancelRotateSecret": {Name: "CancelRotateSecret", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.CancelRotateSecret", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CancelRotateSecretRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CancelRotateSecret(ctx, input.(*CancelRotateSecretRequest))
+		}},
+		"GetRandomPassword": {Name: "GetRandomPassword", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.GetRandomPassword", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetRandomPasswordRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetRandomPassword(ctx, input.(*GetRandomPasswordRequest))
+		}},
+		"BatchGetSecretValue": {Name: "BatchGetSecretValue", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.BatchGetSecretValue", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetSecretValueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchGetSecretValue(ctx, input.(*BatchGetSecretValueRequest))
 		}},
 	}}
 }
