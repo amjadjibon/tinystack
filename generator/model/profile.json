@@ -31,7 +31,9 @@
       "RestoreTableToPointInTime",
       "ExportTableToPointInTime",
       "DescribeExport",
-      "ListExports"
+      "ListExports",
+      "ExecuteStatement",
+      "BatchExecuteStatement"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -519,6 +521,39 @@
         "ExportArn",
         "ExportStatus",
         "ExportType"
+      ],
+      "ExecuteStatementInput": [
+        "Statement",
+        "Parameters",
+        "ConsistentRead",
+        "NextToken",
+        "Limit"
+      ],
+      "ExecuteStatementOutput": [
+        "Items",
+        "NextToken",
+        "LastEvaluatedKey"
+      ],
+      "BatchExecuteStatementInput": [
+        "Statements"
+      ],
+      "BatchStatementRequest": [
+        "Statement",
+        "Parameters",
+        "ConsistentRead"
+      ],
+      "BatchExecuteStatementOutput": [
+        "Responses"
+      ],
+      "BatchStatementResponse": [
+        "Error",
+        "TableName",
+        "Item"
+      ],
+      "BatchStatementError": [
+        "Code",
+        "Message",
+        "Item"
       ]
     }
   },

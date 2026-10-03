@@ -646,6 +646,46 @@ type ListExportsOutput struct {
 	NextToken       *string         `json:"NextToken,omitempty"`
 }
 
+type ExecuteStatementInput struct {
+	Statement      *string          `json:"Statement,omitempty"`
+	Parameters     []AttributeValue `json:"Parameters,omitempty"`
+	ConsistentRead *bool            `json:"ConsistentRead,omitempty"`
+	NextToken      *string          `json:"NextToken,omitempty"`
+	Limit          *int64           `json:"Limit,omitempty"`
+}
+
+type ExecuteStatementOutput struct {
+	Items            []map[string]AttributeValue `json:"Items,omitempty"`
+	NextToken        *string                     `json:"NextToken,omitempty"`
+	LastEvaluatedKey map[string]AttributeValue   `json:"LastEvaluatedKey,omitempty"`
+}
+
+type BatchStatementRequest struct {
+	Statement      *string          `json:"Statement,omitempty"`
+	Parameters     []AttributeValue `json:"Parameters,omitempty"`
+	ConsistentRead *bool            `json:"ConsistentRead,omitempty"`
+}
+
+type BatchExecuteStatementInput struct {
+	Statements []BatchStatementRequest `json:"Statements,omitempty"`
+}
+
+type BatchStatementError struct {
+	Code    *string                   `json:"Code,omitempty"`
+	Message *string                   `json:"Message,omitempty"`
+	Item    map[string]AttributeValue `json:"Item,omitempty"`
+}
+
+type BatchStatementResponse struct {
+	Error     *BatchStatementError      `json:"Error,omitempty"`
+	TableName *string                   `json:"TableName,omitempty"`
+	Item      map[string]AttributeValue `json:"Item,omitempty"`
+}
+
+type BatchExecuteStatementOutput struct {
+	Responses []BatchStatementResponse `json:"Responses,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -678,10 +718,12 @@ type API interface {
 	ExportTableToPointInTime(context.Context, *ExportTableToPointInTimeInput) (*ExportTableToPointInTimeOutput, error)
 	DescribeExport(context.Context, *DescribeExportInput) (*DescribeExportOutput, error)
 	ListExports(context.Context, *ListExportsInput) (*ListExportsOutput, error)
+	ExecuteStatement(context.Context, *ExecuteStatementInput) (*ExecuteStatementOutput, error)
+	BatchExecuteStatement(context.Context, *BatchExecuteStatementInput) (*BatchExecuteStatementOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidExportTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DuplicateItemException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidExportTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTable": {Name: "CreateTable", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.CreateTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTable(ctx, input.(*CreateTableInput))
 		}},
@@ -766,6 +808,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListExports": {Name: "ListExports", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ListExports", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListExportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListExports(ctx, input.(*ListExportsInput))
+		}},
+		"ExecuteStatement": {Name: "ExecuteStatement", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ExecuteStatement", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ExecuteStatementInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ExecuteStatement(ctx, input.(*ExecuteStatementInput))
+		}},
+		"BatchExecuteStatement": {Name: "BatchExecuteStatement", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.BatchExecuteStatement", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &BatchExecuteStatementInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchExecuteStatement(ctx, input.(*BatchExecuteStatementInput))
 		}},
 	}}
 }

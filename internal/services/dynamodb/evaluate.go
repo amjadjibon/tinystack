@@ -256,9 +256,9 @@ func (c *condition) match(it item) bool {
 func (c *condition) function(it item) bool {
 	v := get(it, c.args[0].path)
 	switch c.fn {
-	case "attribute_exists":
+	case fnAttributeExists:
 		return v != nil
-	case "attribute_not_exists":
+	case fnAttributeNotExists:
 		return v == nil
 	case fnAttributeType:
 		return attributeType(v) == *c.args[1].resolve(it).S

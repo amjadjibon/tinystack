@@ -193,7 +193,12 @@ type assignment struct {
 	path  path
 }
 
-const sectionAdd = "ADD"
+// Update expression sections.
+const (
+	sectionAdd    = "ADD"
+	sectionSet    = "SET"
+	sectionRemove = "REMOVE"
+)
 
 type update struct {
 	set    []assignment
@@ -224,15 +229,18 @@ const (
 	fnBeginsWith    = "begins_with"
 	fnIfNotExists   = "if_not_exists"
 	fnListAppend    = "list_append"
+	// fnAttributeExists and fnAttributeNotExists are condition functions.
+	fnAttributeExists    = "attribute_exists"
+	fnAttributeNotExists = "attribute_not_exists"
 )
 
 // conditionFuncs maps each condition function to its argument count.
 var conditionFuncs = map[string]int{
-	"attribute_exists":     1,
-	"attribute_not_exists": 1,
-	fnAttributeType:        2,
-	fnBeginsWith:           2,
-	"contains":             2,
+	fnAttributeExists:    1,
+	fnAttributeNotExists: 1,
+	fnAttributeType:      2,
+	fnBeginsWith:         2,
+	"contains":           2,
 }
 
 var comparators = map[string]bool{"=": true, "<>": true, "<": true, "<=": true, ">": true, ">=": true}
@@ -420,7 +428,7 @@ func (e *expressions) update(text *string) (*update, error) {
 		t := p.peek()
 		section := strings.ToUpper(t.text)
 		if t.kind != tokName ||
-			(section != "SET" && section != "REMOVE" && section != sectionAdd && section != "DELETE") {
+			(section != sectionSet && section != sectionRemove && section != sectionAdd && section != stmtDelete) {
 			return nil, p.unexpected()
 		}
 
@@ -776,7 +784,7 @@ func (p *parser) action(section string, u *update) error {
 	}
 
 	switch section {
-	case "SET":
+	case sectionSet:
 		if expectErr := p.expect("="); expectErr != nil {
 			return expectErr
 		}
@@ -787,7 +795,7 @@ func (p *parser) action(section string, u *update) error {
 		}
 
 		u.set = append(u.set, assignment{path: doc, value: v})
-	case "REMOVE":
+	case sectionRemove:
 		u.remove = append(u.remove, doc)
 	default:
 		v, valueErr := p.value()
