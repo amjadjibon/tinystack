@@ -135,7 +135,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   count and size current; `expression.go` lexes and parses condition, key, filter, projection, and update expressions
   and `evaluate.go` runs them, all inside the operation's transaction; secondary indexes have no records of their own,
   since `indexes.go` derives them from the items at read time, and `TransactWriteItems` tokens live under
-  `…/dynamodb-token/`). Each write that changes an item appends a stream record, in the same transaction, when the
+  `…/dynamodb-token/`). On-demand backups (`backups.go`) copy the table record to `…/dynamodb-backup/<table>/<ID>` and
+  its items to `…/dynamodb-backup-item/<table>/<ID>/`, and restores copy them back into a new table. Each write that changes an item appends a stream record, in the same transaction, when the
   table has a stream (`stream.go`): streams are `…/dynamodb-stream/<table>/<label>` and records
   `…/dynamodb-record/<table>/<label>/<zero-padded sequence>`, numbered from the table record's counter.
   `dynamodb.Service.Streams()` serves the DynamoDB Streams API from the same store. TTL-enabled tables are indexed

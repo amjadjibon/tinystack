@@ -60,6 +60,10 @@ type table struct {
 	TTL string `json:",omitempty"`
 	// Sequence is the sequence number of the table's last stream record.
 	Sequence int64 `json:",omitempty"`
+	// PITR is when point-in-time recovery was enabled, in Unix seconds, or
+	// zero while it is off; PITRDays is its recovery period.
+	PITR     float64 `json:",omitempty"`
+	PITRDays int64   `json:",omitempty"`
 }
 
 func value[T any](p *T) (v T) {

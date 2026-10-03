@@ -21,7 +21,14 @@
       "TransactGetItems",
       "TransactWriteItems",
       "UpdateTable",
-      "UpdateTimeToLive"
+      "UpdateTimeToLive",
+      "CreateBackup",
+      "DescribeBackup",
+      "ListBackups",
+      "DeleteBackup",
+      "RestoreTableFromBackup",
+      "UpdateContinuousBackups",
+      "RestoreTableToPointInTime"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -143,7 +150,8 @@
         "LocalSecondaryIndexes",
         "StreamSpecification",
         "LatestStreamLabel",
-        "LatestStreamArn"
+        "LatestStreamArn",
+        "RestoreSummary"
       ],
       "Tag": [
         "Key",
@@ -160,7 +168,10 @@
         "PointInTimeRecoveryDescription"
       ],
       "PointInTimeRecoveryDescription": [
-        "PointInTimeRecoveryStatus"
+        "PointInTimeRecoveryStatus",
+        "RecoveryPeriodInDays",
+        "EarliestRestorableDateTime",
+        "LatestRestorableDateTime"
       ],
       "DescribeTimeToLiveInput": [
         "TableName"
@@ -333,6 +344,127 @@
       "TimeToLiveSpecification": [
         "Enabled",
         "AttributeName"
+      ],
+      "CreateBackupInput": [
+        "TableName",
+        "BackupName"
+      ],
+      "CreateBackupOutput": [
+        "BackupDetails"
+      ],
+      "BackupDetails": [
+        "BackupArn",
+        "BackupName",
+        "BackupSizeBytes",
+        "BackupStatus",
+        "BackupType",
+        "BackupCreationDateTime"
+      ],
+      "DescribeBackupInput": [
+        "BackupArn"
+      ],
+      "DescribeBackupOutput": [
+        "BackupDescription"
+      ],
+      "BackupDescription": [
+        "BackupDetails",
+        "SourceTableDetails",
+        "SourceTableFeatureDetails"
+      ],
+      "SourceTableDetails": [
+        "TableName",
+        "TableId",
+        "TableArn",
+        "TableSizeBytes",
+        "KeySchema",
+        "TableCreationDateTime",
+        "ProvisionedThroughput",
+        "ItemCount",
+        "BillingMode"
+      ],
+      "SourceTableFeatureDetails": [
+        "LocalSecondaryIndexes",
+        "GlobalSecondaryIndexes",
+        "StreamDescription",
+        "TimeToLiveDescription"
+      ],
+      "LocalSecondaryIndexInfo": [
+        "IndexName",
+        "KeySchema",
+        "Projection"
+      ],
+      "GlobalSecondaryIndexInfo": [
+        "IndexName",
+        "KeySchema",
+        "Projection",
+        "ProvisionedThroughput"
+      ],
+      "ListBackupsInput": [
+        "TableName",
+        "Limit",
+        "TimeRangeLowerBound",
+        "TimeRangeUpperBound",
+        "ExclusiveStartBackupArn",
+        "BackupType"
+      ],
+      "ListBackupsOutput": [
+        "BackupSummaries",
+        "LastEvaluatedBackupArn"
+      ],
+      "BackupSummary": [
+        "TableName",
+        "TableId",
+        "TableArn",
+        "BackupArn",
+        "BackupName",
+        "BackupCreationDateTime",
+        "BackupStatus",
+        "BackupType",
+        "BackupSizeBytes"
+      ],
+      "DeleteBackupInput": [
+        "BackupArn"
+      ],
+      "DeleteBackupOutput": [
+        "BackupDescription"
+      ],
+      "RestoreTableFromBackupInput": [
+        "TargetTableName",
+        "BackupArn",
+        "BillingModeOverride",
+        "ProvisionedThroughputOverride"
+      ],
+      "RestoreTableFromBackupOutput": [
+        "TableDescription"
+      ],
+      "RestoreTableToPointInTimeInput": [
+        "SourceTableArn",
+        "SourceTableName",
+        "TargetTableName",
+        "UseLatestRestorableTime",
+        "RestoreDateTime",
+        "BillingModeOverride",
+        "ProvisionedThroughputOverride"
+      ],
+      "RestoreTableToPointInTimeOutput": [
+        "TableDescription"
+      ],
+      "RestoreSummary": [
+        "SourceBackupArn",
+        "SourceTableArn",
+        "RestoreDateTime",
+        "RestoreInProgress"
+      ],
+      "UpdateContinuousBackupsInput": [
+        "TableName",
+        "PointInTimeRecoverySpecification"
+      ],
+      "PointInTimeRecoverySpecification": [
+        "PointInTimeRecoveryEnabled",
+        "RecoveryPeriodInDays"
+      ],
+      "UpdateContinuousBackupsOutput": [
+        "ContinuousBackupsDescription"
       ]
     }
   },

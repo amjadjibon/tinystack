@@ -31,21 +31,19 @@ func (s *Service) view(ctx context.Context, name *string, fn func(*table)) error
 	})
 }
 
-// DescribeContinuousBackups reports the settings of a new table: continuous
-// backups on and point-in-time recovery off. TinyStack has no backups.
+// DescribeContinuousBackups reports a table's continuous backups, which are
+// always on, and its point-in-time recovery.
 func (s *Service) DescribeContinuousBackups(
 	ctx context.Context,
 	in *api.DescribeContinuousBackupsInput,
 ) (*api.DescribeContinuousBackupsOutput, error) {
-	err := s.view(ctx, in.TableName, func(*table) {})
+	out := &api.DescribeContinuousBackupsOutput{}
+	err := s.view(ctx, in.TableName, func(t *table) { out.ContinuousBackupsDescription = continuousBackups(t) })
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.DescribeContinuousBackupsOutput{ContinuousBackupsDescription: &api.ContinuousBackupsDescription{
-		ContinuousBackupsStatus:        new("ENABLED"),
-		PointInTimeRecoveryDescription: &api.PointInTimeRecoveryDescription{PointInTimeRecoveryStatus: new("DISABLED")},
-	}}, nil
+	return out, nil
 }
 
 // UpdateTable enables or disables the table's stream; it changes nothing else.

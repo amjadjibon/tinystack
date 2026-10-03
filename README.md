@@ -193,7 +193,9 @@ nowhere shows up. `DELETE` clears the list.
 | BatchGetItem / BatchWriteItem | Up to 100 keys or 25 puts and deletes across tables, applied in one transaction; duplicate keys rejected; `UnprocessedKeys` only past the 16 MB response limit, `UnprocessedItems` always empty |
 | TransactGetItems / TransactWriteItems | Up to 100 items from one snapshot; `ConditionCheck`, `Put`, `Delete`, and `Update` all apply or none do, with `CancellationReasons` (and `ALL_OLD` items) on failure; `ClientRequestToken` idempotency for ten minutes |
 | UpdateTable | Enables or disables the stream (`StreamSpecification`); other changes are not supported |
-| DescribeContinuousBackups | Continuous backups on, point-in-time recovery off |
+| DescribeContinuousBackups / UpdateContinuousBackups | Continuous backups always on; point-in-time recovery off until enabled, with `RecoveryPeriodInDays` (1 to 35, default 35) and earliest and latest restorable times |
+| CreateBackup / DescribeBackup / ListBackups / DeleteBackup | On-demand (`USER`) backups that copy the table's items at once and outlive the table; tables by name or ARN; ListBackups filters by table, creation time, and `BackupType`, with `Limit` and `ExclusiveStartBackupArn` |
+| RestoreTableFromBackup / RestoreTableToPointInTime | A new table with the source's key schema, indexes, and items (no stream, TTL, tags, or point-in-time recovery, as in DynamoDB), a `RestoreSummary`, and `BillingModeOverride` and `ProvisionedThroughputOverride`; point-in-time restores need recovery enabled and restore only the latest restorable time (`UseLatestRestorableTime`), since no history is kept |
 | DescribeTimeToLive / UpdateTimeToLive | TTL on one attribute, enabled or disabled at once (no `ENABLING` or `DISABLING`); enabling or disabling twice fails |
 | TagResource / UntagResource / ListTagsOfResource | Table ARNs; also `Tags` on CreateTable |
 
@@ -1119,7 +1121,7 @@ policies are stored but not evaluated: any configured key, IAM access key, or ro
 session may call any operation in its account.
 
 DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...),
-parallel scans, PartiQL, Kinesis streaming, stream shard splits, backups, or capacity accounting/throttling (batch writes never return
+parallel scans, PartiQL, Kinesis streaming, stream shard splits, restores to an earlier time, or capacity accounting/throttling (batch writes never return
 `UnprocessedItems`), and index queries scan the whole table. Expressions
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),

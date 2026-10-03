@@ -94,6 +94,13 @@ type LocalSecondaryIndexDescription struct {
 	IndexArn       *string            `json:"IndexArn,omitempty"`
 }
 
+type RestoreSummary struct {
+	SourceBackupArn   *string  `json:"SourceBackupArn,omitempty"`
+	SourceTableArn    *string  `json:"SourceTableArn,omitempty"`
+	RestoreDateTime   *float64 `json:"RestoreDateTime,omitempty"`
+	RestoreInProgress *bool    `json:"RestoreInProgress,omitempty"`
+}
+
 type TableDescription struct {
 	TableName              *string                           `json:"TableName,omitempty"`
 	TableStatus            *string                           `json:"TableStatus,omitempty"`
@@ -111,6 +118,7 @@ type TableDescription struct {
 	StreamSpecification    *StreamSpecification              `json:"StreamSpecification,omitempty"`
 	LatestStreamLabel      *string                           `json:"LatestStreamLabel,omitempty"`
 	LatestStreamArn        *string                           `json:"LatestStreamArn,omitempty"`
+	RestoreSummary         *RestoreSummary                   `json:"RestoreSummary,omitempty"`
 }
 
 type CreateTableOutput struct {
@@ -255,7 +263,10 @@ type DescribeContinuousBackupsInput struct {
 }
 
 type PointInTimeRecoveryDescription struct {
-	PointInTimeRecoveryStatus *string `json:"PointInTimeRecoveryStatus,omitempty"`
+	PointInTimeRecoveryStatus  *string  `json:"PointInTimeRecoveryStatus,omitempty"`
+	RecoveryPeriodInDays       *int64   `json:"RecoveryPeriodInDays,omitempty"`
+	EarliestRestorableDateTime *float64 `json:"EarliestRestorableDateTime,omitempty"`
+	LatestRestorableDateTime   *float64 `json:"LatestRestorableDateTime,omitempty"`
 }
 
 type ContinuousBackupsDescription struct {
@@ -439,6 +450,143 @@ type UpdateTimeToLiveOutput struct {
 	TimeToLiveSpecification *TimeToLiveSpecification `json:"TimeToLiveSpecification,omitempty"`
 }
 
+type CreateBackupInput struct {
+	TableName  *string `json:"TableName,omitempty"`
+	BackupName *string `json:"BackupName,omitempty"`
+}
+
+type BackupDetails struct {
+	BackupArn              *string  `json:"BackupArn,omitempty"`
+	BackupName             *string  `json:"BackupName,omitempty"`
+	BackupSizeBytes        *int64   `json:"BackupSizeBytes,omitempty"`
+	BackupStatus           *string  `json:"BackupStatus,omitempty"`
+	BackupType             *string  `json:"BackupType,omitempty"`
+	BackupCreationDateTime *float64 `json:"BackupCreationDateTime,omitempty"`
+}
+
+type CreateBackupOutput struct {
+	BackupDetails *BackupDetails `json:"BackupDetails,omitempty"`
+}
+
+type DescribeBackupInput struct {
+	BackupArn *string `json:"BackupArn,omitempty"`
+}
+
+type SourceTableDetails struct {
+	TableName             *string                `json:"TableName,omitempty"`
+	TableId               *string                `json:"TableId,omitempty"`
+	TableArn              *string                `json:"TableArn,omitempty"`
+	TableSizeBytes        *int64                 `json:"TableSizeBytes,omitempty"`
+	KeySchema             []KeySchemaElement     `json:"KeySchema,omitempty"`
+	TableCreationDateTime *float64               `json:"TableCreationDateTime,omitempty"`
+	ProvisionedThroughput *ProvisionedThroughput `json:"ProvisionedThroughput,omitempty"`
+	ItemCount             *int64                 `json:"ItemCount,omitempty"`
+	BillingMode           *string                `json:"BillingMode,omitempty"`
+}
+
+type LocalSecondaryIndexInfo struct {
+	IndexName  *string            `json:"IndexName,omitempty"`
+	KeySchema  []KeySchemaElement `json:"KeySchema,omitempty"`
+	Projection *Projection        `json:"Projection,omitempty"`
+}
+
+type GlobalSecondaryIndexInfo struct {
+	IndexName             *string                `json:"IndexName,omitempty"`
+	KeySchema             []KeySchemaElement     `json:"KeySchema,omitempty"`
+	Projection            *Projection            `json:"Projection,omitempty"`
+	ProvisionedThroughput *ProvisionedThroughput `json:"ProvisionedThroughput,omitempty"`
+}
+
+type SourceTableFeatureDetails struct {
+	LocalSecondaryIndexes  []LocalSecondaryIndexInfo  `json:"LocalSecondaryIndexes,omitempty"`
+	GlobalSecondaryIndexes []GlobalSecondaryIndexInfo `json:"GlobalSecondaryIndexes,omitempty"`
+	StreamDescription      *StreamSpecification       `json:"StreamDescription,omitempty"`
+	TimeToLiveDescription  *TimeToLiveDescription     `json:"TimeToLiveDescription,omitempty"`
+}
+
+type BackupDescription struct {
+	BackupDetails             *BackupDetails             `json:"BackupDetails,omitempty"`
+	SourceTableDetails        *SourceTableDetails        `json:"SourceTableDetails,omitempty"`
+	SourceTableFeatureDetails *SourceTableFeatureDetails `json:"SourceTableFeatureDetails,omitempty"`
+}
+
+type DescribeBackupOutput struct {
+	BackupDescription *BackupDescription `json:"BackupDescription,omitempty"`
+}
+
+type ListBackupsInput struct {
+	TableName               *string  `json:"TableName,omitempty"`
+	Limit                   *int64   `json:"Limit,omitempty"`
+	TimeRangeLowerBound     *float64 `json:"TimeRangeLowerBound,omitempty"`
+	TimeRangeUpperBound     *float64 `json:"TimeRangeUpperBound,omitempty"`
+	ExclusiveStartBackupArn *string  `json:"ExclusiveStartBackupArn,omitempty"`
+	BackupType              *string  `json:"BackupType,omitempty"`
+}
+
+type BackupSummary struct {
+	TableName              *string  `json:"TableName,omitempty"`
+	TableId                *string  `json:"TableId,omitempty"`
+	TableArn               *string  `json:"TableArn,omitempty"`
+	BackupArn              *string  `json:"BackupArn,omitempty"`
+	BackupName             *string  `json:"BackupName,omitempty"`
+	BackupCreationDateTime *float64 `json:"BackupCreationDateTime,omitempty"`
+	BackupStatus           *string  `json:"BackupStatus,omitempty"`
+	BackupType             *string  `json:"BackupType,omitempty"`
+	BackupSizeBytes        *int64   `json:"BackupSizeBytes,omitempty"`
+}
+
+type ListBackupsOutput struct {
+	BackupSummaries        []BackupSummary `json:"BackupSummaries,omitempty"`
+	LastEvaluatedBackupArn *string         `json:"LastEvaluatedBackupArn,omitempty"`
+}
+
+type DeleteBackupInput struct {
+	BackupArn *string `json:"BackupArn,omitempty"`
+}
+
+type DeleteBackupOutput struct {
+	BackupDescription *BackupDescription `json:"BackupDescription,omitempty"`
+}
+
+type RestoreTableFromBackupInput struct {
+	TargetTableName               *string                `json:"TargetTableName,omitempty"`
+	BackupArn                     *string                `json:"BackupArn,omitempty"`
+	BillingModeOverride           *string                `json:"BillingModeOverride,omitempty"`
+	ProvisionedThroughputOverride *ProvisionedThroughput `json:"ProvisionedThroughputOverride,omitempty"`
+}
+
+type RestoreTableFromBackupOutput struct {
+	TableDescription *TableDescription `json:"TableDescription,omitempty"`
+}
+
+type PointInTimeRecoverySpecification struct {
+	PointInTimeRecoveryEnabled *bool  `json:"PointInTimeRecoveryEnabled,omitempty"`
+	RecoveryPeriodInDays       *int64 `json:"RecoveryPeriodInDays,omitempty"`
+}
+
+type UpdateContinuousBackupsInput struct {
+	TableName                        *string                           `json:"TableName,omitempty"`
+	PointInTimeRecoverySpecification *PointInTimeRecoverySpecification `json:"PointInTimeRecoverySpecification,omitempty"`
+}
+
+type UpdateContinuousBackupsOutput struct {
+	ContinuousBackupsDescription *ContinuousBackupsDescription `json:"ContinuousBackupsDescription,omitempty"`
+}
+
+type RestoreTableToPointInTimeInput struct {
+	SourceTableArn                *string                `json:"SourceTableArn,omitempty"`
+	SourceTableName               *string                `json:"SourceTableName,omitempty"`
+	TargetTableName               *string                `json:"TargetTableName,omitempty"`
+	UseLatestRestorableTime       *bool                  `json:"UseLatestRestorableTime,omitempty"`
+	RestoreDateTime               *float64               `json:"RestoreDateTime,omitempty"`
+	BillingModeOverride           *string                `json:"BillingModeOverride,omitempty"`
+	ProvisionedThroughputOverride *ProvisionedThroughput `json:"ProvisionedThroughputOverride,omitempty"`
+}
+
+type RestoreTableToPointInTimeOutput struct {
+	TableDescription *TableDescription `json:"TableDescription,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -461,10 +609,17 @@ type API interface {
 	TransactWriteItems(context.Context, *TransactWriteItemsInput) (*TransactWriteItemsOutput, error)
 	UpdateTable(context.Context, *UpdateTableInput) (*UpdateTableOutput, error)
 	UpdateTimeToLive(context.Context, *UpdateTimeToLiveInput) (*UpdateTimeToLiveOutput, error)
+	CreateBackup(context.Context, *CreateBackupInput) (*CreateBackupOutput, error)
+	DescribeBackup(context.Context, *DescribeBackupInput) (*DescribeBackupOutput, error)
+	ListBackups(context.Context, *ListBackupsInput) (*ListBackupsOutput, error)
+	DeleteBackup(context.Context, *DeleteBackupInput) (*DeleteBackupOutput, error)
+	RestoreTableFromBackup(context.Context, *RestoreTableFromBackupInput) (*RestoreTableFromBackupOutput, error)
+	UpdateContinuousBackups(context.Context, *UpdateContinuousBackupsInput) (*UpdateContinuousBackupsOutput, error)
+	RestoreTableToPointInTime(context.Context, *RestoreTableToPointInTimeInput) (*RestoreTableToPointInTimeOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTable": {Name: "CreateTable", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.CreateTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTable(ctx, input.(*CreateTableInput))
 		}},
@@ -519,6 +674,27 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"UpdateTimeToLive": {Name: "UpdateTimeToLive", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UpdateTimeToLive", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateTimeToLiveInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateTimeToLive(ctx, input.(*UpdateTimeToLiveInput))
+		}},
+		"CreateBackup": {Name: "CreateBackup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.CreateBackup", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateBackupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateBackup(ctx, input.(*CreateBackupInput))
+		}},
+		"DescribeBackup": {Name: "DescribeBackup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeBackup", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeBackupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeBackup(ctx, input.(*DescribeBackupInput))
+		}},
+		"ListBackups": {Name: "ListBackups", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ListBackups", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListBackupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListBackups(ctx, input.(*ListBackupsInput))
+		}},
+		"DeleteBackup": {Name: "DeleteBackup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DeleteBackup", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteBackupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBackup(ctx, input.(*DeleteBackupInput))
+		}},
+		"RestoreTableFromBackup": {Name: "RestoreTableFromBackup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.RestoreTableFromBackup", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &RestoreTableFromBackupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RestoreTableFromBackup(ctx, input.(*RestoreTableFromBackupInput))
+		}},
+		"UpdateContinuousBackups": {Name: "UpdateContinuousBackups", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UpdateContinuousBackups", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateContinuousBackupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateContinuousBackups(ctx, input.(*UpdateContinuousBackupsInput))
+		}},
+		"RestoreTableToPointInTime": {Name: "RestoreTableToPointInTime", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.RestoreTableToPointInTime", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &RestoreTableToPointInTimeInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RestoreTableToPointInTime(ctx, input.(*RestoreTableToPointInTimeInput))
 		}},
 	}}
 }
