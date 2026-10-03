@@ -21,6 +21,7 @@ const (
 var optionalAttributes = map[string]bool{
 	attrRedrivePolicy:             true,
 	attrRedriveAllowPolicy:        true,
+	attrPolicy:                    true,
 	attrFifoQueue:                 true,
 	attrContentBasedDeduplication: true,
 	attrDeduplicationScope:        true,

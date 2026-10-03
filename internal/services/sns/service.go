@@ -36,6 +36,9 @@ const (
 	attrDisplayName = "DisplayName"
 	attrRaw         = "RawMessageDelivery"
 	attrTopicArn    = "TopicArn"
+	attrPolicy      = "Policy"
+	// maxPolicy is the largest topic access policy SNS accepts.
+	maxPolicy = 30 * 1024
 )
 
 var _ api.API = (*Service)(nil)

@@ -106,6 +106,8 @@ type settings struct {
 	DeadLetterTargetArn string `json:",omitempty"`
 	// RedriveAllowPolicy is the canonical JSON policy; empty allows all sources.
 	RedriveAllowPolicy string `json:",omitempty"`
+	// Policy is the queue's access policy, stored only.
+	Policy string `json:",omitempty"`
 	// KmsMasterKeyID turns on SSE-KMS; KmsDataKeyReusePeriodSeconds applies
 	// only then, and zero means the default. Without a KMS key, the queue uses
 	// SSE-SQS unless SqsManagedSseDisabled.
@@ -340,6 +342,12 @@ func (st *settings) apply(attributes map[string]string) error {
 			continue
 		case attrRedriveAllowPolicy:
 			if guardErr := st.allowRedrive(attributes[name]); guardErr != nil {
+				return guardErr
+			}
+
+			continue
+		case attrPolicy:
+			if guardErr := st.policy(attributes[name]); guardErr != nil {
 				return guardErr
 			}
 

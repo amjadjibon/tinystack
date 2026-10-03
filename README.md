@@ -235,7 +235,7 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy`, `RedriveAllowPolicy` (`allowAll`, `denyAll`, or `byQueue` with up to 10 source queue ARNs, checked when a queue names its dead-letter queue), `FifoQueue` (`.fifo` names), `ContentBasedDeduplication`, `DeduplicationScope` (`queue` or `messageGroup`) and `FifoThroughputLimit` (`perQueue`, or `perMessageGroupId` with the `messageGroup` scope) for FIFO queues, and encryption: `SqsManagedSseEnabled` (on by default) or `KmsMasterKeyId` with `KmsDataKeyReusePeriodSeconds` (60 to 86,400, 300 by default) |
+| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy`, `Policy` (a JSON object with a `Statement`, up to 20 KiB, stored as sent and never evaluated; an empty value removes it), `RedriveAllowPolicy` (`allowAll`, `denyAll`, or `byQueue` with up to 10 source queue ARNs, checked when a queue names its dead-letter queue), `FifoQueue` (`.fifo` names), `ContentBasedDeduplication`, `DeduplicationScope` (`queue` or `messageGroup`) and `FifoThroughputLimit` (`perQueue`, or `perMessageGroupId` with the `messageGroup` scope) for FIFO queues, and encryption: `SqsManagedSseEnabled` (on by default) or `KmsMasterKeyId` with `KmsDataKeyReusePeriodSeconds` (60 to 86,400, 300 by default) |
 | GetQueueAttributes / SetQueueAttributes | The writable attributes above plus `QueueArn`, message counts, and created/modified timestamps; unsupported names fail |
 | GetQueueUrl / DeleteQueue | Queue URLs are `<endpoint>/<account>/<name>`; the host part is ignored on input |
 | ListQueues | Name prefix, `MaxResults`, and `NextToken` |
@@ -254,8 +254,8 @@ record email and SMS in `/_tinystack/deliveries` (no mail or text message is sen
 
 | Operation | Behavior |
 | --- | --- |
-| CreateTopic | Idempotent for identical attributes; `DisplayName`, the `*FeedbackSampleRate` attributes, and `Tags`; FIFO topics (a `.fifo` name and `FifoTopic`) with `ContentBasedDeduplication` |
-| GetTopicAttributes / SetTopicAttributes | The writable attributes above plus `TopicArn`, `Owner`, subscription counts, and the default owner-only `Policy`; delivery status sample rates are stored, but nothing is logged |
+| CreateTopic | Idempotent for identical attributes; `DisplayName`, `Policy` (a JSON object with a `Statement`, up to 30 KiB, stored as sent and never evaluated), the `*FeedbackSampleRate` attributes, and `Tags`; FIFO topics (a `.fifo` name and `FifoTopic`) with `ContentBasedDeduplication` |
+| GetTopicAttributes / SetTopicAttributes | The writable attributes above plus `TopicArn`, `Owner`, subscription counts, and the topic's `Policy` (by default, owner-only); delivery status sample rates are stored, but nothing is logged |
 | GetSubscriptionAttributes / SetSubscriptionAttributes | Endpoint, protocol, owner, `PendingConfirmation`, `RawMessageDelivery`, `FilterPolicy`, and `FilterPolicyScope` |
 | TagResource / UntagResource / ListTagsForResource | Topic ARNs |
 | DeleteTopic | Removes the topic and its subscriptions; deleting a missing topic succeeds |
@@ -1131,7 +1131,7 @@ parallel scans, PartiQL transactions (`ExecuteTransaction`), Kinesis streaming, 
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),
 message groups on standard queues, message move tasks for FIFO queues,
-or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `application` or `firehose` subscriptions, SMS sandbox, opt-outs, or spending limits, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
+policy evaluation (a `Policy` is stored only), or `AddPermission`/`RemovePermission`; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `application` or `firehose` subscriptions, SMS sandbox, opt-outs, or spending limits, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no message signatures (the envelope omits the `Signature` fields), topic policy evaluation, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than the owner's full control,
 policy evaluation, object encryption (bucket encryption settings are stored; every object reports `AES256`), POST uploads,

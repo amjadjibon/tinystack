@@ -15,9 +15,10 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// checkTopicAttribute validates a writable topic attribute. Delivery status
-// sample rates are stored; like SNS without a feedback role, TinyStack logs
-// nothing for them. Attributes that would change delivery fail.
+// checkTopicAttribute validates a writable topic attribute. A Policy is stored
+// and never evaluated, and delivery status sample rates are stored too; like
+// SNS without a feedback role, TinyStack logs nothing for them. Attributes
+// that would change delivery fail.
 func checkTopicAttribute(name, v string) error {
 	switch {
 	case name == attrDisplayName:
@@ -27,6 +28,11 @@ func checkTopicAttribute(name, v string) error {
 	case name == attrFifo || name == attrContentDedup:
 		if v != valueTrue && v != valueFalse {
 			return invalid("%s must be true or false", name)
+		}
+	case name == attrPolicy:
+		var parsed map[string]json.RawMessage
+		if len(v) > maxPolicy || json.Unmarshal([]byte(v), &parsed) != nil || parsed["Statement"] == nil {
+			return invalid("Policy Error: the policy must be a JSON object with a Statement")
 		}
 	case strings.HasSuffix(name, "FeedbackSampleRate"):
 		n, err := strconv.Atoi(v)
@@ -88,7 +94,7 @@ func (s *Service) GetTopicAttributes(
 	attributes := map[string]string{
 		attrTopicArn:             arn,
 		"Owner":                  owner,
-		"Policy":                 defaultPolicy(arn, owner),
+		attrPolicy:               defaultPolicy(arn, owner),
 		attrDisplayName:          "",
 		"SubscriptionsConfirmed": strconv.Itoa(len(t.Subscriptions)),
 		"SubscriptionsPending":   "0",

@@ -137,6 +137,10 @@ func (q *queue) attributes(key string, now int64) map[string]string {
 		out[attrRedriveAllowPolicy] = st.RedriveAllowPolicy
 	}
 
+	if st.Policy != "" {
+		out[attrPolicy] = st.Policy
+	}
+
 	if st.DeadLetterTargetArn != "" {
 		policy, _ := json.Marshal(map[string]any{
 			"deadLetterTargetArn": st.DeadLetterTargetArn,

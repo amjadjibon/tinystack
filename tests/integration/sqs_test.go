@@ -541,7 +541,7 @@ func TestSQSDeadLetterQueue(t *testing.T) {
 	}
 
 	_, err = c.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
-		QueueUrl: &queueURL, AttributeNames: []types.QueueAttributeName{types.QueueAttributeNamePolicy},
+		QueueUrl: &queueURL, AttributeNames: []types.QueueAttributeName{"Unknown"},
 	})
 	var badName *types.InvalidAttributeName
 	if !errors.As(err, &badName) {
