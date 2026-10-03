@@ -168,6 +168,36 @@ type ListTagsForResourceResponse struct {
 	Tags []Tag `json:"Tags,omitempty" query:"Tags"`
 }
 
+type PublishBatchRequestEntry struct {
+	Id                *string                          `json:"Id,omitempty" query:"Id"`
+	Message           *string                          `json:"Message,omitempty" query:"Message"`
+	Subject           *string                          `json:"Subject,omitempty" query:"Subject"`
+	MessageStructure  *string                          `json:"MessageStructure,omitempty" query:"MessageStructure"`
+	MessageAttributes map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttributes,key=Name,value=Value"`
+}
+
+type PublishBatchInput struct {
+	TopicArn                   *string                    `json:"TopicArn,omitempty" query:"TopicArn"`
+	PublishBatchRequestEntries []PublishBatchRequestEntry `json:"PublishBatchRequestEntries,omitempty" query:"PublishBatchRequestEntries"`
+}
+
+type PublishBatchResultEntry struct {
+	Id        *string `json:"Id,omitempty" query:"Id"`
+	MessageId *string `json:"MessageId,omitempty" query:"MessageId"`
+}
+
+type BatchResultErrorEntry struct {
+	Id          *string `json:"Id,omitempty" query:"Id"`
+	Code        *string `json:"Code,omitempty" query:"Code"`
+	Message     *string `json:"Message,omitempty" query:"Message"`
+	SenderFault *bool   `json:"SenderFault,omitempty" query:"SenderFault"`
+}
+
+type PublishBatchResponse struct {
+	Successful []PublishBatchResultEntry `json:"Successful,omitempty" query:"Successful"`
+	Failed     []BatchResultErrorEntry   `json:"Failed,omitempty" query:"Failed"`
+}
+
 type API interface {
 	CreateTopic(context.Context, *CreateTopicInput) (*CreateTopicResponse, error)
 	DeleteTopic(context.Context, *DeleteTopicInput) (*DeleteTopicOutput, error)
@@ -185,10 +215,11 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	PublishBatch(context.Context, *PublishBatchInput) (*PublishBatchResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "sns", SigningName: "sns", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://sns.amazonaws.com/doc/2010-03-31/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"AuthorizationErrorException": catalog.ErrorBinding{QueryCode: "AuthorizationError", MessageMember: "", StatusCode: 403}, "ConcurrentAccessException": catalog.ErrorBinding{QueryCode: "ConcurrentAccess", MessageMember: "", StatusCode: 400}, "EndpointDisabledException": catalog.ErrorBinding{QueryCode: "EndpointDisabled", MessageMember: "", StatusCode: 400}, "FilterPolicyLimitExceededException": catalog.ErrorBinding{QueryCode: "FilterPolicyLimitExceeded", MessageMember: "", StatusCode: 403}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "InternalError", MessageMember: "", StatusCode: 500}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "InvalidParameter", MessageMember: "", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "ParameterValueInvalid", MessageMember: "", StatusCode: 400}, "InvalidSecurityException": catalog.ErrorBinding{QueryCode: "InvalidSecurity", MessageMember: "", StatusCode: 403}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "InvalidState", MessageMember: "", StatusCode: 400}, "KMSAccessDeniedException": catalog.ErrorBinding{QueryCode: "KMSAccessDenied", MessageMember: "", StatusCode: 400}, "KMSDisabledException": catalog.ErrorBinding{QueryCode: "KMSDisabled", MessageMember: "", StatusCode: 400}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "KMSInvalidState", MessageMember: "", StatusCode: 400}, "KMSNotFoundException": catalog.ErrorBinding{QueryCode: "KMSNotFound", MessageMember: "", StatusCode: 400}, "KMSOptInRequired": catalog.ErrorBinding{QueryCode: "KMSOptInRequired", MessageMember: "", StatusCode: 403}, "KMSThrottlingException": catalog.ErrorBinding{QueryCode: "KMSThrottling", MessageMember: "", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "NotFound", MessageMember: "", StatusCode: 404}, "PlatformApplicationDisabledException": catalog.ErrorBinding{QueryCode: "PlatformApplicationDisabled", MessageMember: "", StatusCode: 400}, "ReplayLimitExceededException": catalog.ErrorBinding{QueryCode: "ReplayLimitExceeded", MessageMember: "", StatusCode: 403}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "", StatusCode: 404}, "StaleTagException": catalog.ErrorBinding{QueryCode: "StaleTag", MessageMember: "", StatusCode: 400}, "SubscriptionLimitExceededException": catalog.ErrorBinding{QueryCode: "SubscriptionLimitExceeded", MessageMember: "", StatusCode: 403}, "TagLimitExceededException": catalog.ErrorBinding{QueryCode: "TagLimitExceeded", MessageMember: "", StatusCode: 400}, "TagPolicyException": catalog.ErrorBinding{QueryCode: "TagPolicy", MessageMember: "", StatusCode: 400}, "TopicLimitExceededException": catalog.ErrorBinding{QueryCode: "TopicLimitExceeded", MessageMember: "", StatusCode: 403}, "ValidationException": catalog.ErrorBinding{QueryCode: "ValidationException", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "sns", SigningName: "sns", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://sns.amazonaws.com/doc/2010-03-31/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"AuthorizationErrorException": catalog.ErrorBinding{QueryCode: "AuthorizationError", MessageMember: "", StatusCode: 403}, "BatchEntryIdsNotDistinctException": catalog.ErrorBinding{QueryCode: "BatchEntryIdsNotDistinct", MessageMember: "", StatusCode: 400}, "BatchRequestTooLongException": catalog.ErrorBinding{QueryCode: "BatchRequestTooLong", MessageMember: "", StatusCode: 400}, "ConcurrentAccessException": catalog.ErrorBinding{QueryCode: "ConcurrentAccess", MessageMember: "", StatusCode: 400}, "EmptyBatchRequestException": catalog.ErrorBinding{QueryCode: "EmptyBatchRequest", MessageMember: "", StatusCode: 400}, "EndpointDisabledException": catalog.ErrorBinding{QueryCode: "EndpointDisabled", MessageMember: "", StatusCode: 400}, "FilterPolicyLimitExceededException": catalog.ErrorBinding{QueryCode: "FilterPolicyLimitExceeded", MessageMember: "", StatusCode: 403}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "InternalError", MessageMember: "", StatusCode: 500}, "InvalidBatchEntryIdException": catalog.ErrorBinding{QueryCode: "InvalidBatchEntryId", MessageMember: "", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "InvalidParameter", MessageMember: "", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "ParameterValueInvalid", MessageMember: "", StatusCode: 400}, "InvalidSecurityException": catalog.ErrorBinding{QueryCode: "InvalidSecurity", MessageMember: "", StatusCode: 403}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "InvalidState", MessageMember: "", StatusCode: 400}, "KMSAccessDeniedException": catalog.ErrorBinding{QueryCode: "KMSAccessDenied", MessageMember: "", StatusCode: 400}, "KMSDisabledException": catalog.ErrorBinding{QueryCode: "KMSDisabled", MessageMember: "", StatusCode: 400}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "KMSInvalidState", MessageMember: "", StatusCode: 400}, "KMSNotFoundException": catalog.ErrorBinding{QueryCode: "KMSNotFound", MessageMember: "", StatusCode: 400}, "KMSOptInRequired": catalog.ErrorBinding{QueryCode: "KMSOptInRequired", MessageMember: "", StatusCode: 403}, "KMSThrottlingException": catalog.ErrorBinding{QueryCode: "KMSThrottling", MessageMember: "", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "NotFound", MessageMember: "", StatusCode: 404}, "PlatformApplicationDisabledException": catalog.ErrorBinding{QueryCode: "PlatformApplicationDisabled", MessageMember: "", StatusCode: 400}, "ReplayLimitExceededException": catalog.ErrorBinding{QueryCode: "ReplayLimitExceeded", MessageMember: "", StatusCode: 403}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "", StatusCode: 404}, "StaleTagException": catalog.ErrorBinding{QueryCode: "StaleTag", MessageMember: "", StatusCode: 400}, "SubscriptionLimitExceededException": catalog.ErrorBinding{QueryCode: "SubscriptionLimitExceeded", MessageMember: "", StatusCode: 403}, "TagLimitExceededException": catalog.ErrorBinding{QueryCode: "TagLimitExceeded", MessageMember: "", StatusCode: 400}, "TagPolicyException": catalog.ErrorBinding{QueryCode: "TagPolicy", MessageMember: "", StatusCode: 400}, "TooManyEntriesInBatchRequestException": catalog.ErrorBinding{QueryCode: "TooManyEntriesInBatchRequest", MessageMember: "", StatusCode: 400}, "TopicLimitExceededException": catalog.ErrorBinding{QueryCode: "TopicLimitExceeded", MessageMember: "", StatusCode: 403}, "ValidationException": catalog.ErrorBinding{QueryCode: "ValidationException", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTopic": {Name: "CreateTopic", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateTopic", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateTopicInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTopic(ctx, input.(*CreateTopicInput))
 		}},
@@ -232,6 +263,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListTagsForResource", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"PublishBatch": {Name: "PublishBatch", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PublishBatch", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PublishBatchInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PublishBatch(ctx, input.(*PublishBatchInput))
 		}},
 	}}
 }

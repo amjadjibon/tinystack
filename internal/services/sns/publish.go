@@ -139,17 +139,26 @@ func messages(message, structure string) (func(protocol string) string, error) {
 }
 
 func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.PublishResponse, error) {
-	m, err := identity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	key, _, err := resolve(ctx, in.TopicArn, false)
 	if err != nil {
 		return nil, err
 	}
 
-	message := value(in.Message)
+	id, err := s.publish(ctx, key, &api.PublishBatchRequestEntry{
+		Message: in.Message, Subject: in.Subject, MessageStructure: in.MessageStructure,
+		MessageAttributes: in.MessageAttributes,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.PublishResponse{MessageId: new(id)}, nil
+}
+
+// checkMessage validates a message to publish and returns the text each
+// protocol's subscribers receive.
+func checkMessage(e *api.PublishBatchRequestEntry) (func(protocol string) string, error) {
+	message := value(e.Message)
 	if message == "" {
 		return nil, invalid("Empty message")
 	}
@@ -158,26 +167,42 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		return nil, invalid("Message must be valid UTF-8")
 	}
 
-	size := len(message)
-	for name, a := range in.MessageAttributes {
-		size += len(name) + len(value(a.DataType)) + len(value(a.StringValue)) + len(a.BinaryValue)
-	}
-
-	if size > maxMessage {
+	if messageSize(e) > maxMessage {
 		return nil, invalid("Message too long")
 	}
 
-	if subject := value(in.Subject); len(subject) > maxSubject || strings.ContainsAny(subject, "\r\n") {
+	if subject := value(e.Subject); len(subject) > maxSubject || strings.ContainsAny(subject, "\r\n") {
 		return nil, invalid("Subject must be at most 100 characters on one line")
 	}
 
-	if guardErr := checkAttributes(in.MessageAttributes); guardErr != nil {
-		return nil, guardErr
+	if err := checkAttributes(e.MessageAttributes); err != nil {
+		return nil, err
 	}
 
-	textFor, err := messages(message, value(in.MessageStructure))
+	return messages(message, value(e.MessageStructure))
+}
+
+// messageSize is a message's size as SNS limits it: its text and attributes.
+func messageSize(e *api.PublishBatchRequestEntry) int {
+	size := len(value(e.Message))
+	for name, a := range e.MessageAttributes {
+		size += len(name) + len(value(a.DataType)) + len(value(a.StringValue)) + len(a.BinaryValue)
+	}
+
+	return size
+}
+
+// publish sends one message to the subscribers of the topic stored under key
+// and returns its message ID.
+func (s *Service) publish(ctx context.Context, key string, e *api.PublishBatchRequestEntry) (string, error) {
+	m, err := identity(ctx)
 	if err != nil {
-		return nil, err
+		return "", err
+	}
+
+	textFor, err := checkMessage(e)
+	if err != nil {
+		return "", err
 	}
 
 	var subs []subscription
@@ -190,7 +215,7 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		return loadErr
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	id := newID()
@@ -199,11 +224,11 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		Type:      "Notification",
 		MessageID: id,
 		TopicArn:  arn,
-		Subject:   value(in.Subject),
+		Subject:   value(e.Subject),
 		Timestamp: s.now().UTC().Format(timestampFormat),
 	}
 
-	for name, a := range in.MessageAttributes {
+	for name, a := range e.MessageAttributes {
 		if envelope.MessageAttributes == nil {
 			envelope.MessageAttributes = map[string]notificationAttribute{}
 		}
@@ -224,9 +249,9 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 
 		subARN := arn + ":" + sub.ID
 		envelope.Message = textFor(sub.Protocol)
-		accepted, filterErr := sub.accepts(in.MessageAttributes, envelope.Message)
+		accepted, filterErr := sub.accepts(e.MessageAttributes, envelope.Message)
 		if filterErr != nil {
-			return nil, filterErr
+			return "", filterErr
 		}
 
 		// A message the filter policy rejects is not delivered, and not logged.
@@ -235,53 +260,63 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		}
 
 		envelope.UnsubscribeURL = m.Endpoint + "/?Action=Unsubscribe&SubscriptionArn=" + url.QueryEscape(subARN)
-		// As in SNS, a failed delivery (such as a deleted queue or function)
-		// does not fail Publish; the delivery log records it.
-		if confirmable(sub.Protocol) {
-			if deliverErr := s.deliverEndpoint(sub, subARN, &envelope); deliverErr != nil {
-				return nil, deliverErr
-			}
-
-			continue
+		if deliverErr := s.deliver(ctx, sub, subARN, &envelope, e); deliverErr != nil {
+			return "", deliverErr
 		}
-
-		if sub.Protocol == protocolLambda {
-			event, encodeErr := json.Marshal(lambdaEvent{Records: []lambdaRecord{{
-				EventSource:          "aws:sns",
-				EventVersion:         "1.0",
-				EventSubscriptionArn: subARN,
-				Sns:                  envelope.forLambda(in.Subject),
-			}}})
-			if encodeErr != nil {
-				return nil, encodeErr
-			}
-
-			err := s.functions.InvokeAsync(ctx, sub.Endpoint, event)
-			s.deliveries.Add(delivery.ViaSNS, arn, sub.Endpoint, event, err)
-			continue
-		}
-
-		body := envelope.Message
-		var attributes map[string]sqsapi.MessageAttributeValue
-		if sub.Raw {
-			attributes = sqsAttributes(in.MessageAttributes)
-		} else {
-			encoded, encodeErr := json.Marshal(envelope)
-			if encodeErr != nil {
-				return nil, encodeErr
-			}
-
-			body = string(encoded)
-		}
-
-		err := s.queues.Deliver(ctx, sub.Endpoint, &sqsapi.SendMessageBatchRequestEntry{
-			MessageBody:       &body,
-			MessageAttributes: attributes,
-		})
-		s.deliveries.Add(delivery.ViaSNS, arn, sub.Endpoint, []byte(body), err)
 	}
 
-	return &api.PublishResponse{MessageId: new(id)}, nil
+	return id, nil
+}
+
+// deliver sends a notification to one subscriber. As in SNS, a failed
+// delivery (such as a deleted queue or function) does not fail Publish; the
+// delivery log records it.
+func (s *Service) deliver(
+	ctx context.Context,
+	sub *subscription,
+	subARN string,
+	envelope *notification,
+	e *api.PublishBatchRequestEntry,
+) error {
+	if confirmable(sub.Protocol) {
+		return s.deliverEndpoint(sub, subARN, envelope)
+	}
+
+	if sub.Protocol == protocolLambda {
+		event, err := json.Marshal(lambdaEvent{Records: []lambdaRecord{{
+			EventSource:          "aws:sns",
+			EventVersion:         "1.0",
+			EventSubscriptionArn: subARN,
+			Sns:                  envelope.forLambda(e.Subject),
+		}}})
+		if err != nil {
+			return err
+		}
+
+		err = s.functions.InvokeAsync(ctx, sub.Endpoint, event)
+		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, event, err)
+		return nil
+	}
+
+	body := envelope.Message
+	var attributes map[string]sqsapi.MessageAttributeValue
+	if sub.Raw {
+		attributes = sqsAttributes(e.MessageAttributes)
+	} else {
+		encoded, err := json.Marshal(envelope)
+		if err != nil {
+			return err
+		}
+
+		body = string(encoded)
+	}
+
+	err := s.queues.Deliver(ctx, sub.Endpoint, &sqsapi.SendMessageBatchRequestEntry{
+		MessageBody:       &body,
+		MessageAttributes: attributes,
+	})
+	s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(body), err)
+	return nil
 }
 
 // forLambda renders the notification as a Lambda event carries it.

@@ -4432,7 +4432,8 @@
       "SetSubscriptionAttributes",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "PublishBatch"
     ],
     "shapes": {
       "CreateTopicInput": [
@@ -4552,6 +4553,31 @@
       ],
       "ConfirmSubscriptionResponse": [
         "SubscriptionArn"
+      ],
+      "PublishBatchInput": [
+        "TopicArn",
+        "PublishBatchRequestEntries"
+      ],
+      "PublishBatchRequestEntry": [
+        "Id",
+        "Message",
+        "Subject",
+        "MessageStructure",
+        "MessageAttributes"
+      ],
+      "PublishBatchResponse": [
+        "Successful",
+        "Failed"
+      ],
+      "PublishBatchResultEntry": [
+        "Id",
+        "MessageId"
+      ],
+      "BatchResultErrorEntry": [
+        "Id",
+        "Code",
+        "Message",
+        "SenderFault"
       ]
     }
   },
