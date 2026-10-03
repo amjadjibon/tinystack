@@ -2811,7 +2811,12 @@
       "UpdateFunctionUrlConfig",
       "ListFunctionUrlConfigs",
       "DeleteFunctionUrlConfig",
-      "UpdateEventSourceMapping"
+      "UpdateEventSourceMapping",
+      "PutFunctionEventInvokeConfig",
+      "UpdateFunctionEventInvokeConfig",
+      "GetFunctionEventInvokeConfig",
+      "DeleteFunctionEventInvokeConfig",
+      "ListFunctionEventInvokeConfigs"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -3308,6 +3313,54 @@
         "MaximumBatchingWindowInSeconds",
         "MaximumRetryAttempts",
         "FunctionResponseTypes"
+      ],
+      "PutFunctionEventInvokeConfigRequest": [
+        "FunctionName",
+        "Qualifier",
+        "MaximumRetryAttempts",
+        "MaximumEventAgeInSeconds",
+        "DestinationConfig"
+      ],
+      "UpdateFunctionEventInvokeConfigRequest": [
+        "FunctionName",
+        "Qualifier",
+        "MaximumRetryAttempts",
+        "MaximumEventAgeInSeconds",
+        "DestinationConfig"
+      ],
+      "GetFunctionEventInvokeConfigRequest": [
+        "FunctionName",
+        "Qualifier"
+      ],
+      "DeleteFunctionEventInvokeConfigRequest": [
+        "FunctionName",
+        "Qualifier"
+      ],
+      "ListFunctionEventInvokeConfigsRequest": [
+        "FunctionName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListFunctionEventInvokeConfigsResponse": [
+        "FunctionEventInvokeConfigs",
+        "NextMarker"
+      ],
+      "FunctionEventInvokeConfig": [
+        "LastModified",
+        "FunctionArn",
+        "MaximumRetryAttempts",
+        "MaximumEventAgeInSeconds",
+        "DestinationConfig"
+      ],
+      "DestinationConfig": [
+        "OnSuccess",
+        "OnFailure"
+      ],
+      "OnSuccess": [
+        "Destination"
+      ],
+      "OnFailure": [
+        "Destination"
       ]
     }
   },

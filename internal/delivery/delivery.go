@@ -16,9 +16,12 @@ const maxRecords = 256
 
 // Delivery kinds.
 const (
-	ViaSNS                = "sns"
-	ViaEventBridge        = "eventbridge"
-	ViaLambdaAsync        = "lambda-async"
+	ViaSNS         = "sns"
+	ViaEventBridge = "eventbridge"
+	ViaLambdaAsync = "lambda-async"
+	// ViaLambdaDestination records the results asynchronous invocations send
+	// to their destinations.
+	ViaLambdaDestination  = "lambda-destination"
 	ViaEventSourceMapping = "event-source-mapping"
 	ViaS3                 = "s3"
 	ViaSecretsManager     = "secretsmanager"

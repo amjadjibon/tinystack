@@ -169,19 +169,26 @@ func (s *Service) record(
 }
 
 // runAsync invokes the function at qualifier in the background, retrying
-// failures. It reports false when the service is stopping.
+// failures as its event invoke configuration allows and then sending the
+// result to its destination. It reports false when the service is stopping.
 func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload []byte) bool {
 	arn := qualifiedARN(scope, name, qualifier)
+	queued := s.now()
 	return s.spawn(func(ctx context.Context) {
+		cfg := s.loadInvokeConfig(ctx, scope, name, qualifier)
+		attempts, id := cfg.attempts(), newUUID()
 		for attempt := 1; ; attempt++ {
-			result, _, _, err := s.run(ctx, scope, name, qualifier, payload)
+			result, _, version, err := s.run(ctx, scope, name, qualifier, payload)
+			r := &attemptResult{err: err, version: version, result: result, attempts: attempt}
 			failure := invokeError(result, err)
 			if failure != nil {
-				failure = fmt.Errorf("attempt %d of %d: %w", attempt, asyncAttempts, failure)
+				failure = fmt.Errorf("attempt %d of %d: %w", attempt, attempts, failure)
 			}
 
 			s.deliveries.Add(delivery.ViaLambdaAsync, "", arn, payload, failure)
 			if failure == nil {
+				r.condition = conditionSuccess
+				s.sendResult(ctx, arn, cfg.OnSuccess, id, payload, r)
 				return
 			}
 
@@ -193,7 +200,9 @@ func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload 
 				"payload", string(result.Payload),
 			)
 
-			if attempt == asyncAttempts {
+			if attempt == attempts {
+				r.condition = conditionRetries
+				s.sendResult(ctx, arn, cfg.OnFailure, id, payload, r)
 				return
 			}
 
@@ -201,6 +210,12 @@ func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload 
 			case <-ctx.Done():
 				return
 			case <-time.After(retryDelay * time.Duration(attempt)):
+			}
+
+			if s.now().Sub(queued) > cfg.maxAge() {
+				r.condition = conditionEventAge
+				s.sendResult(ctx, arn, cfg.OnFailure, id, payload, r)
+				return
 			}
 		}
 	})

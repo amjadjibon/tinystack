@@ -205,10 +205,10 @@ func (s *Service) pollShard(
 	for i, r := range records {
 		all[i] = kinesisRecord{
 			Kinesis: kinesisData{
-				KinesisSchemaVersion: "1.0", PartitionKey: r.PartitionKey, SequenceNumber: r.SequenceNumber,
+				KinesisSchemaVersion: recordVersion, PartitionKey: r.PartitionKey, SequenceNumber: r.SequenceNumber,
 				Data: r.Data, ApproximateArrivalTimestamp: float64(r.Arrival.UnixMilli()) / 1000,
 			},
-			EventSource: "aws:kinesis", EventVersion: "1.0", EventID: sh.ID + ":" + r.SequenceNumber,
+			EventSource: "aws:kinesis", EventVersion: recordVersion, EventID: sh.ID + ":" + r.SequenceNumber,
 			EventName: "aws:kinesis:record", AWSRegion: scope.Region, EventSourceARN: mp.EventSourceArn,
 		}
 		if keep(filters, all[i].document()) {

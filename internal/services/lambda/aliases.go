@@ -311,6 +311,7 @@ func (s *Service) DeleteAlias(ctx context.Context, in *api.DeleteAliasRequest) (
 		func(tx storage.WriteTx, scope request.Scope, a *alias) (bool, error) {
 			tx.Delete(policyKey(scope, a.Function, a.Name))
 			tx.Delete(provisionedKey(scope, a.Function, a.Name))
+			tx.Delete(invokeConfigKey(scope, a.Function, a.Name))
 			return false, deleteURLs(tx, scope, a.Function, a.Name)
 		})
 	if err != nil {

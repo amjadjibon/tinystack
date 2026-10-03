@@ -261,6 +261,8 @@ func newStartCommand() *cobra.Command {
 			logGroups.UseCaller(caller)
 			// Table exports write to S3.
 			tables.UseCaller(caller)
+			// Asynchronous invocations send results to their destinations.
+			functions.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err

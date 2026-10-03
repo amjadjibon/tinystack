@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
@@ -72,6 +73,9 @@ type Service struct {
 	secretKeys map[string]string
 	// deliveries records asynchronous invocations and mapping batches.
 	deliveries *delivery.Log
+	// caller sends asynchronous invocation results to destinations; see
+	// UseCaller.
+	caller *catalog.Caller
 	// objects reads deployment packages from S3; see UseObjects.
 	objects ObjectReader
 	now     func() time.Time

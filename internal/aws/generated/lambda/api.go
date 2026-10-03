@@ -621,6 +621,66 @@ type UpdateEventSourceMappingRequest struct {
 	FunctionResponseTypes          []string        `json:"FunctionResponseTypes,omitempty"`
 }
 
+type OnSuccess struct {
+	Destination *string `json:"Destination,omitempty"`
+}
+
+type OnFailure struct {
+	Destination *string `json:"Destination,omitempty"`
+}
+
+type DestinationConfig struct {
+	OnSuccess *OnSuccess `json:"OnSuccess,omitempty"`
+	OnFailure *OnFailure `json:"OnFailure,omitempty"`
+}
+
+type PutFunctionEventInvokeConfigRequest struct {
+	FunctionName             *string            `json:"-"`
+	Qualifier                *string            `json:"-"`
+	MaximumRetryAttempts     *int64             `json:"MaximumRetryAttempts,omitempty"`
+	MaximumEventAgeInSeconds *int64             `json:"MaximumEventAgeInSeconds,omitempty"`
+	DestinationConfig        *DestinationConfig `json:"DestinationConfig,omitempty"`
+}
+
+type FunctionEventInvokeConfig struct {
+	LastModified             *float64           `json:"LastModified,omitempty"`
+	FunctionArn              *string            `json:"FunctionArn,omitempty"`
+	MaximumRetryAttempts     *int64             `json:"MaximumRetryAttempts,omitempty"`
+	MaximumEventAgeInSeconds *int64             `json:"MaximumEventAgeInSeconds,omitempty"`
+	DestinationConfig        *DestinationConfig `json:"DestinationConfig,omitempty"`
+}
+
+type UpdateFunctionEventInvokeConfigRequest struct {
+	FunctionName             *string            `json:"-"`
+	Qualifier                *string            `json:"-"`
+	MaximumRetryAttempts     *int64             `json:"MaximumRetryAttempts,omitempty"`
+	MaximumEventAgeInSeconds *int64             `json:"MaximumEventAgeInSeconds,omitempty"`
+	DestinationConfig        *DestinationConfig `json:"DestinationConfig,omitempty"`
+}
+
+type GetFunctionEventInvokeConfigRequest struct {
+	FunctionName *string `json:"-"`
+	Qualifier    *string `json:"-"`
+}
+
+type DeleteFunctionEventInvokeConfigOutput struct{}
+
+type DeleteFunctionEventInvokeConfigRequest struct {
+	FunctionName *string `json:"-"`
+	Qualifier    *string `json:"-"`
+}
+
+type ListFunctionEventInvokeConfigsRequest struct {
+	FunctionName *string `json:"-"`
+	Marker       *string `json:"-"`
+	MaxItems     *int64  `json:"-"`
+}
+
+type ListFunctionEventInvokeConfigsResponse struct {
+	FunctionEventInvokeConfigs []FunctionEventInvokeConfig `json:"FunctionEventInvokeConfigs,omitempty"`
+	NextMarker                 *string                     `json:"NextMarker,omitempty"`
+}
+
 type API interface {
 	CreateFunction(context.Context, *CreateFunctionRequest) (*FunctionConfiguration, error)
 	GetFunction(context.Context, *GetFunctionRequest) (*GetFunctionResponse, error)
@@ -667,6 +727,11 @@ type API interface {
 	ListFunctionUrlConfigs(context.Context, *ListFunctionUrlConfigsRequest) (*ListFunctionUrlConfigsResponse, error)
 	DeleteFunctionUrlConfig(context.Context, *DeleteFunctionUrlConfigRequest) (*DeleteFunctionUrlConfigOutput, error)
 	UpdateEventSourceMapping(context.Context, *UpdateEventSourceMappingRequest) (*EventSourceMappingConfiguration, error)
+	PutFunctionEventInvokeConfig(context.Context, *PutFunctionEventInvokeConfigRequest) (*FunctionEventInvokeConfig, error)
+	UpdateFunctionEventInvokeConfig(context.Context, *UpdateFunctionEventInvokeConfigRequest) (*FunctionEventInvokeConfig, error)
+	GetFunctionEventInvokeConfig(context.Context, *GetFunctionEventInvokeConfigRequest) (*FunctionEventInvokeConfig, error)
+	DeleteFunctionEventInvokeConfig(context.Context, *DeleteFunctionEventInvokeConfigRequest) (*DeleteFunctionEventInvokeConfigOutput, error)
+	ListFunctionEventInvokeConfigs(context.Context, *ListFunctionEventInvokeConfigsRequest) (*ListFunctionEventInvokeConfigsResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -799,6 +864,21 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"UpdateEventSourceMapping": {Name: "UpdateEventSourceMapping", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BatchSize": catalog.MemberBinding{Location: "document", Name: "BatchSize"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "Enabled"}, "FilterCriteria": catalog.MemberBinding{Location: "document", Name: "FilterCriteria"}, "FunctionName": catalog.MemberBinding{Location: "document", Name: "FunctionName"}, "FunctionResponseTypes": catalog.MemberBinding{Location: "document", Name: "FunctionResponseTypes"}, "MaximumBatchingWindowInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumBatchingWindowInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}, "UUID": catalog.MemberBinding{Location: "label", Name: "UUID"}}, Output: map[string]catalog.MemberBinding{"BatchSize": catalog.MemberBinding{Location: "document", Name: "BatchSize"}, "EventSourceArn": catalog.MemberBinding{Location: "document", Name: "EventSourceArn"}, "FilterCriteria": catalog.MemberBinding{Location: "document", Name: "FilterCriteria"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "FunctionResponseTypes": catalog.MemberBinding{Location: "document", Name: "FunctionResponseTypes"}, "LastModified": catalog.MemberBinding{Location: "document", Name: "LastModified"}, "LastProcessingResult": catalog.MemberBinding{Location: "document", Name: "LastProcessingResult"}, "MaximumBatchingWindowInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumBatchingWindowInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}, "StartingPosition": catalog.MemberBinding{Location: "document", Name: "StartingPosition"}, "State": catalog.MemberBinding{Location: "document", Name: "State"}, "StateTransitionReason": catalog.MemberBinding{Location: "document", Name: "StateTransitionReason"}, "UUID": catalog.MemberBinding{Location: "document", Name: "UUID"}}, Method: "PUT", URI: "/2015-03-31/event-source-mappings/{UUID}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &UpdateEventSourceMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateEventSourceMapping(ctx, input.(*UpdateEventSourceMappingRequest))
+		}},
+		"PutFunctionEventInvokeConfig": {Name: "PutFunctionEventInvokeConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DestinationConfig": catalog.MemberBinding{Location: "document", Name: "DestinationConfig"}, "FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "MaximumEventAgeInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumEventAgeInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"DestinationConfig": catalog.MemberBinding{Location: "document", Name: "DestinationConfig"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "LastModified": catalog.MemberBinding{Location: "document", Name: "LastModified"}, "MaximumEventAgeInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumEventAgeInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}}, Method: "PUT", URI: "/2019-09-25/functions/{FunctionName}/event-invoke-config", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutFunctionEventInvokeConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutFunctionEventInvokeConfig(ctx, input.(*PutFunctionEventInvokeConfigRequest))
+		}},
+		"UpdateFunctionEventInvokeConfig": {Name: "UpdateFunctionEventInvokeConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DestinationConfig": catalog.MemberBinding{Location: "document", Name: "DestinationConfig"}, "FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "MaximumEventAgeInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumEventAgeInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"DestinationConfig": catalog.MemberBinding{Location: "document", Name: "DestinationConfig"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "LastModified": catalog.MemberBinding{Location: "document", Name: "LastModified"}, "MaximumEventAgeInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumEventAgeInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}}, Method: "POST", URI: "/2019-09-25/functions/{FunctionName}/event-invoke-config", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateFunctionEventInvokeConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateFunctionEventInvokeConfig(ctx, input.(*UpdateFunctionEventInvokeConfigRequest))
+		}},
+		"GetFunctionEventInvokeConfig": {Name: "GetFunctionEventInvokeConfig", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{"DestinationConfig": catalog.MemberBinding{Location: "document", Name: "DestinationConfig"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "LastModified": catalog.MemberBinding{Location: "document", Name: "LastModified"}, "MaximumEventAgeInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumEventAgeInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}}, Method: "GET", URI: "/2019-09-25/functions/{FunctionName}/event-invoke-config", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetFunctionEventInvokeConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetFunctionEventInvokeConfig(ctx, input.(*GetFunctionEventInvokeConfigRequest))
+		}},
+		"DeleteFunctionEventInvokeConfig": {Name: "DeleteFunctionEventInvokeConfig", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2019-09-25/functions/{FunctionName}/event-invoke-config", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteFunctionEventInvokeConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteFunctionEventInvokeConfig(ctx, input.(*DeleteFunctionEventInvokeConfigRequest))
+		}},
+		"ListFunctionEventInvokeConfigs": {Name: "ListFunctionEventInvokeConfigs", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Marker": catalog.MemberBinding{Location: "query", Name: "Marker"}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems"}}, Output: map[string]catalog.MemberBinding{"FunctionEventInvokeConfigs": catalog.MemberBinding{Location: "document", Name: "FunctionEventInvokeConfigs"}, "NextMarker": catalog.MemberBinding{Location: "document", Name: "NextMarker"}}, Method: "GET", URI: "/2019-09-25/functions/{FunctionName}/event-invoke-config/list", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListFunctionEventInvokeConfigsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListFunctionEventInvokeConfigs(ctx, input.(*ListFunctionEventInvokeConfigsRequest))
 		}},
 	}}
 }

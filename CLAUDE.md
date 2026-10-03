@@ -172,7 +172,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `…/lambda/mapping/<uuid>`, layer versions under `…/lambda/layer/<name>/<zero-padded number>` (packages under
   `…/lambda/layer-code/…`, the last number under `…/lambda/layer-head/<name>`), reserved concurrency under
   `…/lambda/reserved/<name>` (enforced in memory by `concurrency.go`), and provisioned concurrency under
-  `…/lambda/provisioned/<name>/<qualifier>`, and function URLs under `…/lambda/url/<name>/<qualifier>` (found from
+  `…/lambda/provisioned/<name>/<qualifier>`, asynchronous invocation settings under `…/lambda/invoke-config/<name>/<qualifier>`
+  (`destinations.go`, which sends results to SQS, SNS, and EventBridge through the `catalog.Caller` and to Lambda
+  in-process), and function URLs under `…/lambda/url/<name>/<qualifier>` (found from
   the partition-wide `aws/lambda/url/<URL ID>`; `urls.go` is the `execute.Handler` that `Server.UseFunctionURLs`
   serves, building events with `services/apigateway/proxy`); code from S3 is copied in through the `ObjectReader` that `start.go` registers with
   `UseObjects` (`s3.Service.Object`; S3 notifies Lambda, so Lambda cannot hold S3 directly); `versions.go` resolves a qualifier to the record and code an operation uses; it runs code only through
