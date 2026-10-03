@@ -30,7 +30,7 @@ const (
 )
 
 // Record is one delivery. Source is the topic, rule, queue, or bucket ARN it came
-// from, empty for asynchronous invocations; Payload keeps the first
+// from, empty for asynchronous invocations and SMS sent to a phone number; Payload keeps the first
 // recent.MaxText bytes and Size counts them all.
 type Record struct {
 	Time    time.Time `json:"time"`

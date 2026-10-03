@@ -102,6 +102,7 @@ type MessageAttributeValue struct {
 
 type PublishInput struct {
 	TopicArn               *string                          `json:"TopicArn,omitempty" query:"TopicArn"`
+	PhoneNumber            *string                          `json:"PhoneNumber,omitempty" query:"PhoneNumber"`
 	Message                *string                          `json:"Message,omitempty" query:"Message"`
 	Subject                *string                          `json:"Subject,omitempty" query:"Subject"`
 	MessageStructure       *string                          `json:"MessageStructure,omitempty" query:"MessageStructure"`
@@ -248,7 +249,7 @@ func Descriptor(api API) catalog.Service {
 		"ListSubscriptionsByTopic": {Name: "ListSubscriptionsByTopic", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListSubscriptionsByTopic", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListSubscriptionsByTopicInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListSubscriptionsByTopic(ctx, input.(*ListSubscriptionsByTopicInput))
 		}},
-		"Publish": {Name: "Publish", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Publish", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PublishInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Publish(ctx, input.(*PublishInput)) }},
+		"Publish": {Name: "Publish", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Publish", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PublishInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Publish(ctx, input.(*PublishInput)) }},
 		"GetTopicAttributes": {Name: "GetTopicAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetTopicAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetTopicAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetTopicAttributes(ctx, input.(*GetTopicAttributesInput))
 		}},

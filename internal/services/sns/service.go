@@ -466,9 +466,11 @@ func checkSubscriber(protocol, endpoint, account string) error {
 		}
 	case protocolHTTP, protocolHTTPS, protocolEmail, protocolEmailJSON:
 		return checkEndpoint(protocol, endpoint)
+	case protocolSMS:
+		return checkPhoneNumber(endpoint)
 	default:
-		return invalid("Protocol %q is not supported; only sqs, lambda, http, https, email, and email-json "+
-			"subscriptions are", protocol)
+		return invalid("Protocol %q is not supported; only sqs, lambda, http, https, email, email-json, and "+
+			"sms subscriptions are", protocol)
 	}
 
 	if parts[4] != account {

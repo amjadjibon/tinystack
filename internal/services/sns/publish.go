@@ -82,8 +82,8 @@ func checkAttributes(attributes map[string]api.MessageAttributeValue) error {
 
 	for name, a := range attributes {
 		lower := strings.ToLower(name)
-		if !attributeName.MatchString(name) || strings.HasPrefix(lower, "aws.") ||
-			strings.HasPrefix(lower, "amazon.") || strings.Contains(name, "..") {
+		if !smsAttributes[name] && (!attributeName.MatchString(name) || strings.HasPrefix(lower, "aws.") ||
+			strings.HasPrefix(lower, "amazon.") || strings.Contains(name, "..")) {
 			return invalid("Message attribute name %s is invalid", name)
 		}
 
@@ -140,6 +140,10 @@ func messages(message, structure string) (func(protocol string) string, error) {
 }
 
 func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.PublishResponse, error) {
+	if in.PhoneNumber != nil {
+		return s.publishSMS(ctx, in)
+	}
+
 	key, _, err := resolve(ctx, in.TopicArn, false)
 	if err != nil {
 		return nil, err
@@ -303,6 +307,11 @@ func (s *Service) deliver(
 ) error {
 	if confirmable(sub.Protocol) {
 		return s.deliverEndpoint(sub, subARN, envelope)
+	}
+
+	if sub.Protocol == protocolSMS {
+		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(envelope.Message), nil)
+		return nil
 	}
 
 	if sub.Protocol == protocolLambda {

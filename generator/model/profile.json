@@ -4494,6 +4494,7 @@
       ],
       "PublishInput": [
         "TopicArn",
+        "PhoneNumber",
         "Message",
         "Subject",
         "MessageStructure",

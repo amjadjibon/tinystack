@@ -154,7 +154,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   subscriptions (and, for a FIFO topic, its sequence counter and the last 5 minutes of deduplication IDs, `sns/fifo.go`), and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. HTTP, HTTPS, and
   email subscriptions (`sns/endpoints.go`) are pending until `ConfirmSubscription` presents their token; HTTP
   deliveries are `proxy.Forward` POSTs on the service's context in the background (`Stop`, deferred and a shutdown
-  hook in `start.go`, ends them), and email is recorded in the `delivery.Log`. The gateway also takes AWS Query
+  hook in `start.go`, ends them), and email and SMS (`sms.go`: `sms` subscriptions and Publish to a `PhoneNumber`) are recorded in the `delivery.Log`. The gateway also takes AWS Query
   requests as a `GET /?Action=…` (`queryGET`), which is how a subscription's `SubscribeURL` confirms it. S3 reserves bucket names in the partition-wide index `aws/s3/buckets/<name>` (owner account and region)
   in the same transaction as the regional bucket record; objects are `…/s3/<bucket>/o/<key>` (metadata) plus
   `…/s3/<bucket>/d/<key>` (bytes); the metadata record holds the object's tags. Those are always the current version:
