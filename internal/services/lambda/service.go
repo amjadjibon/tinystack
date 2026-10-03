@@ -78,7 +78,7 @@ type Service struct {
 	// ctx ends background work (async invocations and pollers) on Stop.
 	ctx     context.Context
 	cancel  context.CancelFunc
-	pollers map[string]context.CancelFunc
+	pollers map[string]*poller
 	// running counts each function's invocations in flight, which its
 	// reserved concurrency caps; slots guards it.
 	running map[string]int
@@ -119,7 +119,7 @@ func New(
 		now:        time.Now,
 		ctx:        ctx,
 		cancel:     cancel,
-		pollers:    map[string]context.CancelFunc{},
+		pollers:    map[string]*poller{},
 		running:    map[string]int{},
 	}
 }

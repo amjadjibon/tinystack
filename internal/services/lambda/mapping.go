@@ -108,6 +108,19 @@ func (mp *mapping) functionARN(scope request.Scope) string {
 	return qualifiedARN(scope, mp.FunctionName, mp.Qualifier)
 }
 
+// duplicates fails when other is another mapping of the same event source and
+// function.
+func (mp *mapping) duplicates(scope request.Scope, other *mapping) error {
+	if other.UUID == mp.UUID || other.EventSourceArn != mp.EventSourceArn || other.FunctionName != mp.FunctionName ||
+		other.Qualifier != mp.Qualifier {
+		return nil
+	}
+
+	return conflict("An event source mapping with event source (\" " + mp.EventSourceArn + " \") and function " +
+		"(\" " + mp.functionARN(scope) + " \") already exists. Please update or delete the existing mapping with " +
+		"UUID " + other.UUID)
+}
+
 func newUUID() string {
 	var b [16]byte
 	_, _ = rand.Read(b[:])
@@ -162,7 +175,8 @@ func (s *Service) CreateEventSourceMapping(
 		LastProcessingResult: "No records processed",
 	}
 
-	if optionsErr := batchOptions(in, mp); optionsErr != nil {
+	optionsErr := batchOptions(in.MaximumBatchingWindowInSeconds, in.FunctionResponseTypes, in.FilterCriteria, mp)
+	if optionsErr != nil {
 		return nil, optionsErr
 	}
 
@@ -189,10 +203,8 @@ func (s *Service) CreateEventSourceMapping(
 				return loadErr
 			}
 
-			if existing.EventSourceArn == source && existing.FunctionName == fn.Name && existing.Qualifier == q {
-				return conflict("An event source mapping with event source (\" " + source + " \") and function " +
-					"(\" " + mp.functionARN(m.Scope) + " \") already exists. Please update or delete the existing mapping with " +
-					"UUID " + existing.UUID)
+			if dupErr := mp.duplicates(m.Scope, existing); dupErr != nil {
+				return dupErr
 			}
 		}
 
@@ -241,17 +253,10 @@ func (s *Service) queueSource(
 
 	mp.BatchSize = maxSQSBatch
 	if in.BatchSize != nil {
-		if mp.BatchSize = *in.BatchSize; mp.BatchSize < 1 || mp.BatchSize > maxSQSWindowed {
-			return invalid("BatchSize must be between 1 and %d for SQS", maxSQSWindowed)
-		}
-
-		if mp.BatchSize > maxSQSBatch && mp.BatchingWindow == 0 {
-			return invalid("Maximum batch window in seconds must be greater than 0 if maximum batch size is " +
-				"greater than 10")
-		}
+		mp.BatchSize = *in.BatchSize
 	}
 
-	return nil
+	return mp.checkLimits()
 }
 
 // loadMappingByID reads a mapping of the caller.
@@ -318,6 +323,122 @@ func (s *Service) DeleteEventSourceMapping(
 	cfg := mp.configuration(m.Scope)
 	cfg.State = new("Deleting")
 	return &cfg, nil
+}
+
+// UpdateEventSourceMapping changes a mapping's function and settings. Its
+// poller stops first, so the change starts from the last batch it finished.
+func (s *Service) UpdateEventSourceMapping(
+	ctx context.Context,
+	in *api.UpdateEventSourceMappingRequest,
+) (*api.EventSourceMappingConfiguration, error) {
+	m, current, err := s.loadMappingByID(ctx, in.UUID)
+	if err != nil {
+		return nil, err
+	}
+
+	name, qualifier := current.FunctionName, current.Qualifier
+	if in.FunctionName != nil {
+		_, fn, loadErr := s.load(ctx, in.FunctionName)
+		if loadErr != nil {
+			return nil, loadErr
+		}
+
+		_, qualifier, _ = resolveName(m, *in.FunctionName)
+		name = fn.Name
+	}
+
+	change := func(mp *mapping) error {
+		mp.FunctionName, mp.Qualifier = name, qualifier
+		if in.Enabled != nil {
+			mp.Enabled = *in.Enabled
+		}
+
+		if in.BatchSize != nil {
+			mp.BatchSize = *in.BatchSize
+		}
+
+		if in.MaximumRetryAttempts != nil {
+			if mp.StartingPosition == "" {
+				return invalid("MaximumRetryAttempts is only valid for stream event sources")
+			}
+
+			mp.MaximumRetryAttempts = in.MaximumRetryAttempts
+		}
+
+		if optionsErr := batchOptions(
+			in.MaximumBatchingWindowInSeconds, in.FunctionResponseTypes, in.FilterCriteria, mp,
+		); optionsErr != nil {
+			return optionsErr
+		}
+
+		mp.LastModified = s.now().UnixMilli()
+		return mp.checkLimits()
+	}
+
+	// Check the change before stopping the poller.
+	if changeErr := change(current); changeErr != nil {
+		return nil, changeErr
+	}
+
+	<-s.stopPoller(current.UUID)
+	var updated *mapping
+	prefix := scopeKey(m.Scope, kindMapping, "")
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		mp, found, loadErr := loadMapping(tx, prefix+current.UUID)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		if !found {
+			return notFound("Event source mapping " + current.UUID)
+		}
+
+		if changeErr := change(mp); changeErr != nil {
+			return changeErr
+		}
+
+		for _, k := range tx.Keys(prefix) {
+			other, _, otherErr := loadMapping(tx, k)
+			if otherErr != nil {
+				return otherErr
+			}
+
+			if dupErr := mp.duplicates(m.Scope, other); dupErr != nil {
+				return dupErr
+			}
+		}
+
+		updated = mp
+		return writeJSON(tx, prefix+mp.UUID, mp)
+	})
+
+	// A failed update leaves the stored mapping, which polls again if enabled.
+	running := updated
+	if err != nil {
+		running = s.storedMapping(m.Scope, current.UUID)
+	}
+
+	if running != nil && running.Enabled {
+		s.startPoller(m.Scope, running) //nolint:contextcheck // The poller outlives the request until Stop.
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := updated.configuration(m.Scope)
+	return &cfg, nil
+}
+
+// storedMapping reads a mapping, or returns nil when it is gone or unreadable.
+func (s *Service) storedMapping(scope request.Scope, id string) *mapping {
+	var mp *mapping
+	_ = s.store.View(s.ctx, func(tx storage.ReadTx) error {
+		mp, _, _ = loadMapping(tx, scopeKey(scope, kindMapping, id))
+		return nil
+	})
+
+	return mp
 }
 
 func (s *Service) ListEventSourceMappings(
@@ -425,10 +546,18 @@ func (s *Service) Resume(ctx context.Context) error {
 	return nil
 }
 
+// poller is a running mapping poller: cancel ends it, and done closes once it
+// has returned.
+type poller struct {
+	cancel context.CancelFunc
+	done   chan struct{}
+}
+
 func (s *Service) startPoller(scope request.Scope, mp *mapping) {
 	ctx, cancel := context.WithCancel(s.ctx)
+	p := &poller{cancel: cancel, done: make(chan struct{})}
 	s.mu.Lock()
-	s.pollers[mp.UUID] = cancel
+	s.pollers[mp.UUID] = p
 	s.mu.Unlock()
 	poll := s.poll
 	switch {
@@ -438,18 +567,30 @@ func (s *Service) startPoller(scope request.Scope, mp *mapping) {
 		poll = s.pollStream
 	}
 
-	if !s.spawn(func(context.Context) { poll(ctx, scope, *mp) }) {
+	if !s.spawn(func(context.Context) {
+		defer close(p.done)
+		poll(ctx, scope, *mp)
+	}) {
 		cancel()
+		close(p.done)
 	}
 }
 
-func (s *Service) stopPoller(id string) {
+// stopPoller ends a mapping's poller and returns a channel that closes once it
+// has returned, so its last cursor or result is stored.
+func (s *Service) stopPoller(id string) <-chan struct{} {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if cancel, ok := s.pollers[id]; ok {
-		cancel()
-		delete(s.pollers, id)
+	p, ok := s.pollers[id]
+	if !ok {
+		done := make(chan struct{})
+		close(done)
+		return done
 	}
+
+	p.cancel()
+	delete(s.pollers, id)
+	return p.done
 }
 
 // sqsRecord is one message of the SQS event Lambda passes to functions.

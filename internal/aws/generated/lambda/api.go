@@ -610,6 +610,17 @@ type DeleteFunctionUrlConfigRequest struct {
 	Qualifier    *string `json:"-"`
 }
 
+type UpdateEventSourceMappingRequest struct {
+	UUID                           *string         `json:"-"`
+	FunctionName                   *string         `json:"FunctionName,omitempty"`
+	Enabled                        *bool           `json:"Enabled,omitempty"`
+	BatchSize                      *int64          `json:"BatchSize,omitempty"`
+	FilterCriteria                 *FilterCriteria `json:"FilterCriteria,omitempty"`
+	MaximumBatchingWindowInSeconds *int64          `json:"MaximumBatchingWindowInSeconds,omitempty"`
+	MaximumRetryAttempts           *int64          `json:"MaximumRetryAttempts,omitempty"`
+	FunctionResponseTypes          []string        `json:"FunctionResponseTypes,omitempty"`
+}
+
 type API interface {
 	CreateFunction(context.Context, *CreateFunctionRequest) (*FunctionConfiguration, error)
 	GetFunction(context.Context, *GetFunctionRequest) (*GetFunctionResponse, error)
@@ -655,6 +666,7 @@ type API interface {
 	UpdateFunctionUrlConfig(context.Context, *UpdateFunctionUrlConfigRequest) (*UpdateFunctionUrlConfigResponse, error)
 	ListFunctionUrlConfigs(context.Context, *ListFunctionUrlConfigsRequest) (*ListFunctionUrlConfigsResponse, error)
 	DeleteFunctionUrlConfig(context.Context, *DeleteFunctionUrlConfigRequest) (*DeleteFunctionUrlConfigOutput, error)
+	UpdateEventSourceMapping(context.Context, *UpdateEventSourceMappingRequest) (*EventSourceMappingConfiguration, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -784,6 +796,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteFunctionUrlConfig": {Name: "DeleteFunctionUrlConfig", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName"}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2021-10-31/functions/{FunctionName}/url", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteFunctionUrlConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteFunctionUrlConfig(ctx, input.(*DeleteFunctionUrlConfigRequest))
+		}},
+		"UpdateEventSourceMapping": {Name: "UpdateEventSourceMapping", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BatchSize": catalog.MemberBinding{Location: "document", Name: "BatchSize"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "Enabled"}, "FilterCriteria": catalog.MemberBinding{Location: "document", Name: "FilterCriteria"}, "FunctionName": catalog.MemberBinding{Location: "document", Name: "FunctionName"}, "FunctionResponseTypes": catalog.MemberBinding{Location: "document", Name: "FunctionResponseTypes"}, "MaximumBatchingWindowInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumBatchingWindowInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}, "UUID": catalog.MemberBinding{Location: "label", Name: "UUID"}}, Output: map[string]catalog.MemberBinding{"BatchSize": catalog.MemberBinding{Location: "document", Name: "BatchSize"}, "EventSourceArn": catalog.MemberBinding{Location: "document", Name: "EventSourceArn"}, "FilterCriteria": catalog.MemberBinding{Location: "document", Name: "FilterCriteria"}, "FunctionArn": catalog.MemberBinding{Location: "document", Name: "FunctionArn"}, "FunctionResponseTypes": catalog.MemberBinding{Location: "document", Name: "FunctionResponseTypes"}, "LastModified": catalog.MemberBinding{Location: "document", Name: "LastModified"}, "LastProcessingResult": catalog.MemberBinding{Location: "document", Name: "LastProcessingResult"}, "MaximumBatchingWindowInSeconds": catalog.MemberBinding{Location: "document", Name: "MaximumBatchingWindowInSeconds"}, "MaximumRetryAttempts": catalog.MemberBinding{Location: "document", Name: "MaximumRetryAttempts"}, "StartingPosition": catalog.MemberBinding{Location: "document", Name: "StartingPosition"}, "State": catalog.MemberBinding{Location: "document", Name: "State"}, "StateTransitionReason": catalog.MemberBinding{Location: "document", Name: "StateTransitionReason"}, "UUID": catalog.MemberBinding{Location: "document", Name: "UUID"}}, Method: "PUT", URI: "/2015-03-31/event-source-mappings/{UUID}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &UpdateEventSourceMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateEventSourceMapping(ctx, input.(*UpdateEventSourceMappingRequest))
 		}},
 	}}
 }

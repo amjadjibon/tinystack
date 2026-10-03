@@ -2810,7 +2810,8 @@
       "GetFunctionUrlConfig",
       "UpdateFunctionUrlConfig",
       "ListFunctionUrlConfigs",
-      "DeleteFunctionUrlConfig"
+      "DeleteFunctionUrlConfig",
+      "UpdateEventSourceMapping"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -3297,6 +3298,16 @@
       "DeleteFunctionUrlConfigRequest": [
         "FunctionName",
         "Qualifier"
+      ],
+      "UpdateEventSourceMappingRequest": [
+        "UUID",
+        "FunctionName",
+        "Enabled",
+        "BatchSize",
+        "FilterCriteria",
+        "MaximumBatchingWindowInSeconds",
+        "MaximumRetryAttempts",
+        "FunctionResponseTypes"
       ]
     }
   },

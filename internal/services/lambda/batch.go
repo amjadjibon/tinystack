@@ -19,35 +19,75 @@ const (
 var filterPatterns = pattern.Dialect{MaxNumeric: 5e9}
 
 // batchOptions checks and stores the options that queue and stream mappings
-// share: the batching window, filters, and batch item failure reporting.
-func batchOptions(in *api.CreateEventSourceMappingRequest, mp *mapping) error {
-	if window := value(in.MaximumBatchingWindowInSeconds); window < 0 || window > maxBatchingWindow {
-		return invalid("MaximumBatchingWindowInSeconds must be between 0 and %d", maxBatchingWindow)
-	}
-
-	mp.BatchingWindow = value(in.MaximumBatchingWindowInSeconds)
-	for _, t := range in.FunctionResponseTypes {
-		if t != reportBatchItemFailures {
-			return invalid("FunctionResponseTypes must be %s", reportBatchItemFailures)
+// share: the batching window, filters, and batch item failure reporting. A
+// nil option keeps the mapping's setting, and empty ones clear it.
+func batchOptions(window *int64, responseTypes []string, criteria *api.FilterCriteria, mp *mapping) error {
+	if window != nil {
+		if *window < 0 || *window > maxBatchingWindow {
+			return invalid("MaximumBatchingWindowInSeconds must be between 0 and %d", maxBatchingWindow)
 		}
 
-		mp.ReportFailures = true
+		mp.BatchingWindow = *window
 	}
 
-	if in.FilterCriteria == nil {
+	if responseTypes != nil {
+		mp.ReportFailures = false
+		for _, t := range responseTypes {
+			if t != reportBatchItemFailures {
+				return invalid("FunctionResponseTypes must be %s", reportBatchItemFailures)
+			}
+
+			mp.ReportFailures = true
+		}
+	}
+
+	if criteria == nil {
 		return nil
 	}
 
-	if len(in.FilterCriteria.Filters) > maxFilters {
+	if len(criteria.Filters) > maxFilters {
 		return invalid("FilterCriteria can have at most %d filters", maxFilters)
 	}
 
-	for _, f := range in.FilterCriteria.Filters {
+	mp.Filters = nil
+	for _, f := range criteria.Filters {
 		if _, err := pattern.Compile(value(f.Pattern), filterPatterns); err != nil {
 			return invalid("Invalid filter pattern definition. %s", err.Error())
 		}
 
 		mp.Filters = append(mp.Filters, value(f.Pattern))
+	}
+
+	return nil
+}
+
+// checkLimits checks the mapping's batch size and retries against its kind of
+// event source.
+func (mp *mapping) checkLimits() error {
+	if mp.StartingPosition == "" {
+		if mp.BatchSize < 1 || mp.BatchSize > maxSQSWindowed {
+			return invalid("BatchSize must be between 1 and %d for SQS", maxSQSWindowed)
+		}
+
+		if mp.BatchSize > maxSQSBatch && mp.BatchingWindow == 0 {
+			return invalid("Maximum batch window in seconds must be greater than 0 if maximum batch size is " +
+				"greater than 10")
+		}
+
+		return nil
+	}
+
+	kind := "DynamoDB streams"
+	if isKinesis(mp.EventSourceArn) {
+		kind = "Kinesis streams"
+	}
+
+	if mp.BatchSize < 1 || mp.BatchSize > maxStreamBatch {
+		return invalid("BatchSize must be between 1 and %d for %s", maxStreamBatch, kind)
+	}
+
+	if retries := value(mp.MaximumRetryAttempts); retries < -1 || retries > maxRetries {
+		return invalid("MaximumRetryAttempts must be between -1 and %d", maxRetries)
 	}
 
 	return nil

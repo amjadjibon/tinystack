@@ -50,18 +50,16 @@ func (s *Service) streamSource(
 
 	mp.BatchSize = streamBatch
 	if in.BatchSize != nil {
-		if mp.BatchSize = *in.BatchSize; mp.BatchSize < 1 || mp.BatchSize > maxStreamBatch {
-			return invalid("BatchSize must be between 1 and %d for DynamoDB streams", maxStreamBatch)
-		}
+		mp.BatchSize = *in.BatchSize
 	}
 
 	mp.MaximumRetryAttempts = new(int64(-1))
 	if in.MaximumRetryAttempts != nil {
-		if *in.MaximumRetryAttempts < -1 || *in.MaximumRetryAttempts > maxRetries {
-			return invalid("MaximumRetryAttempts must be between -1 and %d", maxRetries)
-		}
-
 		mp.MaximumRetryAttempts = in.MaximumRetryAttempts
+	}
+
+	if err := mp.checkLimits(); err != nil {
+		return err
 	}
 
 	latest, err := s.streams.Latest(request.WithMetadata(ctx, request.Metadata{Scope: scope}), mp.EventSourceArn)

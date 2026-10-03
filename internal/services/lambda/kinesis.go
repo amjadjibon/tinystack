@@ -47,18 +47,16 @@ func (s *Service) kinesisSource(
 
 	mp.BatchSize = streamBatch
 	if in.BatchSize != nil {
-		if mp.BatchSize = *in.BatchSize; mp.BatchSize < 1 || mp.BatchSize > maxStreamBatch {
-			return invalid("BatchSize must be between 1 and %d for Kinesis streams", maxStreamBatch)
-		}
+		mp.BatchSize = *in.BatchSize
 	}
 
 	mp.MaximumRetryAttempts = new(int64(-1))
 	if in.MaximumRetryAttempts != nil {
-		if *in.MaximumRetryAttempts < -1 || *in.MaximumRetryAttempts > maxRetries {
-			return invalid("MaximumRetryAttempts must be between -1 and %d", maxRetries)
-		}
-
 		mp.MaximumRetryAttempts = in.MaximumRetryAttempts
+	}
+
+	if err := mp.checkLimits(); err != nil {
+		return err
 	}
 
 	shards, err := s.kinesis.Shards(ctx, mp.EventSourceArn)
