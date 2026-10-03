@@ -1131,10 +1131,11 @@ SQS limits: no throughput limits (the high-throughput FIFO settings only choose 
 message groups on standard queues, message move tasks for FIFO queues,
 or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `application` or `firehose` subscriptions, SMS sandbox, opt-outs, or spending limits, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
-S3 limits: no multiple ranges per request, MFA delete, ACLs other than `private`,
-policies, encryption (other than the `AES256` header, which every object has), POST uploads, lifecycle, or stored checksums on
-reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no layers, `ImageConfig`, function URLs,
-concurrency settings, resource policy evaluation, or event sources other than SQS, DynamoDB
+S3 limits: no multiple ranges per request, MFA delete, ACLs other than the owner's full control,
+policy evaluation, object encryption (bucket encryption settings are stored; every object reports `AES256`), POST uploads,
+lifecycle expiration or transitions (rules are stored), a website endpoint, or stored checksums on
+reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no `ImageConfig`, pre-started provisioned
+environments, resource policy evaluation, or event sources other than SQS, DynamoDB
 streams, and Kinesis streams (no `AT_TIMESTAMP`, parallelization factor, or tumbling windows) (no bisecting, failure destinations, or `UpdateEventSourceMapping`); asynchronous failures are
 logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
 buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, or targets other than
@@ -1189,7 +1190,7 @@ query logging, DNSSEC signing, CIDR collections, or geoproximity records. ACM li
 CloudWatch limits: no anomaly detection, Metrics Insights queries, metric streams, insight rules, log alarms, EC2 or
 Systems Manager alarm actions, alarm mute rules, or AWS namespaces (services do not publish metrics), and metric math
 supports only the operators and functions listed above.
-STS limits: no MFA (`SerialNumber` and `TokenCode`), federation, web identity, SAML,
+STS limits: no MFA (`SerialNumber` and `TokenCode`), federation, web identity token signature checks, SAML,
 session tags, or session policies, and functions created with temporary
 credentials run without a usable secret key. Asynchronous Lambda invocations still in flight are lost on
 restart. Table names (not ARNs)
