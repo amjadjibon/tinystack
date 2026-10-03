@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -26,6 +27,8 @@ const (
 type Service struct {
 	store  storage.Store
 	logger *slog.Logger
+	// caller writes exports to S3; see UseCaller.
+	caller *catalog.Caller
 	// ctx ends the TTL sweeper on Stop.
 	ctx    context.Context
 	cancel context.CancelFunc

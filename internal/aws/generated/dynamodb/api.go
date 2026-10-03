@@ -587,6 +587,65 @@ type RestoreTableToPointInTimeOutput struct {
 	TableDescription *TableDescription `json:"TableDescription,omitempty"`
 }
 
+type ExportTableToPointInTimeInput struct {
+	TableArn     *string  `json:"TableArn,omitempty"`
+	ExportTime   *float64 `json:"ExportTime,omitempty"`
+	ClientToken  *string  `json:"ClientToken,omitempty"`
+	S3Bucket     *string  `json:"S3Bucket,omitempty"`
+	S3Prefix     *string  `json:"S3Prefix,omitempty"`
+	ExportFormat *string  `json:"ExportFormat,omitempty"`
+	ExportType   *string  `json:"ExportType,omitempty"`
+}
+
+type ExportDescription struct {
+	ExportArn       *string  `json:"ExportArn,omitempty"`
+	ExportStatus    *string  `json:"ExportStatus,omitempty"`
+	StartTime       *float64 `json:"StartTime,omitempty"`
+	EndTime         *float64 `json:"EndTime,omitempty"`
+	ExportManifest  *string  `json:"ExportManifest,omitempty"`
+	TableArn        *string  `json:"TableArn,omitempty"`
+	TableId         *string  `json:"TableId,omitempty"`
+	ExportTime      *float64 `json:"ExportTime,omitempty"`
+	ClientToken     *string  `json:"ClientToken,omitempty"`
+	S3Bucket        *string  `json:"S3Bucket,omitempty"`
+	S3Prefix        *string  `json:"S3Prefix,omitempty"`
+	FailureCode     *string  `json:"FailureCode,omitempty"`
+	FailureMessage  *string  `json:"FailureMessage,omitempty"`
+	ExportFormat    *string  `json:"ExportFormat,omitempty"`
+	BilledSizeBytes *int64   `json:"BilledSizeBytes,omitempty"`
+	ItemCount       *int64   `json:"ItemCount,omitempty"`
+	ExportType      *string  `json:"ExportType,omitempty"`
+}
+
+type ExportTableToPointInTimeOutput struct {
+	ExportDescription *ExportDescription `json:"ExportDescription,omitempty"`
+}
+
+type DescribeExportInput struct {
+	ExportArn *string `json:"ExportArn,omitempty"`
+}
+
+type DescribeExportOutput struct {
+	ExportDescription *ExportDescription `json:"ExportDescription,omitempty"`
+}
+
+type ListExportsInput struct {
+	TableArn   *string `json:"TableArn,omitempty"`
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type ExportSummary struct {
+	ExportArn    *string `json:"ExportArn,omitempty"`
+	ExportStatus *string `json:"ExportStatus,omitempty"`
+	ExportType   *string `json:"ExportType,omitempty"`
+}
+
+type ListExportsOutput struct {
+	ExportSummaries []ExportSummary `json:"ExportSummaries,omitempty"`
+	NextToken       *string         `json:"NextToken,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -616,10 +675,13 @@ type API interface {
 	RestoreTableFromBackup(context.Context, *RestoreTableFromBackupInput) (*RestoreTableFromBackupOutput, error)
 	UpdateContinuousBackups(context.Context, *UpdateContinuousBackupsInput) (*UpdateContinuousBackupsOutput, error)
 	RestoreTableToPointInTime(context.Context, *RestoreTableToPointInTimeInput) (*RestoreTableToPointInTimeOutput, error)
+	ExportTableToPointInTime(context.Context, *ExportTableToPointInTimeInput) (*ExportTableToPointInTimeOutput, error)
+	DescribeExport(context.Context, *DescribeExportInput) (*DescribeExportOutput, error)
+	ListExports(context.Context, *ListExportsInput) (*ListExportsOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidExportTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTable": {Name: "CreateTable", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.CreateTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTable(ctx, input.(*CreateTableInput))
 		}},
@@ -695,6 +757,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"RestoreTableToPointInTime": {Name: "RestoreTableToPointInTime", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.RestoreTableToPointInTime", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &RestoreTableToPointInTimeInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.RestoreTableToPointInTime(ctx, input.(*RestoreTableToPointInTimeInput))
+		}},
+		"ExportTableToPointInTime": {Name: "ExportTableToPointInTime", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ExportTableToPointInTime", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ExportTableToPointInTimeInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ExportTableToPointInTime(ctx, input.(*ExportTableToPointInTimeInput))
+		}},
+		"DescribeExport": {Name: "DescribeExport", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeExport", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeExportInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeExport(ctx, input.(*DescribeExportInput))
+		}},
+		"ListExports": {Name: "ListExports", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ListExports", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListExportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListExports(ctx, input.(*ListExportsInput))
 		}},
 	}}
 }

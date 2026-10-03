@@ -220,6 +220,7 @@ func serverStore(
 	balancers.UseCaller(caller)
 	stacks.UseCaller(caller)
 	logGroups.UseCaller(caller)
+	tables.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)

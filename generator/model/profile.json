@@ -28,7 +28,10 @@
       "DeleteBackup",
       "RestoreTableFromBackup",
       "UpdateContinuousBackups",
-      "RestoreTableToPointInTime"
+      "RestoreTableToPointInTime",
+      "ExportTableToPointInTime",
+      "DescribeExport",
+      "ListExports"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -465,6 +468,57 @@
       ],
       "UpdateContinuousBackupsOutput": [
         "ContinuousBackupsDescription"
+      ],
+      "ExportTableToPointInTimeInput": [
+        "TableArn",
+        "ExportTime",
+        "ClientToken",
+        "S3Bucket",
+        "S3Prefix",
+        "ExportFormat",
+        "ExportType"
+      ],
+      "ExportTableToPointInTimeOutput": [
+        "ExportDescription"
+      ],
+      "ExportDescription": [
+        "ExportArn",
+        "ExportStatus",
+        "StartTime",
+        "EndTime",
+        "ExportManifest",
+        "TableArn",
+        "TableId",
+        "ExportTime",
+        "ClientToken",
+        "S3Bucket",
+        "S3Prefix",
+        "FailureCode",
+        "FailureMessage",
+        "ExportFormat",
+        "BilledSizeBytes",
+        "ItemCount",
+        "ExportType"
+      ],
+      "DescribeExportInput": [
+        "ExportArn"
+      ],
+      "DescribeExportOutput": [
+        "ExportDescription"
+      ],
+      "ListExportsInput": [
+        "TableArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListExportsOutput": [
+        "ExportSummaries",
+        "NextToken"
+      ],
+      "ExportSummary": [
+        "ExportArn",
+        "ExportStatus",
+        "ExportType"
       ]
     }
   },
