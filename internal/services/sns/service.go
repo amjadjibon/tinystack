@@ -95,14 +95,18 @@ func (sub *subscription) arn(topicARN string) string {
 }
 
 type topic struct {
-	Attributes    map[string]string `json:",omitempty"`
-	Tags          map[string]string `json:",omitempty"`
+	Attributes map[string]string `json:",omitempty"`
+	Tags       map[string]string `json:",omitempty"`
+	// Dedup holds a FIFO topic's recent messages by deduplication ID.
+	Dedup         map[string]*sequenced `json:",omitempty"`
 	Subscriptions []subscription
 	CreatedAt     int64
+	// Sequence is the last sequence number a FIFO topic gave a message.
+	Sequence uint64 `json:",omitempty"`
 }
 
 var (
-	topicName = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
+	topicName = regexp.MustCompile(`^(?:[A-Za-z0-9_-]{1,256}|[A-Za-z0-9_-]{1,251}\.fifo)$`)
 	accountID = regexp.MustCompile(`^\d{12}$`)
 )
 
@@ -261,15 +265,13 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 
 	name := value(in.Name)
 	if !topicName.MatchString(name) {
-		return nil, invalid(
-			"Topic Name must be 1 to 256 alphanumeric characters, hyphens, or underscores; FIFO topics are not supported",
-		)
+		return nil, invalid("Topic Name must be 1 to 256 alphanumeric characters, hyphens, or underscores, " +
+			"ending in .fifo for a FIFO topic")
 	}
 
-	for k, v := range in.Attributes {
-		if guardErr := checkTopicAttribute(k, v); guardErr != nil {
-			return nil, guardErr
-		}
+	attributes, err := topicAttributes(name, in.Attributes)
+	if err != nil {
+		return nil, err
 	}
 
 	tags, err := tagMap(in.Tags)
@@ -284,7 +286,7 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 	key := topicKey(m, name)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); !exists {
-			t := &topic{Attributes: in.Attributes, Tags: tags, CreatedAt: s.now().Unix()}
+			t := &topic{Attributes: attributes, Tags: tags, CreatedAt: s.now().Unix()}
 			return save(tx, key, t)
 		}
 
@@ -406,6 +408,10 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
 			return loadErr
+		}
+
+		if guardErr := t.checkSubscription(sub.Protocol, sub.Endpoint); guardErr != nil {
+			return guardErr
 		}
 
 		for _, existing := range t.Subscriptions {

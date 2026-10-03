@@ -150,7 +150,7 @@ func (s *Service) deliverEndpoint(sub *subscription, subARN string, envelope *no
 		"X-Amz-Sns-Topic-Arn": {envelope.TopicArn}, "X-Amz-Sns-Subscription-Arn": {subARN},
 	}
 	if sub.Raw {
-		header.Set("X-Amz-Sns-Rawdelivery", "true")
+		header.Set("X-Amz-Sns-Rawdelivery", valueTrue)
 	}
 
 	s.post(envelope.TopicArn, sub, header, body)

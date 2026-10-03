@@ -101,15 +101,18 @@ type MessageAttributeValue struct {
 }
 
 type PublishInput struct {
-	TopicArn          *string                          `json:"TopicArn,omitempty" query:"TopicArn"`
-	Message           *string                          `json:"Message,omitempty" query:"Message"`
-	Subject           *string                          `json:"Subject,omitempty" query:"Subject"`
-	MessageStructure  *string                          `json:"MessageStructure,omitempty" query:"MessageStructure"`
-	MessageAttributes map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttributes,key=Name,value=Value"`
+	TopicArn               *string                          `json:"TopicArn,omitempty" query:"TopicArn"`
+	Message                *string                          `json:"Message,omitempty" query:"Message"`
+	Subject                *string                          `json:"Subject,omitempty" query:"Subject"`
+	MessageStructure       *string                          `json:"MessageStructure,omitempty" query:"MessageStructure"`
+	MessageAttributes      map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttributes,key=Name,value=Value"`
+	MessageDeduplicationId *string                          `json:"MessageDeduplicationId,omitempty" query:"MessageDeduplicationId"`
+	MessageGroupId         *string                          `json:"MessageGroupId,omitempty" query:"MessageGroupId"`
 }
 
 type PublishResponse struct {
-	MessageId *string `json:"MessageId,omitempty" query:"MessageId"`
+	MessageId      *string `json:"MessageId,omitempty" query:"MessageId"`
+	SequenceNumber *string `json:"SequenceNumber,omitempty" query:"SequenceNumber"`
 }
 
 type GetTopicAttributesInput struct {
@@ -169,11 +172,13 @@ type ListTagsForResourceResponse struct {
 }
 
 type PublishBatchRequestEntry struct {
-	Id                *string                          `json:"Id,omitempty" query:"Id"`
-	Message           *string                          `json:"Message,omitempty" query:"Message"`
-	Subject           *string                          `json:"Subject,omitempty" query:"Subject"`
-	MessageStructure  *string                          `json:"MessageStructure,omitempty" query:"MessageStructure"`
-	MessageAttributes map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttributes,key=Name,value=Value"`
+	Id                     *string                          `json:"Id,omitempty" query:"Id"`
+	Message                *string                          `json:"Message,omitempty" query:"Message"`
+	Subject                *string                          `json:"Subject,omitempty" query:"Subject"`
+	MessageStructure       *string                          `json:"MessageStructure,omitempty" query:"MessageStructure"`
+	MessageAttributes      map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttributes,key=Name,value=Value"`
+	MessageDeduplicationId *string                          `json:"MessageDeduplicationId,omitempty" query:"MessageDeduplicationId"`
+	MessageGroupId         *string                          `json:"MessageGroupId,omitempty" query:"MessageGroupId"`
 }
 
 type PublishBatchInput struct {
@@ -182,8 +187,9 @@ type PublishBatchInput struct {
 }
 
 type PublishBatchResultEntry struct {
-	Id        *string `json:"Id,omitempty" query:"Id"`
-	MessageId *string `json:"MessageId,omitempty" query:"MessageId"`
+	Id             *string `json:"Id,omitempty" query:"Id"`
+	MessageId      *string `json:"MessageId,omitempty" query:"MessageId"`
+	SequenceNumber *string `json:"SequenceNumber,omitempty" query:"SequenceNumber"`
 }
 
 type BatchResultErrorEntry struct {

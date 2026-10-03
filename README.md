@@ -244,12 +244,12 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 ### SNS (AWS Query)
 
-Standard topics that fan out to SQS queues and Lambda functions in-process, POST to HTTP and HTTPS endpoints, and
+Standard and FIFO topics that fan out to SQS queues and Lambda functions in-process, POST to HTTP and HTTPS endpoints, and
 record email in `/_tinystack/deliveries` (no mail is sent).
 
 | Operation | Behavior |
 | --- | --- |
-| CreateTopic | Idempotent for identical attributes; `DisplayName`, the `*FeedbackSampleRate` attributes, and `Tags` |
+| CreateTopic | Idempotent for identical attributes; `DisplayName`, the `*FeedbackSampleRate` attributes, and `Tags`; FIFO topics (a `.fifo` name and `FifoTopic`) with `ContentBasedDeduplication` |
 | GetTopicAttributes / SetTopicAttributes | The writable attributes above plus `TopicArn`, `Owner`, subscription counts, and the default owner-only `Policy`; delivery status sample rates are stored, but nothing is logged |
 | GetSubscriptionAttributes / SetSubscriptionAttributes | Endpoint, protocol, owner, `PendingConfirmation`, `RawMessageDelivery`, `FilterPolicy`, and `FilterPolicyScope` |
 | TagResource / UntagResource / ListTagsForResource | Topic ARNs |
@@ -258,6 +258,7 @@ record email in `/_tinystack/deliveries` (no mail is sent).
 | Subscribe / Unsubscribe | `sqs` (queue ARN) and `lambda` (function ARN) protocols with endpoints in the subscriber's account, confirmed at once; `http`, `https`, `email`, and `email-json` subscriptions, which wait for confirmation (Subscribe returns `pending confirmation` unless `ReturnSubscriptionArn` is set, and lists show `PendingConfirmation`); `RawMessageDelivery` for queues and HTTP endpoints; `FilterPolicy` and `FilterPolicyScope`; subscribing twice with the same attributes returns the existing subscription (and sends a pending one's confirmation request again) |
 | ConfirmSubscription | Confirms a pending subscription with the token from its confirmation request: an HTTP endpoint receives a `SubscriptionConfirmation` POST, and an email subscription's request is in the delivery log; its `SubscribeURL` is an unsigned `GET /?Action=ConfirmSubscription&TopicArn=…&Token=…` on TinyStack (signed in `verify` mode) |
 | Publish | `Subject`, message attributes, and `MessageStructure` `json` (`default` plus optional `sqs` and `lambda` texts); each subscribed queue gets the notification JSON envelope, or the raw message and attributes with `RawMessageDelivery`; each subscribed function is invoked asynchronously with an `aws:sns` event; each confirmed HTTP endpoint receives a POST in the background with SNS's `x-amz-sns-*` headers (a response other than 2XX is a failed delivery, not retried); each confirmed `email` subscription gets the text and `email-json` the envelope in the delivery log; subscriptions whose filter policy rejects the message are skipped; a failed delivery does not fail Publish |
+| FIFO topics | Deliver only to SQS queues (and FIFO queues subscribe only to FIFO topics); a message needs a `MessageGroupId` and a `MessageDeduplicationId` unless the topic has content-based deduplication (the message's SHA-256); a deduplication ID seen within 5 minutes returns the first message's ID and sequence number and is not delivered; Publish and PublishBatch return a `SequenceNumber`, the envelope carries it, and FIFO queues get the message's group and deduplication ID |
 | PublishBatch | Up to 10 entries with distinct IDs and 256 KiB in total, each published as Publish does; an entry that fails is reported in `Failed` (with its AWS Query error code) while the others are published |
 
 Filter policies use the EventBridge pattern syntax without `wildcard`: exact
@@ -1122,7 +1123,7 @@ parallel scans, PartiQL, Kinesis streaming, stream shard splits, backups, or cap
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),
 message groups on standard queues, message move tasks for FIFO queues,
-or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `sms`, `application`, or `firehose` subscriptions, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no FIFO topics, message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
+or policies; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `sms`, `application`, or `firehose` subscriptions, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no message signatures (the envelope omits the `Signature` fields), topic policies, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than `private`,
 policies, encryption (other than the `AES256` header, which every object has), POST uploads, lifecycle, or stored checksums on

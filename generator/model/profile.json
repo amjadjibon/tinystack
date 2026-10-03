@@ -4497,10 +4497,13 @@
         "Message",
         "Subject",
         "MessageStructure",
-        "MessageAttributes"
+        "MessageAttributes",
+        "MessageDeduplicationId",
+        "MessageGroupId"
       ],
       "PublishResponse": [
-        "MessageId"
+        "MessageId",
+        "SequenceNumber"
       ],
       "MessageAttributeValue": [
         "DataType",
@@ -4563,7 +4566,9 @@
         "Message",
         "Subject",
         "MessageStructure",
-        "MessageAttributes"
+        "MessageAttributes",
+        "MessageDeduplicationId",
+        "MessageGroupId"
       ],
       "PublishBatchResponse": [
         "Successful",
@@ -4571,7 +4576,8 @@
       ],
       "PublishBatchResultEntry": [
         "Id",
-        "MessageId"
+        "MessageId",
+        "SequenceNumber"
       ],
       "BatchResultErrorEntry": [
         "Id",

@@ -151,7 +151,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   mover (started by `New`, ended by `Stop`, also deferred in `start.go`) moves each running task's next batch in one
   `Update`. SNS holds a
   `*sqs.Service` and delivers through `sqs.Service.Deliver` (in-process, never HTTP); each topic record holds its
-  subscriptions, and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. HTTP, HTTPS, and
+  subscriptions (and, for a FIFO topic, its sequence counter and the last 5 minutes of deduplication IDs, `sns/fifo.go`), and Publish skips those whose filter policy (`sns/filter.go`) rejects the message. HTTP, HTTPS, and
   email subscriptions (`sns/endpoints.go`) are pending until `ConfirmSubscription` presents their token; HTTP
   deliveries are `proxy.Forward` POSTs on the service's context in the background (`Stop`, deferred and a shutdown
   hook in `start.go`, ends them), and email is recorded in the `delivery.Log`. The gateway also takes AWS Query

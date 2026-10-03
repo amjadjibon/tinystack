@@ -30,11 +30,11 @@ const (
 func (sub *subscription) set(name, v string) error {
 	switch name {
 	case attrRaw:
-		if v != "true" && v != "false" {
+		if v != valueTrue && v != valueFalse {
 			return invalid("RawMessageDelivery must be true or false")
 		}
 
-		sub.Raw = v == "true"
+		sub.Raw = v == valueTrue
 	case attrFilterPolicy:
 		// An empty policy removes the filter.
 		if v == "{}" {

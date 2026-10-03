@@ -24,6 +24,10 @@ func checkTopicAttribute(name, v string) error {
 		if len(v) > 100 {
 			return invalid("DisplayName must be at most 100 characters")
 		}
+	case name == attrFifo || name == attrContentDedup:
+		if v != valueTrue && v != valueFalse {
+			return invalid("%s must be true or false", name)
+		}
 	case strings.HasSuffix(name, "FeedbackSampleRate"):
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 0 || n > 100 {
@@ -116,6 +120,10 @@ func (s *Service) SetTopicAttributes(
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
 			return loadErr
+		}
+
+		if guardErr := t.checkSetAttribute(name); guardErr != nil {
+			return guardErr
 		}
 
 		if t.Attributes == nil {

@@ -67,9 +67,11 @@ func (s *Service) PublishBatch(ctx context.Context, in *api.PublishBatchInput) (
 	out := &api.PublishBatchResponse{Successful: []api.PublishBatchResultEntry{}, Failed: []api.BatchResultErrorEntry{}}
 	for i := range entries {
 		e := &entries[i]
-		messageID, publishErr := s.publish(ctx, key, e)
+		messageID, sequence, publishErr := s.publish(ctx, key, e)
 		if publishErr == nil {
-			out.Successful = append(out.Successful, api.PublishBatchResultEntry{Id: e.Id, MessageId: new(messageID)})
+			out.Successful = append(out.Successful, api.PublishBatchResultEntry{
+				Id: e.Id, MessageId: new(messageID), SequenceNumber: sequence,
+			})
 			continue
 		}
 

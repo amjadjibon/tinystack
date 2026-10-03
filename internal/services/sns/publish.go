@@ -36,6 +36,7 @@ type notification struct {
 	Subject           string `json:",omitempty"`
 	Message           string
 	Timestamp         string
+	SequenceNumber    string `json:",omitempty"`
 	UnsubscribeURL    string
 }
 
@@ -144,15 +145,16 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 		return nil, err
 	}
 
-	id, err := s.publish(ctx, key, &api.PublishBatchRequestEntry{
+	id, sequence, err := s.publish(ctx, key, &api.PublishBatchRequestEntry{
 		Message: in.Message, Subject: in.Subject, MessageStructure: in.MessageStructure,
-		MessageAttributes: in.MessageAttributes,
+		MessageAttributes: in.MessageAttributes, MessageGroupId: in.MessageGroupId,
+		MessageDeduplicationId: in.MessageDeduplicationId,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.PublishResponse{MessageId: new(id)}, nil
+	return &api.PublishResponse{MessageId: new(id), SequenceNumber: sequence}, nil
 }
 
 // checkMessage validates a message to publish and returns the text each
@@ -193,39 +195,59 @@ func messageSize(e *api.PublishBatchRequestEntry) int {
 }
 
 // publish sends one message to the subscribers of the topic stored under key
-// and returns its message ID.
-func (s *Service) publish(ctx context.Context, key string, e *api.PublishBatchRequestEntry) (string, error) {
+// and returns its message ID and, for a FIFO topic, its sequence number. A
+// FIFO topic's duplicate returns the first message's, and is not delivered.
+func (s *Service) publish(
+	ctx context.Context,
+	key string,
+	e *api.PublishBatchRequestEntry,
+) (id string, sequence *string, err error) {
 	m, err := identity(ctx)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	textFor, err := checkMessage(e)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
+	id = newID()
+	now := s.now()
 	var subs []subscription
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	var placed *sequenced
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
-		if loadErr == nil {
-			subs = t.Subscriptions
+		if loadErr != nil {
+			return loadErr
 		}
 
-		return loadErr
+		subs = t.Subscriptions
+		var placeErr error
+		if placed, placeErr = t.place(e, id, now); placeErr != nil || placed == nil || placed.Duplicate {
+			return placeErr
+		}
+
+		return save(tx, key, t)
 	})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	id := newID()
-	arn := keyARN(key)
 	envelope := notification{
 		Type:      "Notification",
 		MessageID: id,
-		TopicArn:  arn,
+		TopicArn:  keyARN(key),
 		Subject:   value(e.Subject),
-		Timestamp: s.now().UTC().Format(timestampFormat),
+		Timestamp: now.UTC().Format(timestampFormat),
+	}
+	if placed != nil {
+		if placed.Duplicate {
+			return placed.ID, &placed.Number, nil
+		}
+
+		sequence = &placed.Number
+		envelope.SequenceNumber = placed.Number
 	}
 
 	for name, a := range e.MessageAttributes {
@@ -247,11 +269,11 @@ func (s *Service) publish(ctx context.Context, key string, e *api.PublishBatchRe
 			continue
 		}
 
-		subARN := arn + ":" + sub.ID
+		subARN := envelope.TopicArn + ":" + sub.ID
 		envelope.Message = textFor(sub.Protocol)
 		accepted, filterErr := sub.accepts(e.MessageAttributes, envelope.Message)
 		if filterErr != nil {
-			return "", filterErr
+			return "", nil, filterErr
 		}
 
 		// A message the filter policy rejects is not delivered, and not logged.
@@ -260,12 +282,12 @@ func (s *Service) publish(ctx context.Context, key string, e *api.PublishBatchRe
 		}
 
 		envelope.UnsubscribeURL = m.Endpoint + "/?Action=Unsubscribe&SubscriptionArn=" + url.QueryEscape(subARN)
-		if deliverErr := s.deliver(ctx, sub, subARN, &envelope, e); deliverErr != nil {
-			return "", deliverErr
+		if deliverErr := s.deliver(ctx, sub, subARN, &envelope, e, placed); deliverErr != nil {
+			return "", nil, deliverErr
 		}
 	}
 
-	return id, nil
+	return id, sequence, nil
 }
 
 // deliver sends a notification to one subscriber. As in SNS, a failed
@@ -277,6 +299,7 @@ func (s *Service) deliver(
 	subARN string,
 	envelope *notification,
 	e *api.PublishBatchRequestEntry,
+	placed *sequenced,
 ) error {
 	if confirmable(sub.Protocol) {
 		return s.deliverEndpoint(sub, subARN, envelope)
@@ -311,10 +334,13 @@ func (s *Service) deliver(
 		body = string(encoded)
 	}
 
-	err := s.queues.Deliver(ctx, sub.Endpoint, &sqsapi.SendMessageBatchRequestEntry{
-		MessageBody:       &body,
-		MessageAttributes: attributes,
-	})
+	entry := &sqsapi.SendMessageBatchRequestEntry{MessageBody: &body, MessageAttributes: attributes}
+	// A FIFO queue keeps the topic's groups and deduplicates as the topic does.
+	if placed != nil && strings.HasSuffix(sub.Endpoint, fifoSuffix) {
+		entry.MessageGroupId, entry.MessageDeduplicationId = &placed.Group, &placed.Dedup
+	}
+
+	err := s.queues.Deliver(ctx, sub.Endpoint, entry)
 	s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(body), err)
 	return nil
 }

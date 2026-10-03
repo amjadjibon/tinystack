@@ -67,7 +67,8 @@ func TestSNSTopicsAndSubscriptions(t *testing.T) {
 	var badParam *snstypes.InvalidParameterException
 	for _, in := range []*sns.CreateTopicInput{
 		{Name: aws.String("events")},
-		{Name: aws.String("orders.fifo"), Attributes: map[string]string{"FifoTopic": "true"}},
+		{Name: aws.String("orders.fifo")},
+		{Name: aws.String("orders"), Attributes: map[string]string{"FifoTopic": "true"}},
 		{Name: aws.String("bad name")},
 	} {
 		if _, err = c.CreateTopic(ctx, in); !errors.As(err, &badParam) {
