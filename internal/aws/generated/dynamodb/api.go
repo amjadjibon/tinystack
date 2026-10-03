@@ -427,9 +427,35 @@ type TransactWriteItemsInput struct {
 type TransactWriteItemsOutput struct {
 }
 
+type UpdateGlobalSecondaryIndexAction struct {
+	IndexName             *string                `json:"IndexName,omitempty"`
+	ProvisionedThroughput *ProvisionedThroughput `json:"ProvisionedThroughput,omitempty"`
+}
+
+type CreateGlobalSecondaryIndexAction struct {
+	IndexName             *string                `json:"IndexName,omitempty"`
+	KeySchema             []KeySchemaElement     `json:"KeySchema,omitempty"`
+	Projection            *Projection            `json:"Projection,omitempty"`
+	ProvisionedThroughput *ProvisionedThroughput `json:"ProvisionedThroughput,omitempty"`
+}
+
+type DeleteGlobalSecondaryIndexAction struct {
+	IndexName *string `json:"IndexName,omitempty"`
+}
+
+type GlobalSecondaryIndexUpdate struct {
+	Update *UpdateGlobalSecondaryIndexAction `json:"Update,omitempty"`
+	Create *CreateGlobalSecondaryIndexAction `json:"Create,omitempty"`
+	Delete *DeleteGlobalSecondaryIndexAction `json:"Delete,omitempty"`
+}
+
 type UpdateTableInput struct {
-	TableName           *string              `json:"TableName,omitempty"`
-	StreamSpecification *StreamSpecification `json:"StreamSpecification,omitempty"`
+	TableName                   *string                      `json:"TableName,omitempty"`
+	AttributeDefinitions        []AttributeDefinition        `json:"AttributeDefinitions,omitempty"`
+	BillingMode                 *string                      `json:"BillingMode,omitempty"`
+	ProvisionedThroughput       *ProvisionedThroughput       `json:"ProvisionedThroughput,omitempty"`
+	GlobalSecondaryIndexUpdates []GlobalSecondaryIndexUpdate `json:"GlobalSecondaryIndexUpdates,omitempty"`
+	StreamSpecification         *StreamSpecification         `json:"StreamSpecification,omitempty"`
 }
 
 type UpdateTableOutput struct {

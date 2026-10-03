@@ -142,48 +142,21 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 		return nil, err
 	}
 
-	mode := value(in.BillingMode)
-	if mode == "" {
-		mode = "PROVISIONED"
+	mode := billingProvisioned
+	if in.BillingMode != nil {
+		if mode, err = billingMode(*in.BillingMode); err != nil {
+			return nil, err
+		}
 	}
 
-	if mode != "PAY_PER_REQUEST" && mode != "PROVISIONED" {
-		return nil, awserror.Validation("Invalid BillingMode")
-	}
-
-	// throughput describes the capacity of the table or an index in mode.
-	throughput := func(p *api.ProvisionedThroughput) (*api.ProvisionedThroughputDescription, error) {
-		out := &api.ProvisionedThroughputDescription{
-			ReadCapacityUnits:      new(int64(0)),
-			WriteCapacityUnits:     new(int64(0)),
-			NumberOfDecreasesToday: new(int64(0)),
-		}
-
-		if mode == "PAY_PER_REQUEST" {
-			if p != nil {
-				return nil, awserror.Validation("ProvisionedThroughput is not valid for PAY_PER_REQUEST")
-			}
-
-			return out, nil
-		}
-
-		if p == nil || value(p.ReadCapacityUnits) < 1 || value(p.WriteCapacityUnits) < 1 {
-			return nil, awserror.Validation("Positive provisioned read and write capacity required")
-		}
-
-		out.ReadCapacityUnits = p.ReadCapacityUnits
-		out.WriteCapacityUnits = p.WriteCapacityUnits
-		return out, nil
-	}
-
-	tableThroughput, err := throughput(in.ProvisionedThroughput)
+	tableThroughput, err := throughputFor(mode, in.ProvisionedThroughput)
 	if err != nil {
 		return nil, err
 	}
 
 	m, _ := request.FromContext(ctx)
 	arn := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", m.Region, m.AccountID, *in.TableName)
-	globals, locals, err := secondaryIndexDescriptions(in, types, used, arn, throughput)
+	globals, locals, err := secondaryIndexDescriptions(in, types, used, arn, mode)
 	if err != nil {
 		return nil, err
 	}

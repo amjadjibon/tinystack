@@ -334,6 +334,10 @@
       ],
       "UpdateTableInput": [
         "TableName",
+        "AttributeDefinitions",
+        "BillingMode",
+        "ProvisionedThroughput",
+        "GlobalSecondaryIndexUpdates",
         "StreamSpecification"
       ],
       "UpdateTableOutput": [
@@ -554,6 +558,24 @@
         "Code",
         "Message",
         "Item"
+      ],
+      "GlobalSecondaryIndexUpdate": [
+        "Update",
+        "Create",
+        "Delete"
+      ],
+      "UpdateGlobalSecondaryIndexAction": [
+        "IndexName",
+        "ProvisionedThroughput"
+      ],
+      "CreateGlobalSecondaryIndexAction": [
+        "IndexName",
+        "KeySchema",
+        "Projection",
+        "ProvisionedThroughput"
+      ],
+      "DeleteGlobalSecondaryIndexAction": [
+        "IndexName"
       ]
     }
   },

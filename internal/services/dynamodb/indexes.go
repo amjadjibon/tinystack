@@ -160,6 +160,48 @@ func checkKeySchema(schema []api.KeySchemaElement, types map[string]string, used
 	return nil
 }
 
+func checkIndexName(name *string) error {
+	if name == nil || !tableName.MatchString(*name) {
+		return awserror.Validation("IndexName must be 3–255 characters using letters, digits, _, -, or .")
+	}
+
+	return nil
+}
+
+// describeGlobal validates a global secondary index, marks its key attributes
+// used, and describes it. Index item counts and sizes stay 0: DynamoDB
+// refreshes them only every six hours.
+func describeGlobal(
+	g *api.GlobalSecondaryIndex,
+	types map[string]string,
+	used map[string]bool,
+	tableArn, mode string,
+) (api.GlobalSecondaryIndexDescription, error) {
+	if err := checkKeySchema(g.KeySchema, types, used); err != nil {
+		return api.GlobalSecondaryIndexDescription{}, err
+	}
+
+	if err := checkProjection(g.Projection, *g.IndexName); err != nil {
+		return api.GlobalSecondaryIndexDescription{}, err
+	}
+
+	pt, err := throughputFor(mode, g.ProvisionedThroughput)
+	if err != nil {
+		return api.GlobalSecondaryIndexDescription{}, err
+	}
+
+	return api.GlobalSecondaryIndexDescription{
+		IndexName:             g.IndexName,
+		KeySchema:             g.KeySchema,
+		Projection:            g.Projection,
+		IndexStatus:           new("ACTIVE"),
+		ProvisionedThroughput: pt,
+		IndexSizeBytes:        new(int64(0)),
+		ItemCount:             new(int64(0)),
+		IndexArn:              new(tableArn + "/index/" + *g.IndexName),
+	}, nil
+}
+
 // checkProjection checks an index projection, which must name its type.
 func checkProjection(p *api.Projection, index string) error {
 	if p == nil {
@@ -192,23 +234,21 @@ func checkProjection(p *api.Projection, index string) error {
 }
 
 // secondaryIndexDescriptions validates CreateTable's secondary indexes, marks
-// their key attributes used, and describes them. Index item counts and sizes
-// stay 0: DynamoDB refreshes them only every six hours.
+// their key attributes used, and describes them.
 func secondaryIndexDescriptions(
 	in *api.CreateTableInput,
 	types map[string]string,
 	used map[string]bool,
-	tableArn string,
-	throughput func(*api.ProvisionedThroughput) (*api.ProvisionedThroughputDescription, error),
+	tableArn, mode string,
 ) ([]api.GlobalSecondaryIndexDescription, []api.LocalSecondaryIndexDescription, error) {
-	if len(in.GlobalSecondaryIndexes) > 20 || len(in.LocalSecondaryIndexes) > 5 {
+	if len(in.GlobalSecondaryIndexes) > maxGlobalIndexes || len(in.LocalSecondaryIndexes) > 5 {
 		return nil, nil, awserror.Validation("A table can have at most 20 global and 5 local secondary indexes")
 	}
 
 	names := map[string]bool{}
 	checkName := func(name *string) error {
-		if name == nil || !tableName.MatchString(*name) {
-			return awserror.Validation("IndexName must be 3–255 characters using letters, digits, _, -, or .")
+		if err := checkIndexName(name); err != nil {
+			return err
 		}
 
 		if names[*name] {
@@ -225,29 +265,12 @@ func secondaryIndexDescriptions(
 			return nil, nil, err
 		}
 
-		if err := checkKeySchema(g.KeySchema, types, used); err != nil {
-			return nil, nil, err
-		}
-
-		if err := checkProjection(g.Projection, *g.IndexName); err != nil {
-			return nil, nil, err
-		}
-
-		pt, err := throughput(g.ProvisionedThroughput)
+		d, err := describeGlobal(&g, types, used, tableArn, mode)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		globals = append(globals, api.GlobalSecondaryIndexDescription{
-			IndexName:             g.IndexName,
-			KeySchema:             g.KeySchema,
-			Projection:            g.Projection,
-			IndexStatus:           new("ACTIVE"),
-			ProvisionedThroughput: pt,
-			IndexSizeBytes:        new(int64(0)),
-			ItemCount:             new(int64(0)),
-			IndexArn:              new(tableArn + "/index/" + *g.IndexName),
-		})
+		globals = append(globals, d)
 	}
 
 	var locals []api.LocalSecondaryIndexDescription
