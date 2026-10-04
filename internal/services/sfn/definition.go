@@ -49,6 +49,7 @@ type retrier struct {
 
 type catcher struct {
 	Assign      any
+	Output      any
 	Next        string
 	ResultPath  optionalPath
 	ErrorEquals []string
@@ -65,39 +66,44 @@ type state struct {
 	Parameters           any
 	ResultSelector       any
 	ItemSelector         any
-	Seconds              *float64
-	TimeoutSeconds       *int64
-	HeartbeatSeconds     *int64
-	MaxConcurrency       *int64
-	ItemProcessor        *processor
-	Iterator             *machine
+	Arguments            any
+	Output               any
+	Items                any
+	Assign               any
 	ItemReader           any
 	ResultWriter         any
-	Default              string
-	ItemsPath            string
+	ItemProcessor        *processor
+	Iterator             *machine
+	Type                 string
+	Comment              string
 	Next                 string
 	Resource             string
 	Cause                string
 	CausePath            string
 	Error                string
 	ErrorPath            string
-	Type                 string
+	Default              string
 	Timestamp            string
 	SecondsPath          string
 	TimestampPath        string
 	TimeoutSecondsPath   string
 	HeartbeatSecondsPath string
 	QueryLanguage        string
-	Comment              string
-	InputPath            optionalPath
+	ItemsPath            string
+	Choices              []map[string]json.RawMessage
 	OutputPath           optionalPath
 	ResultPath           optionalPath
-	Assign               any
-	Choices              []map[string]json.RawMessage
-	Retry                []retrier
-	Catch                []catcher
+	InputPath            optionalPath
 	Branches             []machine
+	Catch                []catcher
+	Retry                []retrier
+	Seconds              number
+	MaxConcurrency       number
+	HeartbeatSeconds     number
+	TimeoutSeconds       number
 	End                  bool
+	// jsonata is set by validate for states that use JSONata.
+	jsonata bool
 }
 
 // machine is a definition, or a Parallel branch or Map iterator.
@@ -120,7 +126,7 @@ func parseDefinition(definition string) (def *machine, problems []string) {
 		return nil, []string{"SCHEMA_VALIDATION_FAILED: " + strings.TrimPrefix(err.Error(), "json: ")}
 	}
 
-	m.validate("", func(format string, args ...any) {
+	m.validate("", langJSONPath, func(format string, args ...any) {
 		problems = append(problems, fmt.Sprintf(format, args...))
 	})
 	return &m, problems
@@ -146,11 +152,10 @@ var comparators = map[string]bool{
 	"IsNumeric": true, "IsString": true, "IsBoolean": true, "IsTimestamp": true,
 }
 
-func (m *machine) validate(where string, add func(string, ...any)) {
-	if m.QueryLanguage != "" && m.QueryLanguage != "JSONPath" {
-		add("SCHEMA_VALIDATION_FAILED: TinyStack supports the JSONPath query language only at %s/QueryLanguage",
-			where)
-	}
+// validate validates a machine whose states use lang unless it or they say
+// otherwise.
+func (m *machine) validate(where, lang string, add func(string, ...any)) {
+	lang = language(m.QueryLanguage, lang, where, add)
 
 	if len(m.States) == 0 {
 		add("SCHEMA_VALIDATION_FAILED: The field 'States' should be non-empty at %s", or(where, "/"))
@@ -174,8 +179,26 @@ func (m *machine) validate(where string, add func(string, ...any)) {
 			add("SCHEMA_VALIDATION_FAILED: State names must be at most 80 characters at %s", at)
 		}
 
-		s.validate(m, at, add)
+		s.validate(m, at, lang, add)
 	}
+}
+
+// language returns the query language a definition, branch, or state sets,
+// or the one it inherits. A JSONata definition's states cannot use JSONPath.
+func language(set, inherited, at string, add func(string, ...any)) string {
+	switch set {
+	case "":
+		return inherited
+	case langJSONPath, langJSONata:
+		if set == langJSONPath && inherited == langJSONata {
+			add("SCHEMA_VALIDATION_FAILED: A JSONata state machine cannot have JSONPath states at %s/QueryLanguage", at)
+		}
+
+		return set
+	}
+
+	add("SCHEMA_VALIDATION_FAILED: The QueryLanguage must be JSONPath or JSONata at %s/QueryLanguage", at)
+	return inherited
 }
 
 func or(s, fallback string) string {
@@ -187,7 +210,7 @@ func or(s, fallback string) string {
 }
 
 //nolint:gocyclo,cyclop // One check per rule of the States Language.
-func (s *state) validate(m *machine, at string, add func(string, ...any)) {
+func (s *state) validate(m *machine, at, lang string, add func(string, ...any)) {
 	if !slices.Contains(stateTypes, s.Type) {
 		add("SCHEMA_VALIDATION_FAILED: The value for the field 'Type' must be one of %s at %s/Type",
 			strings.Join(stateTypes, ", "), at)
@@ -212,14 +235,17 @@ func (s *state) validate(m *machine, at string, add func(string, ...any)) {
 		add("SCHEMA_VALIDATION_FAILED: %s states cannot have 'Next' or 'End' at %s", s.Type, at)
 	}
 
-	if s.QueryLanguage != "" && s.QueryLanguage != "JSONPath" {
-		add("SCHEMA_VALIDATION_FAILED: TinyStack supports the JSONPath query language only at %s/QueryLanguage", at)
+	s.jsonata = language(s.QueryLanguage, lang, at, add) == langJSONata
+	if s.jsonata {
+		s.checkJSONata(at, add)
+	} else {
+		s.checkJSONPath(at, add)
 	}
 
 	for _, p := range []struct {
 		name string
 		path optionalPath
-	}{{"InputPath", s.InputPath}, {"OutputPath", s.OutputPath}, {"ResultPath", s.ResultPath}} {
+	}{{"InputPath", s.InputPath}, {"OutputPath", s.OutputPath}, {fieldResultPath, s.ResultPath}} {
 		if p.path.set && !p.path.null {
 			steps, err := parsePath(p.path.path)
 			if err != nil || (p.name == "ResultPath" && !definite(steps)) {
@@ -260,10 +286,14 @@ func (s *state) validate(m *machine, at string, add func(string, ...any)) {
 		}
 
 		for i, rule := range s.Choices {
-			checkRule(rule, true, fmt.Sprintf("%s/Choices[%d]", at, i), add)
-			var assign any
-			_ = json.Unmarshal(rule["Assign"], &assign)
-			checkAssign(assign, fmt.Sprintf("%s/Choices[%d]", at, i), add)
+			ruleAt := fmt.Sprintf("%s/Choices[%d]", at, i)
+			if s.jsonata {
+				checkCondition(rule, ruleAt, add)
+			} else {
+				checkRule(rule, true, ruleAt, add)
+			}
+
+			checkAssign(member(rule, fieldAssign), ruleAt, add)
 			var next string
 			if json.Unmarshal(rule["Next"], &next) == nil && next != "" {
 				target(fmt.Sprintf("Choices[%d]/Next", i), next)
@@ -275,7 +305,7 @@ func (s *state) validate(m *machine, at string, add func(string, ...any)) {
 		}
 	case stateWait:
 		set := 0
-		for _, v := range []bool{s.Seconds != nil, s.Timestamp != "", s.SecondsPath != "", s.TimestampPath != ""} {
+		for _, v := range []bool{s.Seconds.set, s.Timestamp != "", s.SecondsPath != "", s.TimestampPath != ""} {
 			if v {
 				set++
 			}
@@ -286,7 +316,7 @@ func (s *state) validate(m *machine, at string, add func(string, ...any)) {
 				"TimestampPath at %s", at)
 		}
 
-		if s.Timestamp != "" {
+		if _, expr := expression(s.Timestamp); s.Timestamp != "" && !expr {
 			if _, err := time.Parse(time.RFC3339, s.Timestamp); err != nil {
 				add("SCHEMA_VALIDATION_FAILED: Invalid Timestamp at %s/Timestamp", at)
 			}
@@ -297,7 +327,7 @@ func (s *state) validate(m *machine, at string, add func(string, ...any)) {
 		}
 
 		for i := range s.Branches {
-			s.Branches[i].validate(fmt.Sprintf("%s/Branches[%d]", at, i), add)
+			s.Branches[i].validate(fmt.Sprintf("%s/Branches[%d]", at, i), lang, add)
 		}
 	case stateMap:
 		iterator := s.Iterator
@@ -315,7 +345,7 @@ func (s *state) validate(m *machine, at string, add func(string, ...any)) {
 		case s.ItemReader != nil || s.ResultWriter != nil:
 			add("SCHEMA_VALIDATION_FAILED: ItemReader and ResultWriter are for distributed Map states at %s", at)
 		default:
-			iterator.validate(at+"/ItemProcessor", add)
+			iterator.validate(at+"/ItemProcessor", lang, add)
 		}
 	}
 }
@@ -349,6 +379,128 @@ func checkResource(resource string) string {
 	}
 
 	return "The resource provided " + resource + " is not a Lambda function, activity, or service integration"
+}
+
+// checkJSONPath rejects the fields of JSONata states in a JSONPath state.
+func (s *state) checkJSONPath(at string, add func(string, ...any)) {
+	fields := []struct {
+		name string
+		set  bool
+	}{
+		{"Arguments", s.Arguments != nil},
+		{fieldOutput, s.Output != nil},
+		{"Items", s.Items != nil},
+		{"Seconds", s.Seconds.expr != ""},
+		{"TimeoutSeconds", s.TimeoutSeconds.expr != ""},
+		{"HeartbeatSeconds", s.HeartbeatSeconds.expr != ""},
+		{"MaxConcurrency", s.MaxConcurrency.expr != ""},
+	}
+	for _, f := range fields {
+		if f.set {
+			add(
+				"SCHEMA_VALIDATION_FAILED: The field '%s' is supported only by JSONata states at %s/%s",
+				f.name,
+				at,
+				f.name,
+			)
+		}
+	}
+
+	for i, c := range s.Catch {
+		if c.Output != nil {
+			add(
+				"SCHEMA_VALIDATION_FAILED: The field 'Output' is supported only by JSONata states at %s/Catch[%d]",
+				at,
+				i,
+			)
+		}
+	}
+}
+
+// checkJSONata rejects the fields of JSONPath states in a JSONata state and
+// compiles its expressions.
+func (s *state) checkJSONata(at string, add func(string, ...any)) {
+	fields := []struct {
+		name string
+		set  bool
+	}{
+		{"InputPath", s.InputPath.set},
+		{"OutputPath", s.OutputPath.set},
+		{fieldResultPath, s.ResultPath.set},
+		{"Parameters", s.Parameters != nil},
+		{"ResultSelector", s.ResultSelector != nil},
+		{"Result", s.Result != nil},
+		{"ItemsPath", s.ItemsPath != ""},
+		{"Iterator", s.Iterator != nil},
+		{"SecondsPath", s.SecondsPath != ""},
+		{"TimestampPath", s.TimestampPath != ""},
+		{"TimeoutSecondsPath", s.TimeoutSecondsPath != ""},
+		{"HeartbeatSecondsPath", s.HeartbeatSecondsPath != ""},
+		{"ErrorPath", s.ErrorPath != ""},
+		{"CausePath", s.CausePath != ""},
+	}
+	for _, f := range fields {
+		if f.set {
+			add(
+				"SCHEMA_VALIDATION_FAILED: The field '%s' is not supported by JSONata states at %s/%s",
+				f.name,
+				at,
+				f.name,
+			)
+		}
+	}
+
+	for name, n := range map[string]number{
+		"Seconds": s.Seconds, "TimeoutSeconds": s.TimeoutSeconds, "HeartbeatSeconds": s.HeartbeatSeconds,
+		"MaxConcurrency": s.MaxConcurrency,
+	} {
+		if _, ok := expression(n.expr); n.expr != "" && !ok {
+			add("SCHEMA_VALIDATION_FAILED: %s must be a number or a JSONata expression at %s/%s", name, at, name)
+		}
+
+		checkJSONata(n.expr, at+"/"+name, add)
+	}
+
+	for name, v := range map[string]any{
+		"Arguments": s.Arguments, fieldOutput: s.Output, "Items": s.Items, "ItemSelector": s.ItemSelector,
+		fieldAssign: s.Assign, "Error": s.Error, "Cause": s.Cause, "Timestamp": s.Timestamp,
+	} {
+		checkJSONata(v, at+"/"+name, add)
+	}
+
+	for i, c := range s.Catch {
+		catchAt := fmt.Sprintf("%s/Catch[%d]", at, i)
+		if c.ResultPath.set {
+			add("SCHEMA_VALIDATION_FAILED: The field 'ResultPath' is not supported by JSONata states at %s", catchAt)
+		}
+
+		checkJSONata(c.Output, catchAt+"/Output", add)
+		checkJSONata(c.Assign, catchAt+"/Assign", add)
+	}
+}
+
+// checkCondition validates a JSONata choice rule: a Condition expression and
+// a Next.
+func checkCondition(rule map[string]json.RawMessage, at string, add func(string, ...any)) {
+	var text string
+	if _, ok := expression(member(rule, "Condition")); !ok || json.Unmarshal(rule["Condition"], &text) != nil {
+		add("SCHEMA_VALIDATION_FAILED: JSONata choice rules need a Condition expression at %s", at)
+		return
+	}
+
+	if _, ok := rule["Next"]; !ok {
+		add("SCHEMA_VALIDATION_FAILED: Choice rules need 'Next' at %s", at)
+	}
+
+	for k := range rule {
+		if k != "Condition" && k != "Next" && k != "Assign" && k != "Output" && k != "Comment" {
+			add("SCHEMA_VALIDATION_FAILED: The field '%s' is not supported by JSONata choice rules at %s", k, at)
+		}
+	}
+
+	checkJSONata(text, at+"/Condition", add)
+	checkJSONata(member(rule, fieldOutput), at+"/Output", add)
+	checkJSONata(member(rule, fieldAssign), at+"/Assign", add)
 }
 
 // checkRule validates a choice rule: a comparison of a Variable, or And, Or,

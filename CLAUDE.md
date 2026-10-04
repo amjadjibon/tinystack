@@ -298,7 +298,9 @@ a per-service `Dialect`), and delivers synchronously through
   `intrinsics.go`, `choice.go`, and `definition.go`, which parses and validates definitions) runs executions on the
   service's context (`Stop` ends them; executions a previous process left running are aborted by `New`); a state's
   expressions read its input, and an `env` (`variables.go`) holds the context object and the variables, which each
-  `runMachine` copies from its parent so a branch's assignments stay inside it; and task
+  `runMachine` copies from its parent so a branch's assignments stay inside it; `validate` marks each state that
+  uses JSONata, which `execJSONata` (`jsonata.go`, evaluating `{% %}` strings with `github.com/recolabs/gnata`)
+  runs in place of the JSONPath steps; and task
   tokens, activity queues, and running executions live in memory. Task states reach other services through a
   `catalog.Caller` (`internal/aws/catalog/call.go`), which `start.go` builds from every registered descriptor and hands
   over with `UseCaller`: it runs any operation in-process with parameters keyed by Go field names (the SDK's member

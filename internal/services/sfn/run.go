@@ -300,7 +300,7 @@ func (r *run) runState(
 		e.StateEnteredEventDetails = &api.StateEnteredEventDetails{Name: new(name), Input: text(input)}
 	})
 
-	e := &env{context: r.contextObject(name, entered, item), vars: vars}
+	e := &env{ctx: ctx, context: r.contextObject(name, entered, item), vars: vars}
 	out, next, err := r.execState(ctx, s, input, e)
 	if err != nil {
 		return nil, "", err
@@ -332,6 +332,10 @@ func (r *run) execState(
 	input any,
 	e *env,
 ) (output any, next string, err error) {
+	if s.jsonata {
+		return r.execJSONata(ctx, s, input, e)
+	}
+
 	switch s.Type {
 	case stateSucceed:
 		eff, err := inputOf(s, input)
@@ -394,9 +398,14 @@ func (r *run) execState(
 			return nil, "", err
 		}
 
-		next, assign, err := choose(s, eff, e)
+		rule, next, err := choose(s, eff, e)
 		if err != nil {
 			return nil, "", err
+		}
+
+		assign := s.Assign
+		if rule != nil {
+			assign = member(rule, fieldAssign)
 		}
 
 		if assignErr := e.assign(assign, eff); assignErr != nil {
@@ -430,10 +439,32 @@ func (r *run) execState(
 func (r *run) wait(ctx context.Context, s *state, input any, e *env) error {
 	var until time.Time
 	switch {
-	case s.Seconds != nil:
-		until = r.s.now().Add(time.Duration(*s.Seconds * float64(time.Second)))
+	case s.Seconds.set:
+		n, err := e.number(s.Seconds, "Seconds", input)
+		if err != nil {
+			return err
+		}
+
+		if n < 0 {
+			return &stateError{Name: errRuntime, Cause: "Seconds must not be negative"}
+		}
+
+		until = r.s.now().Add(time.Duration(n * float64(time.Second)))
 	case s.Timestamp != "":
-		until, _ = time.Parse(time.RFC3339, s.Timestamp)
+		ts := s.Timestamp
+		if expr, ok := expression(ts); ok {
+			v, err := e.eval(expr, map[string]any{keyInput: input})
+			if err != nil {
+				return err
+			}
+
+			ts, _ = v.(string)
+		}
+
+		var err error
+		if until, err = time.Parse(time.RFC3339, ts); err != nil {
+			return &stateError{Name: errRuntime, Cause: "Timestamp must be an RFC 3339 timestamp"}
+		}
 	case s.SecondsPath != "":
 		v, err := resolvePath(s.SecondsPath, input, e)
 		n, ok := v.(float64)
@@ -565,15 +596,23 @@ func (r *run) retrying(
 		}
 
 		for _, c := range s.Catch {
-			if matches(c.ErrorEquals, se.Name) {
-				errorOutput := map[string]any{"Error": se.Name, "Cause": se.Cause}
-				if assignErr := e.assign(c.Assign, errorOutput); assignErr != nil {
-					return nil, "", assignErr
-				}
+			if !matches(c.ErrorEquals, se.Name) {
+				continue
+			}
 
-				out, catchErr := resultInto(c.ResultPath, input, errorOutput)
+			errorOutput := map[string]any{"Error": se.Name, "Cause": se.Cause}
+			if s.jsonata {
+				out, catchErr := e.settle(c.Output, c.Assign, errorOutput,
+					map[string]any{keyInput: input, "errorOutput": errorOutput})
 				return out, c.Next, catchErr
 			}
+
+			if assignErr := e.assign(c.Assign, errorOutput); assignErr != nil {
+				return nil, "", assignErr
+			}
+
+			out, catchErr := resultInto(c.ResultPath, input, errorOutput)
+			return out, c.Next, catchErr
 		}
 
 		return nil, "", se
@@ -583,6 +622,10 @@ func (r *run) retrying(
 // finish applies a result's ResultSelector, Assign, ResultPath, and
 // OutputPath.
 func (r *run) finish(s *state, input, result any, e *env) (any, error) {
+	if s.jsonata {
+		return e.settle(s.Output, s.Assign, result, map[string]any{keyInput: input, "result": result})
+	}
+
 	var err error
 	if s.ResultSelector != nil {
 		if result, err = template(s.ResultSelector, result, e); err != nil {
@@ -604,9 +647,12 @@ func (r *run) finish(s *state, input, result any, e *env) (any, error) {
 
 // work runs a Task, Parallel, or Map state once and returns its result.
 func (r *run) work(ctx context.Context, s *state, input any, e *env) (any, error) {
-	eff, err := inputOf(s, input)
-	if err != nil {
-		return nil, err
+	eff := input
+	if !s.jsonata {
+		var err error
+		if eff, err = inputOf(s, input); err != nil {
+			return nil, err
+		}
 	}
 
 	switch s.Type {
@@ -620,11 +666,9 @@ func (r *run) work(ctx context.Context, s *state, input any, e *env) (any, error
 }
 
 func (r *run) parallel(ctx context.Context, s *state, input any, e *env) (any, error) {
-	if s.Parameters != nil {
-		var err error
-		if input, err = template(s.Parameters, input, e); err != nil {
-			return nil, err
-		}
+	input, err := arguments(s, input, e)
+	if err != nil {
+		return nil, err
 	}
 
 	r.event(ctx, "ParallelStateStarted", nil)
@@ -659,20 +703,28 @@ func (r *run) parallel(ctx context.Context, s *state, input any, e *env) (any, e
 	return results, nil
 }
 
-func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, error) {
-	itemsPath := s.ItemsPath
-	if itemsPath == "" {
-		itemsPath = "$"
+// items returns what a Map state iterates over: its ItemsPath (JSONPath) or
+// Items (JSONata), and by default its input.
+func (r *run) items(s *state, input any, e *env) (any, error) {
+	switch {
+	case s.jsonata && s.Items != nil:
+		return e.evaluate(s.Items, map[string]any{keyInput: input})
+	case s.jsonata:
+		return input, nil
 	}
 
-	v, err := resolvePath(itemsPath, input, e)
+	return resolvePath(or(s.ItemsPath, "$"), input, e)
+}
+
+func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, error) {
+	v, err := r.items(s, input, e)
 	if err != nil {
 		return nil, err
 	}
 
 	items, ok := v.([]any)
 	if !ok {
-		return nil, &stateError{Name: errRuntime, Cause: "ItemsPath must select an array"}
+		return nil, &stateError{Name: errRuntime, Cause: "The Map state's items must be an array"}
 	}
 
 	iterator := s.Iterator
@@ -690,8 +742,13 @@ func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, e
 	})
 
 	limit := len(items)
-	if s.MaxConcurrency != nil && *s.MaxConcurrency > 0 {
-		limit = int(*s.MaxConcurrency)
+	concurrency, err := e.number(s.MaxConcurrency, "MaxConcurrency", input)
+	if err != nil {
+		return nil, err
+	}
+
+	if concurrency > 0 {
+		limit = int(concurrency)
 	}
 
 	ctx, cancel := context.WithCancelCause(ctx)
@@ -726,10 +783,16 @@ func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, e
 			)
 			itemInput := value
 			if selector != nil {
-				itemEnv := &env{context: maps.Clone(e.context), vars: e.vars}
+				itemEnv := &env{ctx: ctx, context: maps.Clone(e.context), vars: e.vars}
 				itemEnv.context[stateMap] = map[string]any{"Item": item}
 				var selectErr error
-				if itemInput, selectErr = template(selector, input, itemEnv); selectErr != nil {
+				if s.jsonata {
+					itemInput, selectErr = itemEnv.evaluate(selector, map[string]any{keyInput: input})
+				} else {
+					itemInput, selectErr = template(selector, input, itemEnv)
+				}
+
+				if selectErr != nil {
 					once.Do(func() { failure = selectErr })
 					cancel(selectErr)
 					return

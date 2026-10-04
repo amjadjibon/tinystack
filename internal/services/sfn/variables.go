@@ -1,6 +1,7 @@
 package sfn
 
 import (
+	"context"
 	"maps"
 	"regexp"
 	"strings"
@@ -17,6 +18,8 @@ var variableName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,79}$`)
 // env is what a state's expressions read besides its input: the context
 // object ($$) and the variables.
 type env struct {
+	// ctx is the state's context, which ends expressions with the execution.
+	ctx     context.Context
 	context map[string]any
 	vars    map[string]any
 	// assigned are the variables the state set, for its StateExited event.
@@ -35,10 +38,15 @@ func (e *env) assign(tpl, value any) error {
 		return err
 	}
 
+	e.set(v)
+	return nil
+}
+
+// set sets the variables an evaluated Assign names.
+func (e *env) set(v any) {
 	assigned, _ := v.(map[string]any)
 	maps.Copy(e.vars, assigned)
 	e.assigned = assigned
-	return nil
 }
 
 // checkAssign validates an Assign: an object whose keys, less a ".$"

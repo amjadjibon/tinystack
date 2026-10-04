@@ -7,28 +7,33 @@ import (
 	"time"
 )
 
-// choose returns the Next and Assign of a Choice state's first matching
-// rule, or its Default and its own Assign. With neither, the state fails with
+// choose returns a Choice state's first matching rule and its Next, or no
+// rule and the Default. With neither, the state fails with
 // States.NoChoiceMatched.
-func choose(s *state, input any, e *env) (next string, assign any, err error) {
+func choose(s *state, input any, e *env) (rule map[string]json.RawMessage, next string, err error) {
 	for _, rule := range s.Choices {
-		ok, err := evalRule(rule, input, e)
+		var ok bool
+		if s.jsonata {
+			ok, err = condition(rule, input, e)
+		} else {
+			ok, err = evalRule(rule, input, e)
+		}
+
 		if err != nil {
-			return "", nil, err
+			return nil, "", err
 		}
 
 		if ok {
 			_ = json.Unmarshal(rule["Next"], &next)
-			_ = json.Unmarshal(rule["Assign"], &assign)
-			return next, assign, nil
+			return rule, next, nil
 		}
 	}
 
 	if s.Default != "" {
-		return s.Default, s.Assign, nil
+		return nil, s.Default, nil
 	}
 
-	return "", nil, &stateError{Name: "States.NoChoiceMatched", Cause: "No Matches!"}
+	return nil, "", &stateError{Name: "States.NoChoiceMatched", Cause: "No Matches!"}
 }
 
 //nolint:gocyclo,cyclop // One case per comparison operator.
@@ -72,7 +77,7 @@ func evalRule(rule map[string]json.RawMessage, input any, e *env) (bool, error) 
 	}
 
 	for op, raw := range rule {
-		if op == "Variable" || op == "Next" || op == "Assign" {
+		if op == "Variable" || op == "Next" || op == fieldAssign {
 			continue
 		}
 

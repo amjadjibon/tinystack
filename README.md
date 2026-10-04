@@ -810,7 +810,7 @@ activities, and other TinyStack services in-process, never over the network.
 | ListStateMachineVersions | No versions |
 | TagResource / UntagResource / ListTagsForResource | State machines and activities |
 
-Definitions use the JSONPath query language: `Pass`, `Task`, `Choice` (every comparison, `And`, `Or`, `Not`),
+Definitions use the JSONPath or JSONata query language (below): `Pass`, `Task`, `Choice` (every comparison, `And`, `Or`, `Not`),
 `Wait`, `Succeed`, `Fail`, `Parallel`, and inline `Map` states (`ItemsPath`, `ItemSelector`, `MaxConcurrency`),
 with `InputPath`, `Parameters`, `ResultSelector`, `ResultPath`, and `OutputPath`, the context object (`$$`), every
 intrinsic function (`States.Format`, `States.Array`, `States.MathAdd`, `States.UUID`, and the rest), `Retry` (with
@@ -829,6 +829,19 @@ state's result (after `Parameters` or `Result` for `Pass`, after `ResultSelector
 the effective input for `Choice` and `Wait`, and the error output for a catcher. Every expression of an `Assign` reads
 the variables as they were before the state, a Parallel branch or Map iteration gets a copy of the outer variables
 (what it assigns stays inside), and each `StateExited` history event lists the variables its state assigned.
+
+JSONata: `"QueryLanguage": "JSONata"` on the definition makes every state JSONata, and on a state makes that state
+JSONata in a JSONPath definition (a JSONata definition cannot have JSONPath states). JSONata states take `Arguments`
+(Task and Parallel), `Output` (every state but Fail, and catchers), `Assign`, `Items` and `ItemSelector` (Map), and
+`Condition` choice rules (with their own `Output` and `Assign`), and `Seconds`, `Timestamp`, `TimeoutSeconds`,
+`HeartbeatSeconds`, `MaxConcurrency`, and a Fail state's `Error` and `Cause` may be expressions. Every `{% ... %}`
+string in those fields is a JSONata 2.x expression (evaluated by [gnata](https://github.com/recolabs/gnata)) that
+reads `$states.input`, `$states.context`, `$states.result` (in a Task, Parallel, or Map state's `Output` and
+`Assign`), `$states.errorOutput` (in a catcher), and the variables, with Step Functions' `$partition`, `$range`,
+`$hash`, `$random`, `$uuid`, and `$parse`. JSONPath fields (`InputPath`, `Parameters`, `ResultSelector`, `ResultPath`,
+`OutputPath`, `Result`, `ItemsPath`, and the `*Path` fields) are rejected in JSONata states and the JSONata fields in
+JSONPath states, expressions are compiled when a definition is validated, and an expression that fails or has no
+value fails its state with `States.QueryEvaluationError`.
 
 ### Kinesis Data Streams (AWS JSON 1.1)
 
@@ -1190,7 +1203,7 @@ models and request validation, `AWS` and `HTTP` (non-proxy) integrations or othe
 mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;
 `AWS_IAM` authorization accepts any SigV4-signed request without verifying it, and Lambda resource
-policies are not checked. Step Functions limits: no JSONata, distributed Map (`ItemReader`, `ResultWriter`), state
+policies are not checked. Step Functions limits: no distributed Map (`ItemReader`, `ResultWriter`), state
 machine versions and aliases, redrive, `TestState`, map runs, execution retention, or IAM role checks, and
 `JsonPath` filters and recursive descent are not supported; executions running when TinyStack stops are aborted when
 it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard`), throughput limits, resource policies,

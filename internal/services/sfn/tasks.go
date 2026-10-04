@@ -113,9 +113,10 @@ func (s *Service) queue(activityARN string) chan *activityTask {
 // timeouts reads a Task state's TimeoutSeconds and HeartbeatSeconds, or
 // their paths.
 func timeouts(s *state, input any, e *env) (timeout, heartbeat time.Duration, err error) {
-	read := func(fixed *int64, path string) (time.Duration, error) {
+	read := func(fixed number, name, path string) (time.Duration, error) {
 		if path == "" {
-			return time.Duration(value(fixed)) * time.Second, nil
+			n, numberErr := e.number(fixed, name, input)
+			return time.Duration(n) * time.Second, numberErr
 		}
 
 		v, pathErr := resolvePath(path, input, e)
@@ -127,11 +128,11 @@ func timeouts(s *state, input any, e *env) (timeout, heartbeat time.Duration, er
 		return time.Duration(n) * time.Second, nil
 	}
 
-	if timeout, err = read(s.TimeoutSeconds, s.TimeoutSecondsPath); err != nil {
+	if timeout, err = read(s.TimeoutSeconds, "TimeoutSeconds", s.TimeoutSecondsPath); err != nil {
 		return 0, 0, err
 	}
 
-	heartbeat, err = read(s.HeartbeatSeconds, s.HeartbeatSecondsPath)
+	heartbeat, err = read(s.HeartbeatSeconds, "HeartbeatSeconds", s.HeartbeatSecondsPath)
 	return timeout, heartbeat, err
 }
 
@@ -162,11 +163,9 @@ func (r *run) task(ctx context.Context, s *state, input any, e *env) (any, error
 		e.context[stateTask] = map[string]any{"Token": token}
 	}
 
-	params := input
-	if s.Parameters != nil {
-		if params, err = template(s.Parameters, input, e); err != nil {
-			return nil, err
-		}
+	params, err := arguments(s, input, e)
+	if err != nil {
+		return nil, err
 	}
 
 	switch {
