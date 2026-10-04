@@ -494,7 +494,7 @@ without the random six-character suffix.
 | UpdateSecretVersionStage | Moves or removes a label; a label another version has moves only when `RemoveFromVersionId` names it, and `AWSCURRENT` can only move |
 | DeleteSecret / RestoreSecret | A recovery window of 7 to 30 days (30 by default) blocks reading and changing the secret and its name until restored; `ForceDeleteWithoutRecovery` deletes at once |
 | TagResource / UntagResource | Up to 50 tags |
-| GetResourcePolicy | Always no policy |
+| PutResourcePolicy / GetResourcePolicy / DeleteResourcePolicy / ValidateResourcePolicy | A secret's resource-based policy: a JSON object with a `Statement` (one or a list), up to 20480 characters, else `MalformedPolicyDocumentException`; with `BlockPublicPolicy`, a statement that allows `*` without a `Condition` fails with `PublicPolicyException`. Policies are stored, never evaluated, and ValidateResourcePolicy checks only that the policy is well formed and the secret exists |
 | RotateSecret / CancelRotateSecret | Rotation with a Lambda function (`RotationLambdaARN`) and `RotationRules`: `AutomaticallyAfterDays` (1 to 1,000) or a `rate`/`cron` `ScheduleExpression` (at least 4 hours apart; no `L`, `W`, or `#`), and an optional `Duration`; both are kept from an earlier call when left out. Unless `RotateImmediately` is false, the function runs its steps at once; DescribeSecret and ListSecrets report `RotationEnabled`, the rules, `LastRotatedDate`, and `NextRotationDate`; cancelling turns rotation off and returns the version of an unfinished rotation |
 
 A rotation invokes the function in-process, in the background, with
@@ -1186,7 +1186,7 @@ no parameter policies, `aws:ec2:image` or other data
 types, shared parameters, or parameter quotas.
 KMS limits: no `KEY_AGREEMENT` keys (so no `DeriveSharedSecret`), `ECC_SECG_P256K1`, SM2, or ML-DSA keys or data
 key pairs, `EXTERNAL_MU` messages, `Recipient` attestation, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
-material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policies,
+material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policy evaluation,
 or `SortBy`.
 Cognito limits: no Lambda triggers but those four (custom message, pre authentication, auth challenge, user
 migration, and custom sender triggers are rejected), no pre sign-up trigger for AdminCreateUser, required MFA or MFA sign-in, custom or passwordless authentication (`CUSTOM_AUTH`,

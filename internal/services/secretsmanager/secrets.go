@@ -397,8 +397,7 @@ func (s *Service) RestoreSecret(ctx context.Context, in *api.RestoreSecretReques
 	return out, err
 }
 
-// GetResourcePolicy reports that a secret has no resource policy: TinyStack
-// does not store them.
+// GetResourcePolicy returns a secret's resource-based policy, if it has one.
 func (s *Service) GetResourcePolicy(
 	ctx context.Context,
 	in *api.GetResourcePolicyRequest,
@@ -415,7 +414,9 @@ func (s *Service) GetResourcePolicy(
 			return findErr
 		}
 
-		out = &api.GetResourcePolicyResponse{ARN: new(sec.arn(m.Scope)), Name: new(sec.Name)}
+		out = &api.GetResourcePolicyResponse{
+			ARN: new(sec.arn(m.Scope)), Name: new(sec.Name), ResourcePolicy: optional(sec.Policy),
+		}
 		return nil
 	})
 

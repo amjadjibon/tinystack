@@ -4732,7 +4732,10 @@
       "RotateSecret",
       "CancelRotateSecret",
       "GetRandomPassword",
-      "BatchGetSecretValue"
+      "BatchGetSecretValue",
+      "PutResourcePolicy",
+      "DeleteResourcePolicy",
+      "ValidateResourcePolicy"
     ],
     "shapes": {
       "CreateSecretRequest": [
@@ -4896,7 +4899,8 @@
       ],
       "GetResourcePolicyResponse": [
         "ARN",
-        "Name"
+        "Name",
+        "ResourcePolicy"
       ],
       "Tag": [
         "Key",
@@ -4964,6 +4968,30 @@
         "SecretId",
         "ErrorCode",
         "Message"
+      ],
+      "PutResourcePolicyRequest": [
+        "SecretId",
+        "ResourcePolicy",
+        "BlockPublicPolicy"
+      ],
+      "PutResourcePolicyResponse": [
+        "ARN",
+        "Name"
+      ],
+      "DeleteResourcePolicyRequest": [
+        "SecretId"
+      ],
+      "DeleteResourcePolicyResponse": [
+        "ARN",
+        "Name"
+      ],
+      "ValidateResourcePolicyRequest": [
+        "SecretId",
+        "ResourcePolicy"
+      ],
+      "ValidateResourcePolicyResponse": [
+        "PolicyValidationPassed",
+        "ValidationErrors"
       ]
     }
   },

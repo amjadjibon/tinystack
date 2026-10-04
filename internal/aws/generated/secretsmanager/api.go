@@ -207,8 +207,9 @@ type GetResourcePolicyRequest struct {
 }
 
 type GetResourcePolicyResponse struct {
-	ARN  *string `json:"ARN,omitempty"`
-	Name *string `json:"Name,omitempty"`
+	ARN            *string `json:"ARN,omitempty"`
+	Name           *string `json:"Name,omitempty"`
+	ResourcePolicy *string `json:"ResourcePolicy,omitempty"`
 }
 
 type RotateSecretRequest struct {
@@ -279,6 +280,41 @@ type BatchGetSecretValueResponse struct {
 	Errors       []APIErrorType     `json:"Errors,omitempty"`
 }
 
+type PutResourcePolicyRequest struct {
+	SecretId          *string `json:"SecretId,omitempty"`
+	ResourcePolicy    *string `json:"ResourcePolicy,omitempty"`
+	BlockPublicPolicy *bool   `json:"BlockPublicPolicy,omitempty"`
+}
+
+type PutResourcePolicyResponse struct {
+	ARN  *string `json:"ARN,omitempty"`
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeleteResourcePolicyRequest struct {
+	SecretId *string `json:"SecretId,omitempty"`
+}
+
+type DeleteResourcePolicyResponse struct {
+	ARN  *string `json:"ARN,omitempty"`
+	Name *string `json:"Name,omitempty"`
+}
+
+type ValidateResourcePolicyRequest struct {
+	SecretId       *string `json:"SecretId,omitempty"`
+	ResourcePolicy *string `json:"ResourcePolicy,omitempty"`
+}
+
+type ValidationErrorsEntry struct {
+	CheckName    *string `json:"CheckName,omitempty"`
+	ErrorMessage *string `json:"ErrorMessage,omitempty"`
+}
+
+type ValidateResourcePolicyResponse struct {
+	PolicyValidationPassed *bool                   `json:"PolicyValidationPassed,omitempty"`
+	ValidationErrors       []ValidationErrorsEntry `json:"ValidationErrors,omitempty"`
+}
+
 type API interface {
 	CreateSecret(context.Context, *CreateSecretRequest) (*CreateSecretResponse, error)
 	DescribeSecret(context.Context, *DescribeSecretRequest) (*DescribeSecretResponse, error)
@@ -297,10 +333,13 @@ type API interface {
 	CancelRotateSecret(context.Context, *CancelRotateSecretRequest) (*CancelRotateSecretResponse, error)
 	GetRandomPassword(context.Context, *GetRandomPasswordRequest) (*GetRandomPasswordResponse, error)
 	BatchGetSecretValue(context.Context, *BatchGetSecretValueRequest) (*BatchGetSecretValueResponse, error)
+	PutResourcePolicy(context.Context, *PutResourcePolicyRequest) (*PutResourcePolicyResponse, error)
+	DeleteResourcePolicy(context.Context, *DeleteResourcePolicyRequest) (*DeleteResourcePolicyResponse, error)
+	ValidateResourcePolicy(context.Context, *ValidateResourcePolicyRequest) (*ValidateResourcePolicyResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "secretsmanager", SigningName: "secretsmanager", Inventory: catalog.InventoryOf(api), TargetPrefix: "secretsmanager", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"DecryptionFailure": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "EncryptionFailure": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServiceError": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "PreconditionNotMetException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "secretsmanager", SigningName: "secretsmanager", Inventory: catalog.InventoryOf(api), TargetPrefix: "secretsmanager", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"DecryptionFailure": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "EncryptionFailure": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServiceError": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "PreconditionNotMetException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "PublicPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateSecret": {Name: "CreateSecret", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.CreateSecret", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateSecretRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateSecret(ctx, input.(*CreateSecretRequest))
 		}},
@@ -351,6 +390,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"BatchGetSecretValue": {Name: "BatchGetSecretValue", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.BatchGetSecretValue", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetSecretValueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.BatchGetSecretValue(ctx, input.(*BatchGetSecretValueRequest))
+		}},
+		"PutResourcePolicy": {Name: "PutResourcePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.PutResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutResourcePolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutResourcePolicy(ctx, input.(*PutResourcePolicyRequest))
+		}},
+		"DeleteResourcePolicy": {Name: "DeleteResourcePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.DeleteResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteResourcePolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteResourcePolicy(ctx, input.(*DeleteResourcePolicyRequest))
+		}},
+		"ValidateResourcePolicy": {Name: "ValidateResourcePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "secretsmanager.ValidateResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ValidateResourcePolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ValidateResourcePolicy(ctx, input.(*ValidateResourcePolicyRequest))
 		}},
 	}}
 }
