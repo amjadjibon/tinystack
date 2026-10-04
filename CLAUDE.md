@@ -296,7 +296,9 @@ a per-service `Dialect`), and delivers synchronously through
   `…/sfn/activity/<name>`, executions under `…/sfn/execution/<state machine>/<name>`, and each history event under
   `…/sfn/event/<state machine>/<execution>/<zero-padded ID>`. Its interpreter (`run.go`, with `jsonpath.go`,
   `intrinsics.go`, `choice.go`, and `definition.go`, which parses and validates definitions) runs executions on the
-  service's context (`Stop` ends them; executions a previous process left running are aborted by `New`), and task
+  service's context (`Stop` ends them; executions a previous process left running are aborted by `New`); a state's
+  expressions read its input, and an `env` (`variables.go`) holds the context object and the variables, which each
+  `runMachine` copies from its parent so a branch's assignments stay inside it; and task
   tokens, activity queues, and running executions live in memory. Task states reach other services through a
   `catalog.Caller` (`internal/aws/catalog/call.go`), which `start.go` builds from every registered descriptor and hands
   over with `UseCaller`: it runs any operation in-process with parameters keyed by Go field names (the SDK's member

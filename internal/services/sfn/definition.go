@@ -48,6 +48,7 @@ type retrier struct {
 }
 
 type catcher struct {
+	Assign      any
 	Next        string
 	ResultPath  optionalPath
 	ErrorEquals []string
@@ -91,6 +92,7 @@ type state struct {
 	InputPath            optionalPath
 	OutputPath           optionalPath
 	ResultPath           optionalPath
+	Assign               any
 	Choices              []map[string]json.RawMessage
 	Retry                []retrier
 	Catch                []catcher
@@ -232,10 +234,17 @@ func (s *state) validate(m *machine, at string, add func(string, ...any)) {
 		}
 	}
 
+	if s.Assign != nil && (s.Type == stateSucceed || s.Type == stateFail) {
+		add("SCHEMA_VALIDATION_FAILED: %s states cannot have 'Assign' at %s", s.Type, at)
+	}
+
+	checkAssign(s.Assign, at, add)
 	for i, c := range s.Catch {
 		if len(c.ErrorEquals) == 0 {
 			add("SCHEMA_VALIDATION_FAILED: Catchers need ErrorEquals at %s/Catch[%d]", at, i)
 		}
+
+		checkAssign(c.Assign, fmt.Sprintf("%s/Catch[%d]", at, i), add)
 
 		target(fmt.Sprintf("Catch[%d]/Next", i), c.Next)
 	}
@@ -252,6 +261,9 @@ func (s *state) validate(m *machine, at string, add func(string, ...any)) {
 
 		for i, rule := range s.Choices {
 			checkRule(rule, true, fmt.Sprintf("%s/Choices[%d]", at, i), add)
+			var assign any
+			_ = json.Unmarshal(rule["Assign"], &assign)
+			checkAssign(assign, fmt.Sprintf("%s/Choices[%d]", at, i), add)
 			var next string
 			if json.Unmarshal(rule["Next"], &next) == nil && next != "" {
 				target(fmt.Sprintf("Choices[%d]/Next", i), next)

@@ -53,6 +53,8 @@ const (
 	keyName        = "Name"
 	svcDynamoDB    = "dynamodb"
 	svcEventBridge = "eventbridge"
+	// states is the ARN service name of Step Functions, and its integrations'.
+	states = "states"
 )
 
 const (
@@ -224,7 +226,7 @@ func arn(scope request.Scope, kind, name string) string {
 // name is everything after the kind.
 func parseARN(s string) (scope request.Scope, kind, name string, ok bool) {
 	parts := strings.SplitN(s, ":", 7)
-	if len(parts) != 7 || parts[0] != "arn" || parts[2] != "states" {
+	if len(parts) != 7 || parts[0] != "arn" || parts[2] != states {
 		return request.Scope{}, "", "", false
 	}
 

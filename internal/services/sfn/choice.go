@@ -7,36 +7,37 @@ import (
 	"time"
 )
 
-// choose returns the Next of a Choice state's first matching rule, or its
-// Default. With neither, the state fails with States.NoChoiceMatched.
-func choose(s *state, input any) (string, error) {
+// choose returns the Next and Assign of a Choice state's first matching
+// rule, or its Default and its own Assign. With neither, the state fails with
+// States.NoChoiceMatched.
+func choose(s *state, input any, e *env) (next string, assign any, err error) {
 	for _, rule := range s.Choices {
-		ok, err := evalRule(rule, input)
+		ok, err := evalRule(rule, input, e)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 
 		if ok {
-			var next string
 			_ = json.Unmarshal(rule["Next"], &next)
-			return next, nil
+			_ = json.Unmarshal(rule["Assign"], &assign)
+			return next, assign, nil
 		}
 	}
 
 	if s.Default != "" {
-		return s.Default, nil
+		return s.Default, s.Assign, nil
 	}
 
-	return "", &stateError{Name: "States.NoChoiceMatched", Cause: "No Matches!"}
+	return "", nil, &stateError{Name: "States.NoChoiceMatched", Cause: "No Matches!"}
 }
 
 //nolint:gocyclo,cyclop // One case per comparison operator.
-func evalRule(rule map[string]json.RawMessage, input any) (bool, error) {
+func evalRule(rule map[string]json.RawMessage, input any, e *env) (bool, error) {
 	if raw, ok := rule["And"]; ok {
 		var rules []map[string]json.RawMessage
 		_ = json.Unmarshal(raw, &rules)
 		for _, r := range rules {
-			if ok, err := evalRule(r, input); err != nil || !ok {
+			if ok, err := evalRule(r, input, e); err != nil || !ok {
 				return false, err
 			}
 		}
@@ -48,7 +49,7 @@ func evalRule(rule map[string]json.RawMessage, input any) (bool, error) {
 		var rules []map[string]json.RawMessage
 		_ = json.Unmarshal(raw, &rules)
 		for _, r := range rules {
-			if ok, err := evalRule(r, input); err != nil || ok {
+			if ok, err := evalRule(r, input, e); err != nil || ok {
 				return ok, err
 			}
 		}
@@ -59,19 +60,19 @@ func evalRule(rule map[string]json.RawMessage, input any) (bool, error) {
 	if raw, ok := rule["Not"]; ok {
 		var r map[string]json.RawMessage
 		_ = json.Unmarshal(raw, &r)
-		matched, err := evalRule(r, input)
+		matched, err := evalRule(r, input, e)
 		return !matched, err
 	}
 
 	var variable string
 	_ = json.Unmarshal(rule["Variable"], &variable)
-	v, found, err := query(input, variable)
+	v, found, err := lookup(variable, input, e)
 	if err != nil {
-		return false, &stateError{Name: errRuntime, Cause: err.Error()}
+		return false, err
 	}
 
 	for op, raw := range rule {
-		if op == "Variable" || op == "Next" {
+		if op == "Variable" || op == "Next" || op == "Assign" {
 			continue
 		}
 
@@ -96,7 +97,7 @@ func evalRule(rule map[string]json.RawMessage, input any) (bool, error) {
 
 		if isPath {
 			path, _ := operand.(string)
-			if operand, found, err = query(input, path); err != nil || !found {
+			if operand, found, err = lookup(path, input, e); err != nil || !found {
 				return false, &stateError{Name: errRuntime, Cause: "Invalid path '" + path + "'"}
 			}
 		}

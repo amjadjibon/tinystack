@@ -822,6 +822,14 @@ function ARNs, activity ARNs, the optimized integrations `lambda:invoke`, `sqs:s
 Functions names them (`States.Timeout`, a function's `errorType`, `DynamoDB.ConditionalCheckFailedException`,
 and so on). Logging levels `ALL`, `ERROR`, and `FATAL` write events to the configured CloudWatch Logs group.
 
+Variables: `Assign` on `Pass`, `Task`, `Choice` (on a choice rule, or on the state for its `Default`), `Wait`,
+`Parallel`, and `Map` states and on catchers sets variables that later states read as `$name` (also `$name.field`)
+wherever a path of the input works, except `InputPath`, `OutputPath`, and `ResultPath`. `Assign` reads `$` as the
+state's result (after `Parameters` or `Result` for `Pass`, after `ResultSelector` for `Task`, `Parallel`, and `Map`),
+the effective input for `Choice` and `Wait`, and the error output for a catcher. Every expression of an `Assign` reads
+the variables as they were before the state, a Parallel branch or Map iteration gets a copy of the outer variables
+(what it assigns stays inside), and each `StateExited` history event lists the variables its state assigned.
+
 ### Kinesis Data Streams (AWS JSON 1.1)
 
 | Operation | Behavior |
@@ -1182,7 +1190,7 @@ models and request validation, `AWS` and `HTTP` (non-proxy) integrations or othe
 mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;
 `AWS_IAM` authorization accepts any SigV4-signed request without verifying it, and Lambda resource
-policies are not checked. Step Functions limits: no JSONata, variables (`Assign`), distributed Map (`ItemReader`, `ResultWriter`), state
+policies are not checked. Step Functions limits: no JSONata, distributed Map (`ItemReader`, `ResultWriter`), state
 machine versions and aliases, redrive, `TestState`, map runs, execution retention, or IAM role checks, and
 `JsonPath` filters and recursive descent are not supported; executions running when TinyStack stops are aborted when
 it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard`), throughput limits, resource policies,

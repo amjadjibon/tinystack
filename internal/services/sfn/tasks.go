@@ -42,7 +42,7 @@ var optimized = map[string]struct{ service, prefix string }{
 	"sns":      {"sns", "SNS"},
 	"dynamodb": {svcDynamoDB, "DynamoDB"},
 	"events":   {svcEventBridge, "EventBridge"},
-	"states":   {service, "StepFunctions"},
+	states:     {service, "StepFunctions"},
 }
 
 // sdkServices maps an AWS SDK integration's service name to TinyStack's, and
@@ -112,13 +112,13 @@ func (s *Service) queue(activityARN string) chan *activityTask {
 
 // timeouts reads a Task state's TimeoutSeconds and HeartbeatSeconds, or
 // their paths.
-func timeouts(s *state, input any) (timeout, heartbeat time.Duration, err error) {
+func timeouts(s *state, input any, e *env) (timeout, heartbeat time.Duration, err error) {
 	read := func(fixed *int64, path string) (time.Duration, error) {
 		if path == "" {
 			return time.Duration(value(fixed)) * time.Second, nil
 		}
 
-		v, pathErr := resolvePath(path, input, nil)
+		v, pathErr := resolvePath(path, input, e)
 		n, ok := v.(float64)
 		if pathErr != nil || !ok || n <= 0 {
 			return 0, &stateError{Name: errRuntime, Cause: path + " must select a positive number"}
@@ -138,8 +138,8 @@ func timeouts(s *state, input any) (timeout, heartbeat time.Duration, err error)
 // task runs a Task state once: its resource with its parameters.
 //
 //nolint:gocyclo,cyclop // One branch per kind of resource.
-func (r *run) task(ctx context.Context, s *state, input any, ctxObj map[string]any) (any, error) {
-	timeout, heartbeat, err := timeouts(s, input)
+func (r *run) task(ctx context.Context, s *state, input any, e *env) (any, error) {
+	timeout, heartbeat, err := timeouts(s, input, e)
 	if err != nil {
 		return nil, err
 	}
@@ -159,12 +159,12 @@ func (r *run) task(ctx context.Context, s *state, input any, ctxObj map[string]a
 	if activity || strings.HasSuffix(resource, waitForToken) {
 		token, w = r.s.register(r.exec.ARN)
 		defer r.s.unregister(token)
-		ctxObj[stateTask] = map[string]any{"Token": token}
+		e.context[stateTask] = map[string]any{"Token": token}
 	}
 
 	params := input
 	if s.Parameters != nil {
-		if params, err = template(s.Parameters, input, ctxObj); err != nil {
+		if params, err = template(s.Parameters, input, e); err != nil {
 			return nil, err
 		}
 	}

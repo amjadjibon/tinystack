@@ -154,15 +154,23 @@ func (r *run) contextObject(name string, entered time.Time, item map[string]any)
 	return c
 }
 
-// runMachine runs a machine from StartAt until a terminal state.
-func (r *run) runMachine(ctx context.Context, m *machine, input any, item map[string]any) (any, error) {
+// runMachine runs a machine from StartAt until a terminal state, with a copy
+// of the variables outer holds.
+func (r *run) runMachine(
+	ctx context.Context, m *machine, input any, item, outer map[string]any,
+) (any, error) {
+	vars := maps.Clone(outer)
+	if vars == nil {
+		vars = map[string]any{}
+	}
+
 	name := m.StartAt
 	for {
 		if err := context.Cause(ctx); err != nil && ctx.Err() != nil {
 			return nil, err
 		}
 
-		out, next, err := r.runState(ctx, name, m.States[name], input, item)
+		out, next, err := r.runState(ctx, name, m.States[name], input, item, vars)
 		if err != nil || next == "" {
 			return out, err
 		}
@@ -224,17 +232,17 @@ func resultInto(path optionalPath, input, result any) (any, error) {
 	return out, nil
 }
 
-// template evaluates a Parameters, ResultSelector, or ItemSelector
+// template evaluates a Parameters, ResultSelector, ItemSelector, or Assign
 // template: keys ending in ".$" take a path of the input ($), of the context
-// object ($$), or an intrinsic function.
-func template(tpl, input any, ctxObj map[string]any) (any, error) {
+// object ($$), or of a variable ($name), or an intrinsic function.
+func template(tpl, input any, e *env) (any, error) {
 	switch t := tpl.(type) {
 	case map[string]any:
 		out := make(map[string]any, len(t))
 		for k, v := range t {
 			name, dynamic := strings.CutSuffix(k, ".$")
 			if !dynamic {
-				evaluated, err := template(v, input, ctxObj)
+				evaluated, err := template(v, input, e)
 				if err != nil {
 					return nil, err
 				}
@@ -250,9 +258,9 @@ func template(tpl, input any, ctxObj map[string]any) (any, error) {
 
 			var err error
 			if strings.HasPrefix(expr, "States.") {
-				out[name], err = evalIntrinsic(expr, input, ctxObj)
+				out[name], err = evalIntrinsic(expr, input, e)
 			} else {
-				out[name], err = resolvePath(expr, input, ctxObj)
+				out[name], err = resolvePath(expr, input, e)
 			}
 
 			if err != nil {
@@ -264,7 +272,7 @@ func template(tpl, input any, ctxObj map[string]any) (any, error) {
 	case []any:
 		out := make([]any, len(t))
 		for i, v := range t {
-			evaluated, err := template(v, input, ctxObj)
+			evaluated, err := template(v, input, e)
 			if err != nil {
 				return nil, err
 			}
@@ -285,22 +293,24 @@ func (r *run) runState(
 	name string,
 	s *state,
 	input any,
-	item map[string]any,
+	item, vars map[string]any,
 ) (output any, next string, err error) {
 	entered := r.s.now()
 	r.event(ctx, s.Type+"StateEntered", func(e *api.HistoryEvent) {
 		e.StateEnteredEventDetails = &api.StateEnteredEventDetails{Name: new(name), Input: text(input)}
 	})
 
-	ctxObj := r.contextObject(name, entered, item)
-	out, next, err := r.execState(ctx, s, input, ctxObj)
+	e := &env{context: r.contextObject(name, entered, item), vars: vars}
+	out, next, err := r.execState(ctx, s, input, e)
 	if err != nil {
 		return nil, "", err
 	}
 
 	if s.Type != stateFail {
-		r.event(ctx, s.Type+"StateExited", func(e *api.HistoryEvent) {
-			e.StateExitedEventDetails = &api.StateExitedEventDetails{Name: new(name), Output: text(out)}
+		r.event(ctx, s.Type+"StateExited", func(h *api.HistoryEvent) {
+			h.StateExitedEventDetails = &api.StateExitedEventDetails{
+				Name: new(name), Output: text(out), AssignedVariables: assignedText(e.assigned),
+			}
 		})
 	}
 
@@ -320,7 +330,7 @@ func (r *run) execState(
 	ctx context.Context,
 	s *state,
 	input any,
-	ctxObj map[string]any,
+	e *env,
 ) (output any, next string, err error) {
 	switch s.Type {
 	case stateSucceed:
@@ -341,7 +351,7 @@ func (r *run) execState(
 				continue
 			}
 
-			v, err := resolvePath(p.path, input, ctxObj)
+			v, err := resolvePath(p.path, input, e)
 			if err != nil {
 				return nil, "", err
 			}
@@ -358,13 +368,17 @@ func (r *run) execState(
 
 		result := eff
 		if s.Parameters != nil {
-			if result, err = template(s.Parameters, eff, ctxObj); err != nil {
+			if result, err = template(s.Parameters, eff, e); err != nil {
 				return nil, "", err
 			}
 		}
 
 		if s.Result != nil {
 			result = s.Result
+		}
+
+		if assignErr := e.assign(s.Assign, result); assignErr != nil {
+			return nil, "", assignErr
 		}
 
 		out, err := resultInto(s.ResultPath, input, result)
@@ -380,9 +394,13 @@ func (r *run) execState(
 			return nil, "", err
 		}
 
-		next, err := choose(s, eff)
+		next, assign, err := choose(s, eff, e)
 		if err != nil {
 			return nil, "", err
+		}
+
+		if assignErr := e.assign(assign, eff); assignErr != nil {
+			return nil, "", assignErr
 		}
 
 		out, err := outputOf(s, eff)
@@ -393,7 +411,11 @@ func (r *run) execState(
 			return nil, "", err
 		}
 
-		if waitErr := r.wait(ctx, s, eff); waitErr != nil {
+		if assignErr := e.assign(s.Assign, eff); assignErr != nil {
+			return nil, "", assignErr
+		}
+
+		if waitErr := r.wait(ctx, s, eff, e); waitErr != nil {
 			return nil, "", waitErr
 		}
 
@@ -401,11 +423,11 @@ func (r *run) execState(
 		return out, s.next(), err
 	}
 
-	return r.retrying(ctx, s, input, ctxObj)
+	return r.retrying(ctx, s, input, e)
 }
 
 // wait sleeps until a Wait state's time.
-func (r *run) wait(ctx context.Context, s *state, input any) error {
+func (r *run) wait(ctx context.Context, s *state, input any, e *env) error {
 	var until time.Time
 	switch {
 	case s.Seconds != nil:
@@ -413,7 +435,7 @@ func (r *run) wait(ctx context.Context, s *state, input any) error {
 	case s.Timestamp != "":
 		until, _ = time.Parse(time.RFC3339, s.Timestamp)
 	case s.SecondsPath != "":
-		v, err := resolvePath(s.SecondsPath, input, nil)
+		v, err := resolvePath(s.SecondsPath, input, e)
 		n, ok := v.(float64)
 		if err != nil || !ok || n < 0 {
 			return &stateError{Name: errRuntime, Cause: "SecondsPath must select a non-negative number"}
@@ -421,7 +443,7 @@ func (r *run) wait(ctx context.Context, s *state, input any) error {
 
 		until = r.s.now().Add(time.Duration(n * float64(time.Second)))
 	default:
-		v, pathErr := resolvePath(s.TimestampPath, input, nil)
+		v, pathErr := resolvePath(s.TimestampPath, input, e)
 		ts, _ := v.(string)
 		var parseErr error
 		if until, parseErr = time.Parse(time.RFC3339, ts); pathErr != nil || parseErr != nil {
@@ -498,14 +520,14 @@ func (r *run) retrying(
 	ctx context.Context,
 	s *state,
 	input any,
-	ctxObj map[string]any,
+	e *env,
 ) (output any, next string, err error) {
 	attempts := make([]int, len(s.Retry))
 	for retries := 0; ; retries++ {
-		ctxObj["State"].(map[string]any)["RetryCount"] = float64(retries)
-		result, err := r.work(ctx, s, input, ctxObj)
+		e.context["State"].(map[string]any)["RetryCount"] = float64(retries)
+		result, err := r.work(ctx, s, input, e)
 		if err == nil {
-			out, outErr := r.finish(s, input, result, ctxObj)
+			out, outErr := r.finish(s, input, result, e)
 			return out, s.next(), outErr
 		}
 
@@ -544,7 +566,12 @@ func (r *run) retrying(
 
 		for _, c := range s.Catch {
 			if matches(c.ErrorEquals, se.Name) {
-				out, catchErr := resultInto(c.ResultPath, input, map[string]any{"Error": se.Name, "Cause": se.Cause})
+				errorOutput := map[string]any{"Error": se.Name, "Cause": se.Cause}
+				if assignErr := e.assign(c.Assign, errorOutput); assignErr != nil {
+					return nil, "", assignErr
+				}
+
+				out, catchErr := resultInto(c.ResultPath, input, errorOutput)
 				return out, c.Next, catchErr
 			}
 		}
@@ -553,13 +580,18 @@ func (r *run) retrying(
 	}
 }
 
-// finish applies a result's ResultSelector, ResultPath, and OutputPath.
-func (r *run) finish(s *state, input, result any, ctxObj map[string]any) (any, error) {
+// finish applies a result's ResultSelector, Assign, ResultPath, and
+// OutputPath.
+func (r *run) finish(s *state, input, result any, e *env) (any, error) {
 	var err error
 	if s.ResultSelector != nil {
-		if result, err = template(s.ResultSelector, result, ctxObj); err != nil {
+		if result, err = template(s.ResultSelector, result, e); err != nil {
 			return nil, err
 		}
+	}
+
+	if assignErr := e.assign(s.Assign, result); assignErr != nil {
+		return nil, assignErr
 	}
 
 	out, err := resultInto(s.ResultPath, input, result)
@@ -571,7 +603,7 @@ func (r *run) finish(s *state, input, result any, ctxObj map[string]any) (any, e
 }
 
 // work runs a Task, Parallel, or Map state once and returns its result.
-func (r *run) work(ctx context.Context, s *state, input any, ctxObj map[string]any) (any, error) {
+func (r *run) work(ctx context.Context, s *state, input any, e *env) (any, error) {
 	eff, err := inputOf(s, input)
 	if err != nil {
 		return nil, err
@@ -579,18 +611,18 @@ func (r *run) work(ctx context.Context, s *state, input any, ctxObj map[string]a
 
 	switch s.Type {
 	case stateParallel:
-		return r.parallel(ctx, s, eff, ctxObj)
+		return r.parallel(ctx, s, eff, e)
 	case stateMap:
-		return r.mapItems(ctx, s, eff, ctxObj)
+		return r.mapItems(ctx, s, eff, e)
 	}
 
-	return r.task(ctx, s, eff, ctxObj)
+	return r.task(ctx, s, eff, e)
 }
 
-func (r *run) parallel(ctx context.Context, s *state, input any, ctxObj map[string]any) (any, error) {
+func (r *run) parallel(ctx context.Context, s *state, input any, e *env) (any, error) {
 	if s.Parameters != nil {
 		var err error
-		if input, err = template(s.Parameters, input, ctxObj); err != nil {
+		if input, err = template(s.Parameters, input, e); err != nil {
 			return nil, err
 		}
 	}
@@ -605,7 +637,7 @@ func (r *run) parallel(ctx context.Context, s *state, input any, ctxObj map[stri
 	var wg sync.WaitGroup
 	for i := range s.Branches {
 		wg.Go(func() {
-			out, err := r.runMachine(ctx, &s.Branches[i], input, nil)
+			out, err := r.runMachine(ctx, &s.Branches[i], input, nil, e.vars)
 			if err != nil {
 				once.Do(func() { failure = err })
 				cancel(err)
@@ -627,13 +659,13 @@ func (r *run) parallel(ctx context.Context, s *state, input any, ctxObj map[stri
 	return results, nil
 }
 
-func (r *run) mapItems(ctx context.Context, s *state, input any, ctxObj map[string]any) (any, error) {
+func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, error) {
 	itemsPath := s.ItemsPath
 	if itemsPath == "" {
 		itemsPath = "$"
 	}
 
-	v, err := resolvePath(itemsPath, input, ctxObj)
+	v, err := resolvePath(itemsPath, input, e)
 	if err != nil {
 		return nil, err
 	}
@@ -685,7 +717,7 @@ func (r *run) mapItems(ctx context.Context, s *state, input any, ctxObj map[stri
 			item := map[string]any{"Index": float64(i), "Value": value}
 			details := &api.MapIterationEventDetails{
 				Index: new(int64(i)),
-				Name:  new(ctxObj["State"].(map[string]any)[keyName].(string)),
+				Name:  new(e.context["State"].(map[string]any)[keyName].(string)),
 			}
 			r.event(
 				ctx,
@@ -694,17 +726,17 @@ func (r *run) mapItems(ctx context.Context, s *state, input any, ctxObj map[stri
 			)
 			itemInput := value
 			if selector != nil {
-				itemCtx := maps.Clone(ctxObj)
-				itemCtx[stateMap] = map[string]any{"Item": item}
+				itemEnv := &env{context: maps.Clone(e.context), vars: e.vars}
+				itemEnv.context[stateMap] = map[string]any{"Item": item}
 				var selectErr error
-				if itemInput, selectErr = template(selector, input, itemCtx); selectErr != nil {
+				if itemInput, selectErr = template(selector, input, itemEnv); selectErr != nil {
 					once.Do(func() { failure = selectErr })
 					cancel(selectErr)
 					return
 				}
 			}
 
-			out, runErr := r.runMachine(ctx, iterator, itemInput, item)
+			out, runErr := r.runMachine(ctx, iterator, itemInput, item, e.vars)
 			if runErr != nil {
 				r.event(
 					ctx,

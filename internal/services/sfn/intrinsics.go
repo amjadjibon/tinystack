@@ -25,10 +25,10 @@ func intrinsicFailure(format string, args ...any) *stateError {
 }
 
 // evalIntrinsic evaluates an intrinsic function call such as
-// States.Format('Hello {}', $.name), resolving paths against input and the
-// context object.
-func evalIntrinsic(expr string, input, context any) (any, error) {
-	p := &intrinsicParser{src: expr, input: input, context: context}
+// States.Format('Hello {}', $.name), resolving paths against input, the
+// context object, and the variables.
+func evalIntrinsic(expr string, input any, e *env) (any, error) {
+	p := &intrinsicParser{src: expr, input: input, env: e}
 	v, err := p.call()
 	if err != nil {
 		return nil, err
@@ -43,10 +43,10 @@ func evalIntrinsic(expr string, input, context any) (any, error) {
 }
 
 type intrinsicParser struct {
-	input   any
-	context any
-	src     string
-	pos     int
+	input any
+	env   *env
+	src   string
+	pos   int
 }
 
 func (p *intrinsicParser) skip() {
@@ -117,7 +117,7 @@ func (p *intrinsicParser) argument() (any, error) {
 	done:
 		path := strings.TrimSpace(p.src[p.pos:end])
 		p.pos = end
-		return resolvePath(path, p.input, p.context)
+		return resolvePath(path, p.input, p.env)
 	case strings.HasPrefix(p.src[p.pos:], "States."):
 		return p.call()
 	default:
@@ -157,17 +157,12 @@ func (p *intrinsicParser) stringLiteral() (any, error) {
 	return nil, intrinsicFailure("unterminated string in %s", p.src)
 }
 
-// resolvePath reads a path of the input ("$...") or the context object
-// ("$$...").
-func resolvePath(path string, input, context any) (any, error) {
-	doc := input
-	if rest, ok := strings.CutPrefix(path, "$$"); ok {
-		doc, path = context, "$"+rest
-	}
-
-	v, found, err := query(doc, path)
+// resolvePath reads a path of the input ("$..."), the context object
+// ("$$..."), or a variable ("$name...").
+func resolvePath(path string, input any, e *env) (any, error) {
+	v, found, err := lookup(path, input, e)
 	if err != nil {
-		return nil, &stateError{Name: errRuntime, Cause: err.Error()}
+		return nil, err
 	}
 
 	if !found {
@@ -178,6 +173,48 @@ func resolvePath(path string, input, context any) (any, error) {
 	}
 
 	return v, nil
+}
+
+// lookup is resolvePath that reports a missing value instead of failing.
+func lookup(path string, input any, e *env) (v any, found bool, err error) {
+	doc := input
+	if rest, ok := strings.CutPrefix(path, "$$"); ok {
+		doc, path = e.context, "$"+rest
+	} else if name, rest := variable(path); name != "" {
+		if doc, ok = e.vars[name]; !ok {
+			return nil, false, &stateError{Name: errRuntime, Cause: "The variable '" + name + "' is not defined"}
+		}
+
+		path = "$" + rest
+	}
+
+	v, found, err = query(doc, path)
+	if err != nil {
+		return nil, false, &stateError{Name: errRuntime, Cause: err.Error()}
+	}
+
+	return v, found, nil
+}
+
+// variable splits a path that starts with a variable, such as $order.id,
+// into the variable's name and the rest of the path. The name is "" for a
+// path of the input or the context object.
+func variable(path string) (name, rest string) {
+	rest, ok := strings.CutPrefix(path, "$")
+	if !ok {
+		return "", path
+	}
+
+	end := strings.IndexAny(rest, ".[")
+	if end < 0 {
+		end = len(rest)
+	}
+
+	if !variableName.MatchString(rest[:end]) {
+		return "", path
+	}
+
+	return rest[:end], rest[end:]
 }
 
 func argCount(name string, args []any, lo, hi int) error {

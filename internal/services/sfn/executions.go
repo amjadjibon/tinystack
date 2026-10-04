@@ -151,7 +151,7 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 
 	var input any
 	_ = json.Unmarshal([]byte(r.exec.Input), &input)
-	out, err := r.runMachine(ctx, def, input, nil)
+	out, err := r.runMachine(ctx, def, input, nil, nil)
 	e := r.exec
 	e.Stop = unix(s.now())
 	var stopped *stopError
