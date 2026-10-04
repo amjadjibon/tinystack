@@ -8294,7 +8294,14 @@
       "TagResource",
       "UntagResource",
       "ListTagsForResource",
-      "ListStateMachineVersions"
+      "ListStateMachineVersions",
+      "PublishStateMachineVersion",
+      "DeleteStateMachineVersion",
+      "CreateStateMachineAlias",
+      "DescribeStateMachineAlias",
+      "UpdateStateMachineAlias",
+      "DeleteStateMachineAlias",
+      "ListStateMachineAliases"
     ],
     "shapes": {
       "CreateStateMachineInput": [
@@ -8305,7 +8312,8 @@
         "loggingConfiguration",
         "tags",
         "tracingConfiguration",
-        "publish"
+        "publish",
+        "versionDescription"
       ],
       "UpdateStateMachineInput": [
         "stateMachineArn",
@@ -8313,7 +8321,8 @@
         "roleArn",
         "loggingConfiguration",
         "tracingConfiguration",
-        "publish"
+        "publish",
+        "versionDescription"
       ],
       "DescribeStateMachineInput": [
         "stateMachineArn"
@@ -8343,6 +8352,44 @@
       "CreateActivityInput": [
         "name",
         "tags"
+      ],
+      "ListStateMachineVersionsInput": [
+        "stateMachineArn",
+        "nextToken",
+        "maxResults"
+      ],
+      "PublishStateMachineVersionInput": [
+        "stateMachineArn",
+        "revisionId",
+        "description"
+      ],
+      "DeleteStateMachineVersionInput": [
+        "stateMachineVersionArn"
+      ],
+      "CreateStateMachineAliasInput": [
+        "description",
+        "name",
+        "routingConfiguration"
+      ],
+      "RoutingConfigurationListItem": [
+        "stateMachineVersionArn",
+        "weight"
+      ],
+      "DescribeStateMachineAliasInput": [
+        "stateMachineAliasArn"
+      ],
+      "UpdateStateMachineAliasInput": [
+        "stateMachineAliasArn",
+        "description",
+        "routingConfiguration"
+      ],
+      "DeleteStateMachineAliasInput": [
+        "stateMachineAliasArn"
+      ],
+      "ListStateMachineAliasesInput": [
+        "stateMachineArn",
+        "nextToken",
+        "maxResults"
       ]
     }
   },

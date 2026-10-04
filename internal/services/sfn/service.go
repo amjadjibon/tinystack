@@ -55,6 +55,8 @@ const (
 	svcEventBridge = "eventbridge"
 	// states is the ARN service name of Step Functions, and its integrations'.
 	states = "states"
+	// arnStateMachine is the resource type of state machine ARNs.
+	arnStateMachine = "stateMachine"
 )
 
 const (
@@ -166,6 +168,9 @@ type stateMachine struct {
 	Type       string
 	RevisionID string
 	Created    float64
+	// LastVersion is the number of the last version published, so numbers are
+	// never reused.
+	LastVersion int64 `json:",omitempty"`
 }
 
 // execution is an execution's record; its history events are records of
@@ -175,15 +180,19 @@ type execution struct {
 	ARN             string
 	StateMachine    string
 	StateMachineARN string
-	Status          string
-	Input           string
-	Output          string `json:",omitempty"`
-	Error           string `json:",omitempty"`
-	Cause           string `json:",omitempty"`
-	Endpoint        string
-	Start           float64
-	Stop            float64 `json:",omitempty"`
-	Events          int64
+	// VersionARN and AliasARN name the version that ran and the alias that
+	// chose it, if the execution started from one.
+	VersionARN string `json:",omitempty"`
+	AliasARN   string `json:",omitempty"`
+	Status     string
+	Input      string
+	Output     string `json:",omitempty"`
+	Error      string `json:",omitempty"`
+	Cause      string `json:",omitempty"`
+	Endpoint   string
+	Start      float64
+	Stop       float64 `json:",omitempty"`
+	Events     int64
 }
 
 // activity is an activity's record.
@@ -375,4 +384,13 @@ func page[T any](items []T, id func(T) string, token *string, limit *int64) (sel
 
 	next = new(base64.RawURLEncoding.EncodeToString([]byte(id(items[n-1]))))
 	return items[:n], next, nil
+}
+
+// optional returns s, or nil when it is empty.
+func optional(s string) *string {
+	if s == "" {
+		return nil
+	}
+
+	return &s
 }

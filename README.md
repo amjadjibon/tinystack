@@ -819,7 +819,8 @@ activities, and other TinyStack services in-process, never over the network.
 | GetExecutionHistory | Execution, state, task, Lambda, activity, Parallel, and Map events, in either order, with or without input and output |
 | CreateActivity / DescribeActivity / ListActivities / DeleteActivity / GetActivityTask | Activities whose tasks workers take (GetActivityTask waits up to a minute) |
 | SendTaskSuccess / SendTaskFailure / SendTaskHeartbeat | Complete the tasks of `.waitForTaskToken` integrations and activities |
-| ListStateMachineVersions | No versions |
+| PublishStateMachineVersion / ListStateMachineVersions / DeleteStateMachineVersion | Immutable versions numbered from 1 and never reused (also `publish` and `versionDescription` on CreateStateMachine and UpdateStateMachine), at most 1000; publishing an unchanged revision returns the latest version, a `revisionId` that is not current fails with `ConflictException`, versions list newest first, DescribeStateMachine takes a version ARN, and a version an alias routes to cannot be deleted |
+| CreateStateMachineAlias / DescribeStateMachineAlias / UpdateStateMachineAlias / DeleteStateMachineAlias / ListStateMachineAliases | Aliases that route executions to one or two versions of a state machine by weight (adding up to 100); StartExecution and StartSyncExecution take a version or alias ARN, and DescribeExecution, ListExecutions (which also filters by a version or alias ARN), and DescribeStateMachineForExecution report the version and alias |
 | TagResource / UntagResource / ListTagsForResource | State machines and activities |
 
 Definitions use the JSONPath or JSONata query language (below): `Pass`, `Task`, `Choice` (every comparison, `And`, `Or`, `Not`),
@@ -1215,8 +1216,7 @@ models and request validation, `AWS` and `HTTP` (non-proxy) integrations or othe
 mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;
 `AWS_IAM` authorization accepts any SigV4-signed request without verifying it, and Lambda resource
-policies are not checked. Step Functions limits: no distributed Map (`ItemReader`, `ResultWriter`), state
-machine versions and aliases, redrive, `TestState`, map runs, execution retention, or IAM role checks, and
+policies are not checked. Step Functions limits: no distributed Map (`ItemReader`, `ResultWriter`), redrive, `TestState`, map runs, execution retention, or IAM role checks, and
 `JsonPath` filters and recursive descent are not supported; executions running when TinyStack stops are aborted when
 it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard`), throughput limits, resource policies,
 record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only

@@ -301,7 +301,8 @@ a per-service `Dialect`), and delivers synchronously through
   and access logs go through `logs.Service.Append`, all outside transactions. Lambda keeps each function's, version's,
   and alias's resource-based policy under `…/lambda/policy/<name>/<qualifier>` (`policy.go`), stored, never evaluated.
   Step Functions (`services/sfn`) keeps state machines under `…/sfn/statemachine/<name>`, activities under
-  `…/sfn/activity/<name>`, executions under `…/sfn/execution/<state machine>/<name>`, and each history event under
+  `…/sfn/activity/<name>`, versions under `…/sfn/version/<state machine>/<zero-padded number>` and aliases under
+  `…/sfn/alias/<state machine>/<alias>` (`versions.go`, whose `loadTarget` resolves the version an execution runs), executions under `…/sfn/execution/<state machine>/<name>`, and each history event under
   `…/sfn/event/<state machine>/<execution>/<zero-padded ID>`. Its interpreter (`run.go`, with `jsonpath.go`,
   `intrinsics.go`, `choice.go`, and `definition.go`, which parses and validates definitions) runs executions on the
   service's context (`Stop` ends them; executions a previous process left running are aborted by `New`); a state's

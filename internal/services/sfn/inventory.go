@@ -26,7 +26,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 				out = append(out, catalog.Resource{
 					Type: "state-machine", Account: account, Region: region, Name: sm.Name,
-					ARN: arn(scope, "stateMachine", sm.Name), Tags: sm.Tags,
+					ARN: arn(scope, arnStateMachine, sm.Name), Tags: sm.Tags,
 					Details: map[string]any{"Type": sm.Type, "RoleArn": sm.RoleArn},
 				})
 			case ok && strings.HasPrefix(rest, kindActivity+"/"):

@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -62,7 +63,7 @@ func checkTags(tags map[string]string) error {
 
 func loadMachine(tx storage.ReadTx, arnString *string) (request.Scope, *stateMachine, error) {
 	scope, kind, name, ok := parseARN(value(arnString))
-	if !ok || kind != "stateMachine" || strings.Contains(name, ":") {
+	if !ok || kind != arnStateMachine || strings.Contains(name, ":") {
 		return request.Scope{}, nil, invalidARN(value(arnString))
 	}
 
@@ -116,8 +117,10 @@ func (s *Service) CreateStateMachine(
 	switch {
 	case !roleARN.MatchString(value(in.RoleArn)):
 		return nil, invalidARN(value(in.RoleArn))
-	case value(in.Publish):
-		return nil, awserror.Validation("TinyStack does not support state machine versions")
+	case in.VersionDescription != nil && !value(in.Publish):
+		return nil, awserror.Validation("versionDescription requires publish")
+	case len(value(in.VersionDescription)) > 256:
+		return nil, awserror.Validation("versionDescription must be at most 256 characters")
 	}
 
 	if checkErr := checkLogging(in.LoggingConfiguration); checkErr != nil {
@@ -142,7 +145,7 @@ func (s *Service) CreateStateMachine(
 		sm.Tracing = &api.TracingConfiguration{Enabled: new(false)}
 	}
 
-	out := &api.CreateStateMachineOutput{StateMachineArn: new(arn(m.Scope, "stateMachine", name))}
+	out := &api.CreateStateMachineOutput{StateMachineArn: new(arn(m.Scope, arnStateMachine, name))}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key := machineKey(m.Scope, name)
 		existing, found, readErr := read[stateMachine](tx, key)
@@ -162,7 +165,16 @@ func (s *Service) CreateStateMachine(
 		}
 
 		out.CreationDate = new(sm.Created)
-		return write(tx, key, sm)
+		if writeErr := write(tx, key, sm); writeErr != nil || !value(in.Publish) {
+			return writeErr
+		}
+
+		v, publishErr := publish(tx, m.Scope, sm, value(in.VersionDescription), sm.Created)
+		if publishErr == nil {
+			out.StateMachineVersionArn = new(v.arn(m.Scope))
+		}
+
+		return publishErr
 	})
 	if err != nil {
 		return nil, err
@@ -173,7 +185,7 @@ func (s *Service) CreateStateMachine(
 
 func describeMachine(scope request.Scope, sm *stateMachine) *api.DescribeStateMachineOutput {
 	return &api.DescribeStateMachineOutput{
-		StateMachineArn: new(arn(scope, "stateMachine", sm.Name)), Name: new(sm.Name), Status: new("ACTIVE"),
+		StateMachineArn: new(arn(scope, arnStateMachine, sm.Name)), Name: new(sm.Name), Status: new("ACTIVE"),
 		Definition: new(sm.Definition), RoleArn: new(sm.RoleArn), Type: new(sm.Type),
 		CreationDate: new(sm.Created), LoggingConfiguration: sm.Logging, TracingConfiguration: sm.Tracing,
 		RevisionId: new(sm.RevisionID),
@@ -189,16 +201,43 @@ func (s *Service) DescribeStateMachine(
 		return nil, err
 	}
 
+	scope, machine, qualifier, err := qualified(value(in.StateMachineArn))
+	if err == nil && qualifier != "" && !isVersion(qualifier) {
+		err = invalidARN(value(in.StateMachineArn))
+	}
+
+	if err == nil {
+		err = inScope(&m, scope, in.StateMachineArn)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
 	var out *api.DescribeStateMachineOutput
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		scope, sm, loadErr := loadMachine(tx, in.StateMachineArn)
-		if loadErr == nil {
-			if loadErr = inScope(&m, scope, in.StateMachineArn); loadErr == nil {
+		_, sm, loadErr := loadMachine(tx, new(machineARN(scope, machine)))
+		if loadErr != nil || qualifier == "" {
+			if loadErr == nil {
 				out = describeMachine(scope, sm)
 			}
+
+			return loadErr
 		}
 
-		return loadErr
+		n, _ := strconv.ParseInt(qualifier, 10, 64)
+		v, loadErr := loadVersion(tx, scope, machine, n)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		out = describeMachine(scope, &v.Machine)
+		out.StateMachineArn = new(v.arn(scope))
+		if v.Description != "" {
+			out.Description = new(v.Description)
+		}
+
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -226,7 +265,7 @@ func (s *Service) ListStateMachines(
 			}
 
 			items = append(items, api.StateMachineListItem{
-				StateMachineArn: new(arn(m.Scope, "stateMachine", sm.Name)), Name: new(sm.Name), Type: new(sm.Type),
+				StateMachineArn: new(arn(m.Scope, arnStateMachine, sm.Name)), Name: new(sm.Name), Type: new(sm.Type),
 				CreationDate: new(sm.Created),
 			})
 		}
@@ -259,8 +298,8 @@ func (s *Service) UpdateStateMachine(
 			"loggingConfiguration, or the tracingConfiguration must be specified")
 	case in.RoleArn != nil && !roleARN.MatchString(*in.RoleArn):
 		return nil, invalidARN(*in.RoleArn)
-	case value(in.Publish):
-		return nil, awserror.Validation("TinyStack does not support state machine versions")
+	case in.VersionDescription != nil && !value(in.Publish):
+		return nil, awserror.Validation("versionDescription requires publish")
 	}
 
 	if in.Definition != nil {
@@ -275,6 +314,7 @@ func (s *Service) UpdateStateMachine(
 
 	now := unix(s.now())
 	var sm *stateMachine
+	out := &api.UpdateStateMachineOutput{UpdateDate: &now}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		scope, loaded, loadErr := loadMachine(tx, in.StateMachineArn)
 		if loadErr != nil {
@@ -295,13 +335,23 @@ func (s *Service) UpdateStateMachine(
 			sm.Tracing,
 		)
 		sm.RevisionID = newUUID()
-		return write(tx, machineKey(scope, sm.Name), sm)
+		out.RevisionId = new(sm.RevisionID)
+		if writeErr := write(tx, machineKey(scope, sm.Name), sm); writeErr != nil || !value(in.Publish) {
+			return writeErr
+		}
+
+		v, publishErr := publish(tx, scope, sm, value(in.VersionDescription), now)
+		if publishErr == nil {
+			out.StateMachineVersionArn = new(v.arn(scope))
+		}
+
+		return publishErr
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &api.UpdateStateMachineOutput{UpdateDate: &now, RevisionId: new(sm.RevisionID)}, nil
+	return out, nil
 }
 
 func orElse[T any](p, fallback *T) *T {
@@ -334,7 +384,7 @@ func (s *Service) DeleteStateMachine(
 			return scopeErr
 		}
 
-		for _, kind := range []string{kindExecution, kindEvent} {
+		for _, kind := range []string{kindExecution, kindEvent, kindVersion, kindAlias} {
 			for _, k := range tx.Keys(prefix(scope, kind) + sm.Name + "/") {
 				if kind == kindExecution {
 					e, _, readErr := read[execution](tx, k)
@@ -391,30 +441,4 @@ func (s *Service) ValidateStateMachineDefinition(
 	}
 
 	return out, nil
-}
-
-// ListStateMachineVersions lists no versions: TinyStack does not publish
-// state machine versions.
-func (s *Service) ListStateMachineVersions(
-	ctx context.Context,
-	in *api.ListStateMachineVersionsInput,
-) (*api.ListStateMachineVersionsOutput, error) {
-	m, err := identity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		scope, _, loadErr := loadMachine(tx, in.StateMachineArn)
-		if loadErr != nil {
-			return loadErr
-		}
-
-		return inScope(&m, scope, in.StateMachineArn)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &api.ListStateMachineVersionsOutput{StateMachineVersions: []api.StateMachineVersionListItem{}}, nil
 }

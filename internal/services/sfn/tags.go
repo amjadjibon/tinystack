@@ -25,7 +25,7 @@ func (s *Service) retag(ctx context.Context, arnString *string, fn func(map[stri
 
 		missing := awserror.New("ResourceNotFound", "Resource not found: '"+value(arnString)+"'")
 		switch kind {
-		case "stateMachine":
+		case arnStateMachine:
 			sm, found, readErr := read[stateMachine](tx, machineKey(scope, name))
 			if readErr != nil || !found {
 				return errorsOr(readErr, missing)

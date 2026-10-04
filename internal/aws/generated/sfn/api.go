@@ -38,6 +38,7 @@ type CreateStateMachineInput struct {
 	Tags                 []Tag                 `json:"tags,omitempty"`
 	TracingConfiguration *TracingConfiguration `json:"tracingConfiguration,omitempty"`
 	Publish              *bool                 `json:"publish,omitempty"`
+	VersionDescription   *string               `json:"versionDescription,omitempty"`
 }
 
 type CreateStateMachineOutput struct {
@@ -97,6 +98,7 @@ type UpdateStateMachineInput struct {
 	LoggingConfiguration *LoggingConfiguration `json:"loggingConfiguration,omitempty"`
 	TracingConfiguration *TracingConfiguration `json:"tracingConfiguration,omitempty"`
 	Publish              *bool                 `json:"publish,omitempty"`
+	VersionDescription   *string               `json:"versionDescription,omitempty"`
 }
 
 type UpdateStateMachineOutput struct {
@@ -628,9 +630,9 @@ type ListTagsForResourceOutput struct {
 }
 
 type ListStateMachineVersionsInput struct {
-	MaxResults      *int64  `json:"maxResults,omitempty"`
-	NextToken       *string `json:"nextToken,omitempty"`
 	StateMachineArn *string `json:"stateMachineArn,omitempty"`
+	NextToken       *string `json:"nextToken,omitempty"`
+	MaxResults      *int64  `json:"maxResults,omitempty"`
 }
 
 type StateMachineVersionListItem struct {
@@ -641,6 +643,86 @@ type StateMachineVersionListItem struct {
 type ListStateMachineVersionsOutput struct {
 	NextToken            *string                       `json:"nextToken,omitempty"`
 	StateMachineVersions []StateMachineVersionListItem `json:"stateMachineVersions,omitempty"`
+}
+
+type PublishStateMachineVersionInput struct {
+	StateMachineArn *string `json:"stateMachineArn,omitempty"`
+	RevisionId      *string `json:"revisionId,omitempty"`
+	Description     *string `json:"description,omitempty"`
+}
+
+type PublishStateMachineVersionOutput struct {
+	CreationDate           *float64 `json:"creationDate,omitempty"`
+	StateMachineVersionArn *string  `json:"stateMachineVersionArn,omitempty"`
+}
+
+type DeleteStateMachineVersionInput struct {
+	StateMachineVersionArn *string `json:"stateMachineVersionArn,omitempty"`
+}
+
+type DeleteStateMachineVersionOutput struct {
+}
+
+type RoutingConfigurationListItem struct {
+	StateMachineVersionArn *string `json:"stateMachineVersionArn,omitempty"`
+	Weight                 *int64  `json:"weight,omitempty"`
+}
+
+type CreateStateMachineAliasInput struct {
+	Description          *string                        `json:"description,omitempty"`
+	Name                 *string                        `json:"name,omitempty"`
+	RoutingConfiguration []RoutingConfigurationListItem `json:"routingConfiguration,omitempty"`
+}
+
+type CreateStateMachineAliasOutput struct {
+	CreationDate         *float64 `json:"creationDate,omitempty"`
+	StateMachineAliasArn *string  `json:"stateMachineAliasArn,omitempty"`
+}
+
+type DescribeStateMachineAliasInput struct {
+	StateMachineAliasArn *string `json:"stateMachineAliasArn,omitempty"`
+}
+
+type DescribeStateMachineAliasOutput struct {
+	CreationDate         *float64                       `json:"creationDate,omitempty"`
+	Description          *string                        `json:"description,omitempty"`
+	Name                 *string                        `json:"name,omitempty"`
+	RoutingConfiguration []RoutingConfigurationListItem `json:"routingConfiguration,omitempty"`
+	StateMachineAliasArn *string                        `json:"stateMachineAliasArn,omitempty"`
+	UpdateDate           *float64                       `json:"updateDate,omitempty"`
+}
+
+type UpdateStateMachineAliasInput struct {
+	StateMachineAliasArn *string                        `json:"stateMachineAliasArn,omitempty"`
+	Description          *string                        `json:"description,omitempty"`
+	RoutingConfiguration []RoutingConfigurationListItem `json:"routingConfiguration,omitempty"`
+}
+
+type UpdateStateMachineAliasOutput struct {
+	UpdateDate *float64 `json:"updateDate,omitempty"`
+}
+
+type DeleteStateMachineAliasInput struct {
+	StateMachineAliasArn *string `json:"stateMachineAliasArn,omitempty"`
+}
+
+type DeleteStateMachineAliasOutput struct {
+}
+
+type ListStateMachineAliasesInput struct {
+	StateMachineArn *string `json:"stateMachineArn,omitempty"`
+	NextToken       *string `json:"nextToken,omitempty"`
+	MaxResults      *int64  `json:"maxResults,omitempty"`
+}
+
+type StateMachineAliasListItem struct {
+	CreationDate         *float64 `json:"creationDate,omitempty"`
+	StateMachineAliasArn *string  `json:"stateMachineAliasArn,omitempty"`
+}
+
+type ListStateMachineAliasesOutput struct {
+	NextToken           *string                     `json:"nextToken,omitempty"`
+	StateMachineAliases []StateMachineAliasListItem `json:"stateMachineAliases,omitempty"`
 }
 
 type API interface {
@@ -669,6 +751,13 @@ type API interface {
 	UntagResource(context.Context, *UntagResourceInput) (*UntagResourceOutput, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceInput) (*ListTagsForResourceOutput, error)
 	ListStateMachineVersions(context.Context, *ListStateMachineVersionsInput) (*ListStateMachineVersionsOutput, error)
+	PublishStateMachineVersion(context.Context, *PublishStateMachineVersionInput) (*PublishStateMachineVersionOutput, error)
+	DeleteStateMachineVersion(context.Context, *DeleteStateMachineVersionInput) (*DeleteStateMachineVersionOutput, error)
+	CreateStateMachineAlias(context.Context, *CreateStateMachineAliasInput) (*CreateStateMachineAliasOutput, error)
+	DescribeStateMachineAlias(context.Context, *DescribeStateMachineAliasInput) (*DescribeStateMachineAliasOutput, error)
+	UpdateStateMachineAlias(context.Context, *UpdateStateMachineAliasInput) (*UpdateStateMachineAliasOutput, error)
+	DeleteStateMachineAlias(context.Context, *DeleteStateMachineAliasInput) (*DeleteStateMachineAliasOutput, error)
+	ListStateMachineAliases(context.Context, *ListStateMachineAliasesInput) (*ListStateMachineAliasesOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -747,6 +836,27 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListStateMachineVersions": {Name: "ListStateMachineVersions", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListStateMachineVersions", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListStateMachineVersionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListStateMachineVersions(ctx, input.(*ListStateMachineVersionsInput))
+		}},
+		"PublishStateMachineVersion": {Name: "PublishStateMachineVersion", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.PublishStateMachineVersion", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &PublishStateMachineVersionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PublishStateMachineVersion(ctx, input.(*PublishStateMachineVersionInput))
+		}},
+		"DeleteStateMachineVersion": {Name: "DeleteStateMachineVersion", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DeleteStateMachineVersion", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteStateMachineVersionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteStateMachineVersion(ctx, input.(*DeleteStateMachineVersionInput))
+		}},
+		"CreateStateMachineAlias": {Name: "CreateStateMachineAlias", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.CreateStateMachineAlias", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateStateMachineAliasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateStateMachineAlias(ctx, input.(*CreateStateMachineAliasInput))
+		}},
+		"DescribeStateMachineAlias": {Name: "DescribeStateMachineAlias", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DescribeStateMachineAlias", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeStateMachineAliasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeStateMachineAlias(ctx, input.(*DescribeStateMachineAliasInput))
+		}},
+		"UpdateStateMachineAlias": {Name: "UpdateStateMachineAlias", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.UpdateStateMachineAlias", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateStateMachineAliasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateStateMachineAlias(ctx, input.(*UpdateStateMachineAliasInput))
+		}},
+		"DeleteStateMachineAlias": {Name: "DeleteStateMachineAlias", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DeleteStateMachineAlias", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteStateMachineAliasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteStateMachineAlias(ctx, input.(*DeleteStateMachineAliasInput))
+		}},
+		"ListStateMachineAliases": {Name: "ListStateMachineAliases", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListStateMachineAliases", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListStateMachineAliasesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListStateMachineAliases(ctx, input.(*ListStateMachineAliasesInput))
 		}},
 	}}
 }

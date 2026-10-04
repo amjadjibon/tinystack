@@ -66,19 +66,21 @@ func (s *Service) begin(
 
 	now := s.now()
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		scope, sm, loadErr := loadMachine(tx, smARN)
+		t, loadErr := loadTarget(tx, smARN)
 		if loadErr != nil {
 			return loadErr
 		}
 
+		scope, sm := t.scope, t.machine
 		if scopeErr := inScope(m, scope, smARN); scopeErr != nil {
 			return scopeErr
 		}
 
 		def, _ = parseDefinition(sm.Definition)
 		e := &execution{
-			Name: execName, StateMachine: sm.Name, StateMachineARN: *smARN, Status: statusRunning, Input: in,
-			Endpoint: m.Endpoint, Start: unix(now), ARN: arn(scope, "execution", sm.Name+":"+execName),
+			Name: execName, StateMachine: sm.Name, StateMachineARN: machineARN(scope, sm.Name), Status: statusRunning,
+			Input: in, Endpoint: m.Endpoint, Start: unix(now), ARN: arn(scope, "execution", sm.Name+":"+execName),
+			VersionARN: t.versionARN, AliasARN: t.aliasARN,
 		}
 		r = &run{s: s, machine: sm, exec: e, scope: scope, started: now, record: sm.Type == typeStandard}
 		if sm.Type == typeExpress {
@@ -329,7 +331,8 @@ func (s *Service) DescribeExecution(
 		ExecutionArn: new(e.ARN), StateMachineArn: new(e.StateMachineARN), Name: new(e.Name), Status: new(e.Status),
 		StartDate: new(e.Start), Input: new(e.Input), RedriveCount: new(int64(0)),
 		InputDetails:  &api.CloudWatchEventsExecutionDataDetails{Included: new(true)},
-		RedriveStatus: new("NOT_REDRIVABLE"),
+		RedriveStatus: new("NOT_REDRIVABLE"), StateMachineVersionArn: optional(e.VersionARN),
+		StateMachineAliasArn: optional(e.AliasARN),
 	}
 	if e.Status != statusRunning {
 		out.StopDate = new(e.Stop)
@@ -362,12 +365,17 @@ func (s *Service) DescribeStateMachineForExecution(
 			return loadErr
 		}
 
-		scope, sm, loadErr := loadMachine(tx, &e.StateMachineARN)
+		target := e.StateMachineARN
+		if e.VersionARN != "" {
+			target = e.VersionARN
+		}
+
+		t, loadErr := loadTarget(tx, &target)
 		if loadErr != nil {
 			return loadErr
 		}
 
-		d := describeMachine(scope, sm)
+		d := describeMachine(t.scope, t.machine)
 		out = &api.DescribeStateMachineForExecutionOutput{
 			StateMachineArn: d.StateMachineArn, Name: d.Name, Definition: d.Definition, RoleArn: d.RoleArn,
 			UpdateDate: d.CreationDate, LoggingConfiguration: d.LoggingConfiguration,
@@ -397,13 +405,20 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 
 	out := &api.ListExecutionsOutput{Executions: []api.ExecutionListItem{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		scope, sm, loadErr := loadMachine(tx, in.StateMachineArn)
+		t, loadErr := loadTarget(tx, in.StateMachineArn)
 		if loadErr != nil {
 			return loadErr
 		}
 
+		scope, sm := t.scope, t.machine
 		if scopeErr := inScope(&m, scope, in.StateMachineArn); scopeErr != nil {
 			return scopeErr
+		}
+
+		// A version or alias ARN lists the executions that ran it.
+		qualifiedARN := ""
+		if _, _, qualifier, _ := qualified(value(in.StateMachineArn)); qualifier != "" {
+			qualifiedARN = value(in.StateMachineArn)
 		}
 
 		if sm.Type == typeExpress {
@@ -418,7 +433,8 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 				return readErr
 			}
 
-			if in.StatusFilter == nil || e.Status == *in.StatusFilter {
+			if (in.StatusFilter == nil || e.Status == *in.StatusFilter) &&
+				(qualifiedARN == "" || e.VersionARN == qualifiedARN || e.AliasARN == qualifiedARN) {
 				all = append(all, e)
 			}
 		}
@@ -429,6 +445,7 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 			item := api.ExecutionListItem{
 				ExecutionArn: new(e.ARN), StateMachineArn: new(e.StateMachineARN), Name: new(e.Name),
 				Status: new(e.Status), StartDate: new(e.Start), RedriveCount: new(int64(0)),
+				StateMachineVersionArn: optional(e.VersionARN), StateMachineAliasArn: optional(e.AliasARN),
 			}
 			if e.Status != statusRunning {
 				item.StopDate = new(e.Stop)
