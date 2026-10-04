@@ -8301,7 +8301,8 @@
       "DescribeStateMachineAlias",
       "UpdateStateMachineAlias",
       "DeleteStateMachineAlias",
-      "ListStateMachineAliases"
+      "ListStateMachineAliases",
+      "RedriveExecution"
     ],
     "shapes": {
       "CreateStateMachineInput": [
@@ -8390,6 +8391,10 @@
         "stateMachineArn",
         "nextToken",
         "maxResults"
+      ],
+      "RedriveExecutionInput": [
+        "executionArn",
+        "clientToken"
       ]
     }
   },

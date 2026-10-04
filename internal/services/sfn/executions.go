@@ -80,7 +80,7 @@ func (s *Service) begin(
 		e := &execution{
 			Name: execName, StateMachine: sm.Name, StateMachineARN: machineARN(scope, sm.Name), Status: statusRunning,
 			Input: in, Endpoint: m.Endpoint, Start: unix(now), ARN: arn(scope, "execution", sm.Name+":"+execName),
-			VersionARN: t.versionARN, AliasARN: t.aliasARN,
+			VersionARN: t.versionARN, AliasARN: t.aliasARN, Definition: sm.Definition,
 		}
 		r = &run{s: s, machine: sm, exec: e, scope: scope, started: now, record: sm.Type == typeStandard}
 		if sm.Type == typeExpress {
@@ -106,14 +106,18 @@ func (s *Service) begin(
 		return nil, nil, false, err
 	}
 
+	r.useLogging()
+	return r, def, existing, nil
+}
+
+// useLogging sets the log group a run writes to, if its state machine logs.
+func (r *run) useLogging() {
 	if logging := r.machine.Logging; logging != nil && len(logging.Destinations) > 0 {
 		group := value(logging.Destinations[0].CloudWatchLogsLogGroup.LogGroupArn)
 		if logScope, kind, rest, ok := parseLogGroup(group); ok && kind == "log-group" {
 			r.logScope, r.logGroup = logScope, strings.TrimSuffix(rest, ":*")
 		}
 	}
-
-	return r, def, existing, nil
 }
 
 func parseLogGroup(group string) (scope request.Scope, kind, name string, ok bool) {
@@ -145,17 +149,36 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 		s.mu.Unlock()
 	}()
 
-	r.event(ctx, "ExecutionStarted", func(e *api.HistoryEvent) {
-		e.ExecutionStartedEventDetails = &api.ExecutionStartedEventDetails{
-			Input: new(r.exec.Input), RoleArn: new(r.machine.RoleArn),
-		}
-	})
-
+	name, vars := def.StartAt, map[string]any{}
 	var input any
 	_ = json.Unmarshal([]byte(r.exec.Input), &input)
-	out, err := r.runMachine(ctx, def, input, nil, nil)
+	if p := r.exec.Resume; r.redrive && p != nil {
+		name, input, vars = p.State, p.Input, p.Vars
+		r.event(ctx, "ExecutionRedriven", func(e *api.HistoryEvent) {
+			e.ExecutionRedrivenEventDetails = &api.ExecutionRedrivenEventDetails{RedriveCount: new(r.exec.Redrives)}
+		})
+	} else {
+		r.event(ctx, "ExecutionStarted", func(e *api.HistoryEvent) {
+			e.ExecutionStartedEventDetails = &api.ExecutionStartedEventDetails{
+				Input: new(r.exec.Input), RoleArn: new(r.machine.RoleArn),
+			}
+		})
+	}
+
+	if vars == nil {
+		vars = map[string]any{}
+	}
+
+	var at resumePoint
+	out, err := r.runFrom(ctx, def, name, input, nil, vars, func(state string, in any, v map[string]any) {
+		at = resumePoint{State: state, Input: in, Vars: v}
+	})
 	e := r.exec
 	e.Stop = unix(s.now())
+	e.Resume = &at
+	if err == nil {
+		e.Resume = nil
+	}
 	var stopped *stopError
 	switch {
 	case err == nil:
@@ -329,10 +352,17 @@ func (s *Service) DescribeExecution(
 
 	out := &api.DescribeExecutionOutput{
 		ExecutionArn: new(e.ARN), StateMachineArn: new(e.StateMachineARN), Name: new(e.Name), Status: new(e.Status),
-		StartDate: new(e.Start), Input: new(e.Input), RedriveCount: new(int64(0)),
+		StartDate: new(e.Start), Input: new(e.Input),
 		InputDetails:  &api.CloudWatchEventsExecutionDataDetails{Included: new(true)},
-		RedriveStatus: new("NOT_REDRIVABLE"), StateMachineVersionArn: optional(e.VersionARN),
-		StateMachineAliasArn: optional(e.AliasARN),
+		RedriveStatus: new("REDRIVABLE"), StateMachineVersionArn: optional(e.VersionARN),
+		StateMachineAliasArn: optional(e.AliasARN), RedriveCount: new(e.Redrives),
+	}
+	if e.Redrives > 0 {
+		out.RedriveDate = new(e.RedriveDate)
+	}
+
+	if reason := e.redrivable(s.now()); reason != "" {
+		out.RedriveStatus, out.RedriveStatusReason = new("NOT_REDRIVABLE"), new(reason)
 	}
 	if e.Status != statusRunning {
 		out.StopDate = new(e.Stop)
@@ -446,6 +476,9 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 				ExecutionArn: new(e.ARN), StateMachineArn: new(e.StateMachineARN), Name: new(e.Name),
 				Status: new(e.Status), StartDate: new(e.Start), RedriveCount: new(int64(0)),
 				StateMachineVersionArn: optional(e.VersionARN), StateMachineAliasArn: optional(e.AliasARN),
+			}
+			if e.Redrives > 0 {
+				item.RedriveCount, item.RedriveDate = new(e.Redrives), new(e.RedriveDate)
 			}
 			if e.Status != statusRunning {
 				item.StopDate = new(e.Stop)

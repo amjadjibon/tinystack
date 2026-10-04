@@ -28,7 +28,9 @@ type run struct {
 	logScope request.Scope
 	// record keeps the history: standard executions have one, express ones
 	// do not.
-	record    bool
+	record bool
+	// redrive is set when the run redrives a stopped execution.
+	redrive   bool
 	mu        sync.Mutex
 	lastEvent int64
 }
@@ -140,7 +142,7 @@ func (r *run) contextObject(name string, entered time.Time, item map[string]any)
 	c := map[string]any{
 		"Execution": map[string]any{
 			"Id": r.exec.ARN, "Input": input, keyName: r.exec.Name, "RoleArn": r.machine.RoleArn,
-			"StartTime": r.started.UTC().Format(time.RFC3339Nano), "RedriveCount": float64(0),
+			"StartTime": r.started.UTC().Format(time.RFC3339Nano), "RedriveCount": float64(r.exec.Redrives),
 		},
 		"StateMachine": map[string]any{"Id": r.exec.StateMachineARN, keyName: r.machine.Name},
 		"State": map[string]any{
@@ -164,10 +166,23 @@ func (r *run) runMachine(
 		vars = map[string]any{}
 	}
 
-	name := m.StartAt
+	return r.runFrom(ctx, m, m.StartAt, input, item, vars, nil)
+}
+
+// runFrom runs a machine from the state name until a terminal state, telling
+// enter, when it is not nil, each state it enters with its input and the
+// variables before it.
+func (r *run) runFrom(
+	ctx context.Context, m *machine, name string, input any, item, vars map[string]any,
+	enter func(name string, input any, vars map[string]any),
+) (any, error) {
 	for {
 		if err := context.Cause(ctx); err != nil && ctx.Err() != nil {
 			return nil, err
+		}
+
+		if enter != nil {
+			enter(name, input, maps.Clone(vars))
 		}
 
 		out, next, err := r.runState(ctx, name, m.States[name], input, item, vars)

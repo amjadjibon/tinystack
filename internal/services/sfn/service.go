@@ -175,24 +175,32 @@ type stateMachine struct {
 
 // execution is an execution's record; its history events are records of
 // their own.
+//
+// Definition is the definition the execution runs, which a redrive runs
+// again from Resume, where it stopped; VersionARN and AliasARN name the
+// version that ran and the alias that chose it, if it started from one; and
+// Redrives counts redrives, with RedriveDate and RedriveToken the last's.
 type execution struct {
-	Name            string
-	ARN             string
-	StateMachine    string
+	Resume          *resumePoint `json:",omitempty"`
+	RedriveToken    string       `json:",omitempty"`
+	Status          string
 	StateMachineARN string
-	// VersionARN and AliasARN name the version that ran and the alias that
-	// chose it, if the execution started from one.
-	VersionARN string `json:",omitempty"`
-	AliasARN   string `json:",omitempty"`
-	Status     string
-	Input      string
-	Output     string `json:",omitempty"`
-	Error      string `json:",omitempty"`
-	Cause      string `json:",omitempty"`
-	Endpoint   string
-	Start      float64
-	Stop       float64 `json:",omitempty"`
-	Events     int64
+	Name            string
+	AliasARN        string `json:",omitempty"`
+	Definition      string `json:",omitempty"`
+	ARN             string
+	Endpoint        string
+	StateMachine    string
+	Cause           string `json:",omitempty"`
+	VersionARN      string `json:",omitempty"`
+	Input           string
+	Output          string  `json:",omitempty"`
+	Error           string  `json:",omitempty"`
+	RedriveDate     float64 `json:",omitempty"`
+	Redrives        int64   `json:",omitempty"`
+	Start           float64
+	Stop            float64 `json:",omitempty"`
+	Events          int64
 }
 
 // activity is an activity's record.
