@@ -148,7 +148,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   limits (50 tags, 128-character keys, 256-character values), and each service reports violations with its own code.
   Scoping comes from request metadata, which is how account/region isolation works. SQS long polling registers `watch`
   before the atomic `claim` (so wakeups are not lost), waits outside the transaction, and is released by `Stop`
-  (registered with `http.Server.RegisterOnShutdown`). FIFO group ordering and dead-letter moves also happen inside
+  (registered with `http.Server.RegisterOnShutdown`). SQS's and SNS's AddPermission and RemovePermission edit the
+  stored `Policy` through `services/policydoc`, which adds and removes labeled statements. FIFO group ordering and dead-letter moves also happen inside
   `claim`, and batch operations run all entries in one `Update`, so every queue change stays atomic. Message move
   tasks (`sqs/move.go`) are partition-wide records `aws/sqs/move/<account>/<region>/<source>/<task ID>`; the service's
   mover (started by `New`, ended by `Stop`, also deferred in `start.go`) moves each running task's next batch in one

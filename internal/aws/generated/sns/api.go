@@ -205,6 +205,22 @@ type PublishBatchResponse struct {
 	Failed     []BatchResultErrorEntry   `json:"Failed,omitempty" query:"Failed"`
 }
 
+type AddPermissionOutput struct{}
+
+type AddPermissionInput struct {
+	TopicArn     *string  `json:"TopicArn,omitempty" query:"TopicArn"`
+	Label        *string  `json:"Label,omitempty" query:"Label"`
+	AWSAccountId []string `json:"AWSAccountId,omitempty" query:"AWSAccountId"`
+	ActionName   []string `json:"ActionName,omitempty" query:"ActionName"`
+}
+
+type RemovePermissionOutput struct{}
+
+type RemovePermissionInput struct {
+	TopicArn *string `json:"TopicArn,omitempty" query:"TopicArn"`
+	Label    *string `json:"Label,omitempty" query:"Label"`
+}
+
 type API interface {
 	CreateTopic(context.Context, *CreateTopicInput) (*CreateTopicResponse, error)
 	DeleteTopic(context.Context, *DeleteTopicInput) (*DeleteTopicOutput, error)
@@ -223,6 +239,8 @@ type API interface {
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
 	PublishBatch(context.Context, *PublishBatchInput) (*PublishBatchResponse, error)
+	AddPermission(context.Context, *AddPermissionInput) (*AddPermissionOutput, error)
+	RemovePermission(context.Context, *RemovePermissionInput) (*RemovePermissionOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -273,6 +291,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"PublishBatch": {Name: "PublishBatch", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PublishBatch", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PublishBatchInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PublishBatch(ctx, input.(*PublishBatchInput))
+		}},
+		"AddPermission": {Name: "AddPermission", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AddPermission", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AddPermissionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AddPermission(ctx, input.(*AddPermissionInput))
+		}},
+		"RemovePermission": {Name: "RemovePermission", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RemovePermission", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RemovePermissionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemovePermission(ctx, input.(*RemovePermissionInput))
 		}},
 	}}
 }

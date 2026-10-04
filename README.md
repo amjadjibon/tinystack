@@ -244,6 +244,7 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 | DeleteMessage / ChangeMessageVisibility | Receipt handles change on each receive; a stale handle deletes nothing |
 | SendMessageBatch / DeleteMessageBatch / ChangeMessageVisibilityBatch | Up to 10 entries with distinct IDs in one transaction; each entry succeeds or fails on its own; batch sends are limited to 1 MiB in total |
 | TagQueue / UntagQueue / ListQueueTags | Also `tags` on CreateQueue |
+| AddPermission / RemovePermission | Add a statement labeled `Label` to the queue's `Policy` that lets `AWSAccountIds` take `Actions` (`SendMessage`, `ReceiveMessage`, `DeleteMessage`, `ChangeMessageVisibility`, `GetQueueAttributes`, `GetQueueUrl`, `ListDeadLetterSourceQueues`, `PurgeQueue`, `ListQueueTags`, or `*`), or remove it; a label in use or not found fails with `InvalidParameterValue` |
 | ListDeadLetterSourceQueues | The queues whose `RedrivePolicy` names the queue, with `MaxResults` and `NextToken` |
 | StartMessageMoveTask / ListMessageMoveTasks / CancelMessageMoveTask | Standard dead-letter queues only; moves the messages visible when the task starts, oldest first, to `DestinationArn` or back to each message's source queue, at `MaxNumberOfMessagesPerSecond` (1 to 500, 500 by default); one running task per source; tasks, newest first (up to 10 kept), survive a restart and resume; a task fails when its source or destination queue is deleted, and messages whose source queue is gone stay |
 
@@ -258,6 +259,7 @@ record email and SMS in `/_tinystack/deliveries` (no mail or text message is sen
 | GetTopicAttributes / SetTopicAttributes | The writable attributes above plus `TopicArn`, `Owner`, subscription counts, and the topic's `Policy` (by default, owner-only); delivery status sample rates are stored, but nothing is logged |
 | GetSubscriptionAttributes / SetSubscriptionAttributes | Endpoint, protocol, owner, `PendingConfirmation`, `RawMessageDelivery`, `FilterPolicy`, and `FilterPolicyScope` |
 | TagResource / UntagResource / ListTagsForResource | Topic ARNs |
+| AddPermission / RemovePermission | Add a statement labeled `Label` to the topic's `Policy` (starting from the default policy) that lets accounts take `ActionName`s such as `Publish` and `Subscribe`, or remove it; a label in use or not found fails with `InvalidParameter` |
 | DeleteTopic | Removes the topic and its subscriptions; deleting a missing topic succeeds |
 | ListTopics / ListSubscriptions / ListSubscriptionsByTopic | Account/region isolation, 100 per page with `NextToken` |
 | Subscribe / Unsubscribe | `sqs` (queue ARN) and `lambda` (function ARN) protocols with endpoints in the subscriber's account, and `sms` (an E.164 phone number, whose messages the delivery log records), confirmed at once; `http`, `https`, `email`, and `email-json` subscriptions, which wait for confirmation (Subscribe returns `pending confirmation` unless `ReturnSubscriptionArn` is set, and lists show `PendingConfirmation`); `RawMessageDelivery` for queues and HTTP endpoints; `FilterPolicy` and `FilterPolicyScope`; subscribing twice with the same attributes returns the existing subscription (and sends a pending one's confirmation request again) |
@@ -1169,7 +1171,7 @@ PartiQL transactions (`ExecuteTransaction`), Kinesis streaming, stream shard spl
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),
 message groups on standard queues, message move tasks for FIFO queues,
-policy evaluation (a `Policy` is stored only), or `AddPermission`/`RemovePermission`; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `application` or `firehose` subscriptions, SMS sandbox, opt-outs, or spending limits, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no message signatures (the envelope omits the `Signature` fields), topic policy evaluation, delivery policies,
+or policy evaluation (a `Policy` is stored only); the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `application` or `firehose` subscriptions, SMS sandbox, opt-outs, or spending limits, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no message signatures (the envelope omits the `Signature` fields), topic policy evaluation, delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than the owner's full control,
 policy evaluation, object encryption (bucket encryption settings are stored; every object reports `AES256`), POST uploads,

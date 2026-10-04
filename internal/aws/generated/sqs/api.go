@@ -264,6 +264,22 @@ type ListDeadLetterSourceQueuesResult struct {
 	NextToken *string  `json:"NextToken,omitempty" query:"NextToken"`
 }
 
+type AddPermissionOutput struct{}
+
+type AddPermissionRequest struct {
+	QueueUrl      *string  `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	Label         *string  `json:"Label,omitempty" query:"Label"`
+	AWSAccountIds []string `json:"AWSAccountIds,omitempty" query:"AWSAccountId,flat"`
+	Actions       []string `json:"Actions,omitempty" query:"ActionName,flat"`
+}
+
+type RemovePermissionOutput struct{}
+
+type RemovePermissionRequest struct {
+	QueueUrl *string `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	Label    *string `json:"Label,omitempty" query:"Label"`
+}
+
 type API interface {
 	CreateQueue(context.Context, *CreateQueueRequest) (*CreateQueueResult, error)
 	DeleteQueue(context.Context, *DeleteQueueRequest) (*DeleteQueueOutput, error)
@@ -285,6 +301,8 @@ type API interface {
 	ListMessageMoveTasks(context.Context, *ListMessageMoveTasksRequest) (*ListMessageMoveTasksResult, error)
 	CancelMessageMoveTask(context.Context, *CancelMessageMoveTaskRequest) (*CancelMessageMoveTaskResult, error)
 	ListDeadLetterSourceQueues(context.Context, *ListDeadLetterSourceQueuesRequest) (*ListDeadLetterSourceQueuesResult, error)
+	AddPermission(context.Context, *AddPermissionRequest) (*AddPermissionOutput, error)
+	RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -346,6 +364,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListDeadLetterSourceQueues": {Name: "ListDeadLetterSourceQueues", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.ListDeadLetterSourceQueues", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListDeadLetterSourceQueues", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListDeadLetterSourceQueuesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListDeadLetterSourceQueues(ctx, input.(*ListDeadLetterSourceQueuesRequest))
+		}},
+		"AddPermission": {Name: "AddPermission", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.AddPermission", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AddPermission", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AddPermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AddPermission(ctx, input.(*AddPermissionRequest))
+		}},
+		"RemovePermission": {Name: "RemovePermission", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSQS.RemovePermission", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RemovePermission", Version: "2012-11-05", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RemovePermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemovePermission(ctx, input.(*RemovePermissionRequest))
 		}},
 	}}
 }

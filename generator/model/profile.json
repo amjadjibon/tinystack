@@ -5013,7 +5013,9 @@
       "TagResource",
       "UntagResource",
       "ListTagsForResource",
-      "PublishBatch"
+      "PublishBatch",
+      "AddPermission",
+      "RemovePermission"
     ],
     "shapes": {
       "CreateTopicInput": [
@@ -5165,6 +5167,16 @@
         "Code",
         "Message",
         "SenderFault"
+      ],
+      "AddPermissionInput": [
+        "TopicArn",
+        "Label",
+        "AWSAccountId",
+        "ActionName"
+      ],
+      "RemovePermissionInput": [
+        "TopicArn",
+        "Label"
       ]
     }
   },
@@ -5189,7 +5201,9 @@
       "StartMessageMoveTask",
       "ListMessageMoveTasks",
       "CancelMessageMoveTask",
-      "ListDeadLetterSourceQueues"
+      "ListDeadLetterSourceQueues",
+      "AddPermission",
+      "RemovePermission"
     ],
     "query": {
       "xmlNamespace": "http://queue.amazonaws.com/doc/2012-11-05/"
@@ -5383,6 +5397,16 @@
       "ListDeadLetterSourceQueuesResult": [
         "queueUrls",
         "NextToken"
+      ],
+      "AddPermissionRequest": [
+        "QueueUrl",
+        "Label",
+        "AWSAccountIds",
+        "Actions"
+      ],
+      "RemovePermissionRequest": [
+        "QueueUrl",
+        "Label"
       ]
     }
   },
