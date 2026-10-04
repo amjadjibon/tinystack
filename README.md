@@ -517,13 +517,15 @@ metadata.
 
 ### KMS (AWS JSON 1.1)
 
-Symmetric encryption keys (`SYMMETRIC_DEFAULT`, `ENCRYPT_DECRYPT`) and HMAC keys (`HMAC_224` to `HMAC_512`,
-`GENERATE_VERIFY_MAC`) belong to an account and region, and are named by key ID, key ARN, alias name, or alias ARN
+Symmetric encryption keys (`SYMMETRIC_DEFAULT`, `ENCRYPT_DECRYPT`), HMAC keys (`HMAC_224` to `HMAC_512`,
+`GENERATE_VERIFY_MAC`), and asymmetric keys (`RSA_2048`, `RSA_3072`, and `RSA_4096` with `ENCRYPT_DECRYPT` or
+`SIGN_VERIFY`; `ECC_NIST_P256`, `ECC_NIST_P384`, `ECC_NIST_P521`, and `ECC_NIST_EDWARDS25519` with `SIGN_VERIFY`)
+belong to an account and region, and are named by key ID, key ARN, alias name, or alias ARN
 wherever KMS accepts an alias.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateKey | `Description`, `Policy` (or the default policy that delegates to IAM), `Tags`, and an HMAC `KeySpec` with the `GENERATE_VERIFY_MAC` usage; other key specs, key usages, origins, and multi-Region keys return `UnsupportedOperationException` |
+| CreateKey | `Description`, `Policy` (or the default policy that delegates to IAM), `Tags`, and an HMAC `KeySpec` with the `GENERATE_VERIFY_MAC` usage or an asymmetric `KeySpec` with a `KeyUsage` it supports (required); other key specs, key usages, origins, and multi-Region keys return `UnsupportedOperationException` |
 | DescribeKey / ListKeys | Key metadata; keys in ID order with `Limit` and `Marker` |
 | EnableKey / DisableKey / UpdateKeyDescription | A disabled key cannot encrypt or decrypt |
 | ScheduleKeyDeletion / CancelKeyDeletion | A pending window of 7 to 30 days (30 by default); a key pending deletion is described but not usable, and cancelling leaves it disabled |
@@ -531,7 +533,9 @@ wherever KMS accepts an alias.
 | GetKeyRotationStatus / EnableKeyRotation / DisableKeyRotation | A rotation period of 90 to 2560 days (365 by default), for symmetric encryption keys |
 | CreateAlias / UpdateAlias / DeleteAlias / ListAliases | `alias/` names (not `alias/aws/`), in name order, optionally for one key |
 | TagResource / UntagResource / ListResourceTags | Up to 50 tags |
-| Encrypt / Decrypt | Up to 4 KB of plaintext, `EncryptionContext`, and `DryRun`; the ciphertext names its key, so `Decrypt` needs no `KeyId`, and a `KeyId` that names another key fails with `IncorrectKeyException` |
+| Encrypt / Decrypt | Up to 4 KB of plaintext, `EncryptionContext`, and `DryRun`; the ciphertext names its key, so `Decrypt` needs no `KeyId`, and a `KeyId` that names another key fails with `IncorrectKeyException`. With an RSA `ENCRYPT_DECRYPT` key and `EncryptionAlgorithm` `RSAES_OAEP_SHA_1` or `RSAES_OAEP_SHA_256`, the ciphertext is plain RSA-OAEP (so the public key encrypts outside KMS too), `Decrypt` needs the `KeyId`, the plaintext is limited by the key size, and an `EncryptionContext` is rejected |
+| Sign / Verify | `SIGN_VERIFY` keys sign up to 4 KB, as a `RAW` message or a `DIGEST` of the algorithm's hash length: `RSASSA_PSS_SHA_*` (salt as long as the hash) and `RSASSA_PKCS1_V1_5_SHA_*` for RSA, `ECDSA_SHA_256`/`384`/`512` (DER signatures) for the matching NIST curve, and `ED25519_SHA_512` (`RAW` only) and `ED25519_PH_SHA_512` for Ed25519; the signatures are standard, and a signature that does not verify fails with `KMSInvalidSignatureException` |
+| GetPublicKey | An asymmetric key's DER X.509 public key with its spec, usage, and algorithms; symmetric and HMAC keys return `UnsupportedOperationException` |
 | GenerateDataKey / GenerateDataKeyWithoutPlaintext | `KeySpec` `AES_256` or `AES_128`, or `NumberOfBytes` up to 1024 |
 | GenerateDataKeyPair / GenerateDataKeyPairWithoutPlaintext | `RSA_2048`, `RSA_3072`, `RSA_4096`, `ECC_NIST_P256`, `ECC_NIST_P384`, and `ECC_NIST_P521` pairs: a PKCS #8 private key sealed under a symmetric key (`Decrypt` opens it) and an X.509 public key, both DER |
 | GenerateMac / VerifyMac | HMAC over up to 4 KB with the key's one algorithm (`HMAC_SHA_256` for an `HMAC_256` key); a MAC that does not match fails with `KMSInvalidMacException` |
@@ -1180,8 +1184,8 @@ synchronously during PutEvents, and retries run in the background. IAM limits: n
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, `aws:ec2:image` or other data
 types, shared parameters, or parameter quotas.
-KMS limits: no asymmetric keys (so no `Sign`, `Verify`, or `DeriveSharedSecret`), `ECC_SECG_P256K1` or SM2 data key
-pairs, `Recipient` attestation, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
+KMS limits: no `KEY_AGREEMENT` keys (so no `DeriveSharedSecret`), `ECC_SECG_P256K1`, SM2, or ML-DSA keys or data
+key pairs, `EXTERNAL_MU` messages, `Recipient` attestation, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
 material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policies,
 or `SortBy`.
 Cognito limits: no Lambda triggers but those four (custom message, pre authentication, auth challenge, user

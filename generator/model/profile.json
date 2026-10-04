@@ -2675,7 +2675,10 @@
       "GenerateDataKeyPair",
       "GenerateDataKeyPairWithoutPlaintext",
       "GenerateMac",
-      "VerifyMac"
+      "VerifyMac",
+      "Sign",
+      "Verify",
+      "GetPublicKey"
     ],
     "shapes": {
       "CreateKeyRequest": [
@@ -2713,6 +2716,7 @@
         "CustomerMasterKeySpec",
         "KeySpec",
         "EncryptionAlgorithms",
+        "SigningAlgorithms",
         "MultiRegion",
         "PendingDeletionWindowInDays",
         "MacAlgorithms"
@@ -2946,6 +2950,43 @@
         "KeyId",
         "MacValid",
         "MacAlgorithm"
+      ],
+      "SignRequest": [
+        "KeyId",
+        "Message",
+        "MessageType",
+        "SigningAlgorithm",
+        "DryRun"
+      ],
+      "SignResponse": [
+        "KeyId",
+        "Signature",
+        "SigningAlgorithm"
+      ],
+      "VerifyRequest": [
+        "KeyId",
+        "Message",
+        "MessageType",
+        "Signature",
+        "SigningAlgorithm",
+        "DryRun"
+      ],
+      "VerifyResponse": [
+        "KeyId",
+        "SignatureValid",
+        "SigningAlgorithm"
+      ],
+      "GetPublicKeyRequest": [
+        "KeyId"
+      ],
+      "GetPublicKeyResponse": [
+        "KeyId",
+        "PublicKey",
+        "CustomerMasterKeySpec",
+        "KeySpec",
+        "KeyUsage",
+        "EncryptionAlgorithms",
+        "SigningAlgorithms"
       ]
     }
   },

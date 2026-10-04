@@ -98,8 +98,8 @@ func (s *Service) VerifyMac(ctx context.Context, in *api.VerifyMacRequest) (*api
 func keyPair(spec string) (private, public []byte, err error) {
 	var key crypto.Signer
 	switch spec {
-	case "RSA_2048", "RSA_3072", "RSA_4096":
-		bits := map[string]int{"RSA_2048": 2048, "RSA_3072": 3072, "RSA_4096": 4096}[spec]
+	case rsa2048, rsa3072, rsa4096:
+		bits := map[string]int{rsa2048: 2048, rsa3072: 3072, rsa4096: 4096}[spec]
 		key, err = rsa.GenerateKey(rand.Reader, bits)
 	case "ECC_NIST_P256":
 		key, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)

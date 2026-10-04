@@ -212,7 +212,7 @@ func (k *key) metadata(scope request.Scope) *api.KeyMetadata {
 	if mac, ok := macKeys[k.spec()]; ok {
 		m.MacAlgorithms = []string{mac.algorithm}
 	} else {
-		m.EncryptionAlgorithms = []string{symmetricDefault}
+		m.EncryptionAlgorithms, m.SigningAlgorithms = k.algorithms()
 	}
 
 	if k.State == statePendingDeletion {
@@ -338,7 +338,7 @@ func (s *Service) Check(ctx context.Context, scope request.Scope, ref string) er
 			return usableErr
 		}
 
-		return k.requireUsage(scope, encryptDecrypt)
+		return k.requireSymmetric(scope)
 	})
 }
 
@@ -418,9 +418,10 @@ func defaultPolicy(scope request.Scope) string {
 	return string(b)
 }
 
-// checkKeySpec accepts only what TinyStack implements: symmetric encryption
-// and HMAC keys that KMS generates, in one region. It returns the key's spec
-// and usage as the record stores them, empty for symmetric encryption.
+// checkKeySpec accepts only what TinyStack implements: symmetric encryption,
+// HMAC, and asymmetric keys that KMS generates, in one region. It returns the
+// key's spec and usage as the record stores them, empty for symmetric
+// encryption.
 func checkKeySpec(in *api.CreateKeyRequest) (spec, usage string, err error) {
 	if in.KeySpec != nil && in.CustomerMasterKeySpec != nil {
 		return "", "", awserror.Validation("You cannot specify KeySpec and CustomerMasterKeySpec in the same " +
@@ -429,12 +430,29 @@ func checkKeySpec(in *api.CreateKeyRequest) (spec, usage string, err error) {
 
 	spec = cmp.Or(value(in.KeySpec), value(in.CustomerMasterKeySpec), symmetricDefault)
 	usage = value(in.KeyUsage)
+	if asymmetric, ok := asymmetricKeys[spec]; ok {
+		switch {
+		case usage == "":
+			return "", "", awserror.Validation("Asymmetric keys need a KeyUsage.")
+		case !slices.Contains(asymmetric.usages, usage):
+			return "", "", awserror.Validation("%s keys support the %s key usages, not %s.", spec,
+				strings.Join(asymmetric.usages, " and "), usage)
+		case in.Origin != nil && *in.Origin != originKMS:
+			return "", "", unsupported("TinyStack supports only %s key material, not %s.", originKMS, *in.Origin)
+		case value(in.MultiRegion):
+			return "", "", unsupported("TinyStack does not support multi-Region keys.")
+		}
+
+		return spec, usage, nil
+	}
+
 	_, isMAC := macKeys[spec]
 	switch {
 	case isMAC && usage != generateVerifyMAC:
 		return "", "", awserror.Validation("HMAC keys must have the %s key usage.", generateVerifyMAC)
 	case !isMAC && spec != symmetricDefault:
-		return "", "", unsupported("TinyStack supports only %s and HMAC keys, not %s.", symmetricDefault, spec)
+		return "", "", unsupported("TinyStack supports only %s, HMAC, RSA, ECC_NIST, and %s keys, not %s.",
+			symmetricDefault, edwards, spec)
 	case usage != "" && usage != encryptDecrypt && usage != generateVerifyMAC:
 		return "", "", unsupported("TinyStack supports only %s and %s keys, not %s.", encryptDecrypt,
 			generateVerifyMAC, usage)
@@ -482,16 +500,15 @@ func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api
 		return nil, tagError(tagErr)
 	}
 
-	size := 32
-	if mac, ok := macKeys[spec]; ok {
-		size = mac.size
+	material, err := newMaterial(spec)
+	if err != nil {
+		return nil, err
 	}
 
 	k := &key{
 		Tags: tags, ID: newKeyID(), Description: value(in.Description), Policy: policy, State: stateEnabled,
-		Material: make([]byte, size), Created: s.now().UnixMilli(), Spec: spec, Usage: usage,
+		Material: material, Created: s.now().UnixMilli(), Spec: spec, Usage: usage,
 	}
-	_, _ = rand.Read(k.Material)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		return write(tx, keyKey(scope, k.ID), k)
 	})

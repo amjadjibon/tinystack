@@ -188,7 +188,7 @@ func TestKMSKeys(t *testing.T) {
 
 	// Unsupported key types fail explicitly.
 	for _, in := range []*kms.CreateKeyInput{
-		{KeySpec: kmstypes.KeySpecRsa2048},
+		{KeySpec: kmstypes.KeySpecEccSecgP256k1, KeyUsage: kmstypes.KeyUsageTypeSignVerify},
 		{KeyUsage: kmstypes.KeyUsageTypeSignVerify},
 		{Origin: kmstypes.OriginTypeExternal},
 		{MultiRegion: aws.Bool(true)},

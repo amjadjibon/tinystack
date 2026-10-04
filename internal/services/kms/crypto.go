@@ -122,7 +122,7 @@ func (s *Service) encrypting(
 			return usableErr
 		}
 
-		if usageErr := k.requireUsage(scope, encryptDecrypt); usageErr != nil {
+		if usageErr := k.requireSymmetric(scope); usageErr != nil {
 			return usageErr
 		}
 
@@ -133,6 +133,10 @@ func (s *Service) encrypting(
 func (s *Service) Encrypt(ctx context.Context, in *api.EncryptRequest) (*api.EncryptResponse, error) {
 	if len(in.Plaintext) == 0 || len(in.Plaintext) > maxPlaintext {
 		return nil, awserror.Validation("Plaintext must be 1 to %d bytes.", maxPlaintext)
+	}
+
+	if isAsymmetricAlgorithm(in.EncryptionAlgorithm) {
+		return s.encryptAsymmetric(ctx, in)
 	}
 
 	if guardErr := checkAlgorithm(in.EncryptionAlgorithm); guardErr != nil {
@@ -157,7 +161,12 @@ func (s *Service) Encrypt(ctx context.Context, in *api.EncryptRequest) (*api.Enc
 }
 
 // Decrypt finds the key from the ciphertext; KeyId, when given, must name it.
+// An RSA ciphertext needs its KeyId and EncryptionAlgorithm.
 func (s *Service) Decrypt(ctx context.Context, in *api.DecryptRequest) (*api.DecryptResponse, error) {
+	if isAsymmetricAlgorithm(in.EncryptionAlgorithm) {
+		return s.decryptAsymmetric(ctx, in)
+	}
+
 	if guardErr := checkAlgorithm(in.EncryptionAlgorithm); guardErr != nil {
 		return nil, guardErr
 	}
