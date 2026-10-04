@@ -193,7 +193,11 @@ a per-service `Dialect`), and delivers synchronously through
   `sqs.Service.Deliver`, `sns.Service.Publish`, and `lambda.Service.InvokeAsync`. A delivery that fails with a
   retryable error (`retry.go`) is stored in the partition-wide `aws/eventbridge/retry/<account>/<region>/<ID>` index,
   which the same scheduler retries with backoff (claiming each attempt with a lease, so a crash retries it later) until
-  the target's `RetryPolicy` runs out; then, or for any other failure, the event goes to its SQS dead-letter queue. SSM Parameter Store keeps each
+  the target's `RetryPolicy` runs out; then, or for any other failure, the event goes to its SQS dead-letter queue.
+  Archives (`archive.go`) are `…/eventbridge/archive/<name>`, and PutEvents writes the events each matches, in one
+  transaction after matching, under `…/eventbridge/archived/<name>/<zero-padded event time><event ID>`; `replay.go`
+  reads a time range of them and delivers it to the bus's rules before StartReplay returns, and bus policies
+  (`policy.go`) are `…/eventbridge/policy/<bus>`. SSM Parameter Store keeps each
   parameter under `…/ssm/p/<name>` (current version number, labels, tags) and each immutable version under
   `…/ssm/v/<name>:<zero-padded version>`, so path and history listings read keys in order; SecureString values are
   stored as plain text and only a random placeholder is returned without decryption. Secrets Manager keeps each

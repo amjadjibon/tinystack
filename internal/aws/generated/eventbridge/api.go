@@ -243,6 +243,7 @@ type DescribeEventBusResponse struct {
 	Description      *string  `json:"Description,omitempty"`
 	CreationTime     *float64 `json:"CreationTime,omitempty"`
 	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty"`
+	Policy           *string  `json:"Policy,omitempty"`
 }
 
 type ListEventBusesRequest struct {
@@ -257,6 +258,7 @@ type EventBus struct {
 	Description      *string  `json:"Description,omitempty"`
 	CreationTime     *float64 `json:"CreationTime,omitempty"`
 	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty"`
+	Policy           *string  `json:"Policy,omitempty"`
 }
 
 type ListEventBusesResponse struct {
@@ -281,6 +283,184 @@ type DeleteEventBusRequest struct {
 	Name *string `json:"Name,omitempty"`
 }
 
+type CreateArchiveRequest struct {
+	ArchiveName    *string `json:"ArchiveName,omitempty"`
+	EventSourceArn *string `json:"EventSourceArn,omitempty"`
+	Description    *string `json:"Description,omitempty"`
+	EventPattern   *string `json:"EventPattern,omitempty"`
+	RetentionDays  *int64  `json:"RetentionDays,omitempty"`
+}
+
+type CreateArchiveResponse struct {
+	ArchiveArn   *string  `json:"ArchiveArn,omitempty"`
+	State        *string  `json:"State,omitempty"`
+	StateReason  *string  `json:"StateReason,omitempty"`
+	CreationTime *float64 `json:"CreationTime,omitempty"`
+}
+
+type DescribeArchiveRequest struct {
+	ArchiveName *string `json:"ArchiveName,omitempty"`
+}
+
+type DescribeArchiveResponse struct {
+	ArchiveArn     *string  `json:"ArchiveArn,omitempty"`
+	ArchiveName    *string  `json:"ArchiveName,omitempty"`
+	EventSourceArn *string  `json:"EventSourceArn,omitempty"`
+	Description    *string  `json:"Description,omitempty"`
+	EventPattern   *string  `json:"EventPattern,omitempty"`
+	State          *string  `json:"State,omitempty"`
+	StateReason    *string  `json:"StateReason,omitempty"`
+	RetentionDays  *int64   `json:"RetentionDays,omitempty"`
+	SizeBytes      *int64   `json:"SizeBytes,omitempty"`
+	EventCount     *int64   `json:"EventCount,omitempty"`
+	CreationTime   *float64 `json:"CreationTime,omitempty"`
+}
+
+type ListArchivesRequest struct {
+	NamePrefix     *string `json:"NamePrefix,omitempty"`
+	EventSourceArn *string `json:"EventSourceArn,omitempty"`
+	State          *string `json:"State,omitempty"`
+	NextToken      *string `json:"NextToken,omitempty"`
+	Limit          *int64  `json:"Limit,omitempty"`
+}
+
+type Archive struct {
+	ArchiveName    *string  `json:"ArchiveName,omitempty"`
+	EventSourceArn *string  `json:"EventSourceArn,omitempty"`
+	State          *string  `json:"State,omitempty"`
+	StateReason    *string  `json:"StateReason,omitempty"`
+	RetentionDays  *int64   `json:"RetentionDays,omitempty"`
+	SizeBytes      *int64   `json:"SizeBytes,omitempty"`
+	EventCount     *int64   `json:"EventCount,omitempty"`
+	CreationTime   *float64 `json:"CreationTime,omitempty"`
+}
+
+type ListArchivesResponse struct {
+	Archives  []Archive `json:"Archives,omitempty"`
+	NextToken *string   `json:"NextToken,omitempty"`
+}
+
+type UpdateArchiveRequest struct {
+	ArchiveName   *string `json:"ArchiveName,omitempty"`
+	Description   *string `json:"Description,omitempty"`
+	EventPattern  *string `json:"EventPattern,omitempty"`
+	RetentionDays *int64  `json:"RetentionDays,omitempty"`
+}
+
+type UpdateArchiveResponse struct {
+	ArchiveArn   *string  `json:"ArchiveArn,omitempty"`
+	State        *string  `json:"State,omitempty"`
+	StateReason  *string  `json:"StateReason,omitempty"`
+	CreationTime *float64 `json:"CreationTime,omitempty"`
+}
+
+type DeleteArchiveRequest struct {
+	ArchiveName *string `json:"ArchiveName,omitempty"`
+}
+
+type DeleteArchiveResponse struct {
+}
+
+type ReplayDestination struct {
+	Arn        *string  `json:"Arn,omitempty"`
+	FilterArns []string `json:"FilterArns,omitempty"`
+}
+
+type StartReplayRequest struct {
+	ReplayName     *string            `json:"ReplayName,omitempty"`
+	Description    *string            `json:"Description,omitempty"`
+	EventSourceArn *string            `json:"EventSourceArn,omitempty"`
+	EventStartTime *float64           `json:"EventStartTime,omitempty"`
+	EventEndTime   *float64           `json:"EventEndTime,omitempty"`
+	Destination    *ReplayDestination `json:"Destination,omitempty"`
+}
+
+type StartReplayResponse struct {
+	ReplayArn       *string  `json:"ReplayArn,omitempty"`
+	State           *string  `json:"State,omitempty"`
+	StateReason     *string  `json:"StateReason,omitempty"`
+	ReplayStartTime *float64 `json:"ReplayStartTime,omitempty"`
+}
+
+type DescribeReplayRequest struct {
+	ReplayName *string `json:"ReplayName,omitempty"`
+}
+
+type DescribeReplayResponse struct {
+	ReplayName            *string            `json:"ReplayName,omitempty"`
+	ReplayArn             *string            `json:"ReplayArn,omitempty"`
+	Description           *string            `json:"Description,omitempty"`
+	State                 *string            `json:"State,omitempty"`
+	StateReason           *string            `json:"StateReason,omitempty"`
+	EventSourceArn        *string            `json:"EventSourceArn,omitempty"`
+	Destination           *ReplayDestination `json:"Destination,omitempty"`
+	EventStartTime        *float64           `json:"EventStartTime,omitempty"`
+	EventEndTime          *float64           `json:"EventEndTime,omitempty"`
+	EventLastReplayedTime *float64           `json:"EventLastReplayedTime,omitempty"`
+	ReplayStartTime       *float64           `json:"ReplayStartTime,omitempty"`
+	ReplayEndTime         *float64           `json:"ReplayEndTime,omitempty"`
+}
+
+type ListReplaysRequest struct {
+	NamePrefix     *string `json:"NamePrefix,omitempty"`
+	State          *string `json:"State,omitempty"`
+	EventSourceArn *string `json:"EventSourceArn,omitempty"`
+	NextToken      *string `json:"NextToken,omitempty"`
+	Limit          *int64  `json:"Limit,omitempty"`
+}
+
+type Replay struct {
+	ReplayName            *string  `json:"ReplayName,omitempty"`
+	EventSourceArn        *string  `json:"EventSourceArn,omitempty"`
+	State                 *string  `json:"State,omitempty"`
+	StateReason           *string  `json:"StateReason,omitempty"`
+	EventStartTime        *float64 `json:"EventStartTime,omitempty"`
+	EventEndTime          *float64 `json:"EventEndTime,omitempty"`
+	EventLastReplayedTime *float64 `json:"EventLastReplayedTime,omitempty"`
+	ReplayStartTime       *float64 `json:"ReplayStartTime,omitempty"`
+	ReplayEndTime         *float64 `json:"ReplayEndTime,omitempty"`
+}
+
+type ListReplaysResponse struct {
+	Replays   []Replay `json:"Replays,omitempty"`
+	NextToken *string  `json:"NextToken,omitempty"`
+}
+
+type CancelReplayRequest struct {
+	ReplayName *string `json:"ReplayName,omitempty"`
+}
+
+type CancelReplayResponse struct {
+	ReplayArn   *string `json:"ReplayArn,omitempty"`
+	State       *string `json:"State,omitempty"`
+	StateReason *string `json:"StateReason,omitempty"`
+}
+
+type PutPermissionOutput struct{}
+
+type Condition struct {
+	Type  *string `json:"Type,omitempty"`
+	Key   *string `json:"Key,omitempty"`
+	Value *string `json:"Value,omitempty"`
+}
+
+type PutPermissionRequest struct {
+	EventBusName *string    `json:"EventBusName,omitempty"`
+	Action       *string    `json:"Action,omitempty"`
+	Principal    *string    `json:"Principal,omitempty"`
+	StatementId  *string    `json:"StatementId,omitempty"`
+	Condition    *Condition `json:"Condition,omitempty"`
+	Policy       *string    `json:"Policy,omitempty"`
+}
+
+type RemovePermissionOutput struct{}
+
+type RemovePermissionRequest struct {
+	StatementId          *string `json:"StatementId,omitempty"`
+	RemoveAllPermissions *bool   `json:"RemoveAllPermissions,omitempty"`
+	EventBusName         *string `json:"EventBusName,omitempty"`
+}
+
 type API interface {
 	PutEvents(context.Context, *PutEventsRequest) (*PutEventsResponse, error)
 	PutRule(context.Context, *PutRuleRequest) (*PutRuleResponse, error)
@@ -301,10 +481,21 @@ type API interface {
 	ListEventBuses(context.Context, *ListEventBusesRequest) (*ListEventBusesResponse, error)
 	UpdateEventBus(context.Context, *UpdateEventBusRequest) (*UpdateEventBusResponse, error)
 	DeleteEventBus(context.Context, *DeleteEventBusRequest) (*DeleteEventBusOutput, error)
+	CreateArchive(context.Context, *CreateArchiveRequest) (*CreateArchiveResponse, error)
+	DescribeArchive(context.Context, *DescribeArchiveRequest) (*DescribeArchiveResponse, error)
+	ListArchives(context.Context, *ListArchivesRequest) (*ListArchivesResponse, error)
+	UpdateArchive(context.Context, *UpdateArchiveRequest) (*UpdateArchiveResponse, error)
+	DeleteArchive(context.Context, *DeleteArchiveRequest) (*DeleteArchiveResponse, error)
+	StartReplay(context.Context, *StartReplayRequest) (*StartReplayResponse, error)
+	DescribeReplay(context.Context, *DescribeReplayRequest) (*DescribeReplayResponse, error)
+	ListReplays(context.Context, *ListReplaysRequest) (*ListReplaysResponse, error)
+	CancelReplay(context.Context, *CancelReplayRequest) (*CancelReplayResponse, error)
+	PutPermission(context.Context, *PutPermissionRequest) (*PutPermissionOutput, error)
+	RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "eventbridge", SigningName: "events", Inventory: catalog.InventoryOf(api), TargetPrefix: "AWSEvents", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEventPatternException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ManagedRuleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationDisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "eventbridge", SigningName: "events", Inventory: catalog.InventoryOf(api), TargetPrefix: "AWSEvents", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IllegalStatusException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEventPatternException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ManagedRuleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationDisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PolicyLengthExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"PutEvents": {Name: "PutEvents", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.PutEvents", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutEventsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PutEvents(ctx, input.(*PutEventsRequest))
 		}},
@@ -359,6 +550,39 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteEventBus": {Name: "DeleteEventBus", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DeleteEventBus", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteEventBusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteEventBus(ctx, input.(*DeleteEventBusRequest))
+		}},
+		"CreateArchive": {Name: "CreateArchive", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.CreateArchive", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateArchiveRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateArchive(ctx, input.(*CreateArchiveRequest))
+		}},
+		"DescribeArchive": {Name: "DescribeArchive", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DescribeArchive", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeArchiveRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeArchive(ctx, input.(*DescribeArchiveRequest))
+		}},
+		"ListArchives": {Name: "ListArchives", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.ListArchives", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListArchivesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListArchives(ctx, input.(*ListArchivesRequest))
+		}},
+		"UpdateArchive": {Name: "UpdateArchive", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.UpdateArchive", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateArchiveRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateArchive(ctx, input.(*UpdateArchiveRequest))
+		}},
+		"DeleteArchive": {Name: "DeleteArchive", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DeleteArchive", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteArchiveRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteArchive(ctx, input.(*DeleteArchiveRequest))
+		}},
+		"StartReplay": {Name: "StartReplay", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.StartReplay", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartReplayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartReplay(ctx, input.(*StartReplayRequest))
+		}},
+		"DescribeReplay": {Name: "DescribeReplay", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DescribeReplay", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeReplayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeReplay(ctx, input.(*DescribeReplayRequest))
+		}},
+		"ListReplays": {Name: "ListReplays", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.ListReplays", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListReplaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListReplays(ctx, input.(*ListReplaysRequest))
+		}},
+		"CancelReplay": {Name: "CancelReplay", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.CancelReplay", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CancelReplayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CancelReplay(ctx, input.(*CancelReplayRequest))
+		}},
+		"PutPermission": {Name: "PutPermission", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.PutPermission", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutPermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutPermission(ctx, input.(*PutPermissionRequest))
+		}},
+		"RemovePermission": {Name: "RemovePermission", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.RemovePermission", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RemovePermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemovePermission(ctx, input.(*RemovePermissionRequest))
 		}},
 	}}
 }

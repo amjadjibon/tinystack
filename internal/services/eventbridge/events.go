@@ -23,7 +23,11 @@ import (
 const maxEntries = 256 * 1024
 
 // event is the envelope EventBridge delivers, in its documented field order.
+//
+//nolint:govet // The field order is the JSON order.
 type event struct {
+	// at is the event's time, which orders it in archives.
+	at         time.Time
 	Version    string          `json:"version"`
 	ID         string          `json:"id"`
 	DetailType string          `json:"detail-type"`
@@ -33,6 +37,8 @@ type event struct {
 	Region     string          `json:"region"`
 	Resources  []string        `json:"resources"`
 	Detail     json.RawMessage `json:"detail"`
+	// ReplayName names the replay that sent an archived event again.
+	ReplayName string `json:"replay-name,omitempty"`
 }
 
 func failed(code, message string) api.PutEventsResultEntry {
@@ -85,6 +91,7 @@ func (s *Service) newEvent(scope request.Scope, in *api.PutEventsRequestEntry) (
 		Region:     scope.Region,
 		Resources:  resources,
 		Detail:     detail.Bytes(),
+		at:         at,
 	}, api.PutEventsResultEntry{}
 }
 
@@ -115,8 +122,14 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 		return nil, invalid("Total size of the entries in the request is over the limit.")
 	}
 
+	archives, err := s.archivers(ctx, m.Scope)
+	if err != nil {
+		return nil, err
+	}
+
 	// Each entry names its bus; the rules of each bus are loaded once.
 	busRules := map[string][]compiledRule{}
+	var kept []archived
 	out := &api.PutEventsResponse{FailedEntryCount: new(int64(0))}
 	for i := range in.Entries {
 		rules, known := busRules[value(in.Entries[i].EventBusName)]
@@ -149,6 +162,13 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 		}
 
 		leafValues, _ := pattern.Flatten(encoded)
+		bus, _ := busName(m.Scope, in.Entries[i].EventBusName)
+		for _, a := range archives[bus] {
+			if a.pattern == nil || a.pattern.Matches(leafValues) {
+				kept = append(kept, archived{at: e.at, archive: a.name, id: e.ID, encoded: encoded})
+			}
+		}
+
 		for _, r := range rules {
 			if !r.pattern.Matches(leafValues) {
 				continue
@@ -160,6 +180,10 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 		}
 
 		out.Entries = append(out.Entries, api.PutEventsResultEntry{EventId: new(e.ID)})
+	}
+
+	if keepErr := s.keep(ctx, m.Scope, kept); keepErr != nil {
+		return nil, keepErr
 	}
 
 	return out, nil

@@ -563,6 +563,9 @@ in-process. Rule operations, `PutEvents` entries, and tags take an `EventBusName
 | PutEvents | Up to 10 entries (256 KB) for any of the caller's buses (a missing bus fails its entry); entries need `Source`, `DetailType`, and a JSON object `Detail`, and failed entries are reported per entry; each matching enabled rule delivers the event envelope (or its target input) to every target; a failed delivery does not fail PutEvents |
 | TestEventPattern | Matches an event against a pattern |
 | TagResource / UntagResource / ListTagsForResource | Rule and custom bus ARNs; also `Tags` on PutRule and CreateEventBus |
+| CreateArchive / DescribeArchive / UpdateArchive / DeleteArchive / ListArchives | Archives of a bus (`EventSourceArn`) that keep every event PutEvents accepts for it, or those matching `EventPattern`, for `RetentionDays` (0 keeps them forever; older events are dropped as new ones arrive), with `EventCount` and `SizeBytes`; always `ENABLED`; ListArchives takes `NamePrefix`, `EventSourceArn`, `State`, `Limit`, and `NextToken`; deleting an archive deletes its events |
+| StartReplay / DescribeReplay / ListReplays / CancelReplay | Replays an archive's events with times from `EventStartTime` up to `EventEndTime`, in time order, to the enabled rules of the archive's bus (the `Destination` must be that bus), or to the rules `FilterArns` names, with a `replay-name` field added; replayed events are not archived again. StartReplay delivers the events before it returns (reporting `STARTING`), so a described replay is `COMPLETED` with its end and last replayed event times, and CancelReplay always fails with `IllegalStatusException` |
+| PutPermission / RemovePermission | A bus's resource-based policy (the default bus has one too), shown as `Policy` by DescribeEventBus and ListEventBuses: a whole `Policy` document, or statements that let an account or `*` (optionally with a `StringEquals` `aws:PrincipalOrgID` `Condition`) call `events:PutEvents`, replacing a statement with the same `StatementId`; RemovePermission removes one statement or, with `RemoveAllPermissions`, the policy. Policies are stored, never evaluated, and deleting a bus deletes its policy |
 
 Scheduled rules, on the default bus only, take `rate(<n> <unit>)` (minutes, hours, or
 days; singular for 1) or `cron(<minutes> <hours> <day-of-month> <month> <day-of-week> <year>)`
@@ -1171,7 +1174,7 @@ reads; objects are held in memory (and in `state.db` in persistent mode). Lambda
 environments, resource policy evaluation, or event sources other than SQS, DynamoDB
 streams, and Kinesis streams (no `AT_TIMESTAMP`, parallelization factor, or tumbling windows) (no bisecting or event source mapping failure destinations); asynchronous failures without an
 `OnFailure` destination are logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
-buses or targets, bus policies, archives, or replays, no `L`, `W`, or `#` in cron expressions, or targets other than
+buses or targets, policy evaluation, archive encryption (`KmsKeyIdentifier`), or asynchronous or cancellable replays, no `L`, `W`, or `#` in cron expressions, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; the first delivery happens
 synchronously during PutEvents, and retries run in the background. IAM limits: no root access keys, login profiles, permissions boundaries, access key usage tracking, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),

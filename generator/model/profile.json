@@ -1563,7 +1563,18 @@
       "DescribeEventBus",
       "ListEventBuses",
       "UpdateEventBus",
-      "DeleteEventBus"
+      "DeleteEventBus",
+      "CreateArchive",
+      "DescribeArchive",
+      "ListArchives",
+      "UpdateArchive",
+      "DeleteArchive",
+      "StartReplay",
+      "DescribeReplay",
+      "ListReplays",
+      "CancelReplay",
+      "PutPermission",
+      "RemovePermission"
     ],
     "shapes": {
       "PutEventsRequest": [
@@ -1746,7 +1757,8 @@
         "Arn",
         "Description",
         "CreationTime",
-        "LastModifiedTime"
+        "LastModifiedTime",
+        "Policy"
       ],
       "ListEventBusesRequest": [
         "NamePrefix",
@@ -1762,7 +1774,8 @@
         "Arn",
         "Description",
         "CreationTime",
-        "LastModifiedTime"
+        "LastModifiedTime",
+        "Policy"
       ],
       "UpdateEventBusRequest": [
         "Name",
@@ -1782,6 +1795,155 @@
       ],
       "DeadLetterConfig": [
         "Arn"
+      ],
+      "CreateArchiveRequest": [
+        "ArchiveName",
+        "EventSourceArn",
+        "Description",
+        "EventPattern",
+        "RetentionDays"
+      ],
+      "CreateArchiveResponse": [
+        "ArchiveArn",
+        "State",
+        "StateReason",
+        "CreationTime"
+      ],
+      "DescribeArchiveRequest": [
+        "ArchiveName"
+      ],
+      "DescribeArchiveResponse": [
+        "ArchiveArn",
+        "ArchiveName",
+        "EventSourceArn",
+        "Description",
+        "EventPattern",
+        "State",
+        "StateReason",
+        "RetentionDays",
+        "SizeBytes",
+        "EventCount",
+        "CreationTime"
+      ],
+      "ListArchivesRequest": [
+        "NamePrefix",
+        "EventSourceArn",
+        "State",
+        "NextToken",
+        "Limit"
+      ],
+      "ListArchivesResponse": [
+        "Archives",
+        "NextToken"
+      ],
+      "Archive": [
+        "ArchiveName",
+        "EventSourceArn",
+        "State",
+        "StateReason",
+        "RetentionDays",
+        "SizeBytes",
+        "EventCount",
+        "CreationTime"
+      ],
+      "UpdateArchiveRequest": [
+        "ArchiveName",
+        "Description",
+        "EventPattern",
+        "RetentionDays"
+      ],
+      "UpdateArchiveResponse": [
+        "ArchiveArn",
+        "State",
+        "StateReason",
+        "CreationTime"
+      ],
+      "DeleteArchiveRequest": [
+        "ArchiveName"
+      ],
+      "DeleteArchiveResponse": [],
+      "StartReplayRequest": [
+        "ReplayName",
+        "Description",
+        "EventSourceArn",
+        "EventStartTime",
+        "EventEndTime",
+        "Destination"
+      ],
+      "StartReplayResponse": [
+        "ReplayArn",
+        "State",
+        "StateReason",
+        "ReplayStartTime"
+      ],
+      "ReplayDestination": [
+        "Arn",
+        "FilterArns"
+      ],
+      "DescribeReplayRequest": [
+        "ReplayName"
+      ],
+      "DescribeReplayResponse": [
+        "ReplayName",
+        "ReplayArn",
+        "Description",
+        "State",
+        "StateReason",
+        "EventSourceArn",
+        "Destination",
+        "EventStartTime",
+        "EventEndTime",
+        "EventLastReplayedTime",
+        "ReplayStartTime",
+        "ReplayEndTime"
+      ],
+      "ListReplaysRequest": [
+        "NamePrefix",
+        "State",
+        "EventSourceArn",
+        "NextToken",
+        "Limit"
+      ],
+      "ListReplaysResponse": [
+        "Replays",
+        "NextToken"
+      ],
+      "Replay": [
+        "ReplayName",
+        "EventSourceArn",
+        "State",
+        "StateReason",
+        "EventStartTime",
+        "EventEndTime",
+        "EventLastReplayedTime",
+        "ReplayStartTime",
+        "ReplayEndTime"
+      ],
+      "CancelReplayRequest": [
+        "ReplayName"
+      ],
+      "CancelReplayResponse": [
+        "ReplayArn",
+        "State",
+        "StateReason"
+      ],
+      "PutPermissionRequest": [
+        "EventBusName",
+        "Action",
+        "Principal",
+        "StatementId",
+        "Condition",
+        "Policy"
+      ],
+      "Condition": [
+        "Type",
+        "Key",
+        "Value"
+      ],
+      "RemovePermissionRequest": [
+        "StatementId",
+        "RemoveAllPermissions",
+        "EventBusName"
       ]
     }
   },

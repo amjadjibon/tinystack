@@ -166,10 +166,16 @@ func (s *Service) CreateEventBus(
 	return out, nil
 }
 
-// describe renders a bus; nil is the default bus.
-func (b *bus) describe(scope request.Scope) api.EventBus {
+// describe renders a bus with its policy ("" for none); nil is the default
+// bus.
+func (b *bus) describe(scope request.Scope, policy string) api.EventBus {
 	if b == nil {
-		return api.EventBus{Name: new(defaultBus), Arn: new(busARN(scope, defaultBus))}
+		out := api.EventBus{Name: new(defaultBus), Arn: new(busARN(scope, defaultBus))}
+		if policy != "" {
+			out.Policy = new(policy)
+		}
+
+		return out
 	}
 
 	out := api.EventBus{
@@ -182,49 +188,60 @@ func (b *bus) describe(scope request.Scope) api.EventBus {
 		out.Description = new(b.Description)
 	}
 
+	if policy != "" {
+		out.Policy = new(policy)
+	}
+
 	return out
 }
 
-// viewBus loads the caller's bus given by name or ARN; the default bus is
-// nil.
-func (s *Service) viewBus(ctx context.Context, ref *string) (request.Scope, *bus, error) {
+// viewBus describes the caller's bus given by name or ARN.
+func (s *Service) viewBus(ctx context.Context, ref *string) (api.EventBus, error) {
 	m, err := identity(ctx)
 	if err != nil {
-		return request.Scope{}, nil, err
+		return api.EventBus{}, err
 	}
 
 	name, err := busName(m.Scope, ref)
-	if err != nil || name == defaultBus {
-		return m.Scope, nil, err
+	if err != nil {
+		return api.EventBus{}, err
 	}
 
-	var b *bus
+	var out api.EventBus
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		var found bool
-		var loadErr error
-		if b, found, loadErr = loadBus(tx, m.Scope, name); loadErr == nil && !found {
-			return busNotFound(name)
+		var b *bus
+		if name != defaultBus {
+			var found bool
+			var loadErr error
+			if b, found, loadErr = loadBus(tx, m.Scope, name); loadErr != nil || !found {
+				if loadErr != nil {
+					return loadErr
+				}
+
+				return busNotFound(name)
+			}
 		}
 
-		return loadErr
+		out = b.describe(m.Scope, policy(tx, m.Scope, name))
+		return nil
 	})
-	return m.Scope, b, err
+	return out, err
 }
 
 func (s *Service) DescribeEventBus(
 	ctx context.Context,
 	in *api.DescribeEventBusRequest,
 ) (*api.DescribeEventBusResponse, error) {
-	scope, b, err := s.viewBus(ctx, in.Name)
+	out, err := s.viewBus(ctx, in.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	out := b.describe(scope)
 	return &api.DescribeEventBusResponse{
 		Name:             out.Name,
 		Arn:              out.Arn,
 		Description:      out.Description,
+		Policy:           out.Policy,
 		CreationTime:     out.CreationTime,
 		LastModifiedTime: out.LastModifiedTime,
 	}, nil
@@ -276,7 +293,7 @@ func (s *Service) UpdateEventBus(
 		return nil, err
 	}
 
-	out := b.describe(m.Scope)
+	out := b.describe(m.Scope, "")
 	return &api.UpdateEventBusResponse{Arn: out.Arn, Name: out.Name, Description: out.Description}, nil
 }
 
@@ -306,6 +323,7 @@ func (s *Service) DeleteEventBus(
 		}
 
 		tx.Delete(busPrefix(m.Scope) + name)
+		tx.Delete(policyKey(m.Scope, name))
 		return nil
 	})
 	if err != nil {
@@ -357,7 +375,7 @@ func (s *Service) ListEventBuses(
 				}
 			}
 
-			buses = append(buses, b.describe(m.Scope))
+			buses = append(buses, b.describe(m.Scope, policy(tx, m.Scope, name)))
 		}
 
 		return nil
