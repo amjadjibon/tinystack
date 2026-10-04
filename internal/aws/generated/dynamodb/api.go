@@ -227,6 +227,8 @@ type ScanInput struct {
 	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
 	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
 	IndexName                 *string                   `json:"IndexName,omitempty"`
+	Segment                   *int64                    `json:"Segment,omitempty"`
+	TotalSegments             *int64                    `json:"TotalSegments,omitempty"`
 }
 
 type ScanOutput struct {

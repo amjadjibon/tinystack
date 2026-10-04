@@ -99,7 +99,9 @@
         "ProjectionExpression",
         "ExpressionAttributeNames",
         "ExpressionAttributeValues",
-        "IndexName"
+        "IndexName",
+        "Segment",
+        "TotalSegments"
       ],
       "QueryInput": [
         "TableName",

@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"hash/fnv"
 	"slices"
 	"sort"
 	"strings"
@@ -198,6 +199,11 @@ func (s *Service) Scan(ctx context.Context, in *api.ScanInput) (*api.ScanOutput,
 		return nil, finishErr
 	}
 
+	inSegment, err := segment(in.Segment, in.TotalSegments)
+	if err != nil {
+		return nil, err
+	}
+
 	var p page
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		t, e := load(tx, req.key)
@@ -209,7 +215,7 @@ func (s *Service) Scan(ctx context.Context, in *api.ScanInput) (*api.ScanOutput,
 			return guardErr
 		}
 
-		records := itemRecords(tx, req.key, "")
+		records := slices.DeleteFunc(itemRecords(tx, req.key, ""), func(r string) bool { return !inSegment(r) })
 		if len(in.ExclusiveStartKey) > 0 {
 			id, keyErr := req.ix.startID(t, in.ExclusiveStartKey)
 			if keyErr != nil {
@@ -243,6 +249,34 @@ func (s *Service) Scan(ctx context.Context, in *api.ScanInput) (*api.ScanOutput,
 	}
 
 	return out, nil
+}
+
+// segment returns whether an item record belongs to a parallel scan's
+// segment: each item is in exactly one of TotalSegments segments, chosen by
+// a hash of its key. Without a segment, every item does.
+func segment(seg, total *int64) (func(record string) bool, error) {
+	switch {
+	case seg == nil && total == nil:
+		return func(string) bool { return true }, nil
+	case seg == nil:
+		return nil, awserror.Validation("The Segment parameter is required but was not present in the request " +
+			"when parameter TotalSegments is present")
+	case total == nil:
+		return nil, awserror.Validation("The TotalSegments parameter is required but was not present in the " +
+			"request when Segment parameter is present")
+	case *total < 1 || *total > 1000000:
+		return nil, awserror.Validation("1 validation error detected: Value '%d' at 'totalSegments' failed to "+
+			"satisfy constraint: Member must have value between 1 and 1000000", *total)
+	case *seg < 0 || *seg >= *total:
+		return nil, awserror.Validation("The Segment parameter is zero-based and must be less than parameter "+
+			"TotalSegments: Segment: %d is not less than TotalSegments: %d", *seg, *total)
+	}
+
+	return func(record string) bool {
+		h := fnv.New64a()
+		_, _ = h.Write([]byte(record))
+		return h.Sum64()%uint64(*total) == uint64(*seg) // #nosec G115 -- both are checked to be positive.
+	}, nil
 }
 
 // Query reads one partition of the table or an index in sort key order.

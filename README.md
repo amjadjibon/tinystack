@@ -189,7 +189,7 @@ nowhere shows up. `DELETE` clears the list.
 | PutItem / GetItem / DeleteItem | Typed attributes, atomic replacement/deletion, `ALL_OLD` for writes; `ConditionExpression` on writes, `ProjectionExpression` on GetItem |
 | UpdateItem | `SET` (with `+`, `-`, `if_not_exists`, `list_append`), `REMOVE`, `ADD`, and `DELETE` on nested paths; `ConditionExpression`; creates missing items; every `ReturnValues` option |
 | Query | `KeyConditionExpression` (partition key `=`, sort key `=`, `<`, `<=`, `>`, `>=`, `BETWEEN`, `begins_with`), sort key order either way, `IndexName`, `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key |
-| Scan | `IndexName`, `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key, approximately 1 MiB pages |
+| Scan | `IndexName`, `FilterExpression`, `ProjectionExpression`, `Select`, Limit, continuation key, approximately 1 MiB pages, and parallel scans (`Segment` and `TotalSegments`, up to 1000000: each item is in exactly one segment, chosen by a hash of its key) |
 | BatchGetItem / BatchWriteItem | Up to 100 keys or 25 puts and deletes across tables, applied in one transaction; duplicate keys rejected; `UnprocessedKeys` only past the 16 MB response limit, `UnprocessedItems` always empty |
 | TransactGetItems / TransactWriteItems | Up to 100 items from one snapshot; `ConditionCheck`, `Put`, `Delete`, and `Update` all apply or none do, with `CancellationReasons` (and `ALL_OLD` items) on failure; `ClientRequestToken` idempotency for ten minutes |
 | UpdateTable | Enables or disables the stream (`StreamSpecification`); changes `BillingMode` (switching to `PROVISIONED` needs `ProvisionedThroughput` for the table and an `Update` for each global secondary index; switching to `PAY_PER_REQUEST` clears every throughput) and `ProvisionedThroughput`; `GlobalSecondaryIndexUpdates` with any number of `Update` actions (throughput) and one `Create` (with new `AttributeDefinitions`) or `Delete`. A new index is `ACTIVE` at once and serves every existing item; attribute definitions no key schema uses any more are dropped. Table classes, deletion protection, SSE, and replicas are not supported |
@@ -1164,7 +1164,7 @@ policies are stored but not evaluated: any configured key, IAM access key, or ro
 session may call any operation in its account.
 
 DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...),
-parallel scans, PartiQL transactions (`ExecuteTransaction`), Kinesis streaming, stream shard splits, restores to an earlier time, or capacity accounting/throttling (batch writes never return
+PartiQL transactions (`ExecuteTransaction`), Kinesis streaming, stream shard splits, restores to an earlier time, or capacity accounting/throttling (batch writes never return
 `UnprocessedItems`), and index queries scan the whole table. Expressions
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),
