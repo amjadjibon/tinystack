@@ -610,28 +610,40 @@ func (r *run) retrying(
 			continue
 		}
 
-		for _, c := range s.Catch {
-			if !matches(c.ErrorEquals, se.Name) {
-				continue
-			}
-
-			errorOutput := map[string]any{"Error": se.Name, "Cause": se.Cause}
-			if s.jsonata {
-				out, catchErr := e.settle(c.Output, c.Assign, errorOutput,
-					map[string]any{keyInput: input, "errorOutput": errorOutput})
-				return out, c.Next, catchErr
-			}
-
-			if assignErr := e.assign(c.Assign, errorOutput); assignErr != nil {
-				return nil, "", assignErr
-			}
-
-			out, catchErr := resultInto(c.ResultPath, input, errorOutput)
+		if c := s.catcher(se); c != nil {
+			out, catchErr := c.catch(s, input, se, e)
 			return out, c.Next, catchErr
 		}
 
 		return nil, "", se
 	}
+}
+
+// catcher returns the first of a state's catchers that matches an error.
+func (s *state) catcher(se *stateError) *catcher {
+	for i := range s.Catch {
+		if matches(s.Catch[i].ErrorEquals, se.Name) {
+			return &s.Catch[i]
+		}
+	}
+
+	return nil
+}
+
+// catch returns the state's output when the catcher catches an error: the
+// error output at its ResultPath (JSONPath) or its Output (JSONata), after
+// setting the variables its Assign names.
+func (c *catcher) catch(s *state, input any, se *stateError, e *env) (any, error) {
+	errorOutput := map[string]any{"Error": se.Name, "Cause": se.Cause}
+	if s.jsonata {
+		return e.settle(c.Output, c.Assign, errorOutput, map[string]any{keyInput: input, "errorOutput": errorOutput})
+	}
+
+	if err := e.assign(c.Assign, errorOutput); err != nil {
+		return nil, err
+	}
+
+	return resultInto(c.ResultPath, input, errorOutput)
 }
 
 // finish applies a result's ResultSelector, Assign, ResultPath, and

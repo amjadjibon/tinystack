@@ -822,6 +822,7 @@ activities, and other TinyStack services in-process, never over the network.
 | PublishStateMachineVersion / ListStateMachineVersions / DeleteStateMachineVersion | Immutable versions numbered from 1 and never reused (also `publish` and `versionDescription` on CreateStateMachine and UpdateStateMachine), at most 1000; publishing an unchanged revision returns the latest version, a `revisionId` that is not current fails with `ConflictException`, versions list newest first, DescribeStateMachine takes a version ARN, and a version an alias routes to cannot be deleted |
 | CreateStateMachineAlias / DescribeStateMachineAlias / UpdateStateMachineAlias / DeleteStateMachineAlias / ListStateMachineAliases | Aliases that route executions to one or two versions of a state machine by weight (adding up to 100); StartExecution and StartSyncExecution take a version or alias ARN, and DescribeExecution, ListExecutions (which also filters by a version or alias ARN), and DescribeStateMachineForExecution report the version and alias |
 | RedriveExecution | Runs a failed, timed out, or aborted standard execution again (within 14 days, up to 1000 times) from the top-level state where it stopped, with that state's input and the variables it saw, under the definition it ran; a Parallel or Map state runs again in full. DescribeExecution reports `REDRIVABLE` or `NOT_REDRIVABLE` with the reason, and the redrive count and date; a repeated `clientToken` returns the running redrive. Executions left running when TinyStack stopped are not redrivable |
+| TestState | Runs one state once without storing anything: a single state `definition` (its transitions may name states that do not exist) or a whole definition with `stateName`, with `input`, `variables`, and a `roleArn` (required for Task states); reports `SUCCEEDED` with the output and next state, `RETRIABLE` when a retrier matches the error (Retry is not run), `CAUGHT_ERROR` with the catcher's output and `Next`, or `FAILED`. Only the `INFO` inspection level; no mocks |
 | TagResource / UntagResource / ListTagsForResource | State machines and activities |
 
 Definitions use the JSONPath or JSONata query language (below): `Pass`, `Task`, `Choice` (every comparison, `And`, `Or`, `Not`),
@@ -1217,7 +1218,7 @@ models and request validation, `AWS` and `HTTP` (non-proxy) integrations or othe
 mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;
 `AWS_IAM` authorization accepts any SigV4-signed request without verifying it, and Lambda resource
-policies are not checked. Step Functions limits: no distributed Map (`ItemReader`, `ResultWriter`), `TestState`, map runs, execution retention, or IAM role checks, and
+policies are not checked. Step Functions limits: no distributed Map (`ItemReader`, `ResultWriter`), map runs, execution retention, or IAM role checks, and
 `JsonPath` filters and recursive descent are not supported; executions running when TinyStack stops are aborted when
 it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard`), throughput limits, resource policies,
 record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only

@@ -308,7 +308,8 @@ a per-service `Dialect`), and delivers synchronously through
   service's context (`Stop` ends them; executions a previous process left running are aborted by `New`); a state's
   expressions read its input, and an `env` (`variables.go`) holds the context object and the variables, which each
   `runMachine` copies from its parent so a branch's assignments stay inside it; `execute` records the top-level
-  state it entered last (`resumePoint`), where RedriveExecution (`redrive.go`) runs it again; `validate` marks each state that
+  state it entered last (`resumePoint`), where RedriveExecution (`redrive.go`) runs it again; TestState (`teststate.go`) runs one state
+  through `execState` with Retry and Catch handled by hand; `validate` marks each state that
   uses JSONata, which `execJSONata` (`jsonata.go`, evaluating `{% %}` strings with `github.com/recolabs/gnata`)
   runs in place of the JSONPath steps; and task
   tokens, activity queues, and running executions live in memory. Task states reach other services through a

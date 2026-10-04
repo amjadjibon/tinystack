@@ -8302,7 +8302,8 @@
       "UpdateStateMachineAlias",
       "DeleteStateMachineAlias",
       "ListStateMachineAliases",
-      "RedriveExecution"
+      "RedriveExecution",
+      "TestState"
     ],
     "shapes": {
       "CreateStateMachineInput": [
@@ -8395,6 +8396,14 @@
       "RedriveExecutionInput": [
         "executionArn",
         "clientToken"
+      ],
+      "TestStateInput": [
+        "definition",
+        "roleArn",
+        "input",
+        "inspectionLevel",
+        "variables",
+        "stateName"
       ]
     }
   },

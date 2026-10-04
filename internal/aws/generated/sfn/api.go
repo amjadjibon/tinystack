@@ -734,6 +734,67 @@ type RedriveExecutionOutput struct {
 	RedriveDate *float64 `json:"redriveDate,omitempty"`
 }
 
+type TestStateInput struct {
+	Definition      *string `json:"definition,omitempty"`
+	RoleArn         *string `json:"roleArn,omitempty"`
+	Input           *string `json:"input,omitempty"`
+	InspectionLevel *string `json:"inspectionLevel,omitempty"`
+	Variables       *string `json:"variables,omitempty"`
+	StateName       *string `json:"stateName,omitempty"`
+}
+
+type InspectionErrorDetails struct {
+	CatchIndex                  *int64 `json:"catchIndex,omitempty"`
+	RetryBackoffIntervalSeconds *int64 `json:"retryBackoffIntervalSeconds,omitempty"`
+	RetryIndex                  *int64 `json:"retryIndex,omitempty"`
+}
+
+type InspectionDataRequest struct {
+	Body     *string `json:"body,omitempty"`
+	Headers  *string `json:"headers,omitempty"`
+	Method   *string `json:"method,omitempty"`
+	Protocol *string `json:"protocol,omitempty"`
+	Url      *string `json:"url,omitempty"`
+}
+
+type InspectionDataResponse struct {
+	Body          *string `json:"body,omitempty"`
+	Headers       *string `json:"headers,omitempty"`
+	Protocol      *string `json:"protocol,omitempty"`
+	StatusCode    *string `json:"statusCode,omitempty"`
+	StatusMessage *string `json:"statusMessage,omitempty"`
+}
+
+type InspectionData struct {
+	AfterArguments             *string                 `json:"afterArguments,omitempty"`
+	AfterInputPath             *string                 `json:"afterInputPath,omitempty"`
+	AfterItemBatcher           *string                 `json:"afterItemBatcher,omitempty"`
+	AfterItemSelector          *string                 `json:"afterItemSelector,omitempty"`
+	AfterItemsPath             *string                 `json:"afterItemsPath,omitempty"`
+	AfterItemsPointer          *string                 `json:"afterItemsPointer,omitempty"`
+	AfterParameters            *string                 `json:"afterParameters,omitempty"`
+	AfterResultPath            *string                 `json:"afterResultPath,omitempty"`
+	AfterResultSelector        *string                 `json:"afterResultSelector,omitempty"`
+	ErrorDetails               *InspectionErrorDetails `json:"errorDetails,omitempty"`
+	Input                      *string                 `json:"input,omitempty"`
+	MaxConcurrency             *int64                  `json:"maxConcurrency,omitempty"`
+	Request                    *InspectionDataRequest  `json:"request,omitempty"`
+	Response                   *InspectionDataResponse `json:"response,omitempty"`
+	Result                     *string                 `json:"result,omitempty"`
+	ToleratedFailureCount      *int64                  `json:"toleratedFailureCount,omitempty"`
+	ToleratedFailurePercentage *float64                `json:"toleratedFailurePercentage,omitempty"`
+	Variables                  *string                 `json:"variables,omitempty"`
+}
+
+type TestStateOutput struct {
+	Cause          *string         `json:"cause,omitempty"`
+	Error          *string         `json:"error,omitempty"`
+	InspectionData *InspectionData `json:"inspectionData,omitempty"`
+	NextState      *string         `json:"nextState,omitempty"`
+	Output         *string         `json:"output,omitempty"`
+	Status         *string         `json:"status,omitempty"`
+}
+
 type API interface {
 	CreateStateMachine(context.Context, *CreateStateMachineInput) (*CreateStateMachineOutput, error)
 	DescribeStateMachine(context.Context, *DescribeStateMachineInput) (*DescribeStateMachineOutput, error)
@@ -768,6 +829,7 @@ type API interface {
 	DeleteStateMachineAlias(context.Context, *DeleteStateMachineAliasInput) (*DeleteStateMachineAliasOutput, error)
 	ListStateMachineAliases(context.Context, *ListStateMachineAliasesInput) (*ListStateMachineAliasesOutput, error)
 	RedriveExecution(context.Context, *RedriveExecutionInput) (*RedriveExecutionOutput, error)
+	TestState(context.Context, *TestStateInput) (*TestStateOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -871,5 +933,6 @@ func Descriptor(api API) catalog.Service {
 		"RedriveExecution": {Name: "RedriveExecution", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.RedriveExecution", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &RedriveExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.RedriveExecution(ctx, input.(*RedriveExecutionInput))
 		}},
+		"TestState": {Name: "TestState", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.TestState", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TestStateInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.TestState(ctx, input.(*TestStateInput)) }},
 	}}
 }
