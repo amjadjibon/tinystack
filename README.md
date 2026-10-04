@@ -543,6 +543,8 @@ wherever KMS accepts an alias.
 | GenerateDataKeyPair / GenerateDataKeyPairWithoutPlaintext | `RSA_2048`, `RSA_3072`, `RSA_4096`, `ECC_NIST_P256`, `ECC_NIST_P384`, and `ECC_NIST_P521` pairs: a PKCS #8 private key sealed under a symmetric key (`Decrypt` opens it) and an X.509 public key, both DER |
 | GenerateMac / VerifyMac | HMAC over up to 4 KB with the key's one algorithm (`HMAC_SHA_256` for an `HMAC_256` key); a MAC that does not match fails with `KMSInvalidMacException` |
 | GenerateRandom | Up to 1024 bytes |
+| CreateGrant / ListGrants / ListRetirableGrants / RetireGrant / RevokeGrant | Grants on a key (by key ID or ARN) for a `GranteePrincipal`, with an optional `RetiringPrincipal`, `Name` (a named grant with the same parameters is returned again), `Constraints` (`EncryptionContextEquals` or `EncryptionContextSubset`), and `Operations` the key supports (`Encrypt` is not valid on a signing key); RetireGrant takes the `GrantToken` or the key and grant ID. Grants are stored, never evaluated, and other operations do not take `GrantTokens` |
+| ReEncrypt | Decrypts with the source key (symmetric, or RSA with `SourceKeyId` and `SourceEncryptionAlgorithm`) and encrypts with `DestinationKeyId`, as Decrypt and Encrypt do, without returning the plaintext |
 
 Ciphertexts are AES-256-GCM under key material that is stored with the key, as
 plain bytes, in memory and in `state.db`: TinyStack protects nothing.
@@ -1188,7 +1190,7 @@ are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs
 no parameter policies, `aws:ec2:image` or other data
 types, shared parameters, or parameter quotas.
 KMS limits: no `KEY_AGREEMENT` keys (so no `DeriveSharedSecret`), `ECC_SECG_P256K1`, SM2, or ML-DSA keys or data
-key pairs, `EXTERNAL_MU` messages, `Recipient` attestation, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
+key pairs, `EXTERNAL_MU` messages, `Recipient` attestation, imported, custom key store, or multi-Region keys, `GrantTokens`, grant evaluation, key
 material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policy evaluation,
 or `SortBy`.
 Cognito limits: no Lambda triggers but those four (custom message, pre authentication, auth challenge, user

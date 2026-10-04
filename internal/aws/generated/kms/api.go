@@ -394,6 +394,94 @@ type GetPublicKeyResponse struct {
 	SigningAlgorithms     []string `json:"SigningAlgorithms,omitempty"`
 }
 
+type GrantConstraints struct {
+	EncryptionContextSubset map[string]string `json:"EncryptionContextSubset,omitempty"`
+	EncryptionContextEquals map[string]string `json:"EncryptionContextEquals,omitempty"`
+}
+
+type CreateGrantRequest struct {
+	KeyId             *string           `json:"KeyId,omitempty"`
+	GranteePrincipal  *string           `json:"GranteePrincipal,omitempty"`
+	RetiringPrincipal *string           `json:"RetiringPrincipal,omitempty"`
+	Operations        []string          `json:"Operations,omitempty"`
+	Constraints       *GrantConstraints `json:"Constraints,omitempty"`
+	Name              *string           `json:"Name,omitempty"`
+	DryRun            *bool             `json:"DryRun,omitempty"`
+}
+
+type CreateGrantResponse struct {
+	GrantToken *string `json:"GrantToken,omitempty"`
+	GrantId    *string `json:"GrantId,omitempty"`
+}
+
+type ListGrantsRequest struct {
+	Limit            *int64  `json:"Limit,omitempty"`
+	Marker           *string `json:"Marker,omitempty"`
+	KeyId            *string `json:"KeyId,omitempty"`
+	GrantId          *string `json:"GrantId,omitempty"`
+	GranteePrincipal *string `json:"GranteePrincipal,omitempty"`
+}
+
+type GrantListEntry struct {
+	KeyId             *string           `json:"KeyId,omitempty"`
+	GrantId           *string           `json:"GrantId,omitempty"`
+	Name              *string           `json:"Name,omitempty"`
+	CreationDate      *float64          `json:"CreationDate,omitempty"`
+	GranteePrincipal  *string           `json:"GranteePrincipal,omitempty"`
+	RetiringPrincipal *string           `json:"RetiringPrincipal,omitempty"`
+	IssuingAccount    *string           `json:"IssuingAccount,omitempty"`
+	Operations        []string          `json:"Operations,omitempty"`
+	Constraints       *GrantConstraints `json:"Constraints,omitempty"`
+}
+
+type ListGrantsResponse struct {
+	Grants     []GrantListEntry `json:"Grants,omitempty"`
+	NextMarker *string          `json:"NextMarker,omitempty"`
+	Truncated  *bool            `json:"Truncated,omitempty"`
+}
+
+type ListRetirableGrantsRequest struct {
+	Limit             *int64  `json:"Limit,omitempty"`
+	Marker            *string `json:"Marker,omitempty"`
+	RetiringPrincipal *string `json:"RetiringPrincipal,omitempty"`
+}
+
+type RetireGrantOutput struct{}
+
+type RetireGrantRequest struct {
+	GrantToken *string `json:"GrantToken,omitempty"`
+	KeyId      *string `json:"KeyId,omitempty"`
+	GrantId    *string `json:"GrantId,omitempty"`
+	DryRun     *bool   `json:"DryRun,omitempty"`
+}
+
+type RevokeGrantOutput struct{}
+
+type RevokeGrantRequest struct {
+	KeyId   *string `json:"KeyId,omitempty"`
+	GrantId *string `json:"GrantId,omitempty"`
+	DryRun  *bool   `json:"DryRun,omitempty"`
+}
+
+type ReEncryptRequest struct {
+	CiphertextBlob                 []byte            `json:"CiphertextBlob,omitempty"`
+	SourceEncryptionContext        map[string]string `json:"SourceEncryptionContext,omitempty"`
+	SourceKeyId                    *string           `json:"SourceKeyId,omitempty"`
+	DestinationKeyId               *string           `json:"DestinationKeyId,omitempty"`
+	DestinationEncryptionContext   map[string]string `json:"DestinationEncryptionContext,omitempty"`
+	SourceEncryptionAlgorithm      *string           `json:"SourceEncryptionAlgorithm,omitempty"`
+	DestinationEncryptionAlgorithm *string           `json:"DestinationEncryptionAlgorithm,omitempty"`
+	DryRun                         *bool             `json:"DryRun,omitempty"`
+}
+
+type ReEncryptResponse struct {
+	CiphertextBlob                 []byte  `json:"CiphertextBlob,omitempty"`
+	SourceKeyId                    *string `json:"SourceKeyId,omitempty"`
+	KeyId                          *string `json:"KeyId,omitempty"`
+	SourceEncryptionAlgorithm      *string `json:"SourceEncryptionAlgorithm,omitempty"`
+	DestinationEncryptionAlgorithm *string `json:"DestinationEncryptionAlgorithm,omitempty"`
+}
+
 type API interface {
 	CreateKey(context.Context, *CreateKeyRequest) (*CreateKeyResponse, error)
 	DescribeKey(context.Context, *DescribeKeyRequest) (*DescribeKeyResponse, error)
@@ -428,10 +516,16 @@ type API interface {
 	Sign(context.Context, *SignRequest) (*SignResponse, error)
 	Verify(context.Context, *VerifyRequest) (*VerifyResponse, error)
 	GetPublicKey(context.Context, *GetPublicKeyRequest) (*GetPublicKeyResponse, error)
+	CreateGrant(context.Context, *CreateGrantRequest) (*CreateGrantResponse, error)
+	ListGrants(context.Context, *ListGrantsRequest) (*ListGrantsResponse, error)
+	ListRetirableGrants(context.Context, *ListRetirableGrantsRequest) (*ListGrantsResponse, error)
+	RetireGrant(context.Context, *RetireGrantRequest) (*RetireGrantOutput, error)
+	RevokeGrant(context.Context, *RevokeGrantRequest) (*RevokeGrantOutput, error)
+	ReEncrypt(context.Context, *ReEncryptRequest) (*ReEncryptResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "kms", SigningName: "kms", Inventory: catalog.InventoryOf(api), TargetPrefix: "TrentService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CloudHsmClusterInvalidConfigurationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CustomKeyStoreInvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CustomKeyStoreNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DependencyTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "DisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DryRunOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 412}, "IncorrectKeyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidAliasNameException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidCiphertextException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidGrantTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidKeyUsageException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidMarkerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KMSInternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "KMSInvalidMacException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KMSInvalidSignatureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "KeyUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "TagException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "XksKeyAlreadyInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "XksKeyInvalidConfigurationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "XksKeyNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "kms", SigningName: "kms", Inventory: catalog.InventoryOf(api), TargetPrefix: "TrentService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CloudHsmClusterInvalidConfigurationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CustomKeyStoreInvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CustomKeyStoreNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DependencyTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "DisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DryRunOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 412}, "IncorrectKeyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidAliasNameException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidCiphertextException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidGrantIdException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidGrantTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidKeyUsageException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidMarkerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KMSInternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "KMSInvalidMacException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KMSInvalidSignatureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "KeyUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "TagException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "XksKeyAlreadyInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "XksKeyInvalidConfigurationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "XksKeyNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateKey": {Name: "CreateKey", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.CreateKey", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateKey(ctx, input.(*CreateKeyRequest))
 		}},
@@ -520,6 +614,24 @@ func Descriptor(api API) catalog.Service {
 		"Verify": {Name: "Verify", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.Verify", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &VerifyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Verify(ctx, input.(*VerifyRequest)) }},
 		"GetPublicKey": {Name: "GetPublicKey", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.GetPublicKey", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetPublicKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetPublicKey(ctx, input.(*GetPublicKeyRequest))
+		}},
+		"CreateGrant": {Name: "CreateGrant", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.CreateGrant", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateGrantRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateGrant(ctx, input.(*CreateGrantRequest))
+		}},
+		"ListGrants": {Name: "ListGrants", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.ListGrants", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListGrantsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListGrants(ctx, input.(*ListGrantsRequest))
+		}},
+		"ListRetirableGrants": {Name: "ListRetirableGrants", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.ListRetirableGrants", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListRetirableGrantsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListRetirableGrants(ctx, input.(*ListRetirableGrantsRequest))
+		}},
+		"RetireGrant": {Name: "RetireGrant", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.RetireGrant", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RetireGrantRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RetireGrant(ctx, input.(*RetireGrantRequest))
+		}},
+		"RevokeGrant": {Name: "RevokeGrant", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.RevokeGrant", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RevokeGrantRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RevokeGrant(ctx, input.(*RevokeGrantRequest))
+		}},
+		"ReEncrypt": {Name: "ReEncrypt", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TrentService.ReEncrypt", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ReEncryptRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReEncrypt(ctx, input.(*ReEncryptRequest))
 		}},
 	}}
 }

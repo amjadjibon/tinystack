@@ -2693,7 +2693,13 @@
       "VerifyMac",
       "Sign",
       "Verify",
-      "GetPublicKey"
+      "GetPublicKey",
+      "CreateGrant",
+      "ListGrants",
+      "ListRetirableGrants",
+      "RetireGrant",
+      "RevokeGrant",
+      "ReEncrypt"
     ],
     "shapes": {
       "CreateKeyRequest": [
@@ -3002,6 +3008,79 @@
         "KeyUsage",
         "EncryptionAlgorithms",
         "SigningAlgorithms"
+      ],
+      "CreateGrantRequest": [
+        "KeyId",
+        "GranteePrincipal",
+        "RetiringPrincipal",
+        "Operations",
+        "Constraints",
+        "Name",
+        "DryRun"
+      ],
+      "CreateGrantResponse": [
+        "GrantToken",
+        "GrantId"
+      ],
+      "GrantConstraints": [
+        "EncryptionContextSubset",
+        "EncryptionContextEquals"
+      ],
+      "ListGrantsRequest": [
+        "Limit",
+        "Marker",
+        "KeyId",
+        "GrantId",
+        "GranteePrincipal"
+      ],
+      "ListGrantsResponse": [
+        "Grants",
+        "NextMarker",
+        "Truncated"
+      ],
+      "GrantListEntry": [
+        "KeyId",
+        "GrantId",
+        "Name",
+        "CreationDate",
+        "GranteePrincipal",
+        "RetiringPrincipal",
+        "IssuingAccount",
+        "Operations",
+        "Constraints"
+      ],
+      "ListRetirableGrantsRequest": [
+        "Limit",
+        "Marker",
+        "RetiringPrincipal"
+      ],
+      "RetireGrantRequest": [
+        "GrantToken",
+        "KeyId",
+        "GrantId",
+        "DryRun"
+      ],
+      "RevokeGrantRequest": [
+        "KeyId",
+        "GrantId",
+        "DryRun"
+      ],
+      "ReEncryptRequest": [
+        "CiphertextBlob",
+        "SourceEncryptionContext",
+        "SourceKeyId",
+        "DestinationKeyId",
+        "DestinationEncryptionContext",
+        "SourceEncryptionAlgorithm",
+        "DestinationEncryptionAlgorithm",
+        "DryRun"
+      ],
+      "ReEncryptResponse": [
+        "CiphertextBlob",
+        "SourceKeyId",
+        "KeyId",
+        "SourceEncryptionAlgorithm",
+        "DestinationEncryptionAlgorithm"
       ]
     }
   },
