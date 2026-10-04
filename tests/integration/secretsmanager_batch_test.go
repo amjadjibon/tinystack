@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 
@@ -83,9 +84,16 @@ func TestSecretsManagerBatchGetSecretValue(t *testing.T) {
 	out, err = c.BatchGetSecretValue(ctx, &secretsmanager.BatchGetSecretValueInput{
 		Filters: filters, MaxResults: aws.Int32(2),
 	})
-	if err != nil || len(out.SecretValues) != 2 || out.NextToken == nil ||
-		aws.ToString(out.SecretValues[0].Name) != "app/db" {
+	// Secrets list by creation time, and by name within a millisecond, so the
+	// first two come in either order.
+	if err != nil || len(out.SecretValues) != 2 || out.NextToken == nil {
 		t.Fatalf("first page %+v, %v", out, err)
+	}
+
+	names := []string{aws.ToString(out.SecretValues[0].Name), aws.ToString(out.SecretValues[1].Name)}
+	slices.Sort(names)
+	if !slices.Equal(names, []string{"app/api", "app/db"}) {
+		t.Fatalf("first page names %v", names)
 	}
 
 	// The secret without a value is an error on the second page.
