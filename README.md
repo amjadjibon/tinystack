@@ -199,6 +199,7 @@ nowhere shows up. `DELETE` clears the list.
 | ExportTableToPointInTime / DescribeExport / ListExports | `FULL_EXPORT`s in `DYNAMODB_JSON` of tables with point-in-time recovery, as they are now (no `ExportTime`), written to an S3 bucket at once in DynamoDB's layout (`<S3Prefix>/AWSDynamoDB/<export ID>/` with `_started`, `manifest-summary.json`, `manifest-files.json`, and a gzipped `data/` file of `{"Item": ...}` lines); an export whose objects cannot be written is `FAILED` with an `S3…` failure code; a repeated `ClientToken` returns its export; ListExports by table with `MaxResults` up to 25 and `NextToken` |
 | ExecuteStatement | PartiQL `SELECT` (`*` or paths, a table or `"table"."index"`, `WHERE`, and `ORDER BY` the sort key; a Query when `WHERE` fixes the partition key, with the first sort key condition in the key condition, and otherwise a Scan; `Limit` and `NextToken`), `INSERT INTO … VALUE {…}` (`DuplicateItemException` for an existing key), `UPDATE … SET … REMOVE … WHERE …` (`+`, `-`, `list_append`, `if_not_exists`, `set_add`, `set_delete`; only an existing item), and `DELETE FROM … WHERE …`, whose `WHERE` must give every key attribute with `=`, with `RETURNING`; conditions use `=`, `<>`, `!=`, `<`, `<=`, `>`, `>=`, `BETWEEN`, `IN`, `IS [NOT] MISSING`, `IS [NOT] NULL`, `begins_with`, `contains`, `attribute_type`, `attribute_exists`, `attribute_not_exists`, and `size` with `AND`, `OR`, `NOT`; values are strings, numbers, booleans, `NULL`, maps, lists, `<<sets>>`, and `?` parameters |
 | BatchExecuteStatement | Up to 25 statements, all reads (each naming one item by its full key) or all writes, each run on its own with its error in its response |
+| ExecuteTransaction | Up to 100 statements in one transaction: all reads (`TransactGetItems`; each `SELECT` names one item by its full key and nothing else) or all writes (`TransactWriteItems`, with `ClientRequestToken` and `ReturnValuesOnConditionCheckFailure`; an `INSERT` of an existing item is cancelled with the `DuplicateItem` reason); no `RETURNING` |
 | DescribeTimeToLive / UpdateTimeToLive | TTL on one attribute, enabled or disabled at once (no `ENABLING` or `DISABLING`); enabling or disabling twice fails |
 | TagResource / UntagResource / ListTagsOfResource | Table ARNs; also `Tags` on CreateTable |
 
@@ -1166,7 +1167,7 @@ policies are stored but not evaluated: any configured key, IAM access key, or ro
 session may call any operation in its account.
 
 DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...),
-PartiQL transactions (`ExecuteTransaction`), Kinesis streaming, stream shard splits, restores to an earlier time, or capacity accounting/throttling (batch writes never return
+Kinesis streaming, stream shard splits, restores to an earlier time, or capacity accounting/throttling (batch writes never return
 `UnprocessedItems`), and index queries scan the whole table. Expressions
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),

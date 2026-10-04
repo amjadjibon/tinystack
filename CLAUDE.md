@@ -138,7 +138,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   `…/dynamodb-token/`). On-demand backups (`backups.go`) copy the table record to `…/dynamodb-backup/<table>/<ID>` and
   its items to `…/dynamodb-backup-item/<table>/<ID>/`, and restores copy them back into a new table. Exports (`exports.go`) write a table's items to S3 through the `catalog.Caller` and
   are recorded under `…/dynamodb-export/<table>/<ID>`. PartiQL statements (`partiql.go` parses them) become the Query, Scan,
-  PutItem, UpdateItem, and DeleteItem calls `statements.go` makes with generated expressions. Each write that changes an item appends a stream record, in the same transaction, when the
+  PutItem, UpdateItem, and DeleteItem calls `statements.go` makes with generated expressions (`writeRequest` builds
+  each write once, for ExecuteStatement and for ExecuteTransaction's TransactWriteItems). Each write that changes an item appends a stream record, in the same transaction, when the
   table has a stream (`stream.go`): streams are `…/dynamodb-stream/<table>/<label>` and records
   `…/dynamodb-record/<table>/<label>/<zero-padded sequence>`, numbered from the table record's counter.
   `dynamodb.Service.Streams()` serves the DynamoDB Streams API from the same store. TTL-enabled tables are indexed

@@ -33,7 +33,8 @@
       "DescribeExport",
       "ListExports",
       "ExecuteStatement",
-      "BatchExecuteStatement"
+      "BatchExecuteStatement",
+      "ExecuteTransaction"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -578,6 +579,18 @@
       ],
       "DeleteGlobalSecondaryIndexAction": [
         "IndexName"
+      ],
+      "ExecuteTransactionInput": [
+        "TransactStatements",
+        "ClientRequestToken"
+      ],
+      "ExecuteTransactionOutput": [
+        "Responses"
+      ],
+      "ParameterizedStatement": [
+        "Statement",
+        "Parameters",
+        "ReturnValuesOnConditionCheckFailure"
       ]
     }
   },

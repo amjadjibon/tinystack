@@ -714,6 +714,21 @@ type BatchExecuteStatementOutput struct {
 	Responses []BatchStatementResponse `json:"Responses,omitempty"`
 }
 
+type ParameterizedStatement struct {
+	Statement                           *string          `json:"Statement,omitempty"`
+	Parameters                          []AttributeValue `json:"Parameters,omitempty"`
+	ReturnValuesOnConditionCheckFailure *string          `json:"ReturnValuesOnConditionCheckFailure,omitempty"`
+}
+
+type ExecuteTransactionInput struct {
+	TransactStatements []ParameterizedStatement `json:"TransactStatements,omitempty"`
+	ClientRequestToken *string                  `json:"ClientRequestToken,omitempty"`
+}
+
+type ExecuteTransactionOutput struct {
+	Responses []ItemResponse `json:"Responses,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -748,6 +763,7 @@ type API interface {
 	ListExports(context.Context, *ListExportsInput) (*ListExportsOutput, error)
 	ExecuteStatement(context.Context, *ExecuteStatementInput) (*ExecuteStatementOutput, error)
 	BatchExecuteStatement(context.Context, *BatchExecuteStatementInput) (*BatchExecuteStatementOutput, error)
+	ExecuteTransaction(context.Context, *ExecuteTransactionInput) (*ExecuteTransactionOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -842,6 +858,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"BatchExecuteStatement": {Name: "BatchExecuteStatement", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.BatchExecuteStatement", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &BatchExecuteStatementInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.BatchExecuteStatement(ctx, input.(*BatchExecuteStatementInput))
+		}},
+		"ExecuteTransaction": {Name: "ExecuteTransaction", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ExecuteTransaction", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ExecuteTransactionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ExecuteTransaction(ctx, input.(*ExecuteTransactionInput))
 		}},
 	}}
 }

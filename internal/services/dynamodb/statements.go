@@ -265,9 +265,10 @@ func itemKeyOf(d *api.TableDescription, st *statement) (map[string]api.Attribute
 	return key, conds, nil
 }
 
-// writeItem runs an INSERT, UPDATE, or DELETE, returning the attributes its
-// RETURNING clause asks for.
-func (s *Service) writeItem(ctx context.Context, st *statement, p *pqParser) (map[string]api.AttributeValue, error) {
+// writeRequest translates an INSERT, UPDATE, or DELETE to the write it makes:
+// INSERT puts an item that must not exist, UPDATE updates an item that must,
+// and DELETE deletes one, each with the WHERE clause's other conditions.
+func (s *Service) writeRequest(ctx context.Context, st *statement, p *pqParser) (*api.TransactWriteItem, error) {
 	d, err := s.describe(ctx, st.table)
 	if err != nil {
 		return nil, err
@@ -281,14 +282,9 @@ func (s *Service) writeItem(ctx context.Context, st *statement, p *pqParser) (ma
 	if st.kind == stmtInsert {
 		condition := fnAttributeNotExists + "(" + p.name(hash) + ")"
 		names, _ := p.placeholdersOf(condition)
-		_, err = s.PutItem(ctx, &api.PutItemInput{
+		return &api.TransactWriteItem{Put: &api.Put{
 			TableName: &st.table, Item: *st.item.M, ConditionExpression: &condition, ExpressionAttributeNames: names,
-		})
-		if isCode(err, "ConditionalCheckFailedException") {
-			return nil, awserror.New("DuplicateItemException", "Duplicate primary key exists in table")
-		}
-
-		return nil, err
+		}}, nil
 	}
 
 	key, conds, err := itemKeyOf(d, st)
@@ -299,9 +295,45 @@ func (s *Service) writeItem(ctx context.Context, st *statement, p *pqParser) (ma
 	if st.kind == stmtDelete {
 		condition := join(conds)
 		names, values := p.placeholdersOf(condition)
-		out, deleteErr := s.DeleteItem(ctx, &api.DeleteItemInput{
+		return &api.TransactWriteItem{Delete: &api.Delete{
 			TableName: &st.table, Key: key, ConditionExpression: optional(condition),
-			ExpressionAttributeNames: names, ExpressionAttributeValues: values, ReturnValues: optional(st.returning),
+			ExpressionAttributeNames: names, ExpressionAttributeValues: values,
+		}}, nil
+	}
+
+	exists := &pqCond{expr: fnAttributeExists + "(" + p.name(hash) + ")"}
+	condition := join(append([]*pqCond{exists}, conds...))
+	names, values := p.placeholdersOf(st.update, condition)
+	return &api.TransactWriteItem{Update: &api.Update{
+		TableName: &st.table, Key: key, UpdateExpression: &st.update, ConditionExpression: &condition,
+		ExpressionAttributeNames: names, ExpressionAttributeValues: values,
+	}}, nil
+}
+
+// writeItem runs an INSERT, UPDATE, or DELETE, returning the attributes its
+// RETURNING clause asks for.
+func (s *Service) writeItem(ctx context.Context, st *statement, p *pqParser) (map[string]api.AttributeValue, error) {
+	w, err := s.writeRequest(ctx, st, p)
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case w.Put != nil:
+		_, err = s.PutItem(ctx, &api.PutItemInput{
+			TableName: w.Put.TableName, Item: w.Put.Item, ConditionExpression: w.Put.ConditionExpression,
+			ExpressionAttributeNames: w.Put.ExpressionAttributeNames,
+		})
+		if isCode(err, "ConditionalCheckFailedException") {
+			return nil, awserror.New("DuplicateItemException", "Duplicate primary key exists in table")
+		}
+
+		return nil, err
+	case w.Delete != nil:
+		out, deleteErr := s.DeleteItem(ctx, &api.DeleteItemInput{
+			TableName: w.Delete.TableName, Key: w.Delete.Key, ConditionExpression: w.Delete.ConditionExpression,
+			ExpressionAttributeNames:  w.Delete.ExpressionAttributeNames,
+			ExpressionAttributeValues: w.Delete.ExpressionAttributeValues, ReturnValues: optional(st.returning),
 		})
 		if deleteErr != nil {
 			return nil, deleteErr
@@ -310,13 +342,10 @@ func (s *Service) writeItem(ctx context.Context, st *statement, p *pqParser) (ma
 		return out.Attributes, nil
 	}
 
-	// UPDATE changes only an existing item.
-	exists := &pqCond{expr: fnAttributeExists + "(" + p.name(hash) + ")"}
-	condition := join(append([]*pqCond{exists}, conds...))
-	names, values := p.placeholdersOf(st.update, condition)
 	out, err := s.UpdateItem(ctx, &api.UpdateItemInput{
-		TableName: &st.table, Key: key, UpdateExpression: &st.update, ConditionExpression: &condition,
-		ExpressionAttributeNames: names, ExpressionAttributeValues: values, ReturnValues: optional(st.returning),
+		TableName: w.Update.TableName, Key: w.Update.Key, UpdateExpression: w.Update.UpdateExpression,
+		ConditionExpression: w.Update.ConditionExpression, ExpressionAttributeNames: w.Update.ExpressionAttributeNames,
+		ExpressionAttributeValues: w.Update.ExpressionAttributeValues, ReturnValues: optional(st.returning),
 	})
 	if err != nil {
 		return nil, err
@@ -432,4 +461,142 @@ func batchErrorCode(code string) string {
 	}
 
 	return strings.TrimSuffix(code, "Exception")
+}
+
+// maxTransactStatements is how many statements ExecuteTransaction takes.
+const maxTransactStatements = 100
+
+// ExecuteTransaction runs up to 100 statements as one transaction, all reads
+// (TransactGetItems, each naming one item by its full key) or all writes
+// (TransactWriteItems, where an INSERT of an existing item is cancelled with
+// the DuplicateItem reason).
+func (s *Service) ExecuteTransaction(
+	ctx context.Context,
+	in *api.ExecuteTransactionInput,
+) (*api.ExecuteTransactionOutput, error) {
+	n := len(in.TransactStatements)
+	if n == 0 || n > maxTransactStatements {
+		return nil, awserror.Validation("TransactStatements must hold 1 to %d statements", maxTransactStatements)
+	}
+
+	statements := make([]*statement, n)
+	parsers := make([]*pqParser, n)
+	reads := 0
+	for i := range in.TransactStatements {
+		st, p, err := parseStatement(value(in.TransactStatements[i].Statement), in.TransactStatements[i].Parameters)
+		if err != nil {
+			return nil, err
+		}
+
+		if st.returning != "" {
+			return nil, awserror.Validation("RETURNING is not supported in a transaction")
+		}
+
+		statements[i], parsers[i] = st, p
+		if st.kind == stmtSelect {
+			reads++
+		}
+	}
+
+	// SDKs send a ClientRequestToken with every transaction; reads ignore it.
+	switch {
+	case reads == n:
+		return s.readTransaction(ctx, statements, parsers)
+	case reads != 0:
+		return nil, awserror.Validation("Statements in a transaction must be all reads or all writes")
+	}
+
+	items := make([]api.TransactWriteItem, n)
+	for i, st := range statements {
+		w, err := s.writeRequest(ctx, st, parsers[i])
+		if err != nil {
+			return nil, err
+		}
+
+		onFailure := in.TransactStatements[i].ReturnValuesOnConditionCheckFailure
+		switch {
+		case w.Put != nil:
+			w.Put.ReturnValuesOnConditionCheckFailure = onFailure
+		case w.Delete != nil:
+			w.Delete.ReturnValuesOnConditionCheckFailure = onFailure
+		default:
+			w.Update.ReturnValuesOnConditionCheckFailure = onFailure
+		}
+
+		items[i] = *w
+	}
+
+	_, err := s.TransactWriteItems(ctx, &api.TransactWriteItemsInput{
+		TransactItems: items, ClientRequestToken: in.ClientRequestToken,
+	})
+	if err != nil {
+		return nil, duplicates(err, statements)
+	}
+
+	return &api.ExecuteTransactionOutput{Responses: []api.ItemResponse{}}, nil
+}
+
+// readTransaction reads the items SELECT statements name in one transaction.
+func (s *Service) readTransaction(
+	ctx context.Context,
+	statements []*statement,
+	parsers []*pqParser,
+) (*api.ExecuteTransactionOutput, error) {
+	gets := make([]api.TransactGetItem, len(statements))
+	for i, st := range statements {
+		d, err := s.describe(ctx, st.table)
+		if err != nil {
+			return nil, err
+		}
+
+		if st.where == nil || st.index != "" {
+			return nil, awserror.Validation("A transaction read must name one item of a table by its full key")
+		}
+
+		key, conds, err := itemKeyOf(d, st)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(conds) > 0 {
+			return nil, awserror.Validation("A transaction read can only name an item by its key")
+		}
+
+		projection := strings.Join(st.projection, ", ")
+		names, _ := parsers[i].placeholdersOf(projection)
+		gets[i] = api.TransactGetItem{Get: &api.Get{
+			TableName: &st.table, Key: key, ProjectionExpression: optional(projection), ExpressionAttributeNames: names,
+		}}
+	}
+
+	out, err := s.TransactGetItems(ctx, &api.TransactGetItemsInput{TransactItems: gets})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.ExecuteTransactionOutput{Responses: out.Responses}, nil
+}
+
+// duplicates reports a cancelled INSERT of an existing item with the
+// DuplicateItem reason, as ExecuteTransaction does.
+func duplicates(err error, statements []*statement) error {
+	var awsErr *awserror.Error
+	if !errors.As(err, &awsErr) || awsErr.Code != "TransactionCanceledException" {
+		return err
+	}
+
+	reasons, _ := awsErr.Fields["CancellationReasons"].([]map[string]any)
+	codes := make([]string, len(reasons))
+	for i, reason := range reasons {
+		if statements[i].kind == stmtInsert && reason[reasonCode] == "ConditionalCheckFailed" {
+			reason[reasonCode], reason["Message"] = "DuplicateItem", "Duplicate primary key exists in table"
+			delete(reason, "Item")
+		}
+
+		codes[i], _ = reason[reasonCode].(string)
+	}
+
+	awsErr.Message = "Transaction cancelled, please refer cancellation reasons for specific reasons [" +
+		strings.Join(codes, ", ") + "]"
+	return awsErr
 }
