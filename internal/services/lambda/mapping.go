@@ -1,6 +1,7 @@
 package lambda
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -53,6 +54,9 @@ type mapping struct {
 	LastProcessingResult string
 	StartingPosition     string `json:",omitempty"`
 	Cursor               string `json:",omitempty"`
+	// OnFailure, Bisect, and MaxRecordAge are a stream mapping's failure
+	// handling (streamfailure.go).
+	OnFailure string `json:",omitempty"`
 	// Cursors are a Kinesis mapping's last records processed by shard, or
 	// "done" for a closed shard read to its end.
 	Cursors map[string]string `json:",omitempty"`
@@ -61,8 +65,10 @@ type mapping struct {
 	BatchSize      int64
 	BatchingWindow int64 `json:",omitempty"`
 	LastModified   int64
+	MaxRecordAge   int64 `json:",omitempty"`
 	Enabled        bool
 	ReportFailures bool `json:",omitempty"`
+	Bisect         bool `json:",omitempty"`
 }
 
 func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConfiguration {
@@ -87,6 +93,12 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 
 	if mp.StartingPosition != "" {
 		cfg.StartingPosition = new(mp.StartingPosition)
+		cfg.BisectBatchOnFunctionError = new(mp.Bisect)
+		cfg.MaximumRecordAgeInSeconds = new(cmp.Or(mp.MaxRecordAge, -1))
+		cfg.DestinationConfig = &api.DestinationConfig{OnFailure: &api.OnFailure{}}
+		if mp.OnFailure != "" {
+			cfg.DestinationConfig.OnFailure.Destination = new(mp.OnFailure)
+		}
 	}
 
 	if mp.ReportFailures {
@@ -189,6 +201,10 @@ func (s *Service) CreateEventSourceMapping(
 	} else {
 		err = invalid("EventSourceArn must be an SQS queue, DynamoDB stream, or Kinesis stream ARN; " +
 			"other event sources are not supported")
+	}
+
+	if err == nil {
+		err = streamOptions(in.DestinationConfig, in.BisectBatchOnFunctionError, in.MaximumRecordAgeInSeconds, mp)
 	}
 
 	if err != nil {
@@ -369,6 +385,16 @@ func (s *Service) UpdateEventSourceMapping(
 			in.MaximumBatchingWindowInSeconds, in.FunctionResponseTypes, in.FilterCriteria, mp,
 		); optionsErr != nil {
 			return optionsErr
+		}
+
+		streamErr := streamOptions(
+			in.DestinationConfig,
+			in.BisectBatchOnFunctionError,
+			in.MaximumRecordAgeInSeconds,
+			mp,
+		)
+		if streamErr != nil {
+			return streamErr
 		}
 
 		mp.LastModified = s.now().UnixMilli()

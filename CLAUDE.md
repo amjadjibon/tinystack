@@ -186,7 +186,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   container. SNS invokes subscribed functions through `lambda.Service.InvokeAsync`, and mappings read SQS in-process
   via `sqs.QueueURL` and DynamoDB streams through `dynamodb.Streams`, storing each stream mapping's cursor;
   `batch.go` holds the options both pollers share (filters compiled with `services/pattern`, the batching window,
-  and `ReportBatchItemFailures` responses). EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus)
+  and `ReportBatchItemFailures` responses), and `streamfailure.go` the stream pollers' bisecting, record age limit,
+  and OnFailure records. EventBridge stores each rule with its targets under `…/eventbridge/rule/<name>` (default bus)
   or `…/eventbridge/bus-rule/<bus>/<name>` (custom buses, whose records are `…/eventbridge/bus/<name>`), renders
   `InputTransformer` templates in `transform.go`, fires scheduled rules from a scheduler (`schedule.go`, stopped by
   `Stop` like the DynamoDB sweeper) that reads the partition-wide `aws/eventbridge/schedule/<account>/<region>/<rule>`

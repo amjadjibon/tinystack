@@ -1,8 +1,10 @@
 package lambda
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
+	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -134,6 +136,7 @@ func ready(sh *kinesis.Shard, cursors map[string]string, known map[string]bool) 
 func (s *Service) pollKinesis(ctx context.Context, scope request.Scope, mp mapping) {
 	filters := mp.filters()
 	failures := map[string]int64{}
+	sizes := map[string]int64{}
 	if mp.Cursors == nil {
 		mp.Cursors = map[string]string{}
 	}
@@ -164,7 +167,7 @@ func (s *Service) pollKinesis(ctx context.Context, scope request.Scope, mp mappi
 				continue
 			}
 
-			if s.pollShard(ctx, scope, &mp, sh, filters, failures) {
+			if s.pollShard(ctx, scope, &mp, sh, filters, failures, sizes) {
 				progressed = true
 			}
 		}
@@ -182,9 +185,10 @@ func (s *Service) pollShard(
 	mp *mapping,
 	sh *kinesis.Shard,
 	filters []*pattern.Pattern,
-	failures map[string]int64,
+	failures, sizes map[string]int64,
 ) bool {
-	records, done, err := s.kinesis.Records(ctx, mp.EventSourceArn, sh.ID, mp.Cursors[sh.ID], int(mp.BatchSize))
+	size := cmp.Or(sizes[sh.ID], mp.BatchSize)
+	records, done, err := s.kinesis.Records(ctx, mp.EventSourceArn, sh.ID, mp.Cursors[sh.ID], int(size))
 	if err != nil {
 		s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the Kinesis stream.")
 		return false
@@ -216,9 +220,23 @@ func (s *Service) pollShard(
 		}
 	}
 
-	processed, outcome := len(all), ""
+	if old := oldKinesisRecords(records, mp, s.now()); old > 0 {
+		s.discard(
+			ctx,
+			scope,
+			mp,
+			conditionRecordAge,
+			fieldKinesisBatchInfo,
+			0,
+			new(kinesisBatchInfo(mp, sh.ID, records[:old])),
+		)
+		failures[sh.ID], mp.Cursors[sh.ID] = 0, records[old-1].SequenceNumber
+		s.recordCursors(scope, mp.UUID, mp.Cursors, "")
+		return true
+	}
+
+	processed, outcome, ok := len(all), "", true
 	if len(batch) > 0 {
-		var ok bool
 		processed, ok = s.processKinesisBatch(ctx, scope, mp, all, batch)
 		outcome = resultOK
 		if !ok {
@@ -227,12 +245,17 @@ func (s *Service) pollShard(
 	}
 
 	if processed < len(all) {
-		failures[sh.ID]++
-		if processed > 0 {
-			failures[sh.ID] = 1
+		// A split batch is retried in halves without counting a retry.
+		nextSize, split := mp.nextSize(len(all), !ok)
+		sizes[sh.ID] = int64(nextSize)
+		if !split {
+			failures[sh.ID]++
+			if processed > 0 {
+				failures[sh.ID] = 1
+			}
 		}
 
-		if value(mp.MaximumRetryAttempts) < 0 || failures[sh.ID] <= value(mp.MaximumRetryAttempts) {
+		if split || value(mp.MaximumRetryAttempts) < 0 || failures[sh.ID] <= value(mp.MaximumRetryAttempts) {
 			if processed > 0 {
 				mp.Cursors[sh.ID] = all[processed-1].Kinesis.SequenceNumber
 			}
@@ -241,9 +264,12 @@ func (s *Service) pollShard(
 			sleep(ctx, pollBackoff)
 			return false
 		}
+
+		s.discard(ctx, scope, mp, conditionStreamRetries, fieldKinesisBatchInfo, int(failures[sh.ID]),
+			new(kinesisBatchInfo(mp, sh.ID, records[processed:])))
 	}
 
-	failures[sh.ID] = 0
+	failures[sh.ID], sizes[sh.ID] = 0, 0
 	mp.Cursors[sh.ID] = all[len(all)-1].Kinesis.SequenceNumber
 	s.recordCursors(scope, mp.UUID, mp.Cursors, outcome)
 	return true
@@ -315,5 +341,28 @@ func (s *Service) recordCursors(scope request.Scope, id string, cursors map[stri
 	})
 	if err != nil && s.ctx.Err() == nil {
 		s.logger.Warn("record event source mapping position", "mapping", id, "error", err)
+	}
+}
+
+// oldKinesisRecords counts the records at the start of a batch that are past
+// the mapping's MaximumRecordAgeInSeconds.
+func oldKinesisRecords(records []kinesis.Record, mp *mapping, now time.Time) int {
+	for i := range records {
+		if !mp.tooOld(records[i].Arrival, now) {
+			return i
+		}
+	}
+
+	return len(records)
+}
+
+// kinesisBatchInfo describes records of a Kinesis mapping's batch.
+func kinesisBatchInfo(mp *mapping, shardID string, records []kinesis.Record) batchInfo {
+	first, last := &records[0], &records[len(records)-1]
+	return batchInfo{
+		ShardID: shardID, StartSequenceNumber: first.SequenceNumber, EndSequenceNumber: last.SequenceNumber,
+		ApproximateArrivalOfFirstRecord: arrivalText(first.Arrival),
+		ApproximateArrivalOfLastRecord:  arrivalText(last.Arrival), StreamArn: mp.EventSourceArn,
+		BatchSize: len(records),
 	}
 }

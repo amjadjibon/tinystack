@@ -148,6 +148,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 	filters := mp.filters()
 	var iterator *string
 	var failures int64
+	size := mp.BatchSize
 	for ctx.Err() == nil {
 		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
 			s.recordResult(scope, mp.UUID, "PROBLEM: Function not found.")
@@ -164,7 +165,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 			}
 		}
 
-		records, next, err := s.readStream(streamCtx, iterator, &mp)
+		records, next, err := s.readStream(streamCtx, iterator, &mp, size)
 		if err != nil {
 			iterator = nil
 			s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the DynamoDB stream.")
@@ -182,6 +183,14 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 		}
 
 		all := streamRecords(mp.EventSourceArn, records)
+		if old := s.oldRecords(all, &mp); old > 0 {
+			s.discard(ctx, scope, &mp, conditionRecordAge, fieldDDBStreamBatchInfo, 0,
+				new(s.streamBatchInfo(streamCtx, &mp, all[:old])))
+			failures, mp.Cursor, iterator = 0, all[old-1].sequence(), nil
+			s.recordCursor(scope, mp.UUID, mp.Cursor, "")
+			continue
+		}
+
 		var batch []streamRecord
 		for i := range all {
 			if document, _ := json.Marshal(all[i]); keep(filters, document) {
@@ -190,9 +199,8 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 		}
 
 		// processed is how many records, from the start of all, are done.
-		processed, outcome := len(all), ""
+		processed, outcome, ok := len(all), "", true
 		if len(batch) > 0 {
-			var ok bool
 			processed, ok = s.processStreamBatch(ctx, scope, &mp, all, batch)
 			outcome = resultOK
 			if !ok {
@@ -201,12 +209,17 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 		}
 
 		if processed < len(all) {
-			// A partial failure that moved the checkpoint starts a new count.
-			if failures++; processed > 0 {
-				failures = 1
+			// A split batch is retried in halves without counting a retry, and
+			// a partial failure that moved the checkpoint starts a new count.
+			nextSize, split := mp.nextSize(len(all), !ok)
+			size = int64(nextSize)
+			if !split {
+				if failures++; processed > 0 {
+					failures = 1
+				}
 			}
 
-			if value(mp.MaximumRetryAttempts) < 0 || failures <= value(mp.MaximumRetryAttempts) {
+			if split || value(mp.MaximumRetryAttempts) < 0 || failures <= value(mp.MaximumRetryAttempts) {
 				if processed > 0 {
 					mp.Cursor = all[processed-1].sequence()
 				}
@@ -216,9 +229,12 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 				sleep(ctx, pollBackoff)
 				continue
 			}
+
+			s.discard(ctx, scope, &mp, conditionStreamRetries, fieldDDBStreamBatchInfo, int(failures),
+				new(s.streamBatchInfo(streamCtx, &mp, all[processed:])))
 		}
 
-		failures = 0
+		failures, size = 0, mp.BatchSize
 		mp.Cursor = all[len(all)-1].sequence()
 		s.recordCursor(scope, mp.UUID, mp.Cursor, outcome)
 		if iterator = next; iterator == nil {
@@ -234,20 +250,21 @@ func (s *Service) readStream(
 	ctx context.Context,
 	iterator *string,
 	mp *mapping,
+	size int64,
 ) ([]streamsapi.Record, *string, error) {
 	var records []streamsapi.Record
 	var deadline time.Time
 	for {
 		out, err := s.streams.GetRecords(ctx, &streamsapi.GetRecordsInput{
 			ShardIterator: iterator,
-			Limit:         new(min(mp.BatchSize-int64(len(records)), 1000)),
+			Limit:         new(min(size-int64(len(records)), 1000)),
 		})
 		if err != nil {
 			return nil, nil, err
 		}
 
 		records, iterator = append(records, out.Records...), out.NextShardIterator
-		if len(records) == 0 || iterator == nil || mp.BatchingWindow == 0 || int64(len(records)) >= mp.BatchSize {
+		if len(records) == 0 || iterator == nil || mp.BatchingWindow == 0 || int64(len(records)) >= size {
 			return records, iterator, nil
 		}
 
@@ -344,4 +361,43 @@ func (s *Service) recordCursor(scope request.Scope, id, cursor, result string) {
 	if err != nil && s.ctx.Err() == nil {
 		s.logger.Warn("record event source mapping position", "mapping", id, "error", err)
 	}
+}
+
+// arrival is when a stream record was written.
+func (r *streamRecord) arrival() time.Time {
+	if r.Dynamodb == nil {
+		return time.Time{}
+	}
+
+	seconds := value(r.Dynamodb.ApproximateCreationDateTime)
+	return time.Unix(0, int64(seconds*float64(time.Second)))
+}
+
+// oldRecords counts the records at the start of a batch that are past the
+// mapping's MaximumRecordAgeInSeconds.
+func (s *Service) oldRecords(all []streamRecord, mp *mapping) int {
+	now := s.now()
+	for i := range all {
+		if !mp.tooOld(all[i].arrival(), now) {
+			return i
+		}
+	}
+
+	return len(all)
+}
+
+// streamBatchInfo describes records of a DynamoDB stream mapping's batch.
+func (s *Service) streamBatchInfo(ctx context.Context, mp *mapping, records []streamRecord) batchInfo {
+	info := batchInfo{
+		StartSequenceNumber: records[0].sequence(), EndSequenceNumber: records[len(records)-1].sequence(),
+		ApproximateArrivalOfFirstRecord: arrivalText(records[0].arrival()),
+		ApproximateArrivalOfLastRecord:  arrivalText(records[len(records)-1].arrival()),
+		StreamArn:                       mp.EventSourceArn, BatchSize: len(records),
+	}
+	described, err := s.streams.DescribeStream(ctx, &streamsapi.DescribeStreamInput{StreamArn: &mp.EventSourceArn})
+	if err == nil && len(described.StreamDescription.Shards) > 0 {
+		info.ShardID = value(described.StreamDescription.Shards[0].ShardId)
+	}
+
+	return info
 }

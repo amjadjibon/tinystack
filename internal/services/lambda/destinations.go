@@ -27,6 +27,8 @@ const (
 	conditionRetries  = "RetriesExhausted"
 	conditionEventAge = "EventAgeExceeded"
 	serviceLambda     = "lambda"
+	serviceSQS        = "sqs"
+	serviceSNS        = "sns"
 	// recordVersion is the version of the records Lambda sends functions and
 	// destinations.
 	recordVersion = "1.0"
@@ -171,7 +173,9 @@ func onFailure(d *api.DestinationConfig) *string {
 
 // destinationResources are the resource prefixes of each destination service's
 // ARNs.
-var destinationResources = map[string]string{"sqs": "", "sns": "", serviceLambda: "function:", "events": "event-bus/"}
+var destinationResources = map[string]string{
+	serviceSQS: "", serviceSNS: "", serviceLambda: "function:", "events": "event-bus/",
+}
 
 // destinationService is the service of a destination ARN.
 func destinationService(arn string) (string, bool) {
@@ -507,10 +511,10 @@ func (s *Service) deliver(ctx context.Context, destination, arn, condition strin
 
 	var err error
 	switch service {
-	case "sqs":
+	case serviceSQS:
 		url, _ := sqs.QueueURL(destination)
 		_, err = call(service, "SendMessage", map[string]any{"QueueUrl": url, "MessageBody": string(body)})
-	case "sns":
+	case serviceSNS:
 		_, err = call(service, "Publish", map[string]any{"TopicArn": destination, "Message": string(body)})
 	default:
 		outcome := "Success"

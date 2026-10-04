@@ -3240,7 +3240,10 @@
         "MaximumRetryAttempts",
         "MaximumBatchingWindowInSeconds",
         "FilterCriteria",
-        "FunctionResponseTypes"
+        "FunctionResponseTypes",
+        "DestinationConfig",
+        "BisectBatchOnFunctionError",
+        "MaximumRecordAgeInSeconds"
       ],
       "EventSourceMappingConfiguration": [
         "UUID",
@@ -3255,7 +3258,10 @@
         "MaximumRetryAttempts",
         "MaximumBatchingWindowInSeconds",
         "FilterCriteria",
-        "FunctionResponseTypes"
+        "FunctionResponseTypes",
+        "DestinationConfig",
+        "BisectBatchOnFunctionError",
+        "MaximumRecordAgeInSeconds"
       ],
       "GetEventSourceMappingRequest": [
         "UUID"
@@ -3631,7 +3637,10 @@
         "FilterCriteria",
         "MaximumBatchingWindowInSeconds",
         "MaximumRetryAttempts",
-        "FunctionResponseTypes"
+        "FunctionResponseTypes",
+        "DestinationConfig",
+        "BisectBatchOnFunctionError",
+        "MaximumRecordAgeInSeconds"
       ],
       "PutFunctionEventInvokeConfigRequest": [
         "FunctionName",
