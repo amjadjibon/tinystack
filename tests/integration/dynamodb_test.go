@@ -156,7 +156,7 @@ func serverStore(
 	roles := principals.New(store)
 	stsService := tokens.New(store, roles)
 	stsService.UseAccounts(cfg.Identity.Accounts, cfg.Defaults.Account)
-	userPools := identities.New(store, deliveries)
+	userPools := identities.New(store, functions, deliveries)
 	repositories := containers.New(store)
 	network := compute.New(store)
 	network.UseInstanceProfiles(roles.InstanceProfileOf)

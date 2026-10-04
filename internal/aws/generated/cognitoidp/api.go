@@ -101,6 +101,19 @@ type UsernameConfigurationType struct {
 	CaseSensitive *bool `json:"CaseSensitive,omitempty"`
 }
 
+type PreTokenGenerationVersionConfigType struct {
+	LambdaVersion *string `json:"LambdaVersion,omitempty"`
+	LambdaArn     *string `json:"LambdaArn,omitempty"`
+}
+
+type LambdaConfigType struct {
+	PreSignUp                *string                              `json:"PreSignUp,omitempty"`
+	PostConfirmation         *string                              `json:"PostConfirmation,omitempty"`
+	PostAuthentication       *string                              `json:"PostAuthentication,omitempty"`
+	PreTokenGeneration       *string                              `json:"PreTokenGeneration,omitempty"`
+	PreTokenGenerationConfig *PreTokenGenerationVersionConfigType `json:"PreTokenGenerationConfig,omitempty"`
+}
+
 type CreateUserPoolRequest struct {
 	PoolName                    *string                          `json:"PoolName,omitempty"`
 	Policies                    *UserPoolPolicyType              `json:"Policies,omitempty"`
@@ -125,6 +138,7 @@ type CreateUserPoolRequest struct {
 	UsernameAttributes          []string                         `json:"UsernameAttributes,omitempty"`
 	Schema                      []SchemaAttributeType            `json:"Schema,omitempty"`
 	UsernameConfiguration       *UsernameConfigurationType       `json:"UsernameConfiguration,omitempty"`
+	LambdaConfig                *LambdaConfigType                `json:"LambdaConfig,omitempty"`
 }
 
 type UserPoolType struct {
@@ -156,6 +170,7 @@ type UserPoolType struct {
 	UserPoolAddOns              *UserPoolAddOnsType              `json:"UserPoolAddOns,omitempty"`
 	AccountRecoverySetting      *AccountRecoverySettingType      `json:"AccountRecoverySetting,omitempty"`
 	UserPoolTier                *string                          `json:"UserPoolTier,omitempty"`
+	LambdaConfig                *LambdaConfigType                `json:"LambdaConfig,omitempty"`
 }
 
 type CreateUserPoolResponse struct {
@@ -208,6 +223,7 @@ type UpdateUserPoolRequest struct {
 	AccountRecoverySetting      *AccountRecoverySettingType      `json:"AccountRecoverySetting,omitempty"`
 	UserPoolTier                *string                          `json:"UserPoolTier,omitempty"`
 	PoolName                    *string                          `json:"PoolName,omitempty"`
+	LambdaConfig                *LambdaConfigType                `json:"LambdaConfig,omitempty"`
 }
 
 type UpdateUserPoolResponse struct {

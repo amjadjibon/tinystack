@@ -42,6 +42,8 @@ type outcome struct {
 	Session              *string                       `json:",omitempty"`
 	ChallengeParameters  map[string]string             `json:",omitempty"`
 	AuthenticationResult *api.AuthenticationResultType `json:",omitempty"`
+	// grant is the tokens to issue once the transaction ends.
+	grant *grant
 }
 
 // byClient runs fn in a transaction with the pool and app client clientID
@@ -248,12 +250,12 @@ func (s *Service) finishSignIn(
 		return challengeNew(tx, scope, p, c, u, now)
 	}
 
-	result, err := s.signIn(ctx, tx, scope, p, c, u)
+	g, err := s.signIn(ctx, tx, scope, p, c, u, sourceAuth)
 	if err != nil {
 		return nil, err
 	}
 
-	return &outcome{AuthenticationResult: result, ChallengeParameters: map[string]string{}}, nil
+	return &outcome{grant: g, ChallengeParameters: map[string]string{}}, nil
 }
 
 // challengeNew asks a user signing in with a temporary password for a new one.
@@ -344,12 +346,9 @@ func (s *Service) refresh(
 		return nil, err
 	}
 
-	result, err := tokens(ctx, key, p, c, u, session{auth: r.AuthTime, origin: r.Origin}, s.now().UTC())
-	if err != nil {
-		return nil, err
-	}
-
-	return &outcome{AuthenticationResult: result, ChallengeParameters: map[string]string{}}, nil
+	sess := session{auth: r.AuthTime, origin: r.Origin, source: sourceRefresh}
+	g := tokens(ctx, scope, key, p, c, u, sess, s.now().UTC())
+	return &outcome{grant: g, ChallengeParameters: map[string]string{}}, nil
 }
 
 // answer completes a NEW_PASSWORD_REQUIRED challenge.
@@ -431,18 +430,25 @@ func (s *Service) answer(
 		return nil, saveErr
 	}
 
-	result, err := s.signIn(ctx, tx, scope, p, c, u)
+	g, err := s.signIn(ctx, tx, scope, p, c, u, sourceNewPassword)
 	if err != nil {
 		return nil, err
 	}
 
-	return &outcome{AuthenticationResult: result, ChallengeParameters: map[string]string{}}, nil
+	return &outcome{grant: g, ChallengeParameters: map[string]string{}}, nil
 }
 
-// respondWith converts an outcome to a sign-in operation's response.
-func respondWith[T any](o *outcome, err error) (*T, error) {
+// respondWith issues an outcome's tokens, after its transaction, and converts
+// it to a sign-in operation's response.
+func respondWith[T any](ctx context.Context, s *Service, o *outcome, err error) (*T, error) {
 	if err != nil {
 		return nil, err
+	}
+
+	if o.grant != nil {
+		if o.AuthenticationResult, err = s.issue(ctx, o.grant); err != nil {
+			return nil, err
+		}
 	}
 
 	out, err := convert[T](o)
@@ -461,7 +467,7 @@ func (s *Service) InitiateAuth(ctx context.Context, in *api.InitiateAuthRequest)
 		return authErr
 	})
 
-	return respondWith[api.InitiateAuthResponse](out, err)
+	return respondWith[api.InitiateAuthResponse](ctx, s, out, err)
 }
 
 func (s *Service) AdminInitiateAuth(
@@ -476,7 +482,7 @@ func (s *Service) AdminInitiateAuth(
 			return authErr
 		})
 
-	return respondWith[api.AdminInitiateAuthResponse](out, err)
+	return respondWith[api.AdminInitiateAuthResponse](ctx, s, out, err)
 }
 
 func (s *Service) RespondToAuthChallenge(
@@ -490,7 +496,7 @@ func (s *Service) RespondToAuthChallenge(
 		return answerErr
 	})
 
-	return respondWith[api.RespondToAuthChallengeResponse](out, err)
+	return respondWith[api.RespondToAuthChallengeResponse](ctx, s, out, err)
 }
 
 func (s *Service) AdminRespondToAuthChallenge(
@@ -505,5 +511,5 @@ func (s *Service) AdminRespondToAuthChallenge(
 			return answerErr
 		})
 
-	return respondWith[api.AdminRespondToAuthChallengeResponse](out, err)
+	return respondWith[api.AdminRespondToAuthChallengeResponse](ctx, s, out, err)
 }

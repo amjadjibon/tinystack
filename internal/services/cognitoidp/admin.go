@@ -311,8 +311,9 @@ func (s *Service) AdminConfirmSignUp(
 	ctx context.Context,
 	in *api.AdminConfirmSignUpRequest,
 ) (*api.AdminConfirmSignUpResponse, error) {
+	var confirmed *call
 	err := s.changeUser(ctx, in.UserPoolId, in.Username,
-		func(_ storage.WriteTx, _ request.Scope, _ *pool, u *user, _ *outbox) error {
+		func(_ storage.WriteTx, scope request.Scope, p *pool, u *user, _ *outbox) error {
 			if u.Status != statusUnconfirmed {
 				return awserror.New("NotAuthorizedException",
 					"User cannot be confirmed. Current status is "+u.Status)
@@ -320,8 +321,13 @@ func (s *Service) AdminConfirmSignUp(
 
 			u.Status = statusConfirmed
 			delete(u.Codes, purposeSignUp)
+			confirmed = postConfirmation(scope, p, noClient, "PostConfirmation_ConfirmSignUp", u, in.ClientMetadata)
 			return nil
 		})
+	if err == nil {
+		err = s.invoke(ctx, confirmed, nil)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +399,7 @@ var userFilter = regexp.MustCompile(`^\s*([\w:]+)\s*(=|\^=)\s*"(.*)"\s*$`)
 
 // filterable are the attributes ListUsers filters by.
 var filterable = []string{
-	"username", attrEmail, attrPhone, "name", "given_name", "family_name", attrPreferred, "cognito:user_status",
+	"username", attrEmail, attrPhone, "name", "given_name", "family_name", attrPreferred, attrUserStatus,
 	"status", attrSub,
 }
 
@@ -417,7 +423,7 @@ func userMatcher(p *pool, filter *string) (func(*user) bool, error) {
 			if p.caseInsensitive() {
 				got, want = strings.ToLower(got), strings.ToLower(want)
 			}
-		case "cognito:user_status":
+		case attrUserStatus:
 			got = u.Status
 		case "status":
 			got = map[bool]string{false: "Enabled", true: "Disabled"}[u.Disabled]

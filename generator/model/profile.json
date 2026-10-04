@@ -5470,7 +5470,8 @@
         "AliasAttributes",
         "UsernameAttributes",
         "Schema",
-        "UsernameConfiguration"
+        "UsernameConfiguration",
+        "LambdaConfig"
       ],
       "CreateUserPoolResponse": [
         "UserPool"
@@ -5503,7 +5504,8 @@
         "AdminCreateUserConfig",
         "UserPoolAddOns",
         "AccountRecoverySetting",
-        "UserPoolTier"
+        "UserPoolTier",
+        "LambdaConfig"
       ],
       "UserPoolPolicyType": [
         "PasswordPolicy"
@@ -5565,7 +5567,8 @@
         "UserPoolAddOns",
         "AccountRecoverySetting",
         "UserPoolTier",
-        "PoolName"
+        "PoolName",
+        "LambdaConfig"
       ],
       "UpdateUserPoolResponse": [],
       "DeleteUserPoolRequest": [
@@ -6034,6 +6037,17 @@
         "TokenType",
         "RefreshToken",
         "IdToken"
+      ],
+      "LambdaConfigType": [
+        "PreSignUp",
+        "PostConfirmation",
+        "PostAuthentication",
+        "PreTokenGeneration",
+        "PreTokenGenerationConfig"
+      ],
+      "PreTokenGenerationVersionConfigType": [
+        "LambdaVersion",
+        "LambdaArn"
       ]
     }
   },

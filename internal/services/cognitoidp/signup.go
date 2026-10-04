@@ -2,6 +2,7 @@ package cognitoidp
 
 import (
 	"context"
+	"errors"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
@@ -63,67 +64,140 @@ func (s *Service) byClientUser(
 	return err
 }
 
+// SignUp creates an unconfirmed user. A pool with a pre sign-up trigger runs
+// the transaction twice: the first stops before writing to call the trigger
+// with the user it would create, and the second creates that user (same sub
+// and username) as the trigger's response says.
 func (s *Service) SignUp(ctx context.Context, in *api.SignUpRequest) (*api.SignUpResponse, error) {
 	var (
 		out      outbox
 		response *api.SignUpResponse
+		// pending is the pre sign-up call the first run asked for, and
+		// decided the trigger's response.
+		pending, confirmed *call
+		decided            *preSignUp
 	)
-	err := s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-		if value(p.Settings.AdminCreateUserConfig.AllowAdminCreateUserOnly) {
-			return notAuthorized("SignUp is not permitted for this user pool")
-		}
-
-		if hashErr := checkSecretHash(c, in.SecretHash, value(in.Username)); hashErr != nil {
-			return hashErr
-		}
-
-		if in.Password == nil {
-			return invalidParameter("TinyStack requires a Password: passwordless sign-up is not supported.")
-		}
-
-		for _, a := range in.UserAttributes {
-			if !writable(c, value(a.Name)) {
-				return notAuthorized("A client attempted to write unauthorized attribute")
+	run := func() error {
+		return s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
+			out, confirmed = outbox{}, nil
+			if value(p.Settings.AdminCreateUserConfig.AllowAdminCreateUserOnly) {
+				return notAuthorized("SignUp is not permitted for this user pool")
 			}
-		}
 
-		now := s.now().UTC()
-		u, err := newUser(p, in.Username, in.UserAttributes, now)
-		if err != nil {
-			return err
-		}
+			if hashErr := checkSecretHash(c, in.SecretHash, value(in.Username)); hashErr != nil {
+				return hashErr
+			}
 
-		if _, exists := tx.Get(userKey(scope, p, u.Username)); exists {
-			return awserror.New("UsernameExistsException", "User already exists")
-		}
+			if in.Password == nil {
+				return invalidParameter("TinyStack requires a Password: passwordless sign-up is not supported.")
+			}
 
-		if policyErr := checkPolicy(p, in.Password); policyErr != nil {
-			return policyErr
-		}
+			for _, a := range in.UserAttributes {
+				if !writable(c, value(a.Name)) {
+					return notAuthorized("A client attempted to write unauthorized attribute")
+				}
+			}
 
-		if setErr := setPassword(p, u, *in.Password, true, now); setErr != nil {
-			return setErr
-		}
+			now := s.now().UTC()
+			u, err := newUser(p, in.Username, in.UserAttributes, now)
+			if err != nil {
+				return err
+			}
 
-		u.Status = statusUnconfirmed
-		response = &api.SignUpResponse{
-			UserConfirmed: new(false), UserSub: new(u.Attributes[attrSub]),
-			CodeDeliveryDetails: s.sendSignUpCode(scope, p, u, &out),
+			if pending != nil {
+				if u.Username == u.Attributes[attrSub] {
+					u.Username = pending.event.UserName
+				}
+
+				u.Attributes[attrSub] = pending.event.Request["userAttributes"].(map[string]string)[attrSub]
+			}
+
+			if _, exists := tx.Get(userKey(scope, p, u.Username)); exists {
+				return awserror.New("UsernameExistsException", "User already exists")
+			}
+
+			if policyErr := checkPolicy(p, in.Password); policyErr != nil {
+				return policyErr
+			}
+
+			if function := value(p.triggers().PreSignUp); function != "" && decided == nil {
+				pending = newCall(scope, p, c.ID, function, "PreSignUp", "PreSignUp_SignUp", u, in.ClientMetadata)
+				attrs := pending.event.Request["userAttributes"].(map[string]string)
+				delete(attrs, attrUserStatus)
+				pending.event.Request["validationData"] = attributeMap(in.ValidationData)
+				return errTrigger
+			}
+
+			if setErr := setPassword(p, u, *in.Password, true, now); setErr != nil {
+				return setErr
+			}
+
+			u.Status = statusUnconfirmed
+			response = &api.SignUpResponse{UserConfirmed: new(false), UserSub: new(u.Attributes[attrSub])}
+			if decided != nil {
+				decided.applyTo(u)
+			}
+
+			if u.Status == statusConfirmed {
+				response.UserConfirmed = new(true)
+				confirmed = postConfirmation(scope, p, c.ID, "PostConfirmation_ConfirmSignUp", u, in.ClientMetadata)
+			} else {
+				response.CodeDeliveryDetails = s.sendSignUpCode(scope, p, u, &out)
+			}
+
+			return saveUser(tx, scope, p, nil, u, false)
+		})
+	}
+
+	err := run()
+	if errors.Is(err, errTrigger) {
+		decided = new(preSignUp)
+		if err = s.invoke(ctx, pending, decided); err == nil {
+			err = run()
 		}
-		return saveUser(tx, scope, p, nil, u, false)
-	})
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	out.flush(s.deliveries)
+	if invokeErr := s.invoke(ctx, confirmed, nil); invokeErr != nil {
+		return nil, invokeErr
+	}
+
 	return response, nil
+}
+
+// applyTo confirms and verifies a new user as a pre sign-up trigger decided.
+func (r *preSignUp) applyTo(u *user) {
+	if r.AutoConfirmUser {
+		u.Status = statusConfirmed
+	}
+
+	if r.AutoVerifyEmail && u.Attributes[attrEmail] != "" {
+		u.Attributes[attrEmail+verifiedSuffix] = valueTrue
+	}
+
+	if r.AutoVerifyPhone && u.Attributes[attrPhone] != "" {
+		u.Attributes[attrPhone+verifiedSuffix] = valueTrue
+	}
+}
+
+// attributeMap converts attributes to the map triggers receive.
+func attributeMap(attrs []api.AttributeType) map[string]string {
+	out := make(map[string]string, len(attrs))
+	for _, a := range attrs {
+		out[value(a.Name)] = value(a.Value)
+	}
+
+	return out
 }
 
 // ConfirmSignUp confirms a user with the code sign-up sent, which also
 // verifies the attribute the code went to.
 func (s *Service) ConfirmSignUp(ctx context.Context, in *api.ConfirmSignUpRequest) (*api.ConfirmSignUpResponse, error) {
-	var force bool
+	var confirmed *call
 	err := s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
 		u, err := findSigningIn(tx, scope, p, c, value(in.Username))
 		if err != nil {
@@ -150,9 +224,13 @@ func (s *Service) ConfirmSignUp(ctx context.Context, in *api.ConfirmSignUpReques
 			u.Attributes[attr+verifiedSuffix] = valueTrue
 		}
 
-		force = value(in.ForceAliasCreation)
-		return saveUser(tx, scope, p, &before, u, force)
+		confirmed = postConfirmation(scope, p, c.ID, "PostConfirmation_ConfirmSignUp", u, in.ClientMetadata)
+		return saveUser(tx, scope, p, &before, u, value(in.ForceAliasCreation))
 	})
+	if err == nil {
+		err = s.invoke(ctx, confirmed, nil)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -210,8 +288,9 @@ func (s *Service) ConfirmForgotPassword(
 	ctx context.Context,
 	in *api.ConfirmForgotPasswordRequest,
 ) (*api.ConfirmForgotPasswordResponse, error) {
+	var confirmed *call
 	err := s.byClientUser(ctx, in.ClientId, in.Username, in.SecretHash,
-		func(_ storage.WriteTx, _ request.Scope, p *pool, u *user, _ *outbox) error {
+		func(_ storage.WriteTx, scope request.Scope, p *pool, u *user, _ *outbox) error {
 			now := s.now().UTC()
 			if codeErr := u.useCode(purposePassword, value(in.ConfirmationCode), now); codeErr != nil {
 				return codeErr
@@ -232,8 +311,14 @@ func (s *Service) ConfirmForgotPassword(
 				u.Status = statusUnconfirmed
 			}
 
+			confirmed = postConfirmation(scope, p, value(in.ClientId), "PostConfirmation_ConfirmForgotPassword", u,
+				in.ClientMetadata)
 			return nil
 		})
+	if err == nil {
+		err = s.invoke(ctx, confirmed, nil)
+	}
+
 	if err != nil {
 		return nil, err
 	}

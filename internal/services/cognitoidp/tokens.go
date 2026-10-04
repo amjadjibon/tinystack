@@ -22,10 +22,15 @@ import (
 )
 
 const (
-	keyBits     = 2048
-	maxSessions = 100
-	adminScope  = "aws.cognito.signin.user.admin"
-	algorithm   = "RS256"
+	keyBits       = 2048
+	maxSessions   = 100
+	adminScope    = "aws.cognito.signin.user.admin"
+	algorithm     = "RS256"
+	claimUsername = "username"
+	// The ways tokens are earned, as triggers name them.
+	sourceAuth        = "Authentication"
+	sourceNewPassword = "NewPasswordChallenge"
+	sourceRefresh     = "RefreshTokens"
 )
 
 var b64 = base64.RawURLEncoding
@@ -133,13 +138,27 @@ type session struct {
 	origin string
 	// refresh is the refresh token to issue, or "" to issue none.
 	refresh string
+	// source is how the tokens were earned, as the pre token generation
+	// trigger names it: Authentication, NewPasswordChallenge, or RefreshTokens.
+	source string
 }
 
-// tokens issues access and ID tokens for u through c, signed with key.
+// grant is a sign-in's tokens before they are signed, which waits until its
+// transaction ends so that its triggers can run first.
+type grant struct {
+	key        *rsa.PrivateKey
+	access, id map[string]any
+	// preToken may change the claims, and postAuth runs after they are signed.
+	preToken, postAuth *call
+	refresh            string
+	expiresIn          int64
+}
+
+// tokens prepares access and ID tokens for u through c, signed with key.
 func tokens(
-	ctx context.Context, key *rsa.PrivateKey, p *pool, c *client, u *user, sess session, now time.Time,
-) (*api.AuthenticationResultType, error) {
-	var err error
+	ctx context.Context, scope request.Scope, key *rsa.PrivateKey, p *pool, c *client, u *user, sess session,
+	now time.Time,
+) *grant {
 	iss := issuer(ctx, p.ID)
 	common := func(use string, validity time.Duration) map[string]any {
 		claims := map[string]any{
@@ -156,7 +175,7 @@ func tokens(
 
 	accessValidity := c.Settings.validity(tokenAccess)
 	access := common("access", accessValidity)
-	access["client_id"], access["scope"], access["username"], access["version"] = c.ID, adminScope, u.Username, 2
+	access["client_id"], access["scope"], access[claimUsername], access["version"] = c.ID, adminScope, u.Username, 2
 	id := common("id", c.Settings.validity(tokenID))
 	id["aud"], id["cognito:username"] = c.ID, u.Username
 	for name, v := range u.Attributes {
@@ -171,19 +190,42 @@ func tokens(
 		}
 	}
 
-	out := &api.AuthenticationResultType{
-		TokenType: new("Bearer"), ExpiresIn: new(int64(accessValidity / time.Second)),
+	g := &grant{
+		key: key, access: access, id: id, expiresIn: int64(accessValidity / time.Second), refresh: sess.refresh,
 	}
-	if out.AccessToken, err = signed(key, access); err != nil {
+	g.preToken = preTokenCall(scope, p, c, u, g, sess.source)
+	if function := value(p.triggers().PostAuthentication); function != "" && sess.source != sourceRefresh {
+		g.postAuth = newCall(scope, p, c.ID, function, "PostAuthentication", "PostAuthentication_Authentication", u,
+			nil)
+	}
+
+	return g
+}
+
+// issue runs the grant's triggers and signs its tokens.
+func (s *Service) issue(ctx context.Context, g *grant) (*api.AuthenticationResultType, error) {
+	var changes preToken
+	if err := s.invoke(ctx, g.preToken, &changes); err != nil {
 		return nil, err
 	}
 
-	if out.IdToken, err = signed(key, id); err != nil {
+	changes.apply(g)
+	out := &api.AuthenticationResultType{TokenType: new("Bearer"), ExpiresIn: new(g.expiresIn)}
+	var err error
+	if out.AccessToken, err = signed(g.key, g.access); err != nil {
 		return nil, err
 	}
 
-	if sess.refresh != "" {
-		out.RefreshToken = new(sess.refresh)
+	if out.IdToken, err = signed(g.key, g.id); err != nil {
+		return nil, err
+	}
+
+	if g.refresh != "" {
+		out.RefreshToken = new(g.refresh)
+	}
+
+	if invokeErr := s.invoke(ctx, g.postAuth, nil); invokeErr != nil {
+		return nil, invokeErr
 	}
 
 	return out, nil
@@ -199,13 +241,14 @@ func readable(c *client, name string) bool {
 	return len(c.Settings.ReadAttributes) == 0 || slices.Contains(c.Settings.ReadAttributes, name)
 }
 
-// signIn starts a session for u through c and issues its tokens, with a
-// refresh token when the client allows refreshing.
+// signIn starts a session for u through c and prepares its tokens, with a
+// refresh token when the client allows refreshing. source is how the user
+// signed in.
 func (s *Service) signIn(
-	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, u *user,
-) (*api.AuthenticationResultType, error) {
+	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, u *user, source string,
+) (*grant, error) {
 	now := s.now().UTC()
-	sess := session{auth: now, origin: newSub()}
+	sess := session{auth: now, origin: newSub(), source: source}
 	u.Sessions = append(u.Sessions, sess.origin)
 	if n := len(u.Sessions); n > maxSessions {
 		u.Sessions = u.Sessions[n-maxSessions:]
@@ -233,13 +276,9 @@ func (s *Service) signIn(
 		}
 	}
 
-	out, err := tokens(ctx, key, p, c, u, sess, now)
-	if err != nil {
-		return nil, err
-	}
-
+	g := tokens(ctx, scope, key, p, c, u, sess, now)
 	u.Modified = now
-	return out, write(tx, userKey(scope, p, u.Username), u)
+	return g, write(tx, userKey(scope, p, u.Username), u)
 }
 
 // signOut ends the user's sessions and deletes their refresh tokens: all of
@@ -280,7 +319,7 @@ func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, e
 	}
 
 	clientID, _ := claims["client_id"].(string)
-	username, _ := claims["username"].(string)
+	username, _ := claims[claimUsername].(string)
 	origin, _ := claims["origin_jti"].(string)
 	iss, _ := claims["iss"].(string)
 	exp, _ := claims["exp"].(float64)

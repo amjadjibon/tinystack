@@ -19,16 +19,19 @@ const (
 	attrEmail     = "email"
 	attrPhone     = "phone_number"
 	attrPreferred = "preferred_username"
-	mfaOff        = "OFF"
-	mfaOptional   = "OPTIONAL"
-	typeString    = "String"
-	typeNumber    = "Number"
-	typeBoolean   = "Boolean"
-	typeDate      = "DateTime"
-	customPrefix  = "custom:"
-	maxCustom     = 50
-	maxPools      = 60
-	codeTemplate  = "{####}"
+	// attrIdentities lists a user's federated identities.
+	attrIdentities = "identities"
+	attrUserStatus = "cognito:user_status"
+	mfaOff         = "OFF"
+	mfaOptional    = "OPTIONAL"
+	typeString     = "String"
+	typeNumber     = "Number"
+	typeBoolean    = "Boolean"
+	typeDate       = "DateTime"
+	customPrefix   = "custom:"
+	maxCustom      = 50
+	maxPools       = 60
+	codeTemplate   = "{####}"
 )
 
 // pool is a user pool record. Settings are what CreateUserPool and
@@ -65,6 +68,7 @@ type settings struct {
 	AdminCreateUserConfig       *api.AdminCreateUserConfigType       `json:",omitempty"`
 	UserPoolAddOns              *api.UserPoolAddOnsType              `json:",omitempty"`
 	AccountRecoverySetting      *api.AccountRecoverySettingType      `json:",omitempty"`
+	LambdaConfig                *api.LambdaConfigType                `json:",omitempty"`
 	SmsVerificationMessage      *string                              `json:",omitempty"`
 	EmailVerificationMessage    *string                              `json:",omitempty"`
 	EmailVerificationSubject    *string                              `json:",omitempty"`
@@ -97,7 +101,7 @@ var standard = []struct{ name, kind string }{
 	{"phone_number_verified", typeBoolean},
 	{"address", typeString},
 	{"updated_at", typeNumber},
-	{"identities", typeString},
+	{attrIdentities, typeString},
 }
 
 func standardSchema() []api.SchemaAttributeType {
@@ -119,7 +123,7 @@ func standardSchema() []api.SchemaAttributeType {
 				MinLength: new("10"),
 				MaxLength: new("10"),
 			}
-		case attr.name == "identities":
+		case attr.name == attrIdentities:
 			a.StringAttributeConstraints = &api.StringAttributeConstraintsType{}
 		case attr.kind == typeString:
 			a.StringAttributeConstraints = &api.StringAttributeConstraintsType{
@@ -301,6 +305,10 @@ func validSettings(st *settings, softwareToken bool) error {
 	}
 
 	if err := checkRecovery(st.AccountRecoverySetting); err != nil {
+		return err
+	}
+
+	if err := checkTriggers(st.LambdaConfig); err != nil {
 		return err
 	}
 

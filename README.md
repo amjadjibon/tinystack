@@ -599,7 +599,7 @@ and find the pool through the app client or access token.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateUserPool / DescribeUserPool / UpdateUserPool / DeleteUserPool / ListUserPools | Password policy (with `PasswordHistorySize`), `UsernameAttributes` or `AliasAttributes`, `UsernameConfiguration`, `AutoVerifiedAttributes`, the standard schema plus custom attributes, verification and invitation messages, `AccountRecoverySetting`, `AdminCreateUserConfig`, `UserAttributeUpdateSettings`, `DeletionProtection`, and `UserPoolTags`; UpdateUserPool resets omitted settings to their defaults, as AWS does; pages of up to 60 |
+| CreateUserPool / DescribeUserPool / UpdateUserPool / DeleteUserPool / ListUserPools | Password policy (with `PasswordHistorySize`), `UsernameAttributes` or `AliasAttributes`, `UsernameConfiguration`, `AutoVerifiedAttributes`, the standard schema plus custom attributes, verification and invitation messages, `AccountRecoverySetting`, `AdminCreateUserConfig`, `UserAttributeUpdateSettings`, `DeletionProtection`, `UserPoolTags`, and the Lambda triggers below; UpdateUserPool resets omitted settings to their defaults, as AWS does; pages of up to 60 |
 | AddCustomAttributes | Up to 50 `custom:` attributes (string or number, with constraints and mutability) |
 | GetUserPoolMfaConfig / SetUserPoolMfaConfig | `OFF`, or `OPTIONAL` with software-token MFA stored; required MFA is rejected |
 | CreateUserPoolClient / DescribeUserPoolClient / UpdateUserPoolClient / DeleteUserPoolClient / ListUserPoolClients | `GenerateSecret`, `ExplicitAuthFlows` (legacy names mapped), token validity and units, `AuthSessionValidity`, read and write attributes, `PreventUserExistenceErrors`, `EnableTokenRevocation`, and the OAuth settings (stored; there is no hosted UI) |
@@ -617,6 +617,14 @@ Tokens are RS256 JWTs signed with a key per pool, with the issuer
 and `.../.well-known/openid-configuration` let applications verify them locally.
 Messages are never sent: each code, invitation, and temporary password is in
 `/_tinystack/deliveries` with the destination and the message text.
+
+`LambdaConfig` runs four triggers, synchronously, with Cognito's events: `PreSignUp` (SignUp; its response can
+confirm the user and verify the email address or phone number, which skips the code and runs `PostConfirmation`),
+`PostConfirmation` (ConfirmSignUp, AdminConfirmSignUp, and ConfirmForgotPassword), `PostAuthentication` (every
+sign-in but a refresh), and `PreTokenGeneration` (every token issue; `PreTokenGenerationConfig` versions `V1_0`,
+which changes the ID token's claims and both tokens' groups, and `V2_0`/`V3_0`, which also change the access token's
+claims and scopes; reserved claims such as `sub` and `exp` stay as they are). A trigger that raises fails the
+operation with `UserLambdaValidationException`.
 
 ### EC2 (EC2 Query)
 
@@ -1152,7 +1160,8 @@ KMS limits: no asymmetric keys (so no `Sign`, `Verify`, or `DeriveSharedSecret`)
 pairs, `Recipient` attestation, imported, custom key store, or multi-Region keys, grants, `ReEncrypt`, key
 material rotation, AWS managed keys (`alias/aws/...`), or policy evaluation. Secrets Manager limits: no managed or external rotation, rotation windows (`Duration` is reported, not enforced), replication, resource policies,
 or `SortBy`.
-Cognito limits: no Lambda triggers, required MFA or MFA sign-in, custom or passwordless authentication (`CUSTOM_AUTH`,
+Cognito limits: no Lambda triggers but those four (custom message, pre authentication, auth challenge, user
+migration, and custom sender triggers are rejected), no pre sign-up trigger for AdminCreateUser, required MFA or MFA sign-in, custom or passwordless authentication (`CUSTOM_AUTH`,
 `USER_AUTH`), hosted UI or OAuth endpoints, resource servers, threat protection, device tracking, identity
 providers, verification before attribute updates, or identity pools. ECR limits: no replication, pull-through cache, image scanning results, signing, KMS encryption, tag
 mutability exclusions, registry policies, or layer garbage collection (a deleted image's layers stay until its

@@ -172,7 +172,7 @@ func newStartCommand() *cobra.Command {
 			roles := iam.New(store)
 			tokens := sts.New(store, roles)
 			tokens.UseAccounts(cfg.Identity.Accounts, cfg.Defaults.Account)
-			identities := cognitoidp.New(store, deliveries)
+			identities := cognitoidp.New(store, functions, deliveries)
 			registry := ecr.New(store)
 			containers := ecs.New(store)
 			if cfg.ECS.Containers == config.ContainersDocker {

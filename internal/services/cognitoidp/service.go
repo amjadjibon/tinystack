@@ -32,6 +32,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -45,15 +46,17 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store storage.Store
+	// functions runs the pools' Lambda triggers.
+	functions *lambda.Service
 	// deliveries records the messages TinyStack would send to users.
 	deliveries *delivery.Log
 	now        func() time.Time
 }
 
-// New returns Cognito, recording the email and SMS messages its pools send in
-// deliveries.
-func New(store storage.Store, deliveries *delivery.Log) *Service {
-	return &Service{store: store, deliveries: deliveries, now: time.Now}
+// New returns Cognito, running its pools' Lambda triggers with functions and
+// recording the email and SMS messages they send in deliveries.
+func New(store storage.Store, functions *lambda.Service, deliveries *delivery.Log) *Service {
+	return &Service{store: store, functions: functions, deliveries: deliveries, now: time.Now}
 }
 
 var poolID = regexp.MustCompile(`^[\w-]+_[0-9a-zA-Z]+$`)

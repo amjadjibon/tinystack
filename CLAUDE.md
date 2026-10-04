@@ -242,7 +242,11 @@ a per-service `Dialect`), and delivers synchronously through
   through unsigned in verify mode). Each pool lazily gets an RSA key that signs its RS256 JWTs; `Service.Documents`,
   mounted with `gateway.Server.UseDocuments`, serves `/<pool ID>/.well-known/{jwks.json,openid-configuration}`.
   Passwords are bcrypt hashes plus an SRP verifier (`srp.go`), and every code, invitation, and temporary password is
-  recorded in the `delivery.Log` after the change commits. ECR keeps each repository under `…/ecr/repo/<name>` and the
+  recorded in the `delivery.Log` after the change commits. Lambda triggers (`triggers.go`) call
+  `lambda.Service.Invoke` outside transactions: a transaction decides on a `call`, and the operation makes it after
+  the commit; sign-ins carry their unsigned claims in a `grant` that `respondWith` passes through pre token generation
+  and then signs, and SignUp stops its first transaction with `errTrigger` to call pre sign-up, then runs it again
+  with the response (keeping the sub and username the trigger saw). ECR keeps each repository under `…/ecr/repo/<name>` and the
   images (manifest, tags, push and pull times), tag, layer, blob, and upload records it owns under
   `…/ecr/<kind>/<path-escaped name>/…`, since names contain `/`; `lifecycle.go` applies a repository's lifecycle
   policy in the transaction of every push and policy change. Registry passwords are the partition-wide

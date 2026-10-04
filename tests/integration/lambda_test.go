@@ -121,6 +121,8 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 			}}},
 		})
 		return lambda.Result{Payload: body}, err
+	case "app.cognito":
+		return cognitoTrigger(payload)
 	default:
 		return lambda.Result{Payload: []byte("null")}, nil
 	}
