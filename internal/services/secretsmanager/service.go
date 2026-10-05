@@ -21,6 +21,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -436,16 +437,13 @@ func addVersion(
 
 // tagMap converts request tags, checked against the shared limits.
 func tagMap(tags []api.Tag) (map[string]string, error) {
-	out := make(map[string]string, len(tags))
-	for _, t := range tags {
-		if t.Key == nil || t.Value == nil {
-			return nil, invalidParameter("Tags must have a Key and a Value.")
-		}
-
-		out[*t.Key] = *t.Value
-	}
-
-	return out, tagError(tagging.Check(out))
+	out, err := tagging.Map(
+		tags,
+		func(t api.Tag) (*string, *string) { return t.Key, t.Value },
+		invalidParameter("Tags must have a Key and a Value."),
+		nil,
+	)
+	return out, common.ErrorsOr(err, tagError(tagging.Check(out)))
 }
 
 func tagError(err error) error {

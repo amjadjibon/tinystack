@@ -240,20 +240,12 @@ func (s *Service) SetSubscriptionAttributes(
 
 // tagMap converts SNS tags to a map, rejecting repeated or missing keys.
 func tagMap(tags []api.Tag) (map[string]string, error) {
-	out := make(map[string]string, len(tags))
-	for _, tag := range tags {
-		if tag.Key == nil || tag.Value == nil {
-			return nil, invalid("Tags must have a Key and a Value")
-		}
-
-		if _, dup := out[*tag.Key]; dup {
-			return nil, invalid("Duplicated keys are not allowed.")
-		}
-
-		out[*tag.Key] = *tag.Value
-	}
-
-	return out, nil
+	return tagging.Map(
+		tags,
+		func(t api.Tag) (*string, *string) { return t.Key, t.Value },
+		invalid("Tags must have a Key and a Value"),
+		func(string) error { return invalid("Duplicated keys are not allowed.") },
+	)
 }
 
 func tagError(err error) error {

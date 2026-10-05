@@ -201,20 +201,14 @@ func encodeDocument(doc string) *string {
 
 // tagMap converts request tags, rejecting duplicates and IAM's tag limits.
 func tagMap(tags []api.Tag) (map[string]string, error) {
-	out := make(map[string]string, len(tags))
-	for _, t := range tags {
-		if t.Key == nil || t.Value == nil {
-			return nil, validation("Tags must have a Key and a Value")
-		}
-
-		if _, dup := out[*t.Key]; dup {
-			return nil, invalidInput("Duplicate tag keys found. Please note that Tag keys are case insensitive.")
-		}
-
-		out[*t.Key] = *t.Value
-	}
-
-	return out, nil
+	return tagging.Map(
+		tags,
+		func(t api.Tag) (*string, *string) { return t.Key, t.Value },
+		validation("Tags must have a Key and a Value"),
+		func(string) error {
+			return invalidInput("Duplicate tag keys found. Please note that Tag keys are case insensitive.")
+		},
+	)
 }
 
 // tagError reports a tagging limit violation with IAM's error codes.

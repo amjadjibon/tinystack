@@ -339,17 +339,14 @@ func updateGlobalIndexes(
 
 // tagMap converts DynamoDB tags to a map, rejecting repeated keys.
 func tagMap(tags []api.Tag) (map[string]string, error) {
-	out := make(map[string]string, len(tags))
-	for _, tag := range tags {
-		if tag.Key == nil || tag.Value == nil {
-			return nil, awserror.Validation("Tags must have a Key and a Value")
-		}
-
-		if _, dup := out[*tag.Key]; dup {
-			return nil, awserror.Validation("Duplicate tag keys found: %s", *tag.Key)
-		}
-
-		out[*tag.Key] = *tag.Value
+	out, err := tagging.Map(
+		tags,
+		func(t api.Tag) (*string, *string) { return t.Key, t.Value },
+		awserror.Validation("Tags must have a Key and a Value"),
+		func(k string) error { return awserror.Validation("Duplicate tag keys found: %s", k) },
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := tagging.Check(out); err != nil {

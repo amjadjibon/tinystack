@@ -14,20 +14,12 @@ import (
 
 // tagMap converts EventBridge tags to a map, rejecting repeated keys.
 func tagMap(tags []api.Tag) (map[string]string, error) {
-	out := make(map[string]string, len(tags))
-	for _, tag := range tags {
-		if tag.Key == nil || tag.Value == nil {
-			return nil, invalid("Tags must have a Key and a Value.")
-		}
-
-		if _, dup := out[*tag.Key]; dup {
-			return nil, invalid("Duplicate tag key %s.", *tag.Key)
-		}
-
-		out[*tag.Key] = *tag.Value
-	}
-
-	return out, nil
+	return tagging.Map(
+		tags,
+		func(t api.Tag) (*string, *string) { return t.Key, t.Value },
+		invalid("Tags must have a Key and a Value."),
+		func(k string) error { return invalid("Duplicate tag key %s.", k) },
+	)
 }
 
 // mergeTags adds tags to a rule's tag set within the tag limits.

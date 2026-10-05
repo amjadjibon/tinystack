@@ -79,16 +79,27 @@ func Remove(tags map[string]string, keys []string) map[string]string {
 	return tags
 }
 
-// Map returns a service's tag list as a map, reading each tag's key and value with pair; a later tag replaces an
-// earlier one with the same key.
-func Map[T any](tags []T, pair func(T) (key, value *string)) map[string]string {
+// Map returns a service's tag list as a map, reading each tag's key and value with pair. A tag without its key or
+// value fails with missing, and a repeated key with duplicate(key). A nil missing reads an absent key or value as
+// empty, and a nil duplicate lets a later tag replace an earlier one.
+func Map[T any](tags []T, pair func(T) (key, value *string), missing error, duplicate func(key string) error) (
+	map[string]string, error,
+) {
 	out := make(map[string]string, len(tags))
 	for _, t := range tags {
 		k, v := pair(t)
+		if missing != nil && (k == nil || v == nil) {
+			return nil, missing
+		}
+
+		if _, dup := out[common.Value(k)]; dup && duplicate != nil {
+			return nil, duplicate(common.Value(k))
+		}
+
 		out[common.Value(k)] = common.Value(v)
 	}
 
-	return out
+	return out, nil
 }
 
 // List returns tags as a service's tag list, ordered by key and built with tag. It is never nil.

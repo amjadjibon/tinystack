@@ -121,17 +121,16 @@ func page[T any](items []T, keyOf func(T) string, marker *string, pageSize *int6
 
 // tagMap validates request tags.
 func tagMap(tags []api.Tag) (map[string]string, error) {
-	out := map[string]string{}
-	for _, t := range tags {
-		k := common.Value(t.Key)
-		if _, dup := out[k]; dup {
-			return nil, awserror.New("DuplicateTagKeysException", "Tag key '"+k+"' is duplicated.")
-		}
+	out, err := tagging.Map(
+		tags,
+		func(t api.Tag) (*string, *string) { return t.Key, t.Value },
+		nil,
+		func(k string) error {
+			return awserror.New("DuplicateTagKeysException", "Tag key '"+k+"' is duplicated.")
+		},
+	)
 
-		out[k] = common.Value(t.Value)
-	}
-
-	return out, checkTags(out)
+	return out, common.ErrorsOr(err, checkTags(out))
 }
 
 func checkTags(tags map[string]string) error {

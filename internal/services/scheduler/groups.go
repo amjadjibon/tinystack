@@ -16,7 +16,8 @@ import (
 )
 
 func tagMap(tags []api.Tag) map[string]string {
-	return tagging.Map(tags, func(t api.Tag) (*string, *string) { return t.Key, t.Value })
+	out, _ := tagging.Map(tags, func(t api.Tag) (*string, *string) { return t.Key, t.Value }, nil, nil)
+	return out
 }
 
 func tagError(err error) error {

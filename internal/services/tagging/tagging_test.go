@@ -58,9 +58,20 @@ func TestMapAndList(t *testing.T) {
 	type tag struct{ k, v *string }
 
 	b, a, one := "b", "a", "1"
-	got := Map([]tag{{&b, &one}, {&a, nil}}, func(t tag) (*string, *string) { return t.k, t.v })
-	if len(got) != 2 || got["b"] != "1" || got["a"] != "" {
-		t.Fatal(got)
+	pair := func(t tag) (*string, *string) { return t.k, t.v }
+	got, err := Map([]tag{{&b, &one}, {&a, nil}}, pair, nil, nil)
+	if err != nil || len(got) != 2 || got["b"] != "1" || got["a"] != "" {
+		t.Fatal(got, err)
+	}
+
+	missing := errors.New("missing")
+	if _, err = Map([]tag{{&a, nil}}, pair, missing, nil); !errors.Is(err, missing) {
+		t.Fatalf("missing value error = %v", err)
+	}
+
+	duplicate := func(k string) error { return fmt.Errorf("duplicate %s", k) }
+	if _, err = Map([]tag{{&b, &one}, {&b, &one}}, pair, nil, duplicate); err == nil || err.Error() != "duplicate b" {
+		t.Fatalf("duplicate key error = %v", err)
 	}
 
 	list := List(got, func(k, v string) string { return k + "=" + v })

@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -293,16 +294,13 @@ func makeRoom(tx storage.WriteTx, scope request.Scope, p *parameter) error {
 
 // tagMap converts request tags, reporting SSM's errors.
 func tagMap(tags []api.Tag) (map[string]string, error) {
-	out := make(map[string]string, len(tags))
-	for _, t := range tags {
-		if t.Key == nil || t.Value == nil {
-			return nil, validation("Tags must have a Key and a Value.")
-		}
-
-		out[*t.Key] = *t.Value
-	}
-
-	return out, tagError(tagging.Check(out))
+	out, err := tagging.Map(
+		tags,
+		func(t api.Tag) (*string, *string) { return t.Key, t.Value },
+		validation("Tags must have a Key and a Value."),
+		nil,
+	)
+	return out, common.ErrorsOr(err, tagError(tagging.Check(out)))
 }
 
 func tagError(err error) error {

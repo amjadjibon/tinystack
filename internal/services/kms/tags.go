@@ -13,16 +13,8 @@ import (
 
 // tagMap converts KMS tags to a map, rejecting missing keys.
 func tagMap(tags []api.Tag) (map[string]string, error) {
-	out := make(map[string]string, len(tags))
-	for _, t := range tags {
-		if t.TagKey == nil || t.TagValue == nil {
-			return nil, awserror.New("TagException", "Tags must have a TagKey and a TagValue.")
-		}
-
-		out[*t.TagKey] = *t.TagValue
-	}
-
-	return out, nil
+	return tagging.Map(tags, func(t api.Tag) (*string, *string) { return t.TagKey, t.TagValue },
+		awserror.New("TagException", "Tags must have a TagKey and a TagValue."), nil)
 }
 
 func tagError(err error) error {
