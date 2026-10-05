@@ -11672,5 +11672,16 @@
         "Description"
       ]
     }
+  },
+  "cloudfront": {
+    "operations": [
+      "CreateDistribution",
+      "CreateDistributionWithTags",
+      "DeleteDistribution",
+      "GetDistribution",
+      "GetDistributionConfig",
+      "ListDistributions",
+      "UpdateDistribution"
+    ]
   }
 }
