@@ -26,6 +26,7 @@ import (
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
+	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
@@ -59,6 +60,7 @@ import (
 	apigateways "github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	scalinggroups "github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
+	cdn "github.com/amjadjibon/tinystack/internal/services/cloudfront"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
@@ -172,6 +174,7 @@ func serverStore(
 	firehoses := deliverystreams.New(store, streams, deliveries, logger)
 	monitoring := cloudwatch.New(store, logger)
 	dns := zones.New(store)
+	distributions := cdn.New(store)
 	timers := schedules.New(store, logger)
 	scaling := scalinggroups.New(store, logger)
 	balancers := loadbalancers.New(store, logger)
@@ -202,6 +205,7 @@ func serverStore(
 		sfnapi.Descriptor(workflows),
 		kinesisapi.Descriptor(streams),
 		route53api.Descriptor(dns),
+		cloudfrontapi.Descriptor(distributions),
 		schedulerapi.Descriptor(timers),
 		autoscalingapi.Descriptor(scaling),
 		elbv2api.Descriptor(balancers),

@@ -1,0 +1,155 @@
+// Package cloudfront implements the Amazon CloudFront service without HTTP
+// dependencies. CloudFront is a global service, so resources belong to an
+// account:
+//
+//	<account>/cloudfront/distribution/<id>              (distribution record)
+//	<account>/cloudfront/reference/<caller reference>   (distribution ID)
+//	<account>/cloudfront/alias/<cname>                  (distribution ID)
+//
+// All operations are executed synchronously against the store.
+package cloudfront
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+const (
+	service          = "cloudfront"
+	kindDistribution = "distribution"
+	kindReference    = "reference"
+	kindAlias        = "alias"
+	idAlphabet       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+)
+
+var _ api.API = (*Service)(nil)
+
+type Service struct {
+	store storage.Store
+	now   func() time.Time
+}
+
+func New(store storage.Store) *Service {
+	return &Service{store: store, now: time.Now}
+}
+
+func identity(ctx context.Context) (request.Metadata, error) {
+	m, ok := request.FromContext(ctx)
+	if !ok || m.AccountID == "" {
+		return request.Metadata{}, fmt.Errorf("missing request identity")
+	}
+
+	return m, nil
+}
+
+func key(account, kind, name string) string {
+	return account + "/" + service + "/" + kind + "/" + name
+}
+
+func value[T any](p *T) (v T) {
+	if p != nil {
+		return *p
+	}
+
+	return v
+}
+
+func ptr[T any](v T) *T {
+	return &v
+}
+
+func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
+	data, ok := tx.Get(k)
+	if !ok {
+		return nil, false, nil
+	}
+
+	v = new(T)
+	if err = json.Unmarshal(data, v); err != nil {
+		return nil, false, fmt.Errorf("decode %s: %w", k, err)
+	}
+
+	return v, true, nil
+}
+
+func write(tx storage.WriteTx, k string, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	tx.Put(k, data)
+	return nil
+}
+
+func newID(prefix string, n int) string {
+	b := make([]byte, n)
+	_, _ = rand.Read(b)
+	for i := range b {
+		b[i] = idAlphabet[int(b[i])%len(idAlphabet)]
+	}
+
+	return prefix + string(b)
+}
+
+func noSuchDistribution(id string) error {
+	msg := "The specified distribution does not exist."
+	if id != "" {
+		msg = "The specified distribution does not exist: " + id
+	}
+	return &awserror.Error{
+		Code:       "NoSuchDistribution",
+		Message:    msg,
+		StatusCode: 404,
+	}
+}
+
+func distributionAlreadyExists() error {
+	return &awserror.Error{
+		Code: "DistributionAlreadyExists",
+		Message: "The caller reference you attempted to create the distribution with " +
+			"is associated with another distribution.",
+		StatusCode: 409,
+	}
+}
+
+func cnameAlreadyExists(cname string) error {
+	return &awserror.Error{
+		Code:       "CNAMEAlreadyExists",
+		Message:    fmt.Sprintf("The CNAME specified (%s) is already defined for CloudFront.", cname),
+		StatusCode: 409,
+	}
+}
+
+func distributionNotDisabled() error {
+	return &awserror.Error{
+		Code: "DistributionNotDisabled",
+		Message: "The specified CloudFront distribution is not disabled. " +
+			"You must disable the distribution before you can delete it.",
+		StatusCode: 409,
+	}
+}
+
+func invalidIfMatchVersion() error {
+	return &awserror.Error{
+		Code:       "InvalidIfMatchVersion",
+		Message:    "The If-Match version is missing or not valid.",
+		StatusCode: 400,
+	}
+}
+
+func invalidArgument(msg string) error {
+	return &awserror.Error{
+		Code:       "InvalidArgument",
+		Message:    msg,
+		StatusCode: 400,
+	}
+}

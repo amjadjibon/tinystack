@@ -23,6 +23,7 @@ import (
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
+	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
@@ -57,6 +58,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
+	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
@@ -201,6 +203,7 @@ func newStartCommand() *cobra.Command {
 			monitoring := cloudwatch.New(store, logger)
 			defer monitoring.Stop()
 			dns := route53.New(store)
+			cdn := cloudfront.New(store)
 			timers := scheduler.New(store, logger)
 			defer timers.Stop()
 			scaling := autoscaling.New(store, logger)
@@ -236,6 +239,7 @@ func newStartCommand() *cobra.Command {
 				sfnapi.Descriptor(workflows),
 				kinesisapi.Descriptor(streams),
 				route53api.Descriptor(dns),
+				cloudfrontapi.Descriptor(cdn),
 				schedulerapi.Descriptor(timers),
 				autoscalingapi.Descriptor(scaling),
 				elbv2api.Descriptor(balancers),
