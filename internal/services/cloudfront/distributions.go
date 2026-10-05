@@ -94,13 +94,13 @@ func (s *Service) createDistribution(
 		// Generate unique ID
 		var id string
 		for {
-			id = newID("E", 13)
+			id = newID("E")
 			if _, exists := tx.Get(key(account, kindDistribution, id)); !exists {
 				break
 			}
 		}
 
-		etag := newID("E", 13)
+		etag := newID("E")
 		domainName := strings.ToLower(id) + ".cloudfront.net"
 		arn := fmt.Sprintf("arn:aws:cloudfront::%s:distribution/%s", account, id)
 		now := s.now().UTC()
@@ -109,17 +109,17 @@ func (s *Service) createDistribution(
 			Id:                            &id,
 			ARN:                           &arn,
 			DomainName:                    &domainName,
-			Status:                        ptr("Deployed"),
+			Status:                        new("Deployed"),
 			LastModifiedTime:              &now,
 			DistributionConfig:            cfg,
-			InProgressInvalidationBatches: ptr(int64(0)),
+			InProgressInvalidationBatches: new(int64(0)),
 			ActiveTrustedKeyGroups: &api.ActiveTrustedKeyGroups{
-				Enabled:  ptr(false),
-				Quantity: ptr(int64(0)),
+				Enabled:  new(false),
+				Quantity: new(int64(0)),
 			},
 			ActiveTrustedSigners: &api.ActiveTrustedSigners{
-				Enabled:  ptr(false),
-				Quantity: ptr(int64(0)),
+				Enabled:  new(false),
+				Quantity: new(int64(0)),
 			},
 		}
 
@@ -327,7 +327,7 @@ func (s *Service) UpdateDistribution(
 		}
 
 		now := s.now().UTC()
-		rec.ETag = newID("E", 13)
+		rec.ETag = newID("E")
 		rec.Distribution.DistributionConfig = in.DistributionConfig
 		rec.Distribution.LastModifiedTime = &now
 

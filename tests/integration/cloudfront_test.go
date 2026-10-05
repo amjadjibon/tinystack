@@ -245,3 +245,101 @@ func TestCloudFrontListDistributions(t *testing.T) {
 		t.Fatalf("expected 2 items, got %d", len(list2.DistributionList.Items))
 	}
 }
+
+func TestCloudFrontInvalidations(t *testing.T) {
+	s := server(t)
+	c := cloudfrontClient(s)
+	ctx := context.Background()
+
+	// Create distribution
+	createdDist, err := c.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{
+		DistributionConfig: sampleConfig("inv-dist-ref", "Invalidation test dist", true),
+	})
+	if err != nil {
+		t.Fatalf("CreateDistribution: %v", err)
+	}
+	distID := *createdDist.Distribution.Id
+
+	// 1. Create Invalidation
+	createdInv, err := c.CreateInvalidation(ctx, &cloudfront.CreateInvalidationInput{
+		DistributionId: aws.String(distID),
+		InvalidationBatch: &cftypes.InvalidationBatch{
+			CallerReference: aws.String("inv-ref-1"),
+			Paths: &cftypes.Paths{
+				Quantity: aws.Int32(2),
+				Items:    []string{"/*", "/index.html"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateInvalidation: %v", err)
+	}
+	inv := createdInv.Invalidation
+	if inv == nil || inv.Id == nil || *inv.Id == "" {
+		t.Fatalf("expected non-empty Invalidation ID")
+	}
+	if inv.Status == nil || *inv.Status != "Completed" {
+		t.Fatalf("expected Completed status, got %v", inv.Status)
+	}
+	invID := *inv.Id
+
+	// 2. Get Invalidation
+	gotInv, err := c.GetInvalidation(ctx, &cloudfront.GetInvalidationInput{
+		DistributionId: aws.String(distID),
+		Id:             aws.String(invID),
+	})
+	if err != nil {
+		t.Fatalf("GetInvalidation: %v", err)
+	}
+	if *gotInv.Invalidation.Id != invID {
+		t.Fatalf("expected ID %s, got %s", invID, *gotInv.Invalidation.Id)
+	}
+	if *gotInv.Invalidation.Status != "Completed" {
+		t.Fatalf("expected Completed status")
+	}
+
+	// 3. Idempotent CreateInvalidation with same CallerReference
+	idempotentInv, err := c.CreateInvalidation(ctx, &cloudfront.CreateInvalidationInput{
+		DistributionId: aws.String(distID),
+		InvalidationBatch: &cftypes.InvalidationBatch{
+			CallerReference: aws.String("inv-ref-1"),
+			Paths: &cftypes.Paths{
+				Quantity: aws.Int32(2),
+				Items:    []string{"/*", "/index.html"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateInvalidation idempotent: %v", err)
+	}
+	if *idempotentInv.Invalidation.Id != invID {
+		t.Fatalf("expected same ID %s, got %s", invID, *idempotentInv.Invalidation.Id)
+	}
+
+	// 4. Get non-existent invalidation
+	_, err = c.GetInvalidation(ctx, &cloudfront.GetInvalidationInput{
+		DistributionId: aws.String(distID),
+		Id:             aws.String("non-existent-inv"),
+	})
+	if err == nil {
+		t.Fatal("expected NoSuchInvalidation error")
+	}
+	var ae smithy.APIError
+	if errors.As(err, &ae) && ae.ErrorCode() != "NoSuchInvalidation" {
+		t.Fatalf("expected NoSuchInvalidation, got %s", ae.ErrorCode())
+	}
+
+	// 5. List invalidations
+	listInv, err := c.ListInvalidations(ctx, &cloudfront.ListInvalidationsInput{
+		DistributionId: aws.String(distID),
+	})
+	if err != nil {
+		t.Fatalf("ListInvalidations: %v", err)
+	}
+	if listInv.InvalidationList == nil || *listInv.InvalidationList.Quantity != 1 {
+		t.Fatalf("expected 1 invalidation in list")
+	}
+	if *listInv.InvalidationList.Items[0].Id != invID {
+		t.Fatalf("expected invalidation ID %s in list, got %s", invID, *listInv.InvalidationList.Items[0].Id)
+	}
+}

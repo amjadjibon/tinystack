@@ -28,6 +28,7 @@ const (
 	kindReference    = "reference"
 	kindAlias        = "alias"
 	idAlphabet       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	idLength         = 13
 )
 
 var _ api.API = (*Service)(nil)
@@ -62,10 +63,6 @@ func value[T any](p *T) (v T) {
 	return v
 }
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
 	data, ok := tx.Get(k)
 	if !ok {
@@ -90,8 +87,8 @@ func write(tx storage.WriteTx, k string, v any) error {
 	return nil
 }
 
-func newID(prefix string, n int) string {
-	b := make([]byte, n)
+func newID(prefix string) string {
+	b := make([]byte, idLength)
 	_, _ = rand.Read(b)
 	for i := range b {
 		b[i] = idAlphabet[int(b[i])%len(idAlphabet)]

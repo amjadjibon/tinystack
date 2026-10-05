@@ -11677,10 +11677,13 @@
     "operations": [
       "CreateDistribution",
       "CreateDistributionWithTags",
+      "CreateInvalidation",
       "DeleteDistribution",
       "GetDistribution",
       "GetDistributionConfig",
+      "GetInvalidation",
       "ListDistributions",
+      "ListInvalidations",
       "UpdateDistribution"
     ]
   }
