@@ -468,6 +468,6 @@ Use the shared helpers directly instead of copying them or wrapping them in pack
 - `services/tagging`: `Check`, `CheckSet` (also rejects the reserved `aws:` prefix), `Reserved`, `Merge`, `Remove`,
   `Map`, and `List` (a sorted, non-nil tag list).
 
-Make pointers with the built-in `new(v)` (Go 1.26 accepts an expression), never a `Ptr` helper or a temporary
+Make pointers with the built-in `new(v)`, which accepts an expression, never a `Ptr` helper or a temporary
 variable. A local helper is fine only when it adds behavior (validation, a service's error code, a fixed argument).
 When two services need the same new logic, put it in one of these packages rather than duplicating it.
