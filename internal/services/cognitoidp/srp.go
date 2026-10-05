@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -163,11 +164,11 @@ func (s *Service) beginSRP(
 	sess := srpSession{
 		authSession: authSession{
 			Username: u.Username, Client: c.ID, Challenge: challengePasswordVerifier,
-			Expires: s.now().UTC().Add(time.Duration(value(c.Settings.AuthSessionValidity)) * time.Minute),
+			Expires: s.now().UTC().Add(time.Duration(common.Value(c.Settings.AuthSessionValidity)) * time.Minute),
 		},
 		A: challenge.A, B: challenge.B, Private: challenge.b,
 	}
-	if err := write(tx, sessionKey(scope, p.ID, b64.EncodeToString(block)), sess); err != nil {
+	if err := storage.Write(tx, sessionKey(scope, p.ID, b64.EncodeToString(block)), sess); err != nil {
 		return nil, err
 	}
 
@@ -192,7 +193,7 @@ func (s *Service) checkSRP(
 	}
 
 	k := sessionKey(scope, p.ID, b64.EncodeToString(block))
-	sess, ok, err := read[srpSession](tx, k)
+	sess, ok, err := storage.Read[srpSession](tx, k)
 	switch {
 	case err != nil:
 		return nil, err
@@ -204,7 +205,7 @@ func (s *Service) checkSRP(
 
 	// A challenge that is answered is gone.
 	tx.Delete(k)
-	u, ok, err := read[user](tx, userKey(scope, p, sess.Username))
+	u, ok, err := storage.Read[user](tx, userKey(scope, p, sess.Username))
 	if err != nil || !ok {
 		return nil, errorsOr(err, userNotFound())
 	}

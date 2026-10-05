@@ -11,6 +11,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -67,7 +68,7 @@ func (s *Service) visit() {
 func (s *Service) evaluate(t target, composite bool) error {
 	var ch *change
 	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
-		a, found, err := read[alarm](tx, alarmKey(t.scope, t.name))
+		a, found, err := storage.Read[alarm](tx, alarmKey(t.scope, t.name))
 		if err != nil || !found || (a.Composite != nil) != composite {
 			return err
 		}
@@ -92,7 +93,7 @@ func (s *Service) evaluate(t target, composite bool) error {
 			}
 
 			a.Evaluated = next
-			return write(tx, alarmKey(t.scope, t.name), a)
+			return storage.Write(tx, alarmKey(t.scope, t.name), a)
 		case next == a.Evaluated && (composite || now.Sub(fromUnix(updated)) < hold):
 			// A state set with SetAlarmState holds until the evaluation changes.
 			return nil
@@ -118,7 +119,7 @@ func period(m *api.MetricAlarm) int64 {
 
 	for i := range m.Metrics {
 		if st := m.Metrics[i].MetricStat; st != nil {
-			return value(st.Period)
+			return common.Value(st.Period)
 		}
 	}
 
@@ -145,7 +146,7 @@ func compareThreshold(op string, v, threshold float64) bool {
 func decideMetric(tx storage.ReadTx, scope request.Scope, m *api.MetricAlarm, now time.Time,
 ) (state, reason, data string, err error) {
 	p := period(m)
-	n := value(m.EvaluationPeriods)
+	n := common.Value(m.EvaluationPeriods)
 	end := (now.Unix()/p + 1) * p
 	start := end - (n+1)*p
 	var got *series
@@ -180,9 +181,9 @@ func decideMetric(tx storage.ReadTx, scope request.Scope, m *api.MetricAlarm, no
 	}
 
 	start = end - n*p
-	treat := value(m.TreatMissingData)
-	threshold, op := value(m.Threshold), value(m.ComparisonOperator)
-	needed := value(m.DatapointsToAlarm)
+	treat := common.Value(m.TreatMissingData)
+	threshold, op := common.Value(m.Threshold), common.Value(m.ComparisonOperator)
+	needed := common.Value(m.DatapointsToAlarm)
 	if needed == 0 {
 		needed = n
 	}
@@ -243,14 +244,14 @@ func words(op string, crossed bool) string {
 }
 
 func decideComposite(tx storage.ReadTx, scope request.Scope, c *api.CompositeAlarm) (state, reason string, err error) {
-	r, err := parseRule(value(c.AlarmRule))
+	r, err := parseRule(common.Value(c.AlarmRule))
 	if err != nil {
 		return "", "", err
 	}
 
 	var readErr error
 	holds := r.evaluate(func(name string) string {
-		a, found, err := read[alarm](tx, alarmKey(scope, name))
+		a, found, err := storage.Read[alarm](tx, alarmKey(scope, name))
 		if err != nil {
 			readErr = err
 		}
@@ -287,8 +288,8 @@ func (s *Service) transition(tx storage.WriteTx, scope request.Scope, a *alarm, 
 	now time.Time,
 ) (*change, error) {
 	old, oldReason, _, oldUpdated := a.state()
-	a.setState(state, reason, data, unix(now))
-	if err := write(tx, alarmKey(scope, a.name()), a); err != nil {
+	a.setState(state, reason, data, common.Unix(now))
+	if err := storage.Write(tx, alarmKey(scope, a.name()), a); err != nil {
 		return nil, err
 	}
 
@@ -302,7 +303,7 @@ func (s *Service) transition(tx storage.WriteTx, scope request.Scope, a *alarm, 
 	}
 
 	summary := fmt.Sprintf("Alarm updated from %s to %s", old, state)
-	if err := s.history(tx, scope, a, itemState, summary, string(history), unix(now)); err != nil {
+	if err := s.history(tx, scope, a, itemState, summary, string(history), common.Unix(now)); err != nil {
 		return nil, err
 	}
 
@@ -329,7 +330,7 @@ func (s *Service) notify(ctx context.Context, ch *change) {
 			}
 
 			herr := s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
-				return s.history(tx, ch.scope, a, itemAction, summary, "", unix(s.now()))
+				return s.history(tx, ch.scope, a, itemAction, summary, "", common.Unix(s.now()))
 			})
 			if herr != nil {
 				s.logger.Warn("recording a CloudWatch alarm action failed", "alarm", a.name(), "error", herr)
@@ -382,14 +383,14 @@ func randomID() string {
 // configuration describes an alarm in state change events.
 func configuration(a *alarm) map[string]any {
 	if c := a.Composite; c != nil {
-		return map[string]any{"description": value(c.AlarmDescription), "alarmRule": value(c.AlarmRule)}
+		return map[string]any{"description": common.Value(c.AlarmDescription), "alarmRule": common.Value(c.AlarmRule)}
 	}
 
 	m := a.Metric
 	return map[string]any{
-		"description": value(m.AlarmDescription), "metricName": value(m.MetricName),
-		"namespace": value(m.Namespace), "threshold": value(m.Threshold),
-		"comparisonOperator": value(m.ComparisonOperator),
+		"description": common.Value(m.AlarmDescription), "metricName": common.Value(m.MetricName),
+		"namespace": common.Value(m.Namespace), "threshold": common.Value(m.Threshold),
+		"comparisonOperator": common.Value(m.ComparisonOperator),
 	}
 }
 
@@ -450,8 +451,8 @@ func (s *Service) act(ctx context.Context, ch *change, arn string) error {
 
 func description(a *alarm) string {
 	if a.Composite != nil {
-		return value(a.Composite.AlarmDescription)
+		return common.Value(a.Composite.AlarmDescription)
 	}
 
-	return value(a.Metric.AlarmDescription)
+	return common.Value(a.Metric.AlarmDescription)
 }

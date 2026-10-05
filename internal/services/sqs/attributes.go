@@ -230,7 +230,7 @@ func (s *Service) SetQueueAttributes(
 
 		q.Settings = st
 		q.LastModified = s.now().Unix()
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return nil, err

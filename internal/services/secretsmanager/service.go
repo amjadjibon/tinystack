@@ -216,16 +216,10 @@ func newSuffix() string {
 // newVersionID returns a random UUID, as Secrets Manager generates.
 func newVersionID() string { return uuid.NewV4().String() }
 
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
 // load returns the secret named name, including one past its deletion date,
 // which callers treat as gone.
 func load(tx storage.ReadTx, scope request.Scope, name string) (*secret, bool, error) {
-	return read[secret](tx, secretKey(scope, name))
+	return storage.Read[secret](tx, secretKey(scope, name))
 }
 
 // find returns the secret that id names by name, full ARN, or partial ARN
@@ -430,7 +424,7 @@ func addVersion(
 	}
 
 	if s.hasVersion(id) {
-		existing, _, err := read[payload](tx, valueKey(scope, s.Name, id))
+		existing, _, err := storage.Read[payload](tx, valueKey(scope, s.Name, id))
 		if err != nil {
 			return "", err
 		}
@@ -443,7 +437,7 @@ func addVersion(
 		return id, nil
 	}
 
-	if err := write(tx, valueKey(scope, s.Name, id), value); err != nil {
+	if err := storage.Write(tx, valueKey(scope, s.Name, id), value); err != nil {
 		return "", err
 	}
 

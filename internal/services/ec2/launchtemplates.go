@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -82,7 +83,7 @@ func templateValues(t *launchTemplate) values {
 func versionValues(t *launchTemplate, v *templateVersion) values {
 	d := v.Data
 	return values{
-		filterImageID: {value(d.ImageId)}, "instance-type": {value(d.InstanceType)},
+		filterImageID: {common.Value(d.ImageId)}, "instance-type": {common.Value(d.InstanceType)},
 		"is-default-version": boolValue(v.Number == t.Default), "version-description": {v.Description},
 	}
 }
@@ -96,18 +97,18 @@ func templateData(in *api.RequestLaunchTemplateData, base *api.ResponseLaunchTem
 		return nil, awserror.New("MissingParameter", "The request must contain the parameter LaunchTemplateData")
 	}
 
-	if t := value(in.InstanceType); t != "" {
+	if t := common.Value(in.InstanceType); t != "" {
 		if _, err := instanceType(t); err != nil {
 			return nil, err
 		}
 	}
 
-	if b := value(in.InstanceInitiatedShutdownBehavior); b != "" && b != shutdownStop && b != shutdownTerminate {
+	if b := common.Value(in.InstanceInitiatedShutdownBehavior); b != "" && b != shutdownStop && b != shutdownTerminate {
 		return nil, invalidParameter(fmt.Sprintf(
 			"Value (%s) for parameter instanceInitiatedShutdownBehavior is invalid.", b))
 	}
 
-	if u := value(in.UserData); u != "" {
+	if u := common.Value(in.UserData); u != "" {
 		if _, err := base64.StdEncoding.DecodeString(u); err != nil {
 			return nil, invalidParameter("Invalid BASE64 encoding of user data.")
 		}
@@ -160,7 +161,7 @@ func findTemplate(tx storage.ReadTx, scope request.Scope, id, name string) (*lau
 		return nil, awserror.New("InvalidParameterCombination",
 			"The parameters LaunchTemplateId and LaunchTemplateName cannot be used together")
 	case id != "":
-		t, ok, err := read[launchTemplate](tx, key(scope, kindLaunchTemplate, id))
+		t, ok, err := storage.Read[launchTemplate](tx, key(scope, kindLaunchTemplate, id))
 		if err == nil && !ok {
 			err = templateIDNotFound(id)
 		}
@@ -212,7 +213,7 @@ func (t *launchTemplate) version(s string) (*templateVersion, error) {
 }
 
 func checkVersionDescription(d *string) error {
-	if len(value(d)) > maxVersionDescription {
+	if len(common.Value(d)) > maxVersionDescription {
 		return invalidParameter("The version description must be at most 255 characters long.")
 	}
 
@@ -228,7 +229,7 @@ func (s *Service) CreateLaunchTemplate(
 		return nil, err
 	}
 
-	name := value(in.LaunchTemplateName)
+	name := common.Value(in.LaunchTemplateName)
 	if !templateNamePattern.MatchString(name) {
 		return nil, awserror.New("InvalidLaunchTemplateName.MalformedException",
 			"A launch template name must be between 3 and 128 characters, and may contain letters, numbers, and "+
@@ -251,9 +252,16 @@ func (s *Service) CreateLaunchTemplate(
 
 	now := s.now().UTC()
 	t := &launchTemplate{
-		ID: newID("lt"), Name: name, CreatedAt: now, CreatedBy: "arn:aws:iam::" + m.AccountID + ":root",
-		Default: 1, Latest: 1, Tags: tags,
-		Versions: []templateVersion{{Number: 1, Description: value(in.VersionDescription), CreatedAt: now, Data: data}},
+		ID:        newID("lt"),
+		Name:      name,
+		CreatedAt: now,
+		CreatedBy: "arn:aws:iam::" + m.AccountID + ":root",
+		Default:   1,
+		Latest:    1,
+		Tags:      tags,
+		Versions: []templateVersion{
+			{Number: 1, Description: common.Value(in.VersionDescription), CreatedAt: now, Data: data},
+		},
 	}
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		if _, findErr := findTemplate(tx, scope, "", name); findErr == nil {
@@ -261,7 +269,7 @@ func (s *Service) CreateLaunchTemplate(
 				"Launch template name already in use.")
 		}
 
-		return write(tx, key(scope, kindLaunchTemplate, t.ID), t)
+		return storage.Write(tx, key(scope, kindLaunchTemplate, t.ID), t)
 	})
 	if err != nil {
 		return nil, err
@@ -280,7 +288,7 @@ func (s *Service) CreateLaunchTemplateVersion(
 
 	var out api.LaunchTemplateVersion
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		t, err := findTemplate(tx, scope, value(in.LaunchTemplateId), value(in.LaunchTemplateName))
+		t, err := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
 		if err != nil {
 			return err
 		}
@@ -306,10 +314,10 @@ func (s *Service) CreateLaunchTemplateVersion(
 
 		t.Latest++
 		t.Versions = append(t.Versions, templateVersion{
-			Number: t.Latest, Description: value(in.VersionDescription), CreatedAt: s.now().UTC(), Data: data,
+			Number: t.Latest, Description: common.Value(in.VersionDescription), CreatedAt: s.now().UTC(), Data: data,
 		})
 		out = versionOutput(t, &t.Versions[len(t.Versions)-1])
-		return write(tx, key(scope, kindLaunchTemplate, t.ID), t)
+		return storage.Write(tx, key(scope, kindLaunchTemplate, t.ID), t)
 	})
 	if err != nil {
 		return nil, err
@@ -394,7 +402,7 @@ func (s *Service) DescribeLaunchTemplateVersions(
 
 	out := &api.DescribeLaunchTemplateVersionsResult{LaunchTemplateVersions: []api.LaunchTemplateVersion{}}
 	err = s.view(ctx, in.DryRun, func(tx storage.ReadTx, scope request.Scope) error {
-		t, findErr := findTemplate(tx, scope, value(in.LaunchTemplateId), value(in.LaunchTemplateName))
+		t, findErr := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
 		if findErr != nil {
 			return findErr
 		}
@@ -449,7 +457,7 @@ func (s *Service) ModifyLaunchTemplate(
 ) (*api.ModifyLaunchTemplateResult, error) {
 	var out *api.LaunchTemplate
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		t, err := findTemplate(tx, scope, value(in.LaunchTemplateId), value(in.LaunchTemplateName))
+		t, err := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
 		if err != nil {
 			return err
 		}
@@ -464,7 +472,7 @@ func (s *Service) ModifyLaunchTemplate(
 		}
 
 		out = templateOutput(t)
-		return write(tx, key(scope, kindLaunchTemplate, t.ID), t)
+		return storage.Write(tx, key(scope, kindLaunchTemplate, t.ID), t)
 	})
 	if err != nil {
 		return nil, err
@@ -479,7 +487,7 @@ func (s *Service) DeleteLaunchTemplate(
 ) (*api.DeleteLaunchTemplateResult, error) {
 	var out *api.LaunchTemplate
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		t, err := findTemplate(tx, scope, value(in.LaunchTemplateId), value(in.LaunchTemplateName))
+		t, err := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
 		if err != nil {
 			return err
 		}
@@ -506,7 +514,7 @@ func (s *Service) DeleteLaunchTemplateVersions(
 		UnsuccessfullyDeletedLaunchTemplateVersions: []api.DeleteLaunchTemplateVersionsResponseErrorItem{},
 	}
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		t, err := findTemplate(tx, scope, value(in.LaunchTemplateId), value(in.LaunchTemplateName))
+		t, err := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
 		if err != nil {
 			return err
 		}
@@ -536,7 +544,7 @@ func (s *Service) DeleteLaunchTemplateVersions(
 			}
 		}
 
-		return write(tx, key(scope, kindLaunchTemplate, t.ID), t)
+		return storage.Write(tx, key(scope, kindLaunchTemplate, t.ID), t)
 	})
 	if err != nil {
 		return nil, err
@@ -556,12 +564,12 @@ func withTemplate(tx storage.ReadTx, scope request.Scope, in *api.RunInstancesRe
 		return in, nil
 	}
 
-	t, err := findTemplate(tx, scope, value(spec.LaunchTemplateId), value(spec.LaunchTemplateName))
+	t, err := findTemplate(tx, scope, common.Value(spec.LaunchTemplateId), common.Value(spec.LaunchTemplateName))
 	if err != nil {
 		return nil, err
 	}
 
-	v, err := t.version(value(spec.Version))
+	v, err := t.version(common.Value(spec.Version))
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +584,7 @@ func withTemplate(tx storage.ReadTx, scope request.Scope, in *api.RunInstancesRe
 
 	out.TagSpecifications = nil
 	for _, spec := range v.Data.TagSpecifications {
-		if value(spec.ResourceType) == kindInstance {
+		if common.Value(spec.ResourceType) == kindInstance {
 			out.TagSpecifications = append(out.TagSpecifications, api.TagSpecification(spec))
 		}
 	}

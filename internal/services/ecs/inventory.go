@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -44,7 +45,7 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 	kind, _, _ := strings.Cut(rest, "/")
 	switch kind {
 	case kindCluster:
-		c, _, err := read[cluster](tx, key)
+		c, _, err := storage.Read[cluster](tx, key)
 		if err != nil || c.Status != active {
 			return catalog.Resource{}, false, err
 		}
@@ -61,7 +62,7 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 			},
 		}, true, nil
 	case kindService:
-		svc, _, err := read[ecsService](tx, key)
+		svc, _, err := storage.Read[ecsService](tx, key)
 		if err != nil || svc.Status != active {
 			return catalog.Resource{}, false, err
 		}
@@ -76,8 +77,8 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 			Details: map[string]any{"TaskDefinition": svc.Definition, "DesiredCount": svc.Desired},
 		}, true, nil
 	case "taskdef":
-		d, _, err := read[taskDef](tx, key)
-		if err != nil || value(d.Def.Status) != active {
+		d, _, err := storage.Read[taskDef](tx, key)
+		if err != nil || common.Value(d.Def.Status) != active {
 			return catalog.Resource{}, false, err
 		}
 

@@ -58,12 +58,12 @@ func (s *Service) authority(ctx context.Context) (*authority, error) {
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var found bool
 		var readErr error
-		if rec, found, readErr = read[stored](tx, caKey); readErr != nil || found {
+		if rec, found, readErr = storage.Read[stored](tx, caKey); readErr != nil || found {
 			return readErr
 		}
 
 		rec = fresh
-		return write(tx, caKey, rec)
+		return storage.Write(tx, caKey, rec)
 	})
 	if err != nil {
 		return nil, err

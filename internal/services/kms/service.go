@@ -79,8 +79,6 @@ type key struct {
 
 var keyID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 func notFound(format string, args ...any) error {
 	return awserror.New("NotFoundException", fmt.Sprintf(format, args...))
 }
@@ -115,12 +113,6 @@ func keyARN(scope request.Scope, id string) string {
 func seconds(ms int64) *float64 { return new(float64(ms) / 1000) }
 
 func newKeyID() string { return uuid.NewV4().String() }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 func (k *key) spec() string  { return cmp.Or(k.Spec, symmetricDefault) }
 func (k *key) usage() string { return cmp.Or(k.Usage, encryptDecrypt) }
@@ -215,7 +207,7 @@ func resolve(tx storage.ReadTx, scope request.Scope, ref string, aliases bool) (
 	aliasName, isAlias := strings.CutPrefix(name, "alias/")
 	switch {
 	case isAlias && aliases:
-		a, found, err := read[alias](tx, aliasKey(scope, aliasName))
+		a, found, err := storage.Read[alias](tx, aliasKey(scope, aliasName))
 		if err != nil {
 			return "", err
 		}
@@ -234,7 +226,7 @@ func resolve(tx storage.ReadTx, scope request.Scope, ref string, aliases bool) (
 
 // load resolves ref and reads the key it names.
 func (s *Service) load(tx storage.ReadTx, scope request.Scope, ref *string, aliases bool) (*key, error) {
-	if value(ref) == "" {
+	if common.Value(ref) == "" {
 		return nil, awserror.Validation("KeyId is required.")
 	}
 
@@ -243,7 +235,7 @@ func (s *Service) load(tx storage.ReadTx, scope request.Scope, ref *string, alia
 		return nil, err
 	}
 
-	k, found, err := read[key](tx, keyKey(scope, id))
+	k, found, err := storage.Read[key](tx, keyKey(scope, id))
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +281,7 @@ func (s *Service) change(ctx context.Context, ref *string, fn func(request.Scope
 			return fnErr
 		}
 
-		return write(tx, keyKey(scope, k.ID), k)
+		return storage.Write(tx, keyKey(scope, k.ID), k)
 	})
 }
 
@@ -351,7 +343,7 @@ func page[T any](items []T, id func(T) string, marker *string, limit *int64, def
 }
 
 func checkDescription(description *string) error {
-	if len(value(description)) > maxDescription {
+	if len(common.Value(description)) > maxDescription {
 		return awserror.Validation("Description must be at most %d characters.", maxDescription)
 	}
 
@@ -397,8 +389,8 @@ func checkKeySpec(in *api.CreateKeyRequest) (spec, usage string, err error) {
 			"request.")
 	}
 
-	spec = cmp.Or(value(in.KeySpec), value(in.CustomerMasterKeySpec), symmetricDefault)
-	usage = value(in.KeyUsage)
+	spec = cmp.Or(common.Value(in.KeySpec), common.Value(in.CustomerMasterKeySpec), symmetricDefault)
+	usage = common.Value(in.KeyUsage)
 	if asymmetric, ok := asymmetricKeys[spec]; ok {
 		switch {
 		case usage == "":
@@ -408,7 +400,7 @@ func checkKeySpec(in *api.CreateKeyRequest) (spec, usage string, err error) {
 				strings.Join(asymmetric.usages, " and "), usage)
 		case in.Origin != nil && *in.Origin != originKMS:
 			return "", "", unsupported("TinyStack supports only %s key material, not %s.", originKMS, *in.Origin)
-		case value(in.MultiRegion):
+		case common.Value(in.MultiRegion):
 			return "", "", unsupported("TinyStack does not support multi-Region keys.")
 		}
 
@@ -429,7 +421,7 @@ func checkKeySpec(in *api.CreateKeyRequest) (spec, usage string, err error) {
 		return "", "", awserror.Validation("%s keys must have the %s key usage.", symmetricDefault, encryptDecrypt)
 	case in.Origin != nil && *in.Origin != originKMS:
 		return "", "", unsupported("TinyStack supports only %s key material, not %s.", originKMS, *in.Origin)
-	case value(in.MultiRegion):
+	case common.Value(in.MultiRegion):
 		return "", "", unsupported("TinyStack does not support multi-Region keys.")
 	case !isMAC:
 		return "", "", nil
@@ -453,7 +445,7 @@ func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api
 		return nil, guardErr
 	}
 
-	policy := value(in.Policy)
+	policy := common.Value(in.Policy)
 	if policy == "" {
 		policy = defaultPolicy(scope)
 	} else if guardErr := checkPolicy(policy); guardErr != nil {
@@ -475,11 +467,11 @@ func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api
 	}
 
 	k := &key{
-		Tags: tags, ID: newKeyID(), Description: value(in.Description), Policy: policy, State: stateEnabled,
+		Tags: tags, ID: newKeyID(), Description: common.Value(in.Description), Policy: policy, State: stateEnabled,
 		Material: material, Created: s.now().UnixMilli(), Spec: spec, Usage: usage,
 	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		return write(tx, keyKey(scope, k.ID), k)
+		return storage.Write(tx, keyKey(scope, k.ID), k)
 	})
 	if err != nil {
 		return nil, err
@@ -511,7 +503,7 @@ func (s *Service) ListKeys(ctx context.Context, in *api.ListKeysRequest) (*api.L
 	var ids []string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(prefix(scope, "key")) {
-			record, _, readErr := read[key](tx, k)
+			record, _, readErr := storage.Read[key](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -688,7 +680,7 @@ func (s *Service) PutKeyPolicy(ctx context.Context, in *api.PutKeyPolicyRequest)
 		return nil, guardErr
 	}
 
-	if guardErr := checkPolicy(value(in.Policy)); guardErr != nil {
+	if guardErr := checkPolicy(common.Value(in.Policy)); guardErr != nil {
 		return nil, guardErr
 	}
 

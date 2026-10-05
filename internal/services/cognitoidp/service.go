@@ -116,16 +116,6 @@ func randomString(set string, n int) string {
 	return string(b)
 }
 
-func seconds(t time.Time) *float64 { return common.SecondsMilli(t) }
-
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
 // convert copies the fields two wire shapes share by name, such as a request's
 // settings into a stored record, and a record into a response.
 func convert[T any](from any) (T, error) {
@@ -184,10 +174,10 @@ func limit(n *int64, name string) (int, error) {
 func loadPool(tx storage.ReadTx, scope request.Scope, id *string) (*pool, error) {
 	if id == nil || !poolID.MatchString(*id) || len(*id) > 55 {
 		return nil, invalidParameter("1 validation error detected: Value '%s' at 'userPoolId' failed to satisfy "+
-			"constraint: Member must satisfy regular expression pattern: [\\w-]+_[0-9a-zA-Z]+", value(id))
+			"constraint: Member must satisfy regular expression pattern: [\\w-]+_[0-9a-zA-Z]+", common.Value(id))
 	}
 
-	p, ok, err := read[pool](tx, poolKey(scope, *id))
+	p, ok, err := storage.Read[pool](tx, poolKey(scope, *id))
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +227,7 @@ func (s *Service) update(
 			return fnErr
 		}
 
-		return write(tx, poolKey(scope, p.ID), p)
+		return storage.Write(tx, poolKey(scope, p.ID), p)
 	})
 }
 

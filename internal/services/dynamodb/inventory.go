@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -28,7 +29,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				Account: account,
 				Region:  region,
 				Name:    name,
-				ARN:     value(t.Description.TableArn),
+				ARN:     common.Value(t.Description.TableArn),
 				Tags:    t.Tags,
 				Details: t.Description,
 			})

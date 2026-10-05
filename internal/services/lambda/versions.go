@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -142,7 +143,7 @@ func (s *Service) PublishVersion(
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, value(in.FunctionName))
+	name, q, err := resolveName(m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +219,7 @@ func (s *Service) ListVersionsByFunction(
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, value(in.FunctionName))
+	name, q, err := resolveName(m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +370,7 @@ func (s *Service) DeleteFunction(
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, value(in.FunctionName))
+	name, q, err := resolveName(m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}

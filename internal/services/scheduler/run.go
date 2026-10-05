@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -73,19 +74,19 @@ func (s *Service) claim(r due) (*api.GetScheduleOutput, bool, error) {
 	now := s.now()
 	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
 		k := key(r.scope, kindSchedule, r.group+"/"+r.name)
-		rec, found, err := read[record](tx, k)
+		rec, found, err := storage.Read[record](tx, k)
 		switch {
 		case err != nil:
 			return err
 		case !found:
 			tx.Delete(indexKey(r.scope, r.group, r.name))
 			return nil
-		case rec.Next == 0 || fromUnix(rec.Next).After(now) || value(rec.Schedule.State) != stateEnabled:
+		case rec.Next == 0 || fromUnix(rec.Next).After(now) || common.Value(rec.Schedule.State) != stateEnabled:
 			return nil
 		}
 
 		sc := &rec.Schedule
-		p, err := parseExpression(value(sc.ScheduleExpression), value(sc.ScheduleExpressionTimezone))
+		p, err := parseExpression(common.Value(sc.ScheduleExpression), common.Value(sc.ScheduleExpressionTimezone))
 		if err != nil {
 			return err
 		}
@@ -93,17 +94,17 @@ func (s *Service) claim(r due) (*api.GetScheduleOutput, bool, error) {
 		out = sc
 		rec.Next = 0
 		if next, ok := p.next(now, sc.StartDate, sc.EndDate, true); ok {
-			rec.Next = unix(next)
+			rec.Next = common.Unix(next)
 		}
 
-		if rec.Next == 0 && value(sc.ActionAfterCompletion) == afterDelete {
+		if rec.Next == 0 && common.Value(sc.ActionAfterCompletion) == afterDelete {
 			tx.Delete(k)
 			tx.Delete(indexKey(r.scope, r.group, r.name))
 			return nil
 		}
 
 		s.index(tx, r.scope, rec)
-		return write(tx, k, rec)
+		return storage.Write(tx, k, rec)
 	})
 
 	return out, out != nil && err == nil, err
@@ -117,7 +118,7 @@ func (s *Service) invoke(scope request.Scope, sc *api.GetScheduleOutput) {
 	}
 
 	t := sc.Target
-	arn, input := value(t.Arn), value(t.Input)
+	arn, input := common.Value(t.Arn), common.Value(t.Input)
 	target, op, params, err := targetCall(t)
 	if err == nil {
 		ctx := request.WithMetadata(s.ctx, request.Metadata{Scope: scope, Service: target, RequestID: randomID()})
@@ -128,32 +129,32 @@ func (s *Service) invoke(scope request.Scope, sc *api.GetScheduleOutput) {
 		return
 	}
 
-	s.logger.Warn("a schedule's target failed", "schedule", value(sc.Arn), "target", arn, "error", err)
+	s.logger.Warn("a schedule's target failed", "schedule", common.Value(sc.Arn), "target", arn, "error", err)
 	if t.DeadLetterConfig == nil {
 		return
 	}
 
 	e := awserror.From(err)
 	attribute := func(v string) any { return map[string]any{"DataType": "String", "StringValue": v} }
-	queueURL, _ := sqs.QueueURL(value(t.DeadLetterConfig.Arn))
+	queueURL, _ := sqs.QueueURL(common.Value(t.DeadLetterConfig.Arn))
 	ctx := request.WithMetadata(s.ctx, request.Metadata{Scope: scope, Service: "sqs", RequestID: randomID()})
 	_, dlqErr := s.caller.Call(ctx, "sqs", "SendMessage", map[string]any{
 		"QueueUrl": queueURL, "MessageBody": cmpOr(input, "{}"),
 		"MessageAttributes": map[string]any{
 			"ERROR_CODE": attribute(e.Code), "ERROR_MESSAGE": attribute(e.Message),
 			"EXHAUSTED_RETRY_CONDITION": attribute("MaximumRetryAttempts"), "RETRY_ATTEMPTS": attribute("0"),
-			"TARGET_ARN": attribute(arn), "SCHEDULE_ARN": attribute(value(sc.Arn)),
+			"TARGET_ARN": attribute(arn), "SCHEDULE_ARN": attribute(common.Value(sc.Arn)),
 		},
 	})
 	if dlqErr != nil {
-		s.logger.Warn("sending a failed schedule run to its dead-letter queue failed", "schedule", value(sc.Arn),
+		s.logger.Warn("sending a failed schedule run to its dead-letter queue failed", "schedule", common.Value(sc.Arn),
 			"error", dlqErr)
 	}
 }
 
 // targetCall maps a target to the operation that invokes it.
 func targetCall(t *api.Target) (target, op string, params map[string]any, err error) {
-	arn, input := value(t.Arn), value(t.Input)
+	arn, input := common.Value(t.Arn), common.Value(t.Input)
 	switch {
 	case strings.HasPrefix(arn, universal):
 		svc, action, _ := strings.Cut(strings.TrimPrefix(arn, universal), ":")
@@ -183,7 +184,7 @@ func targetCall(t *api.Target) (target, op string, params map[string]any, err er
 	case strings.HasPrefix(arn, "arn:aws:events:"):
 		p := t.EventBridgeParameters
 		entry := map[string]any{
-			"EventBusName": arn, "Source": value(p.Source), "DetailType": value(p.DetailType),
+			"EventBusName": arn, "Source": common.Value(p.Source), "DetailType": common.Value(p.DetailType),
 			"Detail": cmpOr(input, "{}"),
 		}
 		return "eventbridge", "PutEvents", map[string]any{"Entries": []any{entry}}, nil
@@ -191,7 +192,9 @@ func targetCall(t *api.Target) (target, op string, params map[string]any, err er
 		return "sfn", "StartExecution", map[string]any{"StateMachineArn": arn, "Input": cmpOr(input, "{}")}, nil
 	case strings.HasPrefix(arn, "arn:aws:kinesis:"):
 		return "kinesis", "PutRecord", map[string]any{
-			"StreamARN": arn, "Data": cmpOr(input, "{}"), "PartitionKey": value(t.KinesisParameters.PartitionKey),
+			"StreamARN":    arn,
+			"Data":         cmpOr(input, "{}"),
+			"PartitionKey": common.Value(t.KinesisParameters.PartitionKey),
 		}, nil
 	}
 

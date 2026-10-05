@@ -18,6 +18,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // Asymmetric keys keep their private key as PKCS #8 DER in the key's
@@ -173,13 +174,13 @@ func prepare(scope request.Scope, k *key, message []byte, messageType, algorithm
 		return nil, awserror.Validation("Message must be 1 to %d bytes.", maxMessage)
 	}
 
-	alg := value(algorithm)
+	alg := common.Value(algorithm)
 	if _, signing := k.algorithms(); !slices.Contains(signing, alg) {
 		return nil, awserror.New("InvalidKeyUsageException", "Algorithm "+alg+" is incompatible with key spec "+
 			k.spec()+" of "+keyARN(scope, k.ID)+".")
 	}
 
-	kind := cmp.Or(value(messageType), messageRaw)
+	kind := cmp.Or(common.Value(messageType), messageRaw)
 	h := algorithmHash(alg)
 	switch {
 	case kind != messageRaw && kind != messageDigest:
@@ -313,7 +314,7 @@ func (s *Service) GetPublicKey(ctx context.Context, in *api.GetPublicKeyRequest)
 // must support.
 func oaepHash(scope request.Scope, k *key, algorithm *string) (hash.Hash, error) {
 	encryption, _ := k.algorithms()
-	alg := value(algorithm)
+	alg := common.Value(algorithm)
 	if !slices.Contains(encryption, alg) {
 		return nil, awserror.New("InvalidKeyUsageException", "Algorithm "+alg+" is incompatible with key spec "+
 			k.spec()+" of "+keyARN(scope, k.ID)+".")
@@ -343,7 +344,7 @@ func (s *Service) encryptAsymmetric(ctx context.Context, in *api.EncryptRequest)
 		pub, _ := signer.Public().(*rsa.PublicKey)
 		if most := pub.Size() - 2*h.Size() - 2; len(in.Plaintext) > most {
 			return awserror.Validation("Plaintext must be at most %d bytes for %s with %s.", most, k.spec(),
-				value(in.EncryptionAlgorithm))
+				common.Value(in.EncryptionAlgorithm))
 		}
 
 		if dryErr := dryRun(in.DryRun); dryErr != nil {

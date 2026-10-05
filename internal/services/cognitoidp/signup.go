@@ -7,6 +7,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -39,12 +40,12 @@ func (s *Service) byClientUser(
 ) error {
 	var out outbox
 	err := s.byClient(ctx, clientID, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-		u, err := findSigningIn(tx, scope, p, c, value(name))
+		u, err := findSigningIn(tx, scope, p, c, common.Value(name))
 		if err != nil {
 			return err
 		}
 
-		if hashErr := checkSecretHash(c, hash, value(name), u.Username); hashErr != nil {
+		if hashErr := checkSecretHash(c, hash, common.Value(name), u.Username); hashErr != nil {
 			return hashErr
 		}
 
@@ -80,11 +81,11 @@ func (s *Service) SignUp(ctx context.Context, in *api.SignUpRequest) (*api.SignU
 	run := func() error {
 		return s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
 			out, confirmed = outbox{}, nil
-			if value(p.Settings.AdminCreateUserConfig.AllowAdminCreateUserOnly) {
+			if common.Value(p.Settings.AdminCreateUserConfig.AllowAdminCreateUserOnly) {
 				return notAuthorized("SignUp is not permitted for this user pool")
 			}
 
-			if hashErr := checkSecretHash(c, in.SecretHash, value(in.Username)); hashErr != nil {
+			if hashErr := checkSecretHash(c, in.SecretHash, common.Value(in.Username)); hashErr != nil {
 				return hashErr
 			}
 
@@ -93,7 +94,7 @@ func (s *Service) SignUp(ctx context.Context, in *api.SignUpRequest) (*api.SignU
 			}
 
 			for _, a := range in.UserAttributes {
-				if !writable(c, value(a.Name)) {
+				if !writable(c, common.Value(a.Name)) {
 					return notAuthorized("A client attempted to write unauthorized attribute")
 				}
 			}
@@ -120,7 +121,7 @@ func (s *Service) SignUp(ctx context.Context, in *api.SignUpRequest) (*api.SignU
 				return policyErr
 			}
 
-			if function := value(p.triggers().PreSignUp); function != "" && decided == nil {
+			if function := common.Value(p.triggers().PreSignUp); function != "" && decided == nil {
 				pending = newCall(scope, p, c.ID, function, "PreSignUp", "PreSignUp_SignUp", u, in.ClientMetadata)
 				attrs := pending.event.Request["userAttributes"].(map[string]string)
 				delete(attrs, attrUserStatus)
@@ -188,7 +189,7 @@ func (r *preSignUp) applyTo(u *user) {
 func attributeMap(attrs []api.AttributeType) map[string]string {
 	out := make(map[string]string, len(attrs))
 	for _, a := range attrs {
-		out[value(a.Name)] = value(a.Value)
+		out[common.Value(a.Name)] = common.Value(a.Value)
 	}
 
 	return out
@@ -199,12 +200,12 @@ func attributeMap(attrs []api.AttributeType) map[string]string {
 func (s *Service) ConfirmSignUp(ctx context.Context, in *api.ConfirmSignUpRequest) (*api.ConfirmSignUpResponse, error) {
 	var confirmed *call
 	err := s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-		u, err := findSigningIn(tx, scope, p, c, value(in.Username))
+		u, err := findSigningIn(tx, scope, p, c, common.Value(in.Username))
 		if err != nil {
 			return err
 		}
 
-		if hashErr := checkSecretHash(c, in.SecretHash, value(in.Username), u.Username); hashErr != nil {
+		if hashErr := checkSecretHash(c, in.SecretHash, common.Value(in.Username), u.Username); hashErr != nil {
 			return hashErr
 		}
 
@@ -215,7 +216,7 @@ func (s *Service) ConfirmSignUp(ctx context.Context, in *api.ConfirmSignUpReques
 		before := *u
 		before.Attributes = cloneMap(u.Attributes)
 		attr := u.Codes[purposeSignUp].Attribute
-		if codeErr := u.useCode(purposeSignUp, value(in.ConfirmationCode), s.now().UTC()); codeErr != nil {
+		if codeErr := u.useCode(purposeSignUp, common.Value(in.ConfirmationCode), s.now().UTC()); codeErr != nil {
 			return codeErr
 		}
 
@@ -225,7 +226,7 @@ func (s *Service) ConfirmSignUp(ctx context.Context, in *api.ConfirmSignUpReques
 		}
 
 		confirmed = postConfirmation(scope, p, c.ID, "PostConfirmation_ConfirmSignUp", u, in.ClientMetadata)
-		return saveUser(tx, scope, p, &before, u, value(in.ForceAliasCreation))
+		return saveUser(tx, scope, p, &before, u, common.Value(in.ForceAliasCreation))
 	})
 	if err == nil {
 		err = s.invoke(ctx, confirmed, nil)
@@ -292,7 +293,7 @@ func (s *Service) ConfirmForgotPassword(
 	err := s.byClientUser(ctx, in.ClientId, in.Username, in.SecretHash,
 		func(_ storage.WriteTx, scope request.Scope, p *pool, u *user, _ *outbox) error {
 			now := s.now().UTC()
-			if codeErr := u.useCode(purposePassword, value(in.ConfirmationCode), now); codeErr != nil {
+			if codeErr := u.useCode(purposePassword, common.Value(in.ConfirmationCode), now); codeErr != nil {
 				return codeErr
 			}
 
@@ -311,8 +312,14 @@ func (s *Service) ConfirmForgotPassword(
 				u.Status = statusUnconfirmed
 			}
 
-			confirmed = postConfirmation(scope, p, value(in.ClientId), "PostConfirmation_ConfirmForgotPassword", u,
-				in.ClientMetadata)
+			confirmed = postConfirmation(
+				scope,
+				p,
+				common.Value(in.ClientId),
+				"PostConfirmation_ConfirmForgotPassword",
+				u,
+				in.ClientMetadata,
+			)
 			return nil
 		})
 	if err == nil {

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -80,7 +81,7 @@ func (s *Service) CreateMultipartUpload(
 	if guardErr := validKey(in.Key); guardErr != nil {
 		return nil, guardErr
 	}
-	if c := value(in.StorageClass); c != "" && c != storageStandard {
+	if c := common.Value(in.StorageClass); c != "" && c != storageStandard {
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "Only STANDARD storage is supported")
 	}
 	if sseErr := encryption(in.ServerSideEncryption); sseErr != nil {
@@ -98,7 +99,12 @@ func (s *Service) CreateMultipartUpload(
 		return nil, err
 	}
 	id := base64.RawURLEncoding.EncodeToString(idBytes)
-	u := upload{Key: *in.Key, ContentType: value(in.ContentType), Metadata: in.Metadata, Initiated: s.now().UnixMilli()}
+	u := upload{
+		Key:         *in.Key,
+		ContentType: common.Value(in.ContentType),
+		Metadata:    in.Metadata,
+		Initiated:   s.now().UnixMilli(),
+	}
 	if u.ContentType == "" {
 		u.ContentType = defaultType
 	}
@@ -123,7 +129,7 @@ func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*a
 	if guardErr := validKey(in.Key); guardErr != nil {
 		return nil, guardErr
 	}
-	n := value(in.PartNumber)
+	n := common.Value(in.PartNumber)
 	if n < 1 || n > 10000 {
 		return nil, fail(http.StatusBadRequest, "InvalidArgument", "Part number must be from 1 to 10000")
 	}
@@ -148,7 +154,7 @@ func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*a
 		if resolveErr != nil {
 			return resolveErr
 		}
-		if _, loadErr := loadUpload(tx, bucket, *in.Key, value(in.UploadId)); loadErr != nil {
+		if _, loadErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId)); loadErr != nil {
 			return loadErr
 		}
 		tx.Put(partKey(bucket, *in.UploadId, n), in.Body)
@@ -179,7 +185,7 @@ func (s *Service) CompleteMultipartUpload(
 	}
 	lastNumber := int64(0)
 	for _, requested := range in.MultipartUpload.Parts {
-		n := value(requested.PartNumber)
+		n := common.Value(requested.PartNumber)
 		if n <= lastNumber || n > 10000 {
 			return nil, fail(400, "InvalidPartOrder", "Parts must be in ascending order")
 		}
@@ -200,14 +206,14 @@ func (s *Service) CompleteMultipartUpload(
 			return cfgErr
 		}
 
-		u, loadErr := loadUpload(tx, bucket, *in.Key, value(in.UploadId))
+		u, loadErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId))
 		if loadErr != nil {
 			return loadErr
 		}
 		var body, digests []byte
 		last := int64(0)
 		for i, requested := range in.MultipartUpload.Parts {
-			n := value(requested.PartNumber)
+			n := common.Value(requested.PartNumber)
 			if n <= last || n > 10000 {
 				return fail(400, "InvalidPartOrder", "Parts must be in ascending order")
 			}
@@ -270,7 +276,7 @@ func (s *Service) CompleteMultipartUpload(
 
 	s.notify(ctx, m, cfg, objectEvent{
 		name: "ObjectCreated:CompleteMultipartUpload", reason: "CompleteMultipartUpload",
-		bucket: *in.Bucket, key: *in.Key, etag: etag, version: value(version), size: size,
+		bucket: *in.Bucket, key: *in.Key, etag: etag, version: common.Value(version), size: size,
 	})
 	location := "/" + *in.Bucket + "/" + url.PathEscape(*in.Key)
 	return &api.CompleteMultipartUploadOutput{
@@ -296,7 +302,7 @@ func (s *Service) AbortMultipartUpload(
 		if resolveErr != nil {
 			return resolveErr
 		}
-		if _, loadErr := loadUpload(tx, bucket, *in.Key, value(in.UploadId)); loadErr != nil {
+		if _, loadErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId)); loadErr != nil {
 			return loadErr
 		}
 		removeUpload(tx, bucket, *in.UploadId)
@@ -340,7 +346,7 @@ func (s *Service) ListParts(ctx context.Context, in *api.ListPartsRequest) (*api
 		if resolveErr != nil {
 			return resolveErr
 		}
-		if _, loadErr := loadUpload(tx, bucket, *in.Key, value(in.UploadId)); loadErr != nil {
+		if _, loadErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId)); loadErr != nil {
 			return loadErr
 		}
 		var nums []int64
@@ -388,10 +394,10 @@ func (s *Service) ListMultipartUploads(
 	if limit < 0 || limit > 1000 {
 		return nil, fail(400, "InvalidArgument", "max-uploads must be from 0 to 1000")
 	}
-	if value(in.UploadIdMarker) != "" && value(in.KeyMarker) == "" {
+	if common.Value(in.UploadIdMarker) != "" && common.Value(in.KeyMarker) == "" {
 		return nil, fail(400, "InvalidArgument", "upload-id-marker requires key-marker")
 	}
-	if e := value(in.EncodingType); e != "" && e != encodingURL {
+	if e := common.Value(in.EncodingType); e != "" && e != encodingURL {
 		return nil, fail(400, "InvalidArgument", "Invalid encoding type")
 	}
 	out := &api.ListMultipartUploadsOutput{
@@ -415,8 +421,8 @@ func (s *Service) ListMultipartUploads(
 			if _, readErr := readJSON(tx, k, &u); readErr != nil {
 				return readErr
 			}
-			if !strings.HasPrefix(u.Key, value(in.Prefix)) || u.Key < value(in.KeyMarker) ||
-				(u.Key == value(in.KeyMarker) && (in.UploadIdMarker == nil || id <= *in.UploadIdMarker)) {
+			if !strings.HasPrefix(u.Key, common.Value(in.Prefix)) || u.Key < common.Value(in.KeyMarker) ||
+				(u.Key == common.Value(in.KeyMarker) && (in.UploadIdMarker == nil || id <= *in.UploadIdMarker)) {
 				continue
 			}
 			items = append(items, item{id, u})
@@ -430,23 +436,23 @@ func (s *Service) ListMultipartUploads(
 		seen := map[string]bool{}
 		count := int64(0)
 		for _, it := range items {
-			if d := value(in.Delimiter); d != "" {
-				if pos := strings.Index(it.u.Key[len(value(in.Prefix)):], d); pos >= 0 {
-					common := it.u.Key[:len(value(in.Prefix))+pos+len(d)]
-					if common <= value(in.KeyMarker) {
+			if d := common.Value(in.Delimiter); d != "" {
+				if pos := strings.Index(it.u.Key[len(common.Value(in.Prefix)):], d); pos >= 0 {
+					prefix := it.u.Key[:len(common.Value(in.Prefix))+pos+len(d)]
+					if prefix <= common.Value(in.KeyMarker) {
 						continue
 					}
-					if seen[common] {
+					if seen[prefix] {
 						continue
 					}
 					if count == limit {
 						*out.IsTruncated = true
 						break
 					}
-					seen[common] = true
-					out.CommonPrefixes = append(out.CommonPrefixes, api.CommonPrefix{Prefix: &common})
+					seen[prefix] = true
+					out.CommonPrefixes = append(out.CommonPrefixes, api.CommonPrefix{Prefix: &prefix})
 					count++
-					out.NextKeyMarker = new(common)
+					out.NextKeyMarker = new(prefix)
 					out.NextUploadIdMarker = nil
 					continue
 				}

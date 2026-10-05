@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -72,7 +73,7 @@ func permissionFunction(
 	m *request.Metadata,
 	functionName, qualifier, revision *string,
 ) (name, q string, fn *function, err error) {
-	if name, q, err = resolveName(*m, value(functionName)); err != nil {
+	if name, q, err = resolveName(*m, common.Value(functionName)); err != nil {
 		return "", "", nil, err
 	}
 
@@ -84,7 +85,7 @@ func permissionFunction(
 		return "", "", nil, err
 	}
 
-	if value(revision) != "" && *revision != fn.RevisionID {
+	if common.Value(revision) != "" && *revision != fn.RevisionID {
 		return "", "", nil, revisionMismatch()
 	}
 
@@ -113,11 +114,11 @@ func (s *Service) AddPermission(
 	}
 
 	switch {
-	case !statementID.MatchString(value(in.StatementId)):
+	case !statementID.MatchString(common.Value(in.StatementId)):
 		return nil, invalid("StatementId must be 1 to 100 letters, digits, hyphens, and underscores")
-	case !lambdaAction.MatchString(value(in.Action)):
+	case !lambdaAction.MatchString(common.Value(in.Action)):
 		return nil, invalid("Action must be lambda:<operation>, lambda:*, or *")
-	case value(in.Principal) == "":
+	case common.Value(in.Principal) == "":
 		return nil, invalid("Principal is required")
 	}
 
@@ -160,7 +161,7 @@ func (s *Service) AddPermission(
 			{in.EventSourceToken, stringEquals, "lambda:EventSourceToken"},
 		}
 		for _, c := range conditions {
-			if value(c.value) == "" {
+			if common.Value(c.value) == "" {
 				continue
 			}
 
@@ -242,14 +243,14 @@ func (s *Service) RemovePermission(
 		i := -1
 		if found {
 			for j, st := range p.Statement {
-				if st.Sid == value(in.StatementId) {
+				if st.Sid == common.Value(in.StatementId) {
 					i = j
 				}
 			}
 		}
 
 		if i < 0 {
-			return awserror.New("ResourceNotFoundException", "The statement id "+value(in.StatementId)+
+			return awserror.New("ResourceNotFoundException", "The statement id "+common.Value(in.StatementId)+
 				" does not exist in the policy.")
 		}
 

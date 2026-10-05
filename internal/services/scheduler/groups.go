@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -18,7 +19,7 @@ import (
 func tagMap(tags []api.Tag) map[string]string {
 	out := map[string]string{}
 	for _, t := range tags {
-		out[value(t.Key)] = value(t.Value)
+		out[common.Value(t.Key)] = common.Value(t.Value)
 	}
 
 	return out
@@ -40,7 +41,7 @@ func (s *Service) CreateScheduleGroup(
 		return nil, err
 	}
 
-	name := value(in.Name)
+	name := common.Value(in.Name)
 	if !namePattern.MatchString(name) {
 		return nil, validation("The group name must be 1 to 64 letters, digits, and -_. characters.")
 	}
@@ -50,14 +51,18 @@ func (s *Service) CreateScheduleGroup(
 		return nil, tagError(err)
 	}
 
-	now := unix(s.now())
+	now := common.Unix(s.now())
 	return &api.CreateScheduleGroupOutput{ScheduleGroupArn: new(groupARN(m.Scope, name))},
 		s.store.Update(ctx, func(tx storage.WriteTx) error {
 			if _, exists := tx.Get(key(m.Scope, kindGroup, name)); exists || name == defaultGroup {
 				return awserror.New("ConflictException", "Schedule group "+name+" already exists.")
 			}
 
-			return write(tx, key(m.Scope, kindGroup, name), group{Name: name, Created: now, Modified: now, Tags: tags})
+			return storage.Write(
+				tx,
+				key(m.Scope, kindGroup, name),
+				group{Name: name, Created: now, Modified: now, Tags: tags},
+			)
 		})
 }
 
@@ -78,7 +83,7 @@ func (s *Service) GetScheduleGroup(
 
 	var g *group
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		g, err = loadGroup(tx, m.Scope, value(in.Name))
+		g, err = loadGroup(tx, m.Scope, common.Value(in.Name))
 		return err
 	})
 	if err != nil {
@@ -97,7 +102,7 @@ func (s *Service) DeleteScheduleGroup(
 		return nil, err
 	}
 
-	name := value(in.Name)
+	name := common.Value(in.Name)
 	if name == defaultGroup {
 		return nil, validation("The default schedule group cannot be deleted.")
 	}
@@ -139,7 +144,7 @@ func (s *Service) ListScheduleGroups(
 		def, _ := loadGroup(tx, m.Scope, defaultGroup)
 		groups = append(groups, def)
 		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
-			g, _, readErr := read[group](tx, k)
+			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -157,7 +162,7 @@ func (s *Service) ListScheduleGroups(
 	out := &api.ListScheduleGroupsOutput{ScheduleGroups: []api.ScheduleGroupSummary{}}
 	var last string
 	for _, g := range groups {
-		if in.NextToken != nil && g.Name <= *in.NextToken || !strings.HasPrefix(g.Name, value(in.NamePrefix)) {
+		if in.NextToken != nil && g.Name <= *in.NextToken || !strings.HasPrefix(g.Name, common.Value(in.NamePrefix)) {
 			continue
 		}
 
@@ -180,10 +185,10 @@ func (s *Service) ListScheduleGroups(
 // taggedGroup returns the group an ARN names; only schedule groups other than
 // the default group have tags.
 func taggedGroup(scope request.Scope, arn *string) (string, error) {
-	name, ok := strings.CutPrefix(value(arn), groupARN(scope, ""))
+	name, ok := strings.CutPrefix(common.Value(arn), groupARN(scope, ""))
 	switch {
 	case !ok || name == "":
-		return "", notFound("Resource " + value(arn))
+		return "", notFound("Resource " + common.Value(arn))
 	case name == defaultGroup:
 		return "", validation("The default schedule group cannot be tagged.")
 	}
@@ -213,7 +218,7 @@ func (s *Service) retag(ctx context.Context, arn *string, change func(map[string
 			return loadErr
 		}
 
-		return write(tx, key(m.Scope, kindGroup, name), g)
+		return storage.Write(tx, key(m.Scope, kindGroup, name), g)
 	})
 }
 
@@ -281,7 +286,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			scope := request.Scope{AccountID: account, Region: region}
 			switch {
 			case strings.HasPrefix(rest, kindGroup+"/"):
-				g, _, err := read[group](tx, k)
+				g, _, err := storage.Read[group](tx, k)
 				if err != nil {
 					return err
 				}
@@ -291,22 +296,26 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					ARN: groupARN(scope, g.Name), Tags: g.Tags,
 				})
 			case strings.HasPrefix(rest, kindSchedule+"/"):
-				rec, _, err := read[record](tx, k)
+				rec, _, err := storage.Read[record](tx, k)
 				if err != nil {
 					return err
 				}
 
 				sc := &rec.Schedule
 				details := map[string]any{
-					"Group": value(sc.GroupName), "Expression": value(sc.ScheduleExpression),
-					"State": value(sc.State), "Target": value(sc.Target.Arn),
+					"Group": common.Value(sc.GroupName), "Expression": common.Value(sc.ScheduleExpression),
+					"State": common.Value(sc.State), "Target": common.Value(sc.Target.Arn),
 				}
 				if rec.Next != 0 {
 					details["Next"] = fromUnix(rec.Next).Format("2006-01-02T15:04:05Z")
 				}
 
 				out = append(out, catalog.Resource{
-					Type: "schedule", Account: account, Region: region, Name: value(sc.Name), ARN: value(sc.Arn),
+					Type:    "schedule",
+					Account: account,
+					Region:  region,
+					Name:    common.Value(sc.Name),
+					ARN:     common.Value(sc.Arn),
 					Details: details,
 				})
 			}

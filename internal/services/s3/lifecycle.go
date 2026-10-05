@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const (
@@ -40,13 +41,13 @@ func count(conditions ...bool) int {
 // checkLifecycleRule validates one rule: its ID and status, one way of
 // selecting objects, and at least one well-formed action.
 func checkLifecycleRule(r *api.LifecycleRule, ids map[string]bool) error {
-	id := value(r.ID)
+	id := common.Value(r.ID)
 	switch {
 	case len(id) > 255:
 		return invalidArgument("ID length should not exceed allowed limit of 255")
 	case id != "" && ids[id]:
 		return invalidArgument("Rule ID must be unique. Found same ID for more than one rule")
-	case value(r.Status) != "Enabled" && value(r.Status) != "Disabled":
+	case common.Value(r.Status) != "Enabled" && common.Value(r.Status) != "Disabled":
 		return malformedXML()
 	case r.Prefix != nil && r.Filter != nil:
 		return malformedXML()
@@ -78,26 +79,26 @@ func checkLifecycleRule(r *api.LifecycleRule, ids map[string]bool) error {
 	}
 
 	for _, t := range r.Transitions {
-		if count(t.Date != nil, t.Days != nil) != 1 || value(t.Days) < 0 {
+		if count(t.Date != nil, t.Days != nil) != 1 || common.Value(t.Days) < 0 {
 			return malformedXML()
 		}
 
-		if !transitionClasses[value(t.StorageClass)] {
+		if !transitionClasses[common.Value(t.StorageClass)] {
 			return malformedXML()
 		}
 	}
 
 	for _, t := range r.NoncurrentVersionTransitions {
-		if !transitionClasses[value(t.StorageClass)] || value(t.NoncurrentDays) < 0 {
+		if !transitionClasses[common.Value(t.StorageClass)] || common.Value(t.NoncurrentDays) < 0 {
 			return malformedXML()
 		}
 	}
 
-	if e := r.NoncurrentVersionExpiration; e != nil && value(e.NoncurrentDays) <= 0 {
+	if e := r.NoncurrentVersionExpiration; e != nil && common.Value(e.NoncurrentDays) <= 0 {
 		return invalidArgument("'NoncurrentDays' for NoncurrentVersionExpiration action must be a positive integer")
 	}
 
-	if a := r.AbortIncompleteMultipartUpload; a != nil && value(a.DaysAfterInitiation) <= 0 {
+	if a := r.AbortIncompleteMultipartUpload; a != nil && common.Value(a.DaysAfterInitiation) <= 0 {
 		return invalidArgument(
 			"'DaysAfterInitiation' for AbortIncompleteMultipartUpload action must be a positive integer",
 		)
@@ -122,7 +123,7 @@ func (s *Service) PutBucketLifecycleConfiguration(
 		}
 	}
 
-	size := value(in.TransitionDefaultMinimumObjectSize)
+	size := common.Value(in.TransitionDefaultMinimumObjectSize)
 	switch size {
 	case "":
 		size = minimumSize128K

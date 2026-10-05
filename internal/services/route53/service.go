@@ -72,14 +72,6 @@ func key(account, kind, name string) string {
 	return account + "/" + service + "/" + kind + "/" + name
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
 // newID returns an ID of prefix and uppercase letters and digits, as Route
 // 53's zone and change IDs are.
 func newID(prefix string, n int) string {
@@ -92,7 +84,7 @@ func invalid(format string, args ...any) error {
 
 // bareID drops the /hostedzone/ or /change/ prefix clients may send.
 func bareID(id *string) string {
-	v := value(id)
+	v := common.Value(id)
 	v = strings.TrimPrefix(v, zonePrefix)
 	return strings.TrimPrefix(v, changePrefix)
 }
@@ -102,7 +94,7 @@ func (s *Service) changeInfo(tx storage.WriteTx, account string, comment *string
 	now := s.now().UTC().Truncate(time.Millisecond)
 	id := newID("C", 20)
 	info := api.ChangeInfo{Id: new(changePrefix + id), Status: new(statusPending), SubmittedAt: &now, Comment: comment}
-	if err := write(tx, key(account, kindChange, id), info); err != nil {
+	if err := storage.Write(tx, key(account, kindChange, id), info); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +110,7 @@ func (s *Service) GetChange(ctx context.Context, in *api.GetChangeRequest) (*api
 	var info *api.ChangeInfo
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
-		info, found, err = read[api.ChangeInfo](tx, key(m.AccountID, kindChange, bareID(in.Id)))
+		info, found, err = storage.Read[api.ChangeInfo](tx, key(m.AccountID, kindChange, bareID(in.Id)))
 		if err == nil && !found {
 			err = awserror.New("NoSuchChange", "A change with the specified change ID does not exist.")
 		}

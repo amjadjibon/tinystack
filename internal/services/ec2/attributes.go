@@ -7,6 +7,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -25,12 +26,12 @@ func (s *Service) DescribeVpcAttribute(
 ) (*api.DescribeVpcAttributeResult, error) {
 	out := &api.DescribeVpcAttributeResult{VpcId: in.VpcId}
 	err := s.view(ctx, in.DryRun, func(tx storage.ReadTx, scope request.Scope) error {
-		v, err := loadVPC(tx, scope, value(in.VpcId))
+		v, err := loadVPC(tx, scope, common.Value(in.VpcId))
 		if err != nil {
 			return err
 		}
 
-		switch name := value(in.Attribute); name {
+		switch name := common.Value(in.Attribute); name {
 		case "enableDnsSupport":
 			out.EnableDnsSupport = attribute(!v.NoDNSSupport)
 		case "enableDnsHostnames":
@@ -79,18 +80,18 @@ func (s *Service) ModifyVpcAttribute(
 	}
 
 	err := s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
-		v, err := loadVPC(tx, scope, value(in.VpcId))
+		v, err := loadVPC(tx, scope, common.Value(in.VpcId))
 		if err != nil {
 			return err
 		}
 
 		switch {
 		case in.EnableDnsSupport != nil:
-			v.NoDNSSupport = !value(in.EnableDnsSupport.Value)
+			v.NoDNSSupport = !common.Value(in.EnableDnsSupport.Value)
 		case in.EnableDnsHostnames != nil:
-			v.DNSHostnames = value(in.EnableDnsHostnames.Value)
+			v.DNSHostnames = common.Value(in.EnableDnsHostnames.Value)
 		default:
-			v.UsageMetrics = value(in.EnableNetworkAddressUsageMetrics.Value)
+			v.UsageMetrics = common.Value(in.EnableNetworkAddressUsageMetrics.Value)
 		}
 
 		if v.DNSHostnames && v.NoDNSSupport {
@@ -98,7 +99,7 @@ func (s *Service) ModifyVpcAttribute(
 				"Enabling DNS hostnames requires DNS support to be enabled for the VPC.")
 		}
 
-		return write(tx, key(scope, kindVPC, v.ID), v)
+		return storage.Write(tx, key(scope, kindVPC, v.ID), v)
 	})
 	if err != nil {
 		return nil, err
@@ -125,40 +126,41 @@ func (s *Service) ModifySubnetAttribute(
 		"AssignIpv6AddressOnCreation": in.AssignIpv6AddressOnCreation, "EnableDns64": in.EnableDns64,
 		"MapCustomerOwnedIpOnLaunch": in.MapCustomerOwnedIpOnLaunch,
 	} {
-		if a != nil && value(a.Value) {
+		if a != nil && common.Value(a.Value) {
 			return nil, invalidParameter("TinyStack subnets have no IPv6 CIDR blocks or customer-owned " +
 				"address pools, so " + name + " cannot be enabled")
 		}
 	}
 
-	if in.EnableResourceNameDnsAAAARecordOnLaunch != nil && value(in.EnableResourceNameDnsAAAARecordOnLaunch.Value) {
+	if in.EnableResourceNameDnsAAAARecordOnLaunch != nil &&
+		common.Value(in.EnableResourceNameDnsAAAARecordOnLaunch.Value) {
 		return nil, invalidParameter("TinyStack subnets have no IPv6 CIDR blocks, so " +
 			"EnableResourceNameDnsAAAARecordOnLaunch cannot be enabled")
 	}
 
-	hostname := value(in.PrivateDnsHostnameTypeOnLaunch)
+	hostname := common.Value(in.PrivateDnsHostnameTypeOnLaunch)
 	if in.PrivateDnsHostnameTypeOnLaunch != nil && hostname != hostnameIPName && hostname != hostnameResourceName {
 		return nil, invalidParameter(fmt.Sprintf("Value (%s) for parameter PrivateDnsHostnameTypeOnLaunch is invalid.",
 			hostname))
 	}
 
 	err := s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
-		id := value(in.SubnetId)
-		sn, ok, err := read[subnet](tx, key(scope, kindSubnet, id))
+		id := common.Value(in.SubnetId)
+		sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, id))
 		if err != nil || !ok {
 			return errorsOr(err, subnetNotFound(id))
 		}
 
 		switch {
 		case in.MapPublicIpOnLaunch != nil:
-			sn.MapPublicIP = value(in.MapPublicIpOnLaunch.Value)
+			sn.MapPublicIP = common.Value(in.MapPublicIpOnLaunch.Value)
 		case in.PrivateDnsHostnameTypeOnLaunch != nil:
 			sn.HostnameType = hostname
 		case in.EnableResourceNameDnsARecordOnLaunch != nil:
-			sn.DNSARecord = value(in.EnableResourceNameDnsARecordOnLaunch.Value)
+			sn.DNSARecord = common.Value(in.EnableResourceNameDnsARecordOnLaunch.Value)
 		}
 
-		return write(tx, key(scope, kindSubnet, sn.ID), sn)
+		return storage.Write(tx, key(scope, kindSubnet, sn.ID), sn)
 	})
 	if err != nil {
 		return nil, err

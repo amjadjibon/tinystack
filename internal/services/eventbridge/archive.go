@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -56,18 +57,8 @@ func archiveNotFound(name string) error {
 	return awserror.New("ResourceNotFoundException", "Archive "+name+" does not exist.")
 }
 
-// getJSON reads a JSON record.
-func getJSON[T any](tx storage.ReadTx, key string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, key)
-}
-
-// putJSON writes a JSON record.
-func putJSON(tx storage.WriteTx, key string, v any) error {
-	return storage.Write(tx, key, v)
-}
-
 func loadArchive(tx storage.ReadTx, scope request.Scope, name string) (*archive, error) {
-	a, found, err := getJSON[archive](tx, archivePrefix(scope)+name)
+	a, found, err := storage.Read[archive](tx, archivePrefix(scope)+name)
 	if err == nil && !found {
 		return nil, archiveNotFound(name)
 	}
@@ -76,11 +67,11 @@ func loadArchive(tx storage.ReadTx, scope request.Scope, name string) (*archive,
 }
 
 func checkArchive(description, eventPattern *string, retention *int64) error {
-	if len(value(description)) > 512 {
+	if len(common.Value(description)) > 512 {
 		return invalid("Description must be at most 512 characters.")
 	}
 
-	if value(retention) < 0 {
+	if common.Value(retention) < 0 {
 		return invalid("RetentionDays must not be negative.")
 	}
 
@@ -103,7 +94,7 @@ func (s *Service) CreateArchive(ctx context.Context, in *api.CreateArchiveReques
 		return nil, err
 	}
 
-	name := value(in.ArchiveName)
+	name := common.Value(in.ArchiveName)
 	if !archiveName.MatchString(name) {
 		return nil, invalid("Archive name must be 1 to 48 characters from [.-_A-Za-z0-9].")
 	}
@@ -112,14 +103,14 @@ func (s *Service) CreateArchive(ctx context.Context, in *api.CreateArchiveReques
 		return nil, checkErr
 	}
 
-	bus, ok := strings.CutPrefix(value(in.EventSourceArn), busARN(m.Scope, ""))
+	bus, ok := strings.CutPrefix(common.Value(in.EventSourceArn), busARN(m.Scope, ""))
 	if !ok {
-		return nil, busNotFound(value(in.EventSourceArn))
+		return nil, busNotFound(common.Value(in.EventSourceArn))
 	}
 
 	a := &archive{
-		Name: name, Bus: bus, Description: value(in.Description), Pattern: value(in.EventPattern),
-		Retention: value(in.RetentionDays), Created: s.now().UnixMilli(),
+		Name: name, Bus: bus, Description: common.Value(in.Description), Pattern: common.Value(in.EventPattern),
+		Retention: common.Value(in.RetentionDays), Created: s.now().UnixMilli(),
 	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if busErr := checkBus(tx, m.Scope, bus); busErr != nil {
@@ -130,7 +121,7 @@ func (s *Service) CreateArchive(ctx context.Context, in *api.CreateArchiveReques
 			return awserror.New("ResourceAlreadyExistsException", "Archive "+name+" already exists.")
 		}
 
-		return putJSON(tx, archivePrefix(m.Scope)+name, a)
+		return storage.Write(tx, archivePrefix(m.Scope)+name, a)
 	})
 	if err != nil {
 		return nil, err
@@ -155,7 +146,7 @@ func (s *Service) DescribeArchive(
 	var a *archive
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var loadErr error
-		a, loadErr = loadArchive(tx, m.Scope, value(in.ArchiveName))
+		a, loadErr = loadArchive(tx, m.Scope, common.Value(in.ArchiveName))
 		return loadErr
 	})
 	if err != nil {
@@ -204,8 +195,8 @@ func (s *Service) ListArchives(ctx context.Context, in *api.ListArchivesRequest)
 
 	out := &api.ListArchivesResponse{Archives: []api.Archive{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(archivePrefix(m.Scope) + value(in.NamePrefix)) {
-			a, _, loadErr := getJSON[archive](tx, k)
+		for _, k := range tx.Keys(archivePrefix(m.Scope) + common.Value(in.NamePrefix)) {
+			a, _, loadErr := storage.Read[archive](tx, k)
 			if loadErr != nil {
 				return loadErr
 			}
@@ -246,7 +237,7 @@ func (s *Service) UpdateArchive(ctx context.Context, in *api.UpdateArchiveReques
 	var a *archive
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var loadErr error
-		if a, loadErr = loadArchive(tx, m.Scope, value(in.ArchiveName)); loadErr != nil {
+		if a, loadErr = loadArchive(tx, m.Scope, common.Value(in.ArchiveName)); loadErr != nil {
 			return loadErr
 		}
 
@@ -262,7 +253,7 @@ func (s *Service) UpdateArchive(ctx context.Context, in *api.UpdateArchiveReques
 			a.Retention = *in.RetentionDays
 		}
 
-		return putJSON(tx, archivePrefix(m.Scope)+a.Name, a)
+		return storage.Write(tx, archivePrefix(m.Scope)+a.Name, a)
 	})
 	if err != nil {
 		return nil, err
@@ -283,7 +274,7 @@ func (s *Service) DeleteArchive(ctx context.Context, in *api.DeleteArchiveReques
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		a, loadErr := loadArchive(tx, m.Scope, value(in.ArchiveName))
+		a, loadErr := loadArchive(tx, m.Scope, common.Value(in.ArchiveName))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -313,7 +304,7 @@ func (s *Service) archivers(ctx context.Context, scope request.Scope) (map[strin
 	out := map[string][]archiver{}
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(archivePrefix(scope)) {
-			a, _, err := getJSON[archive](tx, k)
+			a, _, err := storage.Read[archive](tx, k)
 			if err != nil {
 				return err
 			}
@@ -356,7 +347,7 @@ func (s *Service) keep(ctx context.Context, scope request.Scope, events []archiv
 			if !ok {
 				var found bool
 				var err error
-				if a, found, err = getJSON[archive](tx, archivePrefix(scope)+e.archive); err != nil {
+				if a, found, err = storage.Read[archive](tx, archivePrefix(scope)+e.archive); err != nil {
 					return err
 				} else if !found {
 					// The archive was deleted after PutEvents read it.
@@ -386,7 +377,7 @@ func (s *Service) keep(ctx context.Context, scope request.Scope, events []archiv
 				}
 			}
 
-			if err := putJSON(tx, archivePrefix(scope)+a.Name, a); err != nil {
+			if err := storage.Write(tx, archivePrefix(scope)+a.Name, a); err != nil {
 				return err
 			}
 		}

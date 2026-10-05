@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -23,7 +24,7 @@ var identitySource = regexp.MustCompile(
 // checkAuthorizer validates a JWT authorizer (an issuer, audiences, and one
 // token source) or a Lambda REQUEST authorizer.
 func checkAuthorizer(a *api.Authorizer) error {
-	if n := len(value(a.Name)); n < 1 || n > 128 {
+	if n := len(common.Value(a.Name)); n < 1 || n > 128 {
 		return badRequest("Name must be 1 to 128 characters.")
 	}
 
@@ -33,14 +34,14 @@ func checkAuthorizer(a *api.Authorizer) error {
 		}
 	}
 
-	if ttl := value(a.AuthorizerResultTtlInSeconds); ttl < 0 || ttl > maxTTL {
+	if ttl := common.Value(a.AuthorizerResultTtlInSeconds); ttl < 0 || ttl > maxTTL {
 		return badRequest("AuthorizerResultTtlInSeconds must be between 0 and %d.", maxTTL)
 	}
 
-	switch value(a.AuthorizerType) {
+	switch common.Value(a.AuthorizerType) {
 	case typeJWT:
 		switch {
-		case a.JwtConfiguration == nil || !isURL(value(a.JwtConfiguration.Issuer)):
+		case a.JwtConfiguration == nil || !isURL(common.Value(a.JwtConfiguration.Issuer)):
 			return badRequest("A JWT authorizer needs a JwtConfiguration with an issuer URL.")
 		case len(a.IdentitySource) != 1 || !strings.HasPrefix(a.IdentitySource[0], "$request."):
 			return badRequest("A JWT authorizer needs one identity source: a request header or query string.")
@@ -49,14 +50,14 @@ func checkAuthorizer(a *api.Authorizer) error {
 				"only for REQUEST authorizers.")
 		}
 	case typeRequest:
-		switch format := value(a.AuthorizerPayloadFormatVersion); {
-		case !isFunction(value(a.AuthorizerUri)):
+		switch format := common.Value(a.AuthorizerPayloadFormatVersion); {
+		case !isFunction(common.Value(a.AuthorizerUri)):
 			return badRequest("AuthorizerUri must be a Lambda function's invocation URI.")
 		case format != payload1 && format != payload2:
 			return badRequest("AuthorizerPayloadFormatVersion must be 1.0 or 2.0.")
-		case value(a.EnableSimpleResponses) && format != payload2:
+		case common.Value(a.EnableSimpleResponses) && format != payload2:
 			return badRequest("Simple responses need payload format 2.0.")
-		case len(a.IdentitySource) == 0 && value(a.AuthorizerResultTtlInSeconds) > 0:
+		case len(a.IdentitySource) == 0 && common.Value(a.AuthorizerResultTtlInSeconds) > 0:
 			return badRequest("Caching an authorizer's results needs an identity source.")
 		case a.JwtConfiguration != nil:
 			return badRequest("JwtConfiguration is only for JWT authorizers.")
@@ -78,18 +79,25 @@ func (s *Service) CreateAuthorizer(
 	}
 
 	a := &api.Authorizer{
-		AuthorizerId: new(newID(6)), Name: in.Name, AuthorizerType: in.AuthorizerType, AuthorizerUri: in.AuthorizerUri,
-		AuthorizerPayloadFormatVersion: in.AuthorizerPayloadFormatVersion, IdentitySource: in.IdentitySource,
-		AuthorizerResultTtlInSeconds: in.AuthorizerResultTtlInSeconds, EnableSimpleResponses: in.EnableSimpleResponses,
-		JwtConfiguration: in.JwtConfiguration,
+		AuthorizerId: new(
+			common.RandomID(6),
+		),
+		Name:                           in.Name,
+		AuthorizerType:                 in.AuthorizerType,
+		AuthorizerUri:                  in.AuthorizerUri,
+		AuthorizerPayloadFormatVersion: in.AuthorizerPayloadFormatVersion,
+		IdentitySource:                 in.IdentitySource,
+		AuthorizerResultTtlInSeconds:   in.AuthorizerResultTtlInSeconds,
+		EnableSimpleResponses:          in.EnableSimpleResponses,
+		JwtConfiguration:               in.JwtConfiguration,
 	}
 	if checkErr := checkAuthorizer(a); checkErr != nil {
 		return nil, checkErr
 	}
 
-	if value(a.AuthorizerType) == typeRequest {
-		a.EnableSimpleResponses = new(value(a.EnableSimpleResponses))
-		a.AuthorizerResultTtlInSeconds = new(value(a.AuthorizerResultTtlInSeconds))
+	if common.Value(a.AuthorizerType) == typeRequest {
+		a.EnableSimpleResponses = new(common.Value(a.EnableSimpleResponses))
+		a.AuthorizerResultTtlInSeconds = new(common.Value(a.AuthorizerResultTtlInSeconds))
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -98,7 +106,11 @@ func (s *Service) CreateAuthorizer(
 			return loadErr
 		}
 
-		if writeErr := write(tx, owned(m.Scope, kindAuthorizer, *api.ApiId, *a.AuthorizerId), a); writeErr != nil {
+		if writeErr := storage.Write(
+			tx,
+			owned(m.Scope, kindAuthorizer, *api.ApiId, *a.AuthorizerId),
+			a,
+		); writeErr != nil {
 			return writeErr
 		}
 
@@ -131,10 +143,10 @@ func (s *Service) changeAuthorizer(
 			return loadErr
 		}
 
-		key := owned(m.Scope, kindAuthorizer, *owner.ApiId, value(id))
+		key := owned(m.Scope, kindAuthorizer, *owner.ApiId, common.Value(id))
 		var found bool
-		if a, found, loadErr = read[api.Authorizer](tx, key); loadErr != nil || !found {
-			return errorsOr(loadErr, notFound("Invalid Authorizer identifier specified %s", value(id)))
+		if a, found, loadErr = storage.Read[api.Authorizer](tx, key); loadErr != nil || !found {
+			return common.ErrorsOr(loadErr, notFound("Invalid Authorizer identifier specified %s", common.Value(id)))
 		}
 
 		keep, fnErr := fn(tx, m.Scope, a)
@@ -143,7 +155,7 @@ func (s *Service) changeAuthorizer(
 		}
 
 		if keep {
-			if writeErr := write(tx, key, a); writeErr != nil {
+			if writeErr := storage.Write(tx, key, a); writeErr != nil {
 				return writeErr
 			}
 		} else {
@@ -176,10 +188,10 @@ func (s *Service) GetAuthorizer(
 		}
 
 		var found bool
-		a, found, loadErr = read[api.Authorizer](tx, owned(m.Scope, kindAuthorizer, *owner.ApiId,
-			value(in.AuthorizerId)))
-		return errorsOr(loadErr, notFoundIf(!found, "Invalid Authorizer identifier specified %s",
-			value(in.AuthorizerId)))
+		a, found, loadErr = storage.Read[api.Authorizer](tx, owned(m.Scope, kindAuthorizer, *owner.ApiId,
+			common.Value(in.AuthorizerId)))
+		return common.ErrorsOr(loadErr, notFoundIf(!found, "Invalid Authorizer identifier specified %s",
+			common.Value(in.AuthorizerId)))
 	})
 	if err != nil {
 		return nil, err
@@ -205,7 +217,7 @@ func (s *Service) GetAuthorizers(
 			return loadErr
 		}
 
-		all, readErr := records[api.Authorizer](tx, prefix(m.Scope, kindAuthorizer)+*owner.ApiId+"/")
+		all, readErr := storage.Records[api.Authorizer](tx, prefix(m.Scope, kindAuthorizer)+*owner.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -233,18 +245,27 @@ func (s *Service) UpdateAuthorizer(
 ) (*api.UpdateAuthorizerResponse, error) {
 	a, err := s.changeAuthorizer(ctx, in.ApiId, in.AuthorizerId,
 		func(_ storage.WriteTx, _ request.Scope, a *api.Authorizer) (bool, error) {
-			a.Name, a.AuthorizerType = orElse(in.Name, a.Name), orElse(in.AuthorizerType, a.AuthorizerType)
-			a.AuthorizerUri = orElse(in.AuthorizerUri, a.AuthorizerUri)
-			a.AuthorizerPayloadFormatVersion = orElse(in.AuthorizerPayloadFormatVersion,
+			a.Name, a.AuthorizerType = common.OrElse(
+				in.Name,
+				a.Name,
+			), common.OrElse(
+				in.AuthorizerType,
+				a.AuthorizerType,
+			)
+			a.AuthorizerUri = common.OrElse(in.AuthorizerUri, a.AuthorizerUri)
+			a.AuthorizerPayloadFormatVersion = common.OrElse(in.AuthorizerPayloadFormatVersion,
 				a.AuthorizerPayloadFormatVersion)
-			a.AuthorizerResultTtlInSeconds = orElse(in.AuthorizerResultTtlInSeconds, a.AuthorizerResultTtlInSeconds)
-			a.EnableSimpleResponses = orElse(in.EnableSimpleResponses, a.EnableSimpleResponses)
-			a.JwtConfiguration = orElse(in.JwtConfiguration, a.JwtConfiguration)
+			a.AuthorizerResultTtlInSeconds = common.OrElse(
+				in.AuthorizerResultTtlInSeconds,
+				a.AuthorizerResultTtlInSeconds,
+			)
+			a.EnableSimpleResponses = common.OrElse(in.EnableSimpleResponses, a.EnableSimpleResponses)
+			a.JwtConfiguration = common.OrElse(in.JwtConfiguration, a.JwtConfiguration)
 			if in.IdentitySource != nil {
 				a.IdentitySource = in.IdentitySource
 			}
 
-			if value(a.AuthorizerType) == typeJWT {
+			if common.Value(a.AuthorizerType) == typeJWT {
 				a.EnableSimpleResponses, a.AuthorizerResultTtlInSeconds = nil, nil
 			}
 
@@ -264,8 +285,8 @@ func (s *Service) DeleteAuthorizer(
 ) (*api.DeleteAuthorizerOutput, error) {
 	_, err := s.changeAuthorizer(ctx, in.ApiId, in.AuthorizerId,
 		func(tx storage.WriteTx, scope request.Scope, a *api.Authorizer) (bool, error) {
-			used, usedErr := routesUsing(tx, scope, value(in.ApiId), *a.AuthorizerId,
-				func(r *api.Route) string { return value(r.AuthorizerId) })
+			used, usedErr := routesUsing(tx, scope, common.Value(in.ApiId), *a.AuthorizerId,
+				func(r *api.Route) string { return common.Value(r.AuthorizerId) })
 			if usedErr != nil {
 				return false, usedErr
 			}

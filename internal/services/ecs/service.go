@@ -124,19 +124,6 @@ func seconds(t time.Time) *float64 {
 	return common.SecondsMilli(t)
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-// records reads every record under keyPrefix, in key order.
-func records[T any](tx storage.ReadTx, keyPrefix string) ([]*T, error) {
-	return storage.Records[T](tx, keyPrefix)
-}
-
 // page returns the items after the one token names, at most limit of them, and
 // the token for the rest, if any. Tokens are the last returned item's ID.
 func page[T any](items []T, id func(T) string, token *string, limit int) (selected []T, next *string, err error) {
@@ -234,5 +221,3 @@ func newID() string {
 	_, _ = rand.Read(b[:])
 	return hex.EncodeToString(b[:])
 }
-
-func orElse[T any](p, fallback *T) *T { return common.OrElse(p, fallback) }

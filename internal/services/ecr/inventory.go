@@ -19,7 +19,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			r, _, err := read[repository](tx, key)
+			r, _, err := storage.Read[repository](tx, key)
 			if err != nil {
 				return err
 			}

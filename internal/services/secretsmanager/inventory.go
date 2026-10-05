@@ -21,7 +21,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			sec, _, err := read[secret](tx, key)
+			sec, _, err := storage.Read[secret](tx, key)
 			if err != nil {
 				return err
 			}

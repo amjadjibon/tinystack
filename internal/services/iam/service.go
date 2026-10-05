@@ -22,7 +22,6 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -93,8 +92,6 @@ var (
 	accountID  = regexp.MustCompile(`^\d{12}$`)
 )
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 func validation(format string, args ...any) error {
 	return awserror.New("ValidationError", fmt.Sprintf(format, args...))
 }
@@ -145,12 +142,6 @@ func newID(prefix string) string {
 	_, _ = rand.Read(b[:])
 	return prefix + base32.StdEncoding.EncodeToString(b[:])
 }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // list decodes every record of kind in account, ordered by key.
 func list[T any](tx storage.ReadTx, account, kind string) ([]*T, error) {

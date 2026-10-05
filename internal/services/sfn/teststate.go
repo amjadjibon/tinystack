@@ -8,6 +8,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // TestState runs one state once, as an execution would, without storing
@@ -84,12 +85,12 @@ func (s *Service) TestState(ctx context.Context, in *api.TestStateInput) (*api.T
 		return nil, invalidARN(*in.RoleArn)
 	}
 
-	def, name, err := testDefinition(value(in.Definition), value(in.StateName))
+	def, name, err := testDefinition(common.Value(in.Definition), common.Value(in.StateName))
 	if err != nil {
 		return nil, err
 	}
 
-	raw := value(in.Input)
+	raw := common.Value(in.Input)
 	if in.Input == nil {
 		raw = "{}"
 	}
@@ -113,7 +114,7 @@ func (s *Service) TestState(ctx context.Context, in *api.TestStateInput) (*api.T
 	tested.Retry, tested.Catch = nil, nil
 	now := s.now()
 	r := &run{
-		s: s, machine: &stateMachine{Name: testStateName, RoleArn: value(in.RoleArn), Type: typeExpress},
+		s: s, machine: &stateMachine{Name: testStateName, RoleArn: common.Value(in.RoleArn), Type: typeExpress},
 		exec: &execution{
 			Name: uuid.NewV4().
 				String(),

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -22,32 +23,38 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			account := parts[0]
 			switch parts[2] {
 			case kindZone:
-				z, _, err := read[zone](tx, k)
+				z, _, err := storage.Read[zone](tx, k)
 				if err != nil {
 					return err
 				}
 
 				id := bareID(z.Zone.Id)
 				out = append(out, catalog.Resource{
-					Type: "hosted-zone", Account: account, Name: value(z.Zone.Name),
+					Type: "hosted-zone", Account: account, Name: common.Value(z.Zone.Name),
 					ARN: "arn:aws:route53:::hostedzone/" + id, Tags: z.Tags,
 					Details: map[string]any{
-						"Id": id, "Private": value(z.Zone.Config.PrivateZone),
-						"RecordSets": value(z.Zone.ResourceRecordSetCount),
+						"Id": id, "Private": common.Value(z.Zone.Config.PrivateZone),
+						"RecordSets": common.Value(z.Zone.ResourceRecordSetCount),
 					},
 				})
 			case kindHealthCheck:
-				h, _, err := read[healthCheck](tx, k)
+				h, _, err := storage.Read[healthCheck](tx, k)
 				if err != nil {
 					return err
 				}
 
 				c := h.Check.HealthCheckConfig
 				out = append(out, catalog.Resource{
-					Type: "health-check", Account: account, Name: value(h.Check.Id),
-					ARN: "arn:aws:route53:::healthcheck/" + value(h.Check.Id), Tags: h.Tags,
-					Details: map[string]any{"Type": value(c.Type), "Target": value(c.FullyQualifiedDomainName) +
-						value(c.IPAddress)},
+					Type:    "health-check",
+					Account: account,
+					Name:    common.Value(h.Check.Id),
+					ARN:     "arn:aws:route53:::healthcheck/" + common.Value(h.Check.Id),
+					Tags:    h.Tags,
+					Details: map[string]any{
+						"Type": common.Value(c.Type),
+						"Target": common.Value(c.FullyQualifiedDomainName) +
+							common.Value(c.IPAddress),
+					},
 				})
 			}
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -98,7 +99,7 @@ func (c *clientSettings) validity(kind string) time.Duration {
 	amount := map[string]*int64{
 		tokenAccess: c.AccessTokenValidity, tokenID: c.IdTokenValidity, tokenRefresh: c.RefreshTokenValidity,
 	}[kind]
-	unit := value(units[kind])
+	unit := common.Value(units[kind])
 	switch {
 	case unit == "" && kind == tokenRefresh:
 		unit = unitDays
@@ -270,7 +271,8 @@ func checkOAuth(c *clientSettings, custom []string, secret bool) error {
 		}
 	}
 
-	if value(c.AllowedOAuthFlowsUserPoolClient) && (len(c.AllowedOAuthFlows) == 0 || len(c.AllowedOAuthScopes) == 0) {
+	if common.Value(c.AllowedOAuthFlowsUserPoolClient) &&
+		(len(c.AllowedOAuthFlows) == 0 || len(c.AllowedOAuthScopes) == 0) {
 		return awserror.New("InvalidOAuthFlowException", "AllowedOAuthFlows and AllowedOAuthScopes are required "+
 			"when AllowedOAuthFlowsUserPoolClient is true.")
 	}
@@ -299,7 +301,7 @@ func (c *client) output() (*api.UserPoolClientType, error) {
 	}
 
 	out.UserPoolId, out.ClientId, out.ClientName = new(c.Pool), new(c.ID), new(c.Name)
-	out.CreationDate, out.LastModifiedDate = seconds(c.Created), seconds(c.Modified)
+	out.CreationDate, out.LastModifiedDate = common.SecondsMilli(c.Created), common.SecondsMilli(c.Modified)
 	if c.Secret != "" {
 		out.ClientSecret = new(c.Secret)
 	}
@@ -313,7 +315,7 @@ func loadClient(tx storage.ReadTx, scope request.Scope, p *pool, id *string) (*c
 		return nil, invalidParameter("ClientId is required.")
 	}
 
-	c, ok, err := read[client](tx, clientKey(scope, p.ID, *id))
+	c, ok, err := storage.Read[client](tx, clientKey(scope, p.ID, *id))
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +347,7 @@ func (s *Service) CreateUserPoolClient(
 			return scopesErr
 		}
 
-		if settingsErr := checkClient(&st, p, custom, value(in.GenerateSecret)); settingsErr != nil {
+		if settingsErr := checkClient(&st, p, custom, common.Value(in.GenerateSecret)); settingsErr != nil {
 			return settingsErr
 		}
 
@@ -358,16 +360,16 @@ func (s *Service) CreateUserPoolClient(
 			Pool: p.ID, ID: randomString(lower, 26), Name: *in.ClientName, Created: now, Modified: now,
 			Settings: st,
 		}
-		if value(in.GenerateSecret) {
+		if common.Value(in.GenerateSecret) {
 			c.Secret = randomString(lower, 51)
 		}
 
 		index := clientIndex{Account: scope.AccountID, Region: scope.Region, Pool: p.ID}
-		if writeErr := write(tx, clientIndexKey(c.ID), index); writeErr != nil {
+		if writeErr := storage.Write(tx, clientIndexKey(c.ID), index); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, clientKey(scope, p.ID, c.ID), c)
+		return storage.Write(tx, clientKey(scope, p.ID, c.ID), c)
 	})
 	if err != nil {
 		return nil, err
@@ -415,7 +417,7 @@ func (s *Service) ListUserPoolClients(
 	var clients []*client
 	err = s.view(ctx, in.UserPoolId, func(tx storage.ReadTx, scope request.Scope, p *pool) error {
 		for _, id := range ids(tx, prefix(scope, "client")+p.ID+"/") {
-			c, _, readErr := read[client](tx, clientKey(scope, p.ID, id))
+			c, _, readErr := storage.Read[client](tx, clientKey(scope, p.ID, id))
 			if readErr != nil {
 				return readErr
 			}
@@ -480,7 +482,7 @@ func (s *Service) UpdateUserPoolClient(
 			c.Name = *in.ClientName
 		}
 
-		return write(tx, clientKey(scope, p.ID, c.ID), c)
+		return storage.Write(tx, clientKey(scope, p.ID, c.ID), c)
 	})
 	if err != nil {
 		return nil, err

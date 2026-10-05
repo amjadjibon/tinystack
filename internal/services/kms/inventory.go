@@ -21,7 +21,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			scope := request.Scope{AccountID: account, Region: region}
-			k, _, err := read[key](tx, record)
+			k, _, err := storage.Read[key](tx, record)
 			if err != nil {
 				return err
 			}
@@ -32,7 +32,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			var aliases []string
 			for _, aliasRecord := range tx.Keys(prefix(scope, "alias")) {
-				a, _, readErr := read[alias](tx, aliasRecord)
+				a, _, readErr := storage.Read[alias](tx, aliasRecord)
 				if readErr != nil {
 					return readErr
 				}

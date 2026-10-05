@@ -11,6 +11,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -43,12 +44,21 @@ var (
 func recordPrefix(account, zoneID string) string { return key(account, kindRecord, zoneID+"/") }
 
 func recordKey(account, zoneID string, rs *api.ResourceRecordSet) string {
-	return recordPrefix(account, zoneID) + reversed(value(rs.Name)) + keySeparator + value(rs.Type) + keySeparator +
-		value(rs.SetIdentifier)
+	return recordPrefix(
+		account,
+		zoneID,
+	) + reversed(
+		common.Value(rs.Name),
+	) + keySeparator + common.Value(
+		rs.Type,
+	) + keySeparator +
+		common.Value(
+			rs.SetIdentifier,
+		)
 }
 
 func setName(rs *api.ResourceRecordSet) string {
-	return fmt.Sprintf("[name='%s', type='%s'%s]", value(rs.Name), value(rs.Type), identifier(rs))
+	return fmt.Sprintf("[name='%s', type='%s'%s]", common.Value(rs.Name), common.Value(rs.Type), identifier(rs))
 }
 
 func identifier(rs *api.ResourceRecordSet) string {
@@ -63,7 +73,7 @@ func identifier(rs *api.ResourceRecordSet) string {
 //
 //nolint:gocyclo,cyclop // One check per member.
 func checkRecordSet(rs *api.ResourceRecordSet) error {
-	name, err := normalize(value(rs.Name))
+	name, err := normalize(common.Value(rs.Name))
 	if err != nil {
 		return invalid("Invalid request: %v", err)
 	}
@@ -78,7 +88,7 @@ func checkRecordSet(rs *api.ResourceRecordSet) error {
 		}
 	}
 
-	switch t := value(rs.Type); {
+	switch t := common.Value(rs.Type); {
 	case !slices.Contains(recordTypes, t):
 		return invalid("Invalid request: the record type %q is not valid.", t)
 	case (rs.AliasTarget == nil) == (rs.TTL == nil || rs.ResourceRecords == nil):
@@ -97,13 +107,13 @@ func checkRecordSet(rs *api.ResourceRecordSet) error {
 		return invalid("Invalid request: Failover must be PRIMARY or SECONDARY.")
 	case rs.GeoLocation != nil && rs.GeoLocation.ContinentCode != nil && rs.GeoLocation.CountryCode != nil:
 		return invalid("Invalid request: a GeoLocation has a continent or a country, not both.")
-	case len(value(rs.SetIdentifier)) > 128:
+	case len(common.Value(rs.SetIdentifier)) > 128:
 		return invalid("Invalid request: the SetIdentifier must be at most 128 characters long.")
 	}
 
 	if a := rs.AliasTarget; a != nil {
-		target, normErr := normalize(value(a.DNSName))
-		if normErr != nil || value(a.HostedZoneId) == "" {
+		target, normErr := normalize(common.Value(a.DNSName))
+		if normErr != nil || common.Value(a.HostedZoneId) == "" {
 			return invalid("Invalid request: the alias target of %s needs a HostedZoneId and a DNSName.", setName(rs))
 		}
 
@@ -116,14 +126,14 @@ func checkRecordSet(rs *api.ResourceRecordSet) error {
 
 // checkValues checks the values of a record set that is not an alias.
 func checkValues(rs *api.ResourceRecordSet) error {
-	t := value(rs.Type)
+	t := common.Value(rs.Type)
 	if len(rs.ResourceRecords) == 0 || t == typeCNAME && len(rs.ResourceRecords) > 1 {
 		return awserror.New("InvalidChangeBatch", fmt.Sprintf("%s must have exactly one value for CNAME records, "+
 			"and at least one otherwise.", setName(rs)))
 	}
 
 	for _, r := range rs.ResourceRecords {
-		v := value(r.Value)
+		v := common.Value(r.Value)
 		var ok bool
 		switch t {
 		case typeA:
@@ -168,7 +178,7 @@ func (s *Service) ChangeResourceRecordSets(
 
 	for i := range batch.Changes {
 		c := &batch.Changes[i]
-		a := value(c.Action)
+		a := common.Value(c.Action)
 		if a != actionCreate && a != actionDelete && a != actionUpsert || c.ResourceRecordSet == nil {
 			return nil, invalid(
 				"Invalid request: each change needs a CREATE, DELETE, or UPSERT action and a record set.",
@@ -188,12 +198,12 @@ func (s *Service) ChangeResourceRecordSets(
 			return loadErr
 		}
 
-		apex := value(z.Zone.Name)
+		apex := common.Value(z.Zone.Name)
 		var messages []string
 		for i := range batch.Changes {
 			c := &batch.Changes[i]
 			rs := c.ResourceRecordSet
-			if msg, checkErr := s.checkChange(tx, m.AccountID, id, apex, value(c.Action), rs); checkErr != nil {
+			if msg, checkErr := s.checkChange(tx, m.AccountID, id, apex, common.Value(c.Action), rs); checkErr != nil {
 				return checkErr
 			} else if msg != "" {
 				messages = append(messages, msg)
@@ -201,12 +211,12 @@ func (s *Service) ChangeResourceRecordSets(
 			}
 
 			k := recordKey(m.AccountID, id, rs)
-			if value(c.Action) == actionDelete {
+			if common.Value(c.Action) == actionDelete {
 				tx.Delete(k)
 				continue
 			}
 
-			if writeErr := write(tx, k, rs); writeErr != nil {
+			if writeErr := storage.Write(tx, k, rs); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -216,7 +226,7 @@ func (s *Service) ChangeResourceRecordSets(
 		}
 
 		z.Zone.ResourceRecordSetCount = new(int64(len(tx.Keys(recordPrefix(m.AccountID, id)))))
-		if writeErr := write(tx, key(m.AccountID, kindZone, id), z); writeErr != nil {
+		if writeErr := storage.Write(tx, key(m.AccountID, kindZone, id), z); writeErr != nil {
 			return writeErr
 		}
 
@@ -234,13 +244,13 @@ func (s *Service) ChangeResourceRecordSets(
 //nolint:gocyclo,cyclop // One case per action and conflict.
 func (s *Service) checkChange(tx storage.ReadTx, account, zoneID, apex, action string, rs *api.ResourceRecordSet,
 ) (string, error) {
-	name, t := value(rs.Name), value(rs.Type)
+	name, t := common.Value(rs.Name), common.Value(rs.Type)
 	if !within(name, apex) {
 		return fmt.Sprintf("RRSet with DNS name %s is not permitted in zone %s", name, apex), nil
 	}
 
 	k := recordKey(account, zoneID, rs)
-	current, found, err := read[api.ResourceRecordSet](tx, k)
+	current, found, err := storage.Read[api.ResourceRecordSet](tx, k)
 	if err != nil {
 		return "", err
 	}
@@ -296,14 +306,14 @@ func (s *Service) checkChange(tx storage.ReadTx, account, zoneID, apex, action s
 	}
 
 	if a := rs.AliasTarget; a != nil {
-		target, isZone, targetErr := read[zone](tx, key(account, kindZone, *a.HostedZoneId))
+		target, isZone, targetErr := storage.Read[zone](tx, key(account, kindZone, *a.HostedZoneId))
 		if targetErr != nil || !isZone {
 			return "", targetErr
 		}
 
-		targetName := value(a.DNSName)
+		targetName := common.Value(a.DNSName)
 		switch {
-		case !within(targetName, value(target.Zone.Name)):
+		case !within(targetName, common.Value(target.Zone.Name)):
 			return fmt.Sprintf("Tried to create an alias that targets %s, type %s in zone %s, but the alias target "+
 				"name does not lie within the target zone", targetName, t, *a.HostedZoneId), nil
 		case len(tx.Keys(recordPrefix(account, *a.HostedZoneId)+reversed(targetName)+keySeparator+t+keySeparator)) == 0:
@@ -364,7 +374,7 @@ func (s *Service) ListResourceRecordSets(
 				continue
 			}
 
-			rs, _, readErr := read[api.ResourceRecordSet](tx, k)
+			rs, _, readErr := storage.Read[api.ResourceRecordSet](tx, k)
 			if readErr != nil {
 				return readErr
 			}

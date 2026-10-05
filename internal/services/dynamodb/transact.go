@@ -14,6 +14,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -167,7 +168,7 @@ func newTransactWrite(ctx context.Context, ti *api.TransactWriteItem) (*transact
 			"Put, Delete, or Update")
 	}
 
-	switch value(returnValues) {
+	switch common.Value(returnValues) {
 	case "", "NONE":
 	case returnAllOld:
 		w.returnOld = true

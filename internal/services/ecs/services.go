@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -61,12 +62,12 @@ func serviceNotFound() error {
 
 // loadService returns the service ref (a name or an ARN) names in c.
 func loadService(tx storage.ReadTx, scope request.Scope, c *cluster, ref *string) (*ecsService, error) {
-	name, ok := resourceName(scope, value(ref), "service/"+c.Name+"/")
+	name, ok := resourceName(scope, common.Value(ref), "service/"+c.Name+"/")
 	if !ok {
 		return nil, serviceNotFound()
 	}
 
-	svc, found, err := read[ecsService](tx, serviceKey(scope, c.Name, name))
+	svc, found, err := storage.Read[ecsService](tx, serviceKey(scope, c.Name, name))
 	if err != nil || !found {
 		return nil, errorsOr(err, serviceNotFound())
 	}
@@ -158,7 +159,7 @@ func (s *Service) reconcile(tx storage.WriteTx, scope request.Scope, c *cluster,
 		return err
 	}
 
-	tasks, err := records[task](tx, taskPrefix(scope, c.Name))
+	tasks, err := storage.Records[task](tx, taskPrefix(scope, c.Name))
 	if err != nil {
 		return err
 	}
@@ -208,12 +209,12 @@ func (s *Service) reconcile(tx storage.WriteTx, scope request.Scope, c *cluster,
 		},
 	}, svc.Events...)
 	svc.Events = svc.Events[:min(len(svc.Events), maxEvents)]
-	return write(tx, serviceKey(scope, c.Name, svc.Name), svc)
+	return storage.Write(tx, serviceKey(scope, c.Name, svc.Name), svc)
 }
 
 // output describes svc with its running and pending task counts.
 func (svc *ecsService) output(tx storage.ReadTx, scope request.Scope, include []string) (api.Service, error) {
-	tasks, err := records[task](tx, taskPrefix(scope, svc.Cluster))
+	tasks, err := storage.Records[task](tx, taskPrefix(scope, svc.Cluster))
 	if err != nil {
 		return api.Service{}, err
 	}
@@ -306,7 +307,7 @@ func (s *Service) CreateService(ctx context.Context, in *api.CreateServiceReques
 		}
 
 		svc.Cluster, svc.Created = c.Name, s.now().UTC()
-		existing, ok, readErr := read[ecsService](tx, serviceKey(scope, c.Name, svc.Name))
+		existing, ok, readErr := storage.Read[ecsService](tx, serviceKey(scope, c.Name, svc.Name))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -356,13 +357,13 @@ func newService(in *api.CreateServiceRequest) (*ecsService, error) {
 	switch {
 	case in.TaskDefinition == nil:
 		return nil, invalidParameter("TaskDefinition must be specified.")
-	case in.DeploymentController != nil && value(in.DeploymentController.Type) != "ECS":
+	case in.DeploymentController != nil && common.Value(in.DeploymentController.Type) != "ECS":
 		return nil, invalidParameter("TinyStack supports only the ECS deployment controller.")
 	case !oneOf(in.SchedulingStrategy, replica, daemon):
 		return nil, invalidParameter("schedulingStrategy must be REPLICA or DAEMON.")
-	case value(in.SchedulingStrategy) == daemon && value(in.DesiredCount) > 0:
+	case common.Value(in.SchedulingStrategy) == daemon && common.Value(in.DesiredCount) > 0:
 		return nil, invalidParameter("The daemon scheduling strategy does not support a desired count for services.")
-	case value(in.DesiredCount) < 0 || value(in.HealthCheckGracePeriodSeconds) < 0:
+	case common.Value(in.DesiredCount) < 0 || common.Value(in.HealthCheckGracePeriodSeconds) < 0:
 		return nil, invalidParameter("desiredCount and healthCheckGracePeriodSeconds cannot be negative.")
 	case len(in.VpcLatticeConfigurations) > 0:
 		return nil, invalidParameter("TinyStack does not support VPC Lattice configurations.")
@@ -382,11 +383,24 @@ func newService(in *api.CreateServiceRequest) (*ecsService, error) {
 	}
 
 	svc := &ecsService{
-		Name: *in.ServiceName, Status: active, Desired: value(in.DesiredCount), LaunchType: value(in.LaunchType),
-		Strategy: in.CapacityProviderStrategy, Platform: value(in.PlatformVersion), Configuration: configuration,
-		Network: in.NetworkConfiguration, GracePeriod: in.HealthCheckGracePeriodSeconds, Scheduling: replica,
-		Tags: in.Tags, ManagedTags: value(in.EnableECSManagedTags), PropagateTags: "NONE",
-		ExecuteCommand: value(in.EnableExecuteCommand), Rebalancing: "DISABLED", ClientToken: value(in.ClientToken),
+		Name:          *in.ServiceName,
+		Status:        active,
+		Desired:       common.Value(in.DesiredCount),
+		LaunchType:    common.Value(in.LaunchType),
+		Strategy:      in.CapacityProviderStrategy,
+		Platform:      common.Value(in.PlatformVersion),
+		Configuration: configuration,
+		Network:       in.NetworkConfiguration,
+		GracePeriod:   in.HealthCheckGracePeriodSeconds,
+		Scheduling:    replica,
+		Tags:          in.Tags,
+		ManagedTags:   common.Value(in.EnableECSManagedTags),
+		PropagateTags: "NONE",
+		ExecuteCommand: common.Value(
+			in.EnableExecuteCommand,
+		),
+		Rebalancing: "DISABLED",
+		ClientToken: common.Value(in.ClientToken),
 	}
 	if in.SchedulingStrategy != nil {
 		svc.Scheduling = *in.SchedulingStrategy
@@ -499,7 +513,7 @@ func (s *Service) changeService(
 }
 
 func (s *Service) UpdateService(ctx context.Context, in *api.UpdateServiceRequest) (*api.UpdateServiceResponse, error) {
-	if value(in.DesiredCount) < 0 || value(in.HealthCheckGracePeriodSeconds) < 0 {
+	if common.Value(in.DesiredCount) < 0 || common.Value(in.HealthCheckGracePeriodSeconds) < 0 {
 		return nil, invalidParameter("desiredCount and healthCheckGracePeriodSeconds cannot be negative.")
 	}
 
@@ -531,7 +545,7 @@ func (s *Service) update(
 	svc *ecsService,
 	in *api.UpdateServiceRequest,
 ) error {
-	redeploy := value(in.ForceNewDeployment)
+	redeploy := common.Value(in.ForceNewDeployment)
 	if in.DesiredCount != nil {
 		if svc.Scheduling == daemon && *in.DesiredCount > 0 {
 			return invalidParameter("The daemon scheduling strategy does not support a desired count for services.")
@@ -578,11 +592,11 @@ func (s *Service) update(
 		svc.Configuration = configuration
 	}
 
-	svc.GracePeriod = orElse(in.HealthCheckGracePeriodSeconds, svc.GracePeriod)
-	svc.ExecuteCommand = value(orElse(in.EnableExecuteCommand, &svc.ExecuteCommand))
-	svc.ManagedTags = value(orElse(in.EnableECSManagedTags, &svc.ManagedTags))
-	svc.PropagateTags = value(orElse(in.PropagateTags, &svc.PropagateTags))
-	svc.Rebalancing = value(orElse(in.AvailabilityZoneRebalancing, &svc.Rebalancing))
+	svc.GracePeriod = common.OrElse(in.HealthCheckGracePeriodSeconds, svc.GracePeriod)
+	svc.ExecuteCommand = common.Value(common.OrElse(in.EnableExecuteCommand, &svc.ExecuteCommand))
+	svc.ManagedTags = common.Value(common.OrElse(in.EnableECSManagedTags, &svc.ManagedTags))
+	svc.PropagateTags = common.Value(common.OrElse(in.PropagateTags, &svc.PropagateTags))
+	svc.Rebalancing = common.Value(common.OrElse(in.AvailabilityZoneRebalancing, &svc.Rebalancing))
 
 	def, err := resolveDef(tx, scope, &svc.Definition)
 	if err != nil {
@@ -606,12 +620,12 @@ func (s *Service) update(
 func (s *Service) DeleteService(ctx context.Context, in *api.DeleteServiceRequest) (*api.DeleteServiceResponse, error) {
 	out, err := s.changeService(ctx, in.Cluster, in.Service,
 		func(tx storage.WriteTx, scope request.Scope, c *cluster, svc *ecsService) error {
-			if svc.Desired > 0 && svc.Scheduling == replica && !value(in.Force) {
+			if svc.Desired > 0 && svc.Scheduling == replica && !common.Value(in.Force) {
 				return invalidParameter("The service cannot be stopped while it is scaled above 0.")
 			}
 
 			svc.Desired, svc.Status = 0, inactive
-			tasks, err := records[task](tx, taskPrefix(scope, c.Name))
+			tasks, err := storage.Records[task](tx, taskPrefix(scope, c.Name))
 			if err != nil {
 				return err
 			}
@@ -624,7 +638,7 @@ func (s *Service) DeleteService(ctx context.Context, in *api.DeleteServiceReques
 				}
 			}
 
-			return write(tx, serviceKey(scope, c.Name, svc.Name), svc)
+			return storage.Write(tx, serviceKey(scope, c.Name, svc.Name), svc)
 		})
 	if err != nil {
 		return nil, err
@@ -656,7 +670,7 @@ func (s *Service) ListServices(ctx context.Context, in *api.ListServicesRequest)
 			return loadErr
 		}
 
-		services, readErr := records[ecsService](tx, prefix(scope, kindService)+c.Name+"/")
+		services, readErr := storage.Records[ecsService](tx, prefix(scope, kindService)+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}

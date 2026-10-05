@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -45,26 +46,26 @@ func (s *Service) Token(
 	var expiresIn int64
 	var failure string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		index, found, readErr := read[clientIndex](tx, clientIndexKey(clientID))
+		index, found, readErr := storage.Read[clientIndex](tx, clientIndexKey(clientID))
 		if readErr != nil || !found || index.Pool != poolID {
 			failure = invalidClient
 			return readErr
 		}
 
 		scope := request.Scope{AccountID: index.Account, Region: index.Region}
-		p, _, readErr := read[pool](tx, poolKey(scope, poolID))
+		p, _, readErr := storage.Read[pool](tx, poolKey(scope, poolID))
 		if readErr != nil {
 			return readErr
 		}
 
-		c, _, readErr := read[client](tx, clientKey(scope, poolID, clientID))
+		c, _, readErr := storage.Read[client](tx, clientKey(scope, poolID, clientID))
 		switch {
 		case readErr != nil:
 			return readErr
 		case c == nil || p == nil || c.Secret == "" || c.Secret != secret:
 			failure = invalidClient
 			return nil
-		case !value(c.Settings.AllowedOAuthFlowsUserPoolClient) ||
+		case !common.Value(c.Settings.AllowedOAuthFlowsUserPoolClient) ||
 			!slices.Contains(c.Settings.AllowedOAuthFlows, flowClientCredentials):
 			failure = "unauthorized_client"
 			return nil
@@ -88,7 +89,7 @@ func (s *Service) Token(
 		}
 
 		if created {
-			if writeErr := write(tx, poolKey(scope, poolID), p); writeErr != nil {
+			if writeErr := storage.Write(tx, poolKey(scope, poolID), p); writeErr != nil {
 				return writeErr
 			}
 		}

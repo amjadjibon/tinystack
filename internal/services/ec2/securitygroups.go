@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -56,9 +57,9 @@ type rule struct {
 
 // same reports whether two rules allow the same traffic.
 func (r *rule) same(o *rule) bool {
-	return r.Protocol == o.Protocol && value(r.FromPort) == value(o.FromPort) && value(r.ToPort) == value(o.ToPort) &&
-		(r.FromPort == nil) == (o.FromPort == nil) && r.CIDR == o.CIDR && r.CIDRv6 == o.CIDRv6 &&
-		r.PrefixList == o.PrefixList && r.Group == o.Group
+	return r.Protocol == o.Protocol && common.Value(r.FromPort) == common.Value(o.FromPort) &&
+		common.Value(r.ToPort) == common.Value(o.ToPort) && (r.FromPort == nil) == (o.FromPort == nil) &&
+		r.CIDR == o.CIDR && r.CIDRv6 == o.CIDRv6 && r.PrefixList == o.PrefixList && r.Group == o.Group
 }
 
 func (r *rule) peer() string {
@@ -104,7 +105,7 @@ func defaultVPC(tx storage.ReadTx, scope request.Scope) (*vpc, error) {
 // named name in the default VPC.
 func findGroup(tx storage.ReadTx, scope request.Scope, id, name string) (*securityGroup, error) {
 	if id != "" {
-		g, ok, err := read[securityGroup](tx, key(scope, kindSecurityGroup, id))
+		g, ok, err := storage.Read[securityGroup](tx, key(scope, kindSecurityGroup, id))
 		if err == nil && !ok {
 			err = groupNotFound(id)
 		}
@@ -195,7 +196,7 @@ func expand(tx storage.ReadTx, scope request.Scope, perms []api.IpPermission) ([
 	var out []rule
 	for i := range perms {
 		p := &perms[i]
-		proto, err := protocol(value(p.IpProtocol))
+		proto, err := protocol(common.Value(p.IpProtocol))
 		if err != nil {
 			return nil, err
 		}
@@ -207,19 +208,19 @@ func expand(tx storage.ReadTx, scope request.Scope, perms []api.IpPermission) ([
 
 		base := rule{Protocol: proto, FromPort: from, ToPort: to}
 		add := func(r rule, description *string) error {
-			if len(value(description)) > maxDescription {
+			if len(common.Value(description)) > maxDescription {
 				return invalidParameter("Rule descriptions must be at most 255 characters")
 			}
 
-			r.Description = value(description)
+			r.Description = common.Value(description)
 			out = append(out, r)
 			return nil
 		}
 
 		for _, rg := range p.IpRanges {
-			block, parseErr := netip.ParsePrefix(value(rg.CidrIp))
+			block, parseErr := netip.ParsePrefix(common.Value(rg.CidrIp))
 			if parseErr != nil || !block.Addr().Is4() {
-				return nil, invalidParameter(fmt.Sprintf("CIDR block %s is malformed", value(rg.CidrIp)))
+				return nil, invalidParameter(fmt.Sprintf("CIDR block %s is malformed", common.Value(rg.CidrIp)))
 			}
 
 			r := base
@@ -230,9 +231,9 @@ func expand(tx storage.ReadTx, scope request.Scope, perms []api.IpPermission) ([
 		}
 
 		for _, rg := range p.Ipv6Ranges {
-			block, parseErr := netip.ParsePrefix(value(rg.CidrIpv6))
+			block, parseErr := netip.ParsePrefix(common.Value(rg.CidrIpv6))
 			if parseErr != nil || !block.Addr().Is6() {
-				return nil, invalidParameter(fmt.Sprintf("CIDR block %s is malformed", value(rg.CidrIpv6)))
+				return nil, invalidParameter(fmt.Sprintf("CIDR block %s is malformed", common.Value(rg.CidrIpv6)))
 			}
 
 			r := base
@@ -244,18 +245,18 @@ func expand(tx storage.ReadTx, scope request.Scope, perms []api.IpPermission) ([
 
 		for _, pl := range p.PrefixListIds {
 			r := base
-			r.PrefixList = value(pl.PrefixListId)
+			r.PrefixList = common.Value(pl.PrefixListId)
 			if addErr := add(r, pl.Description); addErr != nil {
 				return nil, addErr
 			}
 		}
 
 		for _, pair := range p.UserIdGroupPairs {
-			if owner := value(pair.UserId); owner != "" && owner != scope.AccountID {
+			if owner := common.Value(pair.UserId); owner != "" && owner != scope.AccountID {
 				return nil, invalidParameter("TinyStack does not support security group references to other accounts")
 			}
 
-			g, findErr := findGroup(tx, scope, value(pair.GroupId), value(pair.GroupName))
+			g, findErr := findGroup(tx, scope, common.Value(pair.GroupId), common.Value(pair.GroupName))
 			if findErr != nil {
 				return nil, findErr
 			}
@@ -278,8 +279,8 @@ func permissions(scope request.Scope, rules []rule) []api.IpPermission {
 	for i := range rules {
 		r := &rules[i]
 		at := slices.IndexFunc(out, func(p api.IpPermission) bool {
-			return *p.IpProtocol == r.Protocol && value(p.FromPort) == value(r.FromPort) &&
-				value(p.ToPort) == value(r.ToPort) && (p.FromPort == nil) == (r.FromPort == nil)
+			return *p.IpProtocol == r.Protocol && common.Value(p.FromPort) == common.Value(r.FromPort) &&
+				common.Value(p.ToPort) == common.Value(r.ToPort) && (p.FromPort == nil) == (r.FromPort == nil)
 		})
 		if at < 0 {
 			out = append(out, api.IpPermission{IpProtocol: new(r.Protocol), FromPort: r.FromPort, ToPort: r.ToPort})
@@ -388,7 +389,7 @@ func (s *Service) CreateSecurityGroup(
 	ctx context.Context,
 	in *api.CreateSecurityGroupRequest,
 ) (*api.CreateSecurityGroupResult, error) {
-	name, description := value(in.GroupName), value(in.Description)
+	name, description := common.Value(in.GroupName), common.Value(in.Description)
 	switch {
 	case name == "" || description == "":
 		return nil, awserror.New("MissingParameter", "The request must contain the parameters groupName and "+
@@ -430,7 +431,7 @@ func (s *Service) CreateSecurityGroup(
 		}
 
 		g.VPCID, arn = v.ID, groupARN(scope, g.ID)
-		return write(tx, key(scope, kindSecurityGroup, g.ID), g)
+		return storage.Write(tx, key(scope, kindSecurityGroup, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -447,7 +448,7 @@ func (s *Service) DeleteSecurityGroup(
 ) (*api.DeleteSecurityGroupResult, error) {
 	var id string
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		g, err := findGroup(tx, scope, value(in.GroupId), value(in.GroupName))
+		g, err := findGroup(tx, scope, common.Value(in.GroupId), common.Value(in.GroupName))
 		if err != nil {
 			return err
 		}
@@ -596,7 +597,7 @@ func (s *Service) authorize(
 				"The maximum number of rules per security group has been reached.")
 		}
 
-		return write(tx, key(scope, kindSecurityGroup, g.ID), g)
+		return storage.Write(tx, key(scope, kindSecurityGroup, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -662,7 +663,7 @@ func (s *Service) revoke(
 				"The specified rule does not exist in this security group.")
 		}
 
-		return write(tx, key(scope, kindSecurityGroup, g.ID), g)
+		return storage.Write(tx, key(scope, kindSecurityGroup, g.ID), g)
 	})
 
 	return unknown, err
@@ -672,7 +673,7 @@ func (s *Service) AuthorizeSecurityGroupIngress(
 	ctx context.Context,
 	in *api.AuthorizeSecurityGroupIngressRequest,
 ) (*api.AuthorizeSecurityGroupIngressResult, error) {
-	rules, err := s.authorize(ctx, in.DryRun, value(in.GroupId), value(in.GroupName), in.IpPermissions,
+	rules, err := s.authorize(ctx, in.DryRun, common.Value(in.GroupId), common.Value(in.GroupName), in.IpPermissions,
 		in.TagSpecifications, false)
 	if err != nil {
 		return nil, err
@@ -685,7 +686,15 @@ func (s *Service) AuthorizeSecurityGroupEgress(
 	ctx context.Context,
 	in *api.AuthorizeSecurityGroupEgressRequest,
 ) (*api.AuthorizeSecurityGroupEgressResult, error) {
-	rules, err := s.authorize(ctx, in.DryRun, value(in.GroupId), "", in.IpPermissions, in.TagSpecifications, true)
+	rules, err := s.authorize(
+		ctx,
+		in.DryRun,
+		common.Value(in.GroupId),
+		"",
+		in.IpPermissions,
+		in.TagSpecifications,
+		true,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -697,7 +706,7 @@ func (s *Service) RevokeSecurityGroupIngress(
 	ctx context.Context,
 	in *api.RevokeSecurityGroupIngressRequest,
 ) (*api.RevokeSecurityGroupIngressResult, error) {
-	unknown, err := s.revoke(ctx, in.DryRun, value(in.GroupId), value(in.GroupName), in.IpPermissions,
+	unknown, err := s.revoke(ctx, in.DryRun, common.Value(in.GroupId), common.Value(in.GroupName), in.IpPermissions,
 		in.SecurityGroupRuleIds, false)
 	if err != nil {
 		return nil, err
@@ -710,7 +719,15 @@ func (s *Service) RevokeSecurityGroupEgress(
 	ctx context.Context,
 	in *api.RevokeSecurityGroupEgressRequest,
 ) (*api.RevokeSecurityGroupEgressResult, error) {
-	unknown, err := s.revoke(ctx, in.DryRun, value(in.GroupId), "", in.IpPermissions, in.SecurityGroupRuleIds, true)
+	unknown, err := s.revoke(
+		ctx,
+		in.DryRun,
+		common.Value(in.GroupId),
+		"",
+		in.IpPermissions,
+		in.SecurityGroupRuleIds,
+		true,
+	)
 	if err != nil {
 		return nil, err
 	}

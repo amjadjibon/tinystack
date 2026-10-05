@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -55,7 +56,7 @@ func loadPolicy(tx storage.ReadTx, account string, ref policyRef) (*policy, stri
 	}
 
 	pk := key(account, kindPolicy, ref.name)
-	p, ok, err := read[policy](tx, pk)
+	p, ok, err := storage.Read[policy](tx, pk)
 	if err != nil {
 		return nil, "", err
 	}
@@ -80,7 +81,7 @@ func countAttachment(tx storage.WriteTx, account string, ref policyRef, delta in
 	}
 
 	p.Attachments += delta
-	return policyARN(account, p), write(tx, pk, p)
+	return policyARN(account, p), storage.Write(tx, pk, p)
 }
 
 // viewPolicy runs fn on the managed policy policyArn names.
@@ -128,7 +129,7 @@ func (s *Service) updatePolicy(ctx context.Context, policyArn *string, fn func(p
 			return fnErr
 		}
 
-		return write(tx, pk, p)
+		return storage.Write(tx, pk, p)
 	})
 }
 
@@ -214,7 +215,7 @@ func (s *Service) CreatePolicy(ctx context.Context, in *api.CreatePolicyRequest)
 		return nil, guardErr
 	}
 
-	if len(value(in.Description)) > maxDescription {
+	if len(common.Value(in.Description)) > maxDescription {
 		return nil, validation("Description must be at most %d characters long", maxDescription)
 	}
 
@@ -232,7 +233,7 @@ func (s *Service) CreatePolicy(ctx context.Context, in *api.CreatePolicyRequest)
 		Name:           *in.PolicyName,
 		ID:             newID("ANPA"),
 		Path:           path,
-		Description:    value(in.Description),
+		Description:    common.Value(in.Description),
 		Tags:           tags,
 		DefaultVersion: "v1",
 		Versions:       []policyVersion{{ID: "v1", Document: *in.PolicyDocument, CreatedAt: now}},
@@ -246,7 +247,7 @@ func (s *Service) CreatePolicy(ctx context.Context, in *api.CreatePolicyRequest)
 			return alreadyExists("A policy called %s already exists. Duplicate names are not allowed.", p.Name)
 		}
 
-		return write(tx, pk, p)
+		return storage.Write(tx, pk, p)
 	})
 	if err != nil {
 		return nil, err
@@ -311,7 +312,7 @@ func (s *Service) ListPolicies(ctx context.Context, in *api.ListPoliciesRequest)
 		return nil, err
 	}
 
-	scope := value(in.Scope)
+	scope := common.Value(in.Scope)
 	if scope != "" && scope != "All" && scope != "AWS" && scope != "Local" {
 		return nil, validation("Scope must be All, AWS, or Local")
 	}
@@ -325,7 +326,8 @@ func (s *Service) ListPolicies(ctx context.Context, in *api.ListPoliciesRequest)
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		all, listErr := list[policy](tx, m.AccountID, kindPolicy)
 		for _, p := range all {
-			if scope != "AWS" && strings.HasPrefix(p.Path, prefix) && (!value(in.OnlyAttached) || p.Attachments > 0) {
+			if scope != "AWS" && strings.HasPrefix(p.Path, prefix) &&
+				(!common.Value(in.OnlyAttached) || p.Attachments > 0) {
 				policies = append(policies, p)
 			}
 		}
@@ -369,7 +371,7 @@ func (s *Service) CreatePolicyVersion(
 		v := policyVersion{ID: "v" + strconv.FormatInt(p.NextVersion, 10), Document: *in.PolicyDocument, CreatedAt: now}
 		p.NextVersion++
 		p.Versions = append(p.Versions, v)
-		if value(in.SetAsDefault) {
+		if common.Value(in.SetAsDefault) {
 			p.DefaultVersion, p.UpdatedAt = v.ID, now
 		}
 

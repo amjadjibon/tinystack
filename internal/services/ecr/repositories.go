@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -41,7 +42,7 @@ type repository struct {
 func (r *repository) output(m *request.Metadata) *api.Repository {
 	return &api.Repository{
 		RepositoryArn: new(repoARN(m.Scope, r.Name)), RegistryId: new(m.AccountID), RepositoryName: new(r.Name),
-		RepositoryUri: new(registryHost(m) + "/" + r.Name), CreatedAt: seconds(r.Created),
+		RepositoryUri: new(registryHost(m) + "/" + r.Name), CreatedAt: common.SecondsMilli(r.Created),
 		ImageTagMutability:         new(r.Mutability),
 		ImageScanningConfiguration: &api.ImageScanningConfiguration{ScanOnPush: new(r.ScanOnPush)},
 		EncryptionConfiguration:    &api.EncryptionConfiguration{EncryptionType: new(aes256)},
@@ -59,7 +60,7 @@ func checkMutability(v *string) error {
 func tagMap(tags []api.Tag) map[string]string {
 	out := make(map[string]string, len(tags))
 	for _, t := range tags {
-		out[value(t.Key)] = value(t.Value)
+		out[common.Value(t.Key)] = common.Value(t.Value)
 	}
 
 	return out
@@ -104,7 +105,7 @@ func (s *Service) CreateRepository(
 		return nil, mutabilityErr
 	}
 
-	if e := in.EncryptionConfiguration; e != nil && (value(e.EncryptionType) != aes256 || e.KmsKey != nil) {
+	if e := in.EncryptionConfiguration; e != nil && (common.Value(e.EncryptionType) != aes256 || e.KmsKey != nil) {
 		return nil, invalidParameter("TinyStack supports only AES256 encryption.")
 	}
 
@@ -115,7 +116,7 @@ func (s *Service) CreateRepository(
 
 	r := &repository{
 		Created: s.now().UTC(), Name: *in.RepositoryName, Mutability: mutable, Tags: tags,
-		ScanOnPush: value(value(in.ImageScanningConfiguration).ScanOnPush),
+		ScanOnPush: common.Value(common.Value(in.ImageScanningConfiguration).ScanOnPush),
 	}
 	if in.ImageTagMutability != nil {
 		r.Mutability = *in.ImageTagMutability
@@ -127,7 +128,7 @@ func (s *Service) CreateRepository(
 				"' already exists in the registry with id '"+m.AccountID+"'")
 		}
 
-		return write(tx, repoKey(m.Scope, r.Name), r)
+		return storage.Write(tx, repoKey(m.Scope, r.Name), r)
 	})
 	if err != nil {
 		return nil, err
@@ -203,7 +204,7 @@ func (s *Service) DeleteRepository(
 			return loadErr
 		}
 
-		if len(tx.Keys(owned(m.Scope, "image", r.Name))) > 0 && !value(in.Force) {
+		if len(tx.Keys(owned(m.Scope, "image", r.Name))) > 0 && !common.Value(in.Force) {
 			return awserror.New("RepositoryNotEmptyException", "The repository with name '"+r.Name+
 				"' in registry with id '"+m.AccountID+"' cannot be deleted because it still contains images")
 		}
@@ -264,7 +265,7 @@ func (s *Service) PutImageScanningConfiguration(
 	var out *api.PutImageScanningConfigurationResponse
 	err := s.update(ctx, in.RegistryId, in.RepositoryName,
 		func(_ storage.WriteTx, m *request.Metadata, r *repository) error {
-			r.ScanOnPush = value(in.ImageScanningConfiguration.ScanOnPush)
+			r.ScanOnPush = common.Value(in.ImageScanningConfiguration.ScanOnPush)
 			out = &api.PutImageScanningConfigurationResponse{
 				RegistryId: new(m.AccountID), RepositoryName: new(r.Name),
 				ImageScanningConfiguration: &api.ImageScanningConfiguration{ScanOnPush: new(r.ScanOnPush)},
@@ -372,10 +373,10 @@ func (s *Service) DeleteRepositoryPolicy(
 // taggedRepo returns the name of the scope's repository arn names; only
 // repositories take tags.
 func taggedRepo(scope request.Scope, arn *string) (*string, error) {
-	name, ok := strings.CutPrefix(value(arn), repoARN(scope, ""))
+	name, ok := strings.CutPrefix(common.Value(arn), repoARN(scope, ""))
 	if !ok || name == "" {
 		return nil, invalidParameter("Invalid parameter at 'resourceArn' failed to satisfy constraint: "+
-			"'Invalid ARN' (%q)", value(arn))
+			"'Invalid ARN' (%q)", common.Value(arn))
 	}
 
 	return &name, nil

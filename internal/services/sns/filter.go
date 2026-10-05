@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
 )
 
@@ -125,8 +126,8 @@ func (sub *subscription) accepts(attributes map[string]api.MessageAttributeValue
 func attributeEvent(attributes map[string]api.MessageAttributeValue) pattern.Event {
 	event := pattern.Event{}
 	for name, a := range attributes {
-		v := value(a.StringValue)
-		switch base, custom, _ := strings.Cut(value(a.DataType), "."); {
+		v := common.Value(a.StringValue)
+		switch base, custom, _ := strings.Cut(common.Value(a.DataType), "."); {
 		case base == typeString && custom == "Array":
 			if values, ok := pattern.Values([]byte(v)); ok {
 				event[name] = values

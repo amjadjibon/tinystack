@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -88,7 +89,7 @@ func gatewayAddress(tx storage.WriteTx, scope request.Scope, g *natGateway, allo
 
 	g.AddressID, g.PublicIP, g.Association = a.ID, a.PublicIP, newID("eipassoc")
 	a.AssociationID, a.NATGatewayID, a.InterfaceID, a.PrivateIP = g.Association, g.ID, g.InterfaceID, g.PrivateIP
-	return write(tx, key(scope, kindAddress, a.ID), a)
+	return storage.Write(tx, key(scope, kindAddress, a.ID), a)
 }
 
 // CreateNatGateway creates a NAT gateway in a subnet, with an address from
@@ -99,7 +100,7 @@ func (s *Service) CreateNatGateway(
 	ctx context.Context,
 	in *api.CreateNatGatewayRequest,
 ) (*api.CreateNatGatewayResult, error) {
-	connectivity := value(in.ConnectivityType)
+	connectivity := common.Value(in.ConnectivityType)
 	switch {
 	case connectivity == "":
 		connectivity = connectivityPublic
@@ -108,7 +109,7 @@ func (s *Service) CreateNatGateway(
 			connectivity))
 	}
 
-	allocationID := value(in.AllocationId)
+	allocationID := common.Value(in.AllocationId)
 	switch {
 	case connectivity == connectivityPublic && allocationID == "":
 		return nil, awserror.New("MissingParameter", "The request must contain the parameter AllocationId")
@@ -121,7 +122,7 @@ func (s *Service) CreateNatGateway(
 		return nil, err
 	}
 
-	now, token := s.now().UTC(), value(in.ClientToken)
+	now, token := s.now().UTC(), common.Value(in.ClientToken)
 	var out api.NatGateway
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		all, listErr := list[natGateway](tx, scope, kindNATGateway)
@@ -139,8 +140,8 @@ func (s *Service) CreateNatGateway(
 			}
 		}
 
-		id := value(in.SubnetId)
-		sn, ok, readErr := read[subnet](tx, key(scope, kindSubnet, id))
+		id := common.Value(in.SubnetId)
+		sn, ok, readErr := storage.Read[subnet](tx, key(scope, kindSubnet, id))
 		if readErr != nil || !ok {
 			return errorsOr(readErr, subnetNotFound(id))
 		}
@@ -155,7 +156,7 @@ func (s *Service) CreateNatGateway(
 			return ipsErr
 		}
 
-		ip, ipErr := ips.take(value(in.PrivateIpAddress))
+		ip, ipErr := ips.take(common.Value(in.PrivateIpAddress))
 		if ipErr != nil {
 			return ipErr
 		}
@@ -181,7 +182,7 @@ func (s *Service) CreateNatGateway(
 		}
 
 		out = natGatewayOutput(g, statePending)
-		return write(tx, key(scope, kindNATGateway, g.ID), g)
+		return storage.Write(tx, key(scope, kindNATGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -198,8 +199,8 @@ func (s *Service) DeleteNatGateway(
 ) (*api.DeleteNatGatewayResult, error) {
 	now := s.now().UTC()
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		id := value(in.NatGatewayId)
-		g, ok, err := read[natGateway](tx, key(scope, kindNATGateway, id))
+		id := common.Value(in.NatGatewayId)
+		g, ok, err := storage.Read[natGateway](tx, key(scope, kindNATGateway, id))
 		if err != nil || !ok || !g.visible(now) {
 			return errorsOr(err, natGatewayNotFound(id))
 		}
@@ -209,21 +210,21 @@ func (s *Service) DeleteNatGateway(
 		}
 
 		if g.AddressID != "" {
-			a, found, readErr := read[address](tx, key(scope, kindAddress, g.AddressID))
+			a, found, readErr := storage.Read[address](tx, key(scope, kindAddress, g.AddressID))
 			if readErr != nil {
 				return readErr
 			}
 
 			if found {
 				a.AssociationID, a.NATGatewayID, a.InterfaceID, a.PrivateIP = "", "", "", ""
-				if writeErr := write(tx, key(scope, kindAddress, a.ID), a); writeErr != nil {
+				if writeErr := storage.Write(tx, key(scope, kindAddress, a.ID), a); writeErr != nil {
 					return writeErr
 				}
 			}
 		}
 
 		g.State, g.Deleted = stateDeleted, now
-		return write(tx, key(scope, kindNATGateway, g.ID), g)
+		return storage.Write(tx, key(scope, kindNATGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err

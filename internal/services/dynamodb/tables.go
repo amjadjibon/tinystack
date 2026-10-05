@@ -9,6 +9,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -105,10 +106,10 @@ func updateStream(tx storage.WriteTx, key string, t *table, viewType string) err
 	switch now := time.Now(); {
 	case viewType != "" && streamEnabled(t):
 		return awserror.Validation("Table already has an enabled stream: TableName: %s",
-			value(t.Description.TableName))
+			common.Value(t.Description.TableName))
 	case viewType == "" && !streamEnabled(t):
 		return awserror.Validation("Table does not have an enabled stream: TableName: %s",
-			value(t.Description.TableName))
+			common.Value(t.Description.TableName))
 	case viewType != "":
 		return openStream(tx, key, t, viewType, now)
 	default:
@@ -142,7 +143,7 @@ func throughputFor(mode string, p *api.ProvisionedThroughput) (*api.ProvisionedT
 		return out, nil
 	}
 
-	if p == nil || value(p.ReadCapacityUnits) < 1 || value(p.WriteCapacityUnits) < 1 {
+	if p == nil || common.Value(p.ReadCapacityUnits) < 1 || common.Value(p.WriteCapacityUnits) < 1 {
 		return nil, awserror.Validation("Positive provisioned read and write capacity required")
 	}
 
@@ -156,7 +157,7 @@ func throughputFor(mode string, p *api.ProvisionedThroughput) (*api.ProvisionedT
 // PROVISIONED needs throughput for the table and an Update for each index.
 func updateCapacity(t *table, in *api.UpdateTableInput) error {
 	d := &t.Description
-	mode := value(value(d.BillingModeSummary).BillingMode)
+	mode := common.Value(common.Value(d.BillingModeSummary).BillingMode)
 	if mode == "" {
 		mode = billingProvisioned
 	}
@@ -189,12 +190,12 @@ func updateCapacity(t *table, in *api.UpdateTableInput) error {
 
 	types := map[string]string{}
 	for _, a := range d.AttributeDefinitions {
-		types[value(a.AttributeName)] = value(a.AttributeType)
+		types[common.Value(a.AttributeName)] = common.Value(a.AttributeType)
 	}
 
 	definitions := d.AttributeDefinitions
 	for _, a := range in.AttributeDefinitions {
-		name, kind := value(a.AttributeName), value(a.AttributeType)
+		name, kind := common.Value(a.AttributeName), common.Value(a.AttributeType)
 		switch {
 		case name == "" || (kind != "S" && kind != "N" && kind != "B"):
 			return awserror.Validation("Invalid attribute definition")
@@ -213,9 +214,9 @@ func updateCapacity(t *table, in *api.UpdateTableInput) error {
 
 	if switched && mode == billingProvisioned {
 		for _, g := range d.GlobalSecondaryIndexes {
-			if !updated[value(g.IndexName)] {
+			if !updated[common.Value(g.IndexName)] {
 				return awserror.Validation("ProvisionedThroughput must be specified for index: %s",
-					value(g.IndexName))
+					common.Value(g.IndexName))
 			}
 		}
 	}
@@ -224,12 +225,12 @@ func updateCapacity(t *table, in *api.UpdateTableInput) error {
 	used := map[string]bool{}
 	for _, ix := range append(secondaryIndexes(t), &index{schema: d.KeySchema}) {
 		for _, k := range ix.schema {
-			used[value(k.AttributeName)] = true
+			used[common.Value(k.AttributeName)] = true
 		}
 	}
 
 	d.AttributeDefinitions = slices.DeleteFunc(slices.Clone(definitions), func(a api.AttributeDefinition) bool {
-		return !used[value(a.AttributeName)]
+		return !used[common.Value(a.AttributeName)]
 	})
 
 	return nil
@@ -248,12 +249,12 @@ func updateGlobalIndexes(
 	updated, changes := map[string]bool{}, 0
 	find := func(name *string) (int, error) {
 		for i, g := range d.GlobalSecondaryIndexes {
-			if value(g.IndexName) == value(name) {
+			if common.Value(g.IndexName) == common.Value(name) {
 				return i, nil
 			}
 		}
 
-		return 0, awserror.New("ResourceNotFoundException", "Requested resource not found: Index: "+value(name))
+		return 0, awserror.New("ResourceNotFoundException", "Requested resource not found: Index: "+common.Value(name))
 	}
 
 	for _, u := range updates {
@@ -285,8 +286,8 @@ func updateGlobalIndexes(
 				return nil, err
 			}
 
-			if updated[value(u.Update.IndexName)] {
-				return nil, awserror.Validation("Only one update per index: %s", value(u.Update.IndexName))
+			if updated[common.Value(u.Update.IndexName)] {
+				return nil, awserror.Validation("Only one update per index: %s", common.Value(u.Update.IndexName))
 			}
 
 			pt, err := throughputFor(mode, u.Update.ProvisionedThroughput)
@@ -295,7 +296,7 @@ func updateGlobalIndexes(
 			}
 
 			d.GlobalSecondaryIndexes[i].ProvisionedThroughput = pt
-			updated[value(u.Update.IndexName)] = true
+			updated[common.Value(u.Update.IndexName)] = true
 		case u.Create != nil:
 			c := u.Create
 			if err := checkIndexName(c.IndexName); err != nil {
@@ -317,7 +318,7 @@ func updateGlobalIndexes(
 			g, err := describeGlobal(&api.GlobalSecondaryIndex{
 				IndexName: c.IndexName, KeySchema: c.KeySchema, Projection: c.Projection,
 				ProvisionedThroughput: c.ProvisionedThroughput,
-			}, types, map[string]bool{}, value(d.TableArn), mode)
+			}, types, map[string]bool{}, common.Value(d.TableArn), mode)
 			if err != nil {
 				return nil, err
 			}
@@ -361,10 +362,10 @@ func tagMap(tags []api.Tag) (map[string]string, error) {
 
 // arnName returns the table name in a table ARN of the caller's account and region.
 func arnName(ctx context.Context, arn *string) (*string, error) {
-	scope, name, ok := strings.Cut(value(arn), ":table/")
+	scope, name, ok := strings.Cut(common.Value(arn), ":table/")
 	parts := strings.Split(scope, ":")
 	if !ok || len(parts) != 5 || parts[0] != "arn" || parts[2] != "dynamodb" {
-		return nil, awserror.Validation("Invalid TableArn: %s", value(arn))
+		return nil, awserror.Validation("Invalid TableArn: %s", common.Value(arn))
 	}
 
 	key, err := tableKey(ctx, &name)
@@ -373,7 +374,7 @@ func arnName(ctx context.Context, arn *string) (*string, error) {
 	}
 
 	if !strings.HasPrefix(key, parts[4]+"/"+parts[3]+"/") {
-		return nil, awserror.New("ResourceNotFoundException", "Requested resource not found: "+value(arn))
+		return nil, awserror.New("ResourceNotFoundException", "Requested resource not found: "+common.Value(arn))
 	}
 
 	return &name, nil

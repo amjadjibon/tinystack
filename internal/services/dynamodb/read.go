@@ -9,6 +9,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -46,7 +47,7 @@ func newReadRequest(
 		return nil, awserror.Validation("Limit must be positive")
 	}
 
-	req := &readRequest{key: key, selection: value(selection)}
+	req := &readRequest{key: key, selection: common.Value(selection)}
 	if req.ex, err = newExpressions(names, values); err != nil {
 		return nil, err
 	}
@@ -398,7 +399,7 @@ func partition(
 
 	var sortKey path
 	if len(ix.schema) == 2 {
-		sortKey = path{{name: value(ix.schema[1].AttributeName)}}
+		sortKey = path{{name: common.Value(ix.schema[1].AttributeName)}}
 	}
 
 	compare := func(a, b entry) int {
@@ -421,7 +422,7 @@ func partition(
 			return nil, startErr
 		}
 
-		startHash, startErr := keyPart(t, &ix.schema[0], new(start[value(ix.schema[0].AttributeName)]))
+		startHash, startErr := keyPart(t, &ix.schema[0], new(start[common.Value(ix.schema[0].AttributeName)]))
 		if startErr != nil {
 			return nil, startErr
 		}
@@ -478,13 +479,13 @@ func keyCondition(t *table, schema []api.KeySchemaElement, c *condition) (string
 		seen[attr] = true
 		kind := attributeKind(t, attr)
 		switch {
-		case attr == value(schema[0].AttributeName):
+		case attr == common.Value(schema[0].AttributeName):
 			if part.op != condCompare || part.cmp != "=" {
 				return "", awserror.Validation("Query key condition not supported")
 			}
 
 			hash = part.args[1].value
-		case len(schema) == 2 && attr == value(schema[1].AttributeName):
+		case len(schema) == 2 && attr == common.Value(schema[1].AttributeName):
 			if part.op == condFunc && kind == "N" {
 				return "", awserror.Validation("Invalid KeyConditionExpression: begins_with does not support N")
 			}
@@ -502,7 +503,7 @@ func keyCondition(t *table, schema []api.KeySchemaElement, c *condition) (string
 
 	if hash == nil {
 		return "", awserror.Validation("Query condition missed key schema element: %s",
-			value(schema[0].AttributeName))
+			common.Value(schema[0].AttributeName))
 	}
 
 	return keyPart(t, &schema[0], hash)

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const ownerEnforced = "BucketOwnerEnforced"
@@ -26,7 +27,7 @@ func (s *Service) PutBucketOwnershipControls(
 	in *api.PutBucketOwnershipControlsRequest,
 ) (*api.PutBucketOwnershipControlsOutput, error) {
 	c := in.OwnershipControls
-	if c == nil || len(c.Rules) != 1 || !ownerships[value(c.Rules[0].ObjectOwnership)] {
+	if c == nil || len(c.Rules) != 1 || !ownerships[common.Value(c.Rules[0].ObjectOwnership)] {
 		return nil, malformedXML()
 	}
 
@@ -85,9 +86,12 @@ func (s *Service) PutPublicAccessBlock(
 
 	err := s.updateBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) {
 		meta.PublicAccessBlock = &api.PublicAccessBlockConfiguration{
-			BlockPublicAcls: new(value(c.BlockPublicAcls)), IgnorePublicAcls: new(value(c.IgnorePublicAcls)),
-			BlockPublicPolicy:     new(value(c.BlockPublicPolicy)),
-			RestrictPublicBuckets: new(value(c.RestrictPublicBuckets)),
+			BlockPublicAcls: new(
+				common.Value(c.BlockPublicAcls),
+			),
+			IgnorePublicAcls:      new(common.Value(c.IgnorePublicAcls)),
+			BlockPublicPolicy:     new(common.Value(c.BlockPublicPolicy)),
+			RestrictPublicBuckets: new(common.Value(c.RestrictPublicBuckets)),
 		}
 	})
 	if err != nil {

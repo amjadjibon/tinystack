@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -44,7 +45,7 @@ type listener struct {
 	Extra []api.Certificate
 }
 
-func (l *listener) arnValue() string { return value(l.L.ListenerArn) }
+func (l *listener) arnValue() string { return common.Value(l.L.ListenerArn) }
 
 func (l *listener) ruleARN(scope request.Scope, id string) string {
 	parts, _ := arnParts(l.arnValue(), "listener", scope)
@@ -61,7 +62,7 @@ func findListener(tx storage.ReadTx, scope request.Scope, arnValue string) (*lis
 		return nil, validation("'%s' is not a valid listener ARN", arnValue)
 	}
 
-	l, found, err := read[listener](tx, key(scope, kindListener, parts[1]+"/"+parts[3]))
+	l, found, err := storage.Read[listener](tx, key(scope, kindListener, parts[1]+"/"+parts[3]))
 	switch {
 	case err != nil:
 		return nil, err
@@ -96,7 +97,7 @@ func checkActions(tx storage.ReadTx, scope request.Scope, b *balancer, protocol 
 	out := make([]api.Action, len(actions))
 	orders := map[int64]bool{}
 	for i, a := range actions {
-		kind := value(a.Type)
+		kind := common.Value(a.Type)
 		if a.Order == nil {
 			a.Order = new(int64(i + 1))
 		}
@@ -116,7 +117,7 @@ func checkActions(tx storage.ReadTx, scope request.Scope, b *balancer, protocol 
 			}
 		case actionRedirect:
 			r := a.RedirectConfig
-			if r == nil || (value(r.StatusCode) != "HTTP_301" && value(r.StatusCode) != "HTTP_302") {
+			if r == nil || (common.Value(r.StatusCode) != "HTTP_301" && common.Value(r.StatusCode) != "HTTP_302") {
 				return nil, invalidAction("A redirect action needs a RedirectConfig with status HTTP_301 or HTTP_302")
 			}
 
@@ -137,12 +138,12 @@ func checkActions(tx storage.ReadTx, scope request.Scope, b *balancer, protocol 
 		case actionFixed:
 			f := a.FixedResponseConfig
 			switch {
-			case f == nil || !statusPattern.MatchString(value(f.StatusCode)):
+			case f == nil || !statusPattern.MatchString(common.Value(f.StatusCode)):
 				return nil, invalidAction("A fixed-response action needs a FixedResponseConfig with a 2XX to 5XX " +
 					"status")
 			case f.ContentType != nil && !slices.Contains(contentTypes, *f.ContentType):
 				return nil, invalidAction("The fixed response content type is not supported")
-			case len(value(f.MessageBody)) > maxFixedBody:
+			case len(common.Value(f.MessageBody)) > maxFixedBody:
 				return nil, invalidAction("A fixed response body is at most 1024 characters")
 			}
 		default:
@@ -152,8 +153,11 @@ func checkActions(tx storage.ReadTx, scope request.Scope, b *balancer, protocol 
 		out[i] = a
 	}
 
-	slices.SortFunc(out, func(a, b api.Action) int { return int(value(a.Order) - value(b.Order)) })
-	if last := value(out[len(out)-1].Type); last != actionForward && last != actionRedirect && last != actionFixed {
+	slices.SortFunc(out, func(a, b api.Action) int { return int(common.Value(a.Order) - common.Value(b.Order)) })
+	if last := common.Value(
+		out[len(out)-1].Type,
+	); last != actionForward && last != actionRedirect &&
+		last != actionFixed {
 		return nil, invalidAction("The last action must be forward, redirect, or fixed-response")
 	}
 
@@ -184,7 +188,7 @@ func checkForward(tx storage.ReadTx, scope request.Scope, b *balancer, protocol 
 	switch {
 	case len(groups) == 0 || len(groups) > maxForwardTGs:
 		return invalidAction("A forward action has 1 to 5 target groups")
-	case a.TargetGroupArn != nil && (len(groups) != 1 || value(groups[0].TargetGroupArn) != *a.TargetGroupArn):
+	case a.TargetGroupArn != nil && (len(groups) != 1 || common.Value(groups[0].TargetGroupArn) != *a.TargetGroupArn):
 		return invalidAction("TargetGroupArn and ForwardConfig must name the same target group")
 	case len(groups) == 1:
 		a.TargetGroupArn = groups[0].TargetGroupArn
@@ -203,7 +207,7 @@ func checkForward(tx storage.ReadTx, scope request.Scope, b *balancer, protocol 
 			return invalidAction("Target group weights are 0 to 999")
 		}
 
-		t, err := findTG(tx, scope, value(groups[i].TargetGroupArn))
+		t, err := findTG(tx, scope, common.Value(groups[i].TargetGroupArn))
 		if err != nil {
 			return err
 		}
@@ -216,7 +220,7 @@ func checkForward(tx storage.ReadTx, scope request.Scope, b *balancer, protocol 
 		}
 
 		web := slices.Contains(applicationProtocols, protocol)
-		switch tgProtocol := value(t.TG.Protocol); {
+		switch tgProtocol := common.Value(t.TG.Protocol); {
 		case web && t.kind() != targetLambda && !slices.Contains(applicationProtocols, tgProtocol),
 			!web && (t.kind() == targetLambda || !slices.Contains(networkProtocols, tgProtocol)):
 			return awserror.New("IncompatibleProtocolsException", "The target group protocol is not compatible "+
@@ -230,7 +234,7 @@ func checkForward(tx storage.ReadTx, scope request.Scope, b *balancer, protocol 
 // checkListener checks a listener's protocol, port, certificates, and SSL
 // policy, filling in defaults.
 func checkListener(b *balancer, l *api.Listener) error {
-	protocol, port := value(l.Protocol), value(l.Port)
+	protocol, port := common.Value(l.Protocol), common.Value(l.Port)
 	secure := protocol == protocolHTTPS || protocol == protocolTLS
 	switch {
 	case b.kind() == typeApplication && !slices.Contains(applicationProtocols, protocol),
@@ -253,7 +257,10 @@ func checkListener(b *balancer, l *api.Listener) error {
 			l.SslPolicy = new(defaultPolicy)
 		}
 
-		if !slices.ContainsFunc(sslPolicies, func(p api.SslPolicy) bool { return value(p.Name) == *l.SslPolicy }) {
+		if !slices.ContainsFunc(
+			sslPolicies,
+			func(p api.SslPolicy) bool { return common.Value(p.Name) == *l.SslPolicy },
+		) {
 			return awserror.New("SSLPolicyNotFoundException", "SSL policy '"+*l.SslPolicy+"' not found")
 		}
 	}
@@ -270,8 +277,8 @@ func checkListener(b *balancer, l *api.Listener) error {
 func (s *Service) checkCertificates(ctx context.Context, scope request.Scope, certs []api.Certificate) error {
 	for _, c := range certs {
 		if _, err := s.call(ctx, scope, "acm", "DescribeCertificate",
-			map[string]any{"CertificateArn": value(c.CertificateArn)}); err != nil {
-			return awserror.New("CertificateNotFoundException", "Certificate '"+value(c.CertificateArn)+
+			map[string]any{"CertificateArn": common.Value(c.CertificateArn)}); err != nil {
+			return awserror.New("CertificateNotFoundException", "Certificate '"+common.Value(c.CertificateArn)+
 				"' not found")
 		}
 	}
@@ -298,7 +305,7 @@ func (s *Service) CreateListener(ctx context.Context, in *api.CreateListenerInpu
 
 	var l *listener
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		b, findErr := findLB(tx, m.Scope, value(in.LoadBalancerArn))
+		b, findErr := findLB(tx, m.Scope, common.Value(in.LoadBalancerArn))
 		if findErr != nil {
 			return findErr
 		}
@@ -311,19 +318,19 @@ func (s *Service) CreateListener(ctx context.Context, in *api.CreateListenerInpu
 			return checkErr
 		}
 
-		actions, actionsErr := checkActions(tx, m.Scope, b, value(in.Protocol), in.DefaultActions)
+		actions, actionsErr := checkActions(tx, m.Scope, b, common.Value(in.Protocol), in.DefaultActions)
 		if actionsErr != nil {
 			return actionsErr
 		}
 
 		spec.DefaultActions = actions
-		existing, listErr := list[listener](tx, key(m.Scope, kindListener, b.name()+"/"))
+		existing, listErr := storage.Records[listener](tx, key(m.Scope, kindListener, b.name()+"/"))
 		if listErr != nil {
 			return listErr
 		}
 
 		for _, o := range existing {
-			if value(o.L.Port) != value(in.Port) {
+			if common.Value(o.L.Port) != common.Value(in.Port) {
 				continue
 			}
 
@@ -348,7 +355,7 @@ func (s *Service) CreateListener(ctx context.Context, in *api.CreateListenerInpu
 			ID: id, RuleID: resourceID(), Balancer: b.name(), L: spec, Tags: tags, Attributes: attributes,
 			Extra: []api.Certificate{},
 		}
-		return write(tx, key(m.Scope, kindListener, b.name()+"/"+id), l)
+		return storage.Write(tx, key(m.Scope, kindListener, b.name()+"/"+id), l)
 	})
 	if err != nil {
 		return nil, err
@@ -387,7 +394,7 @@ func (s *Service) DescribeListeners(
 			}
 
 			var listErr error
-			selected, listErr = list[listener](tx, key(m.Scope, kindListener, b.name()+"/"))
+			selected, listErr = storage.Records[listener](tx, key(m.Scope, kindListener, b.name()+"/"))
 			return listErr
 		}
 
@@ -406,7 +413,7 @@ func (s *Service) DescribeListeners(
 		return nil, err
 	}
 
-	slices.SortFunc(selected, func(a, b *listener) int { return int(value(a.L.Port) - value(b.L.Port)) })
+	slices.SortFunc(selected, func(a, b *listener) int { return int(common.Value(a.L.Port) - common.Value(b.L.Port)) })
 	selected, next, err := page(selected, (*listener).arnValue, in.Marker, in.PageSize)
 	if err != nil {
 		return nil, err
@@ -437,7 +444,7 @@ func (s *Service) changeListener(ctx context.Context, arnValue string,
 			return findErr
 		}
 
-		b, found, readErr := read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
+		b, found, readErr := storage.Read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -449,7 +456,7 @@ func (s *Service) changeListener(ctx context.Context, arnValue string,
 			return fnErr
 		}
 
-		return write(tx, key(m.Scope, kindListener, l.Balancer+"/"+l.ID), l)
+		return storage.Write(tx, key(m.Scope, kindListener, l.Balancer+"/"+l.ID), l)
 	})
 
 	return l, err
@@ -467,7 +474,7 @@ func (s *Service) ModifyListener(ctx context.Context, in *api.ModifyListenerInpu
 		return nil, checkErr
 	}
 
-	l, err := s.changeListener(ctx, value(in.ListenerArn), func(tx storage.WriteTx, scope request.Scope,
+	l, err := s.changeListener(ctx, common.Value(in.ListenerArn), func(tx storage.WriteTx, scope request.Scope,
 		b *balancer, l *listener,
 	) error {
 		spec := l.L
@@ -498,7 +505,7 @@ func (s *Service) ModifyListener(ctx context.Context, in *api.ModifyListenerInpu
 				actions = spec.DefaultActions
 			}
 
-			checked, actionsErr := checkActions(tx, scope, b, value(spec.Protocol), actions)
+			checked, actionsErr := checkActions(tx, scope, b, common.Value(spec.Protocol), actions)
 			if actionsErr != nil {
 				return actionsErr
 			}
@@ -506,13 +513,16 @@ func (s *Service) ModifyListener(ctx context.Context, in *api.ModifyListenerInpu
 			spec.DefaultActions = checked
 		}
 
-		if value(spec.Port) != value(l.L.Port) {
-			others, listErr := list[listener](tx, key(scope, kindListener, b.name()+"/"))
+		if common.Value(spec.Port) != common.Value(l.L.Port) {
+			others, listErr := storage.Records[listener](tx, key(scope, kindListener, b.name()+"/"))
 			if listErr != nil {
 				return listErr
 			}
 
-			if slices.ContainsFunc(others, func(o *listener) bool { return value(o.L.Port) == value(spec.Port) }) {
+			if slices.ContainsFunc(
+				others,
+				func(o *listener) bool { return common.Value(o.L.Port) == common.Value(spec.Port) },
+			) {
 				return awserror.New("DuplicateListenerException", "A listener already exists on this port for "+
 					"this load balancer")
 			}
@@ -537,7 +547,7 @@ func (s *Service) DeleteListener(ctx context.Context, in *api.DeleteListenerInpu
 	}
 
 	return &api.DeleteListenerOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
-		l, findErr := findListener(tx, m.Scope, value(in.ListenerArn))
+		l, findErr := findListener(tx, m.Scope, common.Value(in.ListenerArn))
 		if findErr != nil {
 			return findErr
 		}
@@ -570,7 +580,7 @@ func (s *Service) DescribeListenerAttributes(
 
 	var l *listener
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		l, err = findListener(tx, m.Scope, value(in.ListenerArn))
+		l, err = findListener(tx, m.Scope, common.Value(in.ListenerArn))
 		return err
 	})
 	if err != nil {
@@ -585,10 +595,10 @@ func (s *Service) ModifyListenerAttributes(
 ) (*api.ModifyListenerAttributesOutput, error) {
 	keys, values := make([]string, len(in.Attributes)), make([]string, len(in.Attributes))
 	for i, a := range in.Attributes {
-		keys[i], values[i] = value(a.Key), value(a.Value)
+		keys[i], values[i] = common.Value(a.Key), common.Value(a.Value)
 	}
 
-	l, err := s.changeListener(ctx, value(in.ListenerArn), func(_ storage.WriteTx, _ request.Scope, b *balancer,
+	l, err := s.changeListener(ctx, common.Value(in.ListenerArn), func(_ storage.WriteTx, _ request.Scope, b *balancer,
 		l *listener,
 	) error {
 		defaults := listenerAttributes
@@ -633,7 +643,7 @@ func (s *Service) AddListenerCertificates(
 		return nil, checkErr
 	}
 
-	l, err := s.changeListener(ctx, value(in.ListenerArn), func(_ storage.WriteTx, _ request.Scope, _ *balancer,
+	l, err := s.changeListener(ctx, common.Value(in.ListenerArn), func(_ storage.WriteTx, _ request.Scope, _ *balancer,
 		l *listener,
 	) error {
 		if len(l.L.Certificates) == 0 {
@@ -642,7 +652,7 @@ func (s *Service) AddListenerCertificates(
 
 		for _, c := range in.Certificates {
 			if !slices.ContainsFunc(l.certificates(), func(o api.Certificate) bool {
-				return value(o.CertificateArn) == value(c.CertificateArn)
+				return common.Value(o.CertificateArn) == common.Value(c.CertificateArn)
 			}) {
 				l.Extra = append(l.Extra, api.Certificate{CertificateArn: c.CertificateArn})
 			}
@@ -667,14 +677,14 @@ func (s *Service) DescribeListenerCertificates(
 
 	var l *listener
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		l, err = findListener(tx, m.Scope, value(in.ListenerArn))
+		l, err = findListener(tx, m.Scope, common.Value(in.ListenerArn))
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	certs, next, err := page(l.certificates(), func(c api.Certificate) string { return value(c.CertificateArn) },
+	certs, next, err := page(l.certificates(), func(c api.Certificate) string { return common.Value(c.CertificateArn) },
 		in.Marker, in.PageSize)
 	if err != nil {
 		return nil, err
@@ -686,18 +696,18 @@ func (s *Service) DescribeListenerCertificates(
 func (s *Service) RemoveListenerCertificates(
 	ctx context.Context, in *api.RemoveListenerCertificatesInput,
 ) (*api.RemoveListenerCertificatesOutput, error) {
-	_, err := s.changeListener(ctx, value(in.ListenerArn), func(_ storage.WriteTx, _ request.Scope, _ *balancer,
+	_, err := s.changeListener(ctx, common.Value(in.ListenerArn), func(_ storage.WriteTx, _ request.Scope, _ *balancer,
 		l *listener,
 	) error {
 		for _, c := range in.Certificates {
 			if slices.ContainsFunc(l.L.Certificates, func(o api.Certificate) bool {
-				return value(o.CertificateArn) == value(c.CertificateArn)
+				return common.Value(o.CertificateArn) == common.Value(c.CertificateArn)
 			}) {
 				return awserror.New("OperationNotPermittedException", "The default certificate cannot be removed")
 			}
 
 			l.Extra = slices.DeleteFunc(l.Extra, func(o api.Certificate) bool {
-				return value(o.CertificateArn) == value(c.CertificateArn)
+				return common.Value(o.CertificateArn) == common.Value(c.CertificateArn)
 			})
 		}
 

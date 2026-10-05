@@ -133,8 +133,6 @@ var (
 	inputPath = regexp.MustCompile(`^\$(\.[A-Za-z0-9_-]+|\[\d+\])*$`)
 )
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 func invalid(format string, args ...any) error {
 	return awserror.Validation(format, args...)
 }
@@ -189,7 +187,7 @@ func resolveRule(ctx context.Context, name, bus *string) (ruleRef, error) {
 		return ruleRef{}, err
 	}
 
-	if !ruleName.MatchString(value(name)) {
+	if !ruleName.MatchString(common.Value(name)) {
 		return ruleRef{}, invalid("Rule name must be 1 to 64 characters from [.-_A-Za-z0-9].")
 	}
 
@@ -210,14 +208,6 @@ func newID() string {
 	return s[:8] + "-" + s[8:12] + "-" + s[12:16] + "-" + s[16:20] + "-" + s[20:]
 }
 
-func load(tx storage.ReadTx, key string) (*rule, bool, error) {
-	return storage.Read[rule](tx, key)
-}
-
-func save(tx storage.WriteTx, key string, r *rule) error {
-	return storage.Write(tx, key, r)
-}
-
 // update loads an existing rule, applies fn, and saves it.
 func (s *Service) update(ctx context.Context, ref *ruleRef, fn func(r *rule) error) error {
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -230,7 +220,7 @@ func (s *Service) update(ctx context.Context, ref *ruleRef, fn func(r *rule) err
 			return fnErr
 		}
 
-		return save(tx, ref.key, r)
+		return storage.Write(tx, ref.key, r)
 	})
 }
 
@@ -240,7 +230,7 @@ func loadRule(tx storage.ReadTx, ref *ruleRef) (*rule, error) {
 		return nil, err
 	}
 
-	r, ok, err := load(tx, ref.key)
+	r, ok, err := storage.Read[rule](tx, ref.key)
 	if err == nil && !ok {
 		return nil, ref.notFound()
 	}
@@ -281,7 +271,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		return nil, err
 	}
 
-	text, expression := value(in.EventPattern), value(in.ScheduleExpression)
+	text, expression := common.Value(in.EventPattern), common.Value(in.ScheduleExpression)
 	if text == "" && expression == "" {
 		return nil, invalid("Parameter(s) EventPattern or ScheduleExpression must be specified.")
 	}
@@ -306,7 +296,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		}
 	}
 
-	state := value(in.State)
+	state := common.Value(in.State)
 	switch state {
 	case "":
 		state = stateEnabled
@@ -315,7 +305,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		return nil, invalid("State must be ENABLED or DISABLED.")
 	}
 
-	if len(value(in.Description)) > 512 {
+	if len(common.Value(in.Description)) > 512 {
 		return nil, invalid("Description must be at most 512 characters.")
 	}
 
@@ -329,7 +319,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 			return busErr
 		}
 
-		r, exists, loadErr := load(tx, ref.key)
+		r, exists, loadErr := storage.Read[rule](tx, ref.key)
 		if loadErr != nil {
 			return loadErr
 		}
@@ -349,7 +339,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		}
 
 		r.Pattern, r.Schedule, r.State = text, expression, state
-		r.Description, r.RoleARN = value(in.Description), value(in.RoleArn)
+		r.Description, r.RoleARN = common.Value(in.Description), common.Value(in.RoleArn)
 		if tagErr := mergeTags(r, tags); tagErr != nil {
 			return tagErr
 		}
@@ -358,7 +348,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 			return scheduleErr
 		}
 
-		return save(tx, ref.key, r)
+		return storage.Write(tx, ref.key, r)
 	})
 	if err != nil {
 		return nil, err
@@ -444,7 +434,7 @@ func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleRequest) (*a
 			return busErr
 		}
 
-		r, ok, loadErr := load(tx, ref.key)
+		r, ok, loadErr := storage.Read[rule](tx, ref.key)
 		if loadErr != nil || !ok {
 			return loadErr
 		}
@@ -487,12 +477,12 @@ func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api
 			return busErr
 		}
 
-		for _, k := range tx.Keys(prefix + value(in.NamePrefix)) {
+		for _, k := range tx.Keys(prefix + common.Value(in.NamePrefix)) {
 			if strings.TrimPrefix(k, prefix) <= after {
 				continue
 			}
 
-			r, _, loadErr := load(tx, k)
+			r, _, loadErr := storage.Read[rule](tx, k)
 			if loadErr != nil {
 				return loadErr
 			}
@@ -538,7 +528,7 @@ func (s *Service) setState(ctx context.Context, name, bus *string, state string)
 			return scheduleErr
 		}
 
-		return save(tx, ref.key, r)
+		return storage.Write(tx, ref.key, r)
 	})
 }
 
@@ -562,12 +552,12 @@ func (s *Service) TestEventPattern(
 	_ context.Context,
 	in *api.TestEventPatternRequest,
 ) (*api.TestEventPatternResponse, error) {
-	p, err := compilePattern(value(in.EventPattern))
+	p, err := compilePattern(common.Value(in.EventPattern))
 	if err != nil {
 		return nil, err
 	}
 
-	event, ok := pattern.Flatten([]byte(value(in.Event)))
+	event, ok := pattern.Flatten([]byte(common.Value(in.Event)))
 	if !ok {
 		return nil, invalid("Parameter Event is not valid.")
 	}

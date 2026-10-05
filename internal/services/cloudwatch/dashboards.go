@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -40,7 +41,7 @@ func (s *Service) PutDashboard(ctx context.Context, in *api.PutDashboardInput) (
 		return nil, err
 	}
 
-	name, body := value(in.DashboardName), value(in.DashboardBody)
+	name, body := common.Value(in.DashboardName), common.Value(in.DashboardBody)
 	switch {
 	case name == "":
 		return nil, missing("DashboardName")
@@ -67,7 +68,7 @@ func (s *Service) PutDashboard(ctx context.Context, in *api.PutDashboardInput) (
 
 	return &api.PutDashboardOutput{DashboardValidationMessages: []api.DashboardValidationMessage{}},
 		s.store.Update(ctx, func(tx storage.WriteTx) error {
-			old, found, readErr := read[dashboard](tx, dashboardKey(m.Scope, name))
+			old, found, readErr := storage.Read[dashboard](tx, dashboardKey(m.Scope, name))
 			if readErr != nil {
 				return readErr
 			}
@@ -76,8 +77,8 @@ func (s *Service) PutDashboard(ctx context.Context, in *api.PutDashboardInput) (
 				tags = old.Tags
 			}
 
-			return write(tx, dashboardKey(m.Scope, name),
-				dashboard{Name: name, Body: body, Modified: unix(s.now()), Tags: tags})
+			return storage.Write(tx, dashboardKey(m.Scope, name),
+				dashboard{Name: name, Body: body, Modified: common.Unix(s.now()), Tags: tags})
 		})
 }
 
@@ -90,9 +91,9 @@ func (s *Service) GetDashboard(ctx context.Context, in *api.GetDashboardInput) (
 	var d *dashboard
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
-		d, found, err = read[dashboard](tx, dashboardKey(m.Scope, value(in.DashboardName)))
+		d, found, err = storage.Read[dashboard](tx, dashboardKey(m.Scope, common.Value(in.DashboardName)))
 		if err == nil && !found {
-			err = awserror.New(notFoundBoard, "Dashboard "+value(in.DashboardName)+" does not exist")
+			err = awserror.New(notFoundBoard, "Dashboard "+common.Value(in.DashboardName)+" does not exist")
 		}
 
 		return err
@@ -115,7 +116,7 @@ func (s *Service) ListDashboards(ctx context.Context, in *api.ListDashboardsInpu
 	out := &api.ListDashboardsOutput{DashboardEntries: []api.DashboardEntry{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		p := prefix(m.Scope, kindDashboard)
-		for _, k := range tx.Keys(p + value(in.DashboardNamePrefix)) {
+		for _, k := range tx.Keys(p + common.Value(in.DashboardNamePrefix)) {
 			name := strings.TrimPrefix(k, p)
 			if in.NextToken != nil && name <= *in.NextToken {
 				continue
@@ -126,7 +127,7 @@ func (s *Service) ListDashboards(ctx context.Context, in *api.ListDashboardsInpu
 				return nil
 			}
 
-			d, _, readErr := read[dashboard](tx, k)
+			d, _, readErr := storage.Read[dashboard](tx, k)
 			if readErr != nil {
 				return readErr
 			}

@@ -8,6 +8,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -45,7 +46,7 @@ func loadMethod(a *restAPI, resourceID, httpMethod *string) (*method, error) {
 		return nil, err
 	}
 
-	m, ok := r.ResourceMethods[value(httpMethod)]
+	m, ok := r.ResourceMethods[common.Value(httpMethod)]
 	if !ok {
 		return nil, notFound("Invalid Method identifier specified")
 	}
@@ -61,14 +62,14 @@ func (m *method) save() {
 // checkMethod validates a method's authorization against the API's
 // authorizers.
 func checkMethod(a *restAPI, m *api.Method) error {
-	switch t := value(m.AuthorizationType); t {
+	switch t := common.Value(m.AuthorizationType); t {
 	case authNone, authIAM:
 		if m.AuthorizerId != nil {
 			return badRequest("AuthorizerId can only be set with CUSTOM or COGNITO_USER_POOLS authorization.")
 		}
 	case authCustom, authCognito:
-		authorizer, ok := a.Authorizers[value(m.AuthorizerId)]
-		if !ok || (value(authorizer.Type) == typeCognito) != (t == authCognito) {
+		authorizer, ok := a.Authorizers[common.Value(m.AuthorizerId)]
+		if !ok || (common.Value(authorizer.Type) == typeCognito) != (t == authCognito) {
 			return badRequest("Invalid authorizer ID specified. Setting the authorization type to %s requires a "+
 				"valid authorizer of the matching type.", t)
 		}
@@ -76,7 +77,7 @@ func checkMethod(a *restAPI, m *api.Method) error {
 		return badRequest("AuthorizationType must be NONE, AWS_IAM, CUSTOM, or COGNITO_USER_POOLS.")
 	}
 
-	if len(m.AuthorizationScopes) > 0 && value(m.AuthorizationType) != authCognito {
+	if len(m.AuthorizationScopes) > 0 && common.Value(m.AuthorizationType) != authCognito {
 		return badRequest("AuthorizationScopes are only for COGNITO_USER_POOLS authorization.")
 	}
 
@@ -121,14 +122,14 @@ func (s *Service) viewMethod(
 }
 
 func (s *Service) PutMethod(ctx context.Context, in *api.PutMethodRequest) (*api.Method, error) {
-	if !methods[value(in.HttpMethod)] {
+	if !methods[common.Value(in.HttpMethod)] {
 		return nil, badRequest("Invalid HttpMethod specified. Valid options are GET,PUT,POST,DELETE,PATCH,OPTIONS," +
 			"HEAD,ANY")
 	}
 
 	out := &api.Method{
 		HttpMethod: in.HttpMethod, AuthorizationType: in.AuthorizationType, AuthorizerId: in.AuthorizerId,
-		ApiKeyRequired: new(value(in.ApiKeyRequired)), OperationName: in.OperationName,
+		ApiKeyRequired: new(common.Value(in.ApiKeyRequired)), OperationName: in.OperationName,
 		RequestParameters: in.RequestParameters, RequestModels: in.RequestModels,
 		AuthorizationScopes: in.AuthorizationScopes,
 	}
@@ -182,11 +183,11 @@ func (s *Service) UpdateMethod(ctx context.Context, in *api.UpdateMethodRequest)
 		}
 
 		// Dropping an authorizer drops what only it used.
-		if t := value(m.method.AuthorizationType); t == authNone || t == authIAM {
+		if t := common.Value(m.method.AuthorizationType); t == authNone || t == authIAM {
 			m.method.AuthorizerId = nil
 		}
 
-		if value(m.method.AuthorizationType) != authCognito {
+		if common.Value(m.method.AuthorizationType) != authCognito {
 			m.method.AuthorizationScopes = nil
 		}
 
@@ -223,8 +224,8 @@ func (s *Service) PutMethodResponse(
 	ctx context.Context,
 	in *api.PutMethodResponseRequest,
 ) (*api.MethodResponse, error) {
-	if !statusCode.MatchString(value(in.StatusCode)) {
-		return nil, badRequest("Invalid status code specified: %s", value(in.StatusCode))
+	if !statusCode.MatchString(common.Value(in.StatusCode)) {
+		return nil, badRequest("Invalid status code specified: %s", common.Value(in.StatusCode))
 	}
 
 	out := &api.MethodResponse{
@@ -250,7 +251,7 @@ func (s *Service) PutMethodResponse(
 }
 
 func methodResponse(m *method, code *string) (*api.MethodResponse, error) {
-	r, ok := m.method.MethodResponses[value(code)]
+	r, ok := m.method.MethodResponses[common.Value(code)]
 	if !ok {
 		return nil, notFound("Invalid Response status code specified")
 	}
@@ -321,24 +322,27 @@ func (s *Service) DeleteMethodResponse(
 
 // checkIntegration validates a Lambda proxy, HTTP proxy, or mock integration.
 func checkIntegration(i *api.Integration) error {
-	switch value(i.Type) {
+	switch common.Value(i.Type) {
 	case typeLambda:
-		if _, ok := proxy.LambdaARN(value(i.Uri)); !ok || !strings.HasPrefix(value(i.Uri), "arn:aws:apigateway:") {
+		if _, ok := proxy.LambdaARN(
+			common.Value(i.Uri),
+		); !ok ||
+			!strings.HasPrefix(common.Value(i.Uri), "arn:aws:apigateway:") {
 			return badRequest("AWS ARN for integration must contain path or action: the URI of an AWS_PROXY " +
 				"integration must be a Lambda function's invocation URI.")
 		}
 
-		if value(i.HttpMethod) != "POST" {
+		if common.Value(i.HttpMethod) != "POST" {
 			return badRequest("Integrations of type 'AWS_PROXY' currently only support POST for integration " +
 				"HTTP method.")
 		}
 	case typeHTTP:
-		u, err := url.Parse(strings.NewReplacer("${", "", "}", "", "{", "", "}", "").Replace(value(i.Uri)))
+		u, err := url.Parse(strings.NewReplacer("${", "", "}", "", "{", "", "}", "").Replace(common.Value(i.Uri)))
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 			return badRequest("Invalid HTTP endpoint specified for URI")
 		}
 
-		if !methods[value(i.HttpMethod)] {
+		if !methods[common.Value(i.HttpMethod)] {
 			return badRequest("Enumeration value for HttpMethod must be non-empty")
 		}
 	case typeMock:
@@ -347,9 +351,9 @@ func checkIntegration(i *api.Integration) error {
 	}
 
 	switch {
-	case value(i.ConnectionType) != "INTERNET":
+	case common.Value(i.ConnectionType) != "INTERNET":
 		return badRequest("TinyStack supports INTERNET connections only.")
-	case value(i.TimeoutInMillis) < minTimeout || value(i.TimeoutInMillis) > maxTimeout:
+	case common.Value(i.TimeoutInMillis) < minTimeout || common.Value(i.TimeoutInMillis) > maxTimeout:
 		return badRequest("Timeout should be between %d ms and %d ms", minTimeout, maxTimeout)
 	}
 
@@ -361,11 +365,11 @@ func (s *Service) PutIntegration(ctx context.Context, in *api.PutIntegrationRequ
 	err := s.changeMethod(ctx, in.RestApiId, in.ResourceId, in.HttpMethod, func(m *method) error {
 		i := &api.Integration{
 			Type: in.Type, HttpMethod: in.IntegrationHttpMethod, Uri: in.Uri, Credentials: in.Credentials,
-			ConnectionType: orElse(in.ConnectionType, new("INTERNET")), RequestParameters: in.RequestParameters,
+			ConnectionType: common.OrElse(in.ConnectionType, new("INTERNET")), RequestParameters: in.RequestParameters,
 			RequestTemplates: in.RequestTemplates, ContentHandling: in.ContentHandling,
-			PassthroughBehavior: orElse(in.PassthroughBehavior, new("WHEN_NO_MATCH")),
-			TimeoutInMillis:     orElse(in.TimeoutInMillis, new(int64(maxTimeout))),
-			CacheNamespace:      orElse(in.CacheNamespace, m.resource.Id),
+			PassthroughBehavior: common.OrElse(in.PassthroughBehavior, new("WHEN_NO_MATCH")),
+			TimeoutInMillis:     common.OrElse(in.TimeoutInMillis, new(int64(maxTimeout))),
+			CacheNamespace:      common.OrElse(in.CacheNamespace, m.resource.Id),
 			CacheKeyParameters:  in.CacheKeyParameters,
 		}
 		if i.CacheKeyParameters == nil {
@@ -459,7 +463,7 @@ func (s *Service) DeleteIntegration(
 // checkIntegrationResponse requires the method response the integration
 // response maps to, with every header it sets.
 func checkIntegrationResponse(m *method, r *api.IntegrationResponse) error {
-	declared, ok := m.method.MethodResponses[value(r.StatusCode)]
+	declared, ok := m.method.MethodResponses[common.Value(r.StatusCode)]
 	if !ok {
 		return notFound("Invalid Response status code specified")
 	}
@@ -471,7 +475,7 @@ func checkIntegrationResponse(m *method, r *api.IntegrationResponse) error {
 		}
 	}
 
-	if p := value(r.SelectionPattern); p != "" {
+	if p := common.Value(r.SelectionPattern); p != "" {
 		if _, err := regexp.Compile(p); err != nil {
 			return badRequest("Invalid selection pattern specified: %s", p)
 		}
@@ -518,7 +522,7 @@ func integrationResponse(m *method, code *string) (*api.Integration, *api.Integr
 		return nil, nil, err
 	}
 
-	r, ok := i.IntegrationResponses[value(code)]
+	r, ok := i.IntegrationResponses[common.Value(code)]
 	if !ok {
 		return nil, nil, notFound("Invalid Response status code specified")
 	}

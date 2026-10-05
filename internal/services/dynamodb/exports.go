@@ -18,6 +18,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -51,10 +52,10 @@ func exportKey(ctx context.Context, arn *string) (string, error) {
 		return "", err
 	}
 
-	rest, ok := strings.CutPrefix(value(arn), "arn:aws:dynamodb:"+scope.Region+":"+scope.AccountID+":table/")
+	rest, ok := strings.CutPrefix(common.Value(arn), "arn:aws:dynamodb:"+scope.Region+":"+scope.AccountID+":table/")
 	owner, id, found := strings.Cut(rest, "/export/")
 	if !ok || !found || !tableName.MatchString(owner) || id == "" || strings.Contains(id, "/") {
-		return "", awserror.New("ExportNotFoundException", "Export not found: "+value(arn))
+		return "", awserror.New("ExportNotFoundException", "Export not found: "+common.Value(arn))
 	}
 
 	return exportPrefix(scope) + owner + "/" + id, nil
@@ -85,7 +86,7 @@ func (s *Service) ExportTableToPointInTime(
 	case in.ExportTime != nil:
 		return nil, awserror.New("InvalidExportTimeException",
 			"TinyStack exports only the current state of a table; omit ExportTime")
-	case value(in.S3Bucket) == "":
+	case common.Value(in.S3Bucket) == "":
 		return nil, awserror.Validation("S3Bucket is required")
 	case in.ExportFormat != nil && *in.ExportFormat != formatJSON:
 		return nil, awserror.Validation("TinyStack supports only the DYNAMODB_JSON export format")
@@ -95,8 +96,8 @@ func (s *Service) ExportTableToPointInTime(
 		return nil, awserror.New("InternalServerError", "Exports cannot reach S3")
 	}
 
-	if !strings.HasPrefix(value(in.TableArn), "arn:") {
-		return nil, awserror.Validation("Invalid TableArn: %s", value(in.TableArn))
+	if !strings.HasPrefix(common.Value(in.TableArn), "arn:") {
+		return nil, awserror.Validation("Invalid TableArn: %s", common.Value(in.TableArn))
 	}
 
 	key, err := tableNamed(ctx, in.TableArn)
@@ -128,7 +129,7 @@ func (s *Service) ExportTableToPointInTime(
 		_, _ = rand.Read(suffix)
 		id := fmt.Sprintf("%014d-%s", start.UnixMilli(), hex.EncodeToString(suffix))
 		d = &api.ExportDescription{
-			ExportArn: new(value(t.Description.TableArn) + "/export/" + id), ExportStatus: new(exportCompleted),
+			ExportArn: new(common.Value(t.Description.TableArn) + "/export/" + id), ExportStatus: new(exportCompleted),
 			StartTime: new(float64(start.UnixMilli()) / 1000), TableArn: t.Description.TableArn,
 			TableId: t.Description.TableId, ExportTime: new(float64(start.UnixMilli()) / 1000),
 			ClientToken: in.ClientToken, S3Bucket: in.S3Bucket, S3Prefix: in.S3Prefix,
@@ -170,7 +171,7 @@ func (s *Service) ExportTableToPointInTime(
 	}
 
 	d.EndTime = new(float64(time.Now().UnixMilli()) / 1000)
-	_, id, _ := strings.Cut(value(d.ExportArn), "/export/")
+	_, id, _ := strings.Cut(common.Value(d.ExportArn), "/export/")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		return write(tx, exportPrefix(scope)+name+"/"+id, d)
 	})
@@ -195,11 +196,12 @@ func findExport(
 
 	for _, key := range tx.Keys(prefix) {
 		d, err := loadExport(tx, key)
-		if err != nil || value(d.ClientToken) != *in.ClientToken {
+		if err != nil || common.Value(d.ClientToken) != *in.ClientToken {
 			continue
 		}
 
-		if value(d.S3Bucket) != value(in.S3Bucket) || value(d.S3Prefix) != value(in.S3Prefix) {
+		if common.Value(d.S3Bucket) != common.Value(in.S3Bucket) ||
+			common.Value(d.S3Prefix) != common.Value(in.S3Prefix) {
 			return nil, awserror.New("ExportConflictException",
 				"An export with this ClientToken was requested with different parameters")
 		}
@@ -218,9 +220,9 @@ func (s *Service) writeExport(
 	lines []byte,
 	count int64,
 ) error {
-	_, id, _ := strings.Cut(value(d.ExportArn), "/export/")
+	_, id, _ := strings.Cut(common.Value(d.ExportArn), "/export/")
 	base := "AWSDynamoDB/" + id
-	if prefix := strings.Trim(value(d.S3Prefix), "/"); prefix != "" {
+	if prefix := strings.Trim(common.Value(d.S3Prefix), "/"); prefix != "" {
 		base = prefix + "/" + base
 	}
 
@@ -252,7 +254,7 @@ func (s *Service) writeExport(
 		"endTime": exportTime(new(float64(time.Now().UnixMilli()) / 1000)), "tableArn": d.TableArn,
 		"tableId": d.TableId, "exportTime": exportTime(d.ExportTime), "s3Bucket": d.S3Bucket,
 		"s3Prefix": d.S3Prefix, "s3SseAlgorithm": nil, "s3SseKmsKeyId": nil,
-		"manifestFilesS3Key": base + "/manifest-files.json", "billedSizeBytes": value(d.BilledSizeBytes),
+		"manifestFilesS3Key": base + "/manifest-files.json", "billedSizeBytes": common.Value(d.BilledSizeBytes),
 		"itemCount": count, "outputFormat": formatJSON,
 	})
 	if err != nil {
@@ -269,8 +271,16 @@ func (s *Service) writeExport(
 		{base + "/manifest-files.json", append(files, '\n')},
 		{*d.ExportManifest, summary},
 	} {
-		if _, err = s.caller.Call(ctx, "s3", "PutObject",
-			map[string]any{"Bucket": value(d.S3Bucket), "Key": object.key, "Body": string(object.body)}); err != nil {
+		if _, err = s.caller.Call(
+			ctx,
+			"s3",
+			"PutObject",
+			map[string]any{
+				"Bucket": common.Value(d.S3Bucket),
+				"Key":    object.key,
+				"Body":   string(object.body),
+			},
+		); err != nil {
 			return err
 		}
 	}
@@ -280,7 +290,7 @@ func (s *Service) writeExport(
 
 // exportTime formats a manifest's times, which are ISO 8601.
 func exportTime(seconds *float64) string {
-	return time.UnixMilli(int64(value(seconds) * 1000)).UTC().Format("2006-01-02T15:04:05.000Z")
+	return time.UnixMilli(int64(common.Value(seconds) * 1000)).UTC().Format("2006-01-02T15:04:05.000Z")
 }
 
 func (s *Service) DescribeExport(ctx context.Context, in *api.DescribeExportInput) (*api.DescribeExportOutput, error) {

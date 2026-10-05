@@ -97,19 +97,6 @@ func arn(scope request.Scope, resource string) string {
 // resourceID returns 16 random hex digits, the last part of every ARN.
 func resourceID() string { return common.RandomID(16) }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-// list decodes the records under a prefix, in key order.
-func list[T any](tx storage.ReadTx, prefix string) ([]*T, error) {
-	return storage.Records[T](tx, prefix)
-}
-
 func validation(format string, args ...any) error {
 	return awserror.New("ValidationError", fmt.Sprintf(format, args...))
 }
@@ -165,12 +152,12 @@ func page[T any](items []T, keyOf func(T) string, marker *string, pageSize *int6
 func tagMap(tags []api.Tag) (map[string]string, error) {
 	out := map[string]string{}
 	for _, t := range tags {
-		k := value(t.Key)
+		k := common.Value(t.Key)
 		if _, dup := out[k]; dup {
 			return nil, awserror.New("DuplicateTagKeysException", "Tag key '"+k+"' is duplicated.")
 		}
 
-		out[k] = value(t.Value)
+		out[k] = common.Value(t.Value)
 	}
 
 	return out, checkTags(out)

@@ -20,6 +20,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -60,13 +61,13 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 	var rt *route
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		entry, ok, err := read[dnsEntry](tx, dnsPrefix+label)
+		entry, ok, err := storage.Read[dnsEntry](tx, dnsPrefix+label)
 		if err != nil || !ok {
 			return err
 		}
 
 		scope := request.Scope{AccountID: entry.Account, Region: entry.Region}
-		b, ok, err := read[balancer](tx, key(scope, kindLB, entry.Name))
+		b, ok, err := storage.Read[balancer](tx, key(scope, kindLB, entry.Name))
 		if err != nil || !ok {
 			return err
 		}
@@ -90,20 +91,20 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 		return nil, false, nil
 	}
 
-	switch a := rt.action; value(a.Type) {
+	switch a := rt.action; common.Value(a.Type) {
 	case actionRedirect:
 		return redirect(a.RedirectConfig, r, rt.protocol, rt.port), true, nil
 	case actionFixed:
 		f := a.FixedResponseConfig
-		status, _ := strconv.Atoi(value(f.StatusCode))
-		contentType := value(f.ContentType)
+		status, _ := strconv.Atoi(common.Value(f.StatusCode))
+		contentType := common.Value(f.ContentType)
 		if contentType == "" {
 			contentType = "text/plain; charset=utf-8"
 		}
 
 		return &execute.Response{
 			Status: status, Header: http.Header{"Content-Type": {contentType}, headerServer: {serverName}},
-			Body: []byte(value(f.MessageBody)),
+			Body: []byte(common.Value(f.MessageBody)),
 		}, true, nil
 	}
 
@@ -115,7 +116,7 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 func pickListener(tx storage.ReadTx, scope request.Scope, b *balancer, port string, hasPort bool) (
 	*listener, error,
 ) {
-	listeners, err := list[listener](tx, key(scope, kindListener, b.name()+"/"))
+	listeners, err := storage.Records[listener](tx, key(scope, kindListener, b.name()+"/"))
 	switch {
 	case err != nil:
 		return nil, err
@@ -123,14 +124,14 @@ func pickListener(tx storage.ReadTx, scope request.Scope, b *balancer, port stri
 		return nil, errUnavailable
 	}
 
-	slices.SortFunc(listeners, func(a, b *listener) int { return int(value(a.L.Port) - value(b.L.Port)) })
+	slices.SortFunc(listeners, func(a, b *listener) int { return int(common.Value(a.L.Port) - common.Value(b.L.Port)) })
 	want := "80"
 	if hasPort {
 		want = port
 	}
 
 	for _, l := range listeners {
-		if strconv.FormatInt(value(l.L.Port), 10) == want {
+		if strconv.FormatInt(common.Value(l.L.Port), 10) == want {
 			return l, nil
 		}
 	}
@@ -156,7 +157,7 @@ func resolve(tx storage.ReadTx, scope request.Scope, b *balancer, l *listener, r
 		timeout = time.Duration(seconds) * time.Second
 	}
 
-	rt := &route{scope: scope, protocol: value(l.L.Protocol), port: value(l.L.Port), timeout: timeout}
+	rt := &route{scope: scope, protocol: common.Value(l.L.Protocol), port: common.Value(l.L.Port), timeout: timeout}
 	for _, rule := range rules {
 		if !slices.ContainsFunc(rule.Conditions, func(c api.RuleCondition) bool { return !matches(&c, r) }) {
 			rt.action = rule.Actions[len(rule.Actions)-1]
@@ -164,14 +165,14 @@ func resolve(tx storage.ReadTx, scope request.Scope, b *balancer, l *listener, r
 		}
 	}
 
-	if value(rt.action.Type) != actionForward {
+	if common.Value(rt.action.Type) != actionForward {
 		return rt, nil
 	}
 
 	groups := rt.action.ForwardConfig.TargetGroups
 	total := int64(0)
 	for _, g := range groups {
-		total += value(g.Weight)
+		total += common.Value(g.Weight)
 	}
 
 	if total == 0 {
@@ -181,8 +182,8 @@ func resolve(tx storage.ReadTx, scope request.Scope, b *balancer, l *listener, r
 	n, _ := rand.Int(rand.Reader, big.NewInt(total))
 	pick := n.Int64()
 	for _, g := range groups {
-		if pick -= value(g.Weight); pick < 0 {
-			rt.group, err = findTG(tx, scope, value(g.TargetGroupArn))
+		if pick -= common.Value(g.Weight); pick < 0 {
+			rt.group, err = findTG(tx, scope, common.Value(g.TargetGroupArn))
 			return rt, err
 		}
 	}
@@ -193,7 +194,7 @@ func resolve(tx storage.ReadTx, scope request.Scope, b *balancer, l *listener, r
 // matches reports whether a request meets a rule condition: one of the
 // condition's values matches.
 func matches(c *api.RuleCondition, r *execute.Request) bool {
-	switch value(c.Field) {
+	switch common.Value(c.Field) {
 	case fieldHost:
 		host := r.Host
 		if h, _, err := net.SplitHostPort(host); err == nil {
@@ -206,7 +207,7 @@ func matches(c *api.RuleCondition, r *execute.Request) bool {
 			return wildcard(p, r.Path, false)
 		})
 	case fieldHeader:
-		values := r.Header.Values(value(c.HttpHeaderConfig.HttpHeaderName))
+		values := r.Header.Values(common.Value(c.HttpHeaderConfig.HttpHeaderName))
 		return slices.ContainsFunc(c.HttpHeaderConfig.Values, func(p string) bool {
 			return slices.ContainsFunc(values, func(v string) bool { return wildcard(p, v, true) })
 		})
@@ -219,7 +220,10 @@ func matches(c *api.RuleCondition, r *execute.Request) bool {
 					continue
 				}
 
-				if slices.ContainsFunc(values, func(v string) bool { return wildcard(value(p.Value), v, true) }) {
+				if slices.ContainsFunc(
+					values,
+					func(v string) bool { return wildcard(common.Value(p.Value), v, true) },
+				) {
 					return true
 				}
 			}
@@ -259,19 +263,19 @@ func redirect(c *api.RedirectActionConfig, r *execute.Request, protocol string, 
 		"#{protocol}", strings.ToLower(protocol), "#{host}", host, "#{port}", strconv.FormatInt(port, 10),
 		"#{path}", strings.TrimPrefix(r.Path, "/"), "#{query}", r.RawQuery,
 	).Replace
-	scheme := strings.ToLower(replace(value(c.Protocol)))
-	location := scheme + "://" + replace(value(c.Host))
-	if p := replace(value(c.Port)); (scheme != "http" || p != "80") && (scheme != "https" || p != "443") {
+	scheme := strings.ToLower(replace(common.Value(c.Protocol)))
+	location := scheme + "://" + replace(common.Value(c.Host))
+	if p := replace(common.Value(c.Port)); (scheme != "http" || p != "80") && (scheme != "https" || p != "443") {
 		location += ":" + p
 	}
 
-	location += replace(value(c.Path))
-	if q := replace(value(c.Query)); q != "" {
+	location += replace(common.Value(c.Path))
+	if q := replace(common.Value(c.Query)); q != "" {
 		location += "?" + q
 	}
 
 	status := http.StatusMovedPermanently
-	if value(c.StatusCode) == "HTTP_302" {
+	if common.Value(c.StatusCode) == "HTTP_302" {
 		status = http.StatusFound
 	}
 
@@ -317,11 +321,14 @@ func (s *Service) forward(ctx context.Context, rt *route, r *execute.Request) *e
 
 	target := t.Targets[s.turn.Add(1)%uint64(len(t.Targets))]
 	scheme := "http"
-	if value(t.TG.Protocol) == protocolHTTPS {
+	if common.Value(t.TG.Protocol) == protocolHTTPS {
 		scheme = "https"
 	}
 
-	url := scheme + "://" + net.JoinHostPort(value(target.Id), strconv.FormatInt(targetPort(t, target), 10)) + r.Path
+	url := scheme + "://" + net.JoinHostPort(
+		common.Value(target.Id),
+		strconv.FormatInt(targetPort(t, target), 10),
+	) + r.Path
 	if r.RawQuery != "" {
 		url += "?" + r.RawQuery
 	}
@@ -371,7 +378,7 @@ func (s *Service) invoke(ctx context.Context, rt *route, r *execute.Request, hea
 	}
 
 	out, err := s.call(ctx, rt.scope, "lambda", "Invoke",
-		map[string]any{"FunctionName": value(rt.group.Targets[0].Id), "Payload": string(payload)})
+		map[string]any{"FunctionName": common.Value(rt.group.Targets[0].Id), "Payload": string(payload)})
 	if err != nil || out["FunctionError"] != nil {
 		return failure(http.StatusBadGateway)
 	}

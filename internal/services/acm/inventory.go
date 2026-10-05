@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -18,18 +19,22 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			c, _, err := read[certificate](tx, k)
+			c, _, err := storage.Read[certificate](tx, k)
 			if err != nil {
 				return err
 			}
 
 			d := &c.Detail
 			out = append(out, catalog.Resource{
-				Type: "certificate", Account: account, Region: region, Name: value(d.DomainName),
-				ARN: value(d.CertificateArn), Tags: c.Tags,
+				Type: "certificate", Account: account, Region: region, Name: common.Value(d.DomainName),
+				ARN: common.Value(d.CertificateArn), Tags: c.Tags,
 				Details: map[string]any{
-					"Type": value(d.Type), "Status": value(d.Status), "KeyAlgorithm": value(d.KeyAlgorithm),
-					"Names": d.SubjectAlternativeNames,
+					"Type": common.Value(
+						d.Type,
+					),
+					"Status":       common.Value(d.Status),
+					"KeyAlgorithm": common.Value(d.KeyAlgorithm),
+					"Names":        d.SubjectAlternativeNames,
 				},
 			})
 		}

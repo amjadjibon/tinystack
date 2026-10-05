@@ -10,6 +10,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 )
 
@@ -46,7 +47,7 @@ func streamOptions(destinations *api.DestinationConfig, bisect *bool, age *int64
 			return invalid("Stream event sources support only an OnFailure destination")
 		}
 
-		destination := value(onFailure(destinations))
+		destination := common.Value(onFailure(destinations))
 		if service, ok := destinationService(destination); destination != "" &&
 			(!ok || service != serviceSQS && service != serviceSNS) {
 			return invalid("The OnFailure destination of a stream event source must be an SQS queue or SNS topic")

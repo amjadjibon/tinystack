@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // errNoCaller reports a request that needs another service before start.go
@@ -63,7 +64,7 @@ func (s *Service) launchTemplate(ctx context.Context, scope request.Scope, lt *a
 	id, name string, err error,
 ) {
 	params := map[string]any{}
-	given := value(lt.LaunchTemplateId)
+	given := common.Value(lt.LaunchTemplateId)
 	switch {
 	case given != "" && lt.LaunchTemplateName != nil:
 		return "", "", validation("Valid requests must contain either launchTemplateId or LaunchTemplateName")
@@ -128,8 +129,8 @@ func (s *Service) launch(ctx context.Context, scope request.Scope, g *group, lc 
 
 	var tags []any
 	for _, t := range g.Group.Tags {
-		if value(t.PropagateAtLaunch) {
-			tags = append(tags, map[string]any{"Key": value(t.Key), fieldValue: value(t.Value)})
+		if common.Value(t.PropagateAtLaunch) {
+			tags = append(tags, map[string]any{"Key": common.Value(t.Key), fieldValue: common.Value(t.Value)})
 		}
 	}
 
@@ -139,7 +140,7 @@ func (s *Service) launch(ctx context.Context, scope request.Scope, g *group, lc 
 
 	if lt := g.Group.LaunchTemplate; lt != nil {
 		params["LaunchTemplate"] = map[string]any{
-			"LaunchTemplateId": value(lt.LaunchTemplateId), "Version": value(lt.Version),
+			"LaunchTemplateId": common.Value(lt.LaunchTemplateId), "Version": common.Value(lt.Version),
 		}
 	} else {
 		configure(params, lc)
@@ -164,14 +165,14 @@ func (s *Service) launch(ctx context.Context, scope request.Scope, g *group, lc 
 			AvailabilityZone: new(text(placed, "AvailabilityZone")), LifecycleState: new(lifecycleInService),
 			HealthStatus: new(healthHealthy), LaunchTemplate: g.Group.LaunchTemplate,
 			LaunchConfigurationName: g.Group.LaunchConfigurationName, ImageId: new(text(i, "ImageId")),
-			ProtectedFromScaleIn: new(value(g.Group.NewInstancesProtectedFromScaleIn)),
+			ProtectedFromScaleIn: new(common.Value(g.Group.NewInstancesProtectedFromScaleIn)),
 		},
 	}, nil
 }
 
 // configure sets the RunInstances parameters of a launch configuration.
 func configure(params map[string]any, lc *api.LaunchConfiguration) {
-	params["ImageId"], params["InstanceType"] = value(lc.ImageId), value(lc.InstanceType)
+	params["ImageId"], params["InstanceType"] = common.Value(lc.ImageId), common.Value(lc.InstanceType)
 	if lc.KeyName != nil {
 		params["KeyName"] = *lc.KeyName
 	}
@@ -198,7 +199,7 @@ func configure(params map[string]any, lc *api.LaunchConfiguration) {
 	}
 
 	if lc.InstanceMonitoring != nil {
-		params["Monitoring"] = map[string]any{"Enabled": value(lc.InstanceMonitoring.Enabled)}
+		params["Monitoring"] = map[string]any{"Enabled": common.Value(lc.InstanceMonitoring.Enabled)}
 	}
 
 	if lc.PlacementTenancy != nil {

@@ -136,7 +136,7 @@ func (s *Service) abortOrphans() error {
 				continue
 			}
 
-			e, _, err := read[execution](tx, key)
+			e, _, err := storage.Read[execution](tx, key)
 			if err != nil || e.Status != statusRunning {
 				if err != nil {
 					return err
@@ -145,9 +145,9 @@ func (s *Service) abortOrphans() error {
 				continue
 			}
 
-			e.Status, e.Stop = statusAborted, unix(s.now())
+			e.Status, e.Stop = statusAborted, common.Unix(s.now())
 			e.Error, e.Cause = errRuntime, "TinyStack stopped while the execution was running"
-			if writeErr := write(tx, key, e); writeErr != nil {
+			if writeErr := storage.Write(tx, key, e); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -249,18 +249,6 @@ func parseARN(s string) (scope request.Scope, kind, name string, ok bool) {
 	return request.Scope{AccountID: parts[4], Region: parts[3]}, parts[5], parts[6], true
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-func unix(t time.Time) float64 { return common.Unix(t) }
-
-func orElse[T any](p, fallback *T) *T { return common.OrElse(p, fallback) }
-
 func newToken() string {
 	var b [96]byte
 	_, _ = rand.Read(b[:])
@@ -301,7 +289,7 @@ func asStateError(err error) *stateError {
 func tagsOf(tags []api.Tag) map[string]string {
 	out := map[string]string{}
 	for _, t := range tags {
-		out[value(t.Key)] = value(t.Value)
+		out[common.Value(t.Key)] = common.Value(t.Value)
 	}
 
 	return out

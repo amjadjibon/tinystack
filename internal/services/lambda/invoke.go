@@ -18,6 +18,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/recent"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -262,7 +263,7 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, value(in.FunctionName))
+	name, q, err := resolveName(m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +278,7 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 	}
 
 	tail := false
-	switch value(in.LogType) {
+	switch common.Value(in.LogType) {
 	case "", "None":
 	case "Tail":
 		tail = true
@@ -285,11 +286,11 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 		return nil, invalid("LogType must be None or Tail")
 	}
 
-	if tail && value(in.InvocationType) != "" && value(in.InvocationType) != "RequestResponse" {
+	if tail && common.Value(in.InvocationType) != "" && common.Value(in.InvocationType) != "RequestResponse" {
 		return nil, invalid("LogType Tail is only supported for RequestResponse invocations")
 	}
 
-	switch value(in.InvocationType) {
+	switch common.Value(in.InvocationType) {
 	case "", "RequestResponse":
 		payload, checkErr := checkPayload(in.Payload, maxSyncPayload)
 		if checkErr != nil {

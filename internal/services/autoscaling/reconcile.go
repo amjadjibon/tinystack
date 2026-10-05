@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -70,7 +71,7 @@ func (s *Service) visit() {
 func memberIDs(members []member) []string {
 	ids := make([]string, len(members))
 	for i, m := range members {
-		ids[i] = value(m.InstanceId)
+		ids[i] = common.Value(m.InstanceId)
 	}
 
 	return ids
@@ -102,12 +103,12 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 	var lc *api.LaunchConfiguration
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
-		if g, _, err = read[group](tx, key(scope, kindGroup, name)); err != nil || g == nil {
+		if g, _, err = storage.Read[group](tx, key(scope, kindGroup, name)); err != nil || g == nil {
 			return err
 		}
 
 		if n := g.Group.LaunchConfigurationName; n != nil {
-			lc, _, err = read[api.LaunchConfiguration](tx, key(scope, kindConfiguration, *n))
+			lc, _, err = storage.Read[api.LaunchConfiguration](tx, key(scope, kindConfiguration, *n))
 		}
 
 		return err
@@ -129,8 +130,8 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 		}
 
 		for _, m := range g.Members {
-			if !up[value(m.InstanceId)] {
-				unhealthy[value(m.InstanceId)] = true
+			if !up[common.Value(m.InstanceId)] {
+				unhealthy[common.Value(m.InstanceId)] = true
 			}
 		}
 	}
@@ -138,8 +139,8 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 	var gone []departure
 	var kept []member
 	for _, m := range g.Members {
-		id := value(m.InstanceId)
-		sick := unhealthy[id] || value(m.HealthStatus) == healthUnhealthy
+		id := common.Value(m.InstanceId)
+		sick := unhealthy[id] || common.Value(m.HealthStatus) == healthUnhealthy
 		if sick && !g.suspended(processReplaceUnhealthy) {
 			gone = append(gone, departure{m, fmt.Sprintf("At %s an instance was taken out of service in response "+
 				"to an EC2 health check indicating it has been terminated or stopped.", stamp(now))})
@@ -149,11 +150,14 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 		kept = append(kept, m)
 	}
 
-	desired := int(value(g.Group.DesiredCapacity))
+	desired := int(common.Value(g.Group.DesiredCapacity))
 	if extra := len(kept) - desired; extra > 0 && !g.suspended(processTerminate) {
 		for _, v := range victims(kept, extra, g.Group.TerminationPolicies) {
 			size := len(kept)
-			kept = slices.DeleteFunc(kept, func(m member) bool { return value(m.InstanceId) == value(v.InstanceId) })
+			kept = slices.DeleteFunc(
+				kept,
+				func(m member) bool { return common.Value(m.InstanceId) == common.Value(v.InstanceId) },
+			)
 			gone = append(gone, departure{v, joinCause(cause, fmt.Sprintf("At %s an instance was taken out of "+
 				"service in response to a difference between desired and actual capacity, shrinking the capacity "+
 				"from %d to %d.", stamp(now), size, size-1))})
@@ -186,7 +190,7 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		cur, found, readErr := read[group](tx, key(scope, kindGroup, name))
+		cur, found, readErr := storage.Read[group](tx, key(scope, kindGroup, name))
 		if readErr != nil || !found {
 			return readErr
 		}
@@ -194,26 +198,26 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 		leaving := map[string]bool{}
 		for i := range gone {
 			d := &gone[i]
-			leaving[value(d.InstanceId)] = true
-			a := s.activity(cur, now, "Terminating EC2 instance: "+value(d.InstanceId), d.cause, &d.member)
-			if writeErr := write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now)), a); writeErr != nil {
+			leaving[common.Value(d.InstanceId)] = true
+			a := s.activity(cur, now, "Terminating EC2 instance: "+common.Value(d.InstanceId), d.cause, &d.member)
+			if writeErr := storage.Write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now)), a); writeErr != nil {
 				return writeErr
 			}
 		}
 
-		cur.Members = slices.DeleteFunc(cur.Members, func(m member) bool { return leaving[value(m.InstanceId)] })
+		cur.Members = slices.DeleteFunc(cur.Members, func(m member) bool { return leaving[common.Value(m.InstanceId)] })
 		for i := range cur.Members {
-			if unhealthy[value(cur.Members[i].InstanceId)] {
+			if unhealthy[common.Value(cur.Members[i].InstanceId)] {
 				cur.Members[i].HealthStatus = new(healthUnhealthy)
 			}
 		}
 
 		for i, m := range launched {
 			size := len(cur.Members)
-			a := s.activity(cur, now, "Launching a new EC2 instance: "+value(m.InstanceId),
+			a := s.activity(cur, now, "Launching a new EC2 instance: "+common.Value(m.InstanceId),
 				joinCause(cause, fmt.Sprintf("At %s an instance was started in response to a difference between "+
 					"desired and actual capacity, increasing the capacity from %d to %d.", stamp(now), size, size+1)), &m)
-			if writeErr := write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now.Add(time.Duration(i)))),
+			if writeErr := storage.Write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now.Add(time.Duration(i)))),
 				a); writeErr != nil {
 				return writeErr
 			}
@@ -228,12 +232,12 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 					"desired and actual capacity, increasing the capacity from %d to %d.", stamp(now),
 					len(cur.Members), len(cur.Members)+1)), nil)
 			a.StatusCode, a.StatusMessage = new("Failed"), new(awserror.From(failure).Message)
-			if writeErr := write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now)), a); writeErr != nil {
+			if writeErr := storage.Write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now)), a); writeErr != nil {
 				return writeErr
 			}
 		}
 
-		return write(tx, key(scope, kindGroup, name), cur)
+		return storage.Write(tx, key(scope, kindGroup, name), cur)
 	})
 	if err != nil {
 		s.logger.Warn("saving an Auto Scaling group's instances failed", "group", name, "error", err)
@@ -264,8 +268,8 @@ func (g *group) place(members []member) (subnet, zone string) {
 	}
 
 	zone = slices.MinFunc(g.Group.AvailabilityZones, func(a, b string) int {
-		return cmp.Or(cmp.Compare(count(func(m member) bool { return value(m.AvailabilityZone) == a }),
-			count(func(m member) bool { return value(m.AvailabilityZone) == b })), strings.Compare(a, b))
+		return cmp.Or(cmp.Compare(count(func(m member) bool { return common.Value(m.AvailabilityZone) == a }),
+			count(func(m member) bool { return common.Value(m.AvailabilityZone) == b })), strings.Compare(a, b))
 	})
 
 	var candidates []string
@@ -289,7 +293,10 @@ func (g *group) place(members []member) (subnet, zone string) {
 // most members, then by the first termination policy TinyStack orders by
 // (OldestInstance or NewestInstance), and otherwise the oldest.
 func victims(members []member, n int, policies []string) []member {
-	candidates := slices.DeleteFunc(slices.Clone(members), func(m member) bool { return value(m.ProtectedFromScaleIn) })
+	candidates := slices.DeleteFunc(
+		slices.Clone(members),
+		func(m member) bool { return common.Value(m.ProtectedFromScaleIn) },
+	)
 	newest := slices.Index(policies, "NewestInstance") >= 0 &&
 		(slices.Index(policies, "OldestInstance") < 0 ||
 			slices.Index(policies, "NewestInstance") < slices.Index(policies, "OldestInstance"))
@@ -297,26 +304,26 @@ func victims(members []member, n int, policies []string) []member {
 	for range min(n, len(candidates)) {
 		perZone := map[string]int{}
 		for _, m := range members {
-			perZone[value(m.AvailabilityZone)]++
+			perZone[common.Value(m.AvailabilityZone)]++
 		}
 
 		for _, m := range out {
-			perZone[value(m.AvailabilityZone)]--
+			perZone[common.Value(m.AvailabilityZone)]--
 		}
 
 		best := slices.MinFunc(candidates, func(a, b member) int {
-			byZone := cmp.Compare(perZone[value(b.AvailabilityZone)], perZone[value(a.AvailabilityZone)])
+			byZone := cmp.Compare(perZone[common.Value(b.AvailabilityZone)], perZone[common.Value(a.AvailabilityZone)])
 			byAge := a.Launched.Compare(b.Launched)
 			if newest {
 				byAge = -byAge
 			}
 
-			return cmp.Or(byZone, byAge, strings.Compare(value(a.InstanceId), value(b.InstanceId)))
+			return cmp.Or(byZone, byAge, strings.Compare(common.Value(a.InstanceId), common.Value(b.InstanceId)))
 		})
 		out = append(out, best)
 		candidates = slices.DeleteFunc(
 			candidates,
-			func(m member) bool { return value(m.InstanceId) == value(best.InstanceId) },
+			func(m member) bool { return common.Value(m.InstanceId) == common.Value(best.InstanceId) },
 		)
 	}
 
@@ -327,7 +334,7 @@ func victims(members []member, n int, policies []string) []member {
 func (s *Service) activity(g *group, now time.Time, description, cause string, m *member) *api.Activity {
 	details := "{}"
 	if m != nil {
-		detail := map[string]string{"Availability Zone": value(m.AvailabilityZone)}
+		detail := map[string]string{"Availability Zone": common.Value(m.AvailabilityZone)}
 		if m.Subnet != "" {
 			detail["Subnet ID"] = m.Subnet
 		}
@@ -382,14 +389,14 @@ func (s *Service) DescribeScalingActivities(
 		}
 
 		for _, k := range tx.Keys(p) {
-			a, _, readErr := read[api.Activity](tx, k)
+			a, _, readErr := storage.Read[api.Activity](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			if len(in.ActivityIds) == 0 || slices.Contains(in.ActivityIds, value(a.ActivityId)) {
+			if len(in.ActivityIds) == 0 || slices.Contains(in.ActivityIds, common.Value(a.ActivityId)) {
 				seq := k[strings.LastIndexByte(k, '/')+1:]
-				all = append(all, entry{a, invert(seq) + value(a.ActivityId)})
+				all = append(all, entry{a, invert(seq) + common.Value(a.ActivityId)})
 			}
 		}
 

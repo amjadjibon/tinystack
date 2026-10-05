@@ -20,7 +20,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			c, _, err := read[cluster](tx, key)
+			c, _, err := storage.Read[cluster](tx, key)
 			if err != nil {
 				return err
 			}

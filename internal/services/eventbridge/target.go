@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -37,11 +38,11 @@ func targetService(scope request.Scope, arn string) (string, error) {
 
 func newTarget(scope request.Scope, in *api.Target) (target, error) {
 	t := target{
-		ID:        value(in.Id),
-		ARN:       value(in.Arn),
-		RoleARN:   value(in.RoleArn),
-		Input:     value(in.Input),
-		InputPath: value(in.InputPath),
+		ID:        common.Value(in.Id),
+		ARN:       common.Value(in.Arn),
+		RoleARN:   common.Value(in.RoleArn),
+		Input:     common.Value(in.Input),
+		InputPath: common.Value(in.InputPath),
 	}
 	if !targetID.MatchString(t.ID) {
 		return t, invalid("Target Id must be 1 to 64 characters from [.-_A-Za-z0-9].")
@@ -93,7 +94,7 @@ func newTarget(scope request.Scope, in *api.Target) (target, error) {
 			return t, invalid("SqsParameters apply only to SQS targets.")
 		}
 
-		t.MessageGroupID = value(in.SqsParameters.MessageGroupId)
+		t.MessageGroupID = common.Value(in.SqsParameters.MessageGroupId)
 		if len(t.MessageGroupID) > 100 {
 			return t, invalid("MessageGroupId must be at most 100 characters.")
 		}

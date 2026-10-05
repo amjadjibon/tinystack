@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -57,7 +58,7 @@ func taggableByID(id string) (taggableKind, error) {
 func tagMap(tags []api.Tag) (map[string]string, error) {
 	out := make(map[string]string, len(tags))
 	for _, t := range tags {
-		k := value(t.Key)
+		k := common.Value(t.Key)
 		if k == "" {
 			return nil, invalidParameter("Tag keys must not be empty")
 		}
@@ -66,7 +67,7 @@ func tagMap(tags []api.Tag) (map[string]string, error) {
 			return nil, invalidParameter("Tag keys starting with 'aws:' are reserved for internal use")
 		}
 
-		out[k] = value(t.Value)
+		out[k] = common.Value(t.Value)
 	}
 
 	return out, checkTags(out)
@@ -90,7 +91,7 @@ func checkTags(tags map[string]string) error {
 func specTags(specs []api.TagSpecification, resourceType string) (map[string]string, error) {
 	tags := map[string]string{}
 	for _, spec := range specs {
-		kind := value(spec.ResourceType)
+		kind := common.Value(spec.ResourceType)
 		if kind != resourceType {
 			return nil, invalidParameter(fmt.Sprintf(
 				"'%s' is not a valid taggable resource type for this operation.", kind))
@@ -154,7 +155,7 @@ func retag(tx storage.WriteTx, scope request.Scope, id string, fn func(map[strin
 		return err
 	}
 
-	return write(tx, k, record)
+	return storage.Write(tx, k, record)
 }
 
 func (s *Service) CreateTags(ctx context.Context, in *api.CreateTagsRequest) (*api.CreateTagsOutput, error) {
@@ -193,8 +194,8 @@ func (s *Service) DeleteTags(ctx context.Context, in *api.DeleteTagsRequest) (*a
 				}
 
 				for _, t := range in.Tags {
-					if have, ok := tags[value(t.Key)]; ok && (t.Value == nil || *t.Value == have) {
-						delete(tags, value(t.Key))
+					if have, ok := tags[common.Value(t.Key)]; ok && (t.Value == nil || *t.Value == have) {
+						delete(tags, common.Value(t.Key))
 					}
 				}
 

@@ -30,7 +30,7 @@ func (s *Service) TagQueue(ctx context.Context, in *api.TagQueueRequest) (*api.T
 		}
 
 		q.Tags = tags
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (s *Service) UntagQueue(ctx context.Context, in *api.UntagQueueRequest) (*a
 		}
 
 		q.Tags = tagging.Remove(q.Tags, in.TagKeys)
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return nil, err

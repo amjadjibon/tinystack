@@ -108,16 +108,6 @@ func (s *Service) sequenced(t time.Time) string {
 	return fmt.Sprintf("%015d%010d", t.UnixMilli(), n%1e10)
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-func unix(t time.Time) float64 { return common.Unix(t) }
-
 func fromUnix(f float64) time.Time { return time.UnixMilli(int64(f * 1000)).UTC() }
 
 func invalidValue(format string, args ...any) error {
@@ -140,7 +130,10 @@ type metric struct {
 // canonical sorts dimensions by name.
 func canonical(dims []api.Dimension) []api.Dimension {
 	out := slices.Clone(dims)
-	slices.SortFunc(out, func(a, b api.Dimension) int { return strings.Compare(value(a.Name), value(b.Name)) })
+	slices.SortFunc(
+		out,
+		func(a, b api.Dimension) int { return strings.Compare(common.Value(a.Name), common.Value(b.Name)) },
+	)
 	return out
 }
 
@@ -149,7 +142,7 @@ func metricID(namespace, name string, dims []api.Dimension) string {
 	h := sha256.New()
 	h.Write([]byte(namespace + "\x00" + name))
 	for _, d := range canonical(dims) {
-		h.Write([]byte("\x00" + value(d.Name) + "=" + value(d.Value)))
+		h.Write([]byte("\x00" + common.Value(d.Name) + "=" + common.Value(d.Value)))
 	}
 
 	return hex.EncodeToString(h.Sum(nil))[:32]
@@ -162,7 +155,7 @@ func checkDimensions(dims []api.Dimension) error {
 
 	seen := map[string]bool{}
 	for _, d := range dims {
-		name, v := value(d.Name), value(d.Value)
+		name, v := common.Value(d.Name), common.Value(d.Value)
 		switch {
 		case name == "" || len(name) > 255 || v == "" || len(v) > 1024:
 			return invalidValue("Dimension names must be 1 to 255 characters and values 1 to 1024")
@@ -187,7 +180,7 @@ func dashboardARN(scope request.Scope, name string) string {
 func tagsOf(tags []api.Tag) map[string]string {
 	out := map[string]string{}
 	for _, t := range tags {
-		out[value(t.Key)] = value(t.Value)
+		out[common.Value(t.Key)] = common.Value(t.Value)
 	}
 
 	return out

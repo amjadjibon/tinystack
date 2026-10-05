@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -22,7 +23,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			switch {
 			case strings.HasPrefix(rest, kindLB+"/"):
-				b, _, err := read[balancer](tx, k)
+				b, _, err := storage.Read[balancer](tx, k)
 				if err != nil {
 					return err
 				}
@@ -30,11 +31,11 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				out = append(out, catalog.Resource{
 					Type: "load-balancer", Account: account, Region: region, Name: b.name(), ARN: b.arnValue(),
 					Tags: b.Tags, Details: map[string]any{
-						"Type": b.kind(), "Scheme": value(b.LB.Scheme), "DNSName": value(b.LB.DNSName),
+						"Type": b.kind(), "Scheme": common.Value(b.LB.Scheme), "DNSName": common.Value(b.LB.DNSName),
 					},
 				})
 			case strings.HasPrefix(rest, kindTG+"/"):
-				t, _, err := read[targetGroup](tx, k)
+				t, _, err := storage.Read[targetGroup](tx, k)
 				if err != nil {
 					return err
 				}

@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -36,7 +37,7 @@ func streamKey(scope request.Scope, group, name string) string {
 }
 
 func checkStreamName(name *string) error {
-	if n := value(name); n == "" || len(n) > 512 || strings.ContainsAny(n, ":*") {
+	if n := common.Value(name); n == "" || len(n) > 512 || strings.ContainsAny(n, ":*") {
 		return invalid("Log stream name must be 1 to 512 characters without ':' or '*'")
 	}
 
@@ -46,7 +47,7 @@ func checkStreamName(name *string) error {
 func streamNotFound() error { return notFound("The specified log stream does not exist.") }
 
 func loadStream(tx storage.ReadTx, scope request.Scope, group, name string) (*stream, error) {
-	st, found, err := read[stream](tx, streamKey(scope, group, name))
+	st, found, err := storage.Read[stream](tx, streamKey(scope, group, name))
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ func (s *Service) CreateLogStream(
 			return awserror.New("ResourceAlreadyExistsException", "The specified log stream already exists")
 		}
 
-		return write(tx, key, &stream{Name: *in.LogStreamName, Created: s.now().UnixMilli()})
+		return storage.Write(tx, key, &stream{Name: *in.LogStreamName, Created: s.now().UnixMilli()})
 	})
 	if err != nil {
 		return nil, err
@@ -136,7 +137,7 @@ func (s *Service) DeleteLogStream(
 		}
 
 		for _, key := range tx.Keys(eventPrefix(scope, g.Name, *in.LogStreamName)) {
-			e, _, readErr := read[event](tx, key)
+			e, _, readErr := storage.Read[event](tx, key)
 			if readErr != nil {
 				return readErr
 			}
@@ -146,7 +147,7 @@ func (s *Service) DeleteLogStream(
 		}
 
 		tx.Delete(streamKey(scope, g.Name, *in.LogStreamName))
-		return write(tx, groupKey(scope, g.Name), g)
+		return storage.Write(tx, groupKey(scope, g.Name), g)
 	})
 	if err != nil {
 		return nil, err
@@ -162,7 +163,7 @@ func (s *Service) DescribeLogStreams(
 	in *api.DescribeLogStreamsRequest,
 ) (*api.DescribeLogStreamsResponse, error) {
 	byTime := false
-	switch value(in.OrderBy) {
+	switch common.Value(in.OrderBy) {
 	case "", "LogStreamName":
 	case orderByLastEventTime:
 		if in.LogStreamNamePrefix != nil {
@@ -184,7 +185,7 @@ func (s *Service) DescribeLogStreams(
 		return nil, err
 	}
 
-	descending := value(in.Descending)
+	descending := common.Value(in.Descending)
 	out := &api.DescribeLogStreamsResponse{LogStreams: []api.LogStream{}}
 	err = s.view(ctx, in.LogGroupName, in.LogGroupIdentifier,
 		func(tx storage.ReadTx, scope request.Scope, g *group) error {
@@ -194,15 +195,15 @@ func (s *Service) DescribeLogStreams(
 			}
 
 			var entries []entry
-			for _, key := range tx.Keys(streamKey(scope, g.Name, value(in.LogStreamNamePrefix))) {
-				st, _, readErr := read[stream](tx, key)
+			for _, key := range tx.Keys(streamKey(scope, g.Name, common.Value(in.LogStreamNamePrefix))) {
+				st, _, readErr := storage.Read[stream](tx, key)
 				if readErr != nil {
 					return readErr
 				}
 
 				sortKey := st.Name
 				if byTime {
-					sortKey = fmt.Sprintf("%020d/%s", value(st.Last), st.Name)
+					sortKey = fmt.Sprintf("%020d/%s", common.Value(st.Last), st.Name)
 				}
 
 				entries = append(entries, entry{st: st, key: sortKey})

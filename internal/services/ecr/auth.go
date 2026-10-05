@@ -10,6 +10,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -44,12 +45,12 @@ func (s *Service) issue(ctx context.Context, scope request.Scope, ttl time.Durat
 	expires := now.Add(ttl)
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, k := range tx.Keys("aws/" + service + "/token/") {
-			if t, ok, err := read[token](tx, k); err != nil || !ok || !now.Before(t.Expires) {
+			if t, ok, err := storage.Read[token](tx, k); err != nil || !ok || !now.Before(t.Expires) {
 				tx.Delete(k)
 			}
 		}
 
-		return write(tx, tokenKey(password), token{Scope: scope, Expires: expires})
+		return storage.Write(tx, tokenKey(password), token{Scope: scope, Expires: expires})
 	})
 
 	return password, expires, err
@@ -79,7 +80,7 @@ func (s *Service) GetAuthorizationToken(
 
 	encoded := base64.StdEncoding.EncodeToString([]byte(registryUser + ":" + password))
 	return &api.GetAuthorizationTokenResponse{AuthorizationData: []api.AuthorizationData{{
-		AuthorizationToken: new(encoded), ExpiresAt: seconds(expires), ProxyEndpoint: new(m.Endpoint),
+		AuthorizationToken: new(encoded), ExpiresAt: common.SecondsMilli(expires), ProxyEndpoint: new(m.Endpoint),
 	}}}, nil
 }
 
@@ -93,7 +94,7 @@ func (s *Service) Authorize(ctx context.Context, user, password string) (request
 	var t *token
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var readErr error
-		t, _, readErr = read[token](tx, tokenKey(password))
+		t, _, readErr = storage.Read[token](tx, tokenKey(password))
 		return readErr
 	})
 	if err != nil || t == nil || !s.now().Before(t.Expires) {

@@ -71,8 +71,6 @@ var (
 	}
 )
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 func invalid(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))
 }
@@ -106,21 +104,15 @@ func groupARN(scope request.Scope, name string) string {
 }
 
 func checkGroupName(name *string) error {
-	if !groupName.MatchString(value(name)) {
+	if !groupName.MatchString(common.Value(name)) {
 		return invalid("Log group name must be 1 to 512 characters: letters, digits, and . - _ / #")
 	}
 
 	return nil
 }
 
-func read[T any](tx storage.ReadTx, key string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, key)
-}
-
-func write(tx storage.WriteTx, key string, v any) error { return storage.Write(tx, key, v) }
-
 func loadGroup(tx storage.ReadTx, scope request.Scope, name string) (*group, error) {
-	g, found, err := read[group](tx, groupKey(scope, name))
+	g, found, err := storage.Read[group](tx, groupKey(scope, name))
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +208,7 @@ func (s *Service) change(ctx context.Context, name *string, fn func(g *group) er
 			return fnErr
 		}
 
-		return write(tx, groupKey(scope, g.Name), g)
+		return storage.Write(tx, groupKey(scope, g.Name), g)
 	})
 }
 
@@ -245,7 +237,7 @@ func (s *Service) CreateLogGroup(
 		return nil, guardErr
 	}
 
-	class := value(in.LogGroupClass)
+	class := common.Value(in.LogGroupClass)
 	switch class {
 	case "":
 		class = classStandard
@@ -274,7 +266,7 @@ func create(tx storage.WriteTx, scope request.Scope, g *group) error {
 		return awserror.New("ResourceAlreadyExistsException", "The specified log group already exists")
 	}
 
-	return write(tx, groupKey(scope, g.Name), g)
+	return storage.Write(tx, groupKey(scope, g.Name), g)
 }
 
 // DeleteLogGroup deletes the group with its streams and events.
@@ -351,21 +343,21 @@ func (s *Service) DescribeLogGroups(
 		return nil, err
 	}
 
-	pattern := strings.ToLower(value(in.LogGroupNamePattern))
+	pattern := strings.ToLower(common.Value(in.LogGroupNamePattern))
 	out := &api.DescribeLogGroupsResponse{LogGroups: []api.LogGroup{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, key := range tx.Keys(groupKey(scope, value(in.LogGroupNamePrefix))) {
+		for _, key := range tx.Keys(groupKey(scope, common.Value(in.LogGroupNamePrefix))) {
 			name := strings.TrimPrefix(key, prefix(scope, "group"))
 			if name <= after || !strings.Contains(strings.ToLower(name), pattern) {
 				continue
 			}
 
 			if len(out.LogGroups) == limit {
-				out.NextToken = encodeToken(value(out.LogGroups[limit-1].LogGroupName))
+				out.NextToken = encodeToken(common.Value(out.LogGroups[limit-1].LogGroupName))
 				break
 			}
 
-			g, _, readErr := read[group](tx, key)
+			g, _, readErr := storage.Read[group](tx, key)
 			if readErr != nil {
 				return readErr
 			}
@@ -415,7 +407,7 @@ func (s *Service) PutRetentionPolicy(
 	ctx context.Context,
 	in *api.PutRetentionPolicyRequest,
 ) (*api.PutRetentionPolicyOutput, error) {
-	if !slices.Contains(retentions, value(in.RetentionInDays)) {
+	if !slices.Contains(retentions, common.Value(in.RetentionInDays)) {
 		return nil, invalid("retentionInDays must be one of %v", retentions)
 	}
 
@@ -453,7 +445,7 @@ func taggedGroup(scope request.Scope, arn *string) (*string, error) {
 		return nil, err
 	}
 
-	if !strings.HasPrefix(value(arn), "arn:") {
+	if !strings.HasPrefix(common.Value(arn), "arn:") {
 		return nil, invalid("resourceArn must be a log group ARN")
 	}
 

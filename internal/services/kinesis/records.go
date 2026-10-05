@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -34,10 +35,10 @@ func (s *Service) append(tx storage.WriteTx, scope request.Scope, st *stream, da
 	}
 
 	now := s.now()
-	cutoff := unix(now.Add(-time.Duration(st.Retention) * time.Hour))
+	cutoff := common.Unix(now.Add(-time.Duration(st.Retention) * time.Hour))
 	keyPrefix := recordPrefix(scope, st.Name, sh.ID)
 	for _, k := range tx.Keys(keyPrefix) {
-		r, _, readErr := read[record](tx, k)
+		r, _, readErr := storage.Read[record](tx, k)
 		if readErr != nil {
 			return nil, "", readErr
 		}
@@ -51,14 +52,21 @@ func (s *Service) append(tx storage.WriteTx, scope request.Scope, st *stream, da
 
 	sh.Next++
 	seq := sequence(sh.Index, sh.Next)
-	r := &record{Data: data, PartitionKey: partitionKey, Sequence: seq, Arrival: unix(now)}
-	return sh, seq, write(tx, keyPrefix+seq, r)
+	r := &record{Data: data, PartitionKey: partitionKey, Sequence: seq, Arrival: common.Unix(now)}
+	return sh, seq, storage.Write(tx, keyPrefix+seq, r)
 }
 
 func (s *Service) PutRecord(ctx context.Context, in *api.PutRecordInput) (*api.PutRecordOutput, error) {
 	out := &api.PutRecordOutput{}
 	err := s.change(ctx, in.StreamName, in.StreamARN, func(tx storage.WriteTx, scope request.Scope, st *stream) error {
-		sh, seq, err := s.append(tx, scope, st, in.Data, value(in.PartitionKey), value(in.ExplicitHashKey))
+		sh, seq, err := s.append(
+			tx,
+			scope,
+			st,
+			in.Data,
+			common.Value(in.PartitionKey),
+			common.Value(in.ExplicitHashKey),
+		)
 		if err != nil {
 			return err
 		}
@@ -82,7 +90,7 @@ func (s *Service) PutRecords(ctx context.Context, in *api.PutRecordsInput) (*api
 
 	size := 0
 	for _, r := range in.Records {
-		size += len(r.Data) + len(value(r.PartitionKey))
+		size += len(r.Data) + len(common.Value(r.PartitionKey))
 	}
 
 	if size > 5*maxRecord {
@@ -94,7 +102,14 @@ func (s *Service) PutRecords(ctx context.Context, in *api.PutRecordsInput) (*api
 		out.Records, *out.FailedRecordCount = nil, 0
 		out.EncryptionType = new(st.Encryption)
 		for _, r := range in.Records {
-			sh, seq, err := s.append(tx, scope, st, r.Data, value(r.PartitionKey), value(r.ExplicitHashKey))
+			sh, seq, err := s.append(
+				tx,
+				scope,
+				st,
+				r.Data,
+				common.Value(r.PartitionKey),
+				common.Value(r.ExplicitHashKey),
+			)
 			var ae *awserror.Error
 			if ok := asAWS(err, &ae); ok {
 				*out.FailedRecordCount++
@@ -159,9 +174,9 @@ func (s *Service) GetShardIterator(
 ) (*api.GetShardIteratorOutput, error) {
 	var out *api.GetShardIteratorOutput
 	err := s.view(ctx, in.StreamName, in.StreamARN, func(tx storage.ReadTx, scope request.Scope, st *stream) error {
-		sh := st.shard(value(in.ShardId))
+		sh := st.shard(common.Value(in.ShardId))
 		if sh == nil {
-			return awserror.New("ResourceNotFoundException", "Shard "+value(in.ShardId)+" in stream "+st.Name+
+			return awserror.New("ResourceNotFoundException", "Shard "+common.Value(in.ShardId)+" in stream "+st.Name+
 				" under account "+scope.AccountID+" does not exist")
 		}
 
@@ -169,8 +184,8 @@ func (s *Service) GetShardIterator(
 			Account: scope.AccountID, Region: scope.Region, Stream: st.Name, Shard: sh.ID,
 			Expires: s.now().Add(iteratorLife).UnixMilli(),
 		}
-		seq := value(in.StartingSequenceNumber)
-		switch value(in.ShardIteratorType) {
+		seq := common.Value(in.StartingSequenceNumber)
+		switch common.Value(in.ShardIteratorType) {
 		case "TRIM_HORIZON":
 		case "LATEST":
 			it.After = sequence(sh.Index, sh.Next)
@@ -180,7 +195,7 @@ func (s *Service) GetShardIterator(
 			}
 
 			it.After = seq
-			if value(in.ShardIteratorType) == "AT_SEQUENCE_NUMBER" {
+			if common.Value(in.ShardIteratorType) == "AT_SEQUENCE_NUMBER" {
 				it.After = previous(seq)
 			}
 		case "AT_TIMESTAMP":
@@ -189,7 +204,7 @@ func (s *Service) GetShardIterator(
 			}
 
 			for _, k := range tx.Keys(recordPrefix(scope, st.Name, sh.ID)) {
-				r, _, readErr := read[record](tx, k)
+				r, _, readErr := storage.Read[record](tx, k)
 				if readErr != nil {
 					return readErr
 				}
@@ -246,10 +261,10 @@ type Record struct {
 func (s *Service) readShard(tx storage.ReadTx, scope request.Scope, st *stream, sh *shard, after string,
 	limit int,
 ) (records []Record, done bool, behind *float64, err error) {
-	cutoff := unix(s.now().Add(-time.Duration(st.Retention) * time.Hour))
+	cutoff := common.Unix(s.now().Add(-time.Duration(st.Retention) * time.Hour))
 	size := 0
 	for _, k := range tx.Keys(recordPrefix(scope, st.Name, sh.ID)) {
-		r, _, readErr := read[record](tx, k)
+		r, _, readErr := storage.Read[record](tx, k)
 		if readErr != nil {
 			return nil, false, nil, readErr
 		}
@@ -287,7 +302,7 @@ func (s *Service) GetRecords(ctx context.Context, in *api.GetRecordsInput) (*api
 		limit = int(*in.Limit)
 	}
 
-	it, ok := decodeIterator(value(in.ShardIterator))
+	it, ok := decodeIterator(common.Value(in.ShardIterator))
 	switch {
 	case !ok || it.Account != m.AccountID || it.Region != m.Region:
 		return nil, invalidArgument("Invalid ShardIterator")
@@ -318,7 +333,7 @@ func (s *Service) GetRecords(ctx context.Context, in *api.GetRecordsInput) (*api
 		for _, r := range records {
 			out.Records = append(out.Records, api.Record{
 				Data: r.Data, PartitionKey: new(r.PartitionKey), SequenceNumber: new(r.SequenceNumber),
-				ApproximateArrivalTimestamp: new(unix(r.Arrival)), EncryptionType: new(st.Encryption),
+				ApproximateArrivalTimestamp: new(common.Unix(r.Arrival)), EncryptionType: new(st.Encryption),
 			})
 			it.After = r.SequenceNumber
 		}
@@ -446,6 +461,6 @@ func (s *Service) Put(ctx context.Context, arn string, data []byte, partitionKey
 			return err
 		}
 
-		return write(tx, streamKey(scope, name), st)
+		return storage.Write(tx, streamKey(scope, name), st)
 	})
 }

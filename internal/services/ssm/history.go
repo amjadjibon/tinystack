@@ -50,7 +50,7 @@ func (s *Service) GetParameterHistory(
 
 		var versions []*version
 		for _, k := range tx.Keys(versionPrefix(m.Scope, p.Name)) {
-			v, _, readErr := read[version](tx, k)
+			v, _, readErr := storage.Read[version](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -146,7 +146,7 @@ func (s *Service) updateVersion(
 				"have maximum %d labels. Move one or more labels to another version and try again.", maxLabels))
 		}
 
-		return write(tx, parameterKey(m.Scope, p.Name), p)
+		return storage.Write(tx, parameterKey(m.Scope, p.Name), p)
 	})
 }
 

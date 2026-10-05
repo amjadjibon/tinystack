@@ -11,6 +11,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/schedule"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -89,7 +90,7 @@ func (a *scheduled) next(now time.Time) error {
 		return nil
 	}
 
-	s, err := recurrence(*act.Recurrence, value(act.TimeZone))
+	s, err := recurrence(*act.Recurrence, common.Value(act.TimeZone))
 	if err != nil {
 		return err
 	}
@@ -117,7 +118,7 @@ func (s *Service) PutScheduledUpdateGroupAction(
 		return nil, err
 	}
 
-	groupName, name, now := value(in.AutoScalingGroupName), value(in.ScheduledActionName), s.now().UTC()
+	groupName, name, now := common.Value(in.AutoScalingGroupName), common.Value(in.ScheduledActionName), s.now().UTC()
 	if checkErr := checkName("ScheduledActionName", name); checkErr != nil {
 		return nil, checkErr
 	}
@@ -165,13 +166,13 @@ func (s *Service) PutScheduledUpdateGroupAction(
 		}
 
 		k := key(m.Scope, kindScheduled, groupName+"/"+name)
-		if old, found, readErr := read[scheduled](tx, k); readErr != nil {
+		if old, found, readErr := storage.Read[scheduled](tx, k); readErr != nil {
 			return readErr
 		} else if found {
 			a.Action.ScheduledActionARN = old.Action.ScheduledActionARN
 		}
 
-		return write(tx, k, a)
+		return storage.Write(tx, k, a)
 	})
 }
 
@@ -195,14 +196,14 @@ func (s *Service) DescribeScheduledActions(
 		}
 
 		for _, k := range tx.Keys(p) {
-			a, _, readErr := read[scheduled](tx, k)
+			a, _, readErr := storage.Read[scheduled](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
 			switch {
 			case len(in.ScheduledActionNames) > 0 &&
-				!slices.Contains(in.ScheduledActionNames, value(a.Action.ScheduledActionName)):
+				!slices.Contains(in.ScheduledActionNames, common.Value(a.Action.ScheduledActionName)):
 			case in.StartTime != nil && a.Next.Before(*in.StartTime):
 			case in.EndTime != nil && a.Next.After(*in.EndTime):
 			default:
@@ -217,7 +218,7 @@ func (s *Service) DescribeScheduledActions(
 	}
 
 	id := func(a *scheduled) string {
-		return value(a.Action.AutoScalingGroupName) + "/" + value(a.Action.ScheduledActionName)
+		return common.Value(a.Action.AutoScalingGroupName) + "/" + common.Value(a.Action.ScheduledActionName)
 	}
 	page, next, err := window(all, id, in.NextToken, in.MaxRecords)
 	if err != nil {
@@ -245,7 +246,7 @@ func (s *Service) DeleteScheduledAction(
 		return nil, err
 	}
 
-	groupName, name := value(in.AutoScalingGroupName), value(in.ScheduledActionName)
+	groupName, name := common.Value(in.AutoScalingGroupName), common.Value(in.ScheduledActionName)
 	return &api.DeleteScheduledActionOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, loadErr := loadGroup(tx, m.Scope, groupName); loadErr != nil {
 			return loadErr
@@ -266,14 +267,14 @@ func (s *Service) DeleteScheduledAction(
 func (s *Service) runScheduled(scope request.Scope, name string) error {
 	now := s.now().UTC()
 	return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
-		g, found, err := read[group](tx, key(scope, kindGroup, name))
+		g, found, err := storage.Read[group](tx, key(scope, kindGroup, name))
 		if err != nil || !found || g.suspended(processScheduled) {
 			return err
 		}
 
 		changed := false
 		for _, k := range tx.Keys(key(scope, kindScheduled, name+"/")) {
-			a, _, readErr := read[scheduled](tx, k)
+			a, _, readErr := storage.Read[scheduled](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -283,7 +284,7 @@ func (s *Service) runScheduled(scope request.Scope, name string) error {
 			}
 
 			act := &a.Action
-			from := value(g.Group.DesiredCapacity)
+			from := common.Value(g.Group.DesiredCapacity)
 			out := &g.Group
 			for _, set := range []struct {
 				from *int64
@@ -294,13 +295,17 @@ func (s *Service) runScheduled(scope request.Scope, name string) error {
 				}
 			}
 
-			desired := min(max(value(out.DesiredCapacity), value(out.MinSize)), value(out.MaxSize))
+			desired := min(max(common.Value(out.DesiredCapacity), common.Value(out.MinSize)), common.Value(out.MaxSize))
 			out.DesiredCapacity = new(desired)
-			activity := s.activity(g, now, "Scheduled action "+value(act.ScheduledActionName), fmt.Sprintf(
+			activity := s.activity(g, now, "Scheduled action "+common.Value(act.ScheduledActionName), fmt.Sprintf(
 				"At %s a scheduled action update of AutoScalingGroup constraints to min: %d, max: %d, desired: %d "+
-					"changing the desired capacity from %d to %d.", stamp(now), value(out.MinSize), value(out.MaxSize),
+					"changing the desired capacity from %d to %d.", stamp(now), common.Value(out.MinSize), common.Value(out.MaxSize),
 				desired, from, desired), nil)
-			if writeErr := write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now)), activity); writeErr != nil {
+			if writeErr := storage.Write(
+				tx,
+				key(scope, kindActivity, name+"/"+s.sequenced(now)),
+				activity,
+			); writeErr != nil {
 				return writeErr
 			}
 
@@ -314,7 +319,7 @@ func (s *Service) runScheduled(scope request.Scope, name string) error {
 				return checkErr
 			}
 
-			if writeErr := write(tx, k, a); writeErr != nil {
+			if writeErr := storage.Write(tx, k, a); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -323,6 +328,6 @@ func (s *Service) runScheduled(scope request.Scope, name string) error {
 			return nil
 		}
 
-		return write(tx, key(scope, kindGroup, name), g)
+		return storage.Write(tx, key(scope, kindGroup, name), g)
 	})
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -24,7 +25,7 @@ func writable(c *client, name string) bool {
 // clientWrite applies attributes a user writes through c.
 func clientWrite(p *pool, c *client, u *user, attrs []api.AttributeType) ([]string, error) {
 	for _, a := range attrs {
-		if !writable(c, value(a.Name)) {
+		if !writable(c, common.Value(a.Name)) {
 			return nil, notAuthorized("A client attempted to write unauthorized attribute")
 		}
 	}
@@ -131,7 +132,7 @@ func (s *Service) DeleteUserAttributes(
 }
 
 func checkVerifiable(u *user, name *string) error {
-	if value(name) != attrEmail && value(name) != attrPhone {
+	if common.Value(name) != attrEmail && common.Value(name) != attrPhone {
 		return invalidParameter("Only email and phone_number can be verified.")
 	}
 
@@ -174,7 +175,7 @@ func (s *Service) VerifyUserAttribute(
 			return err
 		}
 
-		if err := a.user.useCode(purposeVerify+*in.AttributeName, value(in.Code), s.now().UTC()); err != nil {
+		if err := a.user.useCode(purposeVerify+*in.AttributeName, common.Value(in.Code), s.now().UTC()); err != nil {
 			return err
 		}
 
@@ -193,7 +194,7 @@ func (s *Service) ChangePassword(
 	in *api.ChangePasswordRequest,
 ) (*api.ChangePasswordResponse, error) {
 	err := s.asUser(ctx, in.AccessToken, func(_ storage.WriteTx, a *accessToken, _ *outbox) error {
-		if !checkPassword(a.user.Password, value(in.PreviousPassword)) {
+		if !checkPassword(a.user.Password, common.Value(in.PreviousPassword)) {
 			return notAuthorized("Incorrect username or password.")
 		}
 
@@ -262,20 +263,20 @@ func (s *Service) AdminUserGlobalSignOut(
 // RevokeToken ends the session a refresh token belongs to.
 func (s *Service) RevokeToken(ctx context.Context, in *api.RevokeTokenRequest) (*api.RevokeTokenResponse, error) {
 	err := s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-		if c.Secret != "" && value(in.ClientSecret) != c.Secret {
+		if c.Secret != "" && common.Value(in.ClientSecret) != c.Secret {
 			return notAuthorized("Client secret is invalid")
 		}
 
-		if !value(c.Settings.EnableTokenRevocation) {
+		if !common.Value(c.Settings.EnableTokenRevocation) {
 			return awserror.New("UnsupportedOperationException", "Token revocation is not enabled for this client.")
 		}
 
-		token := value(in.Token)
+		token := common.Value(in.Token)
 		if strings.Count(token, ".") == 2 {
 			return awserror.New("UnsupportedTokenTypeException", "Only refresh tokens can be revoked.")
 		}
 
-		r, ok, err := read[refresh](tx, refreshKey(scope, p.ID, token))
+		r, ok, err := storage.Read[refresh](tx, refreshKey(scope, p.ID, token))
 		if err != nil || !ok {
 			// Revoking an unknown or revoked token succeeds.
 			return err
@@ -285,7 +286,7 @@ func (s *Service) RevokeToken(ctx context.Context, in *api.RevokeTokenRequest) (
 			return notAuthorized("The token was not issued to this client.")
 		}
 
-		u, ok, err := read[user](tx, userKey(scope, p, r.Username))
+		u, ok, err := storage.Read[user](tx, userKey(scope, p, r.Username))
 		if err != nil || !ok {
 			tx.Delete(refreshKey(scope, p.ID, token))
 			return err
@@ -295,7 +296,7 @@ func (s *Service) RevokeToken(ctx context.Context, in *api.RevokeTokenRequest) (
 			return signOutErr
 		}
 
-		return write(tx, userKey(scope, p, u.Username), u)
+		return storage.Write(tx, userKey(scope, p, u.Username), u)
 	})
 	if err != nil {
 		return nil, err

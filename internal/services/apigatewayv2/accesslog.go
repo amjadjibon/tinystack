@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 )
 
@@ -17,12 +18,12 @@ func contextVariable(c *call, resp *execute.Response, name string) string {
 	case "requestId", "extendedRequestId":
 		return c.requestID
 	case "apiId":
-		return value(c.api.ApiId)
+		return common.Value(c.api.ApiId)
 	case "accountId":
 		return c.scope.AccountID
 	case "stage":
 		if c.stage != nil {
-			return value(c.stage.StageName)
+			return common.Value(c.stage.StageName)
 		}
 	case "domainName":
 		host, _, _ := strings.Cut(r.Host, ":")
@@ -35,7 +36,7 @@ func contextVariable(c *call, resp *execute.Response, name string) string {
 		return r.Protocol
 	case "routeKey":
 		if c.route != nil {
-			return value(c.route.RouteKey)
+			return common.Value(c.route.RouteKey)
 		}
 	case "requestTime":
 		return r.Time.Format("02/Jan/2006:15:04:05 -0700")
@@ -74,14 +75,14 @@ func (s *Service) accessLog(ctx context.Context, c *call, resp *execute.Response
 		return
 	}
 
-	scope, group, ok := proxy.LogGroup(value(c.stage.AccessLogSettings.DestinationArn))
+	scope, group, ok := proxy.LogGroup(common.Value(c.stage.AccessLogSettings.DestinationArn))
 	if !ok {
 		return
 	}
 
-	line := proxy.FormatLog(value(c.stage.AccessLogSettings.Format), func(name string) string {
+	line := proxy.FormatLog(common.Value(c.stage.AccessLogSettings.Format), func(name string) string {
 		return contextVariable(c, resp, name)
 	})
 	// A failure to log does not fail the request.
-	_ = s.logs.Append(context.WithoutCancel(ctx), scope, group, value(c.stage.StageName), []string{line})
+	_ = s.logs.Append(context.WithoutCancel(ctx), scope, group, common.Value(c.stage.StageName), []string{line})
 }

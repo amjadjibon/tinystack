@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -54,13 +55,13 @@ func (s *Service) byClient(
 	fn func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error,
 ) error {
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		index, ok, err := read[clientIndex](tx, clientIndexKey(value(clientID)))
+		index, ok, err := storage.Read[clientIndex](tx, clientIndexKey(common.Value(clientID)))
 		if err != nil {
 			return err
 		}
 
 		if !ok {
-			return notFound("User pool client %s does not exist.", value(clientID))
+			return notFound("User pool client %s does not exist.", common.Value(clientID))
 		}
 
 		scope := request.Scope{AccountID: index.Account, Region: index.Region}
@@ -109,7 +110,7 @@ func checkSecretHash(c *client, hash *string, usernames ...string) error {
 		return nil
 	}
 
-	if value(hash) == "" {
+	if common.Value(hash) == "" {
 		return notAuthorized("Client " + c.ID + " is configured with secret but SECRET_HASH was not received")
 	}
 
@@ -170,7 +171,8 @@ func (s *Service) authenticate(
 // exists when the client asks to.
 func findSigningIn(tx storage.ReadTx, scope request.Scope, p *pool, c *client, name string) (*user, error) {
 	u, err := findUser(tx, scope, p, &name)
-	if awserror.From(err).Code == "UserNotFoundException" && value(c.Settings.PreventUserExistenceErrors) == "ENABLED" {
+	if awserror.From(err).Code == "UserNotFoundException" &&
+		common.Value(c.Settings.PreventUserExistenceErrors) == "ENABLED" {
 		return nil, notAuthorized("Incorrect username or password.")
 	}
 
@@ -270,9 +272,9 @@ func challengeNew(
 	id := randomString(alphaNum, 512)
 	sess := authSession{
 		Username: u.Username, Client: c.ID, Challenge: challengeNewPassword,
-		Expires: now.Add(time.Duration(value(c.Settings.AuthSessionValidity)) * time.Minute),
+		Expires: now.Add(time.Duration(common.Value(c.Settings.AuthSessionValidity)) * time.Minute),
 	}
-	if err := write(tx, sessionKey(scope, p.ID, id), sess); err != nil {
+	if err := storage.Write(tx, sessionKey(scope, p.ID, id), sess); err != nil {
 		return nil, err
 	}
 
@@ -286,7 +288,7 @@ func challengeNew(
 	required := []string{}
 	for i := range p.Schema {
 		a := &p.Schema[i]
-		if value(a.Required) && *a.Name != attrSub && u.Attributes[*a.Name] == "" {
+		if common.Value(a.Required) && *a.Name != attrSub && u.Attributes[*a.Name] == "" {
 			required = append(required, attributePrefix+*a.Name)
 		}
 	}
@@ -314,7 +316,7 @@ func (s *Service) refresh(
 	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, params map[string]string,
 ) (*outcome, error) {
 	token := params["REFRESH_TOKEN"]
-	r, ok, err := read[refresh](tx, refreshKey(scope, p.ID, token))
+	r, ok, err := storage.Read[refresh](tx, refreshKey(scope, p.ID, token))
 	switch {
 	case err != nil:
 		return nil, err
@@ -324,7 +326,7 @@ func (s *Service) refresh(
 		return nil, notAuthorized("Refresh Token has expired")
 	}
 
-	u, ok, err := read[user](tx, userKey(scope, p, r.Username))
+	u, ok, err := storage.Read[user](tx, userKey(scope, p, r.Username))
 	switch {
 	case err != nil:
 		return nil, err
@@ -356,7 +358,7 @@ func (s *Service) answer(
 	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, name, id *string,
 	responses map[string]string,
 ) (*outcome, error) {
-	switch value(name) {
+	switch common.Value(name) {
 	case challengeNewPassword:
 	case challengePasswordVerifier:
 		hash := responses[paramSecretHash]
@@ -376,12 +378,12 @@ func (s *Service) answer(
 	}
 
 	expired := notAuthorized("Invalid session for the user, session is expired.")
-	sess, ok, err := read[authSession](tx, sessionKey(scope, p.ID, value(id)))
+	sess, ok, err := storage.Read[authSession](tx, sessionKey(scope, p.ID, common.Value(id)))
 	now := s.now().UTC()
 	switch {
 	case err != nil:
 		return nil, err
-	case value(id) == "" || !ok || sess.Client != c.ID || sess.Challenge != *name || !now.Before(sess.Expires):
+	case common.Value(id) == "" || !ok || sess.Client != c.ID || sess.Challenge != *name || !now.Before(sess.Expires):
 		return nil, expired
 	}
 
@@ -463,7 +465,7 @@ func (s *Service) InitiateAuth(ctx context.Context, in *api.InitiateAuthRequest)
 	var out *outcome
 	err := s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
 		var authErr error
-		out, authErr = s.authenticate(ctx, tx, scope, p, c, value(in.AuthFlow), in.AuthParameters, false)
+		out, authErr = s.authenticate(ctx, tx, scope, p, c, common.Value(in.AuthFlow), in.AuthParameters, false)
 		return authErr
 	})
 
@@ -478,7 +480,7 @@ func (s *Service) AdminInitiateAuth(
 	err := s.byAdminClient(ctx, in.UserPoolId, in.ClientId,
 		func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
 			var authErr error
-			out, authErr = s.authenticate(ctx, tx, scope, p, c, value(in.AuthFlow), in.AuthParameters, true)
+			out, authErr = s.authenticate(ctx, tx, scope, p, c, common.Value(in.AuthFlow), in.AuthParameters, true)
 			return authErr
 		})
 

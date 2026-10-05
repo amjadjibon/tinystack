@@ -10,6 +10,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -43,9 +44,9 @@ func nodegroupKey(scope request.Scope, clusterName, name string) string {
 func nodegroupNotFound(name string) error { return notFound("No node group found for name: %s.", name) }
 
 func loadNodegroup(tx storage.ReadTx, scope request.Scope, c *cluster, name *string) (*nodegroup, error) {
-	n, ok, err := read[nodegroup](tx, nodegroupKey(scope, c.Name, value(name)))
+	n, ok, err := storage.Read[nodegroup](tx, nodegroupKey(scope, c.Name, common.Value(name)))
 	if err != nil || !ok {
-		return nil, errorsOr(err, nodegroupNotFound(value(name)))
+		return nil, common.ErrorsOr(err, nodegroupNotFound(common.Value(name)))
 	}
 
 	return n, nil
@@ -58,11 +59,11 @@ func releaseVersion(version string) string {
 
 func checkScaling(c *api.NodegroupScalingConfig) error {
 	switch {
-	case value(c.MinSize) < 0 || value(c.MaxSize) < 1:
+	case common.Value(c.MinSize) < 0 || common.Value(c.MaxSize) < 1:
 		return invalidParameter("minSize must be at least 0 and maxSize at least 1.")
-	case value(c.DesiredSize) < value(c.MinSize) || value(c.DesiredSize) > value(c.MaxSize):
+	case common.Value(c.DesiredSize) < common.Value(c.MinSize) || common.Value(c.DesiredSize) > common.Value(c.MaxSize):
 		return invalidParameter("desired size %d must be between the minimum size %d and the maximum size %d",
-			value(c.DesiredSize), value(c.MinSize), value(c.MaxSize))
+			common.Value(c.DesiredSize), common.Value(c.MinSize), common.Value(c.MaxSize))
 	}
 
 	return nil
@@ -70,7 +71,7 @@ func checkScaling(c *api.NodegroupScalingConfig) error {
 
 func checkTaints(taints []api.Taint) error {
 	for _, t := range taints {
-		if value(t.Key) == "" || t.Effect == nil || !slices.Contains(taintEffects, *t.Effect) {
+		if common.Value(t.Key) == "" || t.Effect == nil || !slices.Contains(taintEffects, *t.Effect) {
 			return invalidParameter("Taints need a key and an effect of NO_SCHEDULE, NO_EXECUTE, or " +
 				"PREFER_NO_SCHEDULE.")
 		}
@@ -88,9 +89,9 @@ func checkUpdateConfig(u *api.NodegroupUpdateConfig) error {
 		return nil
 	}
 
-	if (u.MaxUnavailable == nil) == (u.MaxUnavailablePercentage == nil) || value(u.MaxUnavailable) < 0 ||
-		value(u.MaxUnavailable) > 100 || value(u.MaxUnavailablePercentage) < 0 ||
-		value(u.MaxUnavailablePercentage) > 100 {
+	if (u.MaxUnavailable == nil) == (u.MaxUnavailablePercentage == nil) || common.Value(u.MaxUnavailable) < 0 ||
+		common.Value(u.MaxUnavailable) > 100 || common.Value(u.MaxUnavailablePercentage) < 0 ||
+		common.Value(u.MaxUnavailablePercentage) > 100 {
 		return invalidParameter("updateConfig needs one of maxUnavailable (1 to 100) and maxUnavailablePercentage " +
 			"(1 to 100).")
 	}
@@ -128,15 +129,15 @@ func (s *Service) CreateNodegroup(
 			return loadErr
 		}
 
-		if placed.VPC != value(c.Vpc.VpcId) {
-			return invalidParameter("Subnets must be in the cluster's VPC %s.", value(c.Vpc.VpcId))
+		if placed.VPC != common.Value(c.Vpc.VpcId) {
+			return invalidParameter("Subnets must be in the cluster's VPC %s.", common.Value(c.Vpc.VpcId))
 		}
 
-		existing, ok, readErr := read[nodegroup](tx, nodegroupKey(scope, c.Name, *in.NodegroupName))
+		existing, ok, readErr := storage.Read[nodegroup](tx, nodegroupKey(scope, c.Name, *in.NodegroupName))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
+		case ok && common.Value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
 			out = &existing.Group
 			return nil
 		case ok:
@@ -149,7 +150,7 @@ func (s *Service) CreateNodegroup(
 		}
 
 		out = &n.Group
-		return write(tx, nodegroupKey(scope, c.Name, *in.NodegroupName), n)
+		return storage.Write(tx, nodegroupKey(scope, c.Name, *in.NodegroupName), n)
 	})
 	if err != nil {
 		return nil, err
@@ -171,14 +172,14 @@ func checkNodegroupRequest(in *api.CreateNodegroupRequest) error {
 	case len(in.Subnets) == 0:
 		return invalidParameter("Subnets are required.")
 	case !oneOf(in.AmiType, amiTypes...):
-		return invalidParameter("amiType %s is not supported.", value(in.AmiType))
+		return invalidParameter("amiType %s is not supported.", common.Value(in.AmiType))
 	case !oneOf(in.CapacityType, "ON_DEMAND", "SPOT"):
 		return invalidParameter("capacityType must be ON_DEMAND or SPOT.")
 	case in.LaunchTemplate != nil && in.DiskSize != nil:
 		return invalidParameter("Disk size must be specified within the launch template.")
 	case in.LaunchTemplate != nil && (in.LaunchTemplate.Id == nil) == (in.LaunchTemplate.Name == nil):
 		return invalidParameter("Either launch template ID or launch template name must be specified.")
-	case in.LaunchTemplate == nil && value(in.AmiType) == "CUSTOM":
+	case in.LaunchTemplate == nil && common.Value(in.AmiType) == "CUSTOM":
 		return invalidParameter("The CUSTOM AMI type requires a launch template.")
 	}
 
@@ -219,8 +220,8 @@ func (s *Service) newNodegroup(scope request.Scope, c *cluster, in *api.CreateNo
 		ClusterName:    new(c.Name),
 		Version:        new(version),
 		ReleaseVersion: new(releaseVersion(version)),
-		CreatedAt:      seconds(now),
-		ModifiedAt:     seconds(now),
+		CreatedAt:      common.SecondsMilli(now),
+		ModifiedAt:     common.SecondsMilli(now),
 		Status:         new(active),
 		CapacityType:   new("ON_DEMAND"),
 		ScalingConfig: &api.NodegroupScalingConfig{
@@ -240,7 +241,7 @@ func (s *Service) newNodegroup(scope request.Scope, c *cluster, in *api.CreateNo
 			{Name: new("eks-" + name + "-" + id)},
 		}},
 		Health:       &api.NodegroupHealth{Issues: []api.Issue{}},
-		Tags:         cloneTags(in.Tags),
+		Tags:         common.CloneTags(in.Tags),
 		UpdateConfig: &api.NodegroupUpdateConfig{MaxUnavailable: new(int64(1))},
 	}
 	if in.ScalingConfig != nil {
@@ -264,7 +265,7 @@ func (s *Service) newNodegroup(scope request.Scope, c *cluster, in *api.CreateNo
 	}
 
 	if in.LaunchTemplate == nil {
-		g.DiskSize = orElse(in.DiskSize, new(int64(20)))
+		g.DiskSize = common.OrElse(in.DiskSize, new(int64(20)))
 		if len(g.InstanceTypes) == 0 {
 			g.InstanceTypes = []string{defaultInstance}
 		}
@@ -276,7 +277,7 @@ func (s *Service) newNodegroup(scope request.Scope, c *cluster, in *api.CreateNo
 		g.Resources.RemoteAccessSecurityGroup = new("sg-" + hexID(17))
 	}
 
-	return &nodegroup{Group: g, Token: value(in.ClientRequestToken)}, nil
+	return &nodegroup{Group: g, Token: common.Value(in.ClientRequestToken)}, nil
 }
 
 func orEmptyMap(m map[string]string) map[string]string {
@@ -418,12 +419,12 @@ func (s *Service) UpdateNodegroupConfig(
 				return err
 			}
 
-			n.Group.ModifiedAt = seconds(s.now().UTC())
+			n.Group.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			if out, err = s.record(tx, scope, c.Name, *n.Group.NodegroupName, "", "ConfigUpdate", params); err != nil {
 				return err
 			}
 
-			return write(tx, nodegroupKey(scope, c.Name, *n.Group.NodegroupName), n)
+			return storage.Write(tx, nodegroupKey(scope, c.Name, *n.Group.NodegroupName), n)
 		})
 	if err != nil {
 		return nil, err
@@ -456,7 +457,8 @@ func configure(g *api.Nodegroup, in *api.UpdateNodegroupConfigRequest) ([]api.Up
 
 		for _, taint := range append(slices.Clone(t.AddOrUpdateTaints), t.RemoveTaints...) {
 			g.Taints = slices.DeleteFunc(g.Taints, func(c api.Taint) bool {
-				return value(c.Key) == value(taint.Key) && value(c.Effect) == value(taint.Effect)
+				return common.Value(c.Key) == common.Value(taint.Key) &&
+					common.Value(c.Effect) == common.Value(taint.Effect)
 			})
 		}
 
@@ -470,8 +472,12 @@ func configure(g *api.Nodegroup, in *api.UpdateNodegroupConfigRequest) ([]api.Up
 
 	if sc := in.ScalingConfig; sc != nil {
 		merged := &api.NodegroupScalingConfig{
-			MinSize: orElse(sc.MinSize, g.ScalingConfig.MinSize), MaxSize: orElse(sc.MaxSize, g.ScalingConfig.MaxSize),
-			DesiredSize: orElse(sc.DesiredSize, g.ScalingConfig.DesiredSize),
+			MinSize: common.OrElse(
+				sc.MinSize,
+				g.ScalingConfig.MinSize,
+			),
+			MaxSize:     common.OrElse(sc.MaxSize, g.ScalingConfig.MaxSize),
+			DesiredSize: common.OrElse(sc.DesiredSize, g.ScalingConfig.DesiredSize),
 		}
 		if err := checkScaling(merged); err != nil {
 			return nil, err
@@ -516,7 +522,7 @@ func (s *Service) UpdateNodegroupVersion(
 	err := s.changeNodegroup(ctx, in.ClusterName, in.NodegroupName,
 		func(tx storage.WriteTx, scope request.Scope, c *cluster, n *nodegroup) error {
 			g := &n.Group
-			version := value(orElse(in.Version, &c.Version))
+			version := common.Value(common.OrElse(in.Version, &c.Version))
 			if i := versionIndex(version); i < 0 || i > versionIndex(c.Version) {
 				return invalidParameter("Requested Nodegroup version %s is invalid for cluster version %s.", version,
 					c.Version)
@@ -527,19 +533,19 @@ func (s *Service) UpdateNodegroupVersion(
 					return invalidParameter("The node group was not created with a launch template.")
 				}
 
-				g.LaunchTemplate.Version = orElse(in.LaunchTemplate.Version, g.LaunchTemplate.Version)
+				g.LaunchTemplate.Version = common.OrElse(in.LaunchTemplate.Version, g.LaunchTemplate.Version)
 			}
 
 			g.Version = new(version)
-			g.ReleaseVersion = orElse(in.ReleaseVersion, new(releaseVersion(version)))
-			g.ModifiedAt = seconds(s.now().UTC())
+			g.ReleaseVersion = common.OrElse(in.ReleaseVersion, new(releaseVersion(version)))
+			g.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			params := []api.UpdateParam{param("Version", version), param("ReleaseVersion", *g.ReleaseVersion)}
 			var err error
 			if out, err = s.record(tx, scope, c.Name, *g.NodegroupName, "", "VersionUpdate", params); err != nil {
 				return err
 			}
 
-			return write(tx, nodegroupKey(scope, c.Name, *g.NodegroupName), n)
+			return storage.Write(tx, nodegroupKey(scope, c.Name, *g.NodegroupName), n)
 		})
 	if err != nil {
 		return nil, err

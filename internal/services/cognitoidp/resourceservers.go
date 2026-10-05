@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -46,11 +47,11 @@ func checkResourceServer(identifier, name *string, scopes []api.ResourceServerSc
 
 	seen := map[string]bool{}
 	for _, sc := range scopes {
-		n := value(sc.ScopeName)
+		n := common.Value(sc.ScopeName)
 		switch {
 		case !scopeNamePattern.MatchString(n):
 			return invalidParameter("Invalid scope name %s.", n)
-		case value(sc.ScopeDescription) == "" || len(*sc.ScopeDescription) > 256:
+		case common.Value(sc.ScopeDescription) == "" || len(*sc.ScopeDescription) > 256:
 			return invalidParameter("ScopeDescription must be 1 to 256 characters.")
 		case seen[n]:
 			return invalidParameter("Scope %s is repeated.", n)
@@ -66,7 +67,7 @@ func checkResourceServer(identifier, name *string, scopes []api.ResourceServerSc
 func customScopes(tx storage.ReadTx, scope request.Scope, pool string) ([]string, error) {
 	var out []string
 	for _, k := range tx.Keys(prefix(scope, kindResourceServer) + pool + "/") {
-		rs, _, err := read[api.ResourceServerType](tx, k)
+		rs, _, err := storage.Read[api.ResourceServerType](tx, k)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +104,7 @@ func (s *Service) CreateResourceServer(
 			rs.Scopes = []api.ResourceServerScopeType{}
 		}
 
-		return write(tx, key, rs)
+		return storage.Write(tx, key, rs)
 	})
 	if err != nil {
 		return nil, err
@@ -120,9 +121,12 @@ func (s *Service) DescribeResourceServer(
 	err := s.view(ctx, in.UserPoolId, func(tx storage.ReadTx, scope request.Scope, p *pool) error {
 		var found bool
 		var readErr error
-		rs, found, readErr = read[api.ResourceServerType](tx, resourceServerKey(scope, p.ID, value(in.Identifier)))
+		rs, found, readErr = storage.Read[api.ResourceServerType](
+			tx,
+			resourceServerKey(scope, p.ID, common.Value(in.Identifier)),
+		)
 		if readErr == nil && !found {
-			return resourceServerNotFound(value(in.Identifier))
+			return resourceServerNotFound(common.Value(in.Identifier))
 		}
 
 		return readErr
@@ -156,7 +160,7 @@ func (s *Service) UpdateResourceServer(
 			rs.Scopes = []api.ResourceServerScopeType{}
 		}
 
-		return write(tx, key, rs)
+		return storage.Write(tx, key, rs)
 	})
 	if err != nil {
 		return nil, err
@@ -170,9 +174,9 @@ func (s *Service) DeleteResourceServer(
 	in *api.DeleteResourceServerRequest,
 ) (*api.DeleteResourceServerOutput, error) {
 	err := s.update(ctx, in.UserPoolId, func(tx storage.WriteTx, scope request.Scope, p *pool) error {
-		key := resourceServerKey(scope, p.ID, value(in.Identifier))
+		key := resourceServerKey(scope, p.ID, common.Value(in.Identifier))
 		if _, exists := tx.Get(key); !exists {
-			return resourceServerNotFound(value(in.Identifier))
+			return resourceServerNotFound(common.Value(in.Identifier))
 		}
 
 		tx.Delete(key)
@@ -198,7 +202,7 @@ func (s *Service) ListResourceServers(
 	var servers []api.ResourceServerType
 	err = s.view(ctx, in.UserPoolId, func(tx storage.ReadTx, scope request.Scope, p *pool) error {
 		for _, k := range tx.Keys(prefix(scope, kindResourceServer) + p.ID + "/") {
-			rs, _, readErr := read[api.ResourceServerType](tx, k)
+			rs, _, readErr := storage.Read[api.ResourceServerType](tx, k)
 			if readErr != nil {
 				return readErr
 			}

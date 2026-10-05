@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -29,7 +30,7 @@ func aliasARN(scope request.Scope, name string) string {
 
 // checkAliasName validates an alias name and returns it without the alias/ prefix.
 func checkAliasName(name *string) (string, error) {
-	full := value(name)
+	full := common.Value(name)
 	if !aliasName.MatchString(full) {
 		return "", awserror.New("InvalidAliasNameException",
 			"Alias must start with alias/ and hold 1 to 250 letters, digits, and / _ -.")
@@ -44,12 +45,12 @@ func checkAliasName(name *string) (string, error) {
 
 // loadAlias reads an alias whose key still exists.
 func (s *Service) loadAlias(tx storage.ReadTx, scope request.Scope, name string) (*alias, bool, error) {
-	a, found, err := read[alias](tx, aliasKey(scope, name))
+	a, found, err := storage.Read[alias](tx, aliasKey(scope, name))
 	if err != nil || !found {
 		return nil, false, err
 	}
 
-	k, found, err := read[key](tx, keyKey(scope, a.Target))
+	k, found, err := storage.Read[key](tx, keyKey(scope, a.Target))
 	if err != nil || !found || k.deleted(s.now()) {
 		return nil, false, err
 	}
@@ -99,7 +100,7 @@ func (s *Service) CreateAlias(ctx context.Context, in *api.CreateAliasRequest) (
 		}
 
 		now := s.now().UnixMilli()
-		return write(tx, aliasKey(scope, name), &alias{Name: name, Target: k.ID, Created: now, Updated: now})
+		return storage.Write(tx, aliasKey(scope, name), &alias{Name: name, Target: k.ID, Created: now, Updated: now})
 	})
 	if err != nil {
 		return nil, err
@@ -135,7 +136,7 @@ func (s *Service) UpdateAlias(ctx context.Context, in *api.UpdateAliasRequest) (
 		}
 
 		a.Target, a.Updated = k.ID, s.now().UnixMilli()
-		return write(tx, aliasKey(scope, name), a)
+		return storage.Write(tx, aliasKey(scope, name), a)
 	})
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -42,7 +43,7 @@ func loadGroup(tx storage.ReadTx, account string, name *string) (*group, string,
 	}
 
 	gk := key(account, kindGroup, *name)
-	g, ok, err := read[group](tx, gk)
+	g, ok, err := storage.Read[group](tx, gk)
 	if err != nil {
 		return nil, "", err
 	}
@@ -69,7 +70,7 @@ func renameMember(tx storage.WriteTx, account, from, to string) error {
 
 	for _, g := range memberOf {
 		g.Users[g.member(from)] = to
-		if writeErr := write(tx, key(account, kindGroup, g.Name), g); writeErr != nil {
+		if writeErr := storage.Write(tx, key(account, kindGroup, g.Name), g); writeErr != nil {
 			return writeErr
 		}
 	}
@@ -116,7 +117,7 @@ func (s *Service) updateGroup(
 			return fnErr
 		}
 
-		return write(tx, gk, g)
+		return storage.Write(tx, gk, g)
 	})
 }
 
@@ -152,7 +153,7 @@ func (s *Service) CreateGroup(ctx context.Context, in *api.CreateGroupRequest) (
 			return alreadyExists("Group with name %s already exists.", g.Name)
 		}
 
-		return write(tx, gk, g)
+		return storage.Write(tx, gk, g)
 	})
 	if err != nil {
 		return nil, err
@@ -228,7 +229,7 @@ func (s *Service) ListGroups(ctx context.Context, in *api.ListGroupsRequest) (*a
 		return nil, err
 	}
 
-	all = slices.DeleteFunc(all, func(g *group) bool { return !strings.HasPrefix(g.Path, value(in.PathPrefix)) })
+	all = slices.DeleteFunc(all, func(g *group) bool { return !strings.HasPrefix(g.Path, common.Value(in.PathPrefix)) })
 	return groupPage(m.AccountID, all, in.Marker, in.MaxItems)
 }
 
@@ -321,7 +322,7 @@ func (s *Service) UpdateGroup(ctx context.Context, in *api.UpdateGroupRequest) (
 			g.Name, gk = *in.NewGroupName, target
 		}
 
-		return write(tx, gk, g)
+		return storage.Write(tx, gk, g)
 	})
 	if err != nil {
 		return nil, err

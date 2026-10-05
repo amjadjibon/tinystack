@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 )
 
@@ -44,7 +45,7 @@ func (s *Service) publishSMS(ctx context.Context, in *api.PublishInput) (*api.Pu
 		return nil, err
 	}
 
-	number := value(in.PhoneNumber)
+	number := common.Value(in.PhoneNumber)
 	if err := checkPhoneNumber(number); err != nil {
 		return nil, err
 	}

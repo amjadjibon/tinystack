@@ -150,13 +150,13 @@ func (s *Service) deploymentPackage(ctx context.Context, zipFile []byte, bucket,
 	switch {
 	case len(zipFile) > 0:
 		return nil, invalid("Please don't provide both S3 and ZipFile")
-	case value(bucket) == "" || value(key) == "":
+	case common.Value(bucket) == "" || common.Value(key) == "":
 		return nil, invalid("Please provide both S3Bucket and S3Key")
 	case s.objects == nil:
 		return nil, invalid("Code from S3 is not available")
 	}
 
-	data, err := s.objects(ctx, *bucket, *key, value(version))
+	data, err := s.objects(ctx, *bucket, *key, common.Value(version))
 	if s3Err, ok := errors.AsType[*awserror.Error](err); ok {
 		return nil, invalid("Error occurred while GetObject. S3 Error Code: %s. S3 Error Message: %s",
 			s3Err.Code, s3Err.Message)
@@ -233,8 +233,6 @@ func (fn *function) version() string {
 func (fn *function) arn(scope request.Scope) string {
 	return qualifiedARN(scope, fn.Name, fn.Version)
 }
-
-func value[T any](p *T) (v T) { return common.Value(p) }
 
 func invalid(format string, args ...any) error {
 	return awserror.New("InvalidParameterValueException", fmt.Sprintf(format, args...))
@@ -610,7 +608,7 @@ func (fn *function) setArchitecture(architectures []string) error {
 func (fn *function) setCode(zipFile []byte, imageURI *string) ([]byte, error) {
 	sum := sha256.New()
 	if fn.PackageType == packageImage {
-		if value(imageURI) == "" || len(zipFile) > 0 {
+		if common.Value(imageURI) == "" || len(zipFile) > 0 {
 			return nil, invalid("Image functions need Code.ImageUri")
 		}
 
@@ -638,8 +636,8 @@ func (fn *function) setCode(zipFile []byte, imageURI *string) ([]byte, error) {
 // deployment package; zipFile is the Zip package the request gives.
 func newFunction(in *api.CreateFunctionRequest, zipFile []byte) (*function, []byte, error) {
 	fn := &function{
-		Name:        value(in.FunctionName),
-		PackageType: value(in.PackageType),
+		Name:        common.Value(in.FunctionName),
+		PackageType: common.Value(in.PackageType),
 		Timeout:     defaultTimeout,
 		MemorySize:  defaultMemory,
 		RevisionID:  uuid.NewV4().String(),
@@ -731,7 +729,7 @@ func (s *Service) CreateFunction(
 			tx.Put(scopeKey(m.Scope, kindCode, fn.Name), code)
 		}
 
-		if writeErr := writeJSON(tx, key, fn); writeErr != nil || !value(in.Publish) {
+		if writeErr := writeJSON(tx, key, fn); writeErr != nil || !common.Value(in.Publish) {
 			return writeErr
 		}
 
@@ -760,7 +758,7 @@ func (s *Service) loadAt(ctx context.Context, raw, qualifier *string) (request.M
 		return m, nil, err
 	}
 
-	name, q, err := resolveName(m, value(raw))
+	name, q, err := resolveName(m, common.Value(raw))
 	if err != nil {
 		return m, nil, err
 	}

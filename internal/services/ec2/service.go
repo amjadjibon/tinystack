@@ -26,8 +26,6 @@ func New(store storage.Store) *Service {
 	return &Service{store: store, now: time.Now}
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 func invalidParameter(message string) error {
 	return awserror.New("InvalidParameterValue", message)
 }
@@ -54,7 +52,7 @@ func caller(ctx context.Context, dry *bool) (request.Metadata, error) {
 // dryRun answers a request with DryRun set: TinyStack authorizes every
 // caller, so it would have succeeded.
 func dryRun(flag *bool) error {
-	if !value(flag) {
+	if !common.Value(flag) {
 		return nil
 	}
 

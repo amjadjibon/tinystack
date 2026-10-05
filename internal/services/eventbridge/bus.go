@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -43,7 +44,7 @@ func busNotFound(name string) error {
 // busName resolves a bus given by name or ARN in the caller's scope, the
 // default bus when it is absent.
 func busName(scope request.Scope, ref *string) (string, error) {
-	name := value(ref)
+	name := common.Value(ref)
 	if strings.HasPrefix(name, "arn:") {
 		rest, ok := strings.CutPrefix(name, busARN(scope, ""))
 		if !ok {
@@ -86,7 +87,7 @@ func checkBus(tx storage.ReadTx, scope request.Scope, name string) error {
 }
 
 func checkBusDescription(description *string) error {
-	if len(value(description)) > 512 {
+	if len(common.Value(description)) > 512 {
 		return invalid("Description must be at most 512 characters.")
 	}
 
@@ -104,7 +105,7 @@ func (s *Service) CreateEventBus(
 		return nil, err
 	}
 
-	name := value(in.Name)
+	name := common.Value(in.Name)
 	switch {
 	case !busPattern.MatchString(name):
 		return nil, invalid("Event bus name must be 1 to 256 characters from [.-_A-Za-z0-9].")
@@ -124,7 +125,7 @@ func (s *Service) CreateEventBus(
 	}
 
 	now := s.now().UnixMilli()
-	b := &bus{Name: name, Description: value(in.Description), Tags: tags, Created: now, Modified: now}
+	b := &bus{Name: name, Description: common.Value(in.Description), Tags: tags, Created: now, Modified: now}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(busPrefix(m.Scope) + name); exists {
 			return awserror.New("ResourceAlreadyExistsException", "Event bus "+name+" already exists.")
@@ -331,7 +332,7 @@ func (s *Service) ListEventBuses(
 		return nil, err
 	}
 
-	prefix := value(in.NamePrefix)
+	prefix := common.Value(in.NamePrefix)
 	var buses []api.EventBus
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var names []string
@@ -369,7 +370,7 @@ func (s *Service) ListEventBuses(
 	out := &api.ListEventBusesResponse{EventBuses: []api.EventBus{}}
 	if len(buses) > size {
 		buses = buses[:size]
-		out.NextToken = nextToken(value(buses[size-1].Name))
+		out.NextToken = nextToken(common.Value(buses[size-1].Name))
 	}
 
 	out.EventBuses = append(out.EventBuses, buses...)

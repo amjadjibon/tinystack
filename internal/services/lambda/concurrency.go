@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -71,7 +72,7 @@ func (s *Service) acquire(ctx context.Context, scope request.Scope, name string)
 // latestFunction resolves a request's unqualified function and checks that it
 // exists.
 func latestFunction(tx storage.ReadTx, m *request.Metadata, raw *string) (string, error) {
-	name, q, err := resolveName(*m, value(raw))
+	name, q, err := resolveName(*m, common.Value(raw))
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +96,7 @@ func (s *Service) PutFunctionConcurrency(
 		return nil, err
 	}
 
-	n := value(in.ReservedConcurrentExecutions)
+	n := common.Value(in.ReservedConcurrentExecutions)
 	switch {
 	case in.ReservedConcurrentExecutions == nil || n < 0:
 		return nil, invalid("ReservedConcurrentExecutions must be 0 or more")
@@ -190,7 +191,7 @@ func (s *Service) DeleteFunctionConcurrency(
 // provisionedTarget resolves the function and the version or alias a
 // provisioned concurrency request names, which must exist.
 func provisionedTarget(tx storage.ReadTx, m *request.Metadata, raw, qualifier *string) (name, q string, err error) {
-	if name, q, err = resolveName(*m, value(raw)); err != nil {
+	if name, q, err = resolveName(*m, common.Value(raw)); err != nil {
 		return "", "", err
 	}
 
@@ -228,7 +229,7 @@ func (s *Service) PutProvisionedConcurrencyConfig(
 		return nil, err
 	}
 
-	n := value(in.ProvisionedConcurrentExecutions)
+	n := common.Value(in.ProvisionedConcurrentExecutions)
 	if n < 1 || n > maxReserved {
 		return nil, invalid("ProvisionedConcurrentExecutions must be from 1 to %d", maxReserved)
 	}

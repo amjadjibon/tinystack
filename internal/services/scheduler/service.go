@@ -26,7 +26,6 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -118,16 +117,6 @@ func scheduleARN(scope request.Scope, groupName, name string) string {
 	return "arn:aws:scheduler:" + scope.Region + ":" + scope.AccountID + ":schedule/" + groupName + "/" + name
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-func unix(t time.Time) float64 { return common.Unix(t) }
-
 func fromUnix(f float64) time.Time { return time.UnixMilli(int64(f * 1000)).UTC() }
 
 func validation(format string, args ...any) error {
@@ -144,7 +133,7 @@ func loadGroup(tx storage.ReadTx, scope request.Scope, name string) (*group, err
 		return &group{Name: defaultGroup, Tags: map[string]string{}}, nil
 	}
 
-	g, found, err := read[group](tx, key(scope, kindGroup, name))
+	g, found, err := storage.Read[group](tx, key(scope, kindGroup, name))
 	if err == nil && !found {
 		err = notFound("Schedule group " + name)
 	}

@@ -11,6 +11,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -92,9 +93,9 @@ func newEntry(
 		AccessEntryArn: new(
 			arn(scope, "access-entry/"+c.Name+"/"+which+"/"+account+"/"+name+"/"+uuid.NewV4().String()),
 		),
-		CreatedAt:  seconds(now),
-		ModifiedAt: seconds(now),
-		Tags:       cloneTags(tags),
+		CreatedAt:  common.SecondsMilli(now),
+		ModifiedAt: common.SecondsMilli(now),
+		Tags:       common.CloneTags(tags),
 		Username:   new(username),
 		Type:       new(kind),
 	}}
@@ -138,8 +139,8 @@ func (s *Service) CreateAccessEntry(
 		return nil, err
 	}
 
-	kind := value(orElse(in.Type, new(standard)))
-	principal := value(in.PrincipalArn)
+	kind := common.Value(common.OrElse(in.Type, new(standard)))
+	principal := common.Value(in.PrincipalArn)
 	switch {
 	case !principalPattern.MatchString(principal):
 		return nil, invalidParameter("The specified principalArn is invalid: invalid ARN")
@@ -164,21 +165,21 @@ func (s *Service) CreateAccessEntry(
 			return loadErr
 		}
 
-		existing, ok, readErr := read[accessEntry](tx, entryKey(scope, c.Name, principal))
+		existing, ok, readErr := storage.Read[accessEntry](tx, entryKey(scope, c.Name, principal))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
+		case ok && common.Value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
 			out = &existing.Entry
 			return nil
 		case ok:
 			return inUse("The specified access entry resource is already in use on this cluster.")
 		}
 
-		e := newEntry(scope, c, principal, kind, value(in.Username), in.KubernetesGroups, in.Tags, s.now().UTC())
-		e.Token = value(in.ClientRequestToken)
+		e := newEntry(scope, c, principal, kind, common.Value(in.Username), in.KubernetesGroups, in.Tags, s.now().UTC())
+		e.Token = common.Value(in.ClientRequestToken)
 		out = &e.Entry
-		return write(tx, entryKey(scope, c.Name, principal), e)
+		return storage.Write(tx, entryKey(scope, c.Name, principal), e)
 	})
 	if err != nil {
 		return nil, err
@@ -204,9 +205,9 @@ func (s *Service) changeEntry(
 			return loadErr
 		}
 
-		e, ok, readErr := read[accessEntry](tx, entryKey(scope, c.Name, value(principal)))
+		e, ok, readErr := storage.Read[accessEntry](tx, entryKey(scope, c.Name, common.Value(principal)))
 		if readErr != nil || !ok {
-			return errorsOr(readErr, entryNotFound(value(principal)))
+			return common.ErrorsOr(readErr, entryNotFound(common.Value(principal)))
 		}
 
 		return fn(tx, scope, c, e)
@@ -246,7 +247,7 @@ func (s *Service) ListAccessEntries(
 			return loadErr
 		}
 
-		entries, readErr := records[accessEntry](tx, prefix(scope, "access")+c.Name+"/")
+		entries, readErr := storage.Records[accessEntry](tx, prefix(scope, "access")+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -289,10 +290,10 @@ func (s *Service) UpdateAccessEntry(
 				e.Entry.KubernetesGroups = in.KubernetesGroups
 			}
 
-			e.Entry.Username = orElse(in.Username, e.Entry.Username)
-			e.Entry.ModifiedAt = seconds(s.now().UTC())
+			e.Entry.Username = common.OrElse(in.Username, e.Entry.Username)
+			e.Entry.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			out = &e.Entry
-			return write(tx, entryKey(scope, c.Name, *e.Entry.PrincipalArn), e)
+			return storage.Write(tx, entryKey(scope, c.Name, *e.Entry.PrincipalArn), e)
 		})
 	if err != nil {
 		return nil, err
@@ -318,7 +319,7 @@ func (s *Service) DeleteAccessEntry(
 }
 
 func checkScope(scope *api.AccessScope) error {
-	switch value(value(scope).Type) {
+	switch common.Value(common.Value(scope).Type) {
 	case kindCluster:
 		if len(scope.Namespaces) > 0 {
 			return invalidParameter("A cluster access scope takes no namespaces.")
@@ -340,9 +341,9 @@ func (s *Service) AssociateAccessPolicy(
 	ctx context.Context,
 	in *api.AssociateAccessPolicyRequest,
 ) (*api.AssociateAccessPolicyResponse, error) {
-	name, ok := strings.CutPrefix(value(in.PolicyArn), policyPrefix)
+	name, ok := strings.CutPrefix(common.Value(in.PolicyArn), policyPrefix)
 	if !ok || !slices.Contains(accessPolicies, name) {
-		return nil, invalidParameter("The specified policyArn is invalid: %s", value(in.PolicyArn))
+		return nil, invalidParameter("The specified policyArn is invalid: %s", common.Value(in.PolicyArn))
 	}
 
 	if err := checkScope(in.AccessScope); err != nil {
@@ -360,7 +361,7 @@ func (s *Service) AssociateAccessPolicy(
 				return invalidRequest("Access policies can only be associated with STANDARD access entries.")
 			}
 
-			now := seconds(s.now().UTC())
+			now := common.SecondsMilli(s.now().UTC())
 			i := slices.IndexFunc(
 				e.Policies,
 				func(p api.AssociatedAccessPolicy) bool { return *p.PolicyArn == *in.PolicyArn },
@@ -372,7 +373,7 @@ func (s *Service) AssociateAccessPolicy(
 
 			e.Policies[i].AccessScope, e.Policies[i].ModifiedAt = in.AccessScope, now
 			out.AssociatedAccessPolicy = &e.Policies[i]
-			return write(tx, entryKey(scope, c.Name, *e.Entry.PrincipalArn), e)
+			return storage.Write(tx, entryKey(scope, c.Name, *e.Entry.PrincipalArn), e)
 		})
 	if err != nil {
 		return nil, err
@@ -389,13 +390,13 @@ func (s *Service) DisassociateAccessPolicy(
 		func(tx storage.WriteTx, scope request.Scope, c *cluster, e *accessEntry) error {
 			before := len(e.Policies)
 			e.Policies = slices.DeleteFunc(e.Policies, func(p api.AssociatedAccessPolicy) bool {
-				return *p.PolicyArn == value(in.PolicyArn)
+				return *p.PolicyArn == common.Value(in.PolicyArn)
 			})
 			if len(e.Policies) == before {
 				return notFound("The specified policy is not associated with the access entry.")
 			}
 
-			return write(tx, entryKey(scope, c.Name, *e.Entry.PrincipalArn), e)
+			return storage.Write(tx, entryKey(scope, c.Name, *e.Entry.PrincipalArn), e)
 		})
 	if err != nil {
 		return nil, err

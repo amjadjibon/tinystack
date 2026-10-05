@@ -23,6 +23,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -109,7 +110,7 @@ func (s *Service) addKeyPair(ctx context.Context, dry *bool, k *keyPair) error {
 			return awserror.New("InvalidKeyPair.Duplicate", fmt.Sprintf("The keypair '%s' already exists.", k.Name))
 		}
 
-		return write(tx, key(scope, kindKeyPair, k.ID), k)
+		return storage.Write(tx, key(scope, kindKeyPair, k.ID), k)
 	})
 }
 
@@ -167,12 +168,12 @@ func authorizedKey(pub ssh.PublicKey, name string) string {
 }
 
 func (s *Service) CreateKeyPair(ctx context.Context, in *api.CreateKeyPairRequest) (*api.KeyPair, error) {
-	name, keyType := value(in.KeyName), value(in.KeyType)
+	name, keyType := common.Value(in.KeyName), common.Value(in.KeyType)
 	if err := checkKeyName(name); err != nil {
 		return nil, err
 	}
 
-	if format := value(in.KeyFormat); format != "" && format != "pem" {
+	if format := common.Value(in.KeyFormat); format != "" && format != "pem" {
 		return nil, invalidParameter("TinyStack supports only the pem key format")
 	}
 
@@ -211,7 +212,7 @@ func (s *Service) ImportKeyPair(
 	ctx context.Context,
 	in *api.ImportKeyPairRequest,
 ) (*api.ImportKeyPairResult, error) {
-	name := value(in.KeyName)
+	name := common.Value(in.KeyName)
 	if err := checkKeyName(name); err != nil {
 		return nil, err
 	}
@@ -285,7 +286,7 @@ func (s *Service) DescribeKeyPairs(
 
 		for _, k := range selected {
 			if match.match(keyPairValues(k)) {
-				out.KeyPairs = append(out.KeyPairs, keyPairInfo(k, value(in.IncludePublicKey)))
+				out.KeyPairs = append(out.KeyPairs, keyPairInfo(k, common.Value(in.IncludePublicKey)))
 			}
 		}
 
@@ -304,7 +305,7 @@ func (s *Service) DeleteKeyPair(
 	ctx context.Context,
 	in *api.DeleteKeyPairRequest,
 ) (*api.DeleteKeyPairResult, error) {
-	name, id := value(in.KeyName), value(in.KeyPairId)
+	name, id := common.Value(in.KeyName), common.Value(in.KeyPairId)
 	if name == "" && id == "" {
 		return nil, awserror.New("MissingParameter", "The request must contain the parameter KeyName or KeyPairId")
 	}

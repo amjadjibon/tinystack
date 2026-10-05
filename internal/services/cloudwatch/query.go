@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -46,7 +47,7 @@ func checkQueries(queries []api.MetricDataQuery, alarm bool) error {
 	ids, returned := map[string]bool{}, 0
 	for i := range queries {
 		q := &queries[i]
-		id := value(q.Id)
+		id := common.Value(q.Id)
 		switch {
 		case !queryID.MatchString(id) || len(id) > 255:
 			return invalidValue("The value %s for parameter MetricDataQueries.member.%d.Id is invalid.", id, i+1)
@@ -59,7 +60,7 @@ func checkQueries(queries []api.MetricDataQuery, alarm bool) error {
 		}
 
 		ids[id] = true
-		if value(q.ReturnData) || q.ReturnData == nil {
+		if common.Value(q.ReturnData) || q.ReturnData == nil {
 			returned++
 		}
 
@@ -79,11 +80,11 @@ func checkQueries(queries []api.MetricDataQuery, alarm bool) error {
 
 func checkStat(st *api.MetricStat, alarm bool) error {
 	switch {
-	case st.Metric == nil || value(st.Metric.Namespace) == "" || value(st.Metric.MetricName) == "":
+	case st.Metric == nil || common.Value(st.Metric.Namespace) == "" || common.Value(st.Metric.MetricName) == "":
 		return missing("MetricStat.Metric.Namespace and MetricName")
 	case st.Period == nil:
 		return missing("MetricStat.Period")
-	case value(st.Stat) == "":
+	case common.Value(st.Stat) == "":
 		return missing("MetricStat.Stat")
 	case st.Unit != nil && !units[*st.Unit]:
 		return invalidValue("The value %s for parameter Unit is invalid.", *st.Unit)
@@ -108,13 +109,13 @@ func stat(tx storage.ReadTx, scope request.Scope, st *api.MetricStat, start, end
 	}
 
 	mt := st.Metric
-	id := metricID(value(mt.Namespace), value(mt.MetricName), mt.Dimensions)
-	got, err := buckets(tx, scope, id, *st.Period, value(st.Unit), start, end)
+	id := metricID(common.Value(mt.Namespace), common.Value(mt.MetricName), mt.Dimensions)
+	got, err := buckets(tx, scope, id, *st.Period, common.Value(st.Unit), start, end)
 	if err != nil {
 		return nil, err
 	}
 
-	out := &series{label: value(mt.MetricName), points: map[int64]float64{}}
+	out := &series{label: common.Value(mt.MetricName), points: map[int64]float64{}}
 	for at, b := range got {
 		if v, ok := f(b); ok {
 			out.points[at] = v
@@ -197,7 +198,7 @@ func (s *Service) GetMetricData(ctx context.Context, in *api.GetMetricDataInput)
 		return nil, err
 	}
 
-	scan := value(in.ScanBy)
+	scan := common.Value(in.ScanBy)
 	switch {
 	case in.StartTime == nil:
 		return nil, missing("StartTime")

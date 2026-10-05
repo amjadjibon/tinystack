@@ -77,7 +77,7 @@ func (s *Service) MountBlob(ctx context.Context, repo, from, digest string) (mou
 	}
 
 	err = s.update(ctx, nil, &repo, func(tx storage.WriteTx, m *request.Metadata, r *repository) error {
-		l, ok, readErr := read[layer](tx, layerKey(m.Scope, from, digest))
+		l, ok, readErr := storage.Read[layer](tx, layerKey(m.Scope, from, digest))
 		if readErr != nil || !ok {
 			return readErr
 		}
@@ -89,7 +89,7 @@ func (s *Service) MountBlob(ctx context.Context, repo, from, digest string) (mou
 		data, _ := tx.Get(blobKey(m.Scope, from, digest))
 		tx.Put(blobKey(m.Scope, r.Name, digest), data)
 		mounted = true
-		return write(tx, layerKey(m.Scope, r.Name, digest), l)
+		return storage.Write(tx, layerKey(m.Scope, r.Name, digest), l)
 	})
 
 	return mounted, err

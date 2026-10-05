@@ -40,7 +40,7 @@ func (s *Service) RoleByARN(ctx context.Context, arn string) (Role, bool, error)
 	var out Role
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, exists, err := read[role](tx, key(account, kindRole, name))
+		r, exists, err := storage.Read[role](tx, key(account, kindRole, name))
 		if err != nil || !exists || r.Path != path {
 			return err
 		}
@@ -77,7 +77,7 @@ func (s *Service) AccessKey(ctx context.Context, id string) (Key, bool, error) {
 	var out Key
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		k, exists, err := read[accessKey](tx, accessKeyPrefix+id)
+		k, exists, err := storage.Read[accessKey](tx, accessKeyPrefix+id)
 		if err != nil || !exists || k.Status != keyActive || id == "" {
 			return err
 		}

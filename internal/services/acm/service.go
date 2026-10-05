@@ -21,7 +21,6 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -112,23 +111,13 @@ func load(tx storage.ReadTx, scope request.Scope, arn *string) (*certificate, er
 		return nil, err
 	}
 
-	c, found, err := read[certificate](tx, key(scope, kindCert, id))
+	c, found, err := storage.Read[certificate](tx, key(scope, kindCert, id))
 	if err == nil && !found {
 		err = notFound(*arn)
 	}
 
 	return c, err
 }
-
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-func unix(t time.Time) float64 { return common.Unix(t) }
 
 func invalidParameter(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))

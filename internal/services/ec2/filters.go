@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // values are what a resource holds for each filter name it supports.
@@ -48,7 +49,7 @@ type filters []filter
 func compileFilters(in []api.Filter, known ...string) (filters, error) {
 	out := make(filters, 0, len(in))
 	for _, f := range in {
-		name := value(f.Name)
+		name := common.Value(f.Name)
 		isTag := strings.HasPrefix(name, "tag:") && len(name) > len("tag:")
 		if !isTag && !slices.Contains(known, name) && name != "tag-key" && name != "tag-value" {
 			return nil, invalidParameter(fmt.Sprintf("The filter '%s' is invalid", name))

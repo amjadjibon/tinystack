@@ -17,6 +17,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -166,8 +167,8 @@ func (s *Service) CreateEventSourceMapping(
 		return nil, err
 	}
 
-	_, q, _ := resolveName(m, value(in.FunctionName))
-	source := value(in.EventSourceArn)
+	_, q, _ := resolveName(m, common.Value(in.FunctionName))
+	source := common.Value(in.EventSourceArn)
 	mp := &mapping{
 		UUID:           uuid.NewV4().String(),
 		EventSourceArn: source,
@@ -274,7 +275,7 @@ func (s *Service) loadMappingByID(ctx context.Context, id *string) (request.Meta
 		return m, nil, err
 	}
 
-	if !uuidPattern.MatchString(value(id)) {
+	if !uuidPattern.MatchString(common.Value(id)) {
 		return m, nil, invalid("UUID must be a 36-character mapping ID")
 	}
 
@@ -639,10 +640,10 @@ func sqsRecords(queueARN, region string, messages []sqsapi.Message) []sqsRecord 
 		record := sqsRecord{
 			Attributes:        msg.Attributes,
 			MessageAttributes: map[string]sqsRecordValue{},
-			MessageID:         value(msg.MessageId),
-			ReceiptHandle:     value(msg.ReceiptHandle),
-			Body:              value(msg.Body),
-			MD5OfBody:         value(msg.MD5OfBody),
+			MessageID:         common.Value(msg.MessageId),
+			ReceiptHandle:     common.Value(msg.ReceiptHandle),
+			Body:              common.Value(msg.Body),
+			MD5OfBody:         common.Value(msg.MD5OfBody),
 			EventSource:       "aws:sqs",
 			EventSourceARN:    queueARN,
 			AWSRegion:         region,
@@ -651,7 +652,7 @@ func sqsRecords(queueARN, region string, messages []sqsapi.Message) []sqsRecord 
 		for name, a := range msg.MessageAttributes {
 			v := sqsRecordValue{
 				StringValue:      a.StringValue,
-				DataType:         value(a.DataType),
+				DataType:         common.Value(a.DataType),
 				StringListValues: []string{},
 				BinaryListValues: []string{},
 			}

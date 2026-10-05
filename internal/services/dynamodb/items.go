@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	streamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -71,7 +72,7 @@ func writeItemBy(
 		return err
 	}
 
-	count := value(t.Description.ItemCount)
+	count := common.Value(t.Description.ItemCount)
 	if old != nil {
 		count--
 	}
@@ -89,7 +90,7 @@ func writeItemBy(
 	}
 
 	t.Description.ItemCount = &count
-	t.Description.TableSizeBytes = new(value(t.Description.TableSizeBytes) - oldSize + newSize)
+	t.Description.TableSizeBytes = new(common.Value(t.Description.TableSizeBytes) - oldSize + newSize)
 	if guardErr := appendRecord(tx, key, t, old, it, by); guardErr != nil {
 		return guardErr
 	}
@@ -125,7 +126,7 @@ func itemKey(t *table, it item, exact bool) (string, error) {
 
 	parts := make([]string, 0, len(t.Description.KeySchema))
 	for _, k := range t.Description.KeySchema {
-		name := value(k.AttributeName)
+		name := common.Value(k.AttributeName)
 		a, ok := it[name]
 		if !ok {
 			return "", awserror.Validation("Missing key attribute %s", name)
@@ -145,8 +146,8 @@ func itemKey(t *table, it item, exact bool) (string, error) {
 // attributeKind returns the type the table's attribute definitions give name.
 func attributeKind(t *table, name string) string {
 	for _, d := range t.Description.AttributeDefinitions {
-		if value(d.AttributeName) == name {
-			return value(d.AttributeType)
+		if common.Value(d.AttributeName) == name {
+			return common.Value(d.AttributeType)
 		}
 	}
 
@@ -156,7 +157,7 @@ func attributeKind(t *table, name string) string {
 // keyPart encodes one key attribute in URL-safe base64, which never contains
 // the ':' between parts or the '/' of storage keys.
 func keyPart(t *table, k *api.KeySchemaElement, a *api.AttributeValue) (string, error) {
-	name := value(k.AttributeName)
+	name := common.Value(k.AttributeName)
 	if _, err := attributeSize(*a, 0); err != nil {
 		return "", err
 	}
@@ -174,7 +175,7 @@ func keyPart(t *table, k *api.KeySchemaElement, a *api.AttributeValue) (string, 
 	}
 
 	maxLength := 2048
-	if value(k.KeyType) == "RANGE" {
+	if common.Value(k.KeyType) == "RANGE" {
 		maxLength = 1024
 	}
 
@@ -264,7 +265,7 @@ func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutIt
 			return conditionFailed()
 		}
 
-		if value(in.ReturnValues) == returnAllOld {
+		if common.Value(in.ReturnValues) == returnAllOld {
 			out.Attributes = old
 		}
 
@@ -348,7 +349,7 @@ func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api
 			return nil
 		}
 
-		if value(in.ReturnValues) == returnAllOld {
+		if common.Value(in.ReturnValues) == returnAllOld {
 			out.Attributes = old
 		}
 
@@ -405,7 +406,7 @@ func (s *Service) UpdateItem(ctx context.Context, in *api.UpdateItemInput) (*api
 			return e
 		}
 
-		switch value(in.ReturnValues) {
+		switch common.Value(in.ReturnValues) {
 		case returnAllOld:
 			out.Attributes = old
 		case returnAllNew:
@@ -454,11 +455,11 @@ func checkItem(t *table, it item, message string) error {
 
 	for _, ix := range secondaryIndexes(t) {
 		for _, k := range ix.schema {
-			if a, ok := it[value(k.AttributeName)]; ok {
+			if a, ok := it[common.Value(k.AttributeName)]; ok {
 				if _, keyErr := keyPart(t, &k, &a); keyErr != nil {
 					return awserror.Validation(
 						"One or more parameter values were invalid: Type mismatch for Index Key %s Index: %s",
-						value(k.AttributeName), ix.name)
+						common.Value(k.AttributeName), ix.name)
 				}
 			}
 		}
@@ -500,6 +501,6 @@ func updated(t *table, upd *update, k, old item, found bool) (item, error) {
 
 func isKey(t *table, name string) bool {
 	return slices.ContainsFunc(t.Description.KeySchema, func(k api.KeySchemaElement) bool {
-		return value(k.AttributeName) == name
+		return common.Value(k.AttributeName) == name
 	})
 }

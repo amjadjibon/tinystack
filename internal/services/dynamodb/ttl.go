@@ -7,6 +7,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -71,7 +72,7 @@ func (s *Service) UpdateTimeToLive(
 		return nil, awserror.Validation("TimeToLiveSpecification with Enabled and AttributeName is required")
 	}
 
-	if name := value(spec.AttributeName); name == "" || len(name) > 255 {
+	if name := common.Value(spec.AttributeName); name == "" || len(name) > 255 {
 		return nil, awserror.Validation("TimeToLiveSpecification.AttributeName must be 1 to 255 characters")
 	}
 

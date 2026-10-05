@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -49,7 +50,7 @@ func (s *Service) resolveProfile(ctx context.Context, spec *api.IamInstanceProfi
 		return nil, awserror.New("MissingParameter", "The request must contain the parameter IamInstanceProfile")
 	}
 
-	ref, field := value(spec.Name), "name"
+	ref, field := common.Value(spec.Name), "name"
 	switch {
 	case spec.Arn != nil && spec.Name != nil:
 		return nil, awserror.New("InvalidParameterCombination", "The parameter 'iamInstanceProfile.name' "+
@@ -108,9 +109,9 @@ func (s *Service) AssociateIamInstanceProfile(
 		return nil, err
 	}
 
-	id := value(in.InstanceId)
+	id := common.Value(in.InstanceId)
 	err = s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
-		i, ok, readErr := read[instance](tx, key(scope, kindInstance, id))
+		i, ok, readErr := storage.Read[instance](tx, key(scope, kindInstance, id))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -124,7 +125,7 @@ func (s *Service) AssociateIamInstanceProfile(
 		}
 
 		i.Profile = a
-		return write(tx, key(scope, kindInstance, id), i)
+		return storage.Write(tx, key(scope, kindInstance, id), i)
 	})
 	if err != nil {
 		return nil, err
@@ -198,14 +199,14 @@ func (s *Service) DisassociateIamInstanceProfile(
 ) (*api.DisassociateIamInstanceProfileResult, error) {
 	var out *api.IamInstanceProfileAssociation
 	err := s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
-		i, findErr := findAssociation(tx, scope, value(in.AssociationId))
+		i, findErr := findAssociation(tx, scope, common.Value(in.AssociationId))
 		if findErr != nil {
 			return findErr
 		}
 
 		out = i.Profile.output(i.ID, disassociating)
 		i.Profile = nil
-		return write(tx, key(scope, kindInstance, i.ID), i)
+		return storage.Write(tx, key(scope, kindInstance, i.ID), i)
 	})
 	if err != nil {
 		return nil, err
@@ -227,13 +228,13 @@ func (s *Service) ReplaceIamInstanceProfileAssociation(
 
 	var instanceID string
 	err = s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
-		i, findErr := findAssociation(tx, scope, value(in.AssociationId))
+		i, findErr := findAssociation(tx, scope, common.Value(in.AssociationId))
 		if findErr != nil {
 			return findErr
 		}
 
 		instanceID, i.Profile = i.ID, a
-		return write(tx, key(scope, kindInstance, i.ID), i)
+		return storage.Write(tx, key(scope, kindInstance, i.ID), i)
 	})
 	if err != nil {
 		return nil, err

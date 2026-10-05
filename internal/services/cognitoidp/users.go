@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -112,7 +113,7 @@ func findUser(tx storage.ReadTx, scope request.Scope, p *pool, name *string) (*u
 		return nil, err
 	}
 
-	u, ok, err := read[user](tx, userKey(scope, p, *name))
+	u, ok, err := storage.Read[user](tx, userKey(scope, p, *name))
 	if err != nil || ok {
 		return u, err
 	}
@@ -123,7 +124,7 @@ func findUser(tx storage.ReadTx, scope request.Scope, p *pool, name *string) (*u
 			continue
 		}
 
-		if u, ok, err = read[user](tx, userKey(scope, p, string(owner))); err != nil || ok {
+		if u, ok, err = storage.Read[user](tx, userKey(scope, p, string(owner))); err != nil || ok {
 			return u, err
 		}
 	}
@@ -156,13 +157,13 @@ func saveUser(tx storage.WriteTx, scope request.Scope, p *pool, before, u *user,
 		}
 	}
 
-	return write(tx, userKey(scope, p, u.Username), u)
+	return storage.Write(tx, userKey(scope, p, u.Username), u)
 }
 
 func claimAlias(tx storage.WriteTx, scope request.Scope, p *pool, u *user, attr, v string, force bool) error {
 	k := aliasKey(scope, p.ID, attr, v)
 	if owner, taken := tx.Get(k); taken && string(owner) != u.Username {
-		holder, ok, err := read[user](tx, userKey(scope, p, string(owner)))
+		holder, ok, err := storage.Read[user](tx, userKey(scope, p, string(owner)))
 		if err != nil {
 			return err
 		}
@@ -175,7 +176,7 @@ func claimAlias(tx storage.WriteTx, scope request.Scope, p *pool, u *user, attr,
 			return awserror.New("AliasExistsException", "An account with the given "+attr+" already exists.")
 		default:
 			holder.Attributes[attr+verifiedSuffix] = valueFalse
-			if writeErr := write(tx, userKey(scope, p, holder.Username), holder); writeErr != nil {
+			if writeErr := storage.Write(tx, userKey(scope, p, holder.Username), holder); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -245,7 +246,7 @@ func newUser(p *pool, name *string, attrs []api.AttributeType, now time.Time) (*
 func checkRequired(p *pool, u *user) error {
 	for i := range p.Schema {
 		a := &p.Schema[i]
-		if value(a.Required) && *a.Name != attrSub && u.Attributes[*a.Name] == "" {
+		if common.Value(a.Required) && *a.Name != attrSub && u.Attributes[*a.Name] == "" {
 			return invalidParameter("Attributes did not conform to the schema: %s: The attribute is required", *a.Name)
 		}
 	}
@@ -261,7 +262,7 @@ func setAttributes(p *pool, u *user, attrs []api.AttributeType, creating bool) (
 	var changed []string
 	given := map[string]bool{}
 	for _, a := range attrs {
-		name, v := value(a.Name), value(a.Value)
+		name, v := common.Value(a.Name), common.Value(a.Value)
 		given[name] = true
 		schema := p.attribute(name)
 		if schema == nil {
@@ -269,7 +270,7 @@ func setAttributes(p *pool, u *user, attrs []api.AttributeType, creating bool) (
 				"not be determined", name)
 		}
 
-		if name == attrSub || (!creating && !value(schema.Mutable) && u.Attributes[name] != v) {
+		if name == attrSub || (!creating && !common.Value(schema.Mutable) && u.Attributes[name] != v) {
 			return nil, invalidParameter("Cannot modify the non-mutable attribute %s", name)
 		}
 
@@ -282,7 +283,7 @@ func setAttributes(p *pool, u *user, attrs []api.AttributeType, creating bool) (
 		}
 
 		if v == "" {
-			if value(schema.Required) {
+			if common.Value(schema.Required) {
 				return nil, invalidParameter("Attributes did not conform to the schema: %s: The attribute is "+
 					"required", name)
 			}
@@ -314,7 +315,7 @@ func checkValue(schema *api.SchemaAttributeType, name, v string) error {
 		return nil
 	}
 
-	switch value(schema.AttributeDataType) {
+	switch common.Value(schema.AttributeDataType) {
 	case typeBoolean:
 		if v != valueTrue && v != valueFalse {
 			return invalidParameter("%s must be true or false.", name)
@@ -394,15 +395,15 @@ func (u *user) attributes(names []string) []api.AttributeType {
 
 func (u *user) output(names []string) api.UserType {
 	return api.UserType{
-		Username: new(u.Username), Attributes: u.attributes(names), UserCreateDate: seconds(u.Created),
-		UserLastModifiedDate: seconds(u.Modified), Enabled: new(!u.Disabled), UserStatus: new(u.Status),
+		Username: new(u.Username), Attributes: u.attributes(names), UserCreateDate: common.SecondsMilli(u.Created),
+		UserLastModifiedDate: common.SecondsMilli(u.Modified), Enabled: new(!u.Disabled), UserStatus: new(u.Status),
 	}
 }
 
 // setPassword sets u's password, temporary until the user changes it unless
 // permanent. The pool's password history forbids reusing a recent password.
 func setPassword(p *pool, u *user, password string, permanent bool, now time.Time) error {
-	size := int(value(passwordPolicy(&p.Settings).PasswordHistorySize))
+	size := int(common.Value(passwordPolicy(&p.Settings).PasswordHistorySize))
 	if size > 0 {
 		recent := append([][]byte{u.Password}, u.History...)
 		for _, hash := range recent[:min(size, len(recent))] {
@@ -433,7 +434,7 @@ func setPassword(p *pool, u *user, password string, permanent bool, now time.Tim
 		return nil
 	}
 
-	days := value(passwordPolicy(&p.Settings).TemporaryPasswordValidityDays)
+	days := common.Value(passwordPolicy(&p.Settings).TemporaryPasswordValidityDays)
 	u.Status, u.PasswordExpires = statusForceChange, now.Add(time.Duration(days)*24*time.Hour)
 	return nil
 }

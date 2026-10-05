@@ -6,6 +6,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -29,7 +30,7 @@ func (s *Service) GetFunctionCodeSigningConfig(
 //
 //nolint:gocritic // Metadata is an immutable request snapshot.
 func taggedFunction(m request.Metadata, arn *string) (string, error) {
-	raw := value(arn)
+	raw := common.Value(arn)
 	if !strings.HasPrefix(raw, "arn:") || strings.Count(raw, ":") != 6 {
 		return "", invalid("Tags can only be managed on an unqualified function ARN: %s", raw)
 	}

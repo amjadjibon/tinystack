@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -18,17 +19,17 @@ func (s *Service) CreateStream(ctx context.Context, in *api.CreateStreamInput) (
 		return nil, err
 	}
 
-	name := value(in.StreamName)
+	name := common.Value(in.StreamName)
 	if !streamName.MatchString(name) {
 		return nil, invalidArgument("StreamName must be 1 to 128 letters, digits, underscores, periods, and hyphens")
 	}
 
 	mode := modeProvisioned
 	if in.StreamModeDetails != nil {
-		mode = value(in.StreamModeDetails.StreamMode)
+		mode = common.Value(in.StreamModeDetails.StreamMode)
 	}
 
-	count := int(value(in.ShardCount))
+	count := int(common.Value(in.ShardCount))
 	switch {
 	case mode != modeProvisioned && mode != modeOnDemand:
 		return nil, invalidArgument("StreamMode must be PROVISIONED or ON_DEMAND")
@@ -47,7 +48,7 @@ func (s *Service) CreateStream(ctx context.Context, in *api.CreateStreamInput) (
 	}
 
 	st := &stream{
-		Name: name, Mode: mode, Retention: defaultRetention, Created: unix(s.now()), Encryption: "NONE",
+		Name: name, Mode: mode, Retention: defaultRetention, Created: common.Unix(s.now()), Encryption: "NONE",
 		Tags: in.Tags, Metrics: []string{},
 	}
 	for _, r := range ranges(big.NewInt(0), maxHash, count) {
@@ -60,7 +61,7 @@ func (s *Service) CreateStream(ctx context.Context, in *api.CreateStreamInput) (
 				"Stream "+name+" under account "+m.AccountID+" already exists.")
 		}
 
-		return write(tx, streamKey(m.Scope, name), st)
+		return storage.Write(tx, streamKey(m.Scope, name), st)
 	})
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func (s *Service) DeleteStream(ctx context.Context, in *api.DeleteStreamInput) (
 			return loadErr
 		}
 
-		if len(st.Consumers) > 0 && !value(in.EnforceConsumerDeletion) {
+		if len(st.Consumers) > 0 && !common.Value(in.EnforceConsumerDeletion) {
 			return awserror.New("ResourceInUseException", "Stream "+name+" has registered consumers; "+
 				"set EnforceConsumerDeletion to delete it with them.")
 		}
@@ -220,7 +221,7 @@ func (s *Service) ListStreams(ctx context.Context, in *api.ListStreamsInput) (*a
 		limit = int(*in.Limit)
 	}
 
-	after := value(in.ExclusiveStartStreamName)
+	after := common.Value(in.ExclusiveStartStreamName)
 	if in.NextToken != nil {
 		after = *in.NextToken
 	}
@@ -232,7 +233,7 @@ func (s *Service) ListStreams(ctx context.Context, in *api.ListStreamsInput) (*a
 	}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(prefix(m.Scope, kindStream)) {
-			st, _, readErr := read[stream](tx, k)
+			st, _, readErr := storage.Read[stream](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -280,12 +281,12 @@ func (s *Service) ListShards(ctx context.Context, in *api.ListShardsInput) (*api
 		limit = int(*in.MaxResults)
 	}
 
-	after := value(in.ExclusiveStartShardId)
+	after := common.Value(in.ExclusiveStartShardId)
 	openOnly := false
 	if f := in.ShardFilter; f != nil {
-		switch value(f.Type) {
+		switch common.Value(f.Type) {
 		case "AFTER_SHARD_ID":
-			after = value(f.ShardId)
+			after = common.Value(f.ShardId)
 		case "AT_LATEST":
 			openOnly = true
 		case "AT_TRIM_HORIZON", "FROM_TRIM_HORIZON":
@@ -335,7 +336,7 @@ func (s *Service) IncreaseStreamRetentionPeriod(
 	in *api.IncreaseStreamRetentionPeriodInput,
 ) (*api.IncreaseStreamRetentionPeriodOutput, error) {
 	err := s.change(ctx, in.StreamName, in.StreamARN, func(_ storage.WriteTx, _ request.Scope, st *stream) error {
-		hours := value(in.RetentionPeriodHours)
+		hours := common.Value(in.RetentionPeriodHours)
 		if hours < st.Retention || hours > maxRetention {
 			return invalidArgument("RetentionPeriodHours must be between the current %d and %d", st.Retention,
 				maxRetention)
@@ -356,7 +357,7 @@ func (s *Service) DecreaseStreamRetentionPeriod(
 	in *api.DecreaseStreamRetentionPeriodInput,
 ) (*api.DecreaseStreamRetentionPeriodOutput, error) {
 	err := s.change(ctx, in.StreamName, in.StreamARN, func(_ storage.WriteTx, _ request.Scope, st *stream) error {
-		hours := value(in.RetentionPeriodHours)
+		hours := common.Value(in.RetentionPeriodHours)
 		if hours > st.Retention || hours < defaultRetention {
 			return invalidArgument("RetentionPeriodHours must be between %d and the current %d", defaultRetention,
 				st.Retention)
@@ -407,9 +408,9 @@ func (s *Service) UpdateShardCount(
 ) (*api.UpdateShardCountOutput, error) {
 	out := &api.UpdateShardCountOutput{TargetShardCount: in.TargetShardCount}
 	err := s.change(ctx, in.StreamName, in.StreamARN, func(_ storage.WriteTx, scope request.Scope, st *stream) error {
-		target, current := int(value(in.TargetShardCount)), len(st.open())
+		target, current := int(common.Value(in.TargetShardCount)), len(st.open())
 		switch {
-		case value(in.ScalingType) != "UNIFORM_SCALING":
+		case common.Value(in.ScalingType) != "UNIFORM_SCALING":
 			return invalidArgument("ScalingType must be UNIFORM_SCALING")
 		case st.Mode == modeOnDemand:
 			return invalidArgument("UpdateShardCount is not supported for ON_DEMAND streams")
@@ -434,10 +435,10 @@ func (s *Service) UpdateShardCount(
 }
 
 func openShard(st *stream, id *string) (*shard, error) {
-	sh := st.shard(value(id))
+	sh := st.shard(common.Value(id))
 	switch {
 	case sh == nil:
-		return nil, awserror.New("ResourceNotFoundException", "Could not find shard "+value(id))
+		return nil, awserror.New("ResourceNotFoundException", "Could not find shard "+common.Value(id))
 	case sh.Closed:
 		return nil, awserror.New("ResourceInUseException", "Shard "+sh.ID+" is closed")
 	}
@@ -452,7 +453,7 @@ func (s *Service) SplitShard(ctx context.Context, in *api.SplitShardInput) (*api
 			return err
 		}
 
-		at, ok := new(big.Int).SetString(value(in.NewStartingHashKey), 10)
+		at, ok := new(big.Int).SetString(common.Value(in.NewStartingHashKey), 10)
 		lo, hi := hashOf(sh.StartHash), hashOf(sh.EndHash)
 		if !ok || at.Cmp(lo) <= 0 || at.Cmp(hi) > 0 {
 			return invalidArgument("NewStartingHashKey must be inside the shard's hash key range, after its start")
@@ -513,7 +514,7 @@ func (s *Service) StartStreamEncryption(
 	in *api.StartStreamEncryptionInput,
 ) (*api.StartStreamEncryptionOutput, error) {
 	err := s.change(ctx, in.StreamName, in.StreamARN, func(_ storage.WriteTx, _ request.Scope, st *stream) error {
-		if value(in.EncryptionType) != encryptionKMS || value(in.KeyId) == "" {
+		if common.Value(in.EncryptionType) != encryptionKMS || common.Value(in.KeyId) == "" {
 			return invalidArgument("EncryptionType must be KMS, with a KeyId")
 		}
 
@@ -532,7 +533,7 @@ func (s *Service) StopStreamEncryption(
 	in *api.StopStreamEncryptionInput,
 ) (*api.StopStreamEncryptionOutput, error) {
 	err := s.change(ctx, in.StreamName, in.StreamARN, func(_ storage.WriteTx, _ request.Scope, st *stream) error {
-		if value(in.EncryptionType) != encryptionKMS {
+		if common.Value(in.EncryptionType) != encryptionKMS {
 			return invalidArgument("EncryptionType must be KMS")
 		}
 
@@ -611,7 +612,7 @@ func (s *Service) UpdateStreamMode(
 ) (*api.UpdateStreamModeOutput, error) {
 	mode := ""
 	if in.StreamModeDetails != nil {
-		mode = value(in.StreamModeDetails.StreamMode)
+		mode = common.Value(in.StreamModeDetails.StreamMode)
 	}
 
 	err := s.change(ctx, nil, in.StreamARN, func(_ storage.WriteTx, _ request.Scope, st *stream) error {
@@ -644,7 +645,7 @@ func (s *Service) DescribeLimits(ctx context.Context, _ *api.DescribeLimitsInput
 	}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(prefix(m.Scope, kindStream)) {
-			st, _, readErr := read[stream](tx, k)
+			st, _, readErr := storage.Read[stream](tx, k)
 			if readErr != nil {
 				return readErr
 			}

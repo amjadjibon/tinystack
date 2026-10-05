@@ -22,7 +22,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			scope := request.Scope{AccountID: account, Region: region}
-			g, _, err := read[group](tx, key)
+			g, _, err := storage.Read[group](tx, key)
 			if err != nil {
 				return err
 			}

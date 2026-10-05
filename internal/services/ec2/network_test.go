@@ -20,11 +20,11 @@ func TestStoredVPCsGetRoutingDefaults(t *testing.T) {
 	sn := &subnet{ID: "subnet-0123456789abcdef0", VPCID: old.ID, CIDR: "10.0.1.0/24", Zone: "us-east-1a"}
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		tx.Put(key(scope, kindDefaults, "vpc"), []byte("{}"))
-		if err := write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
+		if err := storage.Write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
 			return err
 		}
 
-		return write(tx, key(scope, kindVPC, old.ID), old)
+		return storage.Write(tx, key(scope, kindVPC, old.ID), old)
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -219,7 +219,7 @@ func (s *Service) RotateSecret(ctx context.Context, in *api.RotateSecretRequest)
 			out.VersionId = &token
 		}
 
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 	if err != nil {
 		return nil, err
@@ -259,7 +259,7 @@ func (s *Service) CancelRotateSecret(
 			ARN: new(sec.arn(m.Scope)), Name: new(sec.Name), VersionId: optional(sec.pending()),
 		}
 
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 	if err != nil {
 		return nil, err
@@ -323,7 +323,7 @@ func (s *Service) rotate(ctx context.Context, scope request.Scope, name, functio
 		}
 
 		index(tx, scope, sec)
-		return write(tx, secretKey(scope, name), sec)
+		return storage.Write(tx, secretKey(scope, name), sec)
 	})
 	if err != nil && ctx.Err() == nil {
 		s.deliveries.Add(delivery.ViaSecretsManager, arn, function, nil, err)
@@ -392,7 +392,7 @@ func (s *Service) rotateDue(ctx context.Context, now time.Time) error {
 
 			sec.Rotation.Next = sec.Rotation.next(now)
 			index(tx, scope, sec)
-			if writeErr := write(tx, secretKey(scope, sec.Name), sec); writeErr != nil {
+			if writeErr := storage.Write(tx, secretKey(scope, sec.Name), sec); writeErr != nil {
 				return writeErr
 			}
 		}

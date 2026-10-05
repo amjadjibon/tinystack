@@ -9,6 +9,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/policydoc"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -54,7 +55,7 @@ func (s *Service) AddPermission(ctx context.Context, in *api.AddPermissionReques
 		return nil, err
 	}
 
-	name := value(in.Label)
+	name := common.Value(in.Label)
 	switch {
 	case !label.MatchString(name):
 		return nil, invalid("Value %s for parameter Label is invalid. Reason: Must be 1 to 80 characters from "+
@@ -101,7 +102,7 @@ func (s *Service) AddPermission(ctx context.Context, in *api.AddPermissionReques
 		}
 
 		q.Settings.Policy = policy
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return nil, err
@@ -126,14 +127,14 @@ func (s *Service) RemovePermission(
 			return loadErr
 		}
 
-		policy, removeErr := policydoc.Remove(q.Settings.Policy, value(in.Label))
+		policy, removeErr := policydoc.Remove(q.Settings.Policy, common.Value(in.Label))
 		if removeErr != nil {
 			return invalid("Value %s for parameter Label is invalid. Reason: can't find label on existing policy.",
-				value(in.Label))
+				common.Value(in.Label))
 		}
 
 		q.Settings.Policy = policy
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return nil, err

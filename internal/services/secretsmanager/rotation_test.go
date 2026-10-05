@@ -150,7 +150,7 @@ func TestScheduledRotation(t *testing.T) {
 	}
 
 	at := func(d time.Duration) float64 { return float64(start.Add(d).UnixMilli()) / 1000 }
-	if d := describe(); d.LastRotatedDate != nil || value(d.NextRotationDate) != at(4*time.Hour) {
+	if d := describe(); d.LastRotatedDate != nil || common.Value(d.NextRotationDate) != at(4*time.Hour) {
 		t.Fatalf("got %+v", d)
 	}
 
@@ -169,7 +169,7 @@ func TestScheduledRotation(t *testing.T) {
 	}
 
 	d := describe()
-	if value(d.LastRotatedDate) != at(4*time.Hour) || value(d.NextRotationDate) != at(8*time.Hour) ||
+	if common.Value(d.LastRotatedDate) != at(4*time.Hour) || common.Value(d.NextRotationDate) != at(8*time.Hour) ||
 		len(d.VersionIdsToStages) != 2 {
 		t.Fatalf("got %+v", d)
 	}
@@ -213,5 +213,3 @@ func TestScheduledRotation(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-func value[T any](p *T) (v T) { return common.Value(p) }

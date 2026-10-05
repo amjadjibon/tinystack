@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -156,16 +157,16 @@ func (p *pool) attribute(name string) *api.SchemaAttributeType {
 func (p *pool) addSchema(attrs []api.SchemaAttributeType, creating bool) error {
 	for i := range attrs {
 		a := attrs[i]
-		name := strings.TrimPrefix(value(a.Name), customPrefix)
+		name := strings.TrimPrefix(common.Value(a.Name), customPrefix)
 		if name == "" || len(name) > 20 {
 			return invalidParameter("Attribute names must be 1 to 20 characters long.")
 		}
 
-		if value(a.DeveloperOnlyAttribute) {
+		if common.Value(a.DeveloperOnlyAttribute) {
 			return invalidParameter("TinyStack does not support developer-only attributes.")
 		}
 
-		kind := value(a.AttributeDataType)
+		kind := common.Value(a.AttributeDataType)
 		if !oneOf(a.AttributeDataType, typeString, typeNumber, typeBoolean, typeDate) {
 			return invalidParameter("Invalid AttributeDataType %s.", kind)
 		}
@@ -174,7 +175,7 @@ func (p *pool) addSchema(attrs []api.SchemaAttributeType, creating bool) error {
 			return err
 		}
 
-		if existing := p.attribute(value(a.Name)); creating && existing != nil {
+		if existing := p.attribute(common.Value(a.Name)); creating && existing != nil {
 			// A standard attribute keeps its type; the schema sets the rest.
 			if kind != "" && kind != *existing.AttributeDataType {
 				return invalidParameter("%s must be of type %s.", name, *existing.AttributeDataType)
@@ -184,7 +185,7 @@ func (p *pool) addSchema(attrs []api.SchemaAttributeType, creating bool) error {
 				continue
 			}
 
-			existing.Required, existing.Mutable = new(value(a.Required)), new(a.Mutable == nil || *a.Mutable)
+			existing.Required, existing.Mutable = new(common.Value(a.Required)), new(a.Mutable == nil || *a.Mutable)
 			if a.StringAttributeConstraints != nil {
 				existing.StringAttributeConstraints = a.StringAttributeConstraints
 			}
@@ -200,7 +201,7 @@ func (p *pool) addSchema(attrs []api.SchemaAttributeType, creating bool) error {
 			return invalidParameter("Existing attribute already has name %s%s.", customPrefix, name)
 		}
 
-		if value(a.Required) {
+		if common.Value(a.Required) {
 			return invalidParameter("Required custom attributes are not supported currently.")
 		}
 
@@ -281,9 +282,9 @@ func validSettings(st *settings, softwareToken bool) error {
 		return err
 	}
 
-	if pp := passwordPolicy(st); value(pp.MinimumLength) < 6 || value(pp.MinimumLength) > 99 ||
-		value(pp.TemporaryPasswordValidityDays) < 0 || value(pp.TemporaryPasswordValidityDays) > 365 ||
-		value(pp.PasswordHistorySize) < 0 || value(pp.PasswordHistorySize) > 24 {
+	if pp := passwordPolicy(st); common.Value(pp.MinimumLength) < 6 || common.Value(pp.MinimumLength) > 99 ||
+		common.Value(pp.TemporaryPasswordValidityDays) < 0 || common.Value(pp.TemporaryPasswordValidityDays) > 365 ||
+		common.Value(pp.PasswordHistorySize) < 0 || common.Value(pp.PasswordHistorySize) > 24 {
 		return invalidParameter("Password policies need a MinimumLength of 6 to 99, TemporaryPasswordValidityDays " +
 			"of 0 to 365, and a PasswordHistorySize of 0 to 24.")
 	}
@@ -296,7 +297,7 @@ func validSettings(st *settings, softwareToken bool) error {
 		return invalidParameter("EmailSendingAccount must be COGNITO_DEFAULT or DEVELOPER.")
 	}
 
-	if a := st.UserPoolAddOns; a != nil && value(a.AdvancedSecurityMode) != mfaOff {
+	if a := st.UserPoolAddOns; a != nil && common.Value(a.AdvancedSecurityMode) != mfaOff {
 		return invalidParameter("TinyStack does not support threat protection: AdvancedSecurityMode must be OFF.")
 	}
 
@@ -317,7 +318,7 @@ func validSettings(st *settings, softwareToken bool) error {
 }
 
 func checkMFA(mfa *string, methods bool) error {
-	switch value(mfa) {
+	switch common.Value(mfa) {
 	case "", mfaOff:
 	case mfaOptional:
 		if !methods {
@@ -354,7 +355,7 @@ func checkMessages(st *settings) error {
 	}
 
 	if a := st.AdminCreateUserConfig; a != nil {
-		if days := value(a.UnusedAccountValidityDays); days < 0 || days > 365 {
+		if days := common.Value(a.UnusedAccountValidityDays); days < 0 || days > 365 {
 			return invalidParameter("UnusedAccountValidityDays must be between 0 and 365.")
 		}
 
@@ -379,7 +380,7 @@ func checkRecovery(r *api.AccountRecoverySettingType) error {
 
 	seen := map[int64]bool{}
 	for _, m := range r.RecoveryMechanisms {
-		name, priority := value(m.Name), value(m.Priority)
+		name, priority := common.Value(m.Name), common.Value(m.Priority)
 		if !oneOf(m.Name, "verified_email", "verified_phone_number", "admin_only") || name == "" ||
 			priority < 1 || priority > 2 || seen[priority] {
 			return invalidParameter("Invalid account recovery setting.")
@@ -491,7 +492,7 @@ func (p *pool) output(scope request.Scope, users int) (*api.UserPoolType, error)
 	}
 
 	out.Id, out.Name, out.Arn = new(p.ID), new(p.Name), new(poolARN(scope, p.ID))
-	out.CreationDate, out.LastModifiedDate = seconds(p.Created), seconds(p.Modified)
+	out.CreationDate, out.LastModifiedDate = common.SecondsMilli(p.Created), common.SecondsMilli(p.Modified)
 	out.SchemaAttributes, out.AliasAttributes, out.UsernameAttributes = p.Schema, p.AliasAttributes, p.UsernameAttributes
 	out.EstimatedNumberOfUsers = new(int64(users))
 	out.UserPoolTags = map[string]string{}
@@ -557,7 +558,7 @@ func (s *Service) CreateUserPool(
 		}
 
 		tx.Put(poolIndexKey(p.ID), []byte(scope.AccountID))
-		return write(tx, poolKey(scope, p.ID), p)
+		return storage.Write(tx, poolKey(scope, p.ID), p)
 	})
 	if err != nil {
 		return nil, err
@@ -604,7 +605,7 @@ func (s *Service) ListUserPools(
 	var pools []*pool
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, id := range ids(tx, prefix(scope, "pool")) {
-			p, _, readErr := read[pool](tx, poolKey(scope, id))
+			p, _, readErr := storage.Read[pool](tx, poolKey(scope, id))
 			if readErr != nil {
 				return readErr
 			}
@@ -626,7 +627,12 @@ func (s *Service) ListUserPools(
 	out := &api.ListUserPoolsResponse{UserPools: []api.UserPoolDescriptionType{}, NextToken: next}
 	for _, p := range selected {
 		out.UserPools = append(out.UserPools, api.UserPoolDescriptionType{
-			Id: new(p.ID), Name: new(p.Name), CreationDate: seconds(p.Created), LastModifiedDate: seconds(p.Modified),
+			Id: new(
+				p.ID,
+			),
+			Name:             new(p.Name),
+			CreationDate:     common.SecondsMilli(p.Created),
+			LastModifiedDate: common.SecondsMilli(p.Modified),
 		})
 	}
 
@@ -690,7 +696,7 @@ func (s *Service) DeleteUserPool(
 			return loadErr
 		}
 
-		if value(p.Settings.DeletionProtection) == "ACTIVE" {
+		if common.Value(p.Settings.DeletionProtection) == "ACTIVE" {
 			return invalidParameter("The user pool cannot be deleted because deletion protection is activated. " +
 				"Deletion protection must be inactivated first.")
 		}
@@ -726,7 +732,7 @@ func (s *Service) AddCustomAttributes(
 
 	err := s.update(ctx, in.UserPoolId, func(_ storage.WriteTx, _ request.Scope, p *pool) error {
 		for i := range in.CustomAttributes {
-			name := value(in.CustomAttributes[i].Name)
+			name := common.Value(in.CustomAttributes[i].Name)
 			if p.attribute(name) != nil && !strings.HasPrefix(name, customPrefix) {
 				return invalidParameter("Existing attribute already has name %s.", name)
 			}
@@ -776,7 +782,7 @@ func (s *Service) SetUserPoolMfaConfig(
 	err := s.update(ctx, in.UserPoolId, func(_ storage.WriteTx, _ request.Scope, p *pool) error {
 		token := p.SoftwareTokenMFA
 		if in.SoftwareTokenMfaConfiguration != nil {
-			token = value(in.SoftwareTokenMfaConfiguration.Enabled)
+			token = common.Value(in.SoftwareTokenMfaConfiguration.Enabled)
 		}
 
 		mfa := in.MfaConfiguration

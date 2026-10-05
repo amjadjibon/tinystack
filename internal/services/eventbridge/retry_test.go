@@ -10,6 +10,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -45,7 +46,7 @@ func TestRetries(t *testing.T) {
 	}
 
 	target, err := queues.CreateQueue(ctx, &sqsapi.CreateQueueRequest{
-		QueueName: new("orders"), Attributes: map[string]string{"KmsMasterKeyId": value(key.KeyMetadata.KeyId)},
+		QueueName: new("orders"), Attributes: map[string]string{"KmsMasterKeyId": common.Value(key.KeyMetadata.KeyId)},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -187,8 +188,8 @@ func TestRetries(t *testing.T) {
 		"EXHAUSTED_RETRY_CONDITION": "MaximumEventAgeExhausted",
 		"RETRY_ATTEMPTS":            "0",
 	} {
-		if value(attributes[name].StringValue) != want {
-			t.Errorf("%s = %q, want %q", name, value(attributes[name].StringValue), want)
+		if common.Value(attributes[name].StringValue) != want {
+			t.Errorf("%s = %q, want %q", name, common.Value(attributes[name].StringValue), want)
 		}
 	}
 }

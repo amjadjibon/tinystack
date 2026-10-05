@@ -7,6 +7,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -14,7 +15,7 @@ import (
 func tagMap(tags []api.Tag) map[string]string {
 	out := map[string]string{}
 	for _, t := range tags {
-		out[value(t.Key)] = value(t.Value)
+		out[common.Value(t.Key)] = common.Value(t.Value)
 	}
 
 	return out
@@ -39,7 +40,7 @@ func (s *Service) retag(ctx context.Context, arn *string, change func(map[string
 		}
 
 		id, _ := certID(m.Scope, arn)
-		return write(tx, key(m.Scope, kindCert, id), c)
+		return storage.Write(tx, key(m.Scope, kindCert, id), c)
 	})
 }
 
@@ -72,8 +73,8 @@ func (s *Service) RemoveTagsFromCertificate(
 		func(tags map[string]string) (map[string]string, error) {
 			// A tag with a value is removed only when the value matches.
 			for _, t := range in.Tags {
-				if v, ok := tags[value(t.Key)]; ok && (t.Value == nil || *t.Value == v) {
-					delete(tags, value(t.Key))
+				if v, ok := tags[common.Value(t.Key)]; ok && (t.Value == nil || *t.Value == v) {
+					delete(tags, common.Value(t.Key))
 				}
 			}
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -18,7 +19,7 @@ func loadRole(tx storage.ReadTx, account string, name *string) (*role, string, e
 	}
 
 	rk := key(account, kindRole, *name)
-	r, ok, err := read[role](tx, rk)
+	r, ok, err := storage.Read[role](tx, rk)
 	if err != nil {
 		return nil, "", err
 	}
@@ -69,7 +70,7 @@ func (s *Service) updateRole(
 			return fnErr
 		}
 
-		return write(tx, rk, r)
+		return storage.Write(tx, rk, r)
 	})
 }
 
@@ -96,7 +97,7 @@ func roleOutput(account string, r *role, tags bool) *api.Role {
 }
 
 func checkRoleSettings(description *string, maxSession *int64) error {
-	if len(value(description)) > maxDescription {
+	if len(common.Value(description)) > maxDescription {
 		return validation("Description must be at most %d characters long", maxDescription)
 	}
 
@@ -146,7 +147,7 @@ func (s *Service) CreateRole(ctx context.Context, in *api.CreateRoleRequest) (*a
 		Path:               path,
 		Tags:               tags,
 		AssumeRolePolicy:   *in.AssumeRolePolicyDocument,
-		Description:        value(in.Description),
+		Description:        common.Value(in.Description),
 		MaxSessionDuration: defaultSessionTime,
 		CreatedAt:          s.now().UnixMilli(),
 	}
@@ -160,7 +161,7 @@ func (s *Service) CreateRole(ctx context.Context, in *api.CreateRoleRequest) (*a
 			return alreadyExists("Role with name %s already exists.", r.Name)
 		}
 
-		return write(tx, rk, r)
+		return storage.Write(tx, rk, r)
 	})
 	if err != nil {
 		return nil, err
@@ -230,7 +231,7 @@ func (s *Service) ListRoles(ctx context.Context, in *api.ListRolesRequest) (*api
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		all, listErr := list[role](tx, m.AccountID, kindRole)
 		for _, r := range all {
-			if strings.HasPrefix(r.Path, value(in.PathPrefix)) {
+			if strings.HasPrefix(r.Path, common.Value(in.PathPrefix)) {
 				matched = append(matched, r)
 			}
 		}

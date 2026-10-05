@@ -57,14 +57,6 @@ func key(account, kind, name string) string {
 	return account + "/" + service + "/" + kind + "/" + name
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
 func newID(prefix string) string {
 	return prefix + common.RandomID(idLength, common.AlphabetUpperHex)
 }

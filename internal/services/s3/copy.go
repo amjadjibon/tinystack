@@ -10,6 +10,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -21,7 +22,7 @@ const (
 // copySource splits an x-amz-copy-source header, "<bucket>/<key>" with an
 // optional leading slash, URL-encoded, and an optional "?versionId=".
 func copySource(header *string) (bucket, key, version string, err error) {
-	raw := strings.TrimPrefix(value(header), "/")
+	raw := strings.TrimPrefix(common.Value(header), "/")
 	if path, query, hasQuery := strings.Cut(raw, "?"); hasQuery {
 		values, parseErr := url.ParseQuery(query)
 		if parseErr != nil || len(values) != 1 || len(values["versionId"]) != 1 || values.Get("versionId") == "" {
@@ -47,7 +48,7 @@ func copySource(header *string) (bucket, key, version string, err error) {
 
 // directive validates a metadata or tagging directive, COPY by default.
 func directive(p *string, name string) (string, error) {
-	switch d := value(p); d {
+	switch d := common.Value(p); d {
 	case "":
 		return directiveCopy, nil
 	case directiveCopy, directiveReplace:
@@ -102,7 +103,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		return nil, guardErr
 	}
 
-	if c := value(in.StorageClass); c != "" && c != storageStandard {
+	if c := common.Value(in.StorageClass); c != "" && c != storageStandard {
 		return nil, fail(
 			http.StatusNotImplemented,
 			"NotImplemented",
@@ -129,7 +130,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		return nil, err
 	}
 
-	if sourceBucket == value(in.Bucket) && sourceKey == value(in.Key) && sourceVersion == "" &&
+	if sourceBucket == common.Value(in.Bucket) && sourceKey == common.Value(in.Key) && sourceVersion == "" &&
 		metadataDirective == directiveCopy &&
 		taggingDirective == directiveCopy && in.StorageClass == nil {
 		return nil, fail(http.StatusBadRequest, "InvalidRequest", "This copy request is illegal because it is "+
@@ -171,7 +172,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		}
 
 		if metadataDirective == directiveReplace {
-			obj.Metadata, obj.ContentType = maps.Clone(in.Metadata), value(in.ContentType)
+			obj.Metadata, obj.ContentType = maps.Clone(in.Metadata), common.Value(in.ContentType)
 			if obj.ContentType == "" {
 				obj.ContentType = defaultType
 			}
@@ -202,7 +203,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		bucket:  *in.Bucket,
 		key:     *in.Key,
 		etag:    obj.ETag,
-		version: value(written),
+		version: common.Value(written),
 		size:    obj.Size,
 	})
 	return &api.CopyObjectOutput{

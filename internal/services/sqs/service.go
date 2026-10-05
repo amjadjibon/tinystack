@@ -140,8 +140,6 @@ type queue struct {
 	Sequence     int64 `json:",omitempty"`
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 func missing(name string) error {
 	return awserror.New("MissingParameter", "The request must contain the parameter "+name+".")
 }
@@ -216,7 +214,7 @@ func resolve(ctx context.Context, raw *string) (string, error) {
 		return "", err
 	}
 
-	if value(raw) == "" {
+	if common.Value(raw) == "" {
 		return "", missing("QueueUrl")
 	}
 
@@ -246,10 +244,6 @@ func load(tx storage.ReadTx, key string) (*queue, error) {
 		return nil, notFound()
 	}
 	return q, nil
-}
-
-func save(tx storage.WriteTx, key string, q *queue) error {
-	return storage.Write(tx, key, q)
 }
 
 func defaults() settings {
@@ -430,7 +424,7 @@ func (s *Service) CreateQueue(ctx context.Context, in *api.CreateQueueRequest) (
 		}
 
 		now := s.now().Unix()
-		return save(tx, key, &queue{Settings: st, Tags: in.Tags, CreatedAt: now, LastModified: now})
+		return storage.Write(tx, key, &queue{Settings: st, Tags: in.Tags, CreatedAt: now, LastModified: now})
 	})
 	if err != nil {
 		return nil, err
@@ -516,7 +510,7 @@ func (s *Service) ListQueues(ctx context.Context, in *api.ListQueuesRequest) (*a
 	prefix := queueKey(m, "")
 	var names []string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(prefix + value(in.QueueNamePrefix)) {
+		for _, k := range tx.Keys(prefix + common.Value(in.QueueNamePrefix)) {
 			if name := strings.TrimPrefix(k, prefix); name > after {
 				names = append(names, name)
 			}

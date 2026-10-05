@@ -8,6 +8,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -32,7 +33,7 @@ func snapshot(a *restAPI) (*deployment, error) {
 	for _, r := range a.Resources {
 		for name, m := range r.ResourceMethods {
 			if m.MethodIntegration == nil {
-				return nil, badRequest("No integration defined for method %s %s", name, value(r.Path))
+				return nil, badRequest("No integration defined for method %s %s", name, common.Value(r.Path))
 			}
 
 			methodCount++
@@ -43,12 +44,12 @@ func snapshot(a *restAPI) (*deployment, error) {
 		return nil, badRequest("The REST API doesn't contain any methods")
 	}
 
-	c := clone(a)
+	c := common.Clone(a)
 	return &deployment{Resources: c.Resources, Authorizers: c.Authorizers}, nil
 }
 
 func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.Stage) error {
-	if _, found := tx.Get(owned(scope, kindDeployment, apiID, value(st.DeploymentId))); !found {
+	if _, found := tx.Get(owned(scope, kindDeployment, apiID, common.Value(st.DeploymentId))); !found {
 		return badRequest("Invalid deployment identifier specified")
 	}
 
@@ -59,7 +60,7 @@ func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.St
 	}
 
 	if logs := st.AccessLogSettings; logs != nil && (logs.DestinationArn != nil || logs.Format != nil) {
-		if !logGroupARN.MatchString(value(logs.DestinationArn)) || value(logs.Format) == "" {
+		if !logGroupARN.MatchString(common.Value(logs.DestinationArn)) || common.Value(logs.Format) == "" {
 			return badRequest("Access log settings need a CloudWatch Logs log group ARN and a format.")
 		}
 	}
@@ -83,7 +84,7 @@ func (s *Service) CreateDeployment(ctx context.Context, in *api.CreateDeployment
 	}
 
 	// An empty stage name, as Terraform sends, deploys to no stage.
-	if value(in.StageName) == "" {
+	if common.Value(in.StageName) == "" {
 		in.StageName = nil
 	}
 
@@ -102,10 +103,10 @@ func (s *Service) CreateDeployment(ctx context.Context, in *api.CreateDeployment
 			return loadErr
 		}
 
-		now := seconds(s.now())
-		d.Deployment = api.Deployment{Id: new(newID(6)), Description: in.Description, CreatedDate: now}
+		now := common.Seconds(s.now())
+		d.Deployment = api.Deployment{Id: new(common.RandomID(6)), Description: in.Description, CreatedDate: now}
 		apiID := *a.API.Id
-		if writeErr := write(tx, owned(m.Scope, kindDeployment, apiID, *d.Deployment.Id), d); writeErr != nil {
+		if writeErr := storage.Write(tx, owned(m.Scope, kindDeployment, apiID, *d.Deployment.Id), d); writeErr != nil {
 			return writeErr
 		}
 
@@ -114,7 +115,7 @@ func (s *Service) CreateDeployment(ctx context.Context, in *api.CreateDeployment
 		}
 
 		key := owned(m.Scope, kindStage, apiID, *in.StageName)
-		st, found, readErr := read[api.Stage](tx, key)
+		st, found, readErr := storage.Read[api.Stage](tx, key)
 		if readErr != nil {
 			return readErr
 		}
@@ -132,7 +133,7 @@ func (s *Service) CreateDeployment(ctx context.Context, in *api.CreateDeployment
 			return checkErr
 		}
 
-		return write(tx, key, st)
+		return storage.Write(tx, key, st)
 	})
 	if err != nil {
 		return nil, err
@@ -142,9 +143,9 @@ func (s *Service) CreateDeployment(ctx context.Context, in *api.CreateDeployment
 }
 
 func loadDeployment(tx storage.ReadTx, scope request.Scope, apiID string, id *string) (*deployment, error) {
-	d, found, err := read[deployment](tx, owned(scope, kindDeployment, apiID, value(id)))
+	d, found, err := storage.Read[deployment](tx, owned(scope, kindDeployment, apiID, common.Value(id)))
 	if err != nil || !found {
-		return nil, errorsOr(err, notFound("Invalid Deployment identifier specified"))
+		return nil, common.ErrorsOr(err, notFound("Invalid Deployment identifier specified"))
 	}
 
 	return d, nil
@@ -170,7 +171,7 @@ func (s *Service) GetDeployment(ctx context.Context, in *api.GetDeploymentReques
 func (s *Service) GetDeployments(ctx context.Context, in *api.GetDeploymentsRequest) (*api.Deployments, error) {
 	out := &api.Deployments{Items: []api.Deployment{}}
 	err := s.viewAPI(ctx, in.RestApiId, func(tx storage.ReadTx, scope request.Scope, a *restAPI) error {
-		all, err := records[deployment](tx, prefix(scope, kindDeployment)+*a.API.Id+"/")
+		all, err := storage.Records[deployment](tx, prefix(scope, kindDeployment)+*a.API.Id+"/")
 		if err != nil {
 			return err
 		}
@@ -212,7 +213,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, in *api.UpdateDeployment
 			return patchErr
 		}
 
-		return write(tx, owned(m.Scope, kindDeployment, *a.API.Id, *d.Deployment.Id), d)
+		return storage.Write(tx, owned(m.Scope, kindDeployment, *a.API.Id, *d.Deployment.Id), d)
 	})
 	if err != nil {
 		return nil, err
@@ -241,13 +242,13 @@ func (s *Service) DeleteDeployment(
 			return loadErr
 		}
 
-		stages, readErr := records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.API.Id+"/")
+		stages, readErr := storage.Records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.API.Id+"/")
 		if readErr != nil {
 			return readErr
 		}
 
 		for _, st := range stages {
-			if value(st.DeploymentId) == *d.Deployment.Id {
+			if common.Value(st.DeploymentId) == *d.Deployment.Id {
 				return badRequest("Active stages pointing to this deployment must be moved or deleted")
 			}
 		}
@@ -268,7 +269,7 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 		return nil, err
 	}
 
-	if !stageName.MatchString(value(in.StageName)) {
+	if !stageName.MatchString(common.Value(in.StageName)) {
 		return nil, badRequest("Stage name only allows a-zA-Z0-9_- and must be 1 to 128 characters.")
 	}
 
@@ -276,10 +277,10 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 		return nil, checkErr
 	}
 
-	st := newStage(in.StageName, in.DeploymentId, in.Description, in.Variables, *seconds(s.now()))
-	st.TracingEnabled, st.Tags = new(value(in.TracingEnabled)), cloneTags(in.Tags)
-	st.CacheClusterEnabled, st.CacheClusterSize = new(value(in.CacheClusterEnabled)), in.CacheClusterSize
-	if value(st.CacheClusterEnabled) {
+	st := newStage(in.StageName, in.DeploymentId, in.Description, in.Variables, *common.Seconds(s.now()))
+	st.TracingEnabled, st.Tags = new(common.Value(in.TracingEnabled)), common.CloneTags(in.Tags)
+	st.CacheClusterEnabled, st.CacheClusterSize = new(common.Value(in.CacheClusterEnabled)), in.CacheClusterSize
+	if common.Value(st.CacheClusterEnabled) {
 		st.CacheClusterStatus = new("AVAILABLE")
 	}
 
@@ -298,7 +299,7 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 			return checkErr
 		}
 
-		return write(tx, key, st)
+		return storage.Write(tx, key, st)
 	})
 	if err != nil {
 		return nil, err
@@ -308,9 +309,9 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 }
 
 func loadStage(tx storage.ReadTx, scope request.Scope, apiID string, name *string) (*api.Stage, error) {
-	st, found, err := read[api.Stage](tx, owned(scope, kindStage, apiID, value(name)))
+	st, found, err := storage.Read[api.Stage](tx, owned(scope, kindStage, apiID, common.Value(name)))
 	if err != nil || !found {
-		return nil, errorsOr(err, notFound("Invalid stage identifier specified"))
+		return nil, common.ErrorsOr(err, notFound("Invalid stage identifier specified"))
 	}
 
 	return st, nil
@@ -333,9 +334,9 @@ func (s *Service) GetStage(ctx context.Context, in *api.GetStageRequest) (*api.S
 func (s *Service) GetStages(ctx context.Context, in *api.GetStagesRequest) (*api.Stages, error) {
 	out := &api.Stages{Item: []api.Stage{}}
 	err := s.viewAPI(ctx, in.RestApiId, func(tx storage.ReadTx, scope request.Scope, a *restAPI) error {
-		all, err := records[api.Stage](tx, prefix(scope, kindStage)+*a.API.Id+"/")
+		all, err := storage.Records[api.Stage](tx, prefix(scope, kindStage)+*a.API.Id+"/")
 		for _, st := range all {
-			if in.DeploymentId == nil || value(st.DeploymentId) == *in.DeploymentId {
+			if in.DeploymentId == nil || common.Value(st.DeploymentId) == *in.DeploymentId {
 				out.Item = append(out.Item, *st)
 			}
 		}
@@ -374,7 +375,7 @@ var stageFields = []string{
 // "<resource path>/<method>".
 func patchStage(st *api.Stage, ops []api.PatchOperation) error {
 	for _, op := range ops {
-		segments := pathSegments(value(op.Path))
+		segments := pathSegments(common.Value(op.Path))
 		if len(segments) > 0 && slices.Contains(stageFields, segments[0]) {
 			if err := patch(st, []api.PatchOperation{op}, stageFields...); err != nil {
 				return err
@@ -385,7 +386,7 @@ func patchStage(st *api.Stage, ops []api.PatchOperation) error {
 
 		n := len(segments)
 		if n < 2 {
-			return badRequest("Invalid patch path %s", value(op.Path))
+			return badRequest("Invalid patch path %s", common.Value(op.Path))
 		}
 
 		setting, known := "", false
@@ -398,13 +399,13 @@ func patchStage(st *api.Stage, ops []api.PatchOperation) error {
 			methodPath = strings.TrimPrefix(strings.Join(segments, "/"), "/")
 		}
 
-		if value(op.Op) == opRemove && !known {
+		if common.Value(op.Op) == opRemove && !known {
 			delete(st.MethodSettings, methodPath)
 			continue
 		}
 
 		if !known {
-			return badRequest("Invalid method setting path: %s", value(op.Path))
+			return badRequest("Invalid method setting path: %s", common.Value(op.Path))
 		}
 
 		ms := st.MethodSettings[methodPath]
@@ -445,7 +446,7 @@ func (s *Service) UpdateStage(ctx context.Context, in *api.UpdateStageRequest) (
 		}
 
 		st.CacheClusterStatus = new("NOT_AVAILABLE")
-		if value(st.CacheClusterEnabled) {
+		if common.Value(st.CacheClusterEnabled) {
 			st.CacheClusterStatus = new("AVAILABLE")
 		}
 
@@ -454,12 +455,12 @@ func (s *Service) UpdateStage(ctx context.Context, in *api.UpdateStageRequest) (
 			st.AccessLogSettings = nil
 		}
 
-		st.LastUpdatedDate = seconds(s.now())
+		st.LastUpdatedDate = common.Seconds(s.now())
 		if checkErr := checkStage(tx, m.Scope, *a.API.Id, st); checkErr != nil {
 			return checkErr
 		}
 
-		return write(tx, owned(m.Scope, kindStage, *a.API.Id, *st.StageName), st)
+		return storage.Write(tx, owned(m.Scope, kindStage, *a.API.Id, *st.StageName), st)
 	})
 	if err != nil {
 		return nil, err

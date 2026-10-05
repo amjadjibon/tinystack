@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -26,7 +27,7 @@ var kubeName = regexp.MustCompile(`^[a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?$`)
 // externalID returns the external ID a target role's association assumes it
 // with, if it has one.
 func externalID(targetRole *string) *string {
-	if value(targetRole) == "" {
+	if common.Value(targetRole) == "" {
 		return nil
 	}
 
@@ -43,7 +44,7 @@ func (s *Service) CreatePodIdentityAssociation(
 	}
 
 	switch {
-	case !kubeName.MatchString(value(in.Namespace)) || !kubeName.MatchString(value(in.ServiceAccount)):
+	case !kubeName.MatchString(common.Value(in.Namespace)) || !kubeName.MatchString(common.Value(in.ServiceAccount)):
 		return nil, invalidParameter("namespace and serviceAccount must be Kubernetes names.")
 	case checkRole(in.RoleArn, "roleArn") != nil:
 		return nil, checkRole(in.RoleArn, "roleArn")
@@ -62,7 +63,7 @@ func (s *Service) CreatePodIdentityAssociation(
 			return loadErr
 		}
 
-		existing, readErr := records[association](tx, prefix(scope, "pod-identity")+c.Name+"/")
+		existing, readErr := storage.Records[association](tx, prefix(scope, "pod-identity")+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -73,7 +74,7 @@ func (s *Service) CreatePodIdentityAssociation(
 				continue
 			}
 
-			if value(in.ClientRequestToken) != "" && a.Token == *in.ClientRequestToken {
+			if common.Value(in.ClientRequestToken) != "" && a.Token == *in.ClientRequestToken {
 				out = &a.Association
 				return nil
 			}
@@ -83,15 +84,15 @@ func (s *Service) CreatePodIdentityAssociation(
 
 		now := s.now().UTC()
 		id := "a-" + hexID(17)
-		a := &association{Token: value(in.ClientRequestToken), Association: api.PodIdentityAssociation{
+		a := &association{Token: common.Value(in.ClientRequestToken), Association: api.PodIdentityAssociation{
 			ClusterName: new(c.Name), Namespace: in.Namespace, ServiceAccount: in.ServiceAccount, RoleArn: in.RoleArn,
 			AssociationArn: new(arn(scope, "podidentityassociation/"+c.Name+"/"+id)), AssociationId: new(id),
-			Tags: cloneTags(in.Tags), CreatedAt: seconds(now), ModifiedAt: seconds(now),
-			DisableSessionTags: new(value(in.DisableSessionTags)), TargetRoleArn: in.TargetRoleArn,
+			Tags: common.CloneTags(in.Tags), CreatedAt: common.SecondsMilli(now), ModifiedAt: common.SecondsMilli(now),
+			DisableSessionTags: new(common.Value(in.DisableSessionTags)), TargetRoleArn: in.TargetRoleArn,
 			ExternalId: externalID(in.TargetRoleArn),
 		}}
 		out = &a.Association
-		return write(tx, associationKey(scope, c.Name, id), a)
+		return storage.Write(tx, associationKey(scope, c.Name, id), a)
 	})
 	if err != nil {
 		return nil, err
@@ -117,9 +118,9 @@ func (s *Service) changeAssociation(
 			return loadErr
 		}
 
-		a, ok, readErr := read[association](tx, associationKey(scope, c.Name, value(id)))
+		a, ok, readErr := storage.Read[association](tx, associationKey(scope, c.Name, common.Value(id)))
 		if readErr != nil || !ok {
-			return errorsOr(readErr, notFound("Association does not exist: %s", value(id)))
+			return common.ErrorsOr(readErr, notFound("Association does not exist: %s", common.Value(id)))
 		}
 
 		return fn(tx, scope, a)
@@ -159,7 +160,7 @@ func (s *Service) ListPodIdentityAssociations(
 			return loadErr
 		}
 
-		all, readErr := records[association](tx, prefix(scope, "pod-identity")+c.Name+"/")
+		all, readErr := storage.Records[association](tx, prefix(scope, "pod-identity")+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -195,7 +196,7 @@ func (s *Service) UpdatePodIdentityAssociation(
 	in *api.UpdatePodIdentityAssociationRequest,
 ) (*api.UpdatePodIdentityAssociationResponse, error) {
 	for member, role := range map[string]*string{"roleArn": in.RoleArn, "targetRoleArn": in.TargetRoleArn} {
-		if value(role) != "" {
+		if common.Value(role) != "" {
 			if err := checkRole(role, member); err != nil {
 				return nil, err
 			}
@@ -206,16 +207,16 @@ func (s *Service) UpdatePodIdentityAssociation(
 	err := s.changeAssociation(ctx, in.ClusterName, in.AssociationId,
 		func(tx storage.WriteTx, scope request.Scope, a *association) error {
 			p := &a.Association
-			p.RoleArn = orElse(in.RoleArn, p.RoleArn)
-			p.DisableSessionTags = orElse(in.DisableSessionTags, p.DisableSessionTags)
+			p.RoleArn = common.OrElse(in.RoleArn, p.RoleArn)
+			p.DisableSessionTags = common.OrElse(in.DisableSessionTags, p.DisableSessionTags)
 			// An empty target role removes it.
-			if in.TargetRoleArn != nil && value(in.TargetRoleArn) != value(p.TargetRoleArn) {
+			if in.TargetRoleArn != nil && common.Value(in.TargetRoleArn) != common.Value(p.TargetRoleArn) {
 				p.TargetRoleArn, p.ExternalId = nonEmpty(*in.TargetRoleArn), externalID(in.TargetRoleArn)
 			}
 
-			p.ModifiedAt = seconds(s.now().UTC())
+			p.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			out = p
-			return write(tx, associationKey(scope, *p.ClusterName, *p.AssociationId), a)
+			return storage.Write(tx, associationKey(scope, *p.ClusterName, *p.AssociationId), a)
 		})
 	if err != nil {
 		return nil, err

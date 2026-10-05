@@ -9,6 +9,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -45,7 +46,7 @@ func taskDefARN(scope request.Scope, name string, revision int64) string {
 // names: a family alone names its latest active revision.
 func resolveDef(tx storage.ReadTx, scope request.Scope, ref *string) (*taskDef, error) {
 	unknown := clientError("Unable to describe task definition.")
-	name := value(ref)
+	name := common.Value(ref)
 	if strings.HasPrefix(name, "arn:") {
 		var ok bool
 		if name, ok = strings.CutPrefix(name, arn(scope, "task-definition/")); !ok {
@@ -64,7 +65,7 @@ func resolveDef(tx storage.ReadTx, scope request.Scope, ref *string) (*taskDef, 
 			return nil, unknown
 		}
 
-		d, ok, err := read[taskDef](tx, taskDefKey(scope, name, revision))
+		d, ok, err := storage.Read[taskDef](tx, taskDefKey(scope, name, revision))
 		if err != nil || !ok {
 			return nil, errorsOr(err, unknown)
 		}
@@ -72,13 +73,13 @@ func resolveDef(tx storage.ReadTx, scope request.Scope, ref *string) (*taskDef, 
 		return d, nil
 	}
 
-	defs, err := records[taskDef](tx, prefix(scope, "taskdef")+name+"/")
+	defs, err := storage.Records[taskDef](tx, prefix(scope, "taskdef")+name+"/")
 	if err != nil {
 		return nil, err
 	}
 
 	for _, d := range slices.Backward(defs) {
-		if value(d.Def.Status) == active {
+		if common.Value(d.Def.Status) == active {
 			return d, nil
 		}
 	}
@@ -93,7 +94,7 @@ func activeDef(tx storage.ReadTx, scope request.Scope, ref *string) (*taskDef, e
 		return nil, err
 	}
 
-	if value(d.Def.Status) != active {
+	if common.Value(d.Def.Status) != active {
 		return nil, clientError("TaskDefinition is inactive")
 	}
 
@@ -173,7 +174,7 @@ func (s *Service) RegisterTaskDefinition(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		f, _, readErr := read[family](tx, familyKey(scope, *in.Family))
+		f, _, readErr := storage.Read[family](tx, familyKey(scope, *in.Family))
 		if readErr != nil {
 			return readErr
 		}
@@ -187,11 +188,11 @@ func (s *Service) RegisterTaskDefinition(
 		def.TaskDefinitionArn = new(taskDefARN(scope, *in.Family, f.Last))
 		def.RegisteredAt = seconds(s.now().UTC())
 		def.RegisteredBy = new("arn:aws:iam::" + scope.AccountID + ":root")
-		if writeErr := write(tx, familyKey(scope, *in.Family), f); writeErr != nil {
+		if writeErr := storage.Write(tx, familyKey(scope, *in.Family), f); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, taskDefKey(scope, *in.Family, f.Last), taskDef{Def: *def, Tags: in.Tags})
+		return storage.Write(tx, taskDefKey(scope, *in.Family, f.Last), taskDef{Def: *def, Tags: in.Tags})
 	})
 	if err != nil {
 		return nil, err
@@ -221,13 +222,13 @@ func newDefinition(in *api.RegisterTaskDefinitionRequest) (*api.TaskDefinition, 
 		return nil, invalidParameter("pidMode must be host or task, and ipcMode host, task, or none.")
 	}
 
-	if e := in.EphemeralStorage; e != nil && (value(e.SizeInGiB) < 21 || value(e.SizeInGiB) > 200) {
+	if e := in.EphemeralStorage; e != nil && (common.Value(e.SizeInGiB) < 21 || common.Value(e.SizeInGiB) > 200) {
 		return nil, invalidParameter("ephemeralStorage sizeInGiB must be between 21 and 200.")
 	}
 
 	volumes := map[string]bool{}
 	for _, v := range in.Volumes {
-		if !namePattern.MatchString(value(v.Name)) || volumes[*v.Name] {
+		if !namePattern.MatchString(common.Value(v.Name)) || volumes[*v.Name] {
 			return nil, clientError("Volume names must be unique and up to 255 letters, numbers, hyphens, and " +
 				"underscores.")
 		}
@@ -271,14 +272,14 @@ func checkSize(def *api.TaskDefinition, in *api.RegisterTaskDefinitionRequest) e
 		}
 	}
 
-	fits := value(in.NetworkMode) == awsvpc && fargateSize(cpu, memory)
+	fits := common.Value(in.NetworkMode) == awsvpc && fargateSize(cpu, memory)
 	if slices.Contains(in.RequiresCompatibilities, fargate) {
 		switch {
-		case value(in.NetworkMode) != awsvpc:
+		case common.Value(in.NetworkMode) != awsvpc:
 			return clientError("Fargate only supports network mode ‘awsvpc’.")
 		case !fits:
 			return clientError("No Fargate configuration exists for given values: %s CPU, %s memory.",
-				value(in.Cpu), value(in.Memory))
+				common.Value(in.Cpu), common.Value(in.Memory))
 		}
 
 		for _, v := range in.Volumes {
@@ -311,7 +312,7 @@ func checkContainers(
 	names := map[string]bool{}
 	for i := range in.ContainerDefinitions {
 		c := &in.ContainerDefinitions[i]
-		if !namePattern.MatchString(value(c.Name)) || names[*c.Name] {
+		if !namePattern.MatchString(common.Value(c.Name)) || names[*c.Name] {
 			return nil, clientError("Container names must be unique and up to 255 letters, numbers, hyphens, and " +
 				"underscores.")
 		}
@@ -338,7 +339,7 @@ func checkContainers(
 				p.Protocol = new("tcp")
 			}
 
-			if p.HostPort == nil && value(in.NetworkMode) != bridge && in.NetworkMode != nil {
+			if p.HostPort == nil && common.Value(in.NetworkMode) != bridge && in.NetworkMode != nil {
 				p.HostPort = p.ContainerPort
 			}
 
@@ -366,7 +367,7 @@ func checkContainer(
 ) error {
 	name := *c.Name
 	switch {
-	case value(c.Image) == "":
+	case common.Value(c.Image) == "":
 		return clientError("Container.image should not be null or empty.")
 	case in.Memory == nil && c.Memory == nil && c.MemoryReservation == nil:
 		return clientError("Invalid setting for container '%s'. At least one of 'memory' or 'memoryReservation' "+
@@ -374,16 +375,16 @@ func checkContainer(
 	case c.Memory != nil && c.MemoryReservation != nil && *c.MemoryReservation > *c.Memory:
 		return clientError("Invalid setting for container '%s'. 'memory' must be greater than or equal to "+
 			"'memoryReservation'.", name)
-	case len(c.Links) > 0 && value(in.NetworkMode) != bridge && in.NetworkMode != nil:
+	case len(c.Links) > 0 && common.Value(in.NetworkMode) != bridge && in.NetworkMode != nil:
 		return clientError("Links are only supported in bridge network mode.")
-	case c.LogConfiguration != nil && !slices.Contains(logDrivers, value(c.LogConfiguration.LogDriver)):
-		return clientError("Log driver %s is not supported.", value(c.LogConfiguration.LogDriver))
+	case c.LogConfiguration != nil && !slices.Contains(logDrivers, common.Value(c.LogConfiguration.LogDriver)):
+		return clientError("Log driver %s is not supported.", common.Value(c.LogConfiguration.LogDriver))
 	}
 
 	for _, p := range c.PortMappings {
-		mode := value(in.NetworkMode)
+		mode := common.Value(in.NetworkMode)
 		switch {
-		case value(p.ContainerPort) < 1 || value(p.ContainerPort) > 65535:
+		case common.Value(p.ContainerPort) < 1 || common.Value(p.ContainerPort) > 65535:
 			return clientError("Invalid 'containerPort' setting for container '%s'.", name)
 		case !oneOf(p.Protocol, "tcp", "udp"):
 			return clientError("Port mapping protocols are tcp and udp.")
@@ -393,14 +394,14 @@ func checkContainer(
 	}
 
 	for _, m := range c.MountPoints {
-		if !volumes[value(m.SourceVolume)] {
+		if !volumes[common.Value(m.SourceVolume)] {
 			return clientError("Invalid 'mountPoints' setting for container '%s'. 'sourceVolume' must be a "+
 				"volume of the task.", name)
 		}
 	}
 
 	for _, d := range c.DependsOn {
-		if !names[value(d.ContainerName)] || !oneOf(d.Condition, "START", "COMPLETE", "SUCCESS", "HEALTHY") ||
+		if !names[common.Value(d.ContainerName)] || !oneOf(d.Condition, "START", "COMPLETE", "SUCCESS", "HEALTHY") ||
 			d.Condition == nil {
 			return clientError("Invalid 'dependsOn' setting for container '%s'.", name)
 		}
@@ -453,7 +454,7 @@ func (s *Service) DescribeTaskDefinition(
 
 // revisionRef resolves ref, which must name a revision.
 func revisionRef(tx storage.ReadTx, scope request.Scope, ref *string) (*taskDef, error) {
-	name := value(ref)
+	name := common.Value(ref)
 	if i := strings.LastIndex(name, "/"); strings.HasPrefix(name, "arn:") && i >= 0 {
 		name = name[i+1:]
 	}
@@ -481,13 +482,13 @@ func (s *Service) DeregisterTaskDefinition(
 			return resolveErr
 		}
 
-		if value(d.Def.Status) == active {
+		if common.Value(d.Def.Status) == active {
 			d.Def.Status = new(inactive)
 			d.Def.DeregisteredAt = seconds(s.now().UTC())
 		}
 
 		out = &d.Def
-		return write(tx, taskDefKey(scope, *d.Def.Family, *d.Def.Revision), d)
+		return storage.Write(tx, taskDefKey(scope, *d.Def.Family, *d.Def.Revision), d)
 	})
 	if err != nil {
 		return nil, err
@@ -521,13 +522,13 @@ func (s *Service) ListTaskDefinitions(
 
 	out := &api.ListTaskDefinitionsResponse{TaskDefinitionArns: []string{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		defs, readErr := records[taskDef](tx, prefix(scope, "taskdef")+value(in.FamilyPrefix))
+		defs, readErr := storage.Records[taskDef](tx, prefix(scope, "taskdef")+common.Value(in.FamilyPrefix))
 		if readErr != nil {
 			return readErr
 		}
 
-		defs = slices.DeleteFunc(defs, func(d *taskDef) bool { return value(d.Def.Status) != status })
-		if value(in.Sort) == "DESC" {
+		defs = slices.DeleteFunc(defs, func(d *taskDef) bool { return common.Value(d.Def.Status) != status })
+		if common.Value(in.Sort) == "DESC" {
 			slices.Reverse(defs)
 		}
 
@@ -566,7 +567,7 @@ func (s *Service) ListTaskDefinitionFamilies(
 
 	out := &api.ListTaskDefinitionFamiliesResponse{Families: []string{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		defs, readErr := records[taskDef](tx, prefix(scope, "taskdef")+value(in.FamilyPrefix))
+		defs, readErr := storage.Records[taskDef](tx, prefix(scope, "taskdef")+common.Value(in.FamilyPrefix))
 		if readErr != nil {
 			return readErr
 		}
@@ -579,11 +580,12 @@ func (s *Service) ListTaskDefinitionFamilies(
 				families = append(families, *d.Def.Family)
 			}
 
-			isActive[*d.Def.Family] = isActive[*d.Def.Family] || value(d.Def.Status) == active
+			isActive[*d.Def.Family] = isActive[*d.Def.Family] || common.Value(d.Def.Status) == active
 		}
 
 		families = slices.DeleteFunc(families, func(f string) bool {
-			return value(in.Status) == active && !isActive[f] || value(in.Status) == inactive && isActive[f]
+			return common.Value(in.Status) == active && !isActive[f] ||
+				common.Value(in.Status) == inactive && isActive[f]
 		})
 		families, out.NextToken, readErr = page(families, func(f string) string { return f }, in.NextToken, n)
 		out.Families = append(out.Families, families...)
@@ -621,7 +623,7 @@ func (s *Service) DeleteTaskDefinitions(
 					Arn: new(ref), Reason: new("TASK_DEFINITION_NOT_FOUND"), Detail: new(resolveErr.Error()),
 				})
 				continue
-			case value(d.Def.Status) == active:
+			case common.Value(d.Def.Status) == active:
 				out.Failures = append(out.Failures, api.Failure{
 					Arn: d.Def.TaskDefinitionArn, Reason: new("The specified task definition is still in ACTIVE " +
 						"status. Please deregister the target and try again."),

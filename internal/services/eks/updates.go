@@ -8,6 +8,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -36,11 +37,11 @@ func (s *Service) record(
 		Status:    new("Successful"),
 		Type:      new(kind),
 		Params:    params,
-		CreatedAt: seconds(now),
+		CreatedAt: common.SecondsMilli(now),
 		Errors:    []api.ErrorDetail{},
 	}}
 
-	return &u.Update, write(tx, owned(scope, "update", clusterName, *u.Update.Id), u)
+	return &u.Update, storage.Write(tx, owned(scope, "update", clusterName, *u.Update.Id), u)
 }
 
 func (s *Service) DescribeUpdate(
@@ -63,9 +64,10 @@ func (s *Service) DescribeUpdate(
 			return loadErr
 		}
 
-		u, ok, readErr := read[update](tx, owned(scope, "update", c.Name, value(in.UpdateId)))
-		if readErr != nil || !ok || u.Nodegroup != value(in.NodegroupName) || u.Addon != value(in.AddonName) {
-			return errorsOr(readErr, notFound("No update found for ID: %s", value(in.UpdateId)))
+		u, ok, readErr := storage.Read[update](tx, owned(scope, "update", c.Name, common.Value(in.UpdateId)))
+		if readErr != nil || !ok || u.Nodegroup != common.Value(in.NodegroupName) ||
+			u.Addon != common.Value(in.AddonName) {
+			return common.ErrorsOr(readErr, notFound("No update found for ID: %s", common.Value(in.UpdateId)))
 		}
 
 		out = &u.Update
@@ -93,7 +95,7 @@ func (s *Service) ListUpdates(ctx context.Context, in *api.ListUpdatesRequest) (
 			return loadErr
 		}
 
-		updates, readErr := records[update](tx, prefix(scope, "update")+c.Name+"/")
+		updates, readErr := storage.Records[update](tx, prefix(scope, "update")+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -101,7 +103,7 @@ func (s *Service) ListUpdates(ctx context.Context, in *api.ListUpdatesRequest) (
 		slices.SortFunc(updates, func(a, b *update) int { return a.Created.Compare(b.Created) })
 		var ids []string
 		for _, u := range updates {
-			if u.Nodegroup == value(in.NodegroupName) && u.Addon == value(in.AddonName) {
+			if u.Nodegroup == common.Value(in.NodegroupName) && u.Addon == common.Value(in.AddonName) {
 				ids = append(ids, *u.Update.Id)
 			}
 		}

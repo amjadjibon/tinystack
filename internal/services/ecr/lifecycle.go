@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -243,7 +244,7 @@ func (s *Service) GetLifecyclePolicy(
 
 			out = &api.GetLifecyclePolicyResponse{
 				RegistryId: new(m.AccountID), RepositoryName: new(r.Name), LifecyclePolicyText: new(r.Lifecycle),
-				LastEvaluatedAt: seconds(r.Evaluated),
+				LastEvaluatedAt: common.SecondsMilli(r.Evaluated),
 			}
 			return nil
 		})
@@ -267,7 +268,7 @@ func (s *Service) DeleteLifecyclePolicy(
 
 			out = &api.DeleteLifecyclePolicyResponse{
 				RegistryId: new(m.AccountID), RepositoryName: new(r.Name), LifecyclePolicyText: new(r.Lifecycle),
-				LastEvaluatedAt: seconds(r.Evaluated),
+				LastEvaluatedAt: common.SecondsMilli(r.Evaluated),
 			}
 			r.Lifecycle, r.Evaluated = "", time.Time{}
 			return nil

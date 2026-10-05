@@ -6,6 +6,7 @@ import (
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
 )
 
@@ -51,11 +52,11 @@ func batchOptions(window *int64, responseTypes []string, criteria *api.FilterCri
 
 	mp.Filters = nil
 	for _, f := range criteria.Filters {
-		if _, err := pattern.Compile(value(f.Pattern), filterPatterns); err != nil {
+		if _, err := pattern.Compile(common.Value(f.Pattern), filterPatterns); err != nil {
 			return invalid("Invalid filter pattern definition. %s", err.Error())
 		}
 
-		mp.Filters = append(mp.Filters, value(f.Pattern))
+		mp.Filters = append(mp.Filters, common.Value(f.Pattern))
 	}
 
 	return nil
@@ -86,7 +87,7 @@ func (mp *mapping) checkLimits() error {
 		return invalid("BatchSize must be between 1 and %d for %s", maxStreamBatch, kind)
 	}
 
-	if retries := value(mp.MaximumRetryAttempts); retries < -1 || retries > maxRetries {
+	if retries := common.Value(mp.MaximumRetryAttempts); retries < -1 || retries > maxRetries {
 		return invalid("MaximumRetryAttempts must be between -1 and %d", maxRetries)
 	}
 

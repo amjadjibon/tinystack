@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -41,9 +42,9 @@ type targetGroup struct {
 	Targets    []api.TargetDescription
 }
 
-func (t *targetGroup) name() string     { return value(t.TG.TargetGroupName) }
-func (t *targetGroup) arnValue() string { return value(t.TG.TargetGroupArn) }
-func (t *targetGroup) kind() string     { return value(t.TG.TargetType) }
+func (t *targetGroup) name() string     { return common.Value(t.TG.TargetGroupName) }
+func (t *targetGroup) arnValue() string { return common.Value(t.TG.TargetGroupArn) }
+func (t *targetGroup) kind() string     { return common.Value(t.TG.TargetType) }
 
 func tgNotFound() error {
 	return awserror.New("TargetGroupNotFoundException", "One or more target groups not found")
@@ -55,7 +56,7 @@ func findTG(tx storage.ReadTx, scope request.Scope, arnValue string) (*targetGro
 		return nil, validation("'%s' is not a valid target group ARN", arnValue)
 	}
 
-	t, found, err := read[targetGroup](tx, key(scope, kindTG, parts[0]))
+	t, found, err := storage.Read[targetGroup](tx, key(scope, kindTG, parts[0]))
 	switch {
 	case err != nil:
 		return nil, err
@@ -78,20 +79,20 @@ func usage(tx storage.ReadTx, scope request.Scope) (map[string][]string, error) 
 		}
 	}
 
-	listeners, err := list[listener](tx, key(scope, kindListener, ""))
+	listeners, err := storage.Records[listener](tx, key(scope, kindListener, ""))
 	if err != nil {
 		return nil, err
 	}
 
 	for _, l := range listeners {
-		add(value(l.L.LoadBalancerArn), l.L.DefaultActions)
-		rules, rulesErr := list[rule](tx, key(scope, kindRule, l.ID+"/"))
+		add(common.Value(l.L.LoadBalancerArn), l.L.DefaultActions)
+		rules, rulesErr := storage.Records[rule](tx, key(scope, kindRule, l.ID+"/"))
 		if rulesErr != nil {
 			return nil, rulesErr
 		}
 
 		for _, r := range rules {
-			add(value(l.L.LoadBalancerArn), r.R.Actions)
+			add(common.Value(l.L.LoadBalancerArn), r.R.Actions)
 		}
 	}
 
@@ -108,7 +109,7 @@ func forwardedGroups(actions []api.Action) []string {
 
 		if a.ForwardConfig != nil {
 			for _, t := range a.ForwardConfig.TargetGroups {
-				out = append(out, value(t.TargetGroupArn))
+				out = append(out, common.Value(t.TargetGroupArn))
 			}
 		}
 	}
@@ -120,7 +121,7 @@ func forwardedGroups(actions []api.Action) []string {
 //
 //nolint:gocyclo,cyclop // One default per member.
 func healthCheck(tg *api.TargetGroup) error {
-	protocol := value(tg.Protocol)
+	protocol := common.Value(tg.Protocol)
 	if tg.HealthCheckProtocol == nil {
 		tg.HealthCheckProtocol = new(protocolTCP)
 		if protocol == protocolHTTP || protocol == protocolHTTPS {
@@ -128,7 +129,7 @@ func healthCheck(tg *api.TargetGroup) error {
 		}
 	}
 
-	hc := value(tg.HealthCheckProtocol)
+	hc := common.Value(tg.HealthCheckProtocol)
 	web := hc == protocolHTTP || hc == protocolHTTPS
 	for _, d := range []struct {
 		field **int64
@@ -160,19 +161,19 @@ func healthCheck(tg *api.TargetGroup) error {
 		tg.Matcher = &api.Matcher{HttpCode: new("200")}
 	}
 
-	switch interval, timeout := value(tg.HealthCheckIntervalSeconds), value(tg.HealthCheckTimeoutSeconds); {
+	switch interval, timeout := common.Value(tg.HealthCheckIntervalSeconds), common.Value(tg.HealthCheckTimeoutSeconds); {
 	case interval < 5 || interval > 300:
 		return validation("Health check interval must be 5 to 300 seconds")
 	case timeout < 2 || timeout > 120 || timeout >= interval && protocol != "":
 		return validation("Health check timeout must be 2 to 120 seconds and smaller than the interval")
-	case value(tg.HealthyThresholdCount) < 2 || value(tg.HealthyThresholdCount) > 10 ||
-		value(tg.UnhealthyThresholdCount) < 2 || value(tg.UnhealthyThresholdCount) > 10:
+	case common.Value(tg.HealthyThresholdCount) < 2 || common.Value(tg.HealthyThresholdCount) > 10 ||
+		common.Value(tg.UnhealthyThresholdCount) < 2 || common.Value(tg.UnhealthyThresholdCount) > 10:
 		return validation("Health check threshold counts must be 2 to 10")
 	case !web && (tg.HealthCheckPath != nil || tg.Matcher != nil):
 		return validation("Health check path and matcher are only valid with HTTP and HTTPS health checks")
 	}
 
-	if p := value(tg.HealthCheckPort); p != trafficPort {
+	if p := common.Value(tg.HealthCheckPort); p != trafficPort {
 		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
 			return validation("Health check port must be 'traffic-port' or 1 to 65535")
 		}
@@ -190,7 +191,7 @@ func (s *Service) CreateTargetGroup(
 		return nil, err
 	}
 
-	name, kind, protocol := value(in.Name), value(in.TargetType), value(in.Protocol)
+	name, kind, protocol := common.Value(in.Name), common.Value(in.TargetType), common.Value(in.Protocol)
 	if kind == "" {
 		kind = targetInstance
 	}
@@ -285,12 +286,12 @@ func (s *Service) CreateTargetGroup(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		old, found, readErr := read[targetGroup](tx, key(m.Scope, kindTG, name))
+		old, found, readErr := storage.Read[targetGroup](tx, key(m.Scope, kindTG, name))
 		switch {
 		case readErr != nil:
 			return readErr
-		case found && old.kind() == kind && value(old.TG.Protocol) == protocol &&
-			value(old.TG.Port) == value(in.Port) && value(old.TG.VpcId) == value(in.VpcId):
+		case found && old.kind() == kind && common.Value(old.TG.Protocol) == protocol &&
+			common.Value(old.TG.Port) == common.Value(in.Port) && common.Value(old.TG.VpcId) == common.Value(in.VpcId):
 			t = old
 			return nil
 		case found:
@@ -298,7 +299,7 @@ func (s *Service) CreateTargetGroup(
 				"' exists, but with different settings")
 		}
 
-		return write(tx, key(m.Scope, kindTG, name), t)
+		return storage.Write(tx, key(m.Scope, kindTG, name), t)
 	})
 	if err != nil {
 		return nil, err
@@ -317,7 +318,7 @@ func (s *Service) DescribeTargetGroups(
 
 	var selected []*targetGroup
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, listErr := list[targetGroup](tx, key(m.Scope, kindTG, ""))
+		all, listErr := storage.Records[targetGroup](tx, key(m.Scope, kindTG, ""))
 		if listErr != nil {
 			return listErr
 		}
@@ -399,7 +400,7 @@ func (s *Service) changeTG(ctx context.Context, arnValue string, fn func(*target
 		}
 
 		t.TG.LoadBalancerArns = append([]string{}, used[t.arnValue()]...)
-		return write(tx, key(m.Scope, kindTG, t.name()), t)
+		return storage.Write(tx, key(m.Scope, kindTG, t.name()), t)
 	})
 
 	return t, err
@@ -431,7 +432,7 @@ func (s *Service) viewTG(ctx context.Context, arnValue string) (*targetGroup, bo
 func (s *Service) ModifyTargetGroup(
 	ctx context.Context, in *api.ModifyTargetGroupInput,
 ) (*api.ModifyTargetGroupOutput, error) {
-	t, err := s.changeTG(ctx, value(in.TargetGroupArn), func(t *targetGroup) error {
+	t, err := s.changeTG(ctx, common.Value(in.TargetGroupArn), func(t *targetGroup) error {
 		tg := &t.TG
 		for _, set := range []struct {
 			from *int64
@@ -492,7 +493,7 @@ func (s *Service) DeleteTargetGroup(
 	}
 
 	return &api.DeleteTargetGroupOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
-		t, findErr := findTG(tx, m.Scope, value(in.TargetGroupArn))
+		t, findErr := findTG(tx, m.Scope, common.Value(in.TargetGroupArn))
 		switch {
 		case findErr != nil && awserror.From(findErr).Code == "TargetGroupNotFoundException":
 			return nil
@@ -527,7 +528,7 @@ func tgAttributes(t *targetGroup) []api.TargetGroupAttribute {
 func (s *Service) DescribeTargetGroupAttributes(
 	ctx context.Context, in *api.DescribeTargetGroupAttributesInput,
 ) (*api.DescribeTargetGroupAttributesOutput, error) {
-	t, _, err := s.viewTG(ctx, value(in.TargetGroupArn))
+	t, _, err := s.viewTG(ctx, common.Value(in.TargetGroupArn))
 	if err != nil {
 		return nil, err
 	}
@@ -540,15 +541,15 @@ func (s *Service) ModifyTargetGroupAttributes(
 ) (*api.ModifyTargetGroupAttributesOutput, error) {
 	keys, values := make([]string, len(in.Attributes)), make([]string, len(in.Attributes))
 	for i, a := range in.Attributes {
-		keys[i], values[i] = value(a.Key), value(a.Value)
+		keys[i], values[i] = common.Value(a.Key), common.Value(a.Value)
 	}
 
-	t, err := s.changeTG(ctx, value(in.TargetGroupArn), func(t *targetGroup) error {
+	t, err := s.changeTG(ctx, common.Value(in.TargetGroupArn), func(t *targetGroup) error {
 		defaults := targetGroupAttributes
 		switch {
 		case t.kind() == targetLambda:
 			defaults = lambdaTargetGroupAttributes
-		case slices.Contains(networkProtocols, value(t.TG.Protocol)):
+		case slices.Contains(networkProtocols, common.Value(t.TG.Protocol)):
 			defaults = networkTargetGroupAttributes
 		}
 
@@ -569,11 +570,11 @@ func targetPort(t *targetGroup, d api.TargetDescription) int64 {
 		return *d.Port
 	}
 
-	return value(t.TG.Port)
+	return common.Value(t.TG.Port)
 }
 
 func sameTarget(t *targetGroup, a, b api.TargetDescription) bool {
-	return value(a.Id) == value(b.Id) && targetPort(t, a) == targetPort(t, b)
+	return common.Value(a.Id) == common.Value(b.Id) && targetPort(t, a) == targetPort(t, b)
 }
 
 // checkTargets checks targets in the service their type names, outside any
@@ -583,7 +584,7 @@ func (s *Service) checkTargets(ctx context.Context, scope request.Scope, t *targ
 ) error {
 	ids := make([]string, len(targets))
 	for i, d := range targets {
-		ids[i] = value(d.Id)
+		ids[i] = common.Value(d.Id)
 		if p := d.Port; p != nil && (*p < 1 || *p > 65535 || t.kind() == targetLambda) {
 			return awserror.New("InvalidTargetException", "The target port is not valid")
 		}
@@ -619,9 +620,9 @@ func (s *Service) checkTargets(ctx context.Context, scope request.Scope, t *targ
 			case st.state != "running" && st.state != "pending" && st.state != "stopped":
 				return awserror.New("InvalidTargetException", "The following targets are not in a running state "+
 					"and cannot be registered: '"+id+"'")
-			case st.vpc != value(t.TG.VpcId):
+			case st.vpc != common.Value(t.TG.VpcId):
 				return awserror.New("InvalidTargetException", "The following targets are not in the target "+
-					"group's VPC '"+value(t.TG.VpcId)+"': '"+id+"'")
+					"group's VPC '"+common.Value(t.TG.VpcId)+"': '"+id+"'")
 			}
 		}
 	}
@@ -666,7 +667,7 @@ func (s *Service) RegisterTargets(ctx context.Context, in *api.RegisterTargetsIn
 		return nil, err
 	}
 
-	t, _, err := s.viewTG(ctx, value(in.TargetGroupArn))
+	t, _, err := s.viewTG(ctx, common.Value(in.TargetGroupArn))
 	if err != nil {
 		return nil, err
 	}
@@ -675,7 +676,7 @@ func (s *Service) RegisterTargets(ctx context.Context, in *api.RegisterTargetsIn
 		return nil, checkErr
 	}
 
-	_, err = s.changeTG(ctx, value(in.TargetGroupArn), func(t *targetGroup) error {
+	_, err = s.changeTG(ctx, common.Value(in.TargetGroupArn), func(t *targetGroup) error {
 		for _, d := range in.Targets {
 			if t.kind() != targetLambda && d.Port == nil {
 				d.Port = t.TG.Port
@@ -697,8 +698,8 @@ func (s *Service) RegisterTargets(ctx context.Context, in *api.RegisterTargetsIn
 		}
 
 		slices.SortFunc(t.Targets, func(a, b api.TargetDescription) int {
-			return strings.Compare(value(a.Id)+"/"+strconv.FormatInt(targetPort(t, a), 10),
-				value(b.Id)+"/"+strconv.FormatInt(targetPort(t, b), 10))
+			return strings.Compare(common.Value(a.Id)+"/"+strconv.FormatInt(targetPort(t, a), 10),
+				common.Value(b.Id)+"/"+strconv.FormatInt(targetPort(t, b), 10))
 		})
 		return nil
 	})
@@ -712,12 +713,12 @@ func (s *Service) RegisterTargets(ctx context.Context, in *api.RegisterTargetsIn
 func (s *Service) DeregisterTargets(
 	ctx context.Context, in *api.DeregisterTargetsInput,
 ) (*api.DeregisterTargetsOutput, error) {
-	_, err := s.changeTG(ctx, value(in.TargetGroupArn), func(t *targetGroup) error {
+	_, err := s.changeTG(ctx, common.Value(in.TargetGroupArn), func(t *targetGroup) error {
 		for _, d := range in.Targets {
 			i := slices.IndexFunc(t.Targets, func(o api.TargetDescription) bool { return sameTarget(t, o, d) })
 			if i < 0 {
 				return awserror.New("InvalidTargetException", "The following targets are not registered: '"+
-					value(d.Id)+"'")
+					common.Value(d.Id)+"'")
 			}
 
 			t.Targets = slices.Delete(t.Targets, i, i+1)
@@ -746,7 +747,7 @@ func health(t *targetGroup, used, registered bool, st instance) *api.TargetHealt
 			State: new(healthUnused), Reason: new("Target.NotInUse"),
 			Description: new("Target group is not configured to receive traffic from the load balancer"),
 		}
-	case t.kind() == targetLambda && !value(t.TG.HealthCheckEnabled):
+	case t.kind() == targetLambda && !common.Value(t.TG.HealthCheckEnabled):
 		return &api.TargetHealth{
 			State: new("unavailable"), Reason: new("Target.HealthCheckDisabled"),
 			Description: new("Health checks are disabled"),
@@ -769,7 +770,7 @@ func (s *Service) DescribeTargetHealth(
 		return nil, err
 	}
 
-	t, used, err := s.viewTG(ctx, value(in.TargetGroupArn))
+	t, used, err := s.viewTG(ctx, common.Value(in.TargetGroupArn))
 	if err != nil {
 		return nil, err
 	}
@@ -783,7 +784,7 @@ func (s *Service) DescribeTargetHealth(
 	if t.kind() == targetInstance && len(targets) > 0 {
 		ids := make([]string, len(targets))
 		for i, d := range targets {
-			ids[i] = value(d.Id)
+			ids[i] = common.Value(d.Id)
 		}
 
 		if states, err = s.instanceStates(ctx, m.Scope, ids); err != nil {
@@ -800,10 +801,10 @@ func (s *Service) DescribeTargetHealth(
 		}
 
 		desc := api.TargetHealthDescription{
-			Target: &target, TargetHealth: health(t, used, registered, states[value(d.Id)]),
+			Target: &target, TargetHealth: health(t, used, registered, states[common.Value(d.Id)]),
 		}
 		if t.kind() != targetLambda {
-			port := value(t.TG.HealthCheckPort)
+			port := common.Value(t.TG.HealthCheckPort)
 			if port == trafficPort {
 				port = strconv.FormatInt(targetPort(t, target), 10)
 			}

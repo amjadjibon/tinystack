@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -101,10 +102,10 @@ func (s *Service) CreateAddon(ctx context.Context, in *api.CreateAddonRequest) (
 		return nil, err
 	}
 
-	info := findAddon(value(in.AddonName))
+	info := findAddon(common.Value(in.AddonName))
 	switch {
 	case info == nil:
-		return nil, invalidParameter("Addon %s specified is not supported", value(in.AddonName))
+		return nil, invalidParameter("Addon %s specified is not supported", common.Value(in.AddonName))
 	case !oneOf(in.ResolveConflicts, "NONE", "OVERWRITE", "PRESERVE"):
 		return nil, invalidParameter("resolveConflicts must be NONE, OVERWRITE, or PRESERVE.")
 	case in.ServiceAccountRoleArn != nil && checkRole(in.ServiceAccountRoleArn, "serviceAccountRoleArn") != nil:
@@ -122,11 +123,11 @@ func (s *Service) CreateAddon(ctx context.Context, in *api.CreateAddonRequest) (
 			return loadErr
 		}
 
-		existing, ok, readErr := read[addon](tx, addonKey(scope, c.Name, info.name))
+		existing, ok, readErr := storage.Read[addon](tx, addonKey(scope, c.Name, info.name))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
+		case ok && common.Value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
 			out = &existing.Addon
 			return nil
 		case ok:
@@ -139,25 +140,25 @@ func (s *Service) CreateAddon(ctx context.Context, in *api.CreateAddonRequest) (
 		}
 
 		now := s.now().UTC()
-		a := &addon{Token: value(in.ClientRequestToken), Addon: api.Addon{
+		a := &addon{Token: common.Value(in.ClientRequestToken), Addon: api.Addon{
 			AddonName:    new(info.name),
 			ClusterName:  new(c.Name),
 			Status:       new(active),
 			AddonVersion: new(version),
 			Health:       &api.AddonHealth{Issues: []api.AddonIssue{}},
-			CreatedAt:    seconds(now),
-			ModifiedAt:   seconds(now),
+			CreatedAt:    common.SecondsMilli(now),
+			ModifiedAt:   common.SecondsMilli(now),
 			AddonArn: new(
 				arn(scope, "addon/"+c.Name+"/"+info.name+"/"+uuid.NewV4().String()),
 			),
-			Tags:                  cloneTags(in.Tags),
+			Tags:                  common.CloneTags(in.Tags),
 			ServiceAccountRoleArn: in.ServiceAccountRoleArn,
 			Publisher:             new("eks"),
 			Owner:                 new("aws"),
 			ConfigurationValues:   in.ConfigurationValues,
 		}}
 		out = &a.Addon
-		return write(tx, addonKey(scope, c.Name, info.name), a)
+		return storage.Write(tx, addonKey(scope, c.Name, info.name), a)
 	})
 	if err != nil {
 		return nil, err
@@ -183,9 +184,9 @@ func (s *Service) changeAddon(
 			return loadErr
 		}
 
-		a, ok, readErr := read[addon](tx, addonKey(scope, c.Name, value(name)))
+		a, ok, readErr := storage.Read[addon](tx, addonKey(scope, c.Name, common.Value(name)))
 		if readErr != nil || !ok {
-			return errorsOr(readErr, addonNotFound(value(name)))
+			return common.ErrorsOr(readErr, addonNotFound(common.Value(name)))
 		}
 
 		return fn(tx, scope, c, a)
@@ -255,13 +256,13 @@ func (s *Service) UpdateAddon(ctx context.Context, in *api.UpdateAddonRequest) (
 				params = append(params, param("ResolveConflicts", *in.ResolveConflicts))
 			}
 
-			a.Addon.ModifiedAt = seconds(s.now().UTC())
+			a.Addon.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			var err error
 			if out, err = s.record(tx, scope, c.Name, "", *a.Addon.AddonName, "AddonUpdate", params); err != nil {
 				return err
 			}
 
-			return write(tx, addonKey(scope, c.Name, *a.Addon.AddonName), a)
+			return storage.Write(tx, addonKey(scope, c.Name, *a.Addon.AddonName), a)
 		})
 	if err != nil {
 		return nil, err

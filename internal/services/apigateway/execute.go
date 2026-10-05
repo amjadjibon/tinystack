@@ -17,6 +17,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -46,7 +47,7 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 	c := &call{req: r, requestID: uuid.NewV4().String()}
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		loc, ok, err := read[location](tx, indexKey(id))
+		loc, ok, err := storage.Read[location](tx, indexKey(id))
 		if err != nil || !ok {
 			return err
 		}
@@ -58,13 +59,16 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 
 		name, rest, _ := strings.Cut(strings.TrimPrefix(r.Path, "/"), "/")
 		c.path = "/" + rest
-		st, ok, err := read[api.Stage](tx, owned(c.scope, kindStage, id, name))
+		st, ok, err := storage.Read[api.Stage](tx, owned(c.scope, kindStage, id, name))
 		if err != nil || !ok {
 			return err
 		}
 
 		c.stage = st
-		c.snapshot, _, err = read[deployment](tx, owned(c.scope, kindDeployment, id, value(st.DeploymentId)))
+		c.snapshot, _, err = storage.Read[deployment](
+			tx,
+			owned(c.scope, kindDeployment, id, common.Value(st.DeploymentId)),
+		)
 		return err
 	})
 	if err != nil || !found {
@@ -78,7 +82,7 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 }
 
 func (s *Service) run(ctx context.Context, c *call) *execute.Response {
-	if value(c.api.API.DisableExecuteApiEndpoint) || c.stage == nil || c.snapshot == nil {
+	if common.Value(c.api.API.DisableExecuteApiEndpoint) || c.stage == nil || c.snapshot == nil {
 		return execute.Message(http.StatusForbidden, "Forbidden")
 	}
 
@@ -109,7 +113,7 @@ func matchMethod(
 	var bestRank []int
 	for _, id := range slices.Sorted(maps.Keys(resources)) {
 		r := resources[id]
-		bound, rank, ok := proxy.Bind(value(r.Path), path)
+		bound, rank, ok := proxy.Bind(common.Value(r.Path), path)
 		if !ok {
 			continue
 		}
@@ -157,7 +161,7 @@ func identityValue(c *call, source string) string {
 // denies the request.
 func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *execute.Response) {
 	unauthorized := execute.Message(http.StatusUnauthorized, "Unauthorized")
-	switch value(c.method.AuthorizationType) {
+	switch common.Value(c.method.AuthorizationType) {
 	case authIAM:
 		// Signatures are not verified; a SigV4-signed request is authorized.
 		if !strings.HasPrefix(c.req.Header.Get("Authorization"), "AWS4-") && c.req.Query.Get("X-Amz-Signature") == "" {
@@ -167,7 +171,7 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 	case authCognito:
 		return s.cognitoAuthorize(ctx, c)
 	case authCustom:
-		a := c.snapshot.Authorizers[value(c.method.AuthorizerId)]
+		a := c.snapshot.Authorizers[common.Value(c.method.AuthorizerId)]
 		var values []string
 		for _, source := range sources(a) {
 			v := identityValue(c, source)
@@ -179,8 +183,8 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 			values = append(values, v)
 		}
 
-		if value(a.Type) == typeToken {
-			if p := value(
+		if common.Value(a.Type) == typeToken {
+			if p := common.Value(
 				a.IdentityValidationExpression,
 			); p != "" &&
 				!regexp.MustCompile("^(?:"+p+")$").MatchString(values[0]) {
@@ -199,8 +203,8 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 // pools. A method with scopes needs an access token with one of them.
 func (s *Service) cognitoAuthorize(ctx context.Context, c *call) (map[string]any, *execute.Response) {
 	unauthorized := execute.Message(http.StatusUnauthorized, "Unauthorized")
-	a := c.snapshot.Authorizers[value(c.method.AuthorizerId)]
-	token := strings.TrimSpace(identityValue(c, value(a.IdentitySource)))
+	a := c.snapshot.Authorizers[common.Value(c.method.AuthorizerId)]
+	token := strings.TrimSpace(identityValue(c, common.Value(a.IdentitySource)))
 	if len(token) > 7 && strings.EqualFold(token[:7], "bearer ") {
 		token = strings.TrimSpace(token[7:])
 	}
@@ -250,8 +254,8 @@ func (s *Service) lambdaAuthorize(
 ) (map[string]any, *execute.Response) {
 	failed := execute.Message(http.StatusInternalServerError, "Internal Server Error")
 	methodARN := c.methodARN()
-	event := map[string]any{"type": value(a.Type), "methodArn": methodARN}
-	if value(a.Type) == typeToken {
+	event := map[string]any{"type": common.Value(a.Type), "methodArn": methodARN}
+	if common.Value(a.Type) == typeToken {
 		event["authorizationToken"] = values[0]
 	} else {
 		data, err := proxy.EventV1(c.req, c.proxyContext(nil), c.params, c.stage.Variables)
@@ -267,7 +271,7 @@ func (s *Service) lambdaAuthorize(
 	}
 
 	payload, _ := json.Marshal(event)
-	arn, _ := proxy.LambdaARN(value(a.AuthorizerUri))
+	arn, _ := proxy.LambdaARN(common.Value(a.AuthorizerUri))
 	out, functionError, err := s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
 	if err != nil {
 		c.authorizerError = err.Error()
@@ -311,7 +315,7 @@ func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
 	domain, _, _ := strings.Cut(c.req.Host, ":")
 	return &proxy.Context{
 		Authorizer: authorizer, AccountID: c.scope.AccountID, APIID: *c.api.API.Id, Stage: *c.stage.StageName,
-		RequestID: c.requestID, RouteKey: value(c.resource.Id), Resource: value(c.resource.Path),
+		RequestID: c.requestID, RouteKey: common.Value(c.resource.Id), Resource: common.Value(c.resource.Path),
 		Path: "/" + *c.stage.StageName + c.path, ResourcePath: c.path, DomainName: domain,
 	}
 }
@@ -319,13 +323,13 @@ func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
 // integrate runs the method's integration.
 func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]any) *execute.Response {
 	i := c.method.MethodIntegration
-	timeout := time.Duration(value(i.TimeoutInMillis)) * time.Millisecond
-	uri := proxy.Substitute(value(i.Uri), c.stage.Variables)
-	switch value(i.Type) {
+	timeout := time.Duration(common.Value(i.TimeoutInMillis)) * time.Millisecond
+	uri := proxy.Substitute(common.Value(i.Uri), c.stage.Variables)
+	switch common.Value(i.Type) {
 	case typeMock:
 		return mock(c, i)
 	case typeHTTP:
-		method := value(i.HttpMethod)
+		method := common.Value(i.HttpMethod)
 		if method == methodAny {
 			method = c.req.Method
 		}
@@ -382,7 +386,7 @@ func mock(c *call, i *api.Integration) *execute.Response {
 	var chosen *api.IntegrationResponse
 	for _, code := range slices.Sorted(maps.Keys(i.IntegrationResponses)) {
 		r := i.IntegrationResponses[code]
-		pattern := value(r.SelectionPattern)
+		pattern := common.Value(r.SelectionPattern)
 		if pattern == "" && chosen == nil {
 			chosen = &r
 		}
@@ -398,7 +402,7 @@ func mock(c *call, i *api.Integration) *execute.Response {
 		return execute.Message(http.StatusInternalServerError, "Internal server error")
 	}
 
-	code, _ := strconv.Atoi(value(chosen.StatusCode))
+	code, _ := strconv.Atoi(common.Value(chosen.StatusCode))
 	resp := &execute.Response{Status: code, Header: http.Header{"Content-Type": {"application/json"}}}
 	for k, v := range chosen.ResponseParameters {
 		if header, ok := strings.CutPrefix(
@@ -456,12 +460,12 @@ func contextVariable(c *call, resp *execute.Response, name string) string {
 	case "requestId", "extendedRequestId":
 		return c.requestID
 	case "apiId":
-		return value(c.api.API.Id)
+		return common.Value(c.api.API.Id)
 	case "accountId":
 		return c.scope.AccountID
 	case "stage":
 		if c.stage != nil {
-			return value(c.stage.StageName)
+			return common.Value(c.stage.StageName)
 		}
 	case "httpMethod":
 		return r.Method
@@ -469,11 +473,11 @@ func contextVariable(c *call, resp *execute.Response, name string) string {
 		return r.Path
 	case "resourcePath":
 		if c.resource != nil {
-			return value(c.resource.Path)
+			return common.Value(c.resource.Path)
 		}
 	case "resourceId":
 		if c.resource != nil {
-			return value(c.resource.Id)
+			return common.Value(c.resource.Id)
 		}
 	case "protocol":
 		return r.Protocol
@@ -514,14 +518,14 @@ func (s *Service) accessLog(ctx context.Context, c *call, resp *execute.Response
 		return
 	}
 
-	scope, group, ok := proxy.LogGroup(value(c.stage.AccessLogSettings.DestinationArn))
+	scope, group, ok := proxy.LogGroup(common.Value(c.stage.AccessLogSettings.DestinationArn))
 	if !ok {
 		return
 	}
 
-	line := proxy.FormatLog(value(c.stage.AccessLogSettings.Format), func(name string) string {
+	line := proxy.FormatLog(common.Value(c.stage.AccessLogSettings.Format), func(name string) string {
 		return contextVariable(c, resp, name)
 	})
 	// A failure to log does not fail the request.
-	_ = s.logs.Append(context.WithoutCancel(ctx), scope, group, value(c.stage.StageName), []string{line})
+	_ = s.logs.Append(context.WithoutCancel(ctx), scope, group, common.Value(c.stage.StageName), []string{line})
 }

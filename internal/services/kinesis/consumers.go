@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -48,7 +49,7 @@ func (s *Service) RegisterStreamConsumer(
 	ctx context.Context,
 	in *api.RegisterStreamConsumerInput,
 ) (*api.RegisterStreamConsumerOutput, error) {
-	name := value(in.ConsumerName)
+	name := common.Value(in.ConsumerName)
 	if !consumerName.MatchString(name) {
 		return nil, invalidArgument("ConsumerName must be 1 to 128 letters, digits, underscores, periods, and hyphens")
 	}
@@ -65,7 +66,7 @@ func (s *Service) RegisterStreamConsumer(
 			return awserror.New("LimitExceededException", "A stream can have at most 20 consumers")
 		}
 
-		created := unix(s.now())
+		created := common.Unix(s.now())
 		c = consumer{
 			Name: name, Created: created,
 			ARN: StreamARN(scope, st.Name) + "/consumer/" + name + ":" + strconv.FormatInt(int64(created), 10),

@@ -15,6 +15,7 @@ import (
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -53,11 +54,11 @@ func required(name string) api.PutEventsResultEntry {
 // explains a rejected one.
 func (s *Service) newEvent(scope request.Scope, in *api.PutEventsRequestEntry) (*event, api.PutEventsResultEntry) {
 	switch {
-	case value(in.Source) == "":
+	case common.Value(in.Source) == "":
 		return nil, required("Source")
-	case value(in.DetailType) == "":
+	case common.Value(in.DetailType) == "":
 		return nil, required("DetailType")
-	case value(in.Detail) == "":
+	case common.Value(in.Detail) == "":
 		return nil, required("Detail")
 	}
 
@@ -108,12 +109,12 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 	size := 0
 	for i := range in.Entries {
 		entry := &in.Entries[i]
-		size += len(value(entry.Source)) + len(value(entry.DetailType)) + len(value(entry.Detail))
+		size += len(common.Value(entry.Source)) + len(common.Value(entry.DetailType)) + len(common.Value(entry.Detail))
 		for _, r := range entry.Resources {
 			size += len(r)
 		}
 
-		if !utf8.ValidString(value(entry.Detail)) {
+		if !utf8.ValidString(common.Value(entry.Detail)) {
 			return nil, invalid("Detail must be valid UTF-8.")
 		}
 	}
@@ -132,7 +133,7 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 	var kept []archived
 	out := &api.PutEventsResponse{FailedEntryCount: new(int64(0))}
 	for i := range in.Entries {
-		rules, known := busRules[value(in.Entries[i].EventBusName)]
+		rules, known := busRules[common.Value(in.Entries[i].EventBusName)]
 		if !known {
 			var rulesErr error
 			if rules, rulesErr = s.enabledRules(ctx, m.Scope, in.Entries[i].EventBusName); rulesErr != nil {
@@ -142,11 +143,11 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 
 				*out.FailedEntryCount++
 				out.Entries = append(out.Entries, failed("NotFoundException",
-					"Event bus "+value(in.Entries[i].EventBusName)+" does not exist."))
+					"Event bus "+common.Value(in.Entries[i].EventBusName)+" does not exist."))
 				continue
 			}
 
-			busRules[value(in.Entries[i].EventBusName)] = rules
+			busRules[common.Value(in.Entries[i].EventBusName)] = rules
 		}
 
 		e, result := s.newEvent(m.Scope, &in.Entries[i])
@@ -201,7 +202,7 @@ type compiledRule struct {
 func (s *Service) enabledRules(ctx context.Context, scope request.Scope, ref *string) ([]compiledRule, error) {
 	bus, err := busName(scope, ref)
 	if err != nil {
-		return nil, busNotFound(value(ref))
+		return nil, busNotFound(common.Value(ref))
 	}
 
 	var rules []compiledRule
@@ -211,7 +212,7 @@ func (s *Service) enabledRules(ctx context.Context, scope request.Scope, ref *st
 		}
 
 		for _, k := range tx.Keys(rulePrefix(scope, bus)) {
-			r, _, loadErr := load(tx, k)
+			r, _, loadErr := storage.Read[rule](tx, k)
 			if loadErr != nil {
 				return loadErr
 			}

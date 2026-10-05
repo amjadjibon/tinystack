@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -66,7 +67,7 @@ func groupNotFound(name string) error {
 }
 
 func loadGroup(tx storage.ReadTx, scope request.Scope, name string) (*group, error) {
-	g, found, err := read[group](tx, key(scope, kindGroup, name))
+	g, found, err := storage.Read[group](tx, key(scope, kindGroup, name))
 	if err == nil && !found {
 		err = groupNotFound(name)
 	}
@@ -74,11 +75,11 @@ func loadGroup(tx storage.ReadTx, scope request.Scope, name string) (*group, err
 	return g, err
 }
 
-func (g *group) name() string { return value(g.Group.AutoScalingGroupName) }
+func (g *group) name() string { return common.Value(g.Group.AutoScalingGroupName) }
 
 func (g *group) suspended(process string) bool {
 	return slices.ContainsFunc(g.Group.SuspendedProcesses, func(p api.SuspendedProcess) bool {
-		return value(p.ProcessName) == process
+		return common.Value(p.ProcessName) == process
 	})
 }
 
@@ -114,7 +115,7 @@ func (s *Service) resolve(ctx context.Context, scope request.Scope, in *settings
 			return placement{}, err
 		}
 
-		version := value(lt.Version)
+		version := common.Value(lt.Version)
 		if version == "" {
 			version = "$Default"
 		}
@@ -185,7 +186,7 @@ func (g *group) apply(tx storage.ReadTx, scope request.Scope, in *settings, wher
 	}
 
 	// A new minimum or maximum moves the desired capacity inside them.
-	oldDesired := value(out.DesiredCapacity)
+	oldDesired := common.Value(out.DesiredCapacity)
 	for _, set := range []struct {
 		from *int64
 		to   **int64
@@ -202,7 +203,7 @@ func (g *group) apply(tx storage.ReadTx, scope request.Scope, in *settings, wher
 		}
 	}
 
-	minSize, maxSize := value(out.MinSize), value(out.MaxSize)
+	minSize, maxSize := common.Value(out.MinSize), common.Value(out.MaxSize)
 	desired := min(max(oldDesired, minSize), maxSize)
 	if in.DesiredCapacity != nil {
 		desired = *in.DesiredCapacity
@@ -215,7 +216,7 @@ func (g *group) apply(tx storage.ReadTx, scope request.Scope, in *settings, wher
 	case desired < minSize || desired > maxSize:
 		return validation("Desired capacity:%d must be between the specified min size:%d and max size:%d",
 			desired, minSize, maxSize)
-	case value(out.DefaultCooldown) < 0 || value(out.HealthCheckGracePeriod) < 0:
+	case common.Value(out.DefaultCooldown) < 0 || common.Value(out.HealthCheckGracePeriod) < 0:
 		return validation("DefaultCooldown and HealthCheckGracePeriod must not be negative.")
 	case out.MaxInstanceLifetime != nil && *out.MaxInstanceLifetime != 0 && *out.MaxInstanceLifetime < 86400:
 		return validation("MaxInstanceLifetime must be 0 or between 86400 and 31536000 seconds.")
@@ -241,7 +242,7 @@ func (g *group) apply(tx storage.ReadTx, scope request.Scope, in *settings, wher
 	}
 
 	if d := in.AvailabilityZoneDistribution; d != nil {
-		if strategy := value(d.CapacityDistributionStrategy); strategy != "balanced-best-effort" &&
+		if strategy := common.Value(d.CapacityDistributionStrategy); strategy != "balanced-best-effort" &&
 			strategy != "balanced-only" {
 			return validation("CapacityDistributionStrategy must be balanced-best-effort or balanced-only.")
 		}
@@ -289,7 +290,7 @@ func (s *Service) CreateAutoScalingGroup(
 		return nil, err
 	}
 
-	name := value(in.AutoScalingGroupName)
+	name := common.Value(in.AutoScalingGroupName)
 	if checkErr := checkName("AutoScalingGroupName", name); checkErr != nil {
 		return nil, checkErr
 	}
@@ -354,14 +355,14 @@ func (s *Service) CreateAutoScalingGroup(
 		}
 
 		tx.Put(indexKey(m.Scope, name), []byte("{}"))
-		return write(tx, key(m.Scope, kindGroup, name), g)
+		return storage.Write(tx, key(m.Scope, kindGroup, name), g)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	s.reconcile(ctx, m.Scope, name, fmt.Sprintf("At %s a user request created an AutoScalingGroup changing the "+
-		"desired capacity from 0 to %d", stamp(now), value(g.Group.DesiredCapacity)))
+		"desired capacity from 0 to %d", stamp(now), common.Value(g.Group.DesiredCapacity)))
 	return &api.CreateAutoScalingGroupOutput{}, nil
 }
 
@@ -378,7 +379,7 @@ func (s *Service) UpdateAutoScalingGroup(
 		return nil, err
 	}
 
-	name := value(in.AutoScalingGroupName)
+	name := common.Value(in.AutoScalingGroupName)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		g, loadErr := loadGroup(tx, m.Scope, name)
 		if loadErr != nil {
@@ -389,7 +390,7 @@ func (s *Service) UpdateAutoScalingGroup(
 			return applyErr
 		}
 
-		return write(tx, key(m.Scope, kindGroup, name), g)
+		return storage.Write(tx, key(m.Scope, kindGroup, name), g)
 	})
 	if err != nil {
 		return nil, err
@@ -411,7 +412,7 @@ func (s *Service) DeleteAutoScalingGroup(
 		return nil, err
 	}
 
-	name, force := value(in.AutoScalingGroupName), value(in.ForceDelete)
+	name, force := common.Value(in.AutoScalingGroupName), common.Value(in.ForceDelete)
 	var members []string
 	var alarms []string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -420,7 +421,7 @@ func (s *Service) DeleteAutoScalingGroup(
 			return loadErr
 		}
 
-		switch protection := value(g.Group.DeletionProtection); {
+		switch protection := common.Value(g.Group.DeletionProtection); {
 		case protection == protectionAll:
 			return validation("Deletion protection is enabled for AutoScalingGroup %s.", name)
 		case protection == protectionForce && force:
@@ -431,19 +432,19 @@ func (s *Service) DeleteAutoScalingGroup(
 		}
 
 		for _, mem := range g.Members {
-			members = append(members, value(mem.InstanceId))
+			members = append(members, common.Value(mem.InstanceId))
 		}
 
 		for _, kind := range []string{kindPolicy, kindScheduled, kindActivity} {
 			for _, k := range tx.Keys(key(m.Scope, kind, name+"/")) {
 				if kind == kindPolicy {
-					p, _, readErr := read[api.ScalingPolicy](tx, k)
+					p, _, readErr := storage.Read[api.ScalingPolicy](tx, k)
 					if readErr != nil {
 						return readErr
 					}
 
 					for _, a := range p.Alarms {
-						alarms = append(alarms, value(a.AlarmName))
+						alarms = append(alarms, common.Value(a.AlarmName))
 					}
 				}
 
@@ -468,17 +469,17 @@ func (s *Service) DeleteAutoScalingGroup(
 // tag-key, tag-value, and tag:<key> filters.
 func tagFilter(filters []api.Filter, tags []api.TagDescription) (bool, error) {
 	for _, f := range filters {
-		name := value(f.Name)
+		name := common.Value(f.Name)
 		matches := func(t api.TagDescription) bool {
 			switch name {
 			case "tag-key":
-				return slices.Contains(f.Values, value(t.Key))
+				return slices.Contains(f.Values, common.Value(t.Key))
 			case "tag-value":
-				return slices.Contains(f.Values, value(t.Value))
+				return slices.Contains(f.Values, common.Value(t.Value))
 			}
 
 			k, _ := strings.CutPrefix(name, "tag:")
-			return value(t.Key) == k && slices.Contains(f.Values, value(t.Value))
+			return common.Value(t.Key) == k && slices.Contains(f.Values, common.Value(t.Value))
 		}
 		if name != "tag-key" && name != "tag-value" && !strings.HasPrefix(name, "tag:") {
 			return false, validation("Filter name %s is not valid.", name)
@@ -503,7 +504,7 @@ func (s *Service) DescribeAutoScalingGroups(
 	var groups []*group
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
-			g, _, readErr := read[group](tx, k)
+			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -554,7 +555,7 @@ func (s *Service) changeGroup(ctx context.Context, scope request.Scope, name str
 			return fnErr
 		}
 
-		return write(tx, key(scope, kindGroup, name), g)
+		return storage.Write(tx, key(scope, kindGroup, name), g)
 	})
 }
 
@@ -575,23 +576,23 @@ func (s *Service) SetDesiredCapacity(
 		return nil, err
 	}
 
-	name, desired, now := value(in.AutoScalingGroupName), value(in.DesiredCapacity), s.now()
+	name, desired, now := common.Value(in.AutoScalingGroupName), common.Value(in.DesiredCapacity), s.now()
 	var from int64
 	err = s.changeGroup(ctx, m.Scope, name, func(g *group) error {
-		if value(in.HonorCooldown) {
+		if common.Value(in.HonorCooldown) {
 			if coolErr := cooling(g, now); coolErr != nil {
 				return coolErr
 			}
 		}
 
-		minSize, maxSize := value(g.Group.MinSize), value(g.Group.MaxSize)
+		minSize, maxSize := common.Value(g.Group.MinSize), common.Value(g.Group.MaxSize)
 		if desired < minSize || desired > maxSize {
 			return validation("New SetDesiredCapacity value %d is %s min value %d", desired,
 				map[bool]string{true: "below", false: "above"}[desired < minSize],
 				map[bool]int64{true: minSize, false: maxSize}[desired < minSize])
 		}
 
-		from = value(g.Group.DesiredCapacity)
+		from = common.Value(g.Group.DesiredCapacity)
 		g.Group.DesiredCapacity = new(desired)
 		return nil
 	})
@@ -607,12 +608,12 @@ func (s *Service) SetDesiredCapacity(
 // findMember returns the name of the group that has an instance.
 func findMember(tx storage.ReadTx, scope request.Scope, id string) (string, error) {
 	for _, k := range tx.Keys(key(scope, kindGroup, "")) {
-		g, _, err := read[group](tx, k)
+		g, _, err := storage.Read[group](tx, k)
 		if err != nil {
 			return "", err
 		}
 
-		if slices.ContainsFunc(g.Members, func(m member) bool { return value(m.InstanceId) == id }) {
+		if slices.ContainsFunc(g.Members, func(m member) bool { return common.Value(m.InstanceId) == id }) {
 			return g.name(), nil
 		}
 	}
@@ -631,13 +632,13 @@ func (s *Service) DescribeAutoScalingInstances(
 	var all []api.AutoScalingInstanceDetails
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
-			g, _, readErr := read[group](tx, k)
+			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
 			for _, mem := range g.Members {
-				if len(in.InstanceIds) > 0 && !slices.Contains(in.InstanceIds, value(mem.InstanceId)) {
+				if len(in.InstanceIds) > 0 && !slices.Contains(in.InstanceIds, common.Value(mem.InstanceId)) {
 					continue
 				}
 
@@ -645,7 +646,7 @@ func (s *Service) DescribeAutoScalingInstances(
 				all = append(all, api.AutoScalingInstanceDetails{
 					InstanceId: i.InstanceId, InstanceType: i.InstanceType, AutoScalingGroupName: new(g.name()),
 					AvailabilityZone: i.AvailabilityZone, LifecycleState: i.LifecycleState,
-					HealthStatus:            new(strings.ToUpper(value(i.HealthStatus))),
+					HealthStatus:            new(strings.ToUpper(common.Value(i.HealthStatus))),
 					LaunchConfigurationName: i.LaunchConfigurationName, LaunchTemplate: i.LaunchTemplate,
 					ImageId: i.ImageId, ProtectedFromScaleIn: i.ProtectedFromScaleIn,
 				})
@@ -658,7 +659,7 @@ func (s *Service) DescribeAutoScalingInstances(
 		return nil, err
 	}
 
-	id := func(d api.AutoScalingInstanceDetails) string { return value(d.InstanceId) }
+	id := func(d api.AutoScalingInstanceDetails) string { return common.Value(d.InstanceId) }
 	slices.SortFunc(all, func(a, b api.AutoScalingInstanceDetails) int { return strings.Compare(id(a), id(b)) })
 	page, next, err := window(all, id, in.NextToken, in.MaxRecords)
 	if err != nil {
@@ -676,7 +677,7 @@ func (s *Service) TerminateInstanceInAutoScalingGroup(
 		return nil, err
 	}
 
-	id, decrement, now := value(in.InstanceId), value(in.ShouldDecrementDesiredCapacity), s.now()
+	id, decrement, now := common.Value(in.InstanceId), common.Value(in.ShouldDecrementDesiredCapacity), s.now()
 	var activity *api.Activity
 	var name string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -690,14 +691,14 @@ func (s *Service) TerminateInstanceInAutoScalingGroup(
 			return loadErr
 		}
 
-		desired := value(g.Group.DesiredCapacity)
+		desired := common.Value(g.Group.DesiredCapacity)
 		cause := fmt.Sprintf("At %s instance %s was taken out of service in response to a user request.",
 			stamp(now), id)
 		if decrement {
-			if desired-1 < value(g.Group.MinSize) {
+			if desired-1 < common.Value(g.Group.MinSize) {
 				return validation("Currently, desiredCapacity is %d and minSize is %d. Terminating instance "+
 					"without replacement will violate group's min size constraint. Either set shouldDecrement"+
-					"DesiredCapacity flag to false or lower group's min size.", desired, value(g.Group.MinSize))
+					"DesiredCapacity flag to false or lower group's min size.", desired, common.Value(g.Group.MinSize))
 			}
 
 			g.Group.DesiredCapacity = new(desired - 1)
@@ -705,14 +706,18 @@ func (s *Service) TerminateInstanceInAutoScalingGroup(
 				"shrinking the capacity from %d to %d.", stamp(now), id, desired, desired-1)
 		}
 
-		i := slices.IndexFunc(g.Members, func(mem member) bool { return value(mem.InstanceId) == id })
+		i := slices.IndexFunc(g.Members, func(mem member) bool { return common.Value(mem.InstanceId) == id })
 		activity = s.activity(g, now, "Terminating EC2 instance: "+id, cause, &g.Members[i])
 		g.Members = slices.Delete(g.Members, i, i+1)
-		if writeErr := write(tx, key(m.Scope, kindActivity, name+"/"+s.sequenced(now)), activity); writeErr != nil {
+		if writeErr := storage.Write(
+			tx,
+			key(m.Scope, kindActivity, name+"/"+s.sequenced(now)),
+			activity,
+		); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, key(m.Scope, kindGroup, name), g)
+		return storage.Write(tx, key(m.Scope, kindGroup, name), g)
 	})
 	if err != nil {
 		return nil, err
@@ -730,7 +735,7 @@ func (s *Service) changeMembers(ctx context.Context, scope request.Scope, name s
 ) error {
 	return s.changeGroup(ctx, scope, name, func(g *group) error {
 		for _, id := range ids {
-			i := slices.IndexFunc(g.Members, func(m member) bool { return value(m.InstanceId) == id })
+			i := slices.IndexFunc(g.Members, func(m member) bool { return common.Value(m.InstanceId) == id })
 			if i < 0 {
 				return validation("The instance %s is not part of Auto Scaling group %s.", id, name)
 			}
@@ -750,8 +755,8 @@ func (s *Service) SetInstanceProtection(
 		return nil, err
 	}
 
-	err = s.changeMembers(ctx, m.Scope, value(in.AutoScalingGroupName), in.InstanceIds, func(mem *member) {
-		mem.ProtectedFromScaleIn = new(value(in.ProtectedFromScaleIn))
+	err = s.changeMembers(ctx, m.Scope, common.Value(in.AutoScalingGroupName), in.InstanceIds, func(mem *member) {
+		mem.ProtectedFromScaleIn = new(common.Value(in.ProtectedFromScaleIn))
 	})
 	if err != nil {
 		return nil, err
@@ -770,7 +775,7 @@ func (s *Service) SetInstanceHealth(
 		return nil, err
 	}
 
-	id, health := value(in.InstanceId), value(in.HealthStatus)
+	id, health := common.Value(in.InstanceId), common.Value(in.HealthStatus)
 	if health != healthHealthy && health != healthUnhealthy {
 		return nil, validation("HealthStatus must be Healthy or Unhealthy.")
 	}
@@ -811,10 +816,10 @@ func (s *Service) suspend(ctx context.Context, in *api.ScalingProcessQuery, susp
 		}
 	}
 
-	name := value(in.AutoScalingGroupName)
+	name := common.Value(in.AutoScalingGroupName)
 	err = s.changeGroup(ctx, m.Scope, name, func(g *group) error {
 		kept := slices.DeleteFunc(g.Group.SuspendedProcesses, func(p api.SuspendedProcess) bool {
-			return slices.Contains(names, value(p.ProcessName))
+			return slices.Contains(names, common.Value(p.ProcessName))
 		})
 		if suspend {
 			for _, p := range names {
@@ -825,7 +830,7 @@ func (s *Service) suspend(ctx context.Context, in *api.ScalingProcessQuery, susp
 		}
 
 		slices.SortFunc(kept, func(a, b api.SuspendedProcess) int {
-			return strings.Compare(value(a.ProcessName), value(b.ProcessName))
+			return strings.Compare(common.Value(a.ProcessName), common.Value(b.ProcessName))
 		})
 		g.Group.SuspendedProcesses = kept
 		return nil

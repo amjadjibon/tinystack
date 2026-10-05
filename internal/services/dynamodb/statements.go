@@ -11,6 +11,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // ExecuteStatement runs a PartiQL statement (partiql.go) as the item
@@ -32,13 +33,13 @@ func keyAttributes(d *api.TableDescription, index string) (hash, sort string, er
 	if index != "" {
 		schema = nil
 		for _, g := range d.GlobalSecondaryIndexes {
-			if value(g.IndexName) == index {
+			if common.Value(g.IndexName) == index {
 				schema = g.KeySchema
 			}
 		}
 
 		for _, l := range d.LocalSecondaryIndexes {
-			if value(l.IndexName) == index {
+			if common.Value(l.IndexName) == index {
 				schema = l.KeySchema
 			}
 		}
@@ -49,10 +50,10 @@ func keyAttributes(d *api.TableDescription, index string) (hash, sort string, er
 	}
 
 	for _, k := range schema {
-		if value(k.KeyType) == "HASH" {
-			hash = value(k.AttributeName)
+		if common.Value(k.KeyType) == "HASH" {
+			hash = common.Value(k.AttributeName)
 		} else {
-			sort = value(k.AttributeName)
+			sort = common.Value(k.AttributeName)
 		}
 	}
 
@@ -89,7 +90,7 @@ func (s *Service) ExecuteStatement(
 	ctx context.Context,
 	in *api.ExecuteStatementInput,
 ) (*api.ExecuteStatementOutput, error) {
-	st, p, err := parseStatement(value(in.Statement), in.Parameters)
+	st, p, err := parseStatement(common.Value(in.Statement), in.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +194,7 @@ func (s *Service) selectItems(
 			return nil, queryErr
 		}
 
-		items, last = value(out.Items), out.LastEvaluatedKey
+		items, last = common.Value(out.Items), out.LastEvaluatedKey
 	case st.orderBy != "":
 		return nil, awserror.Validation("ORDER BY needs a WHERE clause that fixes the partition key")
 	default:
@@ -213,7 +214,7 @@ func (s *Service) selectItems(
 			return nil, scanErr
 		}
 
-		items, last = value(out.Items), out.LastEvaluatedKey
+		items, last = common.Value(out.Items), out.LastEvaluatedKey
 	}
 
 	out := &api.ExecuteStatementOutput{Items: items, LastEvaluatedKey: last}
@@ -247,7 +248,7 @@ func itemKeyOf(d *api.TableDescription, st *statement) (map[string]api.Attribute
 	conds := st.where.conjuncts()
 	key := map[string]api.AttributeValue{}
 	for _, k := range d.KeySchema {
-		name := value(k.AttributeName)
+		name := common.Value(k.AttributeName)
 		i := 0
 		for i < len(conds) && (conds[i].attr != name || conds[i].eq == nil) {
 			i++
@@ -381,7 +382,7 @@ func (s *Service) BatchExecuteStatement(
 	statements := make([]parsed, len(in.Statements))
 	reads := 0
 	for i := range in.Statements {
-		st, p, err := parseStatement(value(in.Statements[i].Statement), in.Statements[i].Parameters)
+		st, p, err := parseStatement(common.Value(in.Statements[i].Statement), in.Statements[i].Parameters)
 		statements[i] = parsed{st: st, p: p, err: err}
 		if err == nil && st.kind == stmtSelect {
 			reads++
@@ -483,7 +484,10 @@ func (s *Service) ExecuteTransaction(
 	parsers := make([]*pqParser, n)
 	reads := 0
 	for i := range in.TransactStatements {
-		st, p, err := parseStatement(value(in.TransactStatements[i].Statement), in.TransactStatements[i].Parameters)
+		st, p, err := parseStatement(
+			common.Value(in.TransactStatements[i].Statement),
+			in.TransactStatements[i].Parameters,
+		)
 		if err != nil {
 			return nil, err
 		}

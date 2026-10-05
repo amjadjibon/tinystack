@@ -45,7 +45,7 @@ func managedInterfaces(tx storage.ReadTx, scope request.Scope) ([]*managedInterf
 			continue
 		}
 
-		sn, _, readErr := read[subnet](tx, key(scope, kindSubnet, g.SubnetID))
+		sn, _, readErr := storage.Read[subnet](tx, key(scope, kindSubnet, g.SubnetID))
 		if readErr != nil {
 			return nil, readErr
 		}
@@ -95,7 +95,7 @@ func interfaceOutput(tx storage.ReadTx, scope request.Scope, ni *managedInterfac
 		Groups: []api.GroupIdentifier{},
 	}
 	for _, id := range ni.groups {
-		g, ok, err := read[securityGroup](tx, key(scope, kindSecurityGroup, id))
+		g, ok, err := storage.Read[securityGroup](tx, key(scope, kindSecurityGroup, id))
 		if err != nil {
 			return out, err
 		}

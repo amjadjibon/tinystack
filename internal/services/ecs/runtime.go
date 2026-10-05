@@ -9,6 +9,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -154,7 +155,7 @@ func (s *Service) advance(k string) error {
 	err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
 		var found bool
 		var readErr error
-		if t, found, readErr = read[task](tx, taskKey(scope, parts[2], parts[3])); readErr != nil || !found {
+		if t, found, readErr = storage.Read[task](tx, taskKey(scope, parts[2], parts[3])); readErr != nil || !found {
 			t = nil
 			return readErr
 		}
@@ -195,7 +196,7 @@ func (s *Service) launch(scope request.Scope, t *task, def *taskDef) error {
 
 	kept := false
 	updateErr := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
-		cur, found, readErr := read[task](tx, taskKey(scope, t.Cluster, t.ID))
+		cur, found, readErr := storage.Read[task](tx, taskKey(scope, t.Cluster, t.ID))
 		// A task stopped while its containers started keeps none of them.
 		if readErr != nil || !found || cur.Last != pending {
 			return readErr
@@ -235,7 +236,7 @@ func (s *Service) launch(scope request.Scope, t *task, def *taskDef) error {
 		}
 
 		kept = true
-		return write(tx, taskKey(scope, cur.Cluster, cur.ID), cur)
+		return storage.Write(tx, taskKey(scope, cur.Cluster, cur.ID), cur)
 	})
 	if !kept {
 		for _, st := range started {
@@ -254,25 +255,33 @@ func containerSpecs(scope request.Scope, t *task, def *taskDef) ([]ContainerSpec
 		d := &def.Def.ContainerDefinitions[i]
 		if len(d.Secrets) > 0 || len(d.MountPoints) > 0 || len(d.VolumesFrom) > 0 || len(d.DependsOn) > 0 ||
 			len(d.Links) > 0 {
-			return nil, errors.New("container " + value(d.Name) + " uses secrets, volumes, dependencies, or links, " +
-				"which TinyStack does not run")
+			return nil, errors.New(
+				"container " + common.Value(d.Name) + " uses secrets, volumes, dependencies, or links, " +
+					"which TinyStack does not run",
+			)
 		}
 
 		spec := ContainerSpec{
-			Name: value(d.Name), Image: value(d.Image), WorkingDirectory: value(d.WorkingDirectory),
-			User: value(d.User), EntryPoint: d.EntryPoint, Command: d.Command,
-			Environment: map[string]string{"AWS_REGION": scope.Region, "AWS_DEFAULT_REGION": scope.Region},
+			Name: common.Value(
+				d.Name,
+			),
+			Image:            common.Value(d.Image),
+			WorkingDirectory: common.Value(d.WorkingDirectory),
+			User:             common.Value(d.User),
+			EntryPoint:       d.EntryPoint,
+			Command:          d.Command,
+			Environment:      map[string]string{"AWS_REGION": scope.Region, "AWS_DEFAULT_REGION": scope.Region},
 			Labels: map[string]string{
-				"tinystack.ecs.task": taskARN(scope, t.Cluster, t.ID), "tinystack.ecs.container": value(d.Name),
+				"tinystack.ecs.task": taskARN(scope, t.Cluster, t.ID), "tinystack.ecs.container": common.Value(d.Name),
 			},
 		}
 		for _, kv := range d.Environment {
-			spec.Environment[value(kv.Name)] = value(kv.Value)
+			spec.Environment[common.Value(kv.Name)] = common.Value(kv.Value)
 		}
 
 		if t.Overrides != nil {
 			for _, o := range t.Overrides.ContainerOverrides {
-				if value(o.Name) != spec.Name {
+				if common.Value(o.Name) != spec.Name {
 					continue
 				}
 
@@ -281,25 +290,28 @@ func containerSpecs(scope request.Scope, t *task, def *taskDef) ([]ContainerSpec
 				}
 
 				for _, kv := range o.Environment {
-					spec.Environment[value(kv.Name)] = value(kv.Value)
+					spec.Environment[common.Value(kv.Name)] = common.Value(kv.Value)
 				}
 			}
 		}
 
 		for _, p := range d.PortMappings {
-			protocol := value(p.Protocol)
+			protocol := common.Value(p.Protocol)
 			if protocol == "" {
 				protocol = "tcp"
 			}
 
 			// awsvpc tasks get their own address in AWS; here every task
 			// shares the host, so their ports go to free host ports.
-			host := value(p.HostPort)
+			host := common.Value(p.HostPort)
 			if t.Network != nil {
 				host = 0
 			}
 
-			spec.Ports = append(spec.Ports, PortSpec{Container: value(p.ContainerPort), Host: host, Protocol: protocol})
+			spec.Ports = append(
+				spec.Ports,
+				PortSpec{Container: common.Value(p.ContainerPort), Host: host, Protocol: protocol},
+			)
 		}
 
 		specs = append(specs, spec)
@@ -318,7 +330,7 @@ func (s *Service) watch(scope request.Scope, t *task, def *taskDef) error {
 
 	exits := map[int]exit{}
 	for i, c := range t.Containers {
-		if value(c.LastStatus) != running || c.RuntimeId == nil {
+		if common.Value(c.LastStatus) != running || c.RuntimeId == nil {
 			continue
 		}
 
@@ -339,7 +351,7 @@ func (s *Service) watch(scope request.Scope, t *task, def *taskDef) error {
 	}
 
 	return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
-		cur, found, err := read[task](tx, taskKey(scope, t.Cluster, t.ID))
+		cur, found, err := storage.Read[task](tx, taskKey(scope, t.Cluster, t.ID))
 		if err != nil || !found || cur.Last != running {
 			return err
 		}
@@ -348,7 +360,7 @@ func (s *Service) watch(scope request.Scope, t *task, def *taskDef) error {
 		for i := range cur.Containers {
 			e, ok := exits[i]
 			if !ok {
-				if value(cur.Containers[i].LastStatus) == running {
+				if common.Value(cur.Containers[i].LastStatus) == running {
 					left++
 				}
 
@@ -361,12 +373,12 @@ func (s *Service) watch(scope request.Scope, t *task, def *taskDef) error {
 				c.Reason = new("The container no longer exists.")
 			}
 
-			essential = essential || value(def.Def.ContainerDefinitions[i].Essential)
+			essential = essential || common.Value(def.Def.ContainerDefinitions[i].Essential)
 		}
 
 		if !essential && left > 0 {
 			cur.Version++
-			return write(tx, taskKey(scope, cur.Cluster, cur.ID), cur)
+			return storage.Write(tx, taskKey(scope, cur.Cluster, cur.ID), cur)
 		}
 
 		c, loadErr := loadCluster(tx, scope, &cur.Cluster)
@@ -409,7 +421,7 @@ func (s *Service) finish(scope request.Scope, k string, t *task, def *taskDef) e
 // and the container's runtime ID without one.
 func (s *Service) ship(scope request.Scope, t *task, d *api.ContainerDefinition, id string) {
 	lc := d.LogConfiguration
-	if lc == nil || value(lc.LogDriver) != "awslogs" || lc.Options["awslogs-group"] == "" || s.writeLogs == nil {
+	if lc == nil || common.Value(lc.LogDriver) != "awslogs" || lc.Options["awslogs-group"] == "" || s.writeLogs == nil {
 		return
 	}
 
@@ -423,7 +435,7 @@ func (s *Service) ship(scope request.Scope, t *task, d *api.ContainerDefinition,
 
 	stream := id
 	if prefix := lc.Options["awslogs-stream-prefix"]; prefix != "" {
-		stream = prefix + "/" + value(d.Name) + "/" + t.ID
+		stream = prefix + "/" + common.Value(d.Name) + "/" + t.ID
 	}
 
 	if region := lc.Options["awslogs-region"]; region != "" {

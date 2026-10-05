@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -46,7 +47,7 @@ func addressNotFound(id string) error {
 }
 
 func loadAddress(tx storage.ReadTx, scope request.Scope, id string) (*address, error) {
-	a, ok, err := read[address](tx, key(scope, kindAddress, id))
+	a, ok, err := storage.Read[address](tx, key(scope, kindAddress, id))
 	if err == nil && !ok {
 		err = addressNotFound(id)
 	}
@@ -90,7 +91,7 @@ func addressValues(scope request.Scope, a *address) values {
 // unbind ends an address's association with its instance, which keeps a
 // public address of its own only if its subnet maps them and it is running.
 func unbind(tx storage.WriteTx, scope request.Scope, a *address) error {
-	i, ok, err := read[instance](tx, key(scope, kindInstance, a.InstanceID))
+	i, ok, err := storage.Read[instance](tx, key(scope, kindInstance, a.InstanceID))
 	if err != nil {
 		return err
 	}
@@ -100,7 +101,7 @@ func unbind(tx storage.WriteTx, scope request.Scope, a *address) error {
 		return nil
 	}
 
-	sn, _, err := read[subnet](tx, key(scope, kindSubnet, i.SubnetID))
+	sn, _, err := storage.Read[subnet](tx, key(scope, kindSubnet, i.SubnetID))
 	if err != nil {
 		return err
 	}
@@ -110,7 +111,7 @@ func unbind(tx storage.WriteTx, scope request.Scope, a *address) error {
 		i.PublicIP = publicIP()
 	}
 
-	return write(tx, key(scope, kindInstance, i.ID), i)
+	return storage.Write(tx, key(scope, kindInstance, i.ID), i)
 }
 
 // AllocateAddress allocates one of up to five Elastic IP addresses in the
@@ -119,7 +120,7 @@ func (s *Service) AllocateAddress(
 	ctx context.Context,
 	in *api.AllocateAddressRequest,
 ) (*api.AllocateAddressResult, error) {
-	if domain := value(in.Domain); domain != "" && domain != domainVPC {
+	if domain := common.Value(in.Domain); domain != "" && domain != domainVPC {
 		return nil, invalidParameter(fmt.Sprintf("Value (%s) for parameter domain is invalid. "+
 			"Only vpc addresses are supported.", domain))
 	}
@@ -144,7 +145,7 @@ func (s *Service) AllocateAddress(
 			AllocationId: new(a.ID), PublicIp: new(a.PublicIP), Domain: new(domainVPC),
 			PublicIpv4Pool: new("amazon"), NetworkBorderGroup: new(scope.Region),
 		}
-		return write(tx, key(scope, kindAddress, a.ID), a)
+		return storage.Write(tx, key(scope, kindAddress, a.ID), a)
 	})
 	if err != nil {
 		return nil, err
@@ -163,7 +164,7 @@ func (s *Service) ReleaseAddress(
 			return err
 		}
 
-		a, err := loadAddress(tx, scope, value(in.AllocationId))
+		a, err := loadAddress(tx, scope, common.Value(in.AllocationId))
 		if err != nil {
 			return err
 		}
@@ -233,7 +234,7 @@ func (s *Service) DescribeAddressesAttribute(
 	ctx context.Context,
 	in *api.DescribeAddressesAttributeRequest,
 ) (*api.DescribeAddressesAttributeResult, error) {
-	if attribute := value(in.Attribute); attribute != "domain-name" {
+	if attribute := common.Value(in.Attribute); attribute != "domain-name" {
 		return nil, invalidParameter(fmt.Sprintf("Value (%s) for parameter attribute is invalid.", attribute))
 	}
 
@@ -277,13 +278,13 @@ func (s *Service) AssociateAddress(
 ) (*api.AssociateAddressResult, error) {
 	association := newID("eipassoc")
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		a, err := loadAddress(tx, scope, value(in.AllocationId))
+		a, err := loadAddress(tx, scope, common.Value(in.AllocationId))
 		if err != nil {
 			return err
 		}
 
-		id := value(in.InstanceId)
-		i, ok, err := read[instance](tx, key(scope, kindInstance, id))
+		id := common.Value(in.InstanceId)
+		i, ok, err := storage.Read[instance](tx, key(scope, kindInstance, id))
 		if err != nil || !ok || !i.active() {
 			return errorsOr(err, instanceNotFound(id))
 		}
@@ -307,7 +308,7 @@ func (s *Service) AssociateAddress(
 			return natErr
 		}
 
-		if a.AssociationID != "" && a.InstanceID != i.ID && !value(in.AllowReassociation) {
+		if a.AssociationID != "" && a.InstanceID != i.ID && !common.Value(in.AllowReassociation) {
 			return awserror.New("Resource.AlreadyAssociated", fmt.Sprintf("resource %s is already associated "+
 				"with associate-id %s", a.ID, a.AssociationID))
 		}
@@ -330,13 +331,13 @@ func (s *Service) AssociateAddress(
 				return unbindErr
 			}
 
-			if writeErr := write(tx, key(scope, kindAddress, previous.ID), previous); writeErr != nil {
+			if writeErr := storage.Write(tx, key(scope, kindAddress, previous.ID), previous); writeErr != nil {
 				return writeErr
 			}
 		}
 
 		// The instance and the address may have been rewritten above.
-		if i, _, err = read[instance](tx, key(scope, kindInstance, id)); err != nil {
+		if i, _, err = storage.Read[instance](tx, key(scope, kindInstance, id)); err != nil {
 			return err
 		}
 
@@ -346,11 +347,11 @@ func (s *Service) AssociateAddress(
 
 		a.AssociationID, a.InstanceID, a.PrivateIP = association, i.ID, i.PrivateIP
 		i.AddressID, i.PublicIP = a.ID, a.PublicIP
-		if writeErr := write(tx, key(scope, kindInstance, i.ID), i); writeErr != nil {
+		if writeErr := storage.Write(tx, key(scope, kindInstance, i.ID), i); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, key(scope, kindAddress, a.ID), a)
+		return storage.Write(tx, key(scope, kindAddress, a.ID), a)
 	})
 	if err != nil {
 		return nil, err
@@ -369,7 +370,7 @@ func (s *Service) DisassociateAddress(
 			return err
 		}
 
-		id := value(in.AssociationId)
+		id := common.Value(in.AssociationId)
 		at := slices.IndexFunc(all, func(a *address) bool { return id != "" && a.AssociationID == id })
 		if at < 0 {
 			return associationNotFound(id)
@@ -384,7 +385,7 @@ func (s *Service) DisassociateAddress(
 			return unbindErr
 		}
 
-		return write(tx, key(scope, kindAddress, a.ID), a)
+		return storage.Write(tx, key(scope, kindAddress, a.ID), a)
 	})
 	if err != nil {
 		return nil, err
@@ -400,12 +401,12 @@ func releaseInstanceAddress(tx storage.WriteTx, scope request.Scope, i *instance
 		return nil
 	}
 
-	a, ok, err := read[address](tx, key(scope, kindAddress, i.AddressID))
+	a, ok, err := storage.Read[address](tx, key(scope, kindAddress, i.AddressID))
 	i.AddressID = ""
 	if err != nil || !ok {
 		return err
 	}
 
 	a.AssociationID, a.InstanceID, a.PrivateIP = "", "", ""
-	return write(tx, key(scope, kindAddress, a.ID), a)
+	return storage.Write(tx, key(scope, kindAddress, a.ID), a)
 }

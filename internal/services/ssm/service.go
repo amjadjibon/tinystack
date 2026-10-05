@@ -205,12 +205,6 @@ func parameterARN(scope request.Scope, name string) string {
 
 func seconds(ms int64) *float64 { return new(float64(ms) / 1000) }
 
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
 // checkName validates a parameter name as a request refers to one.
 func checkName(name *string) error {
 	if name == nil || *name == "" || len(*name) > 2048 || !nameChars.MatchString(*name) {
@@ -256,7 +250,7 @@ func checkLabel(label string) bool {
 
 // loadParameter returns the parameter named name, which has no selector.
 func loadParameter(tx storage.ReadTx, scope request.Scope, name string) (*parameter, error) {
-	p, ok, err := read[parameter](tx, parameterKey(scope, name))
+	p, ok, err := storage.Read[parameter](tx, parameterKey(scope, name))
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +263,7 @@ func loadParameter(tx storage.ReadTx, scope request.Scope, name string) (*parame
 }
 
 func loadVersion(tx storage.ReadTx, scope request.Scope, name string, v int64) (*version, bool, error) {
-	return read[version](tx, versionKey(scope, name, v))
+	return storage.Read[version](tx, versionKey(scope, name, v))
 }
 
 // resolve returns the version that name, with an optional ":version" or

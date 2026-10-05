@@ -134,7 +134,7 @@ func (s *Service) next(ref stackRef) (bool, error) {
 	var next step
 	if err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
 		var err error
-		st, _, err = read[stack](tx, key(ref.scope, kindStack, ref.name))
+		st, _, err = storage.Read[stack](tx, key(ref.scope, kindStack, ref.name))
 		if err != nil || st == nil || st.Op == nil {
 			return err
 		}
@@ -147,7 +147,7 @@ func (s *Service) next(ref stackRef) (bool, error) {
 
 	if st == nil || st.Op == nil {
 		return false, s.store.Update(s.ctx, func(tx storage.WriteTx) error {
-			cur, _, err := read[stack](tx, key(ref.scope, kindStack, ref.name))
+			cur, _, err := storage.Read[stack](tx, key(ref.scope, kindStack, ref.name))
 			if err == nil && (cur == nil || cur.Op == nil) {
 				tx.Delete(indexKey(ref.scope, ref.name))
 			}
@@ -195,7 +195,7 @@ func (s *Service) next(ref stackRef) (bool, error) {
 // that outlives the service's context, so a step that ran is recorded.
 func (s *Service) commit(ref stackRef, change func(tx storage.WriteTx, st *stack) error) error {
 	return s.store.Update(context.WithoutCancel(s.ctx), func(tx storage.WriteTx) error {
-		st, found, err := read[stack](tx, key(ref.scope, kindStack, ref.name))
+		st, found, err := storage.Read[stack](tx, key(ref.scope, kindStack, ref.name))
 		if err != nil || !found || st.Op == nil {
 			return err
 		}
@@ -204,7 +204,7 @@ func (s *Service) commit(ref stackRef, change func(tx storage.WriteTx, st *stack
 			return err
 		}
 
-		return write(tx, key(ref.scope, kindStack, st.Name), st)
+		return storage.Write(tx, key(ref.scope, kindStack, st.Name), st)
 	})
 }
 
@@ -356,7 +356,7 @@ func dependedOn(st *stack, logical string) bool {
 // importer looks up exports in a stack's account and region.
 func importer(tx storage.ReadTx, scope request.Scope) func(string) (string, error) {
 	return func(name string) (string, error) {
-		e, found, err := read[export](tx, key(scope, kindExport, name))
+		e, found, err := storage.Read[export](tx, key(scope, kindExport, name))
 		if err != nil {
 			return "", err
 		}
@@ -694,7 +694,7 @@ func (s *Service) executed(tx storage.WriteTx, scope request.Scope, st *stack, s
 	}
 
 	k := key(scope, kindChangeSet, st.Name+"/"+st.Op.ChangeSet)
-	cs, found, err := read[changeSet](tx, k)
+	cs, found, err := storage.Read[changeSet](tx, k)
 	if err != nil || !found {
 		return err
 	}
@@ -704,7 +704,7 @@ func (s *Service) executed(tx storage.WriteTx, scope request.Scope, st *stack, s
 		cs.Execution = "EXECUTE_COMPLETE"
 	}
 
-	return write(tx, k, cs)
+	return storage.Write(tx, k, cs)
 }
 
 // retire ends a stack's deletion: its record moves to the deleted stacks,
@@ -730,7 +730,7 @@ func (s *Service) retire(tx storage.WriteTx, scope request.Scope, st *stack) err
 
 	tx.Delete(key(scope, kindStack, st.Name))
 	tx.Delete(indexKey(scope, st.Name))
-	if err := write(tx, key(scope, kindDeleted, stackUUID(st.ID)), st); err != nil {
+	if err := storage.Write(tx, key(scope, kindDeleted, stackUUID(st.ID)), st); err != nil {
 		return err
 	}
 
@@ -741,7 +741,7 @@ func (s *Service) retire(tx storage.WriteTx, scope request.Scope, st *stack) err
 // period.
 func purge(tx storage.WriteTx, scope request.Scope, now time.Time) error {
 	for _, k := range tx.Keys(key(scope, kindDeleted, "")) {
-		old, _, err := read[stack](tx, k)
+		old, _, err := storage.Read[stack](tx, k)
 		if err != nil {
 			return err
 		}
@@ -793,7 +793,7 @@ func (s *Service) publish(tx storage.WriteTx, scope request.Scope, st *stack, ou
 	}
 
 	for _, name := range slices.Sorted(maps.Keys(next)) {
-		e, found, err := read[export](tx, key(scope, kindExport, name))
+		e, found, err := storage.Read[export](tx, key(scope, kindExport, name))
 		if err != nil {
 			return err
 		}
@@ -802,7 +802,11 @@ func (s *Service) publish(tx storage.WriteTx, scope request.Scope, st *stack, ou
 			return validation("Export with name %s is already exported by stack %s", name, e.StackName)
 		}
 
-		err = write(tx, key(scope, kindExport, name), export{StackID: st.ID, StackName: st.Name, Value: next[name]})
+		err = storage.Write(
+			tx,
+			key(scope, kindExport, name),
+			export{StackID: st.ID, StackName: st.Name, Value: next[name]},
+		)
 		if err != nil {
 			return err
 		}
@@ -815,7 +819,7 @@ func (s *Service) publish(tx storage.WriteTx, scope request.Scope, st *stack, ou
 func importers(tx storage.ReadTx, scope request.Scope, name, except string) ([]string, error) {
 	var out []string
 	for _, k := range tx.Keys(key(scope, kindStack, "")) {
-		st, _, err := read[stack](tx, k)
+		st, _, err := storage.Read[stack](tx, k)
 		if err != nil {
 			return nil, err
 		}
@@ -846,7 +850,7 @@ func (s *Service) event(
 		e.Properties = string(data)
 	}
 
-	return write(tx, eventKey(scope, st.ID, st.Events), e)
+	return storage.Write(tx, eventKey(scope, st.ID, st.Events), e)
 }
 
 // stackEvent is a stack event's record.

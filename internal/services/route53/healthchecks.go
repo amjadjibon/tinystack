@@ -9,6 +9,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -33,7 +34,7 @@ type healthCheck struct {
 }
 
 func loadHealthCheck(tx storage.ReadTx, account, id string) (*healthCheck, error) {
-	h, found, err := read[healthCheck](tx, key(account, kindHealthCheck, id))
+	h, found, err := storage.Read[healthCheck](tx, key(account, kindHealthCheck, id))
 	if err == nil && !found {
 		err = awserror.New(noSuchHealthCheck, "No health check exists with the ID "+id)
 	}
@@ -45,7 +46,7 @@ func loadHealthCheck(tx storage.ReadTx, account, id string) (*healthCheck, error
 //
 //nolint:gocyclo,cyclop // One check per member.
 func checkHealthConfig(tx storage.ReadTx, account string, c *api.HealthCheckConfig) error {
-	t := value(c.Type)
+	t := common.Value(c.Type)
 	endpoint := t == checkHTTP || t == checkHTTPS || t == checkHTTPMatch || t == checkHTTPSMatch || t == checkTCP
 	secure := t == checkHTTPS || t == checkHTTPSMatch
 	switch {
@@ -61,7 +62,7 @@ func checkHealthConfig(tx storage.ReadTx, account string, c *api.HealthCheckConf
 		return invalid("The Port must be 1 to 65535.")
 	case (t == checkHTTPMatch || t == checkHTTPSMatch) != (c.SearchString != nil):
 		return invalid("Only string-matching health checks have a SearchString, and they need one.")
-	case len(value(c.SearchString)) > 255 || len(value(c.ResourcePath)) > 255:
+	case len(common.Value(c.SearchString)) > 255 || len(common.Value(c.ResourcePath)) > 255:
 		return invalid("The SearchString and ResourcePath must be at most 255 characters long.")
 	case c.RequestInterval != nil && *c.RequestInterval != 10 && *c.RequestInterval != 30:
 		return invalid("The RequestInterval must be 10 or 30.")
@@ -113,7 +114,7 @@ func checkHealthConfig(tx storage.ReadTx, account string, c *api.HealthCheckConf
 		c.EnableSNI = new(true)
 	}
 
-	c.Inverted, c.Disabled = new(value(c.Inverted)), new(value(c.Disabled))
+	c.Inverted, c.Disabled = new(common.Value(c.Inverted)), new(common.Value(c.Disabled))
 	return nil
 }
 
@@ -125,7 +126,7 @@ func (s *Service) CreateHealthCheck(
 		return nil, err
 	}
 
-	ref := value(in.CallerReference)
+	ref := common.Value(in.CallerReference)
 	switch {
 	case ref == "" || len(ref) > maxCheckReference:
 		return nil, invalid("The CallerReference must be 1 to 64 characters long.")
@@ -165,13 +166,13 @@ func (s *Service) CreateHealthCheck(
 		}
 		tx.Put(refKey, []byte(id))
 		out.HealthCheck = &h.Check
-		return write(tx, key(m.AccountID, kindHealthCheck, id), h)
+		return storage.Write(tx, key(m.AccountID, kindHealthCheck, id), h)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	out.Location = new(healthCheckURL + value(out.HealthCheck.Id))
+	out.Location = new(healthCheckURL + common.Value(out.HealthCheck.Id))
 	return out, nil
 }
 
@@ -185,7 +186,7 @@ func (s *Service) GetHealthCheck(
 
 	var h *healthCheck
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		h, err = loadHealthCheck(tx, m.AccountID, value(in.HealthCheckId))
+		h, err = loadHealthCheck(tx, m.AccountID, common.Value(in.HealthCheckId))
 		return err
 	})
 	if err != nil {
@@ -209,16 +210,19 @@ func (s *Service) ListHealthChecks(
 	}
 
 	out := &api.ListHealthChecksResponse{
-		HealthChecks: []api.HealthCheck{}, Marker: new(value(in.Marker)), IsTruncated: new(false), MaxItems: new(limit),
+		HealthChecks: []api.HealthCheck{},
+		Marker:       new(common.Value(in.Marker)),
+		IsTruncated:  new(false),
+		MaxItems:     new(limit),
 	}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(key(m.AccountID, kindHealthCheck, "")) {
-			h, _, readErr := read[healthCheck](tx, k)
+			h, _, readErr := storage.Read[healthCheck](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			id := value(h.Check.Id)
+			id := common.Value(h.Check.Id)
 			if in.Marker != nil && id < *in.Marker {
 				continue
 			}
@@ -246,7 +250,7 @@ func (s *Service) UpdateHealthCheck(
 		return nil, err
 	}
 
-	id := value(in.HealthCheckId)
+	id := common.Value(in.HealthCheckId)
 	out := &api.UpdateHealthCheckResponse{}
 	return out, s.store.Update(ctx, func(tx storage.WriteTx) error {
 		h, loadErr := loadHealthCheck(tx, m.AccountID, id)
@@ -254,7 +258,7 @@ func (s *Service) UpdateHealthCheck(
 			return loadErr
 		}
 
-		if v := in.HealthCheckVersion; v != nil && *v != value(h.Check.HealthCheckVersion) {
+		if v := in.HealthCheckVersion; v != nil && *v != common.Value(h.Check.HealthCheckVersion) {
 			return awserror.New(
 				"HealthCheckVersionMismatch",
 				"The HealthCheckVersion does not match the health check's.",
@@ -319,9 +323,9 @@ func (s *Service) UpdateHealthCheck(
 		}
 
 		h.Check.HealthCheckConfig = &c
-		h.Check.HealthCheckVersion = new(value(h.Check.HealthCheckVersion) + 1)
+		h.Check.HealthCheckVersion = new(common.Value(h.Check.HealthCheckVersion) + 1)
 		out.HealthCheck = &h.Check
-		return write(tx, key(m.AccountID, kindHealthCheck, id), h)
+		return storage.Write(tx, key(m.AccountID, kindHealthCheck, id), h)
 	})
 }
 
@@ -333,7 +337,7 @@ func (s *Service) DeleteHealthCheck(
 		return nil, err
 	}
 
-	id := value(in.HealthCheckId)
+	id := common.Value(in.HealthCheckId)
 	return &api.DeleteHealthCheckResponse{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
 		h, loadErr := loadHealthCheck(tx, m.AccountID, id)
 		if loadErr != nil {
@@ -341,18 +345,18 @@ func (s *Service) DeleteHealthCheck(
 		}
 
 		for _, k := range tx.Keys(key(m.AccountID, kindRecord, "")) {
-			rs, _, readErr := read[api.ResourceRecordSet](tx, k)
+			rs, _, readErr := storage.Read[api.ResourceRecordSet](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			if value(rs.HealthCheckId) == id {
+			if common.Value(rs.HealthCheckId) == id {
 				return awserror.New("HealthCheckInUse", "The health check "+id+" is used by record set "+setName(rs))
 			}
 		}
 
 		tx.Delete(key(m.AccountID, kindHealthCheck, id))
-		tx.Delete(key(m.AccountID, kindReference, kindHealthCheck+"/"+value(h.Check.CallerReference)))
+		tx.Delete(key(m.AccountID, kindReference, kindHealthCheck+"/"+common.Value(h.Check.CallerReference)))
 		return nil
 	})
 }

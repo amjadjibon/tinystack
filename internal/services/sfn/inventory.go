@@ -19,7 +19,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			scope := request.Scope{AccountID: account, Region: region}
 			switch {
 			case ok && strings.HasPrefix(rest, kindMachine+"/"):
-				sm, _, err := read[stateMachine](tx, key)
+				sm, _, err := storage.Read[stateMachine](tx, key)
 				if err != nil {
 					return err
 				}
@@ -30,7 +30,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					Details: map[string]any{"Type": sm.Type, "RoleArn": sm.RoleArn},
 				})
 			case ok && strings.HasPrefix(rest, kindActivity+"/"):
-				a, _, err := read[activity](tx, key)
+				a, _, err := storage.Read[activity](tx, key)
 				if err != nil {
 					return err
 				}

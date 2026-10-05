@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -23,7 +24,7 @@ func bucketTags(in *api.Tagging) (map[string]string, error) {
 
 	tags := make(map[string]string, len(in.TagSet))
 	for _, tag := range in.TagSet {
-		k := value(tag.Key)
+		k := common.Value(tag.Key)
 		if _, dup := tags[k]; dup {
 			return nil, invalidTag("Cannot provide multiple Tags with the same key")
 		}
@@ -32,7 +33,7 @@ func bucketTags(in *api.Tagging) (map[string]string, error) {
 			return nil, invalidTag("System tags cannot be added/updated by requester")
 		}
 
-		tags[k] = value(tag.Value)
+		tags[k] = common.Value(tag.Value)
 	}
 
 	if err := tagging.Check(tags); err != nil {
@@ -134,7 +135,7 @@ const maxObjectTags = 10
 func objectTags(set []api.Tag) (map[string]string, error) {
 	tags := make(map[string]string, len(set))
 	for _, tag := range set {
-		k, v := value(tag.Key), value(tag.Value)
+		k, v := common.Value(tag.Key), common.Value(tag.Value)
 		if _, dup := tags[k]; dup {
 			return nil, invalidTag("Cannot provide multiple Tags with the same key")
 		}
@@ -213,7 +214,7 @@ func (s *Service) retagObject(ctx context.Context, t target, tags map[string]str
 			return readErr
 		}
 
-		obj, writeErr := rewrite(tx, prefix, *t.key, value(t.version), func(o *object) { o.Tags = tags })
+		obj, writeErr := rewrite(tx, prefix, *t.key, common.Value(t.version), func(o *object) { o.Tags = tags })
 		if writeErr != nil {
 			return writeErr
 		}

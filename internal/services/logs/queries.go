@@ -9,6 +9,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -106,7 +107,7 @@ func (s *Service) StartQuery(ctx context.Context, in *api.StartQueryRequest) (*a
 		return nil, err
 	}
 
-	text := value(in.QueryString)
+	text := common.Value(in.QueryString)
 	switch {
 	case text == "" || len(text) > maxQueryLength:
 		return nil, invalid("queryString must be 1 to %d characters", maxQueryLength)
@@ -161,7 +162,7 @@ func (s *Service) StartQuery(ctx context.Context, in *api.StartQueryRequest) (*a
 	slices.SortStableFunc(rows, func(a, b row) int { return strings.Compare(b[fieldTimestamp], a[fieldTimestamp]) })
 	q.Rows, q.Fields, q.Matched = run(commands, rows, limit)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		return write(tx, queryKey(scope, q.ID), q)
+		return storage.Write(tx, queryKey(scope, q.ID), q)
 	})
 	if err != nil {
 		return nil, err
@@ -181,7 +182,7 @@ func scan(tx storage.ReadTx, scope request.Scope, g *group, from, to int64) ([]r
 				continue
 			}
 
-			e, _, err := read[event](tx, eventKey)
+			e, _, err := storage.Read[event](tx, eventKey)
 			if err != nil {
 				return nil, err
 			}
@@ -194,12 +195,12 @@ func scan(tx storage.ReadTx, scope request.Scope, g *group, from, to int64) ([]r
 }
 
 func loadQuery(tx storage.ReadTx, scope request.Scope, id *string) (*query, error) {
-	q, found, err := read[query](tx, queryKey(scope, value(id)))
+	q, found, err := storage.Read[query](tx, queryKey(scope, common.Value(id)))
 	if err != nil {
 		return nil, err
 	}
 
-	if !found || value(id) == "" {
+	if !found || common.Value(id) == "" {
 		return nil, notFound("The specified query does not exist.")
 	}
 
@@ -276,7 +277,7 @@ func (s *Service) DescribeQueries(
 	}
 
 	limit := int64(maxQueryResults)
-	switch l := value(in.MaxResults); {
+	switch l := common.Value(in.MaxResults); {
 	case in.Status != nil && !slices.Contains(queryStatuses, *in.Status):
 		return nil, invalid("status must be one of %s", strings.Join(queryStatuses, ", "))
 	case in.MaxResults != nil && (l < 1 || l > maxQueryResults):
@@ -297,7 +298,7 @@ func (s *Service) DescribeQueries(
 				continue
 			}
 
-			q, _, readErr := read[query](tx, key)
+			q, _, readErr := storage.Read[query](tx, key)
 			if readErr != nil {
 				return readErr
 			}

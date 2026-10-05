@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -161,7 +162,7 @@ func onSuccess(d *api.DestinationConfig) *string {
 		return nil
 	}
 
-	return new(value(d.OnSuccess.Destination))
+	return new(common.Value(d.OnSuccess.Destination))
 }
 
 func onFailure(d *api.DestinationConfig) *string {
@@ -169,7 +170,7 @@ func onFailure(d *api.DestinationConfig) *string {
 		return nil
 	}
 
-	return new(value(d.OnFailure.Destination))
+	return new(common.Value(d.OnFailure.Destination))
 }
 
 // destinationResources are the resource prefixes of each destination service's
@@ -196,7 +197,7 @@ func destinationService(arn string) (string, bool) {
 // invokeConfigTarget resolves the function and qualifier a request names,
 // which must exist.
 func invokeConfigTarget(tx storage.ReadTx, m *request.Metadata, raw, qualifier *string) (name, q string, err error) {
-	if name, q, err = resolveName(*m, value(raw)); err != nil {
+	if name, q, err = resolveName(*m, common.Value(raw)); err != nil {
 		return "", "", err
 	}
 

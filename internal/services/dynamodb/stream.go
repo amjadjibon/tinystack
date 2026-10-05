@@ -13,6 +13,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	streamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -140,7 +141,7 @@ func streamViewType(spec *api.StreamSpecification) (string, error) {
 		return "", awserror.Validation("StreamSpecification.StreamEnabled is required")
 	}
 
-	viewType := value(spec.StreamViewType)
+	viewType := common.Value(spec.StreamViewType)
 	if !*spec.StreamEnabled {
 		if spec.StreamViewType != nil {
 			return "", awserror.Validation("StreamViewType can only be set when StreamEnabled is true")
@@ -160,7 +161,7 @@ func streamViewType(spec *api.StreamSpecification) (string, error) {
 // streamEnabled reports whether the table has an enabled stream.
 func streamEnabled(t *table) bool {
 	spec := t.Description.StreamSpecification
-	return spec != nil && value(spec.StreamEnabled)
+	return spec != nil && common.Value(spec.StreamEnabled)
 }
 
 // openStream gives the table stored at key a new enabled stream, first
@@ -221,7 +222,7 @@ func closeStream(tx storage.WriteTx, key string, t *table, now time.Time) error 
 	}
 
 	scope, name := tableScope(key)
-	st, found, err := loadStream(tx, streamKey(scope, name, value(t.Description.LatestStreamLabel)))
+	st, found, err := loadStream(tx, streamKey(scope, name, common.Value(t.Description.LatestStreamLabel)))
 	if err != nil {
 		return err
 	}
@@ -261,7 +262,7 @@ func appendRecord(tx storage.WriteTx, key string, t *table, old, it item, by *st
 	}
 
 	scope, name := tableScope(key)
-	label := value(t.Description.LatestStreamLabel)
+	label := common.Value(t.Description.LatestStreamLabel)
 	now := time.Now()
 	record, err := newRecord(scope, t, old, it, now)
 	if err != nil {
@@ -313,10 +314,10 @@ func newRecord(scope request.Scope, t *table, old, it item, now time.Time) (*str
 
 	keys := item{}
 	for _, k := range t.Description.KeySchema {
-		keys[value(k.AttributeName)] = current[value(k.AttributeName)]
+		keys[common.Value(k.AttributeName)] = current[common.Value(k.AttributeName)]
 	}
 
-	viewType := value(t.Description.StreamSpecification.StreamViewType)
+	viewType := common.Value(t.Description.StreamSpecification.StreamViewType)
 	images := []item{keys}
 	var newImage, oldImage item
 	if it != nil && (viewType == viewNewImage || viewType == viewNewAndOld) {
@@ -381,7 +382,7 @@ func recordTime(tx storage.ReadTx, key string) (time.Time, bool) {
 		return time.Time{}, false
 	}
 
-	return time.Unix(int64(value(record.Dynamodb.ApproximateCreationDateTime)), 0), true
+	return time.Unix(int64(common.Value(record.Dynamodb.ApproximateCreationDateTime)), 0), true
 }
 
 func readRecord(tx storage.ReadTx, key string) (*streamsapi.Record, bool) {

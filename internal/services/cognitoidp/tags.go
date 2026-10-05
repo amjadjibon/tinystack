@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -14,9 +15,9 @@ import (
 // taggedPool returns the ID of the scope's user pool arn names; only user
 // pools take tags.
 func taggedPool(scope request.Scope, arn *string) (*string, error) {
-	id, ok := strings.CutPrefix(value(arn), poolARN(scope, ""))
+	id, ok := strings.CutPrefix(common.Value(arn), poolARN(scope, ""))
 	if !ok || id == "" {
-		return nil, notFound("The resource %s does not exist.", value(arn))
+		return nil, notFound("The resource %s does not exist.", common.Value(arn))
 	}
 
 	return &id, nil

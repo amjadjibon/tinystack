@@ -26,7 +26,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			account := parts[0]
 			switch parts[2] {
 			case kindRole:
-				r, _, err := read[role](tx, k)
+				r, _, err := storage.Read[role](tx, k)
 				if err != nil {
 					return err
 				}
@@ -38,7 +38,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					}),
 				})
 			case kindPolicy:
-				p, _, err := read[policy](tx, k)
+				p, _, err := storage.Read[policy](tx, k)
 				if err != nil {
 					return err
 				}
@@ -60,7 +60,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					},
 				})
 			case kindUser:
-				u, _, err := read[user](tx, k)
+				u, _, err := storage.Read[user](tx, k)
 				if err != nil {
 					return err
 				}
@@ -70,7 +70,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					Details: u.details(map[string]any{detailPath: u.Path, "UserId": u.ID, "AccessKeyIds": u.Keys}),
 				})
 			case kindProfile:
-				p, _, err := read[profile](tx, k)
+				p, _, err := storage.Read[profile](tx, k)
 				if err != nil {
 					return err
 				}
@@ -80,7 +80,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					Details: map[string]any{detailPath: p.Path, "InstanceProfileId": p.ID, "Role": p.Role},
 				})
 			case kindGroup:
-				g, _, err := read[group](tx, k)
+				g, _, err := storage.Read[group](tx, k)
 				if err != nil {
 					return err
 				}

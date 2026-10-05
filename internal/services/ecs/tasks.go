@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -118,7 +119,7 @@ func (t *task) output(scope request.Scope, include []string) api.Task {
 // always passes, and UNKNOWN otherwise.
 func taskHealth(t *task) string {
 	for _, c := range t.Containers {
-		if value(c.HealthStatus) != "HEALTHY" {
+		if common.Value(c.HealthStatus) != "HEALTHY" {
 			return "UNKNOWN"
 		}
 	}
@@ -163,10 +164,10 @@ func placement(c *cluster, def *taskDef, l *launch) error {
 			return err
 		}
 
-		l.CapacityProvider = value(l.Strategy[0].CapacityProvider)
+		l.CapacityProvider = common.Value(l.Strategy[0].CapacityProvider)
 		for _, item := range l.Strategy {
-			if value(item.Base) > 0 {
-				l.CapacityProvider = value(item.CapacityProvider)
+			if common.Value(item.Base) > 0 {
+				l.CapacityProvider = common.Value(item.CapacityProvider)
 			}
 		}
 	}
@@ -188,7 +189,7 @@ func placement(c *cluster, def *taskDef, l *launch) error {
 
 func checkNetwork(def *taskDef, network *api.NetworkConfiguration) error {
 	vpc := network != nil && network.AwsvpcConfiguration != nil
-	if value(def.Def.NetworkMode) != awsvpc {
+	if common.Value(def.Def.NetworkMode) != awsvpc {
 		if vpc {
 			return invalidParameter("Network Configuration is not valid for the given networkMode of this task " +
 				"definition.")
@@ -231,10 +232,10 @@ func checkOverrides(def *taskDef, o *api.TaskOverride) error {
 
 	for _, c := range o.ContainerOverrides {
 		if !slices.ContainsFunc(def.Def.ContainerDefinitions, func(d api.ContainerDefinition) bool {
-			return value(d.Name) == value(c.Name)
+			return common.Value(d.Name) == common.Value(c.Name)
 		}) {
 			return invalidParameter("Override for container named %s is not a container in the TaskDefinition.",
-				value(c.Name))
+				common.Value(c.Name))
 		}
 	}
 
@@ -253,11 +254,28 @@ func checkOverrides(def *taskDef, o *api.TaskOverride) error {
 func (s *Service) start(tx storage.WriteTx, scope request.Scope, c *cluster, def *taskDef, l *launch) (*task, error) {
 	now := s.now().UTC()
 	t := &task{
-		Created: now, ID: newID(), Cluster: c.Name, Definition: *def.Def.TaskDefinitionArn, Family: *def.Def.Family,
-		Group: l.Group, StartedBy: l.StartedBy, LaunchType: l.LaunchType, PlatformVersion: l.PlatformVersion,
-		CapacityProvider: l.CapacityProvider, Desired: running, Last: running, Zone: scope.Region + "a",
-		Service: l.Service, ClientToken: l.ClientToken, Overrides: l.Overrides, Network: l.Network, Tags: l.Tags,
-		Version: 1, ExecuteCommand: l.ExecuteCommand, Cpu: value(def.Def.Cpu), Memory: value(def.Def.Memory),
+		Created:          now,
+		ID:               newID(),
+		Cluster:          c.Name,
+		Definition:       *def.Def.TaskDefinitionArn,
+		Family:           *def.Def.Family,
+		Group:            l.Group,
+		StartedBy:        l.StartedBy,
+		LaunchType:       l.LaunchType,
+		PlatformVersion:  l.PlatformVersion,
+		CapacityProvider: l.CapacityProvider,
+		Desired:          running,
+		Last:             running,
+		Zone:             scope.Region + "a",
+		Service:          l.Service,
+		ClientToken:      l.ClientToken,
+		Overrides:        l.Overrides,
+		Network:          l.Network,
+		Tags:             l.Tags,
+		Version:          1,
+		ExecuteCommand:   l.ExecuteCommand,
+		Cpu:              common.Value(def.Def.Cpu),
+		Memory:           common.Value(def.Def.Memory),
 	}
 	if t.Group == "" {
 		t.Group = "family:" + t.Family
@@ -281,7 +299,7 @@ func (s *Service) start(tx storage.WriteTx, scope request.Scope, c *cluster, def
 		t.Containers = append(t.Containers, container(scope, t, &def.Def.ContainerDefinitions[i]))
 	}
 
-	return t, write(tx, taskKey(scope, c.Name, t.ID), t)
+	return t, storage.Write(tx, taskKey(scope, c.Name, t.ID), t)
 }
 
 func overridden(override *string, current string) string {
@@ -299,7 +317,7 @@ func container(scope request.Scope, t *task, d *api.ContainerDefinition) api.Con
 	c := api.Container{
 		ContainerArn: new(arn(scope, "container/"+t.Cluster+"/"+t.ID+"/"+uuid.NewV4().String())),
 		TaskArn:      new(taskARN(scope, t.Cluster, t.ID)), Name: d.Name, Image: d.Image,
-		LastStatus: new(t.Last), HealthStatus: new("UNKNOWN"), Cpu: new(strconv.FormatInt(value(d.Cpu), 10)),
+		LastStatus: new(t.Last), HealthStatus: new("UNKNOWN"), Cpu: new(strconv.FormatInt(common.Value(d.Cpu), 10)),
 		NetworkBindings: []api.NetworkBinding{},
 	}
 	if d.HealthCheck != nil {
@@ -327,7 +345,7 @@ func container(scope request.Scope, t *task, d *api.ContainerDefinition) api.Con
 	for _, p := range d.PortMappings {
 		// A bridge-mode port without a host port gets one from the
 		// ephemeral range.
-		hostPort := value(p.HostPort)
+		hostPort := common.Value(p.HostPort)
 		if hostPort == 0 {
 			n, _ := strconv.ParseInt(digits(4), 10, 64)
 			hostPort = 32768 + n
@@ -354,19 +372,19 @@ func (s *Service) stop(tx storage.WriteTx, scope request.Scope, t *task, code, r
 		c := &t.Containers[i]
 		// Containers that never started, or whose exit the runner recorded,
 		// keep their exit code.
-		if value(c.LastStatus) == running {
+		if common.Value(c.LastStatus) == running {
 			c.ExitCode = new(int64(0))
 		}
 
 		c.LastStatus = new(stopped)
 	}
 
-	return write(tx, taskKey(scope, t.Cluster, t.ID), t)
+	return storage.Write(tx, taskKey(scope, t.Cluster, t.ID), t)
 }
 
 // purge deletes the tasks of a cluster that stopped more than an hour ago.
 func (s *Service) purge(tx storage.WriteTx, scope request.Scope, clusterName string) error {
-	tasks, err := records[task](tx, taskPrefix(scope, clusterName))
+	tasks, err := storage.Records[task](tx, taskPrefix(scope, clusterName))
 	if err != nil {
 		return err
 	}
@@ -387,7 +405,7 @@ func (s *Service) replace(tx storage.WriteTx, scope request.Scope, c *cluster, t
 		return nil
 	}
 
-	svc, ok, err := read[ecsService](tx, serviceKey(scope, c.Name, t.Service))
+	svc, ok, err := storage.Read[ecsService](tx, serviceKey(scope, c.Name, t.Service))
 	if err != nil || !ok || svc.Status != active {
 		return err
 	}
@@ -401,7 +419,7 @@ func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.Run
 		return nil, err
 	}
 
-	count := value(in.Count)
+	count := common.Value(in.Count)
 	if in.Count == nil {
 		count = 1
 	}
@@ -409,7 +427,7 @@ func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.Run
 	switch {
 	case count < 1 || count > 10:
 		return nil, invalidParameter("count must be between 1 and 10.")
-	case len(value(in.StartedBy)) > 128 || len(value(in.Group)) > 255:
+	case len(common.Value(in.StartedBy)) > 128 || len(common.Value(in.Group)) > 255:
 		return nil, invalidParameter("startedBy can have up to 128 characters and group up to 255.")
 	case !oneOf(in.PropagateTags, "TASK_DEFINITION", "NONE"):
 		return nil, invalidParameter("RunTask propagates tags from TASK_DEFINITION or NONE.")
@@ -430,7 +448,13 @@ func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.Run
 			return purgeErr
 		}
 
-		if reused, found, reuseErr := tokenTasks(tx, scope, c.Name, value(in.ClientToken)); reuseErr != nil || found {
+		if reused, found, reuseErr := tokenTasks(
+			tx,
+			scope,
+			c.Name,
+			common.Value(in.ClientToken),
+		); reuseErr != nil ||
+			found {
 			for _, t := range reused {
 				out.Tasks = append(out.Tasks, t.output(scope, []string{fieldTags}))
 			}
@@ -444,16 +468,24 @@ func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.Run
 		}
 
 		l := &launch{
-			LaunchType: value(in.LaunchType), Strategy: in.CapacityProviderStrategy, Network: in.NetworkConfiguration,
-			PlatformVersion: value(in.PlatformVersion), Overrides: in.Overrides, Group: value(in.Group),
-			StartedBy: value(in.StartedBy), ClientToken: value(in.ClientToken), Tags: in.Tags,
-			ExecuteCommand: value(in.EnableExecuteCommand),
+			LaunchType: common.Value(
+				in.LaunchType,
+			),
+			Strategy:        in.CapacityProviderStrategy,
+			Network:         in.NetworkConfiguration,
+			PlatformVersion: common.Value(in.PlatformVersion),
+			Overrides:       in.Overrides,
+			Group:           common.Value(in.Group),
+			StartedBy:       common.Value(in.StartedBy),
+			ClientToken:     common.Value(in.ClientToken),
+			Tags:            in.Tags,
+			ExecuteCommand:  common.Value(in.EnableExecuteCommand),
 		}
-		if value(in.PropagateTags) == "TASK_DEFINITION" {
+		if common.Value(in.PropagateTags) == "TASK_DEFINITION" {
 			l.Tags = mergeTags(def.Tags, in.Tags)
 		}
 
-		if value(in.EnableECSManagedTags) {
+		if common.Value(in.EnableECSManagedTags) {
 			l.Tags = mergeTags(l.Tags, []api.Tag{{Key: new("aws:ecs:clusterName"), Value: new(c.Name)}})
 		}
 
@@ -490,7 +522,7 @@ func tokenTasks(tx storage.ReadTx, scope request.Scope, clusterName, token strin
 		return nil, false, nil
 	}
 
-	tasks, err := records[task](tx, taskPrefix(scope, clusterName))
+	tasks, err := storage.Records[task](tx, taskPrefix(scope, clusterName))
 	if err != nil {
 		return nil, false, err
 	}
@@ -546,7 +578,7 @@ func (s *Service) DescribeTasks(ctx context.Context, in *api.DescribeTasksReques
 
 		for _, ref := range in.Tasks {
 			id := taskRef(scope, c.Name, ref)
-			t, ok, readErr := read[task](tx, taskKey(scope, c.Name, id))
+			t, ok, readErr := storage.Read[task](tx, taskKey(scope, c.Name, id))
 			if readErr != nil {
 				return readErr
 			}
@@ -602,7 +634,7 @@ func (s *Service) ListTasks(ctx context.Context, in *api.ListTasksRequest) (*api
 			return loadErr
 		}
 
-		tasks, readErr := records[task](tx, taskPrefix(scope, c.Name))
+		tasks, readErr := storage.Records[task](tx, taskPrefix(scope, c.Name))
 		if readErr != nil {
 			return readErr
 		}
@@ -633,7 +665,7 @@ func (s *Service) StopTask(ctx context.Context, in *api.StopTaskRequest) (*api.S
 		return nil, err
 	}
 
-	if len(value(in.Reason)) > 1024 {
+	if len(common.Value(in.Reason)) > 1024 {
 		return nil, invalidParameter("reason can have up to 1024 characters.")
 	}
 
@@ -644,12 +676,12 @@ func (s *Service) StopTask(ctx context.Context, in *api.StopTaskRequest) (*api.S
 			return loadErr
 		}
 
-		t, ok, readErr := read[task](tx, taskKey(scope, c.Name, taskRef(scope, c.Name, value(in.Task))))
+		t, ok, readErr := storage.Read[task](tx, taskKey(scope, c.Name, taskRef(scope, c.Name, common.Value(in.Task))))
 		if readErr != nil || !ok {
 			return errorsOr(readErr, invalidParameter("The referenced task was not found."))
 		}
 
-		reason := value(in.Reason)
+		reason := common.Value(in.Reason)
 		if reason == "" {
 			reason = "Task stopped by user"
 		}

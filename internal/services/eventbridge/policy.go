@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -40,13 +41,13 @@ func policy(tx storage.ReadTx, scope request.Scope, bus string) string {
 
 // statement builds the statement PutPermission adds without a Policy.
 func statement(scope request.Scope, bus string, in *api.PutPermissionRequest) (map[string]any, error) {
-	principal := value(in.Principal)
+	principal := common.Value(in.Principal)
 	switch {
-	case value(in.Action) != "events:PutEvents":
+	case common.Value(in.Action) != "events:PutEvents":
 		return nil, invalid("Action must be events:PutEvents.")
 	case principal != "*" && !accountID.MatchString(principal):
 		return nil, invalid("Principal must be an AWS account ID or *.")
-	case !statementID.MatchString(value(in.StatementId)):
+	case !statementID.MatchString(common.Value(in.StatementId)):
 		return nil, invalid("StatementId must be 1 to 64 characters from [a-zA-Z0-9-_].")
 	}
 
@@ -59,7 +60,8 @@ func statement(scope request.Scope, bus string, in *api.PutPermissionRequest) (m
 	}
 
 	if c := in.Condition; c != nil {
-		if value(c.Type) != "StringEquals" || value(c.Key) != "aws:PrincipalOrgID" || value(c.Value) == "" {
+		if common.Value(c.Type) != "StringEquals" || common.Value(c.Key) != "aws:PrincipalOrgID" ||
+			common.Value(c.Value) == "" {
 			return nil, invalid("Condition must be a StringEquals of aws:PrincipalOrgID.")
 		}
 
@@ -152,7 +154,7 @@ func (s *Service) RemovePermission(
 		return nil, err
 	}
 
-	all := value(in.RemoveAllPermissions)
+	all := common.Value(in.RemoveAllPermissions)
 	if all == (in.StatementId != nil) {
 		return nil, invalid("Give either a StatementId or RemoveAllPermissions.")
 	}
@@ -186,7 +188,7 @@ func (s *Service) RemovePermission(
 		}
 
 		doc.Statement = kept
-		return putJSON(tx, policyKey(m.Scope, bus), doc)
+		return storage.Write(tx, policyKey(m.Scope, bus), doc)
 	})
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/policydoc"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -29,7 +30,7 @@ func (s *Service) AddPermission(ctx context.Context, in *api.AddPermissionInput)
 		return nil, err
 	}
 
-	name := value(in.Label)
+	name := common.Value(in.Label)
 	switch {
 	case !label.MatchString(name):
 		return nil, invalid("Label")
@@ -78,7 +79,7 @@ func (s *Service) AddPermission(ctx context.Context, in *api.AddPermissionInput)
 		}
 
 		t.Attributes[attrPolicy] = policy
-		return save(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func (s *Service) RemovePermission(
 			return loadErr
 		}
 
-		policy, removeErr := policydoc.Remove(t.policy(key), value(in.Label))
+		policy, removeErr := policydoc.Remove(t.policy(key), common.Value(in.Label))
 		if removeErr != nil {
 			return invalid("Label")
 		}
@@ -113,7 +114,7 @@ func (s *Service) RemovePermission(
 		}
 
 		t.Attributes[attrPolicy] = policy
-		return save(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return nil, err

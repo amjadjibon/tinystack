@@ -6,6 +6,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -14,7 +15,7 @@ var endpointTypes = []string{"EDGE", "REGIONAL", "PRIVATE"}
 // checkAPI validates the settings CreateRestApi and UpdateRestApi share.
 func checkAPI(a *api.RestApi) error {
 	switch {
-	case value(a.Name) == "":
+	case common.Value(a.Name) == "":
 		return badRequest("Name is required.")
 	case a.ApiKeySource != nil && *a.ApiKeySource != "HEADER" && *a.ApiKeySource != "AUTHORIZER":
 		return badRequest("ApiKeySource must be HEADER or AUTHORIZER.")
@@ -27,7 +28,7 @@ func checkAPI(a *api.RestApi) error {
 			return badRequest("EndpointConfiguration needs one type: EDGE, REGIONAL, or PRIVATE.")
 		}
 
-		if ip := value(c.IpAddressType); ip != "" && ip != "ipv4" && ip != "dualstack" {
+		if ip := common.Value(c.IpAddressType); ip != "" && ip != "ipv4" && ip != "dualstack" {
 			return badRequest("IpAddressType must be ipv4 or dualstack.")
 		}
 	}
@@ -36,9 +37,12 @@ func checkAPI(a *api.RestApi) error {
 }
 
 func loadAPI(tx storage.ReadTx, scope request.Scope, id *string) (*restAPI, error) {
-	a, ok, err := read[restAPI](tx, apiKey(scope, value(id)))
+	a, ok, err := storage.Read[restAPI](tx, apiKey(scope, common.Value(id)))
 	if err != nil || !ok {
-		return nil, errorsOr(err, notFound("Invalid API identifier specified %s:%s", scope.AccountID, value(id)))
+		return nil, common.ErrorsOr(
+			err,
+			notFound("Invalid API identifier specified %s:%s", scope.AccountID, common.Value(id)),
+		)
 	}
 
 	return a, nil
@@ -50,17 +54,28 @@ func (s *Service) CreateRestApi(ctx context.Context, in *api.CreateRestApiReques
 		return nil, err
 	}
 
-	id, root := newID(10), newID(10)
+	id, root := common.RandomID(10), common.RandomID(10)
 	a := &restAPI{
 		API: api.RestApi{
-			Id: new(id), Name: in.Name, Description: in.Description, Version: in.Version,
-			BinaryMediaTypes: in.BinaryMediaTypes, MinimumCompressionSize: in.MinimumCompressionSize,
-			ApiKeySource: orElse(in.ApiKeySource, new("HEADER")), Policy: in.Policy, CreatedDate: seconds(s.now()),
-			EndpointConfiguration: orElse(in.EndpointConfiguration, &api.EndpointConfiguration{
+			Id:                     new(id),
+			Name:                   in.Name,
+			Description:            in.Description,
+			Version:                in.Version,
+			BinaryMediaTypes:       in.BinaryMediaTypes,
+			MinimumCompressionSize: in.MinimumCompressionSize,
+			ApiKeySource: common.OrElse(
+				in.ApiKeySource,
+				new("HEADER"),
+			),
+			Policy:      in.Policy,
+			CreatedDate: common.Seconds(s.now()),
+			EndpointConfiguration: common.OrElse(in.EndpointConfiguration, &api.EndpointConfiguration{
 				Types: []string{"EDGE"}, IpAddressType: new("ipv4"),
 			}),
-			DisableExecuteApiEndpoint: new(value(in.DisableExecuteApiEndpoint)), RootResourceId: new(root),
-			Tags: cloneTags(in.Tags), ApiStatus: new("AVAILABLE"),
+			DisableExecuteApiEndpoint: new(common.Value(in.DisableExecuteApiEndpoint)),
+			RootResourceId:            new(root),
+			Tags:                      common.CloneTags(in.Tags),
+			ApiStatus:                 new("AVAILABLE"),
 		},
 		Resources:   map[string]*api.Resource{root: {Id: new(root), Path: new("/")}},
 		Authorizers: map[string]*api.Authorizer{},
@@ -78,11 +93,11 @@ func (s *Service) CreateRestApi(ctx context.Context, in *api.CreateRestApiReques
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if writeErr := write(tx, apiKey(m.Scope, id), a); writeErr != nil {
+		if writeErr := storage.Write(tx, apiKey(m.Scope, id), a); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, indexKey(id), location{Account: m.AccountID, Region: m.Region})
+		return storage.Write(tx, indexKey(id), location{Account: m.AccountID, Region: m.Region})
 	})
 	if err != nil {
 		return nil, err
@@ -146,7 +161,7 @@ func (s *Service) changeAPI(
 			return fnErr
 		}
 
-		return write(tx, apiKey(m.Scope, *a.API.Id), a)
+		return storage.Write(tx, apiKey(m.Scope, *a.API.Id), a)
 	})
 }
 
@@ -158,7 +173,7 @@ func (s *Service) GetRestApis(ctx context.Context, in *api.GetRestApisRequest) (
 
 	out := &api.RestApis{Items: []api.RestApi{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := records[restAPI](tx, prefix(m.Scope, kindAPI))
+		all, readErr := storage.Records[restAPI](tx, prefix(m.Scope, kindAPI))
 		if readErr != nil {
 			return readErr
 		}

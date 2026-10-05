@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -15,19 +16,19 @@ import (
 var pollWait = 60 * time.Second
 
 func loadActivity(tx storage.ReadTx, m *request.Metadata, arnString *string) (*activity, error) {
-	scope, kind, name, ok := parseARN(value(arnString))
+	scope, kind, name, ok := parseARN(common.Value(arnString))
 	if !ok || kind != kindActivity {
-		return nil, invalidARN(value(arnString))
+		return nil, invalidARN(common.Value(arnString))
 	}
 
 	if err := inScope(m, scope, arnString); err != nil {
 		return nil, err
 	}
 
-	a, found, err := read[activity](tx, activityKey(scope, name))
+	a, found, err := storage.Read[activity](tx, activityKey(scope, name))
 	if err != nil || !found {
 		if err == nil {
-			err = awserror.New("ActivityDoesNotExist", "Activity Does Not Exist: '"+value(arnString)+"'")
+			err = awserror.New("ActivityDoesNotExist", "Activity Does Not Exist: '"+common.Value(arnString)+"'")
 		}
 
 		return nil, err
@@ -43,7 +44,7 @@ func (s *Service) CreateActivity(ctx context.Context, in *api.CreateActivityInpu
 		return nil, err
 	}
 
-	name := value(in.Name)
+	name := common.Value(in.Name)
 	if checkErr := checkName(name); checkErr != nil {
 		return nil, checkErr
 	}
@@ -53,9 +54,9 @@ func (s *Service) CreateActivity(ctx context.Context, in *api.CreateActivityInpu
 		return nil, checkErr
 	}
 
-	a := &activity{Name: name, Tags: tags, Created: unix(s.now())}
+	a := &activity{Name: name, Tags: tags, Created: common.Unix(s.now())}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		existing, found, readErr := read[activity](tx, activityKey(m.Scope, name))
+		existing, found, readErr := storage.Read[activity](tx, activityKey(m.Scope, name))
 		if readErr != nil || found {
 			if found {
 				a = existing
@@ -64,7 +65,7 @@ func (s *Service) CreateActivity(ctx context.Context, in *api.CreateActivityInpu
 			return readErr
 		}
 
-		return write(tx, activityKey(m.Scope, name), a)
+		return storage.Write(tx, activityKey(m.Scope, name), a)
 	})
 	if err != nil {
 		return nil, err
@@ -188,7 +189,7 @@ func (s *Service) GetActivityTask(
 			}
 
 			select {
-			case w.started <- value(in.WorkerName):
+			case w.started <- common.Value(in.WorkerName):
 			default:
 			}
 
@@ -206,7 +207,7 @@ func (s *Service) GetActivityTask(
 // resolve delivers a task token's outcome.
 func (s *Service) resolve(token *string, o outcome) error {
 	s.mu.Lock()
-	w, ok := s.tokens[value(token)]
+	w, ok := s.tokens[common.Value(token)]
 	s.mu.Unlock()
 	if !ok {
 		return awserror.New("TaskDoesNotExist", "Task Does Not Exist")
@@ -222,7 +223,7 @@ func (s *Service) resolve(token *string, o outcome) error {
 
 func (s *Service) SendTaskSuccess(_ context.Context, in *api.SendTaskSuccessInput) (*api.SendTaskSuccessOutput, error) {
 	var output any
-	if err := json.Unmarshal([]byte(value(in.Output)), &output); err != nil {
+	if err := json.Unmarshal([]byte(common.Value(in.Output)), &output); err != nil {
 		return nil, awserror.New("InvalidOutput", "Invalid Output: the output must be JSON")
 	}
 
@@ -234,7 +235,7 @@ func (s *Service) SendTaskSuccess(_ context.Context, in *api.SendTaskSuccessInpu
 }
 
 func (s *Service) SendTaskFailure(_ context.Context, in *api.SendTaskFailureInput) (*api.SendTaskFailureOutput, error) {
-	se := &stateError{Name: value(in.Error), Cause: value(in.Cause)}
+	se := &stateError{Name: common.Value(in.Error), Cause: common.Value(in.Cause)}
 	if err := s.resolve(in.TaskToken, outcome{err: se}); err != nil {
 		return nil, err
 	}
@@ -247,7 +248,7 @@ func (s *Service) SendTaskHeartbeat(
 	in *api.SendTaskHeartbeatInput,
 ) (*api.SendTaskHeartbeatOutput, error) {
 	s.mu.Lock()
-	w, ok := s.tokens[value(in.TaskToken)]
+	w, ok := s.tokens[common.Value(in.TaskToken)]
 	s.mu.Unlock()
 	if !ok {
 		return nil, awserror.New("TaskDoesNotExist", "Task Does Not Exist")

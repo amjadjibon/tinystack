@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const (
@@ -57,25 +58,30 @@ func sslPolicy(name string, protocols []string, ciphers ...[]string) api.SslPoli
 func (s *Service) DescribeSSLPolicies(
 	_ context.Context, in *api.DescribeSSLPoliciesInput,
 ) (*api.DescribeSSLPoliciesOutput, error) {
-	kind := value(in.LoadBalancerType)
+	kind := common.Value(in.LoadBalancerType)
 	if kind != "" && kind != typeApplication && kind != typeNetwork {
 		return nil, validation("LoadBalancerType must be application or network")
 	}
 
 	for _, name := range in.Names {
-		if !slices.ContainsFunc(sslPolicies, func(p api.SslPolicy) bool { return value(p.Name) == name }) {
+		if !slices.ContainsFunc(sslPolicies, func(p api.SslPolicy) bool { return common.Value(p.Name) == name }) {
 			return nil, awserror.New("SSLPolicyNotFoundException", "SSL policy '"+name+"' not found")
 		}
 	}
 
 	var selected []api.SslPolicy
 	for _, p := range sslPolicies {
-		if len(in.Names) == 0 || slices.Contains(in.Names, value(p.Name)) {
+		if len(in.Names) == 0 || slices.Contains(in.Names, common.Value(p.Name)) {
 			selected = append(selected, p)
 		}
 	}
 
-	selected, next, err := page(selected, func(p api.SslPolicy) string { return value(p.Name) }, in.Marker, in.PageSize)
+	selected, next, err := page(
+		selected,
+		func(p api.SslPolicy) string { return common.Value(p.Name) },
+		in.Marker,
+		in.PageSize,
+	)
 	if err != nil {
 		return nil, err
 	}

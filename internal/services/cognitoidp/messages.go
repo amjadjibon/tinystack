@@ -13,6 +13,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 )
 
@@ -59,9 +60,9 @@ func invalidPassword(reason string) error {
 
 // checkPolicy validates password against the pool's password policy.
 func checkPolicy(p *pool, password *string) error {
-	pw := value(password)
+	pw := common.Value(password)
 	pp := passwordPolicy(&p.Settings)
-	if n := utf8.RuneCountInString(pw); n < int(value(pp.MinimumLength)) || n > maxPassword {
+	if n := utf8.RuneCountInString(pw); n < int(common.Value(pp.MinimumLength)) || n > maxPassword {
 		return invalidPassword("Password not long enough")
 	}
 
@@ -70,12 +71,12 @@ func checkPolicy(p *pool, password *string) error {
 		reason   string
 		required bool
 	}{
-		{unicode.IsUpper, "Password must have uppercase characters", value(pp.RequireUppercase)},
-		{unicode.IsLower, "Password must have lowercase characters", value(pp.RequireLowercase)},
-		{unicode.IsDigit, "Password must have numeric characters", value(pp.RequireNumbers)},
+		{unicode.IsUpper, "Password must have uppercase characters", common.Value(pp.RequireUppercase)},
+		{unicode.IsLower, "Password must have lowercase characters", common.Value(pp.RequireLowercase)},
+		{unicode.IsDigit, "Password must have numeric characters", common.Value(pp.RequireNumbers)},
 		{
 			func(r rune) bool { return strings.ContainsRune(symbols, r) }, "Password must have symbol characters",
-			value(pp.RequireSymbols),
+			common.Value(pp.RequireSymbols),
 		},
 	}
 	for _, class := range classes {

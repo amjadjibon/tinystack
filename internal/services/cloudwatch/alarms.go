@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -77,35 +78,51 @@ func (a *alarm) kind() string {
 
 func (a *alarm) name() string {
 	if a.Composite != nil {
-		return value(a.Composite.AlarmName)
+		return common.Value(a.Composite.AlarmName)
 	}
 
-	return value(a.Metric.AlarmName)
+	return common.Value(a.Metric.AlarmName)
 }
 
 func (a *alarm) arn() string {
 	if a.Composite != nil {
-		return value(a.Composite.AlarmArn)
+		return common.Value(a.Composite.AlarmArn)
 	}
 
-	return value(a.Metric.AlarmArn)
+	return common.Value(a.Metric.AlarmArn)
 }
 
 func (a *alarm) state() (state, reason, data string, updated float64) {
 	if c := a.Composite; c != nil {
-		return value(c.StateValue), value(c.StateReason), value(c.StateReasonData), value(c.StateUpdatedTimestamp)
+		return common.Value(
+				c.StateValue,
+			), common.Value(
+				c.StateReason,
+			), common.Value(
+				c.StateReasonData,
+			), common.Value(
+				c.StateUpdatedTimestamp,
+			)
 	}
 
 	m := a.Metric
-	return value(m.StateValue), value(m.StateReason), value(m.StateReasonData), value(m.StateUpdatedTimestamp)
+	return common.Value(
+			m.StateValue,
+		), common.Value(
+			m.StateReason,
+		), common.Value(
+			m.StateReasonData,
+		), common.Value(
+			m.StateUpdatedTimestamp,
+		)
 }
 
 func (a *alarm) enabled() bool {
 	if a.Composite != nil {
-		return value(a.Composite.ActionsEnabled)
+		return common.Value(a.Composite.ActionsEnabled)
 	}
 
-	return value(a.Metric.ActionsEnabled)
+	return common.Value(a.Metric.ActionsEnabled)
 }
 
 func (a *alarm) setEnabled(on bool) {
@@ -195,11 +212,11 @@ func checkActions(lists ...[]string) error {
 
 //nolint:gocyclo,cyclop // One check per member.
 func checkMetricAlarm(in *api.PutMetricAlarmInput) error {
-	if err := checkName(value(in.AlarmName)); err != nil {
+	if err := checkName(common.Value(in.AlarmName)); err != nil {
 		return err
 	}
 
-	n := value(in.EvaluationPeriods)
+	n := common.Value(in.EvaluationPeriods)
 	single := in.MetricName != nil || in.Namespace != nil || in.Statistic != nil || in.ExtendedStatistic != nil ||
 		in.Period != nil || in.Dimensions != nil || in.Unit != nil
 	switch {
@@ -222,7 +239,7 @@ func checkMetricAlarm(in *api.PutMetricAlarmInput) error {
 	case in.EvaluateLowSampleCountPercentile != nil && *in.EvaluateLowSampleCountPercentile != "evaluate" &&
 		*in.EvaluateLowSampleCountPercentile != "ignore":
 		return invalidValue("EvaluateLowSampleCountPercentile must be evaluate or ignore")
-	case len(value(in.AlarmDescription)) > 1024:
+	case len(common.Value(in.AlarmDescription)) > 1024:
 		return invalidValue("The alarm description must be at most 1024 characters")
 	case single && in.Metrics != nil:
 		return awserror.New(combinationCode, "Use either Metrics or MetricName, Namespace, and Statistic")
@@ -272,7 +289,7 @@ func (s *Service) PutMetricAlarm(ctx context.Context, in *api.PutMetricAlarmInpu
 		return nil, invalidValue("%s", err.Error())
 	}
 
-	name, now := *in.AlarmName, unix(s.now())
+	name, now := *in.AlarmName, common.Unix(s.now())
 	cfg := &api.MetricAlarm{
 		AlarmName:        in.AlarmName,
 		AlarmArn:         new(alarmARN(m.Scope, name)),
@@ -311,7 +328,7 @@ func (s *Service) PutMetricAlarm(ctx context.Context, in *api.PutMetricAlarmInpu
 // putAlarm creates an alarm, or replaces an alarm's configuration while
 // keeping its state and tags.
 func (s *Service) putAlarm(tx storage.WriteTx, scope request.Scope, a *alarm, now float64) error {
-	old, found, err := read[alarm](tx, alarmKey(scope, a.name()))
+	old, found, err := storage.Read[alarm](tx, alarmKey(scope, a.name()))
 	if err != nil {
 		return err
 	}
@@ -336,7 +353,7 @@ func (s *Service) putAlarm(tx storage.WriteTx, scope request.Scope, a *alarm, no
 		a.setState(stateNoData, "Unchecked: Initial alarm creation", "", now)
 	}
 
-	if err := write(tx, alarmKey(scope, a.name()), a); err != nil {
+	if err := storage.Write(tx, alarmKey(scope, a.name()), a); err != nil {
 		return err
 	}
 
@@ -358,7 +375,7 @@ func (s *Service) history(tx storage.WriteTx, scope request.Scope, a *alarm, kin
 		item.HistoryData = new(data)
 	}
 
-	return write(tx, p+s.sequenced(fromUnix(now)), item)
+	return storage.Write(tx, p+s.sequenced(fromUnix(now)), item)
 }
 
 func (s *Service) PutCompositeAlarm(
@@ -369,11 +386,11 @@ func (s *Service) PutCompositeAlarm(
 		return nil, err
 	}
 
-	if checkErr := checkName(value(in.AlarmName)); checkErr != nil {
+	if checkErr := checkName(common.Value(in.AlarmName)); checkErr != nil {
 		return nil, checkErr
 	}
 
-	r, err := parseRule(value(in.AlarmRule))
+	r, err := parseRule(common.Value(in.AlarmRule))
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +399,7 @@ func (s *Service) PutCompositeAlarm(
 		return nil, checkErr
 	}
 
-	if len(value(in.AlarmDescription)) > 1024 {
+	if len(common.Value(in.AlarmDescription)) > 1024 {
 		return nil, invalidValue("The alarm description must be at most 1024 characters")
 	}
 
@@ -391,7 +408,7 @@ func (s *Service) PutCompositeAlarm(
 		return nil, invalidValue("%s", err.Error())
 	}
 
-	name, now := *in.AlarmName, unix(s.now())
+	name, now := *in.AlarmName, common.Unix(s.now())
 	cfg := &api.CompositeAlarm{
 		AlarmName: in.AlarmName, AlarmArn: new(alarmARN(m.Scope, name)), AlarmDescription: in.AlarmDescription,
 		AlarmRule: in.AlarmRule, AlarmConfigurationUpdatedTimestamp: new(now),
@@ -438,7 +455,7 @@ func cycle(tx storage.ReadTx, scope request.Scope, name string, r *rule) error {
 		}
 
 		seen[child] = true
-		a, found, err := read[alarm](tx, alarmKey(scope, child))
+		a, found, err := storage.Read[alarm](tx, alarmKey(scope, child))
 		if err != nil {
 			return err
 		}
@@ -447,7 +464,7 @@ func cycle(tx storage.ReadTx, scope request.Scope, name string, r *rule) error {
 			continue
 		}
 
-		if cr, parseErr := parseRule(value(a.Composite.AlarmRule)); parseErr == nil {
+		if cr, parseErr := parseRule(common.Value(a.Composite.AlarmRule)); parseErr == nil {
 			pending = append(pending, cr.alarms()...)
 		}
 	}
@@ -459,7 +476,7 @@ func cycle(tx storage.ReadTx, scope request.Scope, name string, r *rule) error {
 func alarms(tx storage.ReadTx, scope request.Scope) ([]*alarm, error) {
 	var out []*alarm
 	for _, k := range tx.Keys(prefix(scope, kindAlarm)) {
-		a, _, err := read[alarm](tx, k)
+		a, _, err := storage.Read[alarm](tx, k)
 		if err != nil {
 			return nil, err
 		}
@@ -561,11 +578,11 @@ func (s *Service) DescribeAlarms(ctx context.Context, in *api.DescribeAlarmsInpu
 func lastName(out *api.DescribeAlarmsOutput) string {
 	var last string
 	for i := range out.MetricAlarms {
-		last = max(last, value(out.MetricAlarms[i].AlarmName))
+		last = max(last, common.Value(out.MetricAlarms[i].AlarmName))
 	}
 
 	for i := range out.CompositeAlarms {
-		last = max(last, value(out.CompositeAlarms[i].AlarmName))
+		last = max(last, common.Value(out.CompositeAlarms[i].AlarmName))
 	}
 
 	return last
@@ -580,7 +597,7 @@ func relatives(all []*alarm, in *api.DescribeAlarmsInput) (map[string]bool, erro
 				continue
 			}
 
-			r, err := parseRule(value(a.Composite.AlarmRule))
+			r, err := parseRule(common.Value(a.Composite.AlarmRule))
 			if err != nil {
 				return nil, err
 			}
@@ -598,7 +615,7 @@ func relatives(all []*alarm, in *api.DescribeAlarmsInput) (map[string]bool, erro
 			continue
 		}
 
-		r, err := parseRule(value(a.Composite.AlarmRule))
+		r, err := parseRule(common.Value(a.Composite.AlarmRule))
 		if err != nil {
 			return nil, err
 		}
@@ -630,9 +647,9 @@ func (s *Service) DescribeAlarmsForMetric(
 	}
 
 	switch {
-	case value(in.Namespace) == "":
+	case common.Value(in.Namespace) == "":
 		return nil, missing("Namespace")
-	case value(in.MetricName) == "":
+	case common.Value(in.MetricName) == "":
 		return nil, missing("MetricName")
 	}
 
@@ -644,11 +661,11 @@ func (s *Service) DescribeAlarmsForMetric(
 			c := a.Metric
 			switch {
 			case c == nil || c.MetricName == nil,
-				metricID(value(c.Namespace), value(c.MetricName), c.Dimensions) != id,
-				in.Statistic != nil && value(c.Statistic) != *in.Statistic,
-				in.ExtendedStatistic != nil && value(c.ExtendedStatistic) != *in.ExtendedStatistic,
-				in.Period != nil && value(c.Period) != *in.Period,
-				in.Unit != nil && value(c.Unit) != *in.Unit:
+				metricID(common.Value(c.Namespace), common.Value(c.MetricName), c.Dimensions) != id,
+				in.Statistic != nil && common.Value(c.Statistic) != *in.Statistic,
+				in.ExtendedStatistic != nil && common.Value(c.ExtendedStatistic) != *in.ExtendedStatistic,
+				in.Period != nil && common.Value(c.Period) != *in.Period,
+				in.Unit != nil && common.Value(c.Unit) != *in.Unit:
 				continue
 			}
 
@@ -693,9 +710,9 @@ func (s *Service) SetAlarmState(ctx context.Context, in *api.SetAlarmStateInput)
 		return nil, err
 	}
 
-	state, reason := value(in.StateValue), value(in.StateReason)
+	state, reason := common.Value(in.StateValue), common.Value(in.StateReason)
 	switch {
-	case value(in.AlarmName) == "":
+	case common.Value(in.AlarmName) == "":
 		return nil, missing("AlarmName")
 	case state != stateOK && state != stateAlarm && state != stateNoData:
 		return nil, invalidValue("The value %s for parameter StateValue is invalid.", state)
@@ -709,7 +726,7 @@ func (s *Service) SetAlarmState(ctx context.Context, in *api.SetAlarmStateInput)
 
 	var ch *change
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		a, found, readErr := read[alarm](tx, alarmKey(m.Scope, *in.AlarmName))
+		a, found, readErr := storage.Read[alarm](tx, alarmKey(m.Scope, *in.AlarmName))
 		if readErr != nil {
 			return readErr
 		}
@@ -718,7 +735,7 @@ func (s *Service) SetAlarmState(ctx context.Context, in *api.SetAlarmStateInput)
 			return awserror.New("ResourceNotFound", "The alarm "+*in.AlarmName+" does not exist.")
 		}
 
-		ch, readErr = s.transition(tx, m.Scope, a, state, reason, value(in.StateReasonData), s.now())
+		ch, readErr = s.transition(tx, m.Scope, a, state, reason, common.Value(in.StateReasonData), s.now())
 		return readErr
 	})
 	if err != nil {
@@ -754,7 +771,7 @@ func (s *Service) setActions(ctx context.Context, names []string, on bool) error
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, name := range names {
-			a, found, readErr := read[alarm](tx, alarmKey(m.Scope, name))
+			a, found, readErr := storage.Read[alarm](tx, alarmKey(m.Scope, name))
 			if readErr != nil {
 				return readErr
 			}
@@ -764,7 +781,7 @@ func (s *Service) setActions(ctx context.Context, names []string, on bool) error
 			}
 
 			a.setEnabled(on)
-			if err := write(tx, alarmKey(m.Scope, name), a); err != nil {
+			if err := storage.Write(tx, alarmKey(m.Scope, name), a); err != nil {
 				return err
 			}
 		}
@@ -787,7 +804,7 @@ func (s *Service) DescribeAlarmHistory(
 		limit = *in.MaxRecords
 	}
 
-	scan, kind := value(in.ScanBy), value(in.HistoryItemType)
+	scan, kind := common.Value(in.ScanBy), common.Value(in.HistoryItemType)
 	switch {
 	case limit < 1 || limit > 100:
 		return nil, invalidValue("The parameter MaxRecords must be between 1 and 100.")
@@ -810,16 +827,16 @@ func (s *Service) DescribeAlarmHistory(
 		}
 
 		for _, k := range tx.Keys(p) {
-			item, _, readErr := read[api.AlarmHistoryItem](tx, k)
+			item, _, readErr := storage.Read[api.AlarmHistoryItem](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			t := value(item.Timestamp)
+			t := common.Value(item.Timestamp)
 			switch {
-			case in.AlarmName != nil && value(item.AlarmName) != *in.AlarmName,
-				in.AlarmTypes != nil && !slices.Contains(in.AlarmTypes, value(item.AlarmType)),
-				kind != "" && value(item.HistoryItemType) != kind,
+			case in.AlarmName != nil && common.Value(item.AlarmName) != *in.AlarmName,
+				in.AlarmTypes != nil && !slices.Contains(in.AlarmTypes, common.Value(item.AlarmType)),
+				kind != "" && common.Value(item.HistoryItemType) != kind,
 				in.StartDate != nil && t < *in.StartDate,
 				in.EndDate != nil && t > *in.EndDate:
 				continue

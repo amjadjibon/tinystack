@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // checkWebsite validates a website configuration: it redirects every request
@@ -16,7 +17,7 @@ func checkWebsite(cfg *api.WebsiteConfiguration) error {
 		return malformedXML()
 	case cfg.RedirectAllRequestsTo != nil:
 		if cfg.IndexDocument != nil || cfg.ErrorDocument != nil || len(cfg.RoutingRules) > 0 ||
-			value(cfg.RedirectAllRequestsTo.HostName) == "" {
+			common.Value(cfg.RedirectAllRequestsTo.HostName) == "" {
 			return invalidArgument("RedirectAllRequestsTo cannot be provided in conjunction with other Routing Rules.")
 		}
 
@@ -25,7 +26,7 @@ func checkWebsite(cfg *api.WebsiteConfiguration) error {
 		return invalidArgument("A value for IndexDocument Suffix must be provided if RedirectAllRequestsTo is empty")
 	}
 
-	if suffix := value(cfg.IndexDocument.Suffix); suffix == "" || strings.Contains(suffix, "/") {
+	if suffix := common.Value(cfg.IndexDocument.Suffix); suffix == "" || strings.Contains(suffix, "/") {
 		return invalidArgument("The IndexDocument Suffix is not well formed")
 	}
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -27,7 +28,7 @@ func checkCORS(cfg *api.CORSConfiguration) error {
 
 	for i := range cfg.CORSRules {
 		r := &cfg.CORSRules[i]
-		if len(r.AllowedOrigins) == 0 || len(r.AllowedMethods) == 0 || value(r.MaxAgeSeconds) < 0 {
+		if len(r.AllowedOrigins) == 0 || len(r.AllowedMethods) == 0 || common.Value(r.MaxAgeSeconds) < 0 {
 			return malformedXML()
 		}
 

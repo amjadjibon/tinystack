@@ -8,6 +8,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
@@ -36,7 +37,7 @@ func (s *Service) kinesisSource(
 	mp *mapping,
 ) error {
 	source, _, _ := kinesis.ParseStreamARN(mp.EventSourceArn)
-	switch mp.StartingPosition = value(in.StartingPosition); {
+	switch mp.StartingPosition = common.Value(in.StartingPosition); {
 	case source != scope:
 		return invalid("The Kinesis stream must be in the function's account and region")
 	case s.kinesis == nil:
@@ -255,7 +256,8 @@ func (s *Service) pollShard(
 			}
 		}
 
-		if split || value(mp.MaximumRetryAttempts) < 0 || failures[sh.ID] <= value(mp.MaximumRetryAttempts) {
+		if split || common.Value(mp.MaximumRetryAttempts) < 0 ||
+			failures[sh.ID] <= common.Value(mp.MaximumRetryAttempts) {
 			if processed > 0 {
 				mp.Cursors[sh.ID] = all[processed-1].Kinesis.SequenceNumber
 			}

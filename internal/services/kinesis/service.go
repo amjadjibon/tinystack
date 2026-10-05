@@ -148,16 +148,6 @@ func ParseStreamARN(arn string) (request.Scope, string, bool) {
 	return request.Scope{AccountID: parts[4], Region: parts[3]}, name, true
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-func unix(t time.Time) float64 { return common.Unix(t) }
-
 var streamName = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,128}$`)
 
 // streamTarget resolves the stream a request names by StreamName or
@@ -176,7 +166,7 @@ func streamTarget(m *request.Metadata, name, arn *string) (string, error) {
 		return fromARN, nil
 	}
 
-	if !streamName.MatchString(value(name)) {
+	if !streamName.MatchString(common.Value(name)) {
 		return "", invalidArgument("StreamName or StreamARN is required")
 	}
 
@@ -184,7 +174,7 @@ func streamTarget(m *request.Metadata, name, arn *string) (string, error) {
 }
 
 func loadStream(tx storage.ReadTx, scope request.Scope, name string) (*stream, error) {
-	st, found, err := read[stream](tx, streamKey(scope, name))
+	st, found, err := storage.Read[stream](tx, streamKey(scope, name))
 	if err != nil || !found {
 		if err == nil {
 			err = notFound(scope, name)
@@ -220,7 +210,7 @@ func (s *Service) change(ctx context.Context, name, arn *string, fn func(tx stor
 			return fnErr
 		}
 
-		return write(tx, streamKey(m.Scope, st.Name), st)
+		return storage.Write(tx, streamKey(m.Scope, st.Name), st)
 	})
 }
 

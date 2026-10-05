@@ -6,6 +6,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -34,7 +35,7 @@ func loadUser(tx storage.ReadTx, account string, name *string) (*user, string, e
 	}
 
 	uk := key(account, kindUser, *name)
-	u, ok, err := read[user](tx, uk)
+	u, ok, err := storage.Read[user](tx, uk)
 	if err != nil {
 		return nil, "", err
 	}
@@ -49,7 +50,7 @@ func loadUser(tx storage.ReadTx, account string, name *string) (*user, string, e
 // callerUser returns the name of the IAM user whose access key signed the
 // request, or false when the caller is not an IAM user of its account.
 func callerUser(tx storage.ReadTx, m *request.Metadata) (name string, isUser bool, err error) {
-	k, ok, err := read[accessKey](tx, accessKeyPrefix+m.AccessKey)
+	k, ok, err := storage.Read[accessKey](tx, accessKeyPrefix+m.AccessKey)
 	if err != nil || !ok || m.AccessKey == "" || k.Account != m.AccountID {
 		return "", false, err
 	}
@@ -79,7 +80,7 @@ func (s *Service) updateUser(
 			return fnErr
 		}
 
-		return write(tx, uk, u)
+		return storage.Write(tx, uk, u)
 	})
 }
 
@@ -130,7 +131,7 @@ func (s *Service) CreateUser(ctx context.Context, in *api.CreateUserRequest) (*a
 			return alreadyExists("User with name %s already exists.", u.Name)
 		}
 
-		return write(tx, uk, u)
+		return storage.Write(tx, uk, u)
 	})
 	if err != nil {
 		return nil, err
@@ -193,7 +194,7 @@ func (s *Service) ListUsers(ctx context.Context, in *api.ListUsersRequest) (*api
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		all, listErr := list[user](tx, m.AccountID, kindUser)
 		for _, u := range all {
-			if strings.HasPrefix(u.Path, value(in.PathPrefix)) {
+			if strings.HasPrefix(u.Path, common.Value(in.PathPrefix)) {
 				matched = append(matched, u)
 			}
 		}
@@ -267,7 +268,7 @@ func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*a
 			u.Name, uk = *in.NewUserName, target
 		}
 
-		return write(tx, uk, u)
+		return storage.Write(tx, uk, u)
 	})
 	if err != nil {
 		return nil, err

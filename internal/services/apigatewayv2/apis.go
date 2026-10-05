@@ -9,6 +9,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -48,7 +49,7 @@ func checkCors(c *api.Cors) error {
 		return badRequest("MaxAge must be between -1 and 86400.")
 	}
 
-	if value(c.AllowCredentials) && slices.Contains(c.AllowOrigins, "*") {
+	if common.Value(c.AllowCredentials) && slices.Contains(c.AllowOrigins, "*") {
 		return badRequest("allow-credentials is not supported when allow-origins is *")
 	}
 
@@ -74,9 +75,12 @@ func checkAPI(name, selection, keySelection, ipType *string, cors *api.Cors) err
 }
 
 func loadAPI(tx storage.ReadTx, scope request.Scope, id *string) (*api.Api, error) {
-	a, ok, err := read[api.Api](tx, apiKey(scope, value(id)))
+	a, ok, err := storage.Read[api.Api](tx, apiKey(scope, common.Value(id)))
 	if err != nil || !ok {
-		return nil, errorsOr(err, notFound("Invalid API identifier specified %s:%s", scope.AccountID, value(id)))
+		return nil, common.ErrorsOr(
+			err,
+			notFound("Invalid API identifier specified %s:%s", scope.AccountID, common.Value(id)),
+		)
 	}
 
 	return a, nil
@@ -89,9 +93,9 @@ func (s *Service) CreateApi(ctx context.Context, in *api.CreateApiRequest) (*api
 	}
 
 	switch {
-	case value(in.Name) == "":
+	case common.Value(in.Name) == "":
 		return nil, badRequest("Name is required.")
-	case value(in.ProtocolType) != protocolHTTP:
+	case common.Value(in.ProtocolType) != protocolHTTP:
 		return nil, badRequest("TinyStack supports HTTP APIs only: ProtocolType must be HTTP.")
 	case in.RouteKey != nil && in.Target == nil:
 		return nil, badRequest("RouteKey can only be set with Target.")
@@ -108,25 +112,29 @@ func (s *Service) CreateApi(ctx context.Context, in *api.CreateApiRequest) (*api
 	}
 
 	now := s.now().UTC()
-	id := newID(10)
+	id := common.RandomID(10)
 	a := &api.Api{
 		ApiId: new(id), Name: in.Name, ProtocolType: new(protocolHTTP), Description: in.Description,
 		ApiEndpoint:               new(endpoint(m.Endpoint, id)),
-		ApiKeySelectionExpression: orElse(in.ApiKeySelectionExpression, new(apiKeyHeader)),
+		ApiKeySelectionExpression: common.OrElse(in.ApiKeySelectionExpression, new(apiKeyHeader)),
 		RouteSelectionExpression:  new(routeSelection), CorsConfiguration: in.CorsConfiguration,
-		DisableExecuteApiEndpoint: new(value(in.DisableExecuteApiEndpoint)), Version: in.Version,
-		IpAddressType: new(ipv4), CreatedDate: &now, Tags: cloneTags(in.Tags),
+		DisableExecuteApiEndpoint: new(common.Value(in.DisableExecuteApiEndpoint)), Version: in.Version,
+		IpAddressType: new(ipv4), CreatedDate: &now, Tags: common.CloneTags(in.Tags),
 	}
 	if in.IpAddressType != nil {
 		a.IpAddressType = in.IpAddressType
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if writeErr := write(tx, apiKey(m.Scope, id), a); writeErr != nil {
+		if writeErr := storage.Write(tx, apiKey(m.Scope, id), a); writeErr != nil {
 			return writeErr
 		}
 
-		if writeErr := write(tx, indexKey(id), location{Account: m.AccountID, Region: m.Region}); writeErr != nil {
+		if writeErr := storage.Write(
+			tx,
+			indexKey(id),
+			location{Account: m.AccountID, Region: m.Region},
+		); writeErr != nil {
 			return writeErr
 		}
 
@@ -134,7 +142,7 @@ func (s *Service) CreateApi(ctx context.Context, in *api.CreateApiRequest) (*api
 			return nil
 		}
 
-		return s.quickCreate(tx, m.Scope, a, value(in.Target), in.RouteKey)
+		return s.quickCreate(tx, m.Scope, a, common.Value(in.Target), in.RouteKey)
 	})
 	if err != nil {
 		return nil, err
@@ -153,8 +161,8 @@ func (s *Service) quickCreate(tx storage.WriteTx, scope request.Scope, a *api.Ap
 		return err
 	}
 
-	integration.IntegrationId, integration.ApiGatewayManaged = new(newID(7)), new(true)
-	if writeErr := write(tx, owned(scope, kindIntegration, *a.ApiId, *integration.IntegrationId),
+	integration.IntegrationId, integration.ApiGatewayManaged = new(common.RandomID(7)), new(true)
+	if writeErr := storage.Write(tx, owned(scope, kindIntegration, *a.ApiId, *integration.IntegrationId),
 		integration); writeErr != nil {
 		return writeErr
 	}
@@ -170,7 +178,7 @@ func (s *Service) quickCreate(tx storage.WriteTx, scope request.Scope, a *api.Ap
 
 	r := newRoute(routeKey)
 	r.ApiGatewayManaged, r.Target = new(true), new("integrations/"+*integration.IntegrationId)
-	if writeErr := write(tx, owned(scope, kindRoute, *a.ApiId, *r.RouteId), r); writeErr != nil {
+	if writeErr := storage.Write(tx, owned(scope, kindRoute, *a.ApiId, *r.RouteId), r); writeErr != nil {
 		return writeErr
 	}
 
@@ -180,7 +188,7 @@ func (s *Service) quickCreate(tx storage.WriteTx, scope request.Scope, a *api.Ap
 		LastUpdatedDate: &now, DefaultRouteSettings: &api.RouteSettings{DetailedMetricsEnabled: new(false)},
 		RouteSettings: map[string]api.RouteSettings{}, StageVariables: map[string]string{}, Tags: map[string]string{},
 	}
-	if writeErr := write(tx, owned(scope, kindStage, *a.ApiId, defaultStage), st); writeErr != nil {
+	if writeErr := storage.Write(tx, owned(scope, kindStage, *a.ApiId, defaultStage), st); writeErr != nil {
 		return writeErr
 	}
 
@@ -236,7 +244,7 @@ func (s *Service) GetApis(ctx context.Context, in *api.GetApisRequest) (*api.Get
 
 	out := &api.GetApisResponse{Items: []api.Api{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := records[api.Api](tx, prefix(m.Scope, kindAPI))
+		all, readErr := storage.Records[api.Api](tx, prefix(m.Scope, kindAPI))
 		if readErr != nil {
 			return readErr
 		}
@@ -277,18 +285,24 @@ func (s *Service) UpdateApi(ctx context.Context, in *api.UpdateApiRequest) (*api
 			return loadErr
 		}
 
-		a.Name, a.Description = orElse(in.Name, a.Name), orElse(in.Description, a.Description)
-		a.CorsConfiguration = orElse(in.CorsConfiguration, a.CorsConfiguration)
-		a.DisableExecuteApiEndpoint = orElse(in.DisableExecuteApiEndpoint, a.DisableExecuteApiEndpoint)
-		a.Version, a.IpAddressType = orElse(in.Version, a.Version), orElse(in.IpAddressType, a.IpAddressType)
-		a.ApiKeySelectionExpression = orElse(in.ApiKeySelectionExpression, a.ApiKeySelectionExpression)
+		a.Name, a.Description = common.OrElse(in.Name, a.Name), common.OrElse(in.Description, a.Description)
+		a.CorsConfiguration = common.OrElse(in.CorsConfiguration, a.CorsConfiguration)
+		a.DisableExecuteApiEndpoint = common.OrElse(in.DisableExecuteApiEndpoint, a.DisableExecuteApiEndpoint)
+		a.Version, a.IpAddressType = common.OrElse(
+			in.Version,
+			a.Version,
+		), common.OrElse(
+			in.IpAddressType,
+			a.IpAddressType,
+		)
+		a.ApiKeySelectionExpression = common.OrElse(in.ApiKeySelectionExpression, a.ApiKeySelectionExpression)
 		if in.Target != nil || in.RouteKey != nil {
 			if quickErr := s.quickUpdate(tx, m.Scope, *a.ApiId, in.Target, in.RouteKey); quickErr != nil {
 				return quickErr
 			}
 		}
 
-		return write(tx, apiKey(m.Scope, *a.ApiId), a)
+		return storage.Write(tx, apiKey(m.Scope, *a.ApiId), a)
 	})
 	if err != nil {
 		return nil, err
@@ -301,12 +315,12 @@ func (s *Service) UpdateApi(ctx context.Context, in *api.UpdateApiRequest) (*api
 // quickUpdate changes the target and route key of a quick-created API's
 // managed integration and route.
 func (s *Service) quickUpdate(tx storage.WriteTx, scope request.Scope, apiID string, target, key *string) error {
-	routes, err := records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
+	routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
 	if err != nil {
 		return err
 	}
 
-	i := slices.IndexFunc(routes, func(r *api.Route) bool { return value(r.ApiGatewayManaged) })
+	i := slices.IndexFunc(routes, func(r *api.Route) bool { return common.Value(r.ApiGatewayManaged) })
 	if i < 0 {
 		return badRequest("Target and RouteKey can only be updated on an API that was created with a Target.")
 	}
@@ -327,14 +341,14 @@ func (s *Service) quickUpdate(tx storage.WriteTx, scope request.Scope, apiID str
 		}
 
 		integration.ApiGatewayManaged = new(true)
-		integration.IntegrationId = new(integrationID(value(r.Target)))
-		if writeErr := write(tx, owned(scope, kindIntegration, apiID, *integration.IntegrationId),
+		integration.IntegrationId = new(integrationID(common.Value(r.Target)))
+		if writeErr := storage.Write(tx, owned(scope, kindIntegration, apiID, *integration.IntegrationId),
 			integration); writeErr != nil {
 			return writeErr
 		}
 	}
 
-	if writeErr := write(tx, owned(scope, kindRoute, apiID, *r.RouteId), r); writeErr != nil {
+	if writeErr := storage.Write(tx, owned(scope, kindRoute, apiID, *r.RouteId), r); writeErr != nil {
 		return writeErr
 	}
 
@@ -386,7 +400,7 @@ func (s *Service) DeleteCorsConfiguration(
 		}
 
 		a.CorsConfiguration = nil
-		return write(tx, apiKey(m.Scope, *a.ApiId), a)
+		return storage.Write(tx, apiKey(m.Scope, *a.ApiId), a)
 	})
 	if err != nil {
 		return nil, err

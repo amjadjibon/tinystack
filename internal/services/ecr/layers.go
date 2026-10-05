@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -78,7 +79,7 @@ func uploadNotFound(id string) error {
 func (s *Service) startUpload(tx storage.WriteTx, scope request.Scope, r *repository) (string, error) {
 	id := newUploadID()
 	tx.Put(uploadDataKey(scope, r.Name, id), nil)
-	return id, write(tx, uploadKey(scope, r.Name, id), upload{Started: s.now().UTC()})
+	return id, storage.Write(tx, uploadKey(scope, r.Name, id), upload{Started: s.now().UTC()})
 }
 
 // appendUpload adds data to an upload at first, which must be the upload's
@@ -86,7 +87,7 @@ func (s *Service) startUpload(tx storage.WriteTx, scope request.Scope, r *reposi
 func appendUpload(tx storage.WriteTx, scope request.Scope, r *repository, id string, first int64, data []byte) (
 	int64, error,
 ) {
-	u, ok, err := read[upload](tx, uploadKey(scope, r.Name, id))
+	u, ok, err := storage.Read[upload](tx, uploadKey(scope, r.Name, id))
 	if err != nil {
 		return 0, err
 	}
@@ -103,7 +104,7 @@ func appendUpload(tx storage.WriteTx, scope request.Scope, r *repository, id str
 	current, _ := tx.Get(uploadDataKey(scope, r.Name, id))
 	tx.Put(uploadDataKey(scope, r.Name, id), append(current, data...))
 	u.Size += int64(len(data))
-	return u.Size, write(tx, uploadKey(scope, r.Name, id), u)
+	return u.Size, storage.Write(tx, uploadKey(scope, r.Name, id), u)
 }
 
 // completeUpload stores an upload as the layer digest names. A layer that
@@ -113,7 +114,7 @@ func completeUpload(tx storage.WriteTx, scope request.Scope, r *repository, id, 
 		return awserror.New("InvalidLayerException", "Invalid layer digest: "+digest)
 	}
 
-	u, ok, err := read[upload](tx, uploadKey(scope, r.Name, id))
+	u, ok, err := storage.Read[upload](tx, uploadKey(scope, r.Name, id))
 	if err != nil {
 		return err
 	}
@@ -142,12 +143,12 @@ func completeUpload(tx storage.WriteTx, scope request.Scope, r *repository, id, 
 	}
 
 	tx.Put(blobKey(scope, r.Name, digest), data)
-	return write(tx, layerKey(scope, r.Name, digest), layer{Size: u.Size})
+	return storage.Write(tx, layerKey(scope, r.Name, digest), layer{Size: u.Size})
 }
 
 // findLayer returns the layer digest names in r.
 func findLayer(tx storage.ReadTx, scope request.Scope, r *repository, digest string) (*layer, bool, error) {
-	return read[layer](tx, layerKey(scope, r.Name, digest))
+	return storage.Read[layer](tx, layerKey(scope, r.Name, digest))
 }
 
 func (s *Service) BatchCheckLayerAvailability(
@@ -219,7 +220,7 @@ func (s *Service) UploadLayerPart(
 	ctx context.Context,
 	in *api.UploadLayerPartRequest,
 ) (*api.UploadLayerPartResponse, error) {
-	first, last := value(in.PartFirstByte), value(in.PartLastByte)
+	first, last := common.Value(in.PartFirstByte), common.Value(in.PartLastByte)
 	if in.UploadId == nil || first < 0 || len(in.LayerPartBlob) == 0 ||
 		last != first+int64(len(in.LayerPartBlob))-1 {
 		return nil, awserror.New("InvalidLayerPartException",
@@ -281,7 +282,7 @@ func (s *Service) GetDownloadUrlForLayer(
 	ctx context.Context,
 	in *api.GetDownloadUrlForLayerRequest,
 ) (*api.GetDownloadUrlForLayerResponse, error) {
-	digest := value(in.LayerDigest)
+	digest := common.Value(in.LayerDigest)
 	var m *request.Metadata
 	err := s.view(ctx, in.RegistryId, in.RepositoryName,
 		func(tx storage.ReadTx, meta *request.Metadata, r *repository) error {

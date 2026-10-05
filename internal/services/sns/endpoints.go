@@ -13,6 +13,7 @@ import (
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -170,7 +171,7 @@ func (s *Service) ConfirmSubscription(
 		return nil, err
 	}
 
-	token := value(in.Token)
+	token := common.Value(in.Token)
 	var id string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
@@ -190,7 +191,7 @@ func (s *Service) ConfirmSubscription(
 			}
 
 			sub.Pending = false
-			return save(tx, key, t)
+			return storage.Write(tx, key, t)
 		}
 
 		return invalid("Token")

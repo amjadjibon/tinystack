@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -147,7 +148,7 @@ func (s *Service) putImage(tx storage.WriteTx, scope request.Scope, r *repositor
 		return nil, invalidParameter("Invalid parameter at 'imageTag' failed to satisfy constraint: 'Invalid tag'")
 	}
 
-	img, exists, err := read[image](tx, imageKey(scope, r.Name, digest))
+	img, exists, err := storage.Read[image](tx, imageKey(scope, r.Name, digest))
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +178,7 @@ func (s *Service) putImage(tx storage.WriteTx, scope request.Scope, r *repositor
 				"with id '%s'", digest, p.Tag, r.Name, scope.AccountID))
 	}
 
-	if writeErr := write(tx, imageKey(scope, r.Name, digest), img); writeErr != nil {
+	if writeErr := storage.Write(tx, imageKey(scope, r.Name, digest), img); writeErr != nil {
 		return nil, writeErr
 	}
 
@@ -208,7 +209,7 @@ func newImage(tx storage.ReadTx, scope request.Scope, r *repository, mf *manifes
 	if isIndex(mediaType) {
 		var missing []string
 		for _, d := range mf.Manifests {
-			child, ok, err := read[image](tx, imageKey(scope, r.Name, d.Digest))
+			child, ok, err := storage.Read[image](tx, imageKey(scope, r.Name, d.Digest))
 			if err != nil {
 				return nil, err
 			}
@@ -266,14 +267,14 @@ func moveTag(tx storage.WriteTx, scope request.Scope, r *repository, tag, digest
 				"repository is immutable.")
 		}
 
-		prev, found, err := read[image](tx, imageKey(scope, r.Name, string(old)))
+		prev, found, err := storage.Read[image](tx, imageKey(scope, r.Name, string(old)))
 		if err != nil {
 			return err
 		}
 
 		if found {
 			prev.Tags = slices.DeleteFunc(prev.Tags, func(t string) bool { return t == tag })
-			if writeErr := write(tx, imageKey(scope, r.Name, prev.Digest), prev); writeErr != nil {
+			if writeErr := storage.Write(tx, imageKey(scope, r.Name, prev.Digest), prev); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -292,8 +293,8 @@ func (s *Service) PutImage(ctx context.Context, in *api.PutImageRequest) (*api.P
 	err := s.update(ctx, in.RegistryId, in.RepositoryName,
 		func(tx storage.WriteTx, m *request.Metadata, r *repository) error {
 			img, err := s.putImage(tx, m.Scope, r, &push{
-				Manifest: []byte(*in.ImageManifest), MediaType: value(in.ImageManifestMediaType),
-				Tag: value(in.ImageTag), Digest: value(in.ImageDigest),
+				Manifest: []byte(*in.ImageManifest), MediaType: common.Value(in.ImageManifestMediaType),
+				Tag: common.Value(in.ImageTag), Digest: common.Value(in.ImageDigest),
 			})
 			if err != nil {
 				return err
@@ -324,7 +325,7 @@ func (f *imageFailure) output(id api.ImageIdentifier) api.ImageFailure {
 func findImage(tx storage.ReadTx, scope request.Scope, r *repository, id api.ImageIdentifier) (
 	*image, *imageFailure, error,
 ) {
-	digest, tag := value(id.ImageDigest), value(id.ImageTag)
+	digest, tag := common.Value(id.ImageDigest), common.Value(id.ImageTag)
 	switch {
 	case digest == "" && tag == "":
 		return nil, &imageFailure{"MissingDigestAndTag", "Invalid request parameters: both tag and digest cannot be " +
@@ -350,7 +351,7 @@ func findImage(tx storage.ReadTx, scope request.Scope, r *repository, id api.Ima
 		digest = string(d)
 	}
 
-	img, ok, err := read[image](tx, imageKey(scope, r.Name, digest))
+	img, ok, err := storage.Read[image](tx, imageKey(scope, r.Name, digest))
 	if err != nil || !ok {
 		return nil, &imageFailure{failureNotFound, "Requested image not found"}, err
 	}
@@ -406,14 +407,14 @@ func (s *Service) BatchGetImage(ctx context.Context, in *api.BatchGetImageReques
 // pulled records that img was pulled now.
 func (s *Service) pulled(tx storage.WriteTx, scope request.Scope, r *repository, img *image) error {
 	img.Pulled = s.now().UTC()
-	return write(tx, imageKey(scope, r.Name, img.Digest), img)
+	return storage.Write(tx, imageKey(scope, r.Name, img.Digest), img)
 }
 
 // images returns r's images in digest order.
 func images(tx storage.ReadTx, scope request.Scope, r *repository) ([]*image, error) {
 	var out []*image
 	for _, k := range tx.Keys(owned(scope, "image", r.Name)) {
-		img, _, err := read[image](tx, k)
+		img, _, err := storage.Read[image](tx, k)
 		if err != nil {
 			return nil, err
 		}
@@ -434,7 +435,7 @@ func checkTagStatus(status *string) error {
 
 // selected reports whether img passes a tagStatus filter.
 func selected(img *image, status *string) bool {
-	switch value(status) {
+	switch common.Value(status) {
 	case tagged:
 		return len(img.Tags) > 0
 	case untagged:
@@ -449,7 +450,7 @@ func oneOf(v *string, allowed ...string) bool {
 }
 
 func (s *Service) ListImages(ctx context.Context, in *api.ListImagesRequest) (*api.ListImagesResponse, error) {
-	status := value(in.Filter).TagStatus
+	status := common.Value(in.Filter).TagStatus
 	if err := checkTagStatus(status); err != nil {
 		return nil, err
 	}
@@ -482,7 +483,7 @@ func (s *Service) ListImages(ctx context.Context, in *api.ListImagesRequest) (*a
 				}
 			}
 
-			key := func(id api.ImageIdentifier) string { return *id.ImageDigest + "/" + value(id.ImageTag) }
+			key := func(id api.ImageIdentifier) string { return *id.ImageDigest + "/" + common.Value(id.ImageTag) }
 			ids, out.NextToken, err = page(ids, key, in.NextToken, n)
 			out.ImageIds = append(out.ImageIds, ids...)
 			return err
@@ -497,7 +498,7 @@ func (s *Service) ListImages(ctx context.Context, in *api.ListImagesRequest) (*a
 func (img *image) detail(m *request.Metadata, r *repository) api.ImageDetail {
 	d := api.ImageDetail{
 		RegistryId: new(m.AccountID), RepositoryName: new(r.Name), ImageDigest: new(img.Digest),
-		ImageTags: img.Tags, ImageSizeInBytes: new(img.Size), ImagePushedAt: seconds(img.Pushed),
+		ImageTags: img.Tags, ImageSizeInBytes: new(img.Size), ImagePushedAt: common.SecondsMilli(img.Pushed),
 		ImageManifestMediaType: new(img.MediaType),
 	}
 	if img.ArtifactMediaType != "" {
@@ -505,7 +506,7 @@ func (img *image) detail(m *request.Metadata, r *repository) api.ImageDetail {
 	}
 
 	if !img.Pulled.IsZero() {
-		d.LastRecordedPullTime = seconds(img.Pulled)
+		d.LastRecordedPullTime = common.SecondsMilli(img.Pulled)
 	}
 
 	if img.Subject != "" {
@@ -519,7 +520,7 @@ func (s *Service) DescribeImages(
 	ctx context.Context,
 	in *api.DescribeImagesRequest,
 ) (*api.DescribeImagesResponse, error) {
-	status := value(in.Filter).TagStatus
+	status := common.Value(in.Filter).TagStatus
 	if err := checkTagStatus(status); err != nil {
 		return nil, err
 	}
@@ -546,7 +547,7 @@ func (s *Service) DescribeImages(
 				if failure != nil {
 					return awserror.New("ImageNotFoundException", fmt.Sprintf("The image with imageId {imageDigest:"+
 						"'%s', imageTag:'%s'} does not exist within the repository with name '%s' in the registry "+
-						"with id '%s'", value(id.ImageDigest), value(id.ImageTag), r.Name, m.AccountID))
+						"with id '%s'", common.Value(id.ImageDigest), common.Value(id.ImageTag), r.Name, m.AccountID))
 				}
 
 				found = append(found, img)
@@ -659,7 +660,7 @@ func untag(tx storage.WriteTx, scope request.Scope, r *repository, id api.ImageI
 		img.Tags = slices.DeleteFunc(img.Tags, func(t string) bool { return t == *id.ImageTag })
 		tx.Delete(tagKey(scope, r.Name, *id.ImageTag))
 		return []api.ImageIdentifier{{ImageDigest: new(img.Digest), ImageTag: id.ImageTag}},
-			nil, write(tx, imageKey(scope, r.Name, img.Digest), img)
+			nil, storage.Write(tx, imageKey(scope, r.Name, img.Digest), img)
 	}
 
 	index, err := deleteImage(tx, scope, r, img)

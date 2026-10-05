@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -41,11 +42,11 @@ func checkOIDC(o *api.OidcIdentityProviderConfigRequest) error {
 		return err
 	}
 
-	issuer, err := url.Parse(value(o.IssuerUrl))
+	issuer, err := url.Parse(common.Value(o.IssuerUrl))
 	switch {
 	case err != nil || issuer.Scheme != "https" || issuer.Host == "" || issuer.RawQuery != "" || issuer.Fragment != "":
 		return invalidParameter("issuerUrl must be an https URL without a query or fragment.")
-	case value(o.ClientId) == "":
+	case common.Value(o.ClientId) == "":
 		return invalidParameter("clientId is required.")
 	case len(o.RequiredClaims) > maxRequiredClaims:
 		return invalidParameter("requiredClaims can have at most 10 claims.")
@@ -86,7 +87,7 @@ func (s *Service) AssociateIdentityProviderConfig(
 			return loadErr
 		}
 
-		existing, readErr := records[identityProvider](tx, prefix(scope, kindIdentityProvider)+c.Name+"/")
+		existing, readErr := storage.Records[identityProvider](tx, prefix(scope, kindIdentityProvider)+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -98,13 +99,13 @@ func (s *Service) AssociateIdentityProviderConfig(
 
 		o := in.Oidc
 		name := *o.IdentityProviderConfigName
-		p := &identityProvider{Token: value(in.ClientRequestToken), Config: api.OidcIdentityProviderConfig{
+		p := &identityProvider{Token: common.Value(in.ClientRequestToken), Config: api.OidcIdentityProviderConfig{
 			IdentityProviderConfigName: o.IdentityProviderConfigName, ClusterName: new(c.Name),
 			IdentityProviderConfigArn: new(arn(scope, "identityproviderconfig/"+c.Name+"/"+typeOIDC+"/"+name+"/"+
 				uuid.NewV4().String())),
 			IssuerUrl: o.IssuerUrl, ClientId: o.ClientId, UsernameClaim: o.UsernameClaim,
 			UsernamePrefix: o.UsernamePrefix, GroupsClaim: o.GroupsClaim, GroupsPrefix: o.GroupsPrefix,
-			RequiredClaims: o.RequiredClaims, Tags: cloneTags(in.Tags), Status: new("ACTIVE"),
+			RequiredClaims: o.RequiredClaims, Tags: common.CloneTags(in.Tags), Status: new("ACTIVE"),
 		}}
 
 		update, recordErr := s.record(tx, scope, c.Name, "", "", "AssociateIdentityProviderConfig",
@@ -114,7 +115,7 @@ func (s *Service) AssociateIdentityProviderConfig(
 		}
 
 		out.Update, out.Tags = update, p.Config.Tags
-		return write(tx, identityProviderKey(scope, c.Name, name), p)
+		return storage.Write(tx, identityProviderKey(scope, c.Name, name), p)
 	})
 	if err != nil {
 		return nil, err
@@ -128,7 +129,7 @@ func (s *Service) AssociateIdentityProviderConfig(
 func findIdentityProvider(tx storage.ReadTx, scope request.Scope, clusterName *string,
 	ref *api.IdentityProviderConfig,
 ) (*cluster, *identityProvider, error) {
-	if ref == nil || value(ref.Type) != typeOIDC {
+	if ref == nil || common.Value(ref.Type) != typeOIDC {
 		return nil, nil, invalidParameter("identityProviderConfig must name an oidc config.")
 	}
 
@@ -137,9 +138,12 @@ func findIdentityProvider(tx storage.ReadTx, scope request.Scope, clusterName *s
 		return nil, nil, err
 	}
 
-	p, ok, err := read[identityProvider](tx, identityProviderKey(scope, c.Name, value(ref.Name)))
+	p, ok, err := storage.Read[identityProvider](tx, identityProviderKey(scope, c.Name, common.Value(ref.Name)))
 	if err != nil || !ok {
-		return nil, nil, errorsOr(err, notFound("Identity provider config %s not found.", value(ref.Name)))
+		return nil, nil, common.ErrorsOr(
+			err,
+			notFound("Identity provider config %s not found.", common.Value(ref.Name)),
+		)
 	}
 
 	return c, p, nil
@@ -185,7 +189,7 @@ func (s *Service) ListIdentityProviderConfigs(
 			return loadErr
 		}
 
-		all, readErr := records[identityProvider](tx, prefix(scope, kindIdentityProvider)+c.Name+"/")
+		all, readErr := storage.Records[identityProvider](tx, prefix(scope, kindIdentityProvider)+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -16,7 +17,7 @@ import (
 func tagMap(tags []api.Tag) map[string]string {
 	out := make(map[string]string, len(tags))
 	for _, t := range tags {
-		out[value(t.Key)] = value(t.Value)
+		out[common.Value(t.Key)] = common.Value(t.Value)
 	}
 
 	return out
@@ -71,23 +72,23 @@ func taggable(tx storage.ReadTx, scope request.Scope, ref string) (*tagged, erro
 
 	switch kind {
 	case kindCluster:
-		c, ok, err := read[cluster](tx, clusterKey(scope, rest))
+		c, ok, err := storage.Read[cluster](tx, clusterKey(scope, rest))
 		if err != nil || !ok || c.Status != active {
 			return nil, errorsOr(err, clusterNotFound())
 		}
 
 		return &tagged{tags: &c.Tags, save: func(tx storage.WriteTx) error {
-			return write(tx, clusterKey(scope, rest), c)
+			return storage.Write(tx, clusterKey(scope, rest), c)
 		}}, nil
 	case kindService:
 		clusterName, name, _ := strings.Cut(rest, "/")
-		svc, ok, err := read[ecsService](tx, serviceKey(scope, clusterName, name))
+		svc, ok, err := storage.Read[ecsService](tx, serviceKey(scope, clusterName, name))
 		if err != nil || !ok || svc.Status == inactive {
 			return nil, errorsOr(err, notFound)
 		}
 
 		return &tagged{tags: &svc.Tags, save: func(tx storage.WriteTx) error {
-			return write(tx, serviceKey(scope, clusterName, name), svc)
+			return storage.Write(tx, serviceKey(scope, clusterName, name), svc)
 		}}, nil
 	case "task-definition":
 		d, err := revisionRef(tx, scope, &ref)
@@ -96,17 +97,17 @@ func taggable(tx storage.ReadTx, scope request.Scope, ref string) (*tagged, erro
 		}
 
 		return &tagged{tags: &d.Tags, save: func(tx storage.WriteTx) error {
-			return write(tx, taskDefKey(scope, *d.Def.Family, *d.Def.Revision), d)
+			return storage.Write(tx, taskDefKey(scope, *d.Def.Family, *d.Def.Revision), d)
 		}}, nil
 	case kindTask:
 		clusterName, id, _ := strings.Cut(rest, "/")
-		t, ok, err := read[task](tx, taskKey(scope, clusterName, id))
+		t, ok, err := storage.Read[task](tx, taskKey(scope, clusterName, id))
 		if err != nil || !ok {
 			return nil, errorsOr(err, notFound)
 		}
 
 		return &tagged{tags: &t.Tags, save: func(tx storage.WriteTx) error {
-			return write(tx, taskKey(scope, clusterName, id), t)
+			return storage.Write(tx, taskKey(scope, clusterName, id), t)
 		}}, nil
 	}
 
@@ -121,7 +122,7 @@ func (s *Service) retag(ctx context.Context, ref *string, fn func([]api.Tag) ([]
 	}
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, findErr := taggable(tx, scope, value(ref))
+		r, findErr := taggable(tx, scope, common.Value(ref))
 		if findErr != nil {
 			return findErr
 		}
@@ -174,7 +175,7 @@ func (s *Service) ListTagsForResource(
 
 	out := &api.ListTagsForResourceResponse{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, findErr := taggable(tx, scope, value(in.ResourceArn))
+		r, findErr := taggable(tx, scope, common.Value(in.ResourceArn))
 		if findErr != nil {
 			return findErr
 		}

@@ -82,7 +82,7 @@ func (s *Service) CreateSecret(ctx context.Context, in *api.CreateSecretRequest)
 			out.VersionId = new(id)
 		}
 
-		return write(tx, secretKey(m.Scope, created.Name), created)
+		return storage.Write(tx, secretKey(m.Scope, created.Name), created)
 	})
 
 	return out, err
@@ -221,7 +221,7 @@ func (s *Service) ListSecrets(ctx context.Context, in *api.ListSecretsRequest) (
 		prefix := secretKey(m.Scope, "")
 		var found []*secret
 		for _, k := range tx.Keys(prefix) {
-			sec, _, readErr := read[secret](tx, k)
+			sec, _, readErr := storage.Read[secret](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -318,7 +318,7 @@ func (s *Service) UpdateSecret(ctx context.Context, in *api.UpdateSecretRequest)
 			out.VersionId = new(id)
 		}
 
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 
 	return out, err
@@ -368,7 +368,7 @@ func (s *Service) DeleteSecret(ctx context.Context, in *api.DeleteSecretRequest)
 
 		sec.DeletionAt = now.Add(time.Duration(window) * day).UnixMilli()
 		out.DeletionDate = seconds(sec.DeletionAt)
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 
 	return out, err
@@ -391,7 +391,7 @@ func (s *Service) RestoreSecret(ctx context.Context, in *api.RestoreSecretReques
 		sec.DeletionAt = 0
 		index(tx, m.Scope, sec)
 		out = &api.RestoreSecretResponse{ARN: new(sec.arn(m.Scope)), Name: new(sec.Name)}
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 
 	return out, err

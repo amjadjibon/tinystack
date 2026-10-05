@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -46,7 +47,7 @@ func (s *Service) begin(
 	m *request.Metadata,
 	smARN, name, input *string,
 ) (r *run, def *machine, existing bool, err error) {
-	in := value(input)
+	in := common.Value(input)
 	if input == nil {
 		in = "{}"
 	}
@@ -56,7 +57,7 @@ func (s *Service) begin(
 			"be JSON of at most 256 KiB.")
 	}
 
-	execName := value(name)
+	execName := common.Value(name)
 	if name == nil {
 		execName = uuid.NewV4().String()
 	}
@@ -79,9 +80,17 @@ func (s *Service) begin(
 
 		def, _ = parseDefinition(sm.Definition)
 		e := &execution{
-			Name: execName, StateMachine: sm.Name, StateMachineARN: machineARN(scope, sm.Name), Status: statusRunning,
-			Input: in, Endpoint: m.Endpoint, Start: unix(now), ARN: arn(scope, "execution", sm.Name+":"+execName),
-			VersionARN: t.versionARN, AliasARN: t.aliasARN, Definition: sm.Definition,
+			Name:            execName,
+			StateMachine:    sm.Name,
+			StateMachineARN: machineARN(scope, sm.Name),
+			Status:          statusRunning,
+			Input:           in,
+			Endpoint:        m.Endpoint,
+			Start:           common.Unix(now),
+			ARN:             arn(scope, "execution", sm.Name+":"+execName),
+			VersionARN:      t.versionARN,
+			AliasARN:        t.aliasARN,
+			Definition:      sm.Definition,
 		}
 		r = &run{s: s, machine: sm, exec: e, scope: scope, started: now, record: sm.Type == typeStandard}
 		if sm.Type == typeExpress {
@@ -90,7 +99,7 @@ func (s *Service) begin(
 		}
 
 		key := executionKey(scope, sm.Name, execName)
-		previous, found, readErr := read[execution](tx, key)
+		previous, found, readErr := storage.Read[execution](tx, key)
 		switch {
 		case readErr != nil:
 			return readErr
@@ -101,7 +110,7 @@ func (s *Service) begin(
 			return awserror.New("ExecutionAlreadyExists", "Execution Already Exists: '"+e.ARN+"'")
 		}
 
-		return write(tx, key, e)
+		return storage.Write(tx, key, e)
 	})
 	if err != nil {
 		return nil, nil, false, err
@@ -114,7 +123,7 @@ func (s *Service) begin(
 // useLogging sets the log group a run writes to, if its state machine logs.
 func (r *run) useLogging() {
 	if logging := r.machine.Logging; logging != nil && len(logging.Destinations) > 0 {
-		group := value(logging.Destinations[0].CloudWatchLogsLogGroup.LogGroupArn)
+		group := common.Value(logging.Destinations[0].CloudWatchLogsLogGroup.LogGroupArn)
 		if logScope, kind, rest, ok := parseLogGroup(group); ok && kind == "log-group" {
 			r.logScope, r.logGroup = logScope, strings.TrimSuffix(rest, ":*")
 		}
@@ -175,7 +184,7 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 		at = resumePoint{State: state, Input: in, Vars: v}
 	})
 	e := r.exec
-	e.Stop = unix(s.now())
+	e.Stop = common.Unix(s.now())
 	e.Resume = &at
 	if err == nil {
 		e.Resume = nil
@@ -217,13 +226,13 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 
 	err = s.store.Update(context.WithoutCancel(parent), func(tx storage.WriteTx) error {
 		key := executionKey(r.scope, e.StateMachine, e.Name)
-		stored, found, readErr := read[execution](tx, key)
+		stored, found, readErr := storage.Read[execution](tx, key)
 		if readErr != nil || !found {
 			return readErr
 		}
 
 		e.Events = stored.Events
-		return write(tx, key, e)
+		return storage.Write(tx, key, e)
 	})
 	if err != nil {
 		s.logger.Warn("recording a step functions execution failed", "execution", e.ARN, "error", err)
@@ -310,20 +319,20 @@ func (s *Service) StartSyncExecution(
 }
 
 func loadExecution(tx storage.ReadTx, m *request.Metadata, arnString *string) (*execution, error) {
-	scope, kind, name, ok := parseARN(value(arnString))
+	scope, kind, name, ok := parseARN(common.Value(arnString))
 	machine, execName, split := strings.Cut(name, ":")
 	if !ok || kind != "execution" || !split || strings.Contains(execName, ":") {
-		return nil, invalidARN(value(arnString))
+		return nil, invalidARN(common.Value(arnString))
 	}
 
 	if err := inScope(m, scope, arnString); err != nil {
 		return nil, err
 	}
 
-	e, found, err := read[execution](tx, executionKey(scope, machine, execName))
+	e, found, err := storage.Read[execution](tx, executionKey(scope, machine, execName))
 	if err != nil || !found {
 		if err == nil {
-			err = awserror.New("ExecutionDoesNotExist", "Execution Does Not Exist: '"+value(arnString)+"'")
+			err = awserror.New("ExecutionDoesNotExist", "Execution Does Not Exist: '"+common.Value(arnString)+"'")
 		}
 
 		return nil, err
@@ -448,8 +457,8 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 
 		// A version or alias ARN lists the executions that ran it.
 		qualifiedARN := ""
-		if _, _, qualifier, _ := qualified(value(in.StateMachineArn)); qualifier != "" {
-			qualifiedARN = value(in.StateMachineArn)
+		if _, _, qualifier, _ := qualified(common.Value(in.StateMachineArn)); qualifier != "" {
+			qualifiedARN = common.Value(in.StateMachineArn)
 		}
 
 		if sm.Type == typeExpress {
@@ -459,7 +468,7 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 
 		var all []*execution
 		for _, k := range tx.Keys(prefix(scope, kindExecution) + sm.Name + "/") {
-			e, _, readErr := read[execution](tx, k)
+			e, _, readErr := storage.Read[execution](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -524,7 +533,7 @@ func (s *Service) StopExecution(ctx context.Context, in *api.StopExecutionInput)
 	s.mu.Lock()
 	_, running := s.running[e.ARN]
 	s.mu.Unlock()
-	s.cancelRun(e.ARN, &stopError{error: value(in.Error), cause: value(in.Cause)})
+	s.cancelRun(e.ARN, &stopError{error: common.Value(in.Error), cause: common.Value(in.Cause)})
 
 	// Wait for the execution to record that it stopped.
 	for range 50 {
@@ -538,7 +547,7 @@ func (s *Service) StopExecution(ctx context.Context, in *api.StopExecutionInput)
 		s.mu.Unlock()
 	}
 
-	return &api.StopExecutionOutput{StopDate: new(unix(s.now()))}, nil
+	return &api.StopExecutionOutput{StopDate: new(common.Unix(s.now()))}, nil
 }
 
 func (s *Service) GetExecutionHistory(
@@ -563,7 +572,7 @@ func (s *Service) GetExecutionHistory(
 			return readErr
 		}
 
-		if value(in.ReverseOrder) {
+		if common.Value(in.ReverseOrder) {
 			slices.Reverse(events)
 		}
 
@@ -590,7 +599,7 @@ func (s *Service) GetExecutionHistory(
 func recordsOf[T any](tx storage.ReadTx, keyPrefix string) ([]T, error) {
 	var out []T
 	for _, k := range tx.Keys(keyPrefix) {
-		v, _, err := read[T](tx, k)
+		v, _, err := storage.Read[T](tx, k)
 		if err != nil {
 			return nil, err
 		}

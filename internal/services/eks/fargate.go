@@ -6,6 +6,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -46,7 +47,7 @@ func (s *Service) CreateFargateProfile(
 	}
 
 	for _, sel := range in.Selectors {
-		if value(sel.Namespace) == "" || len(sel.Labels) > 5 {
+		if common.Value(sel.Namespace) == "" || len(sel.Labels) > 5 {
 			return nil, invalidParameter("Each selector needs a namespace and can have up to 5 labels.")
 		}
 	}
@@ -67,38 +68,38 @@ func (s *Service) CreateFargateProfile(
 			return loadErr
 		}
 
-		if len(in.Subnets) > 0 && placed.VPC != value(c.Vpc.VpcId) {
-			return invalidParameter("Subnets must be in the cluster's VPC %s.", value(c.Vpc.VpcId))
+		if len(in.Subnets) > 0 && placed.VPC != common.Value(c.Vpc.VpcId) {
+			return invalidParameter("Subnets must be in the cluster's VPC %s.", common.Value(c.Vpc.VpcId))
 		}
 
 		name := *in.FargateProfileName
-		existing, ok, readErr := read[fargateProfile](tx, fargateKey(scope, c.Name, name))
+		existing, ok, readErr := storage.Read[fargateProfile](tx, fargateKey(scope, c.Name, name))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
+		case ok && common.Value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
 			out = &existing.Profile
 			return nil
 		case ok:
 			return inUse("A Fargate Profile already exists with this name in this cluster.")
 		}
 
-		p := &fargateProfile{Token: value(in.ClientRequestToken), Profile: api.FargateProfile{
+		p := &fargateProfile{Token: common.Value(in.ClientRequestToken), Profile: api.FargateProfile{
 			FargateProfileName: new(name),
 			FargateProfileArn:  new(arn(scope, "fargateprofile/"+c.Name+"/"+name+"/"+uuid.NewV4().String())),
 			ClusterName: new(
 				c.Name,
 			),
-			CreatedAt:           seconds(s.now().UTC()),
+			CreatedAt:           common.SecondsMilli(s.now().UTC()),
 			PodExecutionRoleArn: in.PodExecutionRoleArn,
 			Subnets:             orEmpty(in.Subnets),
 			Selectors:           in.Selectors,
 			Status:              new(active),
-			Tags:                cloneTags(in.Tags),
+			Tags:                common.CloneTags(in.Tags),
 			Health:              &api.FargateProfileHealth{Issues: []api.FargateProfileIssue{}},
 		}}
 		out = &p.Profile
-		return write(tx, fargateKey(scope, c.Name, name), p)
+		return storage.Write(tx, fargateKey(scope, c.Name, name), p)
 	})
 	if err != nil {
 		return nil, err
@@ -124,9 +125,9 @@ func (s *Service) fargate(
 			return loadErr
 		}
 
-		p, ok, readErr := read[fargateProfile](tx, fargateKey(scope, c.Name, value(name)))
+		p, ok, readErr := storage.Read[fargateProfile](tx, fargateKey(scope, c.Name, common.Value(name)))
 		if readErr != nil || !ok {
-			return errorsOr(readErr, profileNotFound(value(name)))
+			return common.ErrorsOr(readErr, profileNotFound(common.Value(name)))
 		}
 
 		return fn(tx, scope, p)

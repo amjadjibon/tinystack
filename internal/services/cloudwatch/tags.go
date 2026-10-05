@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -45,7 +46,7 @@ func (s *Service) retag(ctx context.Context, arn string, change func(map[string]
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if strings.HasPrefix(key, prefix(m.Scope, kindAlarm)) {
-			a, found, readErr := read[alarm](tx, key)
+			a, found, readErr := storage.Read[alarm](tx, key)
 			if readErr != nil || !found {
 				return notFound(arn, readErr)
 			}
@@ -54,10 +55,10 @@ func (s *Service) retag(ctx context.Context, arn string, change func(map[string]
 				return readErr
 			}
 
-			return write(tx, key, a)
+			return storage.Write(tx, key, a)
 		}
 
-		d, found, readErr := read[dashboard](tx, key)
+		d, found, readErr := storage.Read[dashboard](tx, key)
 		if readErr != nil || !found {
 			return notFound(arn, readErr)
 		}
@@ -66,7 +67,7 @@ func (s *Service) retag(ctx context.Context, arn string, change func(map[string]
 			return readErr
 		}
 
-		return write(tx, key, d)
+		return storage.Write(tx, key, d)
 	})
 }
 
@@ -83,7 +84,7 @@ func (s *Service) TagResource(ctx context.Context, in *api.TagResourceInput) (*a
 		return nil, missing("Tags")
 	}
 
-	return &api.TagResourceOutput{}, s.retag(ctx, value(in.ResourceARN),
+	return &api.TagResourceOutput{}, s.retag(ctx, common.Value(in.ResourceARN),
 		func(tags map[string]string) (map[string]string, error) {
 			merged, err := tagging.Merge(tags, tagsOf(in.Tags))
 			if err != nil {
@@ -95,7 +96,7 @@ func (s *Service) TagResource(ctx context.Context, in *api.TagResourceInput) (*a
 }
 
 func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceInput) (*api.UntagResourceOutput, error) {
-	return &api.UntagResourceOutput{}, s.retag(ctx, value(in.ResourceARN),
+	return &api.UntagResourceOutput{}, s.retag(ctx, common.Value(in.ResourceARN),
 		func(tags map[string]string) (map[string]string, error) {
 			return tagging.Remove(tags, in.TagKeys), nil
 		})
@@ -109,7 +110,7 @@ func (s *Service) ListTagsForResource(
 		return nil, err
 	}
 
-	key, err := tagged(m.Scope, value(in.ResourceARN))
+	key, err := tagged(m.Scope, common.Value(in.ResourceARN))
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +118,7 @@ func (s *Service) ListTagsForResource(
 	var tags map[string]string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		if strings.HasPrefix(key, prefix(m.Scope, kindAlarm)) {
-			a, found, readErr := read[alarm](tx, key)
+			a, found, readErr := storage.Read[alarm](tx, key)
 			if readErr != nil || !found {
 				return notFound(*in.ResourceARN, readErr)
 			}
@@ -126,7 +127,7 @@ func (s *Service) ListTagsForResource(
 			return nil
 		}
 
-		d, found, readErr := read[dashboard](tx, key)
+		d, found, readErr := storage.Read[dashboard](tx, key)
 		if readErr != nil || !found {
 			return notFound(*in.ResourceARN, readErr)
 		}

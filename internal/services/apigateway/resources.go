@@ -9,6 +9,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -17,7 +18,7 @@ var pathPart = regexp.MustCompile(`^(\{[a-zA-Z0-9._-]+\+?\}|[a-zA-Z0-9._\-:~@%$]
 func isVariable(part string) bool { return strings.HasPrefix(part, "{") }
 
 func loadResource(a *restAPI, id *string) (*api.Resource, error) {
-	r, ok := a.Resources[value(id)]
+	r, ok := a.Resources[common.Value(id)]
 	if !ok {
 		return nil, notFound("Invalid Resource identifier specified")
 	}
@@ -42,21 +43,21 @@ func checkChild(a *restAPI, parent *api.Resource, id, part string) error {
 			"the end and an optional plus sign before the closing brace.")
 	}
 
-	if strings.HasSuffix(value(parent.PathPart), "+}") {
+	if strings.HasSuffix(common.Value(parent.PathPart), "+}") {
 		return badRequest("Cannot create a child of a resource with a greedy path variable: %s", *parent.Path)
 	}
 
 	for _, r := range a.Resources {
-		if value(r.ParentId) != *parent.Id || *r.Id == id {
+		if common.Value(r.ParentId) != *parent.Id || *r.Id == id {
 			continue
 		}
 
 		switch {
-		case value(r.PathPart) == part:
+		case common.Value(r.PathPart) == part:
 			return conflict("Another resource with the same parent already has this name: %s", part)
-		case isVariable(part) && isVariable(value(r.PathPart)):
+		case isVariable(part) && isVariable(common.Value(r.PathPart)):
 			return badRequest("A sibling (%s) of this resource already has a variable path part -- only one is "+
-				"allowed", value(r.PathPart))
+				"allowed", common.Value(r.PathPart))
 		}
 	}
 
@@ -65,9 +66,9 @@ func checkChild(a *restAPI, parent *api.Resource, id, part string) error {
 
 // repath recomputes the paths of r and everything under it.
 func repath(a *restAPI, r *api.Resource) {
-	r.Path = new(childPath(value(a.Resources[value(r.ParentId)].Path), value(r.PathPart)))
+	r.Path = new(childPath(common.Value(a.Resources[common.Value(r.ParentId)].Path), common.Value(r.PathPart)))
 	for _, child := range a.Resources {
-		if value(child.ParentId) == *r.Id {
+		if common.Value(child.ParentId) == *r.Id {
 			repath(a, child)
 		}
 	}
@@ -76,7 +77,7 @@ func repath(a *restAPI, r *api.Resource) {
 // resourceView is a resource as the API reports it: with its methods in full
 // when embed asks for them, and otherwise only their names.
 func resourceView(r *api.Resource, embed []string) api.Resource {
-	out := *clone(r)
+	out := *common.Clone(r)
 	if len(out.ResourceMethods) == 0 {
 		out.ResourceMethods = nil
 		return out
@@ -99,8 +100,8 @@ func (s *Service) CreateResource(ctx context.Context, in *api.CreateResourceRequ
 			return loadErr
 		}
 
-		id := newID(6)
-		if checkErr := checkChild(a, parent, id, value(in.PathPart)); checkErr != nil {
+		id := common.RandomID(6)
+		if checkErr := checkChild(a, parent, id, common.Value(in.PathPart)); checkErr != nil {
 			return checkErr
 		}
 
@@ -167,7 +168,7 @@ func (s *Service) UpdateResource(ctx context.Context, in *api.UpdateResourceRequ
 			return badRequest("The root resource cannot be changed.")
 		}
 
-		changed := clone(r)
+		changed := common.Clone(r)
 		if patchErr := patch(changed, in.PatchOperations, "pathPart", "parentId"); patchErr != nil {
 			return patchErr
 		}
@@ -178,13 +179,13 @@ func (s *Service) UpdateResource(ctx context.Context, in *api.UpdateResourceRequ
 		}
 
 		// A resource cannot move under itself.
-		for p := parent; p != nil; p = a.Resources[value(p.ParentId)] {
+		for p := parent; p != nil; p = a.Resources[common.Value(p.ParentId)] {
 			if *p.Id == *r.Id {
 				return badRequest("A resource cannot be moved under itself.")
 			}
 		}
 
-		if checkErr := checkChild(a, parent, *r.Id, value(changed.PathPart)); checkErr != nil {
+		if checkErr := checkChild(a, parent, *r.Id, common.Value(changed.PathPart)); checkErr != nil {
 			return checkErr
 		}
 
@@ -226,7 +227,7 @@ func (s *Service) DeleteResource(
 
 func deleteTree(a *restAPI, id string) {
 	for _, child := range a.Resources {
-		if value(child.ParentId) == id {
+		if common.Value(child.ParentId) == id {
 			deleteTree(a, *child.Id)
 		}
 	}

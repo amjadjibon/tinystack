@@ -91,16 +91,6 @@ func registryHost(m *request.Metadata) string {
 	return strings.TrimPrefix(strings.TrimPrefix(m.Endpoint, "http://"), "https://")
 }
 
-func seconds(t time.Time) *float64 { return common.SecondsMilli(t) }
-
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
 // page returns the items after the one token names, at most limit of them, and
 // the token for the rest, if any. Tokens are the last returned item's ID.
 func page[T any](items []T, id func(T) string, token *string, limit int) (selected []T, next *string, err error) {
@@ -150,7 +140,7 @@ func checkRepoName(name *string) error {
 	if name == nil || len(*name) < 2 || len(*name) > 256 || !repoName.MatchString(*name) {
 		return invalidParameter("Invalid parameter at 'repositoryName' failed to satisfy constraint: 'must satisfy "+
 			"regular expression '(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)*[a-z0-9]+(?:[._-][a-z0-9]+)*' and be 2 to 256 "+
-			"characters long' (%q)", value(name))
+			"characters long' (%q)", common.Value(name))
 	}
 
 	return nil
@@ -175,7 +165,7 @@ func loadRepo(tx storage.ReadTx, scope request.Scope, registry, name *string) (*
 		return nil, err
 	}
 
-	r, ok, err := read[repository](tx, repoKey(scope, *name))
+	r, ok, err := storage.Read[repository](tx, repoKey(scope, *name))
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +220,7 @@ func (s *Service) update(
 			return fnErr
 		}
 
-		return write(tx, repoKey(m.Scope, r.Name), r)
+		return storage.Write(tx, repoKey(m.Scope, r.Name), r)
 	})
 }
 

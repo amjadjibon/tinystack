@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -80,12 +81,12 @@ func (s *Service) RedriveExecution(
 		ran.Definition = e.Definition
 		def, _ = parseDefinition(e.Definition)
 		e.Status, e.Error, e.Cause, e.Stop = statusRunning, "", "", 0
-		e.Redrives, e.RedriveDate, e.RedriveToken = e.Redrives+1, unix(now), value(in.ClientToken)
+		e.Redrives, e.RedriveDate, e.RedriveToken = e.Redrives+1, common.Unix(now), common.Value(in.ClientToken)
 		r = &run{
 			s: s, machine: &ran, exec: e, scope: m.Scope, started: time.Unix(0, int64(e.Start*float64(time.Second))),
 			record: true, lastEvent: e.Events, redrive: true,
 		}
-		return write(tx, executionKey(m.Scope, e.StateMachine, e.Name), e)
+		return storage.Write(tx, executionKey(m.Scope, e.StateMachine, e.Name), e)
 	})
 	if err != nil {
 		return nil, err

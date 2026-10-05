@@ -14,6 +14,7 @@ import (
 	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -82,14 +83,14 @@ func (s *Service) pull(t target) error {
 	var st *deliveryStream
 	err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
 		var readErr error
-		st, _, readErr = read[deliveryStream](tx, streamKey(t.scope, t.name))
+		st, _, readErr = storage.Read[deliveryStream](tx, streamKey(t.scope, t.name))
 		return readErr
 	})
 	if err != nil || st == nil || st.Type != typeKinesis || s.streams == nil {
 		return err
 	}
 
-	arn := value(st.Source.KinesisStreamARN)
+	arn := common.Value(st.Source.KinesisStreamARN)
 	shards, err := s.streams.Shards(s.ctx, arn)
 	if err != nil {
 		return err
@@ -128,7 +129,7 @@ func (s *Service) pull(t target) error {
 	}
 
 	return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
-		current, found, readErr := read[deliveryStream](tx, streamKey(t.scope, t.name))
+		current, found, readErr := storage.Read[deliveryStream](tx, streamKey(t.scope, t.name))
 		if readErr != nil || !found {
 			return readErr
 		}
@@ -166,13 +167,13 @@ func (s *Service) flush(t target) error {
 	size := 0
 	err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
 		var readErr error
-		if st, _, readErr = read[deliveryStream](tx, streamKey(t.scope, t.name)); readErr != nil || st == nil {
+		if st, _, readErr = storage.Read[deliveryStream](tx, streamKey(t.scope, t.name)); readErr != nil || st == nil {
 			return readErr
 		}
 
-		limit := int(value(st.Destination.BufferingHints.SizeInMBs)) * megabyte
+		limit := int(common.Value(st.Destination.BufferingHints.SizeInMBs)) * megabyte
 		for _, k := range tx.Keys(bufferPrefix(t.scope, t.name)) {
-			r, _, readErr := read[buffered](tx, k)
+			r, _, readErr := storage.Read[buffered](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -190,9 +191,9 @@ func (s *Service) flush(t target) error {
 		return err
 	}
 
-	interval := time.Duration(value(st.Destination.BufferingHints.IntervalInSeconds)) * time.Second
+	interval := time.Duration(common.Value(st.Destination.BufferingHints.IntervalInSeconds)) * time.Second
 	oldest := time.UnixMilli(int64(records[0].Arrival * 1000))
-	if size < int(value(st.Destination.BufferingHints.SizeInMBs))*megabyte && s.now().Sub(oldest) < interval {
+	if size < int(common.Value(st.Destination.BufferingHints.SizeInMBs))*megabyte && s.now().Sub(oldest) < interval {
 		return nil
 	}
 
@@ -226,10 +227,10 @@ type failedRecord struct {
 func (s *Service) deliver(scope request.Scope, st *deliveryStream, records []buffered) error {
 	d := &st.Destination
 	var failed []failedRecord
-	if p := d.ProcessingConfiguration; p != nil && value(p.Enabled) {
+	if p := d.ProcessingConfiguration; p != nil && common.Value(p.Enabled) {
 		for i := range p.Processors {
 			proc := &p.Processors[i]
-			switch value(proc.Type) {
+			switch common.Value(proc.Type) {
 			case processorLambda:
 				var lost []failedRecord
 				records, lost = s.transform(scope, st, parameter(proc, "LambdaArn"), records)
@@ -254,7 +255,7 @@ func (s *Service) deliver(scope request.Scope, st *deliveryStream, records []buf
 			body.Write(r.Data)
 		}
 
-		key := expand(value(d.Prefix), now, "") + objectName(st, now)
+		key := expand(common.Value(d.Prefix), now, "") + objectName(st, now)
 		if err := s.putObject(scope, st, key, body.Bytes()); err != nil {
 			return err
 		}
@@ -270,9 +271,9 @@ func (s *Service) deliver(scope request.Scope, st *deliveryStream, records []buf
 		lines.Write(append(line, '\n'))
 	}
 
-	errorPrefix := value(d.ErrorOutputPrefix)
+	errorPrefix := common.Value(d.ErrorOutputPrefix)
 	if errorPrefix == "" {
-		errorPrefix = value(d.Prefix) + defaultErrors + "/"
+		errorPrefix = common.Value(d.Prefix) + defaultErrors + "/"
 	}
 
 	return s.putObject(scope, st, expand(errorPrefix, now, defaultErrors)+objectName(st, now), lines.Bytes())
@@ -286,7 +287,7 @@ func (s *Service) putObject(scope request.Scope, st *deliveryStream, key string,
 	}
 
 	d := &st.Destination
-	if value(d.CompressionFormat) == formatGzip {
+	if common.Value(d.CompressionFormat) == formatGzip {
 		var compressed bytes.Buffer
 		w := gzip.NewWriter(&compressed)
 		if _, err := w.Write(data); err != nil {
@@ -300,7 +301,7 @@ func (s *Service) putObject(scope request.Scope, st *deliveryStream, key string,
 		data = compressed.Bytes()
 	}
 
-	bucket := bucketName(value(d.BucketARN))
+	bucket := bucketName(common.Value(d.BucketARN))
 	ctx := request.WithMetadata(s.ctx, request.Metadata{Scope: scope, Service: "s3", RequestID: randomID(32)})
 	_, err := s.caller.Call(ctx, "s3", "PutObject", map[string]any{"Bucket": bucket, "Key": key, "Body": string(data)})
 	if s.deliveries != nil {
@@ -313,8 +314,8 @@ func (s *Service) putObject(scope request.Scope, st *deliveryStream, key string,
 // objectName is a delivered object's name: the stream, its version, the
 // time, and a random ID, with the destination's file extension.
 func objectName(st *deliveryStream, now time.Time) string {
-	ext := value(st.Destination.FileExtension)
-	if ext == "" && value(st.Destination.CompressionFormat) == formatGzip {
+	ext := common.Value(st.Destination.FileExtension)
+	if ext == "" && common.Value(st.Destination.CompressionFormat) == formatGzip {
 		ext = ".gz"
 	}
 

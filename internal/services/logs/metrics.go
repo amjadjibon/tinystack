@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -48,16 +49,16 @@ func checkTransformation(transformations []api.MetricTransformation) (*api.Metri
 
 	t := &transformations[0]
 	switch {
-	case value(t.MetricName) == "" || len(*t.MetricName) > 255:
+	case common.Value(t.MetricName) == "" || len(*t.MetricName) > 255:
 		return nil, invalid("metricName must be 1 to 255 characters")
-	case value(t.MetricNamespace) == "" || len(*t.MetricNamespace) > 255:
+	case common.Value(t.MetricNamespace) == "" || len(*t.MetricNamespace) > 255:
 		return nil, invalid("metricNamespace must be 1 to 255 characters")
 	case len(t.Dimensions) > 0:
 		return nil, invalid("TinyStack does not support metric filter dimensions, which need JSON or " +
 			"space-delimited filter patterns")
 	}
 
-	if _, err := strconv.ParseFloat(value(t.MetricValue), 64); err != nil {
+	if _, err := strconv.ParseFloat(common.Value(t.MetricValue), 64); err != nil {
 		return nil, invalid("TinyStack supports only numeric metricValue, since its filter patterns extract no fields")
 	}
 
@@ -68,12 +69,12 @@ func (s *Service) PutMetricFilter(
 	ctx context.Context,
 	in *api.PutMetricFilterRequest,
 ) (*api.PutMetricFilterOutput, error) {
-	name := value(in.FilterName)
+	name := common.Value(in.FilterName)
 	if !filterName.MatchString(name) {
 		return nil, invalid("filterName must be 1 to 512 characters without ':' or '*'")
 	}
 
-	if _, err := compilePattern(value(in.FilterPattern)); err != nil {
+	if _, err := compilePattern(common.Value(in.FilterPattern)); err != nil {
 		return nil, err
 	}
 
@@ -83,8 +84,8 @@ func (s *Service) PutMetricFilter(
 	}
 
 	f := metricFilter{
-		Name: name, Pattern: value(in.FilterPattern), Metric: *t.MetricName, Namespace: *t.MetricNamespace,
-		Value: *t.MetricValue, Default: t.DefaultValue, Unit: value(t.Unit), Created: s.now().UnixMilli(),
+		Name: name, Pattern: common.Value(in.FilterPattern), Metric: *t.MetricName, Namespace: *t.MetricNamespace,
+		Value: *t.MetricValue, Default: t.DefaultValue, Unit: common.Value(t.Unit), Created: s.now().UnixMilli(),
 	}
 	err = s.change(ctx, in.LogGroupName, func(g *group) error {
 		if i := slices.IndexFunc(g.MetricFilters, func(o metricFilter) bool { return o.Name == name }); i >= 0 {
@@ -118,7 +119,7 @@ func (s *Service) DescribeMetricFilters(
 	}
 
 	limit := int64(maxDescribe)
-	switch l := value(in.Limit); {
+	switch l := common.Value(in.Limit); {
 	case in.Limit != nil && (l < 1 || l > maxDescribe):
 		return nil, invalid("limit must be from 1 to %d", maxDescribe)
 	case in.Limit != nil:
@@ -146,7 +147,7 @@ func (s *Service) DescribeMetricFilters(
 		}
 
 		for _, k := range keys {
-			g, _, readErr := read[group](tx, k)
+			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -154,7 +155,7 @@ func (s *Service) DescribeMetricFilters(
 			for i := range g.MetricFilters {
 				f := &g.MetricFilters[i]
 				position := g.Name + "\x00" + f.Name
-				if position <= after || !strings.HasPrefix(f.Name, value(in.FilterNamePrefix)) ||
+				if position <= after || !strings.HasPrefix(f.Name, common.Value(in.FilterNamePrefix)) ||
 					(in.MetricName != nil && (f.Metric != *in.MetricName || f.Namespace != *in.MetricNamespace)) {
 					continue
 				}
@@ -183,7 +184,10 @@ func (s *Service) DeleteMetricFilter(
 	in *api.DeleteMetricFilterRequest,
 ) (*api.DeleteMetricFilterOutput, error) {
 	err := s.change(ctx, in.LogGroupName, func(g *group) error {
-		i := slices.IndexFunc(g.MetricFilters, func(o metricFilter) bool { return o.Name == value(in.FilterName) })
+		i := slices.IndexFunc(
+			g.MetricFilters,
+			func(o metricFilter) bool { return o.Name == common.Value(in.FilterName) },
+		)
 		if i < 0 {
 			return notFound("The specified metric filter does not exist.")
 		}
@@ -207,7 +211,7 @@ func (s *Service) TestMetricFilter(
 		return nil, invalid("logEventMessages must hold 1 to 50 messages")
 	}
 
-	match, err := compilePattern(value(in.FilterPattern))
+	match, err := compilePattern(common.Value(in.FilterPattern))
 	if err != nil {
 		return nil, err
 	}

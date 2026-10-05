@@ -9,6 +9,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -31,7 +32,7 @@ var (
 // sources splits an authorizer's comma-separated identity sources.
 func sources(a *api.Authorizer) []string {
 	var out []string
-	for s := range strings.SplitSeq(value(a.IdentitySource), ",") {
+	for s := range strings.SplitSeq(common.Value(a.IdentitySource), ",") {
 		if s = strings.TrimSpace(s); s != "" {
 			out = append(out, s)
 		}
@@ -43,7 +44,7 @@ func sources(a *api.Authorizer) []string {
 // checkAuthorizer validates a Lambda TOKEN or REQUEST authorizer or a
 // Cognito user pool authorizer.
 func checkAuthorizer(a *api.Authorizer) error {
-	if n := len(value(a.Name)); n < 1 || n > 128 {
+	if n := len(common.Value(a.Name)); n < 1 || n > 128 {
 		return badRequest("Name must be 1 to 128 characters.")
 	}
 
@@ -53,13 +54,13 @@ func checkAuthorizer(a *api.Authorizer) error {
 		}
 	}
 
-	if ttl := value(a.AuthorizerResultTtlInSeconds); ttl < 0 || ttl > maxTTL {
+	if ttl := common.Value(a.AuthorizerResultTtlInSeconds); ttl < 0 || ttl > maxTTL {
 		return badRequest("AuthorizerResultTtlInSeconds must be between 0 and %d.", maxTTL)
 	}
 
-	switch value(a.Type) {
+	switch common.Value(a.Type) {
 	case typeToken, typeRequest:
-		if _, ok := proxy.LambdaARN(value(a.AuthorizerUri)); !ok {
+		if _, ok := proxy.LambdaARN(common.Value(a.AuthorizerUri)); !ok {
 			return badRequest("Invalid Authorizer URI: it must be a Lambda function's invocation URI.")
 		}
 
@@ -67,16 +68,17 @@ func checkAuthorizer(a *api.Authorizer) error {
 			return badRequest("ProviderARNs are only for COGNITO_USER_POOLS authorizers.")
 		}
 
-		token := value(a.Type) == typeToken
-		if token && (len(sources(a)) != 1 || !strings.HasPrefix(value(a.IdentitySource), "method.request.header.")) {
+		token := common.Value(a.Type) == typeToken
+		if token &&
+			(len(sources(a)) != 1 || !strings.HasPrefix(common.Value(a.IdentitySource), "method.request.header.")) {
 			return badRequest("A TOKEN authorizer needs one identity source: method.request.header.<name>.")
 		}
 
-		if !token && len(sources(a)) == 0 && value(a.AuthorizerResultTtlInSeconds) > 0 {
+		if !token && len(sources(a)) == 0 && common.Value(a.AuthorizerResultTtlInSeconds) > 0 {
 			return badRequest("Caching a REQUEST authorizer's results needs an identity source.")
 		}
 
-		if p := value(a.IdentityValidationExpression); p != "" {
+		if p := common.Value(a.IdentityValidationExpression); p != "" {
 			if _, err := regexp.Compile(p); err != nil || !token {
 				return badRequest("Invalid identity validation expression %s.", p)
 			}
@@ -104,12 +106,12 @@ func checkAuthorizer(a *api.Authorizer) error {
 
 func (s *Service) CreateAuthorizer(ctx context.Context, in *api.CreateAuthorizerRequest) (*api.Authorizer, error) {
 	a := &api.Authorizer{
-		Id: new(newID(6)), Name: in.Name, Type: in.Type, ProviderARNs: in.ProviderARNs, AuthType: in.AuthType,
+		Id: new(common.RandomID(6)), Name: in.Name, Type: in.Type, ProviderARNs: in.ProviderARNs, AuthType: in.AuthType,
 		AuthorizerUri: in.AuthorizerUri, AuthorizerCredentials: in.AuthorizerCredentials,
 		IdentitySource: in.IdentitySource, IdentityValidationExpression: in.IdentityValidationExpression,
-		AuthorizerResultTtlInSeconds: orElse(in.AuthorizerResultTtlInSeconds, new(int64(defaultTTL))),
+		AuthorizerResultTtlInSeconds: common.OrElse(in.AuthorizerResultTtlInSeconds, new(int64(defaultTTL))),
 	}
-	if value(a.Type) == typeCognito && a.IdentitySource == nil {
+	if common.Value(a.Type) == typeCognito && a.IdentitySource == nil {
 		a.IdentitySource = new("method.request.header.Authorization")
 	}
 
@@ -129,7 +131,7 @@ func (s *Service) CreateAuthorizer(ctx context.Context, in *api.CreateAuthorizer
 }
 
 func loadAuthorizer(r *restAPI, id *string) (*api.Authorizer, error) {
-	a, ok := r.Authorizers[value(id)]
+	a, ok := r.Authorizers[common.Value(id)]
 	if !ok {
 		return nil, notFound("Invalid Authorizer identifier specified")
 	}
@@ -179,7 +181,7 @@ func (s *Service) UpdateAuthorizer(ctx context.Context, in *api.UpdateAuthorizer
 			return err
 		}
 
-		changed := clone(a)
+		changed := common.Clone(a)
 		if changeErr := patch(changed, in.PatchOperations, "name", "type", "authorizerUri", "identitySource",
 			"identityValidationExpression", "authorizerResultTtlInSeconds", "providerARNs", "authType",
 			"authorizerCredentials"); changeErr != nil {
@@ -193,7 +195,7 @@ func (s *Service) UpdateAuthorizer(ctx context.Context, in *api.UpdateAuthorizer
 		// Methods using the authorizer must still match its type.
 		for _, res := range r.Resources {
 			for _, m := range res.ResourceMethods {
-				if value(m.AuthorizerId) == *a.Id {
+				if common.Value(m.AuthorizerId) == *a.Id {
 					if changeErr := checkMethod(
 						&restAPI{Authorizers: map[string]*api.Authorizer{*a.Id: changed}},
 						&m,
@@ -226,9 +228,13 @@ func (s *Service) DeleteAuthorizer(
 
 		for _, res := range r.Resources {
 			for name, m := range res.ResourceMethods {
-				if value(m.AuthorizerId) == *a.Id {
-					return conflict("Cannot delete authorizer '%s', is referenced in method: %s:%s", value(a.Name),
-						name, value(res.Path))
+				if common.Value(m.AuthorizerId) == *a.Id {
+					return conflict(
+						"Cannot delete authorizer '%s', is referenced in method: %s:%s",
+						common.Value(a.Name),
+						name,
+						common.Value(res.Path),
+					)
 				}
 			}
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -25,7 +26,7 @@ func gatewayNotFound(id string) error {
 }
 
 func loadGateway(tx storage.ReadTx, scope request.Scope, id string) (*internetGateway, error) {
-	g, ok, err := read[internetGateway](tx, key(scope, kindInternetGateway, id))
+	g, ok, err := storage.Read[internetGateway](tx, key(scope, kindInternetGateway, id))
 	if err == nil && !ok {
 		err = gatewayNotFound(id)
 	}
@@ -88,7 +89,7 @@ func (s *Service) CreateInternetGateway(
 	var out api.InternetGateway
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		out = gatewayOutput(scope, g)
-		return write(tx, key(scope, kindInternetGateway, g.ID), g)
+		return storage.Write(tx, key(scope, kindInternetGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func (s *Service) DeleteInternetGateway(
 	in *api.DeleteInternetGatewayRequest,
 ) (*api.DeleteInternetGatewayOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		g, err := loadGateway(tx, scope, value(in.InternetGatewayId))
+		g, err := loadGateway(tx, scope, common.Value(in.InternetGatewayId))
 		if err != nil {
 			return err
 		}
@@ -129,12 +130,12 @@ func (s *Service) AttachInternetGateway(
 	in *api.AttachInternetGatewayRequest,
 ) (*api.AttachInternetGatewayOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		g, err := loadGateway(tx, scope, value(in.InternetGatewayId))
+		g, err := loadGateway(tx, scope, common.Value(in.InternetGatewayId))
 		if err != nil {
 			return err
 		}
 
-		v, err := loadVPC(tx, scope, value(in.VpcId))
+		v, err := loadVPC(tx, scope, common.Value(in.VpcId))
 		if err != nil {
 			return err
 		}
@@ -154,7 +155,7 @@ func (s *Service) AttachInternetGateway(
 		}
 
 		g.VPCID = v.ID
-		return write(tx, key(scope, kindInternetGateway, g.ID), g)
+		return storage.Write(tx, key(scope, kindInternetGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -170,12 +171,12 @@ func (s *Service) DetachInternetGateway(
 	in *api.DetachInternetGatewayRequest,
 ) (*api.DetachInternetGatewayOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		g, err := loadGateway(tx, scope, value(in.InternetGatewayId))
+		g, err := loadGateway(tx, scope, common.Value(in.InternetGatewayId))
 		if err != nil {
 			return err
 		}
 
-		vpcID := value(in.VpcId)
+		vpcID := common.Value(in.VpcId)
 		if _, err = loadVPC(tx, scope, vpcID); err != nil {
 			return err
 		}
@@ -196,7 +197,7 @@ func (s *Service) DetachInternetGateway(
 		}
 
 		g.VPCID = ""
-		return write(tx, key(scope, kindInternetGateway, g.ID), g)
+		return storage.Write(tx, key(scope, kindInternetGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err

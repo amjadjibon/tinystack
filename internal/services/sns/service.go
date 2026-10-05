@@ -113,8 +113,6 @@ var (
 	accountID = regexp.MustCompile(`^\d{12}$`)
 )
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 func invalid(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", "Invalid parameter: "+fmt.Sprintf(format, args...))
 }
@@ -150,7 +148,7 @@ func parseARN(arn *string, sub bool) ([]string, error) {
 		name, want = "SubscriptionArn", 7
 	}
 
-	parts := strings.Split(value(arn), ":")
+	parts := strings.Split(common.Value(arn), ":")
 	if len(parts) != want || parts[0] != arnScheme || parts[2] != "sns" || parts[3] == "" ||
 		!accountID.MatchString(parts[4]) || !topicName.MatchString(parts[5]) || (sub && parts[6] == "") {
 		return nil, invalid("%s", name)
@@ -214,10 +212,6 @@ func load(tx storage.ReadTx, key string) (*topic, error) {
 	return t, nil
 }
 
-func save(tx storage.WriteTx, key string, t *topic) error {
-	return storage.Write(tx, key, t)
-}
-
 // page returns the sorted names after the NextToken and the token for the next page.
 func page(names []string, token *string) (selected []string, next *string, err error) {
 	after := ""
@@ -251,7 +245,7 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 		return nil, err
 	}
 
-	name := value(in.Name)
+	name := common.Value(in.Name)
 	if !topicName.MatchString(name) {
 		return nil, invalid("Topic Name must be 1 to 256 alphanumeric characters, hyphens, or underscores, " +
 			"ending in .fifo for a FIFO topic")
@@ -275,7 +269,7 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); !exists {
 			t := &topic{Attributes: attributes, Tags: tags, CreatedAt: s.now().Unix()}
-			return save(tx, key, t)
+			return storage.Write(tx, key, t)
 		}
 
 		t, loadErr := load(tx, key)
@@ -372,7 +366,7 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 		return nil, err
 	}
 
-	protocol, endpoint := value(in.Protocol), value(in.Endpoint)
+	protocol, endpoint := common.Value(in.Protocol), common.Value(in.Endpoint)
 	if guardErr := checkSubscriber(protocol, endpoint, m.AccountID); guardErr != nil {
 		return nil, guardErr
 	}
@@ -415,7 +409,7 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 		}
 
 		t.Subscriptions = append(t.Subscriptions, sub)
-		return save(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return nil, err
@@ -428,7 +422,7 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 			return nil, confirmErr
 		}
 
-		if !value(in.ReturnSubscriptionArn) {
+		if !common.Value(in.ReturnSubscriptionArn) {
 			return &api.SubscribeResponse{SubscriptionArn: new(pendingARN)}, nil
 		}
 	}
@@ -483,7 +477,7 @@ func (s *Service) Unsubscribe(ctx context.Context, in *api.UnsubscribeInput) (*a
 		for i := range t.Subscriptions {
 			if t.Subscriptions[i].ID == id {
 				t.Subscriptions = append(t.Subscriptions[:i], t.Subscriptions[i+1:]...)
-				return save(tx, key, t)
+				return storage.Write(tx, key, t)
 			}
 		}
 

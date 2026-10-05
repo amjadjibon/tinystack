@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const (
@@ -52,7 +53,7 @@ func (a *acl) private(account string, canned ...string) (bool, error) {
 		return *a.fullControl == `id="`+id+`"`, nil
 	}
 
-	if o := a.policy.Owner; o != nil && value(o.ID) != id {
+	if o := a.policy.Owner; o != nil && common.Value(o.ID) != id {
 		return false, fail(http.StatusForbidden, "AccessDenied", "Access Denied")
 	}
 
@@ -61,8 +62,8 @@ func (a *acl) private(account string, canned ...string) (bool, error) {
 	}
 
 	for _, g := range a.policy.Grants {
-		if g.Grantee == nil || value(g.Grantee.Type) != canonicalUser || value(g.Grantee.ID) != id ||
-			value(g.Permission) != fullControl {
+		if g.Grantee == nil || common.Value(g.Grantee.Type) != canonicalUser || common.Value(g.Grantee.ID) != id ||
+			common.Value(g.Permission) != fullControl {
 			return false, nil
 		}
 	}

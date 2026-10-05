@@ -8,6 +8,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -28,11 +29,16 @@ type deployment struct {
 func snapshot(tx storage.ReadTx, scope request.Scope, apiID string, now time.Time) (*deployment, error) {
 	d := &deployment{
 		Deployment: api.Deployment{
-			DeploymentId: new(newID(6)), CreatedDate: &now, DeploymentStatus: new(deployed), AutoDeployed: new(false),
+			DeploymentId: new(
+				common.RandomID(6),
+			),
+			CreatedDate:      &now,
+			DeploymentStatus: new(deployed),
+			AutoDeployed:     new(false),
 		},
 		Integrations: map[string]api.Integration{}, Authorizers: map[string]api.Authorizer{},
 	}
-	routes, err := records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
+	routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +47,7 @@ func snapshot(tx storage.ReadTx, scope request.Scope, apiID string, now time.Tim
 		d.Routes = append(d.Routes, *r)
 	}
 
-	integrations, err := records[api.Integration](tx, prefix(scope, kindIntegration)+apiID+"/")
+	integrations, err := storage.Records[api.Integration](tx, prefix(scope, kindIntegration)+apiID+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +56,7 @@ func snapshot(tx storage.ReadTx, scope request.Scope, apiID string, now time.Tim
 		d.Integrations[*i.IntegrationId] = *i
 	}
 
-	authorizers, err := records[api.Authorizer](tx, prefix(scope, kindAuthorizer)+apiID+"/")
+	authorizers, err := storage.Records[api.Authorizer](tx, prefix(scope, kindAuthorizer)+apiID+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -69,13 +75,13 @@ func deployedMessage(id string) *string {
 // deploy deploys the API to every stage that deploys automatically, deleting
 // each stage's previous automatic deployment unless another stage serves it.
 func (s *Service) deploy(tx storage.WriteTx, scope request.Scope, apiID string, now time.Time) error {
-	stages, err := records[api.Stage](tx, prefix(scope, kindStage)+apiID+"/")
+	stages, err := storage.Records[api.Stage](tx, prefix(scope, kindStage)+apiID+"/")
 	if err != nil {
 		return err
 	}
 
 	for _, st := range stages {
-		if value(st.AutoDeploy) {
+		if common.Value(st.AutoDeploy) {
 			if deployErr := s.deployStage(tx, scope, apiID, st, now); deployErr != nil {
 				return deployErr
 			}
@@ -100,14 +106,18 @@ func (s *Service) deployStage(
 
 	d.Deployment.AutoDeployed, d.Stage = new(true), *st.StageName
 	d.Deployment.Description = new("Automatic deployment triggered by changes to the Api configuration")
-	if writeErr := write(tx, owned(scope, kindDeployment, apiID, *d.Deployment.DeploymentId), d); writeErr != nil {
+	if writeErr := storage.Write(
+		tx,
+		owned(scope, kindDeployment, apiID, *d.Deployment.DeploymentId),
+		d,
+	); writeErr != nil {
 		return writeErr
 	}
 
-	previous := value(st.DeploymentId)
+	previous := common.Value(st.DeploymentId)
 	st.DeploymentId, st.LastUpdatedDate = d.Deployment.DeploymentId, &now
 	st.LastDeploymentStatusMessage = deployedMessage(*d.Deployment.DeploymentId)
-	if writeErr := write(tx, owned(scope, kindStage, apiID, *st.StageName), st); writeErr != nil {
+	if writeErr := storage.Write(tx, owned(scope, kindStage, apiID, *st.StageName), st); writeErr != nil {
 		return writeErr
 	}
 
@@ -117,18 +127,18 @@ func (s *Service) deployStage(
 // prune deletes an automatic deployment that no stage serves.
 func prune(tx storage.WriteTx, scope request.Scope, apiID, id string) error {
 	key := owned(scope, kindDeployment, apiID, id)
-	d, found, err := read[deployment](tx, key)
-	if err != nil || !found || !value(d.Deployment.AutoDeployed) {
+	d, found, err := storage.Read[deployment](tx, key)
+	if err != nil || !found || !common.Value(d.Deployment.AutoDeployed) {
 		return err
 	}
 
-	stages, err := records[api.Stage](tx, prefix(scope, kindStage)+apiID+"/")
+	stages, err := storage.Records[api.Stage](tx, prefix(scope, kindStage)+apiID+"/")
 	if err != nil {
 		return err
 	}
 
 	for _, st := range stages {
-		if value(st.DeploymentId) == id {
+		if common.Value(st.DeploymentId) == id {
 			return nil
 		}
 	}
@@ -145,7 +155,7 @@ var (
 // checkStage validates a stage's access log settings and deployment.
 func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.Stage) error {
 	if logs := st.AccessLogSettings; logs != nil && (logs.DestinationArn != nil || logs.Format != nil) {
-		if !logGroup.MatchString(value(logs.DestinationArn)) || value(logs.Format) == "" {
+		if !logGroup.MatchString(common.Value(logs.DestinationArn)) || common.Value(logs.Format) == "" {
 			return badRequest("AccessLogSettings need a CloudWatch Logs log group ARN and a format.")
 		}
 	}
@@ -156,7 +166,7 @@ func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.St
 		}
 	}
 
-	if id := value(st.DeploymentId); id != "" {
+	if id := common.Value(st.DeploymentId); id != "" {
 		if _, found := tx.Get(owned(scope, kindDeployment, apiID, id)); !found {
 			return badRequest("Deployment %s does not exist.", id)
 		}
@@ -173,7 +183,7 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 		return nil, err
 	}
 
-	name := value(in.StageName)
+	name := common.Value(in.StageName)
 	if name != defaultStage && !stageName.MatchString(name) {
 		return nil, badRequest("Invalid stage name %s.", name)
 	}
@@ -184,10 +194,10 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 
 	now := s.now().UTC()
 	st := &api.Stage{
-		StageName: in.StageName, Description: in.Description, AutoDeploy: new(value(in.AutoDeploy)),
+		StageName: in.StageName, Description: in.Description, AutoDeploy: new(common.Value(in.AutoDeploy)),
 		DeploymentId: in.DeploymentId, AccessLogSettings: in.AccessLogSettings, CreatedDate: &now,
 		LastUpdatedDate: &now, DefaultRouteSettings: in.DefaultRouteSettings, RouteSettings: in.RouteSettings,
-		StageVariables: in.StageVariables, Tags: cloneTags(in.Tags),
+		StageVariables: in.StageVariables, Tags: common.CloneTags(in.Tags),
 	}
 	if st.DefaultRouteSettings == nil {
 		st.DefaultRouteSettings = &api.RouteSettings{DetailedMetricsEnabled: new(false)}
@@ -216,7 +226,7 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 			return checkErr
 		}
 
-		if value(st.AutoDeploy) {
+		if common.Value(st.AutoDeploy) {
 			return s.deployStage(tx, m.Scope, *a.ApiId, st, now)
 		}
 
@@ -224,7 +234,7 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 			st.LastDeploymentStatusMessage = deployedMessage(*st.DeploymentId)
 		}
 
-		return write(tx, key, st)
+		return storage.Write(tx, key, st)
 	})
 	if err != nil {
 		return nil, err
@@ -235,9 +245,9 @@ func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (
 }
 
 func loadStage(tx storage.ReadTx, scope request.Scope, apiID string, name *string) (*api.Stage, error) {
-	st, found, err := read[api.Stage](tx, owned(scope, kindStage, apiID, value(name)))
+	st, found, err := storage.Read[api.Stage](tx, owned(scope, kindStage, apiID, common.Value(name)))
 	if err != nil || !found {
-		return nil, errorsOr(err, notFound("Invalid stage identifier specified"))
+		return nil, common.ErrorsOr(err, notFound("Invalid stage identifier specified"))
 	}
 
 	return st, nil
@@ -280,7 +290,7 @@ func (s *Service) GetStages(ctx context.Context, in *api.GetStagesRequest) (*api
 			return loadErr
 		}
 
-		all, readErr := records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.ApiId+"/")
+		all, readErr := storage.Records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -319,12 +329,18 @@ func (s *Service) UpdateStage(ctx context.Context, in *api.UpdateStageRequest) (
 			return loadErr
 		}
 
-		wasAuto, previous := value(st.AutoDeploy), value(st.DeploymentId)
+		wasAuto, previous := common.Value(st.AutoDeploy), common.Value(st.DeploymentId)
 		now := s.now().UTC()
-		st.Description, st.AutoDeploy = orElse(in.Description, st.Description), orElse(in.AutoDeploy, st.AutoDeploy)
-		st.DeploymentId = orElse(in.DeploymentId, st.DeploymentId)
-		st.AccessLogSettings = orElse(in.AccessLogSettings, st.AccessLogSettings)
-		st.DefaultRouteSettings = orElse(in.DefaultRouteSettings, st.DefaultRouteSettings)
+		st.Description, st.AutoDeploy = common.OrElse(
+			in.Description,
+			st.Description,
+		), common.OrElse(
+			in.AutoDeploy,
+			st.AutoDeploy,
+		)
+		st.DeploymentId = common.OrElse(in.DeploymentId, st.DeploymentId)
+		st.AccessLogSettings = common.OrElse(in.AccessLogSettings, st.AccessLogSettings)
+		st.DefaultRouteSettings = common.OrElse(in.DefaultRouteSettings, st.DefaultRouteSettings)
 		st.LastUpdatedDate = &now
 		if in.RouteSettings != nil {
 			st.RouteSettings = in.RouteSettings
@@ -338,15 +354,15 @@ func (s *Service) UpdateStage(ctx context.Context, in *api.UpdateStageRequest) (
 			return checkErr
 		}
 
-		if value(st.AutoDeploy) && !wasAuto {
+		if common.Value(st.AutoDeploy) && !wasAuto {
 			return s.deployStage(tx, m.Scope, *a.ApiId, st, now)
 		}
 
-		if value(st.DeploymentId) != previous {
-			st.LastDeploymentStatusMessage = deployedMessage(value(st.DeploymentId))
+		if common.Value(st.DeploymentId) != previous {
+			st.LastDeploymentStatusMessage = deployedMessage(common.Value(st.DeploymentId))
 		}
 
-		if writeErr := write(tx, owned(m.Scope, kindStage, *a.ApiId, *st.StageName), st); writeErr != nil {
+		if writeErr := storage.Write(tx, owned(m.Scope, kindStage, *a.ApiId, *st.StageName), st); writeErr != nil {
 			return writeErr
 		}
 
@@ -378,7 +394,7 @@ func (s *Service) DeleteStage(ctx context.Context, in *api.DeleteStageRequest) (
 		}
 
 		tx.Delete(owned(m.Scope, kindStage, *a.ApiId, *st.StageName))
-		return prune(tx, m.Scope, *a.ApiId, value(st.DeploymentId))
+		return prune(tx, m.Scope, *a.ApiId, common.Value(st.DeploymentId))
 	})
 	if err != nil {
 		return nil, err
@@ -415,15 +431,15 @@ func (s *Service) CreateDeployment(
 				return stageErr
 			}
 
-			if value(st.AutoDeploy) {
+			if common.Value(st.AutoDeploy) {
 				return badRequest("Stage %s deploys automatically; turn AutoDeploy off to deploy it yourself.",
 					*st.StageName)
 			}
 
-			previous := value(st.DeploymentId)
+			previous := common.Value(st.DeploymentId)
 			st.DeploymentId, st.LastUpdatedDate = d.Deployment.DeploymentId, &now
 			st.LastDeploymentStatusMessage = deployedMessage(*d.Deployment.DeploymentId)
-			if writeErr := write(tx, owned(m.Scope, kindStage, *a.ApiId, *st.StageName), st); writeErr != nil {
+			if writeErr := storage.Write(tx, owned(m.Scope, kindStage, *a.ApiId, *st.StageName), st); writeErr != nil {
 				return writeErr
 			}
 
@@ -432,7 +448,7 @@ func (s *Service) CreateDeployment(
 			}
 		}
 
-		return write(tx, owned(m.Scope, kindDeployment, *a.ApiId, *d.Deployment.DeploymentId), d)
+		return storage.Write(tx, owned(m.Scope, kindDeployment, *a.ApiId, *d.Deployment.DeploymentId), d)
 	})
 	if err != nil {
 		return nil, err
@@ -443,9 +459,9 @@ func (s *Service) CreateDeployment(
 }
 
 func loadDeployment(tx storage.ReadTx, scope request.Scope, apiID string, id *string) (*deployment, error) {
-	d, found, err := read[deployment](tx, owned(scope, kindDeployment, apiID, value(id)))
+	d, found, err := storage.Read[deployment](tx, owned(scope, kindDeployment, apiID, common.Value(id)))
 	if err != nil || !found {
-		return nil, errorsOr(err, notFound("Invalid Deployment identifier specified %s", value(id)))
+		return nil, common.ErrorsOr(err, notFound("Invalid Deployment identifier specified %s", common.Value(id)))
 	}
 
 	return d, nil
@@ -494,7 +510,7 @@ func (s *Service) GetDeployments(
 			return loadErr
 		}
 
-		all, readErr := records[deployment](tx, prefix(m.Scope, kindDeployment)+*a.ApiId+"/")
+		all, readErr := storage.Records[deployment](tx, prefix(m.Scope, kindDeployment)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -536,8 +552,8 @@ func (s *Service) UpdateDeployment(
 			return loadErr
 		}
 
-		d.Deployment.Description = orElse(in.Description, d.Deployment.Description)
-		return write(tx, owned(m.Scope, kindDeployment, *a.ApiId, *d.Deployment.DeploymentId), d)
+		d.Deployment.Description = common.OrElse(in.Description, d.Deployment.Description)
+		return storage.Write(tx, owned(m.Scope, kindDeployment, *a.ApiId, *d.Deployment.DeploymentId), d)
 	})
 	if err != nil {
 		return nil, err
@@ -567,14 +583,14 @@ func (s *Service) DeleteDeployment(
 			return loadErr
 		}
 
-		stages, readErr := records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.ApiId+"/")
+		stages, readErr := storage.Records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
 
 		var active []string
 		for _, st := range stages {
-			if value(st.DeploymentId) == *d.Deployment.DeploymentId {
+			if common.Value(st.DeploymentId) == *d.Deployment.DeploymentId {
 				active = append(active, *st.StageName)
 			}
 		}

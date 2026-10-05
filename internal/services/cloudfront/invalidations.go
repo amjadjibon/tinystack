@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -46,7 +47,7 @@ func (s *Service) CreateInvalidation(
 		return nil, err
 	}
 
-	distID := value(in.DistributionId)
+	distID := common.Value(in.DistributionId)
 	if distID == "" {
 		return nil, noSuchDistribution("")
 	}
@@ -54,7 +55,7 @@ func (s *Service) CreateInvalidation(
 		return nil, invalidArgument("InvalidationBatch is required")
 	}
 
-	ref := value(in.InvalidationBatch.CallerReference)
+	ref := common.Value(in.InvalidationBatch.CallerReference)
 	if ref == "" {
 		return nil, invalidArgument("CallerReference is required")
 	}
@@ -62,7 +63,7 @@ func (s *Service) CreateInvalidation(
 	var resultInv *api.Invalidation
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		// Verify distribution exists
-		_, found, readErr := read[distributionRecord](tx, key(m.AccountID, kindDistribution, distID))
+		_, found, readErr := storage.Read[distributionRecord](tx, key(m.AccountID, kindDistribution, distID))
 		if readErr != nil {
 			return readErr
 		}
@@ -73,7 +74,7 @@ func (s *Service) CreateInvalidation(
 		// Check idempotency
 		rKey := invRefKey(m.AccountID, distID, ref)
 		if existingID, exists := tx.Get(rKey); exists {
-			existingInv, invFound, readErr := read[api.Invalidation](
+			existingInv, invFound, readErr := storage.Read[api.Invalidation](
 				tx, invKey(m.AccountID, distID, string(existingID)),
 			)
 			if readErr != nil {
@@ -94,7 +95,7 @@ func (s *Service) CreateInvalidation(
 			InvalidationBatch: in.InvalidationBatch,
 		}
 
-		if writeErr := write(tx, invKey(m.AccountID, distID, invID), inv); writeErr != nil {
+		if writeErr := storage.Write(tx, invKey(m.AccountID, distID, invID), inv); writeErr != nil {
 			return writeErr
 		}
 		tx.Put(rKey, []byte(invID))
@@ -106,7 +107,7 @@ func (s *Service) CreateInvalidation(
 		return nil, err
 	}
 
-	loc := invLocation(distID, value(resultInv.Id))
+	loc := invLocation(distID, common.Value(resultInv.Id))
 	return &api.CreateInvalidationResult{
 		Invalidation: resultInv,
 		Location:     &loc,
@@ -121,18 +122,18 @@ func (s *Service) GetInvalidation(
 		return nil, err
 	}
 
-	distID := value(in.DistributionId)
+	distID := common.Value(in.DistributionId)
 	if distID == "" {
 		return nil, noSuchDistribution("")
 	}
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchInvalidation("")
 	}
 
 	var inv *api.Invalidation
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		_, found, readErr := read[distributionRecord](tx, key(m.AccountID, kindDistribution, distID))
+		_, found, readErr := storage.Read[distributionRecord](tx, key(m.AccountID, kindDistribution, distID))
 		if readErr != nil {
 			return readErr
 		}
@@ -140,7 +141,7 @@ func (s *Service) GetInvalidation(
 			return noSuchDistribution(distID)
 		}
 
-		i, invFound, readErr := read[api.Invalidation](tx, invKey(m.AccountID, distID, id))
+		i, invFound, readErr := storage.Read[api.Invalidation](tx, invKey(m.AccountID, distID, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -167,14 +168,14 @@ func (s *Service) ListInvalidations(
 		return nil, err
 	}
 
-	distID := value(in.DistributionId)
+	distID := common.Value(in.DistributionId)
 	if distID == "" {
 		return nil, noSuchDistribution("")
 	}
 
 	var items []api.InvalidationSummary
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		_, found, readErr := read[distributionRecord](tx, key(m.AccountID, kindDistribution, distID))
+		_, found, readErr := storage.Read[distributionRecord](tx, key(m.AccountID, kindDistribution, distID))
 		if readErr != nil {
 			return readErr
 		}
@@ -187,7 +188,7 @@ func (s *Service) ListInvalidations(
 		slices.Sort(keys)
 
 		for _, k := range keys {
-			inv, invFound, readErr := read[api.Invalidation](tx, k)
+			inv, invFound, readErr := storage.Read[api.Invalidation](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -218,7 +219,7 @@ func (s *Service) ListInvalidations(
 	start := 0
 	if marker != "" {
 		for i := range items {
-			if value(items[i].Id) > marker {
+			if common.Value(items[i].Id) > marker {
 				start = i
 				break
 			}

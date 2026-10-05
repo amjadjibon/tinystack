@@ -11,6 +11,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // Lambda triggers run outside transactions: an operation's transaction
@@ -123,7 +124,7 @@ func newCall(
 func postConfirmation(
 	scope request.Scope, p *pool, clientID, source string, u *user, metadata map[string]string,
 ) *call {
-	function := value(p.triggers().PostConfirmation)
+	function := common.Value(p.triggers().PostConfirmation)
 	if function == "" {
 		return nil
 	}
@@ -257,7 +258,7 @@ func preTokenCall(scope request.Scope, p *pool, c *client, u *user, g *grant, so
 	pc.event.Request["groupConfiguration"] = map[string]any{
 		"groupsToOverride": append([]string{}, u.Groups...), "iamRolesToOverride": []string{}, "preferredRole": nil,
 	}
-	if value(cfg.LambdaVersion) != preTokenV1 {
+	if common.Value(cfg.LambdaVersion) != preTokenV1 {
 		pc.event.Version = "2"
 		pc.event.Request["scopes"] = strings.Fields(g.access["scope"].(string))
 	}

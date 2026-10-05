@@ -11,6 +11,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -339,13 +340,13 @@ func (s *Service) PutBucketVersioning(
 		return nil, fail(http.StatusBadRequest, "MalformedXML", "The XML you provided was not well-formed.")
 	}
 
-	status := value(cfg.Status)
+	status := common.Value(cfg.Status)
 	if status != versioningEnabled && status != versioningSuspended {
 		return nil, fail(http.StatusBadRequest, "IllegalVersioningConfigurationException",
 			"The Versioning element must be specified")
 	}
 
-	switch value(cfg.MFADelete) {
+	switch common.Value(cfg.MFADelete) {
 	case "", "Disabled":
 	case "Enabled":
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "TinyStack does not support MFA delete")
@@ -440,12 +441,12 @@ func versionsPage(versions []entry, prefix, delimiter, keyMarker, versionMarker 
 			continue
 		}
 
-		common := ""
+		rollup := ""
 		if j := strings.Index(e.key[len(prefix):], delimiter); delimiter != "" && j >= 0 {
-			common = e.key[:len(prefix)+j+len(delimiter)]
+			rollup = e.key[:len(prefix)+j+len(delimiter)]
 		}
 
-		if common != "" && seen[common] {
+		if rollup != "" && seen[rollup] {
 			continue
 		}
 
@@ -454,10 +455,10 @@ func versionsPage(versions []entry, prefix, delimiter, keyMarker, versionMarker 
 			break
 		}
 
-		if common != "" {
-			seen[common] = true
-			p.prefixes = append(p.prefixes, common)
-			p.lastKey, p.lastVersion = common, ""
+		if rollup != "" {
+			seen[rollup] = true
+			p.prefixes = append(p.prefixes, rollup)
+			p.lastKey, p.lastVersion = rollup, ""
 			continue
 		}
 
@@ -489,7 +490,7 @@ func (s *Service) ListObjectVersions(
 		limit = min(*in.MaxKeys, maxListKeys)
 	}
 
-	encoding := value(in.EncodingType)
+	encoding := common.Value(in.EncodingType)
 	if encoding != "" && encoding != encodingURL {
 		return nil, fail(http.StatusBadRequest, "InvalidArgument", "Invalid Encoding Method specified in Request")
 	}
@@ -499,7 +500,7 @@ func (s *Service) ListObjectVersions(
 			"A version-id marker cannot be specified without a key marker.")
 	}
 
-	prefix := value(in.Prefix)
+	prefix := common.Value(in.Prefix)
 	var versions []entry
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		bucket, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
@@ -542,7 +543,14 @@ func (s *Service) ListObjectVersions(
 		return nil, err
 	}
 
-	p := versionsPage(versions, prefix, value(in.Delimiter), value(in.KeyMarker), value(in.VersionIdMarker), limit)
+	p := versionsPage(
+		versions,
+		prefix,
+		common.Value(in.Delimiter),
+		common.Value(in.KeyMarker),
+		common.Value(in.VersionIdMarker),
+		limit,
+	)
 	encode := func(s string) *string {
 		if encoding == encodingURL {
 			s = url.QueryEscape(s)
@@ -593,8 +601,8 @@ func (s *Service) ListObjectVersions(
 		})
 	}
 
-	for _, common := range p.prefixes {
-		out.CommonPrefixes = append(out.CommonPrefixes, api.CommonPrefix{Prefix: encode(common)})
+	for _, rollup := range p.prefixes {
+		out.CommonPrefixes = append(out.CommonPrefixes, api.CommonPrefix{Prefix: encode(rollup)})
 	}
 
 	return out, nil

@@ -99,8 +99,6 @@ type bucketMeta struct {
 	CreatedAt int64
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 // fail builds an S3 error with its HTTP status. Modeled errors take their
 // status from the generated error bindings instead.
 func fail(status int, code, message string) error {
@@ -184,7 +182,7 @@ func writeJSON(tx storage.WriteTx, key string, v any) error {
 //nolint:gocritic // Metadata is an immutable request snapshot.
 func resolve(tx storage.ReadTx, m request.Metadata, name, expectedOwner *string) (string, error) {
 	var index bucketIndex
-	found, err := readJSON(tx, indexPrefix+value(name), &index)
+	found, err := readJSON(tx, indexPrefix+common.Value(name), &index)
 	if err != nil {
 		return "", err
 	}
@@ -215,19 +213,19 @@ func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest)
 		return nil, err
 	}
 
-	name := value(in.Bucket)
+	name := common.Value(in.Bucket)
 	if !validBucketName(name) {
 		return nil, fail(http.StatusBadRequest, "InvalidBucketName", "The specified bucket is not valid.")
 	}
 
 	// "private" is the default canned ACL, so it asks for nothing TinyStack lacks.
-	if acl := value(in.ACL); acl != "" && acl != "private" {
+	if acl := common.Value(in.ACL); acl != "" && acl != "private" {
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "TinyStack only supports the private canned ACL.")
 	}
 
 	constraint := ""
 	if in.CreateBucketConfiguration != nil {
-		constraint = value(in.CreateBucketConfiguration.LocationConstraint)
+		constraint = common.Value(in.CreateBucketConfiguration.LocationConstraint)
 	}
 
 	switch {
@@ -346,7 +344,7 @@ func (s *Service) ListBuckets(ctx context.Context, in *api.ListBucketsRequest) (
 
 	var buckets []api.Bucket
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(indexPrefix + value(in.Prefix)) {
+		for _, k := range tx.Keys(indexPrefix + common.Value(in.Prefix)) {
 			name := strings.TrimPrefix(k, indexPrefix)
 			if name <= after {
 				continue

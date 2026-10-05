@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -63,7 +64,7 @@ func scopeOf(ctx context.Context) (request.Scope, error) {
 // storage key.
 func tableNamed(ctx context.Context, nameOrARN *string) (string, error) {
 	name := nameOrARN
-	if strings.HasPrefix(value(nameOrARN), "arn:") {
+	if strings.HasPrefix(common.Value(nameOrARN), "arn:") {
 		var err error
 		if name, err = arnName(ctx, nameOrARN); err != nil {
 			return "", err
@@ -93,9 +94,9 @@ func backupKey(ctx context.Context, arn *string) (key, owner, id string, err err
 		return "", "", "", err
 	}
 
-	notFound := awserror.New("BackupNotFoundException", "Backup not found: "+value(arn))
+	notFound := awserror.New("BackupNotFoundException", "Backup not found: "+common.Value(arn))
 	prefix := "arn:aws:dynamodb:" + scope.Region + ":" + scope.AccountID + ":table/"
-	rest, ok := strings.CutPrefix(value(arn), prefix)
+	rest, ok := strings.CutPrefix(common.Value(arn), prefix)
 	owner, id, found := strings.Cut(rest, "/backup/")
 	if !ok || !found || !tableName.MatchString(owner) || id == "" || strings.Contains(id, "/") {
 		return "", "", "", notFound
@@ -124,7 +125,7 @@ func (s *Service) CreateBackup(ctx context.Context, in *api.CreateBackupInput) (
 		return nil, err
 	}
 
-	if !backupName.MatchString(value(in.BackupName)) {
+	if !backupName.MatchString(common.Value(in.BackupName)) {
 		return nil, awserror.Validation("BackupName must be 3 to 255 characters using letters, digits, _, -, or .")
 	}
 
@@ -141,7 +142,7 @@ func (s *Service) CreateBackup(ctx context.Context, in *api.CreateBackupInput) (
 		}
 
 		b = backup{Source: *t, Details: api.BackupDetails{
-			BackupArn: new(value(t.Description.TableArn) + "/backup/" + id), BackupName: in.BackupName,
+			BackupArn: new(common.Value(t.Description.TableArn) + "/backup/" + id), BackupName: in.BackupName,
 			BackupSizeBytes: t.Description.TableSizeBytes, BackupStatus: new("AVAILABLE"),
 			BackupType: new(backupUser), BackupCreationDateTime: new(float64(now.UnixMilli()) / 1000),
 		}}
@@ -164,7 +165,7 @@ func (s *Service) CreateBackup(ctx context.Context, in *api.CreateBackupInput) (
 // describe renders a backup as DescribeBackup reports it.
 func (b *backup) describe() *api.BackupDescription {
 	d := &b.Source.Description
-	mode := value(value(d.BillingModeSummary).BillingMode)
+	mode := common.Value(common.Value(d.BillingModeSummary).BillingMode)
 	source := &api.SourceTableDetails{
 		TableName: d.TableName, TableId: d.TableId, TableArn: d.TableArn, TableSizeBytes: d.TableSizeBytes,
 		KeySchema: d.KeySchema, TableCreationDateTime: d.CreationDateTime, ItemCount: d.ItemCount,
@@ -216,7 +217,7 @@ func (s *Service) DescribeBackup(ctx context.Context, in *api.DescribeBackupInpu
 	var b *backup
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var loadErr error
-		b, loadErr = loadBackup(tx, key, value(in.BackupArn))
+		b, loadErr = loadBackup(tx, key, common.Value(in.BackupArn))
 		return loadErr
 	})
 	if err != nil {
@@ -240,7 +241,7 @@ func (s *Service) DeleteBackup(ctx context.Context, in *api.DeleteBackupInput) (
 	var b *backup
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var loadErr error
-		if b, loadErr = loadBackup(tx, key, value(in.BackupArn)); loadErr != nil {
+		if b, loadErr = loadBackup(tx, key, common.Value(in.BackupArn)); loadErr != nil {
 			return loadErr
 		}
 
@@ -267,14 +268,14 @@ func (s *Service) ListBackups(ctx context.Context, in *api.ListBackupsInput) (*a
 	}
 
 	limit := int64(100)
-	switch l := value(in.Limit); {
+	switch l := common.Value(in.Limit); {
 	case in.Limit != nil && (l < 1 || l > 100):
 		return nil, awserror.Validation("Limit must be between 1 and 100")
 	case in.Limit != nil:
 		limit = l
 	}
 
-	switch value(in.BackupType) {
+	switch common.Value(in.BackupType) {
 	case "", backupUser, "ALL":
 	case "SYSTEM", "AWS_BACKUP":
 		return &api.ListBackupsOutput{BackupSummaries: []api.BackupSummary{}}, nil
@@ -312,7 +313,7 @@ func (s *Service) ListBackups(ctx context.Context, in *api.ListBackupsInput) (*a
 				return loadErr
 			}
 
-			created := value(b.Details.BackupCreationDateTime)
+			created := common.Value(b.Details.BackupCreationDateTime)
 			if (in.TimeRangeLowerBound != nil && created < *in.TimeRangeLowerBound) ||
 				(in.TimeRangeUpperBound != nil && created >= *in.TimeRangeUpperBound) {
 				continue
@@ -384,11 +385,13 @@ func restore(
 	d.StreamSpecification, d.LatestStreamArn, d.LatestStreamLabel = nil, nil, nil
 	d.RestoreSummary = &o.summary
 	for i := range d.GlobalSecondaryIndexes {
-		d.GlobalSecondaryIndexes[i].IndexArn = new(arn + "/index/" + value(d.GlobalSecondaryIndexes[i].IndexName))
+		d.GlobalSecondaryIndexes[i].IndexArn = new(
+			arn + "/index/" + common.Value(d.GlobalSecondaryIndexes[i].IndexName),
+		)
 	}
 
 	for i := range d.LocalSecondaryIndexes {
-		d.LocalSecondaryIndexes[i].IndexArn = new(arn + "/index/" + value(d.LocalSecondaryIndexes[i].IndexName))
+		d.LocalSecondaryIndexes[i].IndexArn = new(arn + "/index/" + common.Value(d.LocalSecondaryIndexes[i].IndexName))
 	}
 
 	if billErr := rebill(t, o.billing, o.throughput); billErr != nil {
@@ -408,7 +411,7 @@ func restore(
 // overrides; a provisioned table keeps its throughput unless one is given.
 func rebill(t *table, billing *string, throughput *api.ProvisionedThroughput) error {
 	d := &t.Description
-	mode := value(value(d.BillingModeSummary).BillingMode)
+	mode := common.Value(common.Value(d.BillingModeSummary).BillingMode)
 	if billing != nil {
 		mode = *billing
 	}
@@ -428,13 +431,13 @@ func rebill(t *table, billing *string, throughput *api.ProvisionedThroughput) er
 	case mode != billingProvisioned:
 		return awserror.Validation("BillingModeOverride must be PROVISIONED or PAY_PER_REQUEST")
 	case throughput != nil:
-		if value(throughput.ReadCapacityUnits) < 1 || value(throughput.WriteCapacityUnits) < 1 {
+		if common.Value(throughput.ReadCapacityUnits) < 1 || common.Value(throughput.WriteCapacityUnits) < 1 {
 			return awserror.Validation("Positive provisioned read and write capacity required")
 		}
 
 		p = units(throughput.ReadCapacityUnits, throughput.WriteCapacityUnits)
-	case value(d.ProvisionedThroughput).ReadCapacityUnits == nil ||
-		value(value(d.ProvisionedThroughput).ReadCapacityUnits) < 1:
+	case common.Value(d.ProvisionedThroughput).ReadCapacityUnits == nil ||
+		common.Value(common.Value(d.ProvisionedThroughput).ReadCapacityUnits) < 1:
 		return awserror.Validation("ProvisionedThroughputOverride is required to restore an on-demand table as " +
 			"PROVISIONED")
 	default:
@@ -467,7 +470,7 @@ func (s *Service) RestoreTableFromBackup(
 	scope, _ := tableScope(key)
 	var t *table
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		b, loadErr := loadBackup(tx, backupRecord, value(in.BackupArn))
+		b, loadErr := loadBackup(tx, backupRecord, common.Value(in.BackupArn))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -505,7 +508,7 @@ func (s *Service) RestoreTableToPointInTime(
 		source = in.SourceTableArn
 	}
 
-	if in.RestoreDateTime != nil || !value(in.UseLatestRestorableTime) {
+	if in.RestoreDateTime != nil || !common.Value(in.UseLatestRestorableTime) {
 		return nil, awserror.New("InvalidRestoreTimeException",
 			"TinyStack restores only the latest restorable time; set UseLatestRestorableTime")
 	}
@@ -529,7 +532,7 @@ func (s *Service) RestoreTableToPointInTime(
 
 		if src.PITR == 0 {
 			return awserror.New("PointInTimeRecoveryUnavailableException",
-				"Point in time recovery is not enabled for table '"+value(src.Description.TableName)+"'")
+				"Point in time recovery is not enabled for table '"+common.Value(src.Description.TableName)+"'")
 		}
 
 		var restoreErr error

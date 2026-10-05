@@ -11,6 +11,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -41,7 +42,7 @@ func policyKey(scope request.Scope, group, name string) string {
 //
 //nolint:gocyclo,cyclop // One rule per member and type.
 func checkPolicy(in *api.PutScalingPolicyType) error {
-	kind, adjust := value(in.PolicyType), value(in.AdjustmentType)
+	kind, adjust := common.Value(in.PolicyType), common.Value(in.AdjustmentType)
 	target := kind == policyTarget
 	switch {
 	case kind != policySimple && kind != policyStep && !target:
@@ -92,7 +93,7 @@ func alarmMetric(group string, c *api.TargetTrackingConfiguration) (map[string]a
 	if p := c.PredefinedMetricSpecification; p != nil {
 		dims := []any{map[string]any{fieldName: "AutoScalingGroupName", fieldValue: group}}
 		params := map[string]any{"Namespace": "AWS/EC2", "Statistic": metricAverage, "Dimensions": dims}
-		switch value(p.PredefinedMetricType) {
+		switch common.Value(p.PredefinedMetricType) {
 		case predefinedCPU:
 			params["MetricName"] = "CPUUtilization"
 		case predefinedNetworkIn:
@@ -100,7 +101,7 @@ func alarmMetric(group string, c *api.TargetTrackingConfiguration) (map[string]a
 		case predefinedNetworkOut:
 			params["MetricName"] = "NetworkOut"
 		case predefinedRequests:
-			_, tg, ok := strings.Cut(value(p.ResourceLabel), "/targetgroup/")
+			_, tg, ok := strings.Cut(common.Value(p.ResourceLabel), "/targetgroup/")
 			if !ok {
 				return nil, validation(
 					"ResourceLabel must be app/<load balancer>/<ID>/targetgroup/<target group>/<ID>.",
@@ -111,7 +112,7 @@ func alarmMetric(group string, c *api.TargetTrackingConfiguration) (map[string]a
 				"RequestCountPerTarget", "Sum"
 			params["Dimensions"] = []any{map[string]any{fieldName: "TargetGroup", fieldValue: "targetgroup/" + tg}}
 		default:
-			return nil, validation("PredefinedMetricType %s is not valid.", value(p.PredefinedMetricType))
+			return nil, validation("PredefinedMetricType %s is not valid.", common.Value(p.PredefinedMetricType))
 		}
 
 		return params, nil
@@ -120,12 +121,12 @@ func alarmMetric(group string, c *api.TargetTrackingConfiguration) (map[string]a
 	custom := c.CustomizedMetricSpecification
 	var dims []any
 	for _, d := range custom.Dimensions {
-		dims = append(dims, map[string]any{fieldName: value(d.Name), fieldValue: value(d.Value)})
+		dims = append(dims, map[string]any{fieldName: common.Value(d.Name), fieldValue: common.Value(d.Value)})
 	}
 
 	params := map[string]any{
-		"Namespace": value(custom.Namespace), "MetricName": value(custom.MetricName),
-		"Statistic": value(custom.Statistic), "Dimensions": dims,
+		"Namespace": common.Value(custom.Namespace), "MetricName": common.Value(custom.MetricName),
+		"Statistic": common.Value(custom.Statistic), "Dimensions": dims,
 	}
 	if custom.Unit != nil {
 		params["Unit"] = *custom.Unit
@@ -144,7 +145,7 @@ func (s *Service) putAlarms(ctx context.Context, scope request.Scope, group, pol
 		return nil, err
 	}
 
-	target := value(c.TargetValue)
+	target := common.Value(c.TargetValue)
 	type spec struct {
 		kind, operator string
 		threshold      float64
@@ -152,7 +153,7 @@ func (s *Service) putAlarms(ctx context.Context, scope request.Scope, group, pol
 	}
 
 	specs := []spec{{"AlarmHigh", "GreaterThanThreshold", target, highEvaluations}}
-	if !value(c.DisableScaleIn) {
+	if !common.Value(c.DisableScaleIn) {
 		specs = append(specs, spec{"AlarmLow", "LessThanThreshold", target * scaleInRatio, lowEvaluations})
 	}
 
@@ -196,7 +197,7 @@ func (s *Service) deleteAlarms(ctx context.Context, scope request.Scope, names [
 func alarmNames(alarms []api.Alarm) []string {
 	names := make([]string, len(alarms))
 	for i, a := range alarms {
-		names[i] = value(a.AlarmName)
+		names[i] = common.Value(a.AlarmName)
 	}
 
 	return names
@@ -214,7 +215,7 @@ func (s *Service) PutScalingPolicy(ctx context.Context, in *api.PutScalingPolicy
 		in.PolicyType = new(policySimple)
 	}
 
-	groupName, name := value(in.AutoScalingGroupName), value(in.PolicyName)
+	groupName, name := common.Value(in.AutoScalingGroupName), common.Value(in.PolicyName)
 	if checkErr := checkName("PolicyName", name); checkErr != nil {
 		return nil, checkErr
 	}
@@ -229,7 +230,7 @@ func (s *Service) PutScalingPolicy(ctx context.Context, in *api.PutScalingPolicy
 			return loadErr
 		}
 
-		old, _, err = read[api.ScalingPolicy](tx, policyKey(m.Scope, groupName, name))
+		old, _, err = storage.Read[api.ScalingPolicy](tx, policyKey(m.Scope, groupName, name))
 		return err
 	})
 	if err != nil {
@@ -238,7 +239,7 @@ func (s *Service) PutScalingPolicy(ctx context.Context, in *api.PutScalingPolicy
 
 	policyARN := arn(m.Scope, "scalingPolicy:"+newID()+":autoScalingGroupName/"+groupName+":policyName/"+name)
 	if old != nil {
-		policyARN = value(old.PolicyARN)
+		policyARN = common.Value(old.PolicyARN)
 	}
 
 	p := &api.ScalingPolicy{
@@ -249,13 +250,13 @@ func (s *Service) PutScalingPolicy(ctx context.Context, in *api.PutScalingPolicy
 		TargetTrackingConfiguration: in.TargetTrackingConfiguration, Enabled: new(in.Enabled == nil || *in.Enabled),
 		Alarms: []api.Alarm{},
 	}
-	if value(p.PolicyType) == policyStep && p.MetricAggregationType == nil {
+	if common.Value(p.PolicyType) == policyStep && p.MetricAggregationType == nil {
 		p.MetricAggregationType = new(metricAverage)
 	}
 
 	if old != nil {
 		s.deleteAlarms(ctx, m.Scope, alarmNames(old.Alarms))
-		if value(old.PolicyType) != policyTarget {
+		if common.Value(old.PolicyType) != policyTarget {
 			p.Alarms = old.Alarms
 		}
 	}
@@ -271,7 +272,7 @@ func (s *Service) PutScalingPolicy(ctx context.Context, in *api.PutScalingPolicy
 			return loadErr
 		}
 
-		return write(tx, policyKey(m.Scope, groupName, name), p)
+		return storage.Write(tx, policyKey(m.Scope, groupName, name), p)
 	})
 	if err != nil {
 		s.deleteAlarms(ctx, m.Scope, alarmNames(p.Alarms))
@@ -299,15 +300,15 @@ func (s *Service) DescribePolicies(ctx context.Context, in *api.DescribePolicies
 		}
 
 		for _, k := range tx.Keys(p) {
-			policy, _, readErr := read[api.ScalingPolicy](tx, k)
+			policy, _, readErr := storage.Read[api.ScalingPolicy](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			name, arnValue := value(policy.PolicyName), value(policy.PolicyARN)
+			name, arnValue := common.Value(policy.PolicyName), common.Value(policy.PolicyARN)
 			if (len(in.PolicyNames) == 0 || slices.Contains(in.PolicyNames, name) ||
 				slices.Contains(in.PolicyNames, arnValue)) &&
-				(len(in.PolicyTypes) == 0 || slices.Contains(in.PolicyTypes, value(policy.PolicyType))) {
+				(len(in.PolicyTypes) == 0 || slices.Contains(in.PolicyTypes, common.Value(policy.PolicyType))) {
 				all = append(all, policy)
 			}
 		}
@@ -319,7 +320,7 @@ func (s *Service) DescribePolicies(ctx context.Context, in *api.DescribePolicies
 	}
 
 	id := func(p *api.ScalingPolicy) string {
-		return value(p.AutoScalingGroupName) + "/" + value(p.PolicyName)
+		return common.Value(p.AutoScalingGroupName) + "/" + common.Value(p.PolicyName)
 	}
 	page, next, err := window(all, id, in.NextToken, in.MaxRecords)
 	if err != nil {
@@ -341,7 +342,7 @@ func findPolicy(tx storage.ReadTx, scope request.Scope, group, name string) (str
 	}
 
 	k := policyKey(scope, group, name)
-	p, found, err := read[api.ScalingPolicy](tx, k)
+	p, found, err := storage.Read[api.ScalingPolicy](tx, k)
 	if err == nil && !found {
 		err = validation("Policy %s not found for AutoScalingGroup %s.", name, group)
 	}
@@ -357,12 +358,12 @@ func (s *Service) DeletePolicy(ctx context.Context, in *api.DeletePolicyType) (*
 
 	var alarms []string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		k, p, findErr := findPolicy(tx, m.Scope, value(in.AutoScalingGroupName), value(in.PolicyName))
+		k, p, findErr := findPolicy(tx, m.Scope, common.Value(in.AutoScalingGroupName), common.Value(in.PolicyName))
 		if findErr != nil {
 			return findErr
 		}
 
-		if value(p.PolicyType) == policyTarget {
+		if common.Value(p.PolicyType) == policyTarget {
 			alarms = alarmNames(p.Alarms)
 		}
 
@@ -434,7 +435,7 @@ func step(p *api.ScalingPolicy, metric, threshold float64) (api.StepAdjustment, 
 
 // desiredFor is the capacity a policy asks for.
 func desiredFor(p *api.ScalingPolicy, in *api.ExecutePolicyType, current int64) (int64, error) {
-	switch value(p.PolicyType) {
+	switch common.Value(p.PolicyType) {
 	case policyStep:
 		if in.MetricValue == nil || in.BreachThreshold == nil {
 			return 0, validation("MetricValue and BreachThreshold are required to execute a StepScaling policy.")
@@ -445,17 +446,17 @@ func desiredFor(p *api.ScalingPolicy, in *api.ExecutePolicyType, current int64) 
 			return current, nil
 		}
 
-		return adjusted(current, value(st.ScalingAdjustment), value(p.AdjustmentType),
-			value(p.MinAdjustmentMagnitude)), nil
+		return adjusted(current, common.Value(st.ScalingAdjustment), common.Value(p.AdjustmentType),
+			common.Value(p.MinAdjustmentMagnitude)), nil
 	case policyTarget:
 		// Only its alarms execute a target tracking policy, with the metric.
 		c := p.TargetTrackingConfiguration
-		if in.MetricValue == nil || value(c.TargetValue) <= 0 {
+		if in.MetricValue == nil || common.Value(c.TargetValue) <= 0 {
 			return 0, validation("A TargetTrackingScaling policy cannot be executed.")
 		}
 
 		want := int64(math.Ceil(float64(max(current, 1)) * *in.MetricValue / *c.TargetValue))
-		if want < current && value(c.DisableScaleIn) {
+		if want < current && common.Value(c.DisableScaleIn) {
 			return current, nil
 		}
 
@@ -463,7 +464,12 @@ func desiredFor(p *api.ScalingPolicy, in *api.ExecutePolicyType, current int64) 
 	}
 
 	// CloudWatch alarms send the metric to every policy; a simple one ignores it.
-	return adjusted(current, value(p.ScalingAdjustment), value(p.AdjustmentType), value(p.MinAdjustmentMagnitude)),
+	return adjusted(
+			current,
+			common.Value(p.ScalingAdjustment),
+			common.Value(p.AdjustmentType),
+			common.Value(p.MinAdjustmentMagnitude),
+		),
 		nil
 }
 
@@ -480,36 +486,36 @@ func (s *Service) ExecutePolicy(ctx context.Context, in *api.ExecutePolicyType) 
 	var groupName, policyName string
 	var from, to int64
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		_, p, findErr := findPolicy(tx, m.Scope, value(in.AutoScalingGroupName), value(in.PolicyName))
+		_, p, findErr := findPolicy(tx, m.Scope, common.Value(in.AutoScalingGroupName), common.Value(in.PolicyName))
 		if findErr != nil {
 			return findErr
 		}
 
-		groupName, policyName = value(p.AutoScalingGroupName), value(p.PolicyName)
+		groupName, policyName = common.Value(p.AutoScalingGroupName), common.Value(p.PolicyName)
 		g, loadErr := loadGroup(tx, m.Scope, groupName)
 		if loadErr != nil {
 			return loadErr
 		}
 
 		switch {
-		case !value(p.Enabled):
+		case !common.Value(p.Enabled):
 			return validation("Policy %s is disabled.", policyName)
-		case value(in.HonorCooldown) && value(p.PolicyType) == policySimple:
+		case common.Value(in.HonorCooldown) && common.Value(p.PolicyType) == policySimple:
 			if coolErr := cooling(g, now); coolErr != nil {
 				return coolErr
 			}
 		}
 
-		from = value(g.Group.DesiredCapacity)
+		from = common.Value(g.Group.DesiredCapacity)
 		want, desiredErr := desiredFor(p, in, from)
 		if desiredErr != nil {
 			return desiredErr
 		}
 
-		to = min(max(want, value(g.Group.MinSize)), value(g.Group.MaxSize))
+		to = min(max(want, common.Value(g.Group.MinSize)), common.Value(g.Group.MaxSize))
 		g.Group.DesiredCapacity = new(to)
-		if value(p.PolicyType) == policySimple {
-			cooldown := value(g.Group.DefaultCooldown)
+		if common.Value(p.PolicyType) == policySimple {
+			cooldown := common.Value(g.Group.DefaultCooldown)
 			if p.Cooldown != nil {
 				cooldown = *p.Cooldown
 			}
@@ -517,7 +523,7 @@ func (s *Service) ExecutePolicy(ctx context.Context, in *api.ExecutePolicyType) 
 			g.Cooldown = now.Add(time.Duration(cooldown) * time.Second)
 		}
 
-		return write(tx, key(m.Scope, kindGroup, groupName), g)
+		return storage.Write(tx, key(m.Scope, kindGroup, groupName), g)
 	})
 	if err != nil {
 		return nil, err

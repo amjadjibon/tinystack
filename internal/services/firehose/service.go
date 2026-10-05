@@ -152,16 +152,6 @@ func streamARN(scope request.Scope, name string) string {
 	return "arn:aws:firehose:" + scope.Region + ":" + scope.AccountID + ":deliverystream/" + name
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-func unix(t time.Time) float64 { return common.Unix(t) }
-
 func invalidArgument(format string, args ...any) error {
 	return awserror.New("InvalidArgumentException", fmt.Sprintf(format, args...))
 }
@@ -190,39 +180,42 @@ var processors = []string{processorLambda, processorDelimiter}
 // buffering, compression, and processing.
 func checkDestination(d *api.ExtendedS3DestinationConfiguration) error {
 	switch {
-	case !bucketARN.MatchString(value(d.BucketARN)):
+	case !bucketARN.MatchString(common.Value(d.BucketARN)):
 		return invalidArgument("BucketARN must be an S3 bucket ARN")
-	case !roleARN.MatchString(value(d.RoleARN)):
+	case !roleARN.MatchString(common.Value(d.RoleARN)):
 		return invalidArgument("RoleARN must be an IAM role ARN")
-	case !slices.Contains([]string{"", "UNCOMPRESSED", formatGzip}, value(d.CompressionFormat)):
+	case !slices.Contains([]string{"", "UNCOMPRESSED", formatGzip}, common.Value(d.CompressionFormat)):
 		return invalidArgument("TinyStack supports the UNCOMPRESSED and GZIP compression formats")
-	case value(d.S3BackupMode) != "" && value(d.S3BackupMode) != "Disabled":
+	case common.Value(d.S3BackupMode) != "" && common.Value(d.S3BackupMode) != "Disabled":
 		return invalidArgument("TinyStack does not support S3 backups")
-	case value(d.CustomTimeZone) != "" && value(d.CustomTimeZone) != "UTC":
+	case common.Value(d.CustomTimeZone) != "" && common.Value(d.CustomTimeZone) != "UTC":
 		return invalidArgument("TinyStack supports the UTC time zone only")
-	case d.DataFormatConversionConfiguration != nil && value(d.DataFormatConversionConfiguration.Enabled):
+	case d.DataFormatConversionConfiguration != nil && common.Value(d.DataFormatConversionConfiguration.Enabled):
 		return invalidArgument("TinyStack does not support record format conversion")
-	case d.DynamicPartitioningConfiguration != nil && value(d.DynamicPartitioningConfiguration.Enabled):
+	case d.DynamicPartitioningConfiguration != nil && common.Value(d.DynamicPartitioningConfiguration.Enabled):
 		return invalidArgument("TinyStack does not support dynamic partitioning")
 	}
 
 	if h := d.BufferingHints; h != nil {
-		if size := value(h.SizeInMBs); h.SizeInMBs != nil && (size < 1 || size > 128) {
+		if size := common.Value(h.SizeInMBs); h.SizeInMBs != nil && (size < 1 || size > 128) {
 			return invalidArgument("SizeInMBs must be between 1 and 128")
 		}
 
-		if interval := value(h.IntervalInSeconds); h.IntervalInSeconds != nil && (interval < 0 || interval > 900) {
+		if interval := common.Value(
+			h.IntervalInSeconds,
+		); h.IntervalInSeconds != nil &&
+			(interval < 0 || interval > 900) {
 			return invalidArgument("IntervalInSeconds must be between 0 and 900")
 		}
 	}
 
-	if p := d.ProcessingConfiguration; p != nil && value(p.Enabled) {
+	if p := d.ProcessingConfiguration; p != nil && common.Value(p.Enabled) {
 		for _, proc := range p.Processors {
-			if !slices.Contains(processors, value(proc.Type)) {
+			if !slices.Contains(processors, common.Value(proc.Type)) {
 				return invalidArgument("TinyStack supports the Lambda and AppendDelimiterToRecord processors")
 			}
 
-			if value(proc.Type) == processorLambda && parameter(&proc, "LambdaArn") == "" {
+			if common.Value(proc.Type) == processorLambda && parameter(&proc, "LambdaArn") == "" {
 				return invalidArgument("A Lambda processor needs a LambdaArn parameter")
 			}
 		}
@@ -234,8 +227,8 @@ func checkDestination(d *api.ExtendedS3DestinationConfiguration) error {
 // parameter returns a processor's parameter.
 func parameter(p *api.Processor, name string) string {
 	for _, param := range p.Parameters {
-		if value(param.ParameterName) == name {
-			return value(param.ParameterValue)
+		if common.Value(param.ParameterName) == name {
+			return common.Value(param.ParameterValue)
 		}
 	}
 
@@ -276,7 +269,7 @@ func withDefaults(d *api.ExtendedS3DestinationConfiguration) {
 func tagsOf(tags []api.Tag) map[string]string {
 	out := map[string]string{}
 	for _, t := range tags {
-		out[value(t.Key)] = value(t.Value)
+		out[common.Value(t.Key)] = common.Value(t.Value)
 	}
 
 	return out
@@ -299,15 +292,15 @@ func (s *Service) CreateDeliveryStream(
 		return nil, err
 	}
 
-	name := value(in.DeliveryStreamName)
+	name := common.Value(in.DeliveryStreamName)
 	if !streamName.MatchString(name) {
 		return nil, invalidArgument("DeliveryStreamName must be 1 to 64 letters, digits, underscores, periods, " +
 			"and hyphens")
 	}
 
-	now := unix(s.now())
+	now := common.Unix(s.now())
 	st := &deliveryStream{
-		Name: name, Type: value(in.DeliveryStreamType), Version: 1, Created: now, Updated: now,
+		Name: name, Type: common.Value(in.DeliveryStreamType), Version: 1, Created: now, Updated: now,
 		Tags: tagsOf(in.Tags),
 	}
 	switch {
@@ -345,9 +338,9 @@ func (s *Service) CreateDeliveryStream(
 		}
 
 		st.Source, st.SourceTime = in.KinesisStreamSourceConfiguration, now
-		shards, shardErr := s.streams.Shards(ctx, value(st.Source.KinesisStreamARN))
+		shards, shardErr := s.streams.Shards(ctx, common.Value(st.Source.KinesisStreamARN))
 		if shardErr != nil {
-			return nil, invalidArgument("Kinesis stream %s not found", value(st.Source.KinesisStreamARN))
+			return nil, invalidArgument("Kinesis stream %s not found", common.Value(st.Source.KinesisStreamARN))
 		}
 
 		// Delivery starts with the records the stream gets after now.
@@ -380,7 +373,7 @@ func (s *Service) CreateDeliveryStream(
 		}
 
 		tx.Put(indexKey(m.Scope, name), []byte("{}"))
-		return write(tx, streamKey(m.Scope, name), st)
+		return storage.Write(tx, streamKey(m.Scope, name), st)
 	})
 	if err != nil {
 		return nil, err
@@ -397,10 +390,10 @@ func (s *Service) change(ctx context.Context, name *string, fn func(st *delivery
 	}
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		st, found, readErr := read[deliveryStream](tx, streamKey(m.Scope, value(name)))
+		st, found, readErr := storage.Read[deliveryStream](tx, streamKey(m.Scope, common.Value(name)))
 		if readErr != nil || !found {
 			if readErr == nil {
-				readErr = notFound(m.Scope, value(name))
+				readErr = notFound(m.Scope, common.Value(name))
 			}
 
 			return readErr
@@ -410,7 +403,7 @@ func (s *Service) change(ctx context.Context, name *string, fn func(st *delivery
 			return fnErr
 		}
 
-		return write(tx, streamKey(m.Scope, st.Name), st)
+		return storage.Write(tx, streamKey(m.Scope, st.Name), st)
 	})
 }
 
@@ -423,7 +416,7 @@ func (s *Service) DeleteDeliveryStream(
 		return nil, err
 	}
 
-	name := value(in.DeliveryStreamName)
+	name := common.Value(in.DeliveryStreamName)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, found := tx.Get(streamKey(m.Scope, name)); !found {
 			return notFound(m.Scope, name)
@@ -483,9 +476,9 @@ func (s *Service) DescribeDeliveryStream(
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
 		var readErr error
-		st, found, readErr = read[deliveryStream](tx, streamKey(m.Scope, value(in.DeliveryStreamName)))
+		st, found, readErr = storage.Read[deliveryStream](tx, streamKey(m.Scope, common.Value(in.DeliveryStreamName)))
 		if readErr == nil && !found {
-			readErr = notFound(m.Scope, value(in.DeliveryStreamName))
+			readErr = notFound(m.Scope, common.Value(in.DeliveryStreamName))
 		}
 
 		return readErr
@@ -537,12 +530,12 @@ func (s *Service) ListDeliveryStreams(
 	out := &api.ListDeliveryStreamsOutput{DeliveryStreamNames: []string{}, HasMoreDeliveryStreams: new(false)}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(prefix(m.Scope, kindStream)) {
-			st, _, readErr := read[deliveryStream](tx, k)
+			st, _, readErr := storage.Read[deliveryStream](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			if st.Name <= value(in.ExclusiveStartDeliveryStreamName) ||
+			if st.Name <= common.Value(in.ExclusiveStartDeliveryStreamName) ||
 				(in.DeliveryStreamType != nil && st.Type != *in.DeliveryStreamType) {
 				continue
 			}
@@ -570,11 +563,11 @@ func (s *Service) UpdateDestination(
 ) (*api.UpdateDestinationOutput, error) {
 	err := s.change(ctx, in.DeliveryStreamName, func(st *deliveryStream) error {
 		switch {
-		case value(in.CurrentDeliveryStreamVersionId) != strconv.FormatInt(st.Version, 10):
+		case common.Value(in.CurrentDeliveryStreamVersionId) != strconv.FormatInt(st.Version, 10):
 			return awserror.New("ConcurrentModificationException",
 				"CurrentDeliveryStreamVersionId does not match the delivery stream's version")
-		case value(in.DestinationId) != destinationID:
-			return invalidArgument("Invalid DestinationId %s", value(in.DestinationId))
+		case common.Value(in.DestinationId) != destinationID:
+			return invalidArgument("Invalid DestinationId %s", common.Value(in.DestinationId))
 		}
 
 		d := st.Destination
@@ -598,30 +591,35 @@ func (s *Service) UpdateDestination(
 			return invalidArgument("TinyStack supports S3 and extended S3 destination updates")
 		}
 
-		d.RoleARN, d.BucketARN = orElse(update.RoleARN, d.RoleARN), orElse(update.BucketARN, d.BucketARN)
-		d.Prefix, d.ErrorOutputPrefix = orElse(
+		d.RoleARN, d.BucketARN = common.OrElse(update.RoleARN, d.RoleARN), common.OrElse(update.BucketARN, d.BucketARN)
+		d.Prefix, d.ErrorOutputPrefix = common.OrElse(
 			update.Prefix,
 			d.Prefix,
-		), orElse(
+		), common.OrElse(
 			update.ErrorOutputPrefix,
 			d.ErrorOutputPrefix,
 		)
-		d.CompressionFormat = orElse(update.CompressionFormat, d.CompressionFormat)
-		d.S3BackupMode, d.FileExtension = orElse(update.S3BackupMode, d.S3BackupMode), orElse(update.FileExtension,
-			d.FileExtension)
-		d.CustomTimeZone, d.BufferingHints = orElse(
+		d.CompressionFormat = common.OrElse(update.CompressionFormat, d.CompressionFormat)
+		d.S3BackupMode, d.FileExtension = common.OrElse(
+			update.S3BackupMode,
+			d.S3BackupMode,
+		), common.OrElse(
+			update.FileExtension,
+			d.FileExtension,
+		)
+		d.CustomTimeZone, d.BufferingHints = common.OrElse(
 			update.CustomTimeZone,
 			d.CustomTimeZone,
-		), orElse(
+		), common.OrElse(
 			update.BufferingHints,
 			d.BufferingHints,
 		)
-		d.EncryptionConfiguration = orElse(update.EncryptionConfiguration, d.EncryptionConfiguration)
-		d.CloudWatchLoggingOptions = orElse(update.CloudWatchLoggingOptions, d.CloudWatchLoggingOptions)
-		d.ProcessingConfiguration = orElse(update.ProcessingConfiguration, d.ProcessingConfiguration)
-		d.DataFormatConversionConfiguration = orElse(update.DataFormatConversionConfiguration,
+		d.EncryptionConfiguration = common.OrElse(update.EncryptionConfiguration, d.EncryptionConfiguration)
+		d.CloudWatchLoggingOptions = common.OrElse(update.CloudWatchLoggingOptions, d.CloudWatchLoggingOptions)
+		d.ProcessingConfiguration = common.OrElse(update.ProcessingConfiguration, d.ProcessingConfiguration)
+		d.DataFormatConversionConfiguration = common.OrElse(update.DataFormatConversionConfiguration,
 			d.DataFormatConversionConfiguration)
-		d.DynamicPartitioningConfiguration = orElse(update.DynamicPartitioningConfiguration,
+		d.DynamicPartitioningConfiguration = common.OrElse(update.DynamicPartitioningConfiguration,
 			d.DynamicPartitioningConfiguration)
 		if err := checkDestination(&d); err != nil {
 			return err
@@ -630,7 +628,7 @@ func (s *Service) UpdateDestination(
 		withDefaults(&d)
 		st.Destination, st.Plain = d, st.Plain && in.ExtendedS3DestinationUpdate == nil
 		st.Version++
-		st.Updated = unix(s.now())
+		st.Updated = common.Unix(s.now())
 		return nil
 	})
 	if err != nil {
@@ -745,7 +743,7 @@ func (s *Service) ListTagsForDeliveryStream(
 
 		slices.Sort(keys)
 		for _, k := range keys {
-			if k <= value(in.ExclusiveStartTagKey) {
+			if k <= common.Value(in.ExclusiveStartTagKey) {
 				continue
 			}
 
@@ -770,18 +768,18 @@ func (s *Service) ListTagsForDeliveryStream(
 func (s *Service) buffer(tx storage.WriteTx, scope request.Scope, st *deliveryStream, records [][]byte) (
 	[]string, error,
 ) {
-	now := unix(s.now())
+	now := common.Unix(s.now())
 	ids := make([]string, len(records))
 	for i, data := range records {
 		st.NextRecord++
 		ids[i] = randomID(56)
 		key := fmt.Sprintf("%s%020d", bufferPrefix(scope, st.Name), st.NextRecord)
-		if err := write(tx, key, buffered{Data: data, ID: ids[i], Arrival: now}); err != nil {
+		if err := storage.Write(tx, key, buffered{Data: data, ID: ids[i], Arrival: now}); err != nil {
 			return nil, err
 		}
 	}
 
-	return ids, write(tx, streamKey(scope, st.Name), st)
+	return ids, storage.Write(tx, streamKey(scope, st.Name), st)
 }
 
 // put buffers records written to a DirectPut delivery stream.
@@ -792,12 +790,12 @@ func (s *Service) put(ctx context.Context, name *string, records [][]byte) (ids 
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		st, found, readErr := read[deliveryStream](tx, streamKey(m.Scope, value(name)))
+		st, found, readErr := storage.Read[deliveryStream](tx, streamKey(m.Scope, common.Value(name)))
 		switch {
 		case readErr != nil:
 			return readErr
 		case !found:
-			return notFound(m.Scope, value(name))
+			return notFound(m.Scope, common.Value(name))
 		case st.Type != typeDirectPut:
 			return invalidArgument("This operation is not permitted on KinesisStreamAsSource delivery stream type.")
 		}
@@ -855,8 +853,6 @@ func (s *Service) PutRecordBatch(ctx context.Context, in *api.PutRecordBatchInpu
 
 	return out, nil
 }
-
-func orElse[T any](p, fallback *T) *T { return common.OrElse(p, fallback) }
 
 // bucketName is the bucket an S3 bucket ARN names.
 func bucketName(arn string) string {

@@ -62,7 +62,7 @@ func (s *Service) PutParameter(ctx context.Context, in *api.PutParameterRequest)
 	var out *api.PutParameterResult
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		pk := parameterKey(m.Scope, *in.Name)
-		p, exists, readErr := read[parameter](tx, pk)
+		p, exists, readErr := storage.Read[parameter](tx, pk)
 		if readErr != nil {
 			return readErr
 		}
@@ -92,12 +92,12 @@ func (s *Service) PutParameter(ctx context.Context, in *api.PutParameterRequest)
 		}
 
 		p.Version = next.Version
-		if writeErr := write(tx, versionKey(m.Scope, p.Name, next.Version), next); writeErr != nil {
+		if writeErr := storage.Write(tx, versionKey(m.Scope, p.Name, next.Version), next); writeErr != nil {
 			return writeErr
 		}
 
 		out = &api.PutParameterResult{Version: new(next.Version), Tier: new(next.Tier)}
-		return write(tx, pk, p)
+		return storage.Write(tx, pk, p)
 	})
 
 	return out, err
@@ -176,7 +176,7 @@ func (s *Service) checkNewKey(ctx context.Context, scope request.Scope, name str
 
 	var current string
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, found, readErr := read[parameter](tx, parameterKey(scope, name))
+		p, found, readErr := storage.Read[parameter](tx, parameterKey(scope, name))
 		if readErr != nil || !found {
 			return readErr
 		}
@@ -273,7 +273,7 @@ func makeRoom(tx storage.WriteTx, scope request.Scope, p *parameter) error {
 		return nil
 	}
 
-	oldest, _, err := read[version](tx, keys[0])
+	oldest, _, err := storage.Read[version](tx, keys[0])
 	if err != nil {
 		return err
 	}

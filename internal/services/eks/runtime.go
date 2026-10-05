@@ -169,13 +169,13 @@ func (s *Service) visit() {
 // lookup reads the index entry of an endpoint ID and the cluster it names, if
 // it still exists with that ID.
 func lookup(tx storage.ReadTx, id string) (*indexEntry, *cluster, error) {
-	e, found, err := read[indexEntry](tx, indexKey(id))
+	e, found, err := storage.Read[indexEntry](tx, indexKey(id))
 	if err != nil || !found {
 		return nil, nil, err
 	}
 
 	scope := request.Scope{AccountID: e.Account, Region: e.Region}
-	c, found, err := read[cluster](tx, clusterKey(scope, e.Name))
+	c, found, err := storage.Read[cluster](tx, clusterKey(scope, e.Name))
 	if err != nil || !found || c.hostID() != id {
 		return e, nil, err
 	}
@@ -228,17 +228,17 @@ func (s *Service) advance(id string) error {
 		if startErr != nil {
 			current.Status = failed
 			r.logger.Error("start eks cluster", "cluster", current.Name, "error", startErr)
-			return write(tx, clusterKey(scope, current.Name), current)
+			return storage.Write(tx, clusterKey(scope, current.Name), current)
 		}
 
 		current.Status, current.Server, current.Endpoint = active, &server, server.URL
 		current.Authority = base64.StdEncoding.EncodeToString([]byte(server.CA))
 		cur.Server, kept = server.ID, true
-		if writeErr := write(tx, indexKey(id), cur); writeErr != nil {
+		if writeErr := storage.Write(tx, indexKey(id), cur); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, clusterKey(scope, current.Name), current)
+		return storage.Write(tx, clusterKey(scope, current.Name), current)
 	})
 	if startErr == nil && !kept {
 		r.runtime.Remove(context.WithoutCancel(r.ctx), server.ID)

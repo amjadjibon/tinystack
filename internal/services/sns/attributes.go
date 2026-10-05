@@ -11,6 +11,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -117,7 +118,7 @@ func (s *Service) SetTopicAttributes(
 		return nil, err
 	}
 
-	name, v := value(in.AttributeName), value(in.AttributeValue)
+	name, v := common.Value(in.AttributeName), common.Value(in.AttributeValue)
 	if guardErr := checkTopicAttribute(name, v); guardErr != nil {
 		return nil, guardErr
 	}
@@ -137,7 +138,7 @@ func (s *Service) SetTopicAttributes(
 		}
 
 		t.Attributes[name] = v
-		return save(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return nil, err
@@ -222,7 +223,7 @@ func (s *Service) SetSubscriptionAttributes(
 			return findErr
 		}
 
-		if setErr := sub.set(value(in.AttributeName), value(in.AttributeValue)); setErr != nil {
+		if setErr := sub.set(common.Value(in.AttributeName), common.Value(in.AttributeValue)); setErr != nil {
 			return setErr
 		}
 
@@ -230,7 +231,7 @@ func (s *Service) SetSubscriptionAttributes(
 			return checkErr
 		}
 
-		return save(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return nil, err
@@ -301,7 +302,7 @@ func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (
 		}
 
 		t.Tags = tags
-		return save(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return nil, resourceError(err)
@@ -323,7 +324,7 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceReques
 		}
 
 		t.Tags = tagging.Remove(t.Tags, in.TagKeys)
-		return save(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return nil, resourceError(err)

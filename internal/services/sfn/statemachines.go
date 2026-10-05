@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -40,13 +41,14 @@ func checkLogging(l *api.LoggingConfiguration) error {
 	}
 
 	for _, d := range l.Destinations {
-		if d.CloudWatchLogsLogGroup == nil || !logGroupARN.MatchString(value(d.CloudWatchLogsLogGroup.LogGroupArn)) {
+		if d.CloudWatchLogsLogGroup == nil ||
+			!logGroupARN.MatchString(common.Value(d.CloudWatchLogsLogGroup.LogGroupArn)) {
 			return awserror.New("InvalidLoggingConfiguration", "Invalid Logging Configuration: Log Destination not "+
 				"found or not a CloudWatch Logs log group ARN ending in ':*'.")
 		}
 	}
 
-	if value(l.Level) != "" && value(l.Level) != "OFF" && len(l.Destinations) == 0 {
+	if common.Value(l.Level) != "" && common.Value(l.Level) != "OFF" && len(l.Destinations) == 0 {
 		return awserror.New("InvalidLoggingConfiguration",
 			"Invalid Logging Configuration: Must specify exactly one Log Destination.")
 	}
@@ -63,15 +65,18 @@ func checkTags(tags map[string]string) error {
 }
 
 func loadMachine(tx storage.ReadTx, arnString *string) (request.Scope, *stateMachine, error) {
-	scope, kind, name, ok := parseARN(value(arnString))
+	scope, kind, name, ok := parseARN(common.Value(arnString))
 	if !ok || kind != arnStateMachine || strings.Contains(name, ":") {
-		return request.Scope{}, nil, invalidARN(value(arnString))
+		return request.Scope{}, nil, invalidARN(common.Value(arnString))
 	}
 
-	sm, found, err := read[stateMachine](tx, machineKey(scope, name))
+	sm, found, err := storage.Read[stateMachine](tx, machineKey(scope, name))
 	if err != nil || !found {
 		if err == nil {
-			err = awserror.New("StateMachineDoesNotExist", "State Machine Does Not Exist: '"+value(arnString)+"'")
+			err = awserror.New(
+				"StateMachineDoesNotExist",
+				"State Machine Does Not Exist: '"+common.Value(arnString)+"'",
+			)
 		}
 
 		return scope, nil, err
@@ -83,7 +88,7 @@ func loadMachine(tx storage.ReadTx, arnString *string) (request.Scope, *stateMac
 // inScope checks that an ARN is in the caller's account and region.
 func inScope(m *request.Metadata, scope request.Scope, arnString *string) error {
 	if scope != m.Scope {
-		return invalidARN(value(arnString))
+		return invalidARN(common.Value(arnString))
 	}
 
 	return nil
@@ -98,16 +103,16 @@ func (s *Service) CreateStateMachine(
 		return nil, err
 	}
 
-	name := value(in.Name)
+	name := common.Value(in.Name)
 	if checkErr := checkName(name); checkErr != nil {
 		return nil, checkErr
 	}
 
-	if _, problems := parseDefinition(value(in.Definition)); len(problems) > 0 {
+	if _, problems := parseDefinition(common.Value(in.Definition)); len(problems) > 0 {
 		return nil, invalidDefinition(problems)
 	}
 
-	kind := value(in.Type)
+	kind := common.Value(in.Type)
 	switch {
 	case kind == "":
 		kind = typeStandard
@@ -116,11 +121,11 @@ func (s *Service) CreateStateMachine(
 	}
 
 	switch {
-	case !roleARN.MatchString(value(in.RoleArn)):
-		return nil, invalidARN(value(in.RoleArn))
-	case in.VersionDescription != nil && !value(in.Publish):
+	case !roleARN.MatchString(common.Value(in.RoleArn)):
+		return nil, invalidARN(common.Value(in.RoleArn))
+	case in.VersionDescription != nil && !common.Value(in.Publish):
 		return nil, awserror.Validation("versionDescription requires publish")
-	case len(value(in.VersionDescription)) > 256:
+	case len(common.Value(in.VersionDescription)) > 256:
 		return nil, awserror.Validation("versionDescription must be at most 256 characters")
 	}
 
@@ -136,7 +141,7 @@ func (s *Service) CreateStateMachine(
 	sm := &stateMachine{
 		Name: name, Definition: *in.Definition, RoleArn: *in.RoleArn, Type: kind, Tags: tags,
 		Logging: in.LoggingConfiguration, Tracing: in.TracingConfiguration, RevisionID: uuid.NewV4().String(),
-		Created: unix(s.now()),
+		Created: common.Unix(s.now()),
 	}
 	if sm.Logging == nil {
 		sm.Logging = &api.LoggingConfiguration{Level: new("OFF"), IncludeExecutionData: new(false)}
@@ -149,7 +154,7 @@ func (s *Service) CreateStateMachine(
 	out := &api.CreateStateMachineOutput{StateMachineArn: new(arn(m.Scope, arnStateMachine, name))}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key := machineKey(m.Scope, name)
-		existing, found, readErr := read[stateMachine](tx, key)
+		existing, found, readErr := storage.Read[stateMachine](tx, key)
 		if readErr != nil {
 			return readErr
 		}
@@ -166,11 +171,11 @@ func (s *Service) CreateStateMachine(
 		}
 
 		out.CreationDate = new(sm.Created)
-		if writeErr := write(tx, key, sm); writeErr != nil || !value(in.Publish) {
+		if writeErr := storage.Write(tx, key, sm); writeErr != nil || !common.Value(in.Publish) {
 			return writeErr
 		}
 
-		v, publishErr := publish(tx, m.Scope, sm, value(in.VersionDescription), sm.Created)
+		v, publishErr := publish(tx, m.Scope, sm, common.Value(in.VersionDescription), sm.Created)
 		if publishErr == nil {
 			out.StateMachineVersionArn = new(v.arn(m.Scope))
 		}
@@ -202,9 +207,9 @@ func (s *Service) DescribeStateMachine(
 		return nil, err
 	}
 
-	scope, machine, qualifier, err := qualified(value(in.StateMachineArn))
+	scope, machine, qualifier, err := qualified(common.Value(in.StateMachineArn))
 	if err == nil && qualifier != "" && !isVersion(qualifier) {
-		err = invalidARN(value(in.StateMachineArn))
+		err = invalidARN(common.Value(in.StateMachineArn))
 	}
 
 	if err == nil {
@@ -260,7 +265,7 @@ func (s *Service) ListStateMachines(
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var items []api.StateMachineListItem
 		for _, k := range tx.Keys(prefix(m.Scope, kindMachine)) {
-			sm, _, readErr := read[stateMachine](tx, k)
+			sm, _, readErr := storage.Read[stateMachine](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -299,7 +304,7 @@ func (s *Service) UpdateStateMachine(
 			"loggingConfiguration, or the tracingConfiguration must be specified")
 	case in.RoleArn != nil && !roleARN.MatchString(*in.RoleArn):
 		return nil, invalidARN(*in.RoleArn)
-	case in.VersionDescription != nil && !value(in.Publish):
+	case in.VersionDescription != nil && !common.Value(in.Publish):
 		return nil, awserror.Validation("versionDescription requires publish")
 	}
 
@@ -313,7 +318,7 @@ func (s *Service) UpdateStateMachine(
 		return nil, checkErr
 	}
 
-	now := unix(s.now())
+	now := common.Unix(s.now())
 	var sm *stateMachine
 	out := &api.UpdateStateMachineOutput{UpdateDate: &now}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -327,21 +332,25 @@ func (s *Service) UpdateStateMachine(
 		}
 
 		sm = loaded
-		sm.Definition, sm.RoleArn = value(orElse(in.Definition, &sm.Definition)), value(orElse(in.RoleArn, &sm.RoleArn))
-		sm.Logging, sm.Tracing = orElse(
+		sm.Definition, sm.RoleArn = common.Value(
+			common.OrElse(in.Definition, &sm.Definition),
+		), common.Value(
+			common.OrElse(in.RoleArn, &sm.RoleArn),
+		)
+		sm.Logging, sm.Tracing = common.OrElse(
 			in.LoggingConfiguration,
 			sm.Logging,
-		), orElse(
+		), common.OrElse(
 			in.TracingConfiguration,
 			sm.Tracing,
 		)
 		sm.RevisionID = uuid.NewV4().String()
 		out.RevisionId = new(sm.RevisionID)
-		if writeErr := write(tx, machineKey(scope, sm.Name), sm); writeErr != nil || !value(in.Publish) {
+		if writeErr := storage.Write(tx, machineKey(scope, sm.Name), sm); writeErr != nil || !common.Value(in.Publish) {
 			return writeErr
 		}
 
-		v, publishErr := publish(tx, scope, sm, value(in.VersionDescription), now)
+		v, publishErr := publish(tx, scope, sm, common.Value(in.VersionDescription), now)
 		if publishErr == nil {
 			out.StateMachineVersionArn = new(v.arn(scope))
 		}
@@ -380,7 +389,7 @@ func (s *Service) DeleteStateMachine(
 		for _, kind := range []string{kindExecution, kindEvent, kindVersion, kindAlias} {
 			for _, k := range tx.Keys(prefix(scope, kind) + sm.Name + "/") {
 				if kind == kindExecution {
-					e, _, readErr := read[execution](tx, k)
+					e, _, readErr := storage.Read[execution](tx, k)
 					if readErr != nil {
 						return readErr
 					}
@@ -412,7 +421,7 @@ func (s *Service) ValidateStateMachineDefinition(
 	_ context.Context,
 	in *api.ValidateStateMachineDefinitionInput,
 ) (*api.ValidateStateMachineDefinitionOutput, error) {
-	_, problems := parseDefinition(value(in.Definition))
+	_, problems := parseDefinition(common.Value(in.Definition))
 	out := &api.ValidateStateMachineDefinitionOutput{
 		Result: new("OK"), Diagnostics: []api.ValidateStateMachineDefinitionDiagnostic{}, Truncated: new(false),
 	}
@@ -429,7 +438,7 @@ func (s *Service) ValidateStateMachineDefinition(
 		})
 	}
 
-	if limit := value(in.MaxResults); limit > 0 && int64(len(out.Diagnostics)) > limit {
+	if limit := common.Value(in.MaxResults); limit > 0 && int64(len(out.Diagnostics)) > limit {
 		out.Diagnostics, out.Truncated = out.Diagnostics[:limit], new(true)
 	}
 

@@ -9,6 +9,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -63,7 +64,7 @@ func userKey(tx storage.ReadTx, u *user, id *string) (*accessKey, error) {
 		return nil, noSuchKey(*id)
 	}
 
-	k, ok, err := read[accessKey](tx, accessKeyPrefix+*id)
+	k, ok, err := storage.Read[accessKey](tx, accessKeyPrefix+*id)
 	if err == nil && !ok {
 		err = noSuchKey(*id)
 	}
@@ -74,13 +75,13 @@ func userKey(tx storage.ReadTx, u *user, id *string) (*accessKey, error) {
 // renameKeys records a user's new name in its access keys.
 func renameKeys(tx storage.WriteTx, u *user, name string) error {
 	for _, id := range u.Keys {
-		k, ok, err := read[accessKey](tx, accessKeyPrefix+id)
+		k, ok, err := storage.Read[accessKey](tx, accessKeyPrefix+id)
 		if err != nil || !ok {
 			return err
 		}
 
 		k.UserName = name
-		if writeErr := write(tx, accessKeyPrefix+id, k); writeErr != nil {
+		if writeErr := storage.Write(tx, accessKeyPrefix+id, k); writeErr != nil {
 			return writeErr
 		}
 	}
@@ -121,11 +122,11 @@ func (s *Service) CreateAccessKey(
 
 		k.UserName = u.Name
 		u.Keys = append(u.Keys, id)
-		if writeErr := write(tx, accessKeyPrefix+id, k); writeErr != nil {
+		if writeErr := storage.Write(tx, accessKeyPrefix+id, k); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, uk, u)
+		return storage.Write(tx, uk, u)
 	})
 	if err != nil {
 		return nil, err
@@ -157,7 +158,7 @@ func (s *Service) ListAccessKeys(
 		}
 
 		for _, id := range u.Keys {
-			k, _, readErr := read[accessKey](tx, accessKeyPrefix+id)
+			k, _, readErr := storage.Read[accessKey](tx, accessKeyPrefix+id)
 			if readErr != nil {
 				return readErr
 			}
@@ -199,7 +200,7 @@ func (s *Service) UpdateAccessKey(
 		return nil, err
 	}
 
-	status := value(in.Status)
+	status := common.Value(in.Status)
 	if status != keyActive && status != keyInactive {
 		return nil, validation("Status must be Active or Inactive")
 	}
@@ -216,7 +217,7 @@ func (s *Service) UpdateAccessKey(
 		}
 
 		k.Status = status
-		return write(tx, accessKeyPrefix+*in.AccessKeyId, k)
+		return storage.Write(tx, accessKeyPrefix+*in.AccessKeyId, k)
 	})
 	if err != nil {
 		return nil, err
@@ -246,7 +247,7 @@ func (s *Service) DeleteAccessKey(
 
 		tx.Delete(accessKeyPrefix + *in.AccessKeyId)
 		u.Keys = slices.DeleteFunc(u.Keys, func(id string) bool { return id == *in.AccessKeyId })
-		return write(tx, uk, u)
+		return storage.Write(tx, uk, u)
 	})
 	if err != nil {
 		return nil, err
@@ -272,7 +273,7 @@ func (s *Service) GetAccessKeyLastUsed(
 
 	var name string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		k, ok, readErr := read[accessKey](tx, accessKeyPrefix+*in.AccessKeyId)
+		k, ok, readErr := storage.Read[accessKey](tx, accessKeyPrefix+*in.AccessKeyId)
 		if readErr != nil {
 			return readErr
 		}

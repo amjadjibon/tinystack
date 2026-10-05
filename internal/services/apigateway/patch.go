@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const (
@@ -39,20 +40,20 @@ func pathSegments(path string) []string {
 // "/<member>/<old element>" names.
 func patch(v any, ops []api.PatchOperation, fields ...string) error {
 	for _, op := range ops {
-		path := value(op.Path)
+		path := common.Value(op.Path)
 		segments := pathSegments(path)
 		if len(segments) == 0 || !slices.Contains(fields, segments[0]) {
 			return badRequest("Invalid patch path '%s' specified for op '%s'. Must be one of: [%s]", path,
-				value(op.Op), strings.Join(fields, ", "))
+				common.Value(op.Op), strings.Join(fields, ", "))
 		}
 
-		switch value(op.Op) {
+		switch common.Value(op.Op) {
 		case opAdd, opRemove, opReplace:
 		default:
 			return badRequest("Invalid patch operation specified. Must be 'add'|'remove'|'replace'")
 		}
 
-		if err := apply(reflect.ValueOf(v).Elem(), value(op.Op), segments, op.Value, path); err != nil {
+		if err := apply(reflect.ValueOf(v).Elem(), common.Value(op.Op), segments, op.Value, path); err != nil {
 			return err
 		}
 	}
@@ -150,7 +151,7 @@ func apply(v reflect.Value, op string, segments []string, raw *string, path stri
 // applyList changes a list of strings.
 func applyList(f reflect.Value, op string, rest []string, raw *string, invalid error) error {
 	list, _ := f.Interface().([]string)
-	item := value(raw)
+	item := common.Value(raw)
 	if len(rest) == 1 {
 		item = rest[0]
 	}
@@ -175,11 +176,11 @@ func applyList(f reflect.Value, op string, rest []string, raw *string, invalid e
 
 		switch {
 		case len(rest) == 0:
-			list = []string{value(raw)}
+			list = []string{common.Value(raw)}
 		case index < 0:
 			return invalid
 		default:
-			list[index] = value(raw)
+			list[index] = common.Value(raw)
 		}
 	}
 
@@ -189,7 +190,7 @@ func applyList(f reflect.Value, op string, rest []string, raw *string, invalid e
 
 // scalar parses a patch value as t, a string, bool, or number.
 func scalar(t reflect.Type, raw *string, path string) (reflect.Value, error) {
-	s := value(raw)
+	s := common.Value(raw)
 	var parsed any
 	var err error
 	switch t.Kind() {

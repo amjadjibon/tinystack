@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -37,7 +38,7 @@ func noSuchZone(id string) error {
 
 // loadZone reads the zone id names.
 func loadZone(tx storage.ReadTx, account, id string) (*zone, error) {
-	z, found, err := read[zone](tx, key(account, kindZone, id))
+	z, found, err := storage.Read[zone](tx, key(account, kindZone, id))
 	if err == nil && !found {
 		err = noSuchZone(id)
 	}
@@ -63,7 +64,7 @@ func nameServers(id string) []string {
 
 // checkVPC asks EC2 whether a VPC exists in its Region.
 func (s *Service) checkVPC(ctx context.Context, account string, vpc *api.VPC) error {
-	if vpc == nil || value(vpc.VPCId) == "" || value(vpc.VPCRegion) == "" {
+	if vpc == nil || common.Value(vpc.VPCId) == "" || common.Value(vpc.VPCRegion) == "" {
 		return awserror.New("InvalidVPCId", "A VPC needs a VPCId and a VPCRegion.")
 	}
 
@@ -91,17 +92,17 @@ func (s *Service) CreateHostedZone(
 		return nil, err
 	}
 
-	name, err := normalize(value(in.Name))
+	name, err := normalize(common.Value(in.Name))
 	if err != nil {
 		return nil, awserror.New("InvalidDomainName", err.Error())
 	}
 
-	ref := value(in.CallerReference)
+	ref := common.Value(in.CallerReference)
 	private := in.VPC != nil
 	config := &api.HostedZoneConfig{PrivateZone: new(private)}
 	if c := in.HostedZoneConfig; c != nil {
 		config.Comment = c.Comment
-		if value(c.PrivateZone) && !private {
+		if common.Value(c.PrivateZone) && !private {
 			return nil, invalid("A private hosted zone needs a VPC.")
 		}
 	}
@@ -111,7 +112,7 @@ func (s *Service) CreateHostedZone(
 		return nil, invalid("The CallerReference must be 1 to 128 characters long.")
 	case strings.Count(name, ".") < 2 && !private:
 		return nil, awserror.New("InvalidDomainName", name+" is reserved by AWS.")
-	case len(value(config.Comment)) > 256:
+	case len(common.Value(config.Comment)) > 256:
 		return nil, invalid("The comment must be at most 256 characters long.")
 	}
 
@@ -143,12 +144,12 @@ func (s *Service) CreateHostedZone(
 		}
 
 		tx.Put(refKey, []byte(`"`+id+`"`))
-		if writeErr := write(tx, key(m.AccountID, kindZone, id), z); writeErr != nil {
+		if writeErr := storage.Write(tx, key(m.AccountID, kindZone, id), z); writeErr != nil {
 			return writeErr
 		}
 
 		for _, rs := range apexRecords(name, z.NameServers) {
-			if writeErr := write(tx, recordKey(m.AccountID, id, &rs), rs); writeErr != nil {
+			if writeErr := storage.Write(tx, recordKey(m.AccountID, id, &rs), rs); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -194,7 +195,7 @@ func (s *Service) GetHostedZone(ctx context.Context, in *api.GetHostedZoneReques
 	}
 
 	out := &api.GetHostedZoneResponse{HostedZone: &z.Zone}
-	if value(z.Zone.Config.PrivateZone) {
+	if common.Value(z.Zone.Config.PrivateZone) {
 		out.VPCs = z.VPCs
 	} else {
 		out.DelegationSet = &api.DelegationSet{NameServers: z.NameServers}
@@ -228,7 +229,7 @@ func (s *Service) zones(ctx context.Context) ([]*zone, error) {
 	var out []*zone
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(key(m.AccountID, kindZone, "")) {
-			z, _, readErr := read[zone](tx, k)
+			z, _, readErr := storage.Read[zone](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -272,13 +273,16 @@ func (s *Service) ListHostedZones(
 	}
 
 	out := &api.ListHostedZonesResponse{
-		HostedZones: []api.HostedZone{}, Marker: new(value(in.Marker)), IsTruncated: new(false), MaxItems: new(limit),
+		HostedZones: []api.HostedZone{},
+		Marker:      new(common.Value(in.Marker)),
+		IsTruncated: new(false),
+		MaxItems:    new(limit),
 	}
 	for _, z := range all {
 		id := bareID(z.Zone.Id)
 		switch {
 		case in.Marker != nil && id < *in.Marker,
-			in.HostedZoneType != nil && !value(z.Zone.Config.PrivateZone):
+			in.HostedZoneType != nil && !common.Value(z.Zone.Config.PrivateZone):
 			continue
 		}
 
@@ -316,11 +320,11 @@ func (s *Service) ListHostedZonesByName(
 	}
 
 	slices.SortStableFunc(all, func(a, b *zone) int {
-		if c := strings.Compare(reversed(value(a.Zone.Name)), reversed(value(b.Zone.Name))); c != 0 {
+		if c := strings.Compare(reversed(common.Value(a.Zone.Name)), reversed(common.Value(b.Zone.Name))); c != 0 {
 			return c
 		}
 
-		return strings.Compare(value(a.Zone.Id), value(b.Zone.Id))
+		return strings.Compare(common.Value(a.Zone.Id), common.Value(b.Zone.Id))
 	})
 
 	out := &api.ListHostedZonesByNameResponse{
@@ -328,7 +332,7 @@ func (s *Service) ListHostedZonesByName(
 		IsTruncated: new(false), MaxItems: new(limit),
 	}
 	for _, z := range all {
-		name, id := value(z.Zone.Name), bareID(z.Zone.Id)
+		name, id := common.Value(z.Zone.Name), bareID(z.Zone.Id)
 		if c := strings.Compare(reversed(name), reversed(start)); start != "" &&
 			(c < 0 || c == 0 && in.HostedZoneId != nil && id < bareID(in.HostedZoneId)) {
 			continue
@@ -374,12 +378,15 @@ func (s *Service) DeleteHostedZone(
 
 		records := tx.Keys(key(m.AccountID, kindRecord, id+"/"))
 		for _, k := range records {
-			rs, _, readErr := read[api.ResourceRecordSet](tx, k)
+			rs, _, readErr := storage.Read[api.ResourceRecordSet](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			if t := value(rs.Type); value(rs.Name) != value(z.Zone.Name) || t != typeSOA && t != typeNS {
+			if t := common.Value(
+				rs.Type,
+			); common.Value(rs.Name) != common.Value(z.Zone.Name) ||
+				t != typeSOA && t != typeNS {
 				return awserror.New("HostedZoneNotEmpty",
 					"The specified hosted zone contains non-required resource record sets and so cannot be deleted.")
 			}
@@ -390,7 +397,7 @@ func (s *Service) DeleteHostedZone(
 		}
 
 		tx.Delete(key(m.AccountID, kindZone, id))
-		tx.Delete(key(m.AccountID, kindReference, kindZone+"/"+value(z.Zone.CallerReference)))
+		tx.Delete(key(m.AccountID, kindReference, kindZone+"/"+common.Value(z.Zone.CallerReference)))
 		var changeErr error
 		out.ChangeInfo, changeErr = s.changeInfo(tx, m.AccountID, nil)
 		return changeErr
@@ -405,7 +412,7 @@ func (s *Service) UpdateHostedZoneComment(
 		return nil, err
 	}
 
-	if len(value(in.Comment)) > 256 {
+	if len(common.Value(in.Comment)) > 256 {
 		return nil, invalid("The comment must be at most 256 characters long.")
 	}
 
@@ -419,7 +426,7 @@ func (s *Service) UpdateHostedZoneComment(
 
 		z.Zone.Config.Comment = in.Comment
 		out.HostedZone = &z.Zone
-		return write(tx, key(m.AccountID, kindZone, id), z)
+		return storage.Write(tx, key(m.AccountID, kindZone, id), z)
 	})
 }
 
@@ -464,27 +471,28 @@ func (s *Service) associate(ctx context.Context, id string, vpc *api.VPC, commen
 			return loadErr
 		}
 
-		if !value(z.Zone.Config.PrivateZone) {
+		if !common.Value(z.Zone.Config.PrivateZone) {
 			return awserror.New("PublicZoneVPCAssociation", "Public hosted zones cannot be associated with VPCs.")
 		}
 
 		i := slices.IndexFunc(z.VPCs, func(v api.VPC) bool {
-			return value(v.VPCId) == value(vpc.VPCId) && value(v.VPCRegion) == value(vpc.VPCRegion)
+			return common.Value(v.VPCId) == common.Value(vpc.VPCId) &&
+				common.Value(v.VPCRegion) == common.Value(vpc.VPCRegion)
 		})
 		switch {
 		case add && i >= 0:
-			return awserror.New("ConflictingDomainExists", "The VPC "+value(vpc.VPCId)+" is already associated.")
+			return awserror.New("ConflictingDomainExists", "The VPC "+common.Value(vpc.VPCId)+" is already associated.")
 		case add:
 			z.VPCs = append(z.VPCs, *vpc)
 		case i < 0:
-			return awserror.New("VPCAssociationNotFound", "The VPC "+value(vpc.VPCId)+" is not associated.")
+			return awserror.New("VPCAssociationNotFound", "The VPC "+common.Value(vpc.VPCId)+" is not associated.")
 		case len(z.VPCs) == 1:
 			return awserror.New("LastVPCAssociation", "A private hosted zone needs at least one VPC.")
 		default:
 			z.VPCs = slices.Delete(z.VPCs, i, i+1)
 		}
 
-		if writeErr := write(tx, key(m.AccountID, kindZone, id), z); writeErr != nil {
+		if writeErr := storage.Write(tx, key(m.AccountID, kindZone, id), z); writeErr != nil {
 			return writeErr
 		}
 

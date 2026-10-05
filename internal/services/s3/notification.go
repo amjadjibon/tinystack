@@ -18,6 +18,7 @@ import (
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -57,16 +58,16 @@ type destination struct {
 func destinations(cfg *api.NotificationConfiguration) []destination {
 	var out []destination
 	for _, q := range cfg.QueueConfigurations {
-		out = append(out, destination{arn: value(q.QueueArn), events: q.Events, filter: q.Filter, id: q.Id})
+		out = append(out, destination{arn: common.Value(q.QueueArn), events: q.Events, filter: q.Filter, id: q.Id})
 	}
 
 	for _, t := range cfg.TopicConfigurations {
-		out = append(out, destination{arn: value(t.TopicArn), events: t.Events, filter: t.Filter, id: t.Id})
+		out = append(out, destination{arn: common.Value(t.TopicArn), events: t.Events, filter: t.Filter, id: t.Id})
 	}
 
 	for _, f := range cfg.LambdaFunctionConfigurations {
 		out = append(out, destination{
-			arn: value(f.LambdaFunctionArn), events: f.Events, filter: f.Filter, id: f.Id,
+			arn: common.Value(f.LambdaFunctionArn), events: f.Events, filter: f.Filter, id: f.Id,
 		})
 	}
 
@@ -81,17 +82,17 @@ func keyFilter(f *api.NotificationConfigurationFilter) (prefix, suffix string, e
 
 	seen := map[string]bool{}
 	for _, rule := range f.Key.FilterRules {
-		name := strings.ToLower(value(rule.Name))
-		if (name != "prefix" && name != "suffix") || seen[name] || len(value(rule.Value)) > 1024 {
+		name := strings.ToLower(common.Value(rule.Name))
+		if (name != "prefix" && name != "suffix") || seen[name] || len(common.Value(rule.Value)) > 1024 {
 			return "", "", invalidArgument("Filter rules must name prefix or suffix at most once each, " +
 				"with values of up to 1024 characters")
 		}
 
 		seen[name] = true
 		if name == "prefix" {
-			prefix = value(rule.Value)
+			prefix = common.Value(rule.Value)
 		} else {
-			suffix = value(rule.Value)
+			suffix = common.Value(rule.Value)
 		}
 	}
 
@@ -155,7 +156,7 @@ func checkNotifications(cfg *api.NotificationConfiguration, region string) error
 			return err
 		}
 
-		id := value(d.id)
+		id := common.Value(d.id)
 		if len(id) > 255 || (id != "" && ids[id]) {
 			return invalidArgument("Configuration IDs must be unique and at most 255 characters")
 		}
@@ -195,7 +196,7 @@ func overlaps(a, b destination) bool {
 }
 
 func setID(id **string) {
-	if value(*id) == "" {
+	if common.Value(*id) == "" {
 		*id = new(rand.Text())
 	}
 }
@@ -229,7 +230,7 @@ func (s *Service) PutBucketNotificationConfiguration(
 		return nil, err
 	}
 
-	if !value(in.SkipDestinationValidation) {
+	if !common.Value(in.SkipDestinationValidation) {
 		if guardErr := s.validateDestinations(ctx, m, *in.Bucket, cfg); guardErr != nil {
 			return nil, guardErr
 		}
@@ -371,7 +372,7 @@ func (s *Service) notify(ctx context.Context, m request.Metadata, cfg *api.Notif
 			continue
 		}
 
-		payload, err := s.record(m, e, value(d.id), sequencer, now)
+		payload, err := s.record(m, e, common.Value(d.id), sequencer, now)
 		if err == nil {
 			switch strings.SplitN(d.arn, ":", 4)[2] {
 			case serviceSQS:
@@ -488,8 +489,8 @@ func (s *Service) putEvent(ctx context.Context, detailType, arn string, detail [
 		return err
 	}
 
-	if value(out.FailedEntryCount) > 0 {
-		return errors.New(value(out.Entries[0].ErrorMessage))
+	if common.Value(out.FailedEntryCount) > 0 {
+		return errors.New(common.Value(out.Entries[0].ErrorMessage))
 	}
 
 	return nil

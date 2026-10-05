@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -62,7 +63,7 @@ func (s *Service) PutMetricData(ctx context.Context, in *api.PutMetricDataInput)
 		return nil, err
 	}
 
-	namespace := value(in.Namespace)
+	namespace := common.Value(in.Namespace)
 	switch {
 	case namespace == "":
 		return nil, missing("Namespace")
@@ -88,13 +89,22 @@ func (s *Service) PutMetricData(ctx context.Context, in *api.PutMetricDataInput)
 		for i := range in.MetricData {
 			d := &in.MetricData[i]
 			dims := canonical(d.Dimensions)
-			id := metricID(namespace, value(d.MetricName), dims)
-			rec := metric{Namespace: namespace, Name: value(d.MetricName), Dimensions: dims, Last: unix(now)}
-			if err := write(tx, metricKey(m.Scope, id), rec); err != nil {
+			id := metricID(namespace, common.Value(d.MetricName), dims)
+			rec := metric{
+				Namespace:  namespace,
+				Name:       common.Value(d.MetricName),
+				Dimensions: dims,
+				Last:       common.Unix(now),
+			}
+			if err := storage.Write(tx, metricKey(m.Scope, id), rec); err != nil {
 				return err
 			}
 
-			if err := write(tx, dataPrefix(m.Scope, id)+s.sequenced(fromUnix(points[i].T)), points[i]); err != nil {
+			if err := storage.Write(
+				tx,
+				dataPrefix(m.Scope, id)+s.sequenced(fromUnix(points[i].T)),
+				points[i],
+			); err != nil {
 				return err
 			}
 
@@ -107,7 +117,7 @@ func (s *Service) PutMetricData(ctx context.Context, in *api.PutMetricDataInput)
 
 // datum checks one MetricDatum and returns its data point.
 func datum(d *api.MetricDatum, now time.Time) (point, error) {
-	name := value(d.MetricName)
+	name := common.Value(d.MetricName)
 	if name == "" || len(name) > 255 {
 		return point{}, missing("MetricData.member.N.MetricName")
 	}
@@ -116,7 +126,7 @@ func datum(d *api.MetricDatum, now time.Time) (point, error) {
 		return point{}, err
 	}
 
-	unit := value(d.Unit)
+	unit := common.Value(d.Unit)
 	if unit == "" {
 		unit = unitNone
 	}
@@ -125,7 +135,7 @@ func datum(d *api.MetricDatum, now time.Time) (point, error) {
 		return point{}, invalidValue("The value %s for parameter MetricData.member.N.Unit is invalid.", unit)
 	}
 
-	if r := value(d.StorageResolution); d.StorageResolution != nil && r != 1 && r != 60 {
+	if r := common.Value(d.StorageResolution); d.StorageResolution != nil && r != 1 && r != 60 {
 		return point{}, invalidValue("StorageResolution must be 1 or 60")
 	}
 
@@ -139,7 +149,7 @@ func datum(d *api.MetricDatum, now time.Time) (point, error) {
 			"and at most two hours in the future.")
 	}
 
-	p := point{T: unix(t), Unit: unit}
+	p := point{T: common.Unix(t), Unit: unit}
 	given := 0
 	if d.Value != nil {
 		given++
@@ -337,7 +347,7 @@ func buckets(tx storage.ReadTx, scope request.Scope, id string, period int64, un
 			continue
 		}
 
-		pt, _, err := read[point](tx, k)
+		pt, _, err := storage.Read[point](tx, k)
 		if err != nil {
 			return nil, err
 		}
@@ -382,9 +392,9 @@ func (s *Service) GetMetricStatistics(
 
 	stats := slices.Concat(in.Statistics, in.ExtendedStatistics)
 	switch {
-	case value(in.Namespace) == "":
+	case common.Value(in.Namespace) == "":
 		return nil, missing("Namespace")
-	case value(in.MetricName) == "":
+	case common.Value(in.MetricName) == "":
 		return nil, missing("MetricName")
 	case in.StartTime == nil:
 		return nil, missing("StartTime")
@@ -432,7 +442,15 @@ func (s *Service) GetMetricStatistics(
 	id := metricID(*in.Namespace, *in.MetricName, in.Dimensions)
 	var got map[int64]*bucket
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		got, err = buckets(tx, m.Scope, id, *in.Period, value(in.Unit), fromUnix(*in.StartTime), fromUnix(*in.EndTime))
+		got, err = buckets(
+			tx,
+			m.Scope,
+			id,
+			*in.Period,
+			common.Value(in.Unit),
+			fromUnix(*in.StartTime),
+			fromUnix(*in.EndTime),
+		)
 		return err
 	})
 	if err != nil {
@@ -482,7 +500,7 @@ func (s *Service) ListMetrics(ctx context.Context, in *api.ListMetricsInput) (*a
 	}
 
 	var since time.Time
-	switch value(in.RecentlyActive) {
+	switch common.Value(in.RecentlyActive) {
 	case "":
 		since = s.now().Add(-retention)
 	case "PT3H":
@@ -505,12 +523,12 @@ func (s *Service) ListMetrics(ctx context.Context, in *api.ListMetricsInput) (*a
 				continue
 			}
 
-			rec, _, readErr := read[metric](tx, k)
+			rec, _, readErr := storage.Read[metric](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			if rec.Last < unix(since) || !listed(rec, in) {
+			if rec.Last < common.Unix(since) || !listed(rec, in) {
 				continue
 			}
 
@@ -540,7 +558,7 @@ func listed(rec *metric, in *api.ListMetricsInput) bool {
 	for _, f := range in.Dimensions {
 		found := false
 		for _, d := range rec.Dimensions {
-			if value(d.Name) == value(f.Name) && (f.Value == nil || value(d.Value) == *f.Value) {
+			if common.Value(d.Name) == common.Value(f.Name) && (f.Value == nil || common.Value(d.Value) == *f.Value) {
 				found = true
 			}
 		}

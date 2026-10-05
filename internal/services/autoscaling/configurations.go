@@ -7,6 +7,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -22,7 +23,7 @@ func (s *Service) CreateLaunchConfiguration(
 		return nil, err
 	}
 
-	name := value(in.LaunchConfigurationName)
+	name := common.Value(in.LaunchConfigurationName)
 	if checkErr := checkName("LaunchConfigurationName", name); checkErr != nil {
 		return nil, checkErr
 	}
@@ -31,11 +32,11 @@ func (s *Service) CreateLaunchConfiguration(
 		return nil, validation("ImageId and InstanceType are required.")
 	}
 
-	if t := value(in.PlacementTenancy); t != "" && t != "default" && t != "dedicated" {
+	if t := common.Value(in.PlacementTenancy); t != "" && t != "default" && t != "dedicated" {
 		return nil, validation("PlacementTenancy must be default or dedicated.")
 	}
 
-	if u := value(in.UserData); u != "" {
+	if u := common.Value(in.UserData); u != "" {
 		decoded, decodeErr := base64.StdEncoding.DecodeString(u)
 		if decodeErr != nil || len(decoded) > maxUserData {
 			return nil, validation("UserData must be base64 encoded and at most 16 KB.")
@@ -74,7 +75,7 @@ func (s *Service) CreateLaunchConfiguration(
 				"configuration already exists with the name "+name)
 		}
 
-		return write(tx, key(m.Scope, kindConfiguration, name), lc)
+		return storage.Write(tx, key(m.Scope, kindConfiguration, name), lc)
 	})
 	if err != nil {
 		return nil, err
@@ -94,13 +95,13 @@ func (s *Service) DescribeLaunchConfigurations(
 	var all []*api.LaunchConfiguration
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(key(m.Scope, kindConfiguration, "")) {
-			lc, _, readErr := read[api.LaunchConfiguration](tx, k)
+			lc, _, readErr := storage.Read[api.LaunchConfiguration](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
 			if len(in.LaunchConfigurationNames) == 0 ||
-				slices.Contains(in.LaunchConfigurationNames, value(lc.LaunchConfigurationName)) {
+				slices.Contains(in.LaunchConfigurationNames, common.Value(lc.LaunchConfigurationName)) {
 				all = append(all, lc)
 			}
 		}
@@ -113,7 +114,7 @@ func (s *Service) DescribeLaunchConfigurations(
 
 	page, next, err := window(
 		all,
-		func(lc *api.LaunchConfiguration) string { return value(lc.LaunchConfigurationName) },
+		func(lc *api.LaunchConfiguration) string { return common.Value(lc.LaunchConfigurationName) },
 		in.NextToken,
 		in.MaxRecords,
 	)
@@ -138,19 +139,19 @@ func (s *Service) DeleteLaunchConfiguration(
 		return nil, err
 	}
 
-	name := value(in.LaunchConfigurationName)
+	name := common.Value(in.LaunchConfigurationName)
 	return &api.DeleteLaunchConfigurationOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, found := tx.Get(key(m.Scope, kindConfiguration, name)); !found {
 			return validation("Launch configuration name not found - Launch configuration %s not found", name)
 		}
 
 		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
-			g, _, err := read[group](tx, k)
+			g, _, err := storage.Read[group](tx, k)
 			if err != nil {
 				return err
 			}
 
-			if value(g.Group.LaunchConfigurationName) == name {
+			if common.Value(g.Group.LaunchConfigurationName) == name {
 				return awserror.New("ResourceInUseFault", "Cannot delete launch configuration "+name+
 					" because it is attached to AutoScalingGroup "+g.name())
 			}

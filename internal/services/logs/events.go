@@ -12,6 +12,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -88,7 +89,7 @@ func ingest(
 			break
 		}
 
-		e, _, err := read[event](tx, key)
+		e, _, err := storage.Read[event](tx, key)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -110,7 +111,7 @@ func ingest(
 	ingestion := now.UnixMilli()
 	tooOld, tooNew := now.Add(-maxAge).UnixMilli(), now.Add(maxFuture).UnixMilli()
 	for i, e := range events {
-		ts, index := value(e.Timestamp), int64(i)
+		ts, index := common.Value(e.Timestamp), int64(i)
 		switch {
 		case ts < tooOld:
 			reject(func(r *api.RejectedLogEventsInfo) { r.TooOldLogEventEndIndex = &index })
@@ -129,7 +130,7 @@ func ingest(
 
 		id := position(ts, st.Seq)
 		appended := event{ID: id, Message: *e.Message, Timestamp: ts, Ingestion: ingestion}
-		if err := write(tx, eventPrefix(scope, g.Name, st.Name)+id, &appended); err != nil {
+		if err := storage.Write(tx, eventPrefix(scope, g.Name, st.Name)+id, &appended); err != nil {
 			return nil, nil, err
 		}
 
@@ -148,11 +149,11 @@ func ingest(
 		st.LastIngestion = &ingestion
 	}
 
-	if err := write(tx, streamKey(scope, g.Name, st.Name), st); err != nil {
+	if err := storage.Write(tx, streamKey(scope, g.Name, st.Name), st); err != nil {
 		return nil, nil, err
 	}
 
-	return rejected, accepted, write(tx, groupKey(scope, g.Name), g)
+	return rejected, accepted, storage.Write(tx, groupKey(scope, g.Name), g)
 }
 
 // checkBatch validates a PutLogEvents batch.
@@ -263,7 +264,7 @@ func (s *Service) Append(
 
 	var accepted *delivered
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		g, found, err := read[group](tx, groupKey(scope, groupName))
+		g, found, err := storage.Read[group](tx, groupKey(scope, groupName))
 		if err != nil {
 			return err
 		}
@@ -275,7 +276,7 @@ func (s *Service) Append(
 			}
 		}
 
-		st, found, err := read[stream](tx, streamKey(scope, groupName, streamName))
+		st, found, err := storage.Read[stream](tx, streamKey(scope, groupName, streamName))
 		if err != nil {
 			return err
 		}
@@ -298,7 +299,7 @@ func (s *Service) Append(
 
 // timeRange checks a request's startTime and endTime; endTime is exclusive.
 func timeRange(start, end *int64) (from, to int64, err error) {
-	from, to = value(start), int64(1)<<62
+	from, to = common.Value(start), int64(1)<<62
 	if end != nil {
 		to = *end
 	}
@@ -343,7 +344,7 @@ func (s *Service) GetLogEvents(
 		return nil, err
 	}
 
-	forward := value(in.StartFromHead)
+	forward := common.Value(in.StartFromHead)
 	var bound string
 	if in.NextToken != nil {
 		dir, pos, ok := strings.Cut(*in.NextToken, "/")
@@ -380,7 +381,7 @@ func (s *Service) GetLogEvents(
 			size := 0
 			var positions []string // of the returned events
 			for _, key := range keys {
-				e, _, readErr := read[event](tx, key)
+				e, _, readErr := storage.Read[event](tx, key)
 				if readErr != nil {
 					return readErr
 				}
@@ -446,7 +447,7 @@ func (s *Service) FilterLogEvents(
 		return nil, err
 	}
 
-	match, err := compilePattern(value(in.FilterPattern))
+	match, err := compilePattern(common.Value(in.FilterPattern))
 	if err != nil {
 		return nil, err
 	}
@@ -467,7 +468,7 @@ func (s *Service) FilterLogEvents(
 			}
 
 			var hits []hit
-			for _, streamRecord := range tx.Keys(streamKey(scope, g.Name, value(in.LogStreamNamePrefix))) {
+			for _, streamRecord := range tx.Keys(streamKey(scope, g.Name, common.Value(in.LogStreamNamePrefix))) {
 				name := streamRecord[len(streamPrefix(scope, g.Name)):]
 				if len(in.LogStreamNames) > 0 && !slices.Contains(in.LogStreamNames, name) {
 					continue
@@ -481,7 +482,7 @@ func (s *Service) FilterLogEvents(
 						continue
 					}
 
-					e, _, readErr := read[event](tx, key)
+					e, _, readErr := storage.Read[event](tx, key)
 					if readErr != nil {
 						return readErr
 					}

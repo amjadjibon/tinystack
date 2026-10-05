@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -18,7 +19,7 @@ const (
 
 // loadTags reads the tags of a hosted zone or health check.
 func loadTags(tx storage.ReadTx, account string, kind, id *string) (map[string]string, error) {
-	switch value(kind) {
+	switch common.Value(kind) {
 	case tagZone:
 		z, err := loadZone(tx, account, bareID(id))
 		if err != nil {
@@ -27,7 +28,7 @@ func loadTags(tx storage.ReadTx, account string, kind, id *string) (map[string]s
 
 		return z.Tags, nil
 	case tagHealthCheck:
-		h, err := loadHealthCheck(tx, account, value(id))
+		h, err := loadHealthCheck(tx, account, common.Value(id))
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +62,7 @@ func (s *Service) ChangeTagsForResource(
 
 	add := map[string]string{}
 	for _, t := range in.AddTags {
-		add[value(t.Key)] = value(t.Value)
+		add[common.Value(t.Key)] = common.Value(t.Value)
 	}
 
 	return &api.ChangeTagsForResourceResponse{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -75,15 +76,15 @@ func (s *Service) ChangeTagsForResource(
 			return invalid("%s", loadErr.Error())
 		}
 
-		if value(in.ResourceType) == tagZone {
+		if common.Value(in.ResourceType) == tagZone {
 			z, _ := loadZone(tx, m.AccountID, bareID(in.ResourceId))
 			z.Tags = tags
-			return write(tx, key(m.AccountID, kindZone, bareID(in.ResourceId)), z)
+			return storage.Write(tx, key(m.AccountID, kindZone, bareID(in.ResourceId)), z)
 		}
 
-		h, _ := loadHealthCheck(tx, m.AccountID, value(in.ResourceId))
+		h, _ := loadHealthCheck(tx, m.AccountID, common.Value(in.ResourceId))
 		h.Tags = tags
-		return write(tx, key(m.AccountID, kindHealthCheck, value(in.ResourceId)), h)
+		return storage.Write(tx, key(m.AccountID, kindHealthCheck, common.Value(in.ResourceId)), h)
 	})
 }
 

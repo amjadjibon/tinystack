@@ -18,6 +18,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -166,7 +167,7 @@ func tokens(
 	now time.Time,
 ) *grant {
 	iss := issuer(ctx, p.ID)
-	common := func(use string, validity time.Duration) map[string]any {
+	claimsFor := func(use string, validity time.Duration) map[string]any {
 		claims := map[string]any{
 			"sub":         u.Attributes[attrSub],
 			claimIssuer:   iss,
@@ -186,9 +187,9 @@ func tokens(
 	}
 
 	accessValidity := c.Settings.validity(tokenAccess)
-	access := common("access", accessValidity)
+	access := claimsFor("access", accessValidity)
 	access["client_id"], access["scope"], access[claimUsername], access["version"] = c.ID, adminScope, u.Username, 2
-	id := common("id", c.Settings.validity(tokenID))
+	id := claimsFor("id", c.Settings.validity(tokenID))
 	id["aud"], id["cognito:username"] = c.ID, u.Username
 	for name, v := range u.Attributes {
 		if name == attrSub || !readable(c, name) {
@@ -206,7 +207,7 @@ func tokens(
 		key: key, access: access, id: id, expiresIn: int64(accessValidity / time.Second), refresh: sess.refresh,
 	}
 	g.preToken = preTokenCall(scope, p, c, u, g, sess.source)
-	if function := value(p.triggers().PostAuthentication); function != "" && sess.source != sourceRefresh {
+	if function := common.Value(p.triggers().PostAuthentication); function != "" && sess.source != sourceRefresh {
 		g.postAuth = newCall(scope, p, c.ID, function, "PostAuthentication", "PostAuthentication_Authentication", u,
 			nil)
 	}
@@ -272,7 +273,7 @@ func (s *Service) signIn(
 			Expires: now.Add(c.Settings.validity(tokenRefresh)), AuthTime: now, Username: u.Username, Client: c.ID,
 			Origin: sess.origin,
 		}
-		if err := write(tx, refreshKey(scope, p.ID, sess.refresh), r); err != nil {
+		if err := storage.Write(tx, refreshKey(scope, p.ID, sess.refresh), r); err != nil {
 			return nil, err
 		}
 	}
@@ -283,21 +284,21 @@ func (s *Service) signIn(
 	}
 
 	if created {
-		if writeErr := write(tx, poolKey(scope, p.ID), p); writeErr != nil {
+		if writeErr := storage.Write(tx, poolKey(scope, p.ID), p); writeErr != nil {
 			return nil, writeErr
 		}
 	}
 
 	g := tokens(ctx, scope, key, p, c, u, sess, now)
 	u.Modified = now
-	return g, write(tx, userKey(scope, p, u.Username), u)
+	return g, storage.Write(tx, userKey(scope, p, u.Username), u)
 }
 
 // signOut ends the user's sessions and deletes their refresh tokens: all of
 // them, or only origin's.
 func signOut(tx storage.WriteTx, scope request.Scope, p *pool, u *user, origin string) error {
 	for _, k := range tx.Keys(prefix(scope, "refresh") + p.ID + "/") {
-		r, _, err := read[refresh](tx, k)
+		r, _, err := storage.Read[refresh](tx, k)
 		if err != nil {
 			return err
 		}
@@ -325,7 +326,7 @@ type accessToken struct {
 // checkAccess verifies an access token and loads what it stands for.
 func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, error) {
 	invalid := notAuthorized("Invalid Access Token")
-	claims, err := claimsOf(value(token))
+	claims, err := claimsOf(common.Value(token))
 	if err != nil || claims[claimTokenUse] != "access" {
 		return nil, invalid
 	}
@@ -335,7 +336,7 @@ func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, e
 	origin, _ := claims["origin_jti"].(string)
 	iss, _ := claims["iss"].(string)
 	exp, _ := claims["exp"].(float64)
-	index, ok, err := read[clientIndex](tx, clientIndexKey(clientID))
+	index, ok, err := storage.Read[clientIndex](tx, clientIndexKey(clientID))
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +346,7 @@ func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, e
 	}
 
 	scope := request.Scope{AccountID: index.Account, Region: index.Region}
-	p, ok, err := read[pool](tx, poolKey(scope, index.Pool))
+	p, ok, err := storage.Read[pool](tx, poolKey(scope, index.Pool))
 	if err != nil || !ok || len(p.Key) == 0 {
 		return nil, errors.Join(err, invalid)
 	}
@@ -363,12 +364,12 @@ func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, e
 		return nil, notAuthorized("Access Token has expired")
 	}
 
-	c, ok, err := read[client](tx, clientKey(scope, p.ID, clientID))
+	c, ok, err := storage.Read[client](tx, clientKey(scope, p.ID, clientID))
 	if err != nil || !ok {
 		return nil, errors.Join(err, invalid)
 	}
 
-	u, ok, err := read[user](tx, userKey(scope, p, username))
+	u, ok, err := storage.Read[user](tx, userKey(scope, p, username))
 	switch {
 	case err != nil:
 		return nil, err
@@ -401,7 +402,7 @@ func (s *Service) Documents(ctx context.Context, id, name, endpoint string) (doc
 		}
 
 		scope := request.Scope{AccountID: string(account), Region: region}
-		p, _, readErr := read[pool](tx, poolKey(scope, id))
+		p, _, readErr := storage.Read[pool](tx, poolKey(scope, id))
 		return scope, p, readErr
 	}
 
@@ -434,7 +435,7 @@ func (s *Service) Documents(ctx context.Context, id, name, endpoint string) (doc
 
 			key = &private.PublicKey
 			if created {
-				return write(tx, poolKey(scope, id), p)
+				return storage.Write(tx, poolKey(scope, id), p)
 			}
 
 			return nil
@@ -495,7 +496,10 @@ func (s *Service) Verify(ctx context.Context, poolID, token string) (map[string]
 			return ErrInvalidToken
 		}
 
-		p, found, readErr := read[pool](tx, poolKey(request.Scope{AccountID: string(account), Region: region}, poolID))
+		p, found, readErr := storage.Read[pool](
+			tx,
+			poolKey(request.Scope{AccountID: string(account), Region: region}, poolID),
+		)
 		if readErr != nil || !found || len(p.Key) == 0 {
 			return errors.Join(readErr, ErrInvalidToken)
 		}

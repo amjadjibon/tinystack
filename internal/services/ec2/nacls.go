@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -57,7 +58,7 @@ type aclEntry struct {
 func aclNotFound(id string) error { return notFound("InvalidNetworkAclID.NotFound", "networkAcl", id) }
 
 func loadACL(tx storage.ReadTx, scope request.Scope, id string) (*networkACL, error) {
-	acl, ok, err := read[networkACL](tx, key(scope, kindNetworkACL, id))
+	acl, ok, err := storage.Read[networkACL](tx, key(scope, kindNetworkACL, id))
 	if err == nil && !ok {
 		err = aclNotFound(id)
 	}
@@ -98,7 +99,7 @@ func createDefaultACL(tx storage.WriteTx, scope request.Scope, vpcID string, sub
 		acl.Associations = append(acl.Associations, aclAssociation{ID: newID("aclassoc"), SubnetID: id})
 	}
 
-	return write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+	return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
 }
 
 // associateDefaultACL associates a new subnet with its VPC's default ACL.
@@ -111,7 +112,7 @@ func associateDefaultACL(tx storage.WriteTx, scope request.Scope, sn *subnet) er
 	for _, acl := range acls {
 		if acl.Default {
 			acl.Associations = append(acl.Associations, aclAssociation{ID: newID("aclassoc"), SubnetID: sn.ID})
-			return write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+			return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
 		}
 	}
 
@@ -129,7 +130,7 @@ func dissociateACL(tx storage.WriteTx, scope request.Scope, sn *subnet) error {
 		at := slices.IndexFunc(acl.Associations, func(a aclAssociation) bool { return a.SubnetID == sn.ID })
 		if at >= 0 {
 			acl.Associations = slices.Delete(acl.Associations, at, at+1)
-			return write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+			return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
 		}
 	}
 
@@ -210,9 +211,9 @@ func (s *Service) CreateNetworkAcl(
 	}
 
 	var out api.NetworkAcl
-	token := value(in.ClientToken)
+	token := common.Value(in.ClientToken)
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		v, loadErr := loadVPC(tx, scope, value(in.VpcId))
+		v, loadErr := loadVPC(tx, scope, common.Value(in.VpcId))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -232,7 +233,7 @@ func (s *Service) CreateNetworkAcl(
 		acl := newACL(v.ID, false)
 		acl.Tags, acl.ClientToken = tags, token
 		out = aclOutput(scope, acl)
-		return write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+		return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
 	})
 	if err != nil {
 		return nil, err
@@ -248,7 +249,7 @@ func (s *Service) DeleteNetworkAcl(
 	in *api.DeleteNetworkAclRequest,
 ) (*api.DeleteNetworkAclOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		acl, err := loadACL(tx, scope, value(in.NetworkAclId))
+		acl, err := loadACL(tx, scope, common.Value(in.NetworkAclId))
 		if err != nil {
 			return err
 		}
@@ -404,7 +405,7 @@ func (s *Service) changeEntry(
 				return 1
 			}
 		})
-		return write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+		return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
 	})
 }
 
@@ -418,14 +419,14 @@ func (s *Service) CreateNetworkAclEntry(
 	in *api.CreateNetworkAclEntryRequest,
 ) (*api.CreateNetworkAclEntryOutput, error) {
 	e, err := (&aclRule{
-		ports: in.PortRange, icmp: in.IcmpTypeCode, cidr: value(in.CidrBlock), protocol: value(in.Protocol),
-		action: value(in.RuleAction), number: value(in.RuleNumber), egress: value(in.Egress),
+		ports: in.PortRange, icmp: in.IcmpTypeCode, cidr: common.Value(in.CidrBlock), protocol: common.Value(in.Protocol),
+		action: common.Value(in.RuleAction), number: common.Value(in.RuleNumber), egress: common.Value(in.Egress),
 	}).entry()
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.changeEntry(ctx, in.DryRun, value(in.NetworkAclId), e.Number, e.Egress,
+	err = s.changeEntry(ctx, in.DryRun, common.Value(in.NetworkAclId), e.Number, e.Egress,
 		func(acl *networkACL, at int) error {
 			if at >= 0 {
 				return awserror.New("NetworkAclEntryAlreadyExists",
@@ -447,14 +448,14 @@ func (s *Service) ReplaceNetworkAclEntry(
 	in *api.ReplaceNetworkAclEntryRequest,
 ) (*api.ReplaceNetworkAclEntryOutput, error) {
 	e, err := (&aclRule{
-		ports: in.PortRange, icmp: in.IcmpTypeCode, cidr: value(in.CidrBlock), protocol: value(in.Protocol),
-		action: value(in.RuleAction), number: value(in.RuleNumber), egress: value(in.Egress),
+		ports: in.PortRange, icmp: in.IcmpTypeCode, cidr: common.Value(in.CidrBlock), protocol: common.Value(in.Protocol),
+		action: common.Value(in.RuleAction), number: common.Value(in.RuleNumber), egress: common.Value(in.Egress),
 	}).entry()
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.changeEntry(ctx, in.DryRun, value(in.NetworkAclId), e.Number, e.Egress,
+	err = s.changeEntry(ctx, in.DryRun, common.Value(in.NetworkAclId), e.Number, e.Egress,
 		func(acl *networkACL, at int) error {
 			if at < 0 {
 				return entryNotFound(e.Number)
@@ -474,8 +475,8 @@ func (s *Service) DeleteNetworkAclEntry(
 	ctx context.Context,
 	in *api.DeleteNetworkAclEntryRequest,
 ) (*api.DeleteNetworkAclEntryOutput, error) {
-	number := value(in.RuleNumber)
-	err := s.changeEntry(ctx, in.DryRun, value(in.NetworkAclId), number, value(in.Egress),
+	number := common.Value(in.RuleNumber)
+	err := s.changeEntry(ctx, in.DryRun, common.Value(in.NetworkAclId), number, common.Value(in.Egress),
 		func(acl *networkACL, at int) error {
 			switch {
 			case number == lastRule:
@@ -503,7 +504,7 @@ func (s *Service) ReplaceNetworkAclAssociation(
 ) (*api.ReplaceNetworkAclAssociationResult, error) {
 	moved := aclAssociation{ID: newID("aclassoc")}
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		to, err := loadACL(tx, scope, value(in.NetworkAclId))
+		to, err := loadACL(tx, scope, common.Value(in.NetworkAclId))
 		if err != nil {
 			return err
 		}
@@ -513,7 +514,7 @@ func (s *Service) ReplaceNetworkAclAssociation(
 			return err
 		}
 
-		id := value(in.AssociationId)
+		id := common.Value(in.AssociationId)
 		for _, from := range all {
 			at := slices.IndexFunc(from.Associations, func(a aclAssociation) bool { return a.ID == id })
 			if at < 0 {
@@ -526,7 +527,7 @@ func (s *Service) ReplaceNetworkAclAssociation(
 
 			moved.SubnetID = from.Associations[at].SubnetID
 			from.Associations = slices.Delete(from.Associations, at, at+1)
-			if writeErr := write(tx, key(scope, kindNetworkACL, from.ID), from); writeErr != nil {
+			if writeErr := storage.Write(tx, key(scope, kindNetworkACL, from.ID), from); writeErr != nil {
 				return writeErr
 			}
 
@@ -537,7 +538,7 @@ func (s *Service) ReplaceNetworkAclAssociation(
 			}
 
 			to.Associations = append(to.Associations, moved)
-			return write(tx, key(scope, kindNetworkACL, to.ID), to)
+			return storage.Write(tx, key(scope, kindNetworkACL, to.ID), to)
 		}
 
 		return associationNotFound(id)

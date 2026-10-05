@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -48,7 +49,7 @@ func (s *Service) CreateOriginAccessControl(
 		return nil, invalidArgument("OriginAccessControlConfig is required")
 	}
 
-	name := value(in.OriginAccessControlConfig.Name)
+	name := common.Value(in.OriginAccessControlConfig.Name)
 	if name == "" {
 		return nil, invalidArgument("Name is required")
 	}
@@ -78,7 +79,7 @@ func (s *Service) CreateOriginAccessControl(
 			ETag: etag,
 		}
 
-		if writeErr := write(tx, key(m.AccountID, kindOAC, id), rec); writeErr != nil {
+		if writeErr := storage.Write(tx, key(m.AccountID, kindOAC, id), rec); writeErr != nil {
 			return writeErr
 		}
 		tx.Put(key(m.AccountID, kindOACName, name), []byte(id))
@@ -90,7 +91,7 @@ func (s *Service) CreateOriginAccessControl(
 		return nil, err
 	}
 
-	loc := oacLocation(value(created.OAC.Id))
+	loc := oacLocation(common.Value(created.OAC.Id))
 	return &api.CreateOriginAccessControlResult{
 		OriginAccessControl: created.OAC,
 		ETag:                &created.ETag,
@@ -106,14 +107,14 @@ func (s *Service) GetOriginAccessControl(
 		return nil, err
 	}
 
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchOriginAccessControl("")
 	}
 
 	var rec *oacRecord
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, found, readErr := read[oacRecord](tx, key(m.AccountID, kindOAC, id))
+		r, found, readErr := storage.Read[oacRecord](tx, key(m.AccountID, kindOAC, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -141,14 +142,14 @@ func (s *Service) GetOriginAccessControlConfig(
 		return nil, err
 	}
 
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchOriginAccessControl("")
 	}
 
 	var rec *oacRecord
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, found, readErr := read[oacRecord](tx, key(m.AccountID, kindOAC, id))
+		r, found, readErr := storage.Read[oacRecord](tx, key(m.AccountID, kindOAC, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -181,7 +182,7 @@ func (s *Service) UpdateOriginAccessControl(
 		return nil, err
 	}
 
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchOriginAccessControl("")
 	}
@@ -189,14 +190,14 @@ func (s *Service) UpdateOriginAccessControl(
 		return nil, invalidArgument("OriginAccessControlConfig is required")
 	}
 
-	newName := value(in.OriginAccessControlConfig.Name)
+	newName := common.Value(in.OriginAccessControlConfig.Name)
 	if newName == "" {
 		return nil, invalidArgument("Name is required")
 	}
 
 	var updated *oacRecord
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		rec, found, readErr := read[oacRecord](tx, key(m.AccountID, kindOAC, id))
+		rec, found, readErr := storage.Read[oacRecord](tx, key(m.AccountID, kindOAC, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -210,7 +211,7 @@ func (s *Service) UpdateOriginAccessControl(
 
 		oldName := ""
 		if rec.OAC != nil && rec.OAC.OriginAccessControlConfig != nil {
-			oldName = value(rec.OAC.OriginAccessControlConfig.Name)
+			oldName = common.Value(rec.OAC.OriginAccessControlConfig.Name)
 		}
 
 		if oldName != newName {
@@ -227,7 +228,7 @@ func (s *Service) UpdateOriginAccessControl(
 		rec.ETag = newID("E")
 		rec.OAC.OriginAccessControlConfig = in.OriginAccessControlConfig
 
-		if writeErr := write(tx, key(m.AccountID, kindOAC, id), rec); writeErr != nil {
+		if writeErr := storage.Write(tx, key(m.AccountID, kindOAC, id), rec); writeErr != nil {
 			return writeErr
 		}
 		updated = rec
@@ -251,13 +252,13 @@ func (s *Service) DeleteOriginAccessControl(
 		return nil, err
 	}
 
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchOriginAccessControl("")
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		rec, found, readErr := read[oacRecord](tx, key(m.AccountID, kindOAC, id))
+		rec, found, readErr := storage.Read[oacRecord](tx, key(m.AccountID, kindOAC, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -276,14 +277,14 @@ func (s *Service) DeleteOriginAccessControl(
 			if len(parts) != 4 {
 				continue
 			}
-			dRec, dFound, dErr := read[distributionRecord](tx, k)
+			dRec, dFound, dErr := storage.Read[distributionRecord](tx, k)
 			if dErr != nil {
 				return dErr
 			}
 			if dFound && dRec.Distribution != nil && dRec.Distribution.DistributionConfig != nil &&
 				dRec.Distribution.DistributionConfig.Origins != nil {
 				for _, orig := range dRec.Distribution.DistributionConfig.Origins.Items {
-					if value(orig.OriginAccessControlId) == id {
+					if common.Value(orig.OriginAccessControlId) == id {
 						return originAccessControlInUse()
 					}
 				}
@@ -292,7 +293,7 @@ func (s *Service) DeleteOriginAccessControl(
 
 		tx.Delete(key(m.AccountID, kindOAC, id))
 		if rec.OAC != nil && rec.OAC.OriginAccessControlConfig != nil {
-			tx.Delete(key(m.AccountID, kindOACName, value(rec.OAC.OriginAccessControlConfig.Name)))
+			tx.Delete(key(m.AccountID, kindOACName, common.Value(rec.OAC.OriginAccessControlConfig.Name)))
 		}
 
 		return nil
@@ -319,7 +320,7 @@ func (s *Service) ListOriginAccessControls(
 		slices.Sort(keys)
 
 		for _, k := range keys {
-			rec, found, readErr := read[oacRecord](tx, k)
+			rec, found, readErr := storage.Read[oacRecord](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -346,7 +347,7 @@ func (s *Service) ListOriginAccessControls(
 	start := 0
 	if marker != "" {
 		for i := range items {
-			if value(items[i].Id) > marker {
+			if common.Value(items[i].Id) > marker {
 				start = i
 				break
 			}

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -69,7 +70,7 @@ func toSummary(rec *distributionRecord) api.DistributionSummary {
 func (s *Service) createDistribution(
 	ctx context.Context, account string, cfg *api.DistributionConfig, tags map[string]string,
 ) (*api.CreateDistributionResult, error) {
-	ref := value(cfg.CallerReference)
+	ref := common.Value(cfg.CallerReference)
 	if ref == "" {
 		return nil, invalidArgument("CallerReference is required")
 	}
@@ -129,7 +130,7 @@ func (s *Service) createDistribution(
 			ETag:         etag,
 		}
 
-		if writeErr := write(tx, key(account, kindDistribution, id), rec); writeErr != nil {
+		if writeErr := storage.Write(tx, key(account, kindDistribution, id), rec); writeErr != nil {
 			return writeErr
 		}
 		tx.Put(key(account, kindReference, ref), []byte(id))
@@ -147,7 +148,7 @@ func (s *Service) createDistribution(
 		return nil, err
 	}
 
-	location := "https://cloudfront.amazonaws.com/2020-05-31/distribution/" + value(created.Distribution.Id)
+	location := "https://cloudfront.amazonaws.com/2020-05-31/distribution/" + common.Value(created.Distribution.Id)
 	return &api.CreateDistributionResult{
 		Distribution: created.Distribution,
 		ETag:         &created.ETag,
@@ -203,14 +204,14 @@ func (s *Service) GetDistribution(
 		return nil, err
 	}
 
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchDistribution("")
 	}
 
 	var rec *distributionRecord
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, found, readErr := read[distributionRecord](tx, key(m.AccountID, kindDistribution, id))
+		r, found, readErr := storage.Read[distributionRecord](tx, key(m.AccountID, kindDistribution, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -238,14 +239,14 @@ func (s *Service) GetDistributionConfig(
 		return nil, err
 	}
 
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchDistribution("")
 	}
 
 	var rec *distributionRecord
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, found, readErr := read[distributionRecord](tx, key(m.AccountID, kindDistribution, id))
+		r, found, readErr := storage.Read[distributionRecord](tx, key(m.AccountID, kindDistribution, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -273,7 +274,7 @@ func (s *Service) UpdateDistribution(
 		return nil, err
 	}
 
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchDistribution("")
 	}
@@ -283,7 +284,7 @@ func (s *Service) UpdateDistribution(
 
 	var updated *distributionRecord
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		rec, found, readErr := read[distributionRecord](tx, key(m.AccountID, kindDistribution, id))
+		rec, found, readErr := storage.Read[distributionRecord](tx, key(m.AccountID, kindDistribution, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -331,7 +332,7 @@ func (s *Service) UpdateDistribution(
 		rec.Distribution.DistributionConfig = in.DistributionConfig
 		rec.Distribution.LastModifiedTime = &now
 
-		if writeErr := write(tx, key(m.AccountID, kindDistribution, id), rec); writeErr != nil {
+		if writeErr := storage.Write(tx, key(m.AccountID, kindDistribution, id), rec); writeErr != nil {
 			return writeErr
 		}
 		updated = rec
@@ -355,13 +356,13 @@ func (s *Service) DeleteDistribution(
 		return nil, err
 	}
 
-	id := value(in.Id)
+	id := common.Value(in.Id)
 	if id == "" {
 		return nil, noSuchDistribution("")
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		rec, found, readErr := read[distributionRecord](tx, key(m.AccountID, kindDistribution, id))
+		rec, found, readErr := storage.Read[distributionRecord](tx, key(m.AccountID, kindDistribution, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -414,7 +415,7 @@ func (s *Service) ListDistributions(
 		slices.Sort(keys)
 
 		for _, k := range keys {
-			rec, found, readErr := read[distributionRecord](tx, k)
+			rec, found, readErr := storage.Read[distributionRecord](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -441,7 +442,7 @@ func (s *Service) ListDistributions(
 	start := 0
 	if marker != "" {
 		for i := range items {
-			if value(items[i].Id) > marker {
+			if common.Value(items[i].Id) > marker {
 				start = i
 				break
 			}

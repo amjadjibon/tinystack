@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -42,37 +43,37 @@ var methods = map[string]bool{
 // checkIntegration validates an integration of an HTTP API: a Lambda proxy
 // (payload format 1.0 or 2.0) or an HTTP proxy (1.0) over the internet.
 func checkIntegration(i *api.Integration) error {
-	switch value(i.IntegrationType) {
+	switch common.Value(i.IntegrationType) {
 	case typeLambda:
-		if !isFunction(value(i.IntegrationUri)) {
+		if !isFunction(common.Value(i.IntegrationUri)) {
 			return badRequest("IntegrationUri of an AWS_PROXY integration must be a Lambda function ARN or its " +
 				"invocation URI.")
 		}
 
-		if p := value(i.PayloadFormatVersion); p != payload1 && p != payload2 {
+		if p := common.Value(i.PayloadFormatVersion); p != payload1 && p != payload2 {
 			return badRequest("PayloadFormatVersion must be 1.0 or 2.0.")
 		}
 	case typeHTTP:
-		if !isURL(value(i.IntegrationUri)) {
+		if !isURL(common.Value(i.IntegrationUri)) {
 			return badRequest("IntegrationUri of an HTTP_PROXY integration must be an HTTP URL.")
 		}
 
-		if !methods[value(i.IntegrationMethod)] {
+		if !methods[common.Value(i.IntegrationMethod)] {
 			return badRequest("IntegrationMethod of an HTTP_PROXY integration must be an HTTP method or ANY.")
 		}
 
-		if value(i.PayloadFormatVersion) != payload1 {
+		if common.Value(i.PayloadFormatVersion) != payload1 {
 			return badRequest("PayloadFormatVersion of an HTTP_PROXY integration must be 1.0.")
 		}
 	default:
 		return badRequest("TinyStack supports AWS_PROXY and HTTP_PROXY integrations for HTTP APIs.")
 	}
 
-	if value(i.ConnectionType) != connectionInternet {
+	if common.Value(i.ConnectionType) != connectionInternet {
 		return badRequest("TinyStack supports INTERNET connections only.")
 	}
 
-	if t := value(i.TimeoutInMillis); t < minTimeout || t > maxTimeout {
+	if t := common.Value(i.TimeoutInMillis); t < minTimeout || t > maxTimeout {
 		return badRequest("TimeoutInMillis must be between %d and %d.", minTimeout, maxTimeout)
 	}
 
@@ -89,13 +90,13 @@ func (s *Service) CreateIntegration(
 	}
 
 	i := &api.Integration{
-		IntegrationId: new(newID(7)), IntegrationType: in.IntegrationType, IntegrationUri: in.IntegrationUri,
+		IntegrationId: new(common.RandomID(7)), IntegrationType: in.IntegrationType, IntegrationUri: in.IntegrationUri,
 		IntegrationMethod: in.IntegrationMethod, Description: in.Description,
-		ConnectionType:       orElse(in.ConnectionType, new(connectionInternet)),
-		TimeoutInMillis:      orElse(in.TimeoutInMillis, new(int64(maxTimeout))),
-		PayloadFormatVersion: orElse(in.PayloadFormatVersion, new(payload1)),
+		ConnectionType:       common.OrElse(in.ConnectionType, new(connectionInternet)),
+		TimeoutInMillis:      common.OrElse(in.TimeoutInMillis, new(int64(maxTimeout))),
+		PayloadFormatVersion: common.OrElse(in.PayloadFormatVersion, new(payload1)),
 	}
-	if value(i.IntegrationType) == typeLambda && i.IntegrationMethod == nil {
+	if common.Value(i.IntegrationType) == typeLambda && i.IntegrationMethod == nil {
 		i.IntegrationMethod = new("POST")
 	}
 
@@ -109,7 +110,11 @@ func (s *Service) CreateIntegration(
 			return loadErr
 		}
 
-		if writeErr := write(tx, owned(m.Scope, kindIntegration, *a.ApiId, *i.IntegrationId), i); writeErr != nil {
+		if writeErr := storage.Write(
+			tx,
+			owned(m.Scope, kindIntegration, *a.ApiId, *i.IntegrationId),
+			i,
+		); writeErr != nil {
 			return writeErr
 		}
 
@@ -142,10 +147,10 @@ func (s *Service) changeIntegration(
 			return loadErr
 		}
 
-		key := owned(m.Scope, kindIntegration, *a.ApiId, value(id))
+		key := owned(m.Scope, kindIntegration, *a.ApiId, common.Value(id))
 		var found bool
-		if i, found, loadErr = read[api.Integration](tx, key); loadErr != nil || !found {
-			return errorsOr(loadErr, notFound("Invalid Integration identifier specified %s", value(id)))
+		if i, found, loadErr = storage.Read[api.Integration](tx, key); loadErr != nil || !found {
+			return common.ErrorsOr(loadErr, notFound("Invalid Integration identifier specified %s", common.Value(id)))
 		}
 
 		keep, fnErr := fn(tx, m.Scope, i)
@@ -154,7 +159,7 @@ func (s *Service) changeIntegration(
 		}
 
 		if keep {
-			if writeErr := write(tx, key, i); writeErr != nil {
+			if writeErr := storage.Write(tx, key, i); writeErr != nil {
 				return writeErr
 			}
 		} else {
@@ -187,10 +192,10 @@ func (s *Service) GetIntegration(
 		}
 
 		var found bool
-		i, found, loadErr = read[api.Integration](tx, owned(m.Scope, kindIntegration, *a.ApiId,
-			value(in.IntegrationId)))
-		return errorsOr(loadErr, notFoundIf(!found, "Invalid Integration identifier specified %s",
-			value(in.IntegrationId)))
+		i, found, loadErr = storage.Read[api.Integration](tx, owned(m.Scope, kindIntegration, *a.ApiId,
+			common.Value(in.IntegrationId)))
+		return common.ErrorsOr(loadErr, notFoundIf(!found, "Invalid Integration identifier specified %s",
+			common.Value(in.IntegrationId)))
 	})
 	if err != nil {
 		return nil, err
@@ -216,7 +221,7 @@ func (s *Service) GetIntegrations(
 			return loadErr
 		}
 
-		all, readErr := records[api.Integration](tx, prefix(m.Scope, kindIntegration)+*a.ApiId+"/")
+		all, readErr := storage.Records[api.Integration](tx, prefix(m.Scope, kindIntegration)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -244,13 +249,18 @@ func (s *Service) UpdateIntegration(
 ) (*api.UpdateIntegrationResult, error) {
 	i, err := s.changeIntegration(ctx, in.ApiId, in.IntegrationId,
 		func(_ storage.WriteTx, _ request.Scope, i *api.Integration) (bool, error) {
-			i.IntegrationType = orElse(in.IntegrationType, i.IntegrationType)
-			i.IntegrationUri = orElse(in.IntegrationUri, i.IntegrationUri)
-			i.IntegrationMethod = orElse(in.IntegrationMethod, i.IntegrationMethod)
-			i.Description, i.ConnectionType = orElse(in.Description, i.Description), orElse(in.ConnectionType,
-				i.ConnectionType)
-			i.TimeoutInMillis = orElse(in.TimeoutInMillis, i.TimeoutInMillis)
-			i.PayloadFormatVersion = orElse(in.PayloadFormatVersion, i.PayloadFormatVersion)
+			i.IntegrationType = common.OrElse(in.IntegrationType, i.IntegrationType)
+			i.IntegrationUri = common.OrElse(in.IntegrationUri, i.IntegrationUri)
+			i.IntegrationMethod = common.OrElse(in.IntegrationMethod, i.IntegrationMethod)
+			i.Description, i.ConnectionType = common.OrElse(
+				in.Description,
+				i.Description,
+			), common.OrElse(
+				in.ConnectionType,
+				i.ConnectionType,
+			)
+			i.TimeoutInMillis = common.OrElse(in.TimeoutInMillis, i.TimeoutInMillis)
+			i.PayloadFormatVersion = common.OrElse(in.PayloadFormatVersion, i.PayloadFormatVersion)
 			return true, checkIntegration(i)
 		})
 	if err != nil {
@@ -267,8 +277,8 @@ func (s *Service) DeleteIntegration(
 ) (*api.DeleteIntegrationOutput, error) {
 	_, err := s.changeIntegration(ctx, in.ApiId, in.IntegrationId,
 		func(tx storage.WriteTx, scope request.Scope, i *api.Integration) (bool, error) {
-			used, usedErr := routesUsing(tx, scope, value(in.ApiId), *i.IntegrationId,
-				func(r *api.Route) string { return integrationID(value(r.Target)) })
+			used, usedErr := routesUsing(tx, scope, common.Value(in.ApiId), *i.IntegrationId,
+				func(r *api.Route) string { return integrationID(common.Value(r.Target)) })
 			if usedErr != nil {
 				return false, usedErr
 			}

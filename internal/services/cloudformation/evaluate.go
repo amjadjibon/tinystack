@@ -11,6 +11,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // noValue is what Ref AWS::NoValue evaluates to: the property or list
@@ -550,12 +551,12 @@ func resolveParameters(
 ) ([]parameter, error) {
 	values := map[string]string{}
 	for _, p := range given {
-		k := value(p.ParameterKey)
+		k := common.Value(p.ParameterKey)
 		if _, ok := t.Parameters[k]; !ok {
 			return nil, validation("Parameters: [%s] do not exist in the template", k)
 		}
 
-		if value(p.UsePreviousValue) {
+		if common.Value(p.UsePreviousValue) {
 			i := slices.IndexFunc(previous, func(old parameter) bool { return old.Key == k })
 			if i < 0 {
 				return nil, validation(
@@ -569,7 +570,7 @@ func resolveParameters(
 			continue
 		}
 
-		values[k] = value(p.ParameterValue)
+		values[k] = common.Value(p.ParameterValue)
 	}
 
 	var missing []string

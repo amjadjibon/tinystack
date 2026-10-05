@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -20,7 +21,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			st, _, err := read[deliveryStream](tx, key)
+			st, _, err := storage.Read[deliveryStream](tx, key)
 			if err != nil {
 				return err
 			}
@@ -30,7 +31,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				Type: "delivery-stream", Account: account, Region: region, Name: st.Name,
 				ARN: streamARN(scope, st.Name), Tags: st.Tags,
 				Details: map[string]any{
-					"Type": st.Type, "Bucket": value(st.Destination.BucketARN),
+					"Type": st.Type, "Bucket": common.Value(st.Destination.BucketARN),
 					"Buffered": len(tx.Keys(bufferPrefix(scope, st.Name))),
 				},
 			})

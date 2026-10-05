@@ -10,6 +10,7 @@ import (
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const (
@@ -108,7 +109,7 @@ func (t *topic) place(e *api.PublishBatchRequestEntry, id string, now time.Time)
 		return nil, nil //nolint:nilnil // a standard topic's message has no place
 	}
 
-	group, dedup := value(e.MessageGroupId), value(e.MessageDeduplicationId)
+	group, dedup := common.Value(e.MessageGroupId), common.Value(e.MessageDeduplicationId)
 	switch {
 	case !fifoID.MatchString(group):
 		return nil, invalid("The MessageGroupId parameter is required for FIFO topics")
@@ -118,7 +119,7 @@ func (t *topic) place(e *api.PublishBatchRequestEntry, id string, now time.Time)
 		return nil, invalid("The topic should either have ContentBasedDeduplication enabled or " +
 			"MessageDeduplicationId provided explicitly")
 	case e.MessageDeduplicationId == nil:
-		sum := sha256.Sum256([]byte(value(e.Message)))
+		sum := sha256.Sum256([]byte(common.Value(e.Message)))
 		dedup = hex.EncodeToString(sum[:])
 	}
 

@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -56,10 +57,10 @@ func TestScheduledRules(t *testing.T) {
 		var times []string
 		for _, m := range out.Messages {
 			var e event
-			if decodeErr := json.Unmarshal([]byte(value(m.Body)), &e); decodeErr != nil ||
+			if decodeErr := json.Unmarshal([]byte(common.Value(m.Body)), &e); decodeErr != nil ||
 				e.DetailType != "Scheduled Event" || e.Source != "aws.events" || string(e.Detail) != "{}" ||
 				len(e.Resources) != 1 || e.Resources[0] != "arn:aws:events:us-east-1:000000000000:rule/tick" {
-				t.Fatalf("event %s: %v", value(m.Body), decodeErr)
+				t.Fatalf("event %s: %v", common.Value(m.Body), decodeErr)
 			}
 
 			times = append(times, e.Time)

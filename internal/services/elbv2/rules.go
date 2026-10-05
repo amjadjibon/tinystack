@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -60,7 +61,7 @@ func findRule(tx storage.ReadTx, scope request.Scope, arnValue string) (*listene
 		return nil, nil, validation("'%s' is not a valid rule ARN", arnValue)
 	}
 
-	l, found, err := read[listener](tx, key(scope, kindListener, parts[1]+"/"+parts[3]))
+	l, found, err := storage.Read[listener](tx, key(scope, kindListener, parts[1]+"/"+parts[3]))
 	switch {
 	case err != nil:
 		return nil, nil, err
@@ -70,7 +71,7 @@ func findRule(tx storage.ReadTx, scope request.Scope, arnValue string) (*listene
 		return l, nil, nil
 	}
 
-	r, found, err := read[rule](tx, key(scope, kindRule, l.ID+"/"+parts[4]))
+	r, found, err := storage.Read[rule](tx, key(scope, kindRule, l.ID+"/"+parts[4]))
 	switch {
 	case err != nil:
 		return nil, nil, err
@@ -84,7 +85,7 @@ func findRule(tx storage.ReadTx, scope request.Scope, arnValue string) (*listene
 // listenerRules returns a listener's rules in priority order, its default
 // rule last.
 func listenerRules(tx storage.ReadTx, scope request.Scope, l *listener) ([]api.Rule, error) {
-	rules, err := list[rule](tx, key(scope, kindRule, l.ID+"/"))
+	rules, err := storage.Records[rule](tx, key(scope, kindRule, l.ID+"/"))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func checkConditions(conditions []api.RuleCondition) ([]api.RuleCondition, error
 	count := 0
 	out := make([]api.RuleCondition, len(conditions))
 	for i, c := range conditions {
-		field := value(c.Field)
+		field := common.Value(c.Field)
 		configs := 0
 		for _, set := range []bool{
 			c.HostHeaderConfig != nil, c.PathPatternConfig != nil, c.HttpHeaderConfig != nil,
@@ -169,7 +170,7 @@ func checkConditions(conditions []api.RuleCondition) ([]api.RuleCondition, error
 			}
 		case fieldHeader:
 			h := c.HttpHeaderConfig
-			if h == nil || value(h.HttpHeaderName) == "" || len(value(h.HttpHeaderName)) > 40 {
+			if h == nil || common.Value(h.HttpHeaderName) == "" || len(common.Value(h.HttpHeaderName)) > 40 {
 				return nil, validation("An http-header condition needs an HttpHeaderConfig with a header name")
 			}
 
@@ -192,11 +193,11 @@ func checkConditions(conditions []api.RuleCondition) ([]api.RuleCondition, error
 
 			next.QueryStringConfig = c.QueryStringConfig
 			for _, p := range c.QueryStringConfig.Values {
-				if value(p.Value) == "" {
+				if common.Value(p.Value) == "" {
 					return nil, validation("Each query-string condition pair needs a value")
 				}
 
-				values = append(values, value(p.Value))
+				values = append(values, common.Value(p.Value))
 			}
 		case fieldSourceIP:
 			if c.SourceIpConfig == nil {
@@ -246,7 +247,7 @@ func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api
 		return nil, err
 	}
 
-	priority := value(in.Priority)
+	priority := common.Value(in.Priority)
 	if checkErr := checkPriority(priority); checkErr != nil {
 		return nil, checkErr
 	}
@@ -263,12 +264,12 @@ func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api
 
 	var r *rule
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		l, findErr := findListener(tx, m.Scope, value(in.ListenerArn))
+		l, findErr := findListener(tx, m.Scope, common.Value(in.ListenerArn))
 		if findErr != nil {
 			return findErr
 		}
 
-		b, found, readErr := read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
+		b, found, readErr := storage.Read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -278,12 +279,12 @@ func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api
 			return validation("Rules are only supported by application load balancer listeners")
 		}
 
-		actions, actionsErr := checkActions(tx, m.Scope, b, value(l.L.Protocol), in.Actions)
+		actions, actionsErr := checkActions(tx, m.Scope, b, common.Value(l.L.Protocol), in.Actions)
 		if actionsErr != nil {
 			return actionsErr
 		}
 
-		existing, listErr := list[rule](tx, key(m.Scope, kindRule, l.ID+"/"))
+		existing, listErr := storage.Records[rule](tx, key(m.Scope, kindRule, l.ID+"/"))
 		switch {
 		case listErr != nil:
 			return listErr
@@ -298,7 +299,7 @@ func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api
 			RuleArn: new(l.ruleARN(m.Scope, id)), Priority: new(strconv.FormatInt(priority, 10)),
 			Conditions: conditions, Actions: actions, IsDefault: new(false),
 		}}
-		return write(tx, key(m.Scope, kindRule, l.ID+"/"+id), r)
+		return storage.Write(tx, key(m.Scope, kindRule, l.ID+"/"+id), r)
 	})
 	if err != nil {
 		return nil, err
@@ -348,7 +349,12 @@ func (s *Service) DescribeRules(ctx context.Context, in *api.DescribeRulesInput)
 		return nil, err
 	}
 
-	selected, next, err := page(selected, func(r api.Rule) string { return value(r.RuleArn) }, in.Marker, in.PageSize)
+	selected, next, err := page(
+		selected,
+		func(r api.Rule) string { return common.Value(r.RuleArn) },
+		in.Marker,
+		in.PageSize,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +382,7 @@ func (s *Service) ModifyRule(ctx context.Context, in *api.ModifyRuleInput) (*api
 
 	var r *rule
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		l, found, findErr := findRule(tx, m.Scope, value(in.RuleArn))
+		l, found, findErr := findRule(tx, m.Scope, common.Value(in.RuleArn))
 		switch {
 		case findErr != nil:
 			return findErr
@@ -390,7 +396,7 @@ func (s *Service) ModifyRule(ctx context.Context, in *api.ModifyRuleInput) (*api
 		}
 
 		if in.Actions != nil {
-			b, ok, readErr := read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
+			b, ok, readErr := storage.Read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
 			switch {
 			case readErr != nil:
 				return readErr
@@ -398,7 +404,7 @@ func (s *Service) ModifyRule(ctx context.Context, in *api.ModifyRuleInput) (*api
 				return ruleNotFound()
 			}
 
-			actions, actionsErr := checkActions(tx, m.Scope, b, value(l.L.Protocol), in.Actions)
+			actions, actionsErr := checkActions(tx, m.Scope, b, common.Value(l.L.Protocol), in.Actions)
 			if actionsErr != nil {
 				return actionsErr
 			}
@@ -406,7 +412,7 @@ func (s *Service) ModifyRule(ctx context.Context, in *api.ModifyRuleInput) (*api
 			r.R.Actions = actions
 		}
 
-		return write(tx, key(m.Scope, kindRule, r.Listener+"/"+r.ID), r)
+		return storage.Write(tx, key(m.Scope, kindRule, r.Listener+"/"+r.ID), r)
 	})
 	if err != nil {
 		return nil, err
@@ -422,7 +428,7 @@ func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleInput) (*api
 	}
 
 	return &api.DeleteRuleOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
-		_, r, findErr := findRule(tx, m.Scope, value(in.RuleArn))
+		_, r, findErr := findRule(tx, m.Scope, common.Value(in.RuleArn))
 		switch {
 		case findErr != nil:
 			return findErr
@@ -452,11 +458,11 @@ func (s *Service) SetRulePriorities(
 		changed := map[string]*rule{}
 		var order []string
 		for _, p := range in.RulePriorities {
-			if checkErr := checkPriority(value(p.Priority)); checkErr != nil {
+			if checkErr := checkPriority(common.Value(p.Priority)); checkErr != nil {
 				return checkErr
 			}
 
-			_, r, findErr := findRule(tx, m.Scope, value(p.RuleArn))
+			_, r, findErr := findRule(tx, m.Scope, common.Value(p.RuleArn))
 			switch {
 			case findErr != nil:
 				return findErr
@@ -470,16 +476,16 @@ func (s *Service) SetRulePriorities(
 				order = append(order, r.ID)
 			}
 
-			r.Priority = value(p.Priority)
+			r.Priority = common.Value(p.Priority)
 			r.R.Priority = new(strconv.FormatInt(r.Priority, 10))
 			changed[r.ID] = r
-			if writeErr := write(tx, key(m.Scope, kindRule, r.Listener+"/"+r.ID), r); writeErr != nil {
+			if writeErr := storage.Write(tx, key(m.Scope, kindRule, r.Listener+"/"+r.ID), r); writeErr != nil {
 				return writeErr
 			}
 		}
 
 		for _, r := range changed {
-			rules, listErr := list[rule](tx, key(m.Scope, kindRule, r.Listener+"/"))
+			rules, listErr := storage.Records[rule](tx, key(m.Scope, kindRule, r.Listener+"/"))
 			if listErr != nil {
 				return listErr
 			}

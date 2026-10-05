@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -18,15 +19,15 @@ func (s *Service) retag(ctx context.Context, arnString *string, fn func(map[stri
 	}
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		scope, kind, name, ok := parseARN(value(arnString))
+		scope, kind, name, ok := parseARN(common.Value(arnString))
 		if !ok || scope != m.Scope {
-			return invalidARN(value(arnString))
+			return invalidARN(common.Value(arnString))
 		}
 
-		missing := awserror.New("ResourceNotFound", "Resource not found: '"+value(arnString)+"'")
+		missing := awserror.New("ResourceNotFound", "Resource not found: '"+common.Value(arnString)+"'")
 		switch kind {
 		case arnStateMachine:
-			sm, found, readErr := read[stateMachine](tx, machineKey(scope, name))
+			sm, found, readErr := storage.Read[stateMachine](tx, machineKey(scope, name))
 			if readErr != nil || !found {
 				return errorsOr(readErr, missing)
 			}
@@ -35,9 +36,9 @@ func (s *Service) retag(ctx context.Context, arnString *string, fn func(map[stri
 				return checkTags(sm.Tags)
 			}
 
-			return write(tx, machineKey(scope, name), sm)
+			return storage.Write(tx, machineKey(scope, name), sm)
 		case kindActivity:
-			a, found, readErr := read[activity](tx, activityKey(scope, name))
+			a, found, readErr := storage.Read[activity](tx, activityKey(scope, name))
 			if readErr != nil || !found {
 				return errorsOr(readErr, missing)
 			}
@@ -46,7 +47,7 @@ func (s *Service) retag(ctx context.Context, arnString *string, fn func(map[stri
 				return checkTags(a.Tags)
 			}
 
-			return write(tx, activityKey(scope, name), a)
+			return storage.Write(tx, activityKey(scope, name), a)
 		}
 
 		return missing

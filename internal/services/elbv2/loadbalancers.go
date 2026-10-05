@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -50,9 +51,9 @@ type balancer struct {
 	Label string
 }
 
-func (b *balancer) name() string     { return value(b.LB.LoadBalancerName) }
-func (b *balancer) kind() string     { return value(b.LB.Type) }
-func (b *balancer) arnValue() string { return value(b.LB.LoadBalancerArn) }
+func (b *balancer) name() string     { return common.Value(b.LB.LoadBalancerName) }
+func (b *balancer) kind() string     { return common.Value(b.LB.Type) }
+func (b *balancer) arnValue() string { return common.Value(b.LB.LoadBalancerArn) }
 
 // short is the type as ARNs spell it.
 func short(kind string) string {
@@ -74,7 +75,7 @@ func findLB(tx storage.ReadTx, scope request.Scope, arnValue string) (*balancer,
 		return nil, validation("'%s' is not a valid load balancer ARN", arnValue)
 	}
 
-	b, found, err := read[balancer](tx, key(scope, kindLB, parts[1]))
+	b, found, err := storage.Read[balancer](tx, key(scope, kindLB, parts[1]))
 	switch {
 	case err != nil:
 		return nil, err
@@ -107,7 +108,7 @@ func (s *Service) place(ctx context.Context, scope request.Scope, kind string, s
 	mappings []api.SubnetMapping,
 ) (placement, error) {
 	for _, m := range mappings {
-		subnets = append(subnets, value(m.SubnetId))
+		subnets = append(subnets, common.Value(m.SubnetId))
 	}
 
 	if len(subnets) == 0 {
@@ -144,7 +145,7 @@ func (s *Service) place(ctx context.Context, scope request.Scope, kind string, s
 	}
 
 	slices.SortFunc(p.zones, func(a, b api.AvailabilityZone) int {
-		return strings.Compare(value(a.ZoneName), value(b.ZoneName))
+		return strings.Compare(common.Value(a.ZoneName), common.Value(b.ZoneName))
 	})
 	return p, nil
 }
@@ -192,7 +193,7 @@ func (s *Service) CreateLoadBalancer(
 		return nil, err
 	}
 
-	name, kind, scheme := value(in.Name), value(in.Type), value(in.Scheme)
+	name, kind, scheme := common.Value(in.Name), common.Value(in.Type), common.Value(in.Scheme)
 	if kind == "" {
 		kind = typeApplication
 	}
@@ -201,7 +202,7 @@ func (s *Service) CreateLoadBalancer(
 		scheme = schemeInternet
 	}
 
-	addressType := value(in.IpAddressType)
+	addressType := common.Value(in.IpAddressType)
 	if addressType == "" {
 		addressType = ipv4
 	}
@@ -266,11 +267,11 @@ func (s *Service) CreateLoadBalancer(
 		SecurityGroups: groups, IpAddressType: new(addressType),
 	}}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		old, found, readErr := read[balancer](tx, key(m.Scope, kindLB, name))
+		old, found, readErr := storage.Read[balancer](tx, key(m.Scope, kindLB, name))
 		switch {
 		case readErr != nil:
 			return readErr
-		case found && old.kind() == kind && value(old.LB.Scheme) == scheme:
+		case found && old.kind() == kind && common.Value(old.LB.Scheme) == scheme:
 			// Creating a load balancer again with the same settings returns it.
 			b = old
 			return nil
@@ -279,13 +280,13 @@ func (s *Service) CreateLoadBalancer(
 				"' exists, but with different settings")
 		}
 
-		if writeErr := write(tx, dnsPrefix+strings.ToLower(label), dnsEntry{
+		if writeErr := storage.Write(tx, dnsPrefix+strings.ToLower(label), dnsEntry{
 			Account: m.AccountID, Region: m.Region, Name: name,
 		}); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, key(m.Scope, kindLB, name), b)
+		return storage.Write(tx, key(m.Scope, kindLB, name), b)
 	})
 	if err != nil {
 		return nil, err
@@ -304,7 +305,7 @@ func (s *Service) DescribeLoadBalancers(
 
 	var selected []*balancer
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, listErr := list[balancer](tx, key(m.Scope, kindLB, ""))
+		all, listErr := storage.Records[balancer](tx, key(m.Scope, kindLB, ""))
 		if listErr != nil {
 			return listErr
 		}
@@ -358,7 +359,7 @@ func (s *Service) DeleteLoadBalancer(
 	}
 
 	return &api.DeleteLoadBalancerOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
-		b, findErr := findLB(tx, m.Scope, value(in.LoadBalancerArn))
+		b, findErr := findLB(tx, m.Scope, common.Value(in.LoadBalancerArn))
 		switch {
 		case findErr != nil && awserror.From(findErr).Code == "LoadBalancerNotFoundException":
 			return nil
@@ -401,7 +402,7 @@ func (s *Service) changeLB(ctx context.Context, arnValue string, fn func(*balanc
 			return fnErr
 		}
 
-		return write(tx, key(m.Scope, kindLB, b.name()), b)
+		return storage.Write(tx, key(m.Scope, kindLB, b.name()), b)
 	})
 
 	return b, err
@@ -419,7 +420,7 @@ func lbAttributes(b *balancer) []api.LoadBalancerAttribute {
 func (s *Service) DescribeLoadBalancerAttributes(
 	ctx context.Context, in *api.DescribeLoadBalancerAttributesInput,
 ) (*api.DescribeLoadBalancerAttributesOutput, error) {
-	b, err := s.changeLB(ctx, value(in.LoadBalancerArn), func(*balancer) error { return nil })
+	b, err := s.changeLB(ctx, common.Value(in.LoadBalancerArn), func(*balancer) error { return nil })
 	if err != nil {
 		return nil, err
 	}
@@ -432,10 +433,10 @@ func (s *Service) ModifyLoadBalancerAttributes(
 ) (*api.ModifyLoadBalancerAttributesOutput, error) {
 	keys, values := make([]string, len(in.Attributes)), make([]string, len(in.Attributes))
 	for i, a := range in.Attributes {
-		keys[i], values[i] = value(a.Key), value(a.Value)
+		keys[i], values[i] = common.Value(a.Key), common.Value(a.Value)
 	}
 
-	b, err := s.changeLB(ctx, value(in.LoadBalancerArn), func(b *balancer) error {
+	b, err := s.changeLB(ctx, common.Value(in.LoadBalancerArn), func(b *balancer) error {
 		defaults := applicationAttributes
 		if b.kind() == typeNetwork {
 			defaults = networkAttributes
@@ -462,9 +463,9 @@ func (s *Service) SetSecurityGroups(
 
 	var vpc string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		b, findErr := findLB(tx, m.Scope, value(in.LoadBalancerArn))
+		b, findErr := findLB(tx, m.Scope, common.Value(in.LoadBalancerArn))
 		if findErr == nil {
-			vpc = value(b.LB.VpcId)
+			vpc = common.Value(b.LB.VpcId)
 		}
 
 		return findErr
@@ -478,7 +479,7 @@ func (s *Service) SetSecurityGroups(
 		return nil, err
 	}
 
-	if _, err = s.changeLB(ctx, value(in.LoadBalancerArn), func(b *balancer) error {
+	if _, err = s.changeLB(ctx, common.Value(in.LoadBalancerArn), func(b *balancer) error {
 		b.LB.SecurityGroups = groups
 		return nil
 	}); err != nil {
@@ -496,7 +497,7 @@ func (s *Service) SetSubnets(ctx context.Context, in *api.SetSubnetsInput) (*api
 
 	var kind string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		b, findErr := findLB(tx, m.Scope, value(in.LoadBalancerArn))
+		b, findErr := findLB(tx, m.Scope, common.Value(in.LoadBalancerArn))
 		if findErr == nil {
 			kind = b.kind()
 		}
@@ -512,10 +513,10 @@ func (s *Service) SetSubnets(ctx context.Context, in *api.SetSubnetsInput) (*api
 		return nil, err
 	}
 
-	b, err := s.changeLB(ctx, value(in.LoadBalancerArn), func(b *balancer) error {
-		if where.vpc != value(b.LB.VpcId) {
+	b, err := s.changeLB(ctx, common.Value(in.LoadBalancerArn), func(b *balancer) error {
+		if where.vpc != common.Value(b.LB.VpcId) {
 			return awserror.New("InvalidSubnetException", fmt.Sprintf("The subnets must be in VPC '%s'",
-				value(b.LB.VpcId)))
+				common.Value(b.LB.VpcId)))
 		}
 
 		b.LB.AvailabilityZones = where.zones

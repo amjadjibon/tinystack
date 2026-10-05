@@ -14,6 +14,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -237,8 +238,8 @@ func instanceValues(scope request.Scope, i *instance) values {
 	v := values{
 		filterInstanceID: {i.ID}, "instance-state-name": {i.State},
 		"instance-state-code": {strconv.FormatInt(stateCodes[i.State], 10)}, "instance-type": {i.Type},
-		filterImageID: {i.ImageID}, "key-name": {i.KeyName}, filterSubnetID: {value(out.SubnetId)},
-		filterVPCID: {value(out.VpcId)}, filterZone: {i.Zone}, filterPrivateIP: {i.PrivateIP},
+		filterImageID: {i.ImageID}, "key-name": {i.KeyName}, filterSubnetID: {common.Value(out.SubnetId)},
+		filterVPCID: {common.Value(out.VpcId)}, filterZone: {i.Zone}, filterPrivateIP: {i.PrivateIP},
 		"ip-address": {i.PublicIP}, "private-dns-name": {*out.PrivateDnsName}, "dns-name": {*out.PublicDnsName},
 		"reservation-id": {i.Reservation}, "launch-index": {strconv.FormatInt(i.LaunchIndex, 10)},
 		"architecture": {i.Arch}, filterOwnerID: {scope.AccountID}, "client-token": {i.ClientToken},
@@ -280,7 +281,11 @@ type launch struct {
 // checkLaunch validates the parts of a RunInstances request that need no
 // stored state.
 func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
-	l := &launch{min: value(in.MinCount), max: value(in.MaxCount), instanceTyp: value(in.InstanceType)}
+	l := &launch{
+		min:         common.Value(in.MinCount),
+		max:         common.Value(in.MaxCount),
+		instanceTyp: common.Value(in.InstanceType),
+	}
 	if l.min < 1 || l.max < l.min {
 		return nil, invalidParameter("MinCount must be at least 1 and at most MaxCount")
 	}
@@ -290,7 +295,7 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 			"Cannot specify a private IP address when launching more than one instance")
 	}
 
-	img, err := findImage(region, value(in.ImageId))
+	img, err := findImage(region, common.Value(in.ImageId))
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +331,7 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 			"Value (%s) for parameter instanceInitiatedShutdownBehavior is invalid.", l.shutdown))
 	}
 
-	if l.userData = value(in.UserData); l.userData != "" {
+	if l.userData = common.Value(in.UserData); l.userData != "" {
 		decoded, decodeErr := base64.StdEncoding.DecodeString(l.userData)
 		if decodeErr != nil {
 			return nil, invalidParameter("Invalid BASE64 encoding of user data.")
@@ -345,7 +350,7 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 // the default subnet of the Placement zone or of the Region's first zone.
 func launchSubnet(tx storage.ReadTx, scope request.Scope, in *api.RunInstancesRequest) (*subnet, error) {
 	if in.SubnetId != nil {
-		sn, ok, err := read[subnet](tx, key(scope, kindSubnet, *in.SubnetId))
+		sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, *in.SubnetId))
 		if err == nil && !ok {
 			err = subnetNotFound(*in.SubnetId)
 		}
@@ -355,7 +360,11 @@ func launchSubnet(tx storage.ReadTx, scope request.Scope, in *api.RunInstancesRe
 
 	var zoneName, zoneIDName string
 	if in.Placement != nil {
-		zoneName, zoneIDName = value(in.Placement.AvailabilityZone), value(in.Placement.AvailabilityZoneId)
+		zoneName, zoneIDName = common.Value(
+			in.Placement.AvailabilityZone,
+		), common.Value(
+			in.Placement.AvailabilityZoneId,
+		)
 	}
 
 	want, err := zone(scope.Region, zoneName, zoneIDName)
@@ -536,7 +545,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 		}
 	}
 
-	now, token := s.now().UTC(), value(in.ClientToken)
+	now, token := s.now().UTC(), common.Value(in.ClientToken)
 	var out *api.Reservation
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		all, listErr := list[instance](tx, scope, kindInstance)
@@ -580,7 +589,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 			return groupsErr
 		}
 
-		if name := value(in.KeyName); name != "" {
+		if name := common.Value(in.KeyName); name != "" {
 			pairs, pairsErr := list[keyPair](tx, scope, kindKeyPair)
 			if pairsErr != nil {
 				return pairsErr
@@ -599,11 +608,11 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 		out = reservation(scope, newID("r"), nil)
 		for n := range count {
 			i := &instance{
-				ID: newID("i"), Reservation: *out.ReservationId, ImageID: value(in.ImageId), Type: l.instanceTyp,
-				KeyName: value(in.KeyName), SubnetID: sn.ID, VPCID: sn.VPCID, Zone: sn.Zone, State: stateRunning,
+				ID: newID("i"), Reservation: *out.ReservationId, ImageID: common.Value(in.ImageId), Type: l.instanceTyp,
+				KeyName: common.Value(in.KeyName), SubnetID: sn.ID, VPCID: sn.VPCID, Zone: sn.Zone, State: stateRunning,
 				ClientToken: token, UserData: l.userData, Shutdown: l.shutdown, Tenancy: l.tenancy, Arch: l.arch,
-				RootDevice: l.img.RootDevice, LaunchIndex: n, NoTerminate: value(in.DisableApiTermination),
-				Monitoring: in.Monitoring != nil && value(in.Monitoring.Enabled), Groups: groups, Tags: l.tags,
+				RootDevice: l.img.RootDevice, LaunchIndex: n, NoTerminate: common.Value(in.DisableApiTermination),
+				Monitoring: in.Monitoring != nil && common.Value(in.Monitoring.Enabled), Groups: groups, Tags: l.tags,
 				LaunchTime: now, Changed: now,
 			}
 			if profile != nil {
@@ -612,7 +621,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				}
 			}
 
-			ip, ipErr := ips.take(value(in.PrivateIpAddress))
+			ip, ipErr := ips.take(common.Value(in.PrivateIpAddress))
 			if ipErr != nil {
 				return ipErr
 			}
@@ -622,7 +631,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				i.PublicIP = publicIP()
 			}
 
-			if writeErr := write(tx, key(scope, kindInstance, i.ID), i); writeErr != nil {
+			if writeErr := storage.Write(tx, key(scope, kindInstance, i.ID), i); writeErr != nil {
 				return writeErr
 			}
 
@@ -721,7 +730,7 @@ func (s *Service) change(
 			}
 
 			seen[id] = true
-			i, ok, err := read[instance](tx, key(scope, kindInstance, id))
+			i, ok, err := storage.Read[instance](tx, key(scope, kindInstance, id))
 			if err != nil {
 				return err
 			}
@@ -730,7 +739,7 @@ func (s *Service) change(
 				return instanceNotFound(id)
 			}
 
-			sn, _, err := read[subnet](tx, key(scope, kindSubnet, i.SubnetID))
+			sn, _, err := storage.Read[subnet](tx, key(scope, kindSubnet, i.SubnetID))
 			if err != nil {
 				return err
 			}
@@ -754,7 +763,7 @@ func (s *Service) change(
 			out = append(out, api.InstanceStateChange{
 				InstanceId: new(id), PreviousState: instanceState(previous), CurrentState: instanceState(current),
 			})
-			if writeErr := write(tx, key(scope, kindInstance, id), i); writeErr != nil {
+			if writeErr := storage.Write(tx, key(scope, kindInstance, id), i); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -929,7 +938,7 @@ func (s *Service) DescribeInstanceStatus(
 		}
 
 		selected = slices.DeleteFunc(selected, func(i *instance) bool {
-			return (!value(in.IncludeAllInstances) && i.State != stateRunning) || !match.match(statusValues(i))
+			return (!common.Value(in.IncludeAllInstances) && i.State != stateRunning) || !match.match(statusValues(i))
 		})
 		selected, next, pageErr := page(selected, func(i *instance) string { return i.ID }, in.NextToken,
 			in.MaxResults, maxDescribe)

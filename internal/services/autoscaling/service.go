@@ -127,14 +127,6 @@ func (s *Service) sequenced(t time.Time) string {
 	return fmt.Sprintf("%015d%010d", t.UnixMilli(), n%1e10)
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
 func validation(format string, args ...any) error {
 	return awserror.New("ValidationError", fmt.Sprintf(format, args...))
 }

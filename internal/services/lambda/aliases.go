@@ -10,6 +10,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -115,7 +116,7 @@ func loadAlias(tx storage.ReadTx, scope request.Scope, function, name string) (*
 // checkAliasName rejects a name that is not an alias name; a version number
 // cannot be one.
 func checkAliasName(name *string) error {
-	if !aliasName.MatchString(value(name)) || versionNumber.MatchString(value(name)) {
+	if !aliasName.MatchString(common.Value(name)) || versionNumber.MatchString(common.Value(name)) {
 		return invalid("Alias names must be 1 to 128 letters, digits, - or _, and not only digits")
 	}
 
@@ -134,7 +135,7 @@ func checkTarget(tx storage.ReadTx, scope request.Scope, function, version strin
 }
 
 func checkDescription(description *string) error {
-	if len(value(description)) > 256 {
+	if len(common.Value(description)) > 256 {
 		return invalid("Description must be at most 256 characters")
 	}
 
@@ -147,7 +148,7 @@ func aliasRequest(ctx context.Context, function, name *string) (m request.Metada
 		return m, "", err
 	}
 
-	fn, q, err := resolveName(m, value(function))
+	fn, q, err := resolveName(m, common.Value(function))
 	if err != nil {
 		return m, "", err
 	}
@@ -172,8 +173,8 @@ func (s *Service) CreateAlias(ctx context.Context, in *api.CreateAliasRequest) (
 	a := &alias{
 		Name:        *in.Name,
 		Function:    fn,
-		Version:     value(in.FunctionVersion),
-		Description: value(in.Description),
+		Version:     common.Value(in.FunctionVersion),
+		Description: common.Value(in.Description),
 		RevisionID:  uuid.NewV4().String(),
 	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -340,7 +341,7 @@ func (s *Service) ListAliases(ctx context.Context, in *api.ListAliasesRequest) (
 		return nil, err
 	}
 
-	fn, q, err := resolveName(m, value(in.FunctionName))
+	fn, q, err := resolveName(m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}

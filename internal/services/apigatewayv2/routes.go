@@ -8,6 +8,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -55,7 +56,12 @@ func checkRouteKey(key string) error {
 
 func newRoute(key string) *api.Route {
 	return &api.Route{
-		RouteId: new(newID(7)), RouteKey: new(key), ApiKeyRequired: new(false), AuthorizationType: new(authNone),
+		RouteId: new(
+			common.RandomID(7),
+		),
+		RouteKey:          new(key),
+		ApiKeyRequired:    new(false),
+		AuthorizationType: new(authNone),
 	}
 }
 
@@ -69,11 +75,11 @@ func integrationID(target string) string {
 // checkRoute validates a route's key, target, and authorization against the
 // API's integrations and authorizers.
 func checkRoute(tx storage.ReadTx, scope request.Scope, apiID string, r *api.Route) error {
-	if checkErr := checkRouteKey(value(r.RouteKey)); checkErr != nil {
+	if checkErr := checkRouteKey(common.Value(r.RouteKey)); checkErr != nil {
 		return checkErr
 	}
 
-	if value(r.ApiKeyRequired) {
+	if common.Value(r.ApiKeyRequired) {
 		return badRequest("API keys are not supported by HTTP APIs.")
 	}
 
@@ -84,13 +90,16 @@ func checkRoute(tx storage.ReadTx, scope request.Scope, apiID string, r *api.Rou
 		}
 	}
 
-	switch value(r.AuthorizationType) {
+	switch common.Value(r.AuthorizationType) {
 	case authNone, authIAM:
-		if value(r.AuthorizerId) != "" {
+		if common.Value(r.AuthorizerId) != "" {
 			return badRequest("AuthorizerId can only be set with JWT or CUSTOM authorization.")
 		}
 	case authJWT, authCustom:
-		a, found, err := read[api.Authorizer](tx, owned(scope, kindAuthorizer, apiID, value(r.AuthorizerId)))
+		a, found, err := storage.Read[api.Authorizer](
+			tx,
+			owned(scope, kindAuthorizer, apiID, common.Value(r.AuthorizerId)),
+		)
 		if err != nil {
 			return err
 		}
@@ -100,18 +109,18 @@ func checkRoute(tx storage.ReadTx, scope request.Scope, apiID string, r *api.Rou
 			want = typeRequest
 		}
 
-		if !found || value(a.AuthorizerType) != want {
+		if !found || common.Value(a.AuthorizerType) != want {
 			return badRequest("%s authorization needs a %s authorizer of this API.", *r.AuthorizationType, want)
 		}
 	default:
 		return badRequest("AuthorizationType must be NONE, JWT, AWS_IAM, or CUSTOM.")
 	}
 
-	if len(r.AuthorizationScopes) > 0 && value(r.AuthorizationType) != authJWT {
+	if len(r.AuthorizationScopes) > 0 && common.Value(r.AuthorizationType) != authJWT {
 		return badRequest("AuthorizationScopes can only be set with JWT authorization.")
 	}
 
-	routes, err := records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
+	routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
 	if err != nil {
 		return err
 	}
@@ -131,9 +140,9 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 		return nil, err
 	}
 
-	r := newRoute(value(in.RouteKey))
-	r.ApiKeyRequired = orElse(in.ApiKeyRequired, r.ApiKeyRequired)
-	r.AuthorizationType = orElse(in.AuthorizationType, r.AuthorizationType)
+	r := newRoute(common.Value(in.RouteKey))
+	r.ApiKeyRequired = common.OrElse(in.ApiKeyRequired, r.ApiKeyRequired)
+	r.AuthorizationType = common.OrElse(in.AuthorizationType, r.AuthorizationType)
 	r.AuthorizationScopes, r.AuthorizerId, r.Target = in.AuthorizationScopes, in.AuthorizerId, in.Target
 	r.OperationName = in.OperationName
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -146,7 +155,7 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 			return checkErr
 		}
 
-		if writeErr := write(tx, owned(m.Scope, kindRoute, *a.ApiId, *r.RouteId), r); writeErr != nil {
+		if writeErr := storage.Write(tx, owned(m.Scope, kindRoute, *a.ApiId, *r.RouteId), r); writeErr != nil {
 			return writeErr
 		}
 
@@ -179,10 +188,10 @@ func (s *Service) changeRoute(
 			return loadErr
 		}
 
-		key := owned(m.Scope, kindRoute, *a.ApiId, value(routeID))
+		key := owned(m.Scope, kindRoute, *a.ApiId, common.Value(routeID))
 		var found bool
-		if r, found, loadErr = read[api.Route](tx, key); loadErr != nil || !found {
-			return errorsOr(loadErr, notFound("Invalid Route identifier specified %s", value(routeID)))
+		if r, found, loadErr = storage.Read[api.Route](tx, key); loadErr != nil || !found {
+			return common.ErrorsOr(loadErr, notFound("Invalid Route identifier specified %s", common.Value(routeID)))
 		}
 
 		keep, fnErr := fn(tx, m.Scope, r)
@@ -191,7 +200,7 @@ func (s *Service) changeRoute(
 		}
 
 		if keep {
-			if writeErr := write(tx, key, r); writeErr != nil {
+			if writeErr := storage.Write(tx, key, r); writeErr != nil {
 				return writeErr
 			}
 		} else {
@@ -221,8 +230,11 @@ func (s *Service) GetRoute(ctx context.Context, in *api.GetRouteRequest) (*api.G
 		}
 
 		var found bool
-		r, found, loadErr = read[api.Route](tx, owned(m.Scope, kindRoute, *a.ApiId, value(in.RouteId)))
-		return errorsOr(loadErr, notFoundIf(!found, "Invalid Route identifier specified %s", value(in.RouteId)))
+		r, found, loadErr = storage.Read[api.Route](tx, owned(m.Scope, kindRoute, *a.ApiId, common.Value(in.RouteId)))
+		return common.ErrorsOr(
+			loadErr,
+			notFoundIf(!found, "Invalid Route identifier specified %s", common.Value(in.RouteId)),
+		)
 	})
 	if err != nil {
 		return nil, err
@@ -254,7 +266,7 @@ func (s *Service) GetRoutes(ctx context.Context, in *api.GetRoutesRequest) (*api
 			return loadErr
 		}
 
-		all, readErr := records[api.Route](tx, prefix(m.Scope, kindRoute)+*a.ApiId+"/")
+		all, readErr := storage.Records[api.Route](tx, prefix(m.Scope, kindRoute)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -279,28 +291,40 @@ func (s *Service) GetRoutes(ctx context.Context, in *api.GetRoutesRequest) (*api
 func (s *Service) UpdateRoute(ctx context.Context, in *api.UpdateRouteRequest) (*api.UpdateRouteResult, error) {
 	r, err := s.changeRoute(ctx, in.ApiId, in.RouteId,
 		func(tx storage.WriteTx, scope request.Scope, r *api.Route) (bool, error) {
-			r.RouteKey, r.ApiKeyRequired = orElse(in.RouteKey, r.RouteKey), orElse(in.ApiKeyRequired, r.ApiKeyRequired)
-			r.AuthorizationType = orElse(in.AuthorizationType, r.AuthorizationType)
-			r.AuthorizerId, r.Target = orElse(in.AuthorizerId, r.AuthorizerId), orElse(in.Target, r.Target)
-			r.OperationName = orElse(in.OperationName, r.OperationName)
+			r.RouteKey, r.ApiKeyRequired = common.OrElse(
+				in.RouteKey,
+				r.RouteKey,
+			), common.OrElse(
+				in.ApiKeyRequired,
+				r.ApiKeyRequired,
+			)
+			r.AuthorizationType = common.OrElse(in.AuthorizationType, r.AuthorizationType)
+			r.AuthorizerId, r.Target = common.OrElse(
+				in.AuthorizerId,
+				r.AuthorizerId,
+			), common.OrElse(
+				in.Target,
+				r.Target,
+			)
+			r.OperationName = common.OrElse(in.OperationName, r.OperationName)
 			if in.AuthorizationScopes != nil {
 				r.AuthorizationScopes = in.AuthorizationScopes
 			}
 
 			// Clearing authorization drops what only it used.
-			if value(r.AuthorizationType) == authNone || value(r.AuthorizationType) == authIAM {
+			if common.Value(r.AuthorizationType) == authNone || common.Value(r.AuthorizationType) == authIAM {
 				r.AuthorizerId = nil
 			}
 
-			if value(r.AuthorizationType) != authJWT {
+			if common.Value(r.AuthorizationType) != authJWT {
 				r.AuthorizationScopes = nil
 			}
 
-			if value(r.Target) == "" {
+			if common.Value(r.Target) == "" {
 				r.Target = nil
 			}
 
-			return true, checkRoute(tx, scope, value(in.ApiId), r)
+			return true, checkRoute(tx, scope, common.Value(in.ApiId), r)
 		})
 	if err != nil {
 		return nil, err
@@ -328,7 +352,7 @@ func routesUsing(
 	apiID, id string,
 	field func(*api.Route) string,
 ) ([]string, error) {
-	routes, err := records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
+	routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
 	if err != nil {
 		return nil, err
 	}

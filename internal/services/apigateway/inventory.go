@@ -8,6 +8,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -22,7 +23,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			a, _, err := read[restAPI](tx, key)
+			a, _, err := storage.Read[restAPI](tx, key)
 			if err != nil {
 				return err
 			}
@@ -30,7 +31,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			var methodKeys, stages []string
 			for _, r := range a.Resources {
 				for _, m := range slices.Sorted(maps.Keys(r.ResourceMethods)) {
-					methodKeys = append(methodKeys, m+" "+value(r.Path))
+					methodKeys = append(methodKeys, m+" "+common.Value(r.Path))
 				}
 			}
 
@@ -42,7 +43,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			out = append(out, catalog.Resource{
-				Type: "rest-api", Account: account, Region: region, Name: value(a.API.Name),
+				Type: "rest-api", Account: account, Region: region, Name: common.Value(a.API.Name),
 				ARN: apiARN(scope, *a.API.Id), Tags: a.API.Tags,
 				Details: map[string]any{"ApiId": *a.API.Id, "Methods": methodKeys, "Stages": stages},
 			})

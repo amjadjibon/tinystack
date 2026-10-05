@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -30,7 +31,7 @@ func invalidCiphertext() error {
 }
 
 func dryRun(set *bool) error {
-	if value(set) {
+	if common.Value(set) {
 		return awserror.New("DryRunOperationException",
 			"The request would have succeeded, but the DryRun option is set.")
 	}
@@ -195,7 +196,7 @@ func (s *Service) Decrypt(ctx context.Context, in *api.DecryptRequest) (*api.Dec
 			}
 		}
 
-		k, found, readErr := read[key](tx, keyKey(scope, id))
+		k, found, readErr := storage.Read[key](tx, keyKey(scope, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -235,9 +236,9 @@ func dataKeySize(spec *string, bytes *int64) (int, error) {
 		}
 
 		return int(*bytes), nil
-	case value(spec) == "AES_256":
+	case common.Value(spec) == "AES_256":
 		return 32, nil
-	case value(spec) == "AES_128":
+	case common.Value(spec) == "AES_128":
 		return 16, nil
 	case spec != nil:
 		return 0, awserror.Validation("KeySpec must be AES_256 or AES_128.")
@@ -306,7 +307,7 @@ func (s *Service) GenerateRandom(
 	_ context.Context,
 	in *api.GenerateRandomRequest,
 ) (*api.GenerateRandomResponse, error) {
-	n := value(in.NumberOfBytes)
+	n := common.Value(in.NumberOfBytes)
 	if n < 1 || n > maxDataKey {
 		return nil, awserror.Validation("NumberOfBytes must be between 1 and %d.", maxDataKey)
 	}

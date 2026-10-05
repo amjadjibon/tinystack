@@ -140,7 +140,7 @@ func matching(tx storage.ReadTx, scope request.Scope, keep func(name string) boo
 			continue
 		}
 
-		p, _, err := read[parameter](tx, k)
+		p, _, err := storage.Read[parameter](tx, k)
 		if err != nil {
 			return nil, err
 		}

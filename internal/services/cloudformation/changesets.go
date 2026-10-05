@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -39,7 +40,7 @@ func invalidChangeSetStatus(format string, args ...any) error {
 func findChangeSet(tx storage.ReadTx, scope request.Scope, stackName, name string) (*changeSet, error) {
 	if strings.HasPrefix(name, "arn:") {
 		for _, k := range tx.Keys(key(scope, kindChangeSet, "")) {
-			cs, _, err := read[changeSet](tx, k)
+			cs, _, err := storage.Read[changeSet](tx, k)
 			if err != nil {
 				return nil, err
 			}
@@ -61,7 +62,7 @@ func findChangeSet(tx storage.ReadTx, scope request.Scope, stackName, name strin
 		return nil, changeSetNotFound(name)
 	}
 
-	cs, found, err := read[changeSet](tx, key(scope, kindChangeSet, st.Name+"/"+name))
+	cs, found, err := storage.Read[changeSet](tx, key(scope, kindChangeSet, st.Name+"/"+name))
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func (s *Service) CreateChangeSet(
 		return nil, err
 	}
 
-	name, typ := value(in.ChangeSetName), value(in.ChangeSetType)
+	name, typ := common.Value(in.ChangeSetName), common.Value(in.ChangeSetType)
 	if !changeSetName.MatchString(name) {
 		return nil, validation("1 validation error detected: Value '%s' at 'changeSetName' failed to satisfy "+
 			"constraint: Member must satisfy regular expression pattern: [a-zA-Z][-a-zA-Z0-9]*", name)
@@ -106,12 +107,12 @@ func (s *Service) CreateChangeSet(
 		return nil, validation("OnStackFailure can only be specified for CREATE change sets")
 	}
 
-	st, err := s.changeSetStack(ctx, m.Scope, value(in.StackName), typ)
+	st, err := s.changeSetStack(ctx, m.Scope, common.Value(in.StackName), typ)
 	if err != nil {
 		return nil, err
 	}
 
-	if typ == changeSetCreate && value(in.UsePreviousTemplate) {
+	if typ == changeSetCreate && common.Value(in.UsePreviousTemplate) {
 		return nil, validation("UsePreviousTemplate cannot be used to create a stack")
 	}
 
@@ -129,10 +130,21 @@ func (s *Service) CreateChangeSet(
 	}
 
 	cs := &changeSet{
-		ID: changeSetARN(m.Scope, name), Name: name, StackName: st.Name, Description: value(in.Description),
-		Type: typ, Status: statusCreateComplete, Execution: available, Template: body, RoleARN: value(in.RoleARN),
-		OnStackFailure: failure, ClientToken: value(in.ClientToken), Parameters: params, Tags: tags,
-		Capabilities: in.Capabilities, Created: s.now(),
+		ID:             changeSetARN(m.Scope, name),
+		Name:           name,
+		StackName:      st.Name,
+		Description:    common.Value(in.Description),
+		Type:           typ,
+		Status:         statusCreateComplete,
+		Execution:      available,
+		Template:       body,
+		RoleARN:        common.Value(in.RoleARN),
+		OnStackFailure: failure,
+		ClientToken:    common.Value(in.ClientToken),
+		Parameters:     params,
+		Tags:           tags,
+		Capabilities:   in.Capabilities,
+		Created:        s.now(),
 	}
 	if in.OnStackFailure == nil {
 		cs.OnStackFailure = ""
@@ -150,7 +162,7 @@ func (s *Service) CreateChangeSet(
 				return writeErr
 			}
 
-			if writeErr := write(tx, key(m.Scope, kindStack, cur.Name), cur); writeErr != nil {
+			if writeErr := storage.Write(tx, key(m.Scope, kindStack, cur.Name), cur); writeErr != nil {
 				return writeErr
 			}
 		case findErr != nil:
@@ -168,7 +180,7 @@ func (s *Service) CreateChangeSet(
 			cs.Status, cs.Execution, cs.Reason = "FAILED", "UNAVAILABLE", noChanges
 		}
 
-		return write(tx, k, cs)
+		return storage.Write(tx, k, cs)
 	})
 	if err != nil {
 		return nil, err
@@ -227,7 +239,7 @@ func changes(st *stack, body string, params []parameter) []api.Change {
 	out := []api.Change{}
 	for _, logical := range slices.Sorted(maps.Keys(next.Resources)) {
 		decl := next.Resources[logical]
-		change := api.ResourceChange{LogicalResourceId: ptr(logical), ResourceType: ptr(decl.Type)}
+		change := api.ResourceChange{LogicalResourceId: common.Ptr(logical), ResourceType: common.Ptr(decl.Type)}
 		r := st.Resources[logical]
 		var old *resourceDecl
 		if prev != nil {
@@ -236,26 +248,26 @@ func changes(st *stack, body string, params []parameter) []api.Change {
 
 		switch {
 		case r == nil || r.Physical == "" || old == nil:
-			change.Action = ptr("Add")
+			change.Action = common.Ptr("Add")
 		case old.Type != decl.Type:
-			change.Action, change.Replacement = ptr("Modify"), ptr("True")
+			change.Action, change.Replacement = common.Ptr("Modify"), common.Ptr("True")
 		case !reflect.DeepEqual(old.Properties, decl.Properties):
-			change.Action, change.Replacement = ptr("Modify"), ptr(replacement(decl, old))
+			change.Action, change.Replacement = common.Ptr("Modify"), common.Ptr(replacement(decl, old))
 		case mentions(decl.Properties, changedParams):
-			change.Action, change.Replacement = ptr("Modify"), ptr("Conditional")
+			change.Action, change.Replacement = common.Ptr("Modify"), common.Ptr("Conditional")
 		default:
 			continue
 		}
 
 		if r != nil && r.Physical != "" {
-			change.PhysicalResourceId = ptr(r.Physical)
+			change.PhysicalResourceId = common.Ptr(r.Physical)
 		}
 
-		if value(change.Action) == "Modify" {
+		if common.Value(change.Action) == "Modify" {
 			change.Scope = []string{keyProperties}
 		}
 
-		out = append(out, api.Change{Type: ptr("Resource"), ResourceChange: &change})
+		out = append(out, api.Change{Type: common.Ptr("Resource"), ResourceChange: &change})
 	}
 
 	for _, logical := range slices.Sorted(maps.Keys(st.Resources)) {
@@ -264,9 +276,13 @@ func changes(st *stack, body string, params []parameter) []api.Change {
 		}
 
 		r := st.Resources[logical]
-		out = append(out, api.Change{Type: ptr("Resource"), ResourceChange: &api.ResourceChange{
-			Action: ptr("Remove"), LogicalResourceId: ptr(logical), PhysicalResourceId: ptr(r.Physical),
-			ResourceType: ptr(r.Type),
+		out = append(out, api.Change{Type: common.Ptr("Resource"), ResourceChange: &api.ResourceChange{
+			Action: common.Ptr(
+				"Remove",
+			),
+			LogicalResourceId:  common.Ptr(logical),
+			PhysicalResourceId: common.Ptr(r.Physical),
+			ResourceType:       common.Ptr(r.Type),
 		}})
 	}
 
@@ -318,7 +334,7 @@ func (s *Service) DescribeChangeSet(
 	var cs *changeSet
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var findErr error
-		cs, findErr = findChangeSet(tx, m.Scope, value(in.StackName), value(in.ChangeSetName))
+		cs, findErr = findChangeSet(tx, m.Scope, common.Value(in.StackName), common.Value(in.ChangeSetName))
 		return findErr
 	})
 	if err != nil {
@@ -332,7 +348,7 @@ func (s *Service) DescribeChangeSet(
 
 	out := &api.DescribeChangeSetOutput{
 		ChangeSetName: &cs.Name, ChangeSetId: &cs.ID, StackId: &cs.StackID, StackName: &cs.StackName,
-		Parameters: parametersOf(cs.Parameters), CreationTime: ptr(cs.Created), ExecutionStatus: &cs.Execution,
+		Parameters: parametersOf(cs.Parameters), CreationTime: common.Ptr(cs.Created), ExecutionStatus: &cs.Execution,
 		Status: &cs.Status, Capabilities: cs.Capabilities, Tags: apiTags(cs.Tags), Changes: items, NextToken: next,
 	}
 	if cs.Description != "" {
@@ -359,7 +375,7 @@ func (s *Service) ExecuteChangeSet(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		cs, findErr := findChangeSet(tx, m.Scope, value(in.StackName), value(in.ChangeSetName))
+		cs, findErr := findChangeSet(tx, m.Scope, common.Value(in.StackName), common.Value(in.ChangeSetName))
 		if findErr != nil {
 			return findErr
 		}
@@ -401,7 +417,7 @@ func (s *Service) execute(
 	}
 
 	cs.Execution = "EXECUTE_IN_PROGRESS"
-	if err := write(tx, key(m.Scope, kindChangeSet, st.Name+"/"+cs.Name), cs); err != nil {
+	if err := storage.Write(tx, key(m.Scope, kindChangeSet, st.Name+"/"+cs.Name), cs); err != nil {
 		return err
 	}
 
@@ -413,10 +429,10 @@ func (s *Service) execute(
 	op := &operation{
 		Phase:     phaseApply,
 		ChangeSet: cs.Name,
-		Token:     value(in.ClientRequestToken),
+		Token:     common.Value(in.ClientRequestToken),
 		OnFailure: onFailureRollback,
 	}
-	if value(in.DisableRollback) {
+	if common.Value(in.DisableRollback) {
 		op.OnFailure = onFailureNothing
 	}
 
@@ -450,7 +466,7 @@ func (s *Service) DeleteChangeSet(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		cs, findErr := findChangeSet(tx, m.Scope, value(in.StackName), value(in.ChangeSetName))
+		cs, findErr := findChangeSet(tx, m.Scope, common.Value(in.StackName), common.Value(in.ChangeSetName))
 		if findErr != nil {
 			return findErr
 		}
@@ -479,20 +495,20 @@ func (s *Service) ListChangeSets(
 
 	summaries := []api.ChangeSetSummary{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		st, findErr := find(tx, m.Scope, value(in.StackName))
+		st, findErr := find(tx, m.Scope, common.Value(in.StackName))
 		if findErr != nil {
 			return findErr
 		}
 
 		for _, k := range tx.Keys(key(m.Scope, kindChangeSet, st.Name+"/")) {
-			cs, _, findErr := read[changeSet](tx, k)
+			cs, _, findErr := storage.Read[changeSet](tx, k)
 			if findErr != nil {
 				return findErr
 			}
 
 			summary := api.ChangeSetSummary{
 				StackId: &cs.StackID, StackName: &cs.StackName, ChangeSetId: &cs.ID, ChangeSetName: &cs.Name,
-				ExecutionStatus: &cs.Execution, Status: &cs.Status, CreationTime: ptr(cs.Created),
+				ExecutionStatus: &cs.Execution, Status: &cs.Status, CreationTime: common.Ptr(cs.Created),
 			}
 			if cs.Reason != "" {
 				summary.StatusReason = &cs.Reason

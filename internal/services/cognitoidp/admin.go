@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -58,7 +59,7 @@ func (s *Service) AdminCreateUser(
 	ctx context.Context,
 	in *api.AdminCreateUserRequest,
 ) (*api.AdminCreateUserResponse, error) {
-	action := value(in.MessageAction)
+	action := common.Value(in.MessageAction)
 	if !oneOf(in.MessageAction, "RESEND", "SUPPRESS") {
 		return nil, invalidParameter("MessageAction must be RESEND or SUPPRESS.")
 	}
@@ -80,7 +81,7 @@ func (s *Service) AdminCreateUser(
 	)
 	now := s.now().UTC()
 	err := s.update(ctx, in.UserPoolId, func(tx storage.WriteTx, scope request.Scope, p *pool) error {
-		password := value(in.TemporaryPassword)
+		password := common.Value(in.TemporaryPassword)
 		if in.TemporaryPassword != nil {
 			if err := checkPolicy(p, in.TemporaryPassword); err != nil {
 				return err
@@ -265,7 +266,7 @@ func (s *Service) AdminSetUserPassword(
 				return err
 			}
 
-			return setPassword(p, u, *in.Password, value(in.Permanent), s.now().UTC())
+			return setPassword(p, u, *in.Password, common.Value(in.Permanent), s.now().UTC())
 		})
 	if err != nil {
 		return nil, err
@@ -382,12 +383,12 @@ func recoveryAttributes(p *pool) []string {
 
 	mechanisms := slices.Clone(r.RecoveryMechanisms)
 	slices.SortFunc(mechanisms, func(a, b api.RecoveryOptionType) int {
-		return int(value(a.Priority) - value(b.Priority))
+		return int(common.Value(a.Priority) - common.Value(b.Priority))
 	})
 
 	var out []string
 	for _, m := range mechanisms {
-		if attr, ok := strings.CutPrefix(value(m.Name), "verified_"); ok {
+		if attr, ok := strings.CutPrefix(common.Value(m.Name), "verified_"); ok {
 			out = append(out, attr)
 		}
 	}
@@ -405,7 +406,7 @@ var filterable = []string{
 
 // userMatcher compiles a ListUsers filter such as `email ^= "a"`.
 func userMatcher(p *pool, filter *string) (func(*user) bool, error) {
-	if value(filter) == "" {
+	if common.Value(filter) == "" {
 		return func(*user) bool { return true }, nil
 	}
 
@@ -441,7 +442,7 @@ func userMatcher(p *pool, filter *string) (func(*user) bool, error) {
 func users(tx storage.ReadTx, scope request.Scope, p *pool, match func(*user) bool) ([]*user, error) {
 	var out []*user
 	for _, k := range tx.Keys(userPrefix(scope, p.ID)) {
-		u, _, err := read[user](tx, k)
+		u, _, err := storage.Read[user](tx, k)
 		if err != nil {
 			return nil, err
 		}

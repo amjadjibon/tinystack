@@ -16,6 +16,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const maxMessage = 4096
@@ -53,8 +54,8 @@ func (s *Service) mac(ctx context.Context, ref *string, message []byte, algorith
 		}
 
 		spec := macKeys[k.spec()]
-		if value(algorithm) != spec.algorithm {
-			return awserror.New("InvalidKeyUsageException", "Algorithm "+value(algorithm)+" is incompatible "+
+		if common.Value(algorithm) != spec.algorithm {
+			return awserror.New("InvalidKeyUsageException", "Algorithm "+common.Value(algorithm)+" is incompatible "+
 				"with key spec "+k.spec()+".")
 		}
 
@@ -129,7 +130,7 @@ func keyPair(spec string) (private, public []byte, err error) {
 func (s *Service) dataKeyPair(ctx context.Context, ref *string, encryptionContext map[string]string, spec *string,
 	dry *bool,
 ) (private, sealed, public []byte, arn string, err error) {
-	if private, public, err = keyPair(value(spec)); err != nil {
+	if private, public, err = keyPair(common.Value(spec)); err != nil {
 		return nil, nil, nil, "", err
 	}
 

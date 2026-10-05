@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -81,7 +82,7 @@ func isVersion(qualifier string) bool {
 }
 
 func loadVersion(tx storage.ReadTx, scope request.Scope, machine string, n int64) (*version, error) {
-	v, found, err := read[version](tx, versionKey(scope, machine, n))
+	v, found, err := storage.Read[version](tx, versionKey(scope, machine, n))
 	if err == nil && !found {
 		err = awserror.New("ResourceNotFound", "State Machine Version Does Not Exist: '"+
 			machineARN(scope, machine)+":"+strconv.FormatInt(n, 10)+"'")
@@ -91,7 +92,7 @@ func loadVersion(tx storage.ReadTx, scope request.Scope, machine string, n int64
 }
 
 func loadAlias(tx storage.ReadTx, scope request.Scope, machine, name string) (*alias, error) {
-	a, found, err := read[alias](tx, aliasKey(scope, machine, name))
+	a, found, err := storage.Read[alias](tx, aliasKey(scope, machine, name))
 	if err == nil && !found {
 		err = awserror.New("ResourceNotFound", "Resource not found: '"+machineARN(scope, machine)+":"+name+"'")
 	}
@@ -111,7 +112,7 @@ type target struct {
 // loadTarget resolves a state machine, version, or alias ARN to what an
 // execution of it runs. An alias picks one of its versions by weight.
 func loadTarget(tx storage.ReadTx, arnString *string) (*target, error) {
-	scope, machine, qualifier, err := qualified(value(arnString))
+	scope, machine, qualifier, err := qualified(common.Value(arnString))
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +166,7 @@ func publish(
 	tx storage.WriteTx, scope request.Scope, sm *stateMachine, description string, now float64,
 ) (*version, error) {
 	if sm.LastVersion > 0 {
-		latest, found, err := read[version](tx, versionKey(scope, sm.Name, sm.LastVersion))
+		latest, found, err := storage.Read[version](tx, versionKey(scope, sm.Name, sm.LastVersion))
 		if err != nil {
 			return nil, err
 		}
@@ -182,11 +183,11 @@ func publish(
 	sm.LastVersion++
 	v := &version{Description: description, Machine: *sm, Number: sm.LastVersion}
 	v.Machine.Created = now
-	if err := write(tx, versionKey(scope, sm.Name, v.Number), v); err != nil {
+	if err := storage.Write(tx, versionKey(scope, sm.Name, v.Number), v); err != nil {
 		return nil, err
 	}
 
-	return v, write(tx, machineKey(scope, sm.Name), sm)
+	return v, storage.Write(tx, machineKey(scope, sm.Name), sm)
 }
 
 func (v *version) arn(scope request.Scope) string {
@@ -202,7 +203,7 @@ func (s *Service) PublishStateMachineVersion(
 		return nil, err
 	}
 
-	if len(value(in.Description)) > 256 {
+	if len(common.Value(in.Description)) > 256 {
 		return nil, awserror.Validation("description must be at most 256 characters")
 	}
 
@@ -221,7 +222,7 @@ func (s *Service) PublishStateMachineVersion(
 			return awserror.New("ConflictException", "The revisionId does not match the state machine's.")
 		}
 
-		v, publishErr := publish(tx, scope, sm, value(in.Description), unix(s.now()))
+		v, publishErr := publish(tx, scope, sm, common.Value(in.Description), common.Unix(s.now()))
 		if publishErr != nil {
 			return publishErr
 		}
@@ -259,7 +260,7 @@ func (s *Service) ListStateMachineVersions(
 
 		var items []api.StateMachineVersionListItem
 		for _, k := range tx.Keys(prefix(scope, kindVersion) + sm.Name + "/") {
-			v, _, readErr := read[version](tx, k)
+			v, _, readErr := storage.Read[version](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -294,9 +295,9 @@ func (s *Service) DeleteStateMachineVersion(
 		return nil, err
 	}
 
-	scope, machine, qualifier, err := qualified(value(in.StateMachineVersionArn))
+	scope, machine, qualifier, err := qualified(common.Value(in.StateMachineVersionArn))
 	if err == nil && !isVersion(qualifier) {
-		err = invalidARN(value(in.StateMachineVersionArn))
+		err = invalidARN(common.Value(in.StateMachineVersionArn))
 	}
 
 	if err != nil {
@@ -310,7 +311,7 @@ func (s *Service) DeleteStateMachineVersion(
 	n, _ := strconv.ParseInt(qualifier, 10, 64)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, k := range tx.Keys(prefix(scope, kindAlias) + machine + "/") {
-			a, _, readErr := read[alias](tx, k)
+			a, _, readErr := storage.Read[alias](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -343,10 +344,10 @@ func checkRouting(tx storage.ReadTx, m *request.Metadata, items []api.RoutingCon
 
 	total := int64(0)
 	for _, item := range items {
-		s, name, qualifier, qErr := qualified(value(item.StateMachineVersionArn))
+		s, name, qualifier, qErr := qualified(common.Value(item.StateMachineVersionArn))
 		switch {
 		case qErr != nil || !isVersion(qualifier):
-			return scope, "", nil, invalidARN(value(item.StateMachineVersionArn))
+			return scope, "", nil, invalidARN(common.Value(item.StateMachineVersionArn))
 		case machine != "" && (name != machine || s != scope):
 			return scope, "", nil, awserror.Validation("routingConfiguration versions must belong to one " +
 				"state machine")
@@ -362,7 +363,7 @@ func checkRouting(tx storage.ReadTx, m *request.Metadata, items []api.RoutingCon
 			return scope, "", nil, loadErr
 		}
 
-		weight := value(item.Weight)
+		weight := common.Value(item.Weight)
 		if weight < 0 || weight > 100 || slices.ContainsFunc(routes, func(r route) bool { return r.Version == n }) {
 			return scope, "", nil, awserror.Validation("routingConfiguration needs distinct versions with " +
 				"weights from 0 to 100")
@@ -388,16 +389,16 @@ func (s *Service) CreateStateMachineAlias(
 		return nil, err
 	}
 
-	name := value(in.Name)
+	name := common.Value(in.Name)
 	switch {
 	case !aliasName.MatchString(name) || isVersion(name):
 		return nil, awserror.New("InvalidName", "Invalid Name: '"+name+"'")
-	case len(value(in.Description)) > 256:
+	case len(common.Value(in.Description)) > 256:
 		return nil, awserror.Validation("description must be at most 256 characters")
 	}
 
 	out := &api.CreateStateMachineAliasOutput{}
-	now := unix(s.now())
+	now := common.Unix(s.now())
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		scope, machine, routes, routeErr := checkRouting(tx, &m, in.RoutingConfiguration)
 		if routeErr != nil {
@@ -405,11 +406,11 @@ func (s *Service) CreateStateMachineAlias(
 		}
 
 		out.StateMachineAliasArn = new(machineARN(scope, machine) + ":" + name)
-		existing, found, readErr := read[alias](tx, aliasKey(scope, machine, name))
+		existing, found, readErr := storage.Read[alias](tx, aliasKey(scope, machine, name))
 		switch {
 		case readErr != nil:
 			return readErr
-		case found && existing.Description == value(in.Description) && slices.Equal(existing.Routes, routes):
+		case found && existing.Description == common.Value(in.Description) && slices.Equal(existing.Routes, routes):
 			out.CreationDate = new(existing.Created)
 			return nil
 		case found:
@@ -417,9 +418,9 @@ func (s *Service) CreateStateMachineAlias(
 				*out.StateMachineAliasArn+"'")
 		}
 
-		a := &alias{Name: name, Description: value(in.Description), Routes: routes, Created: now, Updated: now}
+		a := &alias{Name: name, Description: common.Value(in.Description), Routes: routes, Created: now, Updated: now}
 		out.CreationDate = new(now)
-		return write(tx, aliasKey(scope, machine, name), a)
+		return storage.Write(tx, aliasKey(scope, machine, name), a)
 	})
 	if err != nil {
 		return nil, err
@@ -430,9 +431,9 @@ func (s *Service) CreateStateMachineAlias(
 
 // aliasRef resolves an alias ARN in the caller's scope.
 func aliasRef(m *request.Metadata, arnString *string) (scope request.Scope, machine, name string, err error) {
-	scope, machine, name, err = qualified(value(arnString))
+	scope, machine, name, err = qualified(common.Value(arnString))
 	if err == nil && (name == "" || isVersion(name)) {
-		err = invalidARN(value(arnString))
+		err = invalidARN(common.Value(arnString))
 	}
 
 	if err == nil {
@@ -510,11 +511,11 @@ func (s *Service) UpdateStateMachineAlias(
 		return nil, err
 	case in.Description == nil && in.RoutingConfiguration == nil:
 		return nil, awserror.Validation("Either the description or the routingConfiguration must be specified")
-	case len(value(in.Description)) > 256:
+	case len(common.Value(in.Description)) > 256:
 		return nil, awserror.Validation("description must be at most 256 characters")
 	}
 
-	now := unix(s.now())
+	now := common.Unix(s.now())
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		a, loadErr := loadAlias(tx, scope, machine, name)
 		if loadErr != nil {
@@ -539,7 +540,7 @@ func (s *Service) UpdateStateMachineAlias(
 		}
 
 		a.Updated = now
-		return write(tx, aliasKey(scope, machine, name), a)
+		return storage.Write(tx, aliasKey(scope, machine, name), a)
 	})
 	if err != nil {
 		return nil, err
@@ -600,7 +601,7 @@ func (s *Service) ListStateMachineAliases(
 
 		var items []api.StateMachineAliasListItem
 		for _, k := range tx.Keys(prefix(scope, kindAlias) + sm.Name + "/") {
-			a, _, readErr := read[alias](tx, k)
+			a, _, readErr := storage.Read[alias](tx, k)
 			if readErr != nil {
 				return readErr
 			}

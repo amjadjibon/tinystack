@@ -25,7 +25,6 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
@@ -107,19 +106,6 @@ func apiARN(scope request.Scope, id string) string {
 	return "arn:aws:apigateway:" + scope.Region + "::/restapis/" + id
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
-// records reads every record under keyPrefix, in key order.
-func records[T any](tx storage.ReadTx, keyPrefix string) ([]*T, error) {
-	return storage.Records[T](tx, keyPrefix)
-}
-
 // page returns the items after the one position names, at most limit of them
 // (1 to 500, 25 by default), and the position of the rest, if any.
 func page[T any](items []T, id func(T) string, position *string, limit *int64) (selected []T, next *string, err error) {
@@ -157,9 +143,6 @@ func page[T any](items []T, id func(T) string, position *string, limit *int64) (
 	return items[:n], next, nil
 }
 
-// newID returns n random lowercase letters and digits, as API Gateway's IDs.
-func newID(n int) string { return common.RandomID(n) }
-
 func checkTags(tags map[string]string) error {
 	for k := range tags {
 		if strings.HasPrefix(strings.ToLower(k), "aws:") {
@@ -173,15 +156,3 @@ func checkTags(tags map[string]string) error {
 
 	return nil
 }
-
-func cloneTags(tags map[string]string) map[string]string { return common.CloneTags(tags) }
-
-func errorsOr(err, fallback error) error { return common.ErrorsOr(err, fallback) }
-
-func orElse[T any](p, fallback *T) *T { return common.OrElse(p, fallback) }
-
-func seconds(t time.Time) *float64 { return common.Seconds(t) }
-
-// clone deep-copies a record through JSON, so a change to the copy cannot
-// reach the original.
-func clone[T any](v *T) *T { return common.Clone(v) }

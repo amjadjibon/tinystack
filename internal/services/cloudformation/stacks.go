@@ -14,6 +14,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -53,7 +54,7 @@ func tagsOf(in []api.Tag) ([]tag, error) {
 
 	out := make([]tag, 0, len(in))
 	for _, t := range in {
-		out = append(out, tag{Key: value(t.Key), Value: value(t.Value)})
+		out = append(out, tag{Key: common.Value(t.Key), Value: common.Value(t.Value)})
 	}
 
 	return out, nil
@@ -151,7 +152,7 @@ func find(tx storage.ReadTx, scope request.Scope, nameOrID string) (*stack, erro
 		name = parts[1]
 	}
 
-	st, found, err := read[stack](tx, key(scope, kindStack, name))
+	st, found, err := storage.Read[stack](tx, key(scope, kindStack, name))
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +162,7 @@ func find(tx storage.ReadTx, scope request.Scope, nameOrID string) (*stack, erro
 	}
 
 	if name != nameOrID {
-		old, found, err := read[stack](tx, key(scope, kindDeleted, stackUUID(nameOrID)))
+		old, found, err := storage.Read[stack](tx, key(scope, kindDeleted, stackUUID(nameOrID)))
 		if err != nil {
 			return nil, err
 		}
@@ -183,14 +184,14 @@ func (s *Service) begin(tx storage.WriteTx, scope request.Scope, st *stack, op *
 	}
 
 	tx.Put(indexKey(scope, st.Name), []byte("{}"))
-	return write(tx, key(scope, kindStack, st.Name), st)
+	return storage.Write(tx, key(scope, kindStack, st.Name), st)
 }
 
 func onFailure(in *string, disableRollback *bool) (string, error) {
 	switch {
 	case in != nil && disableRollback != nil:
 		return "", validation("You may specify either OnFailure or DisableRollback, but not both.")
-	case value(disableRollback):
+	case common.Value(disableRollback):
 		return onFailureNothing, nil
 	case in == nil:
 		return onFailureRollback, nil
@@ -207,7 +208,7 @@ func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*a
 		return nil, err
 	}
 
-	name := value(in.StackName)
+	name := common.Value(in.StackName)
 	err = checkName(name)
 	if err != nil {
 		return nil, err
@@ -238,7 +239,7 @@ func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*a
 		return nil, err
 	}
 
-	if value(in.TimeoutInMinutes) < 0 {
+	if common.Value(in.TimeoutInMinutes) < 0 {
 		return nil, validation("TimeoutInMinutes must be greater than 0")
 	}
 
@@ -254,7 +255,7 @@ func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*a
 
 	var id string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		existing, found, readErr := read[stack](tx, key(m.Scope, kindStack, name))
+		existing, found, readErr := storage.Read[stack](tx, key(m.Scope, kindStack, name))
 		if readErr != nil {
 			return readErr
 		}
@@ -270,13 +271,13 @@ func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*a
 
 		st := &stack{
 			ID: stackARN(m.Scope, name), Name: name, Description: t.Description, Created: s.now(), Template: body,
-			Parameters: params, Tags: tags, Capabilities: in.Capabilities, RoleARN: value(in.RoleARN),
-			Timeout: value(in.TimeoutInMinutes), Protected: value(in.EnableTerminationProtection),
+			Parameters: params, Tags: tags, Capabilities: in.Capabilities, RoleARN: common.Value(in.RoleARN),
+			Timeout: common.Value(in.TimeoutInMinutes), Protected: common.Value(in.EnableTerminationProtection),
 			DisableRollback: failure == onFailureNothing, Endpoint: m.Endpoint, Resources: map[string]*resource{},
 		}
 		id = st.ID
 		return s.begin(tx, m.Scope, st, &operation{
-			Action: actionCreate, Phase: phaseApply, OnFailure: failure, Token: value(in.ClientRequestToken),
+			Action: actionCreate, Phase: phaseApply, OnFailure: failure, Token: common.Value(in.ClientRequestToken),
 		}, statusCreateInProgress)
 	})
 	if err != nil {
@@ -308,7 +309,7 @@ func (s *Service) revise(
 	given []api.Parameter, capabilities []string,
 ) (*template, string, []parameter, error) {
 	text := st.Template
-	if value(previous) {
+	if common.Value(previous) {
 		if body != nil || location != nil {
 			return nil, "", nil, validation(
 				"You cannot specify both usePreviousTemplate and Template Body/Template URL",
@@ -345,13 +346,13 @@ func (s *Service) UpdateStack(ctx context.Context, in *api.UpdateStackInput) (*a
 		return nil, err
 	}
 
-	st, err := s.current(ctx, m.Scope, value(in.StackName))
+	st, err := s.current(ctx, m.Scope, common.Value(in.StackName))
 	if err != nil {
 		return nil, err
 	}
 
 	if st.Deleted != nil {
-		return nil, notExist(value(in.StackName))
+		return nil, notExist(common.Value(in.StackName))
 	}
 
 	t, body, params, err := s.revise(ctx, m, st, in.TemplateBody, in.TemplateURL, in.UsePreviousTemplate,
@@ -373,7 +374,7 @@ func (s *Service) UpdateStack(ctx context.Context, in *api.UpdateStackInput) (*a
 	}
 
 	failure := onFailureRollback
-	if value(in.DisableRollback) {
+	if common.Value(in.DisableRollback) {
 		failure = onFailureNothing
 	}
 
@@ -396,14 +397,14 @@ func (s *Service) UpdateStack(ctx context.Context, in *api.UpdateStackInput) (*a
 		}
 
 		op := &operation{
-			Action: actionUpdate, Phase: phaseApply, OnFailure: failure, Token: value(in.ClientRequestToken),
+			Action: actionUpdate, Phase: phaseApply, OnFailure: failure, Token: common.Value(in.ClientRequestToken),
 			Previous: &revision{
 				Template: cur.Template, Description: cur.Description, Parameters: cur.Parameters, Tags: cur.Tags,
 			},
 		}
 		now := s.now()
 		cur.Template, cur.Description, cur.Parameters, cur.Tags, cur.Updated = body, t.Description, params, tags, &now
-		cur.Capabilities, cur.RoleARN, cur.Endpoint = in.Capabilities, value(in.RoleARN), m.Endpoint
+		cur.Capabilities, cur.RoleARN, cur.Endpoint = in.Capabilities, common.Value(in.RoleARN), m.Endpoint
 		return s.begin(tx, m.Scope, cur, op, statusUpdateInProgress)
 	})
 	if err != nil {
@@ -421,7 +422,7 @@ func (s *Service) DeleteStack(ctx context.Context, in *api.DeleteStackInput) (*a
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		st, findErr := find(tx, m.Scope, value(in.StackName))
+		st, findErr := find(tx, m.Scope, common.Value(in.StackName))
 		if findErr != nil {
 			// Deleting a stack that does not exist succeeds.
 			return nil //nolint:nilerr // DeleteStack is idempotent.
@@ -472,7 +473,10 @@ func (s *Service) DeleteStack(ctx context.Context, in *api.DeleteStackInput) (*a
 		}
 
 		return s.begin(tx, m.Scope, st, &operation{
-			Action: actionDelete, Phase: phaseRemove, Retain: in.RetainResources, Token: value(in.ClientRequestToken),
+			Action: actionDelete,
+			Phase:  phaseRemove,
+			Retain: in.RetainResources,
+			Token:  common.Value(in.ClientRequestToken),
 		}, statusDeleteInProgress)
 	})
 	if err != nil {
@@ -486,10 +490,10 @@ func (s *Service) DeleteStack(ctx context.Context, in *api.DeleteStackInput) (*a
 // describe renders a stack as DescribeStacks does.
 func describe(st *stack) api.Stack {
 	out := api.Stack{
-		StackId: &st.ID, StackName: &st.Name, CreationTime: ptr(st.Created), LastUpdatedTime: st.Updated,
-		DeletionTime: st.Deleted, StackStatus: &st.Status, DisableRollback: ptr(st.DisableRollback),
-		Capabilities: st.Capabilities, EnableTerminationProtection: ptr(st.Protected),
-		DriftInformation: &api.StackDriftInformation{StackDriftStatus: ptr("NOT_CHECKED")},
+		StackId: &st.ID, StackName: &st.Name, CreationTime: common.Ptr(st.Created), LastUpdatedTime: st.Updated,
+		DeletionTime: st.Deleted, StackStatus: &st.Status, DisableRollback: common.Ptr(st.DisableRollback),
+		Capabilities: st.Capabilities, EnableTerminationProtection: common.Ptr(st.Protected),
+		DriftInformation: &api.StackDriftInformation{StackDriftStatus: common.Ptr("NOT_CHECKED")},
 	}
 	if st.Description != "" {
 		out.Description = &st.Description
@@ -513,13 +517,13 @@ func describe(st *stack) api.Stack {
 
 	out.Parameters = parametersOf(st.Parameters)
 	for _, o := range st.Outputs {
-		rendered := api.Output{OutputKey: ptr(o.Key), OutputValue: ptr(o.Value)}
+		rendered := api.Output{OutputKey: common.Ptr(o.Key), OutputValue: common.Ptr(o.Value)}
 		if o.Description != "" {
-			rendered.Description = ptr(o.Description)
+			rendered.Description = common.Ptr(o.Description)
 		}
 
 		if o.Export != "" {
-			rendered.ExportName = ptr(o.Export)
+			rendered.ExportName = common.Ptr(o.Export)
 		}
 
 		out.Outputs = append(out.Outputs, rendered)
@@ -533,13 +537,13 @@ func describe(st *stack) api.Stack {
 func parametersOf(params []parameter) []api.Parameter {
 	var out []api.Parameter
 	for _, p := range params {
-		rendered := api.Parameter{ParameterKey: ptr(p.Key), ParameterValue: ptr(p.Value)}
+		rendered := api.Parameter{ParameterKey: common.Ptr(p.Key), ParameterValue: common.Ptr(p.Value)}
 		if p.NoEcho {
-			rendered.ParameterValue = ptr("****")
+			rendered.ParameterValue = common.Ptr("****")
 		}
 
 		if p.Resolved != "" {
-			rendered.ResolvedValue = ptr(p.Resolved)
+			rendered.ResolvedValue = common.Ptr(p.Resolved)
 		}
 
 		out = append(out, rendered)
@@ -551,7 +555,7 @@ func parametersOf(params []parameter) []api.Parameter {
 func apiTags(tags []tag) []api.Tag {
 	var out []api.Tag
 	for _, t := range tags {
-		out = append(out, api.Tag{Key: ptr(t.Key), Value: ptr(t.Value)})
+		out = append(out, api.Tag{Key: common.Ptr(t.Key), Value: common.Ptr(t.Value)})
 	}
 
 	return out
@@ -582,7 +586,7 @@ func page[T any](items []T, token *string) (out []T, next *string, err error) {
 func stacks(tx storage.ReadTx, scope request.Scope) ([]*stack, error) {
 	var out []*stack
 	for _, k := range tx.Keys(key(scope, kindStack, "")) {
-		st, _, err := read[stack](tx, k)
+		st, _, err := storage.Read[stack](tx, k)
 		if err != nil {
 			return nil, err
 		}
@@ -642,7 +646,7 @@ func (s *Service) ListStacks(ctx context.Context, in *api.ListStacksInput) (*api
 		}
 
 		for _, k := range tx.Keys(key(m.Scope, kindDeleted, "")) {
-			old, _, loadErr := read[stack](tx, k)
+			old, _, loadErr := storage.Read[stack](tx, k)
 			if loadErr != nil {
 				return loadErr
 			}
@@ -663,9 +667,9 @@ func (s *Service) ListStacks(ctx context.Context, in *api.ListStacksInput) (*api
 		}
 
 		summary := api.StackSummary{
-			StackId: &st.ID, StackName: &st.Name, CreationTime: ptr(st.Created), LastUpdatedTime: st.Updated,
+			StackId: &st.ID, StackName: &st.Name, CreationTime: common.Ptr(st.Created), LastUpdatedTime: st.Updated,
 			DeletionTime: st.Deleted, StackStatus: &st.Status,
-			DriftInformation: &api.StackDriftInformationSummary{StackDriftStatus: ptr("NOT_CHECKED")},
+			DriftInformation: &api.StackDriftInformationSummary{StackDriftStatus: common.Ptr("NOT_CHECKED")},
 		}
 		if st.Description != "" {
 			summary.TemplateDescription = &st.Description
@@ -692,14 +696,14 @@ func (s *Service) GetTemplate(ctx context.Context, in *api.GetTemplateInput) (*a
 		return nil, err
 	}
 
-	if stage := value(in.TemplateStage); stage != "" && stage != "Original" && stage != stageProcessed {
+	if stage := common.Value(in.TemplateStage); stage != "" && stage != "Original" && stage != stageProcessed {
 		return nil, validation("Invalid TemplateStage %s", stage)
 	}
 
 	var body string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		if in.ChangeSetName != nil {
-			cs, findErr := findChangeSet(tx, m.Scope, value(in.StackName), *in.ChangeSetName)
+			cs, findErr := findChangeSet(tx, m.Scope, common.Value(in.StackName), *in.ChangeSetName)
 			if findErr != nil {
 				return findErr
 			}
@@ -724,7 +728,7 @@ func (s *Service) GetTemplate(ctx context.Context, in *api.GetTemplateInput) (*a
 		return nil, err
 	}
 
-	if value(in.TemplateStage) == stageProcessed {
+	if common.Value(in.TemplateStage) == stageProcessed {
 		body = processed(body)
 	}
 
@@ -758,9 +762,13 @@ func (s *Service) ValidateTemplate(
 
 	for _, k := range slices.Sorted(maps.Keys(t.Parameters)) {
 		p := t.Parameters[k]
-		rendered := api.TemplateParameter{ParameterKey: ptr(k), DefaultValue: p.Default, NoEcho: ptr(p.NoEcho)}
+		rendered := api.TemplateParameter{
+			ParameterKey: common.Ptr(k),
+			DefaultValue: p.Default,
+			NoEcho:       common.Ptr(p.NoEcho),
+		}
 		if p.Description != "" {
-			rendered.Description = ptr(p.Description)
+			rendered.Description = common.Ptr(p.Description)
 		}
 
 		out.Parameters = append(out.Parameters, rendered)
@@ -817,16 +825,21 @@ func (s *Service) GetTemplateSummary(
 
 	if t.Metadata != nil {
 		data, _ := json.Marshal(t.Metadata)
-		out.Metadata = ptr(string(data))
+		out.Metadata = common.Ptr(string(data))
 	}
 
 	for _, k := range slices.Sorted(maps.Keys(t.Parameters)) {
 		p := t.Parameters[k]
 		rendered := api.ParameterDeclaration{
-			ParameterKey: ptr(k), DefaultValue: p.Default, ParameterType: ptr(p.Type), NoEcho: ptr(p.NoEcho),
+			ParameterKey: common.Ptr(
+				k,
+			),
+			DefaultValue:  p.Default,
+			ParameterType: common.Ptr(p.Type),
+			NoEcho:        common.Ptr(p.NoEcho),
 		}
 		if p.Description != "" {
-			rendered.Description = ptr(p.Description)
+			rendered.Description = common.Ptr(p.Description)
 		}
 
 		if len(p.AllowedValues) > 0 {
@@ -853,7 +866,7 @@ func (s *Service) DescribeStackEvents(
 
 	var events []api.StackEvent
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		st, findErr := find(tx, m.Scope, value(in.StackName))
+		st, findErr := find(tx, m.Scope, common.Value(in.StackName))
 		if findErr != nil {
 			return findErr
 		}
@@ -861,7 +874,7 @@ func (s *Service) DescribeStackEvents(
 		keys := tx.Keys(key(m.Scope, kindEvent, stackUUID(st.ID)+"/"))
 		slices.Reverse(keys)
 		for _, k := range keys {
-			e, _, findErr := read[stackEvent](tx, k)
+			e, _, findErr := storage.Read[stackEvent](tx, k)
 			if findErr != nil {
 				return findErr
 			}
@@ -885,20 +898,20 @@ func (s *Service) DescribeStackEvents(
 
 func renderEvent(st *stack, e *stackEvent) api.StackEvent {
 	out := api.StackEvent{
-		StackId: &st.ID, StackName: &st.Name, EventId: ptr(e.ID), LogicalResourceId: ptr(e.Logical),
-		ResourceType: ptr(e.Type), Timestamp: ptr(e.Time), ResourceStatus: ptr(e.Status),
-		PhysicalResourceId: ptr(e.Physical),
+		StackId: &st.ID, StackName: &st.Name, EventId: common.Ptr(e.ID), LogicalResourceId: common.Ptr(e.Logical),
+		ResourceType: common.Ptr(e.Type), Timestamp: common.Ptr(e.Time), ResourceStatus: common.Ptr(e.Status),
+		PhysicalResourceId: common.Ptr(e.Physical),
 	}
 	if e.Reason != "" {
-		out.ResourceStatusReason = ptr(e.Reason)
+		out.ResourceStatusReason = common.Ptr(e.Reason)
 	}
 
 	if e.Properties != "" {
-		out.ResourceProperties = ptr(e.Properties)
+		out.ResourceProperties = common.Ptr(e.Properties)
 	}
 
 	if e.Token != "" {
-		out.ClientRequestToken = ptr(e.Token)
+		out.ClientRequestToken = common.Ptr(e.Token)
 	}
 
 	return out
@@ -964,7 +977,7 @@ func (s *Service) DescribeStackResource(
 	var found []stackResource
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var loadErr error
-		found, loadErr = resourcesOf(tx, m.Scope, value(in.StackName), value(in.LogicalResourceId), "")
+		found, loadErr = resourcesOf(tx, m.Scope, common.Value(in.StackName), common.Value(in.LogicalResourceId), "")
 		return loadErr
 	})
 	if err != nil {
@@ -972,19 +985,26 @@ func (s *Service) DescribeStackResource(
 	}
 
 	if len(found) == 0 {
-		return nil, validation("Resource %s does not exist for stack %s", value(in.LogicalResourceId),
-			value(in.StackName))
+		return nil, validation("Resource %s does not exist for stack %s", common.Value(in.LogicalResourceId),
+			common.Value(in.StackName))
 	}
 
 	sr := found[0]
 	out := &api.StackResourceDetail{
-		StackName: &sr.st.Name, StackId: &sr.st.ID, LogicalResourceId: ptr(sr.logical),
-		PhysicalResourceId: ptr(sr.r.Physical), ResourceType: ptr(sr.r.Type), LastUpdatedTimestamp: ptr(sr.r.Updated),
-		ResourceStatus: ptr(sr.r.Status), Metadata: ptr(sr.r.Metadata),
-		DriftInformation: &api.StackResourceDriftInformation{StackResourceDriftStatus: ptr("NOT_CHECKED")},
+		StackName:         &sr.st.Name,
+		StackId:           &sr.st.ID,
+		LogicalResourceId: common.Ptr(sr.logical),
+		PhysicalResourceId: common.Ptr(
+			sr.r.Physical,
+		),
+		ResourceType:         common.Ptr(sr.r.Type),
+		LastUpdatedTimestamp: common.Ptr(sr.r.Updated),
+		ResourceStatus:       common.Ptr(sr.r.Status),
+		Metadata:             common.Ptr(sr.r.Metadata),
+		DriftInformation:     &api.StackResourceDriftInformation{StackResourceDriftStatus: common.Ptr("NOT_CHECKED")},
 	}
 	if sr.r.Reason != "" {
-		out.ResourceStatusReason = ptr(sr.r.Reason)
+		out.ResourceStatusReason = common.Ptr(sr.r.Reason)
 	}
 
 	return &api.DescribeStackResourceOutput{StackResourceDetail: out}, nil
@@ -1001,8 +1021,8 @@ func (s *Service) DescribeStackResources(
 	var found []stackResource
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var loadErr error
-		found, loadErr = resourcesOf(tx, m.Scope, value(in.StackName), value(in.LogicalResourceId),
-			value(in.PhysicalResourceId))
+		found, loadErr = resourcesOf(tx, m.Scope, common.Value(in.StackName), common.Value(in.LogicalResourceId),
+			common.Value(in.PhysicalResourceId))
 		return loadErr
 	})
 	if err != nil {
@@ -1012,13 +1032,19 @@ func (s *Service) DescribeStackResources(
 	out := &api.DescribeStackResourcesOutput{StackResources: []api.StackResource{}}
 	for _, sr := range found {
 		rendered := api.StackResource{
-			StackName: &sr.st.Name, StackId: &sr.st.ID, LogicalResourceId: ptr(sr.logical),
-			PhysicalResourceId: ptr(sr.r.Physical), ResourceType: ptr(sr.r.Type), Timestamp: ptr(sr.r.Updated),
-			ResourceStatus:   ptr(sr.r.Status),
-			DriftInformation: &api.StackResourceDriftInformation{StackResourceDriftStatus: ptr("NOT_CHECKED")},
+			StackName:         &sr.st.Name,
+			StackId:           &sr.st.ID,
+			LogicalResourceId: common.Ptr(sr.logical),
+			PhysicalResourceId: common.Ptr(
+				sr.r.Physical,
+			),
+			ResourceType:     common.Ptr(sr.r.Type),
+			Timestamp:        common.Ptr(sr.r.Updated),
+			ResourceStatus:   common.Ptr(sr.r.Status),
+			DriftInformation: &api.StackResourceDriftInformation{StackResourceDriftStatus: common.Ptr("NOT_CHECKED")},
 		}
 		if sr.r.Reason != "" {
-			rendered.ResourceStatusReason = ptr(sr.r.Reason)
+			rendered.ResourceStatusReason = common.Ptr(sr.r.Reason)
 		}
 
 		out.StackResources = append(out.StackResources, rendered)
@@ -1038,7 +1064,7 @@ func (s *Service) ListStackResources(
 	var found []stackResource
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var loadErr error
-		found, loadErr = resourcesOf(tx, m.Scope, value(in.StackName), "", "")
+		found, loadErr = resourcesOf(tx, m.Scope, common.Value(in.StackName), "", "")
 		return loadErr
 	})
 	if err != nil {
@@ -1048,12 +1074,19 @@ func (s *Service) ListStackResources(
 	summaries := []api.StackResourceSummary{}
 	for _, sr := range found {
 		rendered := api.StackResourceSummary{
-			LogicalResourceId: ptr(sr.logical), PhysicalResourceId: ptr(sr.r.Physical), ResourceType: ptr(sr.r.Type),
-			LastUpdatedTimestamp: ptr(sr.r.Updated), ResourceStatus: ptr(sr.r.Status),
-			DriftInformation: &api.StackResourceDriftInformationSummary{StackResourceDriftStatus: ptr("NOT_CHECKED")},
+			LogicalResourceId: common.Ptr(
+				sr.logical,
+			),
+			PhysicalResourceId:   common.Ptr(sr.r.Physical),
+			ResourceType:         common.Ptr(sr.r.Type),
+			LastUpdatedTimestamp: common.Ptr(sr.r.Updated),
+			ResourceStatus:       common.Ptr(sr.r.Status),
+			DriftInformation: &api.StackResourceDriftInformationSummary{
+				StackResourceDriftStatus: common.Ptr("NOT_CHECKED"),
+			},
 		}
 		if sr.r.Reason != "" {
-			rendered.ResourceStatusReason = ptr(sr.r.Reason)
+			rendered.ResourceStatusReason = common.Ptr(sr.r.Reason)
 		}
 
 		summaries = append(summaries, rendered)
@@ -1077,13 +1110,17 @@ func (s *Service) ListExports(ctx context.Context, in *api.ListExportsInput) (*a
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		prefix := key(m.Scope, kindExport, "")
 		for _, k := range tx.Keys(prefix) {
-			e, _, readErr := read[export](tx, k)
+			e, _, readErr := storage.Read[export](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
 			exports = append(exports, api.Export{
-				ExportingStackId: ptr(e.StackID), Name: ptr(strings.TrimPrefix(k, prefix)), Value: ptr(e.Value),
+				ExportingStackId: common.Ptr(
+					e.StackID,
+				),
+				Name:  common.Ptr(strings.TrimPrefix(k, prefix)),
+				Value: common.Ptr(e.Value),
 			})
 		}
 
@@ -1110,7 +1147,7 @@ func (s *Service) ListImports(ctx context.Context, in *api.ListImportsInput) (*a
 	var names []string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var loadErr error
-		names, loadErr = importers(tx, m.Scope, value(in.ExportName), "")
+		names, loadErr = importers(tx, m.Scope, common.Value(in.ExportName), "")
 		return loadErr
 	})
 	if err != nil {
@@ -1118,7 +1155,7 @@ func (s *Service) ListImports(ctx context.Context, in *api.ListImportsInput) (*a
 	}
 
 	if len(names) == 0 {
-		return nil, validation("Export '%s' is not imported by any stack.", value(in.ExportName))
+		return nil, validation("Export '%s' is not imported by any stack.", common.Value(in.ExportName))
 	}
 
 	items, next, err := page(names, in.NextToken)
@@ -1139,17 +1176,17 @@ func (s *Service) UpdateTerminationProtection(
 
 	var id string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		st, findErr := find(tx, m.Scope, value(in.StackName))
+		st, findErr := find(tx, m.Scope, common.Value(in.StackName))
 		if findErr != nil {
 			return findErr
 		}
 
 		if st.Deleted != nil {
-			return notExist(value(in.StackName))
+			return notExist(common.Value(in.StackName))
 		}
 
-		st.Protected, id = value(in.EnableTerminationProtection), st.ID
-		return write(tx, key(m.Scope, kindStack, st.Name), st)
+		st.Protected, id = common.Value(in.EnableTerminationProtection), st.ID
+		return storage.Write(tx, key(m.Scope, kindStack, st.Name), st)
 	})
 	if err != nil {
 		return nil, err

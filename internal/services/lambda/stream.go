@@ -10,6 +10,7 @@ import (
 	streamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -40,7 +41,7 @@ func (s *Service) streamSource(
 		return invalid("The DynamoDB stream must be in the function's account and region")
 	}
 
-	switch mp.StartingPosition = value(in.StartingPosition); mp.StartingPosition {
+	switch mp.StartingPosition = common.Value(in.StartingPosition); mp.StartingPosition {
 	case positionTrim, positionLatest:
 	case "":
 		return invalid("StartingPosition is required for stream event sources")
@@ -96,7 +97,7 @@ func (r *streamRecord) sequence() string {
 		return ""
 	}
 
-	return value(r.Dynamodb.SequenceNumber)
+	return common.Value(r.Dynamodb.SequenceNumber)
 }
 
 // shardIterator returns an iterator after cursor, or at the start of the
@@ -219,7 +220,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 				}
 			}
 
-			if split || value(mp.MaximumRetryAttempts) < 0 || failures <= value(mp.MaximumRetryAttempts) {
+			if split || common.Value(mp.MaximumRetryAttempts) < 0 || failures <= common.Value(mp.MaximumRetryAttempts) {
 				if processed > 0 {
 					mp.Cursor = all[processed-1].sequence()
 				}
@@ -369,7 +370,7 @@ func (r *streamRecord) arrival() time.Time {
 		return time.Time{}
 	}
 
-	seconds := value(r.Dynamodb.ApproximateCreationDateTime)
+	seconds := common.Value(r.Dynamodb.ApproximateCreationDateTime)
 	return time.Unix(0, int64(seconds*float64(time.Second)))
 }
 
@@ -396,7 +397,7 @@ func (s *Service) streamBatchInfo(ctx context.Context, mp *mapping, records []st
 	}
 	described, err := s.streams.DescribeStream(ctx, &streamsapi.DescribeStreamInput{StreamArn: &mp.EventSourceArn})
 	if err == nil && len(described.StreamDescription.Shards) > 0 {
-		info.ShardID = value(described.StreamDescription.Shards[0].ShardId)
+		info.ShardID = common.Value(described.StreamDescription.Shards[0].ShardId)
 	}
 
 	return info

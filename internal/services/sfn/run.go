@@ -14,6 +14,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -40,7 +41,7 @@ type run struct {
 func (r *run) event(ctx context.Context, kind string, set func(*api.HistoryEvent)) {
 	r.mu.Lock()
 	r.lastEvent++
-	e := api.HistoryEvent{Id: new(r.lastEvent), Type: new(kind), Timestamp: new(unix(r.s.now()))}
+	e := api.HistoryEvent{Id: new(r.lastEvent), Type: new(kind), Timestamp: new(common.Unix(r.s.now()))}
 	if r.lastEvent > 1 {
 		e.PreviousEventId = new(r.lastEvent - 1)
 	}
@@ -57,17 +58,17 @@ func (r *run) event(ctx context.Context, kind string, set func(*api.HistoryEvent
 
 	err := r.s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
 		key := executionKey(r.scope, r.exec.StateMachine, r.exec.Name)
-		e2, found, err := read[execution](tx, key)
+		e2, found, err := storage.Read[execution](tx, key)
 		if err != nil || !found {
 			return err
 		}
 
 		e2.Events = max(e2.Events, *e.Id)
-		if writeErr := write(tx, key, e2); writeErr != nil {
+		if writeErr := storage.Write(tx, key, e2); writeErr != nil {
 			return writeErr
 		}
 
-		return write(tx, eventKey(r.scope, r.exec.StateMachine, r.exec.Name, *e.Id), e)
+		return storage.Write(tx, eventKey(r.scope, r.exec.StateMachine, r.exec.Name, *e.Id), e)
 	})
 	if err != nil {
 		r.s.logger.Warn("recording a step functions event failed", "execution", r.exec.ARN, "error", err)
@@ -82,8 +83,8 @@ func (r *run) log(ctx context.Context, e *api.HistoryEvent) {
 		return
 	}
 
-	kind := value(e.Type)
-	switch value(logging.Level) {
+	kind := common.Value(e.Type)
+	switch common.Value(logging.Level) {
 	case "ALL":
 	case "ERROR":
 		if !strings.Contains(kind, "Failed") && !strings.Contains(kind, "TimedOut") &&
@@ -110,7 +111,7 @@ func (r *run) log(ctx context.Context, e *api.HistoryEvent) {
 		detail = v
 	}
 
-	if !value(logging.IncludeExecutionData) {
+	if !common.Value(logging.IncludeExecutionData) {
 		if d, ok := detail.(map[string]any); ok {
 			delete(d, "input")
 			delete(d, "output")
@@ -118,9 +119,9 @@ func (r *run) log(ctx context.Context, e *api.HistoryEvent) {
 	}
 
 	line, _ := json.Marshal(map[string]any{
-		"id": fmt.Sprint(value(e.Id)), "type": kind, "details": detail, "execution_arn": r.exec.ARN,
-		"previous_event_id": fmt.Sprint(value(e.PreviousEventId)),
-		"event_timestamp":   fmt.Sprint(int64(value(e.Timestamp) * 1000)),
+		"id": fmt.Sprint(common.Value(e.Id)), "type": kind, "details": detail, "execution_arn": r.exec.ARN,
+		"previous_event_id": fmt.Sprint(common.Value(e.PreviousEventId)),
+		"event_timestamp":   fmt.Sprint(int64(common.Value(e.Timestamp) * 1000)),
 	})
 	stream := "states/" + r.machine.Name + "/" + r.started.UTC().Format("2006-01-02-15-04") + "/" + r.exec.Name
 	if err := r.s.logs.Append(context.WithoutCancel(ctx), r.logScope, r.logGroup, stream,

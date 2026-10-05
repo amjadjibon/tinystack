@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -71,11 +72,11 @@ func (k *key) allowedOperations() []string {
 
 func checkGrant(k *key, in *api.CreateGrantRequest) error {
 	switch {
-	case value(in.GranteePrincipal) == "" || len(*in.GranteePrincipal) > 256:
+	case common.Value(in.GranteePrincipal) == "" || len(*in.GranteePrincipal) > 256:
 		return awserror.Validation("GranteePrincipal must be 1 to 256 characters.")
-	case len(value(in.RetiringPrincipal)) > 256:
+	case len(common.Value(in.RetiringPrincipal)) > 256:
 		return awserror.Validation("RetiringPrincipal must be at most 256 characters.")
-	case len(value(in.Name)) > 256:
+	case len(common.Value(in.Name)) > 256:
 		return awserror.Validation("Name must be at most 256 characters.")
 	case len(in.Operations) == 0:
 		return awserror.Validation("Operations must name at least one operation.")
@@ -109,8 +110,8 @@ func (g *grant) same(in *api.CreateGrantRequest) bool {
 		gEquals, gSubset = g.Constraints.EncryptionContextEquals, g.Constraints.EncryptionContextSubset
 	}
 
-	return g.Name == value(in.Name) && g.Grantee == value(in.GranteePrincipal) &&
-		g.Retiring == value(in.RetiringPrincipal) && slices.Equal(g.Operations, in.Operations) &&
+	return g.Name == common.Value(in.Name) && g.Grantee == common.Value(in.GranteePrincipal) &&
+		g.Retiring == common.Value(in.RetiringPrincipal) && slices.Equal(g.Operations, in.Operations) &&
 		maps.Equal(equals, gEquals) && maps.Equal(subset, gSubset)
 }
 
@@ -143,7 +144,7 @@ func (s *Service) CreateGrant(ctx context.Context, in *api.CreateGrantRequest) (
 
 		if in.Name != nil {
 			for _, gk := range tx.Keys(grantPrefix(scope, k.ID)) {
-				g, _, readErr := read[grant](tx, gk)
+				g, _, readErr := storage.Read[grant](tx, gk)
 				if readErr != nil {
 					return readErr
 				}
@@ -158,12 +159,18 @@ func (s *Service) CreateGrant(ctx context.Context, in *api.CreateGrantRequest) (
 		id := make([]byte, 32)
 		_, _ = rand.Read(id)
 		g := &grant{
-			Constraints: in.Constraints, ID: hex.EncodeToString(id), Name: value(in.Name),
-			Grantee: value(in.GranteePrincipal), Retiring: value(in.RetiringPrincipal), Operations: in.Operations,
-			Created: s.now().UnixMilli(),
+			Constraints: in.Constraints,
+			ID:          hex.EncodeToString(id),
+			Name:        common.Value(in.Name),
+			Grantee: common.Value(
+				in.GranteePrincipal,
+			),
+			Retiring:   common.Value(in.RetiringPrincipal),
+			Operations: in.Operations,
+			Created:    s.now().UnixMilli(),
 		}
 		out.GrantId, out.GrantToken = new(g.ID), new(grantToken(k.ID, g.ID))
-		return write(tx, grantPrefix(scope, k.ID)+g.ID, g)
+		return storage.Write(tx, grantPrefix(scope, k.ID)+g.ID, g)
 	})
 	if err != nil {
 		return nil, err
@@ -206,7 +213,7 @@ func (s *Service) ListGrants(ctx context.Context, in *api.ListGrantsRequest) (*a
 		}
 
 		for _, gk := range tx.Keys(grantPrefix(scope, k.ID)) {
-			g, _, readErr := read[grant](tx, gk)
+			g, _, readErr := storage.Read[grant](tx, gk)
 			if readErr != nil {
 				return readErr
 			}
@@ -237,14 +244,14 @@ func (s *Service) ListRetirableGrants(
 		return nil, err
 	}
 
-	if value(in.RetiringPrincipal) == "" {
+	if common.Value(in.RetiringPrincipal) == "" {
 		return nil, awserror.Validation("RetiringPrincipal is required.")
 	}
 
 	var entries []api.GrantListEntry
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, gk := range tx.Keys(prefix(scope, "grant")) {
-			g, _, readErr := read[grant](tx, gk)
+			g, _, readErr := storage.Read[grant](tx, gk)
 			if readErr != nil {
 				return readErr
 			}
@@ -278,7 +285,7 @@ func grantPage(entries []api.GrantListEntry, marker *string, limit *int64) (*api
 
 // RetireGrant deletes a grant given by its token, or by its key and ID.
 func (s *Service) RetireGrant(ctx context.Context, in *api.RetireGrantRequest) (*api.RetireGrantOutput, error) {
-	keyRef, grantID := in.KeyId, value(in.GrantId)
+	keyRef, grantID := in.KeyId, common.Value(in.GrantId)
 	if in.GrantToken != nil {
 		decoded, err := base64.RawURLEncoding.DecodeString(*in.GrantToken)
 		id, gid, ok := strings.Cut(string(decoded), "/")
@@ -300,7 +307,7 @@ func (s *Service) RetireGrant(ctx context.Context, in *api.RetireGrantRequest) (
 
 // RevokeGrant deletes a key's grant.
 func (s *Service) RevokeGrant(ctx context.Context, in *api.RevokeGrantRequest) (*api.RevokeGrantOutput, error) {
-	if err := s.deleteGrant(ctx, in.KeyId, value(in.GrantId), in.DryRun); err != nil {
+	if err := s.deleteGrant(ctx, in.KeyId, common.Value(in.GrantId), in.DryRun); err != nil {
 		return nil, err
 	}
 

@@ -21,7 +21,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			scope := request.Scope{AccountID: account, Region: region}
-			p, _, err := read[parameter](tx, key)
+			p, _, err := storage.Read[parameter](tx, key)
 			if err != nil {
 				return err
 			}

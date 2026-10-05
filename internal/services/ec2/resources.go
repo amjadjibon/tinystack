@@ -30,12 +30,6 @@ func key(scope request.Scope, kind, id string) string {
 // newID returns an EC2 resource ID: prefix, a dash, and 17 hex digits.
 func newID(prefix string) string { return prefix + "-" + common.RandomID(17) }
 
-func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	return storage.Read[T](tx, k)
-}
-
-func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
-
 // list decodes every record of kind in scope, ordered by ID.
 func list[T any](tx storage.ReadTx, scope request.Scope, kind string) ([]*T, error) {
 	return storage.Records[T](tx, key(scope, kind, ""))

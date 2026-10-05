@@ -4,6 +4,7 @@ import (
 	"context"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const sseS3 = "AES256"
@@ -25,7 +26,7 @@ func checkEncryption(cfg *api.ServerSideEncryptionConfiguration) error {
 	}
 
 	d := cfg.Rules[0].ApplyServerSideEncryptionByDefault
-	switch value(d.SSEAlgorithm) {
+	switch common.Value(d.SSEAlgorithm) {
 	case sseS3:
 		if d.KMSMasterKeyID != nil {
 			return invalidArgument(

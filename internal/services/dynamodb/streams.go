@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	streamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -216,7 +217,7 @@ func (st *Streams) DescribeStream(
 		return nil, err
 	}
 
-	if f := in.ShardFilter; f != nil && (value(f.Type) != "CHILD_SHARDS" || value(f.ShardId) == "") {
+	if f := in.ShardFilter; f != nil && (common.Value(f.Type) != "CHILD_SHARDS" || common.Value(f.ShardId) == "") {
 		return nil, awserror.Validation("ShardFilter needs Type CHILD_SHARDS and a ShardId")
 	}
 
@@ -239,7 +240,7 @@ func (st *Streams) DescribeStream(
 		}
 
 		// The one shard has no children, and a page after it is empty.
-		if in.ShardFilter != nil || value(in.ExclusiveStartShardId) == ref.Shard {
+		if in.ShardFilter != nil || common.Value(in.ExclusiveStartShardId) == ref.Shard {
 			return nil
 		}
 
@@ -280,7 +281,7 @@ func (it iterator) encode() *string {
 
 func decodeIterator(raw *string) (iterator, error) {
 	var it iterator
-	data, err := base64.RawURLEncoding.DecodeString(value(raw))
+	data, err := base64.RawURLEncoding.DecodeString(common.Value(raw))
 	if err != nil || json.Unmarshal(data, &it) != nil || it.Stream == "" {
 		return it, awserror.Validation("Invalid ShardIterator")
 	}
@@ -295,7 +296,7 @@ func trimmed() error {
 
 // parseSequence validates a sequence number.
 func parseSequence(raw *string) (int64, error) {
-	s := value(raw)
+	s := common.Value(raw)
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil || n < 1 || len(s) > 40 || strings.TrimLeft(s, "0123456789") != "" {
 		return 0, awserror.Validation("Invalid SequenceNumber: %s", s)
@@ -310,7 +311,7 @@ func (st *Streams) GetShardIterator(
 	ctx context.Context,
 	in *streamsapi.GetShardIteratorInput,
 ) (*streamsapi.GetShardIteratorOutput, error) {
-	kind := value(in.ShardIteratorType)
+	kind := common.Value(in.ShardIteratorType)
 	switch kind {
 	case iteratorTrim, iteratorLatest:
 		if in.SequenceNumber != nil {
@@ -329,7 +330,7 @@ func (st *Streams) GetShardIterator(
 	now := time.Now()
 	out := &streamsapi.GetShardIteratorOutput{}
 	err := st.view(ctx, in.StreamArn, func(_ storage.ReadTx, ref *streamRef) error {
-		if value(in.ShardId) != ref.Shard {
+		if common.Value(in.ShardId) != ref.Shard {
 			return awserror.New("ResourceNotFoundException",
 				"Requested resource not found: Shard does not exist")
 		}

@@ -70,8 +70,6 @@ type table struct {
 	PITRDays int64   `json:",omitempty"`
 }
 
-func value[T any](p *T) (v T) { return common.Value(p) }
-
 var tableName = regexp.MustCompile(`^[A-Za-z0-9_.-]{3,255}$`)
 
 func tableKey(ctx context.Context, name *string) (string, error) {
@@ -119,7 +117,7 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 
 	types := map[string]string{}
 	for _, d := range in.AttributeDefinitions {
-		name, kind := value(d.AttributeName), value(d.AttributeType)
+		name, kind := common.Value(d.AttributeName), common.Value(d.AttributeType)
 		if name == "" || len(name) > 255 || (kind != "S" && kind != "N" && kind != "B") || types[name] != "" {
 			return nil, awserror.Validation("Invalid or duplicate attribute definition")
 		}
@@ -276,7 +274,7 @@ func (s *Service) ListTables(ctx context.Context, in *api.ListTablesInput) (*api
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, key := range tx.Keys(prefix) {
 			name := strings.TrimPrefix(key, prefix)
-			if strings.Contains(name, "/") || name <= value(in.ExclusiveStartTableName) {
+			if strings.Contains(name, "/") || name <= common.Value(in.ExclusiveStartTableName) {
 				continue
 			}
 

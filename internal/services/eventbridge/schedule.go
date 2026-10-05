@@ -196,7 +196,7 @@ func claim(tx storage.WriteTx, key string, due, now time.Time) (run, bool, error
 	}
 
 	scope := request.Scope{AccountID: parts[0], Region: parts[1]}
-	r, found, err := load(tx, rulePrefix(scope, defaultBus)+parts[2])
+	r, found, err := storage.Read[rule](tx, rulePrefix(scope, defaultBus)+parts[2])
 	if err != nil || !found || r.State != stateEnabled || r.Schedule == "" {
 		tx.Delete(key)
 		return run{}, false, err

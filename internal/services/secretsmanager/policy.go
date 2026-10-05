@@ -144,7 +144,7 @@ func (s *Service) repolicy(ctx context.Context, id *string, policy string, done 
 
 		sec.Policy = policy
 		done(sec.arn(m.Scope), sec.Name)
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 }
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -126,7 +127,7 @@ func (s *Service) CreateOpenIDConnectProvider(
 		}
 
 		ids := slices.Compact(slices.Sorted(slices.Values(in.ClientIDList)))
-		return write(tx, k, &oidcProvider{
+		return storage.Write(tx, k, &oidcProvider{
 			Tags: tags, URL: name, ClientIDs: ids, Thumbprints: in.ThumbprintList, CreatedAt: s.now().UnixMilli(),
 		})
 	})
@@ -147,7 +148,7 @@ func loadProvider(tx storage.ReadTx, account string, providerARN *string) (*oidc
 	}
 
 	k := key(account, kindOIDC, name)
-	p, found, err := read[oidcProvider](tx, k)
+	p, found, err := storage.Read[oidcProvider](tx, k)
 	if err == nil && !found {
 		err = noSuchEntity("OpenIDConnect Provider not found for arn %s", *providerARN)
 	}
@@ -224,7 +225,7 @@ func (s *Service) updateProvider(ctx context.Context, providerARN *string, chang
 			return changeErr
 		}
 
-		return write(tx, k, p)
+		return storage.Write(tx, k, p)
 	})
 }
 
@@ -257,7 +258,7 @@ func (s *Service) AddClientIDToOpenIDConnectProvider(
 	ctx context.Context,
 	in *api.AddClientIDToOpenIDConnectProviderRequest,
 ) (*api.AddClientIDToOpenIDConnectProviderOutput, error) {
-	id := value(in.ClientID)
+	id := common.Value(in.ClientID)
 	if err := checkClientID(id); err != nil {
 		return nil, err
 	}
@@ -285,7 +286,7 @@ func (s *Service) RemoveClientIDFromOpenIDConnectProvider(
 	ctx context.Context,
 	in *api.RemoveClientIDFromOpenIDConnectProviderRequest,
 ) (*api.RemoveClientIDFromOpenIDConnectProviderOutput, error) {
-	id := value(in.ClientID)
+	id := common.Value(in.ClientID)
 	err := s.updateProvider(ctx, in.OpenIDConnectProviderArn, func(p *oidcProvider) error {
 		p.ClientIDs = slices.DeleteFunc(p.ClientIDs, func(c string) bool { return c == id })
 		return nil
@@ -334,7 +335,7 @@ func (s *Service) OIDCProvider(ctx context.Context, account, issuer string) (Pro
 	var out Provider
 	found := false
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, exists, readErr := read[oidcProvider](tx, key(account, kindOIDC, name))
+		p, exists, readErr := storage.Read[oidcProvider](tx, key(account, kindOIDC, name))
 		if readErr != nil || !exists {
 			return readErr
 		}

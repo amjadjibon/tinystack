@@ -75,7 +75,7 @@ func (s *Service) PutSecretValue(
 			ARN: new(sec.arn(m.Scope)), Name: new(sec.Name), VersionId: new(id), VersionStages: sec.stagesOf()[id],
 		}
 
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 
 	return out, err
@@ -108,7 +108,7 @@ func (s *Service) GetSecretValue(
 			return resolveErr
 		}
 
-		value, _, readErr := read[payload](tx, valueKey(m.Scope, sec.Name, id))
+		value, _, readErr := storage.Read[payload](tx, valueKey(m.Scope, sec.Name, id))
 		if readErr != nil {
 			return readErr
 		}
@@ -239,7 +239,7 @@ func (s *Service) UpdateSecretVersionStage(
 
 		sec.ChangedAt = now.UnixMilli()
 		out = &api.UpdateSecretVersionStageResponse{ARN: new(sec.arn(m.Scope)), Name: new(sec.Name)}
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 
 	return out, err
@@ -334,6 +334,6 @@ func (s *Service) retag(ctx context.Context, id *string, fn func(tags map[string
 			return fnErr
 		}
 
-		return write(tx, secretKey(m.Scope, sec.Name), sec)
+		return storage.Write(tx, secretKey(m.Scope, sec.Name), sec)
 	})
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -80,14 +81,6 @@ func parseHandle(handle string) (string, bool) {
 	return taskPrefix(key) + h.TaskID, ok
 }
 
-func loadTask(tx storage.ReadTx, key string) (*moveTask, bool, error) {
-	return storage.Read[moveTask](tx, key)
-}
-
-func saveTask(tx storage.WriteTx, key string, t *moveTask) error {
-	return storage.Write(tx, key, t)
-}
-
 // callerQueue maps an ARN to the key of a queue in the caller's account and
 // region.
 func callerQueue(ctx context.Context, name, arn string) (string, error) {
@@ -121,7 +114,7 @@ func (s *Service) StartMessageMoveTask(
 	ctx context.Context,
 	in *api.StartMessageMoveTaskRequest,
 ) (*api.StartMessageMoveTaskResult, error) {
-	source, err := callerQueue(ctx, "SourceArn", value(in.SourceArn))
+	source, err := callerQueue(ctx, "SourceArn", common.Value(in.SourceArn))
 	if err != nil {
 		return nil, err
 	}
@@ -146,9 +139,9 @@ func (s *Service) StartMessageMoveTask(
 	t := &moveTask{
 		ID:             fmt.Sprintf("%015d-%s", now, messageID()),
 		SourceArn:      keyARN(source),
-		DestinationArn: value(in.DestinationArn),
+		DestinationArn: common.Value(in.DestinationArn),
 		Status:         taskRunning,
-		Rate:           value(in.MaxNumberOfMessagesPerSecond),
+		Rate:           common.Value(in.MaxNumberOfMessagesPerSecond),
 		StartedAt:      now,
 	}
 
@@ -186,7 +179,7 @@ func (s *Service) StartMessageMoveTask(
 		prefix := taskPrefix(source)
 		keys := tx.Keys(prefix)
 		for _, k := range keys {
-			running, _, taskErr := loadTask(tx, k)
+			running, _, taskErr := storage.Read[moveTask](tx, k)
 			if taskErr != nil {
 				return taskErr
 			}
@@ -210,7 +203,7 @@ func (s *Service) StartMessageMoveTask(
 			}
 		}
 
-		return saveTask(tx, prefix+t.ID, t)
+		return storage.Write(tx, prefix+t.ID, t)
 	})
 	if err != nil {
 		return nil, err
@@ -224,7 +217,7 @@ func (s *Service) ListMessageMoveTasks(
 	ctx context.Context,
 	in *api.ListMessageMoveTasksRequest,
 ) (*api.ListMessageMoveTasksResult, error) {
-	source, err := callerQueue(ctx, "SourceArn", value(in.SourceArn))
+	source, err := callerQueue(ctx, "SourceArn", common.Value(in.SourceArn))
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +237,7 @@ func (s *Service) ListMessageMoveTasks(
 
 		keys := tx.Keys(taskPrefix(source))
 		for i := len(keys) - 1; i >= 0 && int64(len(tasks)) < limit; i-- {
-			t, _, taskErr := loadTask(tx, keys[i])
+			t, _, taskErr := storage.Read[moveTask](tx, keys[i])
 			if taskErr != nil {
 				return taskErr
 			}
@@ -299,14 +292,14 @@ func (s *Service) CancelMessageMoveTask(
 		return nil, err
 	}
 
-	key, ok := parseHandle(value(in.TaskHandle))
+	key, ok := parseHandle(common.Value(in.TaskHandle))
 	if !ok || !strings.HasPrefix(key, moveIndex+m.AccountID+"/"+m.Region+"/") {
 		return nil, resourceNotFound("Task does not exist.")
 	}
 
 	var moved int64
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		t, found, loadErr := loadTask(tx, key)
+		t, found, loadErr := storage.Read[moveTask](tx, key)
 		switch {
 		case loadErr != nil:
 			return loadErr
@@ -317,7 +310,7 @@ func (s *Service) CancelMessageMoveTask(
 		}
 
 		t.Status, moved = taskCancelled, t.Moved
-		return saveTask(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return nil, err
@@ -342,7 +335,7 @@ func (s *Service) mover() {
 		var running []string
 		_ = s.store.View(ctx, func(tx storage.ReadTx) error {
 			for _, k := range tx.Keys(moveIndex) {
-				if t, _, err := loadTask(tx, k); err == nil && t.Status == taskRunning {
+				if t, _, err := storage.Read[moveTask](tx, k); err == nil && t.Status == taskRunning {
 					running = append(running, k)
 				}
 			}
@@ -367,7 +360,7 @@ func (s *Service) move(ctx context.Context, key string) error {
 	now := s.now().UnixMilli()
 	var notified []string
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		t, found, err := loadTask(tx, key)
+		t, found, err := storage.Read[moveTask](tx, key)
 		if err != nil || !found || t.Status != taskRunning {
 			return err
 		}
@@ -376,7 +369,7 @@ func (s *Service) move(ctx context.Context, key string) error {
 		q, err := load(tx, source)
 		if err != nil {
 			t.Status, t.FailureReason = taskFailed, "AWS.SimpleQueueService.NonExistentQueue"
-			return saveTask(tx, key, t)
+			return storage.Write(tx, key, t)
 		}
 
 		rate := t.Rate
@@ -409,7 +402,7 @@ func (s *Service) move(ctx context.Context, key string) error {
 
 			if !exists && t.DestinationArn != "" {
 				t.Status, t.FailureReason = taskFailed, "AWS.SimpleQueueService.NonExistentQueue"
-				return saveTask(tx, key, t)
+				return storage.Write(tx, key, t)
 			}
 
 			if !exists {
@@ -431,7 +424,7 @@ func (s *Service) move(ctx context.Context, key string) error {
 			}
 
 			targetKey, _ := arnKey(arn)
-			if saveErr := save(tx, targetKey, target); saveErr != nil {
+			if saveErr := storage.Write(tx, targetKey, target); saveErr != nil {
 				return saveErr
 			}
 
@@ -442,11 +435,11 @@ func (s *Service) move(ctx context.Context, key string) error {
 			t.Status = taskCompleted
 		}
 
-		if saveErr := save(tx, source, q); saveErr != nil {
+		if saveErr := storage.Write(tx, source, q); saveErr != nil {
 			return saveErr
 		}
 
-		return saveTask(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return err

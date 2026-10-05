@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -35,7 +36,7 @@ func groupNotFound() error { return notFound("Group not found.") }
 func (g *group) output(pool string) *api.GroupType {
 	out := &api.GroupType{
 		GroupName: new(g.Name), UserPoolId: new(pool), Precedence: g.Precedence,
-		CreationDate: seconds(g.Created), LastModifiedDate: seconds(g.Modified),
+		CreationDate: common.SecondsMilli(g.Created), LastModifiedDate: common.SecondsMilli(g.Modified),
 	}
 	if g.Description != "" {
 		out.Description = new(g.Description)
@@ -53,7 +54,7 @@ func checkGroup(name, description, role *string, precedence *int64) error {
 		return invalidParameter("GroupName must be 1 to 128 characters matching [\\p{L}\\p{M}\\p{S}\\p{N}\\p{P}]+.")
 	}
 
-	if utf8.RuneCountInString(value(description)) > 2048 {
+	if utf8.RuneCountInString(common.Value(description)) > 2048 {
 		return invalidParameter("Description must be at most 2048 characters long.")
 	}
 
@@ -73,7 +74,7 @@ func loadGroup(tx storage.ReadTx, scope request.Scope, p *pool, name *string) (*
 		return nil, invalidParameter("GroupName is required.")
 	}
 
-	g, ok, err := read[group](tx, groupKey(scope, p.ID, *name))
+	g, ok, err := storage.Read[group](tx, groupKey(scope, p.ID, *name))
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +104,11 @@ func (s *Service) CreateGroup(ctx context.Context, in *api.CreateGroupRequest) (
 
 		now := s.now().UTC()
 		g := &group{
-			Name: *in.GroupName, Description: value(in.Description), RoleArn: value(in.RoleArn),
+			Name: *in.GroupName, Description: common.Value(in.Description), RoleArn: common.Value(in.RoleArn),
 			Precedence: in.Precedence, Created: now, Modified: now,
 		}
 		out = g.output(p.ID)
-		return write(tx, k, g)
+		return storage.Write(tx, k, g)
 	})
 	if err != nil {
 		return nil, err
@@ -143,7 +144,7 @@ func (s *Service) ListGroups(ctx context.Context, in *api.ListGroupsRequest) (*a
 	var groups []*api.GroupType
 	err = s.view(ctx, in.UserPoolId, func(tx storage.ReadTx, scope request.Scope, p *pool) error {
 		for _, name := range ids(tx, prefix(scope, "group")+p.ID+"/") {
-			g, _, readErr := read[group](tx, groupKey(scope, p.ID, name))
+			g, _, readErr := storage.Read[group](tx, groupKey(scope, p.ID, name))
 			if readErr != nil {
 				return readErr
 			}
@@ -209,7 +210,7 @@ func (s *Service) UpdateGroup(ctx context.Context, in *api.UpdateGroupRequest) (
 
 		g.Modified = s.now().UTC()
 		out = g.output(p.ID)
-		return write(tx, groupKey(scope, p.ID, g.Name), g)
+		return storage.Write(tx, groupKey(scope, p.ID, g.Name), g)
 	})
 	if err != nil {
 		return nil, err
@@ -233,7 +234,7 @@ func (s *Service) DeleteGroup(ctx context.Context, in *api.DeleteGroupRequest) (
 
 		for _, u := range members {
 			u.Groups = slices.DeleteFunc(u.Groups, func(name string) bool { return name == g.Name })
-			if writeErr := write(tx, userKey(scope, p, u.Username), u); writeErr != nil {
+			if writeErr := storage.Write(tx, userKey(scope, p, u.Username), u); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -306,7 +307,7 @@ func (s *Service) AdminListGroupsForUser(
 		}
 
 		for _, name := range u.Groups {
-			g, ok, readErr := read[group](tx, groupKey(scope, p.ID, name))
+			g, ok, readErr := storage.Read[group](tx, groupKey(scope, p.ID, name))
 			if readErr != nil {
 				return readErr
 			}

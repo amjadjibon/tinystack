@@ -15,6 +15,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -89,11 +90,11 @@ func urlEndpoint(base, id, region string) string {
 
 // checkURL validates a URL configuration's auth type, invoke mode, and CORS.
 func checkURL(auth, mode *string, cors *api.Cors) error {
-	if a := value(auth); a != authNone && a != authIAM {
+	if a := common.Value(auth); a != authNone && a != authIAM {
 		return invalid("AuthType must be NONE or AWS_IAM")
 	}
 
-	if m := value(mode); m != "" && m != buffered && m != streaming {
+	if m := common.Value(mode); m != "" && m != buffered && m != streaming {
 		return invalid("InvokeMode must be BUFFERED or RESPONSE_STREAM")
 	}
 
@@ -101,7 +102,7 @@ func checkURL(auth, mode *string, cors *api.Cors) error {
 		return nil
 	}
 
-	if value(cors.MaxAge) < 0 || value(cors.MaxAge) > 86400 {
+	if common.Value(cors.MaxAge) < 0 || common.Value(cors.MaxAge) > 86400 {
 		return invalid("Cors MaxAge must be from 0 to 86400")
 	}
 
@@ -122,7 +123,7 @@ var corsMethods = map[string]bool{
 // urlFunction resolves the function and qualifier a URL request names. The
 // qualifier must be an alias, or none for the unqualified function.
 func urlFunction(tx storage.ReadTx, m *request.Metadata, raw, qualifier *string) (name, q string, err error) {
-	if name, q, err = resolveName(*m, value(raw)); err != nil {
+	if name, q, err = resolveName(*m, common.Value(raw)); err != nil {
 		return "", "", err
 	}
 
@@ -174,7 +175,7 @@ func (s *Service) CreateFunctionUrlConfig(
 
 	now := s.now().UTC().Format(timeFormat)
 	u := functionURL{
-		ID: newURLID(), AuthType: *in.AuthType, Cors: in.Cors, InvokeMode: value(in.InvokeMode),
+		ID: newURLID(), AuthType: *in.AuthType, Cors: in.Cors, InvokeMode: common.Value(in.InvokeMode),
 		Created: now, Modified: now,
 	}
 	if u.InvokeMode == "" {
@@ -437,7 +438,7 @@ func corsHeaders(c *api.Cors, origin string, preflight bool) http.Header {
 	}
 
 	h.Set("Access-Control-Allow-Origin", allowed)
-	if value(c.AllowCredentials) {
+	if common.Value(c.AllowCredentials) {
 		h.Set("Access-Control-Allow-Credentials", "true")
 	}
 

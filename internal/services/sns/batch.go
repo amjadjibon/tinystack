@@ -8,6 +8,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -35,7 +36,7 @@ func (s *Service) PublishBatch(ctx context.Context, in *api.PublishBatchInput) (
 	seen := map[string]bool{}
 	size := 0
 	for i := range entries {
-		id := value(entries[i].Id)
+		id := common.Value(entries[i].Id)
 		if !batchEntryID.MatchString(id) {
 			return nil, awserror.New("InvalidBatchEntryIdException",
 				"The Id of a batch entry in a batch request doesn't abide by the specification.")

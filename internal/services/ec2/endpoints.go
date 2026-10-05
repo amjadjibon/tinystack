@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -86,7 +87,7 @@ func endpointNotFound(id string) error {
 }
 
 func loadEndpoint(tx storage.ReadTx, scope request.Scope, id string) (*vpcEndpoint, error) {
-	ep, ok, err := read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, id))
+	ep, ok, err := storage.Read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, id))
 	if err == nil && !ok {
 		err = endpointNotFound(id)
 	}
@@ -215,25 +216,25 @@ func routeEndpoint(tx storage.WriteTx, scope request.Scope, ep *vpcEndpoint, tab
 
 	rt.Routes = append(rt.Routes, route{PrefixList: list, GatewayID: ep.ID, Origin: originRoute})
 	ep.RouteTableIDs = append(ep.RouteTableIDs, rt.ID)
-	return write(tx, key(scope, kindRouteTable, rt.ID), rt)
+	return storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt)
 }
 
 // unrouteEndpoint removes a gateway endpoint's route from a route table.
 func unrouteEndpoint(tx storage.WriteTx, scope request.Scope, ep *vpcEndpoint, tableID string) error {
 	ep.RouteTableIDs = slices.DeleteFunc(ep.RouteTableIDs, func(id string) bool { return id == tableID })
-	rt, ok, err := read[routeTable](tx, key(scope, kindRouteTable, tableID))
+	rt, ok, err := storage.Read[routeTable](tx, key(scope, kindRouteTable, tableID))
 	if err != nil || !ok {
 		return err
 	}
 
 	rt.Routes = slices.DeleteFunc(rt.Routes, func(r route) bool { return r.GatewayID == ep.ID })
-	return write(tx, key(scope, kindRouteTable, rt.ID), rt)
+	return storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt)
 }
 
 // addEndpointSubnet gives an interface endpoint a network interface in a
 // subnet of its VPC, at most one per zone.
 func addEndpointSubnet(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, id string) error {
-	sn, ok, err := read[subnet](tx, key(scope, kindSubnet, id))
+	sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, id))
 	if err != nil || !ok {
 		return errorsOr(err, subnetNotFound(id))
 	}
@@ -268,7 +269,7 @@ func addEndpointSubnet(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, 
 
 // addEndpointGroup adds a security group of an interface endpoint's VPC.
 func addEndpointGroup(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, id string) error {
-	g, ok, err := read[securityGroup](tx, key(scope, kindSecurityGroup, id))
+	g, ok, err := storage.Read[securityGroup](tx, key(scope, kindSecurityGroup, id))
 	if err != nil || !ok {
 		return errorsOr(err, groupNotFound(id))
 	}
@@ -315,14 +316,14 @@ type endpointRequest struct {
 // build checks the request in tx and returns the new endpoint, routing its
 // route tables.
 func (r *endpointRequest) build(tx storage.WriteTx, scope request.Scope, now time.Time) (*vpcEndpoint, error) {
-	v, err := loadVPC(tx, scope, value(r.in.VpcId))
+	v, err := loadVPC(tx, scope, common.Value(r.in.VpcId))
 	if err != nil {
 		return nil, err
 	}
 
 	ep := &vpcEndpoint{
 		ID: newID("vpce"), VPCID: v.ID, Service: r.service, Type: r.kind, Created: now, Tags: r.tags,
-		Policy: defaultEndpointPolicy, Label: newID("x")[2:10], ClientToken: value(r.in.ClientToken),
+		Policy: defaultEndpointPolicy, Label: newID("x")[2:10], ClientToken: common.Value(r.in.ClientToken),
 	}
 	if r.in.PolicyDocument != nil {
 		ep.Policy = *r.in.PolicyDocument
@@ -382,7 +383,7 @@ func (s *Service) CreateVpcEndpoint(
 		return nil, err
 	}
 
-	r := &endpointRequest{in: in, kind: value(in.VpcEndpointType)}
+	r := &endpointRequest{in: in, kind: common.Value(in.VpcEndpointType)}
 	switch r.kind {
 	case "":
 		r.kind = endpointGateway
@@ -392,12 +393,12 @@ func (s *Service) CreateVpcEndpoint(
 			"TinyStack supports Gateway and Interface endpoints.", r.kind))
 	}
 
-	if r.service, err = endpointService(m.Region, value(in.ServiceName), r.kind); err != nil {
+	if r.service, err = endpointService(m.Region, common.Value(in.ServiceName), r.kind); err != nil {
 		return nil, err
 	}
 
 	gateway := r.kind == endpointGateway
-	if gateway && (len(in.SubnetIds) > 0 || len(in.SecurityGroupIds) > 0 || value(in.PrivateDnsEnabled)) {
+	if gateway && (len(in.SubnetIds) > 0 || len(in.SecurityGroupIds) > 0 || common.Value(in.PrivateDnsEnabled)) {
 		return nil, invalidParameter("Gateway endpoints take route tables, not subnets, security groups, " +
 			"or private DNS")
 	}
@@ -424,7 +425,7 @@ func (s *Service) CreateVpcEndpoint(
 			return listErr
 		}
 
-		token := value(in.ClientToken)
+		token := common.Value(in.ClientToken)
 		if at := slices.IndexFunc(all, func(ep *vpcEndpoint) bool {
 			return token != "" && ep.ClientToken == token
 		}); at >= 0 {
@@ -444,7 +445,7 @@ func (s *Service) CreateVpcEndpoint(
 		}
 
 		out = endpointOutput(scope, ep, state)
-		return write(tx, key(scope, kindVPCEndpoint, ep.ID), ep)
+		return storage.Write(tx, key(scope, kindVPCEndpoint, ep.ID), ep)
 	})
 	if err != nil {
 		return nil, err
@@ -467,7 +468,7 @@ func (s *Service) ModifyVpcEndpoint(
 	}
 
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		ep, err := loadEndpoint(tx, scope, value(in.VpcEndpointId))
+		ep, err := loadEndpoint(tx, scope, common.Value(in.VpcEndpointId))
 		if err != nil {
 			return err
 		}
@@ -484,7 +485,7 @@ func (s *Service) ModifyVpcEndpoint(
 			return stepErr
 		}
 
-		return write(tx, key(scope, kindVPCEndpoint, ep.ID), ep)
+		return storage.Write(tx, key(scope, kindVPCEndpoint, ep.ID), ep)
 	})
 	if err != nil {
 		return nil, err
@@ -541,7 +542,7 @@ func modifyEndpoint(tx storage.WriteTx, scope request.Scope, ep *vpcEndpoint, in
 	}
 
 	switch {
-	case value(in.ResetPolicy):
+	case common.Value(in.ResetPolicy):
 		ep.Policy = defaultEndpointPolicy
 	case in.PolicyDocument != nil:
 		ep.Policy = *in.PolicyDocument
@@ -563,7 +564,7 @@ func (s *Service) DeleteVpcEndpoints(
 	out := &api.DeleteVpcEndpointsResult{Unsuccessful: []api.UnsuccessfulItem{}}
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		for _, id := range in.VpcEndpointIds {
-			ep, ok, err := read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, id))
+			ep, ok, err := storage.Read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, id))
 			if err != nil {
 				return err
 			}
@@ -706,7 +707,7 @@ func forgetRouteTable(tx storage.WriteTx, scope request.Scope, tableID string) e
 	for _, ep := range all {
 		if slices.Contains(ep.RouteTableIDs, tableID) {
 			ep.RouteTableIDs = slices.DeleteFunc(ep.RouteTableIDs, func(id string) bool { return id == tableID })
-			if stepErr := write(tx, key(scope, kindVPCEndpoint, ep.ID), ep); stepErr != nil {
+			if stepErr := storage.Write(tx, key(scope, kindVPCEndpoint, ep.ID), ep); stepErr != nil {
 				return stepErr
 			}
 		}

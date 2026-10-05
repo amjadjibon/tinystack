@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -48,7 +49,7 @@ func domainIndexKey(name string) string { return "aws/" + service + "/domain/" +
 func domainNotFound() error { return notFound("Invalid domain name identifier specified") }
 
 func loadDomain(tx storage.ReadTx, scope request.Scope, name string) (*domain, error) {
-	d, found, err := read[domain](tx, domainKey(scope, strings.ToLower(name)))
+	d, found, err := storage.Read[domain](tx, domainKey(scope, strings.ToLower(name)))
 	if err == nil && !found {
 		err = domainNotFound()
 	}
@@ -62,9 +63,9 @@ func (s *Service) CreateDomainName(ctx context.Context, in *api.CreateDomainName
 		return nil, err
 	}
 
-	name := strings.ToLower(value(in.DomainName))
+	name := strings.ToLower(common.Value(in.DomainName))
 	if !domainPattern.MatchString(name) || len(name) > 253 {
-		return nil, badRequest("Invalid domain name: %s", value(in.DomainName))
+		return nil, badRequest("Invalid domain name: %s", common.Value(in.DomainName))
 	}
 
 	types := []string{endpointEdge}
@@ -86,19 +87,19 @@ func (s *Service) CreateDomainName(ctx context.Context, in *api.CreateDomainName
 		return nil, tagErr
 	}
 
-	label := "d-" + newID(10)
+	label := "d-" + common.RandomID(10)
 	d := &domain{Domain: api.DomainName{
 		DomainName:    &name,
 		DomainNameArn: new("arn:aws:apigateway:" + m.Region + "::/domainnames/" + name),
 		EndpointConfiguration: &api.EndpointConfiguration{
-			Types: types, IpAddressType: orElse(endpointIPType(in.EndpointConfiguration), new("ipv4")),
+			Types: types, IpAddressType: common.OrElse(endpointIPType(in.EndpointConfiguration), new("ipv4")),
 		},
-		DomainNameStatus: new("AVAILABLE"), SecurityPolicy: orElse(in.SecurityPolicy, new("TLS_1_2")),
-		Tags: cloneTags(in.Tags),
+		DomainNameStatus: new("AVAILABLE"), SecurityPolicy: common.OrElse(in.SecurityPolicy, new("TLS_1_2")),
+		Tags: common.CloneTags(in.Tags),
 	}, Mappings: []api.BasePathMapping{}}
 	if edge {
 		d.Domain.CertificateArn, d.Domain.CertificateName = in.CertificateArn, in.CertificateName
-		d.Domain.CertificateUploadDate = seconds(s.now())
+		d.Domain.CertificateUploadDate = common.Seconds(s.now())
 		d.Domain.DistributionDomainName = new(label + ".cloudfront.net")
 		d.Domain.DistributionHostedZoneId = new(cloudFrontZone)
 	} else {
@@ -113,7 +114,7 @@ func (s *Service) CreateDomainName(ctx context.Context, in *api.CreateDomainName
 			return conflict("The domain name you provided already exists.")
 		}
 
-		if writeErr := write(
+		if writeErr := storage.Write(
 			tx,
 			domainIndexKey(name),
 			location{Account: m.AccountID, Region: m.Region},
@@ -121,7 +122,7 @@ func (s *Service) CreateDomainName(ctx context.Context, in *api.CreateDomainName
 			return writeErr
 		}
 
-		return write(tx, domainKey(m.Scope, name), d)
+		return storage.Write(tx, domainKey(m.Scope, name), d)
 	})
 	if err != nil {
 		return nil, err
@@ -146,7 +147,7 @@ func (s *Service) GetDomainName(ctx context.Context, in *api.GetDomainNameReques
 
 	var out *api.DomainName
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		d, loadErr := loadDomain(tx, m.Scope, value(in.DomainName))
+		d, loadErr := loadDomain(tx, m.Scope, common.Value(in.DomainName))
 		if loadErr == nil {
 			out = &d.Domain
 		}
@@ -169,7 +170,7 @@ func (s *Service) GetDomainNames(ctx context.Context, in *api.GetDomainNamesRequ
 	var domains []*domain
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var readErr error
-		domains, readErr = records[domain](tx, prefix(m.Scope, kindDomain))
+		domains, readErr = storage.Records[domain](tx, prefix(m.Scope, kindDomain))
 		return readErr
 	})
 	if err != nil {
@@ -199,7 +200,7 @@ func (s *Service) DeleteDomainName(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		d, loadErr := loadDomain(tx, m.Scope, value(in.DomainName))
+		d, loadErr := loadDomain(tx, m.Scope, common.Value(in.DomainName))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -217,7 +218,7 @@ func (s *Service) DeleteDomainName(
 
 // basePath normalizes a base path, "(none)" for the empty one.
 func basePath(p *string) string {
-	if v := strings.Trim(value(p), "/"); v != "" {
+	if v := strings.Trim(common.Value(p), "/"); v != "" {
 		return v
 	}
 
@@ -243,7 +244,7 @@ func (s *Service) CreateBasePathMapping(
 
 	mapping := &api.BasePathMapping{BasePath: &path, RestApiId: in.RestApiId, Stage: in.Stage}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		d, loadErr := loadDomain(tx, m.Scope, value(in.DomainName))
+		d, loadErr := loadDomain(tx, m.Scope, common.Value(in.DomainName))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -267,7 +268,7 @@ func (s *Service) CreateBasePathMapping(
 			d.Mappings,
 			func(a, b api.BasePathMapping) int { return strings.Compare(*a.BasePath, *b.BasePath) },
 		)
-		return write(tx, domainKey(m.Scope, *d.Domain.DomainName), d)
+		return storage.Write(tx, domainKey(m.Scope, *d.Domain.DomainName), d)
 	})
 	if err != nil {
 		return nil, err
@@ -288,7 +289,7 @@ func (s *Service) GetBasePathMapping(
 	path := basePath(in.BasePath)
 	var out *api.BasePathMapping
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		d, loadErr := loadDomain(tx, m.Scope, value(in.DomainName))
+		d, loadErr := loadDomain(tx, m.Scope, common.Value(in.DomainName))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -319,7 +320,7 @@ func (s *Service) GetBasePathMappings(
 
 	var mappings []api.BasePathMapping
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		d, loadErr := loadDomain(tx, m.Scope, value(in.DomainName))
+		d, loadErr := loadDomain(tx, m.Scope, common.Value(in.DomainName))
 		if loadErr == nil {
 			mappings = d.Mappings
 		}
@@ -354,7 +355,7 @@ func (s *Service) DeleteBasePathMapping(
 
 	path := basePath(in.BasePath)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		d, loadErr := loadDomain(tx, m.Scope, value(in.DomainName))
+		d, loadErr := loadDomain(tx, m.Scope, common.Value(in.DomainName))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -368,7 +369,7 @@ func (s *Service) DeleteBasePathMapping(
 		}
 
 		d.Mappings = kept
-		return write(tx, domainKey(m.Scope, *d.Domain.DomainName), d)
+		return storage.Write(tx, domainKey(m.Scope, *d.Domain.DomainName), d)
 	})
 	if err != nil {
 		return nil, err
@@ -400,7 +401,7 @@ func (h *Domains) Execute(ctx context.Context, name string, r *execute.Request) 
 	name = strings.ToLower(name)
 	var d *domain
 	err := h.s.store.View(ctx, func(tx storage.ReadTx) error {
-		loc, found, err := read[location](tx, domainIndexKey(name))
+		loc, found, err := storage.Read[location](tx, domainIndexKey(name))
 		if err != nil || !found {
 			return err
 		}

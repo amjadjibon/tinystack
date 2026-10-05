@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -19,7 +20,7 @@ const (
 
 // checkTag checks a tag and returns it as a group reports it.
 func checkTag(t api.Tag, group string) (api.TagDescription, error) {
-	k, v := value(t.Key), value(t.Value)
+	k, v := common.Value(t.Key), common.Value(t.Value)
 	switch {
 	case t.ResourceType != nil && *t.ResourceType != resourceTypeGroup:
 		return api.TagDescription{}, validation("Tags can only be applied to resources of type auto-scaling-group.")
@@ -32,19 +33,22 @@ func checkTag(t api.Tag, group string) (api.TagDescription, error) {
 	}
 
 	if group == "" {
-		group = value(t.ResourceId)
+		group = common.Value(t.ResourceId)
 	}
 
 	return api.TagDescription{
 		ResourceId: new(group), ResourceType: new(resourceTypeGroup), Key: new(k), Value: new(v),
-		PropagateAtLaunch: new(value(t.PropagateAtLaunch)),
+		PropagateAtLaunch: new(common.Value(t.PropagateAtLaunch)),
 	}, nil
 }
 
 // merge sets tags on a group's tags, by key, keeping them sorted.
 func merge(tags []api.TagDescription, set ...api.TagDescription) ([]api.TagDescription, error) {
 	for _, t := range set {
-		tags = slices.DeleteFunc(tags, func(o api.TagDescription) bool { return value(o.Key) == value(t.Key) })
+		tags = slices.DeleteFunc(
+			tags,
+			func(o api.TagDescription) bool { return common.Value(o.Key) == common.Value(t.Key) },
+		)
 		tags = append(tags, t)
 	}
 
@@ -52,7 +56,10 @@ func merge(tags []api.TagDescription, set ...api.TagDescription) ([]api.TagDescr
 		return nil, awserror.New("LimitExceededFault", "The quota of 50 tags per Auto Scaling group has been reached.")
 	}
 
-	slices.SortFunc(tags, func(a, b api.TagDescription) int { return strings.Compare(value(a.Key), value(b.Key)) })
+	slices.SortFunc(
+		tags,
+		func(a, b api.TagDescription) int { return strings.Compare(common.Value(a.Key), common.Value(b.Key)) },
+	)
 	return tags, nil
 }
 
@@ -90,7 +97,7 @@ func (s *Service) retag(ctx context.Context, tags []api.Tag,
 				return checkErr
 			}
 
-			g, loadErr := loadGroup(tx, m.Scope, value(d.ResourceId))
+			g, loadErr := loadGroup(tx, m.Scope, common.Value(d.ResourceId))
 			if loadErr != nil {
 				return loadErr
 			}
@@ -99,7 +106,7 @@ func (s *Service) retag(ctx context.Context, tags []api.Tag,
 				return changeErr
 			}
 
-			if writeErr := write(tx, key(m.Scope, kindGroup, g.name()), g); writeErr != nil {
+			if writeErr := storage.Write(tx, key(m.Scope, kindGroup, g.name()), g); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -125,7 +132,7 @@ func (s *Service) DeleteTags(ctx context.Context, in *api.DeleteTagsType) (*api.
 		t api.TagDescription,
 	) error {
 		g.Group.Tags = slices.DeleteFunc(g.Group.Tags, func(o api.TagDescription) bool {
-			return value(o.Key) == value(t.Key)
+			return common.Value(o.Key) == common.Value(t.Key)
 		})
 		return nil
 	})
@@ -133,8 +140,8 @@ func (s *Service) DeleteTags(ctx context.Context, in *api.DeleteTagsType) (*api.
 
 func tagValues(t api.TagDescription) map[string]string {
 	return map[string]string{
-		"auto-scaling-group": value(t.ResourceId), "key": value(t.Key), "value": value(t.Value),
-		"propagate-at-launch": strconv.FormatBool(value(t.PropagateAtLaunch)),
+		"auto-scaling-group": common.Value(t.ResourceId), "key": common.Value(t.Key), "value": common.Value(t.Value),
+		"propagate-at-launch": strconv.FormatBool(common.Value(t.PropagateAtLaunch)),
 	}
 }
 
@@ -145,15 +152,15 @@ func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsType) (*
 	}
 
 	for _, f := range in.Filters {
-		if _, ok := tagValues(api.TagDescription{})[value(f.Name)]; !ok {
-			return nil, validation("Filter name %s is not valid.", value(f.Name))
+		if _, ok := tagValues(api.TagDescription{})[common.Value(f.Name)]; !ok {
+			return nil, validation("Filter name %s is not valid.", common.Value(f.Name))
 		}
 	}
 
 	var all []api.TagDescription
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
-			g, _, readErr := read[group](tx, k)
+			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -161,7 +168,7 @@ func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsType) (*
 			for _, t := range g.Group.Tags {
 				v := tagValues(t)
 				if !slices.ContainsFunc(in.Filters, func(f api.Filter) bool {
-					return !slices.Contains(f.Values, v[value(f.Name)])
+					return !slices.Contains(f.Values, v[common.Value(f.Name)])
 				}) {
 					all = append(all, t)
 				}
@@ -174,7 +181,7 @@ func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsType) (*
 		return nil, err
 	}
 
-	id := func(t api.TagDescription) string { return value(t.ResourceId) + "\x00" + value(t.Key) }
+	id := func(t api.TagDescription) string { return common.Value(t.ResourceId) + "\x00" + common.Value(t.Key) }
 	page, next, err := window(all, id, in.NextToken, in.MaxRecords)
 	if err != nil {
 		return nil, err

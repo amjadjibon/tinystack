@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/schedule"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -110,9 +111,9 @@ type settings struct {
 
 //nolint:gocyclo,cyclop // One check per member.
 func check(in *settings, now time.Time) (plan, error) {
-	state, after := value(in.State), value(in.ActionAfterCompletion)
+	state, after := common.Value(in.State), common.Value(in.ActionAfterCompletion)
 	switch {
-	case !namePattern.MatchString(value(in.Name)):
+	case !namePattern.MatchString(common.Value(in.Name)):
 		return plan{}, validation("The schedule name must be 1 to 64 letters, digits, and -_. characters.")
 	case in.GroupName != nil && !namePattern.MatchString(*in.GroupName):
 		return plan{}, validation("The group name must be 1 to 64 letters, digits, and -_. characters.")
@@ -122,7 +123,7 @@ func check(in *settings, now time.Time) (plan, error) {
 		return plan{}, validation("State must be ENABLED or DISABLED.")
 	case in.ActionAfterCompletion != nil && after != afterNone && after != afterDelete:
 		return plan{}, validation("ActionAfterCompletion must be NONE or DELETE.")
-	case len(value(in.Description)) > maxDescription:
+	case len(common.Value(in.Description)) > maxDescription:
 		return plan{}, validation("The description must be at most 512 characters long.")
 	case in.StartDate != nil && in.EndDate != nil && *in.StartDate >= *in.EndDate:
 		return plan{}, validation("The StartDate must be before the EndDate.")
@@ -138,7 +139,7 @@ func check(in *settings, now time.Time) (plan, error) {
 		return plan{}, err
 	}
 
-	return parseExpression(*in.ScheduleExpression, value(in.ScheduleExpressionTimezone))
+	return parseExpression(*in.ScheduleExpression, common.Value(in.ScheduleExpressionTimezone))
 }
 
 func checkWindow(w *api.FlexibleTimeWindow) error {
@@ -146,7 +147,7 @@ func checkWindow(w *api.FlexibleTimeWindow) error {
 		return validation("FlexibleTimeWindow is required.")
 	}
 
-	switch mode, n := value(w.Mode), w.MaximumWindowInMinutes; {
+	switch mode, n := common.Value(w.Mode), w.MaximumWindowInMinutes; {
 	case mode == modeOff && n == nil, mode == modeFlexible && n != nil && *n >= 1 && *n <= 1440:
 		return nil
 	case mode == modeOff:
@@ -158,11 +159,11 @@ func checkWindow(w *api.FlexibleTimeWindow) error {
 
 //nolint:gocyclo,cyclop // One check per member.
 func checkTarget(t *api.Target) error {
-	if t == nil || value(t.Arn) == "" || value(t.RoleArn) == "" {
+	if t == nil || common.Value(t.Arn) == "" || common.Value(t.RoleArn) == "" {
 		return validation("A Target needs an Arn and a RoleArn.")
 	}
 
-	arn, input := *t.Arn, value(t.Input)
+	arn, input := *t.Arn, common.Value(t.Input)
 	isUniversal := strings.HasPrefix(arn, universal)
 	switch {
 	case len(input) > maxInput:
@@ -178,7 +179,7 @@ func checkTarget(t *api.Target) error {
 		return validation("An EventBridge target needs EventBridgeParameters.")
 	case strings.HasPrefix(arn, "arn:aws:kinesis:") && t.KinesisParameters == nil:
 		return validation("A Kinesis target needs KinesisParameters.")
-	case t.DeadLetterConfig != nil && !strings.HasPrefix(value(t.DeadLetterConfig.Arn), "arn:aws:sqs:"):
+	case t.DeadLetterConfig != nil && !strings.HasPrefix(common.Value(t.DeadLetterConfig.Arn), "arn:aws:sqs:"):
 		return validation("The dead-letter queue must be an SQS queue ARN.")
 	}
 
@@ -216,7 +217,7 @@ func cmpOr(s, fallback string) string {
 // put stores a schedule and indexes its next run.
 func (s *Service) put(tx storage.WriteTx, scope request.Scope, in *settings, p plan, created float64) (string, error) {
 	now := s.now()
-	groupName := cmpOr(value(in.GroupName), defaultGroup)
+	groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
 	if _, err := loadGroup(tx, scope, groupName); err != nil {
 		return "", err
 	}
@@ -224,19 +225,28 @@ func (s *Service) put(tx storage.WriteTx, scope request.Scope, in *settings, p p
 	name := *in.Name
 	arn := scheduleARN(scope, groupName, name)
 	rec := record{Schedule: api.GetScheduleOutput{
-		Arn: new(arn), GroupName: new(groupName), Name: in.Name, ScheduleExpression: in.ScheduleExpression,
-		StartDate: in.StartDate, EndDate: in.EndDate, Description: in.Description,
-		ScheduleExpressionTimezone: new(cmpOr(value(in.ScheduleExpressionTimezone), "UTC")),
-		State:                      new(cmpOr(value(in.State), stateEnabled)), CreationDate: new(created),
-		LastModificationDate: new(unix(now)), KmsKeyArn: in.KmsKeyArn, Target: in.Target,
-		FlexibleTimeWindow: in.FlexibleTimeWindow, ActionAfterCompletion: new(cmpOr(value(in.ActionAfterCompletion),
+		Arn:                        new(arn),
+		GroupName:                  new(groupName),
+		Name:                       in.Name,
+		ScheduleExpression:         in.ScheduleExpression,
+		StartDate:                  in.StartDate,
+		EndDate:                    in.EndDate,
+		Description:                in.Description,
+		ScheduleExpressionTimezone: new(cmpOr(common.Value(in.ScheduleExpressionTimezone), "UTC")),
+		State:                      new(cmpOr(common.Value(in.State), stateEnabled)),
+		CreationDate:               new(created),
+		LastModificationDate:       new(common.Unix(now)),
+		KmsKeyArn:                  in.KmsKeyArn,
+		Target:                     in.Target,
+		FlexibleTimeWindow:         in.FlexibleTimeWindow,
+		ActionAfterCompletion: new(cmpOr(common.Value(in.ActionAfterCompletion),
 			afterNone)),
 	}}
 	if next, ok := p.next(now, in.StartDate, in.EndDate, false); ok {
-		rec.Next = unix(next)
+		rec.Next = common.Unix(next)
 	}
 
-	if err := write(tx, key(scope, kindSchedule, groupName+"/"+name), rec); err != nil {
+	if err := storage.Write(tx, key(scope, kindSchedule, groupName+"/"+name), rec); err != nil {
 		return "", err
 	}
 
@@ -246,8 +256,8 @@ func (s *Service) put(tx storage.WriteTx, scope request.Scope, in *settings, p p
 
 // index records a schedule's next run, or forgets a schedule without one.
 func (s *Service) index(tx storage.WriteTx, scope request.Scope, rec *record) {
-	k := indexKey(scope, value(rec.Schedule.GroupName), value(rec.Schedule.Name))
-	if rec.Next == 0 || value(rec.Schedule.State) != stateEnabled {
+	k := indexKey(scope, common.Value(rec.Schedule.GroupName), common.Value(rec.Schedule.Name))
+	if rec.Next == 0 || common.Value(rec.Schedule.State) != stateEnabled {
 		tx.Delete(k)
 		return
 	}
@@ -274,13 +284,13 @@ func (s *Service) CreateSchedule(ctx context.Context, in *api.CreateScheduleInpu
 
 	var arn string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		groupName := cmpOr(value(in.GroupName), defaultGroup)
+		groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
 		if _, exists := tx.Get(key(m.Scope, kindSchedule, groupName+"/"+*in.Name)); exists {
 			return awserror.New("ConflictException", "Schedule "+*in.Name+" already exists.")
 		}
 
 		var putErr error
-		arn, putErr = s.put(tx, m.Scope, &set, p, unix(s.now()))
+		arn, putErr = s.put(tx, m.Scope, &set, p, common.Unix(s.now()))
 		return putErr
 	})
 	if err != nil {
@@ -309,8 +319,8 @@ func (s *Service) UpdateSchedule(ctx context.Context, in *api.UpdateScheduleInpu
 
 	var arn string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		groupName := cmpOr(value(in.GroupName), defaultGroup)
-		old, found, readErr := read[record](tx, key(m.Scope, kindSchedule, groupName+"/"+*in.Name))
+		groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
+		old, found, readErr := storage.Read[record](tx, key(m.Scope, kindSchedule, groupName+"/"+*in.Name))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -319,7 +329,7 @@ func (s *Service) UpdateSchedule(ctx context.Context, in *api.UpdateScheduleInpu
 		}
 
 		var putErr error
-		arn, putErr = s.put(tx, m.Scope, &set, p, value(old.Schedule.CreationDate))
+		arn, putErr = s.put(tx, m.Scope, &set, p, common.Value(old.Schedule.CreationDate))
 		return putErr
 	})
 	if err != nil {
@@ -338,10 +348,10 @@ func (s *Service) GetSchedule(ctx context.Context, in *api.GetScheduleInput) (*a
 	var rec *record
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
-		groupName := cmpOr(value(in.GroupName), defaultGroup)
-		rec, found, err = read[record](tx, key(m.Scope, kindSchedule, groupName+"/"+value(in.Name)))
+		groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
+		rec, found, err = storage.Read[record](tx, key(m.Scope, kindSchedule, groupName+"/"+common.Value(in.Name)))
 		if err == nil && !found {
-			err = notFound("Schedule " + value(in.Name))
+			err = notFound("Schedule " + common.Value(in.Name))
 		}
 
 		return err
@@ -359,15 +369,15 @@ func (s *Service) DeleteSchedule(ctx context.Context, in *api.DeleteScheduleInpu
 		return nil, err
 	}
 
-	groupName := cmpOr(value(in.GroupName), defaultGroup)
+	groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
 	return &api.DeleteScheduleOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
-		k := key(m.Scope, kindSchedule, groupName+"/"+value(in.Name))
+		k := key(m.Scope, kindSchedule, groupName+"/"+common.Value(in.Name))
 		if _, found := tx.Get(k); !found {
-			return notFound("Schedule " + value(in.Name))
+			return notFound("Schedule " + common.Value(in.Name))
 		}
 
 		tx.Delete(k)
-		tx.Delete(indexKey(m.Scope, groupName, value(in.Name)))
+		tx.Delete(indexKey(m.Scope, groupName, common.Value(in.Name)))
 		return nil
 	})
 }
@@ -405,14 +415,14 @@ func (s *Service) ListSchedules(ctx context.Context, in *api.ListSchedulesInput)
 				continue
 			}
 
-			rec, _, readErr := read[record](tx, k)
+			rec, _, readErr := storage.Read[record](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
 			sc := &rec.Schedule
-			if !strings.HasPrefix(value(sc.Name), value(in.NamePrefix)) ||
-				in.State != nil && value(sc.State) != *in.State {
+			if !strings.HasPrefix(common.Value(sc.Name), common.Value(in.NamePrefix)) ||
+				in.State != nil && common.Value(sc.State) != *in.State {
 				continue
 			}
 

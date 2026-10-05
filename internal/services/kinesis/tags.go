@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -73,7 +74,7 @@ func (s *Service) ListTagsForStream(
 	out := &api.ListTagsForStreamOutput{Tags: []api.Tag{}, HasMoreTags: new(false)}
 	err := s.view(ctx, in.StreamName, in.StreamARN, func(_ storage.ReadTx, _ request.Scope, st *stream) error {
 		for _, k := range slices.Sorted(maps.Keys(st.Tags)) {
-			if k <= value(in.ExclusiveStartTagKey) {
+			if k <= common.Value(in.ExclusiveStartTagKey) {
 				continue
 			}
 
@@ -97,13 +98,13 @@ func (s *Service) ListTagsForStream(
 // resourceStream returns the ARN of the stream a resource ARN names: a
 // stream, or one of its consumers.
 func resourceStream(arn *string) (*string, error) {
-	s := value(arn)
+	s := common.Value(arn)
 	if i := strings.Index(s, "/consumer/"); i >= 0 {
 		s = s[:i]
 	}
 
 	if _, _, ok := ParseStreamARN(s); !ok {
-		return nil, awserror.New("InvalidArgumentException", "Invalid ResourceARN: "+value(arn))
+		return nil, awserror.New("InvalidArgumentException", "Invalid ResourceARN: "+common.Value(arn))
 	}
 
 	return &s, nil

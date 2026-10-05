@@ -8,6 +8,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -54,8 +55,8 @@ func resolveTagged(ctx context.Context, tx storage.ReadTx, arn *string) (*tagged
 		return nil, err
 	}
 
-	missing := awserror.New("ResourceNotFoundException", "Resource "+value(arn)+" does not exist.")
-	if name, ok := strings.CutPrefix(value(arn), busARN(m.Scope, "")); ok {
+	missing := awserror.New("ResourceNotFoundException", "Resource "+common.Value(arn)+" does not exist.")
+	if name, ok := strings.CutPrefix(common.Value(arn), busARN(m.Scope, "")); ok {
 		if !busPattern.MatchString(name) || name == defaultBus {
 			return nil, missing
 		}
@@ -72,7 +73,7 @@ func resolveTagged(ctx context.Context, tx storage.ReadTx, arn *string) (*tagged
 		return &tagged{tags: &b.Tags, save: func(w storage.WriteTx) error { return saveBus(w, m.Scope, b) }}, nil
 	}
 
-	rest, ok := strings.CutPrefix(value(arn), ruleARN(m.Scope, defaultBus, ""))
+	rest, ok := strings.CutPrefix(common.Value(arn), ruleARN(m.Scope, defaultBus, ""))
 	if !ok {
 		return nil, missing
 	}
@@ -92,7 +93,7 @@ func resolveTagged(ctx context.Context, tx storage.ReadTx, arn *string) (*tagged
 		return nil, err
 	}
 
-	return &tagged{tags: &r.Tags, save: func(w storage.WriteTx) error { return save(w, ref.key, r) }}, nil
+	return &tagged{tags: &r.Tags, save: func(w storage.WriteTx) error { return storage.Write(w, ref.key, r) }}, nil
 }
 
 // retag applies fn to the tags of the rule or custom bus arn names.

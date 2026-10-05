@@ -7,6 +7,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -21,20 +22,20 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			a, _, err := read[api.Api](tx, key)
+			a, _, err := storage.Read[api.Api](tx, key)
 			if err != nil {
 				return err
 			}
 
 			scope := request.Scope{AccountID: account, Region: region}
-			routes, err := records[api.Route](tx, prefix(scope, kindRoute)+*a.ApiId+"/")
+			routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+*a.ApiId+"/")
 			if err != nil {
 				return err
 			}
 
 			var keys, stages []string
 			for _, r := range routes {
-				keys = append(keys, value(r.RouteKey))
+				keys = append(keys, common.Value(r.RouteKey))
 			}
 
 			stagePrefix := prefix(scope, kindStage) + *a.ApiId + "/"
@@ -43,10 +44,14 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			out = append(out, catalog.Resource{
-				Type: "http-api", Account: account, Region: region, Name: value(a.Name), ARN: apiARN(scope, *a.ApiId),
-				Tags: a.Tags,
+				Type:    "http-api",
+				Account: account,
+				Region:  region,
+				Name:    common.Value(a.Name),
+				ARN:     apiARN(scope, *a.ApiId),
+				Tags:    a.Tags,
 				Details: map[string]any{
-					"ApiId": *a.ApiId, "Endpoint": value(a.ApiEndpoint), "Routes": keys, "Stages": stages,
+					"ApiId": *a.ApiId, "Endpoint": common.Value(a.ApiEndpoint), "Routes": keys, "Stages": stages,
 				},
 			})
 		}

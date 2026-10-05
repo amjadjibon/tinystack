@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -226,7 +227,7 @@ func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
 func createDefaultVPC(tx storage.WriteTx, scope request.Scope) error {
 	v := &vpc{ID: newID("vpc"), CIDR: defaultVPCCIDR, Tenancy: tenancyDefault, IsDefault: true, DNSHostnames: true}
 	g := &internetGateway{ID: newID("igw"), VPCID: v.ID}
-	if err := write(tx, key(scope, kindInternetGateway, g.ID), g); err != nil {
+	if err := storage.Write(tx, key(scope, kindInternetGateway, g.ID), g); err != nil {
 		return err
 	}
 
@@ -250,7 +251,7 @@ func createDefaultVPC(tx storage.WriteTx, scope request.Scope) error {
 // createSubnetRecord stores a new subnet, associated with its VPC's default
 // network ACL.
 func createSubnetRecord(tx storage.WriteTx, scope request.Scope, sn *subnet) error {
-	if err := write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
+	if err := storage.Write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
 		return err
 	}
 
@@ -310,7 +311,7 @@ func upgradeVPCs(tx storage.WriteTx, scope request.Scope) error {
 func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route) error {
 	v.AssociationID, v.DHCPOptionsID = newID("vpc-cidr-assoc"), newID("dopt")
 	g := defaultGroup(v.ID)
-	if err := write(tx, key(scope, kindSecurityGroup, g.ID), g); err != nil {
+	if err := storage.Write(tx, key(scope, kindSecurityGroup, g.ID), g); err != nil {
 		return err
 	}
 
@@ -322,7 +323,7 @@ func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route)
 		return err
 	}
 
-	return write(tx, key(scope, kindVPC, v.ID), v)
+	return storage.Write(tx, key(scope, kindVPC, v.ID), v)
 }
 
 func vpcOutput(scope request.Scope, v *vpc) api.Vpc {
@@ -357,7 +358,7 @@ func vpcValues(scope request.Scope, v *vpc) values {
 func vpcNotFound(id string) error { return notFound("InvalidVpcID.NotFound", "vpc", id) }
 
 func loadVPC(tx storage.ReadTx, scope request.Scope, id string) (*vpc, error) {
-	v, ok, err := read[vpc](tx, key(scope, kindVPC, id))
+	v, ok, err := storage.Read[vpc](tx, key(scope, kindVPC, id))
 	if err == nil && !ok {
 		err = vpcNotFound(id)
 	}
@@ -374,11 +375,11 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 		return nil, err
 	}
 
-	if value(in.AmazonProvidedIpv6CidrBlock) {
+	if common.Value(in.AmazonProvidedIpv6CidrBlock) {
 		return nil, invalidParameter("TinyStack VPCs have no IPv6 CIDR blocks")
 	}
 
-	tenancy := value(in.InstanceTenancy)
+	tenancy := common.Value(in.InstanceTenancy)
 	switch tenancy {
 	case "":
 		tenancy = tenancyDefault
@@ -414,7 +415,7 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 // ones left, including a default VPC, which does not come back.
 func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api.DeleteVpcOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		v, err := loadVPC(tx, scope, value(in.VpcId))
+		v, err := loadVPC(tx, scope, common.Value(in.VpcId))
 		if err != nil {
 			return err
 		}
@@ -579,7 +580,7 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 
 	var out api.Subnet
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		v, loadErr := loadVPC(tx, scope, value(in.VpcId))
+		v, loadErr := loadVPC(tx, scope, common.Value(in.VpcId))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -600,7 +601,7 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 			}
 		}
 
-		name, zoneErr := zone(scope.Region, value(in.AvailabilityZone), value(in.AvailabilityZoneId))
+		name, zoneErr := zone(scope.Region, common.Value(in.AvailabilityZone), common.Value(in.AvailabilityZoneId))
 		if zoneErr != nil {
 			return zoneErr
 		}
@@ -618,9 +619,9 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 
 func (s *Service) DeleteSubnet(ctx context.Context, in *api.DeleteSubnetRequest) (*api.DeleteSubnetOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		id := value(in.SubnetId)
+		id := common.Value(in.SubnetId)
 		k := key(scope, kindSubnet, id)
-		sn, ok, err := read[subnet](tx, k)
+		sn, ok, err := storage.Read[subnet](tx, k)
 		if err != nil || !ok {
 			return errorsOr(err, subnetNotFound(id))
 		}

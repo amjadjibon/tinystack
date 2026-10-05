@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -32,7 +33,7 @@ func checkBatch(ids []*string) error {
 
 	seen := map[string]bool{}
 	for _, id := range ids {
-		if !entryID.MatchString(value(id)) {
+		if !entryID.MatchString(common.Value(id)) {
 			return awserror.New(
 				"InvalidBatchEntryId",
 				"A batch entry id can only contain alphanumeric characters, hyphens and underscores. "+
@@ -72,7 +73,7 @@ func (s *Service) batch(ctx context.Context, key string, fn func(q *queue, now i
 
 		q.purge(now)
 		fn(q, now)
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return err
@@ -95,9 +96,11 @@ func (s *Service) SendMessageBatch(
 	var total int64
 	for i := range in.Entries {
 		ids[i] = in.Entries[i].Id
-		total += int64(len(value(in.Entries[i].MessageBody)))
+		total += int64(len(common.Value(in.Entries[i].MessageBody)))
 		for name, a := range in.Entries[i].MessageAttributes {
-			total += int64(len(name) + len(value(a.DataType)) + len(value(a.StringValue)) + len(a.BinaryValue))
+			total += int64(
+				len(name) + len(common.Value(a.DataType)) + len(common.Value(a.StringValue)) + len(a.BinaryValue),
+			)
 		}
 	}
 

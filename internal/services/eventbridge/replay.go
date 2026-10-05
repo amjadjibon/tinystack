@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -56,7 +57,7 @@ func replayNotFound(name string) error {
 }
 
 func millis(seconds *float64) int64 {
-	return int64(value(seconds) * 1000)
+	return int64(common.Value(seconds) * 1000)
 }
 
 func seconds(ms int64) *float64 {
@@ -101,7 +102,7 @@ func (s *Service) StartReplay(ctx context.Context, in *api.StartReplayRequest) (
 			return awserror.New("ResourceAlreadyExistsException", "Replay "+r.Name+" already exists.")
 		}
 
-		return putJSON(tx, replayPrefix(m.Scope)+r.Name, r)
+		return storage.Write(tx, replayPrefix(m.Scope)+r.Name, r)
 	})
 	if err != nil {
 		return nil, err
@@ -119,11 +120,11 @@ func (s *Service) StartReplay(ctx context.Context, in *api.StartReplayRequest) (
 
 // newReplay validates a StartReplay request.
 func (s *Service) newReplay(scope request.Scope, in *api.StartReplayRequest) (*replay, error) {
-	name := value(in.ReplayName)
+	name := common.Value(in.ReplayName)
 	switch {
 	case !replayName.MatchString(name):
 		return nil, invalid("Replay name must be 1 to 64 characters from [.-_A-Za-z0-9].")
-	case len(value(in.Description)) > 512:
+	case len(common.Value(in.Description)) > 512:
 		return nil, invalid("Description must be at most 512 characters.")
 	case in.EventStartTime == nil || in.EventEndTime == nil || in.Destination == nil:
 		return nil, invalid("EventStartTime, EventEndTime, and Destination are required.")
@@ -131,18 +132,18 @@ func (s *Service) newReplay(scope request.Scope, in *api.StartReplayRequest) (*r
 		return nil, invalid("EventStartTime must be before EventEndTime.")
 	}
 
-	archive, ok := strings.CutPrefix(value(in.EventSourceArn), archiveARN(scope, ""))
+	archive, ok := strings.CutPrefix(common.Value(in.EventSourceArn), archiveARN(scope, ""))
 	if !ok {
-		return nil, archiveNotFound(value(in.EventSourceArn))
+		return nil, archiveNotFound(common.Value(in.EventSourceArn))
 	}
 
-	bus, ok := strings.CutPrefix(value(in.Destination.Arn), busARN(scope, ""))
+	bus, ok := strings.CutPrefix(common.Value(in.Destination.Arn), busARN(scope, ""))
 	if !ok {
-		return nil, busNotFound(value(in.Destination.Arn))
+		return nil, busNotFound(common.Value(in.Destination.Arn))
 	}
 
 	return &replay{
-		Name: name, Description: value(in.Description), Archive: archive, Bus: bus, State: replayStarting,
+		Name: name, Description: common.Value(in.Description), Archive: archive, Bus: bus, State: replayStarting,
 		Filters: in.Destination.FilterArns, From: millis(in.EventStartTime), To: millis(in.EventEndTime),
 		Started: s.now().UnixMilli(),
 	}, nil
@@ -204,7 +205,7 @@ func (s *Service) run(ctx context.Context, scope request.Scope, r *replay) error
 
 	r.State, r.Ended = replayCompleted, s.now().UnixMilli()
 	return s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
-		return putJSON(tx, replayPrefix(scope)+r.Name, r)
+		return storage.Write(tx, replayPrefix(scope)+r.Name, r)
 	})
 }
 
@@ -218,7 +219,7 @@ func (s *Service) loadReplay(ctx context.Context, name string) (request.Scope, *
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
 		var loadErr error
-		if r, found, loadErr = getJSON[replay](tx, replayPrefix(m.Scope)+name); loadErr == nil && !found {
+		if r, found, loadErr = storage.Read[replay](tx, replayPrefix(m.Scope)+name); loadErr == nil && !found {
 			return replayNotFound(name)
 		}
 
@@ -241,7 +242,7 @@ func (s *Service) DescribeReplay(
 	ctx context.Context,
 	in *api.DescribeReplayRequest,
 ) (*api.DescribeReplayResponse, error) {
-	scope, r, err := s.loadReplay(ctx, value(in.ReplayName))
+	scope, r, err := s.loadReplay(ctx, common.Value(in.ReplayName))
 	if err != nil {
 		return nil, err
 	}
@@ -277,8 +278,8 @@ func (s *Service) ListReplays(ctx context.Context, in *api.ListReplaysRequest) (
 
 	out := &api.ListReplaysResponse{Replays: []api.Replay{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(replayPrefix(m.Scope) + value(in.NamePrefix)) {
-			r, _, loadErr := getJSON[replay](tx, k)
+		for _, k := range tx.Keys(replayPrefix(m.Scope) + common.Value(in.NamePrefix)) {
+			r, _, loadErr := storage.Read[replay](tx, k)
 			if loadErr != nil {
 				return loadErr
 			}
@@ -308,7 +309,7 @@ func (s *Service) ListReplays(ctx context.Context, in *api.ListReplaysRequest) (
 // CancelReplay cancels a replay that is still starting or running, which a
 // TinyStack replay never is once StartReplay returns.
 func (s *Service) CancelReplay(ctx context.Context, in *api.CancelReplayRequest) (*api.CancelReplayResponse, error) {
-	_, r, err := s.loadReplay(ctx, value(in.ReplayName))
+	_, r, err := s.loadReplay(ctx, common.Value(in.ReplayName))
 	if err != nil {
 		return nil, err
 	}

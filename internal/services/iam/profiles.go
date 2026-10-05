@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -30,7 +31,7 @@ func loadProfile(tx storage.ReadTx, account string, name *string) (*profile, str
 	}
 
 	pk := key(account, kindProfile, *name)
-	p, ok, err := read[profile](tx, pk)
+	p, ok, err := storage.Read[profile](tx, pk)
 	switch {
 	case err != nil:
 		return nil, "", err
@@ -63,7 +64,7 @@ func (s *Service) updateProfile(
 			return fnErr
 		}
 
-		return write(tx, pk, p)
+		return storage.Write(tx, pk, p)
 	})
 }
 
@@ -75,7 +76,7 @@ func profileOutput(tx storage.ReadTx, account string, p *profile, tags bool) (*a
 		Arn: new(profileARN(account, p)), CreateDate: millis(p.CreatedAt), Roles: []api.Role{},
 	}
 	if p.Role != "" {
-		r, ok, err := read[role](tx, key(account, kindRole, p.Role))
+		r, ok, err := storage.Read[role](tx, key(account, kindRole, p.Role))
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +154,7 @@ func (s *Service) CreateInstanceProfile(
 			return outErr
 		}
 
-		return write(tx, pk, p)
+		return storage.Write(tx, pk, p)
 	})
 	if err != nil {
 		return nil, err
@@ -268,8 +269,13 @@ func (s *Service) ListInstanceProfiles(
 	out := &api.ListInstanceProfilesResponse{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var listErr error
-		out.InstanceProfiles, out.IsTruncated, out.Marker, listErr = listProfiles(tx, m.AccountID,
-			func(p *profile) bool { return strings.HasPrefix(p.Path, value(in.PathPrefix)) }, in.Marker, in.MaxItems)
+		out.InstanceProfiles, out.IsTruncated, out.Marker, listErr = listProfiles(
+			tx,
+			m.AccountID,
+			func(p *profile) bool { return strings.HasPrefix(p.Path, common.Value(in.PathPrefix)) },
+			in.Marker,
+			in.MaxItems,
+		)
 		return listErr
 	})
 	if err != nil {
@@ -337,8 +343,8 @@ func (s *Service) RemoveRoleFromInstanceProfile(
 	in *api.RemoveRoleFromInstanceProfileRequest,
 ) (*api.RemoveRoleFromInstanceProfileOutput, error) {
 	err := s.updateProfile(ctx, in.InstanceProfileName, func(_ storage.WriteTx, _ string, p *profile) error {
-		if p.Role == "" || !strings.EqualFold(p.Role, value(in.RoleName)) {
-			return noSuchEntity("The role with name %s cannot be found.", value(in.RoleName))
+		if p.Role == "" || !strings.EqualFold(p.Role, common.Value(in.RoleName)) {
+			return noSuchEntity("The role with name %s cannot be found.", common.Value(in.RoleName))
 		}
 
 		p.Role = ""
@@ -438,7 +444,7 @@ func (s *Service) InstanceProfileOf(ctx context.Context, account, ref string) (I
 	var out InstanceProfile
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, ok, err := read[profile](tx, key(account, kindProfile, name))
+		p, ok, err := storage.Read[profile](tx, key(account, kindProfile, name))
 		if err != nil || !ok {
 			return err
 		}

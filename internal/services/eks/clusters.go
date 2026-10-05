@@ -20,6 +20,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -95,9 +96,9 @@ func clusterNotFound(name string) error { return notFound("No cluster found for 
 
 // loadCluster returns the cluster name names.
 func loadCluster(tx storage.ReadTx, scope request.Scope, name *string) (*cluster, error) {
-	c, ok, err := read[cluster](tx, clusterKey(scope, value(name)))
+	c, ok, err := storage.Read[cluster](tx, clusterKey(scope, common.Value(name)))
 	if err != nil || !ok {
-		return nil, errorsOr(err, clusterNotFound(value(name)))
+		return nil, common.ErrorsOr(err, clusterNotFound(common.Value(name)))
 	}
 
 	return c, nil
@@ -105,14 +106,14 @@ func loadCluster(tx storage.ReadTx, scope request.Scope, name *string) (*cluster
 
 func (c *cluster) output(scope request.Scope) *api.Cluster {
 	out := &api.Cluster{
-		Name: new(c.Name), Arn: new(clusterARN(scope, c.Name)), CreatedAt: seconds(c.Created),
+		Name: new(c.Name), Arn: new(clusterARN(scope, c.Name)), CreatedAt: common.SecondsMilli(c.Created),
 		Version: new(c.Version), Endpoint: new(c.Endpoint), RoleArn: new(c.RoleArn), ResourcesVpcConfig: &c.Vpc,
 		KubernetesNetworkConfig: &c.Network, Logging: logging(c.Logging), Status: new(c.Status),
 		Identity: &api.Identity{Oidc: &api.OIDC{
 			Issuer: new("https://oidc.eks." + scope.Region + ".amazonaws.com/id/" + c.hostID()),
 		}},
 		CertificateAuthority: &api.Certificate{Data: new(c.Authority)}, PlatformVersion: new(platformVersion),
-		Tags: cloneTags(c.Tags), EncryptionConfig: c.Encryption, Id: new(c.ID),
+		Tags: common.CloneTags(c.Tags), EncryptionConfig: c.Encryption, Id: new(c.ID),
 		Health: &api.ClusterHealth{Issues: []api.ClusterIssue{}},
 		AccessConfig: &api.AccessConfigResponse{
 			AuthenticationMode: new(c.AuthMode), BootstrapClusterCreatorAdminPermissions: new(c.Bootstrap),
@@ -163,7 +164,7 @@ func applyLogging(enabled []string, in *api.Logging) ([]string, error) {
 			}
 
 			enabled = slices.DeleteFunc(enabled, func(e string) bool { return e == t })
-			if value(setup.Enabled) {
+			if common.Value(setup.Enabled) {
 				enabled = append(enabled, t)
 			}
 		}
@@ -200,8 +201,8 @@ func authority(now time.Time) (string, error) {
 }
 
 func checkEndpoints(v *api.VpcConfigRequest, current *api.VpcConfigResponse) error {
-	public := value(orElse(v.EndpointPublicAccess, current.EndpointPublicAccess))
-	private := value(orElse(v.EndpointPrivateAccess, current.EndpointPrivateAccess))
+	public := common.Value(common.OrElse(v.EndpointPublicAccess, current.EndpointPublicAccess))
+	private := common.Value(common.OrElse(v.EndpointPrivateAccess, current.EndpointPrivateAccess))
 	if !public && !private {
 		return invalidParameter("Cluster endpoint access must be public, private, or both.")
 	}
@@ -221,7 +222,7 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		existing, ok, readErr := read[cluster](tx, clusterKey(scope, c.Name))
+		existing, ok, readErr := storage.Read[cluster](tx, clusterKey(scope, c.Name))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -245,12 +246,12 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 					Type: new(scopeCluster), Namespaces: []string{},
 				}, AssociatedAt: e.Entry.CreatedAt, ModifiedAt: e.Entry.CreatedAt,
 			}}
-			if writeErr := write(tx, entryKey(scope, c.Name, creator), e); writeErr != nil {
+			if writeErr := storage.Write(tx, entryKey(scope, c.Name, creator), e); writeErr != nil {
 				return writeErr
 			}
 		}
 
-		return write(tx, clusterKey(scope, c.Name), c)
+		return storage.Write(tx, clusterKey(scope, c.Name), c)
 	})
 	if err != nil {
 		return nil, err
@@ -282,7 +283,7 @@ func (s *Service) newCluster(ctx context.Context, scope request.Scope, in *api.C
 		version = *in.Version
 	}
 
-	vpc := value(in.ResourcesVpcConfig)
+	vpc := common.Value(in.ResourcesVpcConfig)
 	if len(vpc.SubnetIds) < 2 {
 		return nil, invalidParameter("Subnets specified must be in at least two different AZs")
 	}
@@ -302,21 +303,31 @@ func (s *Service) newCluster(ctx context.Context, scope request.Scope, in *api.C
 	}
 
 	c := &cluster{
-		Created: s.now().UTC(), Tags: cloneTags(in.Tags), Name: *in.Name, ID: uuid.NewV4().String(), Version: version,
-		RoleArn: *in.RoleArn, Status: active, Token: value(in.ClientRequestToken), AuthMode: configMap,
-		Support: extended, Bootstrap: true, Encryption: in.EncryptionConfig,
-		DeletionProtection: value(in.DeletionProtection),
+		Created: s.now().
+			UTC(),
+		Tags:               common.CloneTags(in.Tags),
+		Name:               *in.Name,
+		ID:                 uuid.NewV4().String(),
+		Version:            version,
+		RoleArn:            *in.RoleArn,
+		Status:             active,
+		Token:              common.Value(in.ClientRequestToken),
+		AuthMode:           configMap,
+		Support:            extended,
+		Bootstrap:          true,
+		Encryption:         in.EncryptionConfig,
+		DeletionProtection: common.Value(in.DeletionProtection),
 		Vpc: api.VpcConfigResponse{
 			SubnetIds: vpc.SubnetIds, SecurityGroupIds: orEmpty(vpc.SecurityGroupIds), VpcId: new(placed.VPC),
-			EndpointPublicAccess:  orElse(vpc.EndpointPublicAccess, current.EndpointPublicAccess),
-			EndpointPrivateAccess: orElse(vpc.EndpointPrivateAccess, current.EndpointPrivateAccess),
+			EndpointPublicAccess:  common.OrElse(vpc.EndpointPublicAccess, current.EndpointPublicAccess),
+			EndpointPrivateAccess: common.OrElse(vpc.EndpointPrivateAccess, current.EndpointPrivateAccess),
 			PublicAccessCidrs:     vpc.PublicAccessCidrs,
 		},
 		Network: api.KubernetesNetworkConfigResponse{ServiceIpv4Cidr: new(defaultServiceNet), IpFamily: new("ipv4")},
 	}
 	c.Endpoint = "https://" + c.hostID() + ".gr7." + scope.Region + ".eks.amazonaws.com"
 	if z := in.ZonalShiftConfig; z != nil {
-		c.ZonalShift = new(value(z.Enabled))
+		c.ZonalShift = new(common.Value(z.Enabled))
 	}
 
 	if len(c.Vpc.PublicAccessCidrs) == 0 {
@@ -355,8 +366,8 @@ func (s *Service) clusterOptions(c *cluster, in *api.CreateClusterRequest) error
 			return invalidParameter("authenticationMode must be CONFIG_MAP, API_AND_CONFIG_MAP, or API.")
 		}
 
-		c.AuthMode = value(orElse(a.AuthenticationMode, &c.AuthMode))
-		c.Bootstrap = value(orElse(a.BootstrapClusterCreatorAdminPermissions, &c.Bootstrap))
+		c.AuthMode = common.Value(common.OrElse(a.AuthenticationMode, &c.AuthMode))
+		c.Bootstrap = common.Value(common.OrElse(a.BootstrapClusterCreatorAdminPermissions, &c.Bootstrap))
 	}
 
 	if u := in.UpgradePolicy; u != nil {
@@ -364,11 +375,11 @@ func (s *Service) clusterOptions(c *cluster, in *api.CreateClusterRequest) error
 			return invalidParameter("supportType must be STANDARD or EXTENDED.")
 		}
 
-		c.Support = value(orElse(u.SupportType, &c.Support))
+		c.Support = common.Value(common.OrElse(u.SupportType, &c.Support))
 	}
 
 	for _, e := range in.EncryptionConfig {
-		if !slices.Equal(e.Resources, []string{"secrets"}) || value(value(e.Provider).KeyArn) == "" {
+		if !slices.Equal(e.Resources, []string{"secrets"}) || common.Value(common.Value(e.Provider).KeyArn) == "" {
 			return invalidParameter("Encryption configurations encrypt secrets with a KMS key ARN.")
 		}
 	}
@@ -535,10 +546,10 @@ func (s *Service) clusterChanges(ctx context.Context, scope request.Scope, in *a
 			clusterChange{kind: "AccessConfigUpdate", apply: func(c *cluster) ([]api.UpdateParam, error) {
 				// Modes only move from the config map towards the API.
 				order := []string{configMap, apiAndConfigMap, apiMode}
-				to := slices.Index(order, value(a.AuthenticationMode))
+				to := slices.Index(order, common.Value(a.AuthenticationMode))
 				if to < 0 || to < slices.Index(order, c.AuthMode) {
 					return nil, invalidParameter("Unsupported authentication mode update from %s to %s", c.AuthMode,
-						value(a.AuthenticationMode))
+						common.Value(a.AuthenticationMode))
 				}
 
 				c.AuthMode = order[to]
@@ -565,7 +576,7 @@ func (s *Service) clusterChanges(ctx context.Context, scope request.Scope, in *a
 		changes = append(
 			changes,
 			clusterChange{kind: "ZonalShiftConfigUpdate", apply: func(c *cluster) ([]api.UpdateParam, error) {
-				c.ZonalShift = new(value(z.Enabled))
+				c.ZonalShift = new(common.Value(z.Enabled))
 				return []api.UpdateParam{jsonParam("ZonalShiftConfig", z)}, nil
 			}},
 		)
@@ -600,8 +611,8 @@ func (s *Service) vpcChange(ctx context.Context, scope request.Scope, v *api.Vpc
 				return nil, err
 			}
 
-			c.Vpc.EndpointPublicAccess = orElse(v.EndpointPublicAccess, c.Vpc.EndpointPublicAccess)
-			c.Vpc.EndpointPrivateAccess = orElse(v.EndpointPrivateAccess, c.Vpc.EndpointPrivateAccess)
+			c.Vpc.EndpointPublicAccess = common.OrElse(v.EndpointPublicAccess, c.Vpc.EndpointPublicAccess)
+			c.Vpc.EndpointPrivateAccess = common.OrElse(v.EndpointPrivateAccess, c.Vpc.EndpointPrivateAccess)
 			if v.PublicAccessCidrs != nil {
 				c.Vpc.PublicAccessCidrs = v.PublicAccessCidrs
 			}
@@ -620,9 +631,9 @@ func (s *Service) vpcChange(ctx context.Context, scope request.Scope, v *api.Vpc
 	}
 
 	return clusterChange{kind: "VpcConfigUpdate", apply: func(c *cluster) ([]api.UpdateParam, error) {
-		if placed.VPC != "" && placed.VPC != value(c.Vpc.VpcId) {
+		if placed.VPC != "" && placed.VPC != common.Value(c.Vpc.VpcId) {
 			return nil, invalidParameter("Subnets and security groups must be in the cluster's VPC %s.",
-				value(c.Vpc.VpcId))
+				common.Value(c.Vpc.VpcId))
 		}
 
 		var params []api.UpdateParam
@@ -670,7 +681,7 @@ func (s *Service) UpdateClusterConfig(
 			return applyErr
 		}
 
-		return write(tx, clusterKey(scope, c.Name), c)
+		return storage.Write(tx, clusterKey(scope, c.Name), c)
 	})
 	if err != nil {
 		return nil, err
@@ -700,9 +711,9 @@ func (s *Service) UpdateClusterVersion(
 			return invalidRequest("The Kubernetes API servers TinyStack runs keep the version they started with.")
 		}
 
-		if to := versionIndex(value(in.Version)); to < 0 || to != versionIndex(c.Version)+1 {
+		if to := versionIndex(common.Value(in.Version)); to < 0 || to != versionIndex(c.Version)+1 {
 			return invalidParameter("Unsupported Kubernetes minor version update from %s to %s", c.Version,
-				value(in.Version))
+				common.Value(in.Version))
 		}
 
 		c.Version = *in.Version
@@ -712,7 +723,7 @@ func (s *Service) UpdateClusterVersion(
 			return recordErr
 		}
 
-		return write(tx, clusterKey(scope, c.Name), c)
+		return storage.Write(tx, clusterKey(scope, c.Name), c)
 	})
 	if err != nil {
 		return nil, err
@@ -739,16 +750,24 @@ func (s *Service) DescribeClusterVersions(
 		}
 
 		wanted := len(in.ClusterVersions) == 0 || slices.Contains(in.ClusterVersions, k.name)
-		if !wanted || value(in.DefaultOnly) && k.name != defaultVersion ||
-			now.After(extendedEnd) && !value(in.IncludeAll) {
+		if !wanted || common.Value(in.DefaultOnly) && k.name != defaultVersion ||
+			now.After(extendedEnd) && !common.Value(in.IncludeAll) {
 			continue
 		}
 
 		versions = append(versions, api.ClusterVersionInformation{
-			ClusterVersion: new(k.name), ClusterType: new("eks"), DefaultPlatformVersion: new(platformVersion),
-			DefaultVersion: new(k.name == defaultVersion), ReleaseDate: seconds(k.released),
-			EndOfStandardSupportDate: seconds(standardEnd), EndOfExtendedSupportDate: seconds(extendedEnd),
-			Status: new(status), VersionStatus: new(status), KubernetesPatchVersion: new(k.patch),
+			ClusterVersion:         new(k.name),
+			ClusterType:            new("eks"),
+			DefaultPlatformVersion: new(platformVersion),
+			DefaultVersion:         new(k.name == defaultVersion),
+			ReleaseDate:            common.SecondsMilli(k.released),
+			EndOfStandardSupportDate: common.SecondsMilli(
+				standardEnd,
+			),
+			EndOfExtendedSupportDate: common.SecondsMilli(extendedEnd),
+			Status:                   new(status),
+			VersionStatus:            new(status),
+			KubernetesPatchVersion:   new(k.patch),
 		})
 	}
 

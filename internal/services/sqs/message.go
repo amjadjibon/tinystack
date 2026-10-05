@@ -18,6 +18,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -102,7 +103,7 @@ func checkAttributes(attributes map[string]api.MessageAttributeValue) (int64, er
 			return 0, invalid("Message attribute name '%s' is invalid.", name)
 		}
 
-		dataType := value(a.DataType)
+		dataType := common.Value(a.DataType)
 		base, _, _ := strings.Cut(dataType, ".")
 		if len(dataType) > 256 || !validText(dataType) {
 			return 0, invalid("The type of message (user) attribute '%s' is invalid.", name)
@@ -110,7 +111,7 @@ func checkAttributes(attributes map[string]api.MessageAttributeValue) (int64, er
 
 		switch base {
 		case "String", "Number":
-			if value(a.StringValue) == "" || a.BinaryValue != nil {
+			if common.Value(a.StringValue) == "" || a.BinaryValue != nil {
 				return 0, invalid("Message attribute '%s' must contain a non-empty string value.", name)
 			}
 
@@ -165,7 +166,7 @@ func attributesMD5(attributes map[string]api.MessageAttributeValue) string {
 	for _, name := range names {
 		a := attributes[name]
 		field(h, []byte(name))
-		field(h, []byte(value(a.DataType)))
+		field(h, []byte(common.Value(a.DataType)))
 		if a.StringValue != nil {
 			_, _ = h.Write([]byte{1})
 			field(h, []byte(*a.StringValue))
@@ -244,7 +245,7 @@ func (s *Service) prepare(ctx context.Context, in *api.SendMessageBatchRequestEn
 	}
 
 	body := in.MessageBody
-	if value(body) == "" {
+	if common.Value(body) == "" {
 		return nil, missing("MessageBody")
 	}
 
@@ -284,8 +285,8 @@ func (s *Service) prepare(ctx context.Context, in *api.SendMessageBatchRequestEn
 			BodyMD5:    md5Hex([]byte(*body)),
 			SenderID:   sender,
 			Attributes: in.MessageAttributes,
-			GroupID:    value(in.MessageGroupId),
-			DedupID:    value(in.MessageDeduplicationId),
+			GroupID:    common.Value(in.MessageGroupId),
+			DedupID:    common.Value(in.MessageDeduplicationId),
 		},
 	}, nil
 }
@@ -348,7 +349,7 @@ func (s *Service) send(ctx context.Context, key string, entry *api.SendMessageBa
 			return guardErr
 		}
 
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return nil, err
@@ -545,7 +546,7 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 				c.messages = append(c.messages, render(msg, opts))
 			}
 
-			return save(tx, key, q)
+			return storage.Write(tx, key, q)
 		}
 
 		dlq := deadLetter{source: keyARN(key)}
@@ -594,14 +595,14 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 		}
 
 		if dlq.queue != nil {
-			if saveErr := save(tx, dlq.key, dlq.queue); saveErr != nil {
+			if saveErr := storage.Write(tx, dlq.key, dlq.queue); saveErr != nil {
 				return saveErr
 			}
 
 			c.moved = dlq.key
 		}
 
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	return c, err
 }
@@ -639,11 +640,11 @@ func (s *Service) ReceiveMessage(
 	}
 
 	opts := &receiveOptions{
-		limit:      int(value(in.MaxNumberOfMessages)),
+		limit:      int(common.Value(in.MaxNumberOfMessages)),
 		visibility: in.VisibilityTimeout,
 		system:     map[string]bool{},
 		filter:     in.MessageAttributeNames,
-		attempt:    value(in.ReceiveRequestAttemptId),
+		attempt:    common.Value(in.ReceiveRequestAttemptId),
 	}
 
 	if opts.limit == 0 {
@@ -735,7 +736,7 @@ func (s *Service) DeleteMessage(ctx context.Context, in *api.DeleteMessageReques
 			return nil
 		}
 
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return nil, err
@@ -798,7 +799,7 @@ func (s *Service) ChangeMessageVisibility(
 			return guardErr
 		}
 
-		return save(tx, key, q)
+		return storage.Write(tx, key, q)
 	})
 	if err != nil {
 		return nil, err

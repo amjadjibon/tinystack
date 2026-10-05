@@ -24,7 +24,7 @@ func taggedParameter(ctx context.Context, tx storage.ReadTx, kind, id *string) (
 			"parameters.")
 	}
 
-	p, found, err := read[parameter](tx, parameterKey(m.Scope, value(id, "")))
+	p, found, err := storage.Read[parameter](tx, parameterKey(m.Scope, value(id, "")))
 	if err != nil {
 		return nil, "", err
 	}
@@ -53,7 +53,7 @@ func (s *Service) retag(ctx context.Context, kind, id *string, fn func(tags map[
 			return fnErr
 		}
 
-		return write(tx, k, p)
+		return storage.Write(tx, k, p)
 	})
 }
 

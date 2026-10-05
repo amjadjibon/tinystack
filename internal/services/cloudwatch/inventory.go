@@ -23,7 +23,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			scope := request.Scope{AccountID: account, Region: region}
 			switch {
 			case strings.HasPrefix(rest, kindAlarm+"/"):
-				a, _, err := read[alarm](tx, key)
+				a, _, err := storage.Read[alarm](tx, key)
 				if err != nil {
 					return err
 				}
@@ -34,7 +34,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					Details: map[string]any{"Type": a.kind(), "State": state, "Reason": reason},
 				})
 			case strings.HasPrefix(rest, kindDashboard+"/"):
-				d, _, err := read[dashboard](tx, key)
+				d, _, err := storage.Read[dashboard](tx, key)
 				if err != nil {
 					return err
 				}

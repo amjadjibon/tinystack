@@ -40,7 +40,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			if name, isArchive := strings.CutPrefix(rest, "archive/"); isArchive {
-				a, _, err := getJSON[archive](tx, key)
+				a, _, err := storage.Read[archive](tx, key)
 				if err != nil {
 					return err
 				}
@@ -53,7 +53,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			if name, isReplay := strings.CutPrefix(rest, "replay/"); isReplay {
-				r, _, err := getJSON[replay](tx, key)
+				r, _, err := storage.Read[replay](tx, key)
 				if err != nil {
 					return err
 				}
@@ -69,7 +69,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			r, _, err := load(tx, key)
+			r, _, err := storage.Read[rule](tx, key)
 			if err != nil {
 				return err
 			}

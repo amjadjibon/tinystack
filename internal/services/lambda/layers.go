@@ -14,6 +14,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -147,7 +148,7 @@ func (s *Service) PublishLayerVersion(
 		return nil, err
 	}
 
-	scope, name, err := layerTarget(m, value(in.LayerName))
+	scope, name, err := layerTarget(m, common.Value(in.LayerName))
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,8 @@ func (s *Service) PublishLayerVersion(
 		return nil, zipErr
 	}
 
-	if len(in.CompatibleRuntimes) > 15 || len(in.CompatibleArchitectures) > 2 || len(value(in.Description)) > 256 {
+	if len(in.CompatibleRuntimes) > 15 || len(in.CompatibleArchitectures) > 2 ||
+		len(common.Value(in.Description)) > 256 {
 		return nil, invalid("Too many CompatibleRuntimes or CompatibleArchitectures, or Description is too long")
 	}
 
@@ -188,7 +190,7 @@ func (s *Service) PublishLayerVersion(
 
 	sum := sha256.Sum256(code)
 	l := layerVersion{
-		Name: name, Description: value(in.Description), License: value(in.LicenseInfo),
+		Name: name, Description: common.Value(in.Description), License: common.Value(in.LicenseInfo),
 		CreatedDate: s.now().UTC().Format(timeFormat), CodeSha256: base64.StdEncoding.EncodeToString(sum[:]),
 		Runtimes: in.CompatibleRuntimes, Architecture: in.CompatibleArchitectures, CodeSize: int64(len(code)),
 	}
@@ -249,12 +251,12 @@ func (s *Service) GetLayerVersion(
 		return nil, err
 	}
 
-	scope, name, err := layerTarget(m, value(in.LayerName))
+	scope, name, err := layerTarget(m, common.Value(in.LayerName))
 	if err != nil {
 		return nil, err
 	}
 
-	return s.getLayerVersion(ctx, scope, name, value(in.VersionNumber))
+	return s.getLayerVersion(ctx, scope, name, common.Value(in.VersionNumber))
 }
 
 func (s *Service) GetLayerVersionByArn(
@@ -266,7 +268,7 @@ func (s *Service) GetLayerVersionByArn(
 		return nil, err
 	}
 
-	scope, name, version, err := parseLayerVersionARN(m, value(in.Arn))
+	scope, name, version, err := parseLayerVersionARN(m, common.Value(in.Arn))
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +308,7 @@ func (s *Service) DeleteLayerVersion(
 		return nil, err
 	}
 
-	scope, name, err := layerTarget(m, value(in.LayerName))
+	scope, name, err := layerTarget(m, common.Value(in.LayerName))
 	if err != nil {
 		return nil, err
 	}
@@ -316,8 +318,8 @@ func (s *Service) DeleteLayerVersion(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		tx.Delete(layerKey(scope, name, value(in.VersionNumber)))
-		tx.Delete(layerCodeKey(scope, name, value(in.VersionNumber)))
+		tx.Delete(layerKey(scope, name, common.Value(in.VersionNumber)))
+		tx.Delete(layerCodeKey(scope, name, common.Value(in.VersionNumber)))
 		return nil
 	})
 	if err != nil {
@@ -347,7 +349,7 @@ func (s *Service) ListLayerVersions(
 		return nil, err
 	}
 
-	scope, name, err := layerTarget(m, value(in.LayerName))
+	scope, name, err := layerTarget(m, common.Value(in.LayerName))
 	if err != nil {
 		return nil, err
 	}

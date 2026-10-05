@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -23,7 +24,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			account := parts[0]
 			switch parts[2] {
 			case kindDistribution:
-				rec, found, readErr := read[distributionRecord](tx, k)
+				rec, found, readErr := storage.Read[distributionRecord](tx, k)
 				if readErr != nil {
 					return readErr
 				}
@@ -31,10 +32,10 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					continue
 				}
 
-				id := value(rec.Distribution.Id)
-				arn := value(rec.Distribution.ARN)
-				domain := value(rec.Distribution.DomainName)
-				status := value(rec.Distribution.Status)
+				id := common.Value(rec.Distribution.Id)
+				arn := common.Value(rec.Distribution.ARN)
+				domain := common.Value(rec.Distribution.DomainName)
+				status := common.Value(rec.Distribution.Status)
 				enabled := false
 				if rec.Distribution.DistributionConfig != nil && rec.Distribution.DistributionConfig.Enabled != nil {
 					enabled = *rec.Distribution.DistributionConfig.Enabled
@@ -53,7 +54,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					},
 				})
 			case kindOAC:
-				rec, found, readErr := read[oacRecord](tx, k)
+				rec, found, readErr := storage.Read[oacRecord](tx, k)
 				if readErr != nil {
 					return readErr
 				}
@@ -61,12 +62,12 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					continue
 				}
 
-				id := value(rec.OAC.Id)
+				id := common.Value(rec.OAC.Id)
 				name := ""
 				originType := ""
 				if rec.OAC.OriginAccessControlConfig != nil {
-					name = value(rec.OAC.OriginAccessControlConfig.Name)
-					originType = value(rec.OAC.OriginAccessControlConfig.OriginAccessControlOriginType)
+					name = common.Value(rec.OAC.OriginAccessControlConfig.Name)
+					originType = common.Value(rec.OAC.OriginAccessControlConfig.OriginAccessControlOriginType)
 				}
 
 				out = append(out, catalog.Resource{

@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -35,7 +36,7 @@ func clusterARN(scope request.Scope, name string) string { return arn(scope, "cl
 // clusterRef returns the cluster name a request's cluster member refers to,
 // "default" when it is empty.
 func clusterRef(scope request.Scope, ref *string) (string, error) {
-	if value(ref) == "" {
+	if common.Value(ref) == "" {
 		return defaultCluster, nil
 	}
 
@@ -54,7 +55,7 @@ func loadCluster(tx storage.ReadTx, scope request.Scope, ref *string) (*cluster,
 		return nil, err
 	}
 
-	c, ok, err := read[cluster](tx, clusterKey(scope, name))
+	c, ok, err := storage.Read[cluster](tx, clusterKey(scope, name))
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +84,7 @@ func (c *cluster) output(tx storage.ReadTx, scope request.Scope, include []strin
 		out.Settings = c.Settings
 	}
 
-	services, err := records[ecsService](tx, prefix(scope, kindService)+c.Name+"/")
+	services, err := storage.Records[ecsService](tx, prefix(scope, kindService)+c.Name+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +95,7 @@ func (c *cluster) output(tx storage.ReadTx, scope request.Scope, include []strin
 		}
 	}
 
-	tasks, err := records[task](tx, taskPrefix(scope, c.Name))
+	tasks, err := storage.Records[task](tx, taskPrefix(scope, c.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +114,8 @@ func (c *cluster) output(tx storage.ReadTx, scope request.Scope, include []strin
 
 func checkSettings(settings []api.ClusterSetting) error {
 	for _, s := range settings {
-		if value(s.Name) != containerInsights || !oneOf(s.Value, "enabled", "disabled", "enhanced") || s.Value == nil {
+		if common.Value(s.Name) != containerInsights || !oneOf(s.Value, "enabled", "disabled", "enhanced") ||
+			s.Value == nil {
 			return invalidParameter("The only cluster setting is containerInsights: enabled, disabled, or enhanced.")
 		}
 	}
@@ -135,16 +137,17 @@ func checkProviders(providers []string, strategy []api.CapacityProviderStrategyI
 func checkStrategy(providers []string, strategy []api.CapacityProviderStrategyItem) error {
 	bases := 0
 	for _, item := range strategy {
-		if !slices.Contains(providers, value(item.CapacityProvider)) {
+		if !slices.Contains(providers, common.Value(item.CapacityProvider)) {
 			return invalidParameter("The specified capacity provider strategy cannot contain a capacity provider "+
-				"that is not associated with the cluster: %s", value(item.CapacityProvider))
+				"that is not associated with the cluster: %s", common.Value(item.CapacityProvider))
 		}
 
-		if value(item.Weight) < 0 || value(item.Weight) > 1000 || value(item.Base) < 0 || value(item.Base) > 100000 {
+		if common.Value(item.Weight) < 0 || common.Value(item.Weight) > 1000 || common.Value(item.Base) < 0 ||
+			common.Value(item.Base) > 100000 {
 			return invalidParameter("Capacity provider weights are 0 to 1000 and bases 0 to 100000.")
 		}
 
-		if value(item.Base) > 0 {
+		if common.Value(item.Base) > 0 {
 			bases++
 		}
 	}
@@ -159,7 +162,7 @@ func checkStrategy(providers []string, strategy []api.CapacityProviderStrategyIt
 // setting merges settings into current.
 func setting(current, settings []api.ClusterSetting) []api.ClusterSetting {
 	for _, s := range settings {
-		i := slices.IndexFunc(current, func(c api.ClusterSetting) bool { return value(c.Name) == *s.Name })
+		i := slices.IndexFunc(current, func(c api.ClusterSetting) bool { return common.Value(c.Name) == *s.Name })
 		if i < 0 {
 			current = append(current, s)
 		} else {
@@ -200,7 +203,7 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 	var out *api.Cluster
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		// Creating an active cluster again returns it, as AWS does.
-		c, ok, readErr := read[cluster](tx, clusterKey(scope, name))
+		c, ok, readErr := storage.Read[cluster](tx, clusterKey(scope, name))
 		if readErr != nil {
 			return readErr
 		}
@@ -218,7 +221,7 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 				CapacityProviders: in.CapacityProviders,
 				Strategy:          in.DefaultCapacityProviderStrategy,
 			}
-			if writeErr := write(tx, clusterKey(scope, name), c); writeErr != nil {
+			if writeErr := storage.Write(tx, clusterKey(scope, name), c); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -264,7 +267,7 @@ func (s *Service) DescribeClusters(
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, ref := range refs {
 			name, ok := resourceName(scope, ref, "cluster/")
-			c, found, readErr := read[cluster](tx, clusterKey(scope, name))
+			c, found, readErr := storage.Read[cluster](tx, clusterKey(scope, name))
 			if readErr != nil {
 				return readErr
 			}
@@ -307,7 +310,7 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest)
 
 	out := &api.ListClustersResponse{ClusterArns: []string{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		clusters, readErr := records[cluster](tx, prefix(scope, kindCluster))
+		clusters, readErr := storage.Records[cluster](tx, prefix(scope, kindCluster))
 		if readErr != nil {
 			return readErr
 		}
@@ -346,7 +349,7 @@ func (s *Service) changeCluster(ctx context.Context, ref *string, fn func(*clust
 			return fnErr
 		}
 
-		if writeErr := write(tx, clusterKey(scope, c.Name), c); writeErr != nil {
+		if writeErr := storage.Write(tx, clusterKey(scope, c.Name), c); writeErr != nil {
 			return writeErr
 		}
 
@@ -458,7 +461,7 @@ func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterReques
 		c.Status = inactive
 		described.Status = new(inactive)
 		out = described
-		return write(tx, clusterKey(scope, c.Name), c)
+		return storage.Write(tx, clusterKey(scope, c.Name), c)
 	})
 	if err != nil {
 		return nil, err

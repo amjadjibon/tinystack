@@ -9,6 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -38,7 +39,7 @@ func apiKeyNotFound() error { return notFound("Invalid API Key identifier specif
 func usagePlanNotFound() error { return notFound("Invalid Usage Plan ID specified") }
 
 func loadAPIKey(tx storage.ReadTx, scope request.Scope, id string) (*api.ApiKey, error) {
-	k, found, err := read[api.ApiKey](tx, prefix(scope, kindAPIKey)+id)
+	k, found, err := storage.Read[api.ApiKey](tx, prefix(scope, kindAPIKey)+id)
 	if err == nil && !found {
 		err = apiKeyNotFound()
 	}
@@ -47,7 +48,7 @@ func loadAPIKey(tx storage.ReadTx, scope request.Scope, id string) (*api.ApiKey,
 }
 
 func loadUsagePlan(tx storage.ReadTx, scope request.Scope, id string) (*usagePlan, error) {
-	p, found, err := read[usagePlan](tx, prefix(scope, kindUsagePlan)+id)
+	p, found, err := storage.Read[usagePlan](tx, prefix(scope, kindUsagePlan)+id)
 	if err == nil && !found {
 		err = usagePlanNotFound()
 	}
@@ -71,10 +72,10 @@ func (s *Service) CreateApiKey(ctx context.Context, in *api.CreateApiKeyRequest)
 		return nil, err
 	}
 
-	keyValue := value(in.Value)
+	keyValue := common.Value(in.Value)
 	switch {
 	case in.Value == nil:
-		keyValue = newID(40)
+		keyValue = common.RandomID(40)
 	case len(keyValue) < minKeyValue || len(keyValue) > 128:
 		return nil, badRequest("API Key value should be at least 20 characters")
 	}
@@ -83,10 +84,19 @@ func (s *Service) CreateApiKey(ctx context.Context, in *api.CreateApiKeyRequest)
 		return nil, tagErr
 	}
 
-	now := seconds(s.now())
+	now := common.Seconds(s.now())
 	k := &api.ApiKey{
-		Id: new(newID(10)), Value: &keyValue, Name: in.Name, CustomerId: in.CustomerId, Description: in.Description,
-		Enabled: new(value(in.Enabled)), CreatedDate: now, LastUpdatedDate: now, Tags: cloneTags(in.Tags),
+		Id: new(
+			common.RandomID(10),
+		),
+		Value:           &keyValue,
+		Name:            in.Name,
+		CustomerId:      in.CustomerId,
+		Description:     in.Description,
+		Enabled:         new(common.Value(in.Enabled)),
+		CreatedDate:     now,
+		LastUpdatedDate: now,
+		Tags:            common.CloneTags(in.Tags),
 	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		valueKey := prefix(m.Scope, kindAPIKeyValue) + keyValue
@@ -95,7 +105,7 @@ func (s *Service) CreateApiKey(ctx context.Context, in *api.CreateApiKeyRequest)
 		}
 
 		tx.Put(valueKey, []byte(*k.Id))
-		return write(tx, prefix(m.Scope, kindAPIKey)+*k.Id, k)
+		return storage.Write(tx, prefix(m.Scope, kindAPIKey)+*k.Id, k)
 	})
 	if err != nil {
 		return nil, err
@@ -112,9 +122,9 @@ func (s *Service) GetApiKey(ctx context.Context, in *api.GetApiKeyRequest) (*api
 
 	var out *api.ApiKey
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		k, loadErr := loadAPIKey(tx, m.Scope, value(in.ApiKey))
+		k, loadErr := loadAPIKey(tx, m.Scope, common.Value(in.ApiKey))
 		if loadErr == nil {
-			out = shown(k, value(in.IncludeValue))
+			out = shown(k, common.Value(in.IncludeValue))
 		}
 
 		return loadErr
@@ -136,11 +146,11 @@ func (s *Service) GetApiKeys(ctx context.Context, in *api.GetApiKeysRequest) (*a
 
 	var keys []*api.ApiKey
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := records[api.ApiKey](tx, prefix(m.Scope, kindAPIKey))
+		all, readErr := storage.Records[api.ApiKey](tx, prefix(m.Scope, kindAPIKey))
 		for _, k := range all {
-			if strings.HasPrefix(value(k.Name), value(in.NameQuery)) &&
-				(in.CustomerId == nil || value(k.CustomerId) == *in.CustomerId) {
-				keys = append(keys, shown(k, value(in.IncludeValues)))
+			if strings.HasPrefix(common.Value(k.Name), common.Value(in.NameQuery)) &&
+				(in.CustomerId == nil || common.Value(k.CustomerId) == *in.CustomerId) {
+				keys = append(keys, shown(k, common.Value(in.IncludeValues)))
 			}
 		}
 
@@ -171,7 +181,7 @@ func (s *Service) UpdateApiKey(ctx context.Context, in *api.UpdateApiKeyRequest)
 
 	var out *api.ApiKey
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		k, loadErr := loadAPIKey(tx, m.Scope, value(in.ApiKey))
+		k, loadErr := loadAPIKey(tx, m.Scope, common.Value(in.ApiKey))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -180,9 +190,9 @@ func (s *Service) UpdateApiKey(ctx context.Context, in *api.UpdateApiKeyRequest)
 			return patchErr
 		}
 
-		k.LastUpdatedDate = seconds(s.now())
+		k.LastUpdatedDate = common.Seconds(s.now())
 		out = shown(k, false)
-		return write(tx, prefix(m.Scope, kindAPIKey)+*k.Id, k)
+		return storage.Write(tx, prefix(m.Scope, kindAPIKey)+*k.Id, k)
 	})
 	if err != nil {
 		return nil, err
@@ -199,26 +209,26 @@ func (s *Service) DeleteApiKey(ctx context.Context, in *api.DeleteApiKeyRequest)
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		k, loadErr := loadAPIKey(tx, m.Scope, value(in.ApiKey))
+		k, loadErr := loadAPIKey(tx, m.Scope, common.Value(in.ApiKey))
 		if loadErr != nil {
 			return loadErr
 		}
 
 		for _, pk := range tx.Keys(prefix(m.Scope, kindUsagePlan)) {
-			p, _, readErr := read[usagePlan](tx, pk)
+			p, _, readErr := storage.Read[usagePlan](tx, pk)
 			if readErr != nil {
 				return readErr
 			}
 
 			if slices.Contains(p.Keys, *k.Id) {
 				p.Keys = slices.DeleteFunc(p.Keys, func(id string) bool { return id == *k.Id })
-				if writeErr := write(tx, pk, p); writeErr != nil {
+				if writeErr := storage.Write(tx, pk, p); writeErr != nil {
 					return writeErr
 				}
 			}
 		}
 
-		tx.Delete(prefix(m.Scope, kindAPIKeyValue) + value(k.Value))
+		tx.Delete(prefix(m.Scope, kindAPIKeyValue) + common.Value(k.Value))
 		tx.Delete(prefix(m.Scope, kindAPIKey) + *k.Id)
 		return nil
 	})
@@ -232,8 +242,12 @@ func (s *Service) DeleteApiKey(ctx context.Context, in *api.DeleteApiKeyRequest)
 // checkStages checks that a usage plan's API stages exist.
 func checkStages(tx storage.ReadTx, scope request.Scope, stages []api.ApiStage) error {
 	for _, st := range stages {
-		if _, found := tx.Get(owned(scope, kindStage, value(st.ApiId), value(st.Stage))); !found {
-			return badRequest("Invalid stage identifier specified: %s:%s", value(st.ApiId), value(st.Stage))
+		if _, found := tx.Get(owned(scope, kindStage, common.Value(st.ApiId), common.Value(st.Stage))); !found {
+			return badRequest(
+				"Invalid stage identifier specified: %s:%s",
+				common.Value(st.ApiId),
+				common.Value(st.Stage),
+			)
 		}
 	}
 
@@ -241,18 +255,18 @@ func checkStages(tx storage.ReadTx, scope request.Scope, stages []api.ApiStage) 
 }
 
 func checkLimits(throttle *api.ThrottleSettings, quota *api.QuotaSettings) error {
-	if throttle != nil && (value(throttle.BurstLimit) < 0 || value(throttle.RateLimit) < 0) {
+	if throttle != nil && (common.Value(throttle.BurstLimit) < 0 || common.Value(throttle.RateLimit) < 0) {
 		return badRequest("Throttle limits must not be negative.")
 	}
 
 	if quota != nil {
-		switch value(quota.Period) {
+		switch common.Value(quota.Period) {
 		case "DAY", "WEEK", "MONTH":
 		default:
 			return badRequest("Quota period must be DAY, WEEK, or MONTH.")
 		}
 
-		if value(quota.Limit) < 0 || value(quota.Offset) < 0 {
+		if common.Value(quota.Limit) < 0 || common.Value(quota.Offset) < 0 {
 			return badRequest("Quota limit and offset must not be negative.")
 		}
 	}
@@ -266,7 +280,7 @@ func (s *Service) CreateUsagePlan(ctx context.Context, in *api.CreateUsagePlanRe
 		return nil, err
 	}
 
-	if value(in.Name) == "" {
+	if common.Value(in.Name) == "" {
 		return nil, badRequest("Usage plan name is required.")
 	}
 
@@ -279,15 +293,15 @@ func (s *Service) CreateUsagePlan(ctx context.Context, in *api.CreateUsagePlanRe
 	}
 
 	p := &usagePlan{Plan: api.UsagePlan{
-		Id: new(newID(6)), Name: in.Name, Description: in.Description, ApiStages: in.ApiStages,
-		Throttle: in.Throttle, Quota: in.Quota, Tags: cloneTags(in.Tags),
+		Id: new(common.RandomID(6)), Name: in.Name, Description: in.Description, ApiStages: in.ApiStages,
+		Throttle: in.Throttle, Quota: in.Quota, Tags: common.CloneTags(in.Tags),
 	}, Keys: []string{}}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if stageErr := checkStages(tx, m.Scope, p.Plan.ApiStages); stageErr != nil {
 			return stageErr
 		}
 
-		return write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
+		return storage.Write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
 	})
 	if err != nil {
 		return nil, err
@@ -304,7 +318,7 @@ func (s *Service) GetUsagePlan(ctx context.Context, in *api.GetUsagePlanRequest)
 
 	var out *api.UsagePlan
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, loadErr := loadUsagePlan(tx, m.Scope, value(in.UsagePlanId))
+		p, loadErr := loadUsagePlan(tx, m.Scope, common.Value(in.UsagePlanId))
 		if loadErr == nil {
 			out = &p.Plan
 		}
@@ -328,7 +342,7 @@ func (s *Service) GetUsagePlans(ctx context.Context, in *api.GetUsagePlansReques
 
 	var plans []*usagePlan
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := records[usagePlan](tx, prefix(m.Scope, kindUsagePlan))
+		all, readErr := storage.Records[usagePlan](tx, prefix(m.Scope, kindUsagePlan))
 		for _, p := range all {
 			if in.KeyId == nil || slices.Contains(p.Keys, *in.KeyId) {
 				plans = append(plans, p)
@@ -364,7 +378,7 @@ func (s *Service) UpdateUsagePlan(ctx context.Context, in *api.UpdateUsagePlanRe
 
 	var stageOps, otherOps []api.PatchOperation
 	for _, op := range in.PatchOperations {
-		if value(op.Path) == "/apiStages" {
+		if common.Value(op.Path) == "/apiStages" {
 			stageOps = append(stageOps, op)
 		} else {
 			otherOps = append(otherOps, op)
@@ -373,7 +387,7 @@ func (s *Service) UpdateUsagePlan(ctx context.Context, in *api.UpdateUsagePlanRe
 
 	var out *api.UsagePlan
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		p, loadErr := loadUsagePlan(tx, m.Scope, value(in.UsagePlanId))
+		p, loadErr := loadUsagePlan(tx, m.Scope, common.Value(in.UsagePlanId))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -383,16 +397,16 @@ func (s *Service) UpdateUsagePlan(ctx context.Context, in *api.UpdateUsagePlanRe
 		}
 
 		for _, op := range stageOps {
-			apiID, stage, ok := strings.Cut(value(op.Value), ":")
+			apiID, stage, ok := strings.Cut(common.Value(op.Value), ":")
 			if !ok {
 				return badRequest("API stages are given as <API ID>:<stage>.")
 			}
 
 			st := api.ApiStage{ApiId: &apiID, Stage: &stage}
 			p.Plan.ApiStages = slices.DeleteFunc(p.Plan.ApiStages, func(a api.ApiStage) bool {
-				return value(a.ApiId) == apiID && value(a.Stage) == stage
+				return common.Value(a.ApiId) == apiID && common.Value(a.Stage) == stage
 			})
-			switch value(op.Op) {
+			switch common.Value(op.Op) {
 			case opAdd:
 				if stageErr := checkStages(tx, m.Scope, []api.ApiStage{st}); stageErr != nil {
 					return stageErr
@@ -410,7 +424,7 @@ func (s *Service) UpdateUsagePlan(ctx context.Context, in *api.UpdateUsagePlanRe
 		}
 
 		out = &p.Plan
-		return write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
+		return storage.Write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
 	})
 	if err != nil {
 		return nil, err
@@ -429,11 +443,11 @@ func (s *Service) DeleteUsagePlan(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if _, loadErr := loadUsagePlan(tx, m.Scope, value(in.UsagePlanId)); loadErr != nil {
+		if _, loadErr := loadUsagePlan(tx, m.Scope, common.Value(in.UsagePlanId)); loadErr != nil {
 			return loadErr
 		}
 
-		tx.Delete(prefix(m.Scope, kindUsagePlan) + value(in.UsagePlanId))
+		tx.Delete(prefix(m.Scope, kindUsagePlan) + common.Value(in.UsagePlanId))
 		return nil
 	})
 	if err != nil {
@@ -456,18 +470,18 @@ func (s *Service) CreateUsagePlanKey(
 		return nil, err
 	}
 
-	if value(in.KeyType) != keyTypeAPIKey {
+	if common.Value(in.KeyType) != keyTypeAPIKey {
 		return nil, badRequest("keyType must be API_KEY.")
 	}
 
 	var out *api.UsagePlanKey
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		p, loadErr := loadUsagePlan(tx, m.Scope, value(in.UsagePlanId))
+		p, loadErr := loadUsagePlan(tx, m.Scope, common.Value(in.UsagePlanId))
 		if loadErr != nil {
 			return loadErr
 		}
 
-		k, loadErr := loadAPIKey(tx, m.Scope, value(in.KeyId))
+		k, loadErr := loadAPIKey(tx, m.Scope, common.Value(in.KeyId))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -478,7 +492,7 @@ func (s *Service) CreateUsagePlanKey(
 
 		p.Keys = append(p.Keys, *k.Id)
 		out = planKey(k)
-		return write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
+		return storage.Write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
 	})
 	if err != nil {
 		return nil, err
@@ -495,16 +509,16 @@ func (s *Service) GetUsagePlanKey(ctx context.Context, in *api.GetUsagePlanKeyRe
 
 	var out *api.UsagePlanKey
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, loadErr := loadUsagePlan(tx, m.Scope, value(in.UsagePlanId))
+		p, loadErr := loadUsagePlan(tx, m.Scope, common.Value(in.UsagePlanId))
 		if loadErr != nil {
 			return loadErr
 		}
 
-		if !slices.Contains(p.Keys, value(in.KeyId)) {
+		if !slices.Contains(p.Keys, common.Value(in.KeyId)) {
 			return notFound("Invalid Usage Plan Key ID specified")
 		}
 
-		k, loadErr := loadAPIKey(tx, m.Scope, value(in.KeyId))
+		k, loadErr := loadAPIKey(tx, m.Scope, common.Value(in.KeyId))
 		if loadErr == nil {
 			out = planKey(k)
 		}
@@ -531,7 +545,7 @@ func (s *Service) GetUsagePlanKeys(
 
 	var keys []*api.UsagePlanKey
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, loadErr := loadUsagePlan(tx, m.Scope, value(in.UsagePlanId))
+		p, loadErr := loadUsagePlan(tx, m.Scope, common.Value(in.UsagePlanId))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -542,7 +556,7 @@ func (s *Service) GetUsagePlanKeys(
 				return keyErr
 			}
 
-			if strings.HasPrefix(value(k.Name), value(in.NameQuery)) {
+			if strings.HasPrefix(common.Value(k.Name), common.Value(in.NameQuery)) {
 				keys = append(keys, planKey(k))
 			}
 		}
@@ -576,17 +590,17 @@ func (s *Service) DeleteUsagePlanKey(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		p, loadErr := loadUsagePlan(tx, m.Scope, value(in.UsagePlanId))
+		p, loadErr := loadUsagePlan(tx, m.Scope, common.Value(in.UsagePlanId))
 		if loadErr != nil {
 			return loadErr
 		}
 
-		if !slices.Contains(p.Keys, value(in.KeyId)) {
+		if !slices.Contains(p.Keys, common.Value(in.KeyId)) {
 			return notFound("Invalid Usage Plan Key ID specified")
 		}
 
-		p.Keys = slices.DeleteFunc(p.Keys, func(id string) bool { return id == value(in.KeyId) })
-		return write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
+		p.Keys = slices.DeleteFunc(p.Keys, func(id string) bool { return id == common.Value(in.KeyId) })
+		return storage.Write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
 	})
 	if err != nil {
 		return nil, err
@@ -599,12 +613,12 @@ func (s *Service) DeleteUsagePlanKey(
 // one in a usage plan of its API's stage: the x-api-key header's, or, for an
 // API whose key source is AUTHORIZER, the authorizer's usageIdentifierKey.
 func (s *Service) checkAPIKey(ctx context.Context, c *call, authorizer map[string]any) *execute.Response {
-	if !value(c.method.ApiKeyRequired) {
+	if !common.Value(c.method.ApiKeyRequired) {
 		return nil
 	}
 
 	keyValue := c.req.Header.Get("X-Api-Key")
-	if value(c.api.API.ApiKeySource) == "AUTHORIZER" {
+	if common.Value(c.api.API.ApiKeySource) == "AUTHORIZER" {
 		keyValue, _ = authorizer["usageIdentifierKey"].(string)
 	}
 
@@ -616,14 +630,14 @@ func (s *Service) checkAPIKey(ctx context.Context, c *call, authorizer map[strin
 		}
 
 		k, loadErr := loadAPIKey(tx, c.scope, string(id))
-		if loadErr != nil || !value(k.Enabled) {
+		if loadErr != nil || !common.Value(k.Enabled) {
 			return loadErr
 		}
 
-		plans, readErr := records[usagePlan](tx, prefix(c.scope, kindUsagePlan))
+		plans, readErr := storage.Records[usagePlan](tx, prefix(c.scope, kindUsagePlan))
 		for _, p := range plans {
 			if slices.Contains(p.Keys, *k.Id) && slices.ContainsFunc(p.Plan.ApiStages, func(st api.ApiStage) bool {
-				return value(st.ApiId) == *c.api.API.Id && value(st.Stage) == *c.stage.StageName
+				return common.Value(st.ApiId) == *c.api.API.Id && common.Value(st.Stage) == *c.stage.StageName
 			}) {
 				allowed = true
 			}

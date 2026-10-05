@@ -5,6 +5,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const (
@@ -43,25 +44,28 @@ func findIndex(t *table, name *string) (*index, error) {
 func secondaryIndexes(t *table) []*index {
 	var out []*index
 	for _, g := range t.Description.GlobalSecondaryIndexes {
-		out = append(out, &index{name: value(g.IndexName), schema: g.KeySchema, projection: g.Projection, global: true})
+		out = append(
+			out,
+			&index{name: common.Value(g.IndexName), schema: g.KeySchema, projection: g.Projection, global: true},
+		)
 	}
 
 	for _, l := range t.Description.LocalSecondaryIndexes {
-		out = append(out, &index{name: value(l.IndexName), schema: l.KeySchema, projection: l.Projection})
+		out = append(out, &index{name: common.Value(l.IndexName), schema: l.KeySchema, projection: l.Projection})
 	}
 
 	return out
 }
 
 func (ix *index) projectsAll() bool {
-	return ix.projection == nil || value(ix.projection.ProjectionType) == projectAll
+	return ix.projection == nil || common.Value(ix.projection.ProjectionType) == projectAll
 }
 
 // keyNames returns the table's key attributes, then the index's others.
 func (ix *index) keyNames(t *table) []string {
 	var names []string
 	for _, k := range slices.Concat(t.Description.KeySchema, ix.schema) {
-		if name := value(k.AttributeName); !slices.Contains(names, name) {
+		if name := common.Value(k.AttributeName); !slices.Contains(names, name) {
 			names = append(names, name)
 		}
 	}
@@ -73,7 +77,7 @@ func (ix *index) keyNames(t *table) []string {
 // items that have all of its key attributes.
 func (ix *index) holds(it item) bool {
 	for _, k := range ix.schema {
-		if _, ok := it[value(k.AttributeName)]; !ok {
+		if _, ok := it[common.Value(k.AttributeName)]; !ok {
 			return false
 		}
 	}
@@ -88,7 +92,7 @@ func (ix *index) project(t *table, it item) item {
 	}
 
 	names := ix.keyNames(t)
-	if value(ix.projection.ProjectionType) == projectInclude {
+	if common.Value(ix.projection.ProjectionType) == projectInclude {
 		names = append(names, ix.projection.NonKeyAttributes...)
 	}
 
@@ -148,8 +152,9 @@ func checkKeySchema(schema []api.KeySchemaElement, types map[string]string, used
 			expected = "RANGE"
 		}
 
-		name := value(k.AttributeName)
-		if types[name] == "" || value(k.KeyType) != expected || (i == 1 && name == value(schema[0].AttributeName)) {
+		name := common.Value(k.AttributeName)
+		if types[name] == "" || common.Value(k.KeyType) != expected ||
+			(i == 1 && name == common.Value(schema[0].AttributeName)) {
 			return awserror.Validation("Invalid key schema: key attributes must be defined, distinct, " +
 				"and ordered HASH then RANGE")
 		}
@@ -208,7 +213,7 @@ func checkProjection(p *api.Projection, index string) error {
 		return awserror.Validation("Projection must be specified for index %s", index)
 	}
 
-	switch value(p.ProjectionType) {
+	switch common.Value(p.ProjectionType) {
 	case projectAll, projectKeysOnly:
 		if len(p.NonKeyAttributes) > 0 {
 			return awserror.Validation("NonKeyAttributes can be specified only with the INCLUDE projection type")
@@ -284,7 +289,7 @@ func secondaryIndexDescriptions(
 		}
 
 		if len(in.KeySchema) != 2 || len(l.KeySchema) != 2 ||
-			value(l.KeySchema[0].AttributeName) != value(in.KeySchema[0].AttributeName) {
+			common.Value(l.KeySchema[0].AttributeName) != common.Value(in.KeySchema[0].AttributeName) {
 			return nil, nil, awserror.Validation("Local secondary index %s must have the table's HASH key and "+
 				"a RANGE key, on a table with a RANGE key", *l.IndexName)
 		}

@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
@@ -44,7 +45,7 @@ func TestEvaluateAcrossPeriods(t *testing.T) {
 			t.Fatalf("%+v %v", out, describeErr)
 		}
 
-		return value(out.MetricAlarms[0].StateValue)
+		return common.Value(out.MetricAlarms[0].StateValue)
 	}
 
 	// The next period has begun, and has no data yet.

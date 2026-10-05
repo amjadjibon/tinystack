@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -28,26 +29,26 @@ func taggable(tx storage.ReadTx, scope request.Scope, arn string) (*tagged, erro
 
 	apiID, stage, isStage := strings.Cut(rest, "/stages/")
 	if !isStage {
-		a, found, err := read[restAPI](tx, apiKey(scope, apiID))
+		a, found, err := storage.Read[restAPI](tx, apiKey(scope, apiID))
 		if err != nil || !found {
-			return nil, errorsOr(err, missing)
+			return nil, common.ErrorsOr(err, missing)
 		}
 
 		return &tagged{tags: a.API.Tags, save: func(tx storage.WriteTx, tags map[string]string) error {
 			a.API.Tags = tags
-			return write(tx, apiKey(scope, apiID), a)
+			return storage.Write(tx, apiKey(scope, apiID), a)
 		}}, nil
 	}
 
 	key := owned(scope, kindStage, apiID, stage)
-	st, found, err := read[api.Stage](tx, key)
+	st, found, err := storage.Read[api.Stage](tx, key)
 	if err != nil || !found {
-		return nil, errorsOr(err, missing)
+		return nil, common.ErrorsOr(err, missing)
 	}
 
 	return &tagged{tags: st.Tags, save: func(tx storage.WriteTx, tags map[string]string) error {
 		st.Tags = tags
-		return write(tx, key, st)
+		return storage.Write(tx, key, st)
 	}}, nil
 }
 
@@ -59,12 +60,12 @@ func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]str
 	}
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, findErr := taggable(tx, m.Scope, value(arn))
+		r, findErr := taggable(tx, m.Scope, common.Value(arn))
 		if findErr != nil {
 			return findErr
 		}
 
-		tags, fnErr := fn(cloneTags(r.tags))
+		tags, fnErr := fn(common.CloneTags(r.tags))
 		if fnErr != nil {
 			return fnErr
 		}
@@ -104,12 +105,12 @@ func (s *Service) GetTags(ctx context.Context, in *api.GetTagsRequest) (*api.Tag
 
 	out := &api.Tags{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, findErr := taggable(tx, m.Scope, value(in.ResourceArn))
+		r, findErr := taggable(tx, m.Scope, common.Value(in.ResourceArn))
 		if findErr != nil {
 			return findErr
 		}
 
-		out.Tags = cloneTags(r.tags)
+		out.Tags = common.CloneTags(r.tags)
 		return nil
 	})
 	if err != nil {

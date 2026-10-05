@@ -20,6 +20,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -67,7 +68,7 @@ func preconditionFailed() error {
 }
 
 func validKey(key *string) error {
-	if k := value(key); k == "" || len(k) > maxKeyBytes || !utf8.ValidString(k) {
+	if k := common.Value(key); k == "" || len(k) > maxKeyBytes || !utf8.ValidString(k) {
 		return fail(http.StatusBadRequest, "KeyTooLongError", "Object keys must be 1 to 1024 bytes of UTF-8")
 	}
 
@@ -88,7 +89,7 @@ func verify(in *api.PutObjectRequest) error {
 		}
 	}
 
-	if a := value(in.ChecksumAlgorithm); a != "" && checksums()[a] == nil {
+	if a := common.Value(in.ChecksumAlgorithm); a != "" && checksums()[a] == nil {
 		return fail(http.StatusBadRequest, "InvalidRequest", "Checksum algorithm "+a+" is not supported")
 	}
 
@@ -135,7 +136,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		return nil, guardErr
 	}
 
-	if c := value(in.StorageClass); c != "" && c != storageStandard {
+	if c := common.Value(in.StorageClass); c != "" && c != storageStandard {
 		return nil, fail(
 			http.StatusNotImplemented,
 			"NotImplemented",
@@ -147,7 +148,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		return nil, sseErr
 	}
 
-	if n := value(in.IfNoneMatch); n != "" && n != "*" {
+	if n := common.Value(in.IfNoneMatch); n != "" && n != "*" {
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "If-None-Match only supports *")
 	}
 
@@ -173,7 +174,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 	sum := md5.Sum(in.Body) // #nosec G401 -- S3 ETags are MD5 digests.
 	obj := object{
 		ETag:         `"` + hex.EncodeToString(sum[:]) + `"`,
-		ContentType:  value(in.ContentType),
+		ContentType:  common.Value(in.ContentType),
 		Size:         int64(len(in.Body)),
 		LastModified: s.now().UnixMilli(),
 		Metadata:     in.Metadata,
@@ -225,7 +226,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		bucket:  *in.Bucket,
 		key:     *in.Key,
 		etag:    obj.ETag,
-		version: value(version),
+		version: common.Value(version),
 		size:    obj.Size,
 	})
 	return &api.PutObjectOutput{ETag: new(obj.ETag), VersionId: version}, nil
@@ -267,7 +268,7 @@ func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *stri
 			return readErr
 		}
 
-		obj, data, readErr := locate(tx, prefix, *t.key, value(t.version))
+		obj, data, readErr := locate(tx, prefix, *t.key, common.Value(t.version))
 		if readErr != nil {
 			return readErr
 		}
@@ -496,7 +497,7 @@ func (s *Service) DeleteObjects(ctx context.Context, in *api.DeleteObjectsReques
 				}
 			}
 
-			if !value(in.Delete.Quiet) {
+			if !common.Value(in.Delete.Quiet) {
 				out.Deleted = append(out.Deleted, deleted)
 			}
 
@@ -545,7 +546,7 @@ func (s *Service) GetBucketLocation(
 
 	var index bucketIndex
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		found, readErr := readJSON(tx, indexPrefix+value(in.Bucket), &index)
+		found, readErr := readJSON(tx, indexPrefix+common.Value(in.Bucket), &index)
 		switch {
 		case readErr != nil:
 			return readErr
@@ -591,9 +592,9 @@ func page(keys []string, objects map[string]object, prefix, delimiter, start str
 			continue
 		}
 
-		entry, common := key, false
+		entry, rolled := key, false
 		if i := strings.Index(key[len(prefix):], delimiter); delimiter != "" && i >= 0 {
-			entry, common = key[:len(prefix)+i+len(delimiter)], true
+			entry, rolled = key[:len(prefix)+i+len(delimiter)], true
 		}
 
 		if seen[entry] {
@@ -607,7 +608,7 @@ func page(keys []string, objects map[string]object, prefix, delimiter, start str
 
 		seen[entry] = true
 		l.last = entry
-		if common {
+		if rolled {
 			l.prefixes = append(l.prefixes, entry)
 			continue
 		}
@@ -640,12 +641,12 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 		limit = min(*in.MaxKeys, maxListKeys)
 	}
 
-	encoding := value(in.EncodingType)
+	encoding := common.Value(in.EncodingType)
 	if encoding != "" && encoding != encodingURL {
 		return nil, fail(http.StatusBadRequest, "InvalidArgument", "Invalid Encoding Method specified in Request")
 	}
 
-	start := value(in.StartAfter)
+	start := common.Value(in.StartAfter)
 	if in.ContinuationToken != nil {
 		b, decodeErr := base64.RawURLEncoding.DecodeString(*in.ContinuationToken)
 		if decodeErr != nil || len(b) == 0 {
@@ -663,7 +664,7 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 			return resolveErr
 		}
 
-		for _, k := range tx.Keys(prefix + "/o/" + value(in.Prefix)) {
+		for _, k := range tx.Keys(prefix + "/o/" + common.Value(in.Prefix)) {
 			name := strings.TrimPrefix(k, prefix+"/o/")
 
 			var obj object
@@ -681,7 +682,7 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 		return nil, err
 	}
 
-	l := page(keys, objects, value(in.Prefix), value(in.Delimiter), start, limit)
+	l := page(keys, objects, common.Value(in.Prefix), common.Value(in.Delimiter), start, limit)
 	encode := func(s string) *string {
 		if encoding == "url" {
 			s = url.QueryEscape(s)
@@ -692,7 +693,7 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 
 	out := &api.ListObjectsV2Output{
 		Name:              in.Bucket,
-		Prefix:            encode(value(in.Prefix)),
+		Prefix:            encode(common.Value(in.Prefix)),
 		MaxKeys:           new(limit),
 		KeyCount:          new(int64(len(l.contents) + len(l.prefixes))),
 		IsTruncated:       new(l.more),
@@ -727,7 +728,7 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 // encryption checks a write's server-side encryption: S3 encrypts every
 // object with AES256 keys it manages, the only kind TinyStack supports.
 func encryption(sse *string) error {
-	if v := value(sse); v != "" && v != "AES256" {
+	if v := common.Value(sse); v != "" && v != "AES256" {
 		return fail(
 			http.StatusNotImplemented,
 			"NotImplemented",

@@ -12,6 +12,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -87,14 +88,14 @@ func checkAttributes(attributes map[string]api.MessageAttributeValue) error {
 			return invalid("Message attribute name %s is invalid", name)
 		}
 
-		base, _, _ := strings.Cut(value(a.DataType), ".")
+		base, _, _ := strings.Cut(common.Value(a.DataType), ".")
 		switch base {
 		case typeString, typeNumber:
-			if value(a.StringValue) == "" || a.BinaryValue != nil {
+			if common.Value(a.StringValue) == "" || a.BinaryValue != nil {
 				return invalid("Message attribute %s must contain a non-empty string value", name)
 			}
 
-			if _, err := strconv.ParseFloat(value(a.StringValue), 64); base == typeNumber && err != nil {
+			if _, err := strconv.ParseFloat(common.Value(a.StringValue), 64); base == typeNumber && err != nil {
 				return invalid("Could not cast message attribute '%s' value to number.", name)
 			}
 		case "Binary":
@@ -164,7 +165,7 @@ func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.Publi
 // checkMessage validates a message to publish and returns the text each
 // protocol's subscribers receive.
 func checkMessage(e *api.PublishBatchRequestEntry) (func(protocol string) string, error) {
-	message := value(e.Message)
+	message := common.Value(e.Message)
 	if message == "" {
 		return nil, invalid("Empty message")
 	}
@@ -177,7 +178,7 @@ func checkMessage(e *api.PublishBatchRequestEntry) (func(protocol string) string
 		return nil, invalid("Message too long")
 	}
 
-	if subject := value(e.Subject); len(subject) > maxSubject || strings.ContainsAny(subject, "\r\n") {
+	if subject := common.Value(e.Subject); len(subject) > maxSubject || strings.ContainsAny(subject, "\r\n") {
 		return nil, invalid("Subject must be at most 100 characters on one line")
 	}
 
@@ -185,14 +186,14 @@ func checkMessage(e *api.PublishBatchRequestEntry) (func(protocol string) string
 		return nil, err
 	}
 
-	return messages(message, value(e.MessageStructure))
+	return messages(message, common.Value(e.MessageStructure))
 }
 
 // messageSize is a message's size as SNS limits it: its text and attributes.
 func messageSize(e *api.PublishBatchRequestEntry) int {
-	size := len(value(e.Message))
+	size := len(common.Value(e.Message))
 	for name, a := range e.MessageAttributes {
-		size += len(name) + len(value(a.DataType)) + len(value(a.StringValue)) + len(a.BinaryValue)
+		size += len(name) + len(common.Value(a.DataType)) + len(common.Value(a.StringValue)) + len(a.BinaryValue)
 	}
 
 	return size
@@ -232,7 +233,7 @@ func (s *Service) publish(
 			return placeErr
 		}
 
-		return save(tx, key, t)
+		return storage.Write(tx, key, t)
 	})
 	if err != nil {
 		return "", nil, err
@@ -242,7 +243,7 @@ func (s *Service) publish(
 		Type:      "Notification",
 		MessageID: id,
 		TopicArn:  keyARN(key),
-		Subject:   value(e.Subject),
+		Subject:   common.Value(e.Subject),
 		Timestamp: now.UTC().Format(timestampFormat),
 	}
 	if placed != nil {
@@ -259,12 +260,12 @@ func (s *Service) publish(
 			envelope.MessageAttributes = map[string]notificationAttribute{}
 		}
 
-		v := value(a.StringValue)
+		v := common.Value(a.StringValue)
 		if a.BinaryValue != nil {
 			v = base64.StdEncoding.EncodeToString(a.BinaryValue)
 		}
 
-		envelope.MessageAttributes[name] = notificationAttribute{Type: value(a.DataType), Value: v}
+		envelope.MessageAttributes[name] = notificationAttribute{Type: common.Value(a.DataType), Value: v}
 	}
 
 	for i := range subs {

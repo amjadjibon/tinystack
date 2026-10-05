@@ -15,6 +15,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -46,7 +47,7 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 	c := &call{req: r, requestID: newRequestID()}
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		loc, ok, err := read[location](tx, indexKey(id))
+		loc, ok, err := storage.Read[location](tx, indexKey(id))
 		if err != nil || !ok {
 			return err
 		}
@@ -69,7 +70,7 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 }
 
 func newRequestID() string {
-	return strings.ToUpper(newID(8)) + "=" // shaped like API Gateway's
+	return strings.ToUpper(common.RandomID(8)) + "=" // shaped like API Gateway's
 }
 
 // resolveStage picks the stage the request's first path segment names, or
@@ -81,14 +82,14 @@ func (c *call) resolveStage(tx storage.ReadTx) error {
 		name = ""
 	}
 
-	st, found, err := read[api.Stage](tx, owned(c.scope, kindStage, *c.api.ApiId, name))
+	st, found, err := storage.Read[api.Stage](tx, owned(c.scope, kindStage, *c.api.ApiId, name))
 	if err != nil {
 		return err
 	}
 
 	if !found || name == "" {
 		name, path = defaultStage, c.req.Path
-		if st, found, err = read[api.Stage](tx, owned(c.scope, kindStage, *c.api.ApiId, name)); err != nil {
+		if st, found, err = storage.Read[api.Stage](tx, owned(c.scope, kindStage, *c.api.ApiId, name)); err != nil {
 			return err
 		}
 	}
@@ -98,14 +99,14 @@ func (c *call) resolveStage(tx storage.ReadTx) error {
 	}
 
 	c.stage, c.path = st, path
-	c.snapshot, _, err = read[deployment](tx, owned(c.scope, kindDeployment, *c.api.ApiId, *st.DeploymentId))
+	c.snapshot, _, err = storage.Read[deployment](tx, owned(c.scope, kindDeployment, *c.api.ApiId, *st.DeploymentId))
 	return err
 }
 
 // run answers the request.
 func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 	r := c.req
-	if value(c.api.DisableExecuteApiEndpoint) {
+	if common.Value(c.api.DisableExecuteApiEndpoint) {
 		return execute.Message(http.StatusForbidden, "Forbidden")
 	}
 
@@ -137,7 +138,7 @@ func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 func matchRoute(routes []api.Route, method, path string) (route *api.Route, params map[string]string) {
 	var bestRank []int
 	for i := range routes {
-		routeMethod, template, ok := strings.Cut(value(routes[i].RouteKey), " ")
+		routeMethod, template, ok := strings.Cut(common.Value(routes[i].RouteKey), " ")
 		if !ok || (routeMethod != method && routeMethod != methodAny) {
 			continue
 		}
@@ -161,7 +162,7 @@ func matchRoute(routes []api.Route, method, path string) (route *api.Route, para
 	}
 
 	for i := range routes {
-		if value(routes[i].RouteKey) == defaultRoute {
+		if common.Value(routes[i].RouteKey) == defaultRoute {
 			return &routes[i], nil
 		}
 	}
@@ -205,7 +206,7 @@ func preflightResponse(cors *api.Cors, origin string) *execute.Response {
 		h.Set("Access-Control-Max-Age", strconv.FormatInt(*cors.MaxAge, 10))
 	}
 
-	if value(cors.AllowCredentials) {
+	if common.Value(cors.AllowCredentials) {
 		h.Set("Access-Control-Allow-Credentials", "true")
 	}
 
@@ -236,7 +237,7 @@ func withCors(cors *api.Cors, origin string, resp *execute.Response) *execute.Re
 		resp.Header.Set("Access-Control-Expose-Headers", strings.Join(cors.ExposeHeaders, ","))
 	}
 
-	if value(cors.AllowCredentials) {
+	if common.Value(cors.AllowCredentials) {
 		resp.Header.Set("Access-Control-Allow-Credentials", "true")
 	}
 
@@ -264,7 +265,7 @@ func identityValue(c *call, source string) string {
 func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *execute.Response) {
 	unauthorized := execute.Message(http.StatusUnauthorized, "Unauthorized")
 	forbidden := execute.Message(http.StatusForbidden, "Forbidden")
-	switch value(c.route.AuthorizationType) {
+	switch common.Value(c.route.AuthorizationType) {
 	case authIAM:
 		// Signatures are not verified; a SigV4-signed request is authorized.
 		if !strings.HasPrefix(c.req.Header.Get("Authorization"), "AWS4-") && c.req.Query.Get("X-Amz-Signature") == "" {
@@ -274,14 +275,19 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 
 		return nil, nil
 	case authJWT:
-		a := c.snapshot.Authorizers[value(c.route.AuthorizerId)]
+		a := c.snapshot.Authorizers[common.Value(c.route.AuthorizerId)]
 		token := identityValue(c, a.IdentitySource[0])
 		if token == "" {
 			c.authorizerError = "missing token"
 			return nil, unauthorized
 		}
 
-		claims, err := s.verifier.Verify(ctx, token, value(a.JwtConfiguration.Issuer), a.JwtConfiguration.Audience)
+		claims, err := s.verifier.Verify(
+			ctx,
+			token,
+			common.Value(a.JwtConfiguration.Issuer),
+			a.JwtConfiguration.Audience,
+		)
 		if err != nil {
 			c.authorizerError = err.Error()
 			return nil, unauthorized
@@ -308,7 +314,7 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 // lambdaAuthorize runs a Lambda REQUEST authorizer. Its results are not
 // cached: the function runs for every request.
 func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any, *execute.Response) {
-	a := c.snapshot.Authorizers[value(c.route.AuthorizerId)]
+	a := c.snapshot.Authorizers[common.Value(c.route.AuthorizerId)]
 	var sources []string
 	for _, source := range a.IdentitySource {
 		v := identityValue(c, source)
@@ -325,7 +331,7 @@ func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any,
 	pc := c.proxyContext(nil)
 	var event map[string]any
 	var err error
-	if value(a.AuthorizerPayloadFormatVersion) == payload2 {
+	if common.Value(a.AuthorizerPayloadFormatVersion) == payload2 {
 		event, err = eventObject(proxy.EventV2(c.req, pc, c.params, c.stage.StageVariables))
 		event["type"], event["routeArn"], event["identitySource"] = typeRequest, routeARN, sources
 		delete(event, "body")
@@ -342,14 +348,14 @@ func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any,
 	}
 
 	payload, _ := json.Marshal(event)
-	arn, _ := proxy.LambdaARN(value(a.AuthorizerUri))
+	arn, _ := proxy.LambdaARN(common.Value(a.AuthorizerUri))
 	out, functionError, err := s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
 	if err != nil || functionError {
 		c.authorizerError = "authorizer function failed"
 		return nil, failed
 	}
 
-	allowed, authContext, ok := authorizerResult(out, value(a.EnableSimpleResponses), routeARN)
+	allowed, authContext, ok := authorizerResult(out, common.Value(a.EnableSimpleResponses), routeARN)
 	switch {
 	case !ok:
 		c.authorizerError = "invalid authorizer response"
@@ -388,7 +394,7 @@ func authorizerResult(payload []byte, simple bool, routeARN string) (allowed boo
 		return false, nil, false
 	}
 
-	return value(out.IsAuthorized), out.Context, out.IsAuthorized != nil
+	return common.Value(out.IsAuthorized), out.Context, out.IsAuthorized != nil
 }
 
 func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
@@ -398,30 +404,37 @@ func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
 	}
 
 	resource := ""
-	if _, path, ok := strings.Cut(value(c.route.RouteKey), " "); ok {
+	if _, path, ok := strings.Cut(common.Value(c.route.RouteKey), " "); ok {
 		resource = path
 	}
 
 	path := c.req.Path
 	return &proxy.Context{
-		Authorizer: authorizer, AccountID: c.scope.AccountID, APIID: *c.api.ApiId, Stage: *c.stage.StageName,
-		RequestID: c.requestID, RouteKey: value(c.route.RouteKey), Resource: resource, Path: path, DomainName: domain,
+		Authorizer: authorizer,
+		AccountID:  c.scope.AccountID,
+		APIID:      *c.api.ApiId,
+		Stage:      *c.stage.StageName,
+		RequestID:  c.requestID,
+		RouteKey:   common.Value(c.route.RouteKey),
+		Resource:   resource,
+		Path:       path,
+		DomainName: domain,
 	}
 }
 
 // integrate runs the route's integration.
 func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]any) *execute.Response {
 	failed := execute.Message(http.StatusInternalServerError, "Internal Server Error")
-	i, ok := c.snapshot.Integrations[integrationID(value(c.route.Target))]
+	i, ok := c.snapshot.Integrations[integrationID(common.Value(c.route.Target))]
 	if !ok {
 		c.integrationError = "the route has no integration"
 		return failed
 	}
 
-	timeout := time.Duration(value(i.TimeoutInMillis)) * time.Millisecond
-	uri := proxy.Substitute(value(i.IntegrationUri), c.stage.StageVariables)
-	if value(i.IntegrationType) == typeHTTP {
-		method := value(i.IntegrationMethod)
+	timeout := time.Duration(common.Value(i.TimeoutInMillis)) * time.Millisecond
+	uri := proxy.Substitute(common.Value(i.IntegrationUri), c.stage.StageVariables)
+	if common.Value(i.IntegrationType) == typeHTTP {
+		method := common.Value(i.IntegrationMethod)
 		if method == methodAny {
 			method = c.req.Method
 		}
@@ -443,7 +456,7 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 	var event []byte
 	var err error
 	pc := c.proxyContext(authorizer)
-	if value(i.PayloadFormatVersion) == payload2 {
+	if common.Value(i.PayloadFormatVersion) == payload2 {
 		if authorizer != nil && authorizer["claims"] != nil {
 			pc.Authorizer = map[string]any{"jwt": authorizer}
 		}
@@ -473,7 +486,7 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 	}
 
 	c.integrationCode = http.StatusOK
-	if value(i.PayloadFormatVersion) == payload2 {
+	if common.Value(i.PayloadFormatVersion) == payload2 {
 		return proxy.ResponseV2(out, functionError)
 	}
 

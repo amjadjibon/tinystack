@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -65,7 +66,7 @@ func associationNotFound(id string) error {
 }
 
 func loadRouteTable(tx storage.ReadTx, scope request.Scope, id string) (*routeTable, error) {
-	rt, ok, err := read[routeTable](tx, key(scope, kindRouteTable, id))
+	rt, ok, err := storage.Read[routeTable](tx, key(scope, kindRouteTable, id))
 	if err == nil && !ok {
 		err = routeTableNotFound(id)
 	}
@@ -87,7 +88,7 @@ func createMainRouteTable(tx storage.WriteTx, scope request.Scope, v *vpc, route
 	rt := newRouteTable(v, nil)
 	rt.Routes = append(rt.Routes, routes...)
 	rt.Associations = []routeAssociation{{ID: newID("rtbassoc"), Main: true}}
-	return write(tx, key(scope, kindRouteTable, rt.ID), rt)
+	return storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt)
 }
 
 // vpcRouteTables returns a VPC's route tables, ordered by ID.
@@ -133,7 +134,7 @@ func dissociateRouteTable(tx storage.WriteTx, scope request.Scope, subnetID stri
 		}
 
 		rt.Associations = kept
-		if writeErr := write(tx, key(scope, kindRouteTable, rt.ID), rt); writeErr != nil {
+		if writeErr := storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt); writeErr != nil {
 			return writeErr
 		}
 	}
@@ -148,28 +149,28 @@ func routeState(tx storage.ReadTx, scope request.Scope, rt *routeTable, r *route
 	ok := true
 	switch {
 	case strings.HasPrefix(r.GatewayID, "vpce-"):
-		_, found, err := read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, r.GatewayID))
+		_, found, err := storage.Read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, r.GatewayID))
 		if err != nil {
 			return "", err
 		}
 
 		ok = found
 	case r.NATGatewayID != "":
-		g, found, err := read[natGateway](tx, key(scope, kindNATGateway, r.NATGatewayID))
+		g, found, err := storage.Read[natGateway](tx, key(scope, kindNATGateway, r.NATGatewayID))
 		if err != nil {
 			return "", err
 		}
 
 		ok = found && g.active()
 	case strings.HasPrefix(r.GatewayID, "igw-"):
-		g, found, err := read[internetGateway](tx, key(scope, kindInternetGateway, r.GatewayID))
+		g, found, err := storage.Read[internetGateway](tx, key(scope, kindInternetGateway, r.GatewayID))
 		if err != nil {
 			return "", err
 		}
 
 		ok = found && g.VPCID == rt.VPCID
 	case r.InstanceID != "":
-		i, found, err := read[instance](tx, key(scope, kindInstance, r.InstanceID))
+		i, found, err := storage.Read[instance](tx, key(scope, kindInstance, r.InstanceID))
 		if err != nil {
 			return "", err
 		}
@@ -275,9 +276,9 @@ func (s *Service) CreateRouteTable(
 	}
 
 	var out api.RouteTable
-	token := value(in.ClientToken)
+	token := common.Value(in.ClientToken)
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		v, loadErr := loadVPC(tx, scope, value(in.VpcId))
+		v, loadErr := loadVPC(tx, scope, common.Value(in.VpcId))
 		if loadErr != nil {
 			return loadErr
 		}
@@ -296,7 +297,7 @@ func (s *Service) CreateRouteTable(
 
 		rt := newRouteTable(v, tags)
 		rt.ClientToken = token
-		if writeErr := write(tx, key(scope, kindRouteTable, rt.ID), rt); writeErr != nil {
+		if writeErr := storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt); writeErr != nil {
 			return writeErr
 		}
 
@@ -317,7 +318,7 @@ func (s *Service) DeleteRouteTable(
 	in *api.DeleteRouteTableRequest,
 ) (*api.DeleteRouteTableOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		rt, err := loadRouteTable(tx, scope, value(in.RouteTableId))
+		rt, err := loadRouteTable(tx, scope, common.Value(in.RouteTableId))
 		if err != nil {
 			return err
 		}
@@ -433,14 +434,14 @@ func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *r
 
 		vpcID = g.VPCID
 	case want.NATGatewayID != "":
-		g, found, err := read[natGateway](tx, key(scope, kindNATGateway, want.NATGatewayID))
+		g, found, err := storage.Read[natGateway](tx, key(scope, kindNATGateway, want.NATGatewayID))
 		if err != nil || !found || !g.active() {
 			return errorsOr(err, natGatewayNotFound(want.NATGatewayID))
 		}
 
 		vpcID = g.VPCID
 	default:
-		i, found, err := read[instance](tx, key(scope, kindInstance, want.InstanceID))
+		i, found, err := storage.Read[instance](tx, key(scope, kindInstance, want.InstanceID))
 		if err != nil || !found || !i.active() {
 			return errorsOr(err, instanceNotFound(want.InstanceID))
 		}
@@ -480,7 +481,7 @@ func (s *Service) changeRoute(
 			return fnErr
 		}
 
-		return write(tx, key(scope, kindRouteTable, rt.ID), rt)
+		return storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt)
 	})
 }
 
@@ -494,7 +495,7 @@ func localRoute(rt *routeTable, cidr string) error {
 }
 
 func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (*api.CreateRouteResult, error) {
-	err := s.changeRoute(ctx, in.DryRun, value(in.RouteTableId), value(in.DestinationCidrBlock),
+	err := s.changeRoute(ctx, in.DryRun, common.Value(in.RouteTableId), common.Value(in.DestinationCidrBlock),
 		func(tx storage.ReadTx, scope request.Scope, rt *routeTable, cidr string, at int) error {
 			if at >= 0 {
 				return awserror.New("RouteAlreadyExists", fmt.Sprintf("The route identified by %s already exists.",
@@ -502,8 +503,8 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 			}
 
 			r := route{
-				CIDR: cidr, GatewayID: value(in.GatewayId), NATGatewayID: value(in.NatGatewayId),
-				InstanceID: value(in.InstanceId),
+				CIDR: cidr, GatewayID: common.Value(in.GatewayId), NATGatewayID: common.Value(in.NatGatewayId),
+				InstanceID: common.Value(in.InstanceId),
 			}
 			err := routeTarget(tx, scope, rt, &r)
 			rt.Routes = append(rt.Routes, r)
@@ -517,7 +518,7 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 }
 
 func (s *Service) ReplaceRoute(ctx context.Context, in *api.ReplaceRouteRequest) (*api.ReplaceRouteOutput, error) {
-	err := s.changeRoute(ctx, in.DryRun, value(in.RouteTableId), value(in.DestinationCidrBlock),
+	err := s.changeRoute(ctx, in.DryRun, common.Value(in.RouteTableId), common.Value(in.DestinationCidrBlock),
 		func(tx storage.ReadTx, scope request.Scope, rt *routeTable, cidr string, at int) error {
 			switch {
 			case at < 0:
@@ -527,8 +528,8 @@ func (s *Service) ReplaceRoute(ctx context.Context, in *api.ReplaceRouteRequest)
 			}
 
 			r := route{
-				CIDR: cidr, GatewayID: value(in.GatewayId), NATGatewayID: value(in.NatGatewayId),
-				InstanceID: value(in.InstanceId),
+				CIDR: cidr, GatewayID: common.Value(in.GatewayId), NATGatewayID: common.Value(in.NatGatewayId),
+				InstanceID: common.Value(in.InstanceId),
 			}
 			err := routeTarget(tx, scope, rt, &r)
 			rt.Routes[at] = r
@@ -542,7 +543,7 @@ func (s *Service) ReplaceRoute(ctx context.Context, in *api.ReplaceRouteRequest)
 }
 
 func (s *Service) DeleteRoute(ctx context.Context, in *api.DeleteRouteRequest) (*api.DeleteRouteOutput, error) {
-	err := s.changeRoute(ctx, in.DryRun, value(in.RouteTableId), value(in.DestinationCidrBlock),
+	err := s.changeRoute(ctx, in.DryRun, common.Value(in.RouteTableId), common.Value(in.DestinationCidrBlock),
 		func(_ storage.ReadTx, _ request.Scope, rt *routeTable, cidr string, at int) error {
 			switch {
 			case at < 0:
@@ -567,14 +568,14 @@ func (s *Service) AssociateRouteTable(
 	ctx context.Context,
 	in *api.AssociateRouteTableRequest,
 ) (*api.AssociateRouteTableResult, error) {
-	a := routeAssociation{ID: newID("rtbassoc"), SubnetID: value(in.SubnetId)}
+	a := routeAssociation{ID: newID("rtbassoc"), SubnetID: common.Value(in.SubnetId)}
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		rt, err := loadRouteTable(tx, scope, value(in.RouteTableId))
+		rt, err := loadRouteTable(tx, scope, common.Value(in.RouteTableId))
 		if err != nil {
 			return err
 		}
 
-		sn, ok, err := read[subnet](tx, key(scope, kindSubnet, a.SubnetID))
+		sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, a.SubnetID))
 		if err != nil || !ok {
 			return errorsOr(err, subnetNotFound(a.SubnetID))
 		}
@@ -597,7 +598,7 @@ func (s *Service) AssociateRouteTable(
 		}
 
 		rt.Associations = append(rt.Associations, a)
-		return write(tx, key(scope, kindRouteTable, rt.ID), rt)
+		return storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt)
 	})
 	if err != nil {
 		return nil, err
@@ -615,7 +616,7 @@ func (s *Service) DisassociateRouteTable(
 	in *api.DisassociateRouteTableRequest,
 ) (*api.DisassociateRouteTableOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		rt, at, err := findRouteAssociation(tx, scope, value(in.AssociationId))
+		rt, at, err := findRouteAssociation(tx, scope, common.Value(in.AssociationId))
 		if err != nil {
 			return err
 		}
@@ -626,7 +627,7 @@ func (s *Service) DisassociateRouteTable(
 		}
 
 		rt.Associations = slices.Delete(rt.Associations, at, at+1)
-		return write(tx, key(scope, kindRouteTable, rt.ID), rt)
+		return storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt)
 	})
 	if err != nil {
 		return nil, err
@@ -643,12 +644,12 @@ func (s *Service) ReplaceRouteTableAssociation(
 ) (*api.ReplaceRouteTableAssociationResult, error) {
 	newAssociation := newID("rtbassoc")
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		from, at, err := findRouteAssociation(tx, scope, value(in.AssociationId))
+		from, at, err := findRouteAssociation(tx, scope, common.Value(in.AssociationId))
 		if err != nil {
 			return err
 		}
 
-		to, err := loadRouteTable(tx, scope, value(in.RouteTableId))
+		to, err := loadRouteTable(tx, scope, common.Value(in.RouteTableId))
 		if err != nil {
 			return err
 		}
@@ -659,7 +660,7 @@ func (s *Service) ReplaceRouteTableAssociation(
 
 		a := from.Associations[at]
 		from.Associations = slices.Delete(from.Associations, at, at+1)
-		if writeErr := write(tx, key(scope, kindRouteTable, from.ID), from); writeErr != nil {
+		if writeErr := storage.Write(tx, key(scope, kindRouteTable, from.ID), from); writeErr != nil {
 			return writeErr
 		}
 
@@ -676,7 +677,7 @@ func (s *Service) ReplaceRouteTableAssociation(
 			to.Associations = append(to.Associations, a)
 		}
 
-		return write(tx, key(scope, kindRouteTable, to.ID), to)
+		return storage.Write(tx, key(scope, kindRouteTable, to.ID), to)
 	})
 	if err != nil {
 		return nil, err

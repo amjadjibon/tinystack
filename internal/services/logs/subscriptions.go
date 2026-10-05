@@ -15,6 +15,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -61,25 +62,25 @@ func (s *Service) PutSubscriptionFilter(
 	ctx context.Context,
 	in *api.PutSubscriptionFilterRequest,
 ) (*api.PutSubscriptionFilterOutput, error) {
-	name := value(in.FilterName)
+	name := common.Value(in.FilterName)
 	if !filterName.MatchString(name) {
 		return nil, invalid("filterName must be 1 to 512 characters without ':' or '*'")
 	}
 
-	if _, err := compilePattern(value(in.FilterPattern)); err != nil {
+	if _, err := compilePattern(common.Value(in.FilterPattern)); err != nil {
 		return nil, err
 	}
 
-	if len(value(in.FilterPattern)) > 1024 {
+	if len(common.Value(in.FilterPattern)) > 1024 {
 		return nil, invalid("filterPattern must be at most 1024 characters")
 	}
 
-	arn := value(in.DestinationArn)
+	arn := common.Value(in.DestinationArn)
 	if !destination.MatchString(arn) {
 		return nil, invalid("destinationArn must be a Lambda function, Kinesis stream, or Firehose delivery stream")
 	}
 
-	distribution := value(in.Distribution)
+	distribution := common.Value(in.Distribution)
 	switch distribution {
 	case "":
 		distribution = distributionByStream
@@ -89,7 +90,7 @@ func (s *Service) PutSubscriptionFilter(
 	}
 
 	sub := subscription{
-		Name: name, Pattern: value(in.FilterPattern), Destination: arn, Role: value(in.RoleArn),
+		Name: name, Pattern: common.Value(in.FilterPattern), Destination: arn, Role: common.Value(in.RoleArn),
 		Distribution: distribution, Created: s.now().UnixMilli(),
 	}
 	err := s.change(ctx, in.LogGroupName, func(g *group) error {
@@ -116,14 +117,14 @@ func (s *Service) DescribeSubscriptionFilters(
 	ctx context.Context,
 	in *api.DescribeSubscriptionFiltersRequest,
 ) (*api.DescribeSubscriptionFiltersResponse, error) {
-	if l := value(in.Limit); in.Limit != nil && (l < 1 || l > maxDescribe) {
+	if l := common.Value(in.Limit); in.Limit != nil && (l < 1 || l > maxDescribe) {
 		return nil, invalid("limit must be from 1 to %d", maxDescribe)
 	}
 
 	out := &api.DescribeSubscriptionFiltersResponse{SubscriptionFilters: []api.SubscriptionFilter{}}
 	err := s.view(ctx, in.LogGroupName, nil, func(_ storage.ReadTx, _ request.Scope, g *group) error {
 		for _, sub := range g.Subscriptions {
-			if strings.HasPrefix(sub.Name, value(in.FilterNamePrefix)) {
+			if strings.HasPrefix(sub.Name, common.Value(in.FilterNamePrefix)) {
 				out.SubscriptionFilters = append(out.SubscriptionFilters, api.SubscriptionFilter{
 					FilterName: new(sub.Name), LogGroupName: new(g.Name), FilterPattern: new(sub.Pattern),
 					DestinationArn: new(sub.Destination), RoleArn: optional(sub.Role),
@@ -146,7 +147,10 @@ func (s *Service) DeleteSubscriptionFilter(
 	in *api.DeleteSubscriptionFilterRequest,
 ) (*api.DeleteSubscriptionFilterOutput, error) {
 	err := s.change(ctx, in.LogGroupName, func(g *group) error {
-		i := slices.IndexFunc(g.Subscriptions, func(o subscription) bool { return o.Name == value(in.FilterName) })
+		i := slices.IndexFunc(
+			g.Subscriptions,
+			func(o subscription) bool { return o.Name == common.Value(in.FilterName) },
+		)
 		if i < 0 {
 			return notFound("The specified subscription filter does not exist.")
 		}

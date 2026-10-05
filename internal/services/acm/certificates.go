@@ -19,6 +19,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -81,7 +82,7 @@ func checkDomain(name string) error {
 
 // names returns a request's domain name followed by its other names.
 func names(in *api.RequestCertificateRequest) ([]string, error) {
-	domain := value(in.DomainName)
+	domain := common.Value(in.DomainName)
 	if domain == "" {
 		return nil, awserror.Validation("The DomainName is required.")
 	}
@@ -112,7 +113,7 @@ func validations(scope request.Scope, domains []string, method string, options [
 ) ([]api.DomainValidation, error) {
 	custom := map[string]string{}
 	for _, o := range options {
-		name, domain := value(o.DomainName), value(o.ValidationDomain)
+		name, domain := common.Value(o.DomainName), common.Value(o.ValidationDomain)
 		switch {
 		case !slices.Contains(domains, name):
 			return nil, awserror.New("InvalidDomainValidationOptionsException",
@@ -191,8 +192,8 @@ func (s *Service) RequestCertificate(
 		return nil, err
 	}
 
-	method := cmp.Or(value(in.ValidationMethod), methodEmail)
-	alg := cmp.Or(value(in.KeyAlgorithm), algRSA2048)
+	method := cmp.Or(common.Value(in.ValidationMethod), methodEmail)
+	alg := cmp.Or(common.Value(in.KeyAlgorithm), algRSA2048)
 	switch {
 	case method != methodDNS && method != methodEmail:
 		return nil, invalidParameter("TinyStack does not support the %s validation method.", method)
@@ -227,12 +228,14 @@ func (s *Service) RequestCertificate(
 
 	options := &api.CertificateOptions{CertificateTransparencyLoggingPreference: new(enabled), Export: new(disabled)}
 	if o := in.Options; o != nil {
-		options.CertificateTransparencyLoggingPreference = new(cmp.Or(value(o.CertificateTransparencyLoggingPreference),
-			enabled))
-		options.Export = new(cmp.Or(value(o.Export), disabled))
+		options.CertificateTransparencyLoggingPreference = new(
+			cmp.Or(common.Value(o.CertificateTransparencyLoggingPreference),
+				enabled),
+		)
+		options.Export = new(cmp.Or(common.Value(o.Export), disabled))
 	}
 
-	if value(options.Export) != enabled {
+	if common.Value(options.Export) != enabled {
 		// Only exportable certificates keep their private key.
 		pemKey = ""
 	}
@@ -243,20 +246,20 @@ func (s *Service) RequestCertificate(
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if in.IdempotencyToken != nil {
 			k := key(m.Scope, kindToken, *in.IdempotencyToken)
-			t, found, readErr := read[token](tx, k)
+			t, found, readErr := storage.Read[token](tx, k)
 			if readErr != nil {
 				return readErr
 			}
 
-			if found && t.Expires > unix(now) && t.Request == string(requested) {
+			if found && t.Expires > common.Unix(now) && t.Request == string(requested) {
 				arn = certARN(m.Scope, t.ID)
 				return nil
 			}
 
-			if writeErr := write(
+			if writeErr := storage.Write(
 				tx,
 				k,
-				token{ID: id, Expires: unix(now.Add(tokenLife)), Request: string(requested)},
+				token{ID: id, Expires: common.Unix(now.Add(tokenLife)), Request: string(requested)},
 			); writeErr != nil {
 				return writeErr
 			}
@@ -265,9 +268,13 @@ func (s *Service) RequestCertificate(
 		arn = certARN(m.Scope, id)
 		detail := describe(cert, now)
 		detail.CertificateArn, detail.DomainName, detail.SubjectAlternativeNames = new(arn), new(domains[0]), domains
-		detail.DomainValidationOptions, detail.CreatedAt, detail.IssuedAt = checks, new(unix(now)), new(unix(now))
+		detail.DomainValidationOptions, detail.CreatedAt, detail.IssuedAt = checks, new(
+			common.Unix(now),
+		), new(
+			common.Unix(now),
+		)
 		detail.Type, detail.KeyAlgorithm, detail.Options = new(typeIssued), new(alg), options
-		return write(tx, key(m.Scope, kindCert, id), certificate{
+		return storage.Write(tx, key(m.Scope, kindCert, id), certificate{
 			Detail: detail, Tags: tags, Body: body, Chain: ca.pem, Key: pemKey,
 		})
 	})
@@ -287,7 +294,7 @@ func describe(c *x509.Certificate, now time.Time) api.CertificateDetail {
 
 	d := api.CertificateDetail{
 		Serial: new(serialString(c.SerialNumber)), Subject: new(c.Subject.String()), Issuer: new(issuerName(c)),
-		Status: new(status), NotBefore: new(unix(c.NotBefore)), NotAfter: new(unix(c.NotAfter)),
+		Status: new(status), NotBefore: new(common.Unix(c.NotBefore)), NotAfter: new(common.Unix(c.NotAfter)),
 		SignatureAlgorithm: new(signatureName(c.SignatureAlgorithm)), RenewalEligibility: new(ineligible),
 	}
 	usages := map[x509.KeyUsage]string{
@@ -350,7 +357,8 @@ func (s *Service) view(ctx context.Context, arn *string) (*certificate, error) {
 		return nil, err
 	}
 
-	if value(c.Detail.Status) == statusIssued && s.now().After(time.UnixMilli(int64(value(c.Detail.NotAfter)*1000))) {
+	if common.Value(c.Detail.Status) == statusIssued &&
+		s.now().After(time.UnixMilli(int64(common.Value(c.Detail.NotAfter)*1000))) {
 		c.Detail.Status = new(statusExpired)
 	}
 
@@ -385,7 +393,7 @@ func (s *Service) ListCertificates(
 			types = f.KeyTypes
 		}
 
-		export = value(f.ExportOption)
+		export = common.Value(f.ExportOption)
 	}
 
 	switch {
@@ -414,7 +422,7 @@ func (s *Service) ListCertificates(
 	var all []*certificate
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(key(m.Scope, kindCert, "")) {
-			c, _, readErr := read[certificate](tx, k)
+			c, _, readErr := storage.Read[certificate](tx, k)
 			if readErr != nil {
 				return readErr
 			}
@@ -430,8 +438,8 @@ func (s *Service) ListCertificates(
 
 	if in.SortBy != nil {
 		slices.SortStableFunc(all, func(a, b *certificate) int {
-			order := cmp.Compare(value(a.Detail.CreatedAt), value(b.Detail.CreatedAt))
-			if value(in.SortOrder) == sortDescending {
+			order := cmp.Compare(common.Value(a.Detail.CreatedAt), common.Value(b.Detail.CreatedAt))
+			if common.Value(in.SortOrder) == sortDescending {
 				return -order
 			}
 
@@ -444,15 +452,15 @@ func (s *Service) ListCertificates(
 	var matched int
 	for _, c := range all {
 		d := &c.Detail
-		status := value(d.Status)
-		if status == statusIssued && now.After(time.UnixMilli(int64(value(d.NotAfter)*1000))) {
+		status := common.Value(d.Status)
+		if status == statusIssued && now.After(time.UnixMilli(int64(common.Value(d.NotAfter)*1000))) {
 			status = statusExpired
 		}
 
 		switch {
 		case in.CertificateStatuses != nil && !slices.Contains(in.CertificateStatuses, status),
-			!slices.Contains(types, value(d.KeyAlgorithm)),
-			export != "" && value(value(d.Options).Export) != export:
+			!slices.Contains(types, common.Value(d.KeyAlgorithm)),
+			export != "" && common.Value(common.Value(d.Options).Export) != export:
 			continue
 		}
 
@@ -482,7 +490,7 @@ func summary(c *certificate, status string) api.CertificateSummary {
 		Status:                               new(status),
 		Type:                                 d.Type,
 		KeyAlgorithm:                         d.KeyAlgorithm,
-		ExportOption:                         value(d.Options).Export,
+		ExportOption:                         common.Value(d.Options).Export,
 		InUse:                                new(len(d.InUseBy) > 0),
 		Exported:                             new(c.Exported),
 		RenewalEligibility:                   d.RenewalEligibility,
@@ -493,11 +501,11 @@ func summary(c *certificate, status string) api.CertificateSummary {
 		ImportedAt:                           d.ImportedAt,
 	}
 	for _, u := range d.KeyUsages {
-		out.KeyUsages = append(out.KeyUsages, value(u.Name))
+		out.KeyUsages = append(out.KeyUsages, common.Value(u.Name))
 	}
 
 	for _, u := range d.ExtendedKeyUsages {
-		out.ExtendedKeyUsages = append(out.ExtendedKeyUsages, value(u.Name))
+		out.ExtendedKeyUsages = append(out.ExtendedKeyUsages, common.Value(u.Name))
 	}
 
 	return out
@@ -537,7 +545,7 @@ func (s *Service) GetCertificate(
 		return nil, err
 	}
 
-	if st := value(c.Detail.Status); st != statusIssued && st != statusExpired {
+	if st := common.Value(c.Detail.Status); st != statusIssued && st != statusExpired {
 		return nil, awserror.New("RequestInProgressException", "Certificate "+*in.CertificateArn+" is "+st+".")
 	}
 
@@ -615,29 +623,33 @@ func (s *Service) ImportCertificate(
 	domain := cmp.Or(cert.Subject.CommonName, domains[0])
 	id := uuid.NewV4().String()
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		created := unix(now)
+		created := common.Unix(now)
 		if in.CertificateArn != nil {
 			old, loadErr := load(tx, m.Scope, in.CertificateArn)
 			if loadErr != nil {
 				return loadErr
 			}
 
-			if value(old.Detail.Type) != typeImported {
+			if common.Value(old.Detail.Type) != typeImported {
 				return invalidParameter("Only imported certificates can be reimported.")
 			}
 
 			id, _ = certID(m.Scope, in.CertificateArn)
-			created, tags = value(old.Detail.CreatedAt), old.Tags
+			created, tags = common.Value(old.Detail.CreatedAt), old.Tags
 		}
 
 		detail := describe(cert, now)
 		detail.CertificateArn, detail.DomainName = new(certARN(m.Scope, id)), new(domain)
-		detail.SubjectAlternativeNames, detail.CreatedAt, detail.ImportedAt = domains, new(created), new(unix(now))
+		detail.SubjectAlternativeNames, detail.CreatedAt, detail.ImportedAt = domains, new(
+			created,
+		), new(
+			common.Unix(now),
+		)
 		detail.Type, detail.KeyAlgorithm = new(typeImported), new(alg)
 		detail.Options = &api.CertificateOptions{
 			CertificateTransparencyLoggingPreference: new(enabled), Export: new(disabled),
 		}
-		return write(tx, key(m.Scope, kindCert, id), certificate{
+		return storage.Write(tx, key(m.Scope, kindCert, id), certificate{
 			Detail: detail, Tags: tags, Body: encode(blockCert, cert.Raw), Chain: chain,
 		})
 	})
@@ -668,9 +680,9 @@ func (s *Service) ExportCertificate(
 		}
 
 		switch {
-		case value(c.Detail.Type) != typeIssued || value(value(c.Detail.Options).Export) != enabled:
+		case common.Value(c.Detail.Type) != typeIssued || common.Value(common.Value(c.Detail.Options).Export) != enabled:
 			return awserror.Validation("Certificate %s is not exportable.", *in.CertificateArn)
-		case value(c.Detail.Status) != statusIssued:
+		case common.Value(c.Detail.Status) != statusIssued:
 			return awserror.New("RequestInProgressException", "Certificate "+*in.CertificateArn+" is not issued.")
 		}
 
@@ -684,7 +696,7 @@ func (s *Service) ExportCertificate(
 		}
 		c.Exported = true
 		id, _ := certID(m.Scope, in.CertificateArn)
-		return write(tx, key(m.Scope, kindCert, id), c)
+		return storage.Write(tx, key(m.Scope, kindCert, id), c)
 	})
 
 	return out, err
@@ -714,9 +726,9 @@ func (s *Service) UpdateCertificateOptions(
 
 		o := c.Detail.Options
 		switch {
-		case value(c.Detail.Type) == typeImported:
+		case common.Value(c.Detail.Type) == typeImported:
 			return awserror.New("InvalidStateException", "The options of imported certificates cannot be updated.")
-		case in.Options.Export != nil && *in.Options.Export != value(o.Export):
+		case in.Options.Export != nil && *in.Options.Export != common.Value(o.Export):
 			return awserror.Validation("The export option of a certificate cannot be changed.")
 		}
 
@@ -725,6 +737,6 @@ func (s *Service) UpdateCertificateOptions(
 		}
 
 		id, _ := certID(m.Scope, in.CertificateArn)
-		return write(tx, key(m.Scope, kindCert, id), c)
+		return storage.Write(tx, key(m.Scope, kindCert, id), c)
 	})
 }

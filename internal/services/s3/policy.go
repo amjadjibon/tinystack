@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -114,14 +115,14 @@ func (s *Service) PutBucketPolicy(
 	ctx context.Context,
 	in *api.PutBucketPolicyRequest,
 ) (*api.PutBucketPolicyOutput, error) {
-	policy := value(in.Policy)
+	policy := common.Value(in.Policy)
 	statements, err := parsePolicy(policy)
 	if err != nil {
 		return nil, err
 	}
 
 	err = s.editBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) error {
-		if b := meta.PublicAccessBlock; b != nil && value(b.BlockPublicPolicy) && public(statements) {
+		if b := meta.PublicAccessBlock; b != nil && common.Value(b.BlockPublicPolicy) && public(statements) {
 			return fail(http.StatusForbidden, "AccessDenied", "User is not authorized to perform: s3:PutBucketPolicy "+
 				"on resource because public policies are blocked by the BlockPublicPolicy block public access setting.")
 		}

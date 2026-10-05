@@ -5,6 +5,7 @@ import (
 	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -20,7 +21,7 @@ func (s *Service) UpdateFunctionCode(
 		return nil, err
 	}
 
-	return s.update(ctx, in.FunctionName, in.RevisionId, value(in.DryRun), value(in.Publish), func(
+	return s.update(ctx, in.FunctionName, in.RevisionId, common.Value(in.DryRun), common.Value(in.Publish), func(
 		fn *function,
 	) ([]byte, error) {
 		if err := fn.setArchitecture(in.Architectures); err != nil {
@@ -87,7 +88,7 @@ func (s *Service) update(
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, value(raw))
+	name, q, err := resolveName(m, common.Value(raw))
 	if err != nil {
 		return nil, err
 	}
