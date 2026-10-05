@@ -23,6 +23,10 @@
       "path": "codegen/sdk-codegen/aws-models/cloudformation.json",
       "sha256": "79c020de8f73461d5f277d0a868894413cb8ceca4c60ca6887f848fc8b04456f"
     },
+    "cloudfront": {
+      "path": "codegen/sdk-codegen/aws-models/cloudfront.json",
+      "sha256": "67d568109778448374d83c97dbb31e2f15bd2d1c64b969e7327e3d0f8a75d6ed"
+    },
     "cloudwatch": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch.json",
       "sha256": "b1abe105489d574be25364ad5cc4a67f5782f4cc6bcf6439a587625bacc9c62a"
