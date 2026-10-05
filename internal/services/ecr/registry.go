@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -20,7 +21,7 @@ func (s *Service) Blob(ctx context.Context, repo, digest string, data bool) (siz
 	err = s.view(ctx, nil, &repo, func(tx storage.ReadTx, m *request.Metadata, r *repository) error {
 		l, ok, readErr := findLayer(tx, m.Scope, r, digest)
 		if readErr != nil || !ok {
-			return errorsOr(readErr, layersNotFound(digest))
+			return common.ErrorsOr(readErr, layersNotFound(digest))
 		}
 
 		size = l.Size

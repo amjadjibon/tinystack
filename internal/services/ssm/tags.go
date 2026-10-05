@@ -3,10 +3,10 @@ package ssm
 import (
 	"context"
 	"maps"
-	"slices"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -14,7 +14,7 @@ import (
 // taggedParameter checks a tagging request's resource: TinyStack tags only
 // parameters, named by ResourceId.
 func taggedParameter(ctx context.Context, tx storage.ReadTx, kind, id *string) (*parameter, string, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -109,16 +109,14 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResult, error) {
-	out := &api.ListTagsForResourceResult{TagList: []api.Tag{}}
+	out := &api.ListTagsForResourceResult{}
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		p, _, err := taggedParameter(ctx, tx, in.ResourceType, in.ResourceId)
 		if err != nil {
 			return err
 		}
 
-		for _, k := range slices.Sorted(maps.Keys(p.Tags)) {
-			out.TagList = append(out.TagList, api.Tag{Key: new(k), Value: new(p.Tags[k])})
-		}
+		out.TagList = tagging.List(p.Tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 
 		return nil
 	})

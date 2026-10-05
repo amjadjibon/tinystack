@@ -156,15 +156,6 @@ var (
 	labelChars = regexp.MustCompile(`^[a-zA-Z0-9_.\-]+$`)
 )
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 func validation(format string, args ...any) error {
 	return awserror.New("ValidationException", fmt.Sprintf(format, args...))
 }

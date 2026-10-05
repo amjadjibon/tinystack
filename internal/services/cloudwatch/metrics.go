@@ -58,7 +58,7 @@ func dataPrefix(scope request.Scope, id string) string { return prefix(scope, ki
 func metricKey(scope request.Scope, id string) string { return prefix(scope, kindMetric) + id }
 
 func (s *Service) PutMetricData(ctx context.Context, in *api.PutMetricDataInput) (*api.PutMetricDataOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +385,7 @@ func checkPeriod(period int64, alarm bool) error {
 func (s *Service) GetMetricStatistics(
 	ctx context.Context, in *api.GetMetricStatisticsInput,
 ) (*api.GetMetricStatisticsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -494,7 +494,7 @@ func (s *Service) GetMetricStatistics(
 }
 
 func (s *Service) ListMetrics(ctx context.Context, in *api.ListMetricsInput) (*api.ListMetricsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

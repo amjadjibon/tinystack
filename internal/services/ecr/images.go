@@ -484,7 +484,7 @@ func (s *Service) ListImages(ctx context.Context, in *api.ListImagesRequest) (*a
 			}
 
 			key := func(id api.ImageIdentifier) string { return *id.ImageDigest + "/" + common.Value(id.ImageTag) }
-			ids, out.NextToken, err = page(ids, key, in.NextToken, n)
+			ids, out.NextToken, err = common.Page(ids, key, in.NextToken, n, errPageToken)
 			out.ImageIds = append(out.ImageIds, ids...)
 			return err
 		})
@@ -560,8 +560,8 @@ func (s *Service) DescribeImages(
 				}
 
 				all = slices.DeleteFunc(all, func(img *image) bool { return !selected(img, status) })
-				if found, out.NextToken, err = page(all, func(img *image) string { return img.Digest },
-					in.NextToken, n); err != nil {
+				if found, out.NextToken, err = common.Page(all, func(img *image) string { return img.Digest },
+					in.NextToken, n, errPageToken); err != nil {
 					return err
 				}
 			}

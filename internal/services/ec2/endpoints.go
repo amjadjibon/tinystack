@@ -236,7 +236,7 @@ func unrouteEndpoint(tx storage.WriteTx, scope request.Scope, ep *vpcEndpoint, t
 func addEndpointSubnet(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, id string) error {
 	sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, id))
 	if err != nil || !ok {
-		return errorsOr(err, subnetNotFound(id))
+		return common.ErrorsOr(err, subnetNotFound(id))
 	}
 
 	if sn.VPCID != ep.VPCID {
@@ -271,7 +271,7 @@ func addEndpointSubnet(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, 
 func addEndpointGroup(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, id string) error {
 	g, ok, err := storage.Read[securityGroup](tx, key(scope, kindSecurityGroup, id))
 	if err != nil || !ok {
-		return errorsOr(err, groupNotFound(id))
+		return common.ErrorsOr(err, groupNotFound(id))
 	}
 
 	if g.VPCID != ep.VPCID {

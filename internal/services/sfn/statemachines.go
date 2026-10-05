@@ -98,7 +98,7 @@ func (s *Service) CreateStateMachine(
 	ctx context.Context,
 	in *api.CreateStateMachineInput,
 ) (*api.CreateStateMachineOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (s *Service) DescribeStateMachine(
 	ctx context.Context,
 	in *api.DescribeStateMachineInput,
 ) (*api.DescribeStateMachineOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (s *Service) ListStateMachines(
 	ctx context.Context,
 	in *api.ListStateMachinesInput,
 ) (*api.ListStateMachinesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func (s *Service) UpdateStateMachine(
 	ctx context.Context,
 	in *api.UpdateStateMachineInput,
 ) (*api.UpdateStateMachineOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -370,7 +370,7 @@ func (s *Service) DeleteStateMachine(
 	ctx context.Context,
 	in *api.DeleteStateMachineInput,
 ) (*api.DeleteStateMachineOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

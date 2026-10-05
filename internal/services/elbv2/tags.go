@@ -76,7 +76,7 @@ func findTagged(tx storage.ReadTx, scope request.Scope, arnValue string) (tagged
 
 // retag changes the tags of each resource in one transaction.
 func (s *Service) retag(ctx context.Context, arns []string, change func(map[string]string) error) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (s *Service) RemoveTags(ctx context.Context, in *api.RemoveTagsInput) (*api
 }
 
 func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsInput) (*api.DescribeTagsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

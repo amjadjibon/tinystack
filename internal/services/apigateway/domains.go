@@ -58,7 +58,7 @@ func loadDomain(tx storage.ReadTx, scope request.Scope, name string) (*domain, e
 }
 
 func (s *Service) CreateDomainName(ctx context.Context, in *api.CreateDomainNameRequest) (*api.DomainName, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func endpointIPType(c *api.EndpointConfiguration) *string {
 }
 
 func (s *Service) GetDomainName(ctx context.Context, in *api.GetDomainNameRequest) (*api.DomainName, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (s *Service) GetDomainName(ctx context.Context, in *api.GetDomainNameReques
 }
 
 func (s *Service) GetDomainNames(ctx context.Context, in *api.GetDomainNamesRequest) (*api.DomainNames, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (s *Service) DeleteDomainName(
 	ctx context.Context,
 	in *api.DeleteDomainNameRequest,
 ) (*api.DeleteDomainNameOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (s *Service) CreateBasePathMapping(
 	ctx context.Context,
 	in *api.CreateBasePathMappingRequest,
 ) (*api.BasePathMapping, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func (s *Service) GetBasePathMapping(
 	ctx context.Context,
 	in *api.GetBasePathMappingRequest,
 ) (*api.BasePathMapping, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +313,7 @@ func (s *Service) GetBasePathMappings(
 	ctx context.Context,
 	in *api.GetBasePathMappingsRequest,
 ) (*api.BasePathMappings, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -348,7 +348,7 @@ func (s *Service) DeleteBasePathMapping(
 	ctx context.Context,
 	in *api.DeleteBasePathMappingRequest,
 ) (*api.DeleteBasePathMappingOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

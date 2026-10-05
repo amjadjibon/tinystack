@@ -178,7 +178,7 @@ func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.St
 var stageVariable = regexp.MustCompile(`^[A-Za-z0-9_]{1,64}$`)
 
 func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (*api.CreateStageResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func loadStage(tx storage.ReadTx, scope request.Scope, apiID string, name *strin
 }
 
 func (s *Service) GetStage(ctx context.Context, in *api.GetStageRequest) (*api.GetStageResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +278,7 @@ func (s *Service) GetStage(ctx context.Context, in *api.GetStageRequest) (*api.G
 }
 
 func (s *Service) GetStages(ctx context.Context, in *api.GetStagesRequest) (*api.GetStagesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +313,7 @@ func (s *Service) GetStages(ctx context.Context, in *api.GetStagesRequest) (*api
 }
 
 func (s *Service) UpdateStage(ctx context.Context, in *api.UpdateStageRequest) (*api.UpdateStageResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func (s *Service) UpdateStage(ctx context.Context, in *api.UpdateStageRequest) (
 }
 
 func (s *Service) DeleteStage(ctx context.Context, in *api.DeleteStageRequest) (*api.DeleteStageOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func (s *Service) CreateDeployment(
 	ctx context.Context,
 	in *api.CreateDeploymentRequest,
 ) (*api.CreateDeploymentResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +471,7 @@ func (s *Service) GetDeployment(
 	ctx context.Context,
 	in *api.GetDeploymentRequest,
 ) (*api.GetDeploymentResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +498,7 @@ func (s *Service) GetDeployments(
 	ctx context.Context,
 	in *api.GetDeploymentsRequest,
 ) (*api.GetDeploymentsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -536,7 +536,7 @@ func (s *Service) UpdateDeployment(
 	ctx context.Context,
 	in *api.UpdateDeploymentRequest,
 ) (*api.UpdateDeploymentResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -567,7 +567,7 @@ func (s *Service) DeleteDeployment(
 	ctx context.Context,
 	in *api.DeleteDeploymentRequest,
 ) (*api.DeleteDeploymentOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

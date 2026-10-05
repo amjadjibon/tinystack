@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -35,4 +36,33 @@ func WithMetadata(ctx context.Context, m Metadata) context.Context {
 func FromContext(ctx context.Context) (Metadata, bool) {
 	m, ok := ctx.Value(contextKey{}).(Metadata)
 	return m, ok
+}
+
+var errNoIdentity = errors.New("missing request identity")
+
+// Regional returns the request's metadata, failing when it names no account or Region.
+func Regional(ctx context.Context) (Metadata, error) {
+	m, ok := FromContext(ctx)
+	if !ok || m.AccountID == "" || m.Region == "" {
+		return Metadata{}, errNoIdentity
+	}
+
+	return m, nil
+}
+
+// Global returns the request's metadata, failing when it names no account. Account-wide
+// services such as IAM use it.
+func Global(ctx context.Context) (Metadata, error) {
+	m, ok := FromContext(ctx)
+	if !ok || m.AccountID == "" {
+		return Metadata{}, errNoIdentity
+	}
+
+	return m, nil
+}
+
+// RegionalScope is Regional for callers that need only the account and Region.
+func RegionalScope(ctx context.Context) (Scope, error) {
+	m, err := Regional(ctx)
+	return m.Scope, err
 }

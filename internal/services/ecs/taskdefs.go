@@ -67,7 +67,7 @@ func resolveDef(tx storage.ReadTx, scope request.Scope, ref *string) (*taskDef, 
 
 		d, ok, err := storage.Read[taskDef](tx, taskDefKey(scope, name, revision))
 		if err != nil || !ok {
-			return nil, errorsOr(err, unknown)
+			return nil, common.ErrorsOr(err, unknown)
 		}
 
 		return d, nil
@@ -99,14 +99,6 @@ func activeDef(tx storage.ReadTx, scope request.Scope, ref *string) (*taskDef, e
 	}
 
 	return d, nil
-}
-
-func errorsOr(err, fallback error) error {
-	if err != nil {
-		return err
-	}
-
-	return fallback
 }
 
 // units converts a task size such as "1024", "1 vCPU", or "2 GB" to CPU
@@ -155,7 +147,7 @@ func (s *Service) RegisterTaskDefinition(
 	ctx context.Context,
 	in *api.RegisterTaskDefinitionRequest,
 ) (*api.RegisterTaskDefinitionResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +421,7 @@ func (s *Service) DescribeTaskDefinition(
 	ctx context.Context,
 	in *api.DescribeTaskDefinitionRequest,
 ) (*api.DescribeTaskDefinitionResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -470,7 +462,7 @@ func (s *Service) DeregisterTaskDefinition(
 	ctx context.Context,
 	in *api.DeregisterTaskDefinitionRequest,
 ) (*api.DeregisterTaskDefinitionResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -501,7 +493,7 @@ func (s *Service) ListTaskDefinitions(
 	ctx context.Context,
 	in *api.ListTaskDefinitionsRequest,
 ) (*api.ListTaskDefinitionsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -532,8 +524,8 @@ func (s *Service) ListTaskDefinitions(
 			slices.Reverse(defs)
 		}
 
-		defs, out.NextToken, readErr = page(defs, func(d *taskDef) string { return *d.Def.TaskDefinitionArn },
-			in.NextToken, n)
+		defs, out.NextToken, readErr = common.Page(defs, func(d *taskDef) string { return *d.Def.TaskDefinitionArn },
+			in.NextToken, n, errPageToken)
 		for _, d := range defs {
 			out.TaskDefinitionArns = append(out.TaskDefinitionArns, *d.Def.TaskDefinitionArn)
 		}
@@ -551,7 +543,7 @@ func (s *Service) ListTaskDefinitionFamilies(
 	ctx context.Context,
 	in *api.ListTaskDefinitionFamiliesRequest,
 ) (*api.ListTaskDefinitionFamiliesResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -587,7 +579,13 @@ func (s *Service) ListTaskDefinitionFamilies(
 			return common.Value(in.Status) == active && !isActive[f] ||
 				common.Value(in.Status) == inactive && isActive[f]
 		})
-		families, out.NextToken, readErr = page(families, func(f string) string { return f }, in.NextToken, n)
+		families, out.NextToken, readErr = common.Page(
+			families,
+			func(f string) string { return f },
+			in.NextToken,
+			n,
+			errPageToken,
+		)
 		out.Families = append(out.Families, families...)
 		return readErr
 	})
@@ -603,7 +601,7 @@ func (s *Service) DeleteTaskDefinitions(
 	ctx context.Context,
 	in *api.DeleteTaskDefinitionsRequest,
 ) (*api.DeleteTaskDefinitionsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

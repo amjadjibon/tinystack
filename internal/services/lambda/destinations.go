@@ -225,7 +225,7 @@ func (s *Service) changeInvokeConfig(
 	retries, age *int64,
 	destinations *api.DestinationConfig,
 ) (*api.FunctionEventInvokeConfig, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func (s *Service) GetFunctionEventInvokeConfig(
 	ctx context.Context,
 	in *api.GetFunctionEventInvokeConfigRequest,
 ) (*api.FunctionEventInvokeConfig, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +317,7 @@ func (s *Service) DeleteFunctionEventInvokeConfig(
 	ctx context.Context,
 	in *api.DeleteFunctionEventInvokeConfigRequest,
 ) (*api.DeleteFunctionEventInvokeConfigOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +349,7 @@ func (s *Service) ListFunctionEventInvokeConfigs(
 	ctx context.Context,
 	in *api.ListFunctionEventInvokeConfigsRequest,
 ) (*api.ListFunctionEventInvokeConfigsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

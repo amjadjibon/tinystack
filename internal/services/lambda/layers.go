@@ -143,7 +143,7 @@ func (s *Service) PublishLayerVersion(
 	ctx context.Context,
 	in *api.PublishLayerVersionRequest,
 ) (*api.PublishLayerVersionResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func (s *Service) GetLayerVersion(
 	ctx context.Context,
 	in *api.GetLayerVersionRequest,
 ) (*api.GetLayerVersionResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func (s *Service) GetLayerVersionByArn(
 	ctx context.Context,
 	in *api.GetLayerVersionByArnRequest,
 ) (*api.GetLayerVersionResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +303,7 @@ func (s *Service) DeleteLayerVersion(
 	ctx context.Context,
 	in *api.DeleteLayerVersionRequest,
 ) (*api.DeleteLayerVersionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -344,7 +344,7 @@ func (s *Service) ListLayerVersions(
 	ctx context.Context,
 	in *api.ListLayerVersionsRequest,
 ) (*api.ListLayerVersionsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +398,7 @@ func (s *Service) ListLayerVersions(
 // ListLayers lists the caller's layers by name, each with its newest version
 // that matches the filters.
 func (s *Service) ListLayers(ctx context.Context, in *api.ListLayersRequest) (*api.ListLayersResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

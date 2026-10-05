@@ -289,7 +289,7 @@ func (s *Service) checkCertificates(ctx context.Context, scope request.Scope, ce
 func (s *Service) CreateListener(ctx context.Context, in *api.CreateListenerInput) (*api.CreateListenerOutput,
 	error,
 ) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ func same(a, b *api.Listener) bool {
 func (s *Service) DescribeListeners(
 	ctx context.Context, in *api.DescribeListenersInput,
 ) (*api.DescribeListenersOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -432,7 +432,7 @@ func (s *Service) DescribeListeners(
 func (s *Service) changeListener(ctx context.Context, arnValue string,
 	fn func(tx storage.WriteTx, scope request.Scope, b *balancer, l *listener) error,
 ) (*listener, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -465,7 +465,7 @@ func (s *Service) changeListener(ctx context.Context, arnValue string,
 func (s *Service) ModifyListener(ctx context.Context, in *api.ModifyListenerInput) (*api.ModifyListenerOutput,
 	error,
 ) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -541,7 +541,7 @@ func (s *Service) ModifyListener(ctx context.Context, in *api.ModifyListenerInpu
 func (s *Service) DeleteListener(ctx context.Context, in *api.DeleteListenerInput) (*api.DeleteListenerOutput,
 	error,
 ) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -573,7 +573,7 @@ func listenerAttributeList(l *listener) []api.ListenerAttribute {
 func (s *Service) DescribeListenerAttributes(
 	ctx context.Context, in *api.DescribeListenerAttributesInput,
 ) (*api.DescribeListenerAttributesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -634,7 +634,7 @@ func (l *listener) certificates() []api.Certificate {
 func (s *Service) AddListenerCertificates(
 	ctx context.Context, in *api.AddListenerCertificatesInput,
 ) (*api.AddListenerCertificatesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -670,7 +670,7 @@ func (s *Service) AddListenerCertificates(
 func (s *Service) DescribeListenerCertificates(
 	ctx context.Context, in *api.DescribeListenerCertificatesInput,
 ) (*api.DescribeListenerCertificatesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

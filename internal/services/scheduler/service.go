@@ -17,7 +17,6 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -90,15 +89,6 @@ type group struct {
 type record struct {
 	Schedule api.GetScheduleOutput
 	Next     float64 `json:",omitempty"`
-}
-
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
 }
 
 func key(scope request.Scope, kind, name string) string {

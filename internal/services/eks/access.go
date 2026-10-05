@@ -134,7 +134,7 @@ func (s *Service) CreateAccessEntry(
 	ctx context.Context,
 	in *api.CreateAccessEntryRequest,
 ) (*api.CreateAccessEntryResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (s *Service) changeEntry(
 	clusterName, principal *string,
 	fn func(storage.WriteTx, request.Scope, *cluster, *accessEntry) error,
 ) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func (s *Service) ListAccessEntries(
 	ctx context.Context,
 	in *api.ListAccessEntriesRequest,
 ) (*api.ListAccessEntriesResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

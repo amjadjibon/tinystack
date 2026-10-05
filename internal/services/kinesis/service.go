@@ -109,15 +109,6 @@ func notFound(scope request.Scope, name string) error {
 		fmt.Sprintf("Stream %s under account %s not found.", name, scope.AccountID))
 }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 func prefix(scope request.Scope, kind string) string {
 	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
 }
@@ -190,7 +181,7 @@ func loadStream(tx storage.ReadTx, scope request.Scope, name string) (*stream, e
 func (s *Service) change(ctx context.Context, name, arn *string, fn func(tx storage.WriteTx, scope request.Scope,
 	st *stream) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -218,7 +209,7 @@ func (s *Service) change(ctx context.Context, name, arn *string, fn func(tx stor
 func (s *Service) view(ctx context.Context, name, arn *string, fn func(tx storage.ReadTx, scope request.Scope,
 	st *stream) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}

@@ -113,7 +113,7 @@ func (s *Service) DescribeMetricFilters(
 	ctx context.Context,
 	in *api.DescribeMetricFiltersRequest,
 ) (*api.DescribeMetricFiltersResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

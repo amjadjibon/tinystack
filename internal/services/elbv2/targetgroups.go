@@ -186,7 +186,7 @@ func healthCheck(tg *api.TargetGroup) error {
 func (s *Service) CreateTargetGroup(
 	ctx context.Context, in *api.CreateTargetGroupInput,
 ) (*api.CreateTargetGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func (s *Service) CreateTargetGroup(
 func (s *Service) DescribeTargetGroups(
 	ctx context.Context, in *api.DescribeTargetGroupsInput,
 ) (*api.DescribeTargetGroupsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +378,7 @@ func (s *Service) DescribeTargetGroups(
 func (s *Service) changeTG(ctx context.Context, arnValue string, fn func(*targetGroup) error) (*targetGroup,
 	error,
 ) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +408,7 @@ func (s *Service) changeTG(ctx context.Context, arnValue string, fn func(*target
 
 // viewTG returns a target group.
 func (s *Service) viewTG(ctx context.Context, arnValue string) (*targetGroup, bool, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, false, err
 	}
@@ -487,7 +487,7 @@ func (s *Service) ModifyTargetGroup(
 func (s *Service) DeleteTargetGroup(
 	ctx context.Context, in *api.DeleteTargetGroupInput,
 ) (*api.DeleteTargetGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -662,7 +662,7 @@ func (s *Service) instanceStates(ctx context.Context, scope request.Scope, ids [
 func (s *Service) RegisterTargets(ctx context.Context, in *api.RegisterTargetsInput) (*api.RegisterTargetsOutput,
 	error,
 ) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -765,7 +765,7 @@ func health(t *targetGroup, used, registered bool, st instance) *api.TargetHealt
 func (s *Service) DescribeTargetHealth(
 	ctx context.Context, in *api.DescribeTargetHealthInput,
 ) (*api.DescribeTargetHealthOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

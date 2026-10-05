@@ -16,16 +16,15 @@ package eks
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -73,15 +72,6 @@ func inUse(format string, args ...any) error {
 	return awserror.New("ResourceInUseException", fmt.Sprintf(format, args...))
 }
 
-func identity(ctx context.Context) (request.Scope, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Scope{}, fmt.Errorf("missing request identity")
-	}
-
-	return m.Scope, nil
-}
-
 func prefix(scope request.Scope, kind string) string {
 	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
 }
@@ -107,35 +97,7 @@ func page[T any](items []T, id func(T) string, token *string, limit *int64) (sel
 		n = *limit
 	}
 
-	start := 0
-	if token != nil {
-		after, decodeErr := base64.RawURLEncoding.DecodeString(*token)
-		if decodeErr != nil || len(after) == 0 {
-			return nil, nil, invalidParameter("The pagination token is invalid.")
-		}
-
-		// The item after the token's, or after where it would be in
-		// ascending order if it is gone.
-		start = len(items)
-		for i, item := range items {
-			if id(item) == string(after) {
-				start = i + 1
-				break
-			}
-
-			if id(item) > string(after) && start == len(items) {
-				start = i
-			}
-		}
-	}
-
-	items = items[start:]
-	if int64(len(items)) <= n {
-		return items, nil, nil
-	}
-
-	next = new(base64.RawURLEncoding.EncodeToString([]byte(id(items[n-1]))))
-	return items[:n], next, nil
+	return common.Page(items, id, token, int(n), invalidParameter("The pagination token is invalid."))
 }
 
 var namePattern = regexp.MustCompile(`^[0-9A-Za-z][A-Za-z0-9\-_]*$`)
@@ -161,23 +123,9 @@ func checkRole(role *string, member string) error {
 
 // tagProblem reports how tags break the tag rules, if they do: the shared
 // limits, and keys starting with "aws:".
-func tagProblem(tags map[string]string) string {
-	for k := range tags {
-		if strings.HasPrefix(strings.ToLower(k), "aws:") {
-			return "Tag keys cannot start with aws:."
-		}
-	}
-
-	if err := tagging.Check(tags); err != nil {
-		return err.Error()
-	}
-
-	return ""
-}
-
 func checkTags(tags map[string]string) error {
-	if problem := tagProblem(tags); problem != "" {
-		return invalidParameter("%s", problem)
+	if err := tagging.CheckSet(tags); err != nil {
+		return invalidParameter("%s", err.Error())
 	}
 
 	return nil

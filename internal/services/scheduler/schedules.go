@@ -266,7 +266,7 @@ func (s *Service) index(tx storage.WriteTx, scope request.Scope, rec *record) {
 }
 
 func (s *Service) CreateSchedule(ctx context.Context, in *api.CreateScheduleInput) (*api.CreateScheduleOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +301,7 @@ func (s *Service) CreateSchedule(ctx context.Context, in *api.CreateScheduleInpu
 }
 
 func (s *Service) UpdateSchedule(ctx context.Context, in *api.UpdateScheduleInput) (*api.UpdateScheduleOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +340,7 @@ func (s *Service) UpdateSchedule(ctx context.Context, in *api.UpdateScheduleInpu
 }
 
 func (s *Service) GetSchedule(ctx context.Context, in *api.GetScheduleInput) (*api.GetScheduleOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +364,7 @@ func (s *Service) GetSchedule(ctx context.Context, in *api.GetScheduleInput) (*a
 }
 
 func (s *Service) DeleteSchedule(ctx context.Context, in *api.DeleteScheduleInput) (*api.DeleteScheduleOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (s *Service) DeleteSchedule(ctx context.Context, in *api.DeleteScheduleInpu
 }
 
 func (s *Service) ListSchedules(ctx context.Context, in *api.ListSchedulesInput) (*api.ListSchedulesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

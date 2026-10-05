@@ -414,7 +414,7 @@ func (s *Service) replace(tx storage.WriteTx, scope request.Scope, c *cluster, t
 }
 
 func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.RunTaskResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -556,7 +556,7 @@ func checkTaskFields(include []string) error {
 }
 
 func (s *Service) DescribeTasks(ctx context.Context, in *api.DescribeTasksRequest) (*api.DescribeTasksResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -604,7 +604,7 @@ func (s *Service) DescribeTasks(ctx context.Context, in *api.DescribeTasksReques
 }
 
 func (s *Service) ListTasks(ctx context.Context, in *api.ListTasksRequest) (*api.ListTasksResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -645,7 +645,13 @@ func (s *Service) ListTasks(ctx context.Context, in *api.ListTasksRequest) (*api
 				in.StartedBy != nil && t.StartedBy != *in.StartedBy ||
 				in.LaunchType != nil && t.LaunchType != *in.LaunchType
 		})
-		tasks, out.NextToken, readErr = page(tasks, func(t *task) string { return t.ID }, in.NextToken, n)
+		tasks, out.NextToken, readErr = common.Page(
+			tasks,
+			func(t *task) string { return t.ID },
+			in.NextToken,
+			n,
+			errPageToken,
+		)
 		for _, t := range tasks {
 			out.TaskArns = append(out.TaskArns, taskARN(scope, c.Name, t.ID))
 		}
@@ -660,7 +666,7 @@ func (s *Service) ListTasks(ctx context.Context, in *api.ListTasksRequest) (*api
 }
 
 func (s *Service) StopTask(ctx context.Context, in *api.StopTaskRequest) (*api.StopTaskResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -678,7 +684,7 @@ func (s *Service) StopTask(ctx context.Context, in *api.StopTaskRequest) (*api.S
 
 		t, ok, readErr := storage.Read[task](tx, taskKey(scope, c.Name, taskRef(scope, c.Name, common.Value(in.Task))))
 		if readErr != nil || !ok {
-			return errorsOr(readErr, invalidParameter("The referenced task was not found."))
+			return common.ErrorsOr(readErr, invalidParameter("The referenced task was not found."))
 		}
 
 		reason := common.Value(in.Reason)

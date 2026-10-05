@@ -16,6 +16,7 @@ import (
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -74,7 +75,7 @@ func (s *Service) CreateMultipartUpload(
 	ctx context.Context,
 	in *api.CreateMultipartUploadRequest,
 ) (*api.CreateMultipartUploadOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +123,7 @@ func (s *Service) CreateMultipartUpload(
 }
 
 func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*api.UploadPartOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,7 @@ func (s *Service) CompleteMultipartUpload(
 	ctx context.Context,
 	in *api.CompleteMultipartUploadRequest,
 ) (*api.CompleteMultipartUploadOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +291,7 @@ func (s *Service) AbortMultipartUpload(
 	ctx context.Context,
 	in *api.AbortMultipartUploadRequest,
 ) (*api.AbortMultipartUploadOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +316,7 @@ func (s *Service) AbortMultipartUpload(
 }
 
 func (s *Service) ListParts(ctx context.Context, in *api.ListPartsRequest) (*api.ListPartsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +384,7 @@ func (s *Service) ListMultipartUploads(
 	ctx context.Context,
 	in *api.ListMultipartUploadsRequest,
 ) (*api.ListMultipartUploadsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

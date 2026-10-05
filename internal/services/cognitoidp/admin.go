@@ -482,7 +482,13 @@ func (s *Service) ListUsers(ctx context.Context, in *api.ListUsersRequest) (*api
 		return nil, err
 	}
 
-	selected, next, err := page(found, func(u *user) string { return u.Username }, in.PaginationToken, n)
+	selected, next, err := common.Page(
+		found,
+		func(u *user) string { return u.Username },
+		in.PaginationToken,
+		n,
+		errPageToken,
+	)
 	if err != nil {
 		return nil, err
 	}

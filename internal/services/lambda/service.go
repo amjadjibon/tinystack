@@ -248,15 +248,6 @@ func accessDenied(message string) error {
 
 func conflict(message string) error { return awserror.New("ResourceConflictException", message) }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 // Storage kinds: functions are "<scope>/lambda/function/<name>" with their
 // code under "code/<name>", published versions "version/<name>/<number>" with
 // their code under "version-code/<name>/<number>", aliases
@@ -693,7 +684,7 @@ func (s *Service) CreateFunction(
 	ctx context.Context,
 	in *api.CreateFunctionRequest,
 ) (*api.FunctionConfiguration, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -753,7 +744,7 @@ func (s *Service) load(ctx context.Context, raw *string) (request.Metadata, *fun
 // loadAt reads a function of the caller at the qualifier its name carries or
 // qualifier gives. The tags of a version are its function's.
 func (s *Service) loadAt(ctx context.Context, raw, qualifier *string) (request.Metadata, *function, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return m, nil, err
 	}
@@ -852,7 +843,7 @@ func (s *Service) ListFunctions(
 	ctx context.Context,
 	in *api.ListFunctionsRequest,
 ) (*api.ListFunctionsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

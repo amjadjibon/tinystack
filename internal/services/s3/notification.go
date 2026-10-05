@@ -208,7 +208,7 @@ func (s *Service) PutBucketNotificationConfiguration(
 	ctx context.Context,
 	in *api.PutBucketNotificationConfigurationRequest,
 ) (*api.PutBucketNotificationConfigurationOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (s *Service) GetBucketNotificationConfiguration(
 	ctx context.Context,
 	in *api.GetBucketNotificationConfigurationRequest,
 ) (*api.NotificationConfiguration, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

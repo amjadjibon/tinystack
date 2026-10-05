@@ -2,6 +2,7 @@ package common
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"maps"
 	"time"
@@ -92,4 +93,38 @@ func ErrorsOr(err, fallback error) error {
 		return err
 	}
 	return fallback
+}
+
+// Page returns at most limit items after the one whose ID the token holds, and the token for the rest, if any.
+// A token is the base64 of the last returned item's ID; one whose item is gone resumes at the first greater ID, so
+// items should be in ascending ID order. A malformed token fails with invalid.
+func Page[T any](items []T, id func(T) string, token *string, limit int, invalid error) (
+	selected []T, next *string, err error,
+) {
+	start := 0
+	if token != nil {
+		after, decodeErr := base64.RawURLEncoding.DecodeString(*token)
+		if decodeErr != nil || len(after) == 0 {
+			return nil, nil, invalid
+		}
+
+		start = len(items)
+		for i, item := range items {
+			if id(item) == string(after) {
+				start = i + 1
+				break
+			}
+
+			if id(item) > string(after) && start == len(items) {
+				start = i
+			}
+		}
+	}
+
+	items = items[start:]
+	if len(items) <= limit {
+		return items, nil, nil
+	}
+
+	return items[:limit], Ptr(base64.RawURLEncoding.EncodeToString([]byte(id(items[limit-1])))), nil
 }

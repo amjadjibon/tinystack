@@ -97,7 +97,7 @@ func checkAddonVersion(info *addonInfo, c *cluster, version *string) (string, er
 }
 
 func (s *Service) CreateAddon(ctx context.Context, in *api.CreateAddonRequest) (*api.CreateAddonResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (s *Service) changeAddon(
 	clusterName, name *string,
 	fn func(storage.WriteTx, request.Scope, *cluster, *addon) error,
 ) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}

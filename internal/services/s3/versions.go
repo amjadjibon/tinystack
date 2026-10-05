@@ -11,6 +11,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -366,7 +367,7 @@ func (s *Service) GetBucketVersioning(
 	ctx context.Context,
 	in *api.GetBucketVersioningRequest,
 ) (*api.GetBucketVersioningOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -476,7 +477,7 @@ func (s *Service) ListObjectVersions(
 	ctx context.Context,
 	in *api.ListObjectVersionsRequest,
 ) (*api.ListObjectVersionsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

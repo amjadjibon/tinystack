@@ -275,7 +275,7 @@ func checkMetricAlarm(in *api.PutMetricAlarmInput) error {
 }
 
 func (s *Service) PutMetricAlarm(ctx context.Context, in *api.PutMetricAlarmInput) (*api.PutMetricAlarmOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +381,7 @@ func (s *Service) history(tx storage.WriteTx, scope request.Scope, a *alarm, kin
 func (s *Service) PutCompositeAlarm(
 	ctx context.Context, in *api.PutCompositeAlarmInput,
 ) (*api.PutCompositeAlarmOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -489,7 +489,7 @@ func alarms(tx storage.ReadTx, scope request.Scope) ([]*alarm, error) {
 
 //nolint:gocyclo,cyclop // One filter per member.
 func (s *Service) DescribeAlarms(ctx context.Context, in *api.DescribeAlarmsInput) (*api.DescribeAlarmsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -641,7 +641,7 @@ func hasAction(a *alarm, p string) bool {
 func (s *Service) DescribeAlarmsForMetric(
 	ctx context.Context, in *api.DescribeAlarmsForMetricInput,
 ) (*api.DescribeAlarmsForMetricOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -679,7 +679,7 @@ func (s *Service) DescribeAlarmsForMetric(
 }
 
 func (s *Service) DeleteAlarms(ctx context.Context, in *api.DeleteAlarmsInput) (*api.DeleteAlarmsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -705,7 +705,7 @@ func (s *Service) DeleteAlarms(ctx context.Context, in *api.DeleteAlarmsInput) (
 }
 
 func (s *Service) SetAlarmState(ctx context.Context, in *api.SetAlarmStateInput) (*api.SetAlarmStateOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -760,7 +760,7 @@ func (s *Service) DisableAlarmActions(
 
 // setActions turns the actions of the named alarms that exist on or off.
 func (s *Service) setActions(ctx context.Context, names []string, on bool) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -794,7 +794,7 @@ func (s *Service) setActions(ctx context.Context, names []string, on bool) error
 func (s *Service) DescribeAlarmHistory(
 	ctx context.Context, in *api.DescribeAlarmHistoryInput,
 ) (*api.DescribeAlarmHistoryOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

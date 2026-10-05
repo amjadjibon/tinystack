@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -159,7 +160,7 @@ func (s *Service) createDistribution(
 func (s *Service) CreateDistribution(
 	ctx context.Context, in *api.CreateDistributionRequest,
 ) (*api.CreateDistributionResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +175,7 @@ func (s *Service) CreateDistribution(
 func (s *Service) CreateDistributionWithTags(
 	ctx context.Context, in *api.CreateDistributionWithTagsRequest,
 ) (*api.CreateDistributionWithTagsResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +200,7 @@ func (s *Service) CreateDistributionWithTags(
 func (s *Service) GetDistribution(
 	ctx context.Context, in *api.GetDistributionRequest,
 ) (*api.GetDistributionResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +235,7 @@ func (s *Service) GetDistribution(
 func (s *Service) GetDistributionConfig(
 	ctx context.Context, in *api.GetDistributionConfigRequest,
 ) (*api.GetDistributionConfigResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +270,7 @@ func (s *Service) GetDistributionConfig(
 func (s *Service) UpdateDistribution(
 	ctx context.Context, in *api.UpdateDistributionRequest,
 ) (*api.UpdateDistributionResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +352,7 @@ func (s *Service) UpdateDistribution(
 func (s *Service) DeleteDistribution(
 	ctx context.Context, in *api.DeleteDistributionRequest,
 ) (*api.DeleteDistributionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +404,7 @@ func (s *Service) DeleteDistribution(
 func (s *Service) ListDistributions(
 	ctx context.Context, in *api.ListDistributionsRequest,
 ) (*api.ListDistributionsResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

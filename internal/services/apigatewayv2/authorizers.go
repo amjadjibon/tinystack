@@ -73,7 +73,7 @@ func (s *Service) CreateAuthorizer(
 	ctx context.Context,
 	in *api.CreateAuthorizerRequest,
 ) (*api.CreateAuthorizerResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (s *Service) changeAuthorizer(
 	apiID, id *string,
 	fn func(tx storage.WriteTx, scope request.Scope, a *api.Authorizer) (bool, error),
 ) (*api.Authorizer, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (s *Service) GetAuthorizer(
 	ctx context.Context,
 	in *api.GetAuthorizerRequest,
 ) (*api.GetAuthorizerResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (s *Service) GetAuthorizers(
 	ctx context.Context,
 	in *api.GetAuthorizersRequest,
 ) (*api.GetAuthorizersResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

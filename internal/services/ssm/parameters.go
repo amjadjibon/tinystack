@@ -18,7 +18,7 @@ import (
 // PutParameter creates a parameter, or with Overwrite adds a version to one.
 // Settings a new version leaves out keep their current values.
 func (s *Service) PutParameter(ctx context.Context, in *api.PutParameterRequest) (*api.PutParameterResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +317,7 @@ func tagError(err error) error {
 }
 
 func (s *Service) GetParameter(ctx context.Context, in *api.GetParameterRequest) (*api.GetParameterResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func checkBatch(names []string) error {
 
 // GetParameters returns the parameters it finds and lists the names it does not.
 func (s *Service) GetParameters(ctx context.Context, in *api.GetParametersRequest) (*api.GetParametersResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +425,7 @@ func (s *Service) DeleteParameter(
 	ctx context.Context,
 	in *api.DeleteParameterRequest,
 ) (*api.DeleteParameterResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +454,7 @@ func (s *Service) DeleteParameters(
 	ctx context.Context,
 	in *api.DeleteParametersRequest,
 ) (*api.DeleteParametersResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

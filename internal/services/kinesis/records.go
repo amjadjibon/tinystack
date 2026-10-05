@@ -288,7 +288,7 @@ func (s *Service) readShard(tx storage.ReadTx, scope request.Scope, st *stream, 
 }
 
 func (s *Service) GetRecords(ctx context.Context, in *api.GetRecordsInput) (*api.GetRecordsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

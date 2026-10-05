@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -42,7 +43,7 @@ func invLocation(distID, id string) string {
 func (s *Service) CreateInvalidation(
 	ctx context.Context, in *api.CreateInvalidationRequest,
 ) (*api.CreateInvalidationResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +118,7 @@ func (s *Service) CreateInvalidation(
 func (s *Service) GetInvalidation(
 	ctx context.Context, in *api.GetInvalidationRequest,
 ) (*api.GetInvalidationResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +164,7 @@ func (s *Service) GetInvalidation(
 func (s *Service) ListInvalidations(
 	ctx context.Context, in *api.ListInvalidationsRequest,
 ) (*api.ListInvalidationsResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

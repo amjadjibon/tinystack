@@ -270,7 +270,7 @@ func (s *Service) queueSource(
 
 // loadMappingByID reads a mapping of the caller.
 func (s *Service) loadMappingByID(ctx context.Context, id *string) (request.Metadata, *mapping, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return m, nil, err
 	}
@@ -464,7 +464,7 @@ func (s *Service) ListEventSourceMappings(
 	ctx context.Context,
 	in *api.ListEventSourceMappingsRequest,
 ) (*api.ListEventSourceMappingsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

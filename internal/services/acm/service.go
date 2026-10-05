@@ -12,7 +12,6 @@
 package acm
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -63,15 +62,6 @@ type token struct {
 	// Request is the request's JSON, which a retry must repeat.
 	Request string
 	Expires float64
-}
-
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
 }
 
 func key(scope request.Scope, kind, name string) string {

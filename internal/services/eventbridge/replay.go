@@ -72,7 +72,7 @@ func seconds(ms int64) *float64 {
 // EventEndTime to the rules of the archive's bus, or to the rules of it that
 // FilterArns names.
 func (s *Service) StartReplay(ctx context.Context, in *api.StartReplayRequest) (*api.StartReplayResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (s *Service) run(ctx context.Context, scope request.Scope, r *replay) error
 }
 
 func (s *Service) loadReplay(ctx context.Context, name string) (request.Scope, *replay, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return request.Scope{}, nil, err
 	}
@@ -266,7 +266,7 @@ func (s *Service) DescribeReplay(
 // ListReplays lists the caller's replays in name order, by name prefix,
 // state, or archive.
 func (s *Service) ListReplays(ctx context.Context, in *api.ListReplaysRequest) (*api.ListReplaysResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

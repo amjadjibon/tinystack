@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 )
 
@@ -87,7 +88,7 @@ func (s *Service) GetBucketAcl(ctx context.Context, in *api.GetBucketAclRequest)
 		return nil, err
 	}
 
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +104,7 @@ func (s *Service) PutBucketAcl(ctx context.Context, in *api.PutBucketAclRequest)
 		return nil, err
 	}
 
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +129,7 @@ func (s *Service) GetObjectAcl(ctx context.Context, in *api.GetObjectAclRequest)
 		return nil, err
 	}
 
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +151,7 @@ func (s *Service) PutObjectAcl(ctx context.Context, in *api.PutObjectAclRequest)
 		return nil, err
 	}
 
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

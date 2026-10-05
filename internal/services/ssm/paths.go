@@ -165,7 +165,7 @@ func (s *Service) GetParametersByPath(
 	ctx context.Context,
 	in *api.GetParametersByPathRequest,
 ) (*api.GetParametersByPathResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +233,7 @@ func (s *Service) DescribeParameters(
 	ctx context.Context,
 	in *api.DescribeParametersRequest,
 ) (*api.DescribeParametersResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

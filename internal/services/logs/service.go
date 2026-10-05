@@ -81,15 +81,6 @@ func notFound(message string) error {
 
 func groupNotFound() error { return notFound("The specified log group does not exist.") }
 
-func identity(ctx context.Context) (request.Scope, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Scope{}, fmt.Errorf("missing request identity")
-	}
-
-	return m.Scope, nil
-}
-
 func prefix(scope request.Scope, kind string) string {
 	return scope.AccountID + "/" + scope.Region + "/logs/" + kind + "/"
 }
@@ -167,7 +158,7 @@ func (s *Service) view(
 	name, identifier *string,
 	fn func(tx storage.ReadTx, scope request.Scope, g *group) error,
 ) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -189,7 +180,7 @@ func (s *Service) view(
 
 // change loads the group named name, applies fn, and saves it.
 func (s *Service) change(ctx context.Context, name *string, fn func(g *group) error) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -228,7 +219,7 @@ func (s *Service) CreateLogGroup(
 	ctx context.Context,
 	in *api.CreateLogGroupRequest,
 ) (*api.CreateLogGroupOutput, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +265,7 @@ func (s *Service) DeleteLogGroup(
 	ctx context.Context,
 	in *api.DeleteLogGroupRequest,
 ) (*api.DeleteLogGroupOutput, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +315,7 @@ func (s *Service) DescribeLogGroups(
 	ctx context.Context,
 	in *api.DescribeLogGroupsRequest,
 ) (*api.DescribeLogGroupsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -453,7 +444,7 @@ func taggedGroup(scope request.Scope, arn *string) (*string, error) {
 }
 
 func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]string) (map[string]string, error)) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -500,7 +491,7 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

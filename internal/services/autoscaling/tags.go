@@ -10,6 +10,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -28,7 +29,7 @@ func checkTag(t api.Tag, group string) (api.TagDescription, error) {
 		return api.TagDescription{}, validation("The tag's ResourceId must be the group's name.")
 	case k == "" || len(k) > maxTagKey || len(v) > maxTagValue:
 		return api.TagDescription{}, validation("Tag keys must be 1 to 128 characters and values at most 256.")
-	case strings.HasPrefix(strings.ToLower(k), "aws:"):
+	case tagging.Reserved(k):
 		return api.TagDescription{}, validation("Tag keys starting with 'aws:' are reserved.")
 	}
 
@@ -85,7 +86,7 @@ func checkTags(tags []api.Tag, group string) ([]api.TagDescription, error) {
 func (s *Service) retag(ctx context.Context, tags []api.Tag,
 	change func(scope request.Scope, g *group, t api.TagDescription) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -146,7 +147,7 @@ func tagValues(t api.TagDescription) map[string]string {
 }
 
 func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsType) (*api.TagsType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

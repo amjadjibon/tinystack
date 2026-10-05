@@ -138,7 +138,7 @@ func (s *Service) PublishVersion(
 	ctx context.Context,
 	in *api.PublishVersionRequest,
 ) (*api.FunctionConfiguration, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (s *Service) ListVersionsByFunction(
 		return nil, err
 	}
 
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +365,7 @@ func (s *Service) DeleteFunction(
 	ctx context.Context,
 	in *api.DeleteFunctionRequest,
 ) (*api.DeleteFunctionResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

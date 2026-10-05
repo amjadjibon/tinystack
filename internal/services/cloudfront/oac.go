@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -40,7 +41,7 @@ func toOACSummary(rec *oacRecord) api.OriginAccessControlSummary {
 func (s *Service) CreateOriginAccessControl(
 	ctx context.Context, in *api.CreateOriginAccessControlRequest,
 ) (*api.CreateOriginAccessControlResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +103,7 @@ func (s *Service) CreateOriginAccessControl(
 func (s *Service) GetOriginAccessControl(
 	ctx context.Context, in *api.GetOriginAccessControlRequest,
 ) (*api.GetOriginAccessControlResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +138,7 @@ func (s *Service) GetOriginAccessControl(
 func (s *Service) GetOriginAccessControlConfig(
 	ctx context.Context, in *api.GetOriginAccessControlConfigRequest,
 ) (*api.GetOriginAccessControlConfigResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +178,7 @@ func (s *Service) GetOriginAccessControlConfig(
 func (s *Service) UpdateOriginAccessControl(
 	ctx context.Context, in *api.UpdateOriginAccessControlRequest,
 ) (*api.UpdateOriginAccessControlResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +248,7 @@ func (s *Service) UpdateOriginAccessControl(
 func (s *Service) DeleteOriginAccessControl(
 	ctx context.Context, in *api.DeleteOriginAccessControlRequest,
 ) (*api.DeleteOriginAccessControlOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +309,7 @@ func (s *Service) DeleteOriginAccessControl(
 func (s *Service) ListOriginAccessControls(
 	ctx context.Context, in *api.ListOriginAccessControlsRequest,
 ) (*api.ListOriginAccessControlsResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

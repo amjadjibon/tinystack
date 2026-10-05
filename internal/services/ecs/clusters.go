@@ -174,7 +174,7 @@ func setting(current, settings []api.ClusterSetting) []api.ClusterSetting {
 }
 
 func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterRequest) (*api.CreateClusterResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +243,7 @@ func (s *Service) DescribeClusters(
 	ctx context.Context,
 	in *api.DescribeClustersRequest,
 ) (*api.DescribeClustersResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +298,7 @@ func (s *Service) DescribeClusters(
 }
 
 func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest) (*api.ListClustersResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,13 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest)
 		}
 
 		clusters = slices.DeleteFunc(clusters, func(c *cluster) bool { return c.Status != active })
-		clusters, out.NextToken, readErr = page(clusters, func(c *cluster) string { return c.Name }, in.NextToken, n)
+		clusters, out.NextToken, readErr = common.Page(
+			clusters,
+			func(c *cluster) string { return c.Name },
+			in.NextToken,
+			n,
+			errPageToken,
+		)
 		for _, c := range clusters {
 			out.ClusterArns = append(out.ClusterArns, clusterARN(scope, c.Name))
 		}
@@ -333,7 +339,7 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest)
 // changeCluster runs fn on the active cluster ref names, stores it, and
 // returns its description.
 func (s *Service) changeCluster(ctx context.Context, ref *string, fn func(*cluster) error) (*api.Cluster, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +429,7 @@ func (s *Service) PutClusterCapacityProviders(
 // DeleteCluster makes a cluster without active services or running tasks
 // INACTIVE.
 func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterRequest) (*api.DeleteClusterResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

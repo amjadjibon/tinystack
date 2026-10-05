@@ -7,6 +7,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -131,7 +132,7 @@ func (s *Service) DeleteResourcePolicy(
 
 // repolicy sets a secret's policy, "" for none, and reports its ARN and name.
 func (s *Service) repolicy(ctx context.Context, id *string, policy string, done func(arn, name string)) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -163,7 +164,7 @@ func (s *Service) ValidateResourcePolicy(
 	}
 
 	if in.SecretId != nil {
-		m, err := identity(ctx)
+		m, err := request.Regional(ctx)
 		if err != nil {
 			return nil, err
 		}

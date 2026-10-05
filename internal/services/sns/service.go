@@ -7,7 +7,6 @@ package sns
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"maps"
@@ -121,15 +120,6 @@ func notFound(what string) error {
 	return awserror.New("NotFoundException", what+" does not exist")
 }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 //nolint:gocritic // Metadata is an immutable request snapshot.
 func topicKey(m request.Metadata, name string) string {
 	return m.AccountID + "/" + m.Region + "/sns/" + name
@@ -161,7 +151,7 @@ func parseARN(arn *string, sub bool) ([]string, error) {
 // topic's storage key and the subscription ID. Topics outside the caller's
 // account and region do not exist for the caller.
 func resolve(ctx context.Context, arn *string, sub bool) (key, id string, err error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return "", "", err
 	}
@@ -214,33 +204,12 @@ func load(tx storage.ReadTx, key string) (*topic, error) {
 
 // page returns the sorted names after the NextToken and the token for the next page.
 func page(names []string, token *string) (selected []string, next *string, err error) {
-	after := ""
-	if token != nil {
-		b, decodeErr := base64.RawURLEncoding.DecodeString(*token)
-		if decodeErr != nil || len(b) == 0 {
-			return nil, nil, invalid("NextToken")
-		}
-
-		after = string(b)
-	}
-
 	sort.Strings(names)
-	start := sort.SearchStrings(names, after)
-	if start < len(names) && names[start] == after {
-		start++
-	}
-
-	names = names[start:]
-	if len(names) <= pageSize {
-		return names, nil, nil
-	}
-
-	names = names[:pageSize]
-	return names, new(base64.RawURLEncoding.EncodeToString([]byte(names[pageSize-1]))), nil
+	return common.Page(names, func(n string) string { return n }, token, pageSize, invalid("NextToken"))
 }
 
 func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*api.CreateTopicResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +289,7 @@ func (s *Service) DeleteTopic(ctx context.Context, in *api.DeleteTopicInput) (*a
 
 // topicKeys lists the caller's topic keys.
 func (s *Service) topicKeys(ctx context.Context, tx storage.ReadTx) ([]string, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +325,7 @@ func (s *Service) ListTopics(ctx context.Context, in *api.ListTopicsInput) (*api
 }
 
 func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.SubscribeResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

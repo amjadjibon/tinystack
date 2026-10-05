@@ -62,7 +62,7 @@ func (s *Service) resolveProfile(ctx context.Context, spec *api.IamInstanceProfi
 			"iamInstanceProfile.name or iamInstanceProfile.arn")
 	}
 
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

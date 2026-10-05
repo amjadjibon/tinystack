@@ -5,14 +5,12 @@
 package iam
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"net/url"
 	"regexp"
 	"slices"
@@ -21,7 +19,6 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
-	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -114,15 +111,6 @@ func limitExceeded(format string, args ...any) error {
 
 func invalidInput(format string, args ...any) error {
 	return awserror.New("InvalidInputException", fmt.Sprintf(format, args...))
-}
-
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
 }
 
 // key is the storage key of a record: IAM state is account-wide, so the key has
@@ -243,12 +231,7 @@ func tagError(err error) error {
 
 // tagList returns tags ordered by key.
 func tagList(tags map[string]string) []api.Tag {
-	out := make([]api.Tag, 0, len(tags))
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		out = append(out, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 }
 
 // page returns the items after marker, at most maxItems of them, whether more

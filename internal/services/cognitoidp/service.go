@@ -20,7 +20,6 @@ package cognitoidp
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -66,17 +65,10 @@ func invalidParameter(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))
 }
 
+var errPageToken = invalidParameter("The pagination token is invalid.")
+
 func notFound(format string, args ...any) error {
 	return awserror.New("ResourceNotFoundException", fmt.Sprintf(format, args...))
-}
-
-func identity(ctx context.Context) (request.Scope, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Scope{}, fmt.Errorf("missing request identity")
-	}
-
-	return m.Scope, nil
 }
 
 func prefix(scope request.Scope, kind string) string {
@@ -129,34 +121,6 @@ func convert[T any](from any) (T, error) {
 	return out, err
 }
 
-// page returns the items after the one token names, at most limit of them, and
-// the token for the rest, if any. Tokens are the last returned item's ID.
-func page[T any](items []T, id func(T) string, token *string, limit int) (selected []T, next *string, err error) {
-	start := 0
-	if token != nil {
-		after, decodeErr := base64.RawURLEncoding.DecodeString(*token)
-		if decodeErr != nil || len(after) == 0 {
-			return nil, nil, invalidParameter("The pagination token is invalid.")
-		}
-
-		start = len(items)
-		for i, item := range items {
-			if id(item) > string(after) {
-				start = i
-				break
-			}
-		}
-	}
-
-	items = items[start:]
-	if len(items) <= limit {
-		return items, nil, nil
-	}
-
-	next = new(base64.RawURLEncoding.EncodeToString([]byte(id(items[limit-1]))))
-	return items[:limit], next, nil
-}
-
 // limit validates an optional page size of up to maxPage, which it defaults to.
 func limit(n *int64, name string) (int, error) {
 	if n == nil || *n == 0 {
@@ -191,7 +155,7 @@ func loadPool(tx storage.ReadTx, scope request.Scope, id *string) (*pool, error)
 
 // view runs fn with the pool id names.
 func (s *Service) view(ctx context.Context, id *string, fn func(storage.ReadTx, request.Scope, *pool) error) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -212,7 +176,7 @@ func (s *Service) update(
 	id *string,
 	fn func(storage.WriteTx, request.Scope, *pool) error,
 ) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}

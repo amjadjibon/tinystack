@@ -216,11 +216,12 @@ func (s *Service) ListResourceServers(
 		return nil, err
 	}
 
-	selected, next, err := page(
+	selected, next, err := common.Page(
 		servers,
 		func(rs api.ResourceServerType) string { return *rs.Identifier },
 		in.NextToken,
 		n,
+		errPageToken,
 	)
 	if err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -163,7 +164,7 @@ func checkValues(rs *api.ResourceRecordSet) error {
 func (s *Service) ChangeResourceRecordSets(
 	ctx context.Context, in *api.ChangeResourceRecordSetsRequest,
 ) (*api.ChangeResourceRecordSetsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +329,7 @@ func (s *Service) checkChange(tx storage.ReadTx, account, zoneID, apex, action s
 func (s *Service) ListResourceRecordSets(
 	ctx context.Context, in *api.ListResourceRecordSetsRequest,
 ) (*api.ListResourceRecordSetsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

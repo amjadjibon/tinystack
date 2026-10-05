@@ -206,7 +206,7 @@ func alarmNames(alarms []api.Alarm) []string {
 // PutScalingPolicy creates or replaces a policy. A target tracking policy's
 // alarms are replaced with it.
 func (s *Service) PutScalingPolicy(ctx context.Context, in *api.PutScalingPolicyType) (*api.PolicyARNType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func (s *Service) PutScalingPolicy(ctx context.Context, in *api.PutScalingPolicy
 }
 
 func (s *Service) DescribePolicies(ctx context.Context, in *api.DescribePoliciesType) (*api.PoliciesType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +351,7 @@ func findPolicy(tx storage.ReadTx, scope request.Scope, group, name string) (str
 }
 
 func (s *Service) DeletePolicy(ctx context.Context, in *api.DeletePolicyType) (*api.DeletePolicyOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -477,7 +477,7 @@ func desiredFor(p *api.ScalingPolicy, in *api.ExecutePolicyType, current int64) 
 // its minimum and maximum. A simple scaling policy starts a cooldown, which
 // requests that honor cooldowns (such as alarm actions) wait for.
 func (s *Service) ExecutePolicy(ctx context.Context, in *api.ExecutePolicyType) (*api.ExecutePolicyOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

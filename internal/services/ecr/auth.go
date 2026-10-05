@@ -62,7 +62,7 @@ func (s *Service) GetAuthorizationToken(
 	ctx context.Context,
 	in *api.GetAuthorizationTokenRequest,
 ) (*api.GetAuthorizationTokenResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

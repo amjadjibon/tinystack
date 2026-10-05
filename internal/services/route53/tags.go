@@ -2,10 +2,9 @@ package route53
 
 import (
 	"context"
-	"maps"
-	"slices"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -40,18 +39,17 @@ func loadTags(tx storage.ReadTx, account string, kind, id *string) (map[string]s
 }
 
 func tagSet(kind, id *string, tags map[string]string) api.ResourceTagSet {
-	set := api.ResourceTagSet{ResourceType: kind, ResourceId: new(bareID(id)), Tags: []api.Tag{}}
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		set.Tags = append(set.Tags, api.Tag{Key: new(k), Value: new(tags[k])})
+	return api.ResourceTagSet{
+		ResourceType: kind,
+		ResourceId:   new(bareID(id)),
+		Tags:         tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} }),
 	}
-
-	return set
 }
 
 func (s *Service) ChangeTagsForResource(
 	ctx context.Context, in *api.ChangeTagsForResourceRequest,
 ) (*api.ChangeTagsForResourceResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +89,7 @@ func (s *Service) ChangeTagsForResource(
 func (s *Service) ListTagsForResource(
 	ctx context.Context, in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +110,7 @@ func (s *Service) ListTagsForResource(
 func (s *Service) ListTagsForResources(
 	ctx context.Context, in *api.ListTagsForResourcesRequest,
 ) (*api.ListTagsForResourcesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package ecs
 import (
 	"context"
 	"maps"
-	"slices"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -15,28 +14,18 @@ import (
 )
 
 func tagMap(tags []api.Tag) map[string]string {
-	out := make(map[string]string, len(tags))
-	for _, t := range tags {
-		out[common.Value(t.Key)] = common.Value(t.Value)
-	}
-
-	return out
+	return tagging.Map(tags, func(t api.Tag) (*string, *string) { return t.Key, t.Value })
 }
 
 func tagList(tags map[string]string) []api.Tag {
-	out := make([]api.Tag, 0, len(tags))
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		out = append(out, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 }
 
 // checkTags applies the shared tag limits; keys starting with "aws:" are
 // ECS's own.
 func checkTags(tags []api.Tag) error {
 	for _, t := range tags {
-		if t.Key == nil || strings.HasPrefix(strings.ToLower(*t.Key), "aws:") {
+		if t.Key == nil || tagging.Reserved(*t.Key) {
 			return invalidParameter("Tag keys are required and cannot start with aws:.")
 		}
 	}
@@ -74,7 +63,7 @@ func taggable(tx storage.ReadTx, scope request.Scope, ref string) (*tagged, erro
 	case kindCluster:
 		c, ok, err := storage.Read[cluster](tx, clusterKey(scope, rest))
 		if err != nil || !ok || c.Status != active {
-			return nil, errorsOr(err, clusterNotFound())
+			return nil, common.ErrorsOr(err, clusterNotFound())
 		}
 
 		return &tagged{tags: &c.Tags, save: func(tx storage.WriteTx) error {
@@ -84,7 +73,7 @@ func taggable(tx storage.ReadTx, scope request.Scope, ref string) (*tagged, erro
 		clusterName, name, _ := strings.Cut(rest, "/")
 		svc, ok, err := storage.Read[ecsService](tx, serviceKey(scope, clusterName, name))
 		if err != nil || !ok || svc.Status == inactive {
-			return nil, errorsOr(err, notFound)
+			return nil, common.ErrorsOr(err, notFound)
 		}
 
 		return &tagged{tags: &svc.Tags, save: func(tx storage.WriteTx) error {
@@ -103,7 +92,7 @@ func taggable(tx storage.ReadTx, scope request.Scope, ref string) (*tagged, erro
 		clusterName, id, _ := strings.Cut(rest, "/")
 		t, ok, err := storage.Read[task](tx, taskKey(scope, clusterName, id))
 		if err != nil || !ok {
-			return nil, errorsOr(err, notFound)
+			return nil, common.ErrorsOr(err, notFound)
 		}
 
 		return &tagged{tags: &t.Tags, save: func(tx storage.WriteTx) error {
@@ -116,7 +105,7 @@ func taggable(tx storage.ReadTx, scope request.Scope, ref string) (*tagged, erro
 
 // retag runs fn on the tags of the resource arn names and stores it.
 func (s *Service) retag(ctx context.Context, ref *string, fn func([]api.Tag) ([]api.Tag, error)) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -168,7 +157,7 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -164,7 +164,7 @@ func (s *Service) CreateFunctionUrlConfig(
 	ctx context.Context,
 	in *api.CreateFunctionUrlConfigRequest,
 ) (*api.CreateFunctionUrlConfigResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func (s *Service) GetFunctionUrlConfig(
 	ctx context.Context,
 	in *api.GetFunctionUrlConfigRequest,
 ) (*api.GetFunctionUrlConfigResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (s *Service) UpdateFunctionUrlConfig(
 	ctx context.Context,
 	in *api.UpdateFunctionUrlConfigRequest,
 ) (*api.UpdateFunctionUrlConfigResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func (s *Service) DeleteFunctionUrlConfig(
 	ctx context.Context,
 	in *api.DeleteFunctionUrlConfigRequest,
 ) (*api.DeleteFunctionUrlConfigOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +357,7 @@ func (s *Service) ListFunctionUrlConfigs(
 	ctx context.Context,
 	in *api.ListFunctionUrlConfigsRequest,
 ) (*api.ListFunctionUrlConfigsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -84,7 +84,7 @@ func (s *Service) CreateIntegration(
 	ctx context.Context,
 	in *api.CreateIntegrationRequest,
 ) (*api.CreateIntegrationResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (s *Service) changeIntegration(
 	apiID, id *string,
 	fn func(tx storage.WriteTx, scope request.Scope, i *api.Integration) (bool, error),
 ) (*api.Integration, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (s *Service) GetIntegration(
 	ctx context.Context,
 	in *api.GetIntegrationRequest,
 ) (*api.GetIntegrationResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (s *Service) GetIntegrations(
 	ctx context.Context,
 	in *api.GetIntegrationsRequest,
 ) (*api.GetIntegrationsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

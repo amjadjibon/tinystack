@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Service) CreateStream(ctx context.Context, in *api.CreateStreamInput) (*api.CreateStreamOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *Service) CreateStream(ctx context.Context, in *api.CreateStreamInput) (
 }
 
 func (s *Service) DeleteStream(ctx context.Context, in *api.DeleteStreamInput) (*api.DeleteStreamOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,7 @@ func (s *Service) DescribeStreamSummary(
 }
 
 func (s *Service) ListStreams(ctx context.Context, in *api.ListStreamsInput) (*api.ListStreamsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -634,7 +634,7 @@ func (s *Service) UpdateStreamMode(
 }
 
 func (s *Service) DescribeLimits(ctx context.Context, _ *api.DescribeLimitsInput) (*api.DescribeLimitsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

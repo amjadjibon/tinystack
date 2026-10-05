@@ -4,7 +4,6 @@ package ec2
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -30,18 +29,9 @@ func invalidParameter(message string) error {
 	return awserror.New("InvalidParameterValue", message)
 }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" {
-		return m, errors.New("missing request identity")
-	}
-
-	return m, nil
-}
-
 // caller resolves the caller and answers DryRun.
 func caller(ctx context.Context, dry *bool) (request.Metadata, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return m, err
 	}

@@ -5,6 +5,7 @@ import (
 	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -38,7 +39,7 @@ func (s *Service) UpdateFunctionConfiguration(
 	ctx context.Context,
 	in *api.UpdateFunctionConfigurationRequest,
 ) (*api.FunctionConfiguration, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +84,7 @@ func (s *Service) update(
 	dryRun, publishing bool,
 	change func(*function) ([]byte, error),
 ) (*api.FunctionConfiguration, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

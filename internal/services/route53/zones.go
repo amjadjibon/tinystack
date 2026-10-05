@@ -87,7 +87,7 @@ func (s *Service) checkVPC(ctx context.Context, account string, vpc *api.VPC) er
 func (s *Service) CreateHostedZone(
 	ctx context.Context, in *api.CreateHostedZoneRequest,
 ) (*api.CreateHostedZoneResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (s *Service) GetHostedZone(ctx context.Context, in *api.GetHostedZoneReques
 }
 
 func (s *Service) viewZone(ctx context.Context, id string) (*zone, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (s *Service) viewZone(ctx context.Context, id string) (*zone, error) {
 
 // zones reads every hosted zone of an account, in ID order.
 func (s *Service) zones(ctx context.Context) ([]*zone, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -363,7 +363,7 @@ func (s *Service) GetHostedZoneCount(
 func (s *Service) DeleteHostedZone(
 	ctx context.Context, in *api.DeleteHostedZoneRequest,
 ) (*api.DeleteHostedZoneResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func (s *Service) DeleteHostedZone(
 func (s *Service) UpdateHostedZoneComment(
 	ctx context.Context, in *api.UpdateHostedZoneCommentRequest,
 ) (*api.UpdateHostedZoneCommentResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -451,7 +451,7 @@ func (s *Service) DisassociateVPCFromHostedZone(
 // associate adds a VPC to, or removes one from, a private hosted zone.
 func (s *Service) associate(ctx context.Context, id string, vpc *api.VPC, comment *string, add bool,
 ) (*api.ChangeInfo, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

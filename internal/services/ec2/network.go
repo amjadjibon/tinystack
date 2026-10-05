@@ -623,7 +623,7 @@ func (s *Service) DeleteSubnet(ctx context.Context, in *api.DeleteSubnetRequest)
 		k := key(scope, kindSubnet, id)
 		sn, ok, err := storage.Read[subnet](tx, k)
 		if err != nil || !ok {
-			return errorsOr(err, subnetNotFound(id))
+			return common.ErrorsOr(err, subnetNotFound(id))
 		}
 
 		inUse, err := subnetInUse(tx, scope, id)

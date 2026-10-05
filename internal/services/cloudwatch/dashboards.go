@@ -36,7 +36,7 @@ func dashboardKey(scope request.Scope, name string) string {
 }
 
 func (s *Service) PutDashboard(ctx context.Context, in *api.PutDashboardInput) (*api.PutDashboardOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *Service) PutDashboard(ctx context.Context, in *api.PutDashboardInput) (
 }
 
 func (s *Service) GetDashboard(ctx context.Context, in *api.GetDashboardInput) (*api.GetDashboardOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (s *Service) GetDashboard(ctx context.Context, in *api.GetDashboardInput) (
 }
 
 func (s *Service) ListDashboards(ctx context.Context, in *api.ListDashboardsInput) (*api.ListDashboardsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (s *Service) ListDashboards(ctx context.Context, in *api.ListDashboardsInpu
 func (s *Service) DeleteDashboards(
 	ctx context.Context, in *api.DeleteDashboardsInput,
 ) (*api.DeleteDashboardsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

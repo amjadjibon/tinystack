@@ -32,6 +32,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -209,15 +210,6 @@ type activity struct {
 	Created float64
 }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 func prefix(scope request.Scope, kind string) string {
 	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
 }
@@ -296,21 +288,7 @@ func tagsOf(tags []api.Tag) map[string]string {
 }
 
 func tagList(tags map[string]string) []api.Tag {
-	out := make([]api.Tag, 0, len(tags))
-	for _, k := range sortedKeys(anyMap(tags)) {
-		out = append(out, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out
-}
-
-func anyMap(m map[string]string) map[string]any {
-	out := make(map[string]any, len(m))
-	for k, v := range m {
-		out[k] = v
-	}
-
-	return out
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 }
 
 // page returns the items after the one token names, at most limit of them
@@ -325,29 +303,13 @@ func page[T any](items []T, id func(T) string, token *string, limit *int64) (sel
 		n = *limit
 	}
 
-	start := 0
-	if token != nil {
-		after, decodeErr := base64.RawURLEncoding.DecodeString(*token)
-		if decodeErr != nil {
-			return nil, nil, awserror.New("InvalidToken", "Invalid Token: '"+*token+"'")
-		}
-
-		start = len(items)
-		for i, item := range items {
-			if id(item) == string(after) {
-				start = i + 1
-				break
-			}
-		}
-	}
-
-	items = items[start:]
-	if int64(len(items)) <= n {
-		return items, nil, nil
-	}
-
-	next = new(base64.RawURLEncoding.EncodeToString([]byte(id(items[n-1]))))
-	return items[:n], next, nil
+	return common.Page(
+		items,
+		id,
+		token,
+		int(n),
+		awserror.New("InvalidToken", "Invalid Token: '"+common.Value(token)+"'"),
+	)
 }
 
 // optional returns s, or nil when it is empty.

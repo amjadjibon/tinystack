@@ -9,6 +9,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -122,7 +123,7 @@ func (s *Service) ListDeadLetterSourceQueues(
 	ctx context.Context,
 	in *api.ListDeadLetterSourceQueuesRequest,
 ) (*api.ListDeadLetterSourceQueuesResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -97,7 +97,7 @@ func (s *Service) newEvent(scope request.Scope, in *api.PutEventsRequestEntry) (
 }
 
 func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api.PutEventsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

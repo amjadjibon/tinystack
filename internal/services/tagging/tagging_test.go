@@ -43,3 +43,32 @@ func TestMergeAndRemove(t *testing.T) {
 		t.Fatal(left)
 	}
 }
+
+func TestCheckSet(t *testing.T) {
+	if err := CheckSet(map[string]string{"AWS:name": "v"}); !errors.Is(err, ErrReserved) {
+		t.Fatalf("reserved key error = %v", err)
+	}
+
+	if err := CheckSet(map[string]string{"awsname": "v"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMapAndList(t *testing.T) {
+	type tag struct{ k, v *string }
+
+	b, a, one := "b", "a", "1"
+	got := Map([]tag{{&b, &one}, {&a, nil}}, func(t tag) (*string, *string) { return t.k, t.v })
+	if len(got) != 2 || got["b"] != "1" || got["a"] != "" {
+		t.Fatal(got)
+	}
+
+	list := List(got, func(k, v string) string { return k + "=" + v })
+	if fmt.Sprint(list) != "[a= b=1]" {
+		t.Fatal(list)
+	}
+
+	if list := List(nil, func(k, v string) string { return k }); list == nil {
+		t.Fatal("List returned nil")
+	}
+}

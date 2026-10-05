@@ -17,7 +17,6 @@ package ecr
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -52,18 +51,12 @@ func invalidParameter(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))
 }
 
+var errPageToken = invalidParameter("Invalid parameter at 'nextToken' failed to satisfy constraint: " +
+	"'Invalid pagination token'")
+
 func repositoryNotFound(scope request.Scope, name string) error {
 	return awserror.New("RepositoryNotFoundException", fmt.Sprintf(
 		"The repository with name '%s' does not exist in the registry with id '%s'", name, scope.AccountID))
-}
-
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
 }
 
 func prefix(scope request.Scope, kind string) string {
@@ -89,35 +82,6 @@ func repoARN(scope request.Scope, name string) string {
 // used, so Docker pushes to TinyStack.
 func registryHost(m *request.Metadata) string {
 	return strings.TrimPrefix(strings.TrimPrefix(m.Endpoint, "http://"), "https://")
-}
-
-// page returns the items after the one token names, at most limit of them, and
-// the token for the rest, if any. Tokens are the last returned item's ID.
-func page[T any](items []T, id func(T) string, token *string, limit int) (selected []T, next *string, err error) {
-	start := 0
-	if token != nil {
-		after, decodeErr := base64.RawURLEncoding.DecodeString(*token)
-		if decodeErr != nil || len(after) == 0 {
-			return nil, nil, invalidParameter("Invalid parameter at 'nextToken' failed to satisfy constraint: " +
-				"'Invalid pagination token'")
-		}
-
-		start = len(items)
-		for i, item := range items {
-			if id(item) > string(after) {
-				start = i
-				break
-			}
-		}
-	}
-
-	items = items[start:]
-	if len(items) <= limit {
-		return items, nil, nil
-	}
-
-	next = new(base64.RawURLEncoding.EncodeToString([]byte(id(items[limit-1]))))
-	return items[:limit], next, nil
 }
 
 // limit validates an optional page size of 1 to 1000, defaulting to maxPage.
@@ -183,7 +147,7 @@ func (s *Service) view(
 	registry, name *string,
 	fn func(storage.ReadTx, *request.Metadata, *repository) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -205,7 +169,7 @@ func (s *Service) update(
 	registry, name *string,
 	fn func(storage.WriteTx, *request.Metadata, *repository) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}

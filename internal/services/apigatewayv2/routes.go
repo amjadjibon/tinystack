@@ -135,7 +135,7 @@ func checkRoute(tx storage.ReadTx, scope request.Scope, apiID string, r *api.Rou
 }
 
 func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (*api.CreateRouteResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (s *Service) changeRoute(
 	apiID, routeID *string,
 	fn func(tx storage.WriteTx, scope request.Scope, r *api.Route) (bool, error),
 ) (*api.Route, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func (s *Service) changeRoute(
 }
 
 func (s *Service) GetRoute(ctx context.Context, in *api.GetRouteRequest) (*api.GetRouteResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func notFoundIf(missing bool, format string, args ...any) error {
 }
 
 func (s *Service) GetRoutes(ctx context.Context, in *api.GetRoutesRequest) (*api.GetRoutesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

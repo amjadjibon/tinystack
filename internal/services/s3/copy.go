@@ -85,7 +85,7 @@ func resolveSource(tx storage.ReadTx, m request.Metadata, name string, expectedO
 // directives replace them; copying an object onto itself must replace
 // something.
 func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*api.CopyObjectOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

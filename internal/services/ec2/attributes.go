@@ -148,7 +148,7 @@ func (s *Service) ModifySubnetAttribute(
 		id := common.Value(in.SubnetId)
 		sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, id))
 		if err != nil || !ok {
-			return errorsOr(err, subnetNotFound(id))
+			return common.ErrorsOr(err, subnetNotFound(id))
 		}
 
 		switch {

@@ -242,7 +242,7 @@ func priorityInUse() error {
 }
 
 func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api.CreateRuleOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +309,7 @@ func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api
 }
 
 func (s *Service) DescribeRules(ctx context.Context, in *api.DescribeRulesInput) (*api.DescribeRulesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +368,7 @@ func defaultRuleChange() error {
 }
 
 func (s *Service) ModifyRule(ctx context.Context, in *api.ModifyRuleInput) (*api.ModifyRuleOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +422,7 @@ func (s *Service) ModifyRule(ctx context.Context, in *api.ModifyRuleInput) (*api
 }
 
 func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleInput) (*api.DeleteRuleOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +444,7 @@ func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleInput) (*api
 func (s *Service) SetRulePriorities(
 	ctx context.Context, in *api.SetRulePrioritiesInput,
 ) (*api.SetRulePrioritiesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -12,13 +12,11 @@
 package cloudfront
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
-	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -42,15 +40,6 @@ type Service struct {
 
 func New(store storage.Store) *Service {
 	return &Service{store: store, now: time.Now}
-}
-
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
 }
 
 func key(account, kind, name string) string {

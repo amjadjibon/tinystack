@@ -144,7 +144,7 @@ func checkDescription(description *string) error {
 
 // aliasRequest resolves the unqualified function an alias operation names.
 func aliasRequest(ctx context.Context, function, name *string) (m request.Metadata, fn string, err error) {
-	if m, err = identity(ctx); err != nil {
+	if m, err = request.Regional(ctx); err != nil {
 		return m, "", err
 	}
 
@@ -336,7 +336,7 @@ func (s *Service) ListAliases(ctx context.Context, in *api.ListAliasesRequest) (
 		return nil, err
 	}
 
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

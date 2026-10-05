@@ -288,7 +288,7 @@ func (s *Service) GetDownloadUrlForLayer(
 		func(tx storage.ReadTx, meta *request.Metadata, r *repository) error {
 			m = meta
 			if _, ok, err := findLayer(tx, meta.Scope, r, digest); err != nil || !ok {
-				return errorsOr(err, layersNotFound(digest))
+				return common.ErrorsOr(err, layersNotFound(digest))
 			}
 
 			return nil
@@ -310,12 +310,4 @@ func (s *Service) GetDownloadUrlForLayer(
 	base.User = url.UserPassword(registryUser, password)
 	base.Path = "/v2/" + *in.RepositoryName + "/blobs/" + digest
 	return &api.GetDownloadUrlForLayerResponse{DownloadUrl: new(base.String()), LayerDigest: new(digest)}, nil
-}
-
-func errorsOr(err, fallback error) error {
-	if err != nil {
-		return err
-	}
-
-	return fallback
 }

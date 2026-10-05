@@ -12,6 +12,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -207,7 +208,7 @@ func (s *Service) publish(
 	key string,
 	e *api.PublishBatchRequestEntry,
 ) (id string, sequence *string, err error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return "", nil, err
 	}

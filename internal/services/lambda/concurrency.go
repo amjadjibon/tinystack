@@ -91,7 +91,7 @@ func (s *Service) PutFunctionConcurrency(
 	ctx context.Context,
 	in *api.PutFunctionConcurrencyRequest,
 ) (*api.Concurrency, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (s *Service) GetFunctionConcurrency(
 	ctx context.Context,
 	in *api.GetFunctionConcurrencyRequest,
 ) (*api.GetFunctionConcurrencyResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (s *Service) DeleteFunctionConcurrency(
 	ctx context.Context,
 	in *api.DeleteFunctionConcurrencyRequest,
 ) (*api.DeleteFunctionConcurrencyOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (s *Service) PutProvisionedConcurrencyConfig(
 	ctx context.Context,
 	in *api.PutProvisionedConcurrencyConfigRequest,
 ) (*api.PutProvisionedConcurrencyConfigResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +258,7 @@ func (s *Service) GetProvisionedConcurrencyConfig(
 	ctx context.Context,
 	in *api.GetProvisionedConcurrencyConfigRequest,
 ) (*api.GetProvisionedConcurrencyConfigResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (s *Service) DeleteProvisionedConcurrencyConfig(
 	ctx context.Context,
 	in *api.DeleteProvisionedConcurrencyConfigRequest,
 ) (*api.DeleteProvisionedConcurrencyConfigOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +321,7 @@ func (s *Service) ListProvisionedConcurrencyConfigs(
 	ctx context.Context,
 	in *api.ListProvisionedConcurrencyConfigsRequest,
 ) (*api.ListProvisionedConcurrencyConfigsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

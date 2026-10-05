@@ -6,7 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
+	"strings"
 	"unicode/utf8"
+
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 // Max is the number of tags one resource may have.
@@ -15,6 +19,23 @@ const Max = 50
 // ErrLimit reports a tag set larger than Max. Some services give it its own
 // error code.
 var ErrLimit = fmt.Errorf("a resource can have at most %d tags", Max)
+
+// ErrReserved reports a key that is Reserved.
+var ErrReserved = errors.New("tag keys cannot start with the reserved prefix aws")
+
+// Reserved reports whether key has the aws: prefix, which AWS keeps for its own tags.
+func Reserved(key string) bool { return strings.HasPrefix(strings.ToLower(key), "aws:") }
+
+// CheckSet is Check for tags a caller sets, whose keys must not be Reserved.
+func CheckSet(tags map[string]string) error {
+	for k := range tags {
+		if Reserved(k) {
+			return ErrReserved
+		}
+	}
+
+	return Check(tags)
+}
 
 // Check reports the first way tags break the shared limits: at most Max tags,
 // keys of 1 to 128 characters and values of at most 256.
@@ -56,4 +77,26 @@ func Remove(tags map[string]string, keys []string) map[string]string {
 	}
 
 	return tags
+}
+
+// Map returns a service's tag list as a map, reading each tag's key and value with pair; a later tag replaces an
+// earlier one with the same key.
+func Map[T any](tags []T, pair func(T) (key, value *string)) map[string]string {
+	out := make(map[string]string, len(tags))
+	for _, t := range tags {
+		k, v := pair(t)
+		out[common.Value(k)] = common.Value(v)
+	}
+
+	return out
+}
+
+// List returns tags as a service's tag list, ordered by key and built with tag. It is never nil.
+func List[T any](tags map[string]string, tag func(key, value string) T) []T {
+	out := make([]T, 0, len(tags))
+	for _, k := range slices.Sorted(maps.Keys(tags)) {
+		out = append(out, tag(k, tags[k]))
+	}
+
+	return out
 }

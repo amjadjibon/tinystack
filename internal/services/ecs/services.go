@@ -69,7 +69,7 @@ func loadService(tx storage.ReadTx, scope request.Scope, c *cluster, ref *string
 
 	svc, found, err := storage.Read[ecsService](tx, serviceKey(scope, c.Name, name))
 	if err != nil || !found {
-		return nil, errorsOr(err, serviceNotFound())
+		return nil, common.ErrorsOr(err, serviceNotFound())
 	}
 
 	return svc, nil
@@ -289,7 +289,7 @@ func checkServiceSettings(propagate, rebalancing *string) error {
 }
 
 func (s *Service) CreateService(ctx context.Context, in *api.CreateServiceRequest) (*api.CreateServiceResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +421,7 @@ func (s *Service) DescribeServices(
 	ctx context.Context,
 	in *api.DescribeServicesRequest,
 ) (*api.DescribeServicesResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -474,7 +474,7 @@ func (s *Service) changeService(
 	clusterRef, ref *string,
 	fn func(storage.WriteTx, request.Scope, *cluster, *ecsService) error,
 ) (api.Service, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return api.Service{}, err
 	}
@@ -649,7 +649,7 @@ func (s *Service) DeleteService(ctx context.Context, in *api.DeleteServiceReques
 }
 
 func (s *Service) ListServices(ctx context.Context, in *api.ListServicesRequest) (*api.ListServicesResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -679,8 +679,8 @@ func (s *Service) ListServices(ctx context.Context, in *api.ListServicesRequest)
 			return svc.Status != active || in.LaunchType != nil && svc.LaunchType != *in.LaunchType ||
 				in.SchedulingStrategy != nil && svc.Scheduling != *in.SchedulingStrategy
 		})
-		services, out.NextToken, readErr = page(services, func(svc *ecsService) string { return svc.Name },
-			in.NextToken, n)
+		services, out.NextToken, readErr = common.Page(services, func(svc *ecsService) string { return svc.Name },
+			in.NextToken, n, errPageToken)
 		for _, svc := range services {
 			out.ServiceArns = append(out.ServiceArns, serviceARN(scope, c.Name, svc.Name))
 		}

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -86,7 +87,7 @@ func countAttachment(tx storage.WriteTx, account string, ref policyRef, delta in
 
 // viewPolicy runs fn on the managed policy policyArn names.
 func (s *Service) viewPolicy(ctx context.Context, policyArn *string, fn func(account string, p *policy) error) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func (s *Service) viewPolicy(ctx context.Context, policyArn *string, fn func(acc
 // updatePolicy runs fn on the managed policy policyArn names and stores the
 // result, all in one transaction.
 func (s *Service) updatePolicy(ctx context.Context, policyArn *string, fn func(p *policy) error) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -197,7 +198,7 @@ func versionOutput(p *policy, v policyVersion, document bool) api.PolicyVersion 
 }
 
 func (s *Service) CreatePolicy(ctx context.Context, in *api.CreatePolicyRequest) (*api.CreatePolicyResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +271,7 @@ func (s *Service) GetPolicy(ctx context.Context, in *api.GetPolicyRequest) (*api
 }
 
 func (s *Service) DeletePolicy(ctx context.Context, in *api.DeletePolicyRequest) (*api.DeletePolicyOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +308,7 @@ func (s *Service) DeletePolicy(ctx context.Context, in *api.DeletePolicyRequest)
 // ListPolicies lists the caller's managed policies. AWS managed policies are not
 // modeled, so the AWS scope is always empty.
 func (s *Service) ListPolicies(ctx context.Context, in *api.ListPoliciesRequest) (*api.ListPoliciesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +415,7 @@ func (s *Service) DeletePolicyVersion(
 	ctx context.Context,
 	in *api.DeletePolicyVersionRequest,
 ) (*api.DeletePolicyVersionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -478,7 +479,7 @@ func (s *Service) SetDefaultPolicyVersion(
 	ctx context.Context,
 	in *api.SetDefaultPolicyVersionRequest,
 ) (*api.SetDefaultPolicyVersionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

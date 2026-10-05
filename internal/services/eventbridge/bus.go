@@ -100,7 +100,7 @@ func (s *Service) CreateEventBus(
 	ctx context.Context,
 	in *api.CreateEventBusRequest,
 ) (*api.CreateEventBusResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (b *bus) describe(scope request.Scope, policy string) api.EventBus {
 
 // viewBus describes the caller's bus given by name or ARN.
 func (s *Service) viewBus(ctx context.Context, ref *string) (api.EventBus, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return api.EventBus{}, err
 	}
@@ -239,7 +239,7 @@ func (s *Service) UpdateEventBus(
 		return nil, err
 	}
 
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (s *Service) DeleteEventBus(
 	ctx context.Context,
 	in *api.DeleteEventBusRequest,
 ) (*api.DeleteEventBusOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func (s *Service) ListEventBuses(
 	ctx context.Context,
 	in *api.ListEventBusesRequest,
 ) (*api.ListEventBusesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

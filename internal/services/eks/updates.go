@@ -48,7 +48,7 @@ func (s *Service) DescribeUpdate(
 	ctx context.Context,
 	in *api.DescribeUpdateRequest,
 ) (*api.DescribeUpdateResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *Service) DescribeUpdate(
 // ListUpdates lists a cluster's updates, or its node group's or add-on's,
 // oldest first.
 func (s *Service) ListUpdates(ctx context.Context, in *api.ListUpdatesRequest) (*api.ListUpdatesResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

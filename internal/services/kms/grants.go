@@ -118,7 +118,7 @@ func (g *grant) same(in *api.CreateGrantRequest) bool {
 // CreateGrant records a grant on a key. A named grant with the same
 // parameters as an existing one returns that one.
 func (s *Service) CreateGrant(ctx context.Context, in *api.CreateGrantRequest) (*api.CreateGrantResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (g *grant) entry(scope request.Scope, keyID string) api.GrantListEntry {
 // ListGrants lists a key's grants in grant ID order, optionally one grant or
 // one grantee's.
 func (s *Service) ListGrants(ctx context.Context, in *api.ListGrantsRequest) (*api.ListGrantsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (s *Service) ListRetirableGrants(
 	ctx context.Context,
 	in *api.ListRetirableGrantsRequest,
 ) (*api.ListGrantsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (s *Service) RevokeGrant(ctx context.Context, in *api.RevokeGrantRequest) (
 }
 
 func (s *Service) deleteGrant(ctx context.Context, keyRef *string, grantID string, dry *bool) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}

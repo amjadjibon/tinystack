@@ -182,7 +182,7 @@ func tagError(err error) error {
 func (s *Service) RequestCertificate(
 	ctx context.Context, in *api.RequestCertificateRequest,
 ) (*api.RequestCertificateResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +342,7 @@ func (s *Service) DescribeCertificate(
 
 // view reads the certificate arn names.
 func (s *Service) view(ctx context.Context, arn *string) (*certificate, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func (s *Service) view(ctx context.Context, arn *string) (*certificate, error) {
 func (s *Service) ListCertificates(
 	ctx context.Context, in *api.ListCertificatesRequest,
 ) (*api.ListCertificatesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -514,7 +514,7 @@ func summary(c *certificate, status string) api.CertificateSummary {
 func (s *Service) DeleteCertificate(
 	ctx context.Context, in *api.DeleteCertificateRequest,
 ) (*api.DeleteCertificateOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -561,7 +561,7 @@ func (s *Service) GetCertificate(
 func (s *Service) ImportCertificate(
 	ctx context.Context, in *api.ImportCertificateRequest,
 ) (*api.ImportCertificateResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -663,7 +663,7 @@ func (s *Service) ImportCertificate(
 func (s *Service) ExportCertificate(
 	ctx context.Context, in *api.ExportCertificateRequest,
 ) (*api.ExportCertificateResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -705,7 +705,7 @@ func (s *Service) ExportCertificate(
 func (s *Service) UpdateCertificateOptions(
 	ctx context.Context, in *api.UpdateCertificateOptionsRequest,
 ) (*api.UpdateCertificateOptionsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

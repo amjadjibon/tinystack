@@ -144,15 +144,6 @@ var (
 	suffixSet  = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 )
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 func invalidParameter(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))
 }
@@ -492,18 +483,7 @@ func tagList(tags map[string]string) []api.Tag {
 		return nil
 	}
 
-	keys := make([]string, 0, len(tags))
-	for k := range tags {
-		keys = append(keys, k)
-	}
-
-	slices.Sort(keys)
-	out := make([]api.Tag, 0, len(keys))
-	for _, k := range keys {
-		out = append(out, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 }
 
 // page orders items by sortKey, descending when desc, and returns those after

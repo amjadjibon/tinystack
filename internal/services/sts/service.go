@@ -19,6 +19,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -93,15 +94,6 @@ func (s *session) id() string {
 	}
 
 	return s.RoleID + ":" + s.Name
-}
-
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
 }
 
 func rootARN(account string) string { return "arn:aws:iam::" + account + ":root" }
@@ -184,7 +176,7 @@ func (s *Service) GetCallerIdentity(
 	ctx context.Context,
 	_ *api.GetCallerIdentityRequest,
 ) (*api.GetCallerIdentityResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +213,7 @@ func (s *Service) GetCallerIdentity(
 // AssumeRole issues temporary credentials for a role whose trust policy names
 // the caller. Expired sessions are removed whenever a new one is issued.
 func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*api.AssumeRoleResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +243,7 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 		chained := inSession && current.role()
 		c := caller{
 			account: m.AccountID, arns: []string{rootARN(m.AccountID)}, action: "sts:AssumeRole",
-			context: map[string]string{"sts:externalid": value(in.ExternalId)},
+			context: map[string]string{"sts:externalid": common.Value(in.ExternalId)},
 		}
 		switch {
 		case chained:
@@ -300,7 +292,7 @@ func (s *Service) GetSessionToken(
 	ctx context.Context,
 	in *api.GetSessionTokenRequest,
 ) (*api.GetSessionTokenResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -376,14 +368,6 @@ func issue(tx storage.WriteTx, issued *session, now time.Time) (*api.Credentials
 		SessionToken:    new(issued.Token),
 		Expiration:      new(time.Unix(issued.Expires, 0).UTC()),
 	}, nil
-}
-
-func value(p *string) string {
-	if p == nil {
-		return ""
-	}
-
-	return *p
 }
 
 func checkAssumeRole(in *api.AssumeRoleRequest) error {

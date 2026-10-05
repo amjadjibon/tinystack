@@ -9,6 +9,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -121,7 +122,7 @@ func checkHealthConfig(tx storage.ReadTx, account string, c *api.HealthCheckConf
 func (s *Service) CreateHealthCheck(
 	ctx context.Context, in *api.CreateHealthCheckRequest,
 ) (*api.CreateHealthCheckResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +180,7 @@ func (s *Service) CreateHealthCheck(
 func (s *Service) GetHealthCheck(
 	ctx context.Context, in *api.GetHealthCheckRequest,
 ) (*api.GetHealthCheckResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +200,7 @@ func (s *Service) GetHealthCheck(
 func (s *Service) ListHealthChecks(
 	ctx context.Context, in *api.ListHealthChecksRequest,
 ) (*api.ListHealthChecksResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +246,7 @@ func (s *Service) ListHealthChecks(
 func (s *Service) UpdateHealthCheck(
 	ctx context.Context, in *api.UpdateHealthCheckRequest,
 ) (*api.UpdateHealthCheckResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +333,7 @@ func (s *Service) UpdateHealthCheck(
 func (s *Service) DeleteHealthCheck(
 	ctx context.Context, in *api.DeleteHealthCheckRequest,
 ) (*api.DeleteHealthCheckResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

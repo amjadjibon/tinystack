@@ -87,7 +87,7 @@ func loadAPI(tx storage.ReadTx, scope request.Scope, id *string) (*api.Api, erro
 }
 
 func (s *Service) CreateApi(ctx context.Context, in *api.CreateApiRequest) (*api.CreateApiResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func targetIntegration(target string) (*api.Integration, error) {
 }
 
 func (s *Service) GetApi(ctx context.Context, in *api.GetApiRequest) (*api.GetApiResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func (s *Service) GetApi(ctx context.Context, in *api.GetApiRequest) (*api.GetAp
 }
 
 func (s *Service) GetApis(ctx context.Context, in *api.GetApisRequest) (*api.GetApisResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (s *Service) GetApis(ctx context.Context, in *api.GetApisRequest) (*api.Get
 }
 
 func (s *Service) UpdateApi(ctx context.Context, in *api.UpdateApiRequest) (*api.UpdateApiResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +356,7 @@ func (s *Service) quickUpdate(tx storage.WriteTx, scope request.Scope, apiID str
 }
 
 func (s *Service) DeleteApi(ctx context.Context, in *api.DeleteApiRequest) (*api.DeleteApiOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +388,7 @@ func (s *Service) DeleteCorsConfiguration(
 	ctx context.Context,
 	in *api.DeleteCorsConfigurationRequest,
 ) (*api.DeleteCorsConfigurationOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

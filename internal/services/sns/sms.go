@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 )
@@ -41,7 +42,7 @@ func (s *Service) publishSMS(ctx context.Context, in *api.PublishInput) (*api.Pu
 		return nil, invalid("MessageGroupId and MessageDeduplicationId are only supported for FIFO topics")
 	}
 
-	if _, err := identity(ctx); err != nil {
+	if _, err := request.Regional(ctx); err != nil {
 		return nil, err
 	}
 

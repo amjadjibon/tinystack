@@ -91,15 +91,6 @@ func unsupported(format string, args ...any) error {
 	return awserror.New("UnsupportedOperationException", fmt.Sprintf(format, args...))
 }
 
-func identity(ctx context.Context) (request.Scope, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Scope{}, fmt.Errorf("missing request identity")
-	}
-
-	return m.Scope, nil
-}
-
 func prefix(scope request.Scope, kind string) string {
 	return scope.AccountID + "/" + scope.Region + "/kms/" + kind + "/"
 }
@@ -249,7 +240,7 @@ func (s *Service) load(tx storage.ReadTx, scope request.Scope, ref *string, alia
 
 // view runs fn on the key that ref names.
 func (s *Service) view(ctx context.Context, ref *string, aliases bool, fn func(request.Scope, *key) error) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -266,7 +257,7 @@ func (s *Service) view(ctx context.Context, ref *string, aliases bool, fn func(r
 
 // change runs fn on the key that ref (a key ID or ARN) names and saves it.
 func (s *Service) change(ctx context.Context, ref *string, fn func(request.Scope, *key) error) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -431,7 +422,7 @@ func checkKeySpec(in *api.CreateKeyRequest) (spec, usage string, err error) {
 }
 
 func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api.CreateKeyResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +486,7 @@ func (s *Service) DescribeKey(ctx context.Context, in *api.DescribeKeyRequest) (
 
 // ListKeys lists the caller's keys, including those pending deletion, in key ID order.
 func (s *Service) ListKeys(ctx context.Context, in *api.ListKeysRequest) (*api.ListKeysResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

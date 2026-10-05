@@ -108,7 +108,7 @@ func (s *Service) AddPermission(
 	ctx context.Context,
 	in *api.AddPermissionRequest,
 ) (*api.AddPermissionResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *Service) AddPermission(
 // GetPolicy returns the resource-based policy of a function, version, or
 // alias.
 func (s *Service) GetPolicy(ctx context.Context, in *api.GetPolicyRequest) (*api.GetPolicyResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (s *Service) RemovePermission(
 	ctx context.Context,
 	in *api.RemovePermissionRequest,
 ) (*api.RemovePermissionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

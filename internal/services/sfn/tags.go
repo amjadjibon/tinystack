@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -13,7 +14,7 @@ import (
 
 // retag replaces the tags of the state machine or activity an ARN names.
 func (s *Service) retag(ctx context.Context, arnString *string, fn func(map[string]string) map[string]string) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func (s *Service) retag(ctx context.Context, arnString *string, fn func(map[stri
 		case arnStateMachine:
 			sm, found, readErr := storage.Read[stateMachine](tx, machineKey(scope, name))
 			if readErr != nil || !found {
-				return errorsOr(readErr, missing)
+				return common.ErrorsOr(readErr, missing)
 			}
 
 			if sm.Tags = fn(sm.Tags); checkTags(sm.Tags) != nil {
@@ -40,7 +41,7 @@ func (s *Service) retag(ctx context.Context, arnString *string, fn func(map[stri
 		case kindActivity:
 			a, found, readErr := storage.Read[activity](tx, activityKey(scope, name))
 			if readErr != nil || !found {
-				return errorsOr(readErr, missing)
+				return common.ErrorsOr(readErr, missing)
 			}
 
 			if a.Tags = fn(a.Tags); checkTags(a.Tags) != nil {
@@ -52,14 +53,6 @@ func (s *Service) retag(ctx context.Context, arnString *string, fn func(map[stri
 
 		return missing
 	})
-}
-
-func errorsOr(err, fallback error) error {
-	if err != nil {
-		return err
-	}
-
-	return fallback
 }
 
 func (s *Service) TagResource(ctx context.Context, in *api.TagResourceInput) (*api.TagResourceOutput, error) {

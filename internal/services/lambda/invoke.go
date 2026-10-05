@@ -258,7 +258,7 @@ func checkPayload(payload []byte, limit int) ([]byte, error) {
 }
 
 func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.InvocationResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

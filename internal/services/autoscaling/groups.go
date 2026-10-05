@@ -285,7 +285,7 @@ func (g *group) apply(tx storage.ReadTx, scope request.Scope, in *settings, wher
 func (s *Service) CreateAutoScalingGroup(
 	ctx context.Context, in *api.CreateAutoScalingGroupType,
 ) (*api.CreateAutoScalingGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func (s *Service) CreateAutoScalingGroup(
 func (s *Service) UpdateAutoScalingGroup(
 	ctx context.Context, in *api.UpdateAutoScalingGroupType,
 ) (*api.UpdateAutoScalingGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func (s *Service) UpdateAutoScalingGroup(
 func (s *Service) DeleteAutoScalingGroup(
 	ctx context.Context, in *api.DeleteAutoScalingGroupType,
 ) (*api.DeleteAutoScalingGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +496,7 @@ func tagFilter(filters []api.Filter, tags []api.TagDescription) (bool, error) {
 func (s *Service) DescribeAutoScalingGroups(
 	ctx context.Context, in *api.AutoScalingGroupNamesType,
 ) (*api.AutoScalingGroupsType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -571,7 +571,7 @@ func cooling(g *group, now time.Time) error {
 func (s *Service) SetDesiredCapacity(
 	ctx context.Context, in *api.SetDesiredCapacityType,
 ) (*api.SetDesiredCapacityOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -624,7 +624,7 @@ func findMember(tx storage.ReadTx, scope request.Scope, id string) (string, erro
 func (s *Service) DescribeAutoScalingInstances(
 	ctx context.Context, in *api.DescribeAutoScalingInstancesType,
 ) (*api.AutoScalingInstancesType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -672,7 +672,7 @@ func (s *Service) DescribeAutoScalingInstances(
 func (s *Service) TerminateInstanceInAutoScalingGroup(
 	ctx context.Context, in *api.TerminateInstanceInAutoScalingGroupType,
 ) (*api.ActivityType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -750,7 +750,7 @@ func (s *Service) changeMembers(ctx context.Context, scope request.Scope, name s
 func (s *Service) SetInstanceProtection(
 	ctx context.Context, in *api.SetInstanceProtectionQuery,
 ) (*api.SetInstanceProtectionAnswer, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -770,7 +770,7 @@ func (s *Service) SetInstanceProtection(
 func (s *Service) SetInstanceHealth(
 	ctx context.Context, in *api.SetInstanceHealthQuery,
 ) (*api.SetInstanceHealthOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -800,7 +800,7 @@ func (s *Service) SetInstanceHealth(
 
 // suspend suspends or resumes processes: all of them when none are named.
 func (s *Service) suspend(ctx context.Context, in *api.ScalingProcessQuery, suspend bool) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}

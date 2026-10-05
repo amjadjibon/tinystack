@@ -18,6 +18,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -239,7 +240,7 @@ type outgoing struct {
 // prepare validates a message independently of its queue. SendMessage passes
 // its request as a batch entry, which has the same message fields.
 func (s *Service) prepare(ctx context.Context, in *api.SendMessageBatchRequestEntry) (*outgoing, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

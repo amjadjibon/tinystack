@@ -29,7 +29,7 @@ func (s *Service) CreateFargateProfile(
 	ctx context.Context,
 	in *api.CreateFargateProfileRequest,
 ) (*api.CreateFargateProfileResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (s *Service) fargate(
 	clusterName, name *string,
 	fn func(storage.WriteTx, request.Scope, *fargateProfile) error,
 ) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 )
 
@@ -73,7 +74,7 @@ func testDefinition(definition, stateName string) (*machine, string, error) {
 }
 
 func (s *Service) TestState(ctx context.Context, in *api.TestStateInput) (*api.TestStateOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

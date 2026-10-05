@@ -74,7 +74,7 @@ func statement(scope request.Scope, bus string, in *api.PutPermissionRequest) (m
 // PutPermission sets a bus's whole policy, or adds a statement that lets an
 // account or organization send it events, replacing one with the same ID.
 func (s *Service) PutPermission(ctx context.Context, in *api.PutPermissionRequest) (*api.PutPermissionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (s *Service) RemovePermission(
 	ctx context.Context,
 	in *api.RemovePermissionRequest,
 ) (*api.RemovePermissionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

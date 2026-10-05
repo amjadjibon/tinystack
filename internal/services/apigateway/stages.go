@@ -78,7 +78,7 @@ func newStage(name, deploymentID, description *string, variables map[string]stri
 }
 
 func (s *Service) CreateDeployment(ctx context.Context, in *api.CreateDeploymentRequest) (*api.Deployment, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func (s *Service) GetDeployments(ctx context.Context, in *api.GetDeploymentsRequ
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, in *api.UpdateDeploymentRequest) (*api.Deployment, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (s *Service) DeleteDeployment(
 	ctx context.Context,
 	in *api.DeleteDeploymentRequest,
 ) (*api.DeleteDeploymentOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (s *Service) DeleteDeployment(
 }
 
 func (s *Service) CreateStage(ctx context.Context, in *api.CreateStageRequest) (*api.Stage, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +425,7 @@ func patchStage(st *api.Stage, ops []api.PatchOperation) error {
 }
 
 func (s *Service) UpdateStage(ctx context.Context, in *api.UpdateStageRequest) (*api.Stage, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -470,7 +470,7 @@ func (s *Service) UpdateStage(ctx context.Context, in *api.UpdateStageRequest) (
 }
 
 func (s *Service) DeleteStage(ctx context.Context, in *api.DeleteStageRequest) (*api.DeleteStageOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

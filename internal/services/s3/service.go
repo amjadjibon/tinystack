@@ -114,15 +114,6 @@ func noSuchBucket() error { return awserror.New("NoSuchBucket", "The specified b
 
 func accessDenied() error { return fail(http.StatusForbidden, "AccessDenied", "Access Denied") }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 // canonicalID is the stable owner ID TinyStack reports for an account.
 func canonicalID(account string) string {
 	sum := sha256.Sum256([]byte("tinystack:" + account))
@@ -208,7 +199,7 @@ func resolve(tx storage.ReadTx, m request.Metadata, name, expectedOwner *string)
 }
 
 func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest) (*api.CreateBucketOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +266,7 @@ func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest)
 }
 
 func (s *Service) DeleteBucket(ctx context.Context, in *api.DeleteBucketRequest) (*api.DeleteBucketOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +293,7 @@ func (s *Service) DeleteBucket(ctx context.Context, in *api.DeleteBucketRequest)
 }
 
 func (s *Service) HeadBucket(ctx context.Context, in *api.HeadBucketRequest) (*api.HeadBucketOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +311,7 @@ func (s *Service) HeadBucket(ctx context.Context, in *api.HeadBucketRequest) (*a
 
 // ListBuckets lists the caller's buckets in every region, by name.
 func (s *Service) ListBuckets(ctx context.Context, in *api.ListBucketsRequest) (*api.ListBucketsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

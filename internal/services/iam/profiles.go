@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -49,7 +50,7 @@ func (s *Service) updateProfile(
 	name *string,
 	fn func(tx storage.WriteTx, account string, p *profile) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -114,7 +115,7 @@ func (s *Service) CreateInstanceProfile(
 	ctx context.Context,
 	in *api.CreateInstanceProfileRequest,
 ) (*api.CreateInstanceProfileResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +168,7 @@ func (s *Service) GetInstanceProfile(
 	ctx context.Context,
 	in *api.GetInstanceProfileRequest,
 ) (*api.GetInstanceProfileResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +195,7 @@ func (s *Service) DeleteInstanceProfile(
 	ctx context.Context,
 	in *api.DeleteInstanceProfileRequest,
 ) (*api.DeleteInstanceProfileOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +258,7 @@ func (s *Service) ListInstanceProfiles(
 	ctx context.Context,
 	in *api.ListInstanceProfilesRequest,
 ) (*api.ListInstanceProfilesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +291,7 @@ func (s *Service) ListInstanceProfilesForRole(
 	ctx context.Context,
 	in *api.ListInstanceProfilesForRoleRequest,
 ) (*api.ListInstanceProfilesForRoleResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +402,7 @@ func (s *Service) ListInstanceProfileTags(
 	ctx context.Context,
 	in *api.ListInstanceProfileTagsRequest,
 ) (*api.ListInstanceProfileTagsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

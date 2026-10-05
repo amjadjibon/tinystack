@@ -16,15 +16,13 @@
 package apigateway
 
 import (
-	"context"
-	"encoding/base64"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
@@ -74,15 +72,6 @@ func conflict(format string, args ...any) error {
 	return awserror.New("ConflictException", fmt.Sprintf(format, args...))
 }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 func prefix(scope request.Scope, kind string) string {
 	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
 }
@@ -118,39 +107,11 @@ func page[T any](items []T, id func(T) string, position *string, limit *int64) (
 		n = int(*limit)
 	}
 
-	start := 0
-	if position != nil {
-		after, decodeErr := base64.RawURLEncoding.DecodeString(*position)
-		if decodeErr != nil || len(after) == 0 {
-			return nil, nil, badRequest("Invalid position.")
-		}
-
-		start = len(items)
-		for i, item := range items {
-			if id(item) > string(after) {
-				start = i
-				break
-			}
-		}
-	}
-
-	items = items[start:]
-	if len(items) <= n {
-		return items, nil, nil
-	}
-
-	next = new(base64.RawURLEncoding.EncodeToString([]byte(id(items[n-1]))))
-	return items[:n], next, nil
+	return common.Page(items, id, position, n, badRequest("Invalid position."))
 }
 
 func checkTags(tags map[string]string) error {
-	for k := range tags {
-		if strings.HasPrefix(strings.ToLower(k), "aws:") {
-			return badRequest("Tag keys cannot start with aws:")
-		}
-	}
-
-	if err := tagging.Check(tags); err != nil {
+	if err := tagging.CheckSet(tags); err != nil {
 		return badRequest("%s", err.Error())
 	}
 

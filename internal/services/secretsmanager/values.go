@@ -6,6 +6,7 @@ import (
 	"maps"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -16,7 +17,7 @@ func (s *Service) PutSecretValue(
 	ctx context.Context,
 	in *api.PutSecretValueRequest,
 ) (*api.PutSecretValueResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +89,7 @@ func (s *Service) GetSecretValue(
 	ctx context.Context,
 	in *api.GetSecretValueRequest,
 ) (*api.GetSecretValueResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +167,7 @@ func (s *Service) ListSecretVersionIds(
 	ctx context.Context,
 	in *api.ListSecretVersionIdsRequest,
 ) (*api.ListSecretVersionIdsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +216,7 @@ func (s *Service) UpdateSecretVersionStage(
 	ctx context.Context,
 	in *api.UpdateSecretVersionStageRequest,
 ) (*api.UpdateSecretVersionStageResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +316,7 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceReques
 
 // retag applies fn to a secret's tags and saves them.
 func (s *Service) retag(ctx context.Context, id *string, fn func(tags map[string]string) error) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}

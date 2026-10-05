@@ -2,13 +2,11 @@ package s3
 
 import (
 	"context"
-	"maps"
 	"net/http"
 	"net/url"
-	"slices"
-	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -22,25 +20,7 @@ func bucketTags(in *api.Tagging) (map[string]string, error) {
 		return nil, fail(http.StatusBadRequest, "MalformedXML", "The XML you provided was not well-formed.")
 	}
 
-	tags := make(map[string]string, len(in.TagSet))
-	for _, tag := range in.TagSet {
-		k := common.Value(tag.Key)
-		if _, dup := tags[k]; dup {
-			return nil, invalidTag("Cannot provide multiple Tags with the same key")
-		}
-
-		if strings.HasPrefix(k, "aws:") {
-			return nil, invalidTag("System tags cannot be added/updated by requester")
-		}
-
-		tags[k] = common.Value(tag.Value)
-	}
-
-	if err := tagging.Check(tags); err != nil {
-		return nil, invalidTag("The TagSet is not valid: " + err.Error())
-	}
-
-	return tags, nil
+	return tagMap(in.TagSet)
 }
 
 // updateBucket applies fn to the caller's bucket metadata and saves it.
@@ -54,7 +34,7 @@ func (s *Service) updateBucket(ctx context.Context, bucket, owner *string, fn fu
 // editBucket applies fn to the caller's bucket metadata and saves it, unless
 // fn fails.
 func (s *Service) editBucket(ctx context.Context, bucket, owner *string, fn func(*bucketMeta) error) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -120,12 +100,7 @@ func (s *Service) GetBucketTagging(
 		return nil, fail(http.StatusNotFound, "NoSuchTagSet", "The TagSet does not exist")
 	}
 
-	out := &api.GetBucketTaggingOutput{}
-	for _, k := range slices.Sorted(maps.Keys(meta.Tags)) {
-		out.TagSet = append(out.TagSet, api.Tag{Key: new(k), Value: new(meta.Tags[k])})
-	}
-
-	return out, nil
+	return &api.GetBucketTaggingOutput{TagSet: tagSet(meta.Tags)}, nil
 }
 
 // maxObjectTags is how many tags an object may have.
@@ -133,22 +108,27 @@ const maxObjectTags = 10
 
 // objectTags validates an object tag set, which replaces the previous one.
 func objectTags(set []api.Tag) (map[string]string, error) {
+	if len(set) > maxObjectTags {
+		return nil, fail(http.StatusBadRequest, "BadRequest", "Object tags cannot be greater than 10")
+	}
+
+	return tagMap(set)
+}
+
+// tagMap validates a bucket or object tag set: no repeated or reserved keys, within the shared limits.
+func tagMap(set []api.Tag) (map[string]string, error) {
 	tags := make(map[string]string, len(set))
 	for _, tag := range set {
-		k, v := common.Value(tag.Key), common.Value(tag.Value)
+		k := common.Value(tag.Key)
 		if _, dup := tags[k]; dup {
 			return nil, invalidTag("Cannot provide multiple Tags with the same key")
 		}
 
-		if strings.HasPrefix(k, "aws:") {
+		if tagging.Reserved(k) {
 			return nil, invalidTag("System tags cannot be added/updated by requester")
 		}
 
-		tags[k] = v
-	}
-
-	if len(tags) > maxObjectTags {
-		return nil, fail(http.StatusBadRequest, "BadRequest", "Object tags cannot be greater than 10")
+		tags[k] = common.Value(tag.Value)
 	}
 
 	if err := tagging.Check(tags); err != nil {
@@ -182,18 +162,13 @@ func headerTags(header *string) (map[string]string, error) {
 
 // tagSet renders tags in key order.
 func tagSet(tags map[string]string) []api.Tag {
-	set := []api.Tag{}
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		set = append(set, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return set
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 }
 
 // retagObject replaces the tags of the caller's object, or of the named
 // version, and returns the version ID to report.
 func (s *Service) retagObject(ctx context.Context, t target, tags map[string]string) (*string, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

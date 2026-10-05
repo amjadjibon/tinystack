@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -33,7 +34,7 @@ func loadRole(tx storage.ReadTx, account string, name *string) (*role, string, e
 
 // viewRole runs fn on the named role.
 func (s *Service) viewRole(ctx context.Context, name *string, fn func(account string, r *role) error) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -55,7 +56,7 @@ func (s *Service) updateRole(
 	name *string,
 	fn func(tx storage.WriteTx, account string, r *role) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -110,7 +111,7 @@ func checkRoleSettings(description *string, maxSession *int64) error {
 }
 
 func (s *Service) CreateRole(ctx context.Context, in *api.CreateRoleRequest) (*api.CreateRoleResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +185,7 @@ func (s *Service) GetRole(ctx context.Context, in *api.GetRoleRequest) (*api.Get
 }
 
 func (s *Service) DeleteRole(ctx context.Context, in *api.DeleteRoleRequest) (*api.DeleteRoleOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +219,7 @@ func (s *Service) DeleteRole(ctx context.Context, in *api.DeleteRoleRequest) (*a
 }
 
 func (s *Service) ListRoles(ctx context.Context, in *api.ListRolesRequest) (*api.ListRolesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

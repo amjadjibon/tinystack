@@ -198,7 +198,7 @@ func (s *Service) PublishStateMachineVersion(
 	ctx context.Context,
 	in *api.PublishStateMachineVersionInput,
 ) (*api.PublishStateMachineVersionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +242,7 @@ func (s *Service) ListStateMachineVersions(
 	ctx context.Context,
 	in *api.ListStateMachineVersionsInput,
 ) (*api.ListStateMachineVersionsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (s *Service) DeleteStateMachineVersion(
 	ctx context.Context,
 	in *api.DeleteStateMachineVersionInput,
 ) (*api.DeleteStateMachineVersionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +384,7 @@ func (s *Service) CreateStateMachineAlias(
 	ctx context.Context,
 	in *api.CreateStateMachineAliasInput,
 ) (*api.CreateStateMachineAliasOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +459,7 @@ func (s *Service) DescribeStateMachineAlias(
 	ctx context.Context,
 	in *api.DescribeStateMachineAliasInput,
 ) (*api.DescribeStateMachineAliasOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +500,7 @@ func (s *Service) UpdateStateMachineAlias(
 	ctx context.Context,
 	in *api.UpdateStateMachineAliasInput,
 ) (*api.UpdateStateMachineAliasOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -553,7 +553,7 @@ func (s *Service) DeleteStateMachineAlias(
 	ctx context.Context,
 	in *api.DeleteStateMachineAliasInput,
 ) (*api.DeleteStateMachineAliasOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -583,7 +583,7 @@ func (s *Service) ListStateMachineAliases(
 	ctx context.Context,
 	in *api.ListStateMachineAliasesInput,
 ) (*api.ListStateMachineAliasesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

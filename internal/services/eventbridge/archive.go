@@ -89,7 +89,7 @@ func (a *archive) state() (state, reason *string) {
 }
 
 func (s *Service) CreateArchive(ctx context.Context, in *api.CreateArchiveRequest) (*api.CreateArchiveResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (s *Service) DescribeArchive(
 	ctx context.Context,
 	in *api.DescribeArchiveRequest,
 ) (*api.DescribeArchiveResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (a *archive) list(scope request.Scope) api.Archive {
 // ListArchives lists the caller's archives in name order, by name prefix,
 // bus, or state.
 func (s *Service) ListArchives(ctx context.Context, in *api.ListArchivesRequest) (*api.ListArchivesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (s *Service) ListArchives(ctx context.Context, in *api.ListArchivesRequest)
 
 // UpdateArchive changes an archive's description, pattern, or retention.
 func (s *Service) UpdateArchive(ctx context.Context, in *api.UpdateArchiveRequest) (*api.UpdateArchiveResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (s *Service) UpdateArchive(ctx context.Context, in *api.UpdateArchiveReques
 
 // DeleteArchive deletes an archive and the events it keeps.
 func (s *Service) DeleteArchive(ctx context.Context, in *api.DeleteArchiveRequest) (*api.DeleteArchiveResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

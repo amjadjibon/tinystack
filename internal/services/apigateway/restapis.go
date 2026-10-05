@@ -49,7 +49,7 @@ func loadAPI(tx storage.ReadTx, scope request.Scope, id *string) (*restAPI, erro
 }
 
 func (s *Service) CreateRestApi(ctx context.Context, in *api.CreateRestApiRequest) (*api.RestApi, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (s *Service) viewAPI(
 	id *string,
 	fn func(tx storage.ReadTx, scope request.Scope, a *restAPI) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (s *Service) changeAPI(
 	id *string,
 	fn func(tx storage.WriteTx, scope request.Scope, a *restAPI) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (s *Service) changeAPI(
 }
 
 func (s *Service) GetRestApis(ctx context.Context, in *api.GetRestApisRequest) (*api.RestApis, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (s *Service) UpdateRestApi(ctx context.Context, in *api.UpdateRestApiReques
 }
 
 func (s *Service) DeleteRestApi(ctx context.Context, in *api.DeleteRestApiRequest) (*api.DeleteRestApiOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

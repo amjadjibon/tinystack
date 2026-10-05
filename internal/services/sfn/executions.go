@@ -253,7 +253,7 @@ func (s *Service) spawn(fn func(context.Context)) bool {
 }
 
 func (s *Service) StartExecution(ctx context.Context, in *api.StartExecutionInput) (*api.StartExecutionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +275,7 @@ func (s *Service) StartSyncExecution(
 	ctx context.Context,
 	in *api.StartSyncExecutionInput,
 ) (*api.StartSyncExecutionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +345,7 @@ func (s *Service) DescribeExecution(
 	ctx context.Context,
 	in *api.DescribeExecutionInput,
 ) (*api.DescribeExecutionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +393,7 @@ func (s *Service) DescribeStateMachineForExecution(
 	ctx context.Context,
 	in *api.DescribeStateMachineForExecutionInput,
 ) (*api.DescribeStateMachineForExecutionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +434,7 @@ var statuses = []string{statusRunning, statusSucceeded, statusFailed, statusTime
 
 // ListExecutions lists a state machine's executions, newest first.
 func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInput) (*api.ListExecutionsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +511,7 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 }
 
 func (s *Service) StopExecution(ctx context.Context, in *api.StopExecutionInput) (*api.StopExecutionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +554,7 @@ func (s *Service) GetExecutionHistory(
 	ctx context.Context,
 	in *api.GetExecutionHistoryInput,
 ) (*api.GetExecutionHistoryOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -113,7 +113,7 @@ func (a *scheduled) next(now time.Time) error {
 func (s *Service) PutScheduledUpdateGroupAction(
 	ctx context.Context, in *api.PutScheduledUpdateGroupActionType,
 ) (*api.PutScheduledUpdateGroupActionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (s *Service) PutScheduledUpdateGroupAction(
 func (s *Service) DescribeScheduledActions(
 	ctx context.Context, in *api.DescribeScheduledActionsType,
 ) (*api.ScheduledActionsType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func (s *Service) DescribeScheduledActions(
 func (s *Service) DeleteScheduledAction(
 	ctx context.Context, in *api.DeleteScheduledActionType,
 ) (*api.DeleteScheduledActionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

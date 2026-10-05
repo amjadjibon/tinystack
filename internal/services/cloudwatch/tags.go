@@ -2,8 +2,6 @@ package cloudwatch
 
 import (
 	"context"
-	"maps"
-	"slices"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -34,7 +32,7 @@ func tagged(scope request.Scope, arn string) (string, error) {
 // retag applies change to the tags of the alarm or dashboard arn names.
 func (s *Service) retag(ctx context.Context, arn string, change func(map[string]string) (map[string]string, error),
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -105,7 +103,7 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceInput)
 func (s *Service) ListTagsForResource(
 	ctx context.Context, in *api.ListTagsForResourceInput,
 ) (*api.ListTagsForResourceOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -139,10 +137,7 @@ func (s *Service) ListTagsForResource(
 		return nil, err
 	}
 
-	out := &api.ListTagsForResourceOutput{Tags: []api.Tag{}}
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out, nil
+	return &api.ListTagsForResourceOutput{
+		Tags: tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} }),
+	}, nil
 }

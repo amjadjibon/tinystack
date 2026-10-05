@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -28,7 +29,7 @@ func (s *Service) Place(ctx context.Context, scope request.Scope, subnets, group
 		for _, id := range subnets {
 			sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, id))
 			if err != nil || !ok {
-				return errorsOr(err, subnetNotFound(id))
+				return common.ErrorsOr(err, subnetNotFound(id))
 			}
 
 			if p.VPC != "" && sn.VPCID != p.VPC {
@@ -45,7 +46,7 @@ func (s *Service) Place(ctx context.Context, scope request.Scope, subnets, group
 		for _, id := range groups {
 			g, ok, err := storage.Read[securityGroup](tx, key(scope, kindSecurityGroup, id))
 			if err != nil || !ok {
-				return errorsOr(err, groupNotFound(id))
+				return common.ErrorsOr(err, groupNotFound(id))
 			}
 
 			if p.VPC != "" && g.VPCID != p.VPC {
@@ -57,12 +58,4 @@ func (s *Service) Place(ctx context.Context, scope request.Scope, subnets, group
 	})
 
 	return p, err
-}
-
-func errorsOr(err, fallback error) error {
-	if err != nil {
-		return err
-	}
-
-	return fallback
 }

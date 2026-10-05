@@ -45,7 +45,7 @@ func (s *Service) retag(
 	arn *string,
 	fn func(map[string]string) (map[string]string, error),
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceReques
 }
 
 func (s *Service) ListTags(ctx context.Context, in *api.ListTagsRequest) (*api.ListTagsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

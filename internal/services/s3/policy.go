@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -16,7 +17,7 @@ const maxPolicyBytes = 20 * 1024
 // bucket reads the caller's bucket metadata.
 func (s *Service) bucket(ctx context.Context, bucket, owner *string) (bucketMeta, error) {
 	var meta bucketMeta
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return meta, err
 	}

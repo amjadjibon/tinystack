@@ -7,6 +7,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -18,7 +19,7 @@ const maxUserData = 21847
 func (s *Service) CreateLaunchConfiguration(
 	ctx context.Context, in *api.CreateLaunchConfigurationType,
 ) (*api.CreateLaunchConfigurationOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (s *Service) CreateLaunchConfiguration(
 func (s *Service) DescribeLaunchConfigurations(
 	ctx context.Context, in *api.LaunchConfigurationNamesType,
 ) (*api.LaunchConfigurationsType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func (s *Service) DescribeLaunchConfigurations(
 func (s *Service) DeleteLaunchConfiguration(
 	ctx context.Context, in *api.LaunchConfigurationNameType,
 ) (*api.DeleteLaunchConfigurationOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

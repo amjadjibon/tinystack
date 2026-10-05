@@ -14,7 +14,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -141,15 +140,6 @@ func ruleNotFound(name, bus string) error {
 	return awserror.New("ResourceNotFoundException", "Rule "+name+" does not exist on EventBus "+bus+".")
 }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 // rulePrefix is the storage prefix of the rules of a bus.
 func rulePrefix(scope request.Scope, bus string) string {
 	if bus == defaultBus {
@@ -182,7 +172,7 @@ func (r *ruleRef) notFound() error { return ruleNotFound(r.name, r.bus) }
 // resolveRule validates a rule reference on a bus given by name or ARN, the
 // default bus when it is absent.
 func resolveRule(ctx context.Context, name, bus *string) (ruleRef, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return ruleRef{}, err
 	}
@@ -455,7 +445,7 @@ func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleRequest) (*a
 }
 
 func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api.ListRulesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

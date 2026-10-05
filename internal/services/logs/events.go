@@ -197,7 +197,7 @@ func (s *Service) PutLogEvents(
 	ctx context.Context,
 	in *api.PutLogEventsRequest,
 ) (*api.PutLogEventsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

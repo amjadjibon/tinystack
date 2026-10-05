@@ -177,7 +177,7 @@ func (s *Service) Decrypt(ctx context.Context, in *api.DecryptRequest) (*api.Dec
 		return nil, err
 	}
 
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

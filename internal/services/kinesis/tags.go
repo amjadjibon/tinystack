@@ -152,11 +152,9 @@ func (s *Service) ListTagsForResource(
 		return nil, err
 	}
 
-	out := &api.ListTagsForResourceOutput{Tags: []api.Tag{}}
+	out := &api.ListTagsForResourceOutput{}
 	err = s.view(ctx, nil, arn, func(_ storage.ReadTx, _ request.Scope, st *stream) error {
-		for _, k := range slices.Sorted(maps.Keys(st.Tags)) {
-			out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(st.Tags[k])})
-		}
+		out.Tags = tagging.List(st.Tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 
 		return nil
 	})

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"maps"
-	"slices"
 	"strings"
 	"time"
 
@@ -58,21 +56,11 @@ func checkMutability(v *string) error {
 }
 
 func tagMap(tags []api.Tag) map[string]string {
-	out := make(map[string]string, len(tags))
-	for _, t := range tags {
-		out[common.Value(t.Key)] = common.Value(t.Value)
-	}
-
-	return out
+	return tagging.Map(tags, func(t api.Tag) (*string, *string) { return t.Key, t.Value })
 }
 
 func tagList(tags map[string]string) []api.Tag {
-	out := make([]api.Tag, 0, len(tags))
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		out = append(out, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 }
 
 // tagError reports a tagging violation with ECR's codes.
@@ -88,7 +76,7 @@ func (s *Service) CreateRepository(
 	ctx context.Context,
 	in *api.CreateRepositoryRequest,
 ) (*api.CreateRepositoryResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +129,7 @@ func (s *Service) DescribeRepositories(
 	ctx context.Context,
 	in *api.DescribeRepositoriesRequest,
 ) (*api.DescribeRepositoriesResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +152,13 @@ func (s *Service) DescribeRepositories(
 		names := in.RepositoryNames
 		if len(names) == 0 {
 			names = suffixes(tx, prefix(m.Scope, "repo"))
-			names, out.NextToken, err = page(names, func(n string) string { return n }, in.NextToken, n)
+			names, out.NextToken, err = common.Page(
+				names,
+				func(n string) string { return n },
+				in.NextToken,
+				n,
+				errPageToken,
+			)
 			if err != nil {
 				return err
 			}
@@ -192,7 +186,7 @@ func (s *Service) DeleteRepository(
 	ctx context.Context,
 	in *api.DeleteRepositoryRequest,
 ) (*api.DeleteRepositoryResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +378,7 @@ func taggedRepo(scope request.Scope, arn *string) (*string, error) {
 
 // tagged runs fn on the repository arn names and stores it after.
 func (s *Service) tagged(ctx context.Context, arn *string, fn func(*repository) error) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -432,7 +426,7 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +453,7 @@ func (s *Service) DescribeRegistry(
 	ctx context.Context,
 	_ *api.DescribeRegistryRequest,
 ) (*api.DescribeRegistryResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

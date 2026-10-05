@@ -203,7 +203,7 @@ func onFailure(in *string, disableRollback *bool) (string, error) {
 }
 
 func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*api.CreateStackOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (s *Service) revise(
 }
 
 func (s *Service) UpdateStack(ctx context.Context, in *api.UpdateStackInput) (*api.UpdateStackOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +416,7 @@ func (s *Service) UpdateStack(ctx context.Context, in *api.UpdateStackInput) (*a
 }
 
 func (s *Service) DeleteStack(ctx context.Context, in *api.DeleteStackInput) (*api.DeleteStackOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -598,7 +598,7 @@ func stacks(tx storage.ReadTx, scope request.Scope) ([]*stack, error) {
 }
 
 func (s *Service) DescribeStacks(ctx context.Context, in *api.DescribeStacksInput) (*api.DescribeStacksOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -633,7 +633,7 @@ func (s *Service) DescribeStacks(ctx context.Context, in *api.DescribeStacksInpu
 }
 
 func (s *Service) ListStacks(ctx context.Context, in *api.ListStacksInput) (*api.ListStacksOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -691,7 +691,7 @@ func (s *Service) ListStacks(ctx context.Context, in *api.ListStacksInput) (*api
 }
 
 func (s *Service) GetTemplate(ctx context.Context, in *api.GetTemplateInput) (*api.GetTemplateOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -738,7 +738,7 @@ func (s *Service) GetTemplate(ctx context.Context, in *api.GetTemplateInput) (*a
 func (s *Service) ValidateTemplate(
 	ctx context.Context, in *api.ValidateTemplateInput,
 ) (*api.ValidateTemplateOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -784,7 +784,7 @@ func (s *Service) ValidateTemplate(
 func (s *Service) GetTemplateSummary(
 	ctx context.Context, in *api.GetTemplateSummaryInput,
 ) (*api.GetTemplateSummaryOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -859,7 +859,7 @@ func (s *Service) GetTemplateSummary(
 func (s *Service) DescribeStackEvents(
 	ctx context.Context, in *api.DescribeStackEventsInput,
 ) (*api.DescribeStackEventsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -969,7 +969,7 @@ func resourcesOf(tx storage.ReadTx, scope request.Scope, name, logical, physical
 func (s *Service) DescribeStackResource(
 	ctx context.Context, in *api.DescribeStackResourceInput,
 ) (*api.DescribeStackResourceOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1013,7 +1013,7 @@ func (s *Service) DescribeStackResource(
 func (s *Service) DescribeStackResources(
 	ctx context.Context, in *api.DescribeStackResourcesInput,
 ) (*api.DescribeStackResourcesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1056,7 +1056,7 @@ func (s *Service) DescribeStackResources(
 func (s *Service) ListStackResources(
 	ctx context.Context, in *api.ListStackResourcesInput,
 ) (*api.ListStackResourcesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1101,7 +1101,7 @@ func (s *Service) ListStackResources(
 }
 
 func (s *Service) ListExports(ctx context.Context, in *api.ListExportsInput) (*api.ListExportsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1139,7 +1139,7 @@ func (s *Service) ListExports(ctx context.Context, in *api.ListExportsInput) (*a
 }
 
 func (s *Service) ListImports(ctx context.Context, in *api.ListImportsInput) (*api.ListImportsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1169,7 +1169,7 @@ func (s *Service) ListImports(ctx context.Context, in *api.ListImportsInput) (*a
 func (s *Service) UpdateTerminationProtection(
 	ctx context.Context, in *api.UpdateTerminationProtectionInput,
 ) (*api.UpdateTerminationProtectionOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

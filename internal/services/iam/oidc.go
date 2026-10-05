@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -87,7 +88,7 @@ func (s *Service) CreateOpenIDConnectProvider(
 	ctx context.Context,
 	in *api.CreateOpenIDConnectProviderRequest,
 ) (*api.CreateOpenIDConnectProviderResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +161,7 @@ func (s *Service) GetOpenIDConnectProvider(
 	ctx context.Context,
 	in *api.GetOpenIDConnectProviderRequest,
 ) (*api.GetOpenIDConnectProviderResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +186,7 @@ func (s *Service) ListOpenIDConnectProviders(
 	ctx context.Context,
 	_ *api.ListOpenIDConnectProvidersRequest,
 ) (*api.ListOpenIDConnectProvidersResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +211,7 @@ func (s *Service) ListOpenIDConnectProviders(
 
 // updateProvider applies change to the provider an ARN names.
 func (s *Service) updateProvider(ctx context.Context, providerARN *string, change func(*oidcProvider) error) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -233,7 +234,7 @@ func (s *Service) DeleteOpenIDConnectProvider(
 	ctx context.Context,
 	in *api.DeleteOpenIDConnectProviderRequest,
 ) (*api.DeleteOpenIDConnectProviderOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

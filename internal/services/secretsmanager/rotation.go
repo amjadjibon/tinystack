@@ -150,7 +150,7 @@ func (s *secret) pending() string {
 // finishSecret steps in the background, and the response carries the new
 // version's ID. A rotation that has not finished blocks another.
 func (s *Service) RotateSecret(ctx context.Context, in *api.RotateSecretRequest) (*api.RotateSecretResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (s *Service) CancelRotateSecret(
 	ctx context.Context,
 	in *api.CancelRotateSecretRequest,
 ) (*api.CancelRotateSecretResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

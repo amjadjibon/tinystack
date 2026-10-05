@@ -2,7 +2,6 @@ package dynamodb
 
 import (
 	"context"
-	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -458,11 +457,9 @@ func (s *Service) ListTagsOfResource(
 		return nil, err
 	}
 
-	out := &api.ListTagsOfResourceOutput{Tags: []api.Tag{}}
+	out := &api.ListTagsOfResourceOutput{}
 	err = s.view(ctx, name, func(t *table) {
-		for _, k := range slices.Sorted(maps.Keys(t.Tags)) {
-			out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(t.Tags[k])})
-		}
+		out.Tags = tagging.List(t.Tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 	})
 	if err != nil {
 		return nil, err

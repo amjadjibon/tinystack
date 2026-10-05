@@ -54,7 +54,7 @@ func taggable(tx storage.ReadTx, scope request.Scope, arn string) (*tagged, erro
 
 // retag replaces the tags of the resource arn names with fn's result.
 func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]string) (map[string]string, error)) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceReques
 }
 
 func (s *Service) GetTags(ctx context.Context, in *api.GetTagsRequest) (*api.GetTagsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

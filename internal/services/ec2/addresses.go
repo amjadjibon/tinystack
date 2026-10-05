@@ -286,7 +286,7 @@ func (s *Service) AssociateAddress(
 		id := common.Value(in.InstanceId)
 		i, ok, err := storage.Read[instance](tx, key(scope, kindInstance, id))
 		if err != nil || !ok || !i.active() {
-			return errorsOr(err, instanceNotFound(id))
+			return common.ErrorsOr(err, instanceNotFound(id))
 		}
 
 		if i.State != stateRunning && i.State != stateStopped {

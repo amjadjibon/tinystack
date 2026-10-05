@@ -2,12 +2,11 @@ package eventbridge
 
 import (
 	"context"
-	"maps"
-	"slices"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -50,7 +49,7 @@ type tagged struct {
 
 // resolveTagged loads the rule or custom bus a tagging ARN names.
 func resolveTagged(ctx context.Context, tx storage.ReadTx, arn *string) (*tagged, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -163,10 +162,7 @@ func (s *Service) ListTagsForResource(
 		return nil, err
 	}
 
-	out := &api.ListTagsForResourceResponse{Tags: []api.Tag{}}
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out, nil
+	return &api.ListTagsForResourceResponse{
+		Tags: tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} }),
+	}, nil
 }

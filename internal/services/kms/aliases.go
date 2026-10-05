@@ -74,7 +74,7 @@ func (s *Service) target(tx storage.ReadTx, scope request.Scope, ref *string) (*
 }
 
 func (s *Service) CreateAlias(ctx context.Context, in *api.CreateAliasRequest) (*api.CreateAliasOutput, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (s *Service) CreateAlias(ctx context.Context, in *api.CreateAliasRequest) (
 }
 
 func (s *Service) UpdateAlias(ctx context.Context, in *api.UpdateAliasRequest) (*api.UpdateAliasOutput, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (s *Service) UpdateAlias(ctx context.Context, in *api.UpdateAliasRequest) (
 }
 
 func (s *Service) DeleteAlias(ctx context.Context, in *api.DeleteAliasRequest) (*api.DeleteAliasOutput, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (s *Service) DeleteAlias(ctx context.Context, in *api.DeleteAliasRequest) (
 
 // ListAliases lists the caller's aliases in name order, or only those of KeyId.
 func (s *Service) ListAliases(ctx context.Context, in *api.ListAliasesRequest) (*api.ListAliasesResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -17,7 +17,7 @@ import (
 // CreateSecret creates a secret, with a first version labeled AWSCURRENT when
 // the request sets a value.
 func (s *Service) CreateSecret(ctx context.Context, in *api.CreateSecretRequest) (*api.CreateSecretResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (s *Service) DescribeSecret(
 	ctx context.Context,
 	in *api.DescribeSecretRequest,
 ) (*api.DescribeSecretResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func createdKey(s *secret) string { return fmt.Sprintf("%016d/%s", s.CreatedAt, 
 // ListSecrets lists secret metadata ordered by creation date, ascending unless
 // SortOrder is desc.
 func (s *Service) ListSecrets(ctx context.Context, in *api.ListSecretsRequest) (*api.ListSecretsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (s *Service) ListSecrets(ctx context.Context, in *api.ListSecretsRequest) (
 // UpdateSecret changes a secret's description or key, and with a value adds
 // a version labeled AWSCURRENT.
 func (s *Service) UpdateSecret(ctx context.Context, in *api.UpdateSecretRequest) (*api.UpdateSecretResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +327,7 @@ func (s *Service) UpdateSecret(ctx context.Context, in *api.UpdateSecretRequest)
 // DeleteSecret schedules a secret for deletion after a recovery window of 7
 // to 30 days, or deletes it at once with ForceDeleteWithoutRecovery.
 func (s *Service) DeleteSecret(ctx context.Context, in *api.DeleteSecretRequest) (*api.DeleteSecretResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ func (s *Service) DeleteSecret(ctx context.Context, in *api.DeleteSecretRequest)
 
 // RestoreSecret cancels a scheduled deletion.
 func (s *Service) RestoreSecret(ctx context.Context, in *api.RestoreSecretRequest) (*api.RestoreSecretResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +402,7 @@ func (s *Service) GetResourcePolicy(
 	ctx context.Context,
 	in *api.GetResourcePolicyRequest,
 ) (*api.GetResourcePolicyResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -63,7 +63,7 @@ func tagMap(tags []api.Tag) (map[string]string, error) {
 			return nil, invalidParameter("Tag keys must not be empty")
 		}
 
-		if strings.HasPrefix(strings.ToLower(k), "aws:") {
+		if tagging.Reserved(k) {
 			return nil, invalidParameter("Tag keys starting with 'aws:' are reserved for internal use")
 		}
 
@@ -113,12 +113,7 @@ func tagList(tags map[string]string) []api.Tag {
 		return nil
 	}
 
-	out := make([]api.Tag, 0, len(tags))
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		out = append(out, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 }
 
 // retag changes the tags of the resource id names, keeping its record's

@@ -65,7 +65,7 @@ func (s *Service) updateUser(
 	name *string,
 	fn func(tx storage.WriteTx, account string, u *user) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func userOutput(account string, u *user, tags bool) *api.User {
 }
 
 func (s *Service) CreateUser(ctx context.Context, in *api.CreateUserRequest) (*api.CreateUserResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (s *Service) CreateUser(ctx context.Context, in *api.CreateUserRequest) (*a
 // GetUser describes the named user; without a name, the IAM user that signed
 // the request, or the account's root user.
 func (s *Service) GetUser(ctx context.Context, in *api.GetUserRequest) (*api.GetUserResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (s *Service) GetUser(ctx context.Context, in *api.GetUserRequest) (*api.Get
 }
 
 func (s *Service) ListUsers(ctx context.Context, in *api.ListUsersRequest) (*api.ListUsersResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (s *Service) ListUsers(ctx context.Context, in *api.ListUsersRequest) (*api
 // UpdateUser changes a user's path or name; renaming keeps the user's ID,
 // access keys, policies, tags, and groups.
 func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*api.UpdateUserOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*a
 
 // DeleteUser deletes a user that has no access keys, policies, or groups left.
 func (s *Service) DeleteUser(ctx context.Context, in *api.DeleteUserRequest) (*api.DeleteUserOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +353,7 @@ func (s *Service) UntagUser(ctx context.Context, in *api.UntagUserRequest) (*api
 
 // viewUser runs fn on the named user.
 func (s *Service) viewUser(ctx context.Context, name *string, fn func(account string, u *user) error) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}

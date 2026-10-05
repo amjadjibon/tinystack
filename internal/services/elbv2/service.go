@@ -17,12 +17,9 @@ package elbv2
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
-	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -77,15 +74,6 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 // invoke Lambda targets. Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 func key(scope request.Scope, kind, name string) string {
 	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/" + name
 }
@@ -126,26 +114,13 @@ func page[T any](items []T, keyOf func(T) string, marker *string, pageSize *int6
 		return nil, nil, validation("PageSize must be 1 to 400.")
 	}
 
-	start := 0
-	if marker != nil {
-		after, decodeErr := base64.RawURLEncoding.DecodeString(*marker)
-		if decodeErr != nil {
-			return nil, nil, validation("The marker '%s' is not valid.", *marker)
-		}
-
-		start = slices.IndexFunc(items, func(item T) bool { return keyOf(item) == string(after) }) + 1
-		if start == 0 {
-			return nil, nil, validation("The marker '%s' is not valid.", *marker)
-		}
-	}
-
-	items = items[start:]
-	if int64(len(items)) <= limit {
-		return items, nil, nil
-	}
-
-	items = items[:limit]
-	return items, new(base64.RawURLEncoding.EncodeToString([]byte(keyOf(items[len(items)-1])))), nil
+	return common.Page(
+		items,
+		keyOf,
+		marker,
+		int(limit),
+		validation("The marker '%s' is not valid.", common.Value(marker)),
+	)
 }
 
 // tagMap validates request tags.
@@ -175,12 +150,7 @@ func checkTags(tags map[string]string) error {
 }
 
 func tagList(tags map[string]string) []api.Tag {
-	out := []api.Tag{}
-	for _, k := range slices.Sorted(maps.Keys(tags)) {
-		out = append(out, api.Tag{Key: new(k), Value: new(tags[k])})
-	}
-
-	return out
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 }
 
 // callContext is the context of an in-process call to another service.

@@ -143,7 +143,7 @@ func (s *Service) CreateNatGateway(
 		id := common.Value(in.SubnetId)
 		sn, ok, readErr := storage.Read[subnet](tx, key(scope, kindSubnet, id))
 		if readErr != nil || !ok {
-			return errorsOr(readErr, subnetNotFound(id))
+			return common.ErrorsOr(readErr, subnetNotFound(id))
 		}
 
 		instances, listErr := list[instance](tx, scope, kindInstance)
@@ -202,7 +202,7 @@ func (s *Service) DeleteNatGateway(
 		id := common.Value(in.NatGatewayId)
 		g, ok, err := storage.Read[natGateway](tx, key(scope, kindNATGateway, id))
 		if err != nil || !ok || !g.visible(now) {
-			return errorsOr(err, natGatewayNotFound(id))
+			return common.ErrorsOr(err, natGatewayNotFound(id))
 		}
 
 		if !g.active() {

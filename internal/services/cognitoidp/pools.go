@@ -508,7 +508,7 @@ func (s *Service) CreateUserPool(
 	ctx context.Context,
 	in *api.CreateUserPoolRequest,
 ) (*api.CreateUserPoolResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -593,7 +593,7 @@ func (s *Service) ListUserPools(
 	ctx context.Context,
 	in *api.ListUserPoolsRequest,
 ) (*api.ListUserPoolsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -619,7 +619,13 @@ func (s *Service) ListUserPools(
 		return nil, err
 	}
 
-	selected, next, err := page(pools, func(p *pool) string { return p.ID }, in.NextToken, int(*in.MaxResults))
+	selected, next, err := common.Page(
+		pools,
+		func(p *pool) string { return p.ID },
+		in.NextToken,
+		int(*in.MaxResults),
+		errPageToken,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -685,7 +691,7 @@ func (s *Service) DeleteUserPool(
 	ctx context.Context,
 	in *api.DeleteUserPoolRequest,
 ) (*api.DeleteUserPoolOutput, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

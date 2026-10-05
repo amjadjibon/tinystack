@@ -3,7 +3,6 @@ package scheduler
 import (
 	"context"
 	"errors"
-	"maps"
 	"slices"
 	"strings"
 
@@ -17,12 +16,7 @@ import (
 )
 
 func tagMap(tags []api.Tag) map[string]string {
-	out := map[string]string{}
-	for _, t := range tags {
-		out[common.Value(t.Key)] = common.Value(t.Value)
-	}
-
-	return out
+	return tagging.Map(tags, func(t api.Tag) (*string, *string) { return t.Key, t.Value })
 }
 
 func tagError(err error) error {
@@ -36,7 +30,7 @@ func tagError(err error) error {
 func (s *Service) CreateScheduleGroup(
 	ctx context.Context, in *api.CreateScheduleGroupInput,
 ) (*api.CreateScheduleGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +70,7 @@ func groupOutput(scope request.Scope, g *group) *api.GetScheduleGroupOutput {
 func (s *Service) GetScheduleGroup(
 	ctx context.Context, in *api.GetScheduleGroupInput,
 ) (*api.GetScheduleGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +91,7 @@ func (s *Service) GetScheduleGroup(
 func (s *Service) DeleteScheduleGroup(
 	ctx context.Context, in *api.DeleteScheduleGroupInput,
 ) (*api.DeleteScheduleGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +119,7 @@ func (s *Service) DeleteScheduleGroup(
 func (s *Service) ListScheduleGroups(
 	ctx context.Context, in *api.ListScheduleGroupsInput,
 ) (*api.ListScheduleGroupsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +192,7 @@ func taggedGroup(scope request.Scope, arn *string) (string, error) {
 
 func (s *Service) retag(ctx context.Context, arn *string, change func(map[string]string) (map[string]string, error),
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -246,7 +240,7 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceInput)
 func (s *Service) ListTagsForResource(
 	ctx context.Context, in *api.ListTagsForResourceInput,
 ) (*api.ListTagsForResourceOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -265,12 +259,9 @@ func (s *Service) ListTagsForResource(
 		return nil, err
 	}
 
-	out := &api.ListTagsForResourceOutput{Tags: []api.Tag{}}
-	for _, k := range slices.Sorted(maps.Keys(g.Tags)) {
-		out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(g.Tags[k])})
-	}
-
-	return out, nil
+	return &api.ListTagsForResourceOutput{
+		Tags: tagging.List(g.Tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} }),
+	}, nil
 }
 
 // Resources lists every schedule group and schedule, for the resource browser.

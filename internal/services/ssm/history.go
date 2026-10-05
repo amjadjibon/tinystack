@@ -7,6 +7,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -30,7 +31,7 @@ func (s *Service) GetParameterHistory(
 	ctx context.Context,
 	in *api.GetParameterHistoryRequest,
 ) (*api.GetParameterHistoryResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +117,7 @@ func (s *Service) updateVersion(
 	number *int64,
 	fn func(p *parameter, v int64),
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}

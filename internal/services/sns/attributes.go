@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"maps"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -342,16 +340,14 @@ func (s *Service) ListTagsForResource(
 		return nil, resourceError(err)
 	}
 
-	out := &api.ListTagsForResourceResponse{Tags: []api.Tag{}}
+	out := &api.ListTagsForResourceResponse{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
 			return loadErr
 		}
 
-		for _, k := range slices.Sorted(maps.Keys(t.Tags)) {
-			out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(t.Tags[k])})
-		}
+		out.Tags = tagging.List(t.Tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 
 		return nil
 	})

@@ -1,7 +1,9 @@
 package common_test
 
 import (
+	"encoding/base64"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -146,5 +148,33 @@ func TestErrorsOr(t *testing.T) {
 	}
 	if got := common.ErrorsOr(nil, fallback); !errors.Is(got, fallback) {
 		t.Fatalf("expected fallback error, got %v", got)
+	}
+}
+
+func TestPage(t *testing.T) {
+	t.Parallel()
+
+	invalid := errors.New("invalid token")
+	items := []string{"a", "b", "d", "e"}
+	id := func(s string) string { return s }
+
+	got, next, err := common.Page(items, id, nil, 2, invalid)
+	if err != nil || !slices.Equal(got, []string{"a", "b"}) || next == nil {
+		t.Fatalf("first page = %v, %v, %v", got, next, err)
+	}
+
+	got, next, err = common.Page(items, id, next, 2, invalid)
+	if err != nil || !slices.Equal(got, []string{"d", "e"}) || next != nil {
+		t.Fatalf("last page = %v, %v, %v", got, next, err)
+	}
+
+	gone := base64.RawURLEncoding.EncodeToString([]byte("c"))
+	if got, _, _ = common.Page(items, id, &gone, 2, invalid); !slices.Equal(got, []string{"d", "e"}) {
+		t.Fatalf("page after a removed item = %v", got)
+	}
+
+	bad := "!"
+	if _, _, err = common.Page(items, id, &bad, 2, invalid); !errors.Is(err, invalid) {
+		t.Fatalf("malformed token error = %v", err)
 	}
 }

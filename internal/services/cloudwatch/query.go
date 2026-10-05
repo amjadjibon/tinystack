@@ -193,7 +193,7 @@ func run(tx storage.ReadTx, scope request.Scope, queries []api.MetricDataQuery, 
 }
 
 func (s *Service) GetMetricData(ctx context.Context, in *api.GetMetricDataInput) (*api.GetMetricDataOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

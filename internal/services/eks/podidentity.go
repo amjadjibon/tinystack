@@ -38,7 +38,7 @@ func (s *Service) CreatePodIdentityAssociation(
 	ctx context.Context,
 	in *api.CreatePodIdentityAssociationRequest,
 ) (*api.CreatePodIdentityAssociationResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (s *Service) changeAssociation(
 	clusterName, id *string,
 	fn func(storage.WriteTx, request.Scope, *association) error,
 ) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (s *Service) ListPodIdentityAssociations(
 	ctx context.Context,
 	in *api.ListPodIdentityAssociationsRequest,
 ) (*api.ListPodIdentityAssociationsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

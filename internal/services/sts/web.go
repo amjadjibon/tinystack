@@ -11,6 +11,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -65,7 +66,7 @@ func checkWebIdentity(in *api.AssumeRoleWithWebIdentityRequest) error {
 		return err
 	}
 
-	if n := len(value(in.WebIdentityToken)); n < 4 || n > 20000 {
+	if n := len(common.Value(in.WebIdentityToken)); n < 4 || n > 20000 {
 		return validation("1 validation error detected: Value at 'webIdentityToken' failed to satisfy constraint: " +
 			"Member must have length between 4 and 20000")
 	}
@@ -176,7 +177,7 @@ func (s *Service) GetAccessKeyInfo(
 	ctx context.Context,
 	in *api.GetAccessKeyInfoRequest,
 ) (*api.GetAccessKeyInfoResponse, error) {
-	id := value(in.AccessKeyId)
+	id := common.Value(in.AccessKeyId)
 	if len(id) < 16 || len(id) > 128 {
 		return nil, validation("1 validation error detected: Value at 'accessKeyId' failed to satisfy constraint: " +
 			"Member must have length between 16 and 128")

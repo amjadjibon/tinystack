@@ -2,29 +2,23 @@ package acm
 
 import (
 	"context"
-	"maps"
-	"slices"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 func tagMap(tags []api.Tag) map[string]string {
-	out := map[string]string{}
-	for _, t := range tags {
-		out[common.Value(t.Key)] = common.Value(t.Value)
-	}
-
-	return out
+	return tagging.Map(tags, func(t api.Tag) (*string, *string) { return t.Key, t.Value })
 }
 
 // retag applies change to the tags of the certificate arn names.
 func (s *Service) retag(ctx context.Context, arn *string, change func(map[string]string) (map[string]string, error),
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -90,10 +84,7 @@ func (s *Service) ListTagsForCertificate(
 		return nil, err
 	}
 
-	out := &api.ListTagsForCertificateResponse{Tags: []api.Tag{}}
-	for _, k := range slices.Sorted(maps.Keys(c.Tags)) {
-		out.Tags = append(out.Tags, api.Tag{Key: new(k), Value: new(c.Tags[k])})
-	}
-
-	return out, nil
+	return &api.ListTagsForCertificateResponse{
+		Tags: tagging.List(c.Tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} }),
+	}, nil
 }

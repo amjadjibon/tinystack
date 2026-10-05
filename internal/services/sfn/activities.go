@@ -39,7 +39,7 @@ func loadActivity(tx storage.ReadTx, m *request.Metadata, arnString *string) (*a
 
 // CreateActivity creates an activity, or returns the one with the name.
 func (s *Service) CreateActivity(ctx context.Context, in *api.CreateActivityInput) (*api.CreateActivityOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (s *Service) DescribeActivity(
 	ctx context.Context,
 	in *api.DescribeActivityInput,
 ) (*api.DescribeActivityOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *Service) DescribeActivity(
 }
 
 func (s *Service) ListActivities(ctx context.Context, in *api.ListActivitiesInput) (*api.ListActivitiesOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (s *Service) ListActivities(ctx context.Context, in *api.ListActivitiesInpu
 }
 
 func (s *Service) DeleteActivity(ctx context.Context, in *api.DeleteActivityInput) (*api.DeleteActivityOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (s *Service) GetActivityTask(
 	ctx context.Context,
 	in *api.GetActivityTaskInput,
 ) (*api.GetActivityTaskOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -367,7 +367,7 @@ func invert(k string) string {
 func (s *Service) DescribeScalingActivities(
 	ctx context.Context, in *api.DescribeScalingActivitiesType,
 ) (*api.ActivitiesType, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

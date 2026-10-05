@@ -188,7 +188,7 @@ func (s *Service) securityGroups(ctx context.Context, scope request.Scope, vpc s
 func (s *Service) CreateLoadBalancer(
 	ctx context.Context, in *api.CreateLoadBalancerInput,
 ) (*api.CreateLoadBalancerOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +298,7 @@ func (s *Service) CreateLoadBalancer(
 func (s *Service) DescribeLoadBalancers(
 	ctx context.Context, in *api.DescribeLoadBalancersInput,
 ) (*api.DescribeLoadBalancersOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +353,7 @@ func (s *Service) DescribeLoadBalancers(
 func (s *Service) DeleteLoadBalancer(
 	ctx context.Context, in *api.DeleteLoadBalancerInput,
 ) (*api.DeleteLoadBalancerOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -386,7 +386,7 @@ func (s *Service) DeleteLoadBalancer(
 
 // changeLB runs fn on a load balancer's record in a transaction and saves it.
 func (s *Service) changeLB(ctx context.Context, arnValue string, fn func(*balancer) error) (*balancer, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +456,7 @@ func (s *Service) ModifyLoadBalancerAttributes(
 func (s *Service) SetSecurityGroups(
 	ctx context.Context, in *api.SetSecurityGroupsInput,
 ) (*api.SetSecurityGroupsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -490,7 +490,7 @@ func (s *Service) SetSecurityGroups(
 }
 
 func (s *Service) SetSubnets(ctx context.Context, in *api.SetSubnetsInput) (*api.SetSubnetsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

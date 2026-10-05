@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -80,7 +81,7 @@ func renameMember(tx storage.WriteTx, account, from, to string) error {
 
 // viewGroup runs fn on the named group.
 func (s *Service) viewGroup(ctx context.Context, name *string, fn func(account string, g *group) error) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func (s *Service) updateGroup(
 	name *string,
 	fn func(tx storage.WriteTx, account string, g *group) error,
 ) error {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return err
 	}
@@ -132,7 +133,7 @@ func groupOutput(account string, g *group) api.Group {
 }
 
 func (s *Service) CreateGroup(ctx context.Context, in *api.CreateGroupRequest) (*api.CreateGroupResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +166,7 @@ func (s *Service) CreateGroup(ctx context.Context, in *api.CreateGroupRequest) (
 
 // GetGroup describes a group and pages through its users.
 func (s *Service) GetGroup(ctx context.Context, in *api.GetGroupRequest) (*api.GetGroupResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +211,7 @@ func (s *Service) GetGroup(ctx context.Context, in *api.GetGroupRequest) (*api.G
 }
 
 func (s *Service) ListGroups(ctx context.Context, in *api.ListGroupsRequest) (*api.ListGroupsResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +239,7 @@ func (s *Service) ListGroupsForUser(
 	ctx context.Context,
 	in *api.ListGroupsForUserRequest,
 ) (*api.ListGroupsForUserResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +285,7 @@ func groupPage(account string, groups []*group, marker *string, maxItems *int64)
 // UpdateGroup changes a group's path or name; renaming keeps its ID, users,
 // and policies.
 func (s *Service) UpdateGroup(ctx context.Context, in *api.UpdateGroupRequest) (*api.UpdateGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +334,7 @@ func (s *Service) UpdateGroup(ctx context.Context, in *api.UpdateGroupRequest) (
 
 // DeleteGroup deletes a group that has no users or policies left.
 func (s *Service) DeleteGroup(ctx context.Context, in *api.DeleteGroupRequest) (*api.DeleteGroupOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

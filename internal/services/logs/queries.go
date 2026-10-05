@@ -97,7 +97,7 @@ func queryGroups(scope request.Scope, in *api.StartQueryRequest) ([]string, erro
 // StartQuery runs a query over the events of its groups whose timestamps fall
 // in [startTime, endTime], both in seconds, newest first.
 func (s *Service) StartQuery(ctx context.Context, in *api.StartQueryRequest) (*api.StartQueryResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (s *Service) GetQueryResults(
 	ctx context.Context,
 	in *api.GetQueryResultsRequest,
 ) (*api.GetQueryResultsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (s *Service) GetQueryResults(
 
 // StopQuery stops nothing, since every query has already completed.
 func (s *Service) StopQuery(ctx context.Context, in *api.StopQueryRequest) (*api.StopQueryResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (s *Service) DescribeQueries(
 	ctx context.Context,
 	in *api.DescribeQueriesRequest,
 ) (*api.DescribeQueriesResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

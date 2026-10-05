@@ -431,7 +431,7 @@ func (s *Service) ListUserPoolClients(
 		return nil, err
 	}
 
-	selected, next, err := page(clients, func(c *client) string { return c.ID }, in.NextToken, n)
+	selected, next, err := common.Page(clients, func(c *client) string { return c.ID }, in.NextToken, n, errPageToken)
 	if err != nil {
 		return nil, err
 	}

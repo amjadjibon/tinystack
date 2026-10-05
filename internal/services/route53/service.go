@@ -59,15 +59,6 @@ func New(store storage.Store) *Service {
 // VPCs are not checked.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 func key(account, kind, name string) string {
 	return account + "/" + service + "/" + kind + "/" + name
 }
@@ -102,7 +93,7 @@ func (s *Service) changeInfo(tx storage.WriteTx, account string, comment *string
 }
 
 func (s *Service) GetChange(ctx context.Context, in *api.GetChangeRequest) (*api.GetChangeResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

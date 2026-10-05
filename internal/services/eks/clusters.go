@@ -211,7 +211,7 @@ func checkEndpoints(v *api.VpcConfigRequest, current *api.VpcConfigResponse) err
 }
 
 func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterRequest) (*api.CreateClusterResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func (s *Service) DescribeCluster(
 	ctx context.Context,
 	in *api.DescribeClusterRequest,
 ) (*api.DescribeClusterResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +430,7 @@ func (s *Service) DescribeCluster(
 }
 
 func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest) (*api.ListClustersResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +463,7 @@ var clusterKinds = []string{
 // with its add-ons, access entries, pod identity associations, and identity
 // provider configs.
 func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterRequest) (*api.DeleteClusterResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -655,7 +655,7 @@ func (s *Service) UpdateClusterConfig(
 	ctx context.Context,
 	in *api.UpdateClusterConfigRequest,
 ) (*api.UpdateClusterConfigResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -695,7 +695,7 @@ func (s *Service) UpdateClusterVersion(
 	ctx context.Context,
 	in *api.UpdateClusterVersionRequest,
 ) (*api.UpdateClusterVersionResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

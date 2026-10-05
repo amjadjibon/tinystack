@@ -76,7 +76,7 @@ func (s *Service) CreateLogStream(
 	ctx context.Context,
 	in *api.CreateLogStreamRequest,
 ) (*api.CreateLogStreamOutput, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (s *Service) DeleteLogStream(
 	ctx context.Context,
 	in *api.DeleteLogStreamRequest,
 ) (*api.DeleteLogStreamOutput, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

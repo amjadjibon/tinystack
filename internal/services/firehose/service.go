@@ -125,15 +125,6 @@ type buffered struct {
 	Arrival float64
 }
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Metadata{}, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 func prefix(scope request.Scope, kind string) string {
 	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
 }
@@ -287,7 +278,7 @@ func (s *Service) CreateDeliveryStream(
 	ctx context.Context,
 	in *api.CreateDeliveryStreamInput,
 ) (*api.CreateDeliveryStreamOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +375,7 @@ func (s *Service) CreateDeliveryStream(
 
 // change runs fn on a delivery stream and stores it.
 func (s *Service) change(ctx context.Context, name *string, fn func(st *deliveryStream) error) error {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
 	}
@@ -411,7 +402,7 @@ func (s *Service) DeleteDeliveryStream(
 	ctx context.Context,
 	in *api.DeleteDeliveryStreamInput,
 ) (*api.DeleteDeliveryStreamOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -467,7 +458,7 @@ func (s *Service) DescribeDeliveryStream(
 	ctx context.Context,
 	in *api.DescribeDeliveryStreamInput,
 ) (*api.DescribeDeliveryStreamOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -513,7 +504,7 @@ func (s *Service) ListDeliveryStreams(
 	ctx context.Context,
 	in *api.ListDeliveryStreamsInput,
 ) (*api.ListDeliveryStreamsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -784,7 +775,7 @@ func (s *Service) buffer(tx storage.WriteTx, scope request.Scope, st *deliverySt
 
 // put buffers records written to a DirectPut delivery stream.
 func (s *Service) put(ctx context.Context, name *string, records [][]byte) (ids []string, encrypted bool, err error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, false, err
 	}

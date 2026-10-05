@@ -95,7 +95,7 @@ func (s *Service) CreateAccessKey(
 	ctx context.Context,
 	in *api.CreateAccessKeyRequest,
 ) (*api.CreateAccessKeyResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (s *Service) ListAccessKeys(
 	ctx context.Context,
 	in *api.ListAccessKeysRequest,
 ) (*api.ListAccessKeysResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (s *Service) UpdateAccessKey(
 	ctx context.Context,
 	in *api.UpdateAccessKeyRequest,
 ) (*api.UpdateAccessKeyOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (s *Service) DeleteAccessKey(
 	ctx context.Context,
 	in *api.DeleteAccessKeyRequest,
 ) (*api.DeleteAccessKeyOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (s *Service) GetAccessKeyLastUsed(
 	ctx context.Context,
 	in *api.GetAccessKeyLastUsedRequest,
 ) (*api.GetAccessKeyLastUsedResponse, error) {
-	m, err := identity(ctx)
+	m, err := request.Global(ctx)
 	if err != nil {
 		return nil, err
 	}

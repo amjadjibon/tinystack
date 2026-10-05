@@ -67,7 +67,7 @@ func shown(k *api.ApiKey, withValue bool) *api.ApiKey {
 }
 
 func (s *Service) CreateApiKey(ctx context.Context, in *api.CreateApiKeyRequest) (*api.ApiKey, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s *Service) CreateApiKey(ctx context.Context, in *api.CreateApiKeyRequest)
 }
 
 func (s *Service) GetApiKey(ctx context.Context, in *api.GetApiKeyRequest) (*api.ApiKey, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Service) GetApiKey(ctx context.Context, in *api.GetApiKeyRequest) (*api
 // GetApiKeys lists the caller's API keys in ID order, optionally those whose
 // name starts with nameQuery or that belong to a customer.
 func (s *Service) GetApiKeys(ctx context.Context, in *api.GetApiKeysRequest) (*api.ApiKeys, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (s *Service) GetApiKeys(ctx context.Context, in *api.GetApiKeysRequest) (*a
 }
 
 func (s *Service) UpdateApiKey(ctx context.Context, in *api.UpdateApiKeyRequest) (*api.ApiKey, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (s *Service) UpdateApiKey(ctx context.Context, in *api.UpdateApiKeyRequest)
 
 // DeleteApiKey deletes an API key and takes it out of its usage plans.
 func (s *Service) DeleteApiKey(ctx context.Context, in *api.DeleteApiKeyRequest) (*api.DeleteApiKeyOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +275,7 @@ func checkLimits(throttle *api.ThrottleSettings, quota *api.QuotaSettings) error
 }
 
 func (s *Service) CreateUsagePlan(ctx context.Context, in *api.CreateUsagePlanRequest) (*api.UsagePlan, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func (s *Service) CreateUsagePlan(ctx context.Context, in *api.CreateUsagePlanRe
 }
 
 func (s *Service) GetUsagePlan(ctx context.Context, in *api.GetUsagePlanRequest) (*api.UsagePlan, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +335,7 @@ func (s *Service) GetUsagePlan(ctx context.Context, in *api.GetUsagePlanRequest)
 // GetUsagePlans lists the caller's usage plans in ID order, optionally those
 // with an API key.
 func (s *Service) GetUsagePlans(ctx context.Context, in *api.GetUsagePlansRequest) (*api.UsagePlans, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +371,7 @@ func (s *Service) GetUsagePlans(ctx context.Context, in *api.GetUsagePlansReques
 // UpdateUsagePlan patches a usage plan: its name, description, throttle, and
 // quota, and "/apiStages", which adds or removes "<API ID>:<stage>".
 func (s *Service) UpdateUsagePlan(ctx context.Context, in *api.UpdateUsagePlanRequest) (*api.UsagePlan, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -437,7 +437,7 @@ func (s *Service) DeleteUsagePlan(
 	ctx context.Context,
 	in *api.DeleteUsagePlanRequest,
 ) (*api.DeleteUsagePlanOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -465,7 +465,7 @@ func (s *Service) CreateUsagePlanKey(
 	ctx context.Context,
 	in *api.CreateUsagePlanKeyRequest,
 ) (*api.UsagePlanKey, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -502,7 +502,7 @@ func (s *Service) CreateUsagePlanKey(
 }
 
 func (s *Service) GetUsagePlanKey(ctx context.Context, in *api.GetUsagePlanKeyRequest) (*api.UsagePlanKey, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -538,7 +538,7 @@ func (s *Service) GetUsagePlanKeys(
 	ctx context.Context,
 	in *api.GetUsagePlanKeysRequest,
 ) (*api.UsagePlanKeys, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -584,7 +584,7 @@ func (s *Service) DeleteUsagePlanKey(
 	ctx context.Context,
 	in *api.DeleteUsagePlanKeyRequest,
 ) (*api.DeleteUsagePlanKeyOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

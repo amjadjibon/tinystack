@@ -157,15 +157,6 @@ var (
 	accountID = regexp.MustCompile(`^\d{12}$`)
 )
 
-func identity(ctx context.Context) (request.Metadata, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return m, fmt.Errorf("missing request identity")
-	}
-
-	return m, nil
-}
-
 //nolint:gocritic // Metadata is an immutable request snapshot.
 func queueKey(m request.Metadata, name string) string {
 	return m.AccountID + "/" + m.Region + "/sqs/" + name
@@ -209,7 +200,7 @@ func QueueURL(queueARN string) (string, bool) {
 // resolve maps a queue URL to the caller's regional queue key. The URL host
 // is ignored so URLs stay valid across localhost aliases.
 func resolve(ctx context.Context, raw *string) (string, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -374,7 +365,7 @@ func (st *settings) apply(attributes map[string]string) error {
 }
 
 func (s *Service) CreateQueue(ctx context.Context, in *api.CreateQueueRequest) (*api.CreateQueueResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +447,7 @@ func (s *Service) DeleteQueue(ctx context.Context, in *api.DeleteQueueRequest) (
 }
 
 func (s *Service) GetQueueUrl(ctx context.Context, in *api.GetQueueUrlRequest) (*api.GetQueueUrlResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +476,7 @@ func (s *Service) GetQueueUrl(ctx context.Context, in *api.GetQueueUrlRequest) (
 }
 
 func (s *Service) ListQueues(ctx context.Context, in *api.ListQueuesRequest) (*api.ListQueuesResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

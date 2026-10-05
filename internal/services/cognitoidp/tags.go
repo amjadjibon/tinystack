@@ -25,7 +25,7 @@ func taggedPool(scope request.Scope, arn *string) (*string, error) {
 
 // tagged runs fn on the pool arn names and stores it after.
 func (s *Service) tagged(ctx context.Context, arn *string, fn func(*pool) error) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

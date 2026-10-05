@@ -10,6 +10,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -84,7 +85,7 @@ func parseHandle(handle string) (string, bool) {
 // callerQueue maps an ARN to the key of a queue in the caller's account and
 // region.
 func callerQueue(ctx context.Context, name, arn string) (string, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -287,7 +288,7 @@ func (s *Service) CancelMessageMoveTask(
 	ctx context.Context,
 	in *api.CancelMessageMoveTaskRequest,
 ) (*api.CancelMessageMoveTaskResult, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

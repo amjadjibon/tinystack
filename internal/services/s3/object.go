@@ -20,6 +20,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -127,7 +128,7 @@ func matches(condition, etag string) bool {
 }
 
 func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api.PutObjectOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +248,7 @@ type found struct {
 // read loads the current object, or the named version, and applies If-Match
 // and If-None-Match.
 func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *string, withBody bool) (*found, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +386,7 @@ func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*a
 // versioned bucket; naming a version deletes that version permanently.
 // Deleting a missing key or version succeeds.
 func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest) (*api.DeleteObjectOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -448,7 +449,7 @@ const maxDeletes = 1000
 // one transaction. A key that is not valid is reported in Errors; Quiet leaves
 // the deleted objects out of the response.
 func (s *Service) DeleteObjects(ctx context.Context, in *api.DeleteObjectsRequest) (*api.DeleteObjectsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -539,7 +540,7 @@ func (s *Service) GetBucketLocation(
 	ctx context.Context,
 	in *api.GetBucketLocationRequest,
 ) (*api.GetBucketLocationOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -627,7 +628,7 @@ func page(keys []string, objects map[string]object, prefix, delimiter, start str
 }
 
 func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Request) (*api.ListObjectsV2Output, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}

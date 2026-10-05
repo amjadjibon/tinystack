@@ -103,7 +103,7 @@ func (s *Service) CreateNodegroup(
 	ctx context.Context,
 	in *api.CreateNodegroupRequest,
 ) (*api.CreateNodegroupResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func (s *Service) DescribeNodegroup(
 	ctx context.Context,
 	in *api.DescribeNodegroupRequest,
 ) (*api.DescribeNodegroupResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +327,7 @@ func (s *Service) names(
 	token *string,
 	limit *int64,
 ) (names []string, next *string, err error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -387,7 +387,7 @@ func (s *Service) changeNodegroup(
 	clusterName, name *string,
 	fn func(storage.WriteTx, request.Scope, *cluster, *nodegroup) error,
 ) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}

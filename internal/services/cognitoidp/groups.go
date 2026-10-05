@@ -170,7 +170,13 @@ func groupPage[T any](
 	n int,
 	respond func([]api.GroupType, *string) *T,
 ) (*T, error) {
-	selected, next, err := page(groups, func(g *api.GroupType) string { return *g.GroupName }, token, n)
+	selected, next, err := common.Page(
+		groups,
+		func(g *api.GroupType) string { return *g.GroupName },
+		token,
+		n,
+		errPageToken,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +363,13 @@ func (s *Service) ListUsersInGroup(
 		return nil, err
 	}
 
-	selected, next, err := page(members, func(u *user) string { return u.Username }, in.NextToken, n)
+	selected, next, err := common.Page(
+		members,
+		func(u *user) string { return u.Username },
+		in.NextToken,
+		n,
+		errPageToken,
+	)
 	if err != nil {
 		return nil, err
 	}

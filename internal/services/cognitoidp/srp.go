@@ -207,7 +207,7 @@ func (s *Service) checkSRP(
 	tx.Delete(k)
 	u, ok, err := storage.Read[user](tx, userKey(scope, p, sess.Username))
 	if err != nil || !ok {
-		return nil, errorsOr(err, userNotFound())
+		return nil, common.ErrorsOr(err, userNotFound())
 	}
 
 	key := srpKey(&srpChallenge{A: sess.A, B: sess.B, b: sess.Private}, u.Verifier)
@@ -217,12 +217,4 @@ func (s *Service) checkSRP(
 	}
 
 	return u, nil
-}
-
-func errorsOr(err, fallback error) error {
-	if err != nil {
-		return err
-	}
-
-	return fallback
 }

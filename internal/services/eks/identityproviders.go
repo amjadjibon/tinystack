@@ -67,7 +67,7 @@ func (s *Service) AssociateIdentityProviderConfig(
 	ctx context.Context,
 	in *api.AssociateIdentityProviderConfigRequest,
 ) (*api.AssociateIdentityProviderConfigResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (s *Service) DescribeIdentityProviderConfig(
 	ctx context.Context,
 	in *api.DescribeIdentityProviderConfigRequest,
 ) (*api.DescribeIdentityProviderConfigResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (s *Service) ListIdentityProviderConfigs(
 	ctx context.Context,
 	in *api.ListIdentityProviderConfigsRequest,
 ) (*api.ListIdentityProviderConfigsResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (s *Service) DisassociateIdentityProviderConfig(
 	ctx context.Context,
 	in *api.DisassociateIdentityProviderConfigRequest,
 ) (*api.DisassociateIdentityProviderConfigResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

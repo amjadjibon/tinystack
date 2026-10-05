@@ -19,7 +19,6 @@ package ecs
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"log/slog"
@@ -91,21 +90,14 @@ func invalidParameter(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))
 }
 
+var errPageToken = invalidParameter("Invalid token")
+
 func clientError(format string, args ...any) error {
 	return awserror.New("ClientException", fmt.Sprintf(format, args...))
 }
 
 func clusterNotFound() error {
 	return awserror.New("ClusterNotFoundException", "Cluster not found.")
-}
-
-func identity(ctx context.Context) (request.Scope, error) {
-	m, ok := request.FromContext(ctx)
-	if !ok || m.AccountID == "" || m.Region == "" {
-		return request.Scope{}, fmt.Errorf("missing request identity")
-	}
-
-	return m.Scope, nil
 }
 
 func prefix(scope request.Scope, kind string) string {
@@ -122,40 +114,6 @@ func seconds(t time.Time) *float64 {
 	}
 
 	return common.SecondsMilli(t)
-}
-
-// page returns the items after the one token names, at most limit of them, and
-// the token for the rest, if any. Tokens are the last returned item's ID.
-func page[T any](items []T, id func(T) string, token *string, limit int) (selected []T, next *string, err error) {
-	start := 0
-	if token != nil {
-		after, decodeErr := base64.RawURLEncoding.DecodeString(*token)
-		if decodeErr != nil || len(after) == 0 {
-			return nil, nil, invalidParameter("Invalid token")
-		}
-
-		// The item after the token's, or after where it would be in
-		// ascending order if it is gone.
-		start = len(items)
-		for i, item := range items {
-			if id(item) == string(after) {
-				start = i + 1
-				break
-			}
-
-			if id(item) > string(after) && start == len(items) {
-				start = i
-			}
-		}
-	}
-
-	items = items[start:]
-	if len(items) <= limit {
-		return items, nil, nil
-	}
-
-	next = new(base64.RawURLEncoding.EncodeToString([]byte(id(items[limit-1]))))
-	return items[:limit], next, nil
 }
 
 // limit validates an optional page size of 1 to 100, which defaults to def.

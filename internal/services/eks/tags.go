@@ -115,7 +115,7 @@ func (s *Service) retag(
 	resourceARN *string,
 	fn func(map[string]string) (map[string]string, error),
 ) error {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -139,8 +139,8 @@ func (s *Service) retag(
 func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (*api.TagResourceResponse, error) {
 	err := s.retag(ctx, in.ResourceArn, func(tags map[string]string) (map[string]string, error) {
 		maps.Copy(tags, in.Tags)
-		if problem := tagProblem(tags); problem != "" {
-			return nil, awserror.New("BadRequestException", problem)
+		if err := tagging.CheckSet(tags); err != nil {
+			return nil, awserror.New("BadRequestException", err.Error())
 		}
 
 		return tags, nil
@@ -167,7 +167,7 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	scope, err := identity(ctx)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

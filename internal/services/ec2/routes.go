@@ -436,14 +436,14 @@ func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *r
 	case want.NATGatewayID != "":
 		g, found, err := storage.Read[natGateway](tx, key(scope, kindNATGateway, want.NATGatewayID))
 		if err != nil || !found || !g.active() {
-			return errorsOr(err, natGatewayNotFound(want.NATGatewayID))
+			return common.ErrorsOr(err, natGatewayNotFound(want.NATGatewayID))
 		}
 
 		vpcID = g.VPCID
 	default:
 		i, found, err := storage.Read[instance](tx, key(scope, kindInstance, want.InstanceID))
 		if err != nil || !found || !i.active() {
-			return errorsOr(err, instanceNotFound(want.InstanceID))
+			return common.ErrorsOr(err, instanceNotFound(want.InstanceID))
 		}
 
 		vpcID = i.VPCID
@@ -577,7 +577,7 @@ func (s *Service) AssociateRouteTable(
 
 		sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, a.SubnetID))
 		if err != nil || !ok {
-			return errorsOr(err, subnetNotFound(a.SubnetID))
+			return common.ErrorsOr(err, subnetNotFound(a.SubnetID))
 		}
 
 		if sn.VPCID != rt.VPCID {

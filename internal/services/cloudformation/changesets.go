@@ -77,7 +77,7 @@ func findChangeSet(tx storage.ReadTx, scope request.Scope, stackName, name strin
 func (s *Service) CreateChangeSet(
 	ctx context.Context, in *api.CreateChangeSetInput,
 ) (*api.CreateChangeSetOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ func mentions(v any, params map[string]bool) bool {
 func (s *Service) DescribeChangeSet(
 	ctx context.Context, in *api.DescribeChangeSetInput,
 ) (*api.DescribeChangeSetOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func (s *Service) DescribeChangeSet(
 func (s *Service) ExecuteChangeSet(
 	ctx context.Context, in *api.ExecuteChangeSetInput,
 ) (*api.ExecuteChangeSetOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +460,7 @@ func (s *Service) execute(
 func (s *Service) DeleteChangeSet(
 	ctx context.Context, in *api.DeleteChangeSetInput,
 ) (*api.DeleteChangeSetOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -488,7 +488,7 @@ func (s *Service) DeleteChangeSet(
 func (s *Service) ListChangeSets(
 	ctx context.Context, in *api.ListChangeSetsInput,
 ) (*api.ListChangeSetsOutput, error) {
-	m, err := identity(ctx)
+	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
