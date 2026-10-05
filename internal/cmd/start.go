@@ -271,6 +271,8 @@ func newStartCommand() *cobra.Command {
 			tables.UseCaller(caller)
 			// Asynchronous invocations send results to their destinations.
 			functions.UseCaller(caller)
+			// GraphQL data sources reach DynamoDB and EventBridge.
+			graphQL.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err

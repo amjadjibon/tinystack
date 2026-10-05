@@ -320,6 +320,14 @@ func TestAppSyncDataSourcesResolversAndFunctions(t *testing.T) {
 		t.Fatalf("CreateResolver PIPELINE: %v", err)
 	}
 
+	_, err = c.CreateFunction(ctx, &appsync.CreateFunctionInput{
+		ApiId: aws.String(id), Name: aws.String("broken"), DataSourceName: aws.String("local"), Runtime: runtime,
+		Code: aws.String("export function request(ctx) { return {"),
+	})
+	if code := errorCode(err); code != "BadRequestException" {
+		t.Fatalf("CreateFunction with broken code: %v", err)
+	}
+
 	byFunction, err := c.ListResolversByFunction(ctx, &appsync.ListResolversByFunctionInput{
 		ApiId: aws.String(id), FunctionId: fn.FunctionConfiguration.FunctionId,
 	})

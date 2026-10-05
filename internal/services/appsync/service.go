@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -48,7 +49,9 @@ type Service struct {
 	functions *lambda.Service
 	pools     *cognitoidp.Service
 	verifier  *proxy.Verifier
-	now       func() time.Time
+	// caller reaches the DynamoDB and EventBridge data sources.
+	caller *catalog.Caller
+	now    func() time.Time
 }
 
 // New returns the service. Resolvers and Lambda authorizers invoke functions,
@@ -56,6 +59,9 @@ type Service struct {
 func New(store storage.Store, functions *lambda.Service, pools *cognitoidp.Service) *Service {
 	return &Service{store: store, functions: functions, pools: pools, verifier: proxy.NewVerifier(), now: time.Now}
 }
+
+// UseCaller lets DynamoDB and EventBridge data sources call those services.
+func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 func badRequest(format string, args ...any) error {
 	return awserror.New("BadRequestException", fmt.Sprintf(format, args...))

@@ -41,6 +41,12 @@ func (c code) check() error {
 		return badRequest("maxBatchSize must be between 0 and 2000.")
 	}
 
+	if c.source != nil {
+		if _, err := compile(*c.source); err != nil {
+			return badRequest("The code contains one or more errors: %s", err.Error())
+		}
+	}
+
 	return nil
 }
 

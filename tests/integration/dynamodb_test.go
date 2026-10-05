@@ -230,6 +230,7 @@ func serverStore(
 	logGroups.UseCaller(caller)
 	tables.UseCaller(caller)
 	functions.UseCaller(caller)
+	graphQL.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)

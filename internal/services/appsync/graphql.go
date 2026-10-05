@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/dop251/goja"
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/formatter"
@@ -37,13 +38,17 @@ type graph struct {
 	schema    *ast.Schema
 	resolvers map[string]*api.Resolver
 	sources   map[string]*api.DataSource
+	functions map[string]*api.FunctionConfiguration
 	// keyValid reports whether the request's x-api-key is a live key.
 	keyValid bool
 }
 
 // load reads the API id names in scope, checking apiKey against its keys.
 func (s *Service) load(ctx context.Context, scope request.Scope, id, apiKey string) (*graph, error) {
-	g := &graph{resolvers: map[string]*api.Resolver{}, sources: map[string]*api.DataSource{}}
+	g := &graph{
+		resolvers: map[string]*api.Resolver{}, sources: map[string]*api.DataSource{},
+		functions: map[string]*api.FunctionConfiguration{},
+	}
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
 		if g.api, err = loadAPI(tx, scope, &id); err != nil {
@@ -70,6 +75,15 @@ func (s *Service) load(ctx context.Context, scope request.Scope, id, apiKey stri
 
 		for _, d := range sources {
 			g.sources[*d.Name] = d
+		}
+
+		functions, err := storage.Records[api.FunctionConfiguration](tx, owned(scope, kindFunction, id, ""))
+		if err != nil {
+			return err
+		}
+
+		for _, f := range functions {
+			g.functions[*f.FunctionId] = f
 		}
 
 		if apiKey != "" {
@@ -246,16 +260,19 @@ func (r *session) resolve(ctx context.Context, res *resolution) (value any, hand
 			"The request ran more than the API's limit of %d resolvers.", limit)}
 	}
 
-	if resolver.Runtime != nil || resolver.RequestMappingTemplate != nil || resolver.ResponseMappingTemplate != nil ||
-		common.Value(resolver.Kind) == kindPipeline {
-		return nil, true, &fieldError{Type: "UnsupportedResolver", Message: fmt.Sprintf(
-			"TinyStack runs only direct Lambda resolvers; %s.%s has code, mapping templates, or functions.",
-			res.parent.Name, res.def.Name)}
+	switch {
+	case resolver.RequestMappingTemplate != nil || resolver.ResponseMappingTemplate != nil:
+		return nil, true, unsupported(res, "VTL mapping templates")
+	case resolver.Runtime != nil:
+		value, err = r.runJS(ctx, res, resolver)
+		return value, true, err
+	case common.Value(resolver.Kind) == kindPipeline:
+		return nil, true, unsupported(res, "a pipeline without code")
 	}
 
 	source := r.graph.sources[common.Value(resolver.DataSourceName)]
 	if source == nil || common.Value(source.Type) != sourceLambda {
-		return nil, true, &fieldError{Type: "UnsupportedResolver", Message: fmt.Sprintf(
+		return nil, true, &fieldError{Type: errorUnsupported, Message: fmt.Sprintf(
 			"The resolver of %s.%s has neither code nor mapping templates, so it needs a Lambda data source.",
 			res.parent.Name, res.def.Name)}
 	}
@@ -263,6 +280,131 @@ func (r *session) resolve(ctx context.Context, res *resolution) (value any, hand
 	value, err = r.invoke(ctx, *source.LambdaConfig.LambdaFunctionArn, r.event(res),
 		common.Value(resolver.MaxBatchSize) > 0)
 	return value, true, err
+}
+
+func unsupported(res *resolution, what string) error {
+	return &fieldError{Type: errorUnsupported, Message: fmt.Sprintf(
+		"TinyStack does not run %s, which %s.%s uses.", what, res.parent.Name, res.def.Name)}
+}
+
+// runJS runs an APPSYNC_JS resolver: its request handler, then its data
+// source or, in a pipeline, each function's request handler, data source, and
+// response handler, then its response handler.
+func (r *session) runJS(ctx context.Context, res *resolution, resolver *api.Resolver) (any, error) {
+	event := r.event(res)
+	event["prev"], event["result"], event["error"] = map[string]any{"result": nil}, nil, nil
+	j, err := newJS(event, &res.appended)
+	if err != nil {
+		return nil, err
+	}
+
+	defer j.stop()
+	h, err := j.load(*resolver.Code)
+	if err != nil {
+		return nil, err
+	}
+
+	before, err := j.call(h.request)
+	if errors.Is(err, errThrown) {
+		return j.export(j.early)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if common.Value(resolver.Kind) == kindPipeline {
+		if pipelineErr := r.pipeline(ctx, j, before, resolver.PipelineConfig); pipelineErr != nil {
+			return nil, pipelineErr
+		}
+	} else if stepErr := r.step(ctx, j, r.graph.sources[common.Value(resolver.DataSourceName)], before); stepErr != nil {
+		return nil, stepErr
+	}
+
+	out, err := j.call(h.response)
+	if errors.Is(err, errThrown) {
+		out, err = j.early, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return j.export(out)
+}
+
+// pipeline runs a pipeline's functions in order, each seeing the one before's
+// result as ctx.prev.result, the first the resolver's request handler's.
+func (r *session) pipeline(ctx context.Context, j *jsRun, before goja.Value, config *api.PipelineConfig) error {
+	prev := before
+	for _, id := range common.OrElse(config, &api.PipelineConfig{}).Functions {
+		if err := j.setPrev(prev); err != nil {
+			return err
+		}
+
+		f := r.graph.functions[id]
+		switch {
+		case f == nil:
+			return &fieldError{Type: errorCode, Message: "Function " + id + " no longer exists."}
+		case f.Runtime == nil:
+			return &fieldError{Type: errorUnsupported, Message: fmt.Sprintf(
+				"TinyStack does not run VTL mapping templates, which function %s uses.", *f.Name)}
+		}
+
+		h, err := j.load(*f.Code)
+		if err != nil {
+			return err
+		}
+
+		req, err := j.call(h.request)
+		if errors.Is(err, errThrown) {
+			prev = j.early
+			continue
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if stepErr := r.step(ctx, j, r.graph.sources[*f.DataSourceName], req); stepErr != nil {
+			return stepErr
+		}
+
+		if prev, err = j.call(h.response); errors.Is(err, errThrown) {
+			prev, err = j.early, nil
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return j.setPrev(prev)
+}
+
+// step sends a request handler's result to a data source and sets ctx.result
+// and ctx.error for the response handler.
+func (r *session) step(ctx context.Context, j *jsRun, d *api.DataSource, req goja.Value) error {
+	if d == nil {
+		return &fieldError{Type: errorCode, Message: "The data source no longer exists."}
+	}
+
+	payload, err := j.export(req)
+	if err != nil {
+		return err
+	}
+
+	result, err := r.invokeSource(ctx, d, payload)
+	failure, isSource := errors.AsType[*sourceError](err)
+	if err != nil && !isSource {
+		return err
+	}
+
+	if setErr := j.set("result", result); setErr != nil {
+		return setErr
+	}
+
+	return j.set("error", failure)
 }
 
 // event is the payload a direct Lambda resolver receives.
@@ -317,8 +459,8 @@ func selectionList(set ast.SelectionSet, prefix string, out []string) []string {
 
 // invoke calls a function with event, as a batch of one when batch is set,
 // and returns the field's value.
-func (r *session) invoke(ctx context.Context, arn string, event map[string]any, batch bool) (any, error) {
-	var payload any = event
+func (r *session) invoke(ctx context.Context, arn string, event any, batch bool) (any, error) {
+	payload := event
 	if batch {
 		payload = []any{event}
 	}

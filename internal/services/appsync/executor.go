@@ -85,11 +85,13 @@ type group struct {
 // resolution is what a resolver needs to resolve one field.
 type resolution struct {
 	source any
-	args   map[string]any
-	parent *ast.Definition
-	def    *ast.FieldDefinition
-	group  group
-	path   []any
+	// appended are errors the resolver reports beside its value.
+	appended []*fieldError
+	args     map[string]any
+	parent   *ast.Definition
+	def      *ast.FieldDefinition
+	group    group
+	path     []any
 }
 
 // executor runs one operation of a validated query document.
@@ -235,9 +237,16 @@ func (e *executor) field(ctx context.Context, obj *ast.Definition, g group, sour
 	default:
 		var handled bool
 		var err error
+		var r *resolution
 		if e.resolve != nil {
-			r := &resolution{source: source, args: args, parent: obj, def: def, group: g, path: path}
+			r = &resolution{source: source, args: args, parent: obj, def: def, group: g, path: path}
 			value, handled, err = e.resolve(ctx, r)
+		}
+
+		if r != nil {
+			for _, fe := range r.appended {
+				e.failWith(path, f, fe)
+			}
 		}
 
 		if err != nil {
