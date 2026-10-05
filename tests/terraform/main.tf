@@ -21,6 +21,7 @@ provider "aws" {
     autoscaling    = var.endpoint
     apigateway     = var.endpoint
     apigatewayv2   = var.endpoint
+    appsync        = var.endpoint
     cloudformation = var.endpoint
     cloudwatch     = var.endpoint
     cognitoidp     = var.endpoint
@@ -666,6 +667,102 @@ resource "aws_cloudwatch_log_group" "echo" {
   name              = "/aws/lambda/echo"
   retention_in_days = 7
   tags              = local.tags
+}
+
+resource "aws_appsync_graphql_api" "notes" {
+  name                = "notes-${var.team}"
+  authentication_type = "API_KEY"
+  tags                = local.tags
+
+  additional_authentication_provider {
+    authentication_type = "AWS_IAM"
+  }
+
+  schema = <<-EOT
+    type Note @aws_api_key @aws_iam {
+      id: ID!
+      team: String
+    }
+
+    type Query {
+      note(id: ID!): Note @aws_api_key @aws_iam
+      notes: [Note]
+    }
+
+    schema {
+      query: Query
+    }
+  EOT
+}
+
+resource "aws_appsync_api_key" "notes" {
+  api_id      = aws_appsync_graphql_api.notes.id
+  description = "Key for ${var.team}"
+}
+
+resource "aws_appsync_datasource" "echo" {
+  api_id           = aws_appsync_graphql_api.notes.id
+  name             = "echo"
+  type             = "AWS_LAMBDA"
+  service_role_arn = aws_iam_role.lambda.arn
+
+  lambda_config {
+    function_arn = aws_lambda_function.echo.arn
+  }
+}
+
+resource "aws_appsync_resolver" "note" {
+  api_id      = aws_appsync_graphql_api.notes.id
+  type        = "Query"
+  field       = "note"
+  data_source = aws_appsync_datasource.echo.name
+}
+
+resource "aws_appsync_function" "load" {
+  api_id      = aws_appsync_graphql_api.notes.id
+  data_source = aws_appsync_datasource.echo.name
+  name        = "load_${var.team}"
+
+  runtime {
+    name            = "APPSYNC_JS"
+    runtime_version = "1.0.0"
+  }
+
+  code = <<-EOT
+    export function request(ctx) {
+      return { operation: "Invoke", payload: ctx.args };
+    }
+
+    export function response(ctx) {
+      return ctx.result;
+    }
+  EOT
+}
+
+resource "aws_appsync_resolver" "notes" {
+  api_id = aws_appsync_graphql_api.notes.id
+  type   = "Query"
+  field  = "notes"
+  kind   = "PIPELINE"
+
+  runtime {
+    name            = "APPSYNC_JS"
+    runtime_version = "1.0.0"
+  }
+
+  pipeline_config {
+    functions = [aws_appsync_function.load.function_id]
+  }
+
+  code = <<-EOT
+    export function request(ctx) {
+      return {};
+    }
+
+    export function response(ctx) {
+      return ctx.prev.result;
+    }
+  EOT
 }
 
 resource "aws_apigatewayv2_api" "echo" {

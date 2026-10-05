@@ -16,6 +16,7 @@ const (
 	authCognito = "AMAZON_COGNITO_USER_POOLS"
 	authOIDC    = "OPENID_CONNECT"
 	authLambda  = "AWS_LAMBDA"
+	typeGraphQL = "GRAPHQL"
 )
 
 // view runs fn in a read transaction in the caller's account and region.
@@ -137,6 +138,13 @@ func (s *Service) CreateGraphqlApi(
 		return nil, checkErr
 	}
 
+	switch {
+	case common.Value(in.ApiType) != "" && *in.ApiType != typeGraphQL:
+		return nil, badRequest("TinyStack supports GRAPHQL APIs only, not %s.", *in.ApiType)
+	case common.Value(in.Visibility) != "" && *in.Visibility != "GLOBAL":
+		return nil, badRequest("TinyStack supports GLOBAL APIs only, not %s.", *in.Visibility)
+	}
+
 	id := common.RandomID(26)
 	scheme, h := host(m.Endpoint, id)
 	a := &api.GraphqlApi{
@@ -144,10 +152,10 @@ func (s *Service) CreateGraphqlApi(
 			id,
 		),
 		Arn:                 new(apiARN(m.Scope, id)),
-		Uris:                map[string]string{"GRAPHQL": scheme + "://" + h + "/graphql"},
-		Dns:                 map[string]string{"GRAPHQL": h},
+		Uris:                map[string]string{typeGraphQL: scheme + "://" + h + "/graphql"},
+		Dns:                 map[string]string{typeGraphQL: h},
 		Visibility:          new("GLOBAL"),
-		ApiType:             new("GRAPHQL"),
+		ApiType:             new(typeGraphQL),
 		Owner:               new(m.AccountID),
 		XrayEnabled:         new(false),
 		IntrospectionConfig: new("ENABLED"),

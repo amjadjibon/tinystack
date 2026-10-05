@@ -39,7 +39,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				ARN: common.Value(a.Arn), Tags: a.Tags,
 				Details: map[string]any{
 					"ApiId": *a.ApiId, "AuthenticationType": common.Value(a.AuthenticationType),
-					"Endpoint": a.Uris["GRAPHQL"], "DataSources": sources,
+					"Endpoint": a.Uris[typeGraphQL], "DataSources": sources,
 				},
 			})
 		}

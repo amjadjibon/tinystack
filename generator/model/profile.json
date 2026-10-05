@@ -11746,6 +11746,8 @@
         "introspectionConfig",
         "queryDepthLimit",
         "resolverCountLimit",
+        "apiType",
+        "visibility",
         "tags"
       ],
       "CreateGraphqlApiResponse": [
