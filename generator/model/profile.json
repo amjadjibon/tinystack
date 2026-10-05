@@ -5802,7 +5802,12 @@
       "InitiateAuth",
       "AdminInitiateAuth",
       "RespondToAuthChallenge",
-      "AdminRespondToAuthChallenge"
+      "AdminRespondToAuthChallenge",
+      "CreateResourceServer",
+      "DescribeResourceServer",
+      "UpdateResourceServer",
+      "DeleteResourceServer",
+      "ListResourceServers"
     ],
     "shapes": {
       "CreateUserPoolRequest": [
@@ -6406,6 +6411,54 @@
       "PreTokenGenerationVersionConfigType": [
         "LambdaVersion",
         "LambdaArn"
+      ],
+      "CreateResourceServerRequest": [
+        "UserPoolId",
+        "Identifier",
+        "Name",
+        "Scopes"
+      ],
+      "CreateResourceServerResponse": [
+        "ResourceServer"
+      ],
+      "DescribeResourceServerRequest": [
+        "UserPoolId",
+        "Identifier"
+      ],
+      "DescribeResourceServerResponse": [
+        "ResourceServer"
+      ],
+      "UpdateResourceServerRequest": [
+        "UserPoolId",
+        "Identifier",
+        "Name",
+        "Scopes"
+      ],
+      "UpdateResourceServerResponse": [
+        "ResourceServer"
+      ],
+      "DeleteResourceServerRequest": [
+        "UserPoolId",
+        "Identifier"
+      ],
+      "ListResourceServersRequest": [
+        "UserPoolId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListResourceServersResponse": [
+        "ResourceServers",
+        "NextToken"
+      ],
+      "ResourceServerType": [
+        "UserPoolId",
+        "Identifier",
+        "Name",
+        "Scopes"
+      ],
+      "ResourceServerScopeType": [
+        "ScopeName",
+        "ScopeDescription"
       ]
     }
   },

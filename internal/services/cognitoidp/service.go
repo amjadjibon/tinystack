@@ -83,7 +83,7 @@ func prefix(scope request.Scope, kind string) string {
 }
 
 // poolKinds are the record kinds a pool owns, each under <kind>/<pool ID>/.
-var poolKinds = []string{"client", "user", "alias", "group", "refresh", "session"}
+var poolKinds = []string{"client", "user", "alias", "group", "refresh", "session", kindResourceServer}
 
 func poolKey(scope request.Scope, id string) string { return prefix(scope, "pool") + id }
 

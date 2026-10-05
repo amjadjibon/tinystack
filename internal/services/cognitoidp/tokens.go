@@ -27,6 +27,12 @@ const (
 	adminScope    = "aws.cognito.signin.user.admin"
 	algorithm     = "RS256"
 	claimUsername = "username"
+	claimIssuer   = "iss"
+	claimAuthTime = "auth_time"
+	claimJTI      = "jti"
+	claimExpires  = "exp"
+	claimTokenUse = "token_use"
+	claimIssuedAt = "iat"
 	// The ways tokens are earned, as triggers name them.
 	sourceAuth        = "Authentication"
 	sourceNewPassword = "NewPasswordChallenge"
@@ -162,9 +168,15 @@ func tokens(
 	iss := issuer(ctx, p.ID)
 	common := func(use string, validity time.Duration) map[string]any {
 		claims := map[string]any{
-			"sub": u.Attributes[attrSub], "iss": iss, "origin_jti": sess.origin, "event_id": newSub(),
-			"token_use": use, "auth_time": sess.auth.Unix(), "iat": now.Unix(), "exp": now.Add(validity).Unix(),
-			"jti": newSub(),
+			"sub":         u.Attributes[attrSub],
+			claimIssuer:   iss,
+			"origin_jti":  sess.origin,
+			"event_id":    newSub(),
+			claimTokenUse: use,
+			claimAuthTime: sess.auth.Unix(),
+			claimIssuedAt: now.Unix(),
+			claimExpires:  now.Add(validity).Unix(),
+			claimJTI:      newSub(),
 		}
 		if len(u.Groups) > 0 {
 			claims["cognito:groups"] = u.Groups
@@ -314,7 +326,7 @@ type accessToken struct {
 func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, error) {
 	invalid := notAuthorized("Invalid Access Token")
 	claims, err := claimsOf(value(token))
-	if err != nil || claims["token_use"] != "access" {
+	if err != nil || claims[claimTokenUse] != "access" {
 		return nil, invalid
 	}
 
@@ -441,6 +453,8 @@ func (s *Service) Documents(ctx context.Context, id, name, endpoint string) (doc
 	iss := strings.TrimSuffix(endpoint, "/") + "/" + id
 	doc, err = json.Marshal(map[string]any{
 		"issuer": iss, "jwks_uri": iss + "/.well-known/jwks.json", "subject_types_supported": []string{"public"},
+		"token_endpoint": iss + "/oauth2/token", "grant_types_supported": []string{flowClientCredentials},
+		"token_endpoint_auth_methods_supported": []string{"client_secret_basic", "client_secret_post"},
 		"id_token_signing_alg_values_supported": []string{algorithm}, "response_types_supported": []string{"code"},
 	})
 	return doc, true, err

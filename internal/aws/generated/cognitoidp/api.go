@@ -863,6 +863,67 @@ type AdminRespondToAuthChallengeResponse struct {
 	AuthenticationResult *AuthenticationResultType `json:"AuthenticationResult,omitempty"`
 }
 
+type ResourceServerScopeType struct {
+	ScopeName        *string `json:"ScopeName,omitempty"`
+	ScopeDescription *string `json:"ScopeDescription,omitempty"`
+}
+
+type CreateResourceServerRequest struct {
+	UserPoolId *string                   `json:"UserPoolId,omitempty"`
+	Identifier *string                   `json:"Identifier,omitempty"`
+	Name       *string                   `json:"Name,omitempty"`
+	Scopes     []ResourceServerScopeType `json:"Scopes,omitempty"`
+}
+
+type ResourceServerType struct {
+	UserPoolId *string                   `json:"UserPoolId,omitempty"`
+	Identifier *string                   `json:"Identifier,omitempty"`
+	Name       *string                   `json:"Name,omitempty"`
+	Scopes     []ResourceServerScopeType `json:"Scopes,omitempty"`
+}
+
+type CreateResourceServerResponse struct {
+	ResourceServer *ResourceServerType `json:"ResourceServer,omitempty"`
+}
+
+type DescribeResourceServerRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Identifier *string `json:"Identifier,omitempty"`
+}
+
+type DescribeResourceServerResponse struct {
+	ResourceServer *ResourceServerType `json:"ResourceServer,omitempty"`
+}
+
+type UpdateResourceServerRequest struct {
+	UserPoolId *string                   `json:"UserPoolId,omitempty"`
+	Identifier *string                   `json:"Identifier,omitempty"`
+	Name       *string                   `json:"Name,omitempty"`
+	Scopes     []ResourceServerScopeType `json:"Scopes,omitempty"`
+}
+
+type UpdateResourceServerResponse struct {
+	ResourceServer *ResourceServerType `json:"ResourceServer,omitempty"`
+}
+
+type DeleteResourceServerOutput struct{}
+
+type DeleteResourceServerRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	Identifier *string `json:"Identifier,omitempty"`
+}
+
+type ListResourceServersRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type ListResourceServersResponse struct {
+	ResourceServers []ResourceServerType `json:"ResourceServers,omitempty"`
+	NextToken       *string              `json:"NextToken,omitempty"`
+}
+
 type API interface {
 	CreateUserPool(context.Context, *CreateUserPoolRequest) (*CreateUserPoolResponse, error)
 	DescribeUserPool(context.Context, *DescribeUserPoolRequest) (*DescribeUserPoolResponse, error)
@@ -919,6 +980,11 @@ type API interface {
 	AdminInitiateAuth(context.Context, *AdminInitiateAuthRequest) (*AdminInitiateAuthResponse, error)
 	RespondToAuthChallenge(context.Context, *RespondToAuthChallengeRequest) (*RespondToAuthChallengeResponse, error)
 	AdminRespondToAuthChallenge(context.Context, *AdminRespondToAuthChallengeRequest) (*AdminRespondToAuthChallengeResponse, error)
+	CreateResourceServer(context.Context, *CreateResourceServerRequest) (*CreateResourceServerResponse, error)
+	DescribeResourceServer(context.Context, *DescribeResourceServerRequest) (*DescribeResourceServerResponse, error)
+	UpdateResourceServer(context.Context, *UpdateResourceServerRequest) (*UpdateResourceServerResponse, error)
+	DeleteResourceServer(context.Context, *DeleteResourceServerRequest) (*DeleteResourceServerOutput, error)
+	ListResourceServers(context.Context, *ListResourceServersRequest) (*ListResourceServersResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1081,6 +1147,21 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"AdminRespondToAuthChallenge": {Name: "AdminRespondToAuthChallenge", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminRespondToAuthChallenge", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminRespondToAuthChallengeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.AdminRespondToAuthChallenge(ctx, input.(*AdminRespondToAuthChallengeRequest))
+		}},
+		"CreateResourceServer": {Name: "CreateResourceServer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.CreateResourceServer", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateResourceServerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateResourceServer(ctx, input.(*CreateResourceServerRequest))
+		}},
+		"DescribeResourceServer": {Name: "DescribeResourceServer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DescribeResourceServer", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeResourceServerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeResourceServer(ctx, input.(*DescribeResourceServerRequest))
+		}},
+		"UpdateResourceServer": {Name: "UpdateResourceServer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.UpdateResourceServer", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateResourceServerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateResourceServer(ctx, input.(*UpdateResourceServerRequest))
+		}},
+		"DeleteResourceServer": {Name: "DeleteResourceServer", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DeleteResourceServer", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteResourceServerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteResourceServer(ctx, input.(*DeleteResourceServerRequest))
+		}},
+		"ListResourceServers": {Name: "ListResourceServers", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.ListResourceServers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListResourceServersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListResourceServers(ctx, input.(*ListResourceServersRequest))
 		}},
 	}}
 }

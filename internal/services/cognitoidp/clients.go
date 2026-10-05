@@ -29,6 +29,9 @@ const (
 	flowSRP           = "ALLOW_USER_SRP_AUTH"
 	flowCustom        = "ALLOW_CUSTOM_AUTH"
 
+	// flowClientCredentials is the OAuth client credentials grant.
+	flowClientCredentials = "client_credentials"
+
 	legacyUserPassword  = "USER_PASSWORD_AUTH"
 	legacyAdminPassword = "ADMIN_NO_SRP_AUTH" // #nosec G101 -- an auth flow name, not a credential.
 )
@@ -135,8 +138,9 @@ func (c *clientSettings) flows() []string {
 	return out
 }
 
-// checkClient validates client settings against the pool and fills defaults.
-func checkClient(c *clientSettings, p *pool, secret bool) error {
+// checkClient validates client settings against the pool, whose resource
+// servers define the custom scopes, and fills defaults.
+func checkClient(c *clientSettings, p *pool, custom []string, secret bool) error {
 	if err := checkValidity(c); err != nil {
 		return err
 	}
@@ -171,7 +175,7 @@ func checkClient(c *clientSettings, p *pool, secret bool) error {
 		return invalidParameter("The sub attribute cannot be writable.")
 	}
 
-	if err := checkOAuth(c, secret); err != nil {
+	if err := checkOAuth(c, custom, secret); err != nil {
 		return err
 	}
 
@@ -235,27 +239,35 @@ func checkValidity(c *clientSettings) error {
 	return nil
 }
 
-func checkOAuth(c *clientSettings, secret bool) error {
+func checkOAuth(c *clientSettings, custom []string, secret bool) error {
 	for _, flow := range c.AllowedOAuthFlows {
-		if flow != "code" && flow != "implicit" && flow != "client_credentials" {
+		if flow != "code" && flow != "implicit" && flow != flowClientCredentials {
 			return invalidParameter("Invalid OAuth flow %s.", flow)
 		}
 	}
 
 	for _, scope := range c.AllowedOAuthScopes {
-		if !slices.Contains(oauthScopes, scope) {
+		if !slices.Contains(oauthScopes, scope) && !slices.Contains(custom, scope) {
 			return awserror.New("ScopeDoesNotExistException", "Invalid scope requested: "+scope)
 		}
 	}
 
-	if slices.Contains(c.AllowedOAuthFlows, "client_credentials") {
-		if !secret {
+	if slices.Contains(c.AllowedOAuthFlows, flowClientCredentials) {
+		switch {
+		case !secret:
 			return awserror.New("InvalidOAuthFlowException",
 				"client_credentials flow can not be selected if client does not have a client secret.")
+		case len(c.AllowedOAuthFlows) > 1:
+			return awserror.New("InvalidOAuthFlowException",
+				"client_credentials flow can not be selected along with code flow or implicit flow.")
 		}
 
-		return awserror.New("InvalidOAuthFlowException",
-			"client_credentials flow needs resource server scopes, which TinyStack does not support.")
+		for _, scope := range c.AllowedOAuthScopes {
+			if !slices.Contains(custom, scope) {
+				return awserror.New("InvalidOAuthFlowException",
+					"client_credentials flow can only be used with custom scopes, not "+scope+".")
+			}
+		}
 	}
 
 	if value(c.AllowedOAuthFlowsUserPoolClient) && (len(c.AllowedOAuthFlows) == 0 || len(c.AllowedOAuthScopes) == 0) {
@@ -328,7 +340,12 @@ func (s *Service) CreateUserPoolClient(
 
 	var c *client
 	err = s.update(ctx, in.UserPoolId, func(tx storage.WriteTx, scope request.Scope, p *pool) error {
-		if settingsErr := checkClient(&st, p, value(in.GenerateSecret)); settingsErr != nil {
+		custom, scopesErr := customScopes(tx, scope, p.ID)
+		if scopesErr != nil {
+			return scopesErr
+		}
+
+		if settingsErr := checkClient(&st, p, custom, value(in.GenerateSecret)); settingsErr != nil {
 			return settingsErr
 		}
 
@@ -449,7 +466,12 @@ func (s *Service) UpdateUserPoolClient(
 			return loadErr
 		}
 
-		if settingsErr := checkClient(&st, p, c.Secret != ""); settingsErr != nil {
+		custom, scopesErr := customScopes(tx, scope, p.ID)
+		if scopesErr != nil {
+			return scopesErr
+		}
+
+		if settingsErr := checkClient(&st, p, custom, c.Secret != ""); settingsErr != nil {
 			return settingsErr
 		}
 

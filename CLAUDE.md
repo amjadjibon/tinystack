@@ -249,7 +249,9 @@ a per-service `Dialect`), and delivers synchronously through
   `aws/cognitoidp/client/<client ID>` and `aws/cognitoidp/pool/<pool ID>` indexes find a pool from the unsigned
   sign-in operations (the generator marks `optionalAuth` operations `Anonymous`, and `gateway/auth.go` lets them
   through unsigned in verify mode). Each pool lazily gets an RSA key that signs its RS256 JWTs; `Service.Documents`,
-  mounted with `gateway.Server.UseDocuments`, serves `/<pool ID>/.well-known/{jwks.json,openid-configuration}`.
+  mounted with `gateway.Server.UseDocuments`, serves `/<pool ID>/.well-known/{jwks.json,openid-configuration}`,
+  and `Service.Token` (`oauth.go`, mounted with `Server.UseTokens`) serves the client credentials grant at
+  `/<pool ID>/oauth2/token` with the custom scopes of the pool's resource servers (`resourceservers.go`).
   Passwords are bcrypt hashes plus an SRP verifier (`srp.go`), and every code, invitation, and temporary password is
   recorded in the `delivery.Log` after the change commits. Lambda triggers (`triggers.go`) call
   `lambda.Service.Invoke` outside transactions: a transaction decides on a `call`, and the operation makes it after

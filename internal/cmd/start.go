@@ -270,6 +270,7 @@ func newStartCommand() *cobra.Command {
 
 			handler.UseCredentials(tokens.Credentials)
 			handler.UseDocuments(identities.Documents)
+			handler.UseTokens(identities.Token)
 			handler.UseRegistry(registry)
 			handler.UseCORS(buckets.CORS)
 			handler.UseAPIs(httpAPIs, restAPIs)

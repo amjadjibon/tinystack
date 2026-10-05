@@ -48,6 +48,7 @@ type Server struct {
 	internal    map[string]http.Handler
 	credentials CredentialLookup
 	documents   Documents
+	tokens      Tokens
 	registry    Registry
 	cors        CORS
 	apis        []execute.Handler
@@ -66,6 +67,11 @@ type CredentialLookup func(ctx context.Context, accessKey string) (request.Crede
 // pool's "jwks.json" or "openid-configuration", and whether it has one.
 // endpoint is the base URL the client used.
 type Documents func(ctx context.Context, issuer, name, endpoint string) ([]byte, bool, error)
+
+// Tokens serves an issuer's OAuth 2.0 token endpoint: it takes the issuer,
+// the base URL the client used, the Authorization header, and the form, and
+// returns the status and JSON body.
+type Tokens func(ctx context.Context, issuer, endpoint, authorization string, form url.Values) (int, []byte, error)
 
 // call is a request classified to a protocol and, once known, a service.
 type call struct {
@@ -141,6 +147,44 @@ func (s *Server) UseCredentials(lookup CredentialLookup) {
 // so these paths never name an object. Call it before serving requests.
 func (s *Server) UseDocuments(documents Documents) {
 	s.documents = documents
+}
+
+// UseTokens serves POST /<issuer>/oauth2/token through tokens.
+func (s *Server) UseTokens(tokens Tokens) {
+	s.tokens = tokens
+}
+
+// serveToken serves an issuer's token endpoint, reporting whether the request
+// asked for it.
+func (s *Server) serveToken(w http.ResponseWriter, r *http.Request) bool {
+	issuer, ok := strings.CutSuffix(strings.TrimPrefix(r.URL.Path, "/"), "/oauth2/token")
+	if s.tokens == nil || !ok || !strings.Contains(issuer, "_") || strings.Contains(issuer, "/") {
+		return false
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_, _ = w.Write([]byte(`{"error":"invalid_request"}`))
+		return true
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+	if err := r.ParseForm(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"invalid_request"}`))
+		return true
+	}
+
+	status, body, err := s.tokens(r.Context(), issuer, "http://"+r.Host, r.Header.Get("Authorization"), r.PostForm)
+	if err != nil {
+		s.logger.Error("serve token", "issuer", issuer, "error", err)
+	}
+
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(status)
+	_, _ = w.Write(body)
+	return true
 }
 
 // serveDocument serves an issuer's well-known document, reporting whether
@@ -633,7 +677,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.serveDocument(w, r) || s.serveRegistry(w, r) || s.serveAPI(w, r) || s.servePreflight(w, r) {
+	if s.serveDocument(w, r) || s.serveToken(w, r) || s.serveRegistry(w, r) || s.serveAPI(w, r) ||
+		s.servePreflight(w, r) {
 		return
 	}
 
