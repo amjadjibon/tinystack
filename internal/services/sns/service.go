@@ -9,7 +9,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"maps"
 	"regexp"
@@ -21,6 +20,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -113,13 +113,7 @@ var (
 	accountID = regexp.MustCompile(`^\d{12}$`)
 )
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func invalid(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", "Invalid parameter: "+fmt.Sprintf(format, args...))
@@ -210,27 +204,18 @@ func newID() string {
 }
 
 func load(tx storage.ReadTx, key string) (*topic, error) {
-	data, ok := tx.Get(key)
-	if !ok {
-		return nil, notFound("Topic")
-	}
-
-	var t topic
-	if err := json.Unmarshal(data, &t); err != nil {
+	t, found, err := storage.Read[topic](tx, key)
+	if err != nil {
 		return nil, fmt.Errorf("decode topic: %w", err)
 	}
-
-	return &t, nil
+	if !found {
+		return nil, notFound("Topic")
+	}
+	return t, nil
 }
 
 func save(tx storage.WriteTx, key string, t *topic) error {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Errorf("encode topic: %w", err)
-	}
-
-	tx.Put(key, data)
-	return nil
+	return storage.Write(tx, key, t)
 }
 
 // page returns the sorted names after the NextToken and the token for the next page.

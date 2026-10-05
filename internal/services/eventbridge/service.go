@@ -14,7 +14,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -25,6 +24,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
@@ -133,13 +133,7 @@ var (
 	inputPath = regexp.MustCompile(`^\$(\.[A-Za-z0-9_-]+|\[\d+\])*$`)
 )
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func invalid(format string, args ...any) error {
 	return awserror.Validation(format, args...)
@@ -217,27 +211,11 @@ func newID() string {
 }
 
 func load(tx storage.ReadTx, key string) (*rule, bool, error) {
-	data, ok := tx.Get(key)
-	if !ok {
-		return nil, false, nil
-	}
-
-	var r rule
-	if err := json.Unmarshal(data, &r); err != nil {
-		return nil, false, fmt.Errorf("decode rule: %w", err)
-	}
-
-	return &r, true, nil
+	return storage.Read[rule](tx, key)
 }
 
 func save(tx storage.WriteTx, key string, r *rule) error {
-	data, err := json.Marshal(r)
-	if err != nil {
-		return fmt.Errorf("encode rule: %w", err)
-	}
-
-	tx.Put(key, data)
-	return nil
+	return storage.Write(tx, key, r)
 }
 
 // update loads an existing rule, applies fn, and saves it.

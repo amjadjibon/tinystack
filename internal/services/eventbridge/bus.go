@@ -2,8 +2,6 @@ package eventbridge
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -67,27 +65,11 @@ func busName(scope request.Scope, ref *string) (string, error) {
 }
 
 func loadBus(tx storage.ReadTx, scope request.Scope, name string) (*bus, bool, error) {
-	data, ok := tx.Get(busPrefix(scope) + name)
-	if !ok {
-		return nil, false, nil
-	}
-
-	var b bus
-	if err := json.Unmarshal(data, &b); err != nil {
-		return nil, false, fmt.Errorf("decode event bus: %w", err)
-	}
-
-	return &b, true, nil
+	return storage.Read[bus](tx, busPrefix(scope)+name)
 }
 
 func saveBus(tx storage.WriteTx, scope request.Scope, b *bus) error {
-	data, err := json.Marshal(b)
-	if err != nil {
-		return fmt.Errorf("encode event bus: %w", err)
-	}
-
-	tx.Put(busPrefix(scope)+b.Name, data)
-	return nil
+	return storage.Write(tx, busPrefix(scope)+b.Name, b)
 }
 
 // checkBus reports a custom bus that does not exist.

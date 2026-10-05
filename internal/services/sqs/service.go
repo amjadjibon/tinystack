@@ -4,7 +4,6 @@ package sqs
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -18,6 +17,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -140,13 +140,7 @@ type queue struct {
 	Sequence     int64 `json:",omitempty"`
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func missing(name string) error {
 	return awserror.New("MissingParameter", "The request must contain the parameter "+name+".")
@@ -244,27 +238,18 @@ func resolve(ctx context.Context, raw *string) (string, error) {
 }
 
 func load(tx storage.ReadTx, key string) (*queue, error) {
-	data, ok := tx.Get(key)
-	if !ok {
-		return nil, notFound()
-	}
-
-	var q queue
-	if err := json.Unmarshal(data, &q); err != nil {
+	q, found, err := storage.Read[queue](tx, key)
+	if err != nil {
 		return nil, fmt.Errorf("decode queue: %w", err)
 	}
-
-	return &q, nil
+	if !found {
+		return nil, notFound()
+	}
+	return q, nil
 }
 
 func save(tx storage.WriteTx, key string, q *queue) error {
-	data, err := json.Marshal(q)
-	if err != nil {
-		return fmt.Errorf("encode queue: %w", err)
-	}
-
-	tx.Put(key, data)
-	return nil
+	return storage.Write(tx, key, q)
 }
 
 func defaults() settings {

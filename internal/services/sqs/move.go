@@ -81,27 +81,11 @@ func parseHandle(handle string) (string, bool) {
 }
 
 func loadTask(tx storage.ReadTx, key string) (*moveTask, bool, error) {
-	data, ok := tx.Get(key)
-	if !ok {
-		return nil, false, nil
-	}
-
-	var t moveTask
-	if err := json.Unmarshal(data, &t); err != nil {
-		return nil, false, fmt.Errorf("decode move task: %w", err)
-	}
-
-	return &t, true, nil
+	return storage.Read[moveTask](tx, key)
 }
 
 func saveTask(tx storage.WriteTx, key string, t *moveTask) error {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Errorf("encode move task: %w", err)
-	}
-
-	tx.Put(key, data)
-	return nil
+	return storage.Write(tx, key, t)
 }
 
 // callerQueue maps an ARN to the key of a queue in the caller's account and

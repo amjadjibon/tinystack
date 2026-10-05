@@ -15,7 +15,6 @@ package kinesis
 import (
 	"context"
 	"crypto/md5" // #nosec G501 -- Kinesis maps partition keys to hash keys with MD5.
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"regexp"
@@ -25,6 +24,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -148,39 +148,15 @@ func ParseStreamARN(arn string) (request.Scope, string, bool) {
 	return request.Scope{AccountID: parts[4], Region: parts[3]}, name, true
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
-	tx.Put(k, data)
-	return nil
-}
-
-func unix(t time.Time) float64 { return float64(t.UnixMilli()) / 1000 }
+func unix(t time.Time) float64 { return common.Unix(t) }
 
 var streamName = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,128}$`)
 
