@@ -464,9 +464,13 @@ Use the shared helpers directly instead of copying them or wrapping them in pack
 - `internal/common`: `Value`, `OrElse`, `Clone`, `CloneTags`, `RandomID`, `Seconds`, `SecondsMilli`, `Unix`,
   `ErrorsOr`, and `Page` (base64 last-ID pagination; a service passes its own invalid-token error).
 - `internal/storage`: `Read[T]`, `Write`, and `Records[T]` for JSON records.
-- `internal/aws/request`: `Regional`, `Global` (account-wide services), and `RegionalScope` for the caller's identity.
+- `internal/aws/request`: `Regional`, `Global` (account-wide services), and `RegionalScope` for the caller's identity;
+  `Scope.Prefix(service, kind)` and `Scope.Key(service, kind, name)` for `<account>/<region>/<service>/<kind>/` keys.
 - `services/tagging`: `Check`, `CheckSet` (also rejects the reserved `aws:` prefix), `Reserved`, `Merge`, `Remove`,
-  `Map`, and `List` (a sorted, non-nil tag list).
+  `Map` (a tag list to a map, failing with the service's own missing and duplicate errors), and `List` (a sorted,
+  non-nil tag list).
+- `services/background`: `Group` owns a service's background goroutines: `Every` for periodic work, `Go` for one-off
+  work (refused once stopping), and `Stop`, which reports true only to the call that stopped it.
 
 Make pointers with the built-in `new(v)`, which accepts an expression, never a `Ptr` helper or a temporary
 variable. A local helper is fine only when it adds behavior (validation, a service's error code, a fixed argument).
