@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 )
 
@@ -100,20 +102,34 @@ func (s *Server) UseFunctionURLs(handler execute.Handler) {
 	s.functionURLs = handler
 }
 
-// lambdaURLTarget returns the function URL a request addresses and the path
-// after it, if the request is to one.
-func lambdaURLTarget(r *http.Request) (id, path, endpoint string, ok bool) {
-	if sub, _, found := strings.Cut(r.Host, ".lambda-url."); found && sub != "" && !strings.Contains(sub, ".") {
+// graphQLPath is the path prefix that addresses an AppSync GraphQL API by its
+// ID: /_aws/appsync-api/<API ID>/graphql.
+const graphQLPath = "/_aws/appsync-api/"
+
+// UseGraphQL serves AppSync GraphQL APIs: requests to
+// <API ID>.appsync-api.<host> (such as abc.appsync-api.localhost:4566 or
+// abc.appsync-api.us-east-1.amazonaws.com), or to
+// /_aws/appsync-api/<API ID>/... on any host. Call it before serving
+// requests.
+func (s *Server) UseGraphQL(handler execute.Handler) {
+	s.graphQL = handler
+}
+
+// labelTarget returns the ID a request addresses and the path after it, if
+// the request is to <ID><marker>... or to <prefix><ID>/... on any host, as
+// requests to function URLs and GraphQL APIs are.
+func labelTarget(r *http.Request, marker, prefix string) (id, path, endpoint string, ok bool) {
+	if sub, _, found := strings.Cut(r.Host, marker); found && sub != "" && !strings.Contains(sub, ".") {
 		return sub, r.URL.Path, "http://" + r.Host, true
 	}
 
-	rest, found := strings.CutPrefix(r.URL.Path, lambdaURLPath)
+	rest, found := strings.CutPrefix(r.URL.Path, prefix)
 	if !found {
 		return "", "", "", false
 	}
 
 	id, path, _ = strings.Cut(rest, "/")
-	return id, "/" + path, "http://" + r.Host + lambdaURLPath + id, id != ""
+	return id, "/" + path, "http://" + r.Host + prefix + id, id != ""
 }
 
 // elbTarget returns the load balancer a request addresses and the path after
@@ -159,8 +175,8 @@ func executeTarget(r *http.Request) (id, path, endpoint string, ok bool) {
 	return id, "/" + path, "http://" + r.Host + executePath + id, id != ""
 }
 
-// serveAPI runs a request to an API, a load balancer, or a function URL,
-// reporting whether the request was one.
+// serveAPI runs a request to an API, a load balancer, a function URL, or a
+// GraphQL API, reporting whether the request was one.
 func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	id, path, endpoint, ok := executeTarget(r)
 	handlers := s.apis
@@ -170,8 +186,13 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	if !ok && s.functionURLs != nil {
-		id, path, endpoint, ok = lambdaURLTarget(r)
+		id, path, endpoint, ok = labelTarget(r, ".lambda-url.", lambdaURLPath)
 		handlers = []execute.Handler{s.functionURLs}
+	}
+
+	if !ok && s.graphQL != nil {
+		id, path, endpoint, ok = labelTarget(r, ".appsync-api.", graphQLPath)
+		handlers = []execute.Handler{s.graphQL}
 	}
 
 	if !ok && s.domains != nil {
@@ -183,6 +204,7 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
+	caller := s.caller(w, r)
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxExecuteBody))
 	if err != nil {
 		writeExecute(w, execute.Message(http.StatusRequestEntityTooLarge, "Request Entity Too Large"))
@@ -197,7 +219,7 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	req := &execute.Request{
 		Time: time.Now().UTC(), Header: r.Header.Clone(), Query: r.URL.Query(), Method: r.Method, Path: path,
 		RawQuery: r.URL.RawQuery, Host: r.Host, Endpoint: endpoint, SourceIP: sourceIP, Protocol: r.Proto,
-		Body: body,
+		Body: body, Caller: caller,
 	}
 	for _, h := range handlers {
 		resp, found, execErr := h.Execute(r.Context(), id, req)
@@ -214,6 +236,29 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 
 	writeExecute(w, execute.Message(http.StatusNotFound, "Not Found"))
 	return true
+}
+
+// caller returns the account and access key that signed r, or nil when r is
+// unsigned or, in identity.mode verify, its signature does not verify.
+func (s *Server) caller(w http.ResponseWriter, r *http.Request) *execute.Caller {
+	c := &call{
+		service: &catalog.Service{Protocols: []string{catalog.RESTJSON}},
+		meta: request.Metadata{
+			Scope:    request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
+			Protocol: catalog.RESTJSON,
+		},
+	}
+	signed, err := s.identify(r, &c.meta)
+	if err != nil || signed == "" {
+		return nil
+	}
+
+	c.service.SigningName = signed
+	if s.resolveCredentials(r.Context(), c) != nil || s.authenticate(w, r, c) != nil {
+		return nil
+	}
+
+	return &execute.Caller{AccountID: c.meta.AccountID, AccessKey: c.meta.AccessKey}
 }
 
 func writeExecute(w http.ResponseWriter, resp *execute.Response) {

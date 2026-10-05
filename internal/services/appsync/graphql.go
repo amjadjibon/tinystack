@@ -1,0 +1,355 @@
+package appsync
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"slices"
+	"strings"
+
+	"github.com/vektah/gqlparser/v2"
+	"github.com/vektah/gqlparser/v2/ast"
+	"github.com/vektah/gqlparser/v2/formatter"
+	"github.com/vektah/gqlparser/v2/gqlerror"
+	"github.com/vektah/gqlparser/v2/validator"
+
+	"github.com/amjadjibon/tinystack/internal/aws/execute"
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
+	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+// query is the body of a GraphQL request.
+type query struct {
+	Variables     map[string]any `json:"variables"`
+	Query         string         `json:"query"`
+	OperationName string         `json:"operationName"`
+}
+
+// graph is what running a request needs of an API, read in one transaction:
+// resolvers call other services, so they run outside it.
+type graph struct {
+	api       *api.GraphqlApi
+	schema    *ast.Schema
+	resolvers map[string]*api.Resolver
+	sources   map[string]*api.DataSource
+	// keyValid reports whether the request's x-api-key is a live key.
+	keyValid bool
+}
+
+// load reads the API id names in scope, checking apiKey against its keys.
+func (s *Service) load(ctx context.Context, scope request.Scope, id, apiKey string) (*graph, error) {
+	g := &graph{resolvers: map[string]*api.Resolver{}, sources: map[string]*api.DataSource{}}
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		var err error
+		if g.api, err = loadAPI(tx, scope, &id); err != nil {
+			return err
+		}
+
+		if g.schema, _, err = activeSchema(tx, scope, &id); err != nil {
+			return err
+		}
+
+		resolvers, err := storage.Records[api.Resolver](tx, owned(scope, kindResolver, id, ""))
+		if err != nil {
+			return err
+		}
+
+		for _, r := range resolvers {
+			g.resolvers[*r.TypeName+"."+*r.FieldName] = r
+		}
+
+		sources, err := storage.Records[api.DataSource](tx, owned(scope, kindDataSource, id, ""))
+		if err != nil {
+			return err
+		}
+
+		for _, d := range sources {
+			g.sources[*d.Name] = d
+		}
+
+		if apiKey != "" {
+			k, found, readErr := storage.Read[api.ApiKey](tx, owned(scope, kindAPIKey, id, apiKey))
+			g.keyValid = found && s.now().Unix() < common.Value(k.Expires)
+			return readErr
+		}
+
+		return nil
+	})
+
+	return g, err
+}
+
+// Execute runs a GraphQL request, POST /graphql, against the API id names.
+func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
+	var at location
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		l, found, err := storage.Read[location](tx, indexKey(id))
+		if found {
+			at = *l
+		}
+
+		return err
+	})
+	if err != nil || at.Account == "" {
+		return nil, false, err
+	}
+
+	if r.Method != http.MethodPost || r.Path != "/graphql" {
+		return execute.Message(http.StatusNotFound, "Not Found"), true, nil
+	}
+
+	scope := request.Scope{AccountID: at.Account, Region: at.Region}
+	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope})
+	var q query
+	if err = json.Unmarshal(r.Body, &q); err != nil || q.Query == "" {
+		return respond(http.StatusBadRequest, nil, []*gqlError{{
+			ErrorType: new("MalformedHttpRequestException"), Message: "The request body is not a GraphQL request.",
+		}})
+	}
+
+	g, err := s.load(ctx, scope, id, r.Header.Get("X-Api-Key"))
+	if err != nil {
+		return nil, true, err
+	}
+
+	c, err := s.authorize(ctx, g, r, &q)
+	if err != nil {
+		fe, ok := errors.AsType[*fieldError](err)
+		if !ok {
+			return nil, true, err
+		}
+
+		return respond(http.StatusUnauthorized, nil, []*gqlError{{ErrorType: new(fe.Type), Message: fe.Message}})
+	}
+
+	if g.schema == nil {
+		return respond(http.StatusOK, nil, []*gqlError{{Message: "The API has no schema."}})
+	}
+
+	e, errs := s.prepare(g, c, r, &q)
+	if errs != nil {
+		return respond(http.StatusOK, nil, errs)
+	}
+
+	data, errs := e.run(ctx)
+	return respond(http.StatusOK, data, errs)
+}
+
+func respond(status int, data any, errs []*gqlError) (*execute.Response, bool, error) {
+	body, err := json.Marshal(struct {
+		Data   any         `json:"data"`
+		Errors []*gqlError `json:"errors,omitempty"`
+	}{data, errs})
+	if err != nil {
+		return nil, true, err
+	}
+
+	return &execute.Response{
+		Status: status, Body: body, Header: http.Header{"Content-Type": {"application/json; charset=UTF-8"}},
+	}, true, nil
+}
+
+// prepare validates the request's query, picks its operation, and coerces
+// its variables, returning the executor that runs it.
+func (s *Service) prepare(g *graph, c *caller, r *execute.Request, q *query) (*executor, []*gqlError) {
+	doc, list := gqlparser.LoadQueryWithRules(g.schema, q.Query, nil)
+	if len(list) > 0 {
+		return nil, validationErrors(list)
+	}
+
+	op := doc.Operations.ForName(q.OperationName)
+	if op == nil {
+		return nil, []*gqlError{{ErrorType: new("BadRequestException"), Message: fmt.Sprintf(
+			"The query does not have an operation named %q.", q.OperationName)}}
+	}
+
+	vars, err := validator.VariableValues(g.schema, op, q.Variables)
+	if err != nil {
+		return nil, validationErrors(gqlerror.List{gqlerror.WrapIfUnwrapped(err)})
+	}
+
+	if limit := common.Value(g.api.QueryDepthLimit); limit > 0 && depth(op.SelectionSet, 0) > int(limit) {
+		return nil, []*gqlError{{ErrorType: new("ValidationError"), Message: fmt.Sprintf(
+			"The query exceeds the API's depth limit of %d.", limit)}}
+	}
+
+	e := &executor{
+		schema: g.schema, doc: doc, op: op, vars: vars, allowed: c.allowed(*g.api.AuthenticationType),
+		noIntrospection: common.Value(g.api.IntrospectionConfig) == "DISABLED",
+	}
+	e.resolve = (&session{service: s, graph: g, caller: c, request: r, vars: vars}).resolve
+	return e, nil
+}
+
+func validationErrors(list gqlerror.List) []*gqlError {
+	out := make([]*gqlError, 0, len(list))
+	for _, err := range list {
+		ge := &gqlError{ErrorType: new("ValidationError"), Message: err.Message, Locations: []sourceLocation{}}
+		for _, l := range err.Locations {
+			ge.Locations = append(ge.Locations, sourceLocation{Line: l.Line, Column: l.Column})
+		}
+
+		out = append(out, ge)
+	}
+
+	return out
+}
+
+// depth is how deeply a selection set nests fields.
+func depth(set ast.SelectionSet, level int) int {
+	deepest := level
+	for _, sel := range set {
+		var inner ast.SelectionSet
+		next := level
+		switch s := sel.(type) {
+		case *ast.Field:
+			inner, next = s.SelectionSet, level+1
+		case *ast.FragmentSpread:
+			if s.Definition != nil {
+				inner = s.Definition.SelectionSet
+			}
+		case *ast.InlineFragment:
+			inner = s.SelectionSet
+		}
+
+		deepest = max(deepest, depth(inner, next))
+	}
+
+	return deepest
+}
+
+// session is one request's resolvers.
+type session struct {
+	service  *Service
+	graph    *graph
+	caller   *caller
+	request  *execute.Request
+	vars     map[string]any
+	resolved int
+}
+
+// resolve runs the resolver of a field, if it has one.
+func (r *session) resolve(ctx context.Context, res *resolution) (value any, handled bool, err error) {
+	resolver := r.graph.resolvers[res.parent.Name+"."+res.def.Name]
+	if resolver == nil {
+		return nil, false, nil
+	}
+
+	r.resolved++
+	if limit := common.Value(r.graph.api.ResolverCountLimit); limit > 0 && r.resolved > int(limit) {
+		return nil, true, &fieldError{Type: "ResolverCountLimitExceeded", Message: fmt.Sprintf(
+			"The request ran more than the API's limit of %d resolvers.", limit)}
+	}
+
+	if resolver.Runtime != nil || resolver.RequestMappingTemplate != nil || resolver.ResponseMappingTemplate != nil ||
+		common.Value(resolver.Kind) == kindPipeline {
+		return nil, true, &fieldError{Type: "UnsupportedResolver", Message: fmt.Sprintf(
+			"TinyStack runs only direct Lambda resolvers; %s.%s has code, mapping templates, or functions.",
+			res.parent.Name, res.def.Name)}
+	}
+
+	source := r.graph.sources[common.Value(resolver.DataSourceName)]
+	if source == nil || common.Value(source.Type) != sourceLambda {
+		return nil, true, &fieldError{Type: "UnsupportedResolver", Message: fmt.Sprintf(
+			"The resolver of %s.%s has neither code nor mapping templates, so it needs a Lambda data source.",
+			res.parent.Name, res.def.Name)}
+	}
+
+	value, err = r.invoke(ctx, *source.LambdaConfig.LambdaFunctionArn, r.event(res),
+		common.Value(resolver.MaxBatchSize) > 0)
+	return value, true, err
+}
+
+// event is the payload a direct Lambda resolver receives.
+func (r *session) event(res *resolution) map[string]any {
+	var fields []string
+	for _, f := range res.group.fields {
+		fields = selectionList(f.SelectionSet, "", fields)
+	}
+
+	var b strings.Builder
+	formatter.NewFormatter(&b, formatter.WithIndent("  ")).FormatQueryDocument(&ast.QueryDocument{
+		Operations: ast.OperationList{{SelectionSet: res.group.fields[0].SelectionSet}},
+	})
+	return map[string]any{
+		"arguments": res.args, "identity": r.caller.identity, "source": res.source,
+		"request": map[string]any{"headers": headers(r.request), "domainName": nil},
+		"prev":    nil, "stash": map[string]any{},
+		"info": map[string]any{
+			"fieldName": res.def.Name, "parentTypeName": res.parent.Name, "variables": r.vars,
+			"selectionSetList": fields, "selectionSetGraphQL": strings.TrimSpace(b.String()),
+		},
+	}
+}
+
+// selectionList lists the fields a selection set reads, as paths such as
+// "author/name", in the order it names them.
+func selectionList(set ast.SelectionSet, prefix string, out []string) []string {
+	for _, sel := range set {
+		switch s := sel.(type) {
+		case *ast.Field:
+			if strings.HasPrefix(s.Name, "__") {
+				continue
+			}
+
+			path := prefix + s.Name
+			if !slices.Contains(out, path) {
+				out = append(out, path)
+			}
+
+			out = selectionList(s.SelectionSet, path+"/", out)
+		case *ast.FragmentSpread:
+			if s.Definition != nil {
+				out = selectionList(s.Definition.SelectionSet, prefix, out)
+			}
+		case *ast.InlineFragment:
+			out = selectionList(s.SelectionSet, prefix, out)
+		}
+	}
+
+	return out
+}
+
+// invoke calls a function with event, as a batch of one when batch is set,
+// and returns the field's value.
+func (r *session) invoke(ctx context.Context, arn string, event map[string]any, batch bool) (any, error) {
+	var payload any = event
+	if batch {
+		payload = []any{event}
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	out, err := r.service.functions.Invoke(ctx, &lambdaapi.InvocationRequest{FunctionName: &arn, Payload: body})
+	if err != nil {
+		return nil, &fieldError{Type: "Lambda:IllegalArgument", Message: err.Error()}
+	}
+
+	if out.FunctionError != nil {
+		var failure struct {
+			ErrorMessage string `json:"errorMessage"`
+			ErrorType    string `json:"errorType"`
+		}
+		_ = json.Unmarshal(out.Payload, &failure)
+		return nil, &fieldError{Type: "Lambda:Unhandled", Message: failure.ErrorMessage}
+	}
+
+	var value any
+	if err = json.Unmarshal(out.Payload, &value); err != nil {
+		return nil, &fieldError{Type: "Lambda:Unhandled", Message: "The function returned invalid JSON."}
+	}
+
+	if items, ok := value.([]any); batch && ok && len(items) == 1 {
+		return items[0], nil
+	}
+
+	return value, nil
+}

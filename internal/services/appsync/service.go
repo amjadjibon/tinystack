@@ -1,5 +1,7 @@
 // Package appsync implements AWS AppSync GraphQL APIs without HTTP
-// dependencies. Resources belong to an account and region:
+// dependencies: the management API, and the APIs themselves, which the
+// gateway's GraphQL endpoint runs through Execute. Resources belong to an
+// account and region:
 //
 //	<scope>/appsync/api/<API ID>
 //	<scope>/appsync/schema/<API ID>
@@ -22,6 +24,9 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
+	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -39,12 +44,17 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
-	now   func() time.Time
+	store     storage.Store
+	functions *lambda.Service
+	pools     *cognitoidp.Service
+	verifier  *proxy.Verifier
+	now       func() time.Time
 }
 
-func New(store storage.Store) *Service {
-	return &Service{store: store, now: time.Now}
+// New returns the service. Resolvers and Lambda authorizers invoke functions,
+// and Cognito user pool authorization verifies tokens with pools.
+func New(store storage.Store, functions *lambda.Service, pools *cognitoidp.Service) *Service {
+	return &Service{store: store, functions: functions, pools: pools, verifier: proxy.NewVerifier(), now: time.Now}
 }
 
 func badRequest(format string, args ...any) error {

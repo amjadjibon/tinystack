@@ -166,7 +166,7 @@ func serverStore(
 	network.UseInstanceProfiles(roles.InstanceProfileOf)
 	httpAPIs := apigateways.New(store, functions, logGroups)
 	restAPIs := restapis.New(store, functions, logGroups, userPools)
-	graphQL := graphqlapis.New(store)
+	graphQL := graphqlapis.New(store, functions, userPools)
 	ssmService := parameters.New(store, keys)
 	ssmService.UsePublicParameters(compute.PublicParameters)
 	workflows, err := stepfunctions.New(store, logGroups, logger)
@@ -244,6 +244,7 @@ func serverStore(
 	h.UseDomains(restAPIs.Domains())
 	h.UseLoadBalancers(balancers)
 	h.UseFunctionURLs(functions.URLs())
+	h.UseGraphQL(graphQL)
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)

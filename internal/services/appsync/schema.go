@@ -179,7 +179,7 @@ func (s *Service) GetIntrospectionSchema(
 		case formatSDL:
 			out.Schema = []byte(sdl(schema, common.Value(in.IncludeDirectives)))
 		case formatJSON:
-			err = badRequest("TinyStack supports the SDL format only.")
+			out.Schema, err = introspect(ctx, schema)
 		default:
 			err = badRequest("format must be SDL or JSON.")
 		}
@@ -201,11 +201,7 @@ func sdl(schema *ast.Schema, directives bool) string {
 			continue
 		}
 
-		if !directives {
-			d = stripDirectives(d)
-		}
-
-		doc.Definitions = append(doc.Definitions, d)
+		doc.Definitions = append(doc.Definitions, ownFields(d, directives))
 	}
 
 	slices.SortFunc(doc.Definitions, func(a, b *ast.Definition) int { return strings.Compare(a.Name, b.Name) })
@@ -226,13 +222,25 @@ func sdl(schema *ast.Schema, directives bool) string {
 	return format(doc)
 }
 
-// stripDirectives copies d without the directives on it and its fields.
-func stripDirectives(d *ast.Definition) *ast.Definition {
+// ownFields copies d without the fields the validator adds to the query type
+// and, unless directives is set, without the directives on it and its fields.
+func ownFields(d *ast.Definition, directives bool) *ast.Definition {
 	c := *d
-	c.Directives, c.Fields = nil, make(ast.FieldList, 0, len(d.Fields))
+	c.Fields = make(ast.FieldList, 0, len(d.Fields))
+	if !directives {
+		c.Directives = nil
+	}
+
 	for _, f := range d.Fields {
+		if !own(f) {
+			continue
+		}
+
 		fc := *f
-		fc.Directives = nil
+		if !directives {
+			fc.Directives = nil
+		}
+
 		c.Fields = append(c.Fields, &fc)
 	}
 

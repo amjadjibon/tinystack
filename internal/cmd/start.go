@@ -187,7 +187,7 @@ func newStartCommand() *cobra.Command {
 			defer containers.Stop()
 			httpAPIs := apigatewayv2.New(store, functions, logGroups)
 			restAPIs := apigateway.New(store, functions, logGroups, identities)
-			graphQL := appsync.New(store)
+			graphQL := appsync.New(store, functions, identities)
 			network := ec2.New(store)
 			network.UseInstanceProfiles(roles.InstanceProfileOf)
 			kube := eks.New(store, network)
@@ -285,6 +285,7 @@ func newStartCommand() *cobra.Command {
 			handler.UseDomains(restAPIs.Domains())
 			handler.UseLoadBalancers(balancers)
 			handler.UseFunctionURLs(functions.URLs())
+			handler.UseGraphQL(graphQL)
 			if cfg.EKS.Clusters == config.ClustersK3s {
 				// Cluster endpoints accept the EKS tokens the gateway's
 				// credentials sign.

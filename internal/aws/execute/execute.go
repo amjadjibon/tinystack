@@ -12,6 +12,8 @@ import (
 
 // Request is one request to an API.
 type Request struct {
+	// Caller is who signed the request with SigV4, if anyone did.
+	Caller *Caller
 	Time   time.Time
 	Header http.Header
 	Query  url.Values
@@ -30,6 +32,14 @@ type Request struct {
 	// Protocol is the HTTP version, such as "HTTP/1.1".
 	Protocol string
 	Body     []byte
+}
+
+// Caller is the account and access key that signed a request. In
+// identity.mode verify the gateway passes a caller only once its signature
+// verifies.
+type Caller struct {
+	AccountID string
+	AccessKey string
 }
 
 // Response is an API's answer.
