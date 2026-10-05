@@ -49,11 +49,8 @@ func Clone[T any](v *T) *T {
 	return out
 }
 
-// CloneTags returns a copy of tags, or nil if tags is nil.
+// CloneTags returns a copy of tags. If tags is nil, it returns an empty non-nil map.
 func CloneTags(tags map[string]string) map[string]string {
-	if tags == nil {
-		return nil
-	}
 	out := make(map[string]string, len(tags))
 	maps.Copy(out, tags)
 	return out

@@ -17,11 +17,8 @@ package apigatewayv2
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +26,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
@@ -110,51 +108,17 @@ func apiARN(scope request.Scope, id string) string {
 	return "arn:aws:apigateway:" + scope.Region + "::/apis/" + id
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // records reads every record under keyPrefix, in key order.
 func records[T any](tx storage.ReadTx, keyPrefix string) ([]*T, error) {
-	var out []*T
-	for _, k := range tx.Keys(keyPrefix) {
-		v, _, err := read[T](tx, k)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, v)
-	}
-
-	return out, nil
+	return storage.Records[T](tx, keyPrefix)
 }
 
 // page returns the items after the one token names, at most limit of them
@@ -195,18 +159,8 @@ func page[T any](items []T, id func(T) string, token, limit *string) (selected [
 	return items[:n], next, nil
 }
 
-const idAlphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
-
 // newID returns n random lowercase letters and digits, as API Gateway's IDs.
-func newID(n int) string {
-	b := make([]byte, n)
-	_, _ = rand.Read(b)
-	for i := range b {
-		b[i] = idAlphabet[int(b[i])%len(idAlphabet)]
-	}
-
-	return string(b)
-}
+func newID(n int) string { return common.RandomID(n) }
 
 func checkTags(tags map[string]string) error {
 	for k := range tags {
@@ -222,25 +176,9 @@ func checkTags(tags map[string]string) error {
 	return nil
 }
 
-func cloneTags(tags map[string]string) map[string]string {
-	out := map[string]string{}
-	maps.Copy(out, tags)
-	return out
-}
+func cloneTags(tags map[string]string) map[string]string { return common.CloneTags(tags) }
 
-func errorsOr(err, fallback error) error {
-	if err != nil {
-		return err
-	}
-
-	return fallback
-}
+func errorsOr(err, fallback error) error { return common.ErrorsOr(err, fallback) }
 
 // orElse returns p when it is set and otherwise fallback.
-func orElse[T any](p, fallback *T) *T {
-	if p != nil {
-		return p
-	}
-
-	return fallback
-}
+func orElse[T any](p, fallback *T) *T { return common.OrElse(p, fallback) }

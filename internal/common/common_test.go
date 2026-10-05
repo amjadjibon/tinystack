@@ -76,8 +76,8 @@ func TestClone(t *testing.T) {
 func TestCloneTags(t *testing.T) {
 	t.Parallel()
 
-	if got := common.CloneTags(nil); got != nil {
-		t.Fatalf("expected nil, got %v", got)
+	if got := common.CloneTags(nil); got == nil {
+		t.Fatal("expected non-nil map for nil input")
 	}
 
 	orig := map[string]string{"env": "test", "app": "tinystack"}
