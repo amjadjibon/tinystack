@@ -12,6 +12,7 @@ import (
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -213,10 +214,4 @@ func TestScheduledRotation(t *testing.T) {
 	}
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }

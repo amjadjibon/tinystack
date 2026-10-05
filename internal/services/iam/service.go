@@ -22,6 +22,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -92,13 +93,7 @@ var (
 	accountID  = regexp.MustCompile(`^\d{12}$`)
 )
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func validation(format string, args ...any) error {
 	return awserror.New("ValidationError", fmt.Sprintf(format, args...))
@@ -152,42 +147,14 @@ func newID(prefix string) string {
 }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // list decodes every record of kind in account, ordered by key.
 func list[T any](tx storage.ReadTx, account, kind string) ([]*T, error) {
-	var out []*T
-	for _, k := range tx.Keys(key(account, kind, "")) {
-		v, _, err := read[T](tx, k)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, v)
-	}
-
-	return out, nil
+	return storage.Records[T](tx, key(account, kind, ""))
 }
 
 func required(name string, v *string) error {

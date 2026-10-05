@@ -14,19 +14,19 @@ package kms
 import (
 	"cmp"
 	"context"
-	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"slices"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -79,13 +79,7 @@ type key struct {
 
 var keyID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func notFound(format string, args ...any) error {
 	return awserror.New("NotFoundException", fmt.Sprintf(format, args...))
@@ -120,38 +114,13 @@ func keyARN(scope request.Scope, id string) string {
 
 func seconds(ms int64) *float64 { return new(float64(ms) / 1000) }
 
-func newKeyID() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:])
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
-	s := hex.EncodeToString(b[:])
-	return s[:8] + "-" + s[8:12] + "-" + s[12:16] + "-" + s[16:20] + "-" + s[20:]
-}
+func newKeyID() string { return uuid.NewV4().String() }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return fmt.Errorf("encode %s: %w", k, err)
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 func (k *key) spec() string  { return cmp.Or(k.Spec, symmetricDefault) }
 func (k *key) usage() string { return cmp.Or(k.Usage, encryptDecrypt) }

@@ -9,8 +9,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -19,6 +17,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
@@ -215,37 +214,13 @@ func newSuffix() string {
 }
 
 // newVersionID returns a random UUID, as Secrets Manager generates.
-func newVersionID() string {
-	b := random(16)
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
-	h := hex.EncodeToString(b)
-	return h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
-}
+func newVersionID() string { return uuid.NewV4().String() }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // load returns the secret named name, including one past its deletion date,
 // which callers treat as gone.
