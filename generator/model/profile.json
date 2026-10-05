@@ -11692,5 +11692,504 @@
       "UpdateDistribution",
       "UpdateOriginAccessControl"
     ]
+  },
+  "appsync": {
+    "operations": [
+      "CreateGraphqlApi",
+      "GetGraphqlApi",
+      "UpdateGraphqlApi",
+      "DeleteGraphqlApi",
+      "ListGraphqlApis",
+      "CreateApiKey",
+      "ListApiKeys",
+      "UpdateApiKey",
+      "DeleteApiKey",
+      "CreateDataSource",
+      "GetDataSource",
+      "UpdateDataSource",
+      "DeleteDataSource",
+      "ListDataSources",
+      "StartSchemaCreation",
+      "GetSchemaCreationStatus",
+      "GetIntrospectionSchema",
+      "CreateType",
+      "GetType",
+      "UpdateType",
+      "DeleteType",
+      "ListTypes",
+      "CreateResolver",
+      "GetResolver",
+      "UpdateResolver",
+      "DeleteResolver",
+      "ListResolvers",
+      "ListResolversByFunction",
+      "CreateFunction",
+      "GetFunction",
+      "UpdateFunction",
+      "DeleteFunction",
+      "ListFunctions",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateGraphqlApiRequest": [
+        "name",
+        "logConfig",
+        "authenticationType",
+        "userPoolConfig",
+        "openIDConnectConfig",
+        "additionalAuthenticationProviders",
+        "xrayEnabled",
+        "lambdaAuthorizerConfig",
+        "ownerContact",
+        "introspectionConfig",
+        "queryDepthLimit",
+        "resolverCountLimit",
+        "tags"
+      ],
+      "CreateGraphqlApiResponse": [
+        "graphqlApi"
+      ],
+      "GraphqlApi": [
+        "name",
+        "apiId",
+        "authenticationType",
+        "logConfig",
+        "userPoolConfig",
+        "openIDConnectConfig",
+        "arn",
+        "uris",
+        "tags",
+        "additionalAuthenticationProviders",
+        "xrayEnabled",
+        "lambdaAuthorizerConfig",
+        "dns",
+        "visibility",
+        "apiType",
+        "owner",
+        "ownerContact",
+        "introspectionConfig",
+        "queryDepthLimit",
+        "resolverCountLimit"
+      ],
+      "LogConfig": [
+        "fieldLogLevel",
+        "cloudWatchLogsRoleArn",
+        "excludeVerboseContent"
+      ],
+      "UserPoolConfig": [
+        "userPoolId",
+        "awsRegion",
+        "defaultAction",
+        "appIdClientRegex"
+      ],
+      "OpenIDConnectConfig": [
+        "issuer",
+        "clientId",
+        "iatTTL",
+        "authTTL"
+      ],
+      "AdditionalAuthenticationProvider": [
+        "authenticationType",
+        "openIDConnectConfig",
+        "userPoolConfig",
+        "lambdaAuthorizerConfig"
+      ],
+      "CognitoUserPoolConfig": [
+        "userPoolId",
+        "awsRegion",
+        "appIdClientRegex"
+      ],
+      "LambdaAuthorizerConfig": [
+        "authorizerResultTtlInSeconds",
+        "authorizerUri",
+        "identityValidationExpression"
+      ],
+      "GetGraphqlApiRequest": [
+        "apiId"
+      ],
+      "GetGraphqlApiResponse": [
+        "graphqlApi"
+      ],
+      "UpdateGraphqlApiRequest": [
+        "apiId",
+        "name",
+        "logConfig",
+        "authenticationType",
+        "userPoolConfig",
+        "openIDConnectConfig",
+        "additionalAuthenticationProviders",
+        "xrayEnabled",
+        "lambdaAuthorizerConfig",
+        "ownerContact",
+        "introspectionConfig",
+        "queryDepthLimit",
+        "resolverCountLimit"
+      ],
+      "UpdateGraphqlApiResponse": [
+        "graphqlApi"
+      ],
+      "DeleteGraphqlApiRequest": [
+        "apiId"
+      ],
+      "ListGraphqlApisRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "ListGraphqlApisResponse": [
+        "graphqlApis",
+        "nextToken"
+      ],
+      "CreateApiKeyRequest": [
+        "apiId",
+        "description",
+        "expires"
+      ],
+      "CreateApiKeyResponse": [
+        "apiKey"
+      ],
+      "ApiKey": [
+        "id",
+        "description",
+        "expires",
+        "deletes"
+      ],
+      "ListApiKeysRequest": [
+        "apiId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListApiKeysResponse": [
+        "apiKeys",
+        "nextToken"
+      ],
+      "UpdateApiKeyRequest": [
+        "apiId",
+        "id",
+        "description",
+        "expires"
+      ],
+      "UpdateApiKeyResponse": [
+        "apiKey"
+      ],
+      "DeleteApiKeyRequest": [
+        "apiId",
+        "id"
+      ],
+      "CreateDataSourceRequest": [
+        "apiId",
+        "name",
+        "description",
+        "type",
+        "serviceRoleArn",
+        "dynamodbConfig",
+        "lambdaConfig",
+        "httpConfig",
+        "eventBridgeConfig"
+      ],
+      "CreateDataSourceResponse": [
+        "dataSource"
+      ],
+      "DataSource": [
+        "dataSourceArn",
+        "name",
+        "description",
+        "type",
+        "serviceRoleArn",
+        "dynamodbConfig",
+        "lambdaConfig",
+        "httpConfig",
+        "eventBridgeConfig"
+      ],
+      "DynamodbDataSourceConfig": [
+        "tableName",
+        "awsRegion",
+        "useCallerCredentials"
+      ],
+      "LambdaDataSourceConfig": [
+        "lambdaFunctionArn"
+      ],
+      "HttpDataSourceConfig": [
+        "endpoint",
+        "authorizationConfig"
+      ],
+      "AuthorizationConfig": [
+        "authorizationType",
+        "awsIamConfig"
+      ],
+      "AwsIamConfig": [
+        "signingRegion",
+        "signingServiceName"
+      ],
+      "EventBridgeDataSourceConfig": [
+        "eventBusArn"
+      ],
+      "GetDataSourceRequest": [
+        "apiId",
+        "name"
+      ],
+      "GetDataSourceResponse": [
+        "dataSource"
+      ],
+      "UpdateDataSourceRequest": [
+        "apiId",
+        "name",
+        "description",
+        "type",
+        "serviceRoleArn",
+        "dynamodbConfig",
+        "lambdaConfig",
+        "httpConfig",
+        "eventBridgeConfig"
+      ],
+      "UpdateDataSourceResponse": [
+        "dataSource"
+      ],
+      "DeleteDataSourceRequest": [
+        "apiId",
+        "name"
+      ],
+      "ListDataSourcesRequest": [
+        "apiId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListDataSourcesResponse": [
+        "dataSources",
+        "nextToken"
+      ],
+      "StartSchemaCreationRequest": [
+        "apiId",
+        "definition"
+      ],
+      "StartSchemaCreationResponse": [
+        "status"
+      ],
+      "GetSchemaCreationStatusRequest": [
+        "apiId"
+      ],
+      "GetSchemaCreationStatusResponse": [
+        "status",
+        "details"
+      ],
+      "GetIntrospectionSchemaRequest": [
+        "apiId",
+        "format",
+        "includeDirectives"
+      ],
+      "GetIntrospectionSchemaResponse": [
+        "schema"
+      ],
+      "CreateTypeRequest": [
+        "apiId",
+        "definition",
+        "format"
+      ],
+      "CreateTypeResponse": [
+        "type"
+      ],
+      "Type": [
+        "name",
+        "description",
+        "arn",
+        "definition",
+        "format"
+      ],
+      "GetTypeRequest": [
+        "apiId",
+        "typeName",
+        "format"
+      ],
+      "GetTypeResponse": [
+        "type"
+      ],
+      "UpdateTypeRequest": [
+        "apiId",
+        "typeName",
+        "definition",
+        "format"
+      ],
+      "UpdateTypeResponse": [
+        "type"
+      ],
+      "DeleteTypeRequest": [
+        "apiId",
+        "typeName"
+      ],
+      "ListTypesRequest": [
+        "apiId",
+        "format",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListTypesResponse": [
+        "types",
+        "nextToken"
+      ],
+      "CreateResolverRequest": [
+        "apiId",
+        "typeName",
+        "fieldName",
+        "dataSourceName",
+        "requestMappingTemplate",
+        "responseMappingTemplate",
+        "kind",
+        "pipelineConfig",
+        "maxBatchSize",
+        "runtime",
+        "code"
+      ],
+      "CreateResolverResponse": [
+        "resolver"
+      ],
+      "Resolver": [
+        "typeName",
+        "fieldName",
+        "resolverArn",
+        "dataSourceName",
+        "requestMappingTemplate",
+        "responseMappingTemplate",
+        "kind",
+        "pipelineConfig",
+        "maxBatchSize",
+        "runtime",
+        "code"
+      ],
+      "PipelineConfig": [
+        "functions"
+      ],
+      "AppSyncRuntime": [
+        "name",
+        "runtimeVersion"
+      ],
+      "GetResolverRequest": [
+        "apiId",
+        "typeName",
+        "fieldName"
+      ],
+      "GetResolverResponse": [
+        "resolver"
+      ],
+      "UpdateResolverRequest": [
+        "apiId",
+        "typeName",
+        "fieldName",
+        "dataSourceName",
+        "requestMappingTemplate",
+        "responseMappingTemplate",
+        "kind",
+        "pipelineConfig",
+        "maxBatchSize",
+        "runtime",
+        "code"
+      ],
+      "UpdateResolverResponse": [
+        "resolver"
+      ],
+      "DeleteResolverRequest": [
+        "apiId",
+        "typeName",
+        "fieldName"
+      ],
+      "ListResolversRequest": [
+        "apiId",
+        "typeName",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListResolversResponse": [
+        "resolvers",
+        "nextToken"
+      ],
+      "ListResolversByFunctionRequest": [
+        "apiId",
+        "functionId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListResolversByFunctionResponse": [
+        "resolvers",
+        "nextToken"
+      ],
+      "CreateFunctionRequest": [
+        "apiId",
+        "name",
+        "description",
+        "dataSourceName",
+        "requestMappingTemplate",
+        "responseMappingTemplate",
+        "functionVersion",
+        "maxBatchSize",
+        "runtime",
+        "code"
+      ],
+      "CreateFunctionResponse": [
+        "functionConfiguration"
+      ],
+      "FunctionConfiguration": [
+        "functionId",
+        "functionArn",
+        "name",
+        "description",
+        "dataSourceName",
+        "requestMappingTemplate",
+        "responseMappingTemplate",
+        "functionVersion",
+        "maxBatchSize",
+        "runtime",
+        "code"
+      ],
+      "GetFunctionRequest": [
+        "apiId",
+        "functionId"
+      ],
+      "GetFunctionResponse": [
+        "functionConfiguration"
+      ],
+      "UpdateFunctionRequest": [
+        "apiId",
+        "functionId",
+        "name",
+        "description",
+        "dataSourceName",
+        "requestMappingTemplate",
+        "responseMappingTemplate",
+        "functionVersion",
+        "maxBatchSize",
+        "runtime",
+        "code"
+      ],
+      "UpdateFunctionResponse": [
+        "functionConfiguration"
+      ],
+      "DeleteFunctionRequest": [
+        "apiId",
+        "functionId"
+      ],
+      "ListFunctionsRequest": [
+        "apiId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListFunctionsResponse": [
+        "functions",
+        "nextToken"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ]
+    }
   }
 }
