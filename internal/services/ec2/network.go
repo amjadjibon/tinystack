@@ -188,7 +188,7 @@ func cidr(text, rangeCode string) (netip.Prefix, error) {
 // zone and an internet gateway, the first time the Region is used. It also
 // gives VPCs stored before route tables existed their main route table.
 func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
-	created, upgraded := key(scope, kindDefaults, "vpc"), key(scope, kindDefaults, "network")
+	created, upgraded := scope.Key("ec2", kindDefaults, "vpc"), scope.Key("ec2", kindDefaults, "network")
 	done := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		_, done = tx.Get(created)
@@ -227,7 +227,7 @@ func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
 func createDefaultVPC(tx storage.WriteTx, scope request.Scope) error {
 	v := &vpc{ID: newID("vpc"), CIDR: defaultVPCCIDR, Tenancy: tenancyDefault, IsDefault: true, DNSHostnames: true}
 	g := &internetGateway{ID: newID("igw"), VPCID: v.ID}
-	if err := storage.Write(tx, key(scope, kindInternetGateway, g.ID), g); err != nil {
+	if err := storage.Write(tx, scope.Key("ec2", kindInternetGateway, g.ID), g); err != nil {
 		return err
 	}
 
@@ -251,7 +251,7 @@ func createDefaultVPC(tx storage.WriteTx, scope request.Scope) error {
 // createSubnetRecord stores a new subnet, associated with its VPC's default
 // network ACL.
 func createSubnetRecord(tx storage.WriteTx, scope request.Scope, sn *subnet) error {
-	if err := storage.Write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
+	if err := storage.Write(tx, scope.Key("ec2", kindSubnet, sn.ID), sn); err != nil {
 		return err
 	}
 
@@ -311,7 +311,7 @@ func upgradeVPCs(tx storage.WriteTx, scope request.Scope) error {
 func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route) error {
 	v.AssociationID, v.DHCPOptionsID = newID("vpc-cidr-assoc"), newID("dopt")
 	g := defaultGroup(v.ID)
-	if err := storage.Write(tx, key(scope, kindSecurityGroup, g.ID), g); err != nil {
+	if err := storage.Write(tx, scope.Key("ec2", kindSecurityGroup, g.ID), g); err != nil {
 		return err
 	}
 
@@ -323,7 +323,7 @@ func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route)
 		return err
 	}
 
-	return storage.Write(tx, key(scope, kindVPC, v.ID), v)
+	return storage.Write(tx, scope.Key("ec2", kindVPC, v.ID), v)
 }
 
 func vpcOutput(scope request.Scope, v *vpc) api.Vpc {
@@ -358,7 +358,7 @@ func vpcValues(scope request.Scope, v *vpc) values {
 func vpcNotFound(id string) error { return notFound("InvalidVpcID.NotFound", "vpc", id) }
 
 func loadVPC(tx storage.ReadTx, scope request.Scope, id string) (*vpc, error) {
-	v, ok, err := storage.Read[vpc](tx, key(scope, kindVPC, id))
+	v, ok, err := storage.Read[vpc](tx, scope.Key("ec2", kindVPC, id))
 	if err == nil && !ok {
 		err = vpcNotFound(id)
 	}
@@ -396,7 +396,7 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 	v := &vpc{ID: newID("vpc"), CIDR: *in.CidrBlock, Tenancy: tenancy, Tags: tags}
 	var out api.Vpc
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		if len(tx.Keys(key(scope, kindVPC, ""))) >= maxVPCs {
+		if len(tx.Keys(scope.Key("ec2", kindVPC, ""))) >= maxVPCs {
 			return awserror.New("VpcLimitExceeded", "The maximum number of VPCs has been reached.")
 		}
 
@@ -460,18 +460,18 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 		}
 
 		for _, g := range groups {
-			tx.Delete(key(scope, kindSecurityGroup, g.ID))
+			tx.Delete(scope.Key("ec2", kindSecurityGroup, g.ID))
 		}
 
 		for _, rt := range tables {
-			tx.Delete(key(scope, kindRouteTable, rt.ID))
+			tx.Delete(scope.Key("ec2", kindRouteTable, rt.ID))
 		}
 
 		for _, acl := range acls {
-			tx.Delete(key(scope, kindNetworkACL, acl.ID))
+			tx.Delete(scope.Key("ec2", kindNetworkACL, acl.ID))
 		}
 
-		tx.Delete(key(scope, kindVPC, v.ID))
+		tx.Delete(scope.Key("ec2", kindVPC, v.ID))
 		return nil
 	})
 	if err != nil {
@@ -620,7 +620,7 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 func (s *Service) DeleteSubnet(ctx context.Context, in *api.DeleteSubnetRequest) (*api.DeleteSubnetOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		id := common.Value(in.SubnetId)
-		k := key(scope, kindSubnet, id)
+		k := scope.Key("ec2", kindSubnet, id)
 		sn, ok, err := storage.Read[subnet](tx, k)
 		if err != nil || !ok {
 			return common.ErrorsOr(err, subnetNotFound(id))

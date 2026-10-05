@@ -32,7 +32,7 @@ type dashboard struct {
 }
 
 func dashboardKey(scope request.Scope, name string) string {
-	return prefix(scope, kindDashboard) + name
+	return scope.Prefix(service, kindDashboard) + name
 }
 
 func (s *Service) PutDashboard(ctx context.Context, in *api.PutDashboardInput) (*api.PutDashboardOutput, error) {
@@ -115,7 +115,7 @@ func (s *Service) ListDashboards(ctx context.Context, in *api.ListDashboardsInpu
 
 	out := &api.ListDashboardsOutput{DashboardEntries: []api.DashboardEntry{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p := prefix(m.Scope, kindDashboard)
+		p := m.Prefix(service, kindDashboard)
 		for _, k := range tx.Keys(p + common.Value(in.DashboardNamePrefix)) {
 			name := strings.TrimPrefix(k, p)
 			if in.NextToken != nil && name <= *in.NextToken {

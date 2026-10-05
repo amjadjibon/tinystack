@@ -88,7 +88,9 @@ type cluster struct {
 // hostID is the form of the cluster's ID its endpoint and OIDC issuer use.
 func (c *cluster) hostID() string { return strings.ToUpper(strings.ReplaceAll(c.ID, "-", "")) }
 
-func clusterKey(scope request.Scope, name string) string { return prefix(scope, kindCluster) + name }
+func clusterKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, kindCluster) + name
+}
 
 func clusterARN(scope request.Scope, name string) string { return arn(scope, "cluster/"+name) }
 
@@ -438,8 +440,8 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest)
 	out := &api.ListClustersResponse{Clusters: []string{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var names []string
-		for _, k := range tx.Keys(prefix(scope, kindCluster)) {
-			names = append(names, strings.TrimPrefix(k, prefix(scope, kindCluster)))
+		for _, k := range tx.Keys(scope.Prefix(service, kindCluster)) {
+			names = append(names, strings.TrimPrefix(k, scope.Prefix(service, kindCluster)))
 		}
 
 		var pageErr error
@@ -478,14 +480,14 @@ func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterReques
 		switch {
 		case c.DeletionProtection:
 			return invalidRequest("Cluster %s has deletion protection enabled.", c.Name)
-		case len(tx.Keys(prefix(scope, kindNodegroup)+c.Name+"/")) > 0:
+		case len(tx.Keys(scope.Prefix(service, kindNodegroup)+c.Name+"/")) > 0:
 			return inUse("Cluster has nodegroups attached")
-		case len(tx.Keys(prefix(scope, kindFargate)+c.Name+"/")) > 0:
+		case len(tx.Keys(scope.Prefix(service, kindFargate)+c.Name+"/")) > 0:
 			return inUse("Cluster has fargate profiles attached")
 		}
 
 		for _, kind := range clusterKinds {
-			for _, k := range tx.Keys(prefix(scope, kind) + c.Name + "/") {
+			for _, k := range tx.Keys(scope.Prefix(service, kind) + c.Name + "/") {
 				tx.Delete(k)
 			}
 		}

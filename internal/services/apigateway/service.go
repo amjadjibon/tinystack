@@ -72,14 +72,10 @@ func conflict(format string, args ...any) error {
 	return awserror.New("ConflictException", fmt.Sprintf(format, args...))
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
-}
-
-func apiKey(scope request.Scope, id string) string { return prefix(scope, kindAPI) + id }
+func apiKey(scope request.Scope, id string) string { return scope.Prefix(service, kindAPI) + id }
 
 func owned(scope request.Scope, kind, apiID, id string) string {
-	return prefix(scope, kind) + apiID + "/" + id
+	return scope.Prefix(service, kind) + apiID + "/" + id
 }
 
 // indexKey finds an API's account and region from its ID.

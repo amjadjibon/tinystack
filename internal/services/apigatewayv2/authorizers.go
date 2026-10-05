@@ -217,7 +217,7 @@ func (s *Service) GetAuthorizers(
 			return loadErr
 		}
 
-		all, readErr := storage.Records[api.Authorizer](tx, prefix(m.Scope, kindAuthorizer)+*owner.ApiId+"/")
+		all, readErr := storage.Records[api.Authorizer](tx, m.Prefix(service, kindAuthorizer)+*owner.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}

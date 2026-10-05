@@ -124,7 +124,7 @@ func retag(tx storage.WriteTx, scope request.Scope, id string, fn func(map[strin
 		return err
 	}
 
-	k := key(scope, t.kind, id)
+	k := scope.Key("ec2", t.kind, id)
 	data, ok := tx.Get(k)
 	if !ok {
 		return t.missing(id)

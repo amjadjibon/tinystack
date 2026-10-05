@@ -95,7 +95,7 @@ func (s *Service) ListUpdates(ctx context.Context, in *api.ListUpdatesRequest) (
 			return loadErr
 		}
 
-		updates, readErr := storage.Records[update](tx, prefix(scope, "update")+c.Name+"/")
+		updates, readErr := storage.Records[update](tx, scope.Prefix(service, "update")+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}

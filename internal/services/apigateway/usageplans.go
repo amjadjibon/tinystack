@@ -39,7 +39,7 @@ func apiKeyNotFound() error { return notFound("Invalid API Key identifier specif
 func usagePlanNotFound() error { return notFound("Invalid Usage Plan ID specified") }
 
 func loadAPIKey(tx storage.ReadTx, scope request.Scope, id string) (*api.ApiKey, error) {
-	k, found, err := storage.Read[api.ApiKey](tx, prefix(scope, kindAPIKey)+id)
+	k, found, err := storage.Read[api.ApiKey](tx, scope.Prefix(service, kindAPIKey)+id)
 	if err == nil && !found {
 		err = apiKeyNotFound()
 	}
@@ -48,7 +48,7 @@ func loadAPIKey(tx storage.ReadTx, scope request.Scope, id string) (*api.ApiKey,
 }
 
 func loadUsagePlan(tx storage.ReadTx, scope request.Scope, id string) (*usagePlan, error) {
-	p, found, err := storage.Read[usagePlan](tx, prefix(scope, kindUsagePlan)+id)
+	p, found, err := storage.Read[usagePlan](tx, scope.Prefix(service, kindUsagePlan)+id)
 	if err == nil && !found {
 		err = usagePlanNotFound()
 	}
@@ -99,13 +99,13 @@ func (s *Service) CreateApiKey(ctx context.Context, in *api.CreateApiKeyRequest)
 		Tags:            common.CloneTags(in.Tags),
 	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		valueKey := prefix(m.Scope, kindAPIKeyValue) + keyValue
+		valueKey := m.Prefix(service, kindAPIKeyValue) + keyValue
 		if _, exists := tx.Get(valueKey); exists {
 			return conflict("API Key already exists")
 		}
 
 		tx.Put(valueKey, []byte(*k.Id))
-		return storage.Write(tx, prefix(m.Scope, kindAPIKey)+*k.Id, k)
+		return storage.Write(tx, m.Prefix(service, kindAPIKey)+*k.Id, k)
 	})
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (s *Service) GetApiKeys(ctx context.Context, in *api.GetApiKeysRequest) (*a
 
 	var keys []*api.ApiKey
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := storage.Records[api.ApiKey](tx, prefix(m.Scope, kindAPIKey))
+		all, readErr := storage.Records[api.ApiKey](tx, m.Prefix(service, kindAPIKey))
 		for _, k := range all {
 			if strings.HasPrefix(common.Value(k.Name), common.Value(in.NameQuery)) &&
 				(in.CustomerId == nil || common.Value(k.CustomerId) == *in.CustomerId) {
@@ -192,7 +192,7 @@ func (s *Service) UpdateApiKey(ctx context.Context, in *api.UpdateApiKeyRequest)
 
 		k.LastUpdatedDate = common.Seconds(s.now())
 		out = shown(k, false)
-		return storage.Write(tx, prefix(m.Scope, kindAPIKey)+*k.Id, k)
+		return storage.Write(tx, m.Prefix(service, kindAPIKey)+*k.Id, k)
 	})
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func (s *Service) DeleteApiKey(ctx context.Context, in *api.DeleteApiKeyRequest)
 			return loadErr
 		}
 
-		for _, pk := range tx.Keys(prefix(m.Scope, kindUsagePlan)) {
+		for _, pk := range tx.Keys(m.Prefix(service, kindUsagePlan)) {
 			p, _, readErr := storage.Read[usagePlan](tx, pk)
 			if readErr != nil {
 				return readErr
@@ -228,8 +228,8 @@ func (s *Service) DeleteApiKey(ctx context.Context, in *api.DeleteApiKeyRequest)
 			}
 		}
 
-		tx.Delete(prefix(m.Scope, kindAPIKeyValue) + common.Value(k.Value))
-		tx.Delete(prefix(m.Scope, kindAPIKey) + *k.Id)
+		tx.Delete(m.Prefix(service, kindAPIKeyValue) + common.Value(k.Value))
+		tx.Delete(m.Prefix(service, kindAPIKey) + *k.Id)
 		return nil
 	})
 	if err != nil {
@@ -301,7 +301,7 @@ func (s *Service) CreateUsagePlan(ctx context.Context, in *api.CreateUsagePlanRe
 			return stageErr
 		}
 
-		return storage.Write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
+		return storage.Write(tx, m.Prefix(service, kindUsagePlan)+*p.Plan.Id, p)
 	})
 	if err != nil {
 		return nil, err
@@ -342,7 +342,7 @@ func (s *Service) GetUsagePlans(ctx context.Context, in *api.GetUsagePlansReques
 
 	var plans []*usagePlan
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := storage.Records[usagePlan](tx, prefix(m.Scope, kindUsagePlan))
+		all, readErr := storage.Records[usagePlan](tx, m.Prefix(service, kindUsagePlan))
 		for _, p := range all {
 			if in.KeyId == nil || slices.Contains(p.Keys, *in.KeyId) {
 				plans = append(plans, p)
@@ -424,7 +424,7 @@ func (s *Service) UpdateUsagePlan(ctx context.Context, in *api.UpdateUsagePlanRe
 		}
 
 		out = &p.Plan
-		return storage.Write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
+		return storage.Write(tx, m.Prefix(service, kindUsagePlan)+*p.Plan.Id, p)
 	})
 	if err != nil {
 		return nil, err
@@ -447,7 +447,7 @@ func (s *Service) DeleteUsagePlan(
 			return loadErr
 		}
 
-		tx.Delete(prefix(m.Scope, kindUsagePlan) + common.Value(in.UsagePlanId))
+		tx.Delete(m.Prefix(service, kindUsagePlan) + common.Value(in.UsagePlanId))
 		return nil
 	})
 	if err != nil {
@@ -492,7 +492,7 @@ func (s *Service) CreateUsagePlanKey(
 
 		p.Keys = append(p.Keys, *k.Id)
 		out = planKey(k)
-		return storage.Write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
+		return storage.Write(tx, m.Prefix(service, kindUsagePlan)+*p.Plan.Id, p)
 	})
 	if err != nil {
 		return nil, err
@@ -600,7 +600,7 @@ func (s *Service) DeleteUsagePlanKey(
 		}
 
 		p.Keys = slices.DeleteFunc(p.Keys, func(id string) bool { return id == common.Value(in.KeyId) })
-		return storage.Write(tx, prefix(m.Scope, kindUsagePlan)+*p.Plan.Id, p)
+		return storage.Write(tx, m.Prefix(service, kindUsagePlan)+*p.Plan.Id, p)
 	})
 	if err != nil {
 		return nil, err
@@ -624,7 +624,7 @@ func (s *Service) checkAPIKey(ctx context.Context, c *call, authorizer map[strin
 
 	allowed := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		id, found := tx.Get(prefix(c.scope, kindAPIKeyValue) + keyValue)
+		id, found := tx.Get(c.scope.Prefix(service, kindAPIKeyValue) + keyValue)
 		if keyValue == "" || !found {
 			return nil
 		}
@@ -634,7 +634,7 @@ func (s *Service) checkAPIKey(ctx context.Context, c *call, authorizer map[strin
 			return loadErr
 		}
 
-		plans, readErr := storage.Records[usagePlan](tx, prefix(c.scope, kindUsagePlan))
+		plans, readErr := storage.Records[usagePlan](tx, c.scope.Prefix(service, kindUsagePlan))
 		for _, p := range plans {
 			if slices.Contains(p.Keys, *k.Id) && slices.ContainsFunc(p.Plan.ApiStages, func(st api.ApiStage) bool {
 				return common.Value(st.ApiId) == *c.api.API.Id && common.Value(st.Stage) == *c.stage.StageName

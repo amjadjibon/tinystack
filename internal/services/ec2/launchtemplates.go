@@ -161,7 +161,7 @@ func findTemplate(tx storage.ReadTx, scope request.Scope, id, name string) (*lau
 		return nil, awserror.New("InvalidParameterCombination",
 			"The parameters LaunchTemplateId and LaunchTemplateName cannot be used together")
 	case id != "":
-		t, ok, err := storage.Read[launchTemplate](tx, key(scope, kindLaunchTemplate, id))
+		t, ok, err := storage.Read[launchTemplate](tx, scope.Key("ec2", kindLaunchTemplate, id))
 		if err == nil && !ok {
 			err = templateIDNotFound(id)
 		}
@@ -269,7 +269,7 @@ func (s *Service) CreateLaunchTemplate(
 				"Launch template name already in use.")
 		}
 
-		return storage.Write(tx, key(scope, kindLaunchTemplate, t.ID), t)
+		return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
 	})
 	if err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func (s *Service) CreateLaunchTemplateVersion(
 			Number: t.Latest, Description: common.Value(in.VersionDescription), CreatedAt: s.now().UTC(), Data: data,
 		})
 		out = versionOutput(t, &t.Versions[len(t.Versions)-1])
-		return storage.Write(tx, key(scope, kindLaunchTemplate, t.ID), t)
+		return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
 	})
 	if err != nil {
 		return nil, err
@@ -472,7 +472,7 @@ func (s *Service) ModifyLaunchTemplate(
 		}
 
 		out = templateOutput(t)
-		return storage.Write(tx, key(scope, kindLaunchTemplate, t.ID), t)
+		return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
 	})
 	if err != nil {
 		return nil, err
@@ -493,7 +493,7 @@ func (s *Service) DeleteLaunchTemplate(
 		}
 
 		out = templateOutput(t)
-		tx.Delete(key(scope, kindLaunchTemplate, t.ID))
+		tx.Delete(scope.Key("ec2", kindLaunchTemplate, t.ID))
 		return nil
 	})
 	if err != nil {
@@ -544,7 +544,7 @@ func (s *Service) DeleteLaunchTemplateVersions(
 			}
 		}
 
-		return storage.Write(tx, key(scope, kindLaunchTemplate, t.ID), t)
+		return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
 	})
 	if err != nil {
 		return nil, err

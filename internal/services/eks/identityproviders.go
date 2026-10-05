@@ -87,7 +87,10 @@ func (s *Service) AssociateIdentityProviderConfig(
 			return loadErr
 		}
 
-		existing, readErr := storage.Records[identityProvider](tx, prefix(scope, kindIdentityProvider)+c.Name+"/")
+		existing, readErr := storage.Records[identityProvider](
+			tx,
+			scope.Prefix(service, kindIdentityProvider)+c.Name+"/",
+		)
 		if readErr != nil {
 			return readErr
 		}
@@ -189,7 +192,7 @@ func (s *Service) ListIdentityProviderConfigs(
 			return loadErr
 		}
 
-		all, readErr := storage.Records[identityProvider](tx, prefix(scope, kindIdentityProvider)+c.Name+"/")
+		all, readErr := storage.Records[identityProvider](tx, scope.Prefix(service, kindIdentityProvider)+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}

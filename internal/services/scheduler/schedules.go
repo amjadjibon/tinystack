@@ -246,7 +246,7 @@ func (s *Service) put(tx storage.WriteTx, scope request.Scope, in *settings, p p
 		rec.Next = common.Unix(next)
 	}
 
-	if err := storage.Write(tx, key(scope, kindSchedule, groupName+"/"+name), rec); err != nil {
+	if err := storage.Write(tx, scope.Key(service, kindSchedule, groupName+"/"+name), rec); err != nil {
 		return "", err
 	}
 
@@ -285,7 +285,7 @@ func (s *Service) CreateSchedule(ctx context.Context, in *api.CreateScheduleInpu
 	var arn string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
-		if _, exists := tx.Get(key(m.Scope, kindSchedule, groupName+"/"+*in.Name)); exists {
+		if _, exists := tx.Get(m.Key(service, kindSchedule, groupName+"/"+*in.Name)); exists {
 			return awserror.New("ConflictException", "Schedule "+*in.Name+" already exists.")
 		}
 
@@ -320,7 +320,7 @@ func (s *Service) UpdateSchedule(ctx context.Context, in *api.UpdateScheduleInpu
 	var arn string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
-		old, found, readErr := storage.Read[record](tx, key(m.Scope, kindSchedule, groupName+"/"+*in.Name))
+		old, found, readErr := storage.Read[record](tx, m.Key(service, kindSchedule, groupName+"/"+*in.Name))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -349,7 +349,10 @@ func (s *Service) GetSchedule(ctx context.Context, in *api.GetScheduleInput) (*a
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
 		groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
-		rec, found, err = storage.Read[record](tx, key(m.Scope, kindSchedule, groupName+"/"+common.Value(in.Name)))
+		rec, found, err = storage.Read[record](
+			tx,
+			m.Key(service, kindSchedule, groupName+"/"+common.Value(in.Name)),
+		)
 		if err == nil && !found {
 			err = notFound("Schedule " + common.Value(in.Name))
 		}
@@ -371,7 +374,7 @@ func (s *Service) DeleteSchedule(ctx context.Context, in *api.DeleteScheduleInpu
 
 	groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
 	return &api.DeleteScheduleOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
-		k := key(m.Scope, kindSchedule, groupName+"/"+common.Value(in.Name))
+		k := m.Key(service, kindSchedule, groupName+"/"+common.Value(in.Name))
 		if _, found := tx.Get(k); !found {
 			return notFound("Schedule " + common.Value(in.Name))
 		}
@@ -399,7 +402,7 @@ func (s *Service) ListSchedules(ctx context.Context, in *api.ListSchedulesInput)
 
 	out := &api.ListSchedulesOutput{Schedules: []api.ScheduleSummary{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p := key(m.Scope, kindSchedule, "")
+		p := m.Key(service, kindSchedule, "")
 		if in.GroupName != nil {
 			if _, groupErr := loadGroup(tx, m.Scope, *in.GroupName); groupErr != nil {
 				return groupErr
@@ -410,7 +413,7 @@ func (s *Service) ListSchedules(ctx context.Context, in *api.ListSchedulesInput)
 
 		var last string
 		for _, k := range tx.Keys(p) {
-			id := strings.TrimPrefix(k, key(m.Scope, kindSchedule, ""))
+			id := strings.TrimPrefix(k, m.Key(service, kindSchedule, ""))
 			if in.NextToken != nil && id <= *in.NextToken {
 				continue
 			}

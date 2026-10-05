@@ -71,12 +71,12 @@ func (s *Service) CreateLaunchConfiguration(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if _, found := tx.Get(key(m.Scope, kindConfiguration, name)); found {
+		if _, found := tx.Get(m.Key(service, kindConfiguration, name)); found {
 			return awserror.New("AlreadyExistsFault", "Launch Configuration by this name already exists - A launch "+
 				"configuration already exists with the name "+name)
 		}
 
-		return storage.Write(tx, key(m.Scope, kindConfiguration, name), lc)
+		return storage.Write(tx, m.Key(service, kindConfiguration, name), lc)
 	})
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (s *Service) DescribeLaunchConfigurations(
 
 	var all []*api.LaunchConfiguration
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(key(m.Scope, kindConfiguration, "")) {
+		for _, k := range tx.Keys(m.Key(service, kindConfiguration, "")) {
 			lc, _, readErr := storage.Read[api.LaunchConfiguration](tx, k)
 			if readErr != nil {
 				return readErr
@@ -142,11 +142,11 @@ func (s *Service) DeleteLaunchConfiguration(
 
 	name := common.Value(in.LaunchConfigurationName)
 	return &api.DeleteLaunchConfigurationOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if _, found := tx.Get(key(m.Scope, kindConfiguration, name)); !found {
+		if _, found := tx.Get(m.Key(service, kindConfiguration, name)); !found {
 			return validation("Launch configuration name not found - Launch configuration %s not found", name)
 		}
 
-		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
+		for _, k := range tx.Keys(m.Key(service, kindGroup, "")) {
 			g, _, err := storage.Read[group](tx, k)
 			if err != nil {
 				return err
@@ -158,7 +158,7 @@ func (s *Service) DeleteLaunchConfiguration(
 			}
 		}
 
-		tx.Delete(key(m.Scope, kindConfiguration, name))
+		tx.Delete(m.Key(service, kindConfiguration, name))
 		return nil
 	})
 }

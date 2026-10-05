@@ -81,14 +81,10 @@ func notFound(message string) error {
 
 func groupNotFound() error { return notFound("The specified log group does not exist.") }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/logs/" + kind + "/"
-}
-
 // encode makes a name safe inside a storage key: it never contains '/'.
 func encode(name string) string { return base64.RawURLEncoding.EncodeToString([]byte(name)) }
 
-func groupKey(scope request.Scope, name string) string { return prefix(scope, "group") + name }
+func groupKey(scope request.Scope, name string) string { return scope.Prefix("logs", "group") + name }
 
 func groupARN(scope request.Scope, name string) string {
 	return "arn:aws:logs:" + scope.Region + ":" + scope.AccountID + ":log-group:" + name
@@ -281,7 +277,7 @@ func (s *Service) DeleteLogGroup(
 
 		tx.Delete(groupKey(scope, *in.LogGroupName))
 		for _, kind := range []string{"stream", "event"} {
-			for _, key := range tx.Keys(prefix(scope, kind) + encode(*in.LogGroupName) + "/") {
+			for _, key := range tx.Keys(scope.Prefix("logs", kind) + encode(*in.LogGroupName) + "/") {
 				tx.Delete(key)
 			}
 		}
@@ -338,7 +334,7 @@ func (s *Service) DescribeLogGroups(
 	out := &api.DescribeLogGroupsResponse{LogGroups: []api.LogGroup{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, key := range tx.Keys(groupKey(scope, common.Value(in.LogGroupNamePrefix))) {
-			name := strings.TrimPrefix(key, prefix(scope, "group"))
+			name := strings.TrimPrefix(key, scope.Prefix("logs", "group"))
 			if name <= after || !strings.Contains(strings.ToLower(name), pattern) {
 				continue
 			}

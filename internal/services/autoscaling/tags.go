@@ -107,7 +107,7 @@ func (s *Service) retag(ctx context.Context, tags []api.Tag,
 				return changeErr
 			}
 
-			if writeErr := storage.Write(tx, key(m.Scope, kindGroup, g.name()), g); writeErr != nil {
+			if writeErr := storage.Write(tx, m.Key(service, kindGroup, g.name()), g); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -160,7 +160,7 @@ func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsType) (*
 
 	var all []api.TagDescription
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
+		for _, k := range tx.Keys(m.Key(service, kindGroup, "")) {
 			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr

@@ -90,12 +90,12 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 	var lc *api.LaunchConfiguration
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
-		if g, _, err = storage.Read[group](tx, key(scope, kindGroup, name)); err != nil || g == nil {
+		if g, _, err = storage.Read[group](tx, scope.Key(service, kindGroup, name)); err != nil || g == nil {
 			return err
 		}
 
 		if n := g.Group.LaunchConfigurationName; n != nil {
-			lc, _, err = storage.Read[api.LaunchConfiguration](tx, key(scope, kindConfiguration, *n))
+			lc, _, err = storage.Read[api.LaunchConfiguration](tx, scope.Key(service, kindConfiguration, *n))
 		}
 
 		return err
@@ -177,7 +177,7 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		cur, found, readErr := storage.Read[group](tx, key(scope, kindGroup, name))
+		cur, found, readErr := storage.Read[group](tx, scope.Key(service, kindGroup, name))
 		if readErr != nil || !found {
 			return readErr
 		}
@@ -187,7 +187,11 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 			d := &gone[i]
 			leaving[common.Value(d.InstanceId)] = true
 			a := s.activity(cur, now, "Terminating EC2 instance: "+common.Value(d.InstanceId), d.cause, &d.member)
-			if writeErr := storage.Write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now)), a); writeErr != nil {
+			if writeErr := storage.Write(
+				tx,
+				scope.Key(service, kindActivity, name+"/"+s.sequenced(now)),
+				a,
+			); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -204,8 +208,11 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 			a := s.activity(cur, now, "Launching a new EC2 instance: "+common.Value(m.InstanceId),
 				joinCause(cause, fmt.Sprintf("At %s an instance was started in response to a difference between "+
 					"desired and actual capacity, increasing the capacity from %d to %d.", stamp(now), size, size+1)), &m)
-			if writeErr := storage.Write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now.Add(time.Duration(i)))),
-				a); writeErr != nil {
+			if writeErr := storage.Write(
+				tx,
+				scope.Key(service, kindActivity, name+"/"+s.sequenced(now.Add(time.Duration(i)))),
+				a,
+			); writeErr != nil {
 				return writeErr
 			}
 
@@ -219,12 +226,16 @@ func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, caus
 					"desired and actual capacity, increasing the capacity from %d to %d.", stamp(now),
 					len(cur.Members), len(cur.Members)+1)), nil)
 			a.StatusCode, a.StatusMessage = new("Failed"), new(awserror.From(failure).Message)
-			if writeErr := storage.Write(tx, key(scope, kindActivity, name+"/"+s.sequenced(now)), a); writeErr != nil {
+			if writeErr := storage.Write(
+				tx,
+				scope.Key(service, kindActivity, name+"/"+s.sequenced(now)),
+				a,
+			); writeErr != nil {
 				return writeErr
 			}
 		}
 
-		return storage.Write(tx, key(scope, kindGroup, name), cur)
+		return storage.Write(tx, scope.Key(service, kindGroup, name), cur)
 	})
 	if err != nil {
 		s.logger.Warn("saving an Auto Scaling group's instances failed", "group", name, "error", err)
@@ -366,7 +377,7 @@ func (s *Service) DescribeScalingActivities(
 
 	var all []entry
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p := key(m.Scope, kindActivity, "")
+		p := m.Key(service, kindActivity, "")
 		if in.AutoScalingGroupName != nil {
 			if _, loadErr := loadGroup(tx, m.Scope, *in.AutoScalingGroupName); loadErr != nil {
 				return loadErr

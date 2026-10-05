@@ -93,7 +93,7 @@ func taggable(tx storage.ReadTx, scope request.Scope, resourceARN string) (*tagg
 				return *p.Config.IdentityProviderConfigArn, &p.Config.Tags
 			})
 	case "access-entry":
-		entries, err := storage.Records[accessEntry](tx, prefix(scope, "access")+clusterName+"/")
+		entries, err := storage.Records[accessEntry](tx, scope.Prefix(service, "access")+clusterName+"/")
 		if err != nil {
 			return nil, err
 		}

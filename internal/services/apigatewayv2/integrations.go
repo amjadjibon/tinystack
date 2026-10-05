@@ -221,7 +221,7 @@ func (s *Service) GetIntegrations(
 			return loadErr
 		}
 
-		all, readErr := storage.Records[api.Integration](tx, prefix(m.Scope, kindIntegration)+*a.ApiId+"/")
+		all, readErr := storage.Records[api.Integration](tx, m.Prefix(service, kindIntegration)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}

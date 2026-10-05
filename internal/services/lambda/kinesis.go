@@ -333,7 +333,7 @@ func (s *Service) recordCursors(
 	cursors map[string]string,
 	result string,
 ) {
-	key := scopeKey(scope, kindMapping, id)
+	key := scope.Key("lambda", kindMapping, id)
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		mp, found, err := loadMapping(tx, key)
 		if err != nil || !found {

@@ -56,7 +56,7 @@ func findTG(tx storage.ReadTx, scope request.Scope, arnValue string) (*targetGro
 		return nil, validation("'%s' is not a valid target group ARN", arnValue)
 	}
 
-	t, found, err := storage.Read[targetGroup](tx, key(scope, kindTG, parts[0]))
+	t, found, err := storage.Read[targetGroup](tx, scope.Key(service, kindTG, parts[0]))
 	switch {
 	case err != nil:
 		return nil, err
@@ -79,14 +79,14 @@ func usage(tx storage.ReadTx, scope request.Scope) (map[string][]string, error) 
 		}
 	}
 
-	listeners, err := storage.Records[listener](tx, key(scope, kindListener, ""))
+	listeners, err := storage.Records[listener](tx, scope.Key(service, kindListener, ""))
 	if err != nil {
 		return nil, err
 	}
 
 	for _, l := range listeners {
 		add(common.Value(l.L.LoadBalancerArn), l.L.DefaultActions)
-		rules, rulesErr := storage.Records[rule](tx, key(scope, kindRule, l.ID+"/"))
+		rules, rulesErr := storage.Records[rule](tx, scope.Key(service, kindRule, l.ID+"/"))
 		if rulesErr != nil {
 			return nil, rulesErr
 		}
@@ -286,7 +286,7 @@ func (s *Service) CreateTargetGroup(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		old, found, readErr := storage.Read[targetGroup](tx, key(m.Scope, kindTG, name))
+		old, found, readErr := storage.Read[targetGroup](tx, m.Key(service, kindTG, name))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -299,7 +299,7 @@ func (s *Service) CreateTargetGroup(
 				"' exists, but with different settings")
 		}
 
-		return storage.Write(tx, key(m.Scope, kindTG, name), t)
+		return storage.Write(tx, m.Key(service, kindTG, name), t)
 	})
 	if err != nil {
 		return nil, err
@@ -318,7 +318,7 @@ func (s *Service) DescribeTargetGroups(
 
 	var selected []*targetGroup
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, listErr := storage.Records[targetGroup](tx, key(m.Scope, kindTG, ""))
+		all, listErr := storage.Records[targetGroup](tx, m.Key(service, kindTG, ""))
 		if listErr != nil {
 			return listErr
 		}
@@ -400,7 +400,7 @@ func (s *Service) changeTG(ctx context.Context, arnValue string, fn func(*target
 		}
 
 		t.TG.LoadBalancerArns = append([]string{}, used[t.arnValue()]...)
-		return storage.Write(tx, key(m.Scope, kindTG, t.name()), t)
+		return storage.Write(tx, m.Key(service, kindTG, t.name()), t)
 	})
 
 	return t, err
@@ -511,7 +511,7 @@ func (s *Service) DeleteTargetGroup(
 				"' is currently in use by a listener or a rule")
 		}
 
-		tx.Delete(key(m.Scope, kindTG, t.name()))
+		tx.Delete(m.Key(service, kindTG, t.name()))
 		return nil
 	})
 }

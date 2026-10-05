@@ -43,7 +43,7 @@ func (s *Service) retag(ctx context.Context, arn string, change func(map[string]
 	}
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if strings.HasPrefix(key, prefix(m.Scope, kindAlarm)) {
+		if strings.HasPrefix(key, m.Prefix(service, kindAlarm)) {
 			a, found, readErr := storage.Read[alarm](tx, key)
 			if readErr != nil || !found {
 				return notFound(arn, readErr)
@@ -115,7 +115,7 @@ func (s *Service) ListTagsForResource(
 
 	var tags map[string]string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		if strings.HasPrefix(key, prefix(m.Scope, kindAlarm)) {
+		if strings.HasPrefix(key, m.Prefix(service, kindAlarm)) {
 			a, found, readErr := storage.Read[alarm](tx, key)
 			if readErr != nil || !found {
 				return notFound(*in.ResourceARN, readErr)

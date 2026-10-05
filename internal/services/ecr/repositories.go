@@ -151,7 +151,7 @@ func (s *Service) DescribeRepositories(
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		names := in.RepositoryNames
 		if len(names) == 0 {
-			names = suffixes(tx, prefix(m.Scope, "repo"))
+			names = suffixes(tx, m.Prefix(service, "repo"))
 			names, out.NextToken, err = common.Page(
 				names,
 				func(n string) string { return n },

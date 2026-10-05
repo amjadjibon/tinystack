@@ -77,10 +77,6 @@ func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 // Stop ends the evaluator and waits for it.
 func (s *Service) Stop() { s.bg.Stop() }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
-}
-
 // sequenced is a key suffix ordering records by time, then arrival.
 func (s *Service) sequenced(t time.Time) string {
 	s.mu.Lock()

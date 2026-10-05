@@ -232,16 +232,12 @@ type export struct {
 	Value     string
 }
 
-func key(scope request.Scope, kind, name string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/" + name
-}
-
 func indexKey(scope request.Scope, name string) string {
 	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + name
 }
 
 func eventKey(scope request.Scope, stackID string, n int64) string {
-	return key(scope, kindEvent, stackUUID(stackID)+"/"+fmt.Sprintf("%012d", n))
+	return scope.Key(service, kindEvent, stackUUID(stackID)+"/"+fmt.Sprintf("%012d", n))
 }
 
 func stackARN(scope request.Scope, name string) string {

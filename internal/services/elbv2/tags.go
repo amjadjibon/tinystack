@@ -31,7 +31,7 @@ func findTagged(tx storage.ReadTx, scope request.Scope, arnValue string) (tagged
 
 		return tagged{tags: b.Tags, save: func(tx storage.WriteTx, tags map[string]string) error {
 			b.Tags = tags
-			return storage.Write(tx, key(scope, kindLB, b.name()), b)
+			return storage.Write(tx, scope.Key(service, kindLB, b.name()), b)
 		}}, nil
 	case strings.HasPrefix(resource, "targetgroup/"):
 		t, err := findTG(tx, scope, arnValue)
@@ -41,7 +41,7 @@ func findTagged(tx storage.ReadTx, scope request.Scope, arnValue string) (tagged
 
 		return tagged{tags: t.Tags, save: func(tx storage.WriteTx, tags map[string]string) error {
 			t.Tags = tags
-			return storage.Write(tx, key(scope, kindTG, t.name()), t)
+			return storage.Write(tx, scope.Key(service, kindTG, t.name()), t)
 		}}, nil
 	case strings.HasPrefix(resource, "listener/"):
 		l, err := findListener(tx, scope, arnValue)
@@ -51,7 +51,7 @@ func findTagged(tx storage.ReadTx, scope request.Scope, arnValue string) (tagged
 
 		return tagged{tags: l.Tags, save: func(tx storage.WriteTx, tags map[string]string) error {
 			l.Tags = tags
-			return storage.Write(tx, key(scope, kindListener, l.Balancer+"/"+l.ID), l)
+			return storage.Write(tx, scope.Key(service, kindListener, l.Balancer+"/"+l.ID), l)
 		}}, nil
 	case strings.HasPrefix(resource, "listener-rule/"):
 		l, r, err := findRule(tx, scope, arnValue)
@@ -61,13 +61,13 @@ func findTagged(tx storage.ReadTx, scope request.Scope, arnValue string) (tagged
 		case r == nil:
 			return tagged{tags: l.RuleTags, save: func(tx storage.WriteTx, tags map[string]string) error {
 				l.RuleTags = tags
-				return storage.Write(tx, key(scope, kindListener, l.Balancer+"/"+l.ID), l)
+				return storage.Write(tx, scope.Key(service, kindListener, l.Balancer+"/"+l.ID), l)
 			}}, nil
 		}
 
 		return tagged{tags: r.Tags, save: func(tx storage.WriteTx, tags map[string]string) error {
 			r.Tags = tags
-			return storage.Write(tx, key(scope, kindRule, r.Listener+"/"+r.ID), r)
+			return storage.Write(tx, scope.Key(service, kindRule, r.Listener+"/"+r.ID), r)
 		}}, nil
 	}
 

@@ -338,7 +338,7 @@ func (s *Service) names(
 			return loadErr
 		}
 
-		keyPrefix := prefix(scope, kind) + c.Name + "/"
+		keyPrefix := scope.Prefix(service, kind) + c.Name + "/"
 		for _, k := range tx.Keys(keyPrefix) {
 			names = append(names, strings.TrimPrefix(k, keyPrefix))
 		}

@@ -47,7 +47,7 @@ func addressNotFound(id string) error {
 }
 
 func loadAddress(tx storage.ReadTx, scope request.Scope, id string) (*address, error) {
-	a, ok, err := storage.Read[address](tx, key(scope, kindAddress, id))
+	a, ok, err := storage.Read[address](tx, scope.Key("ec2", kindAddress, id))
 	if err == nil && !ok {
 		err = addressNotFound(id)
 	}
@@ -91,7 +91,7 @@ func addressValues(scope request.Scope, a *address) values {
 // unbind ends an address's association with its instance, which keeps a
 // public address of its own only if its subnet maps them and it is running.
 func unbind(tx storage.WriteTx, scope request.Scope, a *address) error {
-	i, ok, err := storage.Read[instance](tx, key(scope, kindInstance, a.InstanceID))
+	i, ok, err := storage.Read[instance](tx, scope.Key("ec2", kindInstance, a.InstanceID))
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func unbind(tx storage.WriteTx, scope request.Scope, a *address) error {
 		return nil
 	}
 
-	sn, _, err := storage.Read[subnet](tx, key(scope, kindSubnet, i.SubnetID))
+	sn, _, err := storage.Read[subnet](tx, scope.Key("ec2", kindSubnet, i.SubnetID))
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func unbind(tx storage.WriteTx, scope request.Scope, a *address) error {
 		i.PublicIP = publicIP()
 	}
 
-	return storage.Write(tx, key(scope, kindInstance, i.ID), i)
+	return storage.Write(tx, scope.Key("ec2", kindInstance, i.ID), i)
 }
 
 // AllocateAddress allocates one of up to five Elastic IP addresses in the
@@ -137,7 +137,7 @@ func (s *Service) AllocateAddress(
 			return borderErr
 		}
 
-		if len(tx.Keys(key(scope, kindAddress, ""))) >= maxAddresses {
+		if len(tx.Keys(scope.Key("ec2", kindAddress, ""))) >= maxAddresses {
 			return awserror.New("AddressLimitExceeded", "The maximum number of addresses has been reached.")
 		}
 
@@ -145,7 +145,7 @@ func (s *Service) AllocateAddress(
 			AllocationId: new(a.ID), PublicIp: new(a.PublicIP), Domain: new(domainVPC),
 			PublicIpv4Pool: new("amazon"), NetworkBorderGroup: new(scope.Region),
 		}
-		return storage.Write(tx, key(scope, kindAddress, a.ID), a)
+		return storage.Write(tx, scope.Key("ec2", kindAddress, a.ID), a)
 	})
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func (s *Service) ReleaseAddress(
 			return awserror.New("InvalidIPAddress.InUse", fmt.Sprintf("Address %s is in use.", a.PublicIP))
 		}
 
-		tx.Delete(key(scope, kindAddress, a.ID))
+		tx.Delete(scope.Key("ec2", kindAddress, a.ID))
 		return nil
 	})
 	if err != nil {
@@ -284,7 +284,7 @@ func (s *Service) AssociateAddress(
 		}
 
 		id := common.Value(in.InstanceId)
-		i, ok, err := storage.Read[instance](tx, key(scope, kindInstance, id))
+		i, ok, err := storage.Read[instance](tx, scope.Key("ec2", kindInstance, id))
 		if err != nil || !ok || !i.active() {
 			return common.ErrorsOr(err, instanceNotFound(id))
 		}
@@ -331,13 +331,13 @@ func (s *Service) AssociateAddress(
 				return unbindErr
 			}
 
-			if writeErr := storage.Write(tx, key(scope, kindAddress, previous.ID), previous); writeErr != nil {
+			if writeErr := storage.Write(tx, scope.Key("ec2", kindAddress, previous.ID), previous); writeErr != nil {
 				return writeErr
 			}
 		}
 
 		// The instance and the address may have been rewritten above.
-		if i, _, err = storage.Read[instance](tx, key(scope, kindInstance, id)); err != nil {
+		if i, _, err = storage.Read[instance](tx, scope.Key("ec2", kindInstance, id)); err != nil {
 			return err
 		}
 
@@ -347,11 +347,11 @@ func (s *Service) AssociateAddress(
 
 		a.AssociationID, a.InstanceID, a.PrivateIP = association, i.ID, i.PrivateIP
 		i.AddressID, i.PublicIP = a.ID, a.PublicIP
-		if writeErr := storage.Write(tx, key(scope, kindInstance, i.ID), i); writeErr != nil {
+		if writeErr := storage.Write(tx, scope.Key("ec2", kindInstance, i.ID), i); writeErr != nil {
 			return writeErr
 		}
 
-		return storage.Write(tx, key(scope, kindAddress, a.ID), a)
+		return storage.Write(tx, scope.Key("ec2", kindAddress, a.ID), a)
 	})
 	if err != nil {
 		return nil, err
@@ -385,7 +385,7 @@ func (s *Service) DisassociateAddress(
 			return unbindErr
 		}
 
-		return storage.Write(tx, key(scope, kindAddress, a.ID), a)
+		return storage.Write(tx, scope.Key("ec2", kindAddress, a.ID), a)
 	})
 	if err != nil {
 		return nil, err
@@ -401,12 +401,12 @@ func releaseInstanceAddress(tx storage.WriteTx, scope request.Scope, i *instance
 		return nil
 	}
 
-	a, ok, err := storage.Read[address](tx, key(scope, kindAddress, i.AddressID))
+	a, ok, err := storage.Read[address](tx, scope.Key("ec2", kindAddress, i.AddressID))
 	i.AddressID = ""
 	if err != nil || !ok {
 		return err
 	}
 
 	a.AssociationID, a.InstanceID, a.PrivateIP = "", "", ""
-	return storage.Write(tx, key(scope, kindAddress, a.ID), a)
+	return storage.Write(tx, scope.Key("ec2", kindAddress, a.ID), a)
 }

@@ -72,13 +72,9 @@ func inUse(format string, args ...any) error {
 	return awserror.New("ResourceInUseException", fmt.Sprintf(format, args...))
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
-}
-
 // owned is the key of a record of kind that a cluster owns.
 func owned(scope request.Scope, kind, clusterName, id string) string {
-	return prefix(scope, kind) + clusterName + "/" + id
+	return scope.Prefix(service, kind) + clusterName + "/" + id
 }
 
 func arn(scope request.Scope, resource string) string {

@@ -111,7 +111,7 @@ func (s *Service) AssociateIamInstanceProfile(
 
 	id := common.Value(in.InstanceId)
 	err = s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
-		i, ok, readErr := storage.Read[instance](tx, key(scope, kindInstance, id))
+		i, ok, readErr := storage.Read[instance](tx, scope.Key("ec2", kindInstance, id))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -125,7 +125,7 @@ func (s *Service) AssociateIamInstanceProfile(
 		}
 
 		i.Profile = a
-		return storage.Write(tx, key(scope, kindInstance, id), i)
+		return storage.Write(tx, scope.Key("ec2", kindInstance, id), i)
 	})
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (s *Service) DisassociateIamInstanceProfile(
 
 		out = i.Profile.output(i.ID, disassociating)
 		i.Profile = nil
-		return storage.Write(tx, key(scope, kindInstance, i.ID), i)
+		return storage.Write(tx, scope.Key("ec2", kindInstance, i.ID), i)
 	})
 	if err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func (s *Service) ReplaceIamInstanceProfileAssociation(
 		}
 
 		instanceID, i.Profile = i.ID, a
-		return storage.Write(tx, key(scope, kindInstance, i.ID), i)
+		return storage.Write(tx, scope.Key("ec2", kindInstance, i.ID), i)
 	})
 	if err != nil {
 		return nil, err

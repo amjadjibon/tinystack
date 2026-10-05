@@ -454,7 +454,7 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 		}
 
 		var all []*execution
-		for _, k := range tx.Keys(prefix(scope, kindExecution) + sm.Name + "/") {
+		for _, k := range tx.Keys(scope.Prefix(service, kindExecution) + sm.Name + "/") {
 			e, _, readErr := storage.Read[execution](tx, k)
 			if readErr != nil {
 				return readErr
@@ -554,7 +554,10 @@ func (s *Service) GetExecutionHistory(
 		}
 
 		scope, _, _, _ := parseARN(e.ARN)
-		events, readErr := recordsOf[api.HistoryEvent](tx, prefix(scope, kindEvent)+e.StateMachine+"/"+e.Name+"/")
+		events, readErr := recordsOf[api.HistoryEvent](
+			tx,
+			scope.Prefix(service, kindEvent)+e.StateMachine+"/"+e.Name+"/",
+		)
 		if readErr != nil {
 			return readErr
 		}

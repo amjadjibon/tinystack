@@ -32,10 +32,12 @@ type family struct {
 	Last int64
 }
 
-func familyKey(scope request.Scope, name string) string { return prefix(scope, "family") + name }
+func familyKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, "family") + name
+}
 
 func taskDefKey(scope request.Scope, name string, revision int64) string {
-	return fmt.Sprintf("%s%s/%08d", prefix(scope, "taskdef"), name, revision)
+	return fmt.Sprintf("%s%s/%08d", scope.Prefix(service, "taskdef"), name, revision)
 }
 
 func taskDefARN(scope request.Scope, name string, revision int64) string {
@@ -73,7 +75,7 @@ func resolveDef(tx storage.ReadTx, scope request.Scope, ref *string) (*taskDef, 
 		return d, nil
 	}
 
-	defs, err := storage.Records[taskDef](tx, prefix(scope, "taskdef")+name+"/")
+	defs, err := storage.Records[taskDef](tx, scope.Prefix(service, "taskdef")+name+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -514,7 +516,7 @@ func (s *Service) ListTaskDefinitions(
 
 	out := &api.ListTaskDefinitionsResponse{TaskDefinitionArns: []string{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		defs, readErr := storage.Records[taskDef](tx, prefix(scope, "taskdef")+common.Value(in.FamilyPrefix))
+		defs, readErr := storage.Records[taskDef](tx, scope.Prefix(service, "taskdef")+common.Value(in.FamilyPrefix))
 		if readErr != nil {
 			return readErr
 		}
@@ -559,7 +561,7 @@ func (s *Service) ListTaskDefinitionFamilies(
 
 	out := &api.ListTaskDefinitionFamiliesResponse{Families: []string{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		defs, readErr := storage.Records[taskDef](tx, prefix(scope, "taskdef")+common.Value(in.FamilyPrefix))
+		defs, readErr := storage.Records[taskDef](tx, scope.Prefix(service, "taskdef")+common.Value(in.FamilyPrefix))
 		if readErr != nil {
 			return readErr
 		}

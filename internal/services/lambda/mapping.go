@@ -204,7 +204,7 @@ func (s *Service) CreateEventSourceMapping(
 		return nil, err
 	}
 
-	prefix := scopeKey(m.Scope, kindMapping, "")
+	prefix := m.Key("lambda", kindMapping, "")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, k := range tx.Keys(prefix) {
 			existing, _, loadErr := loadMapping(tx, k)
@@ -283,7 +283,7 @@ func (s *Service) loadMappingByID(ctx context.Context, id *string) (request.Meta
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
 		var loadErr error
-		mp, found, loadErr = loadMapping(tx, scopeKey(m.Scope, kindMapping, *id))
+		mp, found, loadErr = loadMapping(tx, m.Key("lambda", kindMapping, *id))
 		if loadErr == nil && !found {
 			return notFound("Event source mapping " + *id)
 		}
@@ -316,7 +316,7 @@ func (s *Service) DeleteEventSourceMapping(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		key := scopeKey(m.Scope, kindMapping, mp.UUID)
+		key := m.Key("lambda", kindMapping, mp.UUID)
 		if _, ok := tx.Get(key); !ok {
 			return notFound("Event source mapping " + mp.UUID)
 		}
@@ -401,7 +401,7 @@ func (s *Service) UpdateEventSourceMapping(
 
 	<-s.stopPoller(current.UUID)
 	var updated *mapping
-	prefix := scopeKey(m.Scope, kindMapping, "")
+	prefix := m.Key("lambda", kindMapping, "")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		mp, found, loadErr := loadMapping(tx, prefix+current.UUID)
 		if loadErr != nil {
@@ -453,7 +453,7 @@ func (s *Service) UpdateEventSourceMapping(
 func (s *Service) storedMapping(ctx context.Context, scope request.Scope, id string) *mapping {
 	var mp *mapping
 	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
-		mp, _, _ = loadMapping(tx, scopeKey(scope, kindMapping, id))
+		mp, _, _ = loadMapping(tx, scope.Key("lambda", kindMapping, id))
 		return nil
 	})
 
@@ -489,7 +489,7 @@ func (s *Service) ListEventSourceMappings(
 	}
 
 	var mps []*mapping
-	prefix := scopeKey(m.Scope, kindMapping, "")
+	prefix := m.Key("lambda", kindMapping, "")
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(prefix) {
 			if strings.TrimPrefix(k, prefix) <= start {
@@ -878,7 +878,7 @@ func (s *Service) deleteMessages(ctx context.Context, url string, records []sqsR
 
 // recordResult stores the mapping's LastProcessingResult when it changes.
 func (s *Service) recordResult(ctx context.Context, scope request.Scope, id, result string) {
-	key := scopeKey(scope, kindMapping, id)
+	key := scope.Key("lambda", kindMapping, id)
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		mp, found, err := loadMapping(tx, key)
 		if err != nil || !found || mp.LastProcessingResult == result {

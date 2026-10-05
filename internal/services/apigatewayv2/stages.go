@@ -38,7 +38,7 @@ func snapshot(tx storage.ReadTx, scope request.Scope, apiID string, now time.Tim
 		},
 		Integrations: map[string]api.Integration{}, Authorizers: map[string]api.Authorizer{},
 	}
-	routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
+	routes, err := storage.Records[api.Route](tx, scope.Prefix(service, kindRoute)+apiID+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func snapshot(tx storage.ReadTx, scope request.Scope, apiID string, now time.Tim
 		d.Routes = append(d.Routes, *r)
 	}
 
-	integrations, err := storage.Records[api.Integration](tx, prefix(scope, kindIntegration)+apiID+"/")
+	integrations, err := storage.Records[api.Integration](tx, scope.Prefix(service, kindIntegration)+apiID+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func snapshot(tx storage.ReadTx, scope request.Scope, apiID string, now time.Tim
 		d.Integrations[*i.IntegrationId] = *i
 	}
 
-	authorizers, err := storage.Records[api.Authorizer](tx, prefix(scope, kindAuthorizer)+apiID+"/")
+	authorizers, err := storage.Records[api.Authorizer](tx, scope.Prefix(service, kindAuthorizer)+apiID+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func deployedMessage(id string) *string {
 // deploy deploys the API to every stage that deploys automatically, deleting
 // each stage's previous automatic deployment unless another stage serves it.
 func (s *Service) deploy(tx storage.WriteTx, scope request.Scope, apiID string, now time.Time) error {
-	stages, err := storage.Records[api.Stage](tx, prefix(scope, kindStage)+apiID+"/")
+	stages, err := storage.Records[api.Stage](tx, scope.Prefix(service, kindStage)+apiID+"/")
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func prune(tx storage.WriteTx, scope request.Scope, apiID, id string) error {
 		return err
 	}
 
-	stages, err := storage.Records[api.Stage](tx, prefix(scope, kindStage)+apiID+"/")
+	stages, err := storage.Records[api.Stage](tx, scope.Prefix(service, kindStage)+apiID+"/")
 	if err != nil {
 		return err
 	}
@@ -290,7 +290,7 @@ func (s *Service) GetStages(ctx context.Context, in *api.GetStagesRequest) (*api
 			return loadErr
 		}
 
-		all, readErr := storage.Records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.ApiId+"/")
+		all, readErr := storage.Records[api.Stage](tx, m.Prefix(service, kindStage)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -510,7 +510,7 @@ func (s *Service) GetDeployments(
 			return loadErr
 		}
 
-		all, readErr := storage.Records[deployment](tx, prefix(m.Scope, kindDeployment)+*a.ApiId+"/")
+		all, readErr := storage.Records[deployment](tx, m.Prefix(service, kindDeployment)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -583,7 +583,7 @@ func (s *Service) DeleteDeployment(
 			return loadErr
 		}
 
-		stages, readErr := storage.Records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.ApiId+"/")
+		stages, readErr := storage.Records[api.Stage](tx, m.Prefix(service, kindStage)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}

@@ -111,7 +111,7 @@ func (s *Service) ListActivities(ctx context.Context, in *api.ListActivitiesInpu
 
 	out := &api.ListActivitiesOutput{Activities: []api.ActivityListItem{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := recordsOf[activity](tx, prefix(m.Scope, kindActivity))
+		all, readErr := recordsOf[activity](tx, m.Prefix(service, kindActivity))
 		if readErr != nil {
 			return readErr
 		}

@@ -33,7 +33,7 @@ type authSession struct {
 }
 
 func sessionKey(scope request.Scope, pool, id string) string {
-	return prefix(scope, "session") + pool + "/" + id
+	return scope.Prefix(service, "session") + pool + "/" + id
 }
 
 // outcome is what every sign-in operation returns, with their shared wire

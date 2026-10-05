@@ -100,7 +100,7 @@ func (s *Service) update(
 
 	var fn *function
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		key := scopeKey(m.Scope, kindFunction, name)
+		key := m.Key("lambda", kindFunction, name)
 		var found bool
 		var loadErr error
 		fn, found, loadErr = loadFunction(tx, key)
@@ -122,7 +122,7 @@ func (s *Service) update(
 		}
 
 		if code != nil {
-			tx.Put(scopeKey(m.Scope, kindCode, name), code)
+			tx.Put(m.Key("lambda", kindCode, name), code)
 		}
 
 		fn.RevisionID = uuid.NewV4().String()

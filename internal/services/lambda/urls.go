@@ -52,7 +52,7 @@ type urlTarget struct {
 }
 
 func urlKey(scope request.Scope, name, qualifier string) string {
-	return scopeKey(scope, kindURL, name+"/"+qualifier)
+	return scope.Key("lambda", kindURL, name+"/"+qualifier)
 }
 
 // newURLID is a URL ID: 32 lowercase letters and digits.

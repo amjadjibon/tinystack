@@ -74,10 +74,6 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 // invoke Lambda targets. Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
-func key(scope request.Scope, kind, name string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/" + name
-}
-
 func arn(scope request.Scope, resource string) string {
 	return "arn:aws:elasticloadbalancing:" + scope.Region + ":" + scope.AccountID + ":" + resource
 }

@@ -56,7 +56,7 @@ func invokeConfigKey(scope request.Scope, name, qualifier string) string {
 		qualifier = latest
 	}
 
-	return scopeKey(scope, kindInvokeConfig, name+"/"+qualifier)
+	return scope.Key("lambda", kindInvokeConfig, name+"/"+qualifier)
 }
 
 // attempts is how often an invocation runs before it fails: the first attempt
@@ -371,7 +371,7 @@ func (s *Service) ListFunctionEventInvokeConfigs(
 			return resolveErr
 		}
 
-		for _, k := range tx.Keys(scopeKey(m.Scope, kindInvokeConfig, name+"/")) {
+		for _, k := range tx.Keys(m.Key("lambda", kindInvokeConfig, name+"/")) {
 			var c invokeConfig
 			if _, readErr := readJSON(tx, k, &c); readErr != nil {
 				return readErr

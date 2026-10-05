@@ -345,7 +345,7 @@ func (s *Service) processStreamBatch(
 // recordCursor stores the last record a stream mapping processed and the
 // batch's result, if it invoked the function.
 func (s *Service) recordCursor(ctx context.Context, scope request.Scope, id, cursor, result string) {
-	key := scopeKey(scope, kindMapping, id)
+	key := scope.Key("lambda", kindMapping, id)
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		mp, found, err := loadMapping(tx, key)
 		if err != nil || !found {

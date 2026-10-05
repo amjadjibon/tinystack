@@ -49,7 +49,7 @@ type ecsService struct {
 }
 
 func serviceKey(scope request.Scope, clusterName, name string) string {
-	return prefix(scope, kindService) + clusterName + "/" + name
+	return scope.Prefix(service, kindService) + clusterName + "/" + name
 }
 
 func serviceARN(scope request.Scope, clusterName, name string) string {
@@ -670,7 +670,7 @@ func (s *Service) ListServices(ctx context.Context, in *api.ListServicesRequest)
 			return loadErr
 		}
 
-		services, readErr := storage.Records[ecsService](tx, prefix(scope, kindService)+c.Name+"/")
+		services, readErr := storage.Records[ecsService](tx, scope.Prefix(service, kindService)+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}

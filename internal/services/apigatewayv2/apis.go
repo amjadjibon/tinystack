@@ -244,7 +244,7 @@ func (s *Service) GetApis(ctx context.Context, in *api.GetApisRequest) (*api.Get
 
 	out := &api.GetApisResponse{Items: []api.Api{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := storage.Records[api.Api](tx, prefix(m.Scope, kindAPI))
+		all, readErr := storage.Records[api.Api](tx, m.Prefix(service, kindAPI))
 		if readErr != nil {
 			return readErr
 		}
@@ -315,7 +315,7 @@ func (s *Service) UpdateApi(ctx context.Context, in *api.UpdateApiRequest) (*api
 // quickUpdate changes the target and route key of a quick-created API's
 // managed integration and route.
 func (s *Service) quickUpdate(tx storage.WriteTx, scope request.Scope, apiID string, target, key *string) error {
-	routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
+	routes, err := storage.Records[api.Route](tx, scope.Prefix(service, kindRoute)+apiID+"/")
 	if err != nil {
 		return err
 	}
@@ -368,7 +368,7 @@ func (s *Service) DeleteApi(ctx context.Context, in *api.DeleteApiRequest) (*api
 		}
 
 		for _, kind := range []string{kindRoute, kindIntegration, kindAuthorizer, kindDeployment, kindStage} {
-			for _, k := range tx.Keys(prefix(m.Scope, kind) + *a.ApiId + "/") {
+			for _, k := range tx.Keys(m.Prefix(service, kind) + *a.ApiId + "/") {
 				tx.Delete(k)
 			}
 		}

@@ -67,7 +67,7 @@ func groupNotFound(name string) error {
 }
 
 func loadGroup(tx storage.ReadTx, scope request.Scope, name string) (*group, error) {
-	g, found, err := storage.Read[group](tx, key(scope, kindGroup, name))
+	g, found, err := storage.Read[group](tx, scope.Key(service, kindGroup, name))
 	if err == nil && !found {
 		err = groupNotFound(name)
 	}
@@ -158,7 +158,7 @@ func (g *group) apply(tx storage.ReadTx, scope request.Scope, in *settings, wher
 	}
 
 	if name := in.LaunchConfigurationName; name != nil {
-		if _, found := tx.Get(key(scope, kindConfiguration, *name)); !found {
+		if _, found := tx.Get(scope.Key(service, kindConfiguration, *name)); !found {
 			return validation("Launch configuration name not found - Launch configuration %s not found", *name)
 		}
 
@@ -345,7 +345,7 @@ func (s *Service) CreateAutoScalingGroup(
 		SuspendedProcesses: []api.SuspendedProcess{}, EnabledMetrics: []api.EnabledMetric{}, Tags: tags,
 	}}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if _, found := tx.Get(key(m.Scope, kindGroup, name)); found {
+		if _, found := tx.Get(m.Key(service, kindGroup, name)); found {
 			return awserror.New("AlreadyExistsFault", "AutoScalingGroup by this name already exists - A group with "+
 				"the name "+name+" already exists")
 		}
@@ -355,7 +355,7 @@ func (s *Service) CreateAutoScalingGroup(
 		}
 
 		tx.Put(indexKey(m.Scope, name), []byte("{}"))
-		return storage.Write(tx, key(m.Scope, kindGroup, name), g)
+		return storage.Write(tx, m.Key(service, kindGroup, name), g)
 	})
 	if err != nil {
 		return nil, err
@@ -390,7 +390,7 @@ func (s *Service) UpdateAutoScalingGroup(
 			return applyErr
 		}
 
-		return storage.Write(tx, key(m.Scope, kindGroup, name), g)
+		return storage.Write(tx, m.Key(service, kindGroup, name), g)
 	})
 	if err != nil {
 		return nil, err
@@ -436,7 +436,7 @@ func (s *Service) DeleteAutoScalingGroup(
 		}
 
 		for _, kind := range []string{kindPolicy, kindScheduled, kindActivity} {
-			for _, k := range tx.Keys(key(m.Scope, kind, name+"/")) {
+			for _, k := range tx.Keys(m.Key(service, kind, name+"/")) {
 				if kind == kindPolicy {
 					p, _, readErr := storage.Read[api.ScalingPolicy](tx, k)
 					if readErr != nil {
@@ -452,7 +452,7 @@ func (s *Service) DeleteAutoScalingGroup(
 			}
 		}
 
-		tx.Delete(key(m.Scope, kindGroup, name))
+		tx.Delete(m.Key(service, kindGroup, name))
 		tx.Delete(indexKey(m.Scope, name))
 		return nil
 	})
@@ -503,7 +503,7 @@ func (s *Service) DescribeAutoScalingGroups(
 
 	var groups []*group
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
+		for _, k := range tx.Keys(m.Key(service, kindGroup, "")) {
 			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr
@@ -555,7 +555,7 @@ func (s *Service) changeGroup(ctx context.Context, scope request.Scope, name str
 			return fnErr
 		}
 
-		return storage.Write(tx, key(scope, kindGroup, name), g)
+		return storage.Write(tx, scope.Key(service, kindGroup, name), g)
 	})
 }
 
@@ -607,7 +607,7 @@ func (s *Service) SetDesiredCapacity(
 
 // findMember returns the name of the group that has an instance.
 func findMember(tx storage.ReadTx, scope request.Scope, id string) (string, error) {
-	for _, k := range tx.Keys(key(scope, kindGroup, "")) {
+	for _, k := range tx.Keys(scope.Key(service, kindGroup, "")) {
 		g, _, err := storage.Read[group](tx, k)
 		if err != nil {
 			return "", err
@@ -631,7 +631,7 @@ func (s *Service) DescribeAutoScalingInstances(
 
 	var all []api.AutoScalingInstanceDetails
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
+		for _, k := range tx.Keys(m.Key(service, kindGroup, "")) {
 			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr
@@ -711,13 +711,13 @@ func (s *Service) TerminateInstanceInAutoScalingGroup(
 		g.Members = slices.Delete(g.Members, i, i+1)
 		if writeErr := storage.Write(
 			tx,
-			key(m.Scope, kindActivity, name+"/"+s.sequenced(now)),
+			m.Key(service, kindActivity, name+"/"+s.sequenced(now)),
 			activity,
 		); writeErr != nil {
 			return writeErr
 		}
 
-		return storage.Write(tx, key(m.Scope, kindGroup, name), g)
+		return storage.Write(tx, m.Key(service, kindGroup, name), g)
 	})
 	if err != nil {
 		return nil, err

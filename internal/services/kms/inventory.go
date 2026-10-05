@@ -31,7 +31,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			var aliases []string
-			for _, aliasRecord := range tx.Keys(prefix(scope, "alias")) {
+			for _, aliasRecord := range tx.Keys(scope.Prefix("kms", "alias")) {
 				a, _, readErr := storage.Read[alias](tx, aliasRecord)
 				if readErr != nil {
 					return readErr

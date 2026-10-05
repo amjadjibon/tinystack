@@ -28,7 +28,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			out = append(out, catalog.Resource{
 				Type: "user-pool", Account: account, Region: region, Name: p.Name, ARN: poolARN(scope, p.ID),
 				Tags: p.Tags, Details: map[string]any{
-					"Id": p.ID, "Clients": len(tx.Keys(prefix(scope, "client") + p.ID + "/")),
+					"Id": p.ID, "Clients": len(tx.Keys(scope.Prefix(service, "client") + p.ID + "/")),
 					"Users": len(tx.Keys(userPrefix(scope, p.ID))),
 				},
 			})

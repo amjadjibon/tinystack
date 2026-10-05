@@ -40,7 +40,7 @@ type query struct {
 	Bytes   int
 }
 
-func queryKey(scope request.Scope, id string) string { return prefix(scope, "query") + id }
+func queryKey(scope request.Scope, id string) string { return scope.Prefix("logs", "query") + id }
 
 func newQueryID() string {
 	var b [16]byte
@@ -293,7 +293,7 @@ func (s *Service) DescribeQueries(
 
 	out := &api.DescribeQueriesResponse{Queries: []api.QueryInfo{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, key := range tx.Keys(prefix(scope, "query")) {
+		for _, key := range tx.Keys(scope.Prefix("logs", "query")) {
 			if key <= after {
 				continue
 			}

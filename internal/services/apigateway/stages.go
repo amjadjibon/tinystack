@@ -171,7 +171,7 @@ func (s *Service) GetDeployment(ctx context.Context, in *api.GetDeploymentReques
 func (s *Service) GetDeployments(ctx context.Context, in *api.GetDeploymentsRequest) (*api.Deployments, error) {
 	out := &api.Deployments{Items: []api.Deployment{}}
 	err := s.viewAPI(ctx, in.RestApiId, func(tx storage.ReadTx, scope request.Scope, a *restAPI) error {
-		all, err := storage.Records[deployment](tx, prefix(scope, kindDeployment)+*a.API.Id+"/")
+		all, err := storage.Records[deployment](tx, scope.Prefix(service, kindDeployment)+*a.API.Id+"/")
 		if err != nil {
 			return err
 		}
@@ -242,7 +242,7 @@ func (s *Service) DeleteDeployment(
 			return loadErr
 		}
 
-		stages, readErr := storage.Records[api.Stage](tx, prefix(m.Scope, kindStage)+*a.API.Id+"/")
+		stages, readErr := storage.Records[api.Stage](tx, m.Prefix(service, kindStage)+*a.API.Id+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -334,7 +334,7 @@ func (s *Service) GetStage(ctx context.Context, in *api.GetStageRequest) (*api.S
 func (s *Service) GetStages(ctx context.Context, in *api.GetStagesRequest) (*api.Stages, error) {
 	out := &api.Stages{Item: []api.Stage{}}
 	err := s.viewAPI(ctx, in.RestApiId, func(tx storage.ReadTx, scope request.Scope, a *restAPI) error {
-		all, err := storage.Records[api.Stage](tx, prefix(scope, kindStage)+*a.API.Id+"/")
+		all, err := storage.Records[api.Stage](tx, scope.Prefix(service, kindStage)+*a.API.Id+"/")
 		for _, st := range all {
 			if in.DeploymentId == nil || common.Value(st.DeploymentId) == *in.DeploymentId {
 				out.Item = append(out.Item, *st)

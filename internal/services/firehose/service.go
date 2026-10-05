@@ -115,14 +115,12 @@ type buffered struct {
 	Arrival float64
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
+func streamKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, kindStream) + name
 }
 
-func streamKey(scope request.Scope, name string) string { return prefix(scope, kindStream) + name }
-
 func bufferPrefix(scope request.Scope, name string) string {
-	return prefix(scope, kindBuffer) + name + "/"
+	return scope.Prefix(service, kindBuffer) + name + "/"
 }
 
 func indexKey(scope request.Scope, name string) string {
@@ -510,7 +508,7 @@ func (s *Service) ListDeliveryStreams(
 
 	out := &api.ListDeliveryStreamsOutput{DeliveryStreamNames: []string{}, HasMoreDeliveryStreams: new(false)}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(prefix(m.Scope, kindStream)) {
+		for _, k := range tx.Keys(m.Prefix(service, kindStream)) {
 			st, _, readErr := storage.Read[deliveryStream](tx, k)
 			if readErr != nil {
 				return readErr

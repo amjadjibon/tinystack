@@ -109,14 +109,12 @@ func notFound(scope request.Scope, name string) error {
 		fmt.Sprintf("Stream %s under account %s not found.", name, scope.AccountID))
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
+func streamKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, kindStream) + name
 }
 
-func streamKey(scope request.Scope, name string) string { return prefix(scope, kindStream) + name }
-
 func recordPrefix(scope request.Scope, name, shardID string) string {
-	return prefix(scope, kindRecord) + name + "/" + shardID + "/"
+	return scope.Prefix(service, kindRecord) + name + "/" + shardID + "/"
 }
 
 // StreamARN is a stream's ARN.

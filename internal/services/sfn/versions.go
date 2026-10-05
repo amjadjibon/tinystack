@@ -53,11 +53,11 @@ type alias struct {
 }
 
 func versionKey(scope request.Scope, machine string, n int64) string {
-	return fmt.Sprintf("%s%s/%010d", prefix(scope, kindVersion), machine, n)
+	return fmt.Sprintf("%s%s/%010d", scope.Prefix(service, kindVersion), machine, n)
 }
 
 func aliasKey(scope request.Scope, machine, name string) string {
-	return prefix(scope, kindAlias) + machine + "/" + name
+	return scope.Prefix(service, kindAlias) + machine + "/" + name
 }
 
 func machineARN(scope request.Scope, machine string) string {
@@ -176,7 +176,7 @@ func publish(
 		}
 	}
 
-	if len(tx.Keys(prefix(scope, kindVersion)+sm.Name+"/")) >= maxVersions {
+	if len(tx.Keys(scope.Prefix(service, kindVersion)+sm.Name+"/")) >= maxVersions {
 		return nil, awserror.New("ServiceQuotaExceededException", "The state machine has 1000 versions.")
 	}
 
@@ -259,7 +259,7 @@ func (s *Service) ListStateMachineVersions(
 		}
 
 		var items []api.StateMachineVersionListItem
-		for _, k := range tx.Keys(prefix(scope, kindVersion) + sm.Name + "/") {
+		for _, k := range tx.Keys(scope.Prefix(service, kindVersion) + sm.Name + "/") {
 			v, _, readErr := storage.Read[version](tx, k)
 			if readErr != nil {
 				return readErr
@@ -310,7 +310,7 @@ func (s *Service) DeleteStateMachineVersion(
 
 	n, _ := strconv.ParseInt(qualifier, 10, 64)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		for _, k := range tx.Keys(prefix(scope, kindAlias) + machine + "/") {
+		for _, k := range tx.Keys(scope.Prefix(service, kindAlias) + machine + "/") {
 			a, _, readErr := storage.Read[alias](tx, k)
 			if readErr != nil {
 				return readErr
@@ -600,7 +600,7 @@ func (s *Service) ListStateMachineAliases(
 		}
 
 		var items []api.StateMachineAliasListItem
-		for _, k := range tx.Keys(prefix(scope, kindAlias) + sm.Name + "/") {
+		for _, k := range tx.Keys(scope.Prefix(service, kindAlias) + sm.Name + "/") {
 			a, _, readErr := storage.Read[alias](tx, k)
 			if readErr != nil {
 				return readErr

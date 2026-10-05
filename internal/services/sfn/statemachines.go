@@ -264,7 +264,7 @@ func (s *Service) ListStateMachines(
 	out := &api.ListStateMachinesOutput{StateMachines: []api.StateMachineListItem{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var items []api.StateMachineListItem
-		for _, k := range tx.Keys(prefix(m.Scope, kindMachine)) {
+		for _, k := range tx.Keys(m.Prefix(service, kindMachine)) {
 			sm, _, readErr := storage.Read[stateMachine](tx, k)
 			if readErr != nil {
 				return readErr
@@ -387,7 +387,7 @@ func (s *Service) DeleteStateMachine(
 		}
 
 		for _, kind := range []string{kindExecution, kindEvent, kindVersion, kindAlias} {
-			for _, k := range tx.Keys(prefix(scope, kind) + sm.Name + "/") {
+			for _, k := range tx.Keys(scope.Prefix(service, kind) + sm.Name + "/") {
 				if kind == kindExecution {
 					e, _, readErr := storage.Read[execution](tx, k)
 					if readErr != nil {

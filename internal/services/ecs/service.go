@@ -92,10 +92,6 @@ func clusterNotFound() error {
 	return awserror.New("ClusterNotFoundException", "Cluster not found.")
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
-}
-
 func arn(scope request.Scope, resource string) string {
 	return "arn:aws:ecs:" + scope.Region + ":" + scope.AccountID + ":" + resource
 }

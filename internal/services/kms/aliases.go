@@ -22,7 +22,7 @@ type alias struct {
 
 var aliasName = regexp.MustCompile(`^alias/[a-zA-Z0-9/_-]{1,250}$`)
 
-func aliasKey(scope request.Scope, name string) string { return prefix(scope, "alias") + name }
+func aliasKey(scope request.Scope, name string) string { return scope.Prefix("kms", "alias") + name }
 
 func aliasARN(scope request.Scope, name string) string {
 	return "arn:aws:kms:" + scope.Region + ":" + scope.AccountID + ":alias/" + name
@@ -195,7 +195,7 @@ func (s *Service) ListAliases(ctx context.Context, in *api.ListAliasesRequest) (
 			only = k.ID
 		}
 
-		records := prefix(scope, "alias")
+		records := scope.Prefix("kms", "alias")
 		for _, k := range tx.Keys(records) {
 			a, exists, loadErr := s.loadAlias(tx, scope, strings.TrimPrefix(k, records))
 			if loadErr != nil {

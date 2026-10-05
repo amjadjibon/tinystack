@@ -351,7 +351,7 @@ func (s *Service) CreateUserPoolClient(
 			return settingsErr
 		}
 
-		if len(tx.Keys(prefix(scope, "client")+p.ID+"/")) >= maxClients {
+		if len(tx.Keys(scope.Prefix(service, "client")+p.ID+"/")) >= maxClients {
 			return awserror.New("LimitExceededException", "The user pool has reached its limit of app clients.")
 		}
 
@@ -416,7 +416,7 @@ func (s *Service) ListUserPoolClients(
 
 	var clients []*client
 	err = s.view(ctx, in.UserPoolId, func(tx storage.ReadTx, scope request.Scope, p *pool) error {
-		for _, id := range ids(tx, prefix(scope, "client")+p.ID+"/") {
+		for _, id := range ids(tx, scope.Prefix(service, "client")+p.ID+"/") {
 			c, _, readErr := storage.Read[client](tx, clientKey(scope, p.ID, id))
 			if readErr != nil {
 				return readErr

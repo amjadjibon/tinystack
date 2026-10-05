@@ -49,7 +49,7 @@ type grant struct {
 }
 
 func grantPrefix(scope request.Scope, keyID string) string {
-	return prefix(scope, "grant") + keyID + "/"
+	return scope.Prefix("kms", "grant") + keyID + "/"
 }
 
 func grantToken(keyID, grantID string) string {
@@ -250,14 +250,14 @@ func (s *Service) ListRetirableGrants(
 
 	var entries []api.GrantListEntry
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, gk := range tx.Keys(prefix(scope, "grant")) {
+		for _, gk := range tx.Keys(scope.Prefix("kms", "grant")) {
 			g, _, readErr := storage.Read[grant](tx, gk)
 			if readErr != nil {
 				return readErr
 			}
 
 			if g.Retiring == *in.RetiringPrincipal {
-				keyID, _, _ := strings.Cut(strings.TrimPrefix(gk, prefix(scope, "grant")), "/")
+				keyID, _, _ := strings.Cut(strings.TrimPrefix(gk, scope.Prefix("kms", "grant")), "/")
 				entries = append(entries, g.entry(scope, keyID))
 			}
 		}

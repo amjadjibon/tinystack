@@ -71,20 +71,18 @@ func notFound(format string, args ...any) error {
 	return awserror.New("ResourceNotFoundException", fmt.Sprintf(format, args...))
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
-}
-
 // poolKinds are the record kinds a pool owns, each under <kind>/<pool ID>/.
 var poolKinds = []string{"client", "user", "alias", "group", "refresh", "session", kindResourceServer}
 
-func poolKey(scope request.Scope, id string) string { return prefix(scope, "pool") + id }
+func poolKey(scope request.Scope, id string) string { return scope.Prefix(service, "pool") + id }
 
 func clientKey(scope request.Scope, pool, id string) string {
-	return prefix(scope, "client") + pool + "/" + id
+	return scope.Prefix(service, "client") + pool + "/" + id
 }
 
-func userPrefix(scope request.Scope, pool string) string { return prefix(scope, "user") + pool + "/" }
+func userPrefix(scope request.Scope, pool string) string {
+	return scope.Prefix(service, "user") + pool + "/"
+}
 
 // poolIndexKey holds a pool's account, partition-wide, so its public keys can
 // be served by pool ID alone.

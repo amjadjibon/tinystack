@@ -53,9 +53,11 @@ type point struct {
 	Summary bool `json:",omitempty"`
 }
 
-func dataPrefix(scope request.Scope, id string) string { return prefix(scope, kindData) + id + "/" }
+func dataPrefix(scope request.Scope, id string) string {
+	return scope.Prefix(service, kindData) + id + "/"
+}
 
-func metricKey(scope request.Scope, id string) string { return prefix(scope, kindMetric) + id }
+func metricKey(scope request.Scope, id string) string { return scope.Prefix(service, kindMetric) + id }
 
 func (s *Service) PutMetricData(ctx context.Context, in *api.PutMetricDataInput) (*api.PutMetricDataOutput, error) {
 	m, err := request.Regional(ctx)
@@ -516,7 +518,7 @@ func (s *Service) ListMetrics(ctx context.Context, in *api.ListMetricsInput) (*a
 	out := &api.ListMetricsOutput{Metrics: []api.Metric{}}
 	var last string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p := prefix(m.Scope, kindMetric)
+		p := m.Prefix(service, kindMetric)
 		for _, k := range tx.Keys(p) {
 			id := strings.TrimPrefix(k, p)
 			if in.NextToken != nil && id <= *in.NextToken {

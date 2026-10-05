@@ -29,7 +29,7 @@ type stream struct {
 }
 
 func streamPrefix(scope request.Scope, group string) string {
-	return prefix(scope, "stream") + encode(group) + "/"
+	return scope.Prefix("logs", "stream") + encode(group) + "/"
 }
 
 func streamKey(scope request.Scope, group, name string) string {

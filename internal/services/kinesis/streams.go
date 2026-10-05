@@ -92,7 +92,7 @@ func (s *Service) DeleteStream(ctx context.Context, in *api.DeleteStreamInput) (
 				"set EnforceConsumerDeletion to delete it with them.")
 		}
 
-		for _, k := range tx.Keys(prefix(m.Scope, kindRecord) + name + "/") {
+		for _, k := range tx.Keys(m.Prefix(service, kindRecord) + name + "/") {
 			tx.Delete(k)
 		}
 
@@ -232,7 +232,7 @@ func (s *Service) ListStreams(ctx context.Context, in *api.ListStreamsInput) (*a
 		HasMoreStreams:  new(false),
 	}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(prefix(m.Scope, kindStream)) {
+		for _, k := range tx.Keys(m.Prefix(service, kindStream)) {
 			st, _, readErr := storage.Read[stream](tx, k)
 			if readErr != nil {
 				return readErr
@@ -644,7 +644,7 @@ func (s *Service) DescribeLimits(ctx context.Context, _ *api.DescribeLimitsInput
 		OnDemandStreamCountLimit: new(int64(50)),
 	}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(prefix(m.Scope, kindStream)) {
+		for _, k := range tx.Keys(m.Prefix(service, kindStream)) {
 			st, _, readErr := storage.Read[stream](tx, k)
 			if readErr != nil {
 				return readErr

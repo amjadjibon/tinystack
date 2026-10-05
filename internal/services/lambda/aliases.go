@@ -92,7 +92,7 @@ func (a *alias) setRouting(tx storage.ReadTx, scope request.Scope, routing *api.
 }
 
 func aliasKey(scope request.Scope, function, name string) string {
-	return scopeKey(scope, kindAlias, function+"/"+name)
+	return scope.Key("lambda", kindAlias, function+"/"+name)
 }
 
 func loadAliasRecord(tx storage.ReadTx, key string) (*alias, bool, error) {
@@ -351,7 +351,7 @@ func (s *Service) ListAliases(ctx context.Context, in *api.ListAliasesRequest) (
 	}
 
 	var aliases []*alias
-	prefix := scopeKey(m.Scope, kindAlias, fn+"/")
+	prefix := m.Key("lambda", kindAlias, fn+"/")
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		if _, _, loadErr := resolve(tx, m.Scope, fn, ""); loadErr != nil {
 			return loadErr

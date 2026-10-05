@@ -61,7 +61,7 @@ func findRule(tx storage.ReadTx, scope request.Scope, arnValue string) (*listene
 		return nil, nil, validation("'%s' is not a valid rule ARN", arnValue)
 	}
 
-	l, found, err := storage.Read[listener](tx, key(scope, kindListener, parts[1]+"/"+parts[3]))
+	l, found, err := storage.Read[listener](tx, scope.Key(service, kindListener, parts[1]+"/"+parts[3]))
 	switch {
 	case err != nil:
 		return nil, nil, err
@@ -71,7 +71,7 @@ func findRule(tx storage.ReadTx, scope request.Scope, arnValue string) (*listene
 		return l, nil, nil
 	}
 
-	r, found, err := storage.Read[rule](tx, key(scope, kindRule, l.ID+"/"+parts[4]))
+	r, found, err := storage.Read[rule](tx, scope.Key(service, kindRule, l.ID+"/"+parts[4]))
 	switch {
 	case err != nil:
 		return nil, nil, err
@@ -85,7 +85,7 @@ func findRule(tx storage.ReadTx, scope request.Scope, arnValue string) (*listene
 // listenerRules returns a listener's rules in priority order, its default
 // rule last.
 func listenerRules(tx storage.ReadTx, scope request.Scope, l *listener) ([]api.Rule, error) {
-	rules, err := storage.Records[rule](tx, key(scope, kindRule, l.ID+"/"))
+	rules, err := storage.Records[rule](tx, scope.Key(service, kindRule, l.ID+"/"))
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api
 			return findErr
 		}
 
-		b, found, readErr := storage.Read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
+		b, found, readErr := storage.Read[balancer](tx, m.Key(service, kindLB, l.Balancer))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -284,7 +284,7 @@ func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api
 			return actionsErr
 		}
 
-		existing, listErr := storage.Records[rule](tx, key(m.Scope, kindRule, l.ID+"/"))
+		existing, listErr := storage.Records[rule](tx, m.Key(service, kindRule, l.ID+"/"))
 		switch {
 		case listErr != nil:
 			return listErr
@@ -299,7 +299,7 @@ func (s *Service) CreateRule(ctx context.Context, in *api.CreateRuleInput) (*api
 			RuleArn: new(l.ruleARN(m.Scope, id)), Priority: new(strconv.FormatInt(priority, 10)),
 			Conditions: conditions, Actions: actions, IsDefault: new(false),
 		}}
-		return storage.Write(tx, key(m.Scope, kindRule, l.ID+"/"+id), r)
+		return storage.Write(tx, m.Key(service, kindRule, l.ID+"/"+id), r)
 	})
 	if err != nil {
 		return nil, err
@@ -396,7 +396,7 @@ func (s *Service) ModifyRule(ctx context.Context, in *api.ModifyRuleInput) (*api
 		}
 
 		if in.Actions != nil {
-			b, ok, readErr := storage.Read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
+			b, ok, readErr := storage.Read[balancer](tx, m.Key(service, kindLB, l.Balancer))
 			switch {
 			case readErr != nil:
 				return readErr
@@ -412,7 +412,7 @@ func (s *Service) ModifyRule(ctx context.Context, in *api.ModifyRuleInput) (*api
 			r.R.Actions = actions
 		}
 
-		return storage.Write(tx, key(m.Scope, kindRule, r.Listener+"/"+r.ID), r)
+		return storage.Write(tx, m.Key(service, kindRule, r.Listener+"/"+r.ID), r)
 	})
 	if err != nil {
 		return nil, err
@@ -436,7 +436,7 @@ func (s *Service) DeleteRule(ctx context.Context, in *api.DeleteRuleInput) (*api
 			return defaultRuleChange()
 		}
 
-		tx.Delete(key(m.Scope, kindRule, r.Listener+"/"+r.ID))
+		tx.Delete(m.Key(service, kindRule, r.Listener+"/"+r.ID))
 		return nil
 	})
 }
@@ -479,13 +479,13 @@ func (s *Service) SetRulePriorities(
 			r.Priority = common.Value(p.Priority)
 			r.R.Priority = new(strconv.FormatInt(r.Priority, 10))
 			changed[r.ID] = r
-			if writeErr := storage.Write(tx, key(m.Scope, kindRule, r.Listener+"/"+r.ID), r); writeErr != nil {
+			if writeErr := storage.Write(tx, m.Key(service, kindRule, r.Listener+"/"+r.ID), r); writeErr != nil {
 				return writeErr
 			}
 		}
 
 		for _, r := range changed {
-			rules, listErr := storage.Records[rule](tx, key(m.Scope, kindRule, r.Listener+"/"))
+			rules, listErr := storage.Records[rule](tx, m.Key(service, kindRule, r.Listener+"/"))
 			if listErr != nil {
 				return listErr
 			}

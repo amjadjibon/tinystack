@@ -48,13 +48,13 @@ func (s *Service) CreateScheduleGroup(
 	now := common.Unix(s.now())
 	return &api.CreateScheduleGroupOutput{ScheduleGroupArn: new(groupARN(m.Scope, name))},
 		s.store.Update(ctx, func(tx storage.WriteTx) error {
-			if _, exists := tx.Get(key(m.Scope, kindGroup, name)); exists || name == defaultGroup {
+			if _, exists := tx.Get(m.Key(service, kindGroup, name)); exists || name == defaultGroup {
 				return awserror.New("ConflictException", "Schedule group "+name+" already exists.")
 			}
 
 			return storage.Write(
 				tx,
-				key(m.Scope, kindGroup, name),
+				m.Key(service, kindGroup, name),
 				group{Name: name, Created: now, Modified: now, Tags: tags},
 			)
 		})
@@ -106,12 +106,12 @@ func (s *Service) DeleteScheduleGroup(
 			return loadErr
 		}
 
-		for _, k := range tx.Keys(key(m.Scope, kindSchedule, name+"/")) {
+		for _, k := range tx.Keys(m.Key(service, kindSchedule, name+"/")) {
 			tx.Delete(k)
 			tx.Delete(indexKey(m.Scope, name, k[strings.LastIndexByte(k, '/')+1:]))
 		}
 
-		tx.Delete(key(m.Scope, kindGroup, name))
+		tx.Delete(m.Key(service, kindGroup, name))
 		return nil
 	})
 }
@@ -137,7 +137,7 @@ func (s *Service) ListScheduleGroups(
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		def, _ := loadGroup(tx, m.Scope, defaultGroup)
 		groups = append(groups, def)
-		for _, k := range tx.Keys(key(m.Scope, kindGroup, "")) {
+		for _, k := range tx.Keys(m.Key(service, kindGroup, "")) {
 			g, _, readErr := storage.Read[group](tx, k)
 			if readErr != nil {
 				return readErr
@@ -212,7 +212,7 @@ func (s *Service) retag(ctx context.Context, arn *string, change func(map[string
 			return loadErr
 		}
 
-		return storage.Write(tx, key(m.Scope, kindGroup, name), g)
+		return storage.Write(tx, m.Key(service, kindGroup, name), g)
 	})
 }
 

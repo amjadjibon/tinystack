@@ -64,10 +64,6 @@ type token struct {
 	Expires float64
 }
 
-func key(scope request.Scope, kind, name string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/" + name
-}
-
 func certARN(scope request.Scope, id string) string {
 	return "arn:aws:acm:" + scope.Region + ":" + scope.AccountID + ":certificate/" + id
 }
@@ -101,7 +97,7 @@ func load(tx storage.ReadTx, scope request.Scope, arn *string) (*certificate, er
 		return nil, err
 	}
 
-	c, found, err := storage.Read[certificate](tx, key(scope, kindCert, id))
+	c, found, err := storage.Read[certificate](tx, scope.Key(service, kindCert, id))
 	if err == nil && !found {
 		err = notFound(*arn)
 	}

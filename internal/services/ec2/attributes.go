@@ -99,7 +99,7 @@ func (s *Service) ModifyVpcAttribute(
 				"Enabling DNS hostnames requires DNS support to be enabled for the VPC.")
 		}
 
-		return storage.Write(tx, key(scope, kindVPC, v.ID), v)
+		return storage.Write(tx, scope.Key("ec2", kindVPC, v.ID), v)
 	})
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (s *Service) ModifySubnetAttribute(
 
 	err := s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
 		id := common.Value(in.SubnetId)
-		sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, id))
+		sn, ok, err := storage.Read[subnet](tx, scope.Key("ec2", kindSubnet, id))
 		if err != nil || !ok {
 			return common.ErrorsOr(err, subnetNotFound(id))
 		}
@@ -160,7 +160,7 @@ func (s *Service) ModifySubnetAttribute(
 			sn.DNSARecord = common.Value(in.EnableResourceNameDnsARecordOnLaunch.Value)
 		}
 
-		return storage.Write(tx, key(scope, kindSubnet, sn.ID), sn)
+		return storage.Write(tx, scope.Key("ec2", kindSubnet, sn.ID), sn)
 	})
 	if err != nil {
 		return nil, err

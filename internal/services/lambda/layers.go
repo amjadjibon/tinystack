@@ -59,11 +59,11 @@ type functionLayer struct {
 func layerID(name string, version int64) string { return fmt.Sprintf("%s/%010d", name, version) }
 
 func layerKey(scope request.Scope, name string, version int64) string {
-	return scopeKey(scope, kindLayer, layerID(name, version))
+	return scope.Key("lambda", kindLayer, layerID(name, version))
 }
 
 func layerCodeKey(scope request.Scope, name string, version int64) string {
-	return scopeKey(scope, kindLayerCode, layerID(name, version))
+	return scope.Key("lambda", kindLayerCode, layerID(name, version))
 }
 
 func (l *layerVersion) arn(scope request.Scope) string {
@@ -195,7 +195,7 @@ func (s *Service) PublishLayerVersion(
 		Runtimes: in.CompatibleRuntimes, Architecture: in.CompatibleArchitectures, CodeSize: int64(len(code)),
 	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		head := scopeKey(m.Scope, kindLayerHead, name)
+		head := m.Key("lambda", kindLayerHead, name)
 		if data, ok := tx.Get(head); ok {
 			last, parseErr := strconv.ParseInt(string(data), 10, 64)
 			if parseErr != nil {
@@ -361,7 +361,7 @@ func (s *Service) ListLayerVersions(
 
 	out := &api.ListLayerVersionsResponse{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		keys := tx.Keys(scopeKey(scope, kindLayer, name+"/"))
+		keys := tx.Keys(scope.Key("lambda", kindLayer, name+"/"))
 		slices.Reverse(keys)
 		for _, k := range keys {
 			if start != "" && k >= start {
@@ -410,13 +410,13 @@ func (s *Service) ListLayers(ctx context.Context, in *api.ListLayersRequest) (*a
 
 	out := &api.ListLayersResponse{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, head := range tx.Keys(scopeKey(m.Scope, kindLayerHead, "")) {
-			name := strings.TrimPrefix(head, scopeKey(m.Scope, kindLayerHead, ""))
+		for _, head := range tx.Keys(m.Key("lambda", kindLayerHead, "")) {
+			name := strings.TrimPrefix(head, m.Key("lambda", kindLayerHead, ""))
 			if name <= start {
 				continue
 			}
 
-			keys := tx.Keys(scopeKey(m.Scope, kindLayer, name+"/"))
+			keys := tx.Keys(m.Key("lambda", kindLayer, name+"/"))
 			slices.Reverse(keys)
 			for _, k := range keys {
 				var l layerVersion

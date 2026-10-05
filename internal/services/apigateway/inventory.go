@@ -37,7 +37,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			slices.Sort(methodKeys)
 			scope := request.Scope{AccountID: account, Region: region}
-			stagePrefix := prefix(scope, kindStage) + *a.API.Id + "/"
+			stagePrefix := scope.Prefix(service, kindStage) + *a.API.Id + "/"
 			for _, k := range tx.Keys(stagePrefix) {
 				stages = append(stages, strings.TrimPrefix(k, stagePrefix))
 			}

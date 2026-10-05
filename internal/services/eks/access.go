@@ -247,7 +247,7 @@ func (s *Service) ListAccessEntries(
 			return loadErr
 		}
 
-		entries, readErr := storage.Records[accessEntry](tx, prefix(scope, "access")+c.Name+"/")
+		entries, readErr := storage.Records[accessEntry](tx, scope.Prefix(service, "access")+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}

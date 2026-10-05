@@ -165,7 +165,7 @@ func (s *Service) PutScheduledUpdateGroupAction(
 			return loadErr
 		}
 
-		k := key(m.Scope, kindScheduled, groupName+"/"+name)
+		k := m.Key(service, kindScheduled, groupName+"/"+name)
 		if old, found, readErr := storage.Read[scheduled](tx, k); readErr != nil {
 			return readErr
 		} else if found {
@@ -186,7 +186,7 @@ func (s *Service) DescribeScheduledActions(
 
 	var all []*scheduled
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p := key(m.Scope, kindScheduled, "")
+		p := m.Key(service, kindScheduled, "")
 		if in.AutoScalingGroupName != nil {
 			if _, loadErr := loadGroup(tx, m.Scope, *in.AutoScalingGroupName); loadErr != nil {
 				return loadErr
@@ -252,7 +252,7 @@ func (s *Service) DeleteScheduledAction(
 			return loadErr
 		}
 
-		k := key(m.Scope, kindScheduled, groupName+"/"+name)
+		k := m.Key(service, kindScheduled, groupName+"/"+name)
 		if _, found := tx.Get(k); !found {
 			return validation("Scheduled action name not found - %s", name)
 		}
@@ -267,13 +267,13 @@ func (s *Service) DeleteScheduledAction(
 func (s *Service) runScheduled(ctx context.Context, scope request.Scope, name string) error {
 	now := s.now().UTC()
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		g, found, err := storage.Read[group](tx, key(scope, kindGroup, name))
+		g, found, err := storage.Read[group](tx, scope.Key(service, kindGroup, name))
 		if err != nil || !found || g.suspended(processScheduled) {
 			return err
 		}
 
 		changed := false
-		for _, k := range tx.Keys(key(scope, kindScheduled, name+"/")) {
+		for _, k := range tx.Keys(scope.Key(service, kindScheduled, name+"/")) {
 			a, _, readErr := storage.Read[scheduled](tx, k)
 			if readErr != nil {
 				return readErr
@@ -303,7 +303,7 @@ func (s *Service) runScheduled(ctx context.Context, scope request.Scope, name st
 				desired, from, desired), nil)
 			if writeErr := storage.Write(
 				tx,
-				key(scope, kindActivity, name+"/"+s.sequenced(now)),
+				scope.Key(service, kindActivity, name+"/"+s.sequenced(now)),
 				activity,
 			); writeErr != nil {
 				return writeErr
@@ -328,6 +328,6 @@ func (s *Service) runScheduled(ctx context.Context, scope request.Scope, name st
 			return nil
 		}
 
-		return storage.Write(tx, key(scope, kindGroup, name), g)
+		return storage.Write(tx, scope.Key(service, kindGroup, name), g)
 	})
 }

@@ -28,7 +28,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			scope := request.Scope{AccountID: account, Region: region}
-			routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+*a.ApiId+"/")
+			routes, err := storage.Records[api.Route](tx, scope.Prefix(service, kindRoute)+*a.ApiId+"/")
 			if err != nil {
 				return err
 			}
@@ -38,7 +38,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				keys = append(keys, common.Value(r.RouteKey))
 			}
 
-			stagePrefix := prefix(scope, kindStage) + *a.ApiId + "/"
+			stagePrefix := scope.Prefix(service, kindStage) + *a.ApiId + "/"
 			for _, k := range tx.Keys(stagePrefix) {
 				stages = append(stages, strings.TrimPrefix(k, stagePrefix))
 			}

@@ -110,7 +110,7 @@ func (s *Service) addKeyPair(ctx context.Context, dry *bool, k *keyPair) error {
 			return awserror.New("InvalidKeyPair.Duplicate", fmt.Sprintf("The keypair '%s' already exists.", k.Name))
 		}
 
-		return storage.Write(tx, key(scope, kindKeyPair, k.ID), k)
+		return storage.Write(tx, scope.Key("ec2", kindKeyPair, k.ID), k)
 	})
 }
 
@@ -320,7 +320,7 @@ func (s *Service) DeleteKeyPair(
 		for _, k := range pairs {
 			if (id == "" || k.ID == id) && (name == "" || k.Name == name) {
 				out.KeyPairId = new(k.ID)
-				tx.Delete(key(scope, kindKeyPair, k.ID))
+				tx.Delete(scope.Key("ec2", kindKeyPair, k.ID))
 			}
 		}
 

@@ -241,10 +241,6 @@ const (
 	kindMapping     = "mapping"
 )
 
-func scopeKey(m request.Scope, kind, name string) string {
-	return m.AccountID + "/" + m.Region + "/lambda/" + kind + "/" + name
-}
-
 func functionARN(scope request.Scope, name string) string {
 	return "arn:aws:lambda:" + scope.Region + ":" + scope.AccountID + ":function:" + name
 }
@@ -689,7 +685,7 @@ func (s *Service) CreateFunction(
 
 	fn.AccessKey = m.AccessKey
 	fn.LastModified = s.now().UTC().Format(timeFormat)
-	key := scopeKey(m.Scope, kindFunction, fn.Name)
+	key := m.Key("lambda", kindFunction, fn.Name)
 	created := fn
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); exists {
@@ -697,7 +693,7 @@ func (s *Service) CreateFunction(
 		}
 
 		if code != nil {
-			tx.Put(scopeKey(m.Scope, kindCode, fn.Name), code)
+			tx.Put(m.Key("lambda", kindCode, fn.Name), code)
 		}
 
 		if writeErr := writeJSON(tx, key, fn); writeErr != nil || !common.Value(in.Publish) {
@@ -841,7 +837,7 @@ func (s *Service) ListFunctions(
 	}
 
 	var fns []*function
-	prefix := scopeKey(m.Scope, kindFunction, "")
+	prefix := m.Key("lambda", kindFunction, "")
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(prefix) {
 			if strings.TrimPrefix(k, prefix) <= start {

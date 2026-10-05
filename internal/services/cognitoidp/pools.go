@@ -553,7 +553,7 @@ func (s *Service) CreateUserPool(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if len(tx.Keys(prefix(scope, "pool"))) >= 1000 {
+		if len(tx.Keys(scope.Prefix(service, "pool"))) >= 1000 {
 			return awserror.New("LimitExceededException", "The account has reached its limit of 1,000 user pools.")
 		}
 
@@ -604,7 +604,7 @@ func (s *Service) ListUserPools(
 
 	var pools []*pool
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, id := range ids(tx, prefix(scope, "pool")) {
+		for _, id := range ids(tx, scope.Prefix(service, "pool")) {
 			p, _, readErr := storage.Read[pool](tx, poolKey(scope, id))
 			if readErr != nil {
 				return readErr
@@ -707,12 +707,12 @@ func (s *Service) DeleteUserPool(
 				"Deletion protection must be inactivated first.")
 		}
 
-		for _, id := range ids(tx, prefix(scope, "client")+p.ID+"/") {
+		for _, id := range ids(tx, scope.Prefix(service, "client")+p.ID+"/") {
 			tx.Delete(clientIndexKey(id))
 		}
 
 		for _, kind := range poolKinds {
-			for _, k := range tx.Keys(prefix(scope, kind) + p.ID + "/") {
+			for _, k := range tx.Keys(scope.Prefix(service, kind) + p.ID + "/") {
 				tx.Delete(k)
 			}
 		}

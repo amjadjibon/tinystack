@@ -56,7 +56,7 @@ func TestTerminatedInstancesDisappear(t *testing.T) {
 
 	var found bool
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		_, found = tx.Get(key(request.Scope{AccountID: "000000000000", Region: "us-east-1"}, kindInstance, id))
+		_, found = tx.Get((request.Scope{AccountID: "000000000000", Region: "us-east-1"}).Key("ec2", kindInstance, id))
 		return nil
 	})
 	if err != nil || found {

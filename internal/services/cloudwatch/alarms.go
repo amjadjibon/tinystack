@@ -58,14 +58,16 @@ type alarm struct {
 	Evaluated string `json:",omitempty"`
 }
 
-func alarmKey(scope request.Scope, name string) string { return prefix(scope, kindAlarm) + name }
+func alarmKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, kindAlarm) + name
+}
 
 func indexKey(scope request.Scope, name string) string {
 	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + name
 }
 
 func historyPrefix(scope request.Scope, name string) string {
-	return prefix(scope, kindHistory) + name + "/"
+	return scope.Prefix(service, kindHistory) + name + "/"
 }
 
 func (a *alarm) kind() string {
@@ -475,7 +477,7 @@ func cycle(tx storage.ReadTx, scope request.Scope, name string, r *rule) error {
 // alarms reads every alarm in scope, in name order.
 func alarms(tx storage.ReadTx, scope request.Scope) ([]*alarm, error) {
 	var out []*alarm
-	for _, k := range tx.Keys(prefix(scope, kindAlarm)) {
+	for _, k := range tx.Keys(scope.Prefix(service, kindAlarm)) {
 		a, _, err := storage.Read[alarm](tx, k)
 		if err != nil {
 			return nil, err
@@ -821,7 +823,7 @@ func (s *Service) DescribeAlarmHistory(
 
 	var entries []entry
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p := prefix(m.Scope, kindHistory)
+		p := m.Prefix(service, kindHistory)
 		if in.AlarmName != nil {
 			p = historyPrefix(m.Scope, *in.AlarmName)
 		}

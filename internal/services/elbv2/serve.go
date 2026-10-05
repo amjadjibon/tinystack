@@ -67,7 +67,7 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 		}
 
 		scope := request.Scope{AccountID: entry.Account, Region: entry.Region}
-		b, ok, err := storage.Read[balancer](tx, key(scope, kindLB, entry.Name))
+		b, ok, err := storage.Read[balancer](tx, scope.Key(service, kindLB, entry.Name))
 		if err != nil || !ok {
 			return err
 		}
@@ -116,7 +116,7 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 func pickListener(tx storage.ReadTx, scope request.Scope, b *balancer, port string, hasPort bool) (
 	*listener, error,
 ) {
-	listeners, err := storage.Records[listener](tx, key(scope, kindListener, b.name()+"/"))
+	listeners, err := storage.Records[listener](tx, scope.Key(service, kindListener, b.name()+"/"))
 	switch {
 	case err != nil:
 		return nil, err

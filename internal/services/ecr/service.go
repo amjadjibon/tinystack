@@ -59,19 +59,15 @@ func repositoryNotFound(scope request.Scope, name string) error {
 		"The repository with name '%s' does not exist in the registry with id '%s'", name, scope.AccountID))
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
-}
-
 // repoKinds are the record kinds a repository owns, each under
 // <kind>/<escaped name>/.
 var repoKinds = []string{"image", "tag", "layer", "blob", "upload", "upload-data"}
 
-func repoKey(scope request.Scope, name string) string { return prefix(scope, "repo") + name }
+func repoKey(scope request.Scope, name string) string { return scope.Prefix(service, "repo") + name }
 
 // owned is the prefix of a repository's records of one kind.
 func owned(scope request.Scope, kind, repo string) string {
-	return prefix(scope, kind) + url.PathEscape(repo) + "/"
+	return scope.Prefix(service, kind) + url.PathEscape(repo) + "/"
 }
 
 func repoARN(scope request.Scope, name string) string {

@@ -42,7 +42,9 @@ type domain struct {
 	Mappings []api.BasePathMapping
 }
 
-func domainKey(scope request.Scope, name string) string { return prefix(scope, kindDomain) + name }
+func domainKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, kindDomain) + name
+}
 
 func domainIndexKey(name string) string { return "aws/" + service + "/domain/" + name }
 
@@ -170,7 +172,7 @@ func (s *Service) GetDomainNames(ctx context.Context, in *api.GetDomainNamesRequ
 	var domains []*domain
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var readErr error
-		domains, readErr = storage.Records[domain](tx, prefix(m.Scope, kindDomain))
+		domains, readErr = storage.Records[domain](tx, m.Prefix(service, kindDomain))
 		return readErr
 	})
 	if err != nil {

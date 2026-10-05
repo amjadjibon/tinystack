@@ -35,7 +35,7 @@ const (
 )
 
 func policyKey(scope request.Scope, group, name string) string {
-	return key(scope, kindPolicy, group+"/"+name)
+	return scope.Key(service, kindPolicy, group+"/"+name)
 }
 
 // checkPolicy checks a policy's settings for its type.
@@ -290,7 +290,7 @@ func (s *Service) DescribePolicies(ctx context.Context, in *api.DescribePolicies
 
 	var all []*api.ScalingPolicy
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		p := key(m.Scope, kindPolicy, "")
+		p := m.Key(service, kindPolicy, "")
 		if in.AutoScalingGroupName != nil {
 			if _, loadErr := loadGroup(tx, m.Scope, *in.AutoScalingGroupName); loadErr != nil {
 				return loadErr
@@ -523,7 +523,7 @@ func (s *Service) ExecutePolicy(ctx context.Context, in *api.ExecutePolicyType) 
 			g.Cooldown = now.Add(time.Duration(cooldown) * time.Second)
 		}
 
-		return storage.Write(tx, key(m.Scope, kindGroup, groupName), g)
+		return storage.Write(tx, m.Key(service, kindGroup, groupName), g)
 	})
 	if err != nil {
 		return nil, err

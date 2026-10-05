@@ -45,7 +45,7 @@ type event struct {
 }
 
 func eventPrefix(scope request.Scope, group, name string) string {
-	return prefix(scope, "event") + encode(group) + "/" + encode(name) + "/"
+	return scope.Prefix("logs", "event") + encode(group) + "/" + encode(name) + "/"
 }
 
 // position orders a stream's events by timestamp, then by ingestion.

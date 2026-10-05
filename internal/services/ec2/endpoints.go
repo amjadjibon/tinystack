@@ -87,7 +87,7 @@ func endpointNotFound(id string) error {
 }
 
 func loadEndpoint(tx storage.ReadTx, scope request.Scope, id string) (*vpcEndpoint, error) {
-	ep, ok, err := storage.Read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, id))
+	ep, ok, err := storage.Read[vpcEndpoint](tx, scope.Key("ec2", kindVPCEndpoint, id))
 	if err == nil && !ok {
 		err = endpointNotFound(id)
 	}
@@ -216,25 +216,25 @@ func routeEndpoint(tx storage.WriteTx, scope request.Scope, ep *vpcEndpoint, tab
 
 	rt.Routes = append(rt.Routes, route{PrefixList: list, GatewayID: ep.ID, Origin: originRoute})
 	ep.RouteTableIDs = append(ep.RouteTableIDs, rt.ID)
-	return storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt)
+	return storage.Write(tx, scope.Key("ec2", kindRouteTable, rt.ID), rt)
 }
 
 // unrouteEndpoint removes a gateway endpoint's route from a route table.
 func unrouteEndpoint(tx storage.WriteTx, scope request.Scope, ep *vpcEndpoint, tableID string) error {
 	ep.RouteTableIDs = slices.DeleteFunc(ep.RouteTableIDs, func(id string) bool { return id == tableID })
-	rt, ok, err := storage.Read[routeTable](tx, key(scope, kindRouteTable, tableID))
+	rt, ok, err := storage.Read[routeTable](tx, scope.Key("ec2", kindRouteTable, tableID))
 	if err != nil || !ok {
 		return err
 	}
 
 	rt.Routes = slices.DeleteFunc(rt.Routes, func(r route) bool { return r.GatewayID == ep.ID })
-	return storage.Write(tx, key(scope, kindRouteTable, rt.ID), rt)
+	return storage.Write(tx, scope.Key("ec2", kindRouteTable, rt.ID), rt)
 }
 
 // addEndpointSubnet gives an interface endpoint a network interface in a
 // subnet of its VPC, at most one per zone.
 func addEndpointSubnet(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, id string) error {
-	sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, id))
+	sn, ok, err := storage.Read[subnet](tx, scope.Key("ec2", kindSubnet, id))
 	if err != nil || !ok {
 		return common.ErrorsOr(err, subnetNotFound(id))
 	}
@@ -269,7 +269,7 @@ func addEndpointSubnet(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, 
 
 // addEndpointGroup adds a security group of an interface endpoint's VPC.
 func addEndpointGroup(tx storage.ReadTx, scope request.Scope, ep *vpcEndpoint, id string) error {
-	g, ok, err := storage.Read[securityGroup](tx, key(scope, kindSecurityGroup, id))
+	g, ok, err := storage.Read[securityGroup](tx, scope.Key("ec2", kindSecurityGroup, id))
 	if err != nil || !ok {
 		return common.ErrorsOr(err, groupNotFound(id))
 	}
@@ -445,7 +445,7 @@ func (s *Service) CreateVpcEndpoint(
 		}
 
 		out = endpointOutput(scope, ep, state)
-		return storage.Write(tx, key(scope, kindVPCEndpoint, ep.ID), ep)
+		return storage.Write(tx, scope.Key("ec2", kindVPCEndpoint, ep.ID), ep)
 	})
 	if err != nil {
 		return nil, err
@@ -485,7 +485,7 @@ func (s *Service) ModifyVpcEndpoint(
 			return stepErr
 		}
 
-		return storage.Write(tx, key(scope, kindVPCEndpoint, ep.ID), ep)
+		return storage.Write(tx, scope.Key("ec2", kindVPCEndpoint, ep.ID), ep)
 	})
 	if err != nil {
 		return nil, err
@@ -564,7 +564,7 @@ func (s *Service) DeleteVpcEndpoints(
 	out := &api.DeleteVpcEndpointsResult{Unsuccessful: []api.UnsuccessfulItem{}}
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		for _, id := range in.VpcEndpointIds {
-			ep, ok, err := storage.Read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, id))
+			ep, ok, err := storage.Read[vpcEndpoint](tx, scope.Key("ec2", kindVPCEndpoint, id))
 			if err != nil {
 				return err
 			}
@@ -586,7 +586,7 @@ func (s *Service) DeleteVpcEndpoints(
 				}
 			}
 
-			tx.Delete(key(scope, kindVPCEndpoint, id))
+			tx.Delete(scope.Key("ec2", kindVPCEndpoint, id))
 		}
 
 		return nil
@@ -707,7 +707,7 @@ func forgetRouteTable(tx storage.WriteTx, scope request.Scope, tableID string) e
 	for _, ep := range all {
 		if slices.Contains(ep.RouteTableIDs, tableID) {
 			ep.RouteTableIDs = slices.DeleteFunc(ep.RouteTableIDs, func(id string) bool { return id == tableID })
-			if stepErr := storage.Write(tx, key(scope, kindVPCEndpoint, ep.ID), ep); stepErr != nil {
+			if stepErr := storage.Write(tx, scope.Key("ec2", kindVPCEndpoint, ep.ID), ep); stepErr != nil {
 				return stepErr
 			}
 		}

@@ -62,7 +62,7 @@ func findListener(tx storage.ReadTx, scope request.Scope, arnValue string) (*lis
 		return nil, validation("'%s' is not a valid listener ARN", arnValue)
 	}
 
-	l, found, err := storage.Read[listener](tx, key(scope, kindListener, parts[1]+"/"+parts[3]))
+	l, found, err := storage.Read[listener](tx, scope.Key(service, kindListener, parts[1]+"/"+parts[3]))
 	switch {
 	case err != nil:
 		return nil, err
@@ -324,7 +324,7 @@ func (s *Service) CreateListener(ctx context.Context, in *api.CreateListenerInpu
 		}
 
 		spec.DefaultActions = actions
-		existing, listErr := storage.Records[listener](tx, key(m.Scope, kindListener, b.name()+"/"))
+		existing, listErr := storage.Records[listener](tx, m.Key(service, kindListener, b.name()+"/"))
 		if listErr != nil {
 			return listErr
 		}
@@ -355,7 +355,7 @@ func (s *Service) CreateListener(ctx context.Context, in *api.CreateListenerInpu
 			ID: id, RuleID: resourceID(), Balancer: b.name(), L: spec, Tags: tags, Attributes: attributes,
 			Extra: []api.Certificate{},
 		}
-		return storage.Write(tx, key(m.Scope, kindListener, b.name()+"/"+id), l)
+		return storage.Write(tx, m.Key(service, kindListener, b.name()+"/"+id), l)
 	})
 	if err != nil {
 		return nil, err
@@ -394,7 +394,7 @@ func (s *Service) DescribeListeners(
 			}
 
 			var listErr error
-			selected, listErr = storage.Records[listener](tx, key(m.Scope, kindListener, b.name()+"/"))
+			selected, listErr = storage.Records[listener](tx, m.Key(service, kindListener, b.name()+"/"))
 			return listErr
 		}
 
@@ -444,7 +444,7 @@ func (s *Service) changeListener(ctx context.Context, arnValue string,
 			return findErr
 		}
 
-		b, found, readErr := storage.Read[balancer](tx, key(m.Scope, kindLB, l.Balancer))
+		b, found, readErr := storage.Read[balancer](tx, m.Key(service, kindLB, l.Balancer))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -456,7 +456,7 @@ func (s *Service) changeListener(ctx context.Context, arnValue string,
 			return fnErr
 		}
 
-		return storage.Write(tx, key(m.Scope, kindListener, l.Balancer+"/"+l.ID), l)
+		return storage.Write(tx, m.Key(service, kindListener, l.Balancer+"/"+l.ID), l)
 	})
 
 	return l, err
@@ -514,7 +514,7 @@ func (s *Service) ModifyListener(ctx context.Context, in *api.ModifyListenerInpu
 		}
 
 		if common.Value(spec.Port) != common.Value(l.L.Port) {
-			others, listErr := storage.Records[listener](tx, key(scope, kindListener, b.name()+"/"))
+			others, listErr := storage.Records[listener](tx, scope.Key(service, kindListener, b.name()+"/"))
 			if listErr != nil {
 				return listErr
 			}
@@ -552,11 +552,11 @@ func (s *Service) DeleteListener(ctx context.Context, in *api.DeleteListenerInpu
 			return findErr
 		}
 
-		for _, k := range tx.Keys(key(m.Scope, kindRule, l.ID+"/")) {
+		for _, k := range tx.Keys(m.Key(service, kindRule, l.ID+"/")) {
 			tx.Delete(k)
 		}
 
-		tx.Delete(key(m.Scope, kindListener, l.Balancer+"/"+l.ID))
+		tx.Delete(m.Key(service, kindListener, l.Balancer+"/"+l.ID))
 		return nil
 	})
 }

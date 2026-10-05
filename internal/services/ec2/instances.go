@@ -350,7 +350,7 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 // the default subnet of the Placement zone or of the Region's first zone.
 func launchSubnet(tx storage.ReadTx, scope request.Scope, in *api.RunInstancesRequest) (*subnet, error) {
 	if in.SubnetId != nil {
-		sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, *in.SubnetId))
+		sn, ok, err := storage.Read[subnet](tx, scope.Key("ec2", kindSubnet, *in.SubnetId))
 		if err == nil && !ok {
 			err = subnetNotFound(*in.SubnetId)
 		}
@@ -557,7 +557,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 		for _, i := range all {
 			switch {
 			case !i.visible(now):
-				tx.Delete(key(scope, kindInstance, i.ID))
+				tx.Delete(scope.Key("ec2", kindInstance, i.ID))
 			case token != "" && i.ClientToken == token:
 				if out == nil {
 					out = reservation(scope, i.Reservation, nil)
@@ -631,7 +631,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				i.PublicIP = publicIP()
 			}
 
-			if writeErr := storage.Write(tx, key(scope, kindInstance, i.ID), i); writeErr != nil {
+			if writeErr := storage.Write(tx, scope.Key("ec2", kindInstance, i.ID), i); writeErr != nil {
 				return writeErr
 			}
 
@@ -730,7 +730,7 @@ func (s *Service) change(
 			}
 
 			seen[id] = true
-			i, ok, err := storage.Read[instance](tx, key(scope, kindInstance, id))
+			i, ok, err := storage.Read[instance](tx, scope.Key("ec2", kindInstance, id))
 			if err != nil {
 				return err
 			}
@@ -739,7 +739,7 @@ func (s *Service) change(
 				return instanceNotFound(id)
 			}
 
-			sn, _, err := storage.Read[subnet](tx, key(scope, kindSubnet, i.SubnetID))
+			sn, _, err := storage.Read[subnet](tx, scope.Key("ec2", kindSubnet, i.SubnetID))
 			if err != nil {
 				return err
 			}
@@ -763,7 +763,7 @@ func (s *Service) change(
 			out = append(out, api.InstanceStateChange{
 				InstanceId: new(id), PreviousState: instanceState(previous), CurrentState: instanceState(current),
 			})
-			if writeErr := storage.Write(tx, key(scope, kindInstance, id), i); writeErr != nil {
+			if writeErr := storage.Write(tx, scope.Key("ec2", kindInstance, id), i); writeErr != nil {
 				return writeErr
 			}
 		}

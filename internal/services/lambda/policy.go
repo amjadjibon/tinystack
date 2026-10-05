@@ -43,7 +43,7 @@ func policyKey(scope request.Scope, name, qualifier string) string {
 		qualifier = latest
 	}
 
-	return scopeKey(scope, kindPolicy, name+"/"+qualifier)
+	return scope.Key("lambda", kindPolicy, name+"/"+qualifier)
 }
 
 var (

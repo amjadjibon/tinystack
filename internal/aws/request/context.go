@@ -8,6 +8,15 @@ import (
 
 type Scope struct{ AccountID, Region string }
 
+// Prefix is the storage key prefix of a service's records of one kind in the scope:
+// "<account>/<region>/<service>/<kind>/".
+func (s Scope) Prefix(service, kind string) string {
+	return s.AccountID + "/" + s.Region + "/" + service + "/" + kind + "/"
+}
+
+// Key is the storage key of a service's record of one kind in the scope.
+func (s Scope) Key(service, kind, name string) string { return s.Prefix(service, kind) + name }
+
 type Metadata struct {
 	Scope
 	RequestID, Service, Operation, Protocol, AccessKey string

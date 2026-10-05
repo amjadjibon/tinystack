@@ -61,7 +61,7 @@ func (s *Service) claim(ctx context.Context, r due) (*api.GetScheduleOutput, boo
 	var out *api.GetScheduleOutput
 	now := s.now()
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		k := key(r.scope, kindSchedule, r.group+"/"+r.name)
+		k := r.scope.Key(service, kindSchedule, r.group+"/"+r.name)
 		rec, found, err := storage.Read[record](tx, k)
 		switch {
 		case err != nil:

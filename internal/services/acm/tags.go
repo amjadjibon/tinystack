@@ -34,7 +34,7 @@ func (s *Service) retag(ctx context.Context, arn *string, change func(map[string
 		}
 
 		id, _ := certID(m.Scope, arn)
-		return storage.Write(tx, key(m.Scope, kindCert, id), c)
+		return storage.Write(tx, m.Key(service, kindCert, id), c)
 	})
 }
 

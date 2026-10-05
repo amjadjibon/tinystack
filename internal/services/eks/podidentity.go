@@ -63,7 +63,7 @@ func (s *Service) CreatePodIdentityAssociation(
 			return loadErr
 		}
 
-		existing, readErr := storage.Records[association](tx, prefix(scope, "pod-identity")+c.Name+"/")
+		existing, readErr := storage.Records[association](tx, scope.Prefix(service, "pod-identity")+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -160,7 +160,7 @@ func (s *Service) ListPodIdentityAssociations(
 			return loadErr
 		}
 
-		all, readErr := storage.Records[association](tx, prefix(scope, "pod-identity")+c.Name+"/")
+		all, readErr := storage.Records[association](tx, scope.Prefix(service, "pod-identity")+c.Name+"/")
 		if readErr != nil {
 			return readErr
 		}

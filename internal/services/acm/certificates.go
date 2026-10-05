@@ -245,7 +245,7 @@ func (s *Service) RequestCertificate(
 	var arn string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if in.IdempotencyToken != nil {
-			k := key(m.Scope, kindToken, *in.IdempotencyToken)
+			k := m.Key(service, kindToken, *in.IdempotencyToken)
 			t, found, readErr := storage.Read[token](tx, k)
 			if readErr != nil {
 				return readErr
@@ -274,7 +274,7 @@ func (s *Service) RequestCertificate(
 			common.Unix(now),
 		)
 		detail.Type, detail.KeyAlgorithm, detail.Options = new(typeIssued), new(alg), options
-		return storage.Write(tx, key(m.Scope, kindCert, id), certificate{
+		return storage.Write(tx, m.Key(service, kindCert, id), certificate{
 			Detail: detail, Tags: tags, Body: body, Chain: ca.pem, Key: pemKey,
 		})
 	})
@@ -421,7 +421,7 @@ func (s *Service) ListCertificates(
 
 	var all []*certificate
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(key(m.Scope, kindCert, "")) {
+		for _, k := range tx.Keys(m.Key(service, kindCert, "")) {
 			c, _, readErr := storage.Read[certificate](tx, k)
 			if readErr != nil {
 				return readErr
@@ -531,7 +531,7 @@ func (s *Service) DeleteCertificate(
 		}
 
 		id, _ := certID(m.Scope, in.CertificateArn)
-		tx.Delete(key(m.Scope, kindCert, id))
+		tx.Delete(m.Key(service, kindCert, id))
 		return nil
 	})
 }
@@ -649,7 +649,7 @@ func (s *Service) ImportCertificate(
 		detail.Options = &api.CertificateOptions{
 			CertificateTransparencyLoggingPreference: new(enabled), Export: new(disabled),
 		}
-		return storage.Write(tx, key(m.Scope, kindCert, id), certificate{
+		return storage.Write(tx, m.Key(service, kindCert, id), certificate{
 			Detail: detail, Tags: tags, Body: encode(blockCert, cert.Raw), Chain: chain,
 		})
 	})
@@ -696,7 +696,7 @@ func (s *Service) ExportCertificate(
 		}
 		c.Exported = true
 		id, _ := certID(m.Scope, in.CertificateArn)
-		return storage.Write(tx, key(m.Scope, kindCert, id), c)
+		return storage.Write(tx, m.Key(service, kindCert, id), c)
 	})
 
 	return out, err
@@ -737,6 +737,6 @@ func (s *Service) UpdateCertificateOptions(
 		}
 
 		id, _ := certID(m.Scope, in.CertificateArn)
-		return storage.Write(tx, key(m.Scope, kindCert, id), c)
+		return storage.Write(tx, m.Key(service, kindCert, id), c)
 	})
 }

@@ -28,7 +28,7 @@ var (
 )
 
 func resourceServerKey(scope request.Scope, pool, identifier string) string {
-	return prefix(scope, kindResourceServer) + pool + "/" + url.PathEscape(identifier)
+	return scope.Prefix(service, kindResourceServer) + pool + "/" + url.PathEscape(identifier)
 }
 
 func resourceServerNotFound(identifier string) error {
@@ -66,7 +66,7 @@ func checkResourceServer(identifier, name *string, scopes []api.ResourceServerSc
 // customScopes returns the full names of a pool's resource server scopes.
 func customScopes(tx storage.ReadTx, scope request.Scope, pool string) ([]string, error) {
 	var out []string
-	for _, k := range tx.Keys(prefix(scope, kindResourceServer) + pool + "/") {
+	for _, k := range tx.Keys(scope.Prefix(service, kindResourceServer) + pool + "/") {
 		rs, _, err := storage.Read[api.ResourceServerType](tx, k)
 		if err != nil {
 			return nil, err
@@ -95,7 +95,7 @@ func (s *Service) CreateResourceServer(
 			return invalidParameter("%s already exists in pool %s.", *in.Identifier, p.ID)
 		}
 
-		if len(tx.Keys(prefix(scope, kindResourceServer)+p.ID+"/")) >= maxResourceServers {
+		if len(tx.Keys(scope.Prefix(service, kindResourceServer)+p.ID+"/")) >= maxResourceServers {
 			return awserror.New("LimitExceededException", "The user pool has reached its limit of resource servers.")
 		}
 
@@ -201,7 +201,7 @@ func (s *Service) ListResourceServers(
 
 	var servers []api.ResourceServerType
 	err = s.view(ctx, in.UserPoolId, func(tx storage.ReadTx, scope request.Scope, p *pool) error {
-		for _, k := range tx.Keys(prefix(scope, kindResourceServer) + p.ID + "/") {
+		for _, k := range tx.Keys(scope.Prefix(service, kindResourceServer) + p.ID + "/") {
 			rs, _, readErr := storage.Read[api.ResourceServerType](tx, k)
 			if readErr != nil {
 				return readErr

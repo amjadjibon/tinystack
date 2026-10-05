@@ -26,7 +26,7 @@ func gatewayNotFound(id string) error {
 }
 
 func loadGateway(tx storage.ReadTx, scope request.Scope, id string) (*internetGateway, error) {
-	g, ok, err := storage.Read[internetGateway](tx, key(scope, kindInternetGateway, id))
+	g, ok, err := storage.Read[internetGateway](tx, scope.Key("ec2", kindInternetGateway, id))
 	if err == nil && !ok {
 		err = gatewayNotFound(id)
 	}
@@ -89,7 +89,7 @@ func (s *Service) CreateInternetGateway(
 	var out api.InternetGateway
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		out = gatewayOutput(scope, g)
-		return storage.Write(tx, key(scope, kindInternetGateway, g.ID), g)
+		return storage.Write(tx, scope.Key("ec2", kindInternetGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (s *Service) DeleteInternetGateway(
 				fmt.Sprintf("The internetGateway '%s' has dependencies and cannot be deleted.", g.ID))
 		}
 
-		tx.Delete(key(scope, kindInternetGateway, g.ID))
+		tx.Delete(scope.Key("ec2", kindInternetGateway, g.ID))
 		return nil
 	})
 	if err != nil {
@@ -155,7 +155,7 @@ func (s *Service) AttachInternetGateway(
 		}
 
 		g.VPCID = v.ID
-		return storage.Write(tx, key(scope, kindInternetGateway, g.ID), g)
+		return storage.Write(tx, scope.Key("ec2", kindInternetGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -197,7 +197,7 @@ func (s *Service) DetachInternetGateway(
 		}
 
 		g.VPCID = ""
-		return storage.Write(tx, key(scope, kindInternetGateway, g.ID), g)
+		return storage.Write(tx, scope.Key("ec2", kindInternetGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err

@@ -152,7 +152,7 @@ func find(tx storage.ReadTx, scope request.Scope, nameOrID string) (*stack, erro
 		name = parts[1]
 	}
 
-	st, found, err := storage.Read[stack](tx, key(scope, kindStack, name))
+	st, found, err := storage.Read[stack](tx, scope.Key(service, kindStack, name))
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func find(tx storage.ReadTx, scope request.Scope, nameOrID string) (*stack, erro
 	}
 
 	if name != nameOrID {
-		old, found, err := storage.Read[stack](tx, key(scope, kindDeleted, stackUUID(nameOrID)))
+		old, found, err := storage.Read[stack](tx, scope.Key(service, kindDeleted, stackUUID(nameOrID)))
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +184,7 @@ func (s *Service) begin(tx storage.WriteTx, scope request.Scope, st *stack, op *
 	}
 
 	tx.Put(indexKey(scope, st.Name), []byte("{}"))
-	return storage.Write(tx, key(scope, kindStack, st.Name), st)
+	return storage.Write(tx, scope.Key(service, kindStack, st.Name), st)
 }
 
 func onFailure(in *string, disableRollback *bool) (string, error) {
@@ -255,7 +255,7 @@ func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*a
 
 	var id string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		existing, found, readErr := storage.Read[stack](tx, key(m.Scope, kindStack, name))
+		existing, found, readErr := storage.Read[stack](tx, m.Key(service, kindStack, name))
 		if readErr != nil {
 			return readErr
 		}
@@ -585,7 +585,7 @@ func page[T any](items []T, token *string) (out []T, next *string, err error) {
 // stacks reads every stack in a scope that is not deleted.
 func stacks(tx storage.ReadTx, scope request.Scope) ([]*stack, error) {
 	var out []*stack
-	for _, k := range tx.Keys(key(scope, kindStack, "")) {
+	for _, k := range tx.Keys(scope.Key(service, kindStack, "")) {
 		st, _, err := storage.Read[stack](tx, k)
 		if err != nil {
 			return nil, err
@@ -645,7 +645,7 @@ func (s *Service) ListStacks(ctx context.Context, in *api.ListStacksInput) (*api
 			return loadErr
 		}
 
-		for _, k := range tx.Keys(key(m.Scope, kindDeleted, "")) {
+		for _, k := range tx.Keys(m.Key(service, kindDeleted, "")) {
 			old, _, loadErr := storage.Read[stack](tx, k)
 			if loadErr != nil {
 				return loadErr
@@ -871,7 +871,7 @@ func (s *Service) DescribeStackEvents(
 			return findErr
 		}
 
-		keys := tx.Keys(key(m.Scope, kindEvent, stackUUID(st.ID)+"/"))
+		keys := tx.Keys(m.Key(service, kindEvent, stackUUID(st.ID)+"/"))
 		slices.Reverse(keys)
 		for _, k := range keys {
 			e, _, findErr := storage.Read[stackEvent](tx, k)
@@ -1108,7 +1108,7 @@ func (s *Service) ListExports(ctx context.Context, in *api.ListExportsInput) (*a
 
 	exports := []api.Export{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		prefix := key(m.Scope, kindExport, "")
+		prefix := m.Key(service, kindExport, "")
 		for _, k := range tx.Keys(prefix) {
 			e, _, readErr := storage.Read[export](tx, k)
 			if readErr != nil {
@@ -1186,7 +1186,7 @@ func (s *Service) UpdateTerminationProtection(
 		}
 
 		st.Protected, id = common.Value(in.EnableTerminationProtection), st.ID
-		return storage.Write(tx, key(m.Scope, kindStack, st.Name), st)
+		return storage.Write(tx, m.Key(service, kindStack, st.Name), st)
 	})
 	if err != nil {
 		return nil, err

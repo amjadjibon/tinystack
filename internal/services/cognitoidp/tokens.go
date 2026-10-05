@@ -52,7 +52,7 @@ type refresh struct {
 }
 
 func refreshKey(scope request.Scope, pool, token string) string {
-	return prefix(scope, "refresh") + pool + "/" + token
+	return scope.Prefix(service, "refresh") + pool + "/" + token
 }
 
 // signingKey returns the pool's RSA signing key, creating it on first use so
@@ -297,7 +297,7 @@ func (s *Service) signIn(
 // signOut ends the user's sessions and deletes their refresh tokens: all of
 // them, or only origin's.
 func signOut(tx storage.WriteTx, scope request.Scope, p *pool, u *user, origin string) error {
-	for _, k := range tx.Keys(prefix(scope, "refresh") + p.ID + "/") {
+	for _, k := range tx.Keys(scope.Prefix(service, "refresh") + p.ID + "/") {
 		r, _, err := storage.Read[refresh](tx, k)
 		if err != nil {
 			return err

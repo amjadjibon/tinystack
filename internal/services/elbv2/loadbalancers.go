@@ -75,7 +75,7 @@ func findLB(tx storage.ReadTx, scope request.Scope, arnValue string) (*balancer,
 		return nil, validation("'%s' is not a valid load balancer ARN", arnValue)
 	}
 
-	b, found, err := storage.Read[balancer](tx, key(scope, kindLB, parts[1]))
+	b, found, err := storage.Read[balancer](tx, scope.Key(service, kindLB, parts[1]))
 	switch {
 	case err != nil:
 		return nil, err
@@ -267,7 +267,7 @@ func (s *Service) CreateLoadBalancer(
 		SecurityGroups: groups, IpAddressType: new(addressType),
 	}}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		old, found, readErr := storage.Read[balancer](tx, key(m.Scope, kindLB, name))
+		old, found, readErr := storage.Read[balancer](tx, m.Key(service, kindLB, name))
 		switch {
 		case readErr != nil:
 			return readErr
@@ -286,7 +286,7 @@ func (s *Service) CreateLoadBalancer(
 			return writeErr
 		}
 
-		return storage.Write(tx, key(m.Scope, kindLB, name), b)
+		return storage.Write(tx, m.Key(service, kindLB, name), b)
 	})
 	if err != nil {
 		return nil, err
@@ -305,7 +305,7 @@ func (s *Service) DescribeLoadBalancers(
 
 	var selected []*balancer
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, listErr := storage.Records[balancer](tx, key(m.Scope, kindLB, ""))
+		all, listErr := storage.Records[balancer](tx, m.Key(service, kindLB, ""))
 		if listErr != nil {
 			return listErr
 		}
@@ -370,8 +370,8 @@ func (s *Service) DeleteLoadBalancer(
 				"' cannot be deleted because deletion protection is enabled")
 		}
 
-		for _, k := range tx.Keys(key(m.Scope, kindListener, b.name()+"/")) {
-			for _, r := range tx.Keys(key(m.Scope, kindRule, k[strings.LastIndexByte(k, '/')+1:]+"/")) {
+		for _, k := range tx.Keys(m.Key(service, kindListener, b.name()+"/")) {
+			for _, r := range tx.Keys(m.Key(service, kindRule, k[strings.LastIndexByte(k, '/')+1:]+"/")) {
 				tx.Delete(r)
 			}
 
@@ -379,7 +379,7 @@ func (s *Service) DeleteLoadBalancer(
 		}
 
 		tx.Delete(dnsPrefix + strings.ToLower(b.Label))
-		tx.Delete(key(m.Scope, kindLB, b.name()))
+		tx.Delete(m.Key(service, kindLB, b.name()))
 		return nil
 	})
 }
@@ -402,7 +402,7 @@ func (s *Service) changeLB(ctx context.Context, arnValue string, fn func(*balanc
 			return fnErr
 		}
 
-		return storage.Write(tx, key(m.Scope, kindLB, b.name()), b)
+		return storage.Write(tx, m.Key(service, kindLB, b.name()), b)
 	})
 
 	return b, err

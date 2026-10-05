@@ -27,7 +27,7 @@ func (s *Service) Place(ctx context.Context, scope request.Scope, subnets, group
 	var p Placement
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, id := range subnets {
-			sn, ok, err := storage.Read[subnet](tx, key(scope, kindSubnet, id))
+			sn, ok, err := storage.Read[subnet](tx, scope.Key("ec2", kindSubnet, id))
 			if err != nil || !ok {
 				return common.ErrorsOr(err, subnetNotFound(id))
 			}
@@ -44,7 +44,7 @@ func (s *Service) Place(ctx context.Context, scope request.Scope, subnets, group
 		}
 
 		for _, id := range groups {
-			g, ok, err := storage.Read[securityGroup](tx, key(scope, kindSecurityGroup, id))
+			g, ok, err := storage.Read[securityGroup](tx, scope.Key("ec2", kindSecurityGroup, id))
 			if err != nil || !ok {
 				return common.ErrorsOr(err, groupNotFound(id))
 			}

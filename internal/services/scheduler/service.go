@@ -81,10 +81,6 @@ type record struct {
 	Next     float64 `json:",omitempty"`
 }
 
-func key(scope request.Scope, kind, name string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/" + name
-}
-
 func indexKey(scope request.Scope, groupName, name string) string {
 	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + groupName + "/" + name
 }
@@ -113,7 +109,7 @@ func loadGroup(tx storage.ReadTx, scope request.Scope, name string) (*group, err
 		return &group{Name: defaultGroup, Tags: map[string]string{}}, nil
 	}
 
-	g, found, err := storage.Read[group](tx, key(scope, kindGroup, name))
+	g, found, err := storage.Read[group](tx, scope.Key(service, kindGroup, name))
 	if err == nil && !found {
 		err = notFound("Schedule group " + name)
 	}

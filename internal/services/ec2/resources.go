@@ -23,16 +23,12 @@ const (
 	kindDefaults = "defaults"
 )
 
-func key(scope request.Scope, kind, id string) string {
-	return scope.AccountID + "/" + scope.Region + "/ec2/" + kind + "/" + id
-}
-
 // newID returns an EC2 resource ID: prefix, a dash, and 17 hex digits.
 func newID(prefix string) string { return prefix + "-" + common.RandomID(17) }
 
 // list decodes every record of kind in scope, ordered by ID.
 func list[T any](tx storage.ReadTx, scope request.Scope, kind string) ([]*T, error) {
-	return storage.Records[T](tx, key(scope, kind, ""))
+	return storage.Records[T](tx, scope.Key("ec2", kind, ""))
 }
 
 // notFound is EC2's error for a missing resource, such as

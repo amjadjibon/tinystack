@@ -28,7 +28,7 @@ type group struct {
 }
 
 func groupKey(scope request.Scope, pool, name string) string {
-	return prefix(scope, "group") + pool + "/" + name
+	return scope.Prefix(service, "group") + pool + "/" + name
 }
 
 func groupNotFound() error { return notFound("Group not found.") }
@@ -98,7 +98,7 @@ func (s *Service) CreateGroup(ctx context.Context, in *api.CreateGroupRequest) (
 			return awserror.New("GroupExistsException", "A group with the name "+*in.GroupName+" already exists.")
 		}
 
-		if len(tx.Keys(prefix(scope, "group")+p.ID+"/")) >= maxGroups {
+		if len(tx.Keys(scope.Prefix(service, "group")+p.ID+"/")) >= maxGroups {
 			return awserror.New("LimitExceededException", "The user pool has reached its limit of groups.")
 		}
 
@@ -143,7 +143,7 @@ func (s *Service) ListGroups(ctx context.Context, in *api.ListGroupsRequest) (*a
 
 	var groups []*api.GroupType
 	err = s.view(ctx, in.UserPoolId, func(tx storage.ReadTx, scope request.Scope, p *pool) error {
-		for _, name := range ids(tx, prefix(scope, "group")+p.ID+"/") {
+		for _, name := range ids(tx, scope.Prefix(service, "group")+p.ID+"/") {
 			g, _, readErr := storage.Read[group](tx, groupKey(scope, p.ID, name))
 			if readErr != nil {
 				return readErr

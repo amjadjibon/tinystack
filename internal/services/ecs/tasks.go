@@ -58,7 +58,7 @@ type task struct {
 }
 
 func taskPrefix(scope request.Scope, clusterName string) string {
-	return prefix(scope, kindTask) + clusterName + "/"
+	return scope.Prefix(service, kindTask) + clusterName + "/"
 }
 
 func taskKey(scope request.Scope, clusterName, id string) string {

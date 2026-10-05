@@ -91,11 +91,7 @@ func unsupported(format string, args ...any) error {
 	return awserror.New("UnsupportedOperationException", fmt.Sprintf(format, args...))
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/kms/" + kind + "/"
-}
-
-func keyKey(scope request.Scope, id string) string { return prefix(scope, "key") + id }
+func keyKey(scope request.Scope, id string) string { return scope.Prefix("kms", "key") + id }
 
 func keyARN(scope request.Scope, id string) string {
 	return "arn:aws:kms:" + scope.Region + ":" + scope.AccountID + ":key/" + id
@@ -493,7 +489,7 @@ func (s *Service) ListKeys(ctx context.Context, in *api.ListKeysRequest) (*api.L
 
 	var ids []string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, k := range tx.Keys(prefix(scope, "key")) {
+		for _, k := range tx.Keys(scope.Prefix("kms", "key")) {
 			record, _, readErr := storage.Read[key](tx, k)
 			if readErr != nil {
 				return readErr

@@ -120,7 +120,7 @@ func checkRoute(tx storage.ReadTx, scope request.Scope, apiID string, r *api.Rou
 		return badRequest("AuthorizationScopes can only be set with JWT authorization.")
 	}
 
-	routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
+	routes, err := storage.Records[api.Route](tx, scope.Prefix(service, kindRoute)+apiID+"/")
 	if err != nil {
 		return err
 	}
@@ -266,7 +266,7 @@ func (s *Service) GetRoutes(ctx context.Context, in *api.GetRoutesRequest) (*api
 			return loadErr
 		}
 
-		all, readErr := storage.Records[api.Route](tx, prefix(m.Scope, kindRoute)+*a.ApiId+"/")
+		all, readErr := storage.Records[api.Route](tx, m.Prefix(service, kindRoute)+*a.ApiId+"/")
 		if readErr != nil {
 			return readErr
 		}
@@ -352,7 +352,7 @@ func routesUsing(
 	apiID, id string,
 	field func(*api.Route) string,
 ) ([]string, error) {
-	routes, err := storage.Records[api.Route](tx, prefix(scope, kindRoute)+apiID+"/")
+	routes, err := storage.Records[api.Route](tx, scope.Prefix(service, kindRoute)+apiID+"/")
 	if err != nil {
 		return nil, err
 	}

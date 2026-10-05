@@ -105,7 +105,7 @@ func defaultVPC(tx storage.ReadTx, scope request.Scope) (*vpc, error) {
 // named name in the default VPC.
 func findGroup(tx storage.ReadTx, scope request.Scope, id, name string) (*securityGroup, error) {
 	if id != "" {
-		g, ok, err := storage.Read[securityGroup](tx, key(scope, kindSecurityGroup, id))
+		g, ok, err := storage.Read[securityGroup](tx, scope.Key("ec2", kindSecurityGroup, id))
 		if err == nil && !ok {
 			err = groupNotFound(id)
 		}
@@ -431,7 +431,7 @@ func (s *Service) CreateSecurityGroup(
 		}
 
 		g.VPCID, arn = v.ID, groupARN(scope, g.ID)
-		return storage.Write(tx, key(scope, kindSecurityGroup, g.ID), g)
+		return storage.Write(tx, scope.Key("ec2", kindSecurityGroup, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -481,7 +481,7 @@ func (s *Service) DeleteSecurityGroup(
 		}
 
 		id = g.ID
-		tx.Delete(key(scope, kindSecurityGroup, g.ID))
+		tx.Delete(scope.Key("ec2", kindSecurityGroup, g.ID))
 		return nil
 	})
 	if err != nil {
@@ -597,7 +597,7 @@ func (s *Service) authorize(
 				"The maximum number of rules per security group has been reached.")
 		}
 
-		return storage.Write(tx, key(scope, kindSecurityGroup, g.ID), g)
+		return storage.Write(tx, scope.Key("ec2", kindSecurityGroup, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -663,7 +663,7 @@ func (s *Service) revoke(
 				"The specified rule does not exist in this security group.")
 		}
 
-		return storage.Write(tx, key(scope, kindSecurityGroup, g.ID), g)
+		return storage.Write(tx, scope.Key("ec2", kindSecurityGroup, g.ID), g)
 	})
 
 	return unknown, err

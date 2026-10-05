@@ -29,7 +29,9 @@ type cluster struct {
 	Strategy          []api.CapacityProviderStrategyItem
 }
 
-func clusterKey(scope request.Scope, name string) string { return prefix(scope, kindCluster) + name }
+func clusterKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, kindCluster) + name
+}
 
 func clusterARN(scope request.Scope, name string) string { return arn(scope, "cluster/"+name) }
 
@@ -84,7 +86,7 @@ func (c *cluster) output(tx storage.ReadTx, scope request.Scope, include []strin
 		out.Settings = c.Settings
 	}
 
-	services, err := storage.Records[ecsService](tx, prefix(scope, kindService)+c.Name+"/")
+	services, err := storage.Records[ecsService](tx, scope.Prefix(service, kindService)+c.Name+"/")
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +312,7 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest)
 
 	out := &api.ListClustersResponse{ClusterArns: []string{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		clusters, readErr := storage.Records[cluster](tx, prefix(scope, kindCluster))
+		clusters, readErr := storage.Records[cluster](tx, scope.Prefix(service, kindCluster))
 		if readErr != nil {
 			return readErr
 		}
@@ -459,7 +461,7 @@ func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterReques
 
 		// Its services and stopped tasks go with it.
 		for _, kind := range []string{kindService, kindTask} {
-			for _, k := range tx.Keys(prefix(scope, kind) + c.Name + "/") {
+			for _, k := range tx.Keys(scope.Prefix(service, kind) + c.Name + "/") {
 				tx.Delete(k)
 			}
 		}

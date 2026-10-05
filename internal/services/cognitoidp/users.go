@@ -75,7 +75,7 @@ func userKey(scope request.Scope, p *pool, name string) string {
 
 // aliasKey indexes the user whose attr is v; attribute values ignore case.
 func aliasKey(scope request.Scope, pool, attr, v string) string {
-	return prefix(scope, "alias") + pool + "/" + attr + "/" + strings.ToLower(v)
+	return scope.Prefix(service, "alias") + pool + "/" + attr + "/" + strings.ToLower(v)
 }
 
 // aliases returns the attributes a user can sign in with and their values: the

@@ -31,10 +31,12 @@ type provisioned struct {
 	Requested    int64
 }
 
-func reservedKey(scope request.Scope, name string) string { return scopeKey(scope, kindReserved, name) }
+func reservedKey(scope request.Scope, name string) string {
+	return scope.Key("lambda", kindReserved, name)
+}
 
 func provisionedKey(scope request.Scope, name, qualifier string) string {
-	return scopeKey(scope, kindProvisioned, name+"/"+qualifier)
+	return scope.Key("lambda", kindProvisioned, name+"/"+qualifier)
 }
 
 // acquire takes one of the function's concurrent executions, failing when its

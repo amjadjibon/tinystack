@@ -39,7 +39,7 @@ func invalidChangeSetStatus(format string, args ...any) error {
 // findChangeSet reads a change set by ARN, or by name and stack.
 func findChangeSet(tx storage.ReadTx, scope request.Scope, stackName, name string) (*changeSet, error) {
 	if strings.HasPrefix(name, "arn:") {
-		for _, k := range tx.Keys(key(scope, kindChangeSet, "")) {
+		for _, k := range tx.Keys(scope.Key(service, kindChangeSet, "")) {
 			cs, _, err := storage.Read[changeSet](tx, k)
 			if err != nil {
 				return nil, err
@@ -62,7 +62,7 @@ func findChangeSet(tx storage.ReadTx, scope request.Scope, stackName, name strin
 		return nil, changeSetNotFound(name)
 	}
 
-	cs, found, err := storage.Read[changeSet](tx, key(scope, kindChangeSet, st.Name+"/"+name))
+	cs, found, err := storage.Read[changeSet](tx, scope.Key(service, kindChangeSet, st.Name+"/"+name))
 	if err != nil {
 		return nil, err
 	}
@@ -162,14 +162,14 @@ func (s *Service) CreateChangeSet(
 				return writeErr
 			}
 
-			if writeErr := storage.Write(tx, key(m.Scope, kindStack, cur.Name), cur); writeErr != nil {
+			if writeErr := storage.Write(tx, m.Key(service, kindStack, cur.Name), cur); writeErr != nil {
 				return writeErr
 			}
 		case findErr != nil:
 			return findErr
 		}
 
-		k := key(m.Scope, kindChangeSet, cur.Name+"/"+name)
+		k := m.Key(service, kindChangeSet, cur.Name+"/"+name)
 		if _, exists := tx.Get(k); exists {
 			return alreadyExists("ChangeSet [%s] already exists", name)
 		}
@@ -410,14 +410,14 @@ func (s *Service) ExecuteChangeSet(
 func (s *Service) execute(
 	tx storage.WriteTx, m request.Metadata, st *stack, cs *changeSet, in *api.ExecuteChangeSetInput,
 ) error {
-	for _, k := range tx.Keys(key(m.Scope, kindChangeSet, st.Name+"/")) {
-		if k != key(m.Scope, kindChangeSet, st.Name+"/"+cs.Name) {
+	for _, k := range tx.Keys(m.Key(service, kindChangeSet, st.Name+"/")) {
+		if k != m.Key(service, kindChangeSet, st.Name+"/"+cs.Name) {
 			tx.Delete(k)
 		}
 	}
 
 	cs.Execution = "EXECUTE_IN_PROGRESS"
-	if err := storage.Write(tx, key(m.Scope, kindChangeSet, st.Name+"/"+cs.Name), cs); err != nil {
+	if err := storage.Write(tx, m.Key(service, kindChangeSet, st.Name+"/"+cs.Name), cs); err != nil {
 		return err
 	}
 
@@ -475,7 +475,7 @@ func (s *Service) DeleteChangeSet(
 			return invalidChangeSetStatus("Cannot delete ChangeSet in status %s", cs.Execution)
 		}
 
-		tx.Delete(key(m.Scope, kindChangeSet, cs.StackName+"/"+cs.Name))
+		tx.Delete(m.Key(service, kindChangeSet, cs.StackName+"/"+cs.Name))
 		return nil
 	})
 	if err != nil {
@@ -500,7 +500,7 @@ func (s *Service) ListChangeSets(
 			return findErr
 		}
 
-		for _, k := range tx.Keys(key(m.Scope, kindChangeSet, st.Name+"/")) {
+		for _, k := range tx.Keys(m.Key(service, kindChangeSet, st.Name+"/")) {
 			cs, _, findErr := storage.Read[changeSet](tx, k)
 			if findErr != nil {
 				return findErr

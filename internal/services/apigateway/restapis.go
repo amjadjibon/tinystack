@@ -173,7 +173,7 @@ func (s *Service) GetRestApis(ctx context.Context, in *api.GetRestApisRequest) (
 
 	out := &api.RestApis{Items: []api.RestApi{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, readErr := storage.Records[restAPI](tx, prefix(m.Scope, kindAPI))
+		all, readErr := storage.Records[restAPI](tx, m.Prefix(service, kindAPI))
 		if readErr != nil {
 			return readErr
 		}
@@ -226,7 +226,7 @@ func (s *Service) DeleteRestApi(ctx context.Context, in *api.DeleteRestApiReques
 		}
 
 		for _, kind := range []string{kindDeployment, kindStage} {
-			for _, k := range tx.Keys(prefix(m.Scope, kind) + *a.API.Id + "/") {
+			for _, k := range tx.Keys(m.Prefix(service, kind) + *a.API.Id + "/") {
 				tx.Delete(k)
 			}
 		}

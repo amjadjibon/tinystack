@@ -47,12 +47,12 @@ func resolveRouted(
 	name, qualifier string,
 	routed bool,
 ) (*function, string, error) {
-	record, code := scopeKey(scope, kindFunction, name), scopeKey(scope, kindCode, name)
+	record, code := scope.Key("lambda", kindFunction, name), scope.Key("lambda", kindCode, name)
 	switch {
 	case qualifier == "" || qualifier == latest:
 	case versionNumber.MatchString(qualifier):
-		record = scopeKey(scope, kindVersion, versionID(name, qualifier))
-		code = scopeKey(scope, kindVersionCode, versionID(name, qualifier))
+		record = scope.Key("lambda", kindVersion, versionID(name, qualifier))
+		code = scope.Key("lambda", kindVersionCode, versionID(name, qualifier))
 	default:
 		a, found, err := loadAlias(tx, scope, name, qualifier)
 		if err != nil {
@@ -98,7 +98,7 @@ func publish(
 	now string,
 ) (*function, error) {
 	if fn.Published > 0 {
-		last, found, err := loadFunction(tx, scopeKey(scope, kindVersion, versionID(fn.Name,
+		last, found, err := loadFunction(tx, scope.Key("lambda", kindVersion, versionID(fn.Name,
 			strconv.FormatInt(fn.Published, 10))))
 		if err != nil {
 			return nil, err
@@ -120,16 +120,16 @@ func publish(
 	}
 
 	id := versionID(fn.Name, v.Version)
-	if code, ok := tx.Get(scopeKey(scope, kindCode, fn.Name)); ok {
-		tx.Put(scopeKey(scope, kindVersionCode, id), code)
+	if code, ok := tx.Get(scope.Key("lambda", kindCode, fn.Name)); ok {
+		tx.Put(scope.Key("lambda", kindVersionCode, id), code)
 	}
 
 	fn.Published++
-	if err := writeJSON(tx, scopeKey(scope, kindFunction, fn.Name), fn); err != nil {
+	if err := writeJSON(tx, scope.Key("lambda", kindFunction, fn.Name), fn); err != nil {
 		return nil, err
 	}
 
-	return &v, writeJSON(tx, scopeKey(scope, kindVersion, id), &v)
+	return &v, writeJSON(tx, scope.Key("lambda", kindVersion, id), &v)
 }
 
 // PublishVersion publishes $LATEST as a new version. With CodeSha256 or
@@ -240,8 +240,8 @@ func (s *Service) ListVersionsByFunction(
 			fns = append(fns, fn)
 		}
 
-		for _, k := range tx.Keys(scopeKey(m.Scope, kindVersion, name+"/")) {
-			if in.Marker != nil && strings.TrimPrefix(k, scopeKey(m.Scope, kindVersion, "")) <= start {
+		for _, k := range tx.Keys(m.Key("lambda", kindVersion, name+"/")) {
+			if in.Marker != nil && strings.TrimPrefix(k, m.Key("lambda", kindVersion, "")) <= start {
 				continue
 			}
 
@@ -284,7 +284,7 @@ func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, 
 		}
 
 		var used []string
-		for _, k := range tx.Keys(scopeKey(scope, kindAlias, name+"/")) {
+		for _, k := range tx.Keys(scope.Key("lambda", kindAlias, name+"/")) {
 			a, _, loadErr := loadAliasRecord(tx, k)
 			if loadErr != nil {
 				return loadErr
@@ -300,8 +300,8 @@ func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, 
 				strings.Join(used, ", ") + "]")
 		}
 
-		tx.Delete(scopeKey(scope, kindVersion, versionID(name, version)))
-		tx.Delete(scopeKey(scope, kindVersionCode, versionID(name, version)))
+		tx.Delete(scope.Key("lambda", kindVersion, versionID(name, version)))
+		tx.Delete(scope.Key("lambda", kindVersionCode, versionID(name, version)))
 		tx.Delete(policyKey(scope, name, version))
 		tx.Delete(provisionedKey(scope, name, version))
 		tx.Delete(invokeConfigKey(scope, name, version))
@@ -323,8 +323,8 @@ func (s *Service) deleteFunction(ctx context.Context, scope request.Scope, name 
 			return loadErr
 		}
 
-		tx.Delete(scopeKey(scope, kindFunction, name))
-		tx.Delete(scopeKey(scope, kindCode, name))
+		tx.Delete(scope.Key("lambda", kindFunction, name))
+		tx.Delete(scope.Key("lambda", kindCode, name))
 		tx.Delete(reservedKey(scope, name))
 		if urlErr := deleteURLs(tx, scope, name, ""); urlErr != nil {
 			return urlErr
@@ -332,7 +332,7 @@ func (s *Service) deleteFunction(ctx context.Context, scope request.Scope, name 
 
 		kinds := []string{kindVersion, kindVersionCode, kindAlias, kindPolicy, kindProvisioned, kindInvokeConfig}
 		for _, kind := range kinds {
-			for _, k := range tx.Keys(scopeKey(scope, kind, name+"/")) {
+			for _, k := range tx.Keys(scope.Key("lambda", kind, name+"/")) {
 				if kind == kindVersion {
 					v, _, loadErr := loadFunction(tx, k)
 					if loadErr != nil {

@@ -89,7 +89,7 @@ func gatewayAddress(tx storage.WriteTx, scope request.Scope, g *natGateway, allo
 
 	g.AddressID, g.PublicIP, g.Association = a.ID, a.PublicIP, newID("eipassoc")
 	a.AssociationID, a.NATGatewayID, a.InterfaceID, a.PrivateIP = g.Association, g.ID, g.InterfaceID, g.PrivateIP
-	return storage.Write(tx, key(scope, kindAddress, a.ID), a)
+	return storage.Write(tx, scope.Key("ec2", kindAddress, a.ID), a)
 }
 
 // CreateNatGateway creates a NAT gateway in a subnet, with an address from
@@ -133,7 +133,7 @@ func (s *Service) CreateNatGateway(
 		for _, g := range all {
 			switch {
 			case !g.visible(now):
-				tx.Delete(key(scope, kindNATGateway, g.ID))
+				tx.Delete(scope.Key("ec2", kindNATGateway, g.ID))
 			case token != "" && g.ClientToken == token:
 				out = natGatewayOutput(g, g.State)
 				return nil
@@ -141,7 +141,7 @@ func (s *Service) CreateNatGateway(
 		}
 
 		id := common.Value(in.SubnetId)
-		sn, ok, readErr := storage.Read[subnet](tx, key(scope, kindSubnet, id))
+		sn, ok, readErr := storage.Read[subnet](tx, scope.Key("ec2", kindSubnet, id))
 		if readErr != nil || !ok {
 			return common.ErrorsOr(readErr, subnetNotFound(id))
 		}
@@ -182,7 +182,7 @@ func (s *Service) CreateNatGateway(
 		}
 
 		out = natGatewayOutput(g, statePending)
-		return storage.Write(tx, key(scope, kindNATGateway, g.ID), g)
+		return storage.Write(tx, scope.Key("ec2", kindNATGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func (s *Service) DeleteNatGateway(
 	now := s.now().UTC()
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		id := common.Value(in.NatGatewayId)
-		g, ok, err := storage.Read[natGateway](tx, key(scope, kindNATGateway, id))
+		g, ok, err := storage.Read[natGateway](tx, scope.Key("ec2", kindNATGateway, id))
 		if err != nil || !ok || !g.visible(now) {
 			return common.ErrorsOr(err, natGatewayNotFound(id))
 		}
@@ -210,21 +210,21 @@ func (s *Service) DeleteNatGateway(
 		}
 
 		if g.AddressID != "" {
-			a, found, readErr := storage.Read[address](tx, key(scope, kindAddress, g.AddressID))
+			a, found, readErr := storage.Read[address](tx, scope.Key("ec2", kindAddress, g.AddressID))
 			if readErr != nil {
 				return readErr
 			}
 
 			if found {
 				a.AssociationID, a.NATGatewayID, a.InterfaceID, a.PrivateIP = "", "", "", ""
-				if writeErr := storage.Write(tx, key(scope, kindAddress, a.ID), a); writeErr != nil {
+				if writeErr := storage.Write(tx, scope.Key("ec2", kindAddress, a.ID), a); writeErr != nil {
 					return writeErr
 				}
 			}
 		}
 
 		g.State, g.Deleted = stateDeleted, now
-		return storage.Write(tx, key(scope, kindNATGateway, g.ID), g)
+		return storage.Write(tx, scope.Key("ec2", kindNATGateway, g.ID), g)
 	})
 	if err != nil {
 		return nil, err

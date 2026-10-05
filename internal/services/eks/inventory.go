@@ -29,7 +29,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			details := map[string]any{"Version": c.Version, "Endpoint": c.Endpoint}
 			for _, kind := range []string{kindNodegroup, kindFargate, kindAddon} {
 				var names []string
-				keyPrefix := prefix(scope, kind) + c.Name + "/"
+				keyPrefix := scope.Prefix(service, kind) + c.Name + "/"
 				for _, k := range tx.Keys(keyPrefix) {
 					names = append(names, strings.TrimPrefix(k, keyPrefix))
 				}

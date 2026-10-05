@@ -200,20 +200,20 @@ type activity struct {
 	Created float64
 }
 
-func prefix(scope request.Scope, kind string) string {
-	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"
+func machineKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, kindMachine) + name
 }
 
-func machineKey(scope request.Scope, name string) string { return prefix(scope, kindMachine) + name }
-
-func activityKey(scope request.Scope, name string) string { return prefix(scope, kindActivity) + name }
+func activityKey(scope request.Scope, name string) string {
+	return scope.Prefix(service, kindActivity) + name
+}
 
 func executionKey(scope request.Scope, machine, name string) string {
-	return prefix(scope, kindExecution) + machine + "/" + name
+	return scope.Prefix(service, kindExecution) + machine + "/" + name
 }
 
 func eventKey(scope request.Scope, machine, name string, id int64) string {
-	return fmt.Sprintf("%s%s/%s/%010d", prefix(scope, kindEvent), machine, name, id)
+	return fmt.Sprintf("%s%s/%s/%010d", scope.Prefix(service, kindEvent), machine, name, id)
 }
 
 func arn(scope request.Scope, kind, name string) string {

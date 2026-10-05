@@ -58,7 +58,7 @@ type aclEntry struct {
 func aclNotFound(id string) error { return notFound("InvalidNetworkAclID.NotFound", "networkAcl", id) }
 
 func loadACL(tx storage.ReadTx, scope request.Scope, id string) (*networkACL, error) {
-	acl, ok, err := storage.Read[networkACL](tx, key(scope, kindNetworkACL, id))
+	acl, ok, err := storage.Read[networkACL](tx, scope.Key("ec2", kindNetworkACL, id))
 	if err == nil && !ok {
 		err = aclNotFound(id)
 	}
@@ -99,7 +99,7 @@ func createDefaultACL(tx storage.WriteTx, scope request.Scope, vpcID string, sub
 		acl.Associations = append(acl.Associations, aclAssociation{ID: newID("aclassoc"), SubnetID: id})
 	}
 
-	return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+	return storage.Write(tx, scope.Key("ec2", kindNetworkACL, acl.ID), acl)
 }
 
 // associateDefaultACL associates a new subnet with its VPC's default ACL.
@@ -112,7 +112,7 @@ func associateDefaultACL(tx storage.WriteTx, scope request.Scope, sn *subnet) er
 	for _, acl := range acls {
 		if acl.Default {
 			acl.Associations = append(acl.Associations, aclAssociation{ID: newID("aclassoc"), SubnetID: sn.ID})
-			return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+			return storage.Write(tx, scope.Key("ec2", kindNetworkACL, acl.ID), acl)
 		}
 	}
 
@@ -130,7 +130,7 @@ func dissociateACL(tx storage.WriteTx, scope request.Scope, sn *subnet) error {
 		at := slices.IndexFunc(acl.Associations, func(a aclAssociation) bool { return a.SubnetID == sn.ID })
 		if at >= 0 {
 			acl.Associations = slices.Delete(acl.Associations, at, at+1)
-			return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+			return storage.Write(tx, scope.Key("ec2", kindNetworkACL, acl.ID), acl)
 		}
 	}
 
@@ -233,7 +233,7 @@ func (s *Service) CreateNetworkAcl(
 		acl := newACL(v.ID, false)
 		acl.Tags, acl.ClientToken = tags, token
 		out = aclOutput(scope, acl)
-		return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+		return storage.Write(tx, scope.Key("ec2", kindNetworkACL, acl.ID), acl)
 	})
 	if err != nil {
 		return nil, err
@@ -261,7 +261,7 @@ func (s *Service) DeleteNetworkAcl(
 			return awserror.New("DependencyViolation", fmt.Sprintf(dependencyFormat, "networkAcl", acl.ID))
 		}
 
-		tx.Delete(key(scope, kindNetworkACL, acl.ID))
+		tx.Delete(scope.Key("ec2", kindNetworkACL, acl.ID))
 		return nil
 	})
 	if err != nil {
@@ -405,7 +405,7 @@ func (s *Service) changeEntry(
 				return 1
 			}
 		})
-		return storage.Write(tx, key(scope, kindNetworkACL, acl.ID), acl)
+		return storage.Write(tx, scope.Key("ec2", kindNetworkACL, acl.ID), acl)
 	})
 }
 
@@ -527,7 +527,7 @@ func (s *Service) ReplaceNetworkAclAssociation(
 
 			moved.SubnetID = from.Associations[at].SubnetID
 			from.Associations = slices.Delete(from.Associations, at, at+1)
-			if writeErr := storage.Write(tx, key(scope, kindNetworkACL, from.ID), from); writeErr != nil {
+			if writeErr := storage.Write(tx, scope.Key("ec2", kindNetworkACL, from.ID), from); writeErr != nil {
 				return writeErr
 			}
 
@@ -538,7 +538,7 @@ func (s *Service) ReplaceNetworkAclAssociation(
 			}
 
 			to.Associations = append(to.Associations, moved)
-			return storage.Write(tx, key(scope, kindNetworkACL, to.ID), to)
+			return storage.Write(tx, scope.Key("ec2", kindNetworkACL, to.ID), to)
 		}
 
 		return associationNotFound(id)
