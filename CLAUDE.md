@@ -457,3 +457,17 @@ local-file reads carry `// #nosec` justifications.
 
 In hand-written Go, put a blank line after a closing `}` when another statement follows in the same block, and keep an
 `if err != nil` check directly under the call that returns the error.
+
+Use the shared helpers directly instead of copying them or wrapping them in package-local forwarders (`value`, `read`,
+`identity`, `page`, ...):
+
+- `internal/common`: `Value`, `OrElse`, `Clone`, `CloneTags`, `RandomID`, `Seconds`, `SecondsMilli`, `Unix`,
+  `ErrorsOr`, and `Page` (base64 last-ID pagination; a service passes its own invalid-token error).
+- `internal/storage`: `Read[T]`, `Write`, and `Records[T]` for JSON records.
+- `internal/aws/request`: `Regional`, `Global` (account-wide services), and `RegionalScope` for the caller's identity.
+- `services/tagging`: `Check`, `CheckSet` (also rejects the reserved `aws:` prefix), `Reserved`, `Merge`, `Remove`,
+  `Map`, and `List` (a sorted, non-nil tag list).
+
+Make pointers with the built-in `new(v)` (Go 1.26 accepts an expression), never a `Ptr` helper or a temporary
+variable. A local helper is fine only when it adds behavior (validation, a service's error code, a fixed argument).
+When two services need the same new logic, put it in one of these packages rather than duplicating it.
