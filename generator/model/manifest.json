@@ -15,6 +15,10 @@
       "path": "codegen/sdk-codegen/aws-models/apigatewayv2.json",
       "sha256": "e10bcf53a23a41be2d4a255087e87effb1cf5c29756a54ae7b92fbee8d892f96"
     },
+    "appsync": {
+      "path": "codegen/sdk-codegen/aws-models/appsync.json",
+      "sha256": "9bbe3b89c7b07c112268fa83682fa26ceab779b02e509c16e5d42643f965318e"
+    },
     "autoscaling": {
       "path": "codegen/sdk-codegen/aws-models/auto-scaling.json",
       "sha256": "a99be352817555cab17666710b0f383b7ab0157714255a6930da3998369ca217"
