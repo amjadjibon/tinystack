@@ -1,6 +1,6 @@
 # TinyStack
 
-A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, EC2 Auto Scaling, Elastic Load Balancing (application and network load balancers), ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, Kinesis, Firehose, CloudFormation, and Cognito user pool endpoints for development and tests.
+A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda, CloudWatch Logs, CloudWatch metrics and alarms, EventBridge, SSM Parameter Store, Secrets Manager, KMS, IAM, STS, EC2, EC2 Auto Scaling, Elastic Load Balancing (application and network load balancers), ECR (with a Docker registry), ECS, EKS, API Gateway, Step Functions, EventBridge Scheduler, ACM, Route 53, CloudFront, Kinesis, Firehose, CloudFormation, and Cognito user pool endpoints for development and tests.
 
 ## Run
 
@@ -1037,6 +1037,17 @@ Route 53 is global: hosted zones and health checks belong to an account in every
 | ListResourceRecordSets | Route 53's order (name with the labels reversed, type, set identifier), up to 300 per page with the next name, type, and identifier |
 | CreateHealthCheck / GetHealthCheck / ListHealthChecks / UpdateHealthCheck / DeleteHealthCheck | `HTTP`, `HTTPS`, string matching, `TCP`, calculated, and CloudWatch metric checks with AWS's defaults; updates check `HealthCheckVersion` and honor `ResetElements`; checks used by record sets cannot be deleted |
 | ChangeTagsForResource / ListTagsForResource / ListTagsForResources / GetDNSSEC | Tags of zones and health checks; DNSSEC is always `NOT_SIGNING` |
+
+### CloudFront (REST XML)
+
+CloudFront is global: distributions, invalidations, and origin access controls belong to an account in every Region.
+
+| Operation | Behavior |
+| --- | --- |
+| CreateDistribution / CreateDistributionWithTags / GetDistribution / GetDistributionConfig / UpdateDistribution / DeleteDistribution | Distribution CRUD; caller references are single-use idempotency tokens; alias/CNAME collisions are validated; ETag checking on updates and deletes; deleting requires disabling first; domain name `<id>.cloudfront.net` generated |
+| ListDistributions | Distributions in the account with marker-based pagination |
+| CreateInvalidation / GetInvalidation / ListInvalidations | Invalidation batches on distributions; caller reference idempotency; settled at once in `Completed` status; marker-based pagination |
+| CreateOriginAccessControl / GetOriginAccessControl / GetOriginAccessControlConfig / UpdateOriginAccessControl / DeleteOriginAccessControl / ListOriginAccessControls | Origin access controls for S3 origins; name uniqueness; ETag checking; deletion prevented while referenced by distributions |
 
 ### EKS (REST JSON)
 
