@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/acm v1.50.1
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.50.0
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.44.0
+	github.com/aws/aws-sdk-go-v2/service/appsync v1.62.1
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.78.1
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.81.1
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.74.0
@@ -38,12 +39,14 @@ require (
 	github.com/aws/smithy-go v1.28.2
 	github.com/recolabs/gnata v0.5.2
 	github.com/spf13/cobra v1.10.2
+	github.com/vektah/gqlparser/v2 v2.5.60
 	golang.org/x/crypto v0.57.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.60.1
 )
 
 require (
+	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.20 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.4 // indirect

@@ -21,6 +21,7 @@ import (
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
+	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
@@ -56,6 +57,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
+	"github.com/amjadjibon/tinystack/internal/services/appsync"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
@@ -185,6 +187,7 @@ func newStartCommand() *cobra.Command {
 			defer containers.Stop()
 			httpAPIs := apigatewayv2.New(store, functions, logGroups)
 			restAPIs := apigateway.New(store, functions, logGroups, identities)
+			graphQL := appsync.New(store)
 			network := ec2.New(store)
 			network.UseInstanceProfiles(roles.InstanceProfileOf)
 			kube := eks.New(store, network)
@@ -236,6 +239,7 @@ func newStartCommand() *cobra.Command {
 				eksapi.Descriptor(kube),
 				apigatewayv2api.Descriptor(httpAPIs),
 				apigatewayapi.Descriptor(restAPIs),
+				appsyncapi.Descriptor(graphQL),
 				sfnapi.Descriptor(workflows),
 				kinesisapi.Descriptor(streams),
 				route53api.Descriptor(dns),

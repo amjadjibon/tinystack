@@ -24,6 +24,7 @@ import (
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
+	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
@@ -58,6 +59,7 @@ import (
 	certificates "github.com/amjadjibon/tinystack/internal/services/acm"
 	restapis "github.com/amjadjibon/tinystack/internal/services/apigateway"
 	apigateways "github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
+	graphqlapis "github.com/amjadjibon/tinystack/internal/services/appsync"
 	scalinggroups "github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	cdn "github.com/amjadjibon/tinystack/internal/services/cloudfront"
@@ -164,6 +166,7 @@ func serverStore(
 	network.UseInstanceProfiles(roles.InstanceProfileOf)
 	httpAPIs := apigateways.New(store, functions, logGroups)
 	restAPIs := restapis.New(store, functions, logGroups, userPools)
+	graphQL := graphqlapis.New(store)
 	ssmService := parameters.New(store, keys)
 	ssmService.UsePublicParameters(compute.PublicParameters)
 	workflows, err := stepfunctions.New(store, logGroups, logger)
@@ -202,6 +205,7 @@ func serverStore(
 		eksapi.Descriptor(kubernetes.New(store, network)),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
+		appsyncapi.Descriptor(graphQL),
 		sfnapi.Descriptor(workflows),
 		kinesisapi.Descriptor(streams),
 		route53api.Descriptor(dns),
