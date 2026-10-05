@@ -44,12 +44,13 @@ type routeAssociation struct {
 }
 
 // route sends a destination to one target: the VPC itself (GatewayID
-// "local"), an internet gateway, or an instance.
+// "local"), an internet gateway, a NAT gateway, or an instance.
 type route struct {
-	CIDR       string
-	GatewayID  string `json:",omitempty"`
-	InstanceID string `json:",omitempty"`
-	Origin     string
+	CIDR         string
+	GatewayID    string `json:",omitempty"`
+	NATGatewayID string `json:",omitempty"`
+	InstanceID   string `json:",omitempty"`
+	Origin       string
 }
 
 func routeTableNotFound(id string) error {
@@ -138,10 +139,18 @@ func dissociateRouteTable(tx storage.WriteTx, scope request.Scope, subnetID stri
 }
 
 // routeState reports whether a route's target can carry traffic: an internet
-// gateway must still be attached to the table's VPC and an instance running.
+// gateway must still be attached to the table's VPC, a NAT gateway not be
+// deleted, and an instance be running.
 func routeState(tx storage.ReadTx, scope request.Scope, rt *routeTable, r *route) (string, error) {
 	ok := true
 	switch {
+	case r.NATGatewayID != "":
+		g, found, err := read[natGateway](tx, key(scope, kindNATGateway, r.NATGatewayID))
+		if err != nil {
+			return "", err
+		}
+
+		ok = found && g.active()
 	case strings.HasPrefix(r.GatewayID, "igw-"):
 		g, found, err := read[internetGateway](tx, key(scope, kindInternetGateway, r.GatewayID))
 		if err != nil {
@@ -190,7 +199,7 @@ func routeTableOutput(tx storage.ReadTx, scope request.Scope, rt *routeTable) (a
 
 		item := api.Route{
 			DestinationCidrBlock: new(r.CIDR), GatewayId: optional(r.GatewayID), InstanceId: optional(r.InstanceID),
-			Origin: new(r.Origin), State: new(state),
+			NatGatewayId: optional(r.NATGatewayID), Origin: new(r.Origin), State: new(state),
 		}
 		if r.InstanceID != "" {
 			item.InstanceOwnerId = new(scope.AccountID)
@@ -207,7 +216,7 @@ func routeTableValues(scope request.Scope, rt *routeTable) values {
 		"route-table-id": {rt.ID}, filterVPCID: {rt.VPCID}, filterOwnerID: {scope.AccountID},
 		filterMain: {}, "association.subnet-id": {}, "association.route-table-association-id": {},
 		"association.route-table-id": {}, "route.destination-cidr-block": {}, "route.gateway-id": {},
-		"route.instance-id": {}, "route.origin": {},
+		"route.instance-id": {}, "route.nat-gateway-id": {}, "route.origin": {},
 	}
 	for _, a := range rt.Associations {
 		v[filterMain] = append(v[filterMain], strconv.FormatBool(a.Main))
@@ -227,6 +236,10 @@ func routeTableValues(scope request.Scope, rt *routeTable) values {
 
 		if r.InstanceID != "" {
 			v["route.instance-id"] = append(v["route.instance-id"], r.InstanceID)
+		}
+
+		if r.NATGatewayID != "" {
+			v["route.nat-gateway-id"] = append(v["route.nat-gateway-id"], r.NATGatewayID)
 		}
 	}
 
@@ -372,42 +385,56 @@ func routeDestination(text string) (string, error) {
 	return p.String(), nil
 }
 
-// routeTarget checks the target a CreateRoute or ReplaceRoute request names,
-// exactly one of an internet gateway attached to the table's VPC and an
-// instance in it, and returns the route.
-func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, gatewayID, instanceID string) (route, error) {
-	r := route{GatewayID: gatewayID, InstanceID: instanceID, Origin: originRoute}
-	switch {
-	case (gatewayID == "") == (instanceID == ""):
-		return r, awserror.New("InvalidParameterCombination", "The parameter combination is not valid: "+
-			"a route needs exactly one of gatewayId and instanceId")
-	case gatewayID != "":
-		if !strings.HasPrefix(gatewayID, "igw-") {
-			return r, notFound("InvalidGatewayID.NotFound", "gateway", gatewayID)
-		}
-
-		g, err := loadGateway(tx, scope, gatewayID)
-		if err != nil {
-			return r, err
-		}
-
-		if g.VPCID != rt.VPCID {
-			return r, invalidParameter(fmt.Sprintf("route table %s and network gateway %s belong to different "+
-				"networks", rt.ID, g.ID))
-		}
-	default:
-		i, found, err := read[instance](tx, key(scope, kindInstance, instanceID))
-		if err != nil || !found || !i.active() {
-			return r, errorsOr(err, instanceNotFound(instanceID))
-		}
-
-		if i.VPCID != rt.VPCID {
-			return r, invalidParameter(fmt.Sprintf("route table %s and instance %s belong to different networks",
-				rt.ID, i.ID))
+// routeTarget checks the target a CreateRoute or ReplaceRoute request names
+// in want: exactly one of an internet gateway attached to the table's VPC, a
+// NAT gateway in it, and an instance in it.
+func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *route) error {
+	want.Origin = originRoute
+	set := 0
+	for _, id := range []string{want.GatewayID, want.NATGatewayID, want.InstanceID} {
+		if id != "" {
+			set++
 		}
 	}
 
-	return r, nil
+	var vpcID string
+	switch {
+	case set != 1:
+		return awserror.New("InvalidParameterCombination", "The parameter combination is not valid: "+
+			"a route needs exactly one of gatewayId, natGatewayId, and instanceId")
+	case want.GatewayID != "":
+		if !strings.HasPrefix(want.GatewayID, "igw-") {
+			return notFound("InvalidGatewayID.NotFound", "gateway", want.GatewayID)
+		}
+
+		g, err := loadGateway(tx, scope, want.GatewayID)
+		if err != nil {
+			return err
+		}
+
+		vpcID = g.VPCID
+	case want.NATGatewayID != "":
+		g, found, err := read[natGateway](tx, key(scope, kindNATGateway, want.NATGatewayID))
+		if err != nil || !found || !g.active() {
+			return errorsOr(err, natGatewayNotFound(want.NATGatewayID))
+		}
+
+		vpcID = g.VPCID
+	default:
+		i, found, err := read[instance](tx, key(scope, kindInstance, want.InstanceID))
+		if err != nil || !found || !i.active() {
+			return errorsOr(err, instanceNotFound(want.InstanceID))
+		}
+
+		vpcID = i.VPCID
+	}
+
+	if vpcID != rt.VPCID {
+		return invalidParameter(fmt.Sprintf("route table %s and the route's target belong to different "+
+			"networks", rt.ID))
+	}
+
+	return nil
 }
 
 // changeRoute loads a route table, runs fn on it with the request's
@@ -455,8 +482,11 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 					cidr))
 			}
 
-			r, err := routeTarget(tx, scope, rt, value(in.GatewayId), value(in.InstanceId))
-			r.CIDR = cidr
+			r := route{
+				CIDR: cidr, GatewayID: value(in.GatewayId), NATGatewayID: value(in.NatGatewayId),
+				InstanceID: value(in.InstanceId),
+			}
+			err := routeTarget(tx, scope, rt, &r)
 			rt.Routes = append(rt.Routes, r)
 			return err
 		})
@@ -477,8 +507,11 @@ func (s *Service) ReplaceRoute(ctx context.Context, in *api.ReplaceRouteRequest)
 				return localRoute(rt, cidr)
 			}
 
-			r, err := routeTarget(tx, scope, rt, value(in.GatewayId), value(in.InstanceId))
-			r.CIDR = cidr
+			r := route{
+				CIDR: cidr, GatewayID: value(in.GatewayId), NATGatewayID: value(in.NatGatewayId),
+				InstanceID: value(in.InstanceId),
+			}
+			err := routeTarget(tx, scope, rt, &r)
 			rt.Routes[at] = r
 			return err
 		})

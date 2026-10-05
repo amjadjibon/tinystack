@@ -1103,6 +1103,7 @@ type Route struct {
 	InstanceOwnerId      *string `json:"InstanceOwnerId,omitempty" ec2:"InstanceOwnerId,instanceOwnerId"`
 	Origin               *string `json:"Origin,omitempty" ec2:"Origin,origin"`
 	State                *string `json:"State,omitempty" ec2:"State,state"`
+	NatGatewayId         *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
 }
 
 type RouteTable struct {
@@ -1146,6 +1147,7 @@ type CreateRouteRequest struct {
 	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
 	GatewayId            *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
 	InstanceId           *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	NatGatewayId         *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
 }
 
 type CreateRouteResult struct {
@@ -1160,6 +1162,7 @@ type ReplaceRouteRequest struct {
 	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
 	GatewayId            *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
 	InstanceId           *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	NatGatewayId         *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
 }
 
 type DeleteRouteOutput struct{}
@@ -1399,6 +1402,65 @@ type DescribeAddressesAttributeResult struct {
 	NextToken *string            `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
 }
 
+type CreateNatGatewayRequest struct {
+	AllocationId      *string            `json:"AllocationId,omitempty" ec2:"AllocationId,AllocationId"`
+	ClientToken       *string            `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	SubnetId          *string            `json:"SubnetId,omitempty" ec2:"SubnetId,SubnetId"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	ConnectivityType  *string            `json:"ConnectivityType,omitempty" ec2:"ConnectivityType,ConnectivityType"`
+	PrivateIpAddress  *string            `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,PrivateIpAddress"`
+}
+
+type NatGatewayAddress struct {
+	AllocationId       *string `json:"AllocationId,omitempty" ec2:"AllocationId,allocationId"`
+	NetworkInterfaceId *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	PrivateIp          *string `json:"PrivateIp,omitempty" ec2:"PrivateIp,privateIp"`
+	PublicIp           *string `json:"PublicIp,omitempty" ec2:"PublicIp,publicIp"`
+	AssociationId      *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	IsPrimary          *bool   `json:"IsPrimary,omitempty" ec2:"IsPrimary,isPrimary"`
+	Status             *string `json:"Status,omitempty" ec2:"Status,status"`
+}
+
+type NatGateway struct {
+	CreateTime          *time.Time          `json:"CreateTime,omitempty" ec2:"CreateTime,createTime"`
+	DeleteTime          *time.Time          `json:"DeleteTime,omitempty" ec2:"DeleteTime,deleteTime"`
+	NatGatewayAddresses []NatGatewayAddress `json:"NatGatewayAddresses,omitempty" ec2:"NatGatewayAddressSet,natGatewayAddressSet,member=item"`
+	NatGatewayId        *string             `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+	State               *string             `json:"State,omitempty" ec2:"State,state"`
+	SubnetId            *string             `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	VpcId               *string             `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	Tags                []Tag               `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	ConnectivityType    *string             `json:"ConnectivityType,omitempty" ec2:"ConnectivityType,connectivityType"`
+}
+
+type CreateNatGatewayResult struct {
+	ClientToken *string     `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+	NatGateway  *NatGateway `json:"NatGateway,omitempty" ec2:"NatGateway,natGateway"`
+}
+
+type DeleteNatGatewayRequest struct {
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	NatGatewayId *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,NatGatewayId"`
+}
+
+type DeleteNatGatewayResult struct {
+	NatGatewayId *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+}
+
+type DescribeNatGatewaysRequest struct {
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	Filter        []Filter `json:"Filter,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults    *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NatGatewayIds []string `json:"NatGatewayIds,omitempty" ec2:"NatGatewayId,NatGatewayId,member=item"`
+	NextToken     *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type DescribeNatGatewaysResult struct {
+	NatGateways []NatGateway `json:"NatGateways,omitempty" ec2:"NatGatewaySet,natGatewaySet,member=item"`
+	NextToken   *string      `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -1473,6 +1535,9 @@ type API interface {
 	AssociateAddress(context.Context, *AssociateAddressRequest) (*AssociateAddressResult, error)
 	DisassociateAddress(context.Context, *DisassociateAddressRequest) (*DisassociateAddressOutput, error)
 	DescribeAddressesAttribute(context.Context, *DescribeAddressesAttributeRequest) (*DescribeAddressesAttributeResult, error)
+	CreateNatGateway(context.Context, *CreateNatGatewayRequest) (*CreateNatGatewayResult, error)
+	DeleteNatGateway(context.Context, *DeleteNatGatewayRequest) (*DeleteNatGatewayResult, error)
+	DescribeNatGateways(context.Context, *DescribeNatGatewaysRequest) (*DescribeNatGatewaysResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1695,6 +1760,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeAddressesAttribute": {Name: "DescribeAddressesAttribute", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeAddressesAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeAddressesAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeAddressesAttribute(ctx, input.(*DescribeAddressesAttributeRequest))
+		}},
+		"CreateNatGateway": {Name: "CreateNatGateway", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateNatGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateNatGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateNatGateway(ctx, input.(*CreateNatGatewayRequest))
+		}},
+		"DeleteNatGateway": {Name: "DeleteNatGateway", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteNatGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteNatGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteNatGateway(ctx, input.(*DeleteNatGatewayRequest))
+		}},
+		"DescribeNatGateways": {Name: "DescribeNatGateways", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeNatGateways", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeNatGatewaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeNatGateways(ctx, input.(*DescribeNatGatewaysRequest))
 		}},
 	}}
 }

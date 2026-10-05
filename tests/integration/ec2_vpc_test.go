@@ -607,3 +607,133 @@ func TestEC2ElasticIPs(t *testing.T) {
 	_, err = c.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{AllocationIds: []string{*allocated.AllocationId}})
 	code(t, err, "InvalidAllocationID.NotFound")
 }
+
+func TestEC2NATGateways(t *testing.T) {
+	s := server(t)
+	c := ec2Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	vpcID := createVPC(t, c, "10.0.0.0/16")
+	public := createSubnet(t, c, vpcID, "10.0.1.0/24")
+	private := createSubnet(t, c, vpcID, "10.0.2.0/24")
+	address, err := c.AllocateAddress(ctx, &ec2.AllocateAddressInput{Domain: ec2types.DomainTypeVpc})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	in := &ec2.CreateNatGatewayInput{SubnetId: aws.String(public), AllocationId: address.AllocationId}
+	_, err = c.CreateNatGateway(ctx, in)
+	code(t, err, "Gateway.NotAttached")
+	_, err = c.CreateNatGateway(ctx, &ec2.CreateNatGatewayInput{SubnetId: aws.String(public)})
+	code(t, err, "MissingParameter")
+
+	gateway, err := c.CreateInternetGateway(ctx, &ec2.CreateInternetGatewayInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.AttachInternetGateway(ctx, &ec2.AttachInternetGatewayInput{
+		InternetGatewayId: gateway.InternetGateway.InternetGatewayId, VpcId: aws.String(vpcID),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	created, err := c.CreateNatGateway(ctx, in)
+	if err != nil || created.NatGateway.State != ec2types.NatGatewayStatePending ||
+		created.NatGateway.ConnectivityType != ec2types.ConnectivityTypePublic ||
+		aws.ToString(created.NatGateway.NatGatewayAddresses[0].PublicIp) != aws.ToString(address.PublicIp) ||
+		aws.ToString(created.NatGateway.NatGatewayAddresses[0].PrivateIp) != "10.0.1.4" {
+		t.Fatalf("got %+v, %v", created, err)
+	}
+
+	natID := created.NatGateway.NatGatewayId
+	described, err := c.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{
+		Filter: []ec2types.Filter{{Name: aws.String("subnet-id"), Values: []string{public}}},
+	})
+	if err != nil || len(described.NatGateways) != 1 ||
+		described.NatGateways[0].State != ec2types.NatGatewayStateAvailable {
+		t.Fatalf("got %+v, %v", described, err)
+	}
+
+	// The gateway holds its address, which only deleting the gateway frees.
+	addresses, err := c.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{
+		AllocationIds: []string{*address.AllocationId},
+	})
+	if err != nil || aws.ToString(addresses.Addresses[0].NetworkInterfaceId) == "" ||
+		aws.ToString(addresses.Addresses[0].PrivateIpAddress) != "10.0.1.4" {
+		t.Fatalf("got %+v, %v", addresses, err)
+	}
+
+	_, err = c.DisassociateAddress(ctx, &ec2.DisassociateAddressInput{
+		AssociationId: addresses.Addresses[0].AssociationId,
+	})
+	code(t, err, "InvalidIPAddress.InUse")
+	_, err = c.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+		InternetGatewayId: gateway.InternetGateway.InternetGatewayId, VpcId: aws.String(vpcID),
+	})
+	code(t, err, "DependencyViolation")
+	_, err = c.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{SubnetId: aws.String(public)})
+	code(t, err, "DependencyViolation")
+
+	// A private subnet routes the internet through it.
+	table, err := c.CreateRouteTable(ctx, &ec2.CreateRouteTableInput{VpcId: aws.String(vpcID)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.CreateRoute(ctx, &ec2.CreateRouteInput{
+		RouteTableId: table.RouteTable.RouteTableId, DestinationCidrBlock: aws.String("0.0.0.0/0"),
+		NatGatewayId: natID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.AssociateRouteTable(ctx, &ec2.AssociateRouteTableInput{
+		RouteTableId: table.RouteTable.RouteTableId, SubnetId: aws.String(private),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	routed := func(state ec2types.RouteState) {
+		t.Helper()
+		out, describeErr := c.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{
+			Filters: []ec2types.Filter{{Name: aws.String("route.nat-gateway-id"), Values: []string{*natID}}},
+		})
+		if describeErr != nil || len(out.RouteTables) != 1 || out.RouteTables[0].Routes[1].State != state {
+			t.Fatalf("got %+v, %v", out, describeErr)
+		}
+	}
+	routed(ec2types.RouteStateActive)
+
+	privateNAT, err := c.CreateNatGateway(ctx, &ec2.CreateNatGatewayInput{
+		SubnetId: aws.String(private), ConnectivityType: ec2types.ConnectivityTypePrivate,
+	})
+	if err != nil || privateNAT.NatGateway.NatGatewayAddresses[0].PublicIp != nil {
+		t.Fatalf("got %+v, %v", privateNAT, err)
+	}
+
+	for _, id := range []*string{natID, privateNAT.NatGateway.NatGatewayId} {
+		if _, err = c.DeleteNatGateway(ctx, &ec2.DeleteNatGatewayInput{NatGatewayId: id}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// A deleted gateway stays visible, its routes are black holes, and its
+	// address is free.
+	routed(ec2types.RouteStateBlackhole)
+	described, err = c.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{NatGatewayIds: []string{*natID}})
+	if err != nil || described.NatGateways[0].State != ec2types.NatGatewayStateDeleted ||
+		described.NatGateways[0].DeleteTime == nil {
+		t.Fatalf("got %+v, %v", described, err)
+	}
+
+	if _, err = c.ReleaseAddress(ctx, &ec2.ReleaseAddressInput{AllocationId: address.AllocationId}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{SubnetId: aws.String(public)}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{NatGatewayIds: []string{"nat-0"}})
+	code(t, err, "NatGatewayNotFound")
+}

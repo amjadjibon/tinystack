@@ -17,14 +17,28 @@ const (
 	maxAddresses = 5
 )
 
-// address is an Elastic IP address, associated with at most one instance.
+// address is an Elastic IP address, associated with at most one instance or
+// NAT gateway (whose network interface it reports).
 type address struct {
 	Tags          map[string]string `json:",omitempty"`
 	ID            string
 	PublicIP      string
 	AssociationID string `json:",omitempty"`
 	InstanceID    string `json:",omitempty"`
+	NATGatewayID  string `json:",omitempty"`
+	InterfaceID   string `json:",omitempty"`
 	PrivateIP     string `json:",omitempty"`
+}
+
+// natAddress fails for an address a NAT gateway holds, which only deleting
+// the gateway releases.
+func natAddress(a *address) error {
+	if a.NATGatewayID == "" {
+		return nil
+	}
+
+	return awserror.New("InvalidIPAddress.InUse",
+		fmt.Sprintf("Address %s is in use by NAT gateway %s.", a.PublicIP, a.NATGatewayID))
 }
 
 func addressNotFound(id string) error {
@@ -45,6 +59,7 @@ func addressOutput(scope request.Scope, a *address) api.Address {
 		AllocationId: new(a.ID), PublicIp: new(a.PublicIP), Domain: new(domainVPC), PublicIpv4Pool: new("amazon"),
 		NetworkBorderGroup: new(scope.Region), Tags: tagList(a.Tags), AssociationId: optional(a.AssociationID),
 		InstanceId: optional(a.InstanceID), PrivateIpAddress: optional(a.PrivateIP),
+		NetworkInterfaceId: optional(a.InterfaceID),
 	}
 	if a.AssociationID != "" {
 		out.NetworkInterfaceOwnerId = new(scope.AccountID)
@@ -67,6 +82,7 @@ func addressValues(scope request.Scope, a *address) values {
 	return values{
 		"allocation-id": {a.ID}, "association-id": {a.AssociationID}, "domain": {domainVPC},
 		filterInstanceID: {a.InstanceID}, filterPrivateIP: {a.PrivateIP}, "public-ip": {a.PublicIP},
+		"network-interface-id": {a.InterfaceID},
 		"network-border-group": {scope.Region}, "network-interface-owner-id": {scope.AccountID},
 	}.withTags(a.Tags)
 }
@@ -287,6 +303,10 @@ func (s *Service) AssociateAddress(
 				fmt.Sprintf("Network %s is not attached to any internet gateway", i.VPCID))
 		}
 
+		if natErr := natAddress(a); natErr != nil {
+			return natErr
+		}
+
 		if a.AssociationID != "" && a.InstanceID != i.ID && !value(in.AllowReassociation) {
 			return awserror.New("Resource.AlreadyAssociated", fmt.Sprintf("resource %s is already associated "+
 				"with associate-id %s", a.ID, a.AssociationID))
@@ -356,6 +376,10 @@ func (s *Service) DisassociateAddress(
 		}
 
 		a := all[at]
+		if natErr := natAddress(a); natErr != nil {
+			return natErr
+		}
+
 		if unbindErr := unbind(tx, scope, a); unbindErr != nil {
 			return unbindErr
 		}

@@ -129,10 +129,17 @@ func groupInUse(tx storage.ReadTx, scope request.Scope, id string) (bool, error)
 	}), err
 }
 
-// subnetInUse reports whether an active instance is in a subnet.
+// subnetInUse reports whether an active instance or NAT gateway is in a
+// subnet.
 func subnetInUse(tx storage.ReadTx, scope request.Scope, id string) (bool, error) {
-	all, err := list[instance](tx, scope, kindInstance)
-	return slices.ContainsFunc(all, func(i *instance) bool { return i.active() && i.SubnetID == id }), err
+	instances, err := list[instance](tx, scope, kindInstance)
+	if err != nil {
+		return false, err
+	}
+
+	gateways, err := list[natGateway](tx, scope, kindNATGateway)
+	return slices.ContainsFunc(instances, func(i *instance) bool { return i.active() && i.SubnetID == id }) ||
+		slices.ContainsFunc(gateways, func(g *natGateway) bool { return g.active() && g.SubnetID == id }), err
 }
 
 func instanceState(name string) *api.InstanceState {
@@ -405,7 +412,14 @@ type addresses struct {
 	block netip.Prefix
 }
 
-func newAddresses(sn *subnet, instances []*instance) *addresses {
+// subnetAddresses returns a subnet's addresses with those of instances and
+// NAT gateways in it marked as used.
+func subnetAddresses(
+	tx storage.ReadTx,
+	scope request.Scope,
+	sn *subnet,
+	instances []*instance,
+) (*addresses, error) {
 	block := netip.MustParsePrefix(sn.CIDR)
 	a := &addresses{block: block, used: map[netip.Addr]bool{}, next: block.Addr()}
 	for range 4 {
@@ -418,7 +432,14 @@ func newAddresses(sn *subnet, instances []*instance) *addresses {
 		}
 	}
 
-	return a
+	gateways, err := list[natGateway](tx, scope, kindNATGateway)
+	for _, g := range gateways {
+		if g.active() && g.SubnetID == sn.ID {
+			a.used[netip.MustParseAddr(g.PrivateIP)] = true
+		}
+	}
+
+	return a, err
 }
 
 // last is the subnet's broadcast address, which AWS reserves.
@@ -553,7 +574,11 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 			}
 		}
 
-		ips := newAddresses(sn, active)
+		ips, ipsErr := subnetAddresses(tx, scope, sn, active)
+		if ipsErr != nil {
+			return ipsErr
+		}
+
 		out = reservation(scope, newID("r"), nil)
 		for n := range count {
 			i := &instance{

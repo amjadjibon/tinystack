@@ -205,12 +205,19 @@ func (s *Service) DetachInternetGateway(
 	return &api.DetachInternetGatewayOutput{}, nil
 }
 
-// publicAddresses reports whether an active instance in a VPC has a public
-// address.
+// publicAddresses reports whether an active instance or NAT gateway in a VPC
+// has a public address.
 func publicAddresses(tx storage.ReadTx, scope request.Scope, vpcID string) (bool, error) {
-	all, err := list[instance](tx, scope, kindInstance)
-	return slices.ContainsFunc(all, func(i *instance) bool {
+	instances, err := list[instance](tx, scope, kindInstance)
+	if err != nil {
+		return false, err
+	}
+
+	gateways, err := list[natGateway](tx, scope, kindNATGateway)
+	return slices.ContainsFunc(instances, func(i *instance) bool {
 		return i.active() && i.VPCID == vpcID && i.PublicIP != ""
+	}) || slices.ContainsFunc(gateways, func(g *natGateway) bool {
+		return g.active() && g.VPCID == vpcID && g.PublicIP != ""
 	}), err
 }
 

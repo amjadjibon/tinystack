@@ -768,7 +768,10 @@
       "DescribeAddresses",
       "AssociateAddress",
       "DisassociateAddress",
-      "DescribeAddressesAttribute"
+      "DescribeAddressesAttribute",
+      "CreateNatGateway",
+      "DeleteNatGateway",
+      "DescribeNatGateways"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -1705,7 +1708,8 @@
         "InstanceId",
         "InstanceOwnerId",
         "Origin",
-        "State"
+        "State",
+        "NatGatewayId"
       ],
       "DeleteRouteTableRequest": [
         "DryRun",
@@ -1727,7 +1731,8 @@
         "RouteTableId",
         "DestinationCidrBlock",
         "GatewayId",
-        "InstanceId"
+        "InstanceId",
+        "NatGatewayId"
       ],
       "CreateRouteResult": [
         "Return"
@@ -1737,7 +1742,8 @@
         "RouteTableId",
         "DestinationCidrBlock",
         "GatewayId",
-        "InstanceId"
+        "InstanceId",
+        "NatGatewayId"
       ],
       "DeleteRouteRequest": [
         "DryRun",
@@ -1926,6 +1932,57 @@
         "PublicIp",
         "AllocationId",
         "PtrRecord"
+      ],
+      "CreateNatGatewayRequest": [
+        "AllocationId",
+        "ClientToken",
+        "DryRun",
+        "SubnetId",
+        "TagSpecifications",
+        "ConnectivityType",
+        "PrivateIpAddress"
+      ],
+      "CreateNatGatewayResult": [
+        "ClientToken",
+        "NatGateway"
+      ],
+      "NatGateway": [
+        "CreateTime",
+        "DeleteTime",
+        "NatGatewayAddresses",
+        "NatGatewayId",
+        "State",
+        "SubnetId",
+        "VpcId",
+        "Tags",
+        "ConnectivityType"
+      ],
+      "NatGatewayAddress": [
+        "AllocationId",
+        "NetworkInterfaceId",
+        "PrivateIp",
+        "PublicIp",
+        "AssociationId",
+        "IsPrimary",
+        "Status"
+      ],
+      "DeleteNatGatewayRequest": [
+        "DryRun",
+        "NatGatewayId"
+      ],
+      "DeleteNatGatewayResult": [
+        "NatGatewayId"
+      ],
+      "DescribeNatGatewaysRequest": [
+        "DryRun",
+        "Filter",
+        "MaxResults",
+        "NatGatewayIds",
+        "NextToken"
+      ],
+      "DescribeNatGatewaysResult": [
+        "NatGateways",
+        "NextToken"
       ]
     }
   },

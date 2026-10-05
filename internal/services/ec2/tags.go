@@ -37,6 +37,7 @@ var taggable = map[string]taggableKind{
 	"rtb":      {kind: kindRouteTable, resourceType: kindRouteTable, missing: routeTableNotFound},
 	"acl":      {kind: kindNetworkACL, resourceType: kindNetworkACL, missing: aclNotFound},
 	"eipalloc": {kind: kindAddress, resourceType: "elastic-ip", missing: addressNotFound},
+	"nat":      {kind: kindNATGateway, resourceType: "natgateway", missing: natGatewayNotFound},
 }
 
 // taggableByID returns the resource type of an ID.
