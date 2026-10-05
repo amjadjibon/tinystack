@@ -16,15 +16,14 @@
 package scheduler
 
 import (
-	"context"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -46,10 +45,7 @@ type Service struct {
 	caller *catalog.Caller
 	logger *slog.Logger
 	now    func() time.Time
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
-	stop   sync.Once
+	bg     *background.Group
 }
 
 // New returns a Scheduler service whose runner runs until Stop.
@@ -58,9 +54,8 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 		logger = slog.Default()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	s := &Service{store: store, logger: logger, now: time.Now, ctx: ctx, cancel: cancel}
-	s.wg.Go(s.runner)
+	s := &Service{store: store, logger: logger, now: time.Now, bg: background.New()}
+	s.bg.Every(runInterval, s.visit)
 	return s
 }
 
@@ -69,12 +64,7 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 // Stop ends the runner and waits for it.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.cancel()
-		s.wg.Wait()
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 // group is a schedule group's record.
 type group struct {

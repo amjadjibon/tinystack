@@ -31,28 +31,14 @@ const (
 // flushInterval is how often the flusher visits the delivery streams.
 var flushInterval = 200 * time.Millisecond
 
-// flusher reads Kinesis sources and delivers buffers until Stop.
-func (s *Service) flusher() {
-	t := time.NewTicker(flushInterval)
-	defer t.Stop()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-t.C:
-			s.visit()
-		}
-	}
-}
-
 type target struct {
 	scope request.Scope
 	name  string
 }
 
-func (s *Service) visit() {
+func (s *Service) visit(ctx context.Context) {
 	var targets []target
-	_ = s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(indexPrefix) {
 			parts := strings.SplitN(strings.TrimPrefix(k, indexPrefix), "/", 3)
 			if len(parts) == 3 {
@@ -64,24 +50,24 @@ func (s *Service) visit() {
 	})
 
 	for _, t := range targets {
-		if s.ctx.Err() != nil {
+		if ctx.Err() != nil {
 			return
 		}
 
-		if err := s.pull(t); err != nil {
+		if err := s.pull(ctx, t); err != nil {
 			s.logger.Warn("reading a firehose source failed", "stream", t.name, "error", err)
 		}
 
-		if err := s.flush(t); err != nil {
+		if err := s.flush(ctx, t); err != nil {
 			s.logger.Warn("firehose delivery failed", "stream", t.name, "error", err)
 		}
 	}
 }
 
 // pull buffers a Kinesis source's new records, parents' before children's.
-func (s *Service) pull(t target) error {
+func (s *Service) pull(ctx context.Context, t target) error {
 	var st *deliveryStream
-	err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var readErr error
 		st, _, readErr = storage.Read[deliveryStream](tx, streamKey(t.scope, t.name))
 		return readErr
@@ -91,7 +77,7 @@ func (s *Service) pull(t target) error {
 	}
 
 	arn := common.Value(st.Source.KinesisStreamARN)
-	shards, err := s.streams.Shards(s.ctx, arn)
+	shards, err := s.streams.Shards(ctx, arn)
 	if err != nil {
 		return err
 	}
@@ -109,7 +95,7 @@ func (s *Service) pull(t target) error {
 			continue
 		}
 
-		got, done, readErr := s.streams.Records(s.ctx, arn, sh.ID, cursor, sourceBatch)
+		got, done, readErr := s.streams.Records(ctx, arn, sh.ID, cursor, sourceBatch)
 		if readErr != nil {
 			return readErr
 		}
@@ -128,7 +114,7 @@ func (s *Service) pull(t target) error {
 		return nil
 	}
 
-	return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		current, found, readErr := storage.Read[deliveryStream](tx, streamKey(t.scope, t.name))
 		if readErr != nil || !found {
 			return readErr
@@ -160,12 +146,12 @@ func parentsDone(sh *kinesis.Shard, cursors map[string]string, known map[string]
 // flush delivers a delivery stream's buffer once it holds its buffering
 // size or its oldest record has waited its buffering interval. Records stay
 // buffered until their delivery succeeds.
-func (s *Service) flush(t target) error {
+func (s *Service) flush(ctx context.Context, t target) error {
 	var st *deliveryStream
 	var keys []string
 	var records []buffered
 	size := 0
-	err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var readErr error
 		if st, _, readErr = storage.Read[deliveryStream](tx, streamKey(t.scope, t.name)); readErr != nil || st == nil {
 			return readErr
@@ -197,11 +183,11 @@ func (s *Service) flush(t target) error {
 		return nil
 	}
 
-	if deliverErr := s.deliver(t.scope, st, records); deliverErr != nil {
+	if deliverErr := s.deliver(ctx, t.scope, st, records); deliverErr != nil {
 		return deliverErr
 	}
 
-	return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, k := range keys {
 			tx.Delete(k)
 		}
@@ -224,7 +210,7 @@ type failedRecord struct {
 
 // deliver processes records and writes them, and the records processing
 // failed, to the destination bucket.
-func (s *Service) deliver(scope request.Scope, st *deliveryStream, records []buffered) error {
+func (s *Service) deliver(ctx context.Context, scope request.Scope, st *deliveryStream, records []buffered) error {
 	d := &st.Destination
 	var failed []failedRecord
 	if p := d.ProcessingConfiguration; p != nil && common.Value(p.Enabled) {
@@ -233,7 +219,7 @@ func (s *Service) deliver(scope request.Scope, st *deliveryStream, records []buf
 			switch common.Value(proc.Type) {
 			case processorLambda:
 				var lost []failedRecord
-				records, lost = s.transform(scope, st, parameter(proc, "LambdaArn"), records)
+				records, lost = s.transform(ctx, scope, st, parameter(proc, "LambdaArn"), records)
 				failed = append(failed, lost...)
 			case processorDelimiter:
 				delimiter := parameter(proc, "Delimiter")
@@ -256,7 +242,7 @@ func (s *Service) deliver(scope request.Scope, st *deliveryStream, records []buf
 		}
 
 		key := expand(common.Value(d.Prefix), now, "") + objectName(st, now)
-		if err := s.putObject(scope, st, key, body.Bytes()); err != nil {
+		if err := s.putObject(ctx, scope, st, key, body.Bytes()); err != nil {
 			return err
 		}
 	}
@@ -276,12 +262,18 @@ func (s *Service) deliver(scope request.Scope, st *deliveryStream, records []buf
 		errorPrefix = common.Value(d.Prefix) + defaultErrors + "/"
 	}
 
-	return s.putObject(scope, st, expand(errorPrefix, now, defaultErrors)+objectName(st, now), lines.Bytes())
+	return s.putObject(ctx, scope, st, expand(errorPrefix, now, defaultErrors)+objectName(st, now), lines.Bytes())
 }
 
 // putObject writes an object, compressed as the destination asks, to the
 // destination bucket.
-func (s *Service) putObject(scope request.Scope, st *deliveryStream, key string, data []byte) error {
+func (s *Service) putObject(
+	ctx context.Context,
+	scope request.Scope,
+	st *deliveryStream,
+	key string,
+	data []byte,
+) error {
 	if s.caller == nil {
 		return errors.New("S3 is not available")
 	}
@@ -302,7 +294,7 @@ func (s *Service) putObject(scope request.Scope, st *deliveryStream, key string,
 	}
 
 	bucket := bucketName(common.Value(d.BucketARN))
-	ctx := request.WithMetadata(s.ctx, request.Metadata{Scope: scope, Service: "s3", RequestID: randomID(32)})
+	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: "s3", RequestID: randomID(32)})
 	_, err := s.caller.Call(ctx, "s3", "PutObject", map[string]any{"Bucket": bucket, "Key": key, "Body": string(data)})
 	if s.deliveries != nil {
 		s.deliveries.Add(delivery.ViaFirehose, streamARN(scope, st.Name), "s3://"+bucket+"/"+key, data, err)
@@ -363,7 +355,13 @@ func expand(prefix string, now time.Time, errorType string) string {
 
 // transform runs a Lambda processor on records and returns those it kept,
 // with their new data, and those it failed.
-func (s *Service) transform(scope request.Scope, st *deliveryStream, arn string, records []buffered) (
+func (s *Service) transform(
+	ctx context.Context,
+	scope request.Scope,
+	st *deliveryStream,
+	arn string,
+	records []buffered,
+) (
 	kept []buffered, failed []failedRecord,
 ) {
 	type eventRecord struct {
@@ -393,7 +391,7 @@ func (s *Service) transform(scope request.Scope, st *deliveryStream, arn string,
 		return nil, failed
 	}
 
-	ctx := request.WithMetadata(context.WithoutCancel(s.ctx), request.Metadata{Scope: scope, Service: "lambda"})
+	ctx = request.WithMetadata(context.WithoutCancel(ctx), request.Metadata{Scope: scope, Service: "lambda"})
 	out, err := s.caller.Call(ctx, "lambda", "Invoke", map[string]any{"FunctionName": arn, "Payload": event})
 	if err != nil {
 		return fail("Lambda.InvokeAccessDenied", err.Error())

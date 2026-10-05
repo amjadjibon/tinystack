@@ -152,7 +152,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 	size := mp.BatchSize
 	for ctx.Err() == nil {
 		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
-			s.recordResult(scope, mp.UUID, "PROBLEM: Function not found.")
+			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Function not found.")
 			sleep(ctx, pollBackoff)
 			continue
 		}
@@ -160,7 +160,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 		if iterator == nil {
 			var err error
 			if iterator, err = s.shardIterator(streamCtx, mp.EventSourceArn, mp.Cursor); err != nil {
-				s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the DynamoDB stream.")
+				s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Lambda could not read from the DynamoDB stream.")
 				sleep(ctx, pollBackoff)
 				continue
 			}
@@ -169,7 +169,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 		records, next, err := s.readStream(streamCtx, iterator, &mp, size)
 		if err != nil {
 			iterator = nil
-			s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the DynamoDB stream.")
+			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Lambda could not read from the DynamoDB stream.")
 			sleep(ctx, pollBackoff)
 			continue
 		}
@@ -188,7 +188,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 			s.discard(ctx, scope, &mp, conditionRecordAge, fieldDDBStreamBatchInfo, 0,
 				new(s.streamBatchInfo(streamCtx, &mp, all[:old])))
 			failures, mp.Cursor, iterator = 0, all[old-1].sequence(), nil
-			s.recordCursor(scope, mp.UUID, mp.Cursor, "")
+			s.recordCursor(ctx, scope, mp.UUID, mp.Cursor, "")
 			continue
 		}
 
@@ -225,7 +225,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 					mp.Cursor = all[processed-1].sequence()
 				}
 
-				s.recordCursor(scope, mp.UUID, mp.Cursor, outcome)
+				s.recordCursor(ctx, scope, mp.UUID, mp.Cursor, outcome)
 				iterator = nil
 				sleep(ctx, pollBackoff)
 				continue
@@ -237,7 +237,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 
 		failures, size = 0, mp.BatchSize
 		mp.Cursor = all[len(all)-1].sequence()
-		s.recordCursor(scope, mp.UUID, mp.Cursor, outcome)
+		s.recordCursor(ctx, scope, mp.UUID, mp.Cursor, outcome)
 		if iterator = next; iterator == nil {
 			return
 		}
@@ -344,9 +344,9 @@ func (s *Service) processStreamBatch(
 
 // recordCursor stores the last record a stream mapping processed and the
 // batch's result, if it invoked the function.
-func (s *Service) recordCursor(scope request.Scope, id, cursor, result string) {
+func (s *Service) recordCursor(ctx context.Context, scope request.Scope, id, cursor, result string) {
 	key := scopeKey(scope, kindMapping, id)
-	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		mp, found, err := loadMapping(tx, key)
 		if err != nil || !found {
 			return err
@@ -359,7 +359,7 @@ func (s *Service) recordCursor(scope request.Scope, id, cursor, result string) {
 
 		return writeJSON(tx, key, mp)
 	})
-	if err != nil && s.ctx.Err() == nil {
+	if err != nil && ctx.Err() == nil {
 		s.logger.Warn("record event source mapping position", "mapping", id, "error", err)
 	}
 }

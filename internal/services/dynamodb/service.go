@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -17,6 +16,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -30,29 +30,20 @@ type Service struct {
 	logger *slog.Logger
 	// caller writes exports to S3; see UseCaller.
 	caller *catalog.Caller
-	// ctx ends the TTL sweeper on Stop.
-	ctx    context.Context
-	cancel context.CancelFunc
-	done   chan struct{}
-	stop   sync.Once
+	// bg runs the TTL sweeper until Stop.
+	bg *background.Group
 }
 
 // New returns a DynamoDB service and starts its TTL sweeper, which runs until
 // Stop.
 func New(store storage.Store) *Service {
-	ctx, cancel := context.WithCancel(context.Background())
-	s := &Service{store: store, logger: slog.Default(), ctx: ctx, cancel: cancel, done: make(chan struct{})}
-	go s.sweep()
+	s := &Service{store: store, logger: slog.Default(), bg: background.New()}
+	s.bg.Every(ttlInterval, s.sweep)
 	return s
 }
 
 // Stop ends the TTL sweeper and waits for it. Later calls return at once.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.cancel()
-		<-s.done
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 // table is the table record. Each item is its own record under the table's
 // key (itemRecord), and the description's item count and size are kept

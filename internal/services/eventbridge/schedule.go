@@ -87,24 +87,13 @@ type run struct {
 
 // scheduler fires due rules and retries failed deliveries every
 // scheduleInterval until Stop.
-func (s *Service) scheduler() {
-	defer close(s.done)
-	ticker := time.NewTicker(scheduleInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-ticker.C:
-		}
+func (s *Service) scheduler(ctx context.Context) {
+	if err := s.fire(ctx, s.now()); err != nil && ctx.Err() == nil {
+		s.logger.Warn("fire scheduled EventBridge rules", "error", err)
+	}
 
-		if err := s.fire(s.ctx, s.now()); err != nil && s.ctx.Err() == nil {
-			s.logger.Warn("fire scheduled EventBridge rules", "error", err)
-		}
-
-		if err := s.retryDue(s.ctx, s.now()); err != nil && s.ctx.Err() == nil {
-			s.logger.Warn("retry EventBridge deliveries", "error", err)
-		}
+	if err := s.retryDue(ctx, s.now()); err != nil && ctx.Err() == nil {
+		s.logger.Warn("retry EventBridge deliveries", "error", err)
 	}
 }
 

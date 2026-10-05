@@ -15,7 +15,6 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 	"uuid"
 
@@ -23,6 +22,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -58,12 +58,8 @@ type Service struct {
 	deliveries *delivery.Log
 	logger     *slog.Logger
 	now        func() time.Time
-	// ctx ends the rotation scheduler and running rotations on Stop.
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
-	mu     sync.Mutex
-	stop   sync.Once
+	// bg runs the rotation scheduler and rotations until Stop.
+	bg *background.Group
 }
 
 // New returns Secrets Manager and starts its rotation scheduler, which runs
@@ -75,7 +71,6 @@ func New(
 	functions *lambda.Service,
 	deliveries *delivery.Log,
 ) *Service {
-	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
 		store:      store,
 		keys:       keys,
@@ -83,32 +78,15 @@ func New(
 		deliveries: deliveries,
 		logger:     slog.Default(),
 		now:        time.Now,
-		ctx:        ctx,
-		cancel:     cancel,
+		bg:         background.New(),
 	}
-	s.spawn(s.scheduler)
+	s.bg.Every(rotationInterval, s.scheduler)
 	return s
 }
 
 // Stop ends the scheduler and running rotations and waits for them. Later
 // calls return at once.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.mu.Lock()
-		s.cancel()
-		s.mu.Unlock()
-		s.wg.Wait()
-	})
-}
-
-// spawn runs fn in the background until Stop, and not at all once Stop has run.
-func (s *Service) spawn(fn func(context.Context)) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.ctx.Err() == nil {
-		s.wg.Go(func() { fn(s.ctx) })
-	}
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 // secret is a secret's metadata.
 type secret struct {

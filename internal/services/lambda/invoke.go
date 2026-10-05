@@ -176,7 +176,7 @@ func (s *Service) record(
 func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload []byte) bool {
 	arn := qualifiedARN(scope, name, qualifier)
 	queued := s.now()
-	return s.spawn(func(ctx context.Context) {
+	return s.bg.Go(func(ctx context.Context) {
 		cfg := s.loadInvokeConfig(ctx, scope, name, qualifier)
 		attempts, id := cfg.attempts(), uuid.NewV4().String()
 		for attempt := 1; ; attempt++ {

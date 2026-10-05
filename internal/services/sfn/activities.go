@@ -198,7 +198,7 @@ func (s *Service) GetActivityTask(
 			return &api.GetActivityTaskOutput{}, nil
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-s.ctx.Done():
+		case <-s.bg.Context().Done():
 			return &api.GetActivityTaskOutput{}, nil
 		}
 	}

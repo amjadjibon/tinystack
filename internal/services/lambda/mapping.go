@@ -434,7 +434,7 @@ func (s *Service) UpdateEventSourceMapping(
 	// A failed update leaves the stored mapping, which polls again if enabled.
 	running := updated
 	if err != nil {
-		running = s.storedMapping(m.Scope, current.UUID)
+		running = s.storedMapping(ctx, m.Scope, current.UUID)
 	}
 
 	if running != nil && running.Enabled {
@@ -450,9 +450,9 @@ func (s *Service) UpdateEventSourceMapping(
 }
 
 // storedMapping reads a mapping, or returns nil when it is gone or unreadable.
-func (s *Service) storedMapping(scope request.Scope, id string) *mapping {
+func (s *Service) storedMapping(ctx context.Context, scope request.Scope, id string) *mapping {
 	var mp *mapping
-	_ = s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
 		mp, _, _ = loadMapping(tx, scopeKey(scope, kindMapping, id))
 		return nil
 	})
@@ -573,7 +573,7 @@ type poller struct {
 }
 
 func (s *Service) startPoller(scope request.Scope, mp *mapping) {
-	ctx, cancel := context.WithCancel(s.ctx)
+	ctx, cancel := context.WithCancel(s.bg.Context())
 	p := &poller{cancel: cancel, done: make(chan struct{})}
 	s.mu.Lock()
 	s.pollers[mp.UUID] = p
@@ -586,7 +586,7 @@ func (s *Service) startPoller(scope request.Scope, mp *mapping) {
 		poll = s.pollStream
 	}
 
-	if !s.spawn(func(context.Context) {
+	if !s.bg.Go(func(context.Context) {
 		defer close(p.done)
 		poll(ctx, scope, *mp)
 	}) {
@@ -715,14 +715,14 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 	for ctx.Err() == nil {
 		// Receiving for a missing function would only hide the messages.
 		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
-			s.recordResult(scope, mp.UUID, "PROBLEM: Function not found.")
+			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Function not found.")
 			sleep(ctx, pollBackoff)
 			continue
 		}
 
 		messages, err := s.receive(queueCtx, url, &mp)
 		if err != nil {
-			s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the SQS queue.")
+			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Lambda could not read from the SQS queue.")
 			sleep(ctx, pollBackoff)
 			continue
 		}
@@ -744,7 +744,7 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 				result = resultCallFailed
 			}
 
-			s.recordResult(scope, mp.UUID, result)
+			s.recordResult(ctx, scope, mp.UUID, result)
 		}
 
 		s.deleteMessages(queueCtx, url, done)
@@ -877,9 +877,9 @@ func (s *Service) deleteMessages(ctx context.Context, url string, records []sqsR
 }
 
 // recordResult stores the mapping's LastProcessingResult when it changes.
-func (s *Service) recordResult(scope request.Scope, id, result string) {
+func (s *Service) recordResult(ctx context.Context, scope request.Scope, id, result string) {
 	key := scopeKey(scope, kindMapping, id)
-	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		mp, found, err := loadMapping(tx, key)
 		if err != nil || !found || mp.LastProcessingResult == result {
 			return err
@@ -888,7 +888,7 @@ func (s *Service) recordResult(scope request.Scope, id, result string) {
 		mp.LastProcessingResult = result
 		return writeJSON(tx, key, mp)
 	})
-	if err != nil && s.ctx.Err() == nil {
+	if err != nil && ctx.Err() == nil {
 		s.logger.Warn("record event source mapping result", "mapping", id, "error", err)
 	}
 }

@@ -24,27 +24,14 @@ var (
 	retryAfter = 10 * time.Second
 )
 
-func (s *Service) runner() {
-	t := time.NewTicker(runInterval)
-	defer t.Stop()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-t.C:
-			s.visit()
-		}
-	}
-}
-
-func (s *Service) visit() {
+func (s *Service) visit(ctx context.Context) {
 	type entry struct {
 		scope request.Scope
 		name  string
 	}
 
 	var groups []entry
-	_ = s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(indexPrefix) {
 			parts := strings.SplitN(strings.TrimPrefix(k, indexPrefix), "/", 3)
 			if len(parts) == 3 {
@@ -56,15 +43,15 @@ func (s *Service) visit() {
 	})
 
 	for _, g := range groups {
-		if s.ctx.Err() != nil {
+		if ctx.Err() != nil {
 			return
 		}
 
-		if err := s.runScheduled(g.scope, g.name); err != nil {
+		if err := s.runScheduled(ctx, g.scope, g.name); err != nil {
 			s.logger.Warn("running scheduled actions failed", "group", g.name, "error", err)
 		}
 
-		s.reconcile(s.ctx, g.scope, g.name, "")
+		s.reconcile(ctx, g.scope, g.name, "")
 	}
 }
 

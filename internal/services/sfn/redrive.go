@@ -95,7 +95,7 @@ func (s *Service) RedriveExecution(
 
 	if !again {
 		r.useLogging()
-		if !s.spawn(func(ctx context.Context) { s.execute(ctx, r, def) }) {
+		if !s.bg.Go(func(ctx context.Context) { s.execute(ctx, r, def) }) {
 			return nil, awserror.New("ServiceException", "The service is shutting down")
 		}
 	}

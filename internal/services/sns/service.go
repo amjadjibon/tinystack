@@ -13,7 +13,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -21,6 +20,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -48,27 +48,20 @@ type Service struct {
 	functions  *lambda.Service
 	deliveries *delivery.Log
 	now        func() time.Time
-	// ctx is the context of HTTP deliveries, which run in the background
-	// until Stop.
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
+	// bg runs HTTP deliveries until Stop.
+	bg *background.Group
 }
 
 // New returns SNS. Call Stop to end HTTP deliveries in flight.
 func New(store storage.Store, queues *sqs.Service, functions *lambda.Service, deliveries *delivery.Log) *Service {
-	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
-		store: store, queues: queues, functions: functions, deliveries: deliveries, now: time.Now, ctx: ctx,
-		cancel: cancel,
+		store: store, queues: queues, functions: functions, deliveries: deliveries, now: time.Now,
+		bg: background.New(),
 	}
 }
 
 // Stop cancels HTTP deliveries in flight and waits for them to end.
-func (s *Service) Stop() {
-	s.cancel()
-	s.wg.Wait()
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 // subscription is a topic's subscription. SQS and Lambda subscriptions are
 // confirmed immediately, as AWS does for resources in the subscriber's

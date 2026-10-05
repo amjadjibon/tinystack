@@ -144,14 +144,14 @@ func (s *Service) pollKinesis(ctx context.Context, scope request.Scope, mp mappi
 
 	for ctx.Err() == nil {
 		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
-			s.recordResult(scope, mp.UUID, "PROBLEM: Function not found.")
+			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Function not found.")
 			sleep(ctx, pollBackoff)
 			continue
 		}
 
 		shards, err := s.kinesis.Shards(ctx, mp.EventSourceArn)
 		if err != nil {
-			s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the Kinesis stream.")
+			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Lambda could not read from the Kinesis stream.")
 			sleep(ctx, pollBackoff)
 			continue
 		}
@@ -191,14 +191,14 @@ func (s *Service) pollShard(
 	size := cmp.Or(sizes[sh.ID], mp.BatchSize)
 	records, done, err := s.kinesis.Records(ctx, mp.EventSourceArn, sh.ID, mp.Cursors[sh.ID], int(size))
 	if err != nil {
-		s.recordResult(scope, mp.UUID, "PROBLEM: Lambda could not read from the Kinesis stream.")
+		s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Lambda could not read from the Kinesis stream.")
 		return false
 	}
 
 	if len(records) == 0 {
 		if done {
 			mp.Cursors[sh.ID] = shardDone
-			s.recordCursors(scope, mp.UUID, mp.Cursors, "")
+			s.recordCursors(ctx, scope, mp.UUID, mp.Cursors, "")
 			return true
 		}
 
@@ -232,7 +232,7 @@ func (s *Service) pollShard(
 			new(kinesisBatchInfo(mp, sh.ID, records[:old])),
 		)
 		failures[sh.ID], mp.Cursors[sh.ID] = 0, records[old-1].SequenceNumber
-		s.recordCursors(scope, mp.UUID, mp.Cursors, "")
+		s.recordCursors(ctx, scope, mp.UUID, mp.Cursors, "")
 		return true
 	}
 
@@ -262,7 +262,7 @@ func (s *Service) pollShard(
 				mp.Cursors[sh.ID] = all[processed-1].Kinesis.SequenceNumber
 			}
 
-			s.recordCursors(scope, mp.UUID, mp.Cursors, outcome)
+			s.recordCursors(ctx, scope, mp.UUID, mp.Cursors, outcome)
 			sleep(ctx, pollBackoff)
 			return false
 		}
@@ -273,7 +273,7 @@ func (s *Service) pollShard(
 
 	failures[sh.ID], sizes[sh.ID] = 0, 0
 	mp.Cursors[sh.ID] = all[len(all)-1].Kinesis.SequenceNumber
-	s.recordCursors(scope, mp.UUID, mp.Cursors, outcome)
+	s.recordCursors(ctx, scope, mp.UUID, mp.Cursors, outcome)
 	return true
 }
 
@@ -326,9 +326,15 @@ func (s *Service) processKinesisBatch(
 
 // recordCursors stores each shard's last record a Kinesis mapping processed
 // and the batch's result, if it invoked the function.
-func (s *Service) recordCursors(scope request.Scope, id string, cursors map[string]string, result string) {
+func (s *Service) recordCursors(
+	ctx context.Context,
+	scope request.Scope,
+	id string,
+	cursors map[string]string,
+	result string,
+) {
 	key := scopeKey(scope, kindMapping, id)
-	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		mp, found, err := loadMapping(tx, key)
 		if err != nil || !found {
 			return err
@@ -341,7 +347,7 @@ func (s *Service) recordCursors(scope request.Scope, id string, cursors map[stri
 
 		return writeJSON(tx, key, mp)
 	})
-	if err != nil && s.ctx.Err() == nil {
+	if err != nil && ctx.Err() == nil {
 		s.logger.Warn("record event source mapping position", "mapping", id, "error", err)
 	}
 }

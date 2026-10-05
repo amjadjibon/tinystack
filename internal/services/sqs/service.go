@@ -18,6 +18,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -45,11 +46,9 @@ type Service struct {
 	logger *slog.Logger
 	now    func() time.Time
 	ready  map[string]chan struct{}
-	// stop ends long polls and the message mover, which closes done.
-	stop     chan struct{}
-	done     chan struct{}
-	mu       sync.Mutex
-	stopOnce sync.Once
+	// bg runs the message mover; Stop also ends long polls.
+	bg *background.Group
+	mu sync.Mutex
 }
 
 // New returns SQS and starts its message mover, which runs until Stop; keys
@@ -61,21 +60,15 @@ func New(store storage.Store, keys *kms.Service) *Service {
 		logger: slog.Default(),
 		now:    time.Now,
 		ready:  map[string]chan struct{}{},
-		stop:   make(chan struct{}),
-		done:   make(chan struct{}),
+		bg:     background.New(),
 	}
-	go s.mover()
+	s.bg.Every(moveInterval, s.mover)
 	return s
 }
 
 // Stop ends pending long polls with empty results so the server can drain,
 // and waits for the message mover.
-func (s *Service) Stop() {
-	s.stopOnce.Do(func() {
-		close(s.stop)
-		<-s.done
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 // watch returns a channel closed by the next change to the queue. Register it
 // before claiming so a change between the claim and the wait is not lost.

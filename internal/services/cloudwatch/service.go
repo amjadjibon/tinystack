@@ -16,7 +16,6 @@
 package cloudwatch
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -31,6 +30,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -54,10 +54,7 @@ type Service struct {
 	caller *catalog.Caller
 	logger *slog.Logger
 	now    func() time.Time
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
-	stop   sync.Once
+	bg     *background.Group
 	// seq orders records written in the same millisecond.
 	seq uint64
 	mu  sync.Mutex
@@ -69,9 +66,8 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 		logger = slog.Default()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	s := &Service{store: store, logger: logger, now: time.Now, ctx: ctx, cancel: cancel}
-	s.wg.Go(s.evaluator)
+	s := &Service{store: store, logger: logger, now: time.Now, bg: background.New()}
+	s.bg.Every(evaluateInterval, s.visit)
 	return s
 }
 
@@ -79,12 +75,7 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 // Stop ends the evaluator and waits for it.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.cancel()
-		s.wg.Wait()
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 func prefix(scope request.Scope, kind string) string {
 	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/"

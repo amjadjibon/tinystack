@@ -17,7 +17,6 @@
 package ecs
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -32,6 +31,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -51,39 +51,31 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	ctx       context.Context
 	store     storage.Store
 	runtime   Runtime
 	writeLogs LogWriter
 	logger    *slog.Logger
 	now       func() time.Time
-	cancel    context.CancelFunc
+	bg        *background.Group
 	// busy holds the index keys the runner is advancing, and cursors the time
 	// of the last log line shipped from each container.
 	busy    map[string]bool
 	cursors map[string]time.Time
-	wg      sync.WaitGroup
 	mu      sync.Mutex
-	once    sync.Once
 }
 
 func New(store storage.Store) *Service {
-	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
-		ctx: ctx, cancel: cancel, store: store, now: time.Now, busy: map[string]bool{},
+		bg: background.New(), store: store, now: time.Now, busy: map[string]bool{},
 		cursors: map[string]time.Time{},
 	}
 }
 
 // Stop ends the runner and removes every container the runtime started.
 func (s *Service) Stop() {
-	s.once.Do(func() {
-		s.cancel()
-		s.wg.Wait()
-		if s.runtime != nil {
-			s.runtime.Close()
-		}
-	})
+	if s.bg.Stop() && s.runtime != nil {
+		s.runtime.Close()
+	}
 }
 
 func invalidParameter(format string, args ...any) error {

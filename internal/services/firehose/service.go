@@ -22,7 +22,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -31,6 +30,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -63,10 +63,7 @@ type Service struct {
 	deliveries *delivery.Log
 	logger     *slog.Logger
 	now        func() time.Time
-	ctx        context.Context
-	cancel     context.CancelFunc
-	wg         sync.WaitGroup
-	stop       sync.Once
+	bg         *background.Group
 }
 
 // New returns a Firehose service whose flusher delivers buffered records and
@@ -76,12 +73,10 @@ func New(store storage.Store, streams *kinesis.Service, deliveries *delivery.Log
 		logger = slog.Default()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
-		store: store, streams: streams, deliveries: deliveries, logger: logger, now: time.Now, ctx: ctx,
-		cancel: cancel,
+		store: store, streams: streams, deliveries: deliveries, logger: logger, now: time.Now, bg: background.New(),
 	}
-	s.wg.Go(s.flusher)
+	s.bg.Every(flushInterval, s.visit)
 	return s
 }
 
@@ -90,12 +85,7 @@ func New(store storage.Store, streams *kinesis.Service, deliveries *delivery.Log
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 // Stop ends the flusher and waits for it.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.cancel()
-		s.wg.Wait()
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 // deliveryStream is a delivery stream's record. Its destination is kept as
 // an extended S3 destination, whichever kind it was configured as.

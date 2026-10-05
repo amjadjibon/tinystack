@@ -31,6 +31,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -82,18 +83,15 @@ type Service struct {
 	caller *catalog.Caller
 	logger *slog.Logger
 	now    func() time.Time
-	// ctx ends running executions on Stop.
-	ctx    context.Context
-	cancel context.CancelFunc
+	// bg runs executions until Stop.
+	bg *background.Group
 	// running cancels a running execution by ARN, for StopExecution.
 	running map[string]context.CancelCauseFunc
 	// tokens are the task tokens states wait on.
 	tokens map[string]*waiter
 	// queues hold the tasks scheduled on each activity, by ARN.
 	queues map[string]chan *activityTask
-	wg     sync.WaitGroup
 	mu     sync.Mutex
-	stop   sync.Once
 }
 
 // New returns a Step Functions service that writes execution logs through
@@ -103,9 +101,8 @@ func New(store storage.Store, logGroups *logs.Service, logger *slog.Logger) (*Se
 		logger = slog.Default()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
-		store: store, logs: logGroups, logger: logger, now: time.Now, ctx: ctx, cancel: cancel,
+		store: store, logs: logGroups, logger: logger, now: time.Now, bg: background.New(),
 		running: map[string]context.CancelCauseFunc{}, tokens: map[string]*waiter{},
 		queues: map[string]chan *activityTask{},
 	}
@@ -120,14 +117,7 @@ func New(store storage.Store, logGroups *logs.Service, logger *slog.Logger) (*Se
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 // Stop ends running executions and waits for them.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.mu.Lock()
-		s.cancel()
-		s.mu.Unlock()
-		s.wg.Wait()
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 // abortOrphans aborts the executions an earlier process left running.
 func (s *Service) abortOrphans() error {

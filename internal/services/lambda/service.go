@@ -31,6 +31,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
@@ -81,17 +82,14 @@ type Service struct {
 	// objects reads deployment packages from S3; see UseObjects.
 	objects ObjectReader
 	now     func() time.Time
-	// ctx ends background work (async invocations and pollers) on Stop.
-	ctx     context.Context
-	cancel  context.CancelFunc
+	// bg runs background work (async invocations and pollers) until Stop.
+	bg      *background.Group
 	pollers map[string]*poller
 	// running counts each function's invocations in flight, which its
 	// reserved concurrency caps; slots guards it.
 	running map[string]int
-	wg      sync.WaitGroup
 	mu      sync.Mutex
 	slots   sync.Mutex
-	stop    sync.Once
 }
 
 // New returns a Lambda service that runs code with runtime, reads SQS and
@@ -112,7 +110,6 @@ func New(
 		logger = slog.Default()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
 		store:      store,
 		queues:     queues,
@@ -123,8 +120,7 @@ func New(
 		secretKeys: secretKeys,
 		deliveries: deliveries,
 		now:        time.Now,
-		ctx:        ctx,
-		cancel:     cancel,
+		bg:         background.New(),
 		pollers:    map[string]*poller{},
 		running:    map[string]int{},
 	}
@@ -168,25 +164,9 @@ func (s *Service) deploymentPackage(ctx context.Context, zipFile []byte, bucket,
 // Stop ends pollers and async invocations, waits for them, and then releases
 // every runtime environment. Concurrent and later calls wait for the first.
 func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.mu.Lock()
-		s.cancel()
-		s.mu.Unlock()
-		s.wg.Wait()
+	if s.bg.Stop() {
 		s.runtime.Close()
-	})
-}
-
-// spawn runs fn in the background until Stop and reports false once Stop has run.
-func (s *Service) spawn(fn func(context.Context)) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.ctx.Err() != nil {
-		return false
 	}
-
-	s.wg.Go(func() { fn(s.ctx) })
-	return true
 }
 
 // function is the stored configuration of one function: $LATEST, or a

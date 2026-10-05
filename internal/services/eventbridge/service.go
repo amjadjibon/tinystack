@@ -17,7 +17,6 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -25,6 +24,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
@@ -54,11 +54,8 @@ type Service struct {
 	deliveries *delivery.Log
 	logger     *slog.Logger
 	now        func() time.Time
-	// ctx ends the scheduler on Stop.
-	ctx    context.Context
-	cancel context.CancelFunc
-	done   chan struct{}
-	stop   sync.Once
+	// bg runs the scheduler until Stop.
+	bg *background.Group
 }
 
 // New returns an EventBridge service and starts its scheduler, which runs
@@ -70,7 +67,6 @@ func New(
 	functions *lambda.Service,
 	deliveries *delivery.Log,
 ) *Service {
-	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
 		store:      store,
 		queues:     queues,
@@ -79,21 +75,14 @@ func New(
 		deliveries: deliveries,
 		logger:     slog.Default(),
 		now:        time.Now,
-		ctx:        ctx,
-		cancel:     cancel,
-		done:       make(chan struct{}),
+		bg:         background.New(),
 	}
-	go s.scheduler()
+	s.bg.Every(scheduleInterval, s.scheduler)
 	return s
 }
 
 // Stop ends the scheduler and waits for it. Later calls return at once.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.cancel()
-		<-s.done
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 type target struct {
 	Transformer *transformer `json:",omitempty"`

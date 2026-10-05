@@ -31,6 +31,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -59,10 +60,7 @@ type Service struct {
 	caller *catalog.Caller
 	logger *slog.Logger
 	now    func() time.Time
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
-	stop   sync.Once
+	bg     *background.Group
 	// busy serializes reconciling, so a group is never scaled twice at once.
 	busy sync.Mutex
 	mu   sync.Mutex
@@ -76,9 +74,8 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 		logger = slog.Default()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	s := &Service{store: store, logger: logger, now: time.Now, ctx: ctx, cancel: cancel}
-	s.wg.Go(s.runner)
+	s := &Service{store: store, logger: logger, now: time.Now, bg: background.New()}
+	s.bg.Every(runInterval, s.visit)
 	return s
 }
 
@@ -88,12 +85,7 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 // Stop ends the runner and waits for it.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.cancel()
-		s.wg.Wait()
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 func key(scope request.Scope, kind, name string) string {
 	return scope.AccountID + "/" + scope.Region + "/" + service + "/" + kind + "/" + name

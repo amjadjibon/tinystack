@@ -694,7 +694,7 @@ func (s *Service) ReceiveMessage(
 		case <-ctx.Done():
 			timer.Stop()
 			return &api.ReceiveMessageResult{}, nil
-		case <-s.stop:
+		case <-s.bg.Context().Done():
 			timer.Stop()
 			return &api.ReceiveMessageResult{}, nil
 		}

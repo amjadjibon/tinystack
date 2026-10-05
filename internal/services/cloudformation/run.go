@@ -57,13 +57,13 @@ type stackRef struct {
 	name  string
 }
 
-func (s *Service) runner() {
+func (s *Service) runner(ctx context.Context) {
 	t := time.NewTicker(runInterval)
 	defer t.Stop()
 	for {
-		s.visit()
+		s.visit(ctx)
 		select {
-		case <-s.ctx.Done():
+		case <-ctx.Done():
 			return
 		case <-t.C:
 		case <-s.wake:
@@ -73,9 +73,9 @@ func (s *Service) runner() {
 
 // visit advances each stack with an operation in progress that is not
 // already advancing.
-func (s *Service) visit() {
+func (s *Service) visit(ctx context.Context) {
 	var refs []stackRef
-	_ = s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(indexPrefix) {
 			parts := strings.SplitN(strings.TrimPrefix(k, indexPrefix), "/", 3)
 			if len(parts) == 3 {
@@ -96,25 +96,25 @@ func (s *Service) visit() {
 
 		s.busy[id] = true
 		s.mu.Unlock()
-		s.wg.Go(func() {
+		s.bg.Go(func(ctx context.Context) {
 			defer func() {
 				s.mu.Lock()
 				delete(s.busy, id)
 				s.mu.Unlock()
 			}()
 
-			s.advance(ref)
+			s.advance(ctx, ref)
 		})
 	}
 }
 
 // advance takes a stack's steps until its operation ends or the service
 // stops.
-func (s *Service) advance(ref stackRef) {
-	for s.ctx.Err() == nil {
-		more, err := s.next(ref)
+func (s *Service) advance(ctx context.Context, ref stackRef) {
+	for ctx.Err() == nil {
+		more, err := s.next(ctx, ref)
 		if err != nil {
-			if s.ctx.Err() == nil {
+			if ctx.Err() == nil {
 				s.logger.Error("cloudformation stack", "stack", ref.name, "error", err)
 			}
 
@@ -129,10 +129,10 @@ func (s *Service) advance(ref stackRef) {
 
 // next plans and takes a stack's next step, reporting whether another
 // follows.
-func (s *Service) next(ref stackRef) (bool, error) {
+func (s *Service) next(ctx context.Context, ref stackRef) (bool, error) {
 	var st *stack
 	var next step
-	if err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	if err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
 		st, _, err = storage.Read[stack](tx, key(ref.scope, kindStack, ref.name))
 		if err != nil || st == nil || st.Op == nil {
@@ -146,7 +146,7 @@ func (s *Service) next(ref stackRef) (bool, error) {
 	}
 
 	if st == nil || st.Op == nil {
-		return false, s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+		return false, s.store.Update(ctx, func(tx storage.WriteTx) error {
 			cur, _, err := storage.Read[stack](tx, key(ref.scope, kindStack, ref.name))
 			if err == nil && (cur == nil || cur.Op == nil) {
 				tx.Delete(indexKey(ref.scope, ref.name))
@@ -158,11 +158,11 @@ func (s *Service) next(ref stackRef) (bool, error) {
 
 	switch next.kind {
 	case stepFinish:
-		return true, s.commit(ref, func(tx storage.WriteTx, cur *stack) error {
+		return true, s.commit(ctx, ref, func(tx storage.WriteTx, cur *stack) error {
 			return s.finish(tx, ref.scope, cur, &next)
 		})
 	case stepFail:
-		return true, s.commit(ref, func(tx storage.WriteTx, cur *stack) error {
+		return true, s.commit(ctx, ref, func(tx storage.WriteTx, cur *stack) error {
 			if err := s.resourceFailed(tx, ref.scope, cur, &next, next.reason); err != nil {
 				return err
 			}
@@ -170,31 +170,31 @@ func (s *Service) next(ref stackRef) (bool, error) {
 			return s.fail(tx, ref.scope, cur, next.logical, next.reason)
 		})
 	case stepRetain, stepForget:
-		return true, s.commit(ref, func(tx storage.WriteTx, cur *stack) error {
+		return true, s.commit(ctx, ref, func(tx storage.WriteTx, cur *stack) error {
 			return s.drop(tx, ref.scope, cur, &next)
 		})
 	}
 
-	if err := s.commit(ref, func(tx storage.WriteTx, cur *stack) error {
+	if err := s.commit(ctx, ref, func(tx storage.WriteTx, cur *stack) error {
 		return s.start(tx, ref.scope, cur, &next)
 	}); err != nil {
 		return false, err
 	}
 
-	physical, attributes, err := s.perform(ref.scope, st, &next)
-	if err != nil && s.ctx.Err() != nil {
-		return false, s.ctx.Err()
+	physical, attributes, err := s.perform(ctx, ref.scope, st, &next)
+	if err != nil && ctx.Err() != nil {
+		return false, ctx.Err()
 	}
 
-	return true, s.commit(ref, func(tx storage.WriteTx, cur *stack) error {
+	return true, s.commit(ctx, ref, func(tx storage.WriteTx, cur *stack) error {
 		return s.record(tx, ref.scope, cur, &next, physical, attributes, err)
 	})
 }
 
 // commit changes a stack with an operation in progress in a transaction
 // that outlives the service's context, so a step that ran is recorded.
-func (s *Service) commit(ref stackRef, change func(tx storage.WriteTx, st *stack) error) error {
-	return s.store.Update(context.WithoutCancel(s.ctx), func(tx storage.WriteTx) error {
+func (s *Service) commit(ctx context.Context, ref stackRef, change func(tx storage.WriteTx, st *stack) error) error {
+	return s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
 		st, found, err := storage.Read[stack](tx, key(ref.scope, kindStack, ref.name))
 		if err != nil || !found || st.Op == nil {
 			return err
@@ -370,27 +370,27 @@ func importer(tx storage.ReadTx, scope request.Scope) func(string) (string, erro
 }
 
 // perform calls the services a step needs, outside transactions.
-func (s *Service) perform(
+func (s *Service) perform(ctx context.Context,
 	scope request.Scope, st *stack, next *step,
 ) (physical string, attributes map[string]any, err error) {
 	c := &client{caller: s.caller, scope: scope, endpoint: st.Endpoint, stack: st.Name, logical: next.logical}
 	r := st.Resources[next.logical]
 	switch next.kind {
 	case stepCreate, stepSwap:
-		return types[next.typ].create(s.ctx, c, next.props)
+		return types[next.typ].create(ctx, c, next.props)
 	case stepDiscard:
-		return "", nil, types[next.typ].remove(s.ctx, c, st.Replaced[0].Resource)
+		return "", nil, types[next.typ].remove(ctx, c, st.Replaced[0].Resource)
 	case stepUpdate:
-		attributes, err := types[next.typ].update(s.ctx, c, r, next.props)
+		attributes, err := types[next.typ].update(ctx, c, r, next.props)
 		return r.Physical, attributes, err
 	case stepReplace:
 		if next.decl.UpdateReplacePolicy == policyRetain {
 			return "", nil, nil
 		}
 
-		return "", nil, types[r.Type].remove(s.ctx, c, r)
+		return "", nil, types[r.Type].remove(ctx, c, r)
 	default:
-		return "", nil, types[r.Type].remove(s.ctx, c, r)
+		return "", nil, types[r.Type].remove(ctx, c, r)
 	}
 }
 

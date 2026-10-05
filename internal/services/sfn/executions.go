@@ -239,19 +239,6 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 	}
 }
 
-// spawn runs fn in the background until Stop, reporting false once Stop has
-// run.
-func (s *Service) spawn(fn func(context.Context)) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.ctx.Err() != nil {
-		return false
-	}
-
-	s.wg.Go(func() { fn(s.ctx) })
-	return true
-}
-
 func (s *Service) StartExecution(ctx context.Context, in *api.StartExecutionInput) (*api.StartExecutionOutput, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
@@ -263,7 +250,7 @@ func (s *Service) StartExecution(ctx context.Context, in *api.StartExecutionInpu
 		return nil, err
 	}
 
-	if !existing && !s.spawn(func(ctx context.Context) { s.execute(ctx, r, def) }) {
+	if !existing && !s.bg.Go(func(ctx context.Context) { s.execute(ctx, r, def) }) {
 		return nil, awserror.New("ServiceException", "The service is shutting down")
 	}
 
@@ -291,7 +278,7 @@ func (s *Service) StartSyncExecution(
 	}
 
 	done := make(chan struct{})
-	if !s.spawn(func(ctx context.Context) {
+	if !s.bg.Go(func(ctx context.Context) {
 		defer close(done)
 		s.execute(ctx, r, def)
 	}) {

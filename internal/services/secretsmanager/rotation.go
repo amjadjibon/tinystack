@@ -226,7 +226,7 @@ func (s *Service) RotateSecret(ctx context.Context, in *api.RotateSecretRequest)
 	}
 
 	if immediately {
-		s.spawn(func(ctx context.Context) { s.rotate(ctx, m.Scope, sec.Name, sec.Rotation.LambdaARN, token) })
+		s.bg.Go(func(ctx context.Context) { s.rotate(ctx, m.Scope, sec.Name, sec.Rotation.LambdaARN, token) })
 	}
 
 	return out, nil
@@ -332,18 +332,8 @@ func (s *Service) rotate(ctx context.Context, scope request.Scope, name, functio
 
 // scheduler rotates due secrets every rotationInterval until Stop.
 func (s *Service) scheduler(ctx context.Context) {
-	ticker := time.NewTicker(rotationInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-		}
-
-		if err := s.rotateDue(ctx, s.now()); err != nil && ctx.Err() == nil {
-			s.logger.Warn("rotate Secrets Manager secrets", "error", err)
-		}
+	if err := s.rotateDue(ctx, s.now()); err != nil && ctx.Err() == nil {
+		s.logger.Warn("rotate Secrets Manager secrets", "error", err)
 	}
 }
 
@@ -404,7 +394,7 @@ func (s *Service) rotateDue(ctx context.Context, now time.Time) error {
 	}
 
 	for _, r := range runs {
-		s.spawn(func(ctx context.Context) { s.rotate(ctx, r.scope, r.name, r.function, r.token) })
+		s.bg.Go(func(ctx context.Context) { s.rotate(ctx, r.scope, r.name, r.function, r.token) })
 	}
 
 	return nil

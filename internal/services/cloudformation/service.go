@@ -19,7 +19,6 @@
 package cloudformation
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -30,6 +29,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -54,15 +54,12 @@ type Service struct {
 	caller *catalog.Caller
 	logger *slog.Logger
 	now    func() time.Time
-	ctx    context.Context
-	cancel context.CancelFunc
+	bg     *background.Group
 	// wake starts a visit before the next tick, after an operation commits.
 	wake chan struct{}
 	// busy holds the stacks whose operations are advancing.
 	busy map[string]bool
-	wg   sync.WaitGroup
 	mu   sync.Mutex
-	stop sync.Once
 }
 
 // New returns a CloudFormation service. Stacks change only once UseCaller
@@ -72,9 +69,8 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 		logger = slog.Default()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
-		store: store, logger: logger, now: time.Now, ctx: ctx, cancel: cancel,
+		store: store, logger: logger, now: time.Now, bg: background.New(),
 		wake: make(chan struct{}, 1), busy: map[string]bool{},
 	}
 }
@@ -83,16 +79,11 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 // operations and starts the runner. Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) {
 	s.caller = caller.Lenient()
-	s.wg.Go(s.runner)
+	s.bg.Go(s.runner)
 }
 
 // Stop ends the runner and waits for the steps in progress.
-func (s *Service) Stop() {
-	s.stop.Do(func() {
-		s.cancel()
-		s.wg.Wait()
-	})
-}
+func (s *Service) Stop() { s.bg.Stop() }
 
 // poke wakes the runner after an operation commits.
 func (s *Service) poke() {

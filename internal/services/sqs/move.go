@@ -321,33 +321,21 @@ func (s *Service) CancelMessageMoveTask(
 }
 
 // mover moves the next batch of every running task each moveInterval until Stop.
-func (s *Service) mover() {
-	defer close(s.done)
-	ticker := time.NewTicker(moveInterval)
-	defer ticker.Stop()
-	ctx := context.Background()
-	for {
-		select {
-		case <-s.stop:
-			return
-		case <-ticker.C:
+func (s *Service) mover(ctx context.Context) {
+	var running []string
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
+		for _, k := range tx.Keys(moveIndex) {
+			if t, _, err := storage.Read[moveTask](tx, k); err == nil && t.Status == taskRunning {
+				running = append(running, k)
+			}
 		}
 
-		var running []string
-		_ = s.store.View(ctx, func(tx storage.ReadTx) error {
-			for _, k := range tx.Keys(moveIndex) {
-				if t, _, err := storage.Read[moveTask](tx, k); err == nil && t.Status == taskRunning {
-					running = append(running, k)
-				}
-			}
+		return nil
+	})
 
-			return nil
-		})
-
-		for _, k := range running {
-			if err := s.move(ctx, k); err != nil {
-				s.logger.Warn("move SQS messages", "task", k, "error", err)
-			}
+	for _, k := range running {
+		if err := s.move(ctx, k); err != nil {
+			s.logger.Warn("move SQS messages", "task", k, "error", err)
 		}
 	}
 }

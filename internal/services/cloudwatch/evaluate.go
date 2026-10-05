@@ -18,20 +18,6 @@ import (
 // evaluateInterval is how often the evaluator visits every alarm.
 var evaluateInterval = time.Second
 
-// evaluator evaluates alarms until Stop.
-func (s *Service) evaluator() {
-	t := time.NewTicker(evaluateInterval)
-	defer t.Stop()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-t.C:
-			s.visit()
-		}
-	}
-}
-
 type target struct {
 	scope request.Scope
 	name  string
@@ -39,9 +25,9 @@ type target struct {
 
 // visit evaluates metric alarms, then composite alarms, which read the
 // states the metric alarms just took.
-func (s *Service) visit() {
+func (s *Service) visit(ctx context.Context) {
 	var targets []target
-	_ = s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(indexPrefix) {
 			parts := strings.SplitN(strings.TrimPrefix(k, indexPrefix), "/", 3)
 			if len(parts) == 3 {
@@ -54,20 +40,20 @@ func (s *Service) visit() {
 
 	for _, composite := range []bool{false, true} {
 		for _, t := range targets {
-			if s.ctx.Err() != nil {
+			if ctx.Err() != nil {
 				return
 			}
 
-			if err := s.evaluate(t, composite); err != nil {
+			if err := s.evaluate(ctx, t, composite); err != nil {
 				s.logger.Warn("evaluating a CloudWatch alarm failed", "alarm", t.name, "error", err)
 			}
 		}
 	}
 }
 
-func (s *Service) evaluate(t target, composite bool) error {
+func (s *Service) evaluate(ctx context.Context, t target, composite bool) error {
 	var ch *change
-	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		a, found, err := storage.Read[alarm](tx, alarmKey(t.scope, t.name))
 		if err != nil || !found || (a.Composite != nil) != composite {
 			return err
@@ -107,7 +93,7 @@ func (s *Service) evaluate(t target, composite bool) error {
 		return err
 	}
 
-	s.notify(s.ctx, ch)
+	s.notify(ctx, ch)
 	return nil
 }
 

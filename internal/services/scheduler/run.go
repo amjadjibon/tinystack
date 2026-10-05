@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -19,28 +20,15 @@ import (
 // runInterval is how often the runner looks for due schedules.
 var runInterval = time.Second
 
-func (s *Service) runner() {
-	t := time.NewTicker(runInterval)
-	defer t.Stop()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-t.C:
-			s.visit()
-		}
-	}
-}
-
 type due struct {
 	scope request.Scope
 	group string
 	name  string
 }
 
-func (s *Service) visit() {
+func (s *Service) visit(ctx context.Context) {
 	var runs []due
-	_ = s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(indexPrefix) {
 			parts := strings.SplitN(strings.TrimPrefix(k, indexPrefix), "/", 4)
 			if len(parts) == 4 {
@@ -52,27 +40,27 @@ func (s *Service) visit() {
 	})
 
 	for _, r := range runs {
-		if s.ctx.Err() != nil {
+		if ctx.Err() != nil {
 			return
 		}
 
-		target, ok, err := s.claim(r)
+		target, ok, err := s.claim(ctx, r)
 		if err != nil {
 			s.logger.Warn("claiming a schedule's run failed", "schedule", r.name, "error", err)
 		}
 
 		if ok {
-			s.invoke(r.scope, target)
+			s.invoke(ctx, r.scope, target)
 		}
 	}
 }
 
 // claim advances a due schedule to its next run, or retires it, and returns
 // the target to invoke.
-func (s *Service) claim(r due) (*api.GetScheduleOutput, bool, error) {
+func (s *Service) claim(ctx context.Context, r due) (*api.GetScheduleOutput, bool, error) {
 	var out *api.GetScheduleOutput
 	now := s.now()
-	err := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		k := key(r.scope, kindSchedule, r.group+"/"+r.name)
 		rec, found, err := storage.Read[record](tx, k)
 		switch {
@@ -112,7 +100,7 @@ func (s *Service) claim(r due) (*api.GetScheduleOutput, bool, error) {
 
 // invoke runs a schedule's target and sends a failed run to its dead-letter
 // queue.
-func (s *Service) invoke(scope request.Scope, sc *api.GetScheduleOutput) {
+func (s *Service) invoke(ctx context.Context, scope request.Scope, sc *api.GetScheduleOutput) {
 	if s.caller == nil {
 		return
 	}
@@ -121,7 +109,7 @@ func (s *Service) invoke(scope request.Scope, sc *api.GetScheduleOutput) {
 	arn, input := common.Value(t.Arn), common.Value(t.Input)
 	target, op, params, err := targetCall(t)
 	if err == nil {
-		ctx := request.WithMetadata(s.ctx, request.Metadata{Scope: scope, Service: target, RequestID: randomID()})
+		ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: target, RequestID: randomID()})
 		_, err = s.caller.Call(ctx, target, op, params)
 	}
 
@@ -137,7 +125,7 @@ func (s *Service) invoke(scope request.Scope, sc *api.GetScheduleOutput) {
 	e := awserror.From(err)
 	attribute := func(v string) any { return map[string]any{"DataType": "String", "StringValue": v} }
 	queueURL, _ := sqs.QueueURL(common.Value(t.DeadLetterConfig.Arn))
-	ctx := request.WithMetadata(s.ctx, request.Metadata{Scope: scope, Service: "sqs", RequestID: randomID()})
+	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: "sqs", RequestID: randomID()})
 	_, dlqErr := s.caller.Call(ctx, "sqs", "SendMessage", map[string]any{
 		"QueueUrl": queueURL, "MessageBody": cmpOr(input, "{}"),
 		"MessageAttributes": map[string]any{

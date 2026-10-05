@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -62,24 +63,20 @@ type indexEntry struct {
 
 // runner is the state of the goroutine that runs clusters' API servers.
 type runner struct {
-	ctx     context.Context
+	bg      *background.Group
 	runtime Runtime
 	logger  *slog.Logger
-	cancel  context.CancelFunc
 	// busy holds the endpoint IDs whose servers are starting.
 	busy map[string]bool
-	wg   sync.WaitGroup
 	mu   sync.Mutex
-	once sync.Once
 }
 
 // UseRuntime runs each cluster's Kubernetes API server in rt, at the endpoint
 // the cluster reports. Call it before serving requests; Stop ends the runner
 // and closes rt.
 func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) {
-	ctx, cancel := context.WithCancel(context.Background())
-	s.runner = &runner{ctx: ctx, cancel: cancel, runtime: rt, logger: logger, busy: map[string]bool{}}
-	s.runner.wg.Go(s.run)
+	s.runner = &runner{bg: background.New(), runtime: rt, logger: logger, busy: map[string]bool{}}
+	s.runner.bg.Every(tick, s.visit)
 }
 
 // Stop ends the runner and removes every API server.
@@ -89,11 +86,9 @@ func (s *Service) Stop() {
 		return
 	}
 
-	r.once.Do(func() {
-		r.cancel()
-		r.wg.Wait()
+	if r.bg.Stop() {
 		r.runtime.Close()
-	})
+	}
 }
 
 func indexKey(id string) string { return indexPrefix + id }
@@ -115,25 +110,12 @@ func (s *Service) serve(tx storage.WriteTx, scope request.Scope, c *cluster) err
 	return nil
 }
 
-func (s *Service) run() {
-	ticker := time.NewTicker(tick)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-s.runner.ctx.Done():
-			return
-		case <-ticker.C:
-			s.visit()
-		}
-	}
-}
-
 // visit advances every cluster the runner owns that is not already starting,
 // so one slow start holds up only its own cluster.
-func (s *Service) visit() {
+func (s *Service) visit(ctx context.Context) {
 	r := s.runner
 	var ids []string
-	if err := s.store.View(r.ctx, func(tx storage.ReadTx) error {
+	if err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys(indexPrefix) {
 			ids = append(ids, k[len(indexPrefix):])
 		}
@@ -152,14 +134,14 @@ func (s *Service) visit() {
 
 		r.busy[id] = true
 		r.mu.Unlock()
-		r.wg.Go(func() {
+		r.bg.Go(func(ctx context.Context) {
 			defer func() {
 				r.mu.Lock()
 				delete(r.busy, id)
 				r.mu.Unlock()
 			}()
 
-			if err := s.advance(id); err != nil && r.ctx.Err() == nil {
+			if err := s.advance(ctx, id); err != nil && ctx.Err() == nil {
 				r.logger.Error("eks cluster", "endpoint", id, "error", err)
 			}
 		})
@@ -186,11 +168,11 @@ func lookup(tx storage.ReadTx, id string) (*indexEntry, *cluster, error) {
 // advance starts the API server of a cluster that has none (or lost it, as
 // every cluster does when TinyStack restarts), and removes the server of a
 // deleted cluster.
-func (s *Service) advance(id string) error {
+func (s *Service) advance(ctx context.Context, id string) error {
 	r := s.runner
 	var e *indexEntry
 	var c *cluster
-	if err := s.store.View(r.ctx, func(tx storage.ReadTx) error {
+	if err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
 		e, c, err = lookup(tx, id)
 		return err
@@ -201,24 +183,24 @@ func (s *Service) advance(id string) error {
 	switch {
 	case c == nil:
 		if e.Server != "" {
-			r.runtime.Remove(r.ctx, e.Server)
+			r.runtime.Remove(ctx, e.Server)
 		}
 
-		return s.store.Update(r.ctx, func(tx storage.WriteTx) error {
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
 			tx.Delete(indexKey(id))
 			return nil
 		})
 	case c.Status == failed:
 		return nil
 	case c.Server != nil:
-		if running, err := r.runtime.Running(r.ctx, c.Server.ID); err != nil || running {
+		if running, err := r.runtime.Running(ctx, c.Server.ID); err != nil || running {
 			return err
 		}
 	}
 
-	server, startErr := r.runtime.Start(r.ctx, Cluster{Account: e.Account, Name: c.Name, Version: c.Version})
+	server, startErr := r.runtime.Start(ctx, Cluster{Account: e.Account, Name: c.Name, Version: c.Version})
 	kept := false
-	err := s.store.Update(r.ctx, func(tx storage.WriteTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		cur, current, err := lookup(tx, id)
 		if err != nil || current == nil {
 			return err
@@ -241,7 +223,7 @@ func (s *Service) advance(id string) error {
 		return storage.Write(tx, clusterKey(scope, current.Name), current)
 	})
 	if startErr == nil && !kept {
-		r.runtime.Remove(context.WithoutCancel(r.ctx), server.ID)
+		r.runtime.Remove(context.WithoutCancel(ctx), server.ID)
 	}
 
 	return err

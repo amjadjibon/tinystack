@@ -264,9 +264,9 @@ func (s *Service) DeleteScheduledAction(
 
 // runScheduled applies a group's due scheduled actions in one transaction,
 // advancing recurring ones and deleting the rest.
-func (s *Service) runScheduled(scope request.Scope, name string) error {
+func (s *Service) runScheduled(ctx context.Context, scope request.Scope, name string) error {
 	now := s.now().UTC()
-	return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		g, found, err := storage.Read[group](tx, key(scope, kindGroup, name))
 		if err != nil || !found || g.suspended(processScheduled) {
 			return err

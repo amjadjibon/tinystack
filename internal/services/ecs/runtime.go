@@ -83,31 +83,18 @@ type LogWriter func(ctx context.Context, scope request.Scope, group, stream stri
 // Stop ends the runner and closes rt.
 func (s *Service) UseRuntime(rt Runtime, writeLogs LogWriter, logger *slog.Logger) {
 	s.runtime, s.writeLogs, s.logger = rt, writeLogs, logger
-	s.wg.Go(s.run)
+	s.bg.Every(tick, s.visit)
 }
 
 func indexKey(scope request.Scope, clusterName, id string) string {
 	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + clusterName + "/" + id
 }
 
-func (s *Service) run() {
-	ticker := time.NewTicker(tick)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-ticker.C:
-			s.visit()
-		}
-	}
-}
-
 // visit advances each task the runner owns that is not already advancing, so
 // a slow image pull holds up only its own task.
-func (s *Service) visit() {
+func (s *Service) visit(ctx context.Context) {
 	var keys []string
-	if err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	if err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		keys = tx.Keys(indexPrefix)
 		return nil
 	}); err != nil {
@@ -123,14 +110,14 @@ func (s *Service) visit() {
 
 		s.busy[k] = true
 		s.mu.Unlock()
-		s.wg.Go(func() {
+		s.bg.Go(func(ctx context.Context) {
 			defer func() {
 				s.mu.Lock()
 				delete(s.busy, k)
 				s.mu.Unlock()
 			}()
 
-			if err := s.advance(k); err != nil && s.ctx.Err() == nil {
+			if err := s.advance(ctx, k); err != nil && ctx.Err() == nil {
 				s.logger.Error("ecs task", "task", k, "error", err)
 			}
 		})
@@ -140,10 +127,10 @@ func (s *Service) visit() {
 // advance moves the task an index key names one step: it starts a pending
 // task's containers, watches a running task's containers, and removes a stopped
 // task's containers.
-func (s *Service) advance(k string) error {
+func (s *Service) advance(ctx context.Context, k string) error {
 	parts := strings.Split(strings.TrimPrefix(k, indexPrefix), "/")
 	if len(parts) != 4 {
-		return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
 			tx.Delete(k)
 			return nil
 		})
@@ -152,7 +139,7 @@ func (s *Service) advance(k string) error {
 	scope := request.Scope{AccountID: parts[0], Region: parts[1]}
 	var t *task
 	var def *taskDef
-	err := s.store.View(s.ctx, func(tx storage.ReadTx) error {
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var found bool
 		var readErr error
 		if t, found, readErr = storage.Read[task](tx, taskKey(scope, parts[2], parts[3])); readErr != nil || !found {
@@ -169,33 +156,33 @@ func (s *Service) advance(k string) error {
 
 	switch {
 	case t == nil:
-		return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
 			tx.Delete(k)
 			return nil
 		})
 	case t.Last == stopped:
-		return s.finish(scope, k, t, def)
+		return s.finish(ctx, scope, k, t, def)
 	case t.Last == pending:
-		return s.launch(scope, t, def)
+		return s.launch(ctx, scope, t, def)
 	default:
-		return s.watch(scope, t, def)
+		return s.watch(ctx, scope, t, def)
 	}
 }
 
 // launch starts a pending task's containers and records them, or stops the task
 // when one fails to start.
-func (s *Service) launch(scope request.Scope, t *task, def *taskDef) error {
+func (s *Service) launch(ctx context.Context, scope request.Scope, t *task, def *taskDef) error {
 	specs, err := containerSpecs(scope, t, def)
 	var started []Started
 	for i := 0; err == nil && i < len(specs); i++ {
 		var st Started
-		if st, err = s.runtime.Start(s.ctx, &specs[i]); err == nil {
+		if st, err = s.runtime.Start(ctx, &specs[i]); err == nil {
 			started = append(started, st)
 		}
 	}
 
 	kept := false
-	updateErr := s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	updateErr := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		cur, found, readErr := storage.Read[task](tx, taskKey(scope, t.Cluster, t.ID))
 		// A task stopped while its containers started keeps none of them.
 		if readErr != nil || !found || cur.Last != pending {
@@ -240,7 +227,7 @@ func (s *Service) launch(scope request.Scope, t *task, def *taskDef) error {
 	})
 	if !kept {
 		for _, st := range started {
-			s.runtime.Remove(context.WithoutCancel(s.ctx), st.ID)
+			s.runtime.Remove(context.WithoutCancel(ctx), st.ID)
 		}
 	}
 
@@ -322,7 +309,7 @@ func containerSpecs(scope request.Scope, t *task, def *taskDef) ([]ContainerSpec
 
 // watch ships a running task's logs and records the containers that exited,
 // stopping the task when an essential one did.
-func (s *Service) watch(scope request.Scope, t *task, def *taskDef) error {
+func (s *Service) watch(ctx context.Context, scope request.Scope, t *task, def *taskDef) error {
 	type exit struct {
 		code *int64
 		gone bool
@@ -334,8 +321,8 @@ func (s *Service) watch(scope request.Scope, t *task, def *taskDef) error {
 			continue
 		}
 
-		s.ship(scope, t, &def.Def.ContainerDefinitions[i], *c.RuntimeId)
-		exited, code, err := s.runtime.State(s.ctx, *c.RuntimeId)
+		s.ship(ctx, scope, t, &def.Def.ContainerDefinitions[i], *c.RuntimeId)
+		exited, code, err := s.runtime.State(ctx, *c.RuntimeId)
 		switch {
 		case errors.Is(err, ErrGone):
 			exits[i] = exit{gone: true}
@@ -350,7 +337,7 @@ func (s *Service) watch(scope request.Scope, t *task, def *taskDef) error {
 		return nil
 	}
 
-	return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		cur, found, err := storage.Read[task](tx, taskKey(scope, t.Cluster, t.ID))
 		if err != nil || !found || cur.Last != running {
 			return err
@@ -397,20 +384,20 @@ func (s *Service) watch(scope request.Scope, t *task, def *taskDef) error {
 
 // finish ships the last logs of a stopped task's containers, removes them, and
 // lets the task go.
-func (s *Service) finish(scope request.Scope, k string, t *task, def *taskDef) error {
+func (s *Service) finish(ctx context.Context, scope request.Scope, k string, t *task, def *taskDef) error {
 	for i, c := range t.Containers {
 		if c.RuntimeId == nil {
 			continue
 		}
 
-		s.ship(scope, t, &def.Def.ContainerDefinitions[i], *c.RuntimeId)
-		s.runtime.Remove(s.ctx, *c.RuntimeId)
+		s.ship(ctx, scope, t, &def.Def.ContainerDefinitions[i], *c.RuntimeId)
+		s.runtime.Remove(ctx, *c.RuntimeId)
 		s.mu.Lock()
 		delete(s.cursors, *c.RuntimeId)
 		s.mu.Unlock()
 	}
 
-	return s.store.Update(s.ctx, func(tx storage.WriteTx) error {
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		tx.Delete(k)
 		return nil
 	})
@@ -419,7 +406,7 @@ func (s *Service) finish(scope request.Scope, k string, t *task, def *taskDef) e
 // ship appends what a container with the awslogs driver wrote since the last
 // call to its log stream: <prefix>/<container>/<task ID> with a stream prefix,
 // and the container's runtime ID without one.
-func (s *Service) ship(scope request.Scope, t *task, d *api.ContainerDefinition, id string) {
+func (s *Service) ship(ctx context.Context, scope request.Scope, t *task, d *api.ContainerDefinition, id string) {
 	lc := d.LogConfiguration
 	if lc == nil || common.Value(lc.LogDriver) != "awslogs" || lc.Options["awslogs-group"] == "" || s.writeLogs == nil {
 		return
@@ -428,7 +415,7 @@ func (s *Service) ship(scope request.Scope, t *task, d *api.ContainerDefinition,
 	s.mu.Lock()
 	since := s.cursors[id]
 	s.mu.Unlock()
-	lines, err := s.runtime.Logs(s.ctx, id, since)
+	lines, err := s.runtime.Logs(ctx, id, since)
 	if err != nil || len(lines) == 0 {
 		return
 	}
@@ -447,7 +434,7 @@ func (s *Service) ship(scope request.Scope, t *task, d *api.ContainerDefinition,
 		messages = append(messages, l.Message)
 	}
 
-	if err = s.writeLogs(s.ctx, scope, lc.Options["awslogs-group"], stream, messages); err != nil {
+	if err = s.writeLogs(ctx, scope, lc.Options["awslogs-group"], stream, messages); err != nil {
 		s.logger.Error("ecs logs", "group", lc.Options["awslogs-group"], "error", err)
 		return
 	}

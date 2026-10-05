@@ -123,33 +123,22 @@ func expired(a api.AttributeValue, now time.Time) bool {
 }
 
 // sweep deletes expired items every ttlInterval until Stop.
-func (s *Service) sweep() {
-	defer close(s.done)
-	ticker := time.NewTicker(ttlInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-ticker.C:
+func (s *Service) sweep(ctx context.Context) {
+	var tables []string
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
+		for _, k := range tx.Keys(ttlIndex) {
+			scoped := strings.SplitN(strings.TrimPrefix(k, ttlIndex), "/", 3)
+			if len(scoped) == 3 {
+				tables = append(tables, scoped[0]+"/"+scoped[1]+"/dynamodb/"+scoped[2])
+			}
 		}
 
-		var tables []string
-		_ = s.store.View(s.ctx, func(tx storage.ReadTx) error {
-			for _, k := range tx.Keys(ttlIndex) {
-				scoped := strings.SplitN(strings.TrimPrefix(k, ttlIndex), "/", 3)
-				if len(scoped) == 3 {
-					tables = append(tables, scoped[0]+"/"+scoped[1]+"/dynamodb/"+scoped[2])
-				}
-			}
+		return nil
+	})
 
-			return nil
-		})
-
-		for _, key := range tables {
-			if err := s.expire(s.ctx, key, time.Now()); err != nil && s.ctx.Err() == nil {
-				s.logger.Warn("delete expired DynamoDB items", "table", key, "error", err)
-			}
+	for _, key := range tables {
+		if err := s.expire(ctx, key, time.Now()); err != nil && ctx.Err() == nil {
+			s.logger.Warn("delete expired DynamoDB items", "table", key, "error", err)
 		}
 	}
 }

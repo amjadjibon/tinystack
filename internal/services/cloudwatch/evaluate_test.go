@@ -17,7 +17,6 @@ func TestEvaluateAcrossPeriods(t *testing.T) {
 	s := New(&memory.Store{}, nil)
 	// Stop the evaluator so the test drives the clock.
 	s.Stop()
-	s.ctx = context.Background()
 	now := time.Date(2026, time.March, 14, 10, 0, 59, 500_000_000, time.UTC)
 	s.now = func() time.Time { return now }
 	scope := request.Scope{AccountID: "000000000000", Region: "us-east-1"}
@@ -50,7 +49,7 @@ func TestEvaluateAcrossPeriods(t *testing.T) {
 
 	// The next period has begun, and has no data yet.
 	now = now.Add(time.Second)
-	if err = s.evaluate(target{scope, "high"}, false); err != nil {
+	if err = s.evaluate(context.Background(), target{scope, "high"}, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -60,7 +59,7 @@ func TestEvaluateAcrossPeriods(t *testing.T) {
 
 	// A period with no data at all is missing data.
 	now = now.Add(time.Minute)
-	if err = s.evaluate(target{scope, "high"}, false); err != nil {
+	if err = s.evaluate(context.Background(), target{scope, "high"}, false); err != nil {
 		t.Fatal(err)
 	}
 

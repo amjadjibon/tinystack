@@ -116,8 +116,8 @@ func (s *Service) post(topicARN string, sub *subscription, header http.Header, b
 	header.Set("Content-Type", "text/plain; charset=UTF-8")
 	header.Set("User-Agent", "Amazon Simple Notification Service Agent")
 	endpoint := sub.Endpoint
-	s.wg.Go(func() {
-		resp := proxy.Forward(s.ctx, http.MethodPost, endpoint, header, body, postTimeout)
+	s.bg.Go(func(ctx context.Context) {
+		resp := proxy.Forward(ctx, http.MethodPost, endpoint, header, body, postTimeout)
 		var err error
 		if resp.Status < 200 || resp.Status > 299 {
 			err = fmt.Errorf("the endpoint answered HTTP %s", strconv.Itoa(resp.Status))
