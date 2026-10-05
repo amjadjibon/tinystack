@@ -355,14 +355,6 @@ func (s *Service) UpdateStateMachine(
 	return out, nil
 }
 
-func orElse[T any](p, fallback *T) *T {
-	if p != nil {
-		return p
-	}
-
-	return fallback
-}
-
 // DeleteStateMachine deletes a state machine with its executions, stopping
 // those still running.
 func (s *Service) DeleteStateMachine(

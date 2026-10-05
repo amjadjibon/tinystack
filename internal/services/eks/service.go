@@ -17,10 +17,8 @@ package eks
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"regexp"
 	"strings"
 	"time"
@@ -28,6 +26,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -97,54 +96,22 @@ func arn(scope request.Scope, resource string) string {
 	return "arn:aws:eks:" + scope.Region + ":" + scope.AccountID + ":" + resource
 }
 
-func seconds(t time.Time) *float64 { return new(float64(t.UnixMilli()) / 1000) }
+func seconds(t time.Time) *float64 { return common.SecondsMilli(t) }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // records reads every record under keyPrefix, in key order.
 func records[T any](tx storage.ReadTx, keyPrefix string) ([]*T, error) {
-	var out []*T
-	for _, k := range tx.Keys(keyPrefix) {
-		v, _, err := read[T](tx, k)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, v)
-	}
-
-	return out, nil
+	return storage.Records[T](tx, keyPrefix)
 }
+
+func orElse[T any](p, fallback *T) *T { return common.OrElse(p, fallback) }
 
 // page returns the items after the one token names, at most limit of them
 // (1 to 100, 100 by default), and the token for the rest, if any.
@@ -234,11 +201,7 @@ func checkTags(tags map[string]string) error {
 	return nil
 }
 
-func cloneTags(tags map[string]string) map[string]string {
-	out := map[string]string{}
-	maps.Copy(out, tags)
-	return out
-}
+func cloneTags(tags map[string]string) map[string]string { return common.CloneTags(tags) }
 
 // place checks subnets and security groups in EC2, reporting EC2's errors as
 // EKS's.
@@ -252,10 +215,4 @@ func (s *Service) place(ctx context.Context, scope request.Scope, subnets, group
 	return p, err
 }
 
-func errorsOr(err, fallback error) error {
-	if err != nil {
-		return err
-	}
-
-	return fallback
-}
+func errorsOr(err, fallback error) error { return common.ErrorsOr(err, fallback) }

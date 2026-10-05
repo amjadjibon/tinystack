@@ -209,14 +209,6 @@ func checkEndpoints(v *api.VpcConfigRequest, current *api.VpcConfigResponse) err
 	return nil
 }
 
-func orElse[T any](v, fallback *T) *T {
-	if v != nil {
-		return v
-	}
-
-	return fallback
-}
-
 func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterRequest) (*api.CreateClusterResponse, error) {
 	scope, err := identity(ctx)
 	if err != nil {

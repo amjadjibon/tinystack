@@ -601,14 +601,6 @@ func (s *Service) update(
 	return nil
 }
 
-func orElse[T any](v, fallback *T) *T {
-	if v != nil {
-		return v
-	}
-
-	return fallback
-}
-
 // DeleteService stops a service's tasks and makes it INACTIVE; it reports
 // DRAINING, as AWS does while the tasks stop.
 func (s *Service) DeleteService(ctx context.Context, in *api.DeleteServiceRequest) (*api.DeleteServiceResponse, error) {

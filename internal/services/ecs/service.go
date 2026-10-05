@@ -21,7 +21,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -33,6 +32,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -121,54 +121,20 @@ func seconds(t time.Time) *float64 {
 		return nil
 	}
 
-	return new(float64(t.UnixMilli()) / 1000)
+	return common.SecondsMilli(t)
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // records reads every record under keyPrefix, in key order.
 func records[T any](tx storage.ReadTx, keyPrefix string) ([]*T, error) {
-	var out []*T
-	for _, k := range tx.Keys(keyPrefix) {
-		v, _, err := read[T](tx, k)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, v)
-	}
-
-	return out, nil
+	return storage.Records[T](tx, keyPrefix)
 }
 
 // page returns the items after the one token names, at most limit of them, and
@@ -268,3 +234,5 @@ func newID() string {
 	_, _ = rand.Read(b[:])
 	return hex.EncodeToString(b[:])
 }
+
+func orElse[T any](p, fallback *T) *T { return common.OrElse(p, fallback) }
