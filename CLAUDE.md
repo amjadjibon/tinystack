@@ -301,7 +301,9 @@ a per-service `Dialect`), and delivers synchronously through
   path matching, Lambda proxy events and responses (payload formats 1.0 and 2.0), HTTP forwarding, authorizer IAM
   policies, access log formatting, and a JWKS-backed RS256 JWT verifier for HTTP API JWT authorizers. Integrations
   and Lambda authorizers call `lambda.Service.Invoke`, REST API Cognito authorizers call `cognitoidp.Service.Verify`,
-  and access logs go through `logs.Service.Append`, all outside transactions. Lambda keeps each function's, version's,
+  and access logs go through `logs.Service.Append`, all outside transactions. REST API keys (`…/apigateway/apikey/<ID>`, found by value through
+  `…/apigateway/apikey-value/<value>`) and usage plans (`…/apigateway/usageplan/<ID>`, with their keys' IDs) are in
+  `usageplans.go`, whose `checkAPIKey` gates `apiKeyRequired` methods. Lambda keeps each function's, version's,
   and alias's resource-based policy under `…/lambda/policy/<name>/<qualifier>` (`policy.go`), stored, never evaluated.
   Step Functions (`services/sfn`) keeps state machines under `…/sfn/statemachine/<name>`, activities under
   `…/sfn/activity/<name>`, versions under `…/sfn/version/<state machine>/<zero-padded number>` and aliases under

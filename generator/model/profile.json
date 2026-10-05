@@ -8206,7 +8206,21 @@
       "DeleteAuthorizer",
       "TagResource",
       "UntagResource",
-      "GetTags"
+      "GetTags",
+      "CreateApiKey",
+      "GetApiKey",
+      "GetApiKeys",
+      "UpdateApiKey",
+      "DeleteApiKey",
+      "CreateUsagePlan",
+      "GetUsagePlan",
+      "GetUsagePlans",
+      "UpdateUsagePlan",
+      "DeleteUsagePlan",
+      "CreateUsagePlanKey",
+      "GetUsagePlanKey",
+      "GetUsagePlanKeys",
+      "DeleteUsagePlanKey"
     ],
     "shapes": {
       "CreateRestApiRequest": [
@@ -8327,6 +8341,125 @@
       "GetDeploymentRequest": [
         "restApiId",
         "deploymentId"
+      ],
+      "CreateApiKeyRequest": [
+        "name",
+        "description",
+        "enabled",
+        "value",
+        "customerId",
+        "tags"
+      ],
+      "ApiKey": [
+        "id",
+        "value",
+        "name",
+        "customerId",
+        "description",
+        "enabled",
+        "createdDate",
+        "lastUpdatedDate",
+        "tags"
+      ],
+      "GetApiKeyRequest": [
+        "apiKey",
+        "includeValue"
+      ],
+      "GetApiKeysRequest": [
+        "position",
+        "limit",
+        "nameQuery",
+        "customerId",
+        "includeValues"
+      ],
+      "ApiKeys": [
+        "items",
+        "position"
+      ],
+      "UpdateApiKeyRequest": [
+        "apiKey",
+        "patchOperations"
+      ],
+      "DeleteApiKeyRequest": [
+        "apiKey"
+      ],
+      "CreateUsagePlanRequest": [
+        "name",
+        "description",
+        "apiStages",
+        "throttle",
+        "quota",
+        "tags"
+      ],
+      "UsagePlan": [
+        "id",
+        "name",
+        "description",
+        "apiStages",
+        "throttle",
+        "quota",
+        "tags"
+      ],
+      "ApiStage": [
+        "apiId",
+        "stage"
+      ],
+      "ThrottleSettings": [
+        "burstLimit",
+        "rateLimit"
+      ],
+      "QuotaSettings": [
+        "limit",
+        "offset",
+        "period"
+      ],
+      "GetUsagePlanRequest": [
+        "usagePlanId"
+      ],
+      "GetUsagePlansRequest": [
+        "position",
+        "keyId",
+        "limit"
+      ],
+      "UsagePlans": [
+        "items",
+        "position"
+      ],
+      "UpdateUsagePlanRequest": [
+        "usagePlanId",
+        "patchOperations"
+      ],
+      "DeleteUsagePlanRequest": [
+        "usagePlanId"
+      ],
+      "CreateUsagePlanKeyRequest": [
+        "usagePlanId",
+        "keyId",
+        "keyType"
+      ],
+      "UsagePlanKey": [
+        "id",
+        "type",
+        "value",
+        "name"
+      ],
+      "GetUsagePlanKeyRequest": [
+        "usagePlanId",
+        "keyId"
+      ],
+      "GetUsagePlanKeysRequest": [
+        "usagePlanId",
+        "position",
+        "limit",
+        "nameQuery"
+      ],
+      "UsagePlanKeys": [
+        "items",
+        "position"
+      ],
+      "DeleteUsagePlanKeyRequest": [
+        "usagePlanId",
+        "keyId"
       ]
     }
   },

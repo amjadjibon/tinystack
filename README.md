@@ -798,6 +798,8 @@ REST APIs are served like HTTP APIs, at
 | PutIntegration / GetIntegration / UpdateIntegration / DeleteIntegration | `AWS_PROXY` (Lambda invocation URIs), `HTTP_PROXY`, and `MOCK` integrations with request templates, timeouts up to 29 s, and cache namespaces |
 | PutIntegrationResponse / GetIntegrationResponse / UpdateIntegrationResponse / DeleteIntegrationResponse | Selection patterns, header mappings to declared method response headers, and templates |
 | CreateAuthorizer / GetAuthorizer / GetAuthorizers / UpdateAuthorizer / DeleteAuthorizer | Lambda `TOKEN` (with identity validation expressions) and `REQUEST` authorizers returning IAM policies, and `COGNITO_USER_POOLS` authorizers, whose tokens TinyStack's Cognito verifies |
+| CreateApiKey / GetApiKey / GetApiKeys / UpdateApiKey / DeleteApiKey | API keys with a `value` (at least 20 characters, unique; generated when left out), `name`, `customerId`, `description`, `enabled`, and `tags`; values are shown only with `includeValue(s)`; GetApiKeys takes `nameQuery` and `customerId`, and deleting a key removes it from its usage plans |
+| CreateUsagePlan / GetUsagePlan / GetUsagePlans / UpdateUsagePlan / DeleteUsagePlan / CreateUsagePlanKey / GetUsagePlanKey / GetUsagePlanKeys / DeleteUsagePlanKey | Usage plans with existing API stages (`/apiStages` patches add or remove `<API ID>:<stage>`), `throttle`, `quota`, and `tags`, and their API keys. A method with `apiKeyRequired` answers 403 unless the request's key (the `x-api-key` header, or with the `AUTHORIZER` key source the authorizer's `usageIdentifierKey`) is enabled and in a usage plan of the stage; throttles and quotas are stored, not enforced |
 | CreateDeployment / GetDeployment / GetDeployments / UpdateDeployment / DeleteDeployment | A snapshot of the resource tree and authorizers, optionally creating or updating a stage; every method needs an integration |
 | CreateStage / GetStage / GetStages / UpdateStage / DeleteStage | Stage variables, method settings (`/*/*/metrics/enabled` and the like, stored), tracing and cache settings (stored), and access logs |
 | GetTags / TagResource / UntagResource | APIs and stages by ARN (`arn:aws:apigateway:<region>::/restapis/<ID>[/stages/<name>]`) |
@@ -1216,7 +1218,7 @@ template is validated, as are unknown properties and attributes), no transforms 
 or `AWS::Include`; SAM without `Auth`, `Cors` on REST APIs, OpenAPI definitions, layers, `DeploymentPreference`,
 S3 events, or `AWS::Serverless::Application`), nested stacks, custom resources, `Fn::Transform`, `Fn::Cidr`, `Fn::GetStackOutput`, stack sets, imports, drift
 detection, stack policies, notifications, creation or update policies, `Snapshot` deletion policies, or service
-roles (`RoleARN` is stored), and IAM capabilities are checked but not evaluated. API Gateway limits: no WebSocket APIs, custom domain names, VPC links, API keys and usage plans,
+roles (`RoleARN` is stored), and IAM capabilities are checked but not evaluated. API Gateway limits: no WebSocket APIs, custom domain names, VPC links, usage plan throttling and quotas,
 models and request validation, `AWS` and `HTTP` (non-proxy) integrations or other AWS service integrations,
 mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;

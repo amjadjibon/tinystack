@@ -500,6 +500,154 @@ type Tags struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
+type CreateApiKeyRequest struct {
+	Name        *string           `json:"name,omitempty"`
+	Description *string           `json:"description,omitempty"`
+	Enabled     *bool             `json:"enabled,omitempty"`
+	Value       *string           `json:"value,omitempty"`
+	CustomerId  *string           `json:"customerId,omitempty"`
+	Tags        map[string]string `json:"tags,omitempty"`
+}
+
+type ApiKey struct {
+	Id              *string           `json:"id,omitempty"`
+	Value           *string           `json:"value,omitempty"`
+	Name            *string           `json:"name,omitempty"`
+	CustomerId      *string           `json:"customerId,omitempty"`
+	Description     *string           `json:"description,omitempty"`
+	Enabled         *bool             `json:"enabled,omitempty"`
+	CreatedDate     *float64          `json:"createdDate,omitempty"`
+	LastUpdatedDate *float64          `json:"lastUpdatedDate,omitempty"`
+	Tags            map[string]string `json:"tags,omitempty"`
+}
+
+type GetApiKeyRequest struct {
+	ApiKey       *string `json:"-"`
+	IncludeValue *bool   `json:"-"`
+}
+
+type GetApiKeysRequest struct {
+	Position      *string `json:"-"`
+	Limit         *int64  `json:"-"`
+	NameQuery     *string `json:"-"`
+	CustomerId    *string `json:"-"`
+	IncludeValues *bool   `json:"-"`
+}
+
+type ApiKeys struct {
+	Items    []ApiKey `json:"item,omitempty"`
+	Position *string  `json:"position,omitempty"`
+}
+
+type UpdateApiKeyRequest struct {
+	ApiKey          *string          `json:"-"`
+	PatchOperations []PatchOperation `json:"patchOperations,omitempty"`
+}
+
+type DeleteApiKeyOutput struct{}
+
+type DeleteApiKeyRequest struct {
+	ApiKey *string `json:"-"`
+}
+
+type ApiStage struct {
+	ApiId *string `json:"apiId,omitempty"`
+	Stage *string `json:"stage,omitempty"`
+}
+
+type ThrottleSettings struct {
+	BurstLimit *int64   `json:"burstLimit,omitempty"`
+	RateLimit  *float64 `json:"rateLimit,omitempty"`
+}
+
+type QuotaSettings struct {
+	Limit  *int64  `json:"limit,omitempty"`
+	Offset *int64  `json:"offset,omitempty"`
+	Period *string `json:"period,omitempty"`
+}
+
+type CreateUsagePlanRequest struct {
+	Name        *string           `json:"name,omitempty"`
+	Description *string           `json:"description,omitempty"`
+	ApiStages   []ApiStage        `json:"apiStages,omitempty"`
+	Throttle    *ThrottleSettings `json:"throttle,omitempty"`
+	Quota       *QuotaSettings    `json:"quota,omitempty"`
+	Tags        map[string]string `json:"tags,omitempty"`
+}
+
+type UsagePlan struct {
+	Id          *string           `json:"id,omitempty"`
+	Name        *string           `json:"name,omitempty"`
+	Description *string           `json:"description,omitempty"`
+	ApiStages   []ApiStage        `json:"apiStages,omitempty"`
+	Throttle    *ThrottleSettings `json:"throttle,omitempty"`
+	Quota       *QuotaSettings    `json:"quota,omitempty"`
+	Tags        map[string]string `json:"tags,omitempty"`
+}
+
+type GetUsagePlanRequest struct {
+	UsagePlanId *string `json:"-"`
+}
+
+type GetUsagePlansRequest struct {
+	Position *string `json:"-"`
+	KeyId    *string `json:"-"`
+	Limit    *int64  `json:"-"`
+}
+
+type UsagePlans struct {
+	Items    []UsagePlan `json:"item,omitempty"`
+	Position *string     `json:"position,omitempty"`
+}
+
+type UpdateUsagePlanRequest struct {
+	UsagePlanId     *string          `json:"-"`
+	PatchOperations []PatchOperation `json:"patchOperations,omitempty"`
+}
+
+type DeleteUsagePlanOutput struct{}
+
+type DeleteUsagePlanRequest struct {
+	UsagePlanId *string `json:"-"`
+}
+
+type CreateUsagePlanKeyRequest struct {
+	UsagePlanId *string `json:"-"`
+	KeyId       *string `json:"keyId,omitempty"`
+	KeyType     *string `json:"keyType,omitempty"`
+}
+
+type UsagePlanKey struct {
+	Id    *string `json:"id,omitempty"`
+	Type  *string `json:"type,omitempty"`
+	Value *string `json:"value,omitempty"`
+	Name  *string `json:"name,omitempty"`
+}
+
+type GetUsagePlanKeyRequest struct {
+	UsagePlanId *string `json:"-"`
+	KeyId       *string `json:"-"`
+}
+
+type GetUsagePlanKeysRequest struct {
+	UsagePlanId *string `json:"-"`
+	Position    *string `json:"-"`
+	Limit       *int64  `json:"-"`
+	NameQuery   *string `json:"-"`
+}
+
+type UsagePlanKeys struct {
+	Items    []UsagePlanKey `json:"item,omitempty"`
+	Position *string        `json:"position,omitempty"`
+}
+
+type DeleteUsagePlanKeyOutput struct{}
+
+type DeleteUsagePlanKeyRequest struct {
+	UsagePlanId *string `json:"-"`
+	KeyId       *string `json:"-"`
+}
+
 type API interface {
 	CreateRestApi(context.Context, *CreateRestApiRequest) (*RestApi, error)
 	GetRestApi(context.Context, *GetRestApiRequest) (*RestApi, error)
@@ -545,6 +693,20 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceOutput, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceOutput, error)
 	GetTags(context.Context, *GetTagsRequest) (*Tags, error)
+	CreateApiKey(context.Context, *CreateApiKeyRequest) (*ApiKey, error)
+	GetApiKey(context.Context, *GetApiKeyRequest) (*ApiKey, error)
+	GetApiKeys(context.Context, *GetApiKeysRequest) (*ApiKeys, error)
+	UpdateApiKey(context.Context, *UpdateApiKeyRequest) (*ApiKey, error)
+	DeleteApiKey(context.Context, *DeleteApiKeyRequest) (*DeleteApiKeyOutput, error)
+	CreateUsagePlan(context.Context, *CreateUsagePlanRequest) (*UsagePlan, error)
+	GetUsagePlan(context.Context, *GetUsagePlanRequest) (*UsagePlan, error)
+	GetUsagePlans(context.Context, *GetUsagePlansRequest) (*UsagePlans, error)
+	UpdateUsagePlan(context.Context, *UpdateUsagePlanRequest) (*UsagePlan, error)
+	DeleteUsagePlan(context.Context, *DeleteUsagePlanRequest) (*DeleteUsagePlanOutput, error)
+	CreateUsagePlanKey(context.Context, *CreateUsagePlanKeyRequest) (*UsagePlanKey, error)
+	GetUsagePlanKey(context.Context, *GetUsagePlanKeyRequest) (*UsagePlanKey, error)
+	GetUsagePlanKeys(context.Context, *GetUsagePlanKeysRequest) (*UsagePlanKeys, error)
+	DeleteUsagePlanKey(context.Context, *DeleteUsagePlanKeyRequest) (*DeleteUsagePlanKeyOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -677,5 +839,47 @@ func Descriptor(api API) catalog.Service {
 			return api.UntagResource(ctx, input.(*UntagResourceRequest))
 		}},
 		"GetTags": {Name: "GetTags", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Limit": catalog.MemberBinding{Location: "query", Name: "limit"}, "Position": catalog.MemberBinding{Location: "query", Name: "position"}, "ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn"}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "tags"}}, Method: "GET", URI: "/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetTags(ctx, input.(*GetTagsRequest)) }},
+		"CreateApiKey": {Name: "CreateApiKey", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"CustomerId": catalog.MemberBinding{Location: "document", Name: "customerId"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "enabled"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Value": catalog.MemberBinding{Location: "document", Name: "value"}}, Output: map[string]catalog.MemberBinding{"CreatedDate": catalog.MemberBinding{Location: "document", Name: "createdDate"}, "CustomerId": catalog.MemberBinding{Location: "document", Name: "customerId"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "enabled"}, "Id": catalog.MemberBinding{Location: "document", Name: "id"}, "LastUpdatedDate": catalog.MemberBinding{Location: "document", Name: "lastUpdatedDate"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Value": catalog.MemberBinding{Location: "document", Name: "value"}}, Method: "POST", URI: "/apikeys", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateApiKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateApiKey(ctx, input.(*CreateApiKeyRequest))
+		}},
+		"GetApiKey": {Name: "GetApiKey", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiKey": catalog.MemberBinding{Location: "label", Name: "apiKey"}, "IncludeValue": catalog.MemberBinding{Location: "query", Name: "includeValue"}}, Output: map[string]catalog.MemberBinding{"CreatedDate": catalog.MemberBinding{Location: "document", Name: "createdDate"}, "CustomerId": catalog.MemberBinding{Location: "document", Name: "customerId"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "enabled"}, "Id": catalog.MemberBinding{Location: "document", Name: "id"}, "LastUpdatedDate": catalog.MemberBinding{Location: "document", Name: "lastUpdatedDate"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Value": catalog.MemberBinding{Location: "document", Name: "value"}}, Method: "GET", URI: "/apikeys/{apiKey}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetApiKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetApiKey(ctx, input.(*GetApiKeyRequest))
+		}},
+		"GetApiKeys": {Name: "GetApiKeys", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"CustomerId": catalog.MemberBinding{Location: "query", Name: "customerId"}, "IncludeValues": catalog.MemberBinding{Location: "query", Name: "includeValues"}, "Limit": catalog.MemberBinding{Location: "query", Name: "limit"}, "NameQuery": catalog.MemberBinding{Location: "query", Name: "name"}, "Position": catalog.MemberBinding{Location: "query", Name: "position"}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items"}, "Position": catalog.MemberBinding{Location: "document", Name: "position"}}, Method: "GET", URI: "/apikeys", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetApiKeysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetApiKeys(ctx, input.(*GetApiKeysRequest))
+		}},
+		"UpdateApiKey": {Name: "UpdateApiKey", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiKey": catalog.MemberBinding{Location: "label", Name: "apiKey"}, "PatchOperations": catalog.MemberBinding{Location: "document", Name: "patchOperations"}}, Output: map[string]catalog.MemberBinding{"CreatedDate": catalog.MemberBinding{Location: "document", Name: "createdDate"}, "CustomerId": catalog.MemberBinding{Location: "document", Name: "customerId"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "enabled"}, "Id": catalog.MemberBinding{Location: "document", Name: "id"}, "LastUpdatedDate": catalog.MemberBinding{Location: "document", Name: "lastUpdatedDate"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Value": catalog.MemberBinding{Location: "document", Name: "value"}}, Method: "PATCH", URI: "/apikeys/{apiKey}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateApiKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateApiKey(ctx, input.(*UpdateApiKeyRequest))
+		}},
+		"DeleteApiKey": {Name: "DeleteApiKey", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiKey": catalog.MemberBinding{Location: "label", Name: "apiKey"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/apikeys/{apiKey}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteApiKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteApiKey(ctx, input.(*DeleteApiKeyRequest))
+		}},
+		"CreateUsagePlan": {Name: "CreateUsagePlan", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiStages": catalog.MemberBinding{Location: "document", Name: "apiStages"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Quota": catalog.MemberBinding{Location: "document", Name: "quota"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Throttle": catalog.MemberBinding{Location: "document", Name: "throttle"}}, Output: map[string]catalog.MemberBinding{"ApiStages": catalog.MemberBinding{Location: "document", Name: "apiStages"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Id": catalog.MemberBinding{Location: "document", Name: "id"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Quota": catalog.MemberBinding{Location: "document", Name: "quota"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Throttle": catalog.MemberBinding{Location: "document", Name: "throttle"}}, Method: "POST", URI: "/usageplans", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateUsagePlanRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateUsagePlan(ctx, input.(*CreateUsagePlanRequest))
+		}},
+		"GetUsagePlan": {Name: "GetUsagePlan", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId"}}, Output: map[string]catalog.MemberBinding{"ApiStages": catalog.MemberBinding{Location: "document", Name: "apiStages"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Id": catalog.MemberBinding{Location: "document", Name: "id"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Quota": catalog.MemberBinding{Location: "document", Name: "quota"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Throttle": catalog.MemberBinding{Location: "document", Name: "throttle"}}, Method: "GET", URI: "/usageplans/{usagePlanId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUsagePlanRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetUsagePlan(ctx, input.(*GetUsagePlanRequest))
+		}},
+		"GetUsagePlans": {Name: "GetUsagePlans", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"KeyId": catalog.MemberBinding{Location: "query", Name: "keyId"}, "Limit": catalog.MemberBinding{Location: "query", Name: "limit"}, "Position": catalog.MemberBinding{Location: "query", Name: "position"}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items"}, "Position": catalog.MemberBinding{Location: "document", Name: "position"}}, Method: "GET", URI: "/usageplans", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUsagePlansRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetUsagePlans(ctx, input.(*GetUsagePlansRequest))
+		}},
+		"UpdateUsagePlan": {Name: "UpdateUsagePlan", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"PatchOperations": catalog.MemberBinding{Location: "document", Name: "patchOperations"}, "UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId"}}, Output: map[string]catalog.MemberBinding{"ApiStages": catalog.MemberBinding{Location: "document", Name: "apiStages"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Id": catalog.MemberBinding{Location: "document", Name: "id"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Quota": catalog.MemberBinding{Location: "document", Name: "quota"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "Throttle": catalog.MemberBinding{Location: "document", Name: "throttle"}}, Method: "PATCH", URI: "/usageplans/{usagePlanId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateUsagePlanRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateUsagePlan(ctx, input.(*UpdateUsagePlanRequest))
+		}},
+		"DeleteUsagePlan": {Name: "DeleteUsagePlan", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/usageplans/{usagePlanId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteUsagePlanRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteUsagePlan(ctx, input.(*DeleteUsagePlanRequest))
+		}},
+		"CreateUsagePlanKey": {Name: "CreateUsagePlanKey", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"KeyId": catalog.MemberBinding{Location: "document", Name: "keyId"}, "KeyType": catalog.MemberBinding{Location: "document", Name: "keyType"}, "UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId"}}, Output: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "document", Name: "id"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Type": catalog.MemberBinding{Location: "document", Name: "type"}, "Value": catalog.MemberBinding{Location: "document", Name: "value"}}, Method: "POST", URI: "/usageplans/{usagePlanId}/keys", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateUsagePlanKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateUsagePlanKey(ctx, input.(*CreateUsagePlanKeyRequest))
+		}},
+		"GetUsagePlanKey": {Name: "GetUsagePlanKey", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"KeyId": catalog.MemberBinding{Location: "label", Name: "keyId"}, "UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId"}}, Output: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "document", Name: "id"}, "Name": catalog.MemberBinding{Location: "document", Name: "name"}, "Type": catalog.MemberBinding{Location: "document", Name: "type"}, "Value": catalog.MemberBinding{Location: "document", Name: "value"}}, Method: "GET", URI: "/usageplans/{usagePlanId}/keys/{keyId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUsagePlanKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetUsagePlanKey(ctx, input.(*GetUsagePlanKeyRequest))
+		}},
+		"GetUsagePlanKeys": {Name: "GetUsagePlanKeys", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Limit": catalog.MemberBinding{Location: "query", Name: "limit"}, "NameQuery": catalog.MemberBinding{Location: "query", Name: "name"}, "Position": catalog.MemberBinding{Location: "query", Name: "position"}, "UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId"}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items"}, "Position": catalog.MemberBinding{Location: "document", Name: "position"}}, Method: "GET", URI: "/usageplans/{usagePlanId}/keys", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUsagePlanKeysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetUsagePlanKeys(ctx, input.(*GetUsagePlanKeysRequest))
+		}},
+		"DeleteUsagePlanKey": {Name: "DeleteUsagePlanKey", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"KeyId": catalog.MemberBinding{Location: "label", Name: "keyId"}, "UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/usageplans/{usagePlanId}/keys/{keyId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteUsagePlanKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteUsagePlanKey(ctx, input.(*DeleteUsagePlanKeyRequest))
+		}},
 	}}
 }

@@ -98,6 +98,10 @@ func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 		return denied
 	}
 
+	if keyDenied := s.checkAPIKey(ctx, c, authorizer); keyDenied != nil {
+		return keyDenied
+	}
+
 	return s.integrate(ctx, c, authorizer)
 }
 
