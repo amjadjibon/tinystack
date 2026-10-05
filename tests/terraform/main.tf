@@ -104,6 +104,107 @@ resource "aws_key_pair" "deploy" {
   tags       = local.tags
 }
 
+# A VPC with public and private subnets, the layout of the terraform-aws-modules/vpc module.
+resource "aws_vpc" "app" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  tags                 = local.tags
+}
+
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.app.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
+}
+
+resource "aws_subnet" "private" {
+  vpc_id            = aws_vpc.app.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = data.aws_availability_zones.available.names[1]
+}
+
+resource "aws_internet_gateway" "app" {
+  vpc_id = aws_vpc.app.id
+  tags   = local.tags
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.app.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.app.id
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_eip" "nat" {
+  domain     = "vpc"
+  depends_on = [aws_internet_gateway.app]
+}
+
+resource "aws_nat_gateway" "app" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public.id
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.app.id
+}
+
+resource "aws_route" "private_internet" {
+  route_table_id         = aws_route_table.private.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.app.id
+}
+
+resource "aws_route_table_association" "private" {
+  subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_network_acl" "private" {
+  vpc_id     = aws_vpc.app.id
+  subnet_ids = [aws_subnet.private.id]
+
+  ingress {
+    protocol   = "tcp"
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = aws_vpc.app.cidr_block
+    from_port  = 443
+    to_port    = 443
+  }
+
+  egress {
+    protocol   = "-1"
+    rule_no    = 100
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id          = aws_vpc.app.id
+  service_name    = "com.amazonaws.us-east-1.s3"
+  route_table_ids = [aws_route_table.private.id]
+}
+
+resource "aws_vpc_endpoint" "sqs" {
+  vpc_id              = aws_vpc.app.id
+  service_name        = "com.amazonaws.us-east-1.sqs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = [aws_subnet.private.id]
+  private_dns_enabled = true
+}
+
 data "aws_ami" "al2023" {
   most_recent = true
   owners      = ["amazon"]
@@ -1137,7 +1238,7 @@ resource "aws_cloudwatch_dashboard" "main" {
   dashboard_name = "main"
   dashboard_body = jsonencode({
     widgets = [{
-      type = "text", x = 0, y = 0, width = 6, height = 3
+      type       = "text", x = 0, y = 0, width = 6, height = 3
       properties = { markdown = "Owned by ${var.team}" }
     }]
   })
