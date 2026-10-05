@@ -655,6 +655,7 @@ since every caller is authorized.
 | DescribeVpcAttribute / ModifyVpcAttribute | `enableDnsSupport` (on by default), `enableDnsHostnames` (off, but on in a default VPC; needs DNS support), and `enableNetworkAddressUsageMetrics`, one per request; `AmazonProvidedIpv6CidrBlock` must be false, since VPCs have no IPv6 blocks |
 | CreateSubnet / DeleteSubnet / DescribeSubnets | A CIDR inside the VPC's that overlaps no other subnet, in a zone given by name or ID (the first by default); the available address count leaves out AWS's five reserved addresses; a subnet with active instances cannot be deleted |
 | ModifySubnetAttribute | One attribute per request: `MapPublicIpOnLaunch`, `PrivateDnsHostnameTypeOnLaunch`, and `EnableResourceNameDnsARecordOnLaunch`; the IPv6, DNS64, and customer-owned address attributes can only be turned off |
+| CreateInternetGateway / AttachInternetGateway / DetachInternetGateway / DeleteInternetGateway / DescribeInternetGateways | A gateway attaches to one VPC, and a VPC takes one gateway (attachments report `available`); an attached gateway cannot be deleted, a VPC with one cannot be deleted, and a gateway cannot be detached while instances in its VPC have public addresses |
 | CreateSecurityGroup / DeleteSecurityGroup / DescribeSecurityGroups | A group in `VpcId` or the default VPC, created with an allow-all egress rule; groups are found by ID or, in the default VPC, by name; a default group, or one that another group's rules or an active instance use, cannot be deleted |
 | AuthorizeSecurityGroupIngress / AuthorizeSecurityGroupEgress | One rule per IPv4 or IPv6 CIDR, prefix list, or security group of the same account, with TCP and UDP ports from 0 to 65535, ICMP types and codes, or all traffic (`-1`); a rule that exists is `InvalidPermission.Duplicate`; up to 60 rules per direction |
 | RevokeSecurityGroupIngress / RevokeSecurityGroupEgress | By permission (those that match no rule come back in `UnknownIpPermissions`) or by `SecurityGroupRuleIds` |
@@ -674,7 +675,7 @@ since every caller is authorized.
 
 The first request in an account and Region creates its default VPC
 (`172.31.0.0/16`) with a default `/20` subnet in each zone that maps public IPs
-on launch. A deleted default VPC does not come back. Describe operations take
+on launch, and an attached internet gateway. A deleted default VPC does not come back. Describe operations take
 the resource IDs to select (an unknown one is `Invalid<Resource>ID.NotFound`),
 and `MaxResults` (5 to 1000) and `NextToken` page through results in ID order.
 They also take `Filters`: filters are ANDed and a filter's values ORed, values
@@ -682,8 +683,8 @@ match with `*` and `?` (escaped with a backslash), every resource supports
 `tag:<key>`, `tag-key`, and `tag-value`, and an unknown filter name is
 `InvalidParameterValue`. Create operations take `TagSpecifications` for the
 resource type they create. EC2 limits: no volumes, network interfaces, Elastic IPs, instance
-attributes, spot instances, route tables, or internet gateways, so Terraform's `aws_instance`
-cannot be applied yet.
+attributes, spot instances, or route tables, so Terraform's `aws_instance` cannot be applied
+yet.
 
 ### ECR (AWS JSON 1.1, and the Docker Registry API)
 

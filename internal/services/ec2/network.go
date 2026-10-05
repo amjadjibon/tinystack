@@ -182,7 +182,7 @@ func cidr(text, rangeCode string) (netip.Prefix, error) {
 }
 
 // defaults creates the Region's default VPC, with a default subnet in each
-// zone, the first time the Region is used.
+// zone and an internet gateway, the first time the Region is used.
 func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
 	marker := key(scope, kindDefaults, "vpc")
 	done := false
@@ -201,6 +201,11 @@ func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
 
 		v := &vpc{ID: newID("vpc"), CIDR: defaultVPCCIDR, Tenancy: tenancyDefault, IsDefault: true, DNSHostnames: true}
 		if err := createVPC(tx, scope, v); err != nil {
+			return err
+		}
+
+		g := &internetGateway{ID: newID("igw"), VPCID: v.ID}
+		if err := write(tx, key(scope, kindInternetGateway, g.ID), g); err != nil {
 			return err
 		}
 
@@ -314,8 +319,9 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 	return &api.CreateVpcResult{Vpc: &out}, nil
 }
 
-// DeleteVpc deletes a VPC that has no subnets or security groups but its
-// default one left, including a default VPC, which does not come back.
+// DeleteVpc deletes a VPC that has no subnets, internet gateway, or security
+// groups but its default one left, including a default VPC, which does not
+// come back.
 func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api.DeleteVpcOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		v, err := loadVPC(tx, scope, value(in.VpcId))
@@ -333,8 +339,13 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 			return err
 		}
 
+		gateway, err := vpcGateway(tx, scope, v.ID)
+		if err != nil {
+			return err
+		}
+
 		groups = slices.DeleteFunc(groups, func(g *securityGroup) bool { return g.VPCID != v.ID })
-		if slices.ContainsFunc(subnets, func(sn *subnet) bool { return sn.VPCID == v.ID }) ||
+		if gateway != "" || slices.ContainsFunc(subnets, func(sn *subnet) bool { return sn.VPCID == v.ID }) ||
 			slices.ContainsFunc(groups, func(g *securityGroup) bool { return g.Name != defaultGroupName }) {
 			return awserror.New("DependencyViolation",
 				fmt.Sprintf("The vpc '%s' has dependencies and cannot be deleted.", v.ID))

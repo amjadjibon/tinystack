@@ -232,8 +232,9 @@ a per-service `Dialect`), and delivers synchronously through
   gateway's credential lookup) resolves those sessions and then active IAM access keys, and `GetCallerIdentity`
   reports the session, the IAM user, or the gateway-resolved account's root user. EC2 keeps each resource under
   `…/ec2/<kind>/<resource ID>` (`resources.go` holds the shared record, ID-selection, and paging helpers); the first
-  request in a Region creates its default VPC, subnets, and security group (`network.go`; every VPC's default group is written with it and deleted with it) and writes `…/ec2/defaults/vpc` so a deleted
-  default VPC stays deleted. `filters.go` compiles `Filters` against the values each resource reports (whose keys are
+  request in a Region creates its default VPC, subnets, internet gateway, and security group (`network.go`; every VPC's default group is written with it and deleted with it) and writes `…/ec2/defaults/vpc` so a deleted
+  default VPC stays deleted. VPC and subnet attributes are fields of their records (`attributes.go`), and internet
+  gateways (`gateways.go`) record the VPC they are attached to. `filters.go` compiles `Filters` against the values each resource reports (whose keys are
   also the filter names it accepts), and `tags.go` finds a resource by its ID prefix (`taggable`) and rewrites only the
   `Tags` field of its record, so a new taggable kind only needs an entry there. Key pairs (`keypairs.go`) store only the public key and fingerprint; a created private key is returned once.
   Instances record their IAM instance profile association (`profiles.go`), checked through the lookup

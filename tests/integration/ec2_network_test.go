@@ -62,11 +62,34 @@ func TestEC2DefaultVPCAndZones(t *testing.T) {
 	_, err = c.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{VpcIds: []string{"vpc-00000000000000000"}})
 	code(t, err, "InvalidVpcID.NotFound")
 
-	// Without its subnets, the default VPC can be deleted for good.
+	// Without its subnets and internet gateway, the default VPC can be deleted
+	// for good.
 	for _, sn := range subnets.Subnets {
 		if _, err = c.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{SubnetId: sn.SubnetId}); err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	_, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(defaultVPC)})
+	code(t, err, "DependencyViolation")
+	gateways, err := c.DescribeInternetGateways(ctx, &ec2.DescribeInternetGatewaysInput{
+		Filters: []ec2types.Filter{{Name: aws.String("attachment.vpc-id"), Values: []string{defaultVPC}}},
+	})
+	if err != nil || len(gateways.InternetGateways) != 1 {
+		t.Fatalf("got %+v, %v", gateways, err)
+	}
+
+	gatewayID := gateways.InternetGateways[0].InternetGatewayId
+	if _, err = c.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+		InternetGatewayId: gatewayID, VpcId: aws.String(defaultVPC),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{
+		InternetGatewayId: gatewayID,
+	}); err != nil {
+		t.Fatal(err)
 	}
 
 	if _, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(defaultVPC)}); err != nil {

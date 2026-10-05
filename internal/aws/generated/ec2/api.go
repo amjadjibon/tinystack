@@ -1016,6 +1016,63 @@ type ModifySubnetAttributeRequest struct {
 	EnableResourceNameDnsAAAARecordOnLaunch *AttributeBooleanValue `json:"EnableResourceNameDnsAAAARecordOnLaunch,omitempty" ec2:"EnableResourceNameDnsAAAARecordOnLaunch,EnableResourceNameDnsAAAARecordOnLaunch"`
 }
 
+type CreateInternetGatewayRequest struct {
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type InternetGatewayAttachment struct {
+	State *string `json:"State,omitempty" ec2:"State,state"`
+	VpcId *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type InternetGateway struct {
+	Attachments       []InternetGatewayAttachment `json:"Attachments,omitempty" ec2:"AttachmentSet,attachmentSet,member=item"`
+	InternetGatewayId *string                     `json:"InternetGatewayId,omitempty" ec2:"InternetGatewayId,internetGatewayId"`
+	OwnerId           *string                     `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	Tags              []Tag                       `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type CreateInternetGatewayResult struct {
+	InternetGateway *InternetGateway `json:"InternetGateway,omitempty" ec2:"InternetGateway,internetGateway"`
+}
+
+type DeleteInternetGatewayOutput struct{}
+
+type DeleteInternetGatewayRequest struct {
+	DryRun            *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	InternetGatewayId *string `json:"InternetGatewayId,omitempty" ec2:"InternetGatewayId,internetGatewayId"`
+}
+
+type AttachInternetGatewayOutput struct{}
+
+type AttachInternetGatewayRequest struct {
+	DryRun            *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	InternetGatewayId *string `json:"InternetGatewayId,omitempty" ec2:"InternetGatewayId,internetGatewayId"`
+	VpcId             *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type DetachInternetGatewayOutput struct{}
+
+type DetachInternetGatewayRequest struct {
+	DryRun            *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	InternetGatewayId *string `json:"InternetGatewayId,omitempty" ec2:"InternetGatewayId,internetGatewayId"`
+	VpcId             *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type DescribeInternetGatewaysRequest struct {
+	NextToken          *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults         *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun             *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	InternetGatewayIds []string `json:"InternetGatewayIds,omitempty" ec2:"InternetGatewayId,internetGatewayId,member=item"`
+	Filters            []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type DescribeInternetGatewaysResult struct {
+	InternetGateways []InternetGateway `json:"InternetGateways,omitempty" ec2:"InternetGatewaySet,internetGatewaySet,member=item"`
+	NextToken        *string           `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -1063,6 +1120,11 @@ type API interface {
 	DescribeVpcAttribute(context.Context, *DescribeVpcAttributeRequest) (*DescribeVpcAttributeResult, error)
 	ModifyVpcAttribute(context.Context, *ModifyVpcAttributeRequest) (*ModifyVpcAttributeOutput, error)
 	ModifySubnetAttribute(context.Context, *ModifySubnetAttributeRequest) (*ModifySubnetAttributeOutput, error)
+	CreateInternetGateway(context.Context, *CreateInternetGatewayRequest) (*CreateInternetGatewayResult, error)
+	DeleteInternetGateway(context.Context, *DeleteInternetGatewayRequest) (*DeleteInternetGatewayOutput, error)
+	AttachInternetGateway(context.Context, *AttachInternetGatewayRequest) (*AttachInternetGatewayOutput, error)
+	DetachInternetGateway(context.Context, *DetachInternetGatewayRequest) (*DetachInternetGatewayOutput, error)
+	DescribeInternetGateways(context.Context, *DescribeInternetGatewaysRequest) (*DescribeInternetGatewaysResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1204,6 +1266,21 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ModifySubnetAttribute": {Name: "ModifySubnetAttribute", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifySubnetAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifySubnetAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ModifySubnetAttribute(ctx, input.(*ModifySubnetAttributeRequest))
+		}},
+		"CreateInternetGateway": {Name: "CreateInternetGateway", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateInternetGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateInternetGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateInternetGateway(ctx, input.(*CreateInternetGatewayRequest))
+		}},
+		"DeleteInternetGateway": {Name: "DeleteInternetGateway", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteInternetGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteInternetGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteInternetGateway(ctx, input.(*DeleteInternetGatewayRequest))
+		}},
+		"AttachInternetGateway": {Name: "AttachInternetGateway", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AttachInternetGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AttachInternetGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AttachInternetGateway(ctx, input.(*AttachInternetGatewayRequest))
+		}},
+		"DetachInternetGateway": {Name: "DetachInternetGateway", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DetachInternetGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DetachInternetGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DetachInternetGateway(ctx, input.(*DetachInternetGatewayRequest))
+		}},
+		"DescribeInternetGateways": {Name: "DescribeInternetGateways", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeInternetGateways", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeInternetGatewaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeInternetGateways(ctx, input.(*DescribeInternetGatewaysRequest))
 		}},
 	}}
 }

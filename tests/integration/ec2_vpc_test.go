@@ -110,3 +110,78 @@ func TestEC2VPCAttributes(t *testing.T) {
 	})
 	code(t, err, "InvalidParameterValue")
 }
+
+func TestEC2InternetGateways(t *testing.T) {
+	s := server(t)
+	c := ec2Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	vpcID := createVPC(t, c, "10.0.0.0/16")
+	created, err := c.CreateInternetGateway(ctx, &ec2.CreateInternetGatewayInput{
+		TagSpecifications: []ec2types.TagSpecification{{
+			ResourceType: ec2types.ResourceTypeInternetGateway,
+			Tags:         []ec2types.Tag{{Key: aws.String("Name"), Value: aws.String("edge")}},
+		}},
+	})
+	if err != nil || len(created.InternetGateway.Attachments) != 0 || len(created.InternetGateway.Tags) != 1 {
+		t.Fatalf("got %+v, %v", created, err)
+	}
+
+	id := created.InternetGateway.InternetGatewayId
+	if _, err = c.AttachInternetGateway(ctx, &ec2.AttachInternetGatewayInput{
+		InternetGatewayId: id, VpcId: aws.String(vpcID),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// A gateway attaches to one VPC, and a VPC takes one gateway.
+	_, err = c.AttachInternetGateway(ctx, &ec2.AttachInternetGatewayInput{
+		InternetGatewayId: id, VpcId: aws.String(createVPC(t, c, "10.1.0.0/16")),
+	})
+	code(t, err, "Resource.AlreadyAssociated")
+	second, err := c.CreateInternetGateway(ctx, &ec2.CreateInternetGatewayInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.AttachInternetGateway(ctx, &ec2.AttachInternetGatewayInput{
+		InternetGatewayId: second.InternetGateway.InternetGatewayId, VpcId: aws.String(vpcID),
+	})
+	code(t, err, "InvalidParameterValue")
+
+	described, err := c.DescribeInternetGateways(ctx, &ec2.DescribeInternetGatewaysInput{
+		Filters: []ec2types.Filter{
+			{Name: aws.String("attachment.vpc-id"), Values: []string{vpcID}},
+			{Name: aws.String("tag:Name"), Values: []string{"edge"}},
+		},
+	})
+	if err != nil || len(described.InternetGateways) != 1 ||
+		aws.ToString(described.InternetGateways[0].Attachments[0].VpcId) != vpcID ||
+		described.InternetGateways[0].Attachments[0].State != "available" {
+		t.Fatalf("got %+v, %v", described, err)
+	}
+
+	_, err = c.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{InternetGatewayId: id})
+	code(t, err, "DependencyViolation")
+	_, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(vpcID)})
+	code(t, err, "DependencyViolation")
+	_, err = c.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+		InternetGatewayId: second.InternetGateway.InternetGatewayId, VpcId: aws.String(vpcID),
+	})
+	code(t, err, "Gateway.NotAttached")
+
+	if _, err = c.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+		InternetGatewayId: id, VpcId: aws.String(vpcID),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.DeleteInternetGateway(ctx, &ec2.DeleteInternetGatewayInput{InternetGatewayId: id}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.DescribeInternetGateways(ctx, &ec2.DescribeInternetGatewaysInput{InternetGatewayIds: []string{*id}})
+	code(t, err, "InvalidInternetGatewayID.NotFound")
+	if _, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(vpcID)}); err != nil {
+		t.Fatal(err)
+	}
+}

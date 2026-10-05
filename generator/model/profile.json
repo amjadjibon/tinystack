@@ -741,7 +741,12 @@
       "ReplaceIamInstanceProfileAssociation",
       "DescribeVpcAttribute",
       "ModifyVpcAttribute",
-      "ModifySubnetAttribute"
+      "ModifySubnetAttribute",
+      "CreateInternetGateway",
+      "DeleteInternetGateway",
+      "AttachInternetGateway",
+      "DetachInternetGateway",
+      "DescribeInternetGateways"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -1597,6 +1602,48 @@
         "HostnameType",
         "EnableResourceNameDnsARecord",
         "EnableResourceNameDnsAAAARecord"
+      ],
+      "CreateInternetGatewayRequest": [
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "CreateInternetGatewayResult": [
+        "InternetGateway"
+      ],
+      "InternetGateway": [
+        "Attachments",
+        "InternetGatewayId",
+        "OwnerId",
+        "Tags"
+      ],
+      "InternetGatewayAttachment": [
+        "State",
+        "VpcId"
+      ],
+      "DeleteInternetGatewayRequest": [
+        "DryRun",
+        "InternetGatewayId"
+      ],
+      "AttachInternetGatewayRequest": [
+        "DryRun",
+        "InternetGatewayId",
+        "VpcId"
+      ],
+      "DetachInternetGatewayRequest": [
+        "DryRun",
+        "InternetGatewayId",
+        "VpcId"
+      ],
+      "DescribeInternetGatewaysRequest": [
+        "NextToken",
+        "MaxResults",
+        "DryRun",
+        "InternetGatewayIds",
+        "Filters"
+      ],
+      "DescribeInternetGatewaysResult": [
+        "InternetGateways",
+        "NextToken"
       ]
     }
   },
