@@ -771,7 +771,12 @@
       "DescribeAddressesAttribute",
       "CreateNatGateway",
       "DeleteNatGateway",
-      "DescribeNatGateways"
+      "DescribeNatGateways",
+      "CreateVpcEndpoint",
+      "DeleteVpcEndpoints",
+      "DescribeVpcEndpoints",
+      "ModifyVpcEndpoint",
+      "DescribePrefixLists"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -1709,7 +1714,8 @@
         "InstanceOwnerId",
         "Origin",
         "State",
-        "NatGatewayId"
+        "NatGatewayId",
+        "DestinationPrefixListId"
       ],
       "DeleteRouteTableRequest": [
         "DryRun",
@@ -1983,6 +1989,112 @@
       "DescribeNatGatewaysResult": [
         "NatGateways",
         "NextToken"
+      ],
+      "CreateVpcEndpointRequest": [
+        "DryRun",
+        "VpcEndpointType",
+        "VpcId",
+        "ServiceName",
+        "PolicyDocument",
+        "RouteTableIds",
+        "SubnetIds",
+        "SecurityGroupIds",
+        "ClientToken",
+        "PrivateDnsEnabled",
+        "TagSpecifications"
+      ],
+      "CreateVpcEndpointResult": [
+        "VpcEndpoint",
+        "ClientToken"
+      ],
+      "VpcEndpoint": [
+        "VpcEndpointId",
+        "VpcEndpointType",
+        "VpcId",
+        "ServiceName",
+        "State",
+        "PolicyDocument",
+        "RouteTableIds",
+        "SubnetIds",
+        "Groups",
+        "IpAddressType",
+        "DnsOptions",
+        "PrivateDnsEnabled",
+        "RequesterManaged",
+        "NetworkInterfaceIds",
+        "DnsEntries",
+        "CreationTimestamp",
+        "Tags",
+        "OwnerId"
+      ],
+      "SecurityGroupIdentifier": [
+        "GroupId",
+        "GroupName"
+      ],
+      "DnsOptions": [
+        "DnsRecordIpType"
+      ],
+      "DnsEntry": [
+        "DnsName",
+        "HostedZoneId"
+      ],
+      "DeleteVpcEndpointsRequest": [
+        "DryRun",
+        "VpcEndpointIds"
+      ],
+      "DeleteVpcEndpointsResult": [
+        "Unsuccessful"
+      ],
+      "UnsuccessfulItem": [
+        "Error",
+        "ResourceId"
+      ],
+      "UnsuccessfulItemError": [
+        "Code",
+        "Message"
+      ],
+      "DescribeVpcEndpointsRequest": [
+        "DryRun",
+        "VpcEndpointIds",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeVpcEndpointsResult": [
+        "VpcEndpoints",
+        "NextToken"
+      ],
+      "ModifyVpcEndpointRequest": [
+        "DryRun",
+        "VpcEndpointId",
+        "ResetPolicy",
+        "PolicyDocument",
+        "AddRouteTableIds",
+        "RemoveRouteTableIds",
+        "AddSubnetIds",
+        "RemoveSubnetIds",
+        "AddSecurityGroupIds",
+        "RemoveSecurityGroupIds",
+        "PrivateDnsEnabled"
+      ],
+      "ModifyVpcEndpointResult": [
+        "Return"
+      ],
+      "DescribePrefixListsRequest": [
+        "DryRun",
+        "Filters",
+        "MaxResults",
+        "NextToken",
+        "PrefixListIds"
+      ],
+      "DescribePrefixListsResult": [
+        "NextToken",
+        "PrefixLists"
+      ],
+      "PrefixList": [
+        "Cidrs",
+        "PrefixListId",
+        "PrefixListName"
       ]
     }
   },

@@ -357,7 +357,7 @@ func groupValues(scope request.Scope, g *securityGroup) values {
 	}
 	for prefix, rules := range map[string][]rule{"ip-permission.": g.Ingress, "egress.ip-permission.": g.Egress} {
 		for _, name := range []string{
-			filterCIDR, "ipv6-cidr", "prefix-list-id", filterGroupID, "protocol", "from-port",
+			filterCIDR, "ipv6-cidr", filterPrefixList, filterGroupID, "protocol", "from-port",
 			"to-port",
 		} {
 			v[prefix+name] = []string{}

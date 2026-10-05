@@ -43,10 +43,13 @@ type routeAssociation struct {
 	Main     bool   `json:",omitempty"`
 }
 
-// route sends a destination to one target: the VPC itself (GatewayID
-// "local"), an internet gateway, a NAT gateway, or an instance.
+// route sends a destination, an IPv4 block or a prefix list, to one target:
+// the VPC itself (GatewayID "local"), an internet gateway, a NAT gateway, an
+// instance, or a gateway VPC endpoint, whose routes go to its service's
+// prefix list.
 type route struct {
-	CIDR         string
+	CIDR         string `json:",omitempty"`
+	PrefixList   string `json:",omitempty"`
 	GatewayID    string `json:",omitempty"`
 	NATGatewayID string `json:",omitempty"`
 	InstanceID   string `json:",omitempty"`
@@ -144,6 +147,13 @@ func dissociateRouteTable(tx storage.WriteTx, scope request.Scope, subnetID stri
 func routeState(tx storage.ReadTx, scope request.Scope, rt *routeTable, r *route) (string, error) {
 	ok := true
 	switch {
+	case strings.HasPrefix(r.GatewayID, "vpce-"):
+		_, found, err := read[vpcEndpoint](tx, key(scope, kindVPCEndpoint, r.GatewayID))
+		if err != nil {
+			return "", err
+		}
+
+		ok = found
 	case r.NATGatewayID != "":
 		g, found, err := read[natGateway](tx, key(scope, kindNATGateway, r.NATGatewayID))
 		if err != nil {
@@ -198,7 +208,8 @@ func routeTableOutput(tx storage.ReadTx, scope request.Scope, rt *routeTable) (a
 		}
 
 		item := api.Route{
-			DestinationCidrBlock: new(r.CIDR), GatewayId: optional(r.GatewayID), InstanceId: optional(r.InstanceID),
+			DestinationCidrBlock: optional(r.CIDR), DestinationPrefixListId: optional(r.PrefixList),
+			GatewayId: optional(r.GatewayID), InstanceId: optional(r.InstanceID),
 			NatGatewayId: optional(r.NATGatewayID), Origin: new(r.Origin), State: new(state),
 		}
 		if r.InstanceID != "" {
@@ -217,6 +228,7 @@ func routeTableValues(scope request.Scope, rt *routeTable) values {
 		filterMain: {}, "association.subnet-id": {}, "association.route-table-association-id": {},
 		"association.route-table-id": {}, "route.destination-cidr-block": {}, "route.gateway-id": {},
 		"route.instance-id": {}, "route.nat-gateway-id": {}, "route.origin": {},
+		"route.destination-prefix-list-id": {},
 	}
 	for _, a := range rt.Associations {
 		v[filterMain] = append(v[filterMain], strconv.FormatBool(a.Main))
@@ -228,8 +240,15 @@ func routeTableValues(scope request.Scope, rt *routeTable) values {
 	}
 
 	for _, r := range rt.Routes {
-		v["route.destination-cidr-block"] = append(v["route.destination-cidr-block"], r.CIDR)
 		v["route.origin"] = append(v["route.origin"], r.Origin)
+		if r.CIDR != "" {
+			v["route.destination-cidr-block"] = append(v["route.destination-cidr-block"], r.CIDR)
+		}
+
+		if r.PrefixList != "" {
+			v["route.destination-prefix-list-id"] = append(v["route.destination-prefix-list-id"], r.PrefixList)
+		}
+
 		if r.GatewayID != "" {
 			v["route.gateway-id"] = append(v["route.gateway-id"], r.GatewayID)
 		}
@@ -292,7 +311,7 @@ func (s *Service) CreateRouteTable(
 }
 
 // DeleteRouteTable deletes a route table that is neither main nor associated
-// with a subnet.
+// with a subnet. Gateway endpoints that routed through it no longer do.
 func (s *Service) DeleteRouteTable(
 	ctx context.Context,
 	in *api.DeleteRouteTableRequest,
@@ -308,7 +327,7 @@ func (s *Service) DeleteRouteTable(
 		}
 
 		tx.Delete(key(scope, kindRouteTable, rt.ID))
-		return nil
+		return forgetRouteTable(tx, scope, rt.ID)
 	})
 	if err != nil {
 		return nil, err

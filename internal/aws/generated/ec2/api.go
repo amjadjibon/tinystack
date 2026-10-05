@@ -1097,13 +1097,14 @@ type PropagatingVgw struct {
 }
 
 type Route struct {
-	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
-	GatewayId            *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
-	InstanceId           *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
-	InstanceOwnerId      *string `json:"InstanceOwnerId,omitempty" ec2:"InstanceOwnerId,instanceOwnerId"`
-	Origin               *string `json:"Origin,omitempty" ec2:"Origin,origin"`
-	State                *string `json:"State,omitempty" ec2:"State,state"`
-	NatGatewayId         *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+	DestinationCidrBlock    *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	GatewayId               *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
+	InstanceId              *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	InstanceOwnerId         *string `json:"InstanceOwnerId,omitempty" ec2:"InstanceOwnerId,instanceOwnerId"`
+	Origin                  *string `json:"Origin,omitempty" ec2:"Origin,origin"`
+	State                   *string `json:"State,omitempty" ec2:"State,state"`
+	NatGatewayId            *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+	DestinationPrefixListId *string `json:"DestinationPrefixListId,omitempty" ec2:"DestinationPrefixListId,destinationPrefixListId"`
 }
 
 type RouteTable struct {
@@ -1461,6 +1462,129 @@ type DescribeNatGatewaysResult struct {
 	NextToken   *string      `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
 }
 
+type CreateVpcEndpointRequest struct {
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	VpcEndpointType   *string            `json:"VpcEndpointType,omitempty" ec2:"VpcEndpointType,VpcEndpointType"`
+	VpcId             *string            `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	ServiceName       *string            `json:"ServiceName,omitempty" ec2:"ServiceName,ServiceName"`
+	PolicyDocument    *string            `json:"PolicyDocument,omitempty" ec2:"PolicyDocument,PolicyDocument"`
+	RouteTableIds     []string           `json:"RouteTableIds,omitempty" ec2:"RouteTableId,RouteTableId,member=item"`
+	SubnetIds         []string           `json:"SubnetIds,omitempty" ec2:"SubnetId,SubnetId,member=item"`
+	SecurityGroupIds  []string           `json:"SecurityGroupIds,omitempty" ec2:"SecurityGroupId,SecurityGroupId,member=item"`
+	ClientToken       *string            `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	PrivateDnsEnabled *bool              `json:"PrivateDnsEnabled,omitempty" ec2:"PrivateDnsEnabled,PrivateDnsEnabled"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+}
+
+type SecurityGroupIdentifier struct {
+	GroupId   *string `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	GroupName *string `json:"GroupName,omitempty" ec2:"GroupName,groupName"`
+}
+
+type DnsOptions struct {
+	DnsRecordIpType *string `json:"DnsRecordIpType,omitempty" ec2:"DnsRecordIpType,dnsRecordIpType"`
+}
+
+type DnsEntry struct {
+	DnsName      *string `json:"DnsName,omitempty" ec2:"DnsName,dnsName"`
+	HostedZoneId *string `json:"HostedZoneId,omitempty" ec2:"HostedZoneId,hostedZoneId"`
+}
+
+type VpcEndpoint struct {
+	VpcEndpointId       *string                   `json:"VpcEndpointId,omitempty" ec2:"VpcEndpointId,vpcEndpointId"`
+	VpcEndpointType     *string                   `json:"VpcEndpointType,omitempty" ec2:"VpcEndpointType,vpcEndpointType"`
+	VpcId               *string                   `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	ServiceName         *string                   `json:"ServiceName,omitempty" ec2:"ServiceName,serviceName"`
+	State               *string                   `json:"State,omitempty" ec2:"State,state"`
+	PolicyDocument      *string                   `json:"PolicyDocument,omitempty" ec2:"PolicyDocument,policyDocument"`
+	RouteTableIds       []string                  `json:"RouteTableIds,omitempty" ec2:"RouteTableIdSet,routeTableIdSet,member=item"`
+	SubnetIds           []string                  `json:"SubnetIds,omitempty" ec2:"SubnetIdSet,subnetIdSet,member=item"`
+	Groups              []SecurityGroupIdentifier `json:"Groups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	IpAddressType       *string                   `json:"IpAddressType,omitempty" ec2:"IpAddressType,ipAddressType"`
+	DnsOptions          *DnsOptions               `json:"DnsOptions,omitempty" ec2:"DnsOptions,dnsOptions"`
+	PrivateDnsEnabled   *bool                     `json:"PrivateDnsEnabled,omitempty" ec2:"PrivateDnsEnabled,privateDnsEnabled"`
+	RequesterManaged    *bool                     `json:"RequesterManaged,omitempty" ec2:"RequesterManaged,requesterManaged"`
+	NetworkInterfaceIds []string                  `json:"NetworkInterfaceIds,omitempty" ec2:"NetworkInterfaceIdSet,networkInterfaceIdSet,member=item"`
+	DnsEntries          []DnsEntry                `json:"DnsEntries,omitempty" ec2:"DnsEntrySet,dnsEntrySet,member=item"`
+	CreationTimestamp   *time.Time                `json:"CreationTimestamp,omitempty" ec2:"CreationTimestamp,creationTimestamp"`
+	Tags                []Tag                     `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	OwnerId             *string                   `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+}
+
+type CreateVpcEndpointResult struct {
+	VpcEndpoint *VpcEndpoint `json:"VpcEndpoint,omitempty" ec2:"VpcEndpoint,vpcEndpoint"`
+	ClientToken *string      `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+}
+
+type DeleteVpcEndpointsRequest struct {
+	DryRun         *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	VpcEndpointIds []string `json:"VpcEndpointIds,omitempty" ec2:"VpcEndpointId,VpcEndpointId,member=item"`
+}
+
+type UnsuccessfulItemError struct {
+	Code    *string `json:"Code,omitempty" ec2:"Code,code"`
+	Message *string `json:"Message,omitempty" ec2:"Message,message"`
+}
+
+type UnsuccessfulItem struct {
+	Error      *UnsuccessfulItemError `json:"Error,omitempty" ec2:"Error,error"`
+	ResourceId *string                `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+}
+
+type DeleteVpcEndpointsResult struct {
+	Unsuccessful []UnsuccessfulItem `json:"Unsuccessful,omitempty" ec2:"Unsuccessful,unsuccessful,member=item"`
+}
+
+type DescribeVpcEndpointsRequest struct {
+	DryRun         *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	VpcEndpointIds []string `json:"VpcEndpointIds,omitempty" ec2:"VpcEndpointId,VpcEndpointId,member=item"`
+	Filters        []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults     *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken      *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type DescribeVpcEndpointsResult struct {
+	VpcEndpoints []VpcEndpoint `json:"VpcEndpoints,omitempty" ec2:"VpcEndpointSet,vpcEndpointSet,member=item"`
+	NextToken    *string       `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type ModifyVpcEndpointRequest struct {
+	DryRun                 *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	VpcEndpointId          *string  `json:"VpcEndpointId,omitempty" ec2:"VpcEndpointId,VpcEndpointId"`
+	ResetPolicy            *bool    `json:"ResetPolicy,omitempty" ec2:"ResetPolicy,ResetPolicy"`
+	PolicyDocument         *string  `json:"PolicyDocument,omitempty" ec2:"PolicyDocument,PolicyDocument"`
+	AddRouteTableIds       []string `json:"AddRouteTableIds,omitempty" ec2:"AddRouteTableId,AddRouteTableId,member=item"`
+	RemoveRouteTableIds    []string `json:"RemoveRouteTableIds,omitempty" ec2:"RemoveRouteTableId,RemoveRouteTableId,member=item"`
+	AddSubnetIds           []string `json:"AddSubnetIds,omitempty" ec2:"AddSubnetId,AddSubnetId,member=item"`
+	RemoveSubnetIds        []string `json:"RemoveSubnetIds,omitempty" ec2:"RemoveSubnetId,RemoveSubnetId,member=item"`
+	AddSecurityGroupIds    []string `json:"AddSecurityGroupIds,omitempty" ec2:"AddSecurityGroupId,AddSecurityGroupId,member=item"`
+	RemoveSecurityGroupIds []string `json:"RemoveSecurityGroupIds,omitempty" ec2:"RemoveSecurityGroupId,RemoveSecurityGroupId,member=item"`
+	PrivateDnsEnabled      *bool    `json:"PrivateDnsEnabled,omitempty" ec2:"PrivateDnsEnabled,PrivateDnsEnabled"`
+}
+
+type ModifyVpcEndpointResult struct {
+	Return *bool `json:"Return,omitempty" ec2:"Return,return"`
+}
+
+type DescribePrefixListsRequest struct {
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	Filters       []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults    *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken     *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	PrefixListIds []string `json:"PrefixListIds,omitempty" ec2:"PrefixListId,PrefixListId,member=item"`
+}
+
+type PrefixList struct {
+	Cidrs          []string `json:"Cidrs,omitempty" ec2:"CidrSet,cidrSet,member=item"`
+	PrefixListId   *string  `json:"PrefixListId,omitempty" ec2:"PrefixListId,prefixListId"`
+	PrefixListName *string  `json:"PrefixListName,omitempty" ec2:"PrefixListName,prefixListName"`
+}
+
+type DescribePrefixListsResult struct {
+	NextToken   *string      `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	PrefixLists []PrefixList `json:"PrefixLists,omitempty" ec2:"PrefixListSet,prefixListSet,member=item"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -1538,6 +1662,11 @@ type API interface {
 	CreateNatGateway(context.Context, *CreateNatGatewayRequest) (*CreateNatGatewayResult, error)
 	DeleteNatGateway(context.Context, *DeleteNatGatewayRequest) (*DeleteNatGatewayResult, error)
 	DescribeNatGateways(context.Context, *DescribeNatGatewaysRequest) (*DescribeNatGatewaysResult, error)
+	CreateVpcEndpoint(context.Context, *CreateVpcEndpointRequest) (*CreateVpcEndpointResult, error)
+	DeleteVpcEndpoints(context.Context, *DeleteVpcEndpointsRequest) (*DeleteVpcEndpointsResult, error)
+	DescribeVpcEndpoints(context.Context, *DescribeVpcEndpointsRequest) (*DescribeVpcEndpointsResult, error)
+	ModifyVpcEndpoint(context.Context, *ModifyVpcEndpointRequest) (*ModifyVpcEndpointResult, error)
+	DescribePrefixLists(context.Context, *DescribePrefixListsRequest) (*DescribePrefixListsResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1769,6 +1898,21 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeNatGateways": {Name: "DescribeNatGateways", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeNatGateways", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeNatGatewaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeNatGateways(ctx, input.(*DescribeNatGatewaysRequest))
+		}},
+		"CreateVpcEndpoint": {Name: "CreateVpcEndpoint", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateVpcEndpoint", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateVpcEndpointRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateVpcEndpoint(ctx, input.(*CreateVpcEndpointRequest))
+		}},
+		"DeleteVpcEndpoints": {Name: "DeleteVpcEndpoints", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVpcEndpoints", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVpcEndpointsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteVpcEndpoints(ctx, input.(*DeleteVpcEndpointsRequest))
+		}},
+		"DescribeVpcEndpoints": {Name: "DescribeVpcEndpoints", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVpcEndpoints", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVpcEndpointsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVpcEndpoints(ctx, input.(*DescribeVpcEndpointsRequest))
+		}},
+		"ModifyVpcEndpoint": {Name: "ModifyVpcEndpoint", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyVpcEndpoint", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyVpcEndpointRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyVpcEndpoint(ctx, input.(*ModifyVpcEndpointRequest))
+		}},
+		"DescribePrefixLists": {Name: "DescribePrefixLists", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribePrefixLists", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribePrefixListsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribePrefixLists(ctx, input.(*DescribePrefixListsRequest))
 		}},
 	}}
 }

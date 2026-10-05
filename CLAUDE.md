@@ -241,7 +241,10 @@ a per-service `Dialect`), and delivers synchronously through
   Region whose stored VPCs were given main route tables and default ACLs. Elastic IP addresses (`addresses.go`)
   record the instance or NAT gateway they are associated with, and the instance records the address as its public
   one. NAT gateways (`natgateways.go`) take a private address from `subnetAddresses`, which instances share, and stay
-  visible for an hour after deletion, like terminated instances. `filters.go` compiles `Filters` against the values each resource reports (whose keys are
+  visible for an hour after deletion, like terminated instances. VPC endpoints (`endpoints.go`) are gateway endpoints,
+  which own the prefix list routes they add to their route tables, or interface endpoints, which hold a network
+  interface and address per subnet; `interfaces.go` derives `DescribeNetworkInterfaces` from NAT gateways and
+  interface endpoints, which have no interface records of their own. `filters.go` compiles `Filters` against the values each resource reports (whose keys are
   also the filter names it accepts), and `tags.go` finds a resource by its ID prefix (`taggable`) and rewrites only the
   `Tags` field of its record, so a new taggable kind only needs an entry there. Key pairs (`keypairs.go`) store only the public key and fingerprint; a created private key is returned once.
   Instances record their IAM instance profile association (`profiles.go`), checked through the lookup

@@ -737,3 +737,132 @@ func TestEC2NATGateways(t *testing.T) {
 	_, err = c.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{NatGatewayIds: []string{"nat-0"}})
 	code(t, err, "NatGatewayNotFound")
 }
+
+func TestEC2VPCEndpoints(t *testing.T) {
+	s := server(t)
+	c := ec2Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	vpcID := createVPC(t, c, "10.0.0.0/16")
+	subnetID := createSubnet(t, c, vpcID, "10.0.1.0/24")
+	main := mainRouteTable(t, c, vpcID)
+
+	lists, err := c.DescribePrefixLists(ctx, &ec2.DescribePrefixListsInput{
+		Filters: []ec2types.Filter{{
+			Name: aws.String("prefix-list-name"), Values: []string{"com.amazonaws.us-east-1.s3"},
+		}},
+	})
+	if err != nil || len(lists.PrefixLists) != 1 || len(lists.PrefixLists[0].Cidrs) == 0 {
+		t.Fatalf("got %+v, %v", lists, err)
+	}
+
+	s3List := aws.ToString(lists.PrefixLists[0].PrefixListId)
+	_, err = c.CreateVpcEndpoint(ctx, &ec2.CreateVpcEndpointInput{
+		VpcId: aws.String(vpcID), ServiceName: aws.String("com.amazonaws.us-east-1.sqs"),
+	})
+	code(t, err, "InvalidServiceName")
+
+	// A gateway endpoint routes its service's prefix list in its route tables.
+	gateway, err := c.CreateVpcEndpoint(ctx, &ec2.CreateVpcEndpointInput{
+		VpcId: aws.String(vpcID), ServiceName: aws.String("com.amazonaws.us-east-1.s3"),
+		RouteTableIds: []string{*main.RouteTableId},
+	})
+	if err != nil || gateway.VpcEndpoint.VpcEndpointType != ec2types.VpcEndpointTypeGateway ||
+		gateway.VpcEndpoint.State != "available" || aws.ToString(gateway.VpcEndpoint.PolicyDocument) == "" {
+		t.Fatalf("got %+v, %v", gateway, err)
+	}
+
+	gatewayID := aws.ToString(gateway.VpcEndpoint.VpcEndpointId)
+	routes := mainRouteTable(t, c, vpcID).Routes
+	if len(routes) != 2 || aws.ToString(routes[1].DestinationPrefixListId) != s3List ||
+		aws.ToString(routes[1].GatewayId) != gatewayID || routes[1].State != ec2types.RouteStateActive {
+		t.Fatalf("got %+v", routes)
+	}
+
+	table, err := c.CreateRouteTable(ctx, &ec2.CreateRouteTableInput{VpcId: aws.String(vpcID)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.ModifyVpcEndpoint(ctx, &ec2.ModifyVpcEndpointInput{
+		VpcEndpointId: aws.String(gatewayID), AddRouteTableIds: []string{*table.RouteTable.RouteTableId},
+		RemoveRouteTableIds: []string{*main.RouteTableId}, PolicyDocument: aws.String(`{"Statement":[]}`),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if routes = mainRouteTable(t, c, vpcID).Routes; len(routes) != 1 {
+		t.Fatalf("got %+v", routes)
+	}
+
+	_, err = c.ModifyVpcEndpoint(ctx, &ec2.ModifyVpcEndpointInput{
+		VpcEndpointId: aws.String(gatewayID), PolicyDocument: aws.String("not json"),
+	})
+	code(t, err, "MalformedPolicyDocument")
+	_, err = c.ModifyVpcEndpoint(ctx, &ec2.ModifyVpcEndpointInput{
+		VpcEndpointId: aws.String(gatewayID), AddSubnetIds: []string{subnetID},
+	})
+	code(t, err, "InvalidParameterValue")
+
+	// An interface endpoint needs the VPC's DNS attributes for private DNS.
+	iface := &ec2.CreateVpcEndpointInput{
+		VpcId: aws.String(vpcID), ServiceName: aws.String("com.amazonaws.us-east-1.sqs"),
+		VpcEndpointType: ec2types.VpcEndpointTypeInterface, SubnetIds: []string{subnetID},
+	}
+	_, err = c.CreateVpcEndpoint(ctx, iface)
+	code(t, err, "InvalidParameterValue")
+	if _, err = c.ModifyVpcAttribute(ctx, &ec2.ModifyVpcAttributeInput{
+		VpcId: aws.String(vpcID), EnableDnsHostnames: &ec2types.AttributeBooleanValue{Value: aws.Bool(true)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	created, err := c.CreateVpcEndpoint(ctx, iface)
+	if err != nil || len(created.VpcEndpoint.NetworkInterfaceIds) != 1 || len(created.VpcEndpoint.Groups) != 1 ||
+		len(created.VpcEndpoint.DnsEntries) != 3 ||
+		aws.ToString(created.VpcEndpoint.DnsEntries[2].DnsName) != "sqs.us-east-1.amazonaws.com" {
+		t.Fatalf("got %+v, %v", created, err)
+	}
+
+	interfaceID := created.VpcEndpoint.NetworkInterfaceIds[0]
+	interfaces, err := c.DescribeNetworkInterfaces(ctx, &ec2.DescribeNetworkInterfacesInput{
+		NetworkInterfaceIds: []string{interfaceID},
+	})
+	if err != nil || len(interfaces.NetworkInterfaces) != 1 ||
+		interfaces.NetworkInterfaces[0].InterfaceType != ec2types.NetworkInterfaceTypeVpcEndpoint ||
+		aws.ToString(interfaces.NetworkInterfaces[0].PrivateIpAddress) != "10.0.1.4" ||
+		aws.ToString(interfaces.NetworkInterfaces[0].SubnetId) != subnetID {
+		t.Fatalf("got %+v, %v", interfaces, err)
+	}
+
+	_, err = c.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{SubnetId: aws.String(subnetID)})
+	code(t, err, "DependencyViolation")
+	_, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(vpcID)})
+	code(t, err, "DependencyViolation")
+
+	described, err := c.DescribeVpcEndpoints(ctx, &ec2.DescribeVpcEndpointsInput{
+		Filters: []ec2types.Filter{{Name: aws.String("vpc-endpoint-type"), Values: []string{"Interface"}}},
+	})
+	if err != nil || len(described.VpcEndpoints) != 1 {
+		t.Fatalf("got %+v, %v", described, err)
+	}
+
+	// Deleting reports the IDs that name no endpoint and removes the routes.
+	deleted, err := c.DeleteVpcEndpoints(ctx, &ec2.DeleteVpcEndpointsInput{
+		VpcEndpointIds: []string{gatewayID, *created.VpcEndpoint.VpcEndpointId, "vpce-00000000000000000"},
+	})
+	if err != nil || len(deleted.Unsuccessful) != 1 ||
+		aws.ToString(deleted.Unsuccessful[0].Error.Code) != "InvalidVpcEndpoint.NotFound" {
+		t.Fatalf("got %+v, %v", deleted, err)
+	}
+
+	tables, err := c.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{
+		Filters: []ec2types.Filter{{Name: aws.String("route.destination-prefix-list-id"), Values: []string{s3List}}},
+	})
+	if err != nil || len(tables.RouteTables) != 0 {
+		t.Fatalf("got %+v, %v", tables, err)
+	}
+
+	if _, err = c.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{SubnetId: aws.String(subnetID)}); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -409,9 +409,9 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 	return &api.CreateVpcResult{Vpc: &out}, nil
 }
 
-// DeleteVpc deletes a VPC that has no subnets, internet gateway, or security
-// groups, route tables, or network ACLs but its default and main ones left,
-// including a default VPC, which does not come back.
+// DeleteVpc deletes a VPC that has no subnets, internet gateway, endpoints,
+// or security groups, route tables, or network ACLs but its default and main
+// ones left, including a default VPC, which does not come back.
 func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api.DeleteVpcOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		v, err := loadVPC(tx, scope, value(in.VpcId))
@@ -444,11 +444,17 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 			return err
 		}
 
+		endpoints, err := list[vpcEndpoint](tx, scope, kindVPCEndpoint)
+		if err != nil {
+			return err
+		}
+
 		groups = slices.DeleteFunc(groups, func(g *securityGroup) bool { return g.VPCID != v.ID })
 		if gateway != "" || slices.ContainsFunc(subnets, func(sn *subnet) bool { return sn.VPCID == v.ID }) ||
 			slices.ContainsFunc(groups, func(g *securityGroup) bool { return g.Name != defaultGroupName }) ||
 			slices.ContainsFunc(tables, func(rt *routeTable) bool { return !rt.main() }) ||
-			slices.ContainsFunc(acls, func(acl *networkACL) bool { return !acl.Default }) {
+			slices.ContainsFunc(acls, func(acl *networkACL) bool { return !acl.Default }) ||
+			slices.ContainsFunc(endpoints, func(ep *vpcEndpoint) bool { return ep.VPCID == v.ID }) {
 			return awserror.New("DependencyViolation", fmt.Sprintf(dependencyFormat, kindVPC, v.ID))
 		}
 

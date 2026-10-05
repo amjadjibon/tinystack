@@ -121,16 +121,25 @@ func listInstances(tx storage.ReadTx, scope request.Scope, now time.Time) ([]*in
 	return slices.DeleteFunc(all, func(i *instance) bool { return !i.visible(now) }), err
 }
 
-// groupInUse reports whether an active instance uses a security group.
+// groupInUse reports whether an active instance or an interface endpoint
+// uses a security group.
 func groupInUse(tx storage.ReadTx, scope request.Scope, id string) (bool, error) {
 	all, err := list[instance](tx, scope, kindInstance)
-	return slices.ContainsFunc(all, func(i *instance) bool {
+	if err != nil {
+		return false, err
+	}
+
+	if slices.ContainsFunc(all, func(i *instance) bool {
 		return i.active() && slices.ContainsFunc(i.Groups, func(g groupRef) bool { return g.ID == id })
-	}), err
+	}) {
+		return true, nil
+	}
+
+	return endpointsUsing(tx, scope, "", id)
 }
 
-// subnetInUse reports whether an active instance or NAT gateway is in a
-// subnet.
+// subnetInUse reports whether an active instance, NAT gateway, or interface
+// endpoint is in a subnet.
 func subnetInUse(tx storage.ReadTx, scope request.Scope, id string) (bool, error) {
 	instances, err := list[instance](tx, scope, kindInstance)
 	if err != nil {
@@ -138,8 +147,16 @@ func subnetInUse(tx storage.ReadTx, scope request.Scope, id string) (bool, error
 	}
 
 	gateways, err := list[natGateway](tx, scope, kindNATGateway)
-	return slices.ContainsFunc(instances, func(i *instance) bool { return i.active() && i.SubnetID == id }) ||
-		slices.ContainsFunc(gateways, func(g *natGateway) bool { return g.active() && g.SubnetID == id }), err
+	if err != nil {
+		return false, err
+	}
+
+	if slices.ContainsFunc(instances, func(i *instance) bool { return i.active() && i.SubnetID == id }) ||
+		slices.ContainsFunc(gateways, func(g *natGateway) bool { return g.active() && g.SubnetID == id }) {
+		return true, nil
+	}
+
+	return endpointsUsing(tx, scope, id, "")
 }
 
 func instanceState(name string) *api.InstanceState {
@@ -412,8 +429,8 @@ type addresses struct {
 	block netip.Prefix
 }
 
-// subnetAddresses returns a subnet's addresses with those of instances and
-// NAT gateways in it marked as used.
+// subnetAddresses returns a subnet's addresses with those of instances, NAT
+// gateways, and interface endpoints in it marked as used.
 func subnetAddresses(
 	tx storage.ReadTx,
 	scope request.Scope,
@@ -432,10 +449,10 @@ func subnetAddresses(
 		}
 	}
 
-	gateways, err := list[natGateway](tx, scope, kindNATGateway)
-	for _, g := range gateways {
-		if g.active() && g.SubnetID == sn.ID {
-			a.used[netip.MustParseAddr(g.PrivateIP)] = true
+	managed, err := managedInterfaces(tx, scope)
+	for _, ni := range managed {
+		if ni.subnetID == sn.ID {
+			a.used[netip.MustParseAddr(ni.privateIP)] = true
 		}
 	}
 
