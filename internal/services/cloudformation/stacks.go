@@ -490,10 +490,10 @@ func (s *Service) DeleteStack(ctx context.Context, in *api.DeleteStackInput) (*a
 // describe renders a stack as DescribeStacks does.
 func describe(st *stack) api.Stack {
 	out := api.Stack{
-		StackId: &st.ID, StackName: &st.Name, CreationTime: common.Ptr(st.Created), LastUpdatedTime: st.Updated,
-		DeletionTime: st.Deleted, StackStatus: &st.Status, DisableRollback: common.Ptr(st.DisableRollback),
-		Capabilities: st.Capabilities, EnableTerminationProtection: common.Ptr(st.Protected),
-		DriftInformation: &api.StackDriftInformation{StackDriftStatus: common.Ptr("NOT_CHECKED")},
+		StackId: &st.ID, StackName: &st.Name, CreationTime: new(st.Created), LastUpdatedTime: st.Updated,
+		DeletionTime: st.Deleted, StackStatus: &st.Status, DisableRollback: new(st.DisableRollback),
+		Capabilities: st.Capabilities, EnableTerminationProtection: new(st.Protected),
+		DriftInformation: &api.StackDriftInformation{StackDriftStatus: new("NOT_CHECKED")},
 	}
 	if st.Description != "" {
 		out.Description = &st.Description
@@ -517,13 +517,13 @@ func describe(st *stack) api.Stack {
 
 	out.Parameters = parametersOf(st.Parameters)
 	for _, o := range st.Outputs {
-		rendered := api.Output{OutputKey: common.Ptr(o.Key), OutputValue: common.Ptr(o.Value)}
+		rendered := api.Output{OutputKey: new(o.Key), OutputValue: new(o.Value)}
 		if o.Description != "" {
-			rendered.Description = common.Ptr(o.Description)
+			rendered.Description = new(o.Description)
 		}
 
 		if o.Export != "" {
-			rendered.ExportName = common.Ptr(o.Export)
+			rendered.ExportName = new(o.Export)
 		}
 
 		out.Outputs = append(out.Outputs, rendered)
@@ -537,13 +537,13 @@ func describe(st *stack) api.Stack {
 func parametersOf(params []parameter) []api.Parameter {
 	var out []api.Parameter
 	for _, p := range params {
-		rendered := api.Parameter{ParameterKey: common.Ptr(p.Key), ParameterValue: common.Ptr(p.Value)}
+		rendered := api.Parameter{ParameterKey: new(p.Key), ParameterValue: new(p.Value)}
 		if p.NoEcho {
-			rendered.ParameterValue = common.Ptr("****")
+			rendered.ParameterValue = new("****")
 		}
 
 		if p.Resolved != "" {
-			rendered.ResolvedValue = common.Ptr(p.Resolved)
+			rendered.ResolvedValue = new(p.Resolved)
 		}
 
 		out = append(out, rendered)
@@ -555,7 +555,7 @@ func parametersOf(params []parameter) []api.Parameter {
 func apiTags(tags []tag) []api.Tag {
 	var out []api.Tag
 	for _, t := range tags {
-		out = append(out, api.Tag{Key: common.Ptr(t.Key), Value: common.Ptr(t.Value)})
+		out = append(out, api.Tag{Key: new(t.Key), Value: new(t.Value)})
 	}
 
 	return out
@@ -667,9 +667,9 @@ func (s *Service) ListStacks(ctx context.Context, in *api.ListStacksInput) (*api
 		}
 
 		summary := api.StackSummary{
-			StackId: &st.ID, StackName: &st.Name, CreationTime: common.Ptr(st.Created), LastUpdatedTime: st.Updated,
+			StackId: &st.ID, StackName: &st.Name, CreationTime: new(st.Created), LastUpdatedTime: st.Updated,
 			DeletionTime: st.Deleted, StackStatus: &st.Status,
-			DriftInformation: &api.StackDriftInformationSummary{StackDriftStatus: common.Ptr("NOT_CHECKED")},
+			DriftInformation: &api.StackDriftInformationSummary{StackDriftStatus: new("NOT_CHECKED")},
 		}
 		if st.Description != "" {
 			summary.TemplateDescription = &st.Description
@@ -763,12 +763,12 @@ func (s *Service) ValidateTemplate(
 	for _, k := range slices.Sorted(maps.Keys(t.Parameters)) {
 		p := t.Parameters[k]
 		rendered := api.TemplateParameter{
-			ParameterKey: common.Ptr(k),
+			ParameterKey: new(k),
 			DefaultValue: p.Default,
-			NoEcho:       common.Ptr(p.NoEcho),
+			NoEcho:       new(p.NoEcho),
 		}
 		if p.Description != "" {
-			rendered.Description = common.Ptr(p.Description)
+			rendered.Description = new(p.Description)
 		}
 
 		out.Parameters = append(out.Parameters, rendered)
@@ -825,21 +825,21 @@ func (s *Service) GetTemplateSummary(
 
 	if t.Metadata != nil {
 		data, _ := json.Marshal(t.Metadata)
-		out.Metadata = common.Ptr(string(data))
+		out.Metadata = new(string(data))
 	}
 
 	for _, k := range slices.Sorted(maps.Keys(t.Parameters)) {
 		p := t.Parameters[k]
 		rendered := api.ParameterDeclaration{
-			ParameterKey: common.Ptr(
+			ParameterKey: new(
 				k,
 			),
 			DefaultValue:  p.Default,
-			ParameterType: common.Ptr(p.Type),
-			NoEcho:        common.Ptr(p.NoEcho),
+			ParameterType: new(p.Type),
+			NoEcho:        new(p.NoEcho),
 		}
 		if p.Description != "" {
-			rendered.Description = common.Ptr(p.Description)
+			rendered.Description = new(p.Description)
 		}
 
 		if len(p.AllowedValues) > 0 {
@@ -898,20 +898,20 @@ func (s *Service) DescribeStackEvents(
 
 func renderEvent(st *stack, e *stackEvent) api.StackEvent {
 	out := api.StackEvent{
-		StackId: &st.ID, StackName: &st.Name, EventId: common.Ptr(e.ID), LogicalResourceId: common.Ptr(e.Logical),
-		ResourceType: common.Ptr(e.Type), Timestamp: common.Ptr(e.Time), ResourceStatus: common.Ptr(e.Status),
-		PhysicalResourceId: common.Ptr(e.Physical),
+		StackId: &st.ID, StackName: &st.Name, EventId: new(e.ID), LogicalResourceId: new(e.Logical),
+		ResourceType: new(e.Type), Timestamp: new(e.Time), ResourceStatus: new(e.Status),
+		PhysicalResourceId: new(e.Physical),
 	}
 	if e.Reason != "" {
-		out.ResourceStatusReason = common.Ptr(e.Reason)
+		out.ResourceStatusReason = new(e.Reason)
 	}
 
 	if e.Properties != "" {
-		out.ResourceProperties = common.Ptr(e.Properties)
+		out.ResourceProperties = new(e.Properties)
 	}
 
 	if e.Token != "" {
-		out.ClientRequestToken = common.Ptr(e.Token)
+		out.ClientRequestToken = new(e.Token)
 	}
 
 	return out
@@ -993,18 +993,18 @@ func (s *Service) DescribeStackResource(
 	out := &api.StackResourceDetail{
 		StackName:         &sr.st.Name,
 		StackId:           &sr.st.ID,
-		LogicalResourceId: common.Ptr(sr.logical),
-		PhysicalResourceId: common.Ptr(
+		LogicalResourceId: new(sr.logical),
+		PhysicalResourceId: new(
 			sr.r.Physical,
 		),
-		ResourceType:         common.Ptr(sr.r.Type),
-		LastUpdatedTimestamp: common.Ptr(sr.r.Updated),
-		ResourceStatus:       common.Ptr(sr.r.Status),
-		Metadata:             common.Ptr(sr.r.Metadata),
-		DriftInformation:     &api.StackResourceDriftInformation{StackResourceDriftStatus: common.Ptr("NOT_CHECKED")},
+		ResourceType:         new(sr.r.Type),
+		LastUpdatedTimestamp: new(sr.r.Updated),
+		ResourceStatus:       new(sr.r.Status),
+		Metadata:             new(sr.r.Metadata),
+		DriftInformation:     &api.StackResourceDriftInformation{StackResourceDriftStatus: new("NOT_CHECKED")},
 	}
 	if sr.r.Reason != "" {
-		out.ResourceStatusReason = common.Ptr(sr.r.Reason)
+		out.ResourceStatusReason = new(sr.r.Reason)
 	}
 
 	return &api.DescribeStackResourceOutput{StackResourceDetail: out}, nil
@@ -1034,17 +1034,17 @@ func (s *Service) DescribeStackResources(
 		rendered := api.StackResource{
 			StackName:         &sr.st.Name,
 			StackId:           &sr.st.ID,
-			LogicalResourceId: common.Ptr(sr.logical),
-			PhysicalResourceId: common.Ptr(
+			LogicalResourceId: new(sr.logical),
+			PhysicalResourceId: new(
 				sr.r.Physical,
 			),
-			ResourceType:     common.Ptr(sr.r.Type),
-			Timestamp:        common.Ptr(sr.r.Updated),
-			ResourceStatus:   common.Ptr(sr.r.Status),
-			DriftInformation: &api.StackResourceDriftInformation{StackResourceDriftStatus: common.Ptr("NOT_CHECKED")},
+			ResourceType:     new(sr.r.Type),
+			Timestamp:        new(sr.r.Updated),
+			ResourceStatus:   new(sr.r.Status),
+			DriftInformation: &api.StackResourceDriftInformation{StackResourceDriftStatus: new("NOT_CHECKED")},
 		}
 		if sr.r.Reason != "" {
-			rendered.ResourceStatusReason = common.Ptr(sr.r.Reason)
+			rendered.ResourceStatusReason = new(sr.r.Reason)
 		}
 
 		out.StackResources = append(out.StackResources, rendered)
@@ -1074,19 +1074,19 @@ func (s *Service) ListStackResources(
 	summaries := []api.StackResourceSummary{}
 	for _, sr := range found {
 		rendered := api.StackResourceSummary{
-			LogicalResourceId: common.Ptr(
+			LogicalResourceId: new(
 				sr.logical,
 			),
-			PhysicalResourceId:   common.Ptr(sr.r.Physical),
-			ResourceType:         common.Ptr(sr.r.Type),
-			LastUpdatedTimestamp: common.Ptr(sr.r.Updated),
-			ResourceStatus:       common.Ptr(sr.r.Status),
+			PhysicalResourceId:   new(sr.r.Physical),
+			ResourceType:         new(sr.r.Type),
+			LastUpdatedTimestamp: new(sr.r.Updated),
+			ResourceStatus:       new(sr.r.Status),
 			DriftInformation: &api.StackResourceDriftInformationSummary{
-				StackResourceDriftStatus: common.Ptr("NOT_CHECKED"),
+				StackResourceDriftStatus: new("NOT_CHECKED"),
 			},
 		}
 		if sr.r.Reason != "" {
-			rendered.ResourceStatusReason = common.Ptr(sr.r.Reason)
+			rendered.ResourceStatusReason = new(sr.r.Reason)
 		}
 
 		summaries = append(summaries, rendered)
@@ -1116,11 +1116,11 @@ func (s *Service) ListExports(ctx context.Context, in *api.ListExportsInput) (*a
 			}
 
 			exports = append(exports, api.Export{
-				ExportingStackId: common.Ptr(
+				ExportingStackId: new(
 					e.StackID,
 				),
-				Name:  common.Ptr(strings.TrimPrefix(k, prefix)),
-				Value: common.Ptr(e.Value),
+				Name:  new(strings.TrimPrefix(k, prefix)),
+				Value: new(e.Value),
 			})
 		}
 

@@ -22,11 +22,6 @@ func Value[T any](p *T) (v T) {
 	return v
 }
 
-// Ptr returns a pointer to v.
-func Ptr[T any](v T) *T {
-	return &v
-}
-
 // OrElse returns p if p is non-nil, or fallback.
 func OrElse[T any](p, fallback *T) *T {
 	if p != nil {
@@ -126,5 +121,5 @@ func Page[T any](items []T, id func(T) string, token *string, limit int, invalid
 		return items, nil, nil
 	}
 
-	return items[:limit], Ptr(base64.RawURLEncoding.EncodeToString([]byte(id(items[limit-1])))), nil
+	return items[:limit], new(base64.RawURLEncoding.EncodeToString([]byte(id(items[limit-1])))), nil
 }

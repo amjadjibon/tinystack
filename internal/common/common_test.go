@@ -35,20 +35,11 @@ func TestValue(t *testing.T) {
 	}
 }
 
-func TestPtr(t *testing.T) {
-	t.Parallel()
-
-	p := common.Ptr("world")
-	if p == nil || *p != "world" {
-		t.Fatalf("unexpected pointer result: %v", p)
-	}
-}
-
 func TestOrElse(t *testing.T) {
 	t.Parallel()
 
-	fallback := common.Ptr("fallback")
-	primary := common.Ptr("primary")
+	fallback := new("fallback")
+	primary := new("primary")
 
 	if got := common.OrElse(nil, fallback); got != fallback {
 		t.Fatalf("expected fallback, got %v", got)

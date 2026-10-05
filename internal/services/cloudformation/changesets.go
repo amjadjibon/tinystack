@@ -239,7 +239,7 @@ func changes(st *stack, body string, params []parameter) []api.Change {
 	out := []api.Change{}
 	for _, logical := range slices.Sorted(maps.Keys(next.Resources)) {
 		decl := next.Resources[logical]
-		change := api.ResourceChange{LogicalResourceId: common.Ptr(logical), ResourceType: common.Ptr(decl.Type)}
+		change := api.ResourceChange{LogicalResourceId: new(logical), ResourceType: new(decl.Type)}
 		r := st.Resources[logical]
 		var old *resourceDecl
 		if prev != nil {
@@ -248,26 +248,26 @@ func changes(st *stack, body string, params []parameter) []api.Change {
 
 		switch {
 		case r == nil || r.Physical == "" || old == nil:
-			change.Action = common.Ptr("Add")
+			change.Action = new("Add")
 		case old.Type != decl.Type:
-			change.Action, change.Replacement = common.Ptr("Modify"), common.Ptr("True")
+			change.Action, change.Replacement = new("Modify"), new("True")
 		case !reflect.DeepEqual(old.Properties, decl.Properties):
-			change.Action, change.Replacement = common.Ptr("Modify"), common.Ptr(replacement(decl, old))
+			change.Action, change.Replacement = new("Modify"), new(replacement(decl, old))
 		case mentions(decl.Properties, changedParams):
-			change.Action, change.Replacement = common.Ptr("Modify"), common.Ptr("Conditional")
+			change.Action, change.Replacement = new("Modify"), new("Conditional")
 		default:
 			continue
 		}
 
 		if r != nil && r.Physical != "" {
-			change.PhysicalResourceId = common.Ptr(r.Physical)
+			change.PhysicalResourceId = new(r.Physical)
 		}
 
 		if common.Value(change.Action) == "Modify" {
 			change.Scope = []string{keyProperties}
 		}
 
-		out = append(out, api.Change{Type: common.Ptr("Resource"), ResourceChange: &change})
+		out = append(out, api.Change{Type: new("Resource"), ResourceChange: &change})
 	}
 
 	for _, logical := range slices.Sorted(maps.Keys(st.Resources)) {
@@ -276,13 +276,13 @@ func changes(st *stack, body string, params []parameter) []api.Change {
 		}
 
 		r := st.Resources[logical]
-		out = append(out, api.Change{Type: common.Ptr("Resource"), ResourceChange: &api.ResourceChange{
-			Action: common.Ptr(
+		out = append(out, api.Change{Type: new("Resource"), ResourceChange: &api.ResourceChange{
+			Action: new(
 				"Remove",
 			),
-			LogicalResourceId:  common.Ptr(logical),
-			PhysicalResourceId: common.Ptr(r.Physical),
-			ResourceType:       common.Ptr(r.Type),
+			LogicalResourceId:  new(logical),
+			PhysicalResourceId: new(r.Physical),
+			ResourceType:       new(r.Type),
 		}})
 	}
 
@@ -348,7 +348,7 @@ func (s *Service) DescribeChangeSet(
 
 	out := &api.DescribeChangeSetOutput{
 		ChangeSetName: &cs.Name, ChangeSetId: &cs.ID, StackId: &cs.StackID, StackName: &cs.StackName,
-		Parameters: parametersOf(cs.Parameters), CreationTime: common.Ptr(cs.Created), ExecutionStatus: &cs.Execution,
+		Parameters: parametersOf(cs.Parameters), CreationTime: new(cs.Created), ExecutionStatus: &cs.Execution,
 		Status: &cs.Status, Capabilities: cs.Capabilities, Tags: apiTags(cs.Tags), Changes: items, NextToken: next,
 	}
 	if cs.Description != "" {
@@ -508,7 +508,7 @@ func (s *Service) ListChangeSets(
 
 			summary := api.ChangeSetSummary{
 				StackId: &cs.StackID, StackName: &cs.StackName, ChangeSetId: &cs.ID, ChangeSetName: &cs.Name,
-				ExecutionStatus: &cs.Execution, Status: &cs.Status, CreationTime: common.Ptr(cs.Created),
+				ExecutionStatus: &cs.Execution, Status: &cs.Status, CreationTime: new(cs.Created),
 			}
 			if cs.Reason != "" {
 				summary.StatusReason = &cs.Reason
