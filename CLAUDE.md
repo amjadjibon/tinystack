@@ -127,7 +127,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -318,6 +318,19 @@ a per-service `Dialect`), and delivers synchronously through
   base path mappings, found from the partition-wide `aws/apigateway/domain/<name>`) are served through
   `gateway.Server.UseDomains`, which routes `/_aws/domain/<name>/...` and unsigned requests whose host is a domain. Lambda keeps each function's, version's,
   and alias's resource-based policy under `…/lambda/policy/<name>/<qualifier>` (`policy.go`), stored, never evaluated.
+  AppSync (`services/appsync`) keeps GraphQL APIs under `…/appsync/api/<ID>`, each schema's SDL and last
+  StartSchemaCreation result under `…/appsync/schema/<ID>` (validated by `github.com/vektah/gqlparser` with AppSync's
+  scalars and `@aws_*` directives; CreateType, UpdateType, and DeleteType edit it, and types are read from it), and
+  API keys, data sources, functions, and resolvers under `…/appsync/<kind>/<API ID>/…` (resolvers by
+  `<type>/<field>`). `gateway/execute.go` (`Server.UseGraphQL`) sends `<API ID>.appsync-api.<host>` and
+  `/_aws/appsync-api/<API ID>/...` to `appsync.Service.Execute`, passing the SigV4 caller the gateway resolved (and, in
+  verify mode, verified) as `execute.Request.Caller`. `graphql.go` reads the API in one transaction, authorizes the
+  request (`auth.go`: API keys, IAM, Cognito tokens through `cognitoidp.Service.Verify`, OIDC through the shared
+  `proxy.Verifier`, and Lambda authorizers, with AppSync's per-type and per-field directive rules), and runs it with
+  `executor.go`, a GraphQL executor (fragments, abstract types, null propagation, ordered output) whose
+  introspection (`introspection.go`) also serves GetIntrospectionSchema's JSON. Only direct Lambda resolvers run, through
+  `lambda.Service.Invoke` outside transactions; APPSYNC_JS code, VTL templates, and pipelines are stored and fail
+  explicitly when a query reaches them.
   Step Functions (`services/sfn`) keeps state machines under `…/sfn/statemachine/<name>`, activities under
   `…/sfn/activity/<name>`, versions under `…/sfn/version/<state machine>/<zero-padded number>` and aliases under
   `…/sfn/alias/<state machine>/<alias>` (`versions.go`, whose `loadTarget` resolves the version an execution runs), executions under `…/sfn/execution/<state machine>/<name>`, and each history event under
@@ -438,8 +451,8 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, and EventBridge Scheduler over REST
-  JSON, Auto Scaling, Elastic Load Balancing, and CloudFormation over Query, plus Docker Registry API calls and requests to API Gateway APIs and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, and EventBridge Scheduler over REST
+  JSON, Auto Scaling, Elastic Load Balancing, and CloudFormation over Query, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real
