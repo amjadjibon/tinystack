@@ -5,6 +5,8 @@
 //	<account>/cloudfront/distribution/<id>              (distribution record)
 //	<account>/cloudfront/reference/<caller reference>   (distribution ID)
 //	<account>/cloudfront/alias/<cname>                  (distribution ID)
+//	<account>/cloudfront/oac/<id>                       (OAC record)
+//	<account>/cloudfront/oac-name/<name>                (OAC ID)
 //
 // All operations are executed synchronously against the store.
 package cloudfront
@@ -27,6 +29,8 @@ const (
 	kindDistribution = "distribution"
 	kindReference    = "reference"
 	kindAlias        = "alias"
+	kindOAC          = "oac"
+	kindOACName      = "oac-name"
 	idAlphabet       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	idLength         = 13
 )
@@ -148,5 +152,34 @@ func invalidArgument(msg string) error {
 		Code:       "InvalidArgument",
 		Message:    msg,
 		StatusCode: 400,
+	}
+}
+
+func noSuchOriginAccessControl(id string) error {
+	msg := "The origin access control does not exist."
+	if id != "" {
+		msg = "The origin access control does not exist: " + id
+	}
+	return &awserror.Error{
+		Code:       "NoSuchOriginAccessControl",
+		Message:    msg,
+		StatusCode: 404,
+	}
+}
+
+func originAccessControlAlreadyExists() error {
+	return &awserror.Error{
+		Code:       "OriginAccessControlAlreadyExists",
+		Message:    "An origin access control with the specified parameters already exists.",
+		StatusCode: 409,
+	}
+}
+
+func originAccessControlInUse() error {
+	return &awserror.Error{
+		Code: "OriginAccessControlInUse",
+		Message: "Cannot delete the origin access control because " +
+			"it's in use by one or more distributions.",
+		StatusCode: 409,
 	}
 }

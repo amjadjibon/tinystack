@@ -2,13 +2,14 @@ package cloudfront
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// Resources lists every CloudFront distribution for the resource browser.
+// Resources lists every CloudFront distribution and OAC for the resource browser.
 // CloudFront is global, so resources have no Region.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
@@ -20,7 +21,8 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			account := parts[0]
-			if parts[2] == kindDistribution {
+			switch parts[2] {
+			case kindDistribution:
 				rec, found, readErr := read[distributionRecord](tx, k)
 				if readErr != nil {
 					return readErr
@@ -48,6 +50,33 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 						"DomainName": domain,
 						"Status":     status,
 						"Enabled":    enabled,
+					},
+				})
+			case kindOAC:
+				rec, found, readErr := read[oacRecord](tx, k)
+				if readErr != nil {
+					return readErr
+				}
+				if !found || rec.OAC == nil {
+					continue
+				}
+
+				id := value(rec.OAC.Id)
+				name := ""
+				originType := ""
+				if rec.OAC.OriginAccessControlConfig != nil {
+					name = value(rec.OAC.OriginAccessControlConfig.Name)
+					originType = value(rec.OAC.OriginAccessControlConfig.OriginAccessControlOriginType)
+				}
+
+				out = append(out, catalog.Resource{
+					Type:    "origin-access-control",
+					Account: account,
+					Name:    id,
+					ARN:     fmt.Sprintf("arn:aws:cloudfront::%s:origin-access-control/%s", account, id),
+					Details: map[string]any{
+						"Name":                          name,
+						"OriginAccessControlOriginType": originType,
 					},
 				})
 			}

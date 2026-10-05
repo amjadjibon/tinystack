@@ -343,3 +343,160 @@ func TestCloudFrontInvalidations(t *testing.T) {
 		t.Fatalf("expected invalidation ID %s in list, got %s", invID, *listInv.InvalidationList.Items[0].Id)
 	}
 }
+
+func TestCloudFrontOriginAccessControl(t *testing.T) {
+	s := server(t)
+	c := cloudfrontClient(s)
+	ctx := context.Background()
+
+	// 1. Create OAC
+	oacConfig := &cftypes.OriginAccessControlConfig{
+		Name:                          aws.String("my-s3-oac"),
+		Description:                   aws.String("OAC for S3 origin"),
+		OriginAccessControlOriginType: cftypes.OriginAccessControlOriginTypesS3,
+		SigningBehavior:               cftypes.OriginAccessControlSigningBehaviorsAlways,
+		SigningProtocol:               cftypes.OriginAccessControlSigningProtocolsSigv4,
+	}
+	created, err := c.CreateOriginAccessControl(ctx, &cloudfront.CreateOriginAccessControlInput{
+		OriginAccessControlConfig: oacConfig,
+	})
+	if err != nil {
+		t.Fatalf("CreateOriginAccessControl: %v", err)
+	}
+	if created.OriginAccessControl == nil || created.OriginAccessControl.Id == nil {
+		t.Fatal("expected OriginAccessControl with ID")
+	}
+	if created.ETag == nil || *created.ETag == "" {
+		t.Fatal("expected ETag")
+	}
+	oacID := *created.OriginAccessControl.Id
+	etag := *created.ETag
+
+	// 2. Duplicate Name fails
+	_, err = c.CreateOriginAccessControl(ctx, &cloudfront.CreateOriginAccessControlInput{
+		OriginAccessControlConfig: oacConfig,
+	})
+	if err == nil {
+		t.Fatal("expected error on duplicate name")
+	}
+	var ae smithy.APIError
+	if errors.As(err, &ae) && ae.ErrorCode() != "OriginAccessControlAlreadyExists" {
+		t.Fatalf("expected OriginAccessControlAlreadyExists, got %s", ae.ErrorCode())
+	}
+
+	// 3. Get OAC
+	got, err := c.GetOriginAccessControl(ctx, &cloudfront.GetOriginAccessControlInput{
+		Id: aws.String(oacID),
+	})
+	if err != nil {
+		t.Fatalf("GetOriginAccessControl: %v", err)
+	}
+	if *got.OriginAccessControl.Id != oacID {
+		t.Fatalf("expected ID %s, got %s", oacID, *got.OriginAccessControl.Id)
+	}
+	if *got.ETag != etag {
+		t.Fatalf("expected ETag %s, got %s", etag, *got.ETag)
+	}
+
+	// 4. Get OAC Config
+	gotCfg, err := c.GetOriginAccessControlConfig(ctx, &cloudfront.GetOriginAccessControlConfigInput{
+		Id: aws.String(oacID),
+	})
+	if err != nil {
+		t.Fatalf("GetOriginAccessControlConfig: %v", err)
+	}
+	if *gotCfg.OriginAccessControlConfig.Name != "my-s3-oac" {
+		t.Fatalf("expected name my-s3-oac, got %s", *gotCfg.OriginAccessControlConfig.Name)
+	}
+
+	// 5. Update OAC with bad ETag fails
+	badUpdateCfg := *oacConfig
+	badUpdateCfg.Description = aws.String("Updated desc")
+	_, err = c.UpdateOriginAccessControl(ctx, &cloudfront.UpdateOriginAccessControlInput{
+		Id:                        aws.String(oacID),
+		IfMatch:                   aws.String("wrong-etag"),
+		OriginAccessControlConfig: &badUpdateCfg,
+	})
+	if err == nil {
+		t.Fatal("expected error on mismatched IfMatch")
+	}
+
+	// 6. Update OAC with correct ETag succeeds
+	updated, err := c.UpdateOriginAccessControl(ctx, &cloudfront.UpdateOriginAccessControlInput{
+		Id:                        aws.String(oacID),
+		IfMatch:                   aws.String(etag),
+		OriginAccessControlConfig: &badUpdateCfg,
+	})
+	if err != nil {
+		t.Fatalf("UpdateOriginAccessControl: %v", err)
+	}
+	if *updated.OriginAccessControl.OriginAccessControlConfig.Description != "Updated desc" {
+		t.Fatalf("expected updated description")
+	}
+	etag = *updated.ETag
+
+	// 7. List OACs
+	listRes, err := c.ListOriginAccessControls(ctx, &cloudfront.ListOriginAccessControlsInput{})
+	if err != nil {
+		t.Fatalf("ListOriginAccessControls: %v", err)
+	}
+	if listRes.OriginAccessControlList == nil || *listRes.OriginAccessControlList.Quantity != 1 {
+		t.Fatalf("expected 1 OAC in list, got %v", listRes.OriginAccessControlList)
+	}
+	if *listRes.OriginAccessControlList.Items[0].Id != oacID {
+		t.Fatalf("expected OAC ID %s in list", oacID)
+	}
+
+	// 8. Test In-Use Deletion protection
+	distCfg := sampleConfig("oac-dist-ref", "OAC test dist", false)
+	distCfg.Origins.Items[0].OriginAccessControlId = aws.String(oacID)
+	createdDist, err := c.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{
+		DistributionConfig: distCfg,
+	})
+	if err != nil {
+		t.Fatalf("CreateDistribution with OAC: %v", err)
+	}
+	distID := *createdDist.Distribution.Id
+	distETag := *createdDist.ETag
+
+	// Attempt to delete OAC should fail because it is in use
+	_, err = c.DeleteOriginAccessControl(ctx, &cloudfront.DeleteOriginAccessControlInput{
+		Id:      aws.String(oacID),
+		IfMatch: aws.String(etag),
+	})
+	if err == nil {
+		t.Fatal("expected OriginAccessControlInUse error")
+	}
+	if errors.As(err, &ae) && ae.ErrorCode() != "OriginAccessControlInUse" {
+		t.Fatalf("expected OriginAccessControlInUse, got %s", ae.ErrorCode())
+	}
+
+	// Delete distribution
+	_, err = c.DeleteDistribution(ctx, &cloudfront.DeleteDistributionInput{
+		Id:      aws.String(distID),
+		IfMatch: aws.String(distETag),
+	})
+	if err != nil {
+		t.Fatalf("DeleteDistribution: %v", err)
+	}
+
+	// Now delete OAC succeeds
+	_, err = c.DeleteOriginAccessControl(ctx, &cloudfront.DeleteOriginAccessControlInput{
+		Id:      aws.String(oacID),
+		IfMatch: aws.String(etag),
+	})
+	if err != nil {
+		t.Fatalf("DeleteOriginAccessControl: %v", err)
+	}
+
+	// Get after delete returns NoSuchOriginAccessControl
+	_, err = c.GetOriginAccessControl(ctx, &cloudfront.GetOriginAccessControlInput{
+		Id: aws.String(oacID),
+	})
+	if err == nil {
+		t.Fatal("expected NoSuchOriginAccessControl error")
+	}
+	if errors.As(err, &ae) && ae.ErrorCode() != "NoSuchOriginAccessControl" {
+		t.Fatalf("expected NoSuchOriginAccessControl, got %s", ae.ErrorCode())
+	}
+}

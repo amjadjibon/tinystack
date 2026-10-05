@@ -11678,13 +11678,19 @@
       "CreateDistribution",
       "CreateDistributionWithTags",
       "CreateInvalidation",
+      "CreateOriginAccessControl",
       "DeleteDistribution",
+      "DeleteOriginAccessControl",
       "GetDistribution",
       "GetDistributionConfig",
       "GetInvalidation",
+      "GetOriginAccessControl",
+      "GetOriginAccessControlConfig",
       "ListDistributions",
       "ListInvalidations",
-      "UpdateDistribution"
+      "ListOriginAccessControls",
+      "UpdateDistribution",
+      "UpdateOriginAccessControl"
     ]
   }
 }
