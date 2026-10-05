@@ -23,6 +23,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
@@ -646,7 +647,7 @@ func newFunction(in *api.CreateFunctionRequest, zipFile []byte) (*function, []by
 		PackageType: value(in.PackageType),
 		Timeout:     defaultTimeout,
 		MemorySize:  defaultMemory,
-		RevisionID:  newUUID(),
+		RevisionID:  uuid.NewV4().String(),
 	}
 
 	if !functionName.MatchString(fn.Name) {

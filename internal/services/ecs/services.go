@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"slices"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
@@ -201,9 +202,7 @@ func (s *Service) reconcile(tx storage.WriteTx, scope request.Scope, c *cluster,
 	d.DesiredCount, d.RunningCount, d.UpdatedAt = new(svc.Desired), new(int64(len(current))), seconds(now)
 	svc.Events = append([]api.ServiceEvent{
 		{
-			Id: new(
-				newUUID(),
-			),
+			Id:        new(uuid.NewV4().String()),
 			CreatedAt: seconds(now),
 			Message:   new("(service " + svc.Name + ") has reached a steady state."),
 		},

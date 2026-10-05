@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/delivery"
@@ -317,12 +318,14 @@ func objectName(st *deliveryStream, now time.Time) string {
 		ext = ".gz"
 	}
 
-	return fmt.Sprintf("%s-%d-%s-%s%s", st.Name, st.Version, now.Format("2006-01-02-15-04-05"), newUUID(), ext)
-}
-
-func newUUID() string {
-	s := randomID(32)
-	return s[:8] + "-" + s[8:12] + "-" + s[12:16] + "-" + s[16:20] + "-" + s[20:]
+	return fmt.Sprintf(
+		"%s-%d-%s-%s%s",
+		st.Name,
+		st.Version,
+		now.Format("2006-01-02-15-04-05"),
+		uuid.NewV4().String(),
+		ext,
+	)
 }
 
 var expression = regexp.MustCompile(`!\{([a-z]+):([^}]*)\}`)
@@ -369,7 +372,7 @@ func (s *Service) transform(scope request.Scope, st *deliveryStream, arn string,
 	}
 
 	event := map[string]any{
-		"invocationId": newUUID(), "deliveryStreamArn": streamARN(scope, st.Name), "region": scope.Region,
+		"invocationId": uuid.NewV4().String(), "deliveryStreamArn": streamARN(scope, st.Name), "region": scope.Region,
 	}
 	list := make([]eventRecord, len(records))
 	for i, r := range records {

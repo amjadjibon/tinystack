@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"slices"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
@@ -114,12 +115,15 @@ func (s *Service) TestState(ctx context.Context, in *api.TestStateInput) (*api.T
 	r := &run{
 		s: s, machine: &stateMachine{Name: testStateName, RoleArn: value(in.RoleArn), Type: typeExpress},
 		exec: &execution{
-			Name: newUUID(), StateMachine: testStateName, StateMachineARN: machineARN(m.Scope, testStateName),
-			Input: raw,
+			Name: uuid.NewV4().
+				String(),
+			StateMachine:    testStateName,
+			StateMachineARN: machineARN(m.Scope, testStateName),
+			Input:           raw,
 		},
 		scope: m.Scope, started: now,
 	}
-	r.exec.ARN = arn(m.Scope, "express", testStateName+":"+r.exec.Name+":"+newUUID())
+	r.exec.ARN = arn(m.Scope, "express", testStateName+":"+r.exec.Name+":"+uuid.NewV4().String())
 	e := &env{ctx: ctx, context: r.contextObject(name, now, nil), vars: vars}
 	out, next, runErr := r.execState(ctx, &tested, input, e)
 	if runErr == nil {

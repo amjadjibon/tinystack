@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -110,7 +111,11 @@ func (s *Service) discard(
 	arn := mp.functionARN(scope)
 	record := map[string]any{
 		"requestContext": map[string]any{
-			"requestId": newUUID(), "functionArn": arn, "condition": condition, "approximateInvokeCount": attempts,
+			"requestId": uuid.NewV4().
+				String(),
+			"functionArn":            arn,
+			"condition":              condition,
+			"approximateInvokeCount": attempts,
 		},
 		"responseContext": map[string]any{
 			"statusCode": http.StatusOK, "executedVersion": cmp.Or(mp.Qualifier, latest), "functionError": "Unhandled",

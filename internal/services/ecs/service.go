@@ -268,9 +268,3 @@ func newID() string {
 	_, _ = rand.Read(b[:])
 	return hex.EncodeToString(b[:])
 }
-
-// newUUID returns a random UUID.
-func newUUID() string {
-	s := newID()
-	return s[:8] + "-" + s[8:12] + "-4" + s[13:16] + "-a" + s[17:20] + "-" + s[20:]
-}

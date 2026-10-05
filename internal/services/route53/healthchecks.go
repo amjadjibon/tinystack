@@ -5,6 +5,7 @@ import (
 	"net"
 	"reflect"
 	"slices"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
@@ -154,7 +155,7 @@ func (s *Service) CreateHealthCheck(
 			return nil
 		}
 
-		id := newUUID()
+		id := uuid.NewV4().String()
 		h := &healthCheck{
 			Check: api.HealthCheck{
 				Id: new(id), CallerReference: new(ref), HealthCheckConfig: in.HealthCheckConfig,

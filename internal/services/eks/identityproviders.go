@@ -3,6 +3,7 @@ package eks
 import (
 	"context"
 	"net/url"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -100,7 +101,7 @@ func (s *Service) AssociateIdentityProviderConfig(
 		p := &identityProvider{Token: value(in.ClientRequestToken), Config: api.OidcIdentityProviderConfig{
 			IdentityProviderConfigName: o.IdentityProviderConfigName, ClusterName: new(c.Name),
 			IdentityProviderConfigArn: new(arn(scope, "identityproviderconfig/"+c.Name+"/"+typeOIDC+"/"+name+"/"+
-				newUUID())),
+				uuid.NewV4().String())),
 			IssuerUrl: o.IssuerUrl, ClientId: o.ClientId, UsernameClaim: o.UsernameClaim,
 			UsernamePrefix: o.UsernamePrefix, GroupsClaim: o.GroupsClaim, GroupsPrefix: o.GroupsPrefix,
 			RequiredClaims: o.RequiredClaims, Tags: cloneTags(in.Tags), Status: new("ACTIVE"),

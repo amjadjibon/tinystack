@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -309,7 +310,7 @@ func (s *Service) newCluster(ctx context.Context, scope request.Scope, in *api.C
 	}
 
 	c := &cluster{
-		Created: s.now().UTC(), Tags: cloneTags(in.Tags), Name: *in.Name, ID: newUUID(), Version: version,
+		Created: s.now().UTC(), Tags: cloneTags(in.Tags), Name: *in.Name, ID: uuid.NewV4().String(), Version: version,
 		RoleArn: *in.RoleArn, Status: active, Token: value(in.ClientRequestToken), AuthMode: configMap,
 		Support: extended, Bootstrap: true, Encryption: in.EncryptionConfig,
 		DeletionProtection: value(in.DeletionProtection),

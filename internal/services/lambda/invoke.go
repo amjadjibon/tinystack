@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -140,7 +141,7 @@ func (s *Service) record(
 	duration time.Duration,
 	output string,
 ) string {
-	id := newUUID()
+	id := uuid.NewV4().String()
 	if m, ok := request.FromContext(ctx); ok && m.RequestID != "" {
 		id = m.RequestID
 	}
@@ -176,7 +177,7 @@ func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload 
 	queued := s.now()
 	return s.spawn(func(ctx context.Context) {
 		cfg := s.loadInvokeConfig(ctx, scope, name, qualifier)
-		attempts, id := cfg.attempts(), newUUID()
+		attempts, id := cfg.attempts(), uuid.NewV4().String()
 		for attempt := 1; ; attempt++ {
 			result, _, version, err := s.run(ctx, scope, name, qualifier, payload)
 			r := &attemptResult{err: err, version: version, result: result, attempts: attempt}

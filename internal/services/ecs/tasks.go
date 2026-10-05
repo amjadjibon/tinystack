@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
@@ -296,7 +297,7 @@ func overridden(override *string, current string) string {
 // container has no runtime ID or network bindings until the runner starts it.
 func container(scope request.Scope, t *task, d *api.ContainerDefinition) api.Container {
 	c := api.Container{
-		ContainerArn: new(arn(scope, "container/"+t.Cluster+"/"+t.ID+"/"+newUUID())),
+		ContainerArn: new(arn(scope, "container/"+t.Cluster+"/"+t.ID+"/"+uuid.NewV4().String())),
 		TaskArn:      new(taskARN(scope, t.Cluster, t.ID)), Name: d.Name, Image: d.Image,
 		LastStatus: new(t.Last), HealthStatus: new("UNKNOWN"), Cpu: new(strconv.FormatInt(value(d.Cpu), 10)),
 		NetworkBindings: []api.NetworkBinding{},

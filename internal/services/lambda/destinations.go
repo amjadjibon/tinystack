@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
@@ -505,7 +506,10 @@ func (s *Service) deliver(ctx context.Context, destination, arn, condition strin
 	parts := strings.Split(destination, ":")
 	scope := request.Scope{AccountID: parts[4], Region: parts[3]}
 	call := func(service, op string, params map[string]any) (any, error) {
-		callCtx := request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: service, RequestID: newUUID()})
+		callCtx := request.WithMetadata(
+			ctx,
+			request.Metadata{Scope: scope, Service: service, RequestID: uuid.NewV4().String()},
+		)
 		return s.caller.Call(callCtx, service, op, params)
 	}
 

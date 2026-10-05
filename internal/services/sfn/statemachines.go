@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
@@ -134,7 +135,7 @@ func (s *Service) CreateStateMachine(
 
 	sm := &stateMachine{
 		Name: name, Definition: *in.Definition, RoleArn: *in.RoleArn, Type: kind, Tags: tags,
-		Logging: in.LoggingConfiguration, Tracing: in.TracingConfiguration, RevisionID: newUUID(),
+		Logging: in.LoggingConfiguration, Tracing: in.TracingConfiguration, RevisionID: uuid.NewV4().String(),
 		Created: unix(s.now()),
 	}
 	if sm.Logging == nil {
@@ -334,7 +335,7 @@ func (s *Service) UpdateStateMachine(
 			in.TracingConfiguration,
 			sm.Tracing,
 		)
-		sm.RevisionID = newUUID()
+		sm.RevisionID = uuid.NewV4().String()
 		out.RevisionId = new(sm.RevisionID)
 		if writeErr := write(tx, machineKey(scope, sm.Name), sm); writeErr != nil || !value(in.Publish) {
 			return writeErr

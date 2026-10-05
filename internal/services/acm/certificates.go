@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
@@ -237,7 +238,7 @@ func (s *Service) RequestCertificate(
 	}
 
 	requested, _ := json.Marshal(in)
-	id := newUUID()
+	id := uuid.NewV4().String()
 	var arn string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if in.IdempotencyToken != nil {
@@ -612,7 +613,7 @@ func (s *Service) ImportCertificate(
 	}
 
 	domain := cmp.Or(cert.Subject.CommonName, domains[0])
-	id := newUUID()
+	id := uuid.NewV4().String()
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		created := unix(now)
 		if in.CertificateArn != nil {

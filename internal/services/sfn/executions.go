@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
@@ -57,7 +58,7 @@ func (s *Service) begin(
 
 	execName := value(name)
 	if name == nil {
-		execName = newUUID()
+		execName = uuid.NewV4().String()
 	}
 
 	if nameErr := checkName(execName); nameErr != nil {
@@ -84,7 +85,7 @@ func (s *Service) begin(
 		}
 		r = &run{s: s, machine: sm, exec: e, scope: scope, started: now, record: sm.Type == typeStandard}
 		if sm.Type == typeExpress {
-			e.ARN = arn(scope, "express", sm.Name+":"+execName+":"+newUUID())
+			e.ARN = arn(scope, "express", sm.Name+":"+execName+":"+uuid.NewV4().String())
 			return nil
 		}
 

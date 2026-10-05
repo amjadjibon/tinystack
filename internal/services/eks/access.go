@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -85,10 +86,17 @@ func newEntry(
 	}
 
 	return &accessEntry{Policies: []api.AssociatedAccessPolicy{}, Entry: api.AccessEntry{
-		ClusterName: new(c.Name), PrincipalArn: new(principal), KubernetesGroups: orEmpty(groups),
-		AccessEntryArn: new(arn(scope, "access-entry/"+c.Name+"/"+which+"/"+account+"/"+name+"/"+newUUID())),
-		CreatedAt:      seconds(now), ModifiedAt: seconds(now), Tags: cloneTags(tags), Username: new(username),
-		Type: new(kind),
+		ClusterName:      new(c.Name),
+		PrincipalArn:     new(principal),
+		KubernetesGroups: orEmpty(groups),
+		AccessEntryArn: new(
+			arn(scope, "access-entry/"+c.Name+"/"+which+"/"+account+"/"+name+"/"+uuid.NewV4().String()),
+		),
+		CreatedAt:  seconds(now),
+		ModifiedAt: seconds(now),
+		Tags:       cloneTags(tags),
+		Username:   new(username),
+		Type:       new(kind),
 	}}
 }
 

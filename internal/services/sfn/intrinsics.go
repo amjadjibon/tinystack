@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"uuid"
 )
 
 // intrinsicFailure is the error intrinsic functions fail with.
@@ -531,7 +532,7 @@ func intrinsic(name string, args []any) (any, error) {
 			return nil, err
 		}
 
-		return newUUID(), nil
+		return uuid.NewV4().String(), nil
 	}
 
 	return nil, intrinsicFailure("unknown intrinsic function %s", name)

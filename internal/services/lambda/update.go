@@ -2,6 +2,7 @@ package lambda
 
 import (
 	"context"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -122,7 +123,7 @@ func (s *Service) update(
 			tx.Put(scopeKey(m.Scope, kindCode, name), code)
 		}
 
-		fn.RevisionID = newUUID()
+		fn.RevisionID = uuid.NewV4().String()
 		fn.LastModified = s.now().UTC().Format(timeFormat)
 		if writeErr := writeJSON(tx, key, fn); writeErr != nil || !publishing {
 			return writeErr

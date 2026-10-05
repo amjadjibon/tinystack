@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
@@ -374,7 +375,7 @@ func (r *run) call(ctx context.Context, svc, op, prefix string, params map[strin
 	}
 
 	ctx = request.WithMetadata(ctx, request.Metadata{
-		Scope: r.scope, RequestID: newUUID(), Service: svc, Operation: op, Endpoint: r.exec.Endpoint,
+		Scope: r.scope, RequestID: uuid.NewV4().String(), Service: svc, Operation: op, Endpoint: r.exec.Endpoint,
 	})
 	out, err := r.s.caller.Call(ctx, svc, op, params)
 	var ae *awserror.Error

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
@@ -42,7 +43,7 @@ type call struct {
 // names the stage, whose deployment's most specific resource and method
 // (or ANY) answer it after the method's authorization.
 func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
-	c := &call{req: r, requestID: newUUID()}
+	c := &call{req: r, requestID: uuid.NewV4().String()}
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		loc, ok, err := read[location](tx, indexKey(id))
@@ -74,13 +75,6 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 	resp.Header.Set("X-Amzn-Requestid", c.requestID)
 	s.accessLog(ctx, c, resp)
 	return resp, true, nil
-}
-
-// newUUID returns a random UUID, the shape of REST API request IDs.
-func newUUID() string {
-	b := []byte(newID(32))
-	return string(b[:8]) + "-" + string(b[8:12]) + "-" + string(b[12:16]) + "-" + string(b[16:20]) + "-" +
-		string(b[20:])
 }
 
 func (s *Service) run(ctx context.Context, c *call) *execute.Response {

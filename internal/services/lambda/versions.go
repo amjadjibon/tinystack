@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -110,7 +111,7 @@ func publish(
 	v := *fn
 	v.Tags, v.Published = nil, 0
 	v.Version = strconv.FormatInt(fn.Published+1, 10)
-	v.Source, v.RevisionID, v.LastModified = fn.RevisionID, newUUID(), now
+	v.Source, v.RevisionID, v.LastModified = fn.RevisionID, uuid.NewV4().String(), now
 	if description != nil {
 		if v.Description = *description; len(v.Description) > 256 {
 			return nil, invalid("Description must be at most 256 characters")

@@ -3,6 +3,7 @@ package eks
 import (
 	"context"
 	"slices"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -139,11 +140,21 @@ func (s *Service) CreateAddon(ctx context.Context, in *api.CreateAddonRequest) (
 
 		now := s.now().UTC()
 		a := &addon{Token: value(in.ClientRequestToken), Addon: api.Addon{
-			AddonName: new(info.name), ClusterName: new(c.Name), Status: new(active), AddonVersion: new(version),
-			Health: &api.AddonHealth{Issues: []api.AddonIssue{}}, CreatedAt: seconds(now), ModifiedAt: seconds(now),
-			AddonArn: new(arn(scope, "addon/"+c.Name+"/"+info.name+"/"+newUUID())), Tags: cloneTags(in.Tags),
-			ServiceAccountRoleArn: in.ServiceAccountRoleArn, Publisher: new("eks"), Owner: new("aws"),
-			ConfigurationValues: in.ConfigurationValues,
+			AddonName:    new(info.name),
+			ClusterName:  new(c.Name),
+			Status:       new(active),
+			AddonVersion: new(version),
+			Health:       &api.AddonHealth{Issues: []api.AddonIssue{}},
+			CreatedAt:    seconds(now),
+			ModifiedAt:   seconds(now),
+			AddonArn: new(
+				arn(scope, "addon/"+c.Name+"/"+info.name+"/"+uuid.NewV4().String()),
+			),
+			Tags:                  cloneTags(in.Tags),
+			ServiceAccountRoleArn: in.ServiceAccountRoleArn,
+			Publisher:             new("eks"),
+			Owner:                 new("aws"),
+			ConfigurationValues:   in.ConfigurationValues,
 		}}
 		out = &a.Addon
 		return write(tx, addonKey(scope, c.Name, info.name), a)

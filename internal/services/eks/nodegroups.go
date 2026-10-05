@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -211,7 +212,7 @@ func (s *Service) newNodegroup(scope request.Scope, c *cluster, in *api.CreateNo
 	}
 
 	now := s.now().UTC()
-	name, id := *in.NodegroupName, newUUID()
+	name, id := *in.NodegroupName, uuid.NewV4().String()
 	g := api.Nodegroup{
 		NodegroupName:  new(name),
 		NodegroupArn:   new(arn(scope, "nodegroup/"+c.Name+"/"+name+"/"+id)),

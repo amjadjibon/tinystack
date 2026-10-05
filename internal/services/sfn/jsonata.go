@@ -10,6 +10,7 @@ import (
 	mrand "math/rand/v2"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/recolabs/gnata"
 )
@@ -52,7 +53,7 @@ func (n *number) UnmarshalJSON(data []byte) error {
 // jsonataFunctions adds Step Functions' functions to JSONata's.
 var jsonataFunctions = gnata.NewCustomEnvironment(map[string]gnata.CustomFunc{
 	"partition": func([]any, any) (any, error) { return "aws", nil },
-	"uuid":      func([]any, any) (any, error) { return newUUID(), nil },
+	"uuid":      func([]any, any) (any, error) { return uuid.NewV4().String(), nil },
 	"parse": func(args []any, _ any) (any, error) {
 		text, ok := only[string](args)
 		if !ok {

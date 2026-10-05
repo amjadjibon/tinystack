@@ -2,6 +2,7 @@ package eks
 
 import (
 	"context"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -84,7 +85,7 @@ func (s *Service) CreateFargateProfile(
 
 		p := &fargateProfile{Token: value(in.ClientRequestToken), Profile: api.FargateProfile{
 			FargateProfileName: new(name),
-			FargateProfileArn:  new(arn(scope, "fargateprofile/"+c.Name+"/"+name+"/"+newUUID())),
+			FargateProfileArn:  new(arn(scope, "fargateprofile/"+c.Name+"/"+name+"/"+uuid.NewV4().String())),
 			ClusterName: new(
 				c.Name,
 			),

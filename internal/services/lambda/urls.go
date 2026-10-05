@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
@@ -508,7 +509,7 @@ func (h urls) Execute(ctx context.Context, id string, r *execute.Request) (*exec
 
 	event, err := proxy.EventV2(r, &proxy.Context{
 		AccountID: target.Account, APIID: id, Stage: "$default", RouteKey: "$default", Path: r.Path,
-		DomainName: host, RequestID: newUUID(),
+		DomainName: host, RequestID: uuid.NewV4().String(),
 	}, nil, nil)
 	if err != nil {
 		return nil, true, err

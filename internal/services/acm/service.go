@@ -13,8 +13,6 @@ package acm
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -155,15 +153,6 @@ func write(tx storage.WriteTx, k string, v any) error {
 }
 
 func unix(t time.Time) float64 { return float64(t.UnixMilli()) / 1000 }
-
-func newUUID() string {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b)
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
-	s := hex.EncodeToString(b)
-	return s[:8] + "-" + s[8:12] + "-" + s[12:16] + "-" + s[16:20] + "-" + s[20:]
-}
 
 func invalidParameter(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))

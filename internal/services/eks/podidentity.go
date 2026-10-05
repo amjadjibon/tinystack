@@ -3,6 +3,7 @@ package eks
 import (
 	"context"
 	"regexp"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -29,7 +30,7 @@ func externalID(targetRole *string) *string {
 		return nil
 	}
 
-	return new(newUUID())
+	return new(uuid.NewV4().String())
 }
 
 func (s *Service) CreatePodIdentityAssociation(

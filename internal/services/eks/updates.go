@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 	"time"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -29,8 +30,14 @@ func (s *Service) record(
 ) (*api.Update, error) {
 	now := s.now().UTC()
 	u := update{Created: now, Nodegroup: nodegroupName, Addon: addonName, Update: api.Update{
-		Id: new(newUUID()), Status: new("Successful"), Type: new(kind), Params: params, CreatedAt: seconds(now),
-		Errors: []api.ErrorDetail{},
+		Id: new(
+			uuid.NewV4().String(),
+		),
+		Status:    new("Successful"),
+		Type:      new(kind),
+		Params:    params,
+		CreatedAt: seconds(now),
+		Errors:    []api.ErrorDetail{},
 	}}
 
 	return &u.Update, write(tx, owned(scope, "update", clusterName, *u.Update.Id), u)

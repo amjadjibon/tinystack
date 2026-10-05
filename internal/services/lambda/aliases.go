@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"strings"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -173,7 +174,7 @@ func (s *Service) CreateAlias(ctx context.Context, in *api.CreateAliasRequest) (
 		Function:    fn,
 		Version:     value(in.FunctionVersion),
 		Description: value(in.Description),
-		RevisionID:  newUUID(),
+		RevisionID:  uuid.NewV4().String(),
 	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, _, loadErr := resolve(tx, m.Scope, fn, ""); loadErr != nil {
@@ -301,7 +302,7 @@ func (s *Service) UpdateAlias(ctx context.Context, in *api.UpdateAliasRequest) (
 			return false, err
 		}
 
-		a.RevisionID = newUUID()
+		a.RevisionID = uuid.NewV4().String()
 		return true, nil
 	})
 }
