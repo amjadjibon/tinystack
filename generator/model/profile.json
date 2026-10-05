@@ -755,7 +755,14 @@
       "DeleteRoute",
       "AssociateRouteTable",
       "DisassociateRouteTable",
-      "ReplaceRouteTableAssociation"
+      "ReplaceRouteTableAssociation",
+      "CreateNetworkAcl",
+      "DeleteNetworkAcl",
+      "DescribeNetworkAcls",
+      "CreateNetworkAclEntry",
+      "ReplaceNetworkAclEntry",
+      "DeleteNetworkAclEntry",
+      "ReplaceNetworkAclAssociation"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -1752,6 +1759,98 @@
       "ReplaceRouteTableAssociationResult": [
         "NewAssociationId",
         "AssociationState"
+      ],
+      "CreateNetworkAclRequest": [
+        "TagSpecifications",
+        "ClientToken",
+        "DryRun",
+        "VpcId"
+      ],
+      "CreateNetworkAclResult": [
+        "NetworkAcl",
+        "ClientToken"
+      ],
+      "NetworkAcl": [
+        "Associations",
+        "Entries",
+        "IsDefault",
+        "NetworkAclId",
+        "Tags",
+        "VpcId",
+        "OwnerId"
+      ],
+      "NetworkAclAssociation": [
+        "NetworkAclAssociationId",
+        "NetworkAclId",
+        "SubnetId"
+      ],
+      "NetworkAclEntry": [
+        "CidrBlock",
+        "Egress",
+        "IcmpTypeCode",
+        "PortRange",
+        "Protocol",
+        "RuleAction",
+        "RuleNumber"
+      ],
+      "IcmpTypeCode": [
+        "Code",
+        "Type"
+      ],
+      "PortRange": [
+        "From",
+        "To"
+      ],
+      "DeleteNetworkAclRequest": [
+        "DryRun",
+        "NetworkAclId"
+      ],
+      "DescribeNetworkAclsRequest": [
+        "NextToken",
+        "MaxResults",
+        "DryRun",
+        "NetworkAclIds",
+        "Filters"
+      ],
+      "DescribeNetworkAclsResult": [
+        "NetworkAcls",
+        "NextToken"
+      ],
+      "CreateNetworkAclEntryRequest": [
+        "DryRun",
+        "NetworkAclId",
+        "RuleNumber",
+        "Protocol",
+        "RuleAction",
+        "Egress",
+        "CidrBlock",
+        "IcmpTypeCode",
+        "PortRange"
+      ],
+      "ReplaceNetworkAclEntryRequest": [
+        "DryRun",
+        "NetworkAclId",
+        "RuleNumber",
+        "Protocol",
+        "RuleAction",
+        "Egress",
+        "CidrBlock",
+        "IcmpTypeCode",
+        "PortRange"
+      ],
+      "DeleteNetworkAclEntryRequest": [
+        "DryRun",
+        "NetworkAclId",
+        "RuleNumber",
+        "Egress"
+      ],
+      "ReplaceNetworkAclAssociationRequest": [
+        "DryRun",
+        "AssociationId",
+        "NetworkAclId"
+      ],
+      "ReplaceNetworkAclAssociationResult": [
+        "NewAssociationId"
       ]
     }
   },

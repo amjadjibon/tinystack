@@ -237,7 +237,7 @@ func createDefaultVPC(tx storage.WriteTx, scope request.Scope) error {
 			ID: newID("subnet"), VPCID: v.ID, CIDR: fmt.Sprintf("172.31.%d.0/20", i*16),
 			Zone: scope.Region + suffix, DefaultForAZ: true, MapPublicIP: true,
 		}
-		if err := write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
+		if err := createSubnetRecord(tx, scope, sn); err != nil {
 			return err
 		}
 	}
@@ -245,9 +245,25 @@ func createDefaultVPC(tx storage.WriteTx, scope request.Scope) error {
 	return nil
 }
 
-// upgradeVPCs gives each VPC that lacks one a main route table.
+// createSubnetRecord stores a new subnet, associated with its VPC's default
+// network ACL.
+func createSubnetRecord(tx storage.WriteTx, scope request.Scope, sn *subnet) error {
+	if err := write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
+		return err
+	}
+
+	return associateDefaultACL(tx, scope, sn)
+}
+
+// upgradeVPCs gives each VPC that lacks them a main route table and a
+// default network ACL, which its subnets are associated with.
 func upgradeVPCs(tx storage.WriteTx, scope request.Scope) error {
 	vpcs, err := list[vpc](tx, scope, kindVPC)
+	if err != nil {
+		return err
+	}
+
+	subnets, err := list[subnet](tx, scope, kindSubnet)
 	if err != nil {
 		return err
 	}
@@ -263,13 +279,32 @@ func upgradeVPCs(tx storage.WriteTx, scope request.Scope) error {
 				return createErr
 			}
 		}
+
+		acls, listErr := vpcACLs(tx, scope, v.ID)
+		if listErr != nil {
+			return listErr
+		}
+
+		if len(acls) == 0 {
+			var ids []string
+			for _, sn := range subnets {
+				if sn.VPCID == v.ID {
+					ids = append(ids, sn.ID)
+				}
+			}
+
+			if createErr := createDefaultACL(tx, scope, v.ID, ids...); createErr != nil {
+				return createErr
+			}
+		}
 	}
 
 	return nil
 }
 
-// createVPC stores a new VPC with its default security group and its main
-// route table, which holds routes after the local one.
+// createVPC stores a new VPC with its default security group, its default
+// network ACL, and its main route table, which holds routes after the local
+// one.
 func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route) error {
 	v.AssociationID, v.DHCPOptionsID = newID("vpc-cidr-assoc"), newID("dopt")
 	g := defaultGroup(v.ID)
@@ -278,6 +313,10 @@ func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route)
 	}
 
 	if err := createMainRouteTable(tx, scope, v, routes...); err != nil {
+		return err
+	}
+
+	if err := createDefaultACL(tx, scope, v.ID); err != nil {
 		return err
 	}
 
@@ -369,8 +408,8 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 }
 
 // DeleteVpc deletes a VPC that has no subnets, internet gateway, or security
-// groups or route tables but its default and main ones left, including a
-// default VPC, which does not come back.
+// groups, route tables, or network ACLs but its default and main ones left,
+// including a default VPC, which does not come back.
 func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api.DeleteVpcOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		v, err := loadVPC(tx, scope, value(in.VpcId))
@@ -398,10 +437,16 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 			return err
 		}
 
+		acls, err := vpcACLs(tx, scope, v.ID)
+		if err != nil {
+			return err
+		}
+
 		groups = slices.DeleteFunc(groups, func(g *securityGroup) bool { return g.VPCID != v.ID })
 		if gateway != "" || slices.ContainsFunc(subnets, func(sn *subnet) bool { return sn.VPCID == v.ID }) ||
 			slices.ContainsFunc(groups, func(g *securityGroup) bool { return g.Name != defaultGroupName }) ||
-			slices.ContainsFunc(tables, func(rt *routeTable) bool { return !rt.main() }) {
+			slices.ContainsFunc(tables, func(rt *routeTable) bool { return !rt.main() }) ||
+			slices.ContainsFunc(acls, func(acl *networkACL) bool { return !acl.Default }) {
 			return awserror.New("DependencyViolation", fmt.Sprintf(dependencyFormat, kindVPC, v.ID))
 		}
 
@@ -411,6 +456,10 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 
 		for _, rt := range tables {
 			tx.Delete(key(scope, kindRouteTable, rt.ID))
+		}
+
+		for _, acl := range acls {
+			tx.Delete(key(scope, kindNetworkACL, acl.ID))
 		}
 
 		tx.Delete(key(scope, kindVPC, v.ID))
@@ -550,7 +599,7 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 
 		sn := &subnet{ID: newID("subnet"), VPCID: v.ID, CIDR: block.String(), Zone: name, Tags: tags}
 		out = subnetOutput(scope, sn)
-		return write(tx, key(scope, kindSubnet, sn.ID), sn)
+		return createSubnetRecord(tx, scope, sn)
 	})
 	if err != nil {
 		return nil, err
@@ -563,8 +612,9 @@ func (s *Service) DeleteSubnet(ctx context.Context, in *api.DeleteSubnetRequest)
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		id := value(in.SubnetId)
 		k := key(scope, kindSubnet, id)
-		if _, ok := tx.Get(k); !ok {
-			return subnetNotFound(id)
+		sn, ok, err := read[subnet](tx, k)
+		if err != nil || !ok {
+			return errorsOr(err, subnetNotFound(id))
 		}
 
 		inUse, err := subnetInUse(tx, scope, id)
@@ -577,7 +627,11 @@ func (s *Service) DeleteSubnet(ctx context.Context, in *api.DeleteSubnetRequest)
 		}
 
 		tx.Delete(k)
-		return disassociateSubnet(tx, scope, id)
+		if dissociateErr := dissociateACL(tx, scope, sn); dissociateErr != nil {
+			return dissociateErr
+		}
+
+		return dissociateRouteTable(tx, scope, id)
 	})
 	if err != nil {
 		return nil, err

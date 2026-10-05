@@ -1199,6 +1199,121 @@ type ReplaceRouteTableAssociationResult struct {
 	AssociationState *RouteTableAssociationState `json:"AssociationState,omitempty" ec2:"AssociationState,associationState"`
 }
 
+type CreateNetworkAclRequest struct {
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	ClientToken       *string            `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	VpcId             *string            `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type NetworkAclAssociation struct {
+	NetworkAclAssociationId *string `json:"NetworkAclAssociationId,omitempty" ec2:"NetworkAclAssociationId,networkAclAssociationId"`
+	NetworkAclId            *string `json:"NetworkAclId,omitempty" ec2:"NetworkAclId,networkAclId"`
+	SubnetId                *string `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+}
+
+type IcmpTypeCode struct {
+	Code *int64 `json:"Code,omitempty" ec2:"Code,code"`
+	Type *int64 `json:"Type,omitempty" ec2:"Type,type"`
+}
+
+type PortRange struct {
+	From *int64 `json:"From,omitempty" ec2:"From,from"`
+	To   *int64 `json:"To,omitempty" ec2:"To,to"`
+}
+
+type NetworkAclEntry struct {
+	CidrBlock    *string       `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	Egress       *bool         `json:"Egress,omitempty" ec2:"Egress,egress"`
+	IcmpTypeCode *IcmpTypeCode `json:"IcmpTypeCode,omitempty" ec2:"IcmpTypeCode,icmpTypeCode"`
+	PortRange    *PortRange    `json:"PortRange,omitempty" ec2:"PortRange,portRange"`
+	Protocol     *string       `json:"Protocol,omitempty" ec2:"Protocol,protocol"`
+	RuleAction   *string       `json:"RuleAction,omitempty" ec2:"RuleAction,ruleAction"`
+	RuleNumber   *int64        `json:"RuleNumber,omitempty" ec2:"RuleNumber,ruleNumber"`
+}
+
+type NetworkAcl struct {
+	Associations []NetworkAclAssociation `json:"Associations,omitempty" ec2:"AssociationSet,associationSet,member=item"`
+	Entries      []NetworkAclEntry       `json:"Entries,omitempty" ec2:"EntrySet,entrySet,member=item"`
+	IsDefault    *bool                   `json:"IsDefault,omitempty" ec2:"Default,default"`
+	NetworkAclId *string                 `json:"NetworkAclId,omitempty" ec2:"NetworkAclId,networkAclId"`
+	Tags         []Tag                   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VpcId        *string                 `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	OwnerId      *string                 `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+}
+
+type CreateNetworkAclResult struct {
+	NetworkAcl  *NetworkAcl `json:"NetworkAcl,omitempty" ec2:"NetworkAcl,networkAcl"`
+	ClientToken *string     `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+}
+
+type DeleteNetworkAclOutput struct{}
+
+type DeleteNetworkAclRequest struct {
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkAclId *string `json:"NetworkAclId,omitempty" ec2:"NetworkAclId,networkAclId"`
+}
+
+type DescribeNetworkAclsRequest struct {
+	NextToken     *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults    *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkAclIds []string `json:"NetworkAclIds,omitempty" ec2:"NetworkAclId,NetworkAclId,member=item"`
+	Filters       []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type DescribeNetworkAclsResult struct {
+	NetworkAcls []NetworkAcl `json:"NetworkAcls,omitempty" ec2:"NetworkAclSet,networkAclSet,member=item"`
+	NextToken   *string      `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type CreateNetworkAclEntryOutput struct{}
+
+type CreateNetworkAclEntryRequest struct {
+	DryRun       *bool         `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkAclId *string       `json:"NetworkAclId,omitempty" ec2:"NetworkAclId,networkAclId"`
+	RuleNumber   *int64        `json:"RuleNumber,omitempty" ec2:"RuleNumber,ruleNumber"`
+	Protocol     *string       `json:"Protocol,omitempty" ec2:"Protocol,protocol"`
+	RuleAction   *string       `json:"RuleAction,omitempty" ec2:"RuleAction,ruleAction"`
+	Egress       *bool         `json:"Egress,omitempty" ec2:"Egress,egress"`
+	CidrBlock    *string       `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	IcmpTypeCode *IcmpTypeCode `json:"IcmpTypeCode,omitempty" ec2:"Icmp,Icmp"`
+	PortRange    *PortRange    `json:"PortRange,omitempty" ec2:"PortRange,portRange"`
+}
+
+type ReplaceNetworkAclEntryOutput struct{}
+
+type ReplaceNetworkAclEntryRequest struct {
+	DryRun       *bool         `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkAclId *string       `json:"NetworkAclId,omitempty" ec2:"NetworkAclId,networkAclId"`
+	RuleNumber   *int64        `json:"RuleNumber,omitempty" ec2:"RuleNumber,ruleNumber"`
+	Protocol     *string       `json:"Protocol,omitempty" ec2:"Protocol,protocol"`
+	RuleAction   *string       `json:"RuleAction,omitempty" ec2:"RuleAction,ruleAction"`
+	Egress       *bool         `json:"Egress,omitempty" ec2:"Egress,egress"`
+	CidrBlock    *string       `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	IcmpTypeCode *IcmpTypeCode `json:"IcmpTypeCode,omitempty" ec2:"Icmp,Icmp"`
+	PortRange    *PortRange    `json:"PortRange,omitempty" ec2:"PortRange,portRange"`
+}
+
+type DeleteNetworkAclEntryOutput struct{}
+
+type DeleteNetworkAclEntryRequest struct {
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkAclId *string `json:"NetworkAclId,omitempty" ec2:"NetworkAclId,networkAclId"`
+	RuleNumber   *int64  `json:"RuleNumber,omitempty" ec2:"RuleNumber,ruleNumber"`
+	Egress       *bool   `json:"Egress,omitempty" ec2:"Egress,egress"`
+}
+
+type ReplaceNetworkAclAssociationRequest struct {
+	DryRun        *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	AssociationId *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	NetworkAclId  *string `json:"NetworkAclId,omitempty" ec2:"NetworkAclId,networkAclId"`
+}
+
+type ReplaceNetworkAclAssociationResult struct {
+	NewAssociationId *string `json:"NewAssociationId,omitempty" ec2:"NewAssociationId,newAssociationId"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -1260,6 +1375,13 @@ type API interface {
 	AssociateRouteTable(context.Context, *AssociateRouteTableRequest) (*AssociateRouteTableResult, error)
 	DisassociateRouteTable(context.Context, *DisassociateRouteTableRequest) (*DisassociateRouteTableOutput, error)
 	ReplaceRouteTableAssociation(context.Context, *ReplaceRouteTableAssociationRequest) (*ReplaceRouteTableAssociationResult, error)
+	CreateNetworkAcl(context.Context, *CreateNetworkAclRequest) (*CreateNetworkAclResult, error)
+	DeleteNetworkAcl(context.Context, *DeleteNetworkAclRequest) (*DeleteNetworkAclOutput, error)
+	DescribeNetworkAcls(context.Context, *DescribeNetworkAclsRequest) (*DescribeNetworkAclsResult, error)
+	CreateNetworkAclEntry(context.Context, *CreateNetworkAclEntryRequest) (*CreateNetworkAclEntryOutput, error)
+	ReplaceNetworkAclEntry(context.Context, *ReplaceNetworkAclEntryRequest) (*ReplaceNetworkAclEntryOutput, error)
+	DeleteNetworkAclEntry(context.Context, *DeleteNetworkAclEntryRequest) (*DeleteNetworkAclEntryOutput, error)
+	ReplaceNetworkAclAssociation(context.Context, *ReplaceNetworkAclAssociationRequest) (*ReplaceNetworkAclAssociationResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1443,6 +1565,27 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ReplaceRouteTableAssociation": {Name: "ReplaceRouteTableAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReplaceRouteTableAssociation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReplaceRouteTableAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ReplaceRouteTableAssociation(ctx, input.(*ReplaceRouteTableAssociationRequest))
+		}},
+		"CreateNetworkAcl": {Name: "CreateNetworkAcl", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateNetworkAcl", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateNetworkAclRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateNetworkAcl(ctx, input.(*CreateNetworkAclRequest))
+		}},
+		"DeleteNetworkAcl": {Name: "DeleteNetworkAcl", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteNetworkAcl", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteNetworkAclRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteNetworkAcl(ctx, input.(*DeleteNetworkAclRequest))
+		}},
+		"DescribeNetworkAcls": {Name: "DescribeNetworkAcls", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeNetworkAcls", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeNetworkAclsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeNetworkAcls(ctx, input.(*DescribeNetworkAclsRequest))
+		}},
+		"CreateNetworkAclEntry": {Name: "CreateNetworkAclEntry", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateNetworkAclEntry", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateNetworkAclEntryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateNetworkAclEntry(ctx, input.(*CreateNetworkAclEntryRequest))
+		}},
+		"ReplaceNetworkAclEntry": {Name: "ReplaceNetworkAclEntry", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReplaceNetworkAclEntry", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReplaceNetworkAclEntryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReplaceNetworkAclEntry(ctx, input.(*ReplaceNetworkAclEntryRequest))
+		}},
+		"DeleteNetworkAclEntry": {Name: "DeleteNetworkAclEntry", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteNetworkAclEntry", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteNetworkAclEntryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteNetworkAclEntry(ctx, input.(*DeleteNetworkAclEntryRequest))
+		}},
+		"ReplaceNetworkAclAssociation": {Name: "ReplaceNetworkAclAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReplaceNetworkAclAssociation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReplaceNetworkAclAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReplaceNetworkAclAssociation(ctx, input.(*ReplaceNetworkAclAssociationRequest))
 		}},
 	}}
 }

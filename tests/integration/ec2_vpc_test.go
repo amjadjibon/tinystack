@@ -349,3 +349,142 @@ func TestEC2RouteTables(t *testing.T) {
 	_, err = c.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{RouteTableIds: []string{*main.RouteTableId}})
 	code(t, err, "InvalidRouteTableID.NotFound")
 }
+
+func TestEC2NetworkACLs(t *testing.T) {
+	s := server(t)
+	c := ec2Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	vpcID := createVPC(t, c, "10.0.0.0/16")
+	subnetID := createSubnet(t, c, vpcID, "10.0.1.0/24")
+
+	// A VPC's default ACL allows all traffic and holds its new subnets.
+	defaults, err := c.DescribeNetworkAcls(ctx, &ec2.DescribeNetworkAclsInput{
+		Filters: []ec2types.Filter{
+			{Name: aws.String("default"), Values: []string{"true"}},
+			{Name: aws.String("vpc-id"), Values: []string{vpcID}},
+		},
+	})
+	if err != nil || len(defaults.NetworkAcls) != 1 {
+		t.Fatalf("got %+v, %v", defaults, err)
+	}
+
+	defaultACL := defaults.NetworkAcls[0]
+	if len(defaultACL.Entries) != 4 || aws.ToInt32(defaultACL.Entries[0].RuleNumber) != 100 ||
+		defaultACL.Entries[0].RuleAction != ec2types.RuleActionAllow || aws.ToBool(defaultACL.Entries[0].Egress) ||
+		len(defaultACL.Associations) != 1 || aws.ToString(defaultACL.Associations[0].SubnetId) != subnetID {
+		t.Fatalf("got %+v", defaultACL)
+	}
+
+	created, err := c.CreateNetworkAcl(ctx, &ec2.CreateNetworkAclInput{VpcId: aws.String(vpcID)})
+	if err != nil || aws.ToBool(created.NetworkAcl.IsDefault) || len(created.NetworkAcl.Entries) != 2 ||
+		created.NetworkAcl.Entries[0].RuleAction != ec2types.RuleActionDeny {
+		t.Fatalf("got %+v, %v", created, err)
+	}
+
+	aclID := created.NetworkAcl.NetworkAclId
+	https := &ec2.CreateNetworkAclEntryInput{
+		NetworkAclId: aclID, RuleNumber: aws.Int32(110), Protocol: aws.String("tcp"), Egress: aws.Bool(false),
+		RuleAction: ec2types.RuleActionAllow, CidrBlock: aws.String("0.0.0.0/0"),
+		PortRange: &ec2types.PortRange{From: aws.Int32(443), To: aws.Int32(443)},
+	}
+	if _, err = c.CreateNetworkAclEntry(ctx, https); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.CreateNetworkAclEntry(ctx, https)
+	code(t, err, "NetworkAclEntryAlreadyExists")
+	for _, in := range []*ec2.CreateNetworkAclEntryInput{
+		{
+			NetworkAclId: aclID, RuleNumber: aws.Int32(120), Protocol: aws.String("6"), Egress: aws.Bool(false),
+			RuleAction: ec2types.RuleActionAllow, CidrBlock: aws.String("0.0.0.0/0"),
+		},
+		{
+			NetworkAclId: aclID, RuleNumber: aws.Int32(32767), Protocol: aws.String("-1"), Egress: aws.Bool(false),
+			RuleAction: ec2types.RuleActionAllow, CidrBlock: aws.String("0.0.0.0/0"),
+		},
+	} {
+		if _, err = c.CreateNetworkAclEntry(ctx, in); err == nil {
+			t.Fatalf("created %+v", in)
+		}
+	}
+
+	if _, err = c.CreateNetworkAclEntry(ctx, &ec2.CreateNetworkAclEntryInput{
+		NetworkAclId: aclID, RuleNumber: aws.Int32(100), Protocol: aws.String("icmp"), Egress: aws.Bool(true),
+		RuleAction: ec2types.RuleActionAllow, CidrBlock: aws.String("10.0.0.0/8"),
+		IcmpTypeCode: &ec2types.IcmpTypeCode{Type: aws.Int32(-1), Code: aws.Int32(-1)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	https.RuleAction, https.CidrBlock = ec2types.RuleActionDeny, aws.String("192.0.2.0/24")
+	if _, err = c.ReplaceNetworkAclEntry(ctx, &ec2.ReplaceNetworkAclEntryInput{
+		NetworkAclId: aclID, RuleNumber: https.RuleNumber, Protocol: https.Protocol, RuleAction: https.RuleAction,
+		CidrBlock: https.CidrBlock, PortRange: https.PortRange, Egress: aws.Bool(false),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	described, err := c.DescribeNetworkAcls(ctx, &ec2.DescribeNetworkAclsInput{NetworkAclIds: []string{*aclID}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entries := described.NetworkAcls[0].Entries
+	if len(entries) != 4 || aws.ToInt32(entries[0].RuleNumber) != 110 || aws.ToString(entries[0].Protocol) != "6" ||
+		entries[0].RuleAction != ec2types.RuleActionDeny || aws.ToInt32(entries[0].PortRange.From) != 443 ||
+		!aws.ToBool(entries[2].Egress) || aws.ToString(entries[2].Protocol) != "1" ||
+		aws.ToInt32(entries[2].IcmpTypeCode.Type) != -1 {
+		t.Fatalf("got %+v", entries)
+	}
+
+	// The subnet moves to the new ACL, which then cannot be deleted.
+	moved, err := c.ReplaceNetworkAclAssociation(ctx, &ec2.ReplaceNetworkAclAssociationInput{
+		AssociationId: defaultACL.Associations[0].NetworkAclAssociationId, NetworkAclId: aclID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bySubnet, err := c.DescribeNetworkAcls(ctx, &ec2.DescribeNetworkAclsInput{
+		Filters: []ec2types.Filter{{Name: aws.String("association.subnet-id"), Values: []string{subnetID}}},
+	})
+	if err != nil || len(bySubnet.NetworkAcls) != 1 || *bySubnet.NetworkAcls[0].NetworkAclId != *aclID ||
+		*bySubnet.NetworkAcls[0].Associations[0].NetworkAclAssociationId != *moved.NewAssociationId {
+		t.Fatalf("got %+v, %v", bySubnet, err)
+	}
+
+	_, err = c.DeleteNetworkAcl(ctx, &ec2.DeleteNetworkAclInput{NetworkAclId: aclID})
+	code(t, err, "DependencyViolation")
+	_, err = c.DeleteNetworkAcl(ctx, &ec2.DeleteNetworkAclInput{NetworkAclId: defaultACL.NetworkAclId})
+	code(t, err, "InvalidParameterValue")
+	_, err = c.DeleteNetworkAclEntry(ctx, &ec2.DeleteNetworkAclEntryInput{
+		NetworkAclId: aclID, RuleNumber: aws.Int32(200), Egress: aws.Bool(false),
+	})
+	code(t, err, "InvalidNetworkAclEntry.NotFound")
+	if _, err = c.DeleteNetworkAclEntry(ctx, &ec2.DeleteNetworkAclEntryInput{
+		NetworkAclId: aclID, RuleNumber: aws.Int32(110), Egress: aws.Bool(false),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Deleting the subnet frees the ACL; a VPC with a custom ACL cannot be
+	// deleted.
+	if _, err = c.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{SubnetId: aws.String(subnetID)}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(vpcID)})
+	code(t, err, "DependencyViolation")
+	if _, err = c.DeleteNetworkAcl(ctx, &ec2.DeleteNetworkAclInput{NetworkAclId: aclID}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(vpcID)}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.DescribeNetworkAcls(ctx, &ec2.DescribeNetworkAclsInput{
+		NetworkAclIds: []string{*defaultACL.NetworkAclId},
+	})
+	code(t, err, "InvalidNetworkAclID.NotFound")
+}

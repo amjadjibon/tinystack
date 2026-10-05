@@ -35,6 +35,7 @@ var taggable = map[string]taggableKind{
 	"lt":     {kind: kindLaunchTemplate, resourceType: kindLaunchTemplate, missing: templateIDNotFound},
 	"igw":    {kind: kindInternetGateway, resourceType: kindInternetGateway, missing: gatewayNotFound},
 	"rtb":    {kind: kindRouteTable, resourceType: kindRouteTable, missing: routeTableNotFound},
+	"acl":    {kind: kindNetworkACL, resourceType: kindNetworkACL, missing: aclNotFound},
 }
 
 // taggableByID returns the resource type of an ID.

@@ -113,8 +113,8 @@ func findRouteAssociation(tx storage.ReadTx, scope request.Scope, id string) (*r
 	return nil, 0, associationNotFound(id)
 }
 
-// disassociateSubnet removes a deleted subnet's explicit association.
-func disassociateSubnet(tx storage.WriteTx, scope request.Scope, subnetID string) error {
+// dissociateRouteTable removes a deleted subnet's explicit association.
+func dissociateRouteTable(tx storage.WriteTx, scope request.Scope, subnetID string) error {
 	all, err := list[routeTable](tx, scope, kindRouteTable)
 	if err != nil {
 		return err

@@ -236,7 +236,9 @@ a per-service `Dialect`), and delivers synchronously through
   default VPC stays deleted. VPC and subnet attributes are fields of their records (`attributes.go`), and internet
   gateways (`gateways.go`) record the VPC they are attached to. Route tables (`routes.go`) hold their routes and
   associations, including the main one, which `createVPC` writes with each VPC; a route's state is computed from its
-  target when described. `…/ec2/defaults/network` marks a Region whose stored VPCs were given main route tables. `filters.go` compiles `Filters` against the values each resource reports (whose keys are
+  target when described. Network ACLs (`nacls.go`) hold their entries and subnet associations; every subnet is in
+  exactly one ACL of its VPC, the default one (written by `createVPC`) when created. `…/ec2/defaults/network` marks a
+  Region whose stored VPCs were given main route tables and default ACLs. `filters.go` compiles `Filters` against the values each resource reports (whose keys are
   also the filter names it accepts), and `tags.go` finds a resource by its ID prefix (`taggable`) and rewrites only the
   `Tags` field of its record, so a new taggable kind only needs an entry there. Key pairs (`keypairs.go`) store only the public key and fingerprint; a created private key is returned once.
   Instances record their IAM instance profile association (`profiles.go`), checked through the lookup
