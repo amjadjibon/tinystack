@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -834,7 +835,7 @@ func (s *Service) event(
 	st.Events++
 	e := stackEvent{
 		Logical: logical, Physical: physical, Type: typ, Status: status, Reason: reason, Time: s.now(),
-		ID: uuid(),
+		ID: uuid.NewV4().String(),
 	}
 	if st.Op != nil {
 		e.Token = st.Op.Token

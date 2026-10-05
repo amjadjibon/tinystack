@@ -856,13 +856,7 @@ func (s *Service) PutRecordBatch(ctx context.Context, in *api.PutRecordBatchInpu
 	return out, nil
 }
 
-func orElse[T any](p, fallback *T) *T {
-	if p != nil {
-		return p
-	}
-
-	return fallback
-}
+func orElse[T any](p, fallback *T) *T { return common.OrElse(p, fallback) }
 
 // bucketName is the bucket an S3 bucket ARN names.
 func bucketName(arn string) string {

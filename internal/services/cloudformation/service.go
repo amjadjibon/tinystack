@@ -20,18 +20,17 @@ package cloudformation
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -265,11 +264,13 @@ func eventKey(scope request.Scope, stackID string, n int64) string {
 }
 
 func stackARN(scope request.Scope, name string) string {
-	return "arn:aws:cloudformation:" + scope.Region + ":" + scope.AccountID + ":stack/" + name + "/" + uuid()
+	return "arn:aws:cloudformation:" + scope.Region + ":" + scope.AccountID + ":stack/" + name + "/" +
+		uuid.NewV4().String()
 }
 
 func changeSetARN(scope request.Scope, name string) string {
-	return "arn:aws:cloudformation:" + scope.Region + ":" + scope.AccountID + ":changeSet/" + name + "/" + uuid()
+	return "arn:aws:cloudformation:" + scope.Region + ":" + scope.AccountID + ":changeSet/" + name + "/" +
+		uuid.NewV4().String()
 }
 
 // stackUUID returns the last part of a stack ID.
@@ -283,49 +284,15 @@ func stackUUID(id string) string {
 	return id
 }
 
-func uuid() string {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b)
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
-	h := hex.EncodeToString(b)
-	return h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
-
-func ptr[T any](v T) *T { return &v }
+func ptr[T any](v T) *T { return common.Ptr(v) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	err = json.Unmarshal(data, v)
-	if err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 func validation(format string, args ...any) error {
 	return awserror.New("ValidationError", fmt.Sprintf(format, args...))

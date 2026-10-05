@@ -17,10 +17,7 @@ package elbv2
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -34,6 +31,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -97,57 +95,19 @@ func arn(scope request.Scope, resource string) string {
 }
 
 // resourceID returns 16 random hex digits, the last part of every ARN.
-func resourceID() string {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
-}
+func resourceID() string { return common.RandomID(16) }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // list decodes the records under a prefix, in key order.
 func list[T any](tx storage.ReadTx, prefix string) ([]*T, error) {
-	var out []*T
-	for _, k := range tx.Keys(prefix) {
-		v, _, err := read[T](tx, k)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, v)
-	}
-
-	return out, nil
+	return storage.Records[T](tx, prefix)
 }
 
 func validation(format string, args ...any) error {

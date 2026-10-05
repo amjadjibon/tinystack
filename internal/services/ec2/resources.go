@@ -2,16 +2,14 @@ package ec2
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -30,49 +28,17 @@ func key(scope request.Scope, kind, id string) string {
 }
 
 // newID returns an EC2 resource ID: prefix, a dash, and 17 hex digits.
-func newID(prefix string) string {
-	var b [9]byte
-	_, _ = rand.Read(b[:])
-	return prefix + "-" + hex.EncodeToString(b[:])[:17]
-}
+func newID(prefix string) string { return prefix + "-" + common.RandomID(17) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // list decodes every record of kind in scope, ordered by ID.
 func list[T any](tx storage.ReadTx, scope request.Scope, kind string) ([]*T, error) {
-	var out []*T
-	for _, k := range tx.Keys(key(scope, kind, "")) {
-		v, _, err := read[T](tx, k)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, v)
-	}
-
-	return out, nil
+	return storage.Records[T](tx, key(scope, kind, ""))
 }
 
 // notFound is EC2's error for a missing resource, such as

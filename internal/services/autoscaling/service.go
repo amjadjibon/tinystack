@@ -18,20 +18,19 @@ package autoscaling
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -117,12 +116,7 @@ func arn(scope request.Scope, resource string) string {
 	return "arn:aws:autoscaling:" + scope.Region + ":" + scope.AccountID + ":" + resource
 }
 
-func newID() string {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b)
-	h := hex.EncodeToString(b)
-	return h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
-}
+func newID() string { return uuid.NewV4().String() }
 
 // sequenced is a key suffix ordering records by time, then arrival.
 func (s *Service) sequenced(t time.Time) string {
@@ -133,37 +127,13 @@ func (s *Service) sequenced(t time.Time) string {
 	return fmt.Sprintf("%015d%010d", t.UnixMilli(), n%1e10)
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 func validation(format string, args ...any) error {
 	return awserror.New("ValidationError", fmt.Sprintf(format, args...))
@@ -214,10 +184,8 @@ func window[T any](items []T, keyOf func(T) string, token *string, maxRecords *i
 
 // callContext is the context of an in-process call to another service.
 func callContext(ctx context.Context, scope request.Scope, target string) context.Context {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b)
 	return request.WithMetadata(context.WithoutCancel(ctx),
-		request.Metadata{Scope: scope, Service: target, RequestID: hex.EncodeToString(b)})
+		request.Metadata{Scope: scope, Service: target, RequestID: common.RandomID(32)})
 }
 
 // splitList splits a comma-separated list, dropping blanks.

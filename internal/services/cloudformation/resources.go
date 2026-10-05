@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
@@ -226,7 +227,7 @@ type client struct {
 // call runs an operation of service in the stack's account and region.
 func (c *client) call(ctx context.Context, svc, operation string, params map[string]any) (map[string]any, error) {
 	ctx = request.WithMetadata(ctx, request.Metadata{
-		Scope: c.scope, Service: svc, Operation: operation, RequestID: uuid(), Endpoint: c.endpoint,
+		Scope: c.scope, Service: svc, Operation: operation, RequestID: uuid.NewV4().String(), Endpoint: c.endpoint,
 	})
 	return c.caller.Call(ctx, svc, operation, params)
 }
@@ -234,7 +235,7 @@ func (c *client) call(ctx context.Context, svc, operation string, params map[str
 // generate returns a name CloudFormation would make for the resource:
 // the stack and logical ID with a random suffix, cut to limit characters.
 func (c *client) generate(limit int) string {
-	suffix := strings.ToUpper(strings.ReplaceAll(uuid(), "-", "")[:12])
+	suffix := strings.ToUpper(strings.ReplaceAll(uuid.NewV4().String(), "-", "")[:12])
 	prefix := c.stack + "-" + c.logical
 	if room := limit - len(suffix) - 1; len(prefix) > room {
 		prefix = prefix[:max(room, 0)]
