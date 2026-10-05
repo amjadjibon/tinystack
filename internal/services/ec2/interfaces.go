@@ -11,7 +11,7 @@ import (
 // networkInterfaceFilters are the filters DescribeNetworkInterfaces accepts.
 var networkInterfaceFilters = []string{
 	"network-interface-id", filterGroupID, filterSubnetID, filterVPCID, "status", filterDescription, filterZone,
-	"attachment.instance-id", filterOwnerID, "private-ip-address", "interface-type", "requester-managed",
+	"attachment.instance-id", filterOwnerID, filterPrivateIP, "interface-type", "requester-managed",
 }
 
 // DescribeNetworkInterfaces lists network interfaces. TinyStack creates none

@@ -661,6 +661,8 @@ since every caller is authorized.
 | AssociateRouteTable / DisassociateRouteTable / ReplaceRouteTableAssociation | One explicit association per subnet of the table's VPC (deleting the subnet removes it); replacing an association, including the main one, moves it under a new ID, and the main association cannot be removed |
 | CreateNetworkAcl / DeleteNetworkAcl / DescribeNetworkAcls | Every VPC has a default ACL that allows all traffic (rule 100) and holds its new subnets; new ACLs only deny (rule 32767 in each direction, which cannot change), and a `ClientToken` already used returns its ACL; the default ACL and ACLs with subnets cannot be deleted, and a VPC with other ACLs cannot be deleted |
 | CreateNetworkAclEntry / ReplaceNetworkAclEntry / DeleteNetworkAclEntry / ReplaceNetworkAclAssociation | Numbered (1 to 32766) IPv4 rules per direction, with protocols reported as numbers; TCP and UDP rules need a port range and ICMP rules a type and code; a subnet moves to another ACL of its VPC under a new association ID |
+| AllocateAddress / ReleaseAddress / DescribeAddresses / DescribeAddressesAttribute | Up to 5 `vpc` Elastic IP addresses per Region, in the Region's network border group, by `AllocationIds`, `PublicIps`, or filters such as `instance-id` and `association-id`; an associated address cannot be released; no address has a PTR record |
+| AssociateAddress / DisassociateAddress | An address becomes the public address of a running or stopped instance whose VPC has an internet gateway (`Gateway.NotAttached` otherwise), replacing an address it had; one associated elsewhere moves only with `AllowReassociation`; it stays with a stopped instance and is disassociated when the instance terminates |
 | CreateSecurityGroup / DeleteSecurityGroup / DescribeSecurityGroups | A group in `VpcId` or the default VPC, created with an allow-all egress rule; groups are found by ID or, in the default VPC, by name; a default group, or one that another group's rules or an active instance use, cannot be deleted |
 | AuthorizeSecurityGroupIngress / AuthorizeSecurityGroupEgress | One rule per IPv4 or IPv6 CIDR, prefix list, or security group of the same account, with TCP and UDP ports from 0 to 65535, ICMP types and codes, or all traffic (`-1`); a rule that exists is `InvalidPermission.Duplicate`; up to 60 rules per direction |
 | RevokeSecurityGroupIngress / RevokeSecurityGroupEgress | By permission (those that match no rule come back in `UnknownIpPermissions`) or by `SecurityGroupRuleIds` |
@@ -672,7 +674,7 @@ since every caller is authorized.
 | CreateLaunchTemplate / CreateLaunchTemplateVersion / ModifyLaunchTemplate | Templates of an image, instance type, key pair, security groups, user data, placement, monitoring, instance profile, and instance tags; a version based on `SourceVersion` keeps what it does not set, and `ModifyLaunchTemplate` sets the default version |
 | DescribeLaunchTemplates / DescribeLaunchTemplateVersions / DeleteLaunchTemplate / DeleteLaunchTemplateVersions | By ID, name, and filters; versions newest first or by number, `$Latest`, or `$Default`; the default version cannot be deleted |
 | DescribeInstances | Instances grouped by reservation, paged by instance; `InstanceIds` and `MaxResults` cannot be combined |
-| StartInstances / StopInstances / RebootInstances / TerminateInstances | Report the transitional state (`pending`, `stopping`, `shutting-down`) and then settle at once; a stopped instance loses its public address and gets a new one on start; a terminated one releases its addresses, stays visible for an hour, and cannot change again (`IncorrectInstanceState`); `DisableApiTermination` blocks termination (`OperationNotPermitted`) |
+| StartInstances / StopInstances / RebootInstances / TerminateInstances | Report the transitional state (`pending`, `stopping`, `shutting-down`) and then settle at once; a stopped instance loses its public address (but not an Elastic IP address) and gets a new one on start; a terminated one releases its addresses, stays visible for an hour, and cannot change again (`IncorrectInstanceState`); `DisableApiTermination` blocks termination (`OperationNotPermitted`) |
 | DescribeInstanceStatus | Running instances, whose checks always pass, or every instance with `IncludeAllInstances` (`not-applicable` when not running) |
 | AssociateIamInstanceProfile / DescribeIamInstanceProfileAssociations / ReplaceIamInstanceProfileAssociation / DisassociateIamInstanceProfile | One IAM instance profile per running or stopped instance, associated at once (`associated`; `disassociating` is reported and the association is gone); filters `instance-id` and `state` |
 | DescribeNetworkInterfaces | Always empty, since TinyStack creates no network interfaces |
@@ -687,8 +689,8 @@ They also take `Filters`: filters are ANDed and a filter's values ORed, values
 match with `*` and `?` (escaped with a backslash), every resource supports
 `tag:<key>`, `tag-key`, and `tag-value`, and an unknown filter name is
 `InvalidParameterValue`. Create operations take `TagSpecifications` for the
-resource type they create. EC2 limits: no volumes, network interfaces, Elastic IPs, instance
-attributes, or spot instances, so Terraform's `aws_instance` cannot be applied yet.
+resource type they create. EC2 limits: no volumes, network interfaces, instance attributes,
+or spot instances, so Terraform's `aws_instance` cannot be applied yet.
 
 ### ECR (AWS JSON 1.1, and the Docker Registry API)
 

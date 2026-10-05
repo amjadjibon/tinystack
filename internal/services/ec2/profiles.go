@@ -159,7 +159,7 @@ func (s *Service) DescribeIamInstanceProfileAssociations(
 		var associations []*held
 		for _, i := range all {
 			if i.active() && i.Profile != nil &&
-				match.match(values{"instance-id": {i.ID}, "state": {associated}}) {
+				match.match(values{filterInstanceID: {i.ID}, "state": {associated}}) {
 				associations = append(associations, &held{profile: i.Profile, instance: i.ID})
 			}
 		}

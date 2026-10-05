@@ -27,15 +27,16 @@ type taggableKind struct {
 // taggable maps each resource ID prefix to its resource type. Every record
 // of these kinds keeps its tags in a Tags field.
 var taggable = map[string]taggableKind{
-	"vpc":    {kind: kindVPC, resourceType: "vpc", missing: vpcNotFound},
-	"subnet": {kind: kindSubnet, resourceType: "subnet", missing: subnetNotFound},
-	"sg":     {kind: kindSecurityGroup, resourceType: "security-group", missing: groupNotFound},
-	"key":    {kind: kindKeyPair, resourceType: "key-pair", missing: keyPairIDNotFound},
-	"i":      {kind: kindInstance, resourceType: kindInstance, missing: instanceNotFound},
-	"lt":     {kind: kindLaunchTemplate, resourceType: kindLaunchTemplate, missing: templateIDNotFound},
-	"igw":    {kind: kindInternetGateway, resourceType: kindInternetGateway, missing: gatewayNotFound},
-	"rtb":    {kind: kindRouteTable, resourceType: kindRouteTable, missing: routeTableNotFound},
-	"acl":    {kind: kindNetworkACL, resourceType: kindNetworkACL, missing: aclNotFound},
+	"vpc":      {kind: kindVPC, resourceType: "vpc", missing: vpcNotFound},
+	"subnet":   {kind: kindSubnet, resourceType: "subnet", missing: subnetNotFound},
+	"sg":       {kind: kindSecurityGroup, resourceType: "security-group", missing: groupNotFound},
+	"key":      {kind: kindKeyPair, resourceType: "key-pair", missing: keyPairIDNotFound},
+	"i":        {kind: kindInstance, resourceType: kindInstance, missing: instanceNotFound},
+	"lt":       {kind: kindLaunchTemplate, resourceType: kindLaunchTemplate, missing: templateIDNotFound},
+	"igw":      {kind: kindInternetGateway, resourceType: kindInternetGateway, missing: gatewayNotFound},
+	"rtb":      {kind: kindRouteTable, resourceType: kindRouteTable, missing: routeTableNotFound},
+	"acl":      {kind: kindNetworkACL, resourceType: kindNetworkACL, missing: aclNotFound},
+	"eipalloc": {kind: kindAddress, resourceType: "elastic-ip", missing: addressNotFound},
 }
 
 // taggableByID returns the resource type of an ID.

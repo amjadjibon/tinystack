@@ -72,6 +72,8 @@ type instance struct {
 	Zone        string
 	PrivateIP   string `json:",omitempty"`
 	PublicIP    string `json:",omitempty"`
+	// AddressID is the Elastic IP address that is PublicIP, if any.
+	AddressID   string `json:",omitempty"`
 	State       string
 	Reason      string `json:",omitempty"` // the state transition reason
 	ClientToken string `json:",omitempty"`
@@ -209,10 +211,10 @@ func instanceOutput(scope request.Scope, i *instance, state string) api.Instance
 func instanceValues(scope request.Scope, i *instance) values {
 	out := instanceOutput(scope, i, i.State)
 	v := values{
-		"instance-id": {i.ID}, "instance-state-name": {i.State},
+		filterInstanceID: {i.ID}, "instance-state-name": {i.State},
 		"instance-state-code": {strconv.FormatInt(stateCodes[i.State], 10)}, "instance-type": {i.Type},
 		filterImageID: {i.ImageID}, "key-name": {i.KeyName}, filterSubnetID: {value(out.SubnetId)},
-		filterVPCID: {value(out.VpcId)}, filterZone: {i.Zone}, "private-ip-address": {i.PrivateIP},
+		filterVPCID: {value(out.VpcId)}, filterZone: {i.Zone}, filterPrivateIP: {i.PrivateIP},
 		"ip-address": {i.PublicIP}, "private-dns-name": {*out.PrivateDnsName}, "dns-name": {*out.PublicDnsName},
 		"reservation-id": {i.Reservation}, "launch-index": {strconv.FormatInt(i.LaunchIndex, 10)},
 		"architecture": {i.Arch}, filterOwnerID: {scope.AccountID}, "client-token": {i.ClientToken},
@@ -697,6 +699,12 @@ func (s *Service) change(
 				return err
 			}
 
+			if i.State == stateTerminated {
+				if releaseErr := releaseInstanceAddress(tx, scope, i); releaseErr != nil {
+					return releaseErr
+				}
+			}
+
 			if i.State != previous {
 				i.Changed = now
 			}
@@ -733,7 +741,7 @@ func (s *Service) StartInstances(
 			return stateRunning, nil
 		case stateStopped:
 			i.State, i.Reason = stateRunning, ""
-			if sn != nil && sn.MapPublicIP {
+			if sn != nil && sn.MapPublicIP && i.AddressID == "" {
 				i.PublicIP = publicIP()
 			}
 
@@ -759,7 +767,12 @@ func (s *Service) StopInstances(ctx context.Context, in *api.StopInstancesReques
 			case stateStopped:
 				return stateStopped, nil
 			case stateRunning:
-				i.State, i.Reason, i.PublicIP = stateStopped, reason, ""
+				// An Elastic IP address stays with a stopped instance.
+				i.State, i.Reason = stateStopped, reason
+				if i.AddressID == "" {
+					i.PublicIP = ""
+				}
+
 				return stateStopping, nil
 			default:
 				return "", incorrectState(i.ID, "stopped")

@@ -488,3 +488,122 @@ func TestEC2NetworkACLs(t *testing.T) {
 	})
 	code(t, err, "InvalidNetworkAclID.NotFound")
 }
+
+// describeInstance returns an instance.
+func describeInstance(t *testing.T, c *ec2.Client, id string) ec2types.Instance {
+	t.Helper()
+	out, err := c.DescribeInstances(context.Background(), &ec2.DescribeInstancesInput{InstanceIds: []string{id}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return out.Reservations[0].Instances[0]
+}
+
+func TestEC2ElasticIPs(t *testing.T) {
+	s := server(t)
+	c := ec2Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	launched, err := c.RunInstances(ctx, &ec2.RunInstancesInput{
+		ImageId: latestImage(t, s), MinCount: aws.Int32(2), MaxCount: aws.Int32(2),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	first, second := launched.Instances[0].InstanceId, launched.Instances[1].InstanceId
+	_, err = c.AllocateAddress(ctx, &ec2.AllocateAddressInput{Domain: ec2types.DomainTypeStandard})
+	code(t, err, "InvalidParameterValue")
+	allocated, err := c.AllocateAddress(ctx, &ec2.AllocateAddressInput{
+		Domain: ec2types.DomainTypeVpc,
+		TagSpecifications: []ec2types.TagSpecification{{
+			ResourceType: ec2types.ResourceTypeElasticIp,
+			Tags:         []ec2types.Tag{{Key: aws.String("Name"), Value: aws.String("web")}},
+		}},
+	})
+	if err != nil || allocated.Domain != ec2types.DomainTypeVpc || aws.ToString(allocated.PublicIp) == "" {
+		t.Fatalf("got %+v, %v", allocated, err)
+	}
+
+	ip := aws.ToString(allocated.PublicIp)
+	associated, err := c.AssociateAddress(ctx, &ec2.AssociateAddressInput{
+		AllocationId: allocated.AllocationId, InstanceId: first,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := describeInstance(t, c, *first); aws.ToString(got.PublicIpAddress) != ip {
+		t.Fatalf("got %+v", got)
+	}
+
+	// An address in use moves only when asked to, and cannot be released.
+	_, err = c.AssociateAddress(ctx, &ec2.AssociateAddressInput{
+		AllocationId: allocated.AllocationId, InstanceId: second,
+	})
+	code(t, err, "Resource.AlreadyAssociated")
+	_, err = c.ReleaseAddress(ctx, &ec2.ReleaseAddressInput{AllocationId: allocated.AllocationId})
+	code(t, err, "InvalidIPAddress.InUse")
+
+	// It stays with a stopped instance.
+	if _, err = c.StopInstances(ctx, &ec2.StopInstancesInput{InstanceIds: []string{*first}}); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := describeInstance(t, c, *first); aws.ToString(got.PublicIpAddress) != ip {
+		t.Fatalf("got %+v", got)
+	}
+
+	moved, err := c.AssociateAddress(ctx, &ec2.AssociateAddressInput{
+		AllocationId: allocated.AllocationId, InstanceId: second, AllowReassociation: aws.Bool(true),
+	})
+	if err != nil || aws.ToString(moved.AssociationId) == aws.ToString(associated.AssociationId) {
+		t.Fatalf("got %+v, %v", moved, err)
+	}
+
+	if got := describeInstance(t, c, *first); got.PublicIpAddress != nil {
+		t.Fatalf("stopped instance kept %v", aws.ToString(got.PublicIpAddress))
+	}
+
+	addresses, err := c.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{
+		Filters: []ec2types.Filter{{Name: aws.String("instance-id"), Values: []string{*second}}},
+	})
+	if err != nil || len(addresses.Addresses) != 1 || aws.ToString(addresses.Addresses[0].PublicIp) != ip ||
+		aws.ToString(addresses.Addresses[0].PrivateIpAddress) == "" || len(addresses.Addresses[0].Tags) != 1 {
+		t.Fatalf("got %+v, %v", addresses, err)
+	}
+
+	// Terminating the instance disassociates the address.
+	if _, err = c.TerminateInstances(ctx, &ec2.TerminateInstancesInput{InstanceIds: []string{*second}}); err != nil {
+		t.Fatal(err)
+	}
+
+	addresses, err = c.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{PublicIps: []string{ip}})
+	if err != nil || addresses.Addresses[0].AssociationId != nil {
+		t.Fatalf("got %+v, %v", addresses, err)
+	}
+
+	_, err = c.DisassociateAddress(ctx, &ec2.DisassociateAddressInput{AssociationId: moved.AssociationId})
+	code(t, err, "InvalidAssociationID.NotFound")
+
+	// An instance in a VPC without an internet gateway cannot take one.
+	vpcID := createVPC(t, c, "10.0.0.0/16")
+	isolated, err := c.RunInstances(ctx, &ec2.RunInstancesInput{
+		ImageId: latestImage(t, s), MinCount: aws.Int32(1), MaxCount: aws.Int32(1),
+		SubnetId: aws.String(createSubnet(t, c, vpcID, "10.0.8.0/24")),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.AssociateAddress(ctx, &ec2.AssociateAddressInput{
+		AllocationId: allocated.AllocationId, InstanceId: isolated.Instances[0].InstanceId,
+	})
+	code(t, err, "Gateway.NotAttached")
+	if _, err = c.ReleaseAddress(ctx, &ec2.ReleaseAddressInput{AllocationId: allocated.AllocationId}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{AllocationIds: []string{*allocated.AllocationId}})
+	code(t, err, "InvalidAllocationID.NotFound")
+}

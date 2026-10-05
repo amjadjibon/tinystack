@@ -28,6 +28,8 @@ const (
 	filterSubnetID    = "subnet-id"
 	filterDescription = "description"
 	filterImageID     = "image-id"
+	filterInstanceID  = "instance-id"
+	filterPrivateIP   = "private-ip-address"
 	tenancyDefault    = "default"
 	minPrefixLength   = 16
 	maxPrefixLength   = 28

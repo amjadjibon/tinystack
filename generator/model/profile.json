@@ -762,7 +762,13 @@
       "CreateNetworkAclEntry",
       "ReplaceNetworkAclEntry",
       "DeleteNetworkAclEntry",
-      "ReplaceNetworkAclAssociation"
+      "ReplaceNetworkAclAssociation",
+      "AllocateAddress",
+      "ReleaseAddress",
+      "DescribeAddresses",
+      "AssociateAddress",
+      "DisassociateAddress",
+      "DescribeAddressesAttribute"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -1851,6 +1857,75 @@
       ],
       "ReplaceNetworkAclAssociationResult": [
         "NewAssociationId"
+      ],
+      "AllocateAddressRequest": [
+        "Domain",
+        "TagSpecifications",
+        "DryRun",
+        "NetworkBorderGroup"
+      ],
+      "AllocateAddressResult": [
+        "AllocationId",
+        "PublicIpv4Pool",
+        "NetworkBorderGroup",
+        "Domain",
+        "PublicIp"
+      ],
+      "ReleaseAddressRequest": [
+        "AllocationId",
+        "DryRun",
+        "NetworkBorderGroup"
+      ],
+      "DescribeAddressesRequest": [
+        "PublicIps",
+        "DryRun",
+        "Filters",
+        "AllocationIds"
+      ],
+      "DescribeAddressesResult": [
+        "Addresses"
+      ],
+      "Address": [
+        "AllocationId",
+        "AssociationId",
+        "Domain",
+        "NetworkInterfaceId",
+        "NetworkInterfaceOwnerId",
+        "PrivateIpAddress",
+        "Tags",
+        "PublicIpv4Pool",
+        "NetworkBorderGroup",
+        "InstanceId",
+        "PublicIp"
+      ],
+      "AssociateAddressRequest": [
+        "AllocationId",
+        "InstanceId",
+        "DryRun",
+        "AllowReassociation"
+      ],
+      "AssociateAddressResult": [
+        "AssociationId"
+      ],
+      "DisassociateAddressRequest": [
+        "AssociationId",
+        "DryRun"
+      ],
+      "DescribeAddressesAttributeRequest": [
+        "AllocationIds",
+        "Attribute",
+        "NextToken",
+        "MaxResults",
+        "DryRun"
+      ],
+      "DescribeAddressesAttributeResult": [
+        "Addresses",
+        "NextToken"
+      ],
+      "AddressAttribute": [
+        "PublicIp",
+        "AllocationId",
+        "PtrRecord"
       ]
     }
   },

@@ -1314,6 +1314,91 @@ type ReplaceNetworkAclAssociationResult struct {
 	NewAssociationId *string `json:"NewAssociationId,omitempty" ec2:"NewAssociationId,newAssociationId"`
 }
 
+type AllocateAddressRequest struct {
+	Domain             *string            `json:"Domain,omitempty" ec2:"Domain,Domain"`
+	TagSpecifications  []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun             *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkBorderGroup *string            `json:"NetworkBorderGroup,omitempty" ec2:"NetworkBorderGroup,NetworkBorderGroup"`
+}
+
+type AllocateAddressResult struct {
+	AllocationId       *string `json:"AllocationId,omitempty" ec2:"AllocationId,allocationId"`
+	PublicIpv4Pool     *string `json:"PublicIpv4Pool,omitempty" ec2:"PublicIpv4Pool,publicIpv4Pool"`
+	NetworkBorderGroup *string `json:"NetworkBorderGroup,omitempty" ec2:"NetworkBorderGroup,networkBorderGroup"`
+	Domain             *string `json:"Domain,omitempty" ec2:"Domain,domain"`
+	PublicIp           *string `json:"PublicIp,omitempty" ec2:"PublicIp,publicIp"`
+}
+
+type ReleaseAddressOutput struct{}
+
+type ReleaseAddressRequest struct {
+	AllocationId       *string `json:"AllocationId,omitempty" ec2:"AllocationId,AllocationId"`
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkBorderGroup *string `json:"NetworkBorderGroup,omitempty" ec2:"NetworkBorderGroup,NetworkBorderGroup"`
+}
+
+type DescribeAddressesRequest struct {
+	PublicIps     []string `json:"PublicIps,omitempty" ec2:"PublicIp,PublicIp,member=PublicIp"`
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters       []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	AllocationIds []string `json:"AllocationIds,omitempty" ec2:"AllocationId,AllocationId,member=AllocationId"`
+}
+
+type Address struct {
+	AllocationId            *string `json:"AllocationId,omitempty" ec2:"AllocationId,allocationId"`
+	AssociationId           *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	Domain                  *string `json:"Domain,omitempty" ec2:"Domain,domain"`
+	NetworkInterfaceId      *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	NetworkInterfaceOwnerId *string `json:"NetworkInterfaceOwnerId,omitempty" ec2:"NetworkInterfaceOwnerId,networkInterfaceOwnerId"`
+	PrivateIpAddress        *string `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	Tags                    []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	PublicIpv4Pool          *string `json:"PublicIpv4Pool,omitempty" ec2:"PublicIpv4Pool,publicIpv4Pool"`
+	NetworkBorderGroup      *string `json:"NetworkBorderGroup,omitempty" ec2:"NetworkBorderGroup,networkBorderGroup"`
+	InstanceId              *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	PublicIp                *string `json:"PublicIp,omitempty" ec2:"PublicIp,publicIp"`
+}
+
+type DescribeAddressesResult struct {
+	Addresses []Address `json:"Addresses,omitempty" ec2:"AddressesSet,addressesSet,member=item"`
+}
+
+type AssociateAddressRequest struct {
+	AllocationId       *string `json:"AllocationId,omitempty" ec2:"AllocationId,AllocationId"`
+	InstanceId         *string `json:"InstanceId,omitempty" ec2:"InstanceId,InstanceId"`
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	AllowReassociation *bool   `json:"AllowReassociation,omitempty" ec2:"AllowReassociation,allowReassociation"`
+}
+
+type AssociateAddressResult struct {
+	AssociationId *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+}
+
+type DisassociateAddressOutput struct{}
+
+type DisassociateAddressRequest struct {
+	AssociationId *string `json:"AssociationId,omitempty" ec2:"AssociationId,AssociationId"`
+	DryRun        *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeAddressesAttributeRequest struct {
+	AllocationIds []string `json:"AllocationIds,omitempty" ec2:"AllocationId,AllocationId,member=item"`
+	Attribute     *string  `json:"Attribute,omitempty" ec2:"Attribute,Attribute"`
+	NextToken     *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults    *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type AddressAttribute struct {
+	PublicIp     *string `json:"PublicIp,omitempty" ec2:"PublicIp,publicIp"`
+	AllocationId *string `json:"AllocationId,omitempty" ec2:"AllocationId,allocationId"`
+	PtrRecord    *string `json:"PtrRecord,omitempty" ec2:"PtrRecord,ptrRecord"`
+}
+
+type DescribeAddressesAttributeResult struct {
+	Addresses []AddressAttribute `json:"Addresses,omitempty" ec2:"AddressSet,addressSet,member=item"`
+	NextToken *string            `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -1382,6 +1467,12 @@ type API interface {
 	ReplaceNetworkAclEntry(context.Context, *ReplaceNetworkAclEntryRequest) (*ReplaceNetworkAclEntryOutput, error)
 	DeleteNetworkAclEntry(context.Context, *DeleteNetworkAclEntryRequest) (*DeleteNetworkAclEntryOutput, error)
 	ReplaceNetworkAclAssociation(context.Context, *ReplaceNetworkAclAssociationRequest) (*ReplaceNetworkAclAssociationResult, error)
+	AllocateAddress(context.Context, *AllocateAddressRequest) (*AllocateAddressResult, error)
+	ReleaseAddress(context.Context, *ReleaseAddressRequest) (*ReleaseAddressOutput, error)
+	DescribeAddresses(context.Context, *DescribeAddressesRequest) (*DescribeAddressesResult, error)
+	AssociateAddress(context.Context, *AssociateAddressRequest) (*AssociateAddressResult, error)
+	DisassociateAddress(context.Context, *DisassociateAddressRequest) (*DisassociateAddressOutput, error)
+	DescribeAddressesAttribute(context.Context, *DescribeAddressesAttributeRequest) (*DescribeAddressesAttributeResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1586,6 +1677,24 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ReplaceNetworkAclAssociation": {Name: "ReplaceNetworkAclAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReplaceNetworkAclAssociation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReplaceNetworkAclAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ReplaceNetworkAclAssociation(ctx, input.(*ReplaceNetworkAclAssociationRequest))
+		}},
+		"AllocateAddress": {Name: "AllocateAddress", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AllocateAddress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AllocateAddressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AllocateAddress(ctx, input.(*AllocateAddressRequest))
+		}},
+		"ReleaseAddress": {Name: "ReleaseAddress", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReleaseAddress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReleaseAddressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReleaseAddress(ctx, input.(*ReleaseAddressRequest))
+		}},
+		"DescribeAddresses": {Name: "DescribeAddresses", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeAddresses", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeAddressesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeAddresses(ctx, input.(*DescribeAddressesRequest))
+		}},
+		"AssociateAddress": {Name: "AssociateAddress", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssociateAddress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssociateAddressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateAddress(ctx, input.(*AssociateAddressRequest))
+		}},
+		"DisassociateAddress": {Name: "DisassociateAddress", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DisassociateAddress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DisassociateAddressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisassociateAddress(ctx, input.(*DisassociateAddressRequest))
+		}},
+		"DescribeAddressesAttribute": {Name: "DescribeAddressesAttribute", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeAddressesAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeAddressesAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeAddressesAttribute(ctx, input.(*DescribeAddressesAttributeRequest))
 		}},
 	}}
 }
