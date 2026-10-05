@@ -16,6 +16,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -69,13 +70,7 @@ type table struct {
 	PITRDays int64   `json:",omitempty"`
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 var tableName = regexp.MustCompile(`^[A-Za-z0-9_.-]{3,255}$`)
 

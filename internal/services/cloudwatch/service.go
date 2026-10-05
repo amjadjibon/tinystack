@@ -19,7 +19,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -31,6 +30,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -108,39 +108,15 @@ func (s *Service) sequenced(t time.Time) string {
 	return fmt.Sprintf("%015d%010d", t.UnixMilli(), n%1e10)
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
-	tx.Put(k, data)
-	return nil
-}
-
-func unix(t time.Time) float64 { return float64(t.UnixMilli()) / 1000 }
+func unix(t time.Time) float64 { return common.Unix(t) }
 
 func fromUnix(f float64) time.Time { return time.UnixMilli(int64(f * 1000)).UTC() }
 

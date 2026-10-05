@@ -16,7 +16,6 @@ package logs
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -29,6 +28,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -71,13 +71,7 @@ var (
 	}
 )
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func invalid(format string, args ...any) error {
 	return awserror.New("InvalidParameterException", fmt.Sprintf(format, args...))
@@ -120,28 +114,10 @@ func checkGroupName(name *string) error {
 }
 
 func read[T any](tx storage.ReadTx, key string) (v *T, found bool, err error) {
-	data, ok := tx.Get(key)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", key, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, key)
 }
 
-func write(tx storage.WriteTx, key string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return fmt.Errorf("encode %s: %w", key, err)
-	}
-
-	tx.Put(key, data)
-	return nil
-}
+func write(tx storage.WriteTx, key string, v any) error { return storage.Write(tx, key, v) }
 
 func loadGroup(tx storage.ReadTx, scope request.Scope, name string) (*group, error) {
 	g, found, err := read[group](tx, groupKey(scope, name))

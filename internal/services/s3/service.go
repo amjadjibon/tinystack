@@ -24,6 +24,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
@@ -98,13 +99,7 @@ type bucketMeta struct {
 	CreatedAt int64
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 // fail builds an S3 error with its HTTP status. Modeled errors take their
 // status from the generated error bindings instead.
