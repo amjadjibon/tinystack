@@ -182,12 +182,17 @@ func cidr(text, rangeCode string) (netip.Prefix, error) {
 }
 
 // defaults creates the Region's default VPC, with a default subnet in each
-// zone and an internet gateway, the first time the Region is used.
+// zone and an internet gateway, the first time the Region is used. It also
+// gives VPCs stored before route tables existed their main route table.
 func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
-	marker := key(scope, kindDefaults, "vpc")
+	created, upgraded := key(scope, kindDefaults, "vpc"), key(scope, kindDefaults, "network")
 	done := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		_, done = tx.Get(marker)
+		_, done = tx.Get(created)
+		if _, ok := tx.Get(upgraded); !ok {
+			done = false
+		}
+
 		return nil
 	})
 	if err != nil || done {
@@ -195,40 +200,84 @@ func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
 	}
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if _, exists := tx.Get(marker); exists {
-			return nil
-		}
-
-		v := &vpc{ID: newID("vpc"), CIDR: defaultVPCCIDR, Tenancy: tenancyDefault, IsDefault: true, DNSHostnames: true}
-		if err := createVPC(tx, scope, v); err != nil {
-			return err
-		}
-
-		g := &internetGateway{ID: newID("igw"), VPCID: v.ID}
-		if err := write(tx, key(scope, kindInternetGateway, g.ID), g); err != nil {
-			return err
-		}
-
-		for i, suffix := range zoneSuffixes {
-			sn := &subnet{
-				ID: newID("subnet"), VPCID: v.ID, CIDR: fmt.Sprintf("172.31.%d.0/20", i*16),
-				Zone: scope.Region + suffix, DefaultForAZ: true, MapPublicIP: true,
-			}
-			if err := write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
+		if _, exists := tx.Get(created); !exists {
+			if err := createDefaultVPC(tx, scope); err != nil {
 				return err
 			}
+
+			tx.Put(created, []byte("{}"))
 		}
 
-		tx.Put(marker, []byte("{}"))
+		if _, exists := tx.Get(upgraded); !exists {
+			if err := upgradeVPCs(tx, scope); err != nil {
+				return err
+			}
+
+			tx.Put(upgraded, []byte("{}"))
+		}
+
 		return nil
 	})
 }
 
-// createVPC stores a new VPC and its default security group.
-func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc) error {
+// createDefaultVPC stores the Region's default VPC and what it comes with.
+func createDefaultVPC(tx storage.WriteTx, scope request.Scope) error {
+	v := &vpc{ID: newID("vpc"), CIDR: defaultVPCCIDR, Tenancy: tenancyDefault, IsDefault: true, DNSHostnames: true}
+	g := &internetGateway{ID: newID("igw"), VPCID: v.ID}
+	if err := write(tx, key(scope, kindInternetGateway, g.ID), g); err != nil {
+		return err
+	}
+
+	if err := createVPC(tx, scope, v, route{CIDR: anywhere, GatewayID: g.ID, Origin: originRoute}); err != nil {
+		return err
+	}
+
+	for i, suffix := range zoneSuffixes {
+		sn := &subnet{
+			ID: newID("subnet"), VPCID: v.ID, CIDR: fmt.Sprintf("172.31.%d.0/20", i*16),
+			Zone: scope.Region + suffix, DefaultForAZ: true, MapPublicIP: true,
+		}
+		if err := write(tx, key(scope, kindSubnet, sn.ID), sn); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// upgradeVPCs gives each VPC that lacks one a main route table.
+func upgradeVPCs(tx storage.WriteTx, scope request.Scope) error {
+	vpcs, err := list[vpc](tx, scope, kindVPC)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range vpcs {
+		tables, listErr := vpcRouteTables(tx, scope, v.ID)
+		if listErr != nil {
+			return listErr
+		}
+
+		if !slices.ContainsFunc(tables, (*routeTable).main) {
+			if createErr := createMainRouteTable(tx, scope, v); createErr != nil {
+				return createErr
+			}
+		}
+	}
+
+	return nil
+}
+
+// createVPC stores a new VPC with its default security group and its main
+// route table, which holds routes after the local one.
+func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route) error {
 	v.AssociationID, v.DHCPOptionsID = newID("vpc-cidr-assoc"), newID("dopt")
 	g := defaultGroup(v.ID)
 	if err := write(tx, key(scope, kindSecurityGroup, g.ID), g); err != nil {
+		return err
+	}
+
+	if err := createMainRouteTable(tx, scope, v, routes...); err != nil {
 		return err
 	}
 
@@ -320,8 +369,8 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 }
 
 // DeleteVpc deletes a VPC that has no subnets, internet gateway, or security
-// groups but its default one left, including a default VPC, which does not
-// come back.
+// groups or route tables but its default and main ones left, including a
+// default VPC, which does not come back.
 func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api.DeleteVpcOutput, error) {
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
 		v, err := loadVPC(tx, scope, value(in.VpcId))
@@ -344,15 +393,24 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 			return err
 		}
 
+		tables, err := vpcRouteTables(tx, scope, v.ID)
+		if err != nil {
+			return err
+		}
+
 		groups = slices.DeleteFunc(groups, func(g *securityGroup) bool { return g.VPCID != v.ID })
 		if gateway != "" || slices.ContainsFunc(subnets, func(sn *subnet) bool { return sn.VPCID == v.ID }) ||
-			slices.ContainsFunc(groups, func(g *securityGroup) bool { return g.Name != defaultGroupName }) {
-			return awserror.New("DependencyViolation",
-				fmt.Sprintf("The vpc '%s' has dependencies and cannot be deleted.", v.ID))
+			slices.ContainsFunc(groups, func(g *securityGroup) bool { return g.Name != defaultGroupName }) ||
+			slices.ContainsFunc(tables, func(rt *routeTable) bool { return !rt.main() }) {
+			return awserror.New("DependencyViolation", fmt.Sprintf(dependencyFormat, kindVPC, v.ID))
 		}
 
 		for _, g := range groups {
 			tx.Delete(key(scope, kindSecurityGroup, g.ID))
+		}
+
+		for _, rt := range tables {
+			tx.Delete(key(scope, kindRouteTable, rt.ID))
 		}
 
 		tx.Delete(key(scope, kindVPC, v.ID))
@@ -515,12 +573,11 @@ func (s *Service) DeleteSubnet(ctx context.Context, in *api.DeleteSubnetRequest)
 		}
 
 		if inUse {
-			return awserror.New("DependencyViolation",
-				fmt.Sprintf("The subnet '%s' has dependencies and cannot be deleted.", id))
+			return awserror.New("DependencyViolation", fmt.Sprintf(dependencyFormat, kindSubnet, id))
 		}
 
 		tx.Delete(k)
-		return nil
+		return disassociateSubnet(tx, scope, id)
 	})
 	if err != nil {
 		return nil, err

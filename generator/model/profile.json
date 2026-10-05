@@ -746,7 +746,16 @@
       "DeleteInternetGateway",
       "AttachInternetGateway",
       "DetachInternetGateway",
-      "DescribeInternetGateways"
+      "DescribeInternetGateways",
+      "CreateRouteTable",
+      "DeleteRouteTable",
+      "DescribeRouteTables",
+      "CreateRoute",
+      "ReplaceRoute",
+      "DeleteRoute",
+      "AssociateRouteTable",
+      "DisassociateRouteTable",
+      "ReplaceRouteTableAssociation"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -1644,6 +1653,105 @@
       "DescribeInternetGatewaysResult": [
         "InternetGateways",
         "NextToken"
+      ],
+      "CreateRouteTableRequest": [
+        "TagSpecifications",
+        "DryRun",
+        "VpcId",
+        "ClientToken"
+      ],
+      "CreateRouteTableResult": [
+        "RouteTable",
+        "ClientToken"
+      ],
+      "RouteTable": [
+        "Associations",
+        "PropagatingVgws",
+        "RouteTableId",
+        "Routes",
+        "Tags",
+        "VpcId",
+        "OwnerId"
+      ],
+      "RouteTableAssociation": [
+        "Main",
+        "RouteTableAssociationId",
+        "RouteTableId",
+        "SubnetId",
+        "AssociationState"
+      ],
+      "RouteTableAssociationState": [
+        "State"
+      ],
+      "PropagatingVgw": [
+        "GatewayId"
+      ],
+      "Route": [
+        "DestinationCidrBlock",
+        "GatewayId",
+        "InstanceId",
+        "InstanceOwnerId",
+        "Origin",
+        "State"
+      ],
+      "DeleteRouteTableRequest": [
+        "DryRun",
+        "RouteTableId"
+      ],
+      "DescribeRouteTablesRequest": [
+        "NextToken",
+        "MaxResults",
+        "DryRun",
+        "RouteTableIds",
+        "Filters"
+      ],
+      "DescribeRouteTablesResult": [
+        "RouteTables",
+        "NextToken"
+      ],
+      "CreateRouteRequest": [
+        "DryRun",
+        "RouteTableId",
+        "DestinationCidrBlock",
+        "GatewayId",
+        "InstanceId"
+      ],
+      "CreateRouteResult": [
+        "Return"
+      ],
+      "ReplaceRouteRequest": [
+        "DryRun",
+        "RouteTableId",
+        "DestinationCidrBlock",
+        "GatewayId",
+        "InstanceId"
+      ],
+      "DeleteRouteRequest": [
+        "DryRun",
+        "RouteTableId",
+        "DestinationCidrBlock"
+      ],
+      "AssociateRouteTableRequest": [
+        "DryRun",
+        "SubnetId",
+        "RouteTableId"
+      ],
+      "AssociateRouteTableResult": [
+        "AssociationId",
+        "AssociationState"
+      ],
+      "DisassociateRouteTableRequest": [
+        "DryRun",
+        "AssociationId"
+      ],
+      "ReplaceRouteTableAssociationRequest": [
+        "DryRun",
+        "AssociationId",
+        "RouteTableId"
+      ],
+      "ReplaceRouteTableAssociationResult": [
+        "NewAssociationId",
+        "AssociationState"
       ]
     }
   },

@@ -185,3 +185,167 @@ func TestEC2InternetGateways(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// mainRouteTable returns a VPC's main route table.
+func mainRouteTable(t *testing.T, c *ec2.Client, vpcID string) ec2types.RouteTable {
+	t.Helper()
+	out, err := c.DescribeRouteTables(context.Background(), &ec2.DescribeRouteTablesInput{
+		Filters: []ec2types.Filter{
+			{Name: aws.String("association.main"), Values: []string{"true"}},
+			{Name: aws.String("vpc-id"), Values: []string{vpcID}},
+		},
+	})
+	if err != nil || len(out.RouteTables) != 1 {
+		t.Fatalf("got %+v, %v", out, err)
+	}
+
+	return out.RouteTables[0]
+}
+
+func TestEC2RouteTables(t *testing.T) {
+	s := server(t)
+	c := ec2Client(s, "test", "us-east-1")
+	ctx := context.Background()
+
+	// The default VPC's main route table sends the internet to its gateway.
+	vpcs, err := c.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defaultMain := mainRouteTable(t, c, aws.ToString(vpcs.Vpcs[0].VpcId))
+	if len(defaultMain.Routes) != 2 || aws.ToString(defaultMain.Routes[0].GatewayId) != "local" ||
+		aws.ToString(defaultMain.Routes[1].DestinationCidrBlock) != "0.0.0.0/0" ||
+		defaultMain.Routes[1].State != ec2types.RouteStateActive {
+		t.Fatalf("got %+v", defaultMain.Routes)
+	}
+
+	vpcID := createVPC(t, c, "10.0.0.0/16")
+	main := mainRouteTable(t, c, vpcID)
+	if len(main.Routes) != 1 || aws.ToString(main.Routes[0].DestinationCidrBlock) != "10.0.0.0/16" ||
+		main.Routes[0].Origin != ec2types.RouteOriginCreateRouteTable ||
+		len(main.Associations) != 1 || !aws.ToBool(main.Associations[0].Main) {
+		t.Fatalf("got %+v", main)
+	}
+
+	created, err := c.CreateRouteTable(ctx, &ec2.CreateRouteTableInput{VpcId: aws.String(vpcID)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tableID := created.RouteTable.RouteTableId
+	gateway, err := c.CreateInternetGateway(ctx, &ec2.CreateInternetGatewayInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	gatewayID := gateway.InternetGateway.InternetGatewayId
+	internet := &ec2.CreateRouteInput{
+		RouteTableId: tableID, DestinationCidrBlock: aws.String("0.0.0.0/0"), GatewayId: gatewayID,
+	}
+	_, err = c.CreateRoute(ctx, internet)
+	code(t, err, "InvalidParameterValue")
+	if _, err = c.AttachInternetGateway(ctx, &ec2.AttachInternetGatewayInput{
+		InternetGatewayId: gatewayID, VpcId: aws.String(vpcID),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.CreateRoute(ctx, internet); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.CreateRoute(ctx, internet)
+	code(t, err, "RouteAlreadyExists")
+	for _, in := range []*ec2.CreateRouteInput{
+		{RouteTableId: tableID, DestinationCidrBlock: aws.String("10.9.0.1/16"), GatewayId: gatewayID},
+		{RouteTableId: tableID, DestinationCidrBlock: aws.String("10.9.0.0/16")},
+	} {
+		_, err = c.CreateRoute(ctx, in)
+		if err == nil {
+			t.Fatalf("created %+v", in)
+		}
+	}
+
+	_, err = c.DeleteRoute(ctx, &ec2.DeleteRouteInput{
+		RouteTableId: tableID, DestinationCidrBlock: aws.String("10.0.0.0/16"),
+	})
+	code(t, err, "InvalidParameterValue")
+
+	// A subnet takes one explicit association.
+	subnetID := createSubnet(t, c, vpcID, "10.0.1.0/24")
+	associated, err := c.AssociateRouteTable(ctx, &ec2.AssociateRouteTableInput{
+		RouteTableId: tableID, SubnetId: aws.String(subnetID),
+	})
+	if err != nil || associated.AssociationState.State != ec2types.RouteTableAssociationStateCodeAssociated {
+		t.Fatalf("got %+v, %v", associated, err)
+	}
+
+	_, err = c.AssociateRouteTable(ctx, &ec2.AssociateRouteTableInput{
+		RouteTableId: main.RouteTableId, SubnetId: aws.String(subnetID),
+	})
+	code(t, err, "Resource.AlreadyAssociated")
+	_, err = c.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{RouteTableId: tableID})
+	code(t, err, "DependencyViolation")
+
+	bySubnet, err := c.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{
+		Filters: []ec2types.Filter{{Name: aws.String("association.subnet-id"), Values: []string{subnetID}}},
+	})
+	if err != nil || len(bySubnet.RouteTables) != 1 || *bySubnet.RouteTables[0].RouteTableId != *tableID {
+		t.Fatalf("got %+v, %v", bySubnet, err)
+	}
+
+	// Detaching the gateway leaves the route a black hole.
+	if _, err = c.DetachInternetGateway(ctx, &ec2.DetachInternetGatewayInput{
+		InternetGatewayId: gatewayID, VpcId: aws.String(vpcID),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	blackholes, err := c.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{
+		Filters: []ec2types.Filter{{Name: aws.String("route.state"), Values: []string{"blackhole"}}},
+	})
+	if err != nil || len(blackholes.RouteTables) != 1 {
+		t.Fatalf("got %+v, %v", blackholes, err)
+	}
+
+	// The main association moves to the new table and back.
+	moved, err := c.ReplaceRouteTableAssociation(ctx, &ec2.ReplaceRouteTableAssociationInput{
+		AssociationId: main.Associations[0].RouteTableAssociationId, RouteTableId: tableID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if now := mainRouteTable(t, c, vpcID); *now.RouteTableId != *tableID || len(now.Associations) != 2 {
+		t.Fatalf("got %+v", now)
+	}
+
+	_, err = c.DisassociateRouteTable(ctx, &ec2.DisassociateRouteTableInput{AssociationId: moved.NewAssociationId})
+	code(t, err, "InvalidParameterValue")
+	if _, err = c.ReplaceRouteTableAssociation(ctx, &ec2.ReplaceRouteTableAssociationInput{
+		AssociationId: moved.NewAssociationId, RouteTableId: main.RouteTableId,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Deleting the subnet removes its association.
+	if _, err = c.DeleteSubnet(ctx, &ec2.DeleteSubnetInput{SubnetId: aws.String(subnetID)}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.DisassociateRouteTable(ctx, &ec2.DisassociateRouteTableInput{AssociationId: associated.AssociationId})
+	code(t, err, "InvalidAssociationID.NotFound")
+	_, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(vpcID)})
+	code(t, err, "DependencyViolation")
+	if _, err = c.DeleteRouteTable(ctx, &ec2.DeleteRouteTableInput{RouteTableId: tableID}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.DeleteVpc(ctx, &ec2.DeleteVpcInput{VpcId: aws.String(vpcID)}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{RouteTableIds: []string{*main.RouteTableId}})
+	code(t, err, "InvalidRouteTableID.NotFound")
+}

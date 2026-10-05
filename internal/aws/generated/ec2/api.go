@@ -1073,6 +1073,132 @@ type DescribeInternetGatewaysResult struct {
 	NextToken        *string           `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
 }
 
+type CreateRouteTableRequest struct {
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	VpcId             *string            `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	ClientToken       *string            `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+}
+
+type RouteTableAssociationState struct {
+	State *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type RouteTableAssociation struct {
+	Main                    *bool                       `json:"Main,omitempty" ec2:"Main,main"`
+	RouteTableAssociationId *string                     `json:"RouteTableAssociationId,omitempty" ec2:"RouteTableAssociationId,routeTableAssociationId"`
+	RouteTableId            *string                     `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+	SubnetId                *string                     `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	AssociationState        *RouteTableAssociationState `json:"AssociationState,omitempty" ec2:"AssociationState,associationState"`
+}
+
+type PropagatingVgw struct {
+	GatewayId *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
+}
+
+type Route struct {
+	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	GatewayId            *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
+	InstanceId           *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	InstanceOwnerId      *string `json:"InstanceOwnerId,omitempty" ec2:"InstanceOwnerId,instanceOwnerId"`
+	Origin               *string `json:"Origin,omitempty" ec2:"Origin,origin"`
+	State                *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type RouteTable struct {
+	Associations    []RouteTableAssociation `json:"Associations,omitempty" ec2:"AssociationSet,associationSet,member=item"`
+	PropagatingVgws []PropagatingVgw        `json:"PropagatingVgws,omitempty" ec2:"PropagatingVgwSet,propagatingVgwSet,member=item"`
+	RouteTableId    *string                 `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+	Routes          []Route                 `json:"Routes,omitempty" ec2:"RouteSet,routeSet,member=item"`
+	Tags            []Tag                   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VpcId           *string                 `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	OwnerId         *string                 `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+}
+
+type CreateRouteTableResult struct {
+	RouteTable  *RouteTable `json:"RouteTable,omitempty" ec2:"RouteTable,routeTable"`
+	ClientToken *string     `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+}
+
+type DeleteRouteTableOutput struct{}
+
+type DeleteRouteTableRequest struct {
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	RouteTableId *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+}
+
+type DescribeRouteTablesRequest struct {
+	NextToken     *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults    *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	RouteTableIds []string `json:"RouteTableIds,omitempty" ec2:"RouteTableId,RouteTableId,member=item"`
+	Filters       []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type DescribeRouteTablesResult struct {
+	RouteTables []RouteTable `json:"RouteTables,omitempty" ec2:"RouteTableSet,routeTableSet,member=item"`
+	NextToken   *string      `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type CreateRouteRequest struct {
+	DryRun               *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	RouteTableId         *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	GatewayId            *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
+	InstanceId           *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+}
+
+type CreateRouteResult struct {
+	Return *bool `json:"Return,omitempty" ec2:"Return,return"`
+}
+
+type ReplaceRouteOutput struct{}
+
+type ReplaceRouteRequest struct {
+	DryRun               *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	RouteTableId         *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	GatewayId            *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
+	InstanceId           *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+}
+
+type DeleteRouteOutput struct{}
+
+type DeleteRouteRequest struct {
+	DryRun               *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	RouteTableId         *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+}
+
+type AssociateRouteTableRequest struct {
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	SubnetId     *string `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	RouteTableId *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+}
+
+type AssociateRouteTableResult struct {
+	AssociationId    *string                     `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	AssociationState *RouteTableAssociationState `json:"AssociationState,omitempty" ec2:"AssociationState,associationState"`
+}
+
+type DisassociateRouteTableOutput struct{}
+
+type DisassociateRouteTableRequest struct {
+	DryRun        *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	AssociationId *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+}
+
+type ReplaceRouteTableAssociationRequest struct {
+	DryRun        *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	AssociationId *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	RouteTableId  *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+}
+
+type ReplaceRouteTableAssociationResult struct {
+	NewAssociationId *string                     `json:"NewAssociationId,omitempty" ec2:"NewAssociationId,newAssociationId"`
+	AssociationState *RouteTableAssociationState `json:"AssociationState,omitempty" ec2:"AssociationState,associationState"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -1125,6 +1251,15 @@ type API interface {
 	AttachInternetGateway(context.Context, *AttachInternetGatewayRequest) (*AttachInternetGatewayOutput, error)
 	DetachInternetGateway(context.Context, *DetachInternetGatewayRequest) (*DetachInternetGatewayOutput, error)
 	DescribeInternetGateways(context.Context, *DescribeInternetGatewaysRequest) (*DescribeInternetGatewaysResult, error)
+	CreateRouteTable(context.Context, *CreateRouteTableRequest) (*CreateRouteTableResult, error)
+	DeleteRouteTable(context.Context, *DeleteRouteTableRequest) (*DeleteRouteTableOutput, error)
+	DescribeRouteTables(context.Context, *DescribeRouteTablesRequest) (*DescribeRouteTablesResult, error)
+	CreateRoute(context.Context, *CreateRouteRequest) (*CreateRouteResult, error)
+	ReplaceRoute(context.Context, *ReplaceRouteRequest) (*ReplaceRouteOutput, error)
+	DeleteRoute(context.Context, *DeleteRouteRequest) (*DeleteRouteOutput, error)
+	AssociateRouteTable(context.Context, *AssociateRouteTableRequest) (*AssociateRouteTableResult, error)
+	DisassociateRouteTable(context.Context, *DisassociateRouteTableRequest) (*DisassociateRouteTableOutput, error)
+	ReplaceRouteTableAssociation(context.Context, *ReplaceRouteTableAssociationRequest) (*ReplaceRouteTableAssociationResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1281,6 +1416,33 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeInternetGateways": {Name: "DescribeInternetGateways", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeInternetGateways", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeInternetGatewaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeInternetGateways(ctx, input.(*DescribeInternetGatewaysRequest))
+		}},
+		"CreateRouteTable": {Name: "CreateRouteTable", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateRouteTable", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateRouteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateRouteTable(ctx, input.(*CreateRouteTableRequest))
+		}},
+		"DeleteRouteTable": {Name: "DeleteRouteTable", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteRouteTable", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteRouteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteRouteTable(ctx, input.(*DeleteRouteTableRequest))
+		}},
+		"DescribeRouteTables": {Name: "DescribeRouteTables", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeRouteTables", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeRouteTablesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeRouteTables(ctx, input.(*DescribeRouteTablesRequest))
+		}},
+		"CreateRoute": {Name: "CreateRoute", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateRoute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateRouteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateRoute(ctx, input.(*CreateRouteRequest))
+		}},
+		"ReplaceRoute": {Name: "ReplaceRoute", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReplaceRoute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReplaceRouteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReplaceRoute(ctx, input.(*ReplaceRouteRequest))
+		}},
+		"DeleteRoute": {Name: "DeleteRoute", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteRoute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteRouteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteRoute(ctx, input.(*DeleteRouteRequest))
+		}},
+		"AssociateRouteTable": {Name: "AssociateRouteTable", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssociateRouteTable", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssociateRouteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateRouteTable(ctx, input.(*AssociateRouteTableRequest))
+		}},
+		"DisassociateRouteTable": {Name: "DisassociateRouteTable", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DisassociateRouteTable", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DisassociateRouteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisassociateRouteTable(ctx, input.(*DisassociateRouteTableRequest))
+		}},
+		"ReplaceRouteTableAssociation": {Name: "ReplaceRouteTableAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReplaceRouteTableAssociation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReplaceRouteTableAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReplaceRouteTableAssociation(ctx, input.(*ReplaceRouteTableAssociationRequest))
 		}},
 	}}
 }
