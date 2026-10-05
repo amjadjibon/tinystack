@@ -328,9 +328,14 @@ a per-service `Dialect`), and delivers synchronously through
   request (`auth.go`: API keys, IAM, Cognito tokens through `cognitoidp.Service.Verify`, OIDC through the shared
   `proxy.Verifier`, and Lambda authorizers, with AppSync's per-type and per-field directive rules), and runs it with
   `executor.go`, a GraphQL executor (fragments, abstract types, null propagation, ordered output) whose
-  introspection (`introspection.go`) also serves GetIntrospectionSchema's JSON. Only direct Lambda resolvers run, through
-  `lambda.Service.Invoke` outside transactions; APPSYNC_JS code, VTL templates, and pipelines are stored and fail
-  explicitly when a query reaches them.
+  introspection (`introspection.go`) also serves GetIntrospectionSchema's JSON. Resolvers run outside transactions:
+  a unit resolver without code calls its Lambda data source directly, and APPSYNC_JS code (unit and pipeline
+  resolvers and functions) runs in `github.com/dop251/goja` (`js.go`: each ES module is rewritten into a function of a
+  module loader, so a field's handlers share one `ctx` and stash; `utils.js` is `@aws-appsync/utils` and
+  `@aws-appsync/utils/dynamodb` in JavaScript, with `util.error`, `appendError`, `earlyReturn`, and IDs in Go).
+  `sources.go` sends the request objects to NONE, Lambda (`lambda.Service.Invoke`), HTTP (`proxy.Forward`), and,
+  through the `catalog.Caller` from `UseCaller`, DynamoDB and EventBridge data sources, converting DynamoDB items to
+  plain JSON. VTL mapping templates are stored and fail explicitly when a query reaches them.
   Step Functions (`services/sfn`) keeps state machines under `…/sfn/statemachine/<name>`, activities under
   `…/sfn/activity/<name>`, versions under `…/sfn/version/<state machine>/<zero-padded number>` and aliases under
   `…/sfn/alias/<state machine>/<alias>` (`versions.go`, whose `loadTarget` resolves the version an execution runs), executions under `…/sfn/execution/<state machine>/<name>`, and each history event under
