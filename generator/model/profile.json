@@ -738,7 +738,10 @@
       "AssociateIamInstanceProfile",
       "DescribeIamInstanceProfileAssociations",
       "DisassociateIamInstanceProfile",
-      "ReplaceIamInstanceProfileAssociation"
+      "ReplaceIamInstanceProfileAssociation",
+      "DescribeVpcAttribute",
+      "ModifyVpcAttribute",
+      "ModifySubnetAttribute"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -779,7 +782,8 @@
         "CidrBlock",
         "InstanceTenancy",
         "DryRun",
-        "TagSpecifications"
+        "TagSpecifications",
+        "AmazonProvidedIpv6CidrBlock"
       ],
       "CreateVpcResult": [
         "Vpc"
@@ -843,7 +847,10 @@
         "AvailabilityZone",
         "DefaultForAz",
         "MapPublicIpOnLaunch",
-        "Tags"
+        "Tags",
+        "EnableDns64",
+        "MapCustomerOwnedIpOnLaunch",
+        "PrivateDnsNameOptionsOnLaunch"
       ],
       "DeleteSubnetRequest": [
         "SubnetId",
@@ -1555,6 +1562,41 @@
       ],
       "ReplaceIamInstanceProfileAssociationResult": [
         "IamInstanceProfileAssociation"
+      ],
+      "DescribeVpcAttributeRequest": [
+        "Attribute",
+        "VpcId",
+        "DryRun"
+      ],
+      "DescribeVpcAttributeResult": [
+        "EnableDnsHostnames",
+        "EnableDnsSupport",
+        "EnableNetworkAddressUsageMetrics",
+        "VpcId"
+      ],
+      "AttributeBooleanValue": [
+        "Value"
+      ],
+      "ModifyVpcAttributeRequest": [
+        "EnableDnsHostnames",
+        "EnableDnsSupport",
+        "VpcId",
+        "EnableNetworkAddressUsageMetrics"
+      ],
+      "ModifySubnetAttributeRequest": [
+        "AssignIpv6AddressOnCreation",
+        "MapPublicIpOnLaunch",
+        "SubnetId",
+        "MapCustomerOwnedIpOnLaunch",
+        "EnableDns64",
+        "PrivateDnsHostnameTypeOnLaunch",
+        "EnableResourceNameDnsARecordOnLaunch",
+        "EnableResourceNameDnsAAAARecordOnLaunch"
+      ],
+      "PrivateDnsNameOptionsOnLaunch": [
+        "HostnameType",
+        "EnableResourceNameDnsARecord",
+        "EnableResourceNameDnsAAAARecord"
       ]
     }
   },

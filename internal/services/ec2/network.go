@@ -1,6 +1,7 @@
 package ec2
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"net/netip"
@@ -43,16 +44,24 @@ type vpc struct {
 	AssociationID string
 	DHCPOptionsID string
 	IsDefault     bool
+	// NoDNSSupport turns off enableDnsSupport, which is on by default.
+	NoDNSSupport bool
+	DNSHostnames bool
+	UsageMetrics bool
 }
 
 type subnet struct {
-	Tags         map[string]string `json:",omitempty"`
-	ID           string
-	VPCID        string
-	CIDR         string
-	Zone         string
+	Tags  map[string]string `json:",omitempty"`
+	ID    string
+	VPCID string
+	CIDR  string
+	Zone  string
+	// HostnameType is the private DNS host name type of instances launched
+	// into the subnet; empty means ip-name.
+	HostnameType string
 	DefaultForAZ bool
 	MapPublicIP  bool
+	DNSARecord   bool
 }
 
 // zoneID returns the ID of a zone, such as use1-az1 for us-east-1a: the
@@ -190,7 +199,7 @@ func (s *Service) defaults(ctx context.Context, scope request.Scope) error {
 			return nil
 		}
 
-		v := &vpc{ID: newID("vpc"), CIDR: defaultVPCCIDR, Tenancy: tenancyDefault, IsDefault: true}
+		v := &vpc{ID: newID("vpc"), CIDR: defaultVPCCIDR, Tenancy: tenancyDefault, IsDefault: true, DNSHostnames: true}
 		if err := createVPC(tx, scope, v); err != nil {
 			return err
 		}
@@ -268,6 +277,10 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 
 	if _, err := cidr(*in.CidrBlock, "InvalidVpc.Range"); err != nil {
 		return nil, err
+	}
+
+	if value(in.AmazonProvidedIpv6CidrBlock) {
+		return nil, invalidParameter("TinyStack VPCs have no IPv6 CIDR blocks")
 	}
 
 	tenancy := value(in.InstanceTenancy)
@@ -386,8 +399,13 @@ func subnetOutput(scope request.Scope, sn *subnet) api.Subnet {
 		AvailableIpAddressCount: new(int64(1)<<(32-p.Bits()) - 5),
 		DefaultForAz:            new(sn.DefaultForAZ), MapPublicIpOnLaunch: new(sn.MapPublicIP),
 		OwnerId: new(scope.AccountID), AssignIpv6AddressOnCreation: new(false), Ipv6Native: new(false),
-		SubnetArn: new(subnetARN(scope, sn)),
-		Tags:      tagList(sn.Tags),
+		SubnetArn: new(subnetARN(scope, sn)), EnableDns64: new(false), MapCustomerOwnedIpOnLaunch: new(false),
+		PrivateDnsNameOptionsOnLaunch: &api.PrivateDnsNameOptionsOnLaunch{
+			HostnameType:                    new(cmp.Or(sn.HostnameType, hostnameIPName)),
+			EnableResourceNameDnsARecord:    new(sn.DNSARecord),
+			EnableResourceNameDnsAAAARecord: new(false),
+		},
+		Tags: tagList(sn.Tags),
 	}
 }
 

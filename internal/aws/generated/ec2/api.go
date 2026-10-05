@@ -63,10 +63,11 @@ type TagSpecification struct {
 }
 
 type CreateVpcRequest struct {
-	CidrBlock         *string            `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
-	InstanceTenancy   *string            `json:"InstanceTenancy,omitempty" ec2:"InstanceTenancy,instanceTenancy"`
-	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
-	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	CidrBlock                   *string            `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
+	InstanceTenancy             *string            `json:"InstanceTenancy,omitempty" ec2:"InstanceTenancy,instanceTenancy"`
+	DryRun                      *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	TagSpecifications           []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	AmazonProvidedIpv6CidrBlock *bool              `json:"AmazonProvidedIpv6CidrBlock,omitempty" ec2:"AmazonProvidedIpv6CidrBlock,amazonProvidedIpv6CidrBlock"`
 }
 
 type VpcCidrBlockState struct {
@@ -124,21 +125,30 @@ type CreateSubnetRequest struct {
 	TagSpecifications  []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
 }
 
+type PrivateDnsNameOptionsOnLaunch struct {
+	HostnameType                    *string `json:"HostnameType,omitempty" ec2:"HostnameType,hostnameType"`
+	EnableResourceNameDnsARecord    *bool   `json:"EnableResourceNameDnsARecord,omitempty" ec2:"EnableResourceNameDnsARecord,enableResourceNameDnsARecord"`
+	EnableResourceNameDnsAAAARecord *bool   `json:"EnableResourceNameDnsAAAARecord,omitempty" ec2:"EnableResourceNameDnsAAAARecord,enableResourceNameDnsAAAARecord"`
+}
+
 type Subnet struct {
-	AvailabilityZoneId          *string `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
-	OwnerId                     *string `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
-	AssignIpv6AddressOnCreation *bool   `json:"AssignIpv6AddressOnCreation,omitempty" ec2:"AssignIpv6AddressOnCreation,assignIpv6AddressOnCreation"`
-	SubnetArn                   *string `json:"SubnetArn,omitempty" ec2:"SubnetArn,subnetArn"`
-	Ipv6Native                  *bool   `json:"Ipv6Native,omitempty" ec2:"Ipv6Native,ipv6Native"`
-	SubnetId                    *string `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
-	State                       *string `json:"State,omitempty" ec2:"State,state"`
-	VpcId                       *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
-	CidrBlock                   *string `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
-	AvailableIpAddressCount     *int64  `json:"AvailableIpAddressCount,omitempty" ec2:"AvailableIpAddressCount,availableIpAddressCount"`
-	AvailabilityZone            *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
-	DefaultForAz                *bool   `json:"DefaultForAz,omitempty" ec2:"DefaultForAz,defaultForAz"`
-	MapPublicIpOnLaunch         *bool   `json:"MapPublicIpOnLaunch,omitempty" ec2:"MapPublicIpOnLaunch,mapPublicIpOnLaunch"`
-	Tags                        []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	AvailabilityZoneId            *string                        `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
+	OwnerId                       *string                        `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	AssignIpv6AddressOnCreation   *bool                          `json:"AssignIpv6AddressOnCreation,omitempty" ec2:"AssignIpv6AddressOnCreation,assignIpv6AddressOnCreation"`
+	SubnetArn                     *string                        `json:"SubnetArn,omitempty" ec2:"SubnetArn,subnetArn"`
+	Ipv6Native                    *bool                          `json:"Ipv6Native,omitempty" ec2:"Ipv6Native,ipv6Native"`
+	SubnetId                      *string                        `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	State                         *string                        `json:"State,omitempty" ec2:"State,state"`
+	VpcId                         *string                        `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	CidrBlock                     *string                        `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	AvailableIpAddressCount       *int64                         `json:"AvailableIpAddressCount,omitempty" ec2:"AvailableIpAddressCount,availableIpAddressCount"`
+	AvailabilityZone              *string                        `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	DefaultForAz                  *bool                          `json:"DefaultForAz,omitempty" ec2:"DefaultForAz,defaultForAz"`
+	MapPublicIpOnLaunch           *bool                          `json:"MapPublicIpOnLaunch,omitempty" ec2:"MapPublicIpOnLaunch,mapPublicIpOnLaunch"`
+	Tags                          []Tag                          `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	EnableDns64                   *bool                          `json:"EnableDns64,omitempty" ec2:"EnableDns64,enableDns64"`
+	MapCustomerOwnedIpOnLaunch    *bool                          `json:"MapCustomerOwnedIpOnLaunch,omitempty" ec2:"MapCustomerOwnedIpOnLaunch,mapCustomerOwnedIpOnLaunch"`
+	PrivateDnsNameOptionsOnLaunch *PrivateDnsNameOptionsOnLaunch `json:"PrivateDnsNameOptionsOnLaunch,omitempty" ec2:"PrivateDnsNameOptionsOnLaunch,privateDnsNameOptionsOnLaunch"`
 }
 
 type CreateSubnetResult struct {
@@ -967,6 +977,45 @@ type ReplaceIamInstanceProfileAssociationResult struct {
 	IamInstanceProfileAssociation *IamInstanceProfileAssociation `json:"IamInstanceProfileAssociation,omitempty" ec2:"IamInstanceProfileAssociation,iamInstanceProfileAssociation"`
 }
 
+type DescribeVpcAttributeRequest struct {
+	Attribute *string `json:"Attribute,omitempty" ec2:"Attribute,Attribute"`
+	VpcId     *string `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	DryRun    *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type AttributeBooleanValue struct {
+	Value *bool `json:"Value,omitempty" ec2:"Value,value"`
+}
+
+type DescribeVpcAttributeResult struct {
+	EnableDnsHostnames               *AttributeBooleanValue `json:"EnableDnsHostnames,omitempty" ec2:"EnableDnsHostnames,enableDnsHostnames"`
+	EnableDnsSupport                 *AttributeBooleanValue `json:"EnableDnsSupport,omitempty" ec2:"EnableDnsSupport,enableDnsSupport"`
+	EnableNetworkAddressUsageMetrics *AttributeBooleanValue `json:"EnableNetworkAddressUsageMetrics,omitempty" ec2:"EnableNetworkAddressUsageMetrics,enableNetworkAddressUsageMetrics"`
+	VpcId                            *string                `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type ModifyVpcAttributeOutput struct{}
+
+type ModifyVpcAttributeRequest struct {
+	EnableDnsHostnames               *AttributeBooleanValue `json:"EnableDnsHostnames,omitempty" ec2:"EnableDnsHostnames,EnableDnsHostnames"`
+	EnableDnsSupport                 *AttributeBooleanValue `json:"EnableDnsSupport,omitempty" ec2:"EnableDnsSupport,EnableDnsSupport"`
+	VpcId                            *string                `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	EnableNetworkAddressUsageMetrics *AttributeBooleanValue `json:"EnableNetworkAddressUsageMetrics,omitempty" ec2:"EnableNetworkAddressUsageMetrics,EnableNetworkAddressUsageMetrics"`
+}
+
+type ModifySubnetAttributeOutput struct{}
+
+type ModifySubnetAttributeRequest struct {
+	AssignIpv6AddressOnCreation             *AttributeBooleanValue `json:"AssignIpv6AddressOnCreation,omitempty" ec2:"AssignIpv6AddressOnCreation,AssignIpv6AddressOnCreation"`
+	MapPublicIpOnLaunch                     *AttributeBooleanValue `json:"MapPublicIpOnLaunch,omitempty" ec2:"MapPublicIpOnLaunch,MapPublicIpOnLaunch"`
+	SubnetId                                *string                `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	MapCustomerOwnedIpOnLaunch              *AttributeBooleanValue `json:"MapCustomerOwnedIpOnLaunch,omitempty" ec2:"MapCustomerOwnedIpOnLaunch,MapCustomerOwnedIpOnLaunch"`
+	EnableDns64                             *AttributeBooleanValue `json:"EnableDns64,omitempty" ec2:"EnableDns64,EnableDns64"`
+	PrivateDnsHostnameTypeOnLaunch          *string                `json:"PrivateDnsHostnameTypeOnLaunch,omitempty" ec2:"PrivateDnsHostnameTypeOnLaunch,PrivateDnsHostnameTypeOnLaunch"`
+	EnableResourceNameDnsARecordOnLaunch    *AttributeBooleanValue `json:"EnableResourceNameDnsARecordOnLaunch,omitempty" ec2:"EnableResourceNameDnsARecordOnLaunch,EnableResourceNameDnsARecordOnLaunch"`
+	EnableResourceNameDnsAAAARecordOnLaunch *AttributeBooleanValue `json:"EnableResourceNameDnsAAAARecordOnLaunch,omitempty" ec2:"EnableResourceNameDnsAAAARecordOnLaunch,EnableResourceNameDnsAAAARecordOnLaunch"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -1011,6 +1060,9 @@ type API interface {
 	DescribeIamInstanceProfileAssociations(context.Context, *DescribeIamInstanceProfileAssociationsRequest) (*DescribeIamInstanceProfileAssociationsResult, error)
 	DisassociateIamInstanceProfile(context.Context, *DisassociateIamInstanceProfileRequest) (*DisassociateIamInstanceProfileResult, error)
 	ReplaceIamInstanceProfileAssociation(context.Context, *ReplaceIamInstanceProfileAssociationRequest) (*ReplaceIamInstanceProfileAssociationResult, error)
+	DescribeVpcAttribute(context.Context, *DescribeVpcAttributeRequest) (*DescribeVpcAttributeResult, error)
+	ModifyVpcAttribute(context.Context, *ModifyVpcAttributeRequest) (*ModifyVpcAttributeOutput, error)
+	ModifySubnetAttribute(context.Context, *ModifySubnetAttributeRequest) (*ModifySubnetAttributeOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1143,6 +1195,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ReplaceIamInstanceProfileAssociation": {Name: "ReplaceIamInstanceProfileAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ReplaceIamInstanceProfileAssociation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ReplaceIamInstanceProfileAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ReplaceIamInstanceProfileAssociation(ctx, input.(*ReplaceIamInstanceProfileAssociationRequest))
+		}},
+		"DescribeVpcAttribute": {Name: "DescribeVpcAttribute", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVpcAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVpcAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVpcAttribute(ctx, input.(*DescribeVpcAttributeRequest))
+		}},
+		"ModifyVpcAttribute": {Name: "ModifyVpcAttribute", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyVpcAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyVpcAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyVpcAttribute(ctx, input.(*ModifyVpcAttributeRequest))
+		}},
+		"ModifySubnetAttribute": {Name: "ModifySubnetAttribute", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifySubnetAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifySubnetAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifySubnetAttribute(ctx, input.(*ModifySubnetAttributeRequest))
 		}},
 	}}
 }

@@ -652,7 +652,9 @@ since every caller is authorized.
 | DescribeRegions | The commercial Regions, all `opt-in-not-required`, or those named in `RegionNames`; an unknown name is `InvalidParameterValue` |
 | DescribeAvailabilityZones | Three zones per Region (`<region>a` to `c`, with IDs such as `use1-az1`), by `ZoneNames` or `ZoneIds` |
 | CreateVpc / DeleteVpc / DescribeVpcs | IPv4 `CidrBlock` from /16 to /28, `InstanceTenancy` `default` or `dedicated`, up to 5 VPCs per Region, each with a `default` security group; a VPC with subnets or other security groups cannot be deleted (`DependencyViolation`) |
+| DescribeVpcAttribute / ModifyVpcAttribute | `enableDnsSupport` (on by default), `enableDnsHostnames` (off, but on in a default VPC; needs DNS support), and `enableNetworkAddressUsageMetrics`, one per request; `AmazonProvidedIpv6CidrBlock` must be false, since VPCs have no IPv6 blocks |
 | CreateSubnet / DeleteSubnet / DescribeSubnets | A CIDR inside the VPC's that overlaps no other subnet, in a zone given by name or ID (the first by default); the available address count leaves out AWS's five reserved addresses; a subnet with active instances cannot be deleted |
+| ModifySubnetAttribute | One attribute per request: `MapPublicIpOnLaunch`, `PrivateDnsHostnameTypeOnLaunch`, and `EnableResourceNameDnsARecordOnLaunch`; the IPv6, DNS64, and customer-owned address attributes can only be turned off |
 | CreateSecurityGroup / DeleteSecurityGroup / DescribeSecurityGroups | A group in `VpcId` or the default VPC, created with an allow-all egress rule; groups are found by ID or, in the default VPC, by name; a default group, or one that another group's rules or an active instance use, cannot be deleted |
 | AuthorizeSecurityGroupIngress / AuthorizeSecurityGroupEgress | One rule per IPv4 or IPv6 CIDR, prefix list, or security group of the same account, with TCP and UDP ports from 0 to 65535, ICMP types and codes, or all traffic (`-1`); a rule that exists is `InvalidPermission.Duplicate`; up to 60 rules per direction |
 | RevokeSecurityGroupIngress / RevokeSecurityGroupEgress | By permission (those that match no rule come back in `UnknownIpPermissions`) or by `SecurityGroupRuleIds` |
@@ -680,8 +682,8 @@ match with `*` and `?` (escaped with a backslash), every resource supports
 `tag:<key>`, `tag-key`, and `tag-value`, and an unknown filter name is
 `InvalidParameterValue`. Create operations take `TagSpecifications` for the
 resource type they create. EC2 limits: no volumes, network interfaces, Elastic IPs, instance
-attributes, spot instances, route tables, internet gateways, or VPC attributes, so Terraform's
-`aws_instance` and `aws_vpc` cannot be applied yet.
+attributes, spot instances, route tables, or internet gateways, so Terraform's `aws_instance`
+cannot be applied yet.
 
 ### ECR (AWS JSON 1.1, and the Docker Registry API)
 
