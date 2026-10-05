@@ -16,8 +16,6 @@ package route53
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -26,6 +24,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -42,7 +41,6 @@ const (
 	statusInSync    = "INSYNC"
 	invalidInput    = "InvalidInput"
 	maxReference    = 128
-	idAlphabet      = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
 var _ api.API = (*Service)(nil)
@@ -74,48 +72,18 @@ func key(account, kind, name string) string {
 	return account + "/" + service + "/" + kind + "/" + name
 }
 
-func value[T any](p *T) (v T) {
-	if p != nil {
-		return *p
-	}
-
-	return v
-}
+func value[T any](p *T) (v T) { return common.Value(p) }
 
 func read[T any](tx storage.ReadTx, k string) (v *T, found bool, err error) {
-	data, ok := tx.Get(k)
-	if !ok {
-		return nil, false, nil
-	}
-
-	v = new(T)
-	if err = json.Unmarshal(data, v); err != nil {
-		return nil, false, fmt.Errorf("decode %s: %w", k, err)
-	}
-
-	return v, true, nil
+	return storage.Read[T](tx, k)
 }
 
-func write(tx storage.WriteTx, k string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	tx.Put(k, data)
-	return nil
-}
+func write(tx storage.WriteTx, k string, v any) error { return storage.Write(tx, k, v) }
 
 // newID returns an ID of prefix and uppercase letters and digits, as Route
 // 53's zone and change IDs are.
 func newID(prefix string, n int) string {
-	b := make([]byte, n)
-	_, _ = rand.Read(b)
-	for i := range b {
-		b[i] = idAlphabet[int(b[i])%len(idAlphabet)]
-	}
-
-	return prefix + string(b)
+	return prefix + common.RandomID(n, common.AlphabetUpperHex)
 }
 
 func invalid(format string, args ...any) error {
