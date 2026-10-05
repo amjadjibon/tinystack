@@ -55,8 +55,10 @@ type Server struct {
 	balancers   execute.Handler
 	// functionURLs serves Lambda function URLs; see UseFunctionURLs.
 	functionURLs execute.Handler
-	health       []byte
-	cfg          config.Config
+	// domains serves API Gateway custom domain names; see UseDomains.
+	domains Domains
+	health  []byte
+	cfg     config.Config
 }
 
 // CredentialLookup returns the credentials of an access key TinyStack issued,

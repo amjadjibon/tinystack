@@ -8220,7 +8220,15 @@
       "CreateUsagePlanKey",
       "GetUsagePlanKey",
       "GetUsagePlanKeys",
-      "DeleteUsagePlanKey"
+      "DeleteUsagePlanKey",
+      "CreateDomainName",
+      "GetDomainName",
+      "GetDomainNames",
+      "DeleteDomainName",
+      "CreateBasePathMapping",
+      "GetBasePathMapping",
+      "GetBasePathMappings",
+      "DeleteBasePathMapping"
     ],
     "shapes": {
       "CreateRestApiRequest": [
@@ -8460,6 +8468,75 @@
       "DeleteUsagePlanKeyRequest": [
         "usagePlanId",
         "keyId"
+      ],
+      "CreateDomainNameRequest": [
+        "domainName",
+        "certificateName",
+        "certificateArn",
+        "regionalCertificateName",
+        "regionalCertificateArn",
+        "endpointConfiguration",
+        "tags",
+        "securityPolicy"
+      ],
+      "DomainName": [
+        "domainName",
+        "domainNameArn",
+        "certificateName",
+        "certificateArn",
+        "certificateUploadDate",
+        "regionalDomainName",
+        "regionalHostedZoneId",
+        "regionalCertificateName",
+        "regionalCertificateArn",
+        "distributionDomainName",
+        "distributionHostedZoneId",
+        "endpointConfiguration",
+        "domainNameStatus",
+        "securityPolicy",
+        "tags"
+      ],
+      "GetDomainNameRequest": [
+        "domainName"
+      ],
+      "GetDomainNamesRequest": [
+        "position",
+        "limit"
+      ],
+      "DomainNames": [
+        "items",
+        "position"
+      ],
+      "DeleteDomainNameRequest": [
+        "domainName"
+      ],
+      "CreateBasePathMappingRequest": [
+        "domainName",
+        "basePath",
+        "restApiId",
+        "stage"
+      ],
+      "BasePathMapping": [
+        "basePath",
+        "restApiId",
+        "stage"
+      ],
+      "GetBasePathMappingRequest": [
+        "domainName",
+        "basePath"
+      ],
+      "GetBasePathMappingsRequest": [
+        "domainName",
+        "position",
+        "limit"
+      ],
+      "BasePathMappings": [
+        "items",
+        "position"
+      ],
+      "DeleteBasePathMappingRequest": [
+        "domainName",
+        "basePath"
       ]
     }
   },

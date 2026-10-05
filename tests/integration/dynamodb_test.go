@@ -233,6 +233,7 @@ func serverStore(
 	h.UseRegistry(repositories)
 	h.UseCORS(objects.CORS)
 	h.UseAPIs(httpAPIs, restAPIs)
+	h.UseDomains(restAPIs.Domains())
 	h.UseLoadBalancers(balancers)
 	h.UseFunctionURLs(functions.URLs())
 	h.Handle("deliveries", deliveries)

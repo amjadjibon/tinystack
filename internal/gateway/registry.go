@@ -79,6 +79,11 @@ func (s *Server) serveRegistry(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
+	// A custom domain's /v2 paths are its API's.
+	if _, isDomain := s.domainHost(r); isDomain {
+		return false
+	}
+
 	w.Header().Set("Docker-Distribution-API-Version", "registry/2.0")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	user, password, _ := r.BasicAuth()

@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"io"
 	"net"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
+	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 )
 
 // maxExecuteBody bounds request bodies to APIs, as API Gateway's 10 MB payload
@@ -38,6 +40,51 @@ const elbPath = "/_aws/elb/"
 // /_aws/elb/<label>/... on any host. Call it before serving requests.
 func (s *Server) UseLoadBalancers(handler execute.Handler) {
 	s.balancers = handler
+}
+
+// domainPath is the path prefix that addresses an API Gateway custom domain
+// name: /_aws/domain/<domain name>/...
+const domainPath = "/_aws/domain/"
+
+// Domains serves custom domain names, which Known recognizes by host.
+type Domains interface {
+	execute.Handler
+	Known(ctx context.Context, host string) bool
+}
+
+// UseDomains serves API Gateway custom domain names: unsigned requests whose
+// host is a domain name, or requests to /_aws/domain/<domain name>/... on any
+// host. Call it before serving requests.
+func (s *Server) UseDomains(domains Domains) {
+	s.domains = domains
+}
+
+// domainTarget returns the custom domain a request addresses and the path
+// after it, if the request is to one.
+func (s *Server) domainTarget(r *http.Request) (name, path, endpoint string, ok bool) {
+	if rest, found := strings.CutPrefix(r.URL.Path, domainPath); found {
+		name, path, _ = strings.Cut(rest, "/")
+		return name, "/" + path, "http://" + r.Host + domainPath + name, name != ""
+	}
+
+	host, ok := s.domainHost(r)
+	return host, r.URL.Path, "http://" + r.Host, ok
+}
+
+// domainHost returns the custom domain a request's host is, if it is one.
+// SigV4 requests are AWS's, so they never pay for the lookup.
+func (s *Server) domainHost(r *http.Request) (string, bool) {
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+
+	if s.domains == nil || strings.HasPrefix(r.Header.Get("Authorization"), "AWS4-") ||
+		sigv4.Presigned(r.URL.Query()) || !strings.Contains(host, ".") || !s.domains.Known(r.Context(), host) {
+		return "", false
+	}
+
+	return host, true
 }
 
 // lambdaURLPath is the path prefix that addresses a Lambda function URL by
@@ -125,6 +172,11 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	if !ok && s.functionURLs != nil {
 		id, path, endpoint, ok = lambdaURLTarget(r)
 		handlers = []execute.Handler{s.functionURLs}
+	}
+
+	if !ok && s.domains != nil {
+		id, path, endpoint, ok = s.domainTarget(r)
+		handlers = []execute.Handler{s.domains}
 	}
 
 	if !ok || len(handlers) == 0 {

@@ -648,6 +648,91 @@ type DeleteUsagePlanKeyRequest struct {
 	KeyId       *string `json:"-"`
 }
 
+type CreateDomainNameRequest struct {
+	DomainName              *string                `json:"domainName,omitempty"`
+	CertificateName         *string                `json:"certificateName,omitempty"`
+	CertificateArn          *string                `json:"certificateArn,omitempty"`
+	RegionalCertificateName *string                `json:"regionalCertificateName,omitempty"`
+	RegionalCertificateArn  *string                `json:"regionalCertificateArn,omitempty"`
+	EndpointConfiguration   *EndpointConfiguration `json:"endpointConfiguration,omitempty"`
+	Tags                    map[string]string      `json:"tags,omitempty"`
+	SecurityPolicy          *string                `json:"securityPolicy,omitempty"`
+}
+
+type DomainName struct {
+	DomainName               *string                `json:"domainName,omitempty"`
+	DomainNameArn            *string                `json:"domainNameArn,omitempty"`
+	CertificateName          *string                `json:"certificateName,omitempty"`
+	CertificateArn           *string                `json:"certificateArn,omitempty"`
+	CertificateUploadDate    *float64               `json:"certificateUploadDate,omitempty"`
+	RegionalDomainName       *string                `json:"regionalDomainName,omitempty"`
+	RegionalHostedZoneId     *string                `json:"regionalHostedZoneId,omitempty"`
+	RegionalCertificateName  *string                `json:"regionalCertificateName,omitempty"`
+	RegionalCertificateArn   *string                `json:"regionalCertificateArn,omitempty"`
+	DistributionDomainName   *string                `json:"distributionDomainName,omitempty"`
+	DistributionHostedZoneId *string                `json:"distributionHostedZoneId,omitempty"`
+	EndpointConfiguration    *EndpointConfiguration `json:"endpointConfiguration,omitempty"`
+	DomainNameStatus         *string                `json:"domainNameStatus,omitempty"`
+	SecurityPolicy           *string                `json:"securityPolicy,omitempty"`
+	Tags                     map[string]string      `json:"tags,omitempty"`
+}
+
+type GetDomainNameRequest struct {
+	DomainName *string `json:"-"`
+}
+
+type GetDomainNamesRequest struct {
+	Position *string `json:"-"`
+	Limit    *int64  `json:"-"`
+}
+
+type DomainNames struct {
+	Items    []DomainName `json:"item,omitempty"`
+	Position *string      `json:"position,omitempty"`
+}
+
+type DeleteDomainNameOutput struct{}
+
+type DeleteDomainNameRequest struct {
+	DomainName *string `json:"-"`
+}
+
+type CreateBasePathMappingRequest struct {
+	DomainName *string `json:"-"`
+	BasePath   *string `json:"basePath,omitempty"`
+	RestApiId  *string `json:"restApiId,omitempty"`
+	Stage      *string `json:"stage,omitempty"`
+}
+
+type BasePathMapping struct {
+	BasePath  *string `json:"basePath,omitempty"`
+	RestApiId *string `json:"restApiId,omitempty"`
+	Stage     *string `json:"stage,omitempty"`
+}
+
+type GetBasePathMappingRequest struct {
+	DomainName *string `json:"-"`
+	BasePath   *string `json:"-"`
+}
+
+type GetBasePathMappingsRequest struct {
+	DomainName *string `json:"-"`
+	Position   *string `json:"-"`
+	Limit      *int64  `json:"-"`
+}
+
+type BasePathMappings struct {
+	Items    []BasePathMapping `json:"item,omitempty"`
+	Position *string           `json:"position,omitempty"`
+}
+
+type DeleteBasePathMappingOutput struct{}
+
+type DeleteBasePathMappingRequest struct {
+	DomainName *string `json:"-"`
+	BasePath   *string `json:"-"`
+}
+
 type API interface {
 	CreateRestApi(context.Context, *CreateRestApiRequest) (*RestApi, error)
 	GetRestApi(context.Context, *GetRestApiRequest) (*RestApi, error)
@@ -707,6 +792,14 @@ type API interface {
 	GetUsagePlanKey(context.Context, *GetUsagePlanKeyRequest) (*UsagePlanKey, error)
 	GetUsagePlanKeys(context.Context, *GetUsagePlanKeysRequest) (*UsagePlanKeys, error)
 	DeleteUsagePlanKey(context.Context, *DeleteUsagePlanKeyRequest) (*DeleteUsagePlanKeyOutput, error)
+	CreateDomainName(context.Context, *CreateDomainNameRequest) (*DomainName, error)
+	GetDomainName(context.Context, *GetDomainNameRequest) (*DomainName, error)
+	GetDomainNames(context.Context, *GetDomainNamesRequest) (*DomainNames, error)
+	DeleteDomainName(context.Context, *DeleteDomainNameRequest) (*DeleteDomainNameOutput, error)
+	CreateBasePathMapping(context.Context, *CreateBasePathMappingRequest) (*BasePathMapping, error)
+	GetBasePathMapping(context.Context, *GetBasePathMappingRequest) (*BasePathMapping, error)
+	GetBasePathMappings(context.Context, *GetBasePathMappingsRequest) (*BasePathMappings, error)
+	DeleteBasePathMapping(context.Context, *DeleteBasePathMappingRequest) (*DeleteBasePathMappingOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -880,6 +973,30 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteUsagePlanKey": {Name: "DeleteUsagePlanKey", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"KeyId": catalog.MemberBinding{Location: "label", Name: "keyId"}, "UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/usageplans/{usagePlanId}/keys/{keyId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteUsagePlanKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteUsagePlanKey(ctx, input.(*DeleteUsagePlanKeyRequest))
+		}},
+		"CreateDomainName": {Name: "CreateDomainName", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"CertificateArn": catalog.MemberBinding{Location: "document", Name: "certificateArn"}, "CertificateName": catalog.MemberBinding{Location: "document", Name: "certificateName"}, "DomainName": catalog.MemberBinding{Location: "document", Name: "domainName"}, "EndpointConfiguration": catalog.MemberBinding{Location: "document", Name: "endpointConfiguration"}, "RegionalCertificateArn": catalog.MemberBinding{Location: "document", Name: "regionalCertificateArn"}, "RegionalCertificateName": catalog.MemberBinding{Location: "document", Name: "regionalCertificateName"}, "SecurityPolicy": catalog.MemberBinding{Location: "document", Name: "securityPolicy"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}}, Output: map[string]catalog.MemberBinding{"CertificateArn": catalog.MemberBinding{Location: "document", Name: "certificateArn"}, "CertificateName": catalog.MemberBinding{Location: "document", Name: "certificateName"}, "CertificateUploadDate": catalog.MemberBinding{Location: "document", Name: "certificateUploadDate"}, "DistributionDomainName": catalog.MemberBinding{Location: "document", Name: "distributionDomainName"}, "DistributionHostedZoneId": catalog.MemberBinding{Location: "document", Name: "distributionHostedZoneId"}, "DomainName": catalog.MemberBinding{Location: "document", Name: "domainName"}, "DomainNameArn": catalog.MemberBinding{Location: "document", Name: "domainNameArn"}, "DomainNameStatus": catalog.MemberBinding{Location: "document", Name: "domainNameStatus"}, "EndpointConfiguration": catalog.MemberBinding{Location: "document", Name: "endpointConfiguration"}, "RegionalCertificateArn": catalog.MemberBinding{Location: "document", Name: "regionalCertificateArn"}, "RegionalCertificateName": catalog.MemberBinding{Location: "document", Name: "regionalCertificateName"}, "RegionalDomainName": catalog.MemberBinding{Location: "document", Name: "regionalDomainName"}, "RegionalHostedZoneId": catalog.MemberBinding{Location: "document", Name: "regionalHostedZoneId"}, "SecurityPolicy": catalog.MemberBinding{Location: "document", Name: "securityPolicy"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}}, Method: "POST", URI: "/domainnames", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateDomainNameRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateDomainName(ctx, input.(*CreateDomainNameRequest))
+		}},
+		"GetDomainName": {Name: "GetDomainName", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "domainName"}, "DomainNameId": catalog.MemberBinding{Location: "unsupported:query", Name: "domainNameId"}}, Output: map[string]catalog.MemberBinding{"CertificateArn": catalog.MemberBinding{Location: "document", Name: "certificateArn"}, "CertificateName": catalog.MemberBinding{Location: "document", Name: "certificateName"}, "CertificateUploadDate": catalog.MemberBinding{Location: "document", Name: "certificateUploadDate"}, "DistributionDomainName": catalog.MemberBinding{Location: "document", Name: "distributionDomainName"}, "DistributionHostedZoneId": catalog.MemberBinding{Location: "document", Name: "distributionHostedZoneId"}, "DomainName": catalog.MemberBinding{Location: "document", Name: "domainName"}, "DomainNameArn": catalog.MemberBinding{Location: "document", Name: "domainNameArn"}, "DomainNameStatus": catalog.MemberBinding{Location: "document", Name: "domainNameStatus"}, "EndpointConfiguration": catalog.MemberBinding{Location: "document", Name: "endpointConfiguration"}, "RegionalCertificateArn": catalog.MemberBinding{Location: "document", Name: "regionalCertificateArn"}, "RegionalCertificateName": catalog.MemberBinding{Location: "document", Name: "regionalCertificateName"}, "RegionalDomainName": catalog.MemberBinding{Location: "document", Name: "regionalDomainName"}, "RegionalHostedZoneId": catalog.MemberBinding{Location: "document", Name: "regionalHostedZoneId"}, "SecurityPolicy": catalog.MemberBinding{Location: "document", Name: "securityPolicy"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}}, Method: "GET", URI: "/domainnames/{domainName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetDomainNameRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetDomainName(ctx, input.(*GetDomainNameRequest))
+		}},
+		"GetDomainNames": {Name: "GetDomainNames", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Limit": catalog.MemberBinding{Location: "query", Name: "limit"}, "Position": catalog.MemberBinding{Location: "query", Name: "position"}, "ResourceOwner": catalog.MemberBinding{Location: "unsupported:query", Name: "resourceOwner"}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items"}, "Position": catalog.MemberBinding{Location: "document", Name: "position"}}, Method: "GET", URI: "/domainnames", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetDomainNamesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetDomainNames(ctx, input.(*GetDomainNamesRequest))
+		}},
+		"DeleteDomainName": {Name: "DeleteDomainName", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "domainName"}, "DomainNameId": catalog.MemberBinding{Location: "unsupported:query", Name: "domainNameId"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/domainnames/{domainName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteDomainNameRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteDomainName(ctx, input.(*DeleteDomainNameRequest))
+		}},
+		"CreateBasePathMapping": {Name: "CreateBasePathMapping", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BasePath": catalog.MemberBinding{Location: "document", Name: "basePath"}, "DomainName": catalog.MemberBinding{Location: "label", Name: "domainName"}, "DomainNameId": catalog.MemberBinding{Location: "unsupported:query", Name: "domainNameId"}, "RestApiId": catalog.MemberBinding{Location: "document", Name: "restApiId"}, "Stage": catalog.MemberBinding{Location: "document", Name: "stage"}}, Output: map[string]catalog.MemberBinding{"BasePath": catalog.MemberBinding{Location: "document", Name: "basePath"}, "RestApiId": catalog.MemberBinding{Location: "document", Name: "restApiId"}, "Stage": catalog.MemberBinding{Location: "document", Name: "stage"}}, Method: "POST", URI: "/domainnames/{domainName}/basepathmappings", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateBasePathMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateBasePathMapping(ctx, input.(*CreateBasePathMappingRequest))
+		}},
+		"GetBasePathMapping": {Name: "GetBasePathMapping", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BasePath": catalog.MemberBinding{Location: "label", Name: "basePath"}, "DomainName": catalog.MemberBinding{Location: "label", Name: "domainName"}, "DomainNameId": catalog.MemberBinding{Location: "unsupported:query", Name: "domainNameId"}}, Output: map[string]catalog.MemberBinding{"BasePath": catalog.MemberBinding{Location: "document", Name: "basePath"}, "RestApiId": catalog.MemberBinding{Location: "document", Name: "restApiId"}, "Stage": catalog.MemberBinding{Location: "document", Name: "stage"}}, Method: "GET", URI: "/domainnames/{domainName}/basepathmappings/{basePath}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetBasePathMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBasePathMapping(ctx, input.(*GetBasePathMappingRequest))
+		}},
+		"GetBasePathMappings": {Name: "GetBasePathMappings", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "domainName"}, "DomainNameId": catalog.MemberBinding{Location: "unsupported:query", Name: "domainNameId"}, "Limit": catalog.MemberBinding{Location: "query", Name: "limit"}, "Position": catalog.MemberBinding{Location: "query", Name: "position"}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items"}, "Position": catalog.MemberBinding{Location: "document", Name: "position"}}, Method: "GET", URI: "/domainnames/{domainName}/basepathmappings", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetBasePathMappingsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBasePathMappings(ctx, input.(*GetBasePathMappingsRequest))
+		}},
+		"DeleteBasePathMapping": {Name: "DeleteBasePathMapping", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BasePath": catalog.MemberBinding{Location: "label", Name: "basePath"}, "DomainName": catalog.MemberBinding{Location: "label", Name: "domainName"}, "DomainNameId": catalog.MemberBinding{Location: "unsupported:query", Name: "domainNameId"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/domainnames/{domainName}/basepathmappings/{basePath}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteBasePathMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBasePathMapping(ctx, input.(*DeleteBasePathMappingRequest))
 		}},
 	}}
 }
