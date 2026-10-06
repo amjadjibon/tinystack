@@ -56,7 +56,7 @@ type Server struct {
 	// functionURLs serves Lambda function URLs; see UseFunctionURLs.
 	functionURLs execute.Handler
 	// graphQL serves AppSync GraphQL APIs; see UseGraphQL.
-	graphQL execute.Handler
+	graphQL GraphQL
 	// domains serves API Gateway custom domain names; see UseDomains.
 	domains Domains
 	health  []byte

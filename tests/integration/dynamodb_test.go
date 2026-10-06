@@ -250,6 +250,7 @@ func serverStore(
 
 	s = httptest.NewServer(h)
 	return s, func() {
+		graphQL.Stop()
 		stacks.Stop()
 		workflows.Stop()
 		firehoses.Stop()

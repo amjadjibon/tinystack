@@ -17,6 +17,8 @@ const (
 	authOIDC    = "OPENID_CONNECT"
 	authLambda  = "AWS_LAMBDA"
 	typeGraphQL = "GRAPHQL"
+	// typeRealtime names an API's real-time endpoint in its uris and dns.
+	typeRealtime = "REALTIME"
 )
 
 // view runs fn in a read transaction in the caller's account and region.
@@ -146,14 +148,21 @@ func (s *Service) CreateGraphqlApi(
 	}
 
 	id := common.RandomID(26)
-	scheme, h := host(m.Endpoint, id)
+	scheme, h := host(m.Endpoint, id, "appsync-api")
+	_, realtime := host(m.Endpoint, id, "appsync-realtime-api")
+	socketScheme := "ws"
+	if scheme == "https" {
+		socketScheme = "wss"
+	}
+
 	a := &api.GraphqlApi{
-		ApiId: new(
-			id,
-		),
-		Arn:                 new(apiARN(m.Scope, id)),
-		Uris:                map[string]string{typeGraphQL: scheme + "://" + h + "/graphql"},
-		Dns:                 map[string]string{typeGraphQL: h},
+		ApiId: new(id),
+		Arn:   new(apiARN(m.Scope, id)),
+		Uris: map[string]string{
+			typeGraphQL:  scheme + "://" + h + "/graphql",
+			typeRealtime: socketScheme + "://" + realtime + "/graphql",
+		},
+		Dns:                 map[string]string{typeGraphQL: h, typeRealtime: realtime},
 		Visibility:          new("GLOBAL"),
 		ApiType:             new(typeGraphQL),
 		Owner:               new(m.AccountID),

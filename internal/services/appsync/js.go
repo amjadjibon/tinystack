@@ -102,7 +102,9 @@ type jsRun struct {
 	// thrown is the error util.error or util.unauthorized raised.
 	thrown *fieldError
 	// early is the value runtime.earlyReturn returned, if it was called.
-	early    goja.Value
+	early goja.Value
+	// filter is the enhanced filter extensions.setSubscriptionFilter set.
+	filter   any
 	appended *[]*fieldError
 	stop     func() bool
 }
@@ -167,6 +169,18 @@ func (j *jsRun) host() *goja.Object {
 	set("earlyReturn", func(call goja.FunctionCall) goja.Value {
 		j.early = call.Argument(0)
 		panic(j.vm.NewGoError(errThrown))
+	})
+	set("setSubscriptionFilter", func(call goja.FunctionCall) goja.Value {
+		filter, err := j.export(call.Argument(0))
+		if err != nil {
+			panic(j.vm.NewGoError(err))
+		}
+
+		j.filter = filter
+		return goja.Undefined()
+	})
+	set("invalidation", func(goja.FunctionCall) goja.Value {
+		return raise(&fieldError{Type: errorUnsupported, Message: "TinyStack does not invalidate subscriptions."})
 	})
 	set("autoId", func(goja.FunctionCall) goja.Value { return j.vm.ToValue(uuid()) })
 	set("autoUlid", func(goja.FunctionCall) goja.Value { return j.vm.ToValue(ulid()) })

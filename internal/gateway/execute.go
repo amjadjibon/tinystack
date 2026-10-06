@@ -106,12 +106,20 @@ func (s *Server) UseFunctionURLs(handler execute.Handler) {
 // ID: /_aws/appsync-api/<API ID>/graphql.
 const graphQLPath = "/_aws/appsync-api/"
 
+// GraphQL serves GraphQL APIs over HTTP and their real-time WebSocket
+// connections.
+type GraphQL interface {
+	execute.Handler
+	execute.SocketHandler
+}
+
 // UseGraphQL serves AppSync GraphQL APIs: requests to
 // <API ID>.appsync-api.<host> (such as abc.appsync-api.localhost:4566 or
 // abc.appsync-api.us-east-1.amazonaws.com), or to
-// /_aws/appsync-api/<API ID>/... on any host. Call it before serving
+// /_aws/appsync-api/<API ID>/... on any host, and WebSocket connections to
+// those or to <API ID>.appsync-realtime-api.<host>. Call it before serving
 // requests.
-func (s *Server) UseGraphQL(handler execute.Handler) {
+func (s *Server) UseGraphQL(handler GraphQL) {
 	s.graphQL = handler
 }
 
@@ -190,9 +198,14 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		handlers = []execute.Handler{s.functionURLs}
 	}
 
+	graphQL := false
 	if !ok && s.graphQL != nil {
 		id, path, endpoint, ok = labelTarget(r, ".appsync-api.", graphQLPath)
-		handlers = []execute.Handler{s.graphQL}
+		if !ok {
+			id, path, endpoint, ok = labelTarget(r, ".appsync-realtime-api.", graphQLPath)
+		}
+
+		handlers, graphQL = []execute.Handler{s.graphQL}, ok
 	}
 
 	if !ok && s.domains != nil {
@@ -204,13 +217,6 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	caller := s.caller(w, r)
-	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxExecuteBody))
-	if err != nil {
-		writeExecute(w, execute.Message(http.StatusRequestEntityTooLarge, "Request Entity Too Large"))
-		return true
-	}
-
 	sourceIP := r.RemoteAddr
 	if h, _, splitErr := net.SplitHostPort(sourceIP); splitErr == nil {
 		sourceIP = h
@@ -219,8 +225,20 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	req := &execute.Request{
 		Time: time.Now().UTC(), Header: r.Header.Clone(), Query: r.URL.Query(), Method: r.Method, Path: path,
 		RawQuery: r.URL.RawQuery, Host: r.Host, Endpoint: endpoint, SourceIP: sourceIP, Protocol: r.Proto,
-		Body: body, Caller: caller,
 	}
+	if graphQL && upgrade(r) {
+		s.serveSocket(w, r, id, req)
+		return true
+	}
+
+	req.Caller = s.caller(w, r)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxExecuteBody))
+	if err != nil {
+		writeExecute(w, execute.Message(http.StatusRequestEntityTooLarge, "Request Entity Too Large"))
+		return true
+	}
+
+	req.Body = body
 	for _, h := range handlers {
 		resp, found, execErr := h.Execute(r.Context(), id, req)
 		if execErr != nil {

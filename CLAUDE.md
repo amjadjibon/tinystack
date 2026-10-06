@@ -335,7 +335,13 @@ a per-service `Dialect`), and delivers synchronously through
   `@aws-appsync/utils/dynamodb` in JavaScript, with `util.error`, `appendError`, `earlyReturn`, and IDs in Go).
   `sources.go` sends the request objects to NONE, Lambda (`lambda.Service.Invoke`), HTTP (`proxy.Forward`), and,
   through the `catalog.Caller` from `UseCaller`, DynamoDB and EventBridge data sources, converting DynamoDB items to
-  plain JSON. VTL mapping templates are stored and fail explicitly when a query reaches them.
+  plain JSON. VTL mapping templates are stored and fail explicitly when a query reaches them. Subscriptions
+  (`realtime.go`) run over AppSync's `graphql-ws` WebSocket protocol: the gateway upgrades GraphQL requests (and
+  `<API ID>.appsync-realtime-api.<host>`) and hands `appsync.Service.Connect` an `execute.Socket`, whose `Caller`
+  verifies the SigV4 requests IAM clients describe in the connection header and each `start`. Started subscriptions
+  live in memory (`Stop`, deferred and a shutdown hook in `start.go`, closes the connections); after a mutation, each
+  root field's data goes to the subscriptions whose `@aws_subscribe` names it, whose arguments it equals, and whose
+  enhanced filter (`filters.go`, set by the subscription resolver's `extensions.setSubscriptionFilter`) it passes.
   Step Functions (`services/sfn`) keeps state machines under `…/sfn/statemachine/<name>`, activities under
   `…/sfn/activity/<name>`, versions under `…/sfn/version/<state machine>/<zero-padded number>` and aliases under
   `…/sfn/alias/<state machine>/<alias>` (`versions.go`, whose `loadTarget` resolves the version an execution runs), executions under `…/sfn/execution/<state machine>/<name>`, and each history event under
@@ -457,7 +463,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, and EventBridge Scheduler over REST
-  JSON, Auto Scaling, Elastic Load Balancing, and CloudFormation over Query, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  JSON, Auto Scaling, Elastic Load Balancing, and CloudFormation over Query, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real

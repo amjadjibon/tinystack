@@ -98,26 +98,33 @@ func (s *Service) load(ctx context.Context, scope request.Scope, id, apiKey stri
 	return g, err
 }
 
-// Execute runs a GraphQL request, POST /graphql, against the API id names.
-func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
-	var at location
+// locate returns the scope of the API id names, which is empty when there
+// is none.
+func (s *Service) locate(ctx context.Context, id string) (request.Scope, error) {
+	var scope request.Scope
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		l, found, err := storage.Read[location](tx, indexKey(id))
 		if found {
-			at = *l
+			scope = request.Scope{AccountID: l.Account, Region: l.Region}
 		}
 
 		return err
 	})
-	if err != nil || at.Account == "" {
+
+	return scope, err
+}
+
+// Execute runs a GraphQL request, POST /graphql, against the API id names.
+func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
+	scope, err := s.locate(ctx, id)
+	if err != nil || scope.AccountID == "" {
 		return nil, false, err
 	}
 
-	if r.Method != http.MethodPost || r.Path != "/graphql" {
+	if r.Method != http.MethodPost || r.Path != graphqlPath {
 		return execute.Message(http.StatusNotFound, "Not Found"), true, nil
 	}
 
-	scope := request.Scope{AccountID: at.Account, Region: at.Region}
 	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope})
 	var q query
 	if err = json.Unmarshal(r.Body, &q); err != nil || q.Query == "" {
@@ -150,15 +157,29 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 		return respond(http.StatusOK, nil, errs)
 	}
 
+	if e.op.Operation == ast.Subscription {
+		return respond(http.StatusOK, nil, []*gqlError{{
+			ErrorType: new("UnsupportedOperation"),
+			Message:   "Subscriptions are served by the API's real-time endpoint, " + g.api.Uris[typeRealtime] + ".",
+		}})
+	}
+
 	data, errs := e.run(ctx)
+	if e.op.Operation == ast.Mutation {
+		s.publish(ctx, id, data)
+	}
+
 	return respond(http.StatusOK, data, errs)
 }
 
+// result is a GraphQL response's data and errors.
+type result struct {
+	Data   any         `json:"data"`
+	Errors []*gqlError `json:"errors,omitempty"`
+}
+
 func respond(status int, data any, errs []*gqlError) (*execute.Response, bool, error) {
-	body, err := json.Marshal(struct {
-		Data   any         `json:"data"`
-		Errors []*gqlError `json:"errors,omitempty"`
-	}{data, errs})
+	body, err := json.Marshal(result{data, errs})
 	if err != nil {
 		return nil, true, err
 	}
@@ -239,11 +260,13 @@ func depth(set ast.SelectionSet, level int) int {
 
 // session is one request's resolvers.
 type session struct {
-	service  *Service
-	graph    *graph
-	caller   *caller
-	request  *execute.Request
-	vars     map[string]any
+	service *Service
+	graph   *graph
+	caller  *caller
+	request *execute.Request
+	vars    map[string]any
+	// filter is the enhanced filter a subscription's resolver set.
+	filter   any
 	resolved int
 }
 
@@ -298,7 +321,13 @@ func (r *session) runJS(ctx context.Context, res *resolution, resolver *api.Reso
 		return nil, err
 	}
 
-	defer j.stop()
+	defer func() {
+		j.stop()
+		if j.filter != nil {
+			r.filter = j.filter
+		}
+	}()
+
 	h, err := j.load(*resolver.Code)
 	if err != nil {
 		return nil, err

@@ -62,3 +62,28 @@ func Message(status int, message string) *Response {
 	body, _ := json.Marshal(map[string]string{"message": message})
 	return &Response{Status: status, Header: http.Header{"Content-Type": {"application/json"}}, Body: body}
 }
+
+// Socket is a WebSocket connection to an API. The gateway completes the
+// handshake when the handler accepts it.
+type Socket interface {
+	// Accept completes the handshake, choosing subprotocol if the client
+	// offered it. Call it before Receive and Send.
+	Accept(subprotocol string) error
+	// Receive returns the next message.
+	Receive(ctx context.Context) ([]byte, error)
+	// Send sends a text message. It may be called concurrently with Receive.
+	Send(ctx context.Context, message []byte) error
+	// Caller returns who signed a request the client describes inside a
+	// message, a POST of body to path (relative to the API's endpoint) with
+	// header, or nil when it is unsigned or, in identity.mode verify, its
+	// signature does not verify.
+	Caller(ctx context.Context, header http.Header, path string, body []byte) *Caller
+}
+
+// SocketHandler serves WebSocket connections to the APIs of one service.
+type SocketHandler interface {
+	// Connect serves socket, a connection to the API id names, until it
+	// closes. It reports false, without accepting socket, when id names no
+	// API or r.Path no endpoint of one.
+	Connect(ctx context.Context, id string, r *Request, socket Socket) (bool, error)
+}

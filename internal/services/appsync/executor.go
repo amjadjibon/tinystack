@@ -40,10 +40,11 @@ type fieldError struct {
 
 func (e *fieldError) Error() string { return e.Message }
 
-// entry is one field of a response object.
+// entry is one field of a response object: its response key and field name.
 type entry struct {
 	value any
 	key   string
+	name  string
 }
 
 // object is a response object, which keeps its fields in selection order.
@@ -114,7 +115,7 @@ type executor struct {
 // non-null root field fails, and its errors.
 func (e *executor) run(ctx context.Context) (any, []*gqlError) {
 	root := map[ast.Operation]*ast.Definition{
-		ast.Query: e.schema.Query, ast.Mutation: e.schema.Mutation,
+		ast.Query: e.schema.Query, ast.Mutation: e.schema.Mutation, ast.Subscription: e.schema.Subscription,
 	}[e.op.Operation]
 	if root == nil {
 		e.fail(nil, nil, "UnsupportedOperation", fmt.Sprintf("TinyStack does not run %s operations.", e.op.Operation))
@@ -207,7 +208,7 @@ func (e *executor) selectionSet(ctx context.Context, obj *ast.Definition, groups
 			return nil, false
 		}
 
-		out = append(out, entry{key: g.key, value: v})
+		out = append(out, entry{key: g.key, name: g.fields[0].Name, value: v})
 	}
 
 	return out, true

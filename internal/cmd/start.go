@@ -188,6 +188,8 @@ func newStartCommand() *cobra.Command {
 			httpAPIs := apigatewayv2.New(store, functions, logGroups)
 			restAPIs := apigateway.New(store, functions, logGroups, identities)
 			graphQL := appsync.New(store, functions, identities)
+			// Stop closes real-time connections, which shutdown leaves open.
+			defer graphQL.Stop()
 			network := ec2.New(store)
 			network.UseInstanceProfiles(roles.InstanceProfileOf)
 			kube := eks.New(store, network)
@@ -334,6 +336,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(containers.Stop)
 			server.RegisterOnShutdown(kube.Stop)
 			server.RegisterOnShutdown(stacks.Stop)
+			server.RegisterOnShutdown(graphQL.Stop)
 			// The console has its own listener, so its pages never reach the
 			// AWS protocol classification.
 			var consoleServer *http.Server

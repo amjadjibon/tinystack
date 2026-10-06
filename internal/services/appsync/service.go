@@ -11,7 +11,8 @@
 // The schema record holds the SDL as StartSchemaCreation, CreateType,
 // UpdateType, and DeleteType leave it; types are read from it. The
 // partition-wide aws/appsync/api/<API ID> finds an API's account and region
-// when it is called.
+// when it is called. Real-time connections and their subscriptions live in
+// memory.
 package appsync
 
 import (
@@ -26,6 +27,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -51,14 +53,23 @@ type Service struct {
 	verifier  *proxy.Verifier
 	// caller reaches the DynamoDB and EventBridge data sources.
 	caller *catalog.Caller
+	bg     *background.Group
 	now    func() time.Time
+	// subscriptions are the real-time connections' started subscriptions.
+	subscriptions hub
 }
 
 // New returns the service. Resolvers and Lambda authorizers invoke functions,
 // and Cognito user pool authorization verifies tokens with pools.
 func New(store storage.Store, functions *lambda.Service, pools *cognitoidp.Service) *Service {
-	return &Service{store: store, functions: functions, pools: pools, verifier: proxy.NewVerifier(), now: time.Now}
+	return &Service{
+		store: store, functions: functions, pools: pools, verifier: proxy.NewVerifier(), bg: background.New(),
+		now: time.Now,
+	}
 }
+
+// Stop closes the real-time connections.
+func (s *Service) Stop() { s.bg.Stop() }
 
 // UseCaller lets DynamoDB and EventBridge data sources call those services.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
@@ -88,13 +99,13 @@ func apiARN(scope request.Scope, id string) string {
 	return "arn:aws:appsync:" + scope.Region + ":" + scope.AccountID + ":apis/" + id
 }
 
-// host is the host an API is called at: a subdomain of the host the client
-// used, <ID>.appsync-api.<host>, where an IP address becomes "localhost",
-// whose subdomains resolve to the loopback address.
-func host(base, id string) (scheme, h string) {
+// host is the host an API's endpoint, such as appsync-api, is at: a subdomain
+// of the host the client used, <ID>.<endpoint>.<host>, where an IP address
+// becomes "localhost", whose subdomains resolve to the loopback address.
+func host(base, id, endpoint string) (scheme, h string) {
 	u, err := url.Parse(base)
 	if err != nil || u.Host == "" {
-		return "http", id + ".appsync-api.localhost"
+		return "http", id + "." + endpoint + ".localhost"
 	}
 
 	name, port := u.Hostname(), u.Port()
@@ -102,7 +113,7 @@ func host(base, id string) (scheme, h string) {
 		name = "localhost"
 	}
 
-	h = id + ".appsync-api." + name
+	h = id + "." + endpoint + "." + name
 	if port != "" {
 		h = net.JoinHostPort(h, port)
 	}

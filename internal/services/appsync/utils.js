@@ -20,6 +20,44 @@
     return out;
   };
 
+  // The operators of enhanced subscription filters.
+  const filterOperators = [
+    "eq",
+    "ne",
+    "le",
+    "lt",
+    "ge",
+    "gt",
+    "contains",
+    "notContains",
+    "beginsWith",
+    "in",
+    "notIn",
+    "between",
+    "containsAny",
+  ];
+
+  // fieldFilters are the filters { operator: value } sets on a field, whose
+  // nested objects name its fields.
+  const fieldFilters = (path, ops) =>
+    Object.entries(ops).flatMap(([op, value]) =>
+      filterOperators.includes(op) ? [{ fieldName: path, operator: op, value }] : fieldFilters(`${path}.${op}`, value),
+    );
+
+  // filterGroups converts a filter object into groups of filters, any of
+  // which may pass, each of whose filters must.
+  const filterGroups = (o, ignored) => {
+    const and = (a, b) => a.flatMap((x) => b.map((y) => x.concat(y)));
+    let groups = [[]];
+    for (const [key, v] of Object.entries(o || {})) {
+      if (ignored.includes(key)) continue;
+      if (key === "or") groups = and(groups, v.flatMap((e) => filterGroups(e, ignored)));
+      else if (key === "and") for (const e of v) groups = and(groups, filterGroups(e, ignored));
+      else groups = and(groups, [fieldFilters(key, v)]);
+    }
+    return groups;
+  };
+
   const util = {
     error: host.error,
     appendError: host.appendError,
@@ -45,6 +83,12 @@
       parseISO8601ToEpochMilliSeconds: (s) => Date.parse(s),
       epochMilliSecondsToSeconds: (ms) => Math.floor(ms / 1000),
       epochMilliSecondsToISO8601: (ms) => new Date(ms).toISOString(),
+    },
+    transform: {
+      toSubscriptionFilter: (o, ignoredFields = [], rules = undefined) => {
+        if (rules !== undefined) throw new Error("TinyStack does not support toSubscriptionFilter rules.");
+        return { filterGroup: filterGroups(o, ignoredFields).map((filters) => ({ filters })) };
+      },
     },
     dynamodb: {
       toDynamoDB,
@@ -190,7 +234,15 @@
   };
 
   return {
-    "@aws-appsync/utils": { util, runtime: { earlyReturn: host.earlyReturn } },
+    "@aws-appsync/utils": {
+      util,
+      runtime: { earlyReturn: host.earlyReturn },
+      extensions: {
+        setSubscriptionFilter: host.setSubscriptionFilter,
+        setSubscriptionInvalidationFilter: host.invalidation,
+        invalidateSubscriptions: host.invalidation,
+      },
+    },
     "@aws-appsync/utils/dynamodb": dynamodb,
   };
 })
