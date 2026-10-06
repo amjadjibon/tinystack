@@ -8,7 +8,7 @@ delete it through ElastiCache management APIs. The implementation brief is
 ## Feature checklist
 
 - [x] Management — Create/describe/delete cache clusters (Redis, Valkey, Memcached), subnet groups, parameter groups, tags, and lifecycle events in records mode.
-- [ ] Runtime — Start and monitor an isolated Redis-compatible process/container, allocate an endpoint, and expose engine health as AWS state.
+- [x] Runtime — Start and monitor an isolated Redis-compatible process/container, allocate an endpoint, and expose engine health as AWS state.
 - [ ] Persistence — State whether cache contents survive TinyStack restart; if persistence is enabled, retain a named volume and reconnect safely.
 - [ ] Later features — Multi-node replication, automatic failover, snapshots, scaling, TLS, AUTH, and serverless caches require separate capability gates.
 

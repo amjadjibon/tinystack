@@ -1,0 +1,413 @@
+package elasticache
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"strings"
+	"time"
+
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+const (
+	indexPrefix = "aws/elasticache/index/"
+	tick        = time.Second
+)
+
+// ErrGone is returned when a container no longer exists.
+var ErrGone = errors.New("container is gone")
+
+// Runtime runs cache node containers.
+type Runtime interface {
+	Start(ctx context.Context, spec *NodeSpec) (Started, error)
+	Running(ctx context.Context, id string) (bool, error)
+	Remove(ctx context.Context, id string)
+	ListLabeled(ctx context.Context, label string) (map[string]string, error)
+	Close()
+}
+
+// NodeSpec defines a container to run for a cache node.
+type NodeSpec struct {
+	Labels  map[string]string
+	Image   string
+	Alias   string
+	Network string
+	Args    []string
+	Port    int64
+}
+
+// Started holds the ID and published host port of a started container.
+type Started struct {
+	ID   string
+	Port int64
+}
+
+// UseRuntime enables container execution for cache clusters.
+func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) {
+	s.runtime = rt
+	s.logger = logger
+	if s.bg == nil {
+		s.bg = background.New()
+	}
+	s.bg.Every(tick, s.visit)
+}
+
+func indexKey(scope request.Scope, kind, id string) string {
+	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + kind + "/" + strings.ToLower(id)
+}
+
+func parseIndexKey(k string) (scope request.Scope, kind, id string, ok bool) {
+	rest := strings.TrimPrefix(k, indexPrefix)
+	parts := strings.Split(rest, "/")
+	if len(parts) != 4 {
+		return request.Scope{}, "", "", false
+	}
+
+	return request.Scope{AccountID: parts[0], Region: parts[1]}, parts[2], parts[3], true
+}
+
+func (s *Service) visit(ctx context.Context) {
+	if s.runtime == nil {
+		return
+	}
+
+	s.mu.Lock()
+	needOrphanClean := !s.orphansDone
+	s.orphansDone = true
+	s.mu.Unlock()
+
+	if needOrphanClean {
+		s.cleanOrphans(ctx)
+	}
+
+	var keys []string
+	if err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		keys = tx.Keys(indexPrefix)
+		return nil
+	}); err != nil {
+		return
+	}
+
+	for _, k := range keys {
+		s.mu.Lock()
+		if s.busy[k] {
+			s.mu.Unlock()
+			continue
+		}
+
+		s.busy[k] = true
+		s.mu.Unlock()
+
+		s.bg.Go(func(ctx context.Context) {
+			defer func() {
+				s.mu.Lock()
+				delete(s.busy, k)
+				s.mu.Unlock()
+			}()
+
+			if err := s.advance(ctx, k); err != nil && ctx.Err() == nil {
+				if s.logger != nil {
+					s.logger.Error("elasticache advance failed", "key", k, "err", err)
+				}
+			}
+		})
+	}
+}
+
+func (s *Service) cleanOrphans(ctx context.Context) {
+	containers, err := s.runtime.ListLabeled(ctx, "tinystack.elasticache")
+	if err != nil || len(containers) == 0 {
+		return
+	}
+
+	for id, arn := range containers {
+		scope, kind, name, parseErr := parseARN(arn)
+		if parseErr != nil {
+			s.runtime.Remove(ctx, id)
+			continue
+		}
+
+		exists := false
+		_ = s.store.View(ctx, func(tx storage.ReadTx) error {
+			switch kind {
+			case resKindCluster:
+				_, found, _ := storage.Read[clusterRecord](tx, clusterKey(scope, name))
+				exists = found
+			default:
+				exists = false
+			}
+			return nil
+		})
+
+		if !exists {
+			s.runtime.Remove(ctx, id)
+		}
+	}
+}
+
+func (s *Service) advance(ctx context.Context, k string) error {
+	scope, kind, id, ok := parseIndexKey(k)
+	if !ok {
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
+			tx.Delete(k)
+			return nil
+		})
+	}
+
+	switch kind {
+	case resKindCluster:
+		return s.advanceCluster(ctx, scope, id, k)
+	default:
+		return nil
+	}
+}
+
+func (s *Service) advanceCluster(ctx context.Context, scope request.Scope, clusterID, idxKey string) error {
+	var record *clusterRecord
+	var found bool
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		var readErr error
+		record, found, readErr = storage.Read[clusterRecord](tx, clusterKey(scope, clusterID))
+		return readErr
+	})
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
+			tx.Delete(idxKey)
+			return nil
+		})
+	}
+
+	switch record.Status {
+	case statusDeleting:
+		for _, n := range record.Nodes {
+			if n.ContainerID != "" {
+				s.runtime.Remove(ctx, n.ContainerID)
+			}
+		}
+
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
+			tx.Delete(clusterKey(scope, clusterID))
+			tx.Delete(idxKey)
+			return nil
+		})
+
+	case statusRebooting:
+		for i := range record.Nodes {
+			n := &record.Nodes[i]
+			if n.ContainerID != "" {
+				s.runtime.Remove(ctx, n.ContainerID)
+				n.ContainerID = ""
+			}
+			n.Status = statusCreating
+		}
+		record.Status = statusModifying
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
+			return storage.Write(tx, clusterKey(scope, clusterID), *record)
+		})
+
+	case statusCreating, statusModifying:
+		return s.advanceCreatingCluster(ctx, scope, clusterID, record)
+
+	case statusAvailable:
+		return s.advanceAvailableCluster(ctx, scope, clusterID, record)
+
+	default:
+		return nil
+	}
+}
+
+func (s *Service) advanceCreatingCluster(
+	ctx context.Context,
+	scope request.Scope,
+	clusterID string,
+	record *clusterRecord,
+) error {
+	spec, err := resolveEngine(record.Engine, record.EngineVersion)
+	if err != nil {
+		return err
+	}
+
+	args := s.buildParamArgs(ctx, scope, record.Engine, record.ParameterGroupName)
+	containerPort := int64(6379)
+	if record.Engine == EngineMemcached {
+		containerPort = 11211
+	}
+
+	changed := false
+	for i := range record.Nodes {
+		n := &record.Nodes[i]
+		if n.ContainerID == "" {
+			nodeSpec := &NodeSpec{
+				Labels: map[string]string{
+					"tinystack.elasticache": clusterARN(scope, clusterID),
+					"tinystack.node":        n.NodeID,
+				},
+				Image: spec.Image,
+				Port:  containerPort,
+				Args:  args,
+			}
+
+			started, startErr := s.runtime.Start(ctx, nodeSpec)
+			if startErr != nil {
+				record.Status = statusCreateFailed
+				s.recordEvent(
+					ctx,
+					scope,
+					clusterID,
+					sourceTypeCacheCluster,
+					fmt.Sprintf("Cluster %s failed to start node %s: %v", clusterID, n.NodeID, startErr),
+				)
+				return s.store.Update(ctx, func(tx storage.WriteTx) error {
+					return storage.Write(tx, clusterKey(scope, clusterID), *record)
+				})
+			}
+
+			n.ContainerID = started.ID
+			n.Port = started.Port
+			n.Status = statusCreating
+			changed = true
+		}
+
+		if n.Status != statusAvailable {
+			probeErr := probeNode(ctx, record.Engine, "127.0.0.1", n.Port, 2*time.Second)
+			if probeErr == nil {
+				n.Status = statusAvailable
+				changed = true
+			} else if time.Since(record.CreateTime) > 2*time.Minute {
+				record.Status = statusCreateFailed
+				s.recordEvent(
+					ctx,
+					scope,
+					clusterID,
+					sourceTypeCacheCluster,
+					fmt.Sprintf("Cluster %s failed health probe after 2 minutes", clusterID),
+				)
+				return s.store.Update(ctx, func(tx storage.WriteTx) error {
+					return storage.Write(tx, clusterKey(scope, clusterID), *record)
+				})
+			}
+		}
+	}
+
+	allAvail := true
+	for i := range record.Nodes {
+		if record.Nodes[i].Status != statusAvailable {
+			allAvail = false
+			break
+		}
+	}
+
+	if allAvail {
+		record.Status = statusAvailable
+		if record.ParameterApplyStatus == "applying" || record.ParameterApplyStatus == "pending-reboot" {
+			record.ParameterApplyStatus = applyStatusInSync
+		}
+		s.recordEvent(
+			ctx,
+			scope,
+			clusterID,
+			sourceTypeCacheCluster,
+			fmt.Sprintf("Cluster %s is available", clusterID),
+		)
+		changed = true
+	}
+
+	if changed {
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
+			return storage.Write(tx, clusterKey(scope, clusterID), *record)
+		})
+	}
+
+	return nil
+}
+
+func (s *Service) advanceAvailableCluster(
+	ctx context.Context,
+	scope request.Scope,
+	clusterID string,
+	record *clusterRecord,
+) error {
+	for i := range record.Nodes {
+		n := &record.Nodes[i]
+		if n.ContainerID != "" {
+			running, runErr := s.runtime.Running(ctx, n.ContainerID)
+			if errors.Is(runErr, ErrGone) || !running {
+				n.Status = statusCreating
+				n.ContainerID = ""
+				record.Status = statusModifying
+				s.recordEvent(
+					ctx,
+					scope,
+					clusterID,
+					sourceTypeCacheCluster,
+					fmt.Sprintf("Node %s stopped unexpectedly, restarting", n.NodeID),
+				)
+				return s.store.Update(ctx, func(tx storage.WriteTx) error {
+					return storage.Write(tx, clusterKey(scope, clusterID), *record)
+				})
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) buildParamArgs(
+	ctx context.Context,
+	scope request.Scope,
+	engine, paramGroupName string,
+) []string {
+	if isDefaultParameterGroup(paramGroupName) {
+		return nil
+	}
+
+	var params map[string]string
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
+		pg, found, err := storage.Read[parameterGroupRecord](tx, parameterGroupKey(scope, paramGroupName))
+		if err == nil && found {
+			params = pg.UserValues
+		}
+		return nil
+	})
+
+	var args []string
+	switch engine {
+	case EngineRedis, EngineValkey:
+		for k, v := range params {
+			args = append(args, "--"+k, v)
+		}
+	case EngineMemcached:
+		for k, v := range params {
+			flags, _ := memcachedParamFlags(k, v)
+			args = append(args, flags...)
+		}
+	}
+
+	return args
+}
+
+func memcachedParamFlags(name, val string) ([]string, error) {
+	switch name {
+	case "max_item_size":
+		return []string{"-I", val}, nil
+	case "max_simultaneous_connections_per_node":
+		return []string{"-c", val}, nil
+	case "cas_disabled":
+		if val == "1" || strings.EqualFold(val, "true") {
+			return []string{"-C"}, nil
+		}
+		return nil, nil
+	case "chunk_size":
+		return []string{"-s", val}, nil
+	default:
+		return nil, invalidParameterValue("parameter %s has no Memcached flag mapping", name)
+	}
+}

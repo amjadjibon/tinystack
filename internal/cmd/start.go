@@ -78,6 +78,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/eks"
 	"github.com/amjadjibon/tinystack/internal/services/eks/k3s"
 	"github.com/amjadjibon/tinystack/internal/services/elasticache"
+	cachedocker "github.com/amjadjibon/tinystack/internal/services/elasticache/docker"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
@@ -323,6 +324,9 @@ func newStartCommand() *cobra.Command {
 				}
 
 				kube.UseRuntime(clusters, logger)
+			}
+			if cfg.ElastiCache.Caches == config.CachesDocker {
+				caches.UseRuntime(cachedocker.New(), logger)
 			}
 			handler.Handle("deliveries", deliveries)
 

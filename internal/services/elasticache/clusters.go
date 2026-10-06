@@ -3,6 +3,7 @@ package elasticache
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -15,10 +16,11 @@ import (
 )
 
 type clusterNode struct {
-	CreateTime time.Time
-	NodeID     string
-	Status     string
-	Port       int64
+	CreateTime  time.Time
+	NodeID      string
+	Status      string
+	ContainerID string
+	Port        int64
 }
 
 type clusterRecord struct {
@@ -157,9 +159,13 @@ func toAPICacheCluster(scope request.Scope, r *clusterRecord, showNodes bool) ap
 	}
 
 	if r.Engine == EngineMemcached {
+		cfgPort := r.Port
+		if len(r.Nodes) > 0 && r.Nodes[0].Port > 0 {
+			cfgPort = r.Nodes[0].Port
+		}
 		cluster.ConfigurationEndpoint = &api.Endpoint{
 			Address: new(endpointHost),
-			Port:    new(r.Port),
+			Port:    new(cfgPort),
 		}
 	}
 
@@ -291,6 +297,29 @@ func (s *Service) CreateCacheCluster(
 		prefAZ = common.Value(in.PreferredAvailabilityZone)
 	}
 
+	if spec.Engine == EngineMemcached && !isDefaultParameterGroup(paramGroupName) {
+		var memParams map[string]string
+		_ = s.store.View(ctx, func(tx storage.ReadTx) error {
+			pg, found, rErr := storage.Read[parameterGroupRecord](tx, parameterGroupKey(scope, paramGroupName))
+			if rErr == nil && found {
+				memParams = pg.UserValues
+			}
+			return nil
+		})
+		for k, v := range memParams {
+			if _, fErr := memcachedParamFlags(k, v); fErr != nil {
+				return nil, fErr
+			}
+		}
+	}
+
+	clusterStatus := statusAvailable
+	nodeStatus := statusAvailable
+	if s.runtime != nil {
+		clusterStatus = statusCreating
+		nodeStatus = statusCreating
+	}
+
 	now := time.Now().UTC()
 	nodes := make([]clusterNode, 0, numNodes)
 	for i := int64(1); i <= numNodes; i++ {
@@ -299,31 +328,34 @@ func (s *Service) CreateCacheCluster(
 		if spec.Engine == EngineMemcached {
 			nodePort = port + i - 1
 		}
+		if s.runtime != nil {
+			nodePort = 0
+		}
 
 		nodes = append(nodes, clusterNode{
-			NodeID:     nodeID,
-			Port:       nodePort,
-			Status:     statusAvailable,
 			CreateTime: now,
+			NodeID:     nodeID,
+			Status:     nodeStatus,
+			Port:       nodePort,
 		})
 	}
 
 	record := clusterRecord{
+		CreateTime:           now,
+		Tags:                 tags,
+		SecurityGroupIDs:     in.SecurityGroupIds,
+		Nodes:                nodes,
 		ClusterID:            clusterID,
 		Engine:               spec.Engine,
 		EngineVersion:        spec.EngineVersion,
 		NodeType:             nodeType,
-		Status:               statusAvailable,
-		NumNodes:             numNodes,
-		Port:                 port,
+		Status:               clusterStatus,
 		SubnetGroupName:      subnetGroupName,
 		ParameterGroupName:   paramGroupName,
-		ParameterApplyStatus: "in-sync",
+		ParameterApplyStatus: applyStatusInSync,
 		PreferredAZ:          prefAZ,
-		SecurityGroupIDs:     in.SecurityGroupIds,
-		Nodes:                nodes,
-		CreateTime:           now,
-		Tags:                 tags,
+		NumNodes:             numNodes,
+		Port:                 port,
 	}
 
 	key := clusterKey(scope, clusterID)
@@ -332,6 +364,12 @@ func (s *Service) CreateCacheCluster(
 			return readErr
 		} else if found {
 			return clusterAlreadyExists(clusterID)
+		}
+
+		if s.runtime != nil {
+			if writeErr := storage.Write(tx, indexKey(scope, resKindCluster, clusterID), struct{}{}); writeErr != nil {
+				return writeErr
+			}
 		}
 
 		return storage.Write(tx, key, record)
@@ -596,6 +634,27 @@ func (s *Service) DeleteCacheCluster(
 		return nil, err
 	}
 
+	if s.runtime != nil {
+		existing.Status = statusDeleting
+		for i := range existing.Nodes {
+			existing.Nodes[i].Status = statusDeleting
+		}
+		err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+			if writeErr := storage.Write(tx, indexKey(scope, resKindCluster, targetID), struct{}{}); writeErr != nil {
+				return writeErr
+			}
+			return storage.Write(tx, key, *existing)
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		cluster := toAPICacheCluster(scope, existing, false)
+		return &api.DeleteCacheClusterResult{
+			CacheCluster: &cluster,
+		}, nil
+	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		tx.Delete(key)
 		return nil
@@ -645,6 +704,25 @@ func (s *Service) RebootCacheCluster(
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if s.runtime != nil {
+		existing.Status = statusRebooting
+		for i := range existing.Nodes {
+			n := &existing.Nodes[i]
+			if len(in.CacheNodeIdsToReboot) == 0 || slices.Contains(in.CacheNodeIdsToReboot, n.NodeID) {
+				n.Status = statusRebooting
+			}
+		}
+		err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+			if writeErr := storage.Write(tx, indexKey(scope, resKindCluster, targetID), struct{}{}); writeErr != nil {
+				return writeErr
+			}
+			return storage.Write(tx, key, *existing)
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	s.recordEvent(ctx, scope, targetID, sourceTypeCacheCluster, "Cluster "+targetID+" rebooted")

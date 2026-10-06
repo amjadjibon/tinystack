@@ -3,6 +3,7 @@ package elasticache
 import (
 	"context"
 	"strings"
+	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -518,6 +519,12 @@ func (s *Service) ModifyCacheParameterGroup(
 			return nil, invalidParameterValue("Parameter %s is not modifiable.", pName)
 		}
 
+		if strings.HasPrefix(existing.Family, "memcached") {
+			if _, fErr := memcachedParamFlags(pName, pVal); fErr != nil {
+				return nil, fErr
+			}
+		}
+
 		existing.UserValues[pName] = pVal
 	}
 
@@ -526,6 +533,10 @@ func (s *Service) ModifyCacheParameterGroup(
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if s.runtime != nil {
+		s.applyParameterGroupChanges(ctx, scope, name, in.ParameterNameValues, defMap)
 	}
 
 	s.recordEvent(ctx, scope, name, sourceTypeCacheParameterGroup, "Cache parameter group "+name+" modified")
@@ -655,4 +666,53 @@ func (s *Service) DeleteCacheParameterGroup(
 	s.recordEvent(ctx, scope, name, sourceTypeCacheParameterGroup, "Cache parameter group "+name+" deleted")
 
 	return &api.DeleteCacheParameterGroupOutput{}, nil
+}
+
+func (s *Service) applyParameterGroupChanges(
+	ctx context.Context,
+	scope request.Scope,
+	groupName string,
+	pnvs []api.ParameterNameValue,
+	defs map[string]paramDefinition,
+) {
+	var clusters []clusterRecord
+	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
+		all, _ := storage.Records[clusterRecord](tx, clusterPrefix(scope))
+		for _, cl := range all {
+			if strings.EqualFold(cl.ParameterGroupName, groupName) {
+				clusters = append(clusters, *cl)
+			}
+		}
+		return nil
+	})
+
+	for i := range clusters {
+		cl := &clusters[i]
+		hasStatic := false
+		if cl.Engine == EngineRedis || cl.Engine == EngineValkey {
+			for _, pnv := range pnvs {
+				pName := common.Value(pnv.ParameterName)
+				pVal := common.Value(pnv.ParameterValue)
+				d := defs[pName]
+				if d.Dynamic && cl.Status == statusAvailable {
+					for _, node := range cl.Nodes {
+						if node.Port > 0 {
+							_ = redisConfigSet(ctx, "127.0.0.1", node.Port, pName, pVal, 2*time.Second)
+						}
+					}
+				} else {
+					hasStatic = true
+				}
+			}
+		} else {
+			hasStatic = true
+		}
+
+		if hasStatic {
+			cl.ParameterApplyStatus = "pending-reboot"
+			_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+				return storage.Write(tx, clusterKey(scope, cl.ClusterID), cl)
+			})
+		}
+	}
 }

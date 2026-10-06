@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -16,24 +17,38 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 const (
 	serviceName = "elasticache"
 
-	statusAvailable = "available"
-	defaultVpcID    = "vpc-default"
+	statusAvailable          = "available"
+	statusCreating           = "creating"
+	statusModifying          = "modifying"
+	statusDeleting           = "deleting"
+	statusRebooting          = "rebooting"
+	statusCreateFailed       = "create-failed"
+	defaultVpcID             = "vpc-default"
+	applyStatusInSync        = "in-sync"
+	applyStatusApplying      = "applying"
+	applyStatusPendingReboot = "pending-reboot"
 )
 
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store    storage.Store
-	caller   *catalog.Caller
-	logger   *slog.Logger
-	now      func() time.Time
-	eventSeq atomic.Uint64
+	store       storage.Store
+	runtime     Runtime
+	caller      *catalog.Caller
+	logger      *slog.Logger
+	bg          *background.Group
+	busy        map[string]bool
+	now         func() time.Time
+	mu          sync.Mutex
+	eventSeq    atomic.Uint64
+	orphansDone bool
 }
 
 // New returns an ElastiCache service using store for persistence.
@@ -42,6 +57,7 @@ func New(store storage.Store) *Service {
 		store:  store,
 		logger: slog.Default(),
 		now:    time.Now,
+		busy:   map[string]bool{},
 	}
 }
 
@@ -51,7 +67,14 @@ func (s *Service) UseCaller(caller *catalog.Caller) {
 }
 
 // Stop shuts down any background workers.
-func (s *Service) Stop() {}
+func (s *Service) Stop() {
+	if s.bg != nil {
+		s.bg.Stop()
+	}
+	if s.runtime != nil {
+		s.runtime.Close()
+	}
+}
 
 func invalidParameterValue(format string, args ...any) error {
 	return awserror.New("InvalidParameterValueException", fmt.Sprintf(format, args...))
@@ -117,6 +140,10 @@ func tagQuotaExceeded() error {
 
 func clusterKey(scope request.Scope, id string) string {
 	return scope.Key(serviceName, "cluster", strings.ToLower(id))
+}
+
+func clusterPrefix(scope request.Scope) string {
+	return scope.Key(serviceName, "cluster", "")
 }
 
 func subnetGroupKey(scope request.Scope, name string) string {
