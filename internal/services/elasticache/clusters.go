@@ -134,9 +134,10 @@ func toAPICacheCluster(scope request.Scope, r *clusterRecord, showNodes bool) ap
 			host := localhost
 			port := n.Port
 			nodes = append(nodes, api.CacheNode{
-				CacheNodeId:         new(n.NodeID),
-				CacheNodeStatus:     new(n.Status),
-				CacheNodeCreateTime: new(n.CreateTime),
+				CacheNodeCreateTime:      new(n.CreateTime),
+				CacheNodeId:              new(n.NodeID),
+				CacheNodeStatus:          new(n.Status),
+				CustomerAvailabilityZone: new(r.PreferredAZ),
 				Endpoint: &api.Endpoint{
 					Address: new(host),
 					Port:    new(port),
