@@ -19,6 +19,10 @@
       "path": "codegen/sdk-codegen/aws-models/appsync.json",
       "sha256": "9bbe3b89c7b07c112268fa83682fa26ceab779b02e509c16e5d42643f965318e"
     },
+    "athena": {
+      "path": "codegen/sdk-codegen/aws-models/athena.json",
+      "sha256": "64bc66f6d0c82e219320a7cd48fe4d1796f1108208a4063bf4730c0bd404f834"
+    },
     "autoscaling": {
       "path": "codegen/sdk-codegen/aws-models/auto-scaling.json",
       "sha256": "a99be352817555cab17666710b0f383b7ab0157714255a6930da3998369ca217"
@@ -34,6 +38,10 @@
     "cloudwatch": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch.json",
       "sha256": "b1abe105489d574be25364ad5cc4a67f5782f4cc6bcf6439a587625bacc9c62a"
+    },
+    "cognitoidentity": {
+      "path": "codegen/sdk-codegen/aws-models/cognito-identity.json",
+      "sha256": "fcd689121fb95b1e796b20749d45de982e223ace60e5dd2d4b3f841fd03cd9f5"
     },
     "cognitoidp": {
       "path": "codegen/sdk-codegen/aws-models/cognito-identity-provider.json",
@@ -75,6 +83,10 @@
       "path": "codegen/sdk-codegen/aws-models/firehose.json",
       "sha256": "ae58605d392b6571983abec05ebd3aa2884d3ab43d1b7d1dda6f30f03815f35e"
     },
+    "glue": {
+      "path": "codegen/sdk-codegen/aws-models/glue.json",
+      "sha256": "8bfd97bf150ef0be4cf912b63568a553b29ef79a21d97690bfdd88cb6f47d970"
+    },
     "iam": {
       "path": "codegen/sdk-codegen/aws-models/iam.json",
       "sha256": "c0cec5eeceeffdf03f310ae41c30d072041dbc274bc5a388cad525847de1bec2"
@@ -110,6 +122,10 @@
     "secretsmanager": {
       "path": "codegen/sdk-codegen/aws-models/secrets-manager.json",
       "sha256": "b1bce4d92db3876e6811dd5900a26e4b6b9af15833425dc7a07a5e23886fa886"
+    },
+    "sesv2": {
+      "path": "codegen/sdk-codegen/aws-models/sesv2.json",
+      "sha256": "578928472c1c7524ebfa7f15f67dd5fa5c47d6f4c73356e954e1861497d54926"
     },
     "sfn": {
       "path": "codegen/sdk-codegen/aws-models/sfn.json",
