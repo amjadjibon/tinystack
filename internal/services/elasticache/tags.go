@@ -16,6 +16,7 @@ const (
 	resKindSubnetGroup      = "subnetgroup"
 	resKindParameterGroup   = "parametergroup"
 	resKindReplicationGroup = "replicationgroup"
+	resKindServerlessCache  = "serverlesscache"
 )
 
 func parseARN(arn string) (scope request.Scope, kind, id string, err error) {
@@ -34,7 +35,7 @@ func parseARN(arn string) (scope request.Scope, kind, id string, err error) {
 	id = parts[6]
 
 	switch kind {
-	case resKindCluster, resKindSubnetGroup, resKindParameterGroup, resKindReplicationGroup:
+	case resKindCluster, resKindSubnetGroup, resKindParameterGroup, resKindReplicationGroup, resKindServerlessCache:
 		return scope, kind, id, nil
 	default:
 		return request.Scope{}, "", "", invalidARN(arn)
@@ -112,6 +113,18 @@ func (s *Service) getResourceTags(
 
 			if !found {
 				return replicationGroupNotFound(id)
+			}
+
+			tags = rec.Tags
+
+		case resKindServerlessCache:
+			rec, found, err := storage.Read[serverlessCacheRecord](tx, serverlessCacheKey(scope, id))
+			if err != nil {
+				return err
+			}
+
+			if !found {
+				return serverlessCacheNotFound(id)
 			}
 
 			tags = rec.Tags
@@ -229,6 +242,26 @@ func (s *Service) updateResourceTags(
 			rec.Tags = newTags
 			finalTags = newTags
 			return storage.Write(tx, key, rec)
+
+		case resKindServerlessCache:
+			key := serverlessCacheKey(scope, id)
+			rec, found, err := storage.Read[serverlessCacheRecord](tx, key)
+			if err != nil {
+				return err
+			}
+
+			if !found {
+				return serverlessCacheNotFound(id)
+			}
+
+			newTags, uErr := updateFn(rec.Tags)
+			if uErr != nil {
+				return uErr
+			}
+
+			rec.Tags = newTags
+			finalTags = newTags
+			return storage.Write(tx, key, *rec)
 
 		default:
 			return invalidARN(kind + ":" + id)

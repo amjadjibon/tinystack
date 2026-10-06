@@ -142,7 +142,7 @@ func init() {
 		properties: []string{
 			memberCacheSubnetGroupName,
 			memberDescription,
-			"SubnetIds",
+			memberSubnetIDs,
 			memberTags,
 		},
 		attributes: []string{},
@@ -152,7 +152,7 @@ func init() {
 			params := map[string]any{
 				memberCacheSubnetGroupName:    name,
 				"CacheSubnetGroupDescription": p.str(memberDescription),
-				"SubnetIds":                   p.list("SubnetIds"),
+				memberSubnetIDs:               p.list(memberSubnetIDs),
 			}
 
 			if tags := p.tags(); len(tags) > 0 {
@@ -174,8 +174,8 @@ func init() {
 				params["CacheSubnetGroupDescription"] = v
 			}
 
-			if v := p.list("SubnetIds"); len(v) > 0 {
-				params["SubnetIds"] = v
+			if v := p.list(memberSubnetIDs); len(v) > 0 {
+				params[memberSubnetIDs] = v
 			}
 
 			if _, err := c.call(ctx, "elasticache", "ModifyCacheSubnetGroup", params); err != nil {
@@ -406,6 +406,113 @@ func init() {
 			return err
 		},
 	})
+
+	register("AWS::ElastiCache::ServerlessCache", &resourceType{
+		name: memberServerlessCacheName,
+		properties: []string{
+			memberServerlessCacheName,
+			memberEngine,
+			memberMajorEngineVersion,
+			memberDescription,
+			"CacheUsageLimits",
+			memberKmsKeyID,
+			"SecurityGroupIds",
+			memberSubnetIDs,
+			"DailySnapshotTime",
+			"SnapshotRetentionLimit",
+			memberTags,
+		},
+		attributes: []string{
+			"Arn",
+			"CreateTime",
+			memberStatus,
+			"Endpoint.Address",
+			"Endpoint.Port",
+			"ReaderEndpoint.Address",
+			"ReaderEndpoint.Port",
+		},
+		replace: []string{memberServerlessCacheName, memberEngine, memberSubnetIDs, memberKmsKeyID},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			name := strings.ToLower(c.nameOf(p, memberServerlessCacheName, 40))
+			params := map[string]any{
+				memberServerlessCacheName: name,
+				memberEngine:              p.str(memberEngine),
+			}
+			if p.has(memberMajorEngineVersion) {
+				params[memberMajorEngineVersion] = p.str(memberMajorEngineVersion)
+			}
+			if p.has(memberDescription) {
+				params[memberDescription] = p.str(memberDescription)
+			}
+			if p.has(memberKmsKeyID) {
+				params[memberKmsKeyID] = p.str(memberKmsKeyID)
+			}
+			if p.has("DailySnapshotTime") {
+				params["DailySnapshotTime"] = p.str("DailySnapshotTime")
+			}
+			if v, ok := p["SnapshotRetentionLimit"]; ok {
+				params["SnapshotRetentionLimit"] = v
+			}
+			if v := p.list("SecurityGroupIds"); len(v) > 0 {
+				params["SecurityGroupIds"] = v
+			}
+			if v := p.list(memberSubnetIDs); len(v) > 0 {
+				params[memberSubnetIDs] = v
+			}
+			if p.has("CacheUsageLimits") {
+				params["CacheUsageLimits"] = p["CacheUsageLimits"]
+			}
+			if tags := p.tags(); len(tags) > 0 {
+				params[memberTags] = tagList(tags, memberKey, memberValue)
+			}
+
+			out, err := c.call(ctx, "elasticache", "CreateServerlessCache", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			return name, serverlessCacheAttributes(out), nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			params := map[string]any{
+				memberServerlessCacheName: r.Physical,
+			}
+			if p.has(memberDescription) {
+				params[memberDescription] = p.str(memberDescription)
+			}
+			if p.has("DailySnapshotTime") {
+				params["DailySnapshotTime"] = p.str("DailySnapshotTime")
+			}
+			if v, ok := p["SnapshotRetentionLimit"]; ok {
+				params["SnapshotRetentionLimit"] = v
+			}
+			if v := p.list("SecurityGroupIds"); len(v) > 0 {
+				params["SecurityGroupIds"] = v
+			}
+			if p.has("CacheUsageLimits") {
+				params["CacheUsageLimits"] = p["CacheUsageLimits"]
+			}
+			if p.has(memberMajorEngineVersion) {
+				params[memberMajorEngineVersion] = p.str(memberMajorEngineVersion)
+			}
+
+			out, err := c.call(ctx, "elasticache", "ModifyServerlessCache", params)
+			if err != nil {
+				return nil, err
+			}
+
+			return serverlessCacheAttributes(out), nil
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "elasticache", "DeleteServerlessCache", map[string]any{
+				memberServerlessCacheName: r.Physical,
+			})
+			if gone(err, "ServerlessCacheNotFoundFault") {
+				return nil
+			}
+			return err
+		},
+	})
 }
 
 func cacheClusterAttributes(out map[string]any) map[string]any {
@@ -454,6 +561,30 @@ func replicationGroupAttributes(out map[string]any) map[string]any {
 				attrs["ReadEndPoint.Ports"] = fmt.Sprint(re["Port"])
 			}
 		}
+	}
+
+	return attrs
+}
+
+func serverlessCacheAttributes(out map[string]any) map[string]any {
+	sc, _ := out["ServerlessCache"].(map[string]any)
+	attrs := make(map[string]any)
+	if sc == nil {
+		return attrs
+	}
+
+	attrs["Arn"] = sc["ARN"]
+	attrs["CreateTime"] = sc["CreateTime"]
+	attrs["Status"] = sc["Status"]
+
+	if ep, ok := sc["Endpoint"].(map[string]any); ok {
+		attrs["Endpoint.Address"] = ep["Address"]
+		attrs["Endpoint.Port"] = fmt.Sprint(ep[memberPort])
+	}
+
+	if ep, ok := sc["ReaderEndpoint"].(map[string]any); ok {
+		attrs["ReaderEndpoint.Address"] = ep["Address"]
+		attrs["ReaderEndpoint.Port"] = fmt.Sprint(ep[memberPort])
 	}
 
 	return attrs

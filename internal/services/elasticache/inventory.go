@@ -10,6 +10,12 @@ import (
 )
 
 // Resources lists all ElastiCache resources for the resource browser.
+const (
+	detailDescription = "Description"
+	detailStatus      = "Status"
+)
+
+// Resources lists all ElastiCache resources for the resource browser.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 
@@ -43,13 +49,61 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					Details: map[string]any{
 						"Engine":        rec.Engine,
 						"EngineVersion": rec.EngineVersion,
-						"Status":        rec.Status,
+						detailStatus:    rec.Status,
 						"NumNodes":      rec.NumNodes,
 						"Port":          rec.Port,
 					},
 				})
 
-			case strings.HasPrefix(rest, "subnet-group/"):
+			case strings.HasPrefix(rest, "replicationgroup/"):
+				rec, found, err := storage.Read[replicationGroupRecord](tx, k)
+				if err != nil {
+					return err
+				}
+
+				if !found {
+					continue
+				}
+
+				out = append(out, catalog.Resource{
+					Type:    "cache-replication-group",
+					Account: account,
+					Region:  region,
+					Name:    rec.ReplicationGroupID,
+					ARN:     replicationGroupARN(scope, rec.ReplicationGroupID),
+					Tags:    rec.Tags,
+					Details: map[string]any{
+						detailDescription: rec.Description,
+						detailStatus:      rec.Status,
+						"NumClusters":     len(rec.MemberClusterIDs),
+					},
+				})
+
+			case strings.HasPrefix(rest, "serverless/"):
+				rec, found, err := storage.Read[serverlessCacheRecord](tx, k)
+				if err != nil {
+					return err
+				}
+
+				if !found {
+					continue
+				}
+
+				out = append(out, catalog.Resource{
+					Type:    "serverless-cache",
+					Account: account,
+					Region:  region,
+					Name:    rec.ServerlessCacheName,
+					ARN:     serverlessCacheARN(scope, rec.ServerlessCacheName),
+					Tags:    rec.Tags,
+					Details: map[string]any{
+						"Engine":             rec.Engine,
+						"MajorEngineVersion": rec.MajorEngineVersion,
+						detailStatus:         rec.Status,
+					},
+				})
+
+			case strings.HasPrefix(rest, "subnetgroup/") || strings.HasPrefix(rest, "subnet-group/"):
 				rec, found, err := storage.Read[subnetGroupRecord](tx, k)
 				if err != nil {
 					return err
@@ -67,13 +121,13 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					ARN:     subnetGroupARN(scope, rec.Name),
 					Tags:    rec.Tags,
 					Details: map[string]any{
-						"Description": rec.Description,
-						"VpcID":       rec.VpcID,
-						"Subnets":     len(rec.Subnets),
+						detailDescription: rec.Description,
+						"VpcID":           rec.VpcID,
+						"Subnets":         len(rec.Subnets),
 					},
 				})
 
-			case strings.HasPrefix(rest, "parameter-group/"):
+			case strings.HasPrefix(rest, "parametergroup/") || strings.HasPrefix(rest, "parameter-group/"):
 				rec, found, err := storage.Read[parameterGroupRecord](tx, k)
 				if err != nil {
 					return err
@@ -91,8 +145,8 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					ARN:     parameterGroupARN(scope, rec.Name),
 					Tags:    rec.Tags,
 					Details: map[string]any{
-						"Family":      rec.Family,
-						"Description": rec.Description,
+						"Family":          rec.Family,
+						detailDescription: rec.Description,
 					},
 				})
 			}

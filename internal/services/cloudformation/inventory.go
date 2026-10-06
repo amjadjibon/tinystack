@@ -31,7 +31,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			out = append(out, catalog.Resource{
 				Type: "stack", Account: account, Region: region, Name: st.Name, ARN: st.ID, Tags: tags,
-				Details: map[string]any{"Status": st.Status, keyResources: strconv.Itoa(len(st.Resources))},
+				Details: map[string]any{memberStatus: st.Status, keyResources: strconv.Itoa(len(st.Resources))},
 			})
 		}
 

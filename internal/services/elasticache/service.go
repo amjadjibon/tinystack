@@ -184,6 +184,31 @@ func replicationGroupAlreadyExists(id string) error {
 	return awserror.New("ReplicationGroupAlreadyExistsFault", fmt.Sprintf("Replication group %s already exists.", id))
 }
 
+func serverlessCacheKey(scope request.Scope, name string) string {
+	return scope.Key(serviceName, "serverless", strings.ToLower(name))
+}
+
+func serverlessCachePrefix(scope request.Scope) string {
+	return scope.Key(serviceName, "serverless", "")
+}
+
+func serverlessCacheARN(scope request.Scope, name string) string {
+	return fmt.Sprintf(
+		"arn:aws:elasticache:%s:%s:serverlesscache:%s",
+		scope.Region,
+		scope.AccountID,
+		strings.ToLower(name),
+	)
+}
+
+func serverlessCacheNotFound(name string) error {
+	return awserror.New("ServerlessCacheNotFoundFault", fmt.Sprintf("Serverless cache %s not found", name))
+}
+
+func serverlessCacheAlreadyExists(name string) error {
+	return awserror.New("ServerlessCacheAlreadyExistsFault", fmt.Sprintf("Serverless cache %s already exists", name))
+}
+
 func subnetGroupARN(scope request.Scope, name string) string {
 	return fmt.Sprintf("arn:aws:elasticache:%s:%s:subnetgroup:%s", scope.Region, scope.AccountID, strings.ToLower(name))
 }

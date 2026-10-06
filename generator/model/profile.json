@@ -7172,7 +7172,11 @@
       "DeleteReplicationGroup",
       "IncreaseReplicaCount",
       "DecreaseReplicaCount",
-      "TestFailover"
+      "TestFailover",
+      "CreateServerlessCache",
+      "DescribeServerlessCaches",
+      "ModifyServerlessCache",
+      "DeleteServerlessCache"
     ],
     "shapes": {
       "CreateCacheClusterMessage": [
@@ -7571,6 +7575,91 @@
       ],
       "TestFailoverResult": [
         "ReplicationGroup"
+      ],
+      "CreateServerlessCacheRequest": [
+        "ServerlessCacheName",
+        "Description",
+        "Engine",
+        "MajorEngineVersion",
+        "CacheUsageLimits",
+        "KmsKeyId",
+        "SecurityGroupIds",
+        "SubnetIds",
+        "SnapshotRetentionLimit",
+        "DailySnapshotTime",
+        "Tags"
+      ],
+      "CreateServerlessCacheResponse": [
+        "ServerlessCache"
+      ],
+      "DescribeServerlessCachesRequest": [
+        "ServerlessCacheName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeServerlessCachesResponse": [
+        "ServerlessCaches",
+        "NextToken"
+      ],
+      "ModifyServerlessCacheRequest": [
+        "ServerlessCacheName",
+        "Description",
+        "CacheUsageLimits",
+        "SecurityGroupIds",
+        "SnapshotRetentionLimit",
+        "DailySnapshotTime",
+        "Engine",
+        "MajorEngineVersion"
+      ],
+      "ModifyServerlessCacheResponse": [
+        "ServerlessCache"
+      ],
+      "DeleteServerlessCacheRequest": [
+        "ServerlessCacheName",
+        "FinalSnapshotName"
+      ],
+      "DeleteServerlessCacheResponse": [
+        "ServerlessCache"
+      ],
+      "ServerlessCache": [
+        "ServerlessCacheName",
+        "Description",
+        "CreateTime",
+        "Status",
+        "Engine",
+        "MajorEngineVersion",
+        "FullEngineVersion",
+        "CacheUsageLimits",
+        "KmsKeyId",
+        "SecurityGroupIds",
+        "Endpoint",
+        "ReaderEndpoint",
+        "ARN",
+        "SubnetIds",
+        "SnapshotRetentionLimit",
+        "DailySnapshotTime"
+      ],
+      "ServerlessCacheList": [],
+      "CacheUsageLimits": [
+        "DataStorage",
+        "ECPUPerSecond"
+      ],
+      "DataStorage": [
+        "Maximum",
+        "Minimum",
+        "Unit"
+      ],
+      "ECPUPerSecond": [
+        "Maximum",
+        "Minimum"
+      ],
+      "DataStorageUnit": [],
+      "SubnetIdsList": [],
+      "ServerlessCacheNotFoundFault": [
+        "message"
+      ],
+      "ServerlessCacheAlreadyExistsFault": [
+        "message"
       ]
     }
   },

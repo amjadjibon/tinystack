@@ -177,7 +177,7 @@ func configureBucket(ctx context.Context, c *client, name string, old, p props) 
 	}
 
 	_, err := c.call(ctx, "s3", "PutBucketVersioning", map[string]any{
-		memberBucket: name, "VersioningConfiguration": map[string]any{"Status": status},
+		memberBucket: name, "VersioningConfiguration": map[string]any{memberStatus: status},
 	})
 	return err
 }

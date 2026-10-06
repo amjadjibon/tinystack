@@ -82,7 +82,7 @@ func init() {
 			memberDescription,
 			"SecretString",
 			"GenerateSecretString",
-			"KmsKeyId",
+			memberKmsKeyID,
 			memberTags,
 		},
 		attributes: []string{"Id"},

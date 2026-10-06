@@ -60,6 +60,10 @@ func indexClusterKey(scope request.Scope, id string) string {
 	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + resKindCluster + "/" + strings.ToLower(id)
 }
 
+func indexServerlessKey(scope request.Scope, id string) string {
+	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + resKindServerlessCache + "/" + strings.ToLower(id)
+}
+
 func parseIndexKey(k string) (scope request.Scope, kind, id string, ok bool) {
 	rest := strings.TrimPrefix(k, indexPrefix)
 	parts := strings.Split(rest, "/")
@@ -137,6 +141,9 @@ func (s *Service) cleanOrphans(ctx context.Context) {
 			case resKindCluster:
 				_, found, _ := storage.Read[clusterRecord](tx, clusterKey(scope, name))
 				exists = found
+			case resKindServerlessCache:
+				_, found, _ := storage.Read[serverlessCacheRecord](tx, serverlessCacheKey(scope, name))
+				exists = found
 			default:
 				exists = false
 			}
@@ -161,6 +168,8 @@ func (s *Service) advance(ctx context.Context, k string) error {
 	switch kind {
 	case resKindCluster:
 		return s.advanceCluster(ctx, scope, id, k)
+	case resKindServerlessCache:
+		return s.advanceServerless(ctx, scope, id, k)
 	default:
 		return nil
 	}
@@ -477,4 +486,129 @@ func memcachedParamFlags(name, val string) ([]string, error) {
 	default:
 		return nil, invalidParameterValue("parameter %s has no Memcached flag mapping", name)
 	}
+}
+
+func (s *Service) advanceServerless(ctx context.Context, scope request.Scope, name, idxKey string) error {
+	var record *serverlessCacheRecord
+	var found bool
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		var readErr error
+		record, found, readErr = storage.Read[serverlessCacheRecord](tx, serverlessCacheKey(scope, name))
+		return readErr
+	})
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
+			tx.Delete(idxKey)
+			return nil
+		})
+	}
+
+	switch record.Status {
+	case statusDeleting:
+		if record.Node.ContainerID != "" {
+			s.runtime.Remove(ctx, record.Node.ContainerID)
+		}
+
+		return s.store.Update(ctx, func(tx storage.WriteTx) error {
+			tx.Delete(serverlessCacheKey(scope, name))
+			tx.Delete(idxKey)
+			return nil
+		})
+
+	case statusCreating, statusModifying:
+		return s.advanceCreatingServerless(ctx, scope, name, record)
+
+	case statusAvailable:
+		return s.advanceAvailableServerless(ctx, scope, name, record)
+	}
+
+	return nil
+}
+
+func (s *Service) advanceCreatingServerless(
+	ctx context.Context,
+	scope request.Scope,
+	name string,
+	record *serverlessCacheRecord,
+) error {
+	spec, err := resolveEngine(record.Engine, record.MajorEngineVersion)
+	if err != nil {
+		return err
+	}
+
+	n := &record.Node
+	if n.ContainerID == "" {
+		started, sErr := s.runtime.Start(ctx, &NodeSpec{
+			Labels: map[string]string{
+				"tinystack.elasticache": serverlessCacheARN(scope, name),
+				"tinystack.node":        n.NodeID,
+			},
+			Image: spec.Image,
+			Port:  spec.DefaultPort,
+		})
+		if sErr != nil {
+			record.Status = statusCreateFailed
+			_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+				return storage.Write(tx, serverlessCacheKey(scope, name), *record)
+			})
+			s.recordEvent(
+				ctx,
+				scope,
+				name,
+				"serverless-cache",
+				"Failed to start serverless cache container: "+sErr.Error(),
+			)
+			return sErr
+		}
+
+		n.ContainerID = started.ID
+		n.Port = started.Port
+		n.Status = statusCreating
+		_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+			return storage.Write(tx, serverlessCacheKey(scope, name), *record)
+		})
+	}
+
+	if probeErr := probeNode(ctx, spec.Engine, localhost, n.Port, "", 2*time.Second); probeErr != nil {
+		if time.Since(n.CreateTime) > 2*time.Minute {
+			record.Status = statusCreateFailed
+			_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+				return storage.Write(tx, serverlessCacheKey(scope, name), *record)
+			})
+			s.recordEvent(ctx, scope, name, "serverless-cache", "Serverless cache failed health check after 2 minutes")
+		}
+		return nil
+	}
+
+	n.Status = statusAvailable
+	record.Status = statusAvailable
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		return storage.Write(tx, serverlessCacheKey(scope, name), *record)
+	})
+}
+
+func (s *Service) advanceAvailableServerless(
+	ctx context.Context,
+	scope request.Scope,
+	name string,
+	record *serverlessCacheRecord,
+) error {
+	n := &record.Node
+	if n.ContainerID != "" {
+		running, err := s.runtime.Running(ctx, n.ContainerID)
+		if err != nil || !running {
+			s.runtime.Remove(ctx, n.ContainerID)
+			n.ContainerID = ""
+			n.Status = statusCreating
+			record.Status = statusModifying
+			return s.store.Update(ctx, func(tx storage.WriteTx) error {
+				return storage.Write(tx, serverlessCacheKey(scope, name), *record)
+			})
+		}
+	}
+	return nil
 }
