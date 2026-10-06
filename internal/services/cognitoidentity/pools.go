@@ -33,8 +33,8 @@ var socialProviders = []string{
 }
 
 var (
-	namePattern         = regexp.MustCompile(`^[\w\s+=,.@-]{1,128}$`)
-	userPoolPattern     = regexp.MustCompile(`^cognito-idp\.[a-z0-9-]+\.amazonaws\.com/[a-z0-9-]+_[A-Za-z0-9]+$`)
+	namePattern          = regexp.MustCompile(`^[\w\s+=,.@-]{1,128}$`)
+	userPoolPattern      = regexp.MustCompile(`^cognito-idp\.[a-z0-9-]+\.amazonaws\.com/[a-z0-9-]+_[A-Za-z0-9]+$`)
 	developerNamePattern = regexp.MustCompile(`^[\w.-]{1,128}$`)
 )
 
