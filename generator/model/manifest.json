@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/aws/aws-sdk-go-v2",
-  "commit": "52ba2565aefa81106ba8aca112e7c42176cc28a7",
+  "commit": "2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da",
   "license": "LICENSE.aws-sdk-go-v2",
   "models": {
     "acm": {
@@ -33,7 +33,7 @@
     },
     "cloudfront": {
       "path": "codegen/sdk-codegen/aws-models/cloudfront.json",
-      "sha256": "67d568109778448374d83c97dbb31e2f15bd2d1c64b969e7327e3d0f8a75d6ed"
+      "sha256": "f82d5851098bb2461eb8d18798fcd4eed6d6d46344d1e35a581d10eb775d9058"
     },
     "cloudwatch": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch.json",
@@ -45,11 +45,11 @@
     },
     "cognitoidp": {
       "path": "codegen/sdk-codegen/aws-models/cognito-identity-provider.json",
-      "sha256": "05f1aeb9c9247fe6860d0b05b0a6ef4ec7d7ba919d3b73b430bc4928885f0602"
+      "sha256": "3379f96d8708b44b7181cfcd64bb024aed20edc8b79e7e739753691751232ca4"
     },
     "dynamodb": {
       "path": "codegen/sdk-codegen/aws-models/dynamodb.json",
-      "sha256": "7e9436596b667e2e0600de9c086205b38960012028bcd625ee786a5126d0f63e"
+      "sha256": "889458e11643e5f4b240af1d2f1fd0271d06ebf44d88fb571853aa5c8e1ae438"
     },
     "dynamodbstreams": {
       "path": "codegen/sdk-codegen/aws-models/dynamodb-streams.json",
@@ -57,7 +57,7 @@
     },
     "ec2": {
       "path": "codegen/sdk-codegen/aws-models/ec2.json",
-      "sha256": "f76013e26489abaa79978321f1cf6afeff85bb2ac0bb684de8141cc156aa8b9f"
+      "sha256": "e233aadc33c799f5ad66975cff1649feb95e987c7a0f1a398a994e8c80357e90"
     },
     "ecr": {
       "path": "codegen/sdk-codegen/aws-models/ecr.json",
@@ -65,11 +65,11 @@
     },
     "ecs": {
       "path": "codegen/sdk-codegen/aws-models/ecs.json",
-      "sha256": "c96219723d15095dd4aa668b30e9efcc092d50ea01a38cd631ee677255ba2684"
+      "sha256": "b66c352b2df9d1007429c157f036aee781f4736b9757b877e37fb51eb61856a7"
     },
     "eks": {
       "path": "codegen/sdk-codegen/aws-models/eks.json",
-      "sha256": "68a753313e55402162cb2187b54b4ed03ef6b997544a5adaa388e1eef3019595"
+      "sha256": "8aaad1b255330361760760b20c58c186d2e6776088577d169b203d050a09de10"
     },
     "elbv2": {
       "path": "codegen/sdk-codegen/aws-models/elastic-load-balancing-v2.json",
@@ -85,7 +85,7 @@
     },
     "glue": {
       "path": "codegen/sdk-codegen/aws-models/glue.json",
-      "sha256": "8bfd97bf150ef0be4cf912b63568a553b29ef79a21d97690bfdd88cb6f47d970"
+      "sha256": "d80948f07fba89a215cd9450ff5b3f45c4c31728e440975fccbcc042b9d70eb5"
     },
     "iam": {
       "path": "codegen/sdk-codegen/aws-models/iam.json",
@@ -105,7 +105,7 @@
     },
     "logs": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch-logs.json",
-      "sha256": "8e51aad2fb99605ae6dfc350d5915215512f990eb1a0c16d07ef2c4e49297d77"
+      "sha256": "308aa3e4d27c48f1233a6c286e970948a64a9eb157ee446b8227364eb7d8c49b"
     },
     "route53": {
       "path": "codegen/sdk-codegen/aws-models/route-53.json",
@@ -113,7 +113,7 @@
     },
     "s3": {
       "path": "codegen/sdk-codegen/aws-models/s3.json",
-      "sha256": "ea4b0318e929b56b01523e7fd25e139b5646055dba96bbf6e41a79ac90522c71"
+      "sha256": "57431518807d8565e103b9bcc8f2610950e725645e28374e746bdf8e300cc37a"
     },
     "scheduler": {
       "path": "codegen/sdk-codegen/aws-models/scheduler.json",
@@ -125,7 +125,7 @@
     },
     "sesv2": {
       "path": "codegen/sdk-codegen/aws-models/sesv2.json",
-      "sha256": "578928472c1c7524ebfa7f15f67dd5fa5c47d6f4c73356e954e1861497d54926"
+      "sha256": "d7bbdda897ee0d26c9a8f04cc7d0de71ea6de2215cf02f8a342cbfe2ecca9250"
     },
     "sfn": {
       "path": "codegen/sdk-codegen/aws-models/sfn.json",
@@ -141,7 +141,7 @@
     },
     "ssm": {
       "path": "codegen/sdk-codegen/aws-models/ssm.json",
-      "sha256": "6fea3c5ffc0e590e9c292d77c201b03d39945adfa6ab319b5c5c1389788c18fe"
+      "sha256": "8aac35e07b6511821a0704008decdc8a0b69bc8deeb6ab3efadc5426a3225ef7"
     },
     "sts": {
       "path": "codegen/sdk-codegen/aws-models/sts.json",

@@ -335,10 +335,17 @@ type DeploymentController struct {
 	Type *string `json:"type,omitempty"`
 }
 
+type VpcLatticeAdvancedConfiguration struct {
+	AlternateTargetGroupArn *string `json:"alternateTargetGroupArn,omitempty"`
+	ProductionListenerRule  *string `json:"productionListenerRule,omitempty"`
+	TestListenerRule        *string `json:"testListenerRule,omitempty"`
+}
+
 type VpcLatticeConfiguration struct {
-	PortName       *string `json:"portName,omitempty"`
-	RoleArn        *string `json:"roleArn,omitempty"`
-	TargetGroupArn *string `json:"targetGroupArn,omitempty"`
+	AdvancedConfiguration *VpcLatticeAdvancedConfiguration `json:"advancedConfiguration,omitempty"`
+	PortName              *string                          `json:"portName,omitempty"`
+	RoleArn               *string                          `json:"roleArn,omitempty"`
+	TargetGroupArn        *string                          `json:"targetGroupArn,omitempty"`
 }
 
 type CreateServiceRequest struct {
