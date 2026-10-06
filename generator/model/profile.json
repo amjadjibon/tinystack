@@ -9635,6 +9635,605 @@
       ]
     }
   },
+  "iot": {
+    "operations": [
+      "CreateThing",
+      "DescribeThing",
+      "UpdateThing",
+      "DeleteThing",
+      "ListThings",
+      "CreateThingType",
+      "DescribeThingType",
+      "ListThingTypes",
+      "DeprecateThingType",
+      "DeleteThingType",
+      "CreateThingGroup",
+      "DescribeThingGroup",
+      "UpdateThingGroup",
+      "DeleteThingGroup",
+      "ListThingGroups",
+      "AddThingToThingGroup",
+      "RemoveThingFromThingGroup",
+      "ListThingsInThingGroup",
+      "ListThingGroupsForThing",
+      "CreateKeysAndCertificate",
+      "CreateCertificateFromCsr",
+      "DescribeCertificate",
+      "UpdateCertificate",
+      "DeleteCertificate",
+      "ListCertificates",
+      "ListCertificatesByCA",
+      "RegisterCertificate",
+      "RegisterCertificateWithoutCA",
+      "RegisterCACertificate",
+      "GetRegistrationCode",
+      "DeleteRegistrationCode",
+      "DescribeCACertificate",
+      "UpdateCACertificate",
+      "DeleteCACertificate",
+      "ListCACertificates",
+      "CreatePolicy",
+      "GetPolicy",
+      "DeletePolicy",
+      "ListPolicies",
+      "CreatePolicyVersion",
+      "ListPolicyVersions",
+      "GetPolicyVersion",
+      "SetDefaultPolicyVersion",
+      "DeletePolicyVersion",
+      "AttachPolicy",
+      "DetachPolicy",
+      "ListAttachedPolicies",
+      "ListTargetsForPolicy",
+      "AttachThingPrincipal",
+      "DetachThingPrincipal",
+      "ListThingPrincipals",
+      "ListPrincipalThings",
+      "DescribeEndpoint",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateThingRequest": [
+        "thingName",
+        "thingTypeName",
+        "attributePayload"
+      ],
+      "AttributePayload": [
+        "attributes",
+        "merge"
+      ],
+      "CreateThingResponse": [
+        "thingName",
+        "thingArn",
+        "thingId"
+      ],
+      "DescribeThingRequest": [
+        "thingName"
+      ],
+      "DescribeThingResponse": [
+        "defaultClientId",
+        "thingName",
+        "thingId",
+        "thingArn",
+        "thingTypeName",
+        "attributes",
+        "version"
+      ],
+      "UpdateThingRequest": [
+        "thingName",
+        "thingTypeName",
+        "attributePayload",
+        "expectedVersion",
+        "removeThingType"
+      ],
+      "UpdateThingResponse": [],
+      "DeleteThingRequest": [
+        "thingName",
+        "expectedVersion"
+      ],
+      "DeleteThingResponse": [],
+      "ListThingsRequest": [
+        "nextToken",
+        "maxResults",
+        "attributeName",
+        "attributeValue",
+        "thingTypeName",
+        "usePrefixAttributeValue"
+      ],
+      "ListThingsResponse": [
+        "things",
+        "nextToken"
+      ],
+      "ThingAttribute": [
+        "thingName",
+        "thingTypeName",
+        "thingArn",
+        "attributes",
+        "version"
+      ],
+      "CreateThingTypeRequest": [
+        "thingTypeName",
+        "thingTypeProperties",
+        "tags"
+      ],
+      "ThingTypeProperties": [
+        "thingTypeDescription",
+        "searchableAttributes",
+        "mqtt5Configuration"
+      ],
+      "Mqtt5Configuration": [
+        "propagatingAttributes"
+      ],
+      "PropagatingAttribute": [
+        "userPropertyKey",
+        "thingAttribute",
+        "connectionAttribute"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "CreateThingTypeResponse": [
+        "thingTypeName",
+        "thingTypeArn",
+        "thingTypeId"
+      ],
+      "DescribeThingTypeRequest": [
+        "thingTypeName"
+      ],
+      "DescribeThingTypeResponse": [
+        "thingTypeName",
+        "thingTypeId",
+        "thingTypeArn",
+        "thingTypeProperties",
+        "thingTypeMetadata"
+      ],
+      "ThingTypeMetadata": [
+        "deprecated",
+        "deprecationDate",
+        "creationDate"
+      ],
+      "ListThingTypesRequest": [
+        "nextToken",
+        "maxResults",
+        "thingTypeName"
+      ],
+      "ListThingTypesResponse": [
+        "thingTypes",
+        "nextToken"
+      ],
+      "ThingTypeDefinition": [
+        "thingTypeName",
+        "thingTypeArn",
+        "thingTypeProperties",
+        "thingTypeMetadata"
+      ],
+      "DeprecateThingTypeRequest": [
+        "thingTypeName",
+        "undoDeprecate"
+      ],
+      "DeprecateThingTypeResponse": [],
+      "DeleteThingTypeRequest": [
+        "thingTypeName"
+      ],
+      "DeleteThingTypeResponse": [],
+      "CreateThingGroupRequest": [
+        "thingGroupName",
+        "parentGroupName",
+        "thingGroupProperties",
+        "tags"
+      ],
+      "ThingGroupProperties": [
+        "thingGroupDescription",
+        "attributePayload"
+      ],
+      "CreateThingGroupResponse": [
+        "thingGroupName",
+        "thingGroupArn",
+        "thingGroupId"
+      ],
+      "DescribeThingGroupRequest": [
+        "thingGroupName"
+      ],
+      "DescribeThingGroupResponse": [
+        "thingGroupName",
+        "thingGroupId",
+        "thingGroupArn",
+        "version",
+        "thingGroupProperties",
+        "thingGroupMetadata"
+      ],
+      "ThingGroupMetadata": [
+        "parentGroupName",
+        "rootToParentThingGroups",
+        "creationDate"
+      ],
+      "GroupNameAndArn": [
+        "groupName",
+        "groupArn"
+      ],
+      "UpdateThingGroupRequest": [
+        "thingGroupName",
+        "thingGroupProperties",
+        "expectedVersion"
+      ],
+      "UpdateThingGroupResponse": [
+        "version"
+      ],
+      "DeleteThingGroupRequest": [
+        "thingGroupName",
+        "expectedVersion"
+      ],
+      "DeleteThingGroupResponse": [],
+      "ListThingGroupsRequest": [
+        "nextToken",
+        "maxResults",
+        "parentGroup",
+        "namePrefixFilter",
+        "recursive"
+      ],
+      "ListThingGroupsResponse": [
+        "thingGroups",
+        "nextToken"
+      ],
+      "AddThingToThingGroupRequest": [
+        "thingGroupName",
+        "thingGroupArn",
+        "thingName",
+        "thingArn"
+      ],
+      "AddThingToThingGroupResponse": [],
+      "RemoveThingFromThingGroupRequest": [
+        "thingGroupName",
+        "thingGroupArn",
+        "thingName",
+        "thingArn"
+      ],
+      "RemoveThingFromThingGroupResponse": [],
+      "ListThingsInThingGroupRequest": [
+        "thingGroupName",
+        "recursive",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListThingsInThingGroupResponse": [
+        "things",
+        "nextToken"
+      ],
+      "ListThingGroupsForThingRequest": [
+        "thingName",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListThingGroupsForThingResponse": [
+        "thingGroups",
+        "nextToken"
+      ],
+      "CreateKeysAndCertificateRequest": [
+        "setAsActive"
+      ],
+      "CreateKeysAndCertificateResponse": [
+        "certificateArn",
+        "certificateId",
+        "certificatePem",
+        "keyPair"
+      ],
+      "KeyPair": [
+        "PublicKey",
+        "PrivateKey"
+      ],
+      "CreateCertificateFromCsrRequest": [
+        "certificateSigningRequest",
+        "setAsActive"
+      ],
+      "CreateCertificateFromCsrResponse": [
+        "certificateArn",
+        "certificateId",
+        "certificatePem"
+      ],
+      "DescribeCertificateRequest": [
+        "certificateId"
+      ],
+      "DescribeCertificateResponse": [
+        "certificateDescription"
+      ],
+      "CertificateDescription": [
+        "certificateArn",
+        "certificateId",
+        "caCertificateId",
+        "status",
+        "certificatePem",
+        "ownedBy",
+        "creationDate",
+        "lastModifiedDate",
+        "customerVersion",
+        "generationId",
+        "validity",
+        "certificateMode"
+      ],
+      "CertificateValidity": [
+        "notBefore",
+        "notAfter"
+      ],
+      "UpdateCertificateRequest": [
+        "certificateId",
+        "newStatus"
+      ],
+      "DeleteCertificateRequest": [
+        "certificateId",
+        "forceDelete"
+      ],
+      "ListCertificatesRequest": [
+        "pageSize",
+        "marker",
+        "ascendingOrder"
+      ],
+      "ListCertificatesResponse": [
+        "certificates",
+        "nextMarker"
+      ],
+      "Certificate": [
+        "certificateArn",
+        "certificateId",
+        "status",
+        "certificateMode",
+        "creationDate"
+      ],
+      "ListCertificatesByCARequest": [
+        "caCertificateId",
+        "pageSize",
+        "marker",
+        "ascendingOrder"
+      ],
+      "ListCertificatesByCAResponse": [
+        "certificates",
+        "nextMarker"
+      ],
+      "RegisterCertificateRequest": [
+        "certificatePem",
+        "caCertificatePem",
+        "setAsActive",
+        "status"
+      ],
+      "RegisterCertificateResponse": [
+        "certificateArn",
+        "certificateId"
+      ],
+      "RegisterCertificateWithoutCARequest": [
+        "certificatePem",
+        "status"
+      ],
+      "RegisterCertificateWithoutCAResponse": [
+        "certificateArn",
+        "certificateId"
+      ],
+      "RegisterCACertificateRequest": [
+        "caCertificate",
+        "verificationCertificate",
+        "setAsActive",
+        "tags",
+        "certificateMode"
+      ],
+      "RegisterCACertificateResponse": [
+        "certificateArn",
+        "certificateId"
+      ],
+      "GetRegistrationCodeRequest": [],
+      "GetRegistrationCodeResponse": [
+        "registrationCode"
+      ],
+      "DeleteRegistrationCodeRequest": [],
+      "DeleteRegistrationCodeResponse": [],
+      "DescribeCACertificateRequest": [
+        "certificateId"
+      ],
+      "DescribeCACertificateResponse": [
+        "certificateDescription"
+      ],
+      "CACertificateDescription": [
+        "certificateArn",
+        "certificateId",
+        "status",
+        "certificatePem",
+        "ownedBy",
+        "creationDate",
+        "autoRegistrationStatus",
+        "lastModifiedDate",
+        "customerVersion",
+        "generationId",
+        "validity",
+        "certificateMode"
+      ],
+      "UpdateCACertificateRequest": [
+        "certificateId",
+        "newStatus"
+      ],
+      "DeleteCACertificateRequest": [
+        "certificateId"
+      ],
+      "DeleteCACertificateResponse": [],
+      "ListCACertificatesRequest": [
+        "pageSize",
+        "marker",
+        "ascendingOrder"
+      ],
+      "ListCACertificatesResponse": [
+        "certificates",
+        "nextMarker"
+      ],
+      "CACertificate": [
+        "certificateArn",
+        "certificateId",
+        "status",
+        "creationDate"
+      ],
+      "CreatePolicyRequest": [
+        "policyName",
+        "policyDocument",
+        "tags"
+      ],
+      "CreatePolicyResponse": [
+        "policyName",
+        "policyArn",
+        "policyDocument",
+        "policyVersionId"
+      ],
+      "GetPolicyRequest": [
+        "policyName"
+      ],
+      "GetPolicyResponse": [
+        "policyName",
+        "policyArn",
+        "policyDocument",
+        "defaultVersionId",
+        "creationDate",
+        "lastModifiedDate",
+        "generationId"
+      ],
+      "DeletePolicyRequest": [
+        "policyName"
+      ],
+      "ListPoliciesRequest": [
+        "marker",
+        "pageSize",
+        "ascendingOrder"
+      ],
+      "ListPoliciesResponse": [
+        "policies",
+        "nextMarker"
+      ],
+      "Policy": [
+        "policyName",
+        "policyArn"
+      ],
+      "CreatePolicyVersionRequest": [
+        "policyName",
+        "policyDocument",
+        "setAsDefault"
+      ],
+      "CreatePolicyVersionResponse": [
+        "policyArn",
+        "policyDocument",
+        "policyVersionId",
+        "isDefaultVersion"
+      ],
+      "ListPolicyVersionsRequest": [
+        "policyName"
+      ],
+      "ListPolicyVersionsResponse": [
+        "policyVersions"
+      ],
+      "PolicyVersion": [
+        "versionId",
+        "isDefaultVersion",
+        "createDate"
+      ],
+      "GetPolicyVersionRequest": [
+        "policyName",
+        "policyVersionId"
+      ],
+      "GetPolicyVersionResponse": [
+        "policyArn",
+        "policyName",
+        "policyDocument",
+        "policyVersionId",
+        "isDefaultVersion",
+        "creationDate",
+        "lastModifiedDate",
+        "generationId"
+      ],
+      "SetDefaultPolicyVersionRequest": [
+        "policyName",
+        "policyVersionId"
+      ],
+      "DeletePolicyVersionRequest": [
+        "policyName",
+        "policyVersionId"
+      ],
+      "AttachPolicyRequest": [
+        "policyName",
+        "target"
+      ],
+      "DetachPolicyRequest": [
+        "policyName",
+        "target"
+      ],
+      "ListAttachedPoliciesRequest": [
+        "target",
+        "recursive",
+        "marker",
+        "pageSize"
+      ],
+      "ListAttachedPoliciesResponse": [
+        "policies",
+        "nextMarker"
+      ],
+      "ListTargetsForPolicyRequest": [
+        "policyName",
+        "marker",
+        "pageSize"
+      ],
+      "ListTargetsForPolicyResponse": [
+        "targets",
+        "nextMarker"
+      ],
+      "AttachThingPrincipalRequest": [
+        "thingName",
+        "principal",
+        "thingPrincipalType"
+      ],
+      "AttachThingPrincipalResponse": [],
+      "DetachThingPrincipalRequest": [
+        "thingName",
+        "principal"
+      ],
+      "DetachThingPrincipalResponse": [],
+      "ListThingPrincipalsRequest": [
+        "nextToken",
+        "maxResults",
+        "thingName"
+      ],
+      "ListThingPrincipalsResponse": [
+        "principals",
+        "nextToken"
+      ],
+      "ListPrincipalThingsRequest": [
+        "nextToken",
+        "maxResults",
+        "principal"
+      ],
+      "ListPrincipalThingsResponse": [
+        "things",
+        "nextToken"
+      ],
+      "DescribeEndpointRequest": [
+        "endpointType"
+      ],
+      "DescribeEndpointResponse": [
+        "endpointAddress"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "resourceArn",
+        "nextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags",
+        "nextToken"
+      ]
+    }
+  },
   "kinesis": {
     "operations": [
       "CreateStream",

@@ -67,10 +67,11 @@ def main():
                 assert terraform("output", "-raw", "zones") == "3"
                 assert terraform("output", "-raw", "image_matches") == "true"
                 assert terraform("output", "-raw", "registry_user") == "AWS"
+                assert terraform("output", "-raw", "iot_endpoint").endswith("-ats.iot.us-east-1.localhost")
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "5 added, 76 changed, 5 destroyed" in updated, updated
+                assert "5 added, 80 changed, 5 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 terraform("destroy", "-auto-approve", team="platform")

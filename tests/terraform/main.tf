@@ -35,6 +35,7 @@ provider "aws" {
     eventbridge    = var.endpoint
     firehose       = var.endpoint
     iam            = var.endpoint
+    iot            = var.endpoint
     kinesis        = var.endpoint
     kms            = var.endpoint
     lambda         = var.endpoint
@@ -1631,4 +1632,66 @@ resource "aws_elasticache_serverless_cache" "serverless" {
   engine     = "redis"
   subnet_ids = slice(data.aws_subnets.default.ids, 0, 2)
   tags       = local.tags
+}
+
+resource "aws_iot_thing_type" "sensor" {
+  name = "sensor"
+  properties {
+    description           = "Terraform test sensors"
+    searchable_attributes = ["team"]
+  }
+  tags = local.tags
+}
+
+resource "aws_iot_thing" "probe" {
+  name            = "probe"
+  thing_type_name = aws_iot_thing_type.sensor.name
+  attributes      = { team = var.team }
+}
+
+resource "aws_iot_thing_group" "fleet" {
+  name = "fleet"
+  properties {
+    description = "Terraform test fleet"
+    attribute_payload {
+      attributes = { team = var.team }
+    }
+  }
+  tags = local.tags
+}
+
+resource "aws_iot_thing_group_membership" "probe" {
+  thing_name       = aws_iot_thing.probe.name
+  thing_group_name = aws_iot_thing_group.fleet.name
+}
+
+resource "aws_iot_certificate" "probe" {
+  active = true
+}
+
+resource "aws_iot_policy" "probe" {
+  name = "probe"
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [{ Effect = "Allow", Action = ["iot:Connect", "iot:Publish"], Resource = ["*"] }]
+  })
+  tags = local.tags
+}
+
+resource "aws_iot_policy_attachment" "probe" {
+  policy = aws_iot_policy.probe.name
+  target = aws_iot_certificate.probe.arn
+}
+
+resource "aws_iot_thing_principal_attachment" "probe" {
+  thing     = aws_iot_thing.probe.name
+  principal = aws_iot_certificate.probe.arn
+}
+
+data "aws_iot_endpoint" "data" {
+  endpoint_type = "iot:Data-ATS"
+}
+
+output "iot_endpoint" {
+  value = data.aws_iot_endpoint.data.endpoint_address
 }

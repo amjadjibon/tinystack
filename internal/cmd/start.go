@@ -41,6 +41,7 @@ import (
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -84,6 +85,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
 	"github.com/amjadjibon/tinystack/internal/services/glue"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
+	"github.com/amjadjibon/tinystack/internal/services/iot"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
@@ -275,6 +277,7 @@ func newStartCommand() *cobra.Command {
 				cognitoidentityapi.Descriptor(identityPools),
 				glueapi.Descriptor(dataCatalog),
 				athenaapi.Descriptor(queries),
+				iotapi.Descriptor(iot.New(store)),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.

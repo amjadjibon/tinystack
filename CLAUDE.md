@@ -127,7 +127,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**, **services/cognitoidentity**, **services/glue**, **services/athena**, **services/elasticache**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**, **services/cognitoidentity**, **services/glue**, **services/athena**, **services/elasticache**, **services/iot**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -422,7 +422,8 @@ a per-service `Dialect`), and delivers synchronously through
   ACM (`services/acm`) keeps each certificate (its details, tags, PEM certificate and chain, and, only when requested
   as exportable, its private key) under `…/acm/cert/<ID>` and idempotency tokens under `…/acm/token/<token>`;
   requested certificates are issued at once, signed by a certificate authority created on first use under the
-  partition-wide `aws/acm/ca` (`issue.go`), and `export.go` encrypts exported keys (PBES2).
+  partition-wide `aws/acm/ca` (`issue.go`), and `export.go` encrypts exported keys (PBES2). The authority, issuing,
+  and PEM parsing are `services/pki` (`pki.Lazy` keeps an authority under one key), which IoT shares.
   Route 53 (`services/route53`) is global, so it keeps records under `<account>/route53/...` with no Region: zones
   (with their VPCs, name servers, and tags) under `zone/<ID>`, record sets under `rrset/<zone ID>/<name with the
   labels reversed> <type> <set identifier>` (the space sorts below every stored name character, so a zone lists in
@@ -487,6 +488,23 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   under `…/elasticache/event/<timestamp-seq>`. In records mode, resources settle in `available` immediately with default
   localhost endpoints; with `elasticache.caches: docker`, cache nodes run as containers with readiness probes and published
   host ports. Cache containers do not retain volumes across TinyStack restarts.
+  IoT Core (`services/iot`, the control plane; names are case-sensitive and kept as given) keeps things (attributes,
+  version, type, static groups, and attached principals) under `…/iot/thing/<name>`, thing types under
+  `…/iot/thing-type/<name>`, static thing groups (with their parent, at most 7 levels deep) under
+  `…/iot/thing-group/<name>`, device certificates by ID (the hex SHA-256 of the DER) under `…/iot/certificate/<ID>`,
+  registered CA certificates under `…/iot/ca/<ID>`, policies (up to 5 versions, numbered from 1 and never reused, and
+  their targets) under `…/iot/policy/<name>`, and, under `…/iot/principal/<path-escaped ID>`, the things and policies a
+  certificate ARN, Cognito identity ID, or thing group ARN is attached to (deleted once it is attached to nothing).
+  `CreateKeysAndCertificate` and `CreateCertificateFromCsr` sign with an IoT certificate authority under the
+  partition-wide `aws/iot/ca`; `RegisterCertificate` finds the registered CA whose signature checks, and
+  `RegisterCACertificate` checks that the verification certificate is signed by the CA for the account's registration
+  code (`…/iot/registration-code/code`). `DescribeEndpoint` returns `<prefix>[-ats].iot.<region>.localhost` names
+  from a per-account prefix (`<account>/iot/endpoint/prefix`, indexed by the partition-wide
+  `aws/iot/endpoint/<prefix>`).
+  `policy.go` accepts only the policy subset TinyStack will evaluate (no `Principal`; `StringEquals`, `StringLike`, and
+  `Bool` conditions; known policy variables), failing others with `MalformedPolicyException`. Billing groups, dynamic
+  groups, CA auto-registration, and certificate transfers fail explicitly; the broker, rules, and shadows are not
+  implemented yet.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for
@@ -508,7 +526,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, ECS, Cognito identity pools, Glue, and Athena over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, and EventBridge Scheduler over REST
-  JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, IoT over REST JSON, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real

@@ -163,6 +163,7 @@ var TerraformServices = []string{
 	"firehose",
 	"glue",
 	"iam",
+	"iot",
 	"kinesis",
 	"kms",
 	"lambda",

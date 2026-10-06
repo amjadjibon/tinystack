@@ -44,6 +44,7 @@ import (
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -83,6 +84,7 @@ import (
 	deliverystreams "github.com/amjadjibon/tinystack/internal/services/firehose"
 	datacatalog "github.com/amjadjibon/tinystack/internal/services/glue"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
+	things "github.com/amjadjibon/tinystack/internal/services/iot"
 	datastreams "github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
@@ -237,6 +239,7 @@ func serverStore(
 		cognitoidentityapi.Descriptor(identityPools),
 		glueapi.Descriptor(catalogService),
 		athenaapi.Descriptor(queries),
+		iotapi.Descriptor(things.New(store)),
 	}
 	caller := catalog.NewCaller(services...)
 	workflows.UseCaller(caller)

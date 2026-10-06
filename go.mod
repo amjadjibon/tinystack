@@ -22,11 +22,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.66.1
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.100.0
 	github.com/aws/aws-sdk-go-v2/service/eks v1.102.0
+	github.com/aws/aws-sdk-go-v2/service/elasticache v1.63.0
 	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.63.1
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.55.0
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.52.1
 	github.com/aws/aws-sdk-go-v2/service/glue v1.167.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.64.1
+	github.com/aws/aws-sdk-go-v2/service/iot v1.84.1
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.56.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0
@@ -57,7 +59,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.4 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/elasticache v1.63.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.4 // indirect

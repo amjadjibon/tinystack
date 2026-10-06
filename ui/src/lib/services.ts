@@ -14,6 +14,7 @@ const database = "Database";
 const networking = "Networking & Content Delivery";
 const integration = "Application Integration";
 const analytics = "Analytics";
+const iot = "Internet of Things";
 const management = "Management & Governance";
 const security = "Security, Identity & Compliance";
 const business = "Business Applications";
@@ -26,6 +27,7 @@ export const categories = [
 	networking,
 	integration,
 	analytics,
+	iot,
 	management,
 	security,
 	business,
@@ -102,6 +104,7 @@ const catalog: Record<string, ServiceInfo> = {
 	firehose: { title: "Data Firehose", category: analytics, icon: "firehose" },
 	glue: { title: "Glue Data Catalog", category: analytics, icon: "glue" },
 	iam: { title: "IAM", category: security, icon: "iam" },
+	iot: { title: "IoT Core", category: iot, icon: "iot" },
 	kinesis: {
 		title: "Kinesis Data Streams",
 		category: analytics,

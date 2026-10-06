@@ -1,0 +1,165 @@
+// Package iot implements the AWS IoT Core control plane without HTTP
+// dependencies. Resources belong to an account and region, and keep their
+// names as given (IoT names are case-sensitive):
+//
+//	<scope>/iot/thing/<name>                    (attributes, version, groups, principals)
+//	<scope>/iot/thing-type/<name>
+//	<scope>/iot/thing-group/<name>              (static groups, with their parent)
+//	<scope>/iot/certificate/<ID>                (device certificates by SHA-256)
+//	<scope>/iot/ca/<ID>                         (registered CA certificates)
+//	<scope>/iot/policy/<name>                   (every version, and the targets)
+//	<scope>/iot/principal/<path-escaped ID>     (what a certificate, Cognito identity, or thing group is attached to)
+//	<scope>/iot/registration-code/code
+//	<account>/iot/endpoint/prefix               (the account's endpoint prefix)
+//	aws/iot/endpoint/<prefix>                   (the account of an endpoint prefix)
+//
+// Certificates that CreateKeysAndCertificate and CreateCertificateFromCsr
+// issue are signed by TinyStack's IoT certificate authority, created on first
+// use under the partition-wide aws/iot/ca.
+package iot
+
+import (
+	"context"
+	"fmt"
+	"regexp"
+	"time"
+
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/pki"
+	"github.com/amjadjibon/tinystack/internal/services/tagging"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+const (
+	service          = "iot"
+	kindThing        = "thing"
+	kindThingType    = "thing-type"
+	kindThingGroup   = "thing-group"
+	kindCertificate  = "certificate"
+	kindCA           = "ca"
+	kindPolicy       = "policy"
+	kindPrincipal    = "principal"
+	kindRegistration = "registration-code"
+	kindEndpoint     = "endpoint"
+	caKey            = "aws/" + service + "/ca"
+	caCommonName     = "TinyStack IoT Certificate Authority"
+	// defaultPage and maxPage bound every list operation's page size.
+	defaultPage = 25
+	maxPage     = 250
+)
+
+var _ api.API = (*Service)(nil)
+
+type Service struct {
+	store storage.Store
+	ca    *pki.Lazy
+	now   func() time.Time
+}
+
+func New(store storage.Store) *Service {
+	return &Service{store: store, ca: pki.NewLazy(store, caKey, caCommonName), now: time.Now}
+}
+
+func invalid(format string, args ...any) error {
+	return awserror.New("InvalidRequestException", fmt.Sprintf(format, args...))
+}
+
+func notFound(format string, args ...any) error {
+	return awserror.New("ResourceNotFoundException", fmt.Sprintf(format, args...))
+}
+
+func alreadyExists(format string, args ...any) error {
+	return awserror.New("ResourceAlreadyExistsException", fmt.Sprintf(format, args...))
+}
+
+func conflict(format string, args ...any) error {
+	return awserror.New("DeleteConflictException", fmt.Sprintf(format, args...))
+}
+
+func versionConflict(what string) error {
+	return awserror.New("VersionConflictException", "The version for "+what+" does not match the expected version.")
+}
+
+func certificateState(format string, args ...any) error {
+	return awserror.New("CertificateStateException", fmt.Sprintf(format, args...))
+}
+
+// thingNamePattern is what thing, thing type, and thing group names may be.
+var thingNamePattern = regexp.MustCompile(`^[a-zA-Z0-9:_-]{1,128}$`)
+
+func checkName(kind string, name *string) error {
+	if !thingNamePattern.MatchString(common.Value(name)) {
+		return invalid("The %s name must be 1 to 128 letters, digits, colons, underscores, or hyphens.", kind)
+	}
+
+	return nil
+}
+
+// arn names a resource of one of the ARN kinds: thing, thingtype,
+// thinggroup, cert, cacert, or policy.
+func arn(scope request.Scope, kind, name string) string {
+	return "arn:aws:iot:" + scope.Region + ":" + scope.AccountID + ":" + kind + "/" + name
+}
+
+// view runs fn in a read transaction in the caller's account and region.
+func (s *Service) view(ctx context.Context, fn func(storage.ReadTx, request.Scope) error) error {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return err
+	}
+
+	return s.store.View(ctx, func(tx storage.ReadTx) error { return fn(tx, scope) })
+}
+
+// update runs fn in a write transaction in the caller's account and region.
+func (s *Service) update(ctx context.Context, fn func(storage.WriteTx, request.Scope) error) error {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return err
+	}
+
+	return s.store.Update(ctx, func(tx storage.WriteTx) error { return fn(tx, scope) })
+}
+
+// tagMap converts a request's tags, which must be valid and not reserved.
+func tagMap(tags []api.Tag) (map[string]string, error) {
+	m, err := tagging.Map(tags, func(t api.Tag) (key, value *string) { return t.Key, new(common.Value(t.Value)) },
+		invalid("Every tag needs a Key."),
+		func(key string) error { return invalid("The tag key %s appears more than once.", key) })
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tagging.CheckSet(m); err != nil {
+		return nil, invalid("%s", err.Error())
+	}
+
+	return m, nil
+}
+
+func tagList(tags map[string]string) []api.Tag {
+	return tagging.List(tags, func(k, v string) api.Tag { return api.Tag{Key: new(k), Value: new(v)} })
+}
+
+// page returns the items after the one token names: size of them, the
+// default page size when size is unset.
+func page[T any](items []T, id func(T) string, token *string, size *int64) (selected []T, next *string, err error) {
+	n := int(common.Value(size))
+	switch {
+	case size == nil:
+		n = defaultPage
+	case n < 1 || n > maxPage:
+		return nil, nil, invalid("The page size must be between 1 and %d.", maxPage)
+	}
+
+	return common.Page(items, id, token, n, invalid("The pagination token is invalid."))
+}
+
+// exists reports whether key holds a record.
+func exists(tx storage.ReadTx, key string) bool {
+	_, ok := tx.Get(key)
+	return ok
+}

@@ -95,6 +95,10 @@
       "path": "codegen/sdk-codegen/aws-models/iam.json",
       "sha256": "c0cec5eeceeffdf03f310ae41c30d072041dbc274bc5a388cad525847de1bec2"
     },
+    "iot": {
+      "path": "codegen/sdk-codegen/aws-models/iot.json",
+      "sha256": "b844c77e44c5fa65fc0666fd4085e65338c150adbdf0e88b201f2fe1f5a48568"
+    },
     "kinesis": {
       "path": "codegen/sdk-codegen/aws-models/kinesis.json",
       "sha256": "b3cd88f396f3591df7f1a809957379a9c8afba1e593e3eb38ee7d99afb689636"
