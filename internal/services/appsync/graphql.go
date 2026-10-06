@@ -217,7 +217,8 @@ func (s *Service) prepare(g *graph, c *caller, r *execute.Request, q *query) (*e
 		schema: g.schema, doc: doc, op: op, vars: vars, allowed: c.allowed(*g.api.AuthenticationType),
 		noIntrospection: common.Value(g.api.IntrospectionConfig) == "DISABLED",
 	}
-	e.resolve = (&session{service: s, graph: g, caller: c, request: r, vars: vars}).resolve
+	ses := &session{service: s, graph: g, caller: c, request: r, vars: vars}
+	e.resolve, e.prefetch = ses.resolve, ses.prefetch
 	return e, nil
 }
 
@@ -265,6 +266,8 @@ type session struct {
 	caller  *caller
 	request *execute.Request
 	vars    map[string]any
+	// batched are the fields prefetch resolved, by path.
+	batched map[string]*outcome
 	// filter is the enhanced filter a subscription's resolver set.
 	filter   any
 	resolved int
@@ -277,6 +280,11 @@ func (r *session) resolve(ctx context.Context, res *resolution) (value any, hand
 		return nil, false, nil
 	}
 
+	if o, ok := r.batched[pathString(res.path)]; ok {
+		res.appended = append(res.appended, o.appended...)
+		return o.value, true, o.err
+	}
+
 	r.resolved++
 	if limit := common.Value(r.graph.api.ResolverCountLimit); limit > 0 && r.resolved > int(limit) {
 		return nil, true, &fieldError{Type: "ResolverCountLimitExceeded", Message: fmt.Sprintf(
@@ -284,13 +292,13 @@ func (r *session) resolve(ctx context.Context, res *resolution) (value any, hand
 	}
 
 	switch {
-	case resolver.RequestMappingTemplate != nil || resolver.ResponseMappingTemplate != nil:
-		return nil, true, unsupported(res, "VTL mapping templates")
 	case resolver.Runtime != nil:
 		value, err = r.runJS(ctx, res, resolver)
 		return value, true, err
-	case common.Value(resolver.Kind) == kindPipeline:
-		return nil, true, unsupported(res, "a pipeline without code")
+	case resolver.RequestMappingTemplate != nil || resolver.ResponseMappingTemplate != nil ||
+		common.Value(resolver.Kind) == kindPipeline:
+		value, err = r.runVTL(ctx, res, resolver)
+		return value, true, err
 	}
 
 	source := r.graph.sources[common.Value(resolver.DataSourceName)]
@@ -305,17 +313,12 @@ func (r *session) resolve(ctx context.Context, res *resolution) (value any, hand
 	return value, true, err
 }
 
-func unsupported(res *resolution, what string) error {
-	return &fieldError{Type: errorUnsupported, Message: fmt.Sprintf(
-		"TinyStack does not run %s, which %s.%s uses.", what, res.parent.Name, res.def.Name)}
-}
-
 // runJS runs an APPSYNC_JS resolver: its request handler, then its data
 // source or, in a pipeline, each function's request handler, data source, and
 // response handler, then its response handler.
 func (r *session) runJS(ctx context.Context, res *resolution, resolver *api.Resolver) (any, error) {
 	event := r.event(res)
-	event["prev"], event["result"], event["error"] = map[string]any{"result": nil}, nil, nil
+	event["prev"], event[keyResult], event["error"] = map[string]any{keyResult: nil}, nil, nil
 	j, err := newJS(event, &res.appended)
 	if err != nil {
 		return nil, err
@@ -377,7 +380,8 @@ func (r *session) pipeline(ctx context.Context, j *jsRun, before goja.Value, con
 			return &fieldError{Type: errorCode, Message: "Function " + id + " no longer exists."}
 		case f.Runtime == nil:
 			return &fieldError{Type: errorUnsupported, Message: fmt.Sprintf(
-				"TinyStack does not run VTL mapping templates, which function %s uses.", *f.Name)}
+				"TinyStack does not run functions with mapping templates, such as %s, in an APPSYNC_JS pipeline.",
+				*f.Name)}
 		}
 
 		h, err := j.load(*f.Code)
@@ -429,7 +433,7 @@ func (r *session) step(ctx context.Context, j *jsRun, d *api.DataSource, req goj
 		return err
 	}
 
-	if setErr := j.set("result", result); setErr != nil {
+	if setErr := j.set(keyResult, result); setErr != nil {
 		return setErr
 	}
 
@@ -489,11 +493,37 @@ func selectionList(set ast.SelectionSet, prefix string, out []string) []string {
 // invoke calls a function with event, as a batch of one when batch is set,
 // and returns the field's value.
 func (r *session) invoke(ctx context.Context, arn string, event any, batch bool) (any, error) {
-	payload := event
-	if batch {
-		payload = []any{event}
+	if !batch {
+		return r.lambda(ctx, arn, event)
 	}
 
+	results, err := r.invokeBatch(ctx, arn, []any{event})
+	if err != nil {
+		return nil, err
+	}
+
+	return results[0], nil
+}
+
+// invokeBatch calls a function with a batch of payloads, which must return
+// one result for each, in order.
+func (r *session) invokeBatch(ctx context.Context, arn string, payloads []any) ([]any, error) {
+	value, err := r.lambda(ctx, arn, payloads)
+	if err != nil {
+		return nil, err
+	}
+
+	results, ok := value.([]any)
+	if !ok || len(results) != len(payloads) {
+		return nil, &fieldError{Type: typeLambdaUnhandled, Message: fmt.Sprintf(
+			"The function must return a list of %d results, one for each item of the batch.", len(payloads))}
+	}
+
+	return results, nil
+}
+
+// lambda calls a function with payload and returns what it returned.
+func (r *session) lambda(ctx context.Context, arn string, payload any) (any, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -510,16 +540,12 @@ func (r *session) invoke(ctx context.Context, arn string, event any, batch bool)
 			ErrorType    string `json:"errorType"`
 		}
 		_ = json.Unmarshal(out.Payload, &failure)
-		return nil, &fieldError{Type: "Lambda:Unhandled", Message: failure.ErrorMessage}
+		return nil, &fieldError{Type: typeLambdaUnhandled, Message: failure.ErrorMessage}
 	}
 
 	var value any
 	if err = json.Unmarshal(out.Payload, &value); err != nil {
-		return nil, &fieldError{Type: "Lambda:Unhandled", Message: "The function returned invalid JSON."}
-	}
-
-	if items, ok := value.([]any); batch && ok && len(items) == 1 {
-		return items[0], nil
+		return nil, &fieldError{Type: typeLambdaUnhandled, Message: "The function returned invalid JSON."}
 	}
 
 	return value, nil

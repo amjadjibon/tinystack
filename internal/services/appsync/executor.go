@@ -9,6 +9,7 @@ import (
 	"math"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -106,7 +107,11 @@ type executor struct {
 	resolve func(ctx context.Context, r *resolution) (value any, handled bool, err error)
 	// allowed reports whether the caller may read a field.
 	allowed func(parent *ast.Definition, f *ast.FieldDefinition) bool
-	errors  []*gqlError
+	// prefetch may resolve a field of every object of a list at once, before
+	// resolve is asked for each, at paths[i] for sources[i].
+	prefetch func(ctx context.Context, parent *ast.Definition, def *ast.FieldDefinition, g group, sources []any,
+		paths [][]any)
+	errors []*gqlError
 	// noIntrospection refuses __schema and __type.
 	noIntrospection bool
 }
@@ -335,6 +340,7 @@ func (e *executor) completeNullable(ctx context.Context, t *ast.Type, g group, v
 			return nil, true
 		}
 
+		e.prefetchItems(ctx, t.Elem, g, items, path)
 		out := make([]any, 0, len(items))
 		for i, item := range items {
 			r, itemOK := e.complete(ctx, t.Elem, g, item, append(slices.Clone(path), i))
@@ -377,6 +383,34 @@ func (e *executor) completeNullable(ctx context.Context, t *ast.Type, g group, v
 	}
 
 	return o, true
+}
+
+// prefetchItems offers the fields a list's objects select to prefetch, so
+// a resolver can resolve them together.
+func (e *executor) prefetchItems(ctx context.Context, elem *ast.Type, g group, items, path []any) {
+	d := e.schema.Types[elem.NamedType]
+	if e.prefetch == nil || elem.Elem != nil || d == nil || d.Kind != ast.Object || len(items) < 2 {
+		return
+	}
+
+	var groups []group
+	for _, f := range g.fields {
+		groups = e.collect(d, f.SelectionSet, groups)
+	}
+
+	for _, fg := range groups {
+		def := d.Fields.ForName(fg.fields[0].Name)
+		if def == nil || strings.HasPrefix(def.Name, "__") || e.allowed != nil && !e.allowed(d, def) {
+			continue
+		}
+
+		paths := make([][]any, len(items))
+		for i := range items {
+			paths[i] = append(slices.Clone(path), i, fg.key)
+		}
+
+		e.prefetch(ctx, d, def, fg, items, paths)
+	}
 }
 
 // scalar serializes a resolved scalar as AppSync does.

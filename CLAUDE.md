@@ -334,8 +334,13 @@ a per-service `Dialect`), and delivers synchronously through
   module loader, so a field's handlers share one `ctx` and stash; `utils.js` is `@aws-appsync/utils` and
   `@aws-appsync/utils/dynamodb` in JavaScript, with `util.error`, `appendError`, `earlyReturn`, and IDs in Go).
   `sources.go` sends the request objects to NONE, Lambda (`lambda.Service.Invoke`), HTTP (`proxy.Forward`), and,
-  through the `catalog.Caller` from `UseCaller`, DynamoDB and EventBridge data sources, converting DynamoDB items to
-  plain JSON. VTL mapping templates are stored and fail explicitly when a query reaches them. Subscriptions
+  through the `catalog.Caller` from `UseCaller`, DynamoDB (`batch.go` adds the batch and transaction operations) and
+  EventBridge data sources, converting DynamoDB items to plain JSON. VTL mapping templates (unit resolvers and
+  pipelines of template functions) render with `services/appsync/vtl`, a Velocity subset, and `templates.go`'s
+  `$util` and `$ctx`; `#return` in a request template skips the data source, and a `2017-02-28` template's data
+  source error ends the resolver. A unit resolver on a Lambda data source with a `maxBatchSize` batches: when a list
+  of objects completes, the executor's `prefetch` hook lets `batching.go` run each item's request (direct, JS, or VTL
+  `BatchInvoke`), call the function with up to `maxBatchSize` payloads at a time, and run each item's response. Subscriptions
   (`realtime.go`) run over AppSync's `graphql-ws` WebSocket protocol: the gateway upgrades GraphQL requests (and
   `<API ID>.appsync-realtime-api.<host>`) and hands `appsync.Service.Connect` an `execute.Socket`, whose `Caller`
   verifies the SigV4 requests IAM clients describe in the connection header and each `start`. Started subscriptions

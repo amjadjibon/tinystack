@@ -161,7 +161,7 @@ func (j *jsRun) host() *goja.Object {
 	}
 	set("error", func(call goja.FunctionCall) goja.Value { return raise(errorOf(call)) })
 	set("unauthorized", func(goja.FunctionCall) goja.Value {
-		return raise(&fieldError{Type: "Unauthorized", Message: "Unauthorized"})
+		return raise(&fieldError{Type: typeUnauthorized, Message: typeUnauthorized})
 	})
 	set("appendError", func(call goja.FunctionCall) goja.Value {
 		*j.appended = append(*j.appended, errorOf(call))
@@ -324,7 +324,7 @@ func (j *jsRun) set(name string, v any) error {
 func (j *jsRun) setPrev(result goja.Value) error {
 	prev := j.vm.NewObject()
 	if result != nil {
-		if err := prev.Set("result", result); err != nil {
+		if err := prev.Set(keyResult, result); err != nil {
 			return err
 		}
 	}

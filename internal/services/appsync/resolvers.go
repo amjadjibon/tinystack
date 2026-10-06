@@ -47,6 +47,16 @@ func (c code) check() error {
 		}
 	}
 
+	for _, t := range []*string{c.request, c.response} {
+		if t == nil {
+			continue
+		}
+
+		if _, err := parseTemplate(*t); err != nil {
+			return badRequest("The mapping template contains one or more errors: %s", err.Error())
+		}
+	}
+
 	return nil
 }
 

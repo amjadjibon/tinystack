@@ -289,5 +289,5 @@ func introspect(ctx context.Context, schema *ast.Schema) ([]byte, error) {
 
 	e := &executor{schema: schema, doc: doc, op: doc.Operations[0]}
 	data, _ := e.run(ctx)
-	return json.Marshal(map[string]any{"data": data})
+	return json.Marshal(map[string]any{keyData: data})
 }

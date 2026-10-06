@@ -127,6 +127,8 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 		return graphqlResolver(payload)
 	case "app.graphqlAuthorize":
 		return graphqlAuthorizer(payload)
+	case "app.graphqlBatch":
+		return graphqlBatch(payload)
 	default:
 		return lambda.Result{Payload: []byte("null")}, nil
 	}

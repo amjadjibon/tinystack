@@ -14,8 +14,8 @@ const opBetween = "between"
 // filterOperators are the operators of enhanced subscription filters, by
 // whether their value is a list.
 var filterOperators = map[string]bool{
-	"eq": false, "ne": false, "le": false, "lt": false, "ge": false, "gt": false, "contains": false,
-	"notContains": false, "beginsWith": false, "in": true, "notIn": true, opBetween: true, "containsAny": true,
+	"eq": false, "ne": false, "le": false, "lt": false, "ge": false, "gt": false, opContains: false,
+	opNotContains: false, opBeginsWith: false, "in": true, "notIn": true, opBetween: true, "containsAny": true,
 }
 
 // filterGroups reads an enhanced subscription filter,
@@ -108,11 +108,11 @@ func filterPasses(f, value map[string]any) bool {
 	case "le", "lt", "ge", "gt":
 		c, ok := compare(got, want)
 		return ok && map[string]bool{"le": c <= 0, "lt": c < 0, "ge": c >= 0, "gt": c > 0}[op]
-	case "contains":
+	case opContains:
 		return contains(got, want)
-	case "notContains":
+	case opNotContains:
 		return !contains(got, want)
-	case "beginsWith":
+	case opBeginsWith:
 		s, isString := got.(string)
 		prefix, _ := want.(string)
 		return isString && strings.HasPrefix(s, prefix)

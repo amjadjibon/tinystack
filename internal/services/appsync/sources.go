@@ -58,14 +58,15 @@ func (r *session) invokeSource(ctx context.Context, d *api.DataSource, req any) 
 }
 
 func (r *session) invokeLambda(ctx context.Context, d *api.DataSource, req map[string]any) (any, error) {
-	if op, _ := req["operation"].(string); op != "Invoke" {
+	op, _ := req["operation"].(string)
+	if op != "Invoke" && op != opBatchInvoke {
 		return nil, &sourceError{
-			Type:    "Unsupported",
-			Message: "TinyStack runs only the Invoke operation of Lambda data sources.",
+			Type:    errorUnsupported,
+			Message: "Lambda data sources run the Invoke and BatchInvoke operations, not " + op + ".",
 		}
 	}
 
-	value, err := r.invoke(ctx, *d.LambdaConfig.LambdaFunctionArn, req["payload"], false)
+	value, err := r.invoke(ctx, *d.LambdaConfig.LambdaFunctionArn, req["payload"], op == opBatchInvoke)
 	if fe, ok := errors.AsType[*fieldError](err); ok {
 		return nil, &sourceError{Type: fe.Type, Message: fe.Message}
 	}
@@ -127,10 +128,14 @@ func expressionParams(params map[string]any, field string, e any) {
 
 func (r *session) invokeDynamoDB(ctx context.Context, d *api.DataSource, req map[string]any) (any, error) {
 	op, _ := req["operation"].(string)
-	params := map[string]any{"TableName": *d.DynamodbConfig.TableName}
+	if result, handled, err := r.invokeDynamoDBMany(ctx, d, op, req); handled {
+		return result, err
+	}
+
+	params := map[string]any{attrTableName: *d.DynamodbConfig.TableName}
 	expressionParams(params, "ConditionExpression", req["condition"])
 	for from, to := range map[string]string{
-		"key": "Key", "index": "IndexName", "limit": "Limit", "consistentRead": "ConsistentRead",
+		"key": attrKey, "index": "IndexName", "limit": "Limit", "consistentRead": "ConsistentRead",
 		"scanIndexForward": "ScanIndexForward", "select": "Select",
 	} {
 		if v, ok := req[from]; ok && v != nil {
@@ -149,7 +154,7 @@ func (r *session) invokeDynamoDB(ctx context.Context, d *api.DataSource, req map
 
 	switch op {
 	case "GetItem":
-	case "PutItem":
+	case opPutItem:
 		item, _ := req["attributeValues"].(map[string]any)
 		key, _ := req["key"].(map[string]any)
 		merged := maps.Clone(item)
@@ -158,12 +163,12 @@ func (r *session) invokeDynamoDB(ctx context.Context, d *api.DataSource, req map
 		}
 
 		maps.Copy(merged, key)
-		delete(params, "Key")
+		delete(params, attrKey)
 		params["Item"] = merged
-	case "UpdateItem":
+	case opUpdateItem:
 		expressionParams(params, "UpdateExpression", req["update"])
 		params["ReturnValues"] = "ALL_NEW"
-	case "DeleteItem":
+	case opDeleteItem:
 		params["ReturnValues"] = "ALL_OLD"
 	case "Query":
 		expressionParams(params, "KeyConditionExpression", req["query"])
@@ -183,9 +188,9 @@ func (r *session) invokeDynamoDB(ctx context.Context, d *api.DataSource, req map
 	switch op {
 	case "GetItem":
 		return plainItem(out["Item"]), nil
-	case "PutItem":
+	case opPutItem:
 		return plainItem(params["Item"]), nil
-	case "UpdateItem", "DeleteItem":
+	case opUpdateItem, opDeleteItem:
 		return plainItem(out["Attributes"]), nil
 	}
 
@@ -236,11 +241,11 @@ func plain(v any) any {
 	av, _ := v.(map[string]any)
 	for kind, value := range av {
 		switch kind {
-		case "S", "B", "BOOL", "SS", "BS":
+		case "S", "B", attrBOOL, "SS", "BS":
 			return value
 		case "N":
 			return number(value)
-		case "NULL":
+		case attrNULL:
 			return nil
 		case "NS":
 			list, _ := value.([]any)

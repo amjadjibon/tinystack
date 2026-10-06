@@ -396,7 +396,7 @@ func (c *connection) start(ctx context.Context, id string, raw json.RawMessage) 
 	f := groups[0].fields[0]
 	def := root.Fields.ForName(f.Name)
 	if !e.allowed(root, def) {
-		return fail(&gqlError{ErrorType: new("Unauthorized"), Message: fmt.Sprintf(
+		return fail(&gqlError{ErrorType: new(typeUnauthorized), Message: fmt.Sprintf(
 			"Not Authorized to access %s on type %s", f.Name, root.Name)})
 	}
 
@@ -507,7 +507,7 @@ func (sub *subscription) deliver(ctx context.Context, value any) {
 		},
 	}
 	data, errs := e.run(ctx)
-	sub.conn.send(message{ID: sub.id, Type: "data", Payload: result{data, errs}})
+	sub.conn.send(message{ID: sub.id, Type: keyData, Payload: result{data, errs}})
 }
 
 // plainOutput converts response objects into maps keyed by field name, as

@@ -44,6 +44,27 @@ const (
 	defaultLimit   = 25
 )
 
+// Names that requests, results, and errors share.
+const (
+	keyData             = "data"
+	keyResult           = "result"
+	keyAnd              = "and"
+	attrKey             = "Key"
+	attrTableName       = "TableName"
+	attrBOOL            = "BOOL"
+	attrNULL            = "NULL"
+	opPutItem           = "PutItem"
+	opUpdateItem        = "UpdateItem"
+	opDeleteItem        = "DeleteItem"
+	opBatchInvoke       = "BatchInvoke"
+	opContains          = "contains"
+	opBeginsWith        = "beginsWith"
+	opNotContains       = "notContains"
+	typeLambdaUnhandled = "Lambda:Unhandled"
+	typeUnauthorized    = "Unauthorized"
+	typeMappingTemplate = "MappingTemplate"
+)
+
 var _ api.API = (*Service)(nil)
 
 type Service struct {
