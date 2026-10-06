@@ -12193,5 +12193,336 @@
         "tags"
       ]
     }
+  },
+  "sesv2": {
+    "operations": [
+      "CreateEmailIdentity",
+      "GetEmailIdentity",
+      "ListEmailIdentities",
+      "DeleteEmailIdentity",
+      "CreateEmailTemplate",
+      "GetEmailTemplate",
+      "UpdateEmailTemplate",
+      "DeleteEmailTemplate",
+      "ListEmailTemplates",
+      "TestRenderEmailTemplate",
+      "CreateConfigurationSet",
+      "GetConfigurationSet",
+      "ListConfigurationSets",
+      "DeleteConfigurationSet",
+      "CreateConfigurationSetEventDestination",
+      "GetConfigurationSetEventDestinations",
+      "UpdateConfigurationSetEventDestination",
+      "DeleteConfigurationSetEventDestination",
+      "SendEmail",
+      "SendBulkEmail",
+      "GetAccount",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateEmailIdentityRequest": [
+        "EmailIdentity",
+        "Tags",
+        "ConfigurationSetName"
+      ],
+      "CreateEmailIdentityResponse": [
+        "IdentityType",
+        "VerifiedForSendingStatus",
+        "DkimAttributes"
+      ],
+      "DkimAttributes": [
+        "SigningEnabled",
+        "Status",
+        "Tokens",
+        "SigningAttributesOrigin",
+        "NextSigningKeyLength",
+        "CurrentSigningKeyLength",
+        "LastKeyGenerationTimestamp"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "GetEmailIdentityRequest": [
+        "EmailIdentity"
+      ],
+      "GetEmailIdentityResponse": [
+        "IdentityType",
+        "FeedbackForwardingStatus",
+        "VerifiedForSendingStatus",
+        "DkimAttributes",
+        "Tags",
+        "ConfigurationSetName",
+        "VerificationStatus"
+      ],
+      "ListEmailIdentitiesRequest": [
+        "NextToken",
+        "PageSize"
+      ],
+      "ListEmailIdentitiesResponse": [
+        "EmailIdentities",
+        "NextToken"
+      ],
+      "IdentityInfo": [
+        "IdentityType",
+        "IdentityName",
+        "SendingEnabled",
+        "VerificationStatus"
+      ],
+      "DeleteEmailIdentityRequest": [
+        "EmailIdentity"
+      ],
+      "CreateEmailTemplateRequest": [
+        "TemplateName",
+        "TemplateContent",
+        "Tags"
+      ],
+      "EmailTemplateContent": [
+        "Subject",
+        "Text",
+        "Html"
+      ],
+      "GetEmailTemplateRequest": [
+        "TemplateName"
+      ],
+      "GetEmailTemplateResponse": [
+        "TemplateName",
+        "TemplateContent",
+        "Tags"
+      ],
+      "UpdateEmailTemplateRequest": [
+        "TemplateName",
+        "TemplateContent"
+      ],
+      "DeleteEmailTemplateRequest": [
+        "TemplateName"
+      ],
+      "ListEmailTemplatesRequest": [
+        "NextToken",
+        "PageSize"
+      ],
+      "ListEmailTemplatesResponse": [
+        "TemplatesMetadata",
+        "NextToken"
+      ],
+      "EmailTemplateMetadata": [
+        "TemplateName",
+        "CreatedTimestamp"
+      ],
+      "TestRenderEmailTemplateRequest": [
+        "TemplateName",
+        "TemplateData"
+      ],
+      "TestRenderEmailTemplateResponse": [
+        "RenderedTemplate"
+      ],
+      "CreateConfigurationSetRequest": [
+        "ConfigurationSetName",
+        "TrackingOptions",
+        "DeliveryOptions",
+        "ReputationOptions",
+        "SendingOptions",
+        "Tags",
+        "SuppressionOptions"
+      ],
+      "TrackingOptions": [
+        "CustomRedirectDomain",
+        "HttpsPolicy"
+      ],
+      "DeliveryOptions": [
+        "TlsPolicy",
+        "SendingPoolName",
+        "MaxDeliverySeconds"
+      ],
+      "ReputationOptions": [
+        "ReputationMetricsEnabled",
+        "LastFreshStart"
+      ],
+      "SendingOptions": [
+        "SendingEnabled"
+      ],
+      "SuppressionOptions": [
+        "SuppressedReasons"
+      ],
+      "GetConfigurationSetRequest": [
+        "ConfigurationSetName"
+      ],
+      "GetConfigurationSetResponse": [
+        "ConfigurationSetName",
+        "TrackingOptions",
+        "DeliveryOptions",
+        "ReputationOptions",
+        "SendingOptions",
+        "Tags",
+        "SuppressionOptions"
+      ],
+      "ListConfigurationSetsRequest": [
+        "NextToken",
+        "PageSize"
+      ],
+      "ListConfigurationSetsResponse": [
+        "ConfigurationSets",
+        "NextToken"
+      ],
+      "DeleteConfigurationSetRequest": [
+        "ConfigurationSetName"
+      ],
+      "CreateConfigurationSetEventDestinationRequest": [
+        "ConfigurationSetName",
+        "EventDestinationName",
+        "EventDestination"
+      ],
+      "EventDestinationDefinition": [
+        "Enabled",
+        "MatchingEventTypes",
+        "KinesisFirehoseDestination",
+        "SnsDestination",
+        "EventBridgeDestination"
+      ],
+      "SnsDestination": [
+        "TopicArn"
+      ],
+      "EventBridgeDestination": [
+        "EventBusArn"
+      ],
+      "KinesisFirehoseDestination": [
+        "IamRoleArn",
+        "DeliveryStreamArn"
+      ],
+      "GetConfigurationSetEventDestinationsRequest": [
+        "ConfigurationSetName"
+      ],
+      "GetConfigurationSetEventDestinationsResponse": [
+        "EventDestinations"
+      ],
+      "EventDestination": [
+        "Name",
+        "Enabled",
+        "MatchingEventTypes",
+        "KinesisFirehoseDestination",
+        "SnsDestination",
+        "EventBridgeDestination"
+      ],
+      "UpdateConfigurationSetEventDestinationRequest": [
+        "ConfigurationSetName",
+        "EventDestinationName",
+        "EventDestination"
+      ],
+      "DeleteConfigurationSetEventDestinationRequest": [
+        "ConfigurationSetName",
+        "EventDestinationName"
+      ],
+      "SendEmailRequest": [
+        "FromEmailAddress",
+        "Destination",
+        "ReplyToAddresses",
+        "Content",
+        "EmailTags",
+        "ConfigurationSetName"
+      ],
+      "SendEmailResponse": [
+        "MessageId"
+      ],
+      "Destination": [
+        "ToAddresses",
+        "CcAddresses",
+        "BccAddresses"
+      ],
+      "EmailContent": [
+        "Simple",
+        "Raw",
+        "Template"
+      ],
+      "Message": [
+        "Subject",
+        "Body",
+        "Headers"
+      ],
+      "Content": [
+        "Data",
+        "Charset"
+      ],
+      "Body": [
+        "Text",
+        "Html"
+      ],
+      "MessageHeader": [
+        "Name",
+        "Value"
+      ],
+      "RawMessage": [
+        "Data"
+      ],
+      "Template": [
+        "TemplateName",
+        "TemplateArn",
+        "TemplateContent",
+        "TemplateData",
+        "Headers"
+      ],
+      "MessageTag": [
+        "Name",
+        "Value"
+      ],
+      "SendBulkEmailRequest": [
+        "FromEmailAddress",
+        "ReplyToAddresses",
+        "DefaultEmailTags",
+        "DefaultContent",
+        "BulkEmailEntries",
+        "ConfigurationSetName"
+      ],
+      "SendBulkEmailResponse": [
+        "BulkEmailEntryResults"
+      ],
+      "BulkEmailContent": [
+        "Template"
+      ],
+      "BulkEmailEntry": [
+        "Destination",
+        "ReplacementTags",
+        "ReplacementEmailContent",
+        "ReplacementHeaders"
+      ],
+      "ReplacementEmailContent": [
+        "ReplacementTemplate"
+      ],
+      "ReplacementTemplate": [
+        "ReplacementTemplateData"
+      ],
+      "BulkEmailEntryResult": [
+        "Status",
+        "Error",
+        "MessageId"
+      ],
+      "GetAccountResponse": [
+        "DedicatedIpAutoWarmupEnabled",
+        "EnforcementStatus",
+        "ProductionAccessEnabled",
+        "SendQuota",
+        "SendingEnabled"
+      ],
+      "SendQuota": [
+        "Max24HourSend",
+        "MaxSendRate",
+        "SentLast24Hours"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
   }
 }

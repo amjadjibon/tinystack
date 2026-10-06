@@ -1,8 +1,8 @@
 // Package delivery records the messages TinyStack's services hand to each
 // other (SNS fan-out, EventBridge targets, asynchronous Lambda invocations, and
 // event source mappings) so that a failed delivery, which AWS never reports to
-// the sender, is still visible. It also records the messages Cognito would send
-// to users, which TinyStack never sends.
+// the sender, is still visible. It also records the messages Cognito and SES
+// would send to users, which TinyStack never sends.
 package delivery
 
 import (
@@ -30,6 +30,9 @@ const (
 	// ViaCognito records the email and SMS messages a user pool would send,
 	// such as confirmation codes and temporary passwords.
 	ViaCognito = "cognito"
+	// ViaSES records the email SES would send, which TinyStack never sends,
+	// and the events it publishes to configuration sets' destinations.
+	ViaSES = "ses"
 )
 
 // Record is one delivery. Source is the topic, rule, queue, or bucket ARN it came

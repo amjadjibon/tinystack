@@ -48,6 +48,7 @@ import (
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
@@ -82,6 +83,7 @@ import (
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	schedules "github.com/amjadjibon/tinystack/internal/services/scheduler"
 	secrets "github.com/amjadjibon/tinystack/internal/services/secretsmanager"
+	email "github.com/amjadjibon/tinystack/internal/services/sesv2"
 	stepfunctions "github.com/amjadjibon/tinystack/internal/services/sfn"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
 	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -183,6 +185,7 @@ func serverStore(
 	balancers := loadbalancers.New(store, logger)
 	tasks := orchestration.New(store)
 	stacks := cloudformation.New(store, logger)
+	mail := email.New(store, deliveries)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -217,6 +220,7 @@ func serverStore(
 		firehoseapi.Descriptor(firehoses),
 		cloudwatchapi.Descriptor(monitoring),
 		cloudformationapi.Descriptor(stacks),
+		sesv2api.Descriptor(mail),
 	}
 	caller := catalog.NewCaller(services...)
 	workflows.UseCaller(caller)
@@ -231,6 +235,7 @@ func serverStore(
 	tables.UseCaller(caller)
 	functions.UseCaller(caller)
 	graphQL.UseCaller(caller)
+	mail.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)

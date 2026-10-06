@@ -45,6 +45,7 @@ import (
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
@@ -83,6 +84,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
+	"github.com/amjadjibon/tinystack/internal/services/sesv2"
 	"github.com/amjadjibon/tinystack/internal/services/sfn"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -217,6 +219,7 @@ func newStartCommand() *cobra.Command {
 			stacks := cloudformation.New(store, logger)
 			// Stop ends the stack runner, which writes to the store.
 			defer stacks.Stop()
+			email := sesv2.New(store, deliveries)
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -253,6 +256,7 @@ func newStartCommand() *cobra.Command {
 				firehoseapi.Descriptor(firehoses),
 				cloudwatchapi.Descriptor(monitoring),
 				cloudformationapi.Descriptor(stacks),
+				sesv2api.Descriptor(email),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.
@@ -275,6 +279,7 @@ func newStartCommand() *cobra.Command {
 			functions.UseCaller(caller)
 			// GraphQL data sources reach DynamoDB and EventBridge.
 			graphQL.UseCaller(caller)
+			email.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err

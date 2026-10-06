@@ -127,7 +127,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -342,6 +342,15 @@ a per-service `Dialect`), and delivers synchronously through
   live in memory (`Stop`, deferred and a shutdown hook in `start.go`, closes the connections); after a mutation, each
   root field's data goes to the subscriptions whose `@aws_subscribe` names it, whose arguments it equals, and whose
   enhanced filter (`filters.go`, set by the subscription resolver's `extensions.setSubscriptionFilter`) it passes.
+  SES (`services/sesv2`, API v2) keeps email identities (verified as soon as they are created) under
+  `…/sesv2/identity/<lowercased address or domain>`, templates under `…/sesv2/template/<name>`, configuration sets
+  with their event destinations under `…/sesv2/configuration-set/<name>`, and hourly send counts for `GetAccount`
+  under `…/sesv2/account/sending`. It never sends email: a send checks that its sender's address or domain is an
+  identity, renders templates with the Handlebars subset in `render.go` (a template that fails to render is accepted
+  and produces a rendering failure event), records each message in the `delivery.Log`, and after its transaction
+  commits publishes send, delivery, and, for the mailbox simulator's `bounce@`, `complaint@`, and `suppressionlist@`
+  addresses, bounce and complaint events (`events.go`) to the configuration set's SNS, EventBridge, and Firehose
+  destinations through the `catalog.Caller`.
   Step Functions (`services/sfn`) keeps state machines under `…/sfn/statemachine/<name>`, activities under
   `…/sfn/activity/<name>`, versions under `…/sfn/version/<state machine>/<zero-padded number>` and aliases under
   `…/sfn/alias/<state machine>/<alias>` (`versions.go`, whose `loadTarget` resolves the version an execution runs), executions under `…/sfn/execution/<state machine>/<name>`, and each history event under
@@ -462,7 +471,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, and EventBridge Scheduler over REST
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, and EventBridge Scheduler over REST
   JSON, Auto Scaling, Elastic Load Balancing, and CloudFormation over Query, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
