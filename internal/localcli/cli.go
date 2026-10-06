@@ -1,7 +1,9 @@
 package localcli
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,6 +15,12 @@ import (
 
 // DefaultEndpoint is the default TinyStack local endpoint.
 const DefaultEndpoint = "http://127.0.0.1:4566"
+
+// The credentials and Region TinyStack's tools use by default.
+const (
+	defaultCredential = "test"
+	defaultRegion     = "us-east-1"
+)
 
 // Endpoint returns the configured TinyStack endpoint from environment variables,
 // falling back to http://127.0.0.1:4566.
@@ -39,10 +47,10 @@ func Endpoint() string {
 // and configuration for TinyStack injected if not already set.
 func BaseEnv(endpoint string, extra map[string]string) []string {
 	defaults := map[string]string{
-		"AWS_ACCESS_KEY_ID":         "test",
-		"AWS_SECRET_ACCESS_KEY":     "test",
-		"AWS_DEFAULT_REGION":        "us-east-1",
-		"AWS_REGION":                "us-east-1",
+		"AWS_ACCESS_KEY_ID":         defaultCredential,
+		"AWS_SECRET_ACCESS_KEY":     defaultCredential,
+		"AWS_DEFAULT_REGION":        defaultRegion,
+		"AWS_REGION":                defaultRegion,
 		"AWS_ENDPOINT_URL":          endpoint,
 		"AWS_EC2_METADATA_DISABLED": "true",
 	}
@@ -84,7 +92,8 @@ func Execute(binaryName string, args, env []string) int {
 		return 127
 	}
 
-	cmd := exec.Command(binPath, args...)
+	// #nosec G204 -- running the tool the user named, with their arguments, is this wrapper's purpose.
+	cmd := exec.CommandContext(context.Background(), binPath, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -111,7 +120,7 @@ func Execute(binaryName string, args, env []string) int {
 	}()
 
 	if err := cmd.Wait(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			return exitErr.ExitCode()
 		}
 		fmt.Fprintf(os.Stderr, "tinystack: %s exited with error: %v\n", binaryName, err)
@@ -137,9 +146,11 @@ var TerraformServices = []string{
 	"apigateway",
 	"apigatewayv2",
 	"appsync",
+	"athena",
 	"autoscaling",
 	"cloudformation",
 	"cloudwatch",
+	"cognitoidentity",
 	"cognitoidp",
 	"dynamodb",
 	"ec2",
@@ -149,6 +160,7 @@ var TerraformServices = []string{
 	"elbv2",
 	"eventbridge",
 	"firehose",
+	"glue",
 	"iam",
 	"kinesis",
 	"kms",
@@ -158,6 +170,7 @@ var TerraformServices = []string{
 	"s3",
 	"scheduler",
 	"secretsmanager",
+	"sesv2",
 	"sfn",
 	"sns",
 	"sqs",
@@ -175,9 +188,9 @@ func TerraformOverrideConfig(endpoint string) ([]byte, error) {
 	override := map[string]any{
 		"provider": map[string]any{
 			"aws": map[string]any{
-				"access_key":                  "test",
-				"secret_key":                  "test",
-				"region":                      "us-east-1",
+				"access_key":                  defaultCredential,
+				"secret_key":                  defaultCredential,
+				"region":                      defaultRegion,
 				"skip_credentials_validation": true,
 				"skip_metadata_api_check":     true,
 				"skip_requesting_account_id":  false,
@@ -192,7 +205,7 @@ func TerraformOverrideConfig(endpoint string) ([]byte, error) {
 
 // FindTerraformWorkDir inspects arguments for -chdir=<dir> or -chdir <dir>.
 func FindTerraformWorkDir(args []string) string {
-	for i := 0; i < len(args); i++ {
+	for i := range args {
 		arg := args[i]
 		if strings.HasPrefix(arg, "-chdir=") {
 			return strings.TrimPrefix(arg, "-chdir=")
