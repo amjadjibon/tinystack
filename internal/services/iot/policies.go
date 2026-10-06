@@ -85,7 +85,7 @@ func (s *Service) CreatePolicy(ctx context.Context, in *api.CreatePolicyRequest)
 		return nil, err
 	}
 
-	if err := checkPolicy(common.Value(in.PolicyDocument)); err != nil {
+	if _, err := parsePolicy(common.Value(in.PolicyDocument)); err != nil {
 		return nil, err
 	}
 
@@ -203,7 +203,7 @@ func (s *Service) CreatePolicyVersion(
 	ctx context.Context,
 	in *api.CreatePolicyVersionRequest,
 ) (*api.CreatePolicyVersionResponse, error) {
-	if err := checkPolicy(common.Value(in.PolicyDocument)); err != nil {
+	if _, err := parsePolicy(common.Value(in.PolicyDocument)); err != nil {
 		return nil, err
 	}
 

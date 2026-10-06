@@ -1,0 +1,395 @@
+package iot
+
+import (
+	"cmp"
+	"context"
+	"encoding/json"
+	"net/url"
+	"slices"
+	"strings"
+	"time"
+
+	mqtt "github.com/mochi-mqtt/server/v2"
+	mqttstorage "github.com/mochi-mqtt/server/v2/hooks/storage"
+	"github.com/mochi-mqtt/server/v2/packets"
+
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+const (
+	kindRetained = "retained"
+	// eventsPrefix starts the lifecycle event topics, which only IoT Core
+	// publishes.
+	eventsPrefix = "$aws/events/"
+)
+
+// hook is how a broker asks TinyStack who may connect, publish, subscribe,
+// and receive, and how it reports sessions and retained messages.
+type hook struct {
+	mqtt.HookBase
+	service *Service
+	broker  *broker
+}
+
+func (h *hook) ID() string { return "tinystack-iot" }
+
+func (h *hook) Provides(b byte) bool {
+	return slices.Contains([]byte{
+		mqtt.OnConnectAuthenticate, mqtt.OnACLCheck, mqtt.OnSessionEstablished, mqtt.OnDisconnect,
+		mqtt.OnSubscribe, mqtt.OnSubscribed, mqtt.OnUnsubscribed, mqtt.OnRetainMessage, mqtt.StoredRetainedMessages,
+	}, b)
+}
+
+// connectionOf returns a client's connection, or nil for the broker's own
+// inline clients.
+func connectionOf(cl *mqtt.Client) *connection {
+	c, _ := cl.Net.Conn.(*connection)
+	return c
+}
+
+//nolint:gocritic // mochi's Hook interface passes packets by value.
+func (h *hook) OnConnectAuthenticate(cl *mqtt.Client, _ packets.Packet) bool {
+	c := connectionOf(cl)
+	if c == nil || len(cl.ID) > maxClientID {
+		return false
+	}
+
+	docs, vars, err := h.policies(c, cl.ID)
+	c.thing = vars[varThingName]
+	return err == nil && h.allowed(c, docs, vars, "iot:Connect", "client/"+cl.ID)
+}
+
+const (
+	varClientID   = "iot:ClientId"
+	varThingName  = "iot:Connection.Thing.ThingName"
+	varIsAttached = "iot:Connection.Thing.IsAttached"
+	varThingType  = "iot:Connection.Thing.ThingTypeName"
+	varAttribute  = "iot:Connection.Thing.Attributes["
+	varCognitoSub = "cognito-identity.amazonaws.com:sub"
+)
+
+// policies returns the IoT policies that govern a connection, with what the
+// policy variables are for it. No policies means IAM alone governs it, as for
+// every connection outside identity.mode verify and for callers with no
+// attached IoT policy, which TinyStack allows (AWS would also evaluate IAM).
+// A client ID that names a thing attached to the principal is that thing's
+// connection.
+func (h *hook) policies(c *connection, clientID string) ([]*policyDocument, map[string]string, error) {
+	vars := map[string]string{varClientID: clientID, varIsAttached: "false"}
+	if !h.service.verify || c.principal == "" {
+		return nil, vars, nil
+	}
+
+	vars[varCognitoSub] = c.principal
+	var docs []*policyDocument
+	err := h.service.store.View(context.Background(), func(tx storage.ReadTx) error {
+		p, err := loadPrincipal(tx, c.scope, c.principal)
+		if err != nil {
+			return err
+		}
+
+		if slices.Contains(p.Things, clientID) {
+			t, thingErr := loadThing(tx, c.scope, clientID)
+			if thingErr != nil {
+				return thingErr
+			}
+
+			vars[varThingName], vars[varIsAttached] = t.Name, "true"
+			if t.Type != "" {
+				vars[varThingType] = t.Type
+			}
+
+			for k, v := range t.Attributes {
+				vars[varAttribute+k+"]"] = v
+			}
+		}
+
+		names, err := attachedPolicies(tx, c.scope, c.principal, true)
+		if err != nil {
+			return err
+		}
+
+		for _, name := range names {
+			pol, err := loadPolicy(tx, c.scope, name)
+			if err != nil {
+				return err
+			}
+
+			doc, err := parsePolicy(pol.defaultVersion().Document)
+			if err != nil {
+				return err
+			}
+
+			docs = append(docs, doc)
+		}
+
+		return nil
+	})
+	if err != nil {
+		h.service.logger.Warn("iot policies unreadable", "principal", c.principal, "error", err)
+	}
+
+	return docs, vars, err
+}
+
+// allowed reports whether docs allow action on the resource of the
+// connection's account and Region, where no documents allow everything.
+func (h *hook) allowed(c *connection, docs []*policyDocument, vars map[string]string, action, resource string) bool {
+	if docs == nil {
+		return true
+	}
+
+	return allows(docs, &attempt{
+		vars:     vars,
+		action:   action,
+		resource: "arn:aws:iot:" + c.scope.Region + ":" + c.scope.AccountID + ":" + resource,
+	})
+}
+
+// authorize reports whether a connection's current policies allow action on
+// resource.
+func (h *hook) authorize(c *connection, clientID, action, resource string) bool {
+	docs, vars, err := h.policies(c, clientID)
+	return err == nil && h.allowed(c, docs, vars, action, resource)
+}
+
+func (h *hook) OnACLCheck(cl *mqtt.Client, topic string, write bool) bool {
+	c := connectionOf(cl)
+	if c == nil {
+		return true
+	}
+
+	if write {
+		return publishable(topic) && h.authorize(c, cl.ID, "iot:Publish", "topic/"+topic)
+	}
+
+	// A SUBSCRIBE's filters were authorized by OnSubscribe; anything else is
+	// a message being delivered.
+	c.mu.Lock()
+	allowed, subscribing := c.subscribing[topic]
+	c.mu.Unlock()
+	if subscribing {
+		return allowed
+	}
+
+	return h.authorize(c, cl.ID, "iot:Receive", "topic/"+topic)
+}
+
+//nolint:gocritic // mochi's Hook interface passes packets by value.
+func (h *hook) OnSubscribe(cl *mqtt.Client, pk packets.Packet) packets.Packet {
+	c := connectionOf(cl)
+	if c == nil {
+		return pk
+	}
+
+	decided := map[string]bool{}
+	for _, f := range pk.Filters {
+		decided[f.Filter] = subscribable(f.Filter) && h.authorize(c, cl.ID, "iot:Subscribe", "topicfilter/"+f.Filter)
+	}
+
+	c.mu.Lock()
+	c.subscribing = decided
+	c.mu.Unlock()
+	return pk
+}
+
+//nolint:gocritic // mochi's Hook interface passes packets by value.
+func (h *hook) OnSubscribed(cl *mqtt.Client, pk packets.Packet, codes []byte) {
+	c := connectionOf(cl)
+	if c == nil {
+		return
+	}
+
+	c.mu.Lock()
+	c.subscribing = nil
+	c.mu.Unlock()
+	var topics []string
+	for i, f := range pk.Filters {
+		if i < len(codes) && codes[i] < packets.ErrUnspecifiedError.Code {
+			topics = append(topics, f.Filter)
+		}
+	}
+
+	if len(topics) > 0 {
+		h.event(cl, c, "subscriptions/subscribed", map[string]any{"topics": topics})
+	}
+}
+
+//nolint:gocritic // mochi's Hook interface passes packets by value.
+func (h *hook) OnUnsubscribed(cl *mqtt.Client, pk packets.Packet) {
+	if c := connectionOf(cl); c != nil {
+		topics := make([]string, 0, len(pk.Filters))
+		for _, f := range pk.Filters {
+			topics = append(topics, f.Filter)
+		}
+
+		h.event(cl, c, "subscriptions/unsubscribed", map[string]any{"topics": topics})
+	}
+}
+
+//nolint:gocritic // mochi's Hook interface passes packets by value.
+func (h *hook) OnSessionEstablished(cl *mqtt.Client, _ packets.Packet) {
+	c := connectionOf(cl)
+	if c == nil {
+		return
+	}
+
+	b := h.broker
+	b.mu.Lock()
+	info := b.connections[cl.ID]
+	if info == nil {
+		info = &connectionInfo{}
+		b.connections[cl.ID] = info
+	}
+
+	info.connected, info.disconnected, info.reason, info.thing = h.service.now(), time.Time{}, "", c.thing
+	info.version++
+	version := info.version
+	b.mu.Unlock()
+	h.event(cl, c, "presence/connected", map[string]any{"ipAddress": host(cl.Net.Remote), "versionNumber": version})
+}
+
+func (h *hook) OnDisconnect(cl *mqtt.Client, err error, expire bool) {
+	c := connectionOf(cl)
+	if c == nil {
+		return
+	}
+
+	b := h.broker
+	b.mu.Lock()
+	info := b.connections[cl.ID]
+	reason, version := "CONNECTION_LOST", int64(0)
+	if err == nil {
+		reason = "CLIENT_INITIATED_DISCONNECT"
+	}
+
+	if info != nil {
+		reason = cmp.Or(info.reason, reason)
+		info.disconnected, info.reason = h.service.now(), reason
+		version = info.version
+		if expire {
+			delete(b.connections, cl.ID)
+		}
+	}
+	b.mu.Unlock()
+	h.event(cl, c, "presence/disconnected", map[string]any{
+		"clientInitiatedDisconnect": reason == "CLIENT_INITIATED_DISCONNECT", "disconnectReason": reason,
+		"versionNumber": version,
+	})
+}
+
+// event publishes a lifecycle event about a client, with IoT Core's common
+// fields, to $aws/events/<kind>/<client ID>.
+func (h *hook) event(cl *mqtt.Client, c *connection, kind string, fields map[string]any) {
+	if h.broker.closing.Load() {
+		return
+	}
+
+	fields["clientId"] = cl.ID
+	fields["timestamp"] = h.service.now().UnixMilli()
+	fields["eventType"] = kind[strings.LastIndex(kind, "/")+1:]
+	fields["sessionIdentifier"] = c.session
+	fields["principalIdentifier"] = c.caller
+	payload, err := json.Marshal(fields)
+	if err == nil {
+		err = h.broker.server.Publish(eventsPrefix+kind+"/"+cl.ID, payload, false, 0)
+	}
+
+	if err != nil {
+		h.service.logger.Warn("iot lifecycle event failed", "client", cl.ID, "error", err)
+	}
+}
+
+// retained is a retained message's record.
+type retained struct {
+	Topic    string
+	Payload  []byte
+	Qos      byte
+	Modified int64 // Unix milliseconds
+}
+
+func retainedKey(scope request.Scope, topic string) string {
+	return scope.Key(service, kindRetained, url.PathEscape(topic))
+}
+
+// OnRetainMessage keeps the broker's retained messages in the store, where
+// the data plane reads them and a persistent store keeps them across restarts.
+//
+//nolint:gocritic // mochi's Hook interface passes packets by value.
+func (h *hook) OnRetainMessage(_ *mqtt.Client, pk packets.Packet, r int64) {
+	if r == 0 {
+		return
+	}
+
+	key := retainedKey(h.broker.scope, pk.TopicName)
+	err := h.service.store.Update(context.Background(), func(tx storage.WriteTx) error {
+		if r < 0 {
+			tx.Delete(key)
+			return nil
+		}
+
+		return storage.Write(tx, key, &retained{
+			Topic: pk.TopicName, Payload: pk.Payload, Qos: pk.FixedHeader.Qos, Modified: h.service.now().UnixMilli(),
+		})
+	})
+	if err != nil {
+		h.service.logger.Warn("iot retained message not stored", "topic", pk.TopicName, "error", err)
+	}
+}
+
+// StoredRetainedMessages loads the scope's retained messages into its broker
+// when it starts.
+func (h *hook) StoredRetainedMessages() ([]mqttstorage.Message, error) {
+	var out []mqttstorage.Message
+	err := h.service.store.View(context.Background(), func(tx storage.ReadTx) error {
+		records, err := storage.Records[retained](tx, h.broker.scope.Prefix(service, kindRetained))
+		for _, r := range records {
+			out = append(out, mqttstorage.Message{
+				TopicName: r.Topic, Payload: r.Payload, Created: r.Modified / 1000,
+				FixedHeader: packets.FixedHeader{Type: packets.Publish, Retain: true, Qos: r.Qos},
+			})
+		}
+
+		return err
+	})
+
+	return out, err
+}
+
+// publishable reports whether a client may publish to topic: within IoT
+// Core's limits, and not a reserved topic (shadows and Basic Ingest are not
+// implemented yet, and lifecycle events are IoT Core's own).
+func publishable(topic string) bool {
+	return withinLimits(topic) && !strings.HasPrefix(topic, "$")
+}
+
+// subscribable reports whether a client may subscribe to filter: within IoT
+// Core's limits, and not a $SYS topic, which IoT Core does not have.
+func subscribable(filter string) bool {
+	return withinLimits(filter) && !strings.HasPrefix(filter, "$SYS")
+}
+
+// withinLimits checks a topic's length and its slashes, not counting those
+// of a reserved topic's prefix.
+func withinLimits(topic string) bool {
+	if len(topic) > maxTopic {
+		return false
+	}
+
+	slashes := strings.Count(topic, "/")
+	if strings.HasPrefix(topic, "$aws/") {
+		slashes -= 3
+	}
+
+	return slashes <= maxSlashes
+}
+
+// host returns the host of an address, or the address if it has no port.
+func host(addr string) string {
+	if i := strings.LastIndex(addr, ":"); i > 0 && !strings.HasSuffix(addr, "]") {
+		return strings.Trim(addr[:i], "[]")
+	}
+
+	return addr
+}

@@ -276,7 +276,12 @@ func (s *Server) caller(w http.ResponseWriter, r *http.Request) *execute.Caller 
 		return nil
 	}
 
-	return &execute.Caller{AccountID: c.meta.AccountID, AccessKey: c.meta.AccessKey}
+	caller := &execute.Caller{AccountID: c.meta.AccountID, Region: c.meta.Region, AccessKey: c.meta.AccessKey}
+	if c.credentials != nil {
+		caller.CognitoIdentity = c.credentials.CognitoIdentity
+	}
+
+	return caller
 }
 
 func writeExecute(w http.ResponseWriter, resp *execute.Response) {

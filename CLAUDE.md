@@ -150,7 +150,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   Scoping comes from request metadata, which is how account/region isolation works. SQS long polling registers `watch`
   before the atomic `claim` (so wakeups are not lost), waits outside the transaction, and is released by `Stop`
   (registered with `http.Server.RegisterOnShutdown`). SQS's and SNS's AddPermission and RemovePermission edit the
-  stored `Policy` through `services/policydoc`, which adds and removes labeled statements. FIFO group ordering and dead-letter moves also happen inside
+  stored `Policy` through `services/policydoc`, which adds and removes labeled statements (its `Like` matches the
+  wildcard patterns of STS trust policies and IoT policies). FIFO group ordering and dead-letter moves also happen inside
   `claim`, and batch operations run all entries in one `Update`, so every queue change stays atomic. Message move
   tasks (`sqs/move.go`) are partition-wide records `aws/sqs/move/<account>/<region>/<source>/<task ID>`; the service's
   mover (started by `New`, ended by `Stop`, also deferred in `start.go`) moves each running task's next batch in one
@@ -503,8 +504,20 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `aws/iot/endpoint/<prefix>`).
   `policy.go` accepts only the policy subset TinyStack will evaluate (no `Principal`; `StringEquals`, `StringLike`, and
   `Bool` conditions; known policy variables), failing others with `MalformedPolicyException`. Billing groups, dynamic
-  groups, CA auto-registration, and certificate transfers fail explicitly; the broker, rules, and shadows are not
-  implemented yet.
+  groups, CA auto-registration, and certificate transfers fail explicitly; rules and shadows are not implemented yet.
+  MQTT goes through an embedded `github.com/mochi-mqtt/server/v2` broker per account and Region (`broker.go`, started on
+  first use, stopped by `Stop`, deferred and a shutdown hook in `start.go`), which serves each connection with
+  `EstablishConnection`: the gateway upgrades `GET /mqtt` (`gateway/mqtt.go`, `Server.UseMQTT`; presigned SigV4 for
+  `iotdevicegateway`, also without `X-Amz-Expires` and with the session token appended after signing, as device SDKs
+  send it) and hands `ServeMQTT` the caller, and `iot.mqtt_port` (parse mode only) serves plain MQTT as the default
+  account and Region (`ListenMQTT`). `hook.go` enforces IoT Core's limits (QoS 1, 128 KB payloads, topic length and
+  levels; clients cannot publish to `$` topics), publishes lifecycle events on `$aws/events/…`, and keeps retained
+  messages in `…/iot/retained/<path-escaped topic>`, from which each broker reloads them. In verify mode it evaluates
+  the IoT policies attached to the caller's Cognito identity (STS sessions from `AssumeRoleWithWebIdentity` with a
+  Cognito token record it, and `execute.Caller.CognitoIdentity` carries it) for `iot:Connect`, `Publish`,
+  `Subscribe`, and `Receive`; callers with no attached IoT policy are allowed, since IAM policies are not evaluated.
+  `iot.Service.DataPlane()` serves the IoT data plane (`Publish` with MQTT 5 properties, retained messages, and
+  connections and subscriptions from the broker).
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for
@@ -526,7 +539,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, ECS, Cognito identity pools, Glue, and Athena over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, and EventBridge Scheduler over REST
-  JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, IoT over REST JSON, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, IoT and the IoT data plane over REST JSON, MQTT clients over WebSocket, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real

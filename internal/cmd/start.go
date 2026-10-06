@@ -42,6 +42,7 @@ import (
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
+	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -56,6 +57,7 @@ import (
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/console"
 	"github.com/amjadjibon/tinystack/internal/delivery"
@@ -229,6 +231,13 @@ func newStartCommand() *cobra.Command {
 			balancers := elbv2.New(store, logger)
 			caches := elasticache.New(store)
 			defer caches.Stop()
+			things := iot.New(store, logger)
+			// Stop disconnects every MQTT client.
+			defer things.Stop()
+			things.UseIdentity(
+				request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
+				cfg.Identity.Mode == config.IdentityVerify,
+			)
 			stacks := cloudformation.New(store, logger)
 			// Stop ends the stack runner, which writes to the store.
 			defer stacks.Stop()
@@ -277,7 +286,8 @@ func newStartCommand() *cobra.Command {
 				cognitoidentityapi.Descriptor(identityPools),
 				glueapi.Descriptor(dataCatalog),
 				athenaapi.Descriptor(queries),
-				iotapi.Descriptor(iot.New(store)),
+				iotapi.Descriptor(things),
+				iotdataplaneapi.Descriptor(things.DataPlane()),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.
@@ -318,6 +328,7 @@ func newStartCommand() *cobra.Command {
 			handler.UseLoadBalancers(balancers)
 			handler.UseFunctionURLs(functions.URLs())
 			handler.UseGraphQL(graphQL)
+			handler.UseMQTT(things)
 			if cfg.EKS.Clusters == config.ClustersK3s {
 				// Cluster endpoints accept the EKS tokens the gateway's
 				// credentials sign.
@@ -369,6 +380,22 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(caches.Stop)
 			server.RegisterOnShutdown(stacks.Stop)
 			server.RegisterOnShutdown(graphQL.Stop)
+			server.RegisterOnShutdown(things.Stop)
+			if cfg.IoT.MQTTPort != 0 {
+				mqttListener, mqttErr := listenConfig.Listen(
+					cmd.Context(),
+					"tcp",
+					net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.IoT.MQTTPort)),
+				)
+				if mqttErr != nil {
+					_ = listener.Close()
+					return mqttErr
+				}
+
+				things.ListenMQTT(mqttListener)
+				logger.Info("mqtt ready", "address", mqttListener.Addr().String())
+			}
+
 			// The console has its own listener, so its pages never reach the
 			// AWS protocol classification.
 			var consoleServer *http.Server

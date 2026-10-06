@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"bytes"
+	"cmp"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
@@ -91,7 +92,14 @@ func signature(r *http.Request) (a *sigv4.Authorization, signed bool, err error)
 		return nil, false, nil
 	}
 
-	if a, err = sigv4.ParseQuery(query); err != nil {
+	// AWS IoT device SDKs presign MQTT over WebSocket URLs without
+	// X-Amz-Expires; IoT Core accepts them for the usual signing window.
+	var missingExpires time.Duration
+	if r.URL.Path == mqttPath && upgrade(r) {
+		missingExpires = mqttExpires
+	}
+
+	if a, err = sigv4.ParseQuery(query, missingExpires); err != nil {
 		return nil, true, awserror.New("AuthorizationQueryParametersError", "Invalid presigned URL: "+err.Error())
 	}
 
@@ -128,7 +136,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 		// IAM user's key.
 		token := r.Header.Get("X-Amz-Security-Token")
 		if a.Expires != 0 {
-			token = r.URL.Query().Get(sigv4.QuerySecurityToken)
+			token = cmp.Or(r.URL.Query().Get(sigv4.QuerySecurityToken), token)
 		}
 
 		if c.credentials == nil || subtle.ConstantTimeCompare([]byte(token), []byte(c.credentials.Token)) != 1 {

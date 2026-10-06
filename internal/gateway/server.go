@@ -57,6 +57,8 @@ type Server struct {
 	functionURLs execute.Handler
 	// graphQL serves AppSync GraphQL APIs; see UseGraphQL.
 	graphQL GraphQL
+	// mqtt serves MQTT over WebSocket; see UseMQTT.
+	mqtt execute.MQTT
 	// domains serves API Gateway custom domain names; see UseDomains.
 	domains Domains
 	health  []byte
@@ -681,7 +683,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.serveDocument(w, r) || s.serveToken(w, r) || s.serveRegistry(w, r) || s.serveAPI(w, r) ||
+	if s.serveDocument(w, r) || s.serveToken(w, r) || s.serveRegistry(w, r) || s.serveMQTT(w, r) || s.serveAPI(w, r) ||
 		s.servePreflight(w, r) {
 		return
 	}

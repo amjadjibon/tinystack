@@ -33,6 +33,13 @@ func TestLoad(t *testing.T) {
 		{"console off", "server:\n  console_port: 0", true},
 		{"console on the AWS port", "server:\n  console_port: 4566", false},
 		{"bad console port", "server:\n  console_port: 70000", false},
+		{"plain mqtt", "iot:\n  mqtt_port: 1883", true},
+		{"mqtt on the console port", "iot:\n  mqtt_port: 4567", false},
+		{"bad mqtt port", "iot:\n  mqtt_port: -1", false},
+		{
+			"plain mqtt with verify",
+			"identity:\n  mode: verify\n  secret_keys:\n    test: secret\niot:\n  mqtt_port: 1883", false,
+		},
 		{"documents", "{}\n---\n{}", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

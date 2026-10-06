@@ -27,3 +27,8 @@ eks:
 elasticache:
   # records keeps caches as records; docker also runs each node in a container.
   caches: records
+iot:
+  # Plain MQTT without authentication, as the default account and Region
+  # (identity.mode: parse only); 0 turns it off. MQTT over WebSocket is always
+  # served at /mqtt on the server port.
+  mqtt_port: 0

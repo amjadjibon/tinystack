@@ -45,6 +45,7 @@ import (
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
+	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -59,6 +60,7 @@ import (
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
@@ -200,6 +202,11 @@ func serverStore(
 	identityPools := identitypools.New(store, userPools, roles)
 	catalogService := datacatalog.New(store)
 	queries := queryengine.New(store, catalogService, objects)
+	devices := things.New(store, logger)
+	devices.UseIdentity(
+		request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
+		cfg.Identity.Mode == config.IdentityVerify,
+	)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -239,7 +246,8 @@ func serverStore(
 		cognitoidentityapi.Descriptor(identityPools),
 		glueapi.Descriptor(catalogService),
 		athenaapi.Descriptor(queries),
-		iotapi.Descriptor(things.New(store)),
+		iotapi.Descriptor(devices),
+		iotdataplaneapi.Descriptor(devices.DataPlane()),
 	}
 	caller := catalog.NewCaller(services...)
 	workflows.UseCaller(caller)
@@ -272,10 +280,12 @@ func serverStore(
 	h.UseLoadBalancers(balancers)
 	h.UseFunctionURLs(functions.URLs())
 	h.UseGraphQL(graphQL)
+	h.UseMQTT(devices)
 	h.Handle("deliveries", deliveries)
 
 	s = httptest.NewServer(h)
 	return s, func() {
+		devices.Stop()
 		graphQL.Stop()
 		stacks.Stop()
 		caches.Stop()

@@ -5,6 +5,7 @@ package execute
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -39,7 +40,12 @@ type Request struct {
 // verifies.
 type Caller struct {
 	AccountID string
+	// Region is the Region the request was signed for.
+	Region    string
 	AccessKey string
+	// CognitoIdentity is the Cognito identity ID the caller's credentials
+	// were issued for, if they came from an identity pool.
+	CognitoIdentity string
 }
 
 // Response is an API's answer.
@@ -86,4 +92,11 @@ type SocketHandler interface {
 	// closes. It reports false, without accepting socket, when id names no
 	// API or r.Path no endpoint of one.
 	Connect(ctx context.Context, id string, r *Request, socket Socket) (bool, error)
+}
+
+// MQTT serves MQTT connections that arrive over WebSocket.
+type MQTT interface {
+	// ServeMQTT serves conn until it closes. r.Caller is who signed the
+	// connection request, or nil when it is unsigned.
+	ServeMQTT(ctx context.Context, r *Request, conn net.Conn) error
 }

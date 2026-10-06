@@ -50,7 +50,7 @@ func (s *Server) KubernetesAccount(r *http.Request, cluster string) (string, err
 		return "", ErrKubernetesToken
 	}
 
-	a, err := sigv4.ParseQuery(presigned.Query())
+	a, err := sigv4.ParseQuery(presigned.Query(), 0)
 	if err != nil || !slices.Contains(a.SignedHeaders, "x-k8s-aws-id") {
 		return "", ErrKubernetesToken
 	}

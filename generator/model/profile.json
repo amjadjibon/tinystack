@@ -10234,6 +10234,89 @@
       ]
     }
   },
+  "iotdataplane": {
+    "operations": [
+      "Publish",
+      "GetRetainedMessage",
+      "ListRetainedMessages",
+      "GetConnection",
+      "DeleteConnection",
+      "ListSubscriptions"
+    ],
+    "shapes": {
+      "PublishRequest": [
+        "topic",
+        "qos",
+        "retain",
+        "payload",
+        "payloadFormatIndicator",
+        "contentType",
+        "responseTopic",
+        "correlationData",
+        "messageExpiry"
+      ],
+      "GetRetainedMessageRequest": [
+        "topic"
+      ],
+      "GetRetainedMessageResponse": [
+        "topic",
+        "payload",
+        "qos",
+        "lastModifiedTime"
+      ],
+      "ListRetainedMessagesRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "ListRetainedMessagesResponse": [
+        "retainedTopics",
+        "nextToken"
+      ],
+      "RetainedMessageSummary": [
+        "topic",
+        "payloadSize",
+        "qos",
+        "lastModifiedTime"
+      ],
+      "GetConnectionRequest": [
+        "clientId",
+        "includeSocketInformation"
+      ],
+      "GetConnectionResponse": [
+        "connected",
+        "thingName",
+        "cleanSession",
+        "sourceIp",
+        "sourcePort",
+        "targetIp",
+        "targetPort",
+        "keepAliveDuration",
+        "connectedSince",
+        "disconnectedSince",
+        "disconnectReason",
+        "sessionExpiry",
+        "clientId"
+      ],
+      "DeleteConnectionRequest": [
+        "clientId",
+        "cleanSession",
+        "preventWillMessage"
+      ],
+      "ListSubscriptionsRequest": [
+        "clientId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListSubscriptionsResponse": [
+        "subscriptions",
+        "nextToken"
+      ],
+      "SubscriptionSummary": [
+        "topicFilter",
+        "qos"
+      ]
+    }
+  },
   "kinesis": {
     "operations": [
       "CreateStream",

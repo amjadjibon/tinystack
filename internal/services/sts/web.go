@@ -138,6 +138,10 @@ func (s *Service) AssumeRoleWithWebIdentity(
 			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID,
 			Name: *in.RoleSessionName, Expires: now.Add(duration).Unix(),
 		}
+		if token.Issuer == "https://"+cognitoProvider {
+			issued.CognitoIdentity = token.Subject
+		}
+
 		credentials, issueErr := issue(tx, issued, now)
 		if issueErr != nil {
 			return issueErr

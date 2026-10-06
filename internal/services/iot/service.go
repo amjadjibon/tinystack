@@ -21,13 +21,16 @@ package iot
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/pki"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -54,13 +57,46 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
-	ca    *pki.Lazy
-	now   func() time.Time
+	store  storage.Store
+	ca     *pki.Lazy
+	now    func() time.Time
+	logger *slog.Logger
+	bg     *background.Group
+	// brokers are the running MQTT brokers by scope, guarded by brokersMu;
+	// nil once stopped.
+	brokers map[request.Scope]*broker
+	// defaults is the account and Region of connections that carry no
+	// identity, and verify is whether IoT policies are evaluated
+	// (identity.mode verify).
+	defaults  request.Scope
+	brokersMu sync.Mutex
+	verify    bool
 }
 
-func New(store storage.Store) *Service {
-	return &Service{store: store, ca: pki.NewLazy(store, caKey, caCommonName), now: time.Now}
+// New returns the service. Its MQTT brokers start on first use and run until
+// Stop.
+func New(store storage.Store, logger *slog.Logger) *Service {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	return &Service{
+		store: store, ca: pki.NewLazy(store, caKey, caCommonName), now: time.Now, logger: logger,
+		bg: background.New(), brokers: map[request.Scope]*broker{},
+	}
+}
+
+// UseIdentity sets the account and Region of connections without an
+// identity, and whether IoT policies are evaluated, as identity.mode verify
+// asks. Call it before serving requests.
+func (s *Service) UseIdentity(defaults request.Scope, verify bool) {
+	s.defaults, s.verify = defaults, verify
+}
+
+// Stop disconnects every MQTT client and stops the brokers and listeners.
+func (s *Service) Stop() {
+	s.closeBrokers()
+	s.bg.Stop()
 }
 
 func invalid(format string, args ...any) error {

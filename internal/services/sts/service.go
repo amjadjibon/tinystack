@@ -75,7 +75,10 @@ type session struct {
 	Name      string `json:",omitempty"`
 	UserARN   string `json:",omitempty"`
 	UserID    string `json:",omitempty"`
-	Expires   int64  // Unix seconds
+	// CognitoIdentity is the Cognito identity ID whose token
+	// AssumeRoleWithWebIdentity exchanged for the session.
+	CognitoIdentity string `json:",omitempty"`
+	Expires         int64  // Unix seconds
 }
 
 func (s *session) role() bool { return s.RoleARN != "" }
@@ -143,10 +146,11 @@ func (s *Service) Credentials(ctx context.Context, accessKey string) (request.Cr
 
 		found = true
 		out = request.Credentials{
-			Expires:   time.Unix(stored.Expires, 0),
-			AccountID: stored.AccountID,
-			Secret:    stored.Secret,
-			Token:     stored.Token,
+			Expires:         time.Unix(stored.Expires, 0),
+			AccountID:       stored.AccountID,
+			Secret:          stored.Secret,
+			Token:           stored.Token,
+			CognitoIdentity: stored.CognitoIdentity,
 		}
 
 		return nil

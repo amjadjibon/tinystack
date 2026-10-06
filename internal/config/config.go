@@ -75,6 +75,11 @@ type Config struct {
 		// ConsolePort serves the web console on Host; 0 turns it off.
 		ConsolePort int `yaml:"console_port"`
 	} `yaml:"server"`
+	IoT struct {
+		// MQTTPort serves plain MQTT, without authentication, on Host as the
+		// default account and Region; 0 turns it off.
+		MQTTPort int `yaml:"mqtt_port"`
+	} `yaml:"iot"`
 }
 
 // Default returns loopback-only defaults using ephemeral memory.
@@ -182,6 +187,14 @@ func (c *Config) Validate() error {
 
 	if c.ElastiCache.Caches != CachesRecords && c.ElastiCache.Caches != CachesDocker {
 		return fmt.Errorf("elasticache.caches must be records or docker")
+	}
+
+	if p := c.IoT.MQTTPort; p < 0 || p > 65535 || (p != 0 && (p == c.Server.Port || p == c.Server.ConsolePort)) {
+		return fmt.Errorf("iot.mqtt_port must be 0 or another port up to 65535")
+	}
+
+	if c.IoT.MQTTPort != 0 && c.Identity.Mode == IdentityVerify {
+		return fmt.Errorf("iot.mqtt_port serves unauthenticated MQTT, so it requires identity.mode: parse")
 	}
 
 	return nil

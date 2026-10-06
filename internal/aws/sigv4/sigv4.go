@@ -113,22 +113,27 @@ func QueryParameter(name string) bool {
 
 // ParseQuery parses the signature of a presigned URL. Signature may be empty;
 // Verify rejects it.
-func ParseQuery(query url.Values) (*Authorization, error) {
+func ParseQuery(query url.Values, missingExpires time.Duration) (*Authorization, error) {
 	if query.Get(queryAlgorithm) != Algorithm {
 		return nil, errors.New("expected " + queryAlgorithm + "=" + Algorithm)
 	}
 
-	seconds, err := strconv.Atoi(query.Get(queryExpires))
-	if err != nil || seconds < 1 || time.Duration(seconds)*time.Second > MaxExpires {
-		return nil, errors.New(queryExpires + " must be between 1 and 604800 seconds")
+	expires := missingExpires
+	if raw := query.Get(queryExpires); raw != "" || missingExpires == 0 {
+		seconds, err := strconv.Atoi(raw)
+		if err != nil || seconds < 1 || time.Duration(seconds)*time.Second > MaxExpires {
+			return nil, errors.New(queryExpires + " must be between 1 and 604800 seconds")
+		}
+
+		expires = time.Duration(seconds) * time.Second
 	}
 
-	a := &Authorization{Signature: query.Get(querySignature), Expires: time.Duration(seconds) * time.Second}
+	a := &Authorization{Signature: query.Get(querySignature), Expires: expires}
 	if headers := query.Get(querySignedHeaders); headers != "" {
 		a.SignedHeaders = strings.Split(headers, ";")
 	}
 
-	err = a.setCredential(query.Get(queryCredential))
+	err := a.setCredential(query.Get(queryCredential))
 	return a, err
 }
 

@@ -29,6 +29,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/glue v1.167.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.64.1
 	github.com/aws/aws-sdk-go-v2/service/iot v1.84.1
+	github.com/aws/aws-sdk-go-v2/service/iotdataplane v1.40.1
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.56.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0
@@ -45,6 +46,7 @@ require (
 	github.com/aws/smithy-go v1.28.2
 	github.com/coder/websocket v1.8.15
 	github.com/dop251/goja v0.0.0-20261004200024-481fdb442bb4
+	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/recolabs/gnata v0.5.2
 	github.com/spf13/cobra v1.10.2
 	github.com/vektah/gqlparser/v2 v2.5.60
@@ -69,10 +71,12 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/google/pprof v0.0.0-20261005154351-639476b4d215 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/rs/xid v1.4.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/tidwall/gjson v1.20.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect

@@ -33,6 +33,9 @@ type Credentials struct {
 	AccountID string
 	Secret    string
 	Token     string
+	// CognitoIdentity is the Cognito identity ID the credentials were issued
+	// for, if they came from an identity pool.
+	CognitoIdentity string
 }
 
 type contextKey struct{}
