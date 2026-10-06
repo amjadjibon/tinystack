@@ -7165,7 +7165,14 @@
       "AddTagsToResource",
       "RemoveTagsFromResource",
       "ListTagsForResource",
-      "DescribeEvents"
+      "DescribeEvents",
+      "CreateReplicationGroup",
+      "DescribeReplicationGroups",
+      "ModifyReplicationGroup",
+      "DeleteReplicationGroup",
+      "IncreaseReplicaCount",
+      "DecreaseReplicaCount",
+      "TestFailover"
     ],
     "shapes": {
       "CreateCacheClusterMessage": [
@@ -7179,7 +7186,8 @@
         "SecurityGroupIds",
         "Tags",
         "Port",
-        "PreferredAvailabilityZone"
+        "PreferredAvailabilityZone",
+        "ReplicationGroupId"
       ],
       "CreateCacheClusterResult": [
         "CacheCluster"
@@ -7437,6 +7445,132 @@
         "CacheParameterGroupName",
         "ParameterApplyStatus",
         "CacheNodeIdsToReboot"
+      ],
+      "CreateReplicationGroupMessage": [
+        "ReplicationGroupId",
+        "ReplicationGroupDescription",
+        "GlobalReplicationGroupId",
+        "PrimaryClusterId",
+        "AutomaticFailoverEnabled",
+        "MultiAZEnabled",
+        "NumCacheClusters",
+        "PreferredCacheClusterAZs",
+        "NumNodeGroups",
+        "ReplicasPerNodeGroup",
+        "CacheNodeType",
+        "Engine",
+        "EngineVersion",
+        "CacheParameterGroupName",
+        "CacheSubnetGroupName",
+        "SecurityGroupIds",
+        "Tags",
+        "Port",
+        "AuthToken",
+        "TransitEncryptionEnabled",
+        "AtRestEncryptionEnabled",
+        "DataTieringEnabled",
+        "ClusterMode"
+      ],
+      "CreateReplicationGroupResult": [
+        "ReplicationGroup"
+      ],
+      "DescribeReplicationGroupsMessage": [
+        "ReplicationGroupId",
+        "MaxRecords",
+        "Marker"
+      ],
+      "ReplicationGroupMessage": [
+        "Marker",
+        "ReplicationGroups"
+      ],
+      "ReplicationGroup": [
+        "ReplicationGroupId",
+        "Description",
+        "Status",
+        "MemberClusters",
+        "NodeGroups",
+        "AutomaticFailover",
+        "MultiAZ",
+        "ConfigurationEndpoint",
+        "SnapshotRetentionLimit",
+        "SnapshotWindow",
+        "ClusterEnabled",
+        "CacheNodeType",
+        "AuthTokenEnabled",
+        "AuthTokenLastModifiedDate",
+        "TransitEncryptionEnabled",
+        "AtRestEncryptionEnabled",
+        "ARN",
+        "ReplicationGroupCreateTime",
+        "Engine"
+      ],
+      "NodeGroup": [
+        "NodeGroupId",
+        "Status",
+        "PrimaryEndpoint",
+        "ReaderEndpoint",
+        "Slots",
+        "NodeGroupMembers"
+      ],
+      "NodeGroupMember": [
+        "CacheClusterId",
+        "CacheNodeId",
+        "ReadEndpoint",
+        "PreferredAvailabilityZone",
+        "CurrentRole"
+      ],
+      "ModifyReplicationGroupMessage": [
+        "ReplicationGroupId",
+        "ReplicationGroupDescription",
+        "PrimaryClusterId",
+        "AutomaticFailoverEnabled",
+        "MultiAZEnabled",
+        "NodeGroupId",
+        "SecurityGroupIds",
+        "CacheParameterGroupName",
+        "ApplyImmediately",
+        "Engine",
+        "EngineVersion",
+        "CacheNodeType",
+        "AuthToken",
+        "AuthTokenUpdateStrategy",
+        "TransitEncryptionEnabled",
+        "ClusterMode"
+      ],
+      "ModifyReplicationGroupResult": [
+        "ReplicationGroup"
+      ],
+      "DeleteReplicationGroupMessage": [
+        "ReplicationGroupId",
+        "RetainPrimaryCluster",
+        "FinalSnapshotIdentifier"
+      ],
+      "DeleteReplicationGroupResult": [
+        "ReplicationGroup"
+      ],
+      "IncreaseReplicaCountMessage": [
+        "ReplicationGroupId",
+        "NewReplicaCount",
+        "ApplyImmediately"
+      ],
+      "IncreaseReplicaCountResult": [
+        "ReplicationGroup"
+      ],
+      "DecreaseReplicaCountMessage": [
+        "ReplicationGroupId",
+        "NewReplicaCount",
+        "ReplicasToRemove",
+        "ApplyImmediately"
+      ],
+      "DecreaseReplicaCountResult": [
+        "ReplicationGroup"
+      ],
+      "TestFailoverMessage": [
+        "ReplicationGroupId",
+        "NodeGroupId"
+      ],
+      "TestFailoverResult": [
+        "ReplicationGroup"
       ]
     }
   },

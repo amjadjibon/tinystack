@@ -41,6 +41,7 @@ func (r *Runtime) Start(ctx context.Context, spec *elasticache.NodeSpec) (elasti
 	args = append(args, "-p", fmt.Sprintf("127.0.0.1::%d/tcp", spec.Port))
 
 	if spec.Network != "" {
+		_, _ = dockercli.Run(ctx, nil, "network", "create", spec.Network)
 		args = append(args, "--network", spec.Network)
 	}
 	if spec.Alias != "" {

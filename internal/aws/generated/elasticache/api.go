@@ -24,6 +24,7 @@ type CreateCacheClusterMessage struct {
 	Tags                      []Tag    `json:"Tags,omitempty" query:"Tags,member=Tag"`
 	Port                      *int64   `json:"Port,omitempty" query:"Port"`
 	PreferredAvailabilityZone *string  `json:"PreferredAvailabilityZone,omitempty" query:"PreferredAvailabilityZone"`
+	ReplicationGroupId        *string  `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
 }
 
 type Endpoint struct {
@@ -333,6 +334,149 @@ type EventsMessage struct {
 	Events []Event `json:"Events,omitempty" query:"Events,member=Event"`
 }
 
+type CreateReplicationGroupMessage struct {
+	ReplicationGroupId          *string  `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	ReplicationGroupDescription *string  `json:"ReplicationGroupDescription,omitempty" query:"ReplicationGroupDescription"`
+	GlobalReplicationGroupId    *string  `json:"GlobalReplicationGroupId,omitempty" query:"GlobalReplicationGroupId"`
+	PrimaryClusterId            *string  `json:"PrimaryClusterId,omitempty" query:"PrimaryClusterId"`
+	AutomaticFailoverEnabled    *bool    `json:"AutomaticFailoverEnabled,omitempty" query:"AutomaticFailoverEnabled"`
+	MultiAZEnabled              *bool    `json:"MultiAZEnabled,omitempty" query:"MultiAZEnabled"`
+	NumCacheClusters            *int64   `json:"NumCacheClusters,omitempty" query:"NumCacheClusters"`
+	PreferredCacheClusterAZs    []string `json:"PreferredCacheClusterAZs,omitempty" query:"PreferredCacheClusterAZs,member=AvailabilityZone"`
+	NumNodeGroups               *int64   `json:"NumNodeGroups,omitempty" query:"NumNodeGroups"`
+	ReplicasPerNodeGroup        *int64   `json:"ReplicasPerNodeGroup,omitempty" query:"ReplicasPerNodeGroup"`
+	CacheNodeType               *string  `json:"CacheNodeType,omitempty" query:"CacheNodeType"`
+	Engine                      *string  `json:"Engine,omitempty" query:"Engine"`
+	EngineVersion               *string  `json:"EngineVersion,omitempty" query:"EngineVersion"`
+	CacheParameterGroupName     *string  `json:"CacheParameterGroupName,omitempty" query:"CacheParameterGroupName"`
+	CacheSubnetGroupName        *string  `json:"CacheSubnetGroupName,omitempty" query:"CacheSubnetGroupName"`
+	SecurityGroupIds            []string `json:"SecurityGroupIds,omitempty" query:"SecurityGroupIds,member=SecurityGroupId"`
+	Tags                        []Tag    `json:"Tags,omitempty" query:"Tags,member=Tag"`
+	Port                        *int64   `json:"Port,omitempty" query:"Port"`
+	AuthToken                   *string  `json:"AuthToken,omitempty" query:"AuthToken"`
+	TransitEncryptionEnabled    *bool    `json:"TransitEncryptionEnabled,omitempty" query:"TransitEncryptionEnabled"`
+	AtRestEncryptionEnabled     *bool    `json:"AtRestEncryptionEnabled,omitempty" query:"AtRestEncryptionEnabled"`
+	DataTieringEnabled          *bool    `json:"DataTieringEnabled,omitempty" query:"DataTieringEnabled"`
+	ClusterMode                 *string  `json:"ClusterMode,omitempty" query:"ClusterMode"`
+}
+
+type NodeGroupMember struct {
+	CacheClusterId            *string   `json:"CacheClusterId,omitempty" query:"CacheClusterId"`
+	CacheNodeId               *string   `json:"CacheNodeId,omitempty" query:"CacheNodeId"`
+	ReadEndpoint              *Endpoint `json:"ReadEndpoint,omitempty" query:"ReadEndpoint"`
+	PreferredAvailabilityZone *string   `json:"PreferredAvailabilityZone,omitempty" query:"PreferredAvailabilityZone"`
+	CurrentRole               *string   `json:"CurrentRole,omitempty" query:"CurrentRole"`
+}
+
+type NodeGroup struct {
+	NodeGroupId      *string           `json:"NodeGroupId,omitempty" query:"NodeGroupId"`
+	Status           *string           `json:"Status,omitempty" query:"Status"`
+	PrimaryEndpoint  *Endpoint         `json:"PrimaryEndpoint,omitempty" query:"PrimaryEndpoint"`
+	ReaderEndpoint   *Endpoint         `json:"ReaderEndpoint,omitempty" query:"ReaderEndpoint"`
+	Slots            *string           `json:"Slots,omitempty" query:"Slots"`
+	NodeGroupMembers []NodeGroupMember `json:"NodeGroupMembers,omitempty" query:"NodeGroupMembers,member=NodeGroupMember"`
+}
+
+type ReplicationGroup struct {
+	ReplicationGroupId         *string     `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	Description                *string     `json:"Description,omitempty" query:"Description"`
+	Status                     *string     `json:"Status,omitempty" query:"Status"`
+	MemberClusters             []string    `json:"MemberClusters,omitempty" query:"MemberClusters,member=ClusterId"`
+	NodeGroups                 []NodeGroup `json:"NodeGroups,omitempty" query:"NodeGroups,member=NodeGroup"`
+	AutomaticFailover          *string     `json:"AutomaticFailover,omitempty" query:"AutomaticFailover"`
+	MultiAZ                    *string     `json:"MultiAZ,omitempty" query:"MultiAZ"`
+	ConfigurationEndpoint      *Endpoint   `json:"ConfigurationEndpoint,omitempty" query:"ConfigurationEndpoint"`
+	SnapshotRetentionLimit     *int64      `json:"SnapshotRetentionLimit,omitempty" query:"SnapshotRetentionLimit"`
+	SnapshotWindow             *string     `json:"SnapshotWindow,omitempty" query:"SnapshotWindow"`
+	ClusterEnabled             *bool       `json:"ClusterEnabled,omitempty" query:"ClusterEnabled"`
+	CacheNodeType              *string     `json:"CacheNodeType,omitempty" query:"CacheNodeType"`
+	AuthTokenEnabled           *bool       `json:"AuthTokenEnabled,omitempty" query:"AuthTokenEnabled"`
+	AuthTokenLastModifiedDate  *time.Time  `json:"AuthTokenLastModifiedDate,omitempty" query:"AuthTokenLastModifiedDate"`
+	TransitEncryptionEnabled   *bool       `json:"TransitEncryptionEnabled,omitempty" query:"TransitEncryptionEnabled"`
+	AtRestEncryptionEnabled    *bool       `json:"AtRestEncryptionEnabled,omitempty" query:"AtRestEncryptionEnabled"`
+	ARN                        *string     `json:"ARN,omitempty" query:"ARN"`
+	ReplicationGroupCreateTime *time.Time  `json:"ReplicationGroupCreateTime,omitempty" query:"ReplicationGroupCreateTime"`
+	Engine                     *string     `json:"Engine,omitempty" query:"Engine"`
+}
+
+type CreateReplicationGroupResult struct {
+	ReplicationGroup *ReplicationGroup `json:"ReplicationGroup,omitempty" query:"ReplicationGroup"`
+}
+
+type DescribeReplicationGroupsMessage struct {
+	ReplicationGroupId *string `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	MaxRecords         *int64  `json:"MaxRecords,omitempty" query:"MaxRecords"`
+	Marker             *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type ReplicationGroupMessage struct {
+	Marker            *string            `json:"Marker,omitempty" query:"Marker"`
+	ReplicationGroups []ReplicationGroup `json:"ReplicationGroups,omitempty" query:"ReplicationGroups,member=ReplicationGroup"`
+}
+
+type ModifyReplicationGroupMessage struct {
+	ReplicationGroupId          *string  `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	ReplicationGroupDescription *string  `json:"ReplicationGroupDescription,omitempty" query:"ReplicationGroupDescription"`
+	PrimaryClusterId            *string  `json:"PrimaryClusterId,omitempty" query:"PrimaryClusterId"`
+	AutomaticFailoverEnabled    *bool    `json:"AutomaticFailoverEnabled,omitempty" query:"AutomaticFailoverEnabled"`
+	MultiAZEnabled              *bool    `json:"MultiAZEnabled,omitempty" query:"MultiAZEnabled"`
+	NodeGroupId                 *string  `json:"NodeGroupId,omitempty" query:"NodeGroupId"`
+	SecurityGroupIds            []string `json:"SecurityGroupIds,omitempty" query:"SecurityGroupIds,member=SecurityGroupId"`
+	CacheParameterGroupName     *string  `json:"CacheParameterGroupName,omitempty" query:"CacheParameterGroupName"`
+	ApplyImmediately            *bool    `json:"ApplyImmediately,omitempty" query:"ApplyImmediately"`
+	Engine                      *string  `json:"Engine,omitempty" query:"Engine"`
+	EngineVersion               *string  `json:"EngineVersion,omitempty" query:"EngineVersion"`
+	CacheNodeType               *string  `json:"CacheNodeType,omitempty" query:"CacheNodeType"`
+	AuthToken                   *string  `json:"AuthToken,omitempty" query:"AuthToken"`
+	AuthTokenUpdateStrategy     *string  `json:"AuthTokenUpdateStrategy,omitempty" query:"AuthTokenUpdateStrategy"`
+	TransitEncryptionEnabled    *bool    `json:"TransitEncryptionEnabled,omitempty" query:"TransitEncryptionEnabled"`
+	ClusterMode                 *string  `json:"ClusterMode,omitempty" query:"ClusterMode"`
+}
+
+type ModifyReplicationGroupResult struct {
+	ReplicationGroup *ReplicationGroup `json:"ReplicationGroup,omitempty" query:"ReplicationGroup"`
+}
+
+type DeleteReplicationGroupMessage struct {
+	ReplicationGroupId      *string `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	RetainPrimaryCluster    *bool   `json:"RetainPrimaryCluster,omitempty" query:"RetainPrimaryCluster"`
+	FinalSnapshotIdentifier *string `json:"FinalSnapshotIdentifier,omitempty" query:"FinalSnapshotIdentifier"`
+}
+
+type DeleteReplicationGroupResult struct {
+	ReplicationGroup *ReplicationGroup `json:"ReplicationGroup,omitempty" query:"ReplicationGroup"`
+}
+
+type IncreaseReplicaCountMessage struct {
+	ReplicationGroupId *string `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	NewReplicaCount    *int64  `json:"NewReplicaCount,omitempty" query:"NewReplicaCount"`
+	ApplyImmediately   *bool   `json:"ApplyImmediately,omitempty" query:"ApplyImmediately"`
+}
+
+type IncreaseReplicaCountResult struct {
+	ReplicationGroup *ReplicationGroup `json:"ReplicationGroup,omitempty" query:"ReplicationGroup"`
+}
+
+type DecreaseReplicaCountMessage struct {
+	ReplicationGroupId *string  `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	NewReplicaCount    *int64   `json:"NewReplicaCount,omitempty" query:"NewReplicaCount"`
+	ReplicasToRemove   []string `json:"ReplicasToRemove,omitempty" query:"ReplicasToRemove"`
+	ApplyImmediately   *bool    `json:"ApplyImmediately,omitempty" query:"ApplyImmediately"`
+}
+
+type DecreaseReplicaCountResult struct {
+	ReplicationGroup *ReplicationGroup `json:"ReplicationGroup,omitempty" query:"ReplicationGroup"`
+}
+
+type TestFailoverMessage struct {
+	ReplicationGroupId *string `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	NodeGroupId        *string `json:"NodeGroupId,omitempty" query:"NodeGroupId"`
+}
+
+type TestFailoverResult struct {
+	ReplicationGroup *ReplicationGroup `json:"ReplicationGroup,omitempty" query:"ReplicationGroup"`
+}
+
 type API interface {
 	CreateCacheCluster(context.Context, *CreateCacheClusterMessage) (*CreateCacheClusterResult, error)
 	DescribeCacheClusters(context.Context, *DescribeCacheClustersMessage) (*CacheClusterMessage, error)
@@ -355,10 +499,17 @@ type API interface {
 	RemoveTagsFromResource(context.Context, *RemoveTagsFromResourceMessage) (*TagListMessage, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceMessage) (*TagListMessage, error)
 	DescribeEvents(context.Context, *DescribeEventsMessage) (*EventsMessage, error)
+	CreateReplicationGroup(context.Context, *CreateReplicationGroupMessage) (*CreateReplicationGroupResult, error)
+	DescribeReplicationGroups(context.Context, *DescribeReplicationGroupsMessage) (*ReplicationGroupMessage, error)
+	ModifyReplicationGroup(context.Context, *ModifyReplicationGroupMessage) (*ModifyReplicationGroupResult, error)
+	DeleteReplicationGroup(context.Context, *DeleteReplicationGroupMessage) (*DeleteReplicationGroupResult, error)
+	IncreaseReplicaCount(context.Context, *IncreaseReplicaCountMessage) (*IncreaseReplicaCountResult, error)
+	DecreaseReplicaCount(context.Context, *DecreaseReplicaCountMessage) (*DecreaseReplicaCountResult, error)
+	TestFailover(context.Context, *TestFailoverMessage) (*TestFailoverResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "elasticache", SigningName: "elasticache", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://elasticache.amazonaws.com/doc/2015-02-02/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"CacheClusterAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "CacheClusterAlreadyExists", MessageMember: "", StatusCode: 400}, "CacheClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "CacheClusterNotFound", MessageMember: "", StatusCode: 404}, "CacheParameterGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "CacheParameterGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "CacheParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "CacheParameterGroupNotFound", MessageMember: "", StatusCode: 404}, "CacheParameterGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "CacheParameterGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "CacheSecurityGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "CacheSecurityGroupNotFound", MessageMember: "", StatusCode: 404}, "CacheSubnetGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "CacheSubnetGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "CacheSubnetGroupInUse": catalog.ErrorBinding{QueryCode: "CacheSubnetGroupInUse", MessageMember: "", StatusCode: 400}, "CacheSubnetGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "CacheSubnetGroupNotFoundFault", MessageMember: "", StatusCode: 400}, "CacheSubnetGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "CacheSubnetGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "CacheSubnetQuotaExceededFault": catalog.ErrorBinding{QueryCode: "CacheSubnetQuotaExceededFault", MessageMember: "", StatusCode: 400}, "ClusterQuotaForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "ClusterQuotaForCustomerExceeded", MessageMember: "", StatusCode: 400}, "GlobalReplicationGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "GlobalReplicationGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "InsufficientCacheClusterCapacityFault": catalog.ErrorBinding{QueryCode: "InsufficientCacheClusterCapacity", MessageMember: "", StatusCode: 400}, "InvalidARNFault": catalog.ErrorBinding{QueryCode: "InvalidARN", MessageMember: "", StatusCode: 400}, "InvalidCacheClusterStateFault": catalog.ErrorBinding{QueryCode: "InvalidCacheClusterState", MessageMember: "", StatusCode: 400}, "InvalidCacheParameterGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidCacheParameterGroupState", MessageMember: "", StatusCode: 400}, "InvalidCacheSecurityGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidCacheSecurityGroupState", MessageMember: "", StatusCode: 400}, "InvalidGlobalReplicationGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidGlobalReplicationGroupState", MessageMember: "", StatusCode: 400}, "InvalidParameterCombinationException": catalog.ErrorBinding{QueryCode: "InvalidParameterCombination", MessageMember: "", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "InvalidParameterValue", MessageMember: "", StatusCode: 400}, "InvalidReplicationGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidReplicationGroupState", MessageMember: "", StatusCode: 400}, "InvalidServerlessCacheSnapshotStateFault": catalog.ErrorBinding{QueryCode: "InvalidServerlessCacheSnapshotStateFault", MessageMember: "", StatusCode: 400}, "InvalidServerlessCacheStateFault": catalog.ErrorBinding{QueryCode: "InvalidServerlessCacheStateFault", MessageMember: "", StatusCode: 400}, "InvalidSubnet": catalog.ErrorBinding{QueryCode: "InvalidSubnet", MessageMember: "", StatusCode: 400}, "InvalidVPCNetworkStateFault": catalog.ErrorBinding{QueryCode: "InvalidVPCNetworkStateFault", MessageMember: "", StatusCode: 400}, "NodeQuotaForClusterExceededFault": catalog.ErrorBinding{QueryCode: "NodeQuotaForClusterExceeded", MessageMember: "", StatusCode: 400}, "NodeQuotaForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "NodeQuotaForCustomerExceeded", MessageMember: "", StatusCode: 400}, "ReplicationGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "ReplicationGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "ReservedCacheNodeNotFoundFault": catalog.ErrorBinding{QueryCode: "ReservedCacheNodeNotFound", MessageMember: "", StatusCode: 404}, "ServerlessCacheNotFoundFault": catalog.ErrorBinding{QueryCode: "ServerlessCacheNotFoundFault", MessageMember: "", StatusCode: 404}, "ServerlessCacheSnapshotNotFoundFault": catalog.ErrorBinding{QueryCode: "ServerlessCacheSnapshotNotFoundFault", MessageMember: "", StatusCode: 404}, "SnapshotAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "SnapshotAlreadyExistsFault", MessageMember: "", StatusCode: 400}, "SnapshotFeatureNotSupportedFault": catalog.ErrorBinding{QueryCode: "SnapshotFeatureNotSupportedFault", MessageMember: "", StatusCode: 400}, "SnapshotNotFoundFault": catalog.ErrorBinding{QueryCode: "SnapshotNotFoundFault", MessageMember: "", StatusCode: 404}, "SnapshotQuotaExceededFault": catalog.ErrorBinding{QueryCode: "SnapshotQuotaExceededFault", MessageMember: "", StatusCode: 400}, "SubnetInUse": catalog.ErrorBinding{QueryCode: "SubnetInUse", MessageMember: "", StatusCode: 400}, "SubnetNotAllowedFault": catalog.ErrorBinding{QueryCode: "SubnetNotAllowedFault", MessageMember: "", StatusCode: 400}, "TagNotFoundFault": catalog.ErrorBinding{QueryCode: "TagNotFound", MessageMember: "", StatusCode: 404}, "TagQuotaPerResourceExceeded": catalog.ErrorBinding{QueryCode: "TagQuotaPerResourceExceeded", MessageMember: "", StatusCode: 400}, "UserGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "UserGroupNotFound", MessageMember: "", StatusCode: 404}, "UserNotFoundFault": catalog.ErrorBinding{QueryCode: "UserNotFound", MessageMember: "", StatusCode: 404}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "elasticache", SigningName: "elasticache", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://elasticache.amazonaws.com/doc/2015-02-02/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"APICallRateForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "APICallRateForCustomerExceeded", MessageMember: "", StatusCode: 400}, "CacheClusterAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "CacheClusterAlreadyExists", MessageMember: "", StatusCode: 400}, "CacheClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "CacheClusterNotFound", MessageMember: "", StatusCode: 404}, "CacheParameterGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "CacheParameterGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "CacheParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "CacheParameterGroupNotFound", MessageMember: "", StatusCode: 404}, "CacheParameterGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "CacheParameterGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "CacheSecurityGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "CacheSecurityGroupNotFound", MessageMember: "", StatusCode: 404}, "CacheSubnetGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "CacheSubnetGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "CacheSubnetGroupInUse": catalog.ErrorBinding{QueryCode: "CacheSubnetGroupInUse", MessageMember: "", StatusCode: 400}, "CacheSubnetGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "CacheSubnetGroupNotFoundFault", MessageMember: "", StatusCode: 400}, "CacheSubnetGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "CacheSubnetGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "CacheSubnetQuotaExceededFault": catalog.ErrorBinding{QueryCode: "CacheSubnetQuotaExceededFault", MessageMember: "", StatusCode: 400}, "ClusterQuotaForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "ClusterQuotaForCustomerExceeded", MessageMember: "", StatusCode: 400}, "GlobalReplicationGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "GlobalReplicationGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "InsufficientCacheClusterCapacityFault": catalog.ErrorBinding{QueryCode: "InsufficientCacheClusterCapacity", MessageMember: "", StatusCode: 400}, "InvalidARNFault": catalog.ErrorBinding{QueryCode: "InvalidARN", MessageMember: "", StatusCode: 400}, "InvalidCacheClusterStateFault": catalog.ErrorBinding{QueryCode: "InvalidCacheClusterState", MessageMember: "", StatusCode: 400}, "InvalidCacheParameterGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidCacheParameterGroupState", MessageMember: "", StatusCode: 400}, "InvalidCacheSecurityGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidCacheSecurityGroupState", MessageMember: "", StatusCode: 400}, "InvalidGlobalReplicationGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidGlobalReplicationGroupState", MessageMember: "", StatusCode: 400}, "InvalidKMSKeyFault": catalog.ErrorBinding{QueryCode: "InvalidKMSKeyFault", MessageMember: "", StatusCode: 400}, "InvalidParameterCombinationException": catalog.ErrorBinding{QueryCode: "InvalidParameterCombination", MessageMember: "", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "InvalidParameterValue", MessageMember: "", StatusCode: 400}, "InvalidReplicationGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidReplicationGroupState", MessageMember: "", StatusCode: 400}, "InvalidServerlessCacheSnapshotStateFault": catalog.ErrorBinding{QueryCode: "InvalidServerlessCacheSnapshotStateFault", MessageMember: "", StatusCode: 400}, "InvalidServerlessCacheStateFault": catalog.ErrorBinding{QueryCode: "InvalidServerlessCacheStateFault", MessageMember: "", StatusCode: 400}, "InvalidSubnet": catalog.ErrorBinding{QueryCode: "InvalidSubnet", MessageMember: "", StatusCode: 400}, "InvalidUserGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidUserGroupState", MessageMember: "", StatusCode: 400}, "InvalidVPCNetworkStateFault": catalog.ErrorBinding{QueryCode: "InvalidVPCNetworkStateFault", MessageMember: "", StatusCode: 400}, "NoOperationFault": catalog.ErrorBinding{QueryCode: "NoOperationFault", MessageMember: "", StatusCode: 400}, "NodeGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "NodeGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "NodeGroupsPerReplicationGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "NodeGroupsPerReplicationGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "NodeQuotaForClusterExceededFault": catalog.ErrorBinding{QueryCode: "NodeQuotaForClusterExceeded", MessageMember: "", StatusCode: 400}, "NodeQuotaForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "NodeQuotaForCustomerExceeded", MessageMember: "", StatusCode: 400}, "ReplicationGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "ReplicationGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "ReplicationGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "ReplicationGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "ReservedCacheNodeNotFoundFault": catalog.ErrorBinding{QueryCode: "ReservedCacheNodeNotFound", MessageMember: "", StatusCode: 404}, "ServerlessCacheNotFoundFault": catalog.ErrorBinding{QueryCode: "ServerlessCacheNotFoundFault", MessageMember: "", StatusCode: 404}, "ServerlessCacheSnapshotNotFoundFault": catalog.ErrorBinding{QueryCode: "ServerlessCacheSnapshotNotFoundFault", MessageMember: "", StatusCode: 404}, "ServiceLinkedRoleNotFoundFault": catalog.ErrorBinding{QueryCode: "ServiceLinkedRoleNotFoundFault", MessageMember: "", StatusCode: 400}, "SnapshotAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "SnapshotAlreadyExistsFault", MessageMember: "", StatusCode: 400}, "SnapshotFeatureNotSupportedFault": catalog.ErrorBinding{QueryCode: "SnapshotFeatureNotSupportedFault", MessageMember: "", StatusCode: 400}, "SnapshotNotFoundFault": catalog.ErrorBinding{QueryCode: "SnapshotNotFoundFault", MessageMember: "", StatusCode: 404}, "SnapshotQuotaExceededFault": catalog.ErrorBinding{QueryCode: "SnapshotQuotaExceededFault", MessageMember: "", StatusCode: 400}, "SubnetInUse": catalog.ErrorBinding{QueryCode: "SubnetInUse", MessageMember: "", StatusCode: 400}, "SubnetNotAllowedFault": catalog.ErrorBinding{QueryCode: "SubnetNotAllowedFault", MessageMember: "", StatusCode: 400}, "TagNotFoundFault": catalog.ErrorBinding{QueryCode: "TagNotFound", MessageMember: "", StatusCode: 404}, "TagQuotaPerResourceExceeded": catalog.ErrorBinding{QueryCode: "TagQuotaPerResourceExceeded", MessageMember: "", StatusCode: 400}, "TestFailoverNotAvailableFault": catalog.ErrorBinding{QueryCode: "TestFailoverNotAvailableFault", MessageMember: "", StatusCode: 400}, "UserGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "UserGroupNotFound", MessageMember: "", StatusCode: 404}, "UserNotFoundFault": catalog.ErrorBinding{QueryCode: "UserNotFound", MessageMember: "", StatusCode: 404}}, Operations: map[string]catalog.Operation{
 		"CreateCacheCluster": {Name: "CreateCacheCluster", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateCacheCluster", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateCacheClusterMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateCacheCluster(ctx, input.(*CreateCacheClusterMessage))
 		}},
@@ -421,6 +572,27 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeEvents": {Name: "DescribeEvents", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeEvents", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeEventsMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeEvents(ctx, input.(*DescribeEventsMessage))
+		}},
+		"CreateReplicationGroup": {Name: "CreateReplicationGroup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateReplicationGroup", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateReplicationGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateReplicationGroup(ctx, input.(*CreateReplicationGroupMessage))
+		}},
+		"DescribeReplicationGroups": {Name: "DescribeReplicationGroups", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeReplicationGroups", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeReplicationGroupsMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeReplicationGroups(ctx, input.(*DescribeReplicationGroupsMessage))
+		}},
+		"ModifyReplicationGroup": {Name: "ModifyReplicationGroup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyReplicationGroup", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyReplicationGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyReplicationGroup(ctx, input.(*ModifyReplicationGroupMessage))
+		}},
+		"DeleteReplicationGroup": {Name: "DeleteReplicationGroup", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteReplicationGroup", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteReplicationGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteReplicationGroup(ctx, input.(*DeleteReplicationGroupMessage))
+		}},
+		"IncreaseReplicaCount": {Name: "IncreaseReplicaCount", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "IncreaseReplicaCount", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &IncreaseReplicaCountMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.IncreaseReplicaCount(ctx, input.(*IncreaseReplicaCountMessage))
+		}},
+		"DecreaseReplicaCount": {Name: "DecreaseReplicaCount", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DecreaseReplicaCount", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DecreaseReplicaCountMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DecreaseReplicaCount(ctx, input.(*DecreaseReplicaCountMessage))
+		}},
+		"TestFailover": {Name: "TestFailover", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TestFailover", Version: "2015-02-02", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TestFailoverMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TestFailover(ctx, input.(*TestFailoverMessage))
 		}},
 	}}
 }

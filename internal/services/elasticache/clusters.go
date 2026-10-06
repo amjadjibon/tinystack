@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -25,20 +26,23 @@ type clusterNode struct {
 
 type clusterRecord struct {
 	CreateTime           time.Time
+	Tags                 map[string]string
+	Status               string
+	SubnetGroupName      string
 	ClusterID            string
 	Engine               string
 	EngineVersion        string
 	NodeType             string
-	Status               string
-	SubnetGroupName      string
+	AuthToken            string
+	ReplicationGroupID   string
 	ParameterGroupName   string
 	ParameterApplyStatus string
 	PreferredAZ          string
-	Tags                 map[string]string
-	SecurityGroupIDs     []string
 	Nodes                []clusterNode
+	SecurityGroupIDs     []string
 	NumNodes             int64
 	Port                 int64
+	TransitEncryption    bool
 }
 
 func validateClusterID(id string) error {
@@ -126,7 +130,7 @@ func toAPICacheCluster(scope request.Scope, r *clusterRecord, showNodes bool) ap
 	var nodes []api.CacheNode
 	if showNodes {
 		for _, n := range r.Nodes {
-			host := "127.0.0.1"
+			host := localhost
 			port := n.Port
 			nodes = append(nodes, api.CacheNode{
 				CacheNodeId:         new(n.NodeID),
@@ -156,6 +160,10 @@ func toAPICacheCluster(scope request.Scope, r *clusterRecord, showNodes bool) ap
 		CacheNodes:                nodes,
 		PreferredAvailabilityZone: new(r.PreferredAZ),
 		ARN:                       new(arn),
+	}
+
+	if r.ReplicationGroupID != "" {
+		cluster.ReplicationGroupId = new(r.ReplicationGroupID)
 	}
 
 	if r.Engine == EngineMemcached {
@@ -367,7 +375,7 @@ func (s *Service) CreateCacheCluster(
 		}
 
 		if s.runtime != nil {
-			if writeErr := storage.Write(tx, indexKey(scope, resKindCluster, clusterID), struct{}{}); writeErr != nil {
+			if writeErr := storage.Write(tx, indexClusterKey(scope, clusterID), struct{}{}); writeErr != nil {
 				return writeErr
 			}
 		}
@@ -433,6 +441,11 @@ func (s *Service) DescribeCacheClusters(
 		}
 
 		for _, r := range records {
+			if in.ShowCacheClustersNotInReplicationGroups != nil &&
+				*in.ShowCacheClustersNotInReplicationGroups &&
+				r.ReplicationGroupID != "" {
+				continue
+			}
 			clusters = append(clusters, toAPICacheCluster(scope, r, showNodes))
 		}
 
@@ -634,13 +647,24 @@ func (s *Service) DeleteCacheCluster(
 		return nil, err
 	}
 
+	if existing.ReplicationGroupID != "" {
+		return nil, awserror.New(
+			"InvalidClusterStateFault",
+			fmt.Sprintf(
+				"Cluster %s is part of replication group %s. Use DeleteReplicationGroup or DecreaseReplicaCount.",
+				targetID,
+				existing.ReplicationGroupID,
+			),
+		)
+	}
+
 	if s.runtime != nil {
 		existing.Status = statusDeleting
 		for i := range existing.Nodes {
 			existing.Nodes[i].Status = statusDeleting
 		}
 		err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-			if writeErr := storage.Write(tx, indexKey(scope, resKindCluster, targetID), struct{}{}); writeErr != nil {
+			if writeErr := storage.Write(tx, indexClusterKey(scope, targetID), struct{}{}); writeErr != nil {
 				return writeErr
 			}
 			return storage.Write(tx, key, *existing)
@@ -706,6 +730,17 @@ func (s *Service) RebootCacheCluster(
 		return nil, err
 	}
 
+	if existing.ReplicationGroupID != "" {
+		return nil, awserror.New(
+			"InvalidClusterStateFault",
+			fmt.Sprintf(
+				"Cluster %s is part of replication group %s. Use DeleteReplicationGroup or DecreaseReplicaCount.",
+				targetID,
+				existing.ReplicationGroupID,
+			),
+		)
+	}
+
 	if s.runtime != nil {
 		existing.Status = statusRebooting
 		for i := range existing.Nodes {
@@ -715,7 +750,7 @@ func (s *Service) RebootCacheCluster(
 			}
 		}
 		err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-			if writeErr := storage.Write(tx, indexKey(scope, resKindCluster, targetID), struct{}{}); writeErr != nil {
+			if writeErr := storage.Write(tx, indexClusterKey(scope, targetID), struct{}{}); writeErr != nil {
 				return writeErr
 			}
 			return storage.Write(tx, key, *existing)

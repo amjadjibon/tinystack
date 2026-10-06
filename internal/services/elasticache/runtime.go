@@ -56,8 +56,8 @@ func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) {
 	s.bg.Every(tick, s.visit)
 }
 
-func indexKey(scope request.Scope, kind, id string) string {
-	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + kind + "/" + strings.ToLower(id)
+func indexClusterKey(scope request.Scope, id string) string {
+	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + resKindCluster + "/" + strings.ToLower(id)
 }
 
 func parseIndexKey(k string) (scope request.Scope, kind, id string, ok bool) {
@@ -241,6 +241,44 @@ func (s *Service) advanceCreatingCluster(
 		containerPort = 11211
 	}
 
+	var extraArgs []string
+	network := ""
+	alias := ""
+
+	if record.ReplicationGroupID != "" {
+		network = fmt.Sprintf(
+			"tinystack-elasticache-%s-%s-%s",
+			scope.AccountID,
+			scope.Region,
+			record.ReplicationGroupID,
+		)
+		alias = record.ClusterID
+
+		var repGroup *replicationGroupRecord
+		_ = s.store.View(ctx, func(tx storage.ReadTx) error {
+			rg, found, _ := storage.Read[replicationGroupRecord](
+				tx,
+				replicationGroupKey(scope, record.ReplicationGroupID),
+			)
+			if found {
+				repGroup = rg
+			}
+			return nil
+		})
+
+		if repGroup != nil {
+			if repGroup.AuthToken != "" {
+				extraArgs = append(extraArgs, "--requirepass", repGroup.AuthToken)
+			}
+			if record.ClusterID != repGroup.PrimaryClusterID {
+				extraArgs = append(extraArgs, "--replicaof", repGroup.PrimaryClusterID, "6379")
+				if repGroup.AuthToken != "" {
+					extraArgs = append(extraArgs, "--masterauth", repGroup.AuthToken)
+				}
+			}
+		}
+	}
+
 	changed := false
 	for i := range record.Nodes {
 		n := &record.Nodes[i]
@@ -250,9 +288,11 @@ func (s *Service) advanceCreatingCluster(
 					"tinystack.elasticache": clusterARN(scope, clusterID),
 					"tinystack.node":        n.NodeID,
 				},
-				Image: spec.Image,
-				Port:  containerPort,
-				Args:  args,
+				Image:   spec.Image,
+				Port:    containerPort,
+				Args:    append(append([]string{}, args...), extraArgs...),
+				Network: network,
+				Alias:   alias,
 			}
 
 			started, startErr := s.runtime.Start(ctx, nodeSpec)
@@ -277,7 +317,7 @@ func (s *Service) advanceCreatingCluster(
 		}
 
 		if n.Status != statusAvailable {
-			probeErr := probeNode(ctx, record.Engine, "127.0.0.1", n.Port, 2*time.Second)
+			probeErr := probeNode(ctx, record.Engine, "127.0.0.1", n.Port, record.AuthToken, 2*time.Second)
 			if probeErr == nil {
 				n.Status = statusAvailable
 				changed = true
@@ -318,6 +358,33 @@ func (s *Service) advanceCreatingCluster(
 			fmt.Sprintf("Cluster %s is available", clusterID),
 		)
 		changed = true
+
+		if record.ReplicationGroupID != "" {
+			_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+				rg, found, _ := storage.Read[replicationGroupRecord](
+					tx,
+					replicationGroupKey(scope, record.ReplicationGroupID),
+				)
+				if found && rg.Status == statusCreating {
+					allMembersAvail := true
+					for _, mID := range rg.MemberClusterIDs {
+						if mID == clusterID {
+							continue
+						}
+						cl, clFound, _ := storage.Read[clusterRecord](tx, clusterKey(scope, mID))
+						if !clFound || cl.Status != statusAvailable {
+							allMembersAvail = false
+							break
+						}
+					}
+					if allMembersAvail {
+						rg.Status = statusAvailable
+						_ = storage.Write(tx, replicationGroupKey(scope, record.ReplicationGroupID), *rg)
+					}
+				}
+				return nil
+			})
+		}
 	}
 
 	if changed {

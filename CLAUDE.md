@@ -481,10 +481,11 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   under `…/logs/query/<ID>` for `GetQueryResults` (`queries.go`). Lambda writes every invocation's log (its own START/END/REPORT lines around the runtime's
   `Result.Log`) through `logs.Service.Append`, which creates `/aws/lambda/<name>` and the stream on first use; the
   docker runtime reads the container's output with `docker logs` after each invocation.
-  ElastiCache (`services/elasticache`) keeps clusters under `…/elasticache/cluster/<id>`, subnet groups under
-  `…/elasticache/subnetgroup/<name>`, parameter groups under `…/elasticache/parametergroup/<name>`, and lifecycle
-  events under `…/elasticache/event/<timestamp-seq>`. In records mode, clusters settle in `available` immediately; with
-  `elasticache.caches: docker`, cache nodes run as containers.
+  ElastiCache (`services/elasticache`) keeps clusters under `…/elasticache/cluster/<id>`, replication groups under
+  `…/elasticache/replicationgroup/<id>`, subnet groups under `…/elasticache/subnetgroup/<name>`, parameter groups under
+  `…/elasticache/parametergroup/<name>`, and lifecycle events under `…/elasticache/event/<timestamp-seq>`. In records mode,
+  clusters and replication groups settle in `available` immediately; with `elasticache.caches: docker`, cache nodes run as containers
+  networked together with replica-of and AUTH support.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for

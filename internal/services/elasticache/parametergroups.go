@@ -3,7 +3,6 @@ package elasticache
 import (
 	"context"
 	"strings"
-	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -697,7 +696,7 @@ func (s *Service) applyParameterGroupChanges(
 				if d.Dynamic && cl.Status == statusAvailable {
 					for _, node := range cl.Nodes {
 						if node.Port > 0 {
-							_ = redisConfigSet(ctx, "127.0.0.1", node.Port, pName, pVal, 2*time.Second)
+							_ = redisConfigSet(ctx, node.Port, cl.AuthToken, pName, pVal)
 						}
 					}
 				} else {

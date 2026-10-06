@@ -11,14 +11,14 @@ func init() {
 		name: memberClusterName,
 		properties: []string{
 			memberClusterName,
-			"Engine",
+			memberEngine,
 			"EngineVersion",
 			"CacheNodeType",
 			"NumCacheNodes",
 			memberCacheSubnetGroupName,
 			memberCacheParameterGroupName,
 			"VpcSecurityGroupIds",
-			"Port",
+			memberPort,
 			"PreferredAvailabilityZone",
 			"SnapshotRetentionLimit",
 			memberTags,
@@ -31,9 +31,9 @@ func init() {
 		},
 		replace: []string{
 			memberClusterName,
-			"Engine",
+			memberEngine,
 			memberCacheSubnetGroupName,
-			"Port",
+			memberPort,
 		},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
 			clusterID := strings.ToLower(c.nameOf(p, memberClusterName, 50))
@@ -41,8 +41,8 @@ func init() {
 				memberCacheClusterID: clusterID,
 			}
 
-			if v := p.str("Engine"); v != "" {
-				params["Engine"] = v
+			if v := p.str(memberEngine); v != "" {
+				params[memberEngine] = v
 			}
 
 			if v := p.str("EngineVersion"); v != "" {
@@ -69,8 +69,8 @@ func init() {
 				params["SecurityGroupIds"] = v
 			}
 
-			if v, ok := p["Port"]; ok {
-				params["Port"] = v
+			if v, ok := p[memberPort]; ok {
+				params[memberPort] = v
 			}
 
 			if v := p.str("PreferredAvailabilityZone"); v != "" {
@@ -275,6 +275,137 @@ func init() {
 			return err
 		},
 	})
+
+	register("AWS::ElastiCache::ReplicationGroup", &resourceType{
+		name: memberReplicationGroupID,
+		properties: []string{
+			memberReplicationGroupID,
+			memberReplicationGroupDescription,
+			memberEngine,
+			"EngineVersion",
+			"CacheNodeType",
+			"NumCacheClusters",
+			"ReplicasPerNodeGroup",
+			memberCacheSubnetGroupName,
+			memberCacheParameterGroupName,
+			"SecurityGroupIds",
+			"AutomaticFailoverEnabled",
+			memberPort,
+			"AuthToken",
+			"TransitEncryptionEnabled",
+			"AtRestEncryptionEnabled",
+			memberTags,
+		},
+		attributes: []string{
+			"PrimaryEndPoint.Address",
+			"PrimaryEndPoint.Port",
+			"ReadEndPoint.Addresses",
+			"ReadEndPoint.Ports",
+			"ConfigurationEndPoint.Address",
+			"ConfigurationEndPoint.Port",
+		},
+		replace: []string{
+			memberReplicationGroupID,
+			memberEngine,
+			memberCacheSubnetGroupName,
+			memberPort,
+		},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			groupID := strings.ToLower(c.nameOf(p, memberReplicationGroupID, 50))
+			desc := p.str(memberReplicationGroupDescription)
+			if desc == "" {
+				desc = groupID
+			}
+			params := map[string]any{
+				memberReplicationGroupID:          groupID,
+				memberReplicationGroupDescription: desc,
+			}
+
+			if v := p.str(memberEngine); v != "" {
+				params[memberEngine] = v
+			}
+			if v := p.str("EngineVersion"); v != "" {
+				params["EngineVersion"] = v
+			}
+			if v := p.str("CacheNodeType"); v != "" {
+				params["CacheNodeType"] = v
+			}
+			if v, ok := p["NumCacheClusters"]; ok {
+				params["NumCacheClusters"] = v
+			}
+			if v, ok := p["ReplicasPerNodeGroup"]; ok {
+				params["ReplicasPerNodeGroup"] = v
+			}
+			if v := p.str(memberCacheSubnetGroupName); v != "" {
+				params[memberCacheSubnetGroupName] = v
+			}
+			if v := p.str(memberCacheParameterGroupName); v != "" {
+				params[memberCacheParameterGroupName] = v
+			}
+			if v := p.list("SecurityGroupIds"); len(v) > 0 {
+				params["SecurityGroupIds"] = v
+			}
+			if v, ok := p["AutomaticFailoverEnabled"]; ok {
+				params["AutomaticFailoverEnabled"] = v
+			}
+			if v, ok := p[memberPort]; ok {
+				params[memberPort] = v
+			}
+			if v := p.str("AuthToken"); v != "" {
+				params["AuthToken"] = v
+			}
+			if v, ok := p["TransitEncryptionEnabled"]; ok {
+				params["TransitEncryptionEnabled"] = v
+			}
+			if v, ok := p["AtRestEncryptionEnabled"]; ok {
+				params["AtRestEncryptionEnabled"] = v
+			}
+			if tags := p.tags(); len(tags) > 0 {
+				params[memberTags] = tagList(tags, memberKey, memberValue)
+			}
+
+			out, err := c.call(ctx, "elasticache", "CreateReplicationGroup", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			attrs := replicationGroupAttributes(out)
+			return groupID, attrs, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			params := map[string]any{
+				memberReplicationGroupID: r.Physical,
+			}
+			if v := p.str(memberReplicationGroupDescription); v != "" {
+				params[memberReplicationGroupDescription] = v
+			}
+			if v := p.str(memberCacheParameterGroupName); v != "" {
+				params[memberCacheParameterGroupName] = v
+			}
+			if v := p.list("SecurityGroupIds"); len(v) > 0 {
+				params["SecurityGroupIds"] = v
+			}
+			if v, ok := p["AutomaticFailoverEnabled"]; ok {
+				params["AutomaticFailoverEnabled"] = v
+			}
+
+			out, err := c.call(ctx, "elasticache", "ModifyReplicationGroup", params)
+			if err != nil {
+				return nil, err
+			}
+
+			return replicationGroupAttributes(out), nil
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "elasticache", "DeleteReplicationGroup", map[string]any{
+				memberReplicationGroupID: r.Physical,
+			})
+			if gone(err, "ReplicationGroupNotFoundFault") {
+				return nil
+			}
+			return err
+		},
+	})
 }
 
 func cacheClusterAttributes(out map[string]any) map[string]any {
@@ -286,7 +417,7 @@ func cacheClusterAttributes(out map[string]any) map[string]any {
 
 	if ep, ok := cluster["ConfigurationEndpoint"].(map[string]any); ok {
 		attrs["ConfigurationEndpoint.Address"] = ep["Address"]
-		attrs["ConfigurationEndpoint.Port"] = fmt.Sprint(ep["Port"])
+		attrs["ConfigurationEndpoint.Port"] = fmt.Sprint(ep[memberPort])
 	}
 
 	nodes, _ := cluster["CacheNodes"].([]any)
@@ -294,7 +425,33 @@ func cacheClusterAttributes(out map[string]any) map[string]any {
 		if firstNode, ok := nodes[0].(map[string]any); ok {
 			if ep, ok := firstNode["Endpoint"].(map[string]any); ok {
 				attrs["RedisEndpoint.Address"] = ep["Address"]
-				attrs["RedisEndpoint.Port"] = fmt.Sprint(ep["Port"])
+				attrs["RedisEndpoint.Port"] = fmt.Sprint(ep[memberPort])
+			}
+		}
+	}
+
+	return attrs
+}
+
+func replicationGroupAttributes(out map[string]any) map[string]any {
+	group, _ := out["ReplicationGroup"].(map[string]any)
+	attrs := make(map[string]any)
+	if group == nil {
+		return attrs
+	}
+
+	nodeGroups, _ := group["NodeGroups"].([]any)
+	if len(nodeGroups) > 0 {
+		if firstNG, ok := nodeGroups[0].(map[string]any); ok {
+			if pe, ok := firstNG["PrimaryEndpoint"].(map[string]any); ok {
+				attrs["PrimaryEndPoint.Address"] = pe["Address"]
+				attrs["PrimaryEndPoint.Port"] = fmt.Sprint(pe["Port"])
+				attrs["ConfigurationEndPoint.Address"] = pe["Address"]
+				attrs["ConfigurationEndPoint.Port"] = fmt.Sprint(pe["Port"])
+			}
+			if re, ok := firstNG["ReaderEndpoint"].(map[string]any); ok {
+				attrs["ReadEndPoint.Addresses"] = fmt.Sprint(re["Address"])
+				attrs["ReadEndPoint.Ports"] = fmt.Sprint(re["Port"])
 			}
 		}
 	}

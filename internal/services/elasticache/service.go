@@ -34,6 +34,7 @@ const (
 	applyStatusInSync        = "in-sync"
 	applyStatusApplying      = "applying"
 	applyStatusPendingReboot = "pending-reboot"
+	localhost                = "127.0.0.1"
 )
 
 var _ api.API = (*Service)(nil)
@@ -156,6 +157,31 @@ func parameterGroupKey(scope request.Scope, name string) string {
 
 func clusterARN(scope request.Scope, id string) string {
 	return fmt.Sprintf("arn:aws:elasticache:%s:%s:cluster:%s", scope.Region, scope.AccountID, strings.ToLower(id))
+}
+
+func replicationGroupKey(scope request.Scope, id string) string {
+	return scope.Key(serviceName, "replicationgroup", strings.ToLower(id))
+}
+
+func replicationGroupPrefix(scope request.Scope) string {
+	return scope.Key(serviceName, "replicationgroup", "")
+}
+
+func replicationGroupARN(scope request.Scope, id string) string {
+	return fmt.Sprintf(
+		"arn:aws:elasticache:%s:%s:replicationgroup:%s",
+		scope.Region,
+		scope.AccountID,
+		strings.ToLower(id),
+	)
+}
+
+func replicationGroupNotFound(id string) error {
+	return awserror.New("ReplicationGroupNotFoundFault", fmt.Sprintf("ReplicationGroupNotFoundFault: %s", id))
+}
+
+func replicationGroupAlreadyExists(id string) error {
+	return awserror.New("ReplicationGroupAlreadyExistsFault", fmt.Sprintf("Replication group %s already exists.", id))
 }
 
 func subnetGroupARN(scope request.Scope, name string) string {
