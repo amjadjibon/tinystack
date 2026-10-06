@@ -2,9 +2,10 @@ package sts
 
 import (
 	"encoding/json"
-	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/amjadjibon/tinystack/internal/services/policydoc"
 )
 
 // caller is who asks to assume a role, as a trust policy's principals and
@@ -78,20 +79,6 @@ func trusts(document string, c *caller) bool {
 	return allowed
 }
 
-// like reports whether s matches an IAM pattern, where "*" is any run of
-// characters, "/" included, and "?" any one character.
-func like(pattern, s string, foldCase bool) bool {
-	expr := regexp.QuoteMeta(pattern)
-	expr = strings.ReplaceAll(expr, `\*`, ".*")
-	expr = strings.ReplaceAll(expr, `\?`, ".")
-	if foldCase {
-		expr = "(?i)" + expr
-	}
-
-	ok, _ := regexp.MatchString("^"+expr+"$", s)
-	return ok
-}
-
 // values decodes a policy element that is a string or a list of strings.
 func values(raw json.RawMessage) []string {
 	var list []string
@@ -109,7 +96,7 @@ func values(raw json.RawMessage) []string {
 
 func matchesAction(raw json.RawMessage, action string) bool {
 	for _, pattern := range values(raw) {
-		if like(pattern, action, true) {
+		if policydoc.Like(pattern, action, true) {
 			return true
 		}
 	}
@@ -178,7 +165,8 @@ func conditionsHold(conditions map[string]map[string]json.RawMessage, context ma
 
 			matches := func(v string) bool {
 				return slices.ContainsFunc(values(raw), func(want string) bool {
-					return (base == "StringEquals" && want == v) || (base == "StringLike" && like(want, v, false))
+					return (base == "StringEquals" && want == v) ||
+						(base == "StringLike" && policydoc.Like(want, v, false))
 				})
 			}
 			if set == "ForAllValues" {

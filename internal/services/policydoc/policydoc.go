@@ -1,13 +1,29 @@
 // Package policydoc adds and removes the labeled statements of resource-based
-// policies that SQS's and SNS's AddPermission and RemovePermission manage.
-// Policies are stored, never evaluated.
+// policies that SQS's and SNS's AddPermission and RemovePermission manage
+// (policies are stored, never evaluated), and matches the wildcard patterns
+// of the policies TinyStack does evaluate: STS trust policies and IoT
+// policies.
 package policydoc
 
 import (
 	"encoding/json"
 	"errors"
+	"regexp"
 	"slices"
+	"strings"
 )
+
+// Like reports whether s matches a policy pattern, where "*" is any run of
+// characters, "/" included, and "?" any one character.
+func Like(pattern, s string, foldCase bool) bool {
+	expr := strings.NewReplacer(`\*`, ".*", `\?`, ".").Replace(regexp.QuoteMeta(pattern))
+	if foldCase {
+		expr = "(?i)" + expr
+	}
+
+	ok, _ := regexp.MatchString("^"+expr+"$", s)
+	return ok
+}
 
 // ErrExists reports a statement ID that a policy already has.
 var ErrExists = errors.New("the policy already has a statement with this ID")
