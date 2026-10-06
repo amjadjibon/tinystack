@@ -25,6 +25,7 @@ import (
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
+	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
@@ -40,6 +41,7 @@ import (
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
+	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -62,6 +64,7 @@ import (
 	restapis "github.com/amjadjibon/tinystack/internal/services/apigateway"
 	apigateways "github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	graphqlapis "github.com/amjadjibon/tinystack/internal/services/appsync"
+	queryengine "github.com/amjadjibon/tinystack/internal/services/athena"
 	scalinggroups "github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	cdn "github.com/amjadjibon/tinystack/internal/services/cloudfront"
@@ -76,6 +79,7 @@ import (
 	loadbalancers "github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	deliverystreams "github.com/amjadjibon/tinystack/internal/services/firehose"
+	datacatalog "github.com/amjadjibon/tinystack/internal/services/glue"
 	principals "github.com/amjadjibon/tinystack/internal/services/iam"
 	datastreams "github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -189,6 +193,8 @@ func serverStore(
 	stacks := cloudformation.New(store, logger)
 	mail := email.New(store, deliveries)
 	identityPools := identitypools.New(store, userPools, roles)
+	catalogService := datacatalog.New(store)
+	queries := queryengine.New(store, catalogService, objects)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -225,6 +231,8 @@ func serverStore(
 		cloudformationapi.Descriptor(stacks),
 		sesv2api.Descriptor(mail),
 		cognitoidentityapi.Descriptor(identityPools),
+		glueapi.Descriptor(catalogService),
+		athenaapi.Descriptor(queries),
 	}
 	caller := catalog.NewCaller(services...)
 	workflows.UseCaller(caller)

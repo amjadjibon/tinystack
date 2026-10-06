@@ -12722,5 +12722,657 @@
         "Tags"
       ]
     }
+  },
+  "glue": {
+    "operations": [
+      "CreateDatabase",
+      "GetDatabase",
+      "GetDatabases",
+      "UpdateDatabase",
+      "DeleteDatabase",
+      "CreateTable",
+      "GetTable",
+      "GetTables",
+      "UpdateTable",
+      "DeleteTable",
+      "BatchDeleteTable",
+      "CreatePartition",
+      "BatchCreatePartition",
+      "GetPartition",
+      "GetPartitions",
+      "DeletePartition",
+      "TagResource",
+      "UntagResource",
+      "GetTags"
+    ],
+    "shapes": {
+      "CreateDatabaseRequest": [
+        "CatalogId",
+        "DatabaseInput",
+        "Tags"
+      ],
+      "DatabaseInput": [
+        "Name",
+        "Description",
+        "LocationUri",
+        "Parameters",
+        "CreateTableDefaultPermissions"
+      ],
+      "PrincipalPermissions": [
+        "Principal",
+        "Permissions"
+      ],
+      "DataLakePrincipal": [
+        "DataLakePrincipalIdentifier"
+      ],
+      "Database": [
+        "Name",
+        "Description",
+        "LocationUri",
+        "Parameters",
+        "CreateTime",
+        "CreateTableDefaultPermissions",
+        "CatalogId"
+      ],
+      "GetDatabaseRequest": [
+        "CatalogId",
+        "Name"
+      ],
+      "GetDatabaseResponse": [
+        "Database"
+      ],
+      "GetDatabasesRequest": [
+        "CatalogId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetDatabasesResponse": [
+        "DatabaseList",
+        "NextToken"
+      ],
+      "UpdateDatabaseRequest": [
+        "CatalogId",
+        "Name",
+        "DatabaseInput"
+      ],
+      "DeleteDatabaseRequest": [
+        "CatalogId",
+        "Name"
+      ],
+      "CreateTableRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableInput"
+      ],
+      "TableInput": [
+        "Name",
+        "Description",
+        "Owner",
+        "LastAccessTime",
+        "Retention",
+        "StorageDescriptor",
+        "PartitionKeys",
+        "ViewOriginalText",
+        "ViewExpandedText",
+        "TableType",
+        "Parameters"
+      ],
+      "Table": [
+        "Name",
+        "DatabaseName",
+        "Description",
+        "Owner",
+        "CreateTime",
+        "UpdateTime",
+        "LastAccessTime",
+        "Retention",
+        "StorageDescriptor",
+        "PartitionKeys",
+        "ViewOriginalText",
+        "ViewExpandedText",
+        "TableType",
+        "Parameters",
+        "CreatedBy",
+        "IsRegisteredWithLakeFormation",
+        "CatalogId",
+        "VersionId"
+      ],
+      "StorageDescriptor": [
+        "Columns",
+        "Location",
+        "InputFormat",
+        "OutputFormat",
+        "Compressed",
+        "NumberOfBuckets",
+        "SerdeInfo",
+        "BucketColumns",
+        "SortColumns",
+        "Parameters",
+        "SkewedInfo",
+        "StoredAsSubDirectories"
+      ],
+      "Column": [
+        "Name",
+        "Type",
+        "Comment",
+        "Parameters"
+      ],
+      "SerDeInfo": [
+        "Name",
+        "SerializationLibrary",
+        "Parameters"
+      ],
+      "Order": [
+        "Column",
+        "SortOrder"
+      ],
+      "SkewedInfo": [
+        "SkewedColumnNames",
+        "SkewedColumnValues",
+        "SkewedColumnValueLocationMaps"
+      ],
+      "GetTableRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "Name"
+      ],
+      "GetTableResponse": [
+        "Table"
+      ],
+      "GetTablesRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "Expression",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetTablesResponse": [
+        "TableList",
+        "NextToken"
+      ],
+      "UpdateTableRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableInput",
+        "SkipArchive"
+      ],
+      "DeleteTableRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "Name"
+      ],
+      "BatchDeleteTableRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TablesToDelete"
+      ],
+      "BatchDeleteTableResponse": [
+        "Errors"
+      ],
+      "TableError": [
+        "TableName",
+        "ErrorDetail"
+      ],
+      "ErrorDetail": [
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "CreatePartitionRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "PartitionInput"
+      ],
+      "PartitionInput": [
+        "Values",
+        "LastAccessTime",
+        "StorageDescriptor",
+        "Parameters"
+      ],
+      "Partition": [
+        "Values",
+        "DatabaseName",
+        "TableName",
+        "CreationTime",
+        "LastAccessTime",
+        "StorageDescriptor",
+        "Parameters",
+        "CatalogId"
+      ],
+      "BatchCreatePartitionRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "PartitionInputList"
+      ],
+      "BatchCreatePartitionResponse": [
+        "Errors"
+      ],
+      "PartitionError": [
+        "PartitionValues",
+        "ErrorDetail"
+      ],
+      "GetPartitionRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "PartitionValues"
+      ],
+      "GetPartitionResponse": [
+        "Partition"
+      ],
+      "GetPartitionsRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetPartitionsResponse": [
+        "Partitions",
+        "NextToken"
+      ],
+      "DeletePartitionRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "PartitionValues"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "TagsToAdd"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagsToRemove"
+      ],
+      "GetTagsRequest": [
+        "ResourceArn"
+      ],
+      "GetTagsResponse": [
+        "Tags"
+      ]
+    }
+  },
+  "athena": {
+    "operations": [
+      "StartQueryExecution",
+      "GetQueryExecution",
+      "GetQueryResults",
+      "StopQueryExecution",
+      "ListQueryExecutions",
+      "BatchGetQueryExecution",
+      "CreateWorkGroup",
+      "GetWorkGroup",
+      "ListWorkGroups",
+      "UpdateWorkGroup",
+      "DeleteWorkGroup",
+      "CreateNamedQuery",
+      "GetNamedQuery",
+      "ListNamedQueries",
+      "DeleteNamedQuery",
+      "BatchGetNamedQuery",
+      "GetDataCatalog",
+      "ListDataCatalogs",
+      "ListDatabases",
+      "GetDatabase",
+      "ListTableMetadata",
+      "GetTableMetadata",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "StartQueryExecutionInput": [
+        "QueryString",
+        "ClientRequestToken",
+        "QueryExecutionContext",
+        "ResultConfiguration",
+        "WorkGroup",
+        "ExecutionParameters"
+      ],
+      "StartQueryExecutionOutput": [
+        "QueryExecutionId"
+      ],
+      "QueryExecutionContext": [
+        "Database",
+        "Catalog"
+      ],
+      "ResultConfiguration": [
+        "OutputLocation",
+        "EncryptionConfiguration",
+        "ExpectedBucketOwner"
+      ],
+      "EncryptionConfiguration": [
+        "EncryptionOption",
+        "KmsKey"
+      ],
+      "GetQueryExecutionInput": [
+        "QueryExecutionId"
+      ],
+      "GetQueryExecutionOutput": [
+        "QueryExecution"
+      ],
+      "QueryExecution": [
+        "QueryExecutionId",
+        "Query",
+        "StatementType",
+        "ResultConfiguration",
+        "QueryExecutionContext",
+        "Status",
+        "Statistics",
+        "WorkGroup",
+        "EngineVersion",
+        "ExecutionParameters",
+        "SubstatementType"
+      ],
+      "QueryExecutionStatus": [
+        "State",
+        "StateChangeReason",
+        "SubmissionDateTime",
+        "CompletionDateTime",
+        "AthenaError"
+      ],
+      "AthenaError": [
+        "ErrorCategory",
+        "ErrorType",
+        "Retryable",
+        "ErrorMessage"
+      ],
+      "QueryExecutionStatistics": [
+        "EngineExecutionTimeInMillis",
+        "DataScannedInBytes",
+        "TotalExecutionTimeInMillis",
+        "QueryQueueTimeInMillis",
+        "QueryPlanningTimeInMillis",
+        "ServiceProcessingTimeInMillis"
+      ],
+      "EngineVersion": [
+        "SelectedEngineVersion",
+        "EffectiveEngineVersion"
+      ],
+      "GetQueryResultsInput": [
+        "QueryExecutionId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetQueryResultsOutput": [
+        "UpdateCount",
+        "ResultSet",
+        "NextToken"
+      ],
+      "ResultSet": [
+        "Rows",
+        "ResultSetMetadata"
+      ],
+      "ResultSetMetadata": [
+        "ColumnInfo"
+      ],
+      "ColumnInfo": [
+        "CatalogName",
+        "SchemaName",
+        "TableName",
+        "Name",
+        "Label",
+        "Type",
+        "Precision",
+        "Scale",
+        "Nullable",
+        "CaseSensitive"
+      ],
+      "Row": [
+        "Data"
+      ],
+      "Datum": [
+        "VarCharValue"
+      ],
+      "StopQueryExecutionInput": [
+        "QueryExecutionId"
+      ],
+      "ListQueryExecutionsInput": [
+        "NextToken",
+        "MaxResults",
+        "WorkGroup"
+      ],
+      "ListQueryExecutionsOutput": [
+        "QueryExecutionIds",
+        "NextToken"
+      ],
+      "BatchGetQueryExecutionInput": [
+        "QueryExecutionIds"
+      ],
+      "BatchGetQueryExecutionOutput": [
+        "QueryExecutions",
+        "UnprocessedQueryExecutionIds"
+      ],
+      "UnprocessedQueryExecutionId": [
+        "QueryExecutionId",
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "CreateWorkGroupInput": [
+        "Name",
+        "Configuration",
+        "Description",
+        "Tags"
+      ],
+      "WorkGroupConfiguration": [
+        "ResultConfiguration",
+        "EnforceWorkGroupConfiguration",
+        "PublishCloudWatchMetricsEnabled",
+        "BytesScannedCutoffPerQuery",
+        "RequesterPaysEnabled",
+        "EngineVersion"
+      ],
+      "GetWorkGroupInput": [
+        "WorkGroup"
+      ],
+      "GetWorkGroupOutput": [
+        "WorkGroup"
+      ],
+      "WorkGroup": [
+        "Name",
+        "State",
+        "Configuration",
+        "Description",
+        "CreationTime"
+      ],
+      "ListWorkGroupsInput": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListWorkGroupsOutput": [
+        "WorkGroups",
+        "NextToken"
+      ],
+      "WorkGroupSummary": [
+        "Name",
+        "State",
+        "Description",
+        "CreationTime",
+        "EngineVersion"
+      ],
+      "UpdateWorkGroupInput": [
+        "WorkGroup",
+        "Description",
+        "ConfigurationUpdates",
+        "State"
+      ],
+      "WorkGroupConfigurationUpdates": [
+        "EnforceWorkGroupConfiguration",
+        "ResultConfigurationUpdates",
+        "PublishCloudWatchMetricsEnabled",
+        "BytesScannedCutoffPerQuery",
+        "RemoveBytesScannedCutoffPerQuery",
+        "RequesterPaysEnabled",
+        "EngineVersion"
+      ],
+      "ResultConfigurationUpdates": [
+        "OutputLocation",
+        "RemoveOutputLocation",
+        "EncryptionConfiguration",
+        "RemoveEncryptionConfiguration",
+        "ExpectedBucketOwner",
+        "RemoveExpectedBucketOwner"
+      ],
+      "DeleteWorkGroupInput": [
+        "WorkGroup",
+        "RecursiveDeleteOption"
+      ],
+      "CreateNamedQueryInput": [
+        "Name",
+        "Description",
+        "Database",
+        "QueryString",
+        "ClientRequestToken",
+        "WorkGroup"
+      ],
+      "CreateNamedQueryOutput": [
+        "NamedQueryId"
+      ],
+      "GetNamedQueryInput": [
+        "NamedQueryId"
+      ],
+      "GetNamedQueryOutput": [
+        "NamedQuery"
+      ],
+      "NamedQuery": [
+        "Name",
+        "Description",
+        "Database",
+        "QueryString",
+        "NamedQueryId",
+        "WorkGroup"
+      ],
+      "ListNamedQueriesInput": [
+        "NextToken",
+        "MaxResults",
+        "WorkGroup"
+      ],
+      "ListNamedQueriesOutput": [
+        "NamedQueryIds",
+        "NextToken"
+      ],
+      "DeleteNamedQueryInput": [
+        "NamedQueryId"
+      ],
+      "BatchGetNamedQueryInput": [
+        "NamedQueryIds"
+      ],
+      "BatchGetNamedQueryOutput": [
+        "NamedQueries",
+        "UnprocessedNamedQueryIds"
+      ],
+      "UnprocessedNamedQueryId": [
+        "NamedQueryId",
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "GetDataCatalogInput": [
+        "Name",
+        "WorkGroup"
+      ],
+      "GetDataCatalogOutput": [
+        "DataCatalog"
+      ],
+      "DataCatalog": [
+        "Name",
+        "Description",
+        "Type",
+        "Parameters"
+      ],
+      "ListDataCatalogsInput": [
+        "NextToken",
+        "MaxResults",
+        "WorkGroup"
+      ],
+      "ListDataCatalogsOutput": [
+        "DataCatalogsSummary",
+        "NextToken"
+      ],
+      "DataCatalogSummary": [
+        "CatalogName",
+        "Type"
+      ],
+      "ListDatabasesInput": [
+        "CatalogName",
+        "NextToken",
+        "MaxResults",
+        "WorkGroup"
+      ],
+      "ListDatabasesOutput": [
+        "DatabaseList",
+        "NextToken"
+      ],
+      "Database": [
+        "Name",
+        "Description",
+        "Parameters"
+      ],
+      "GetDatabaseInput": [
+        "CatalogName",
+        "DatabaseName",
+        "WorkGroup"
+      ],
+      "GetDatabaseOutput": [
+        "Database"
+      ],
+      "ListTableMetadataInput": [
+        "CatalogName",
+        "DatabaseName",
+        "Expression",
+        "NextToken",
+        "MaxResults",
+        "WorkGroup"
+      ],
+      "ListTableMetadataOutput": [
+        "TableMetadataList",
+        "NextToken"
+      ],
+      "TableMetadata": [
+        "Name",
+        "CreateTime",
+        "LastAccessTime",
+        "TableType",
+        "Columns",
+        "PartitionKeys",
+        "Parameters"
+      ],
+      "Column": [
+        "Name",
+        "Type",
+        "Comment"
+      ],
+      "GetTableMetadataInput": [
+        "CatalogName",
+        "DatabaseName",
+        "TableName",
+        "WorkGroup"
+      ],
+      "GetTableMetadataOutput": [
+        "TableMetadata"
+      ],
+      "TagResourceInput": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "UntagResourceInput": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "ListTagsForResourceInput": [
+        "ResourceARN",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListTagsForResourceOutput": [
+        "Tags",
+        "NextToken"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ]
+    }
   }
 }
