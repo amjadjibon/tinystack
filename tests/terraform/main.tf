@@ -1627,7 +1627,8 @@ resource "aws_elasticache_replication_group" "rep" {
 }
 
 resource "aws_elasticache_serverless_cache" "serverless" {
-  name   = "serverless"
-  engine = "redis"
-  tags   = local.tags
+  name       = "serverless"
+  engine     = "redis"
+  subnet_ids = slice(data.aws_subnets.default.ids, 0, 2)
+  tags       = local.tags
 }
