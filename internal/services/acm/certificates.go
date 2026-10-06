@@ -20,6 +20,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/pki"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -215,13 +216,13 @@ func (s *Service) RequestCertificate(
 		return nil, tagError(err)
 	}
 
-	ca, err := s.authority(ctx)
+	ca, err := s.ca.Get(ctx, s.now())
 	if err != nil {
 		return nil, err
 	}
 
 	now := s.now()
-	cert, body, pemKey, err := ca.issue(domains, alg, now)
+	cert, body, pemKey, err := issue(ca, domains, alg, now)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +276,7 @@ func (s *Service) RequestCertificate(
 		)
 		detail.Type, detail.KeyAlgorithm, detail.Options = new(typeIssued), new(alg), options
 		return storage.Write(tx, m.Key(service, kindCert, id), certificate{
-			Detail: detail, Tags: tags, Body: body, Chain: ca.pem, Key: pemKey,
+			Detail: detail, Tags: tags, Body: body, Chain: ca.PEM, Key: pemKey,
 		})
 	})
 	if err != nil {
@@ -577,12 +578,12 @@ func (s *Service) ImportCertificate(
 		return nil, invalidParameter("Tags cannot be applied when reimporting a certificate.")
 	}
 
-	certs, err := parseCertificates(in.Certificate)
+	certs, err := pki.ParseCertificates(in.Certificate)
 	if err != nil || len(certs) != 1 {
 		return nil, awserror.Validation("The Certificate must be one PEM-encoded X.509 certificate.")
 	}
 
-	k, err := parseKey(in.PrivateKey)
+	k, err := pki.ParseKey(in.PrivateKey)
 	if err != nil {
 		return nil, awserror.Validation("The PrivateKey is not a valid PEM private key: %v", err)
 	}
@@ -599,13 +600,13 @@ func (s *Service) ImportCertificate(
 
 	var chain string
 	if len(in.CertificateChain) > 0 {
-		chained, chainErr := parseCertificates(in.CertificateChain)
+		chained, chainErr := pki.ParseCertificates(in.CertificateChain)
 		if chainErr != nil {
 			return nil, awserror.Validation("The CertificateChain must be PEM-encoded X.509 certificates.")
 		}
 
 		for _, c := range chained {
-			chain += encode(blockCert, c.Raw)
+			chain += pki.Encode(pki.BlockCertificate, c.Raw)
 		}
 	}
 
@@ -650,7 +651,7 @@ func (s *Service) ImportCertificate(
 			CertificateTransparencyLoggingPreference: new(enabled), Export: new(disabled),
 		}
 		return storage.Write(tx, m.Key(service, kindCert, id), certificate{
-			Detail: detail, Tags: tags, Body: encode(blockCert, cert.Raw), Chain: chain,
+			Detail: detail, Tags: tags, Body: pki.Encode(pki.BlockCertificate, cert.Raw), Chain: chain,
 		})
 	})
 	if err != nil {

@@ -10,6 +10,8 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"errors"
+
+	"github.com/amjadjibon/tinystack/internal/services/pki"
 )
 
 const pbkdf2Iterations = 100000
@@ -104,5 +106,5 @@ func encryptKey(pemKey string, passphrase []byte) (string, error) {
 		return "", err
 	}
 
-	return encode("ENCRYPTED PRIVATE KEY", der), nil
+	return pki.Encode("ENCRYPTED PRIVATE KEY", der), nil
 }

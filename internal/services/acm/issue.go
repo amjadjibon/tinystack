@@ -1,7 +1,6 @@
 package acm
 
 import (
-	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -10,14 +9,12 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/hex"
-	"encoding/pem"
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
 	"time"
 
-	"github.com/amjadjibon/tinystack/internal/storage"
+	"github.com/amjadjibon/tinystack/internal/services/pki"
 )
 
 const (
@@ -25,107 +22,8 @@ const (
 	algEC256     = "EC_prime256v1"
 	algEC384     = "EC_secp384r1"
 	validity     = 395 * 24 * time.Hour
-	caValidity   = 20 * 365 * 24 * time.Hour
 	caCommonName = "TinyStack Local Certificate Authority"
-	blockCert    = "CERTIFICATE"
-	blockKey     = "PRIVATE KEY"
 )
-
-// authority is TinyStack's certificate authority.
-type authority struct {
-	key  crypto.Signer
-	cert *x509.Certificate
-	pem  string
-}
-
-// stored is the authority's record.
-type stored struct{ Key, Cert string }
-
-// authority returns the certificate authority, creating it on first use.
-func (s *Service) authority(ctx context.Context) (*authority, error) {
-	s.caMu.Lock()
-	defer s.caMu.Unlock()
-	if s.ca != nil {
-		return s.ca, nil
-	}
-
-	fresh, err := newAuthority(s.now())
-	if err != nil {
-		return nil, err
-	}
-
-	var rec *stored
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		var found bool
-		var readErr error
-		if rec, found, readErr = storage.Read[stored](tx, caKey); readErr != nil || found {
-			return readErr
-		}
-
-		rec = fresh
-		return storage.Write(tx, caKey, rec)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if s.ca, err = parseAuthority(rec); err != nil {
-		return nil, err
-	}
-
-	return s.ca, nil
-}
-
-func newAuthority(now time.Time) (*stored, error) {
-	k, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-
-	tmpl := &x509.Certificate{
-		SerialNumber:          serialNumber(),
-		Subject:               pkix.Name{CommonName: caCommonName, Organization: []string{"TinyStack"}},
-		NotBefore:             now.Add(-time.Hour),
-		NotAfter:              now.Add(caValidity),
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &k.PublicKey, k)
-	if err != nil {
-		return nil, err
-	}
-
-	keyDER, err := x509.MarshalPKCS8PrivateKey(k)
-	if err != nil {
-		return nil, err
-	}
-
-	return &stored{Key: encode(blockKey, keyDER), Cert: encode(blockCert, der)}, nil
-}
-
-func parseAuthority(rec *stored) (*authority, error) {
-	certs, err := parseCertificates([]byte(rec.Cert))
-	if err != nil {
-		return nil, err
-	}
-
-	k, err := parseKey([]byte(rec.Key))
-	if err != nil {
-		return nil, err
-	}
-
-	return &authority{key: k, cert: certs[0], pem: rec.Cert}, nil
-}
-
-func encode(kind string, der []byte) string {
-	return string(pem.EncodeToMemory(&pem.Block{Type: kind, Bytes: der}))
-}
-
-func serialNumber() *big.Int {
-	n, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 127))
-	return n.Add(n, big.NewInt(1))
-}
 
 // newKey generates a private key for one of the key algorithms ACM issues.
 func newKey(alg string) (crypto.Signer, error) {
@@ -143,96 +41,28 @@ func newKey(alg string) (crypto.Signer, error) {
 
 // issue signs a new server certificate for names, the first being the
 // subject, and returns it with its key.
-func (a *authority) issue(names []string, alg string, now time.Time) (cert *x509.Certificate, body, pemKey string,
-	err error,
+func issue(ca *pki.Authority, names []string, alg string, now time.Time) (cert *x509.Certificate, body,
+	pemKey string, err error,
 ) {
 	k, err := newKey(alg)
 	if err != nil {
 		return nil, "", "", err
 	}
 
-	tmpl := &x509.Certificate{
-		SerialNumber: serialNumber(),
-		Subject:      pkix.Name{CommonName: names[0]},
-		DNSNames:     names,
-		NotBefore:    now.Add(-time.Minute),
-		NotAfter:     now.Add(validity),
-		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
-	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, a.cert, k.Public(), a.key)
+	cert, body, err = ca.Issue(&x509.Certificate{
+		Subject:     pkix.Name{CommonName: names[0]},
+		DNSNames:    names,
+		NotBefore:   now.Add(-time.Minute),
+		NotAfter:    now.Add(validity),
+		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+	}, k.Public())
 	if err != nil {
 		return nil, "", "", err
 	}
 
-	keyDER, err := x509.MarshalPKCS8PrivateKey(k)
-	if err != nil {
-		return nil, "", "", err
-	}
-
-	cert, err = x509.ParseCertificate(der)
-	return cert, encode(blockCert, der), encode(blockKey, keyDER), err
-}
-
-// parseCertificates reads one or more PEM certificates.
-func parseCertificates(data []byte) ([]*x509.Certificate, error) {
-	var out []*x509.Certificate
-	for {
-		var block *pem.Block
-		block, data = pem.Decode(data)
-		if block == nil {
-			break
-		}
-
-		if block.Type != blockCert {
-			return nil, fmt.Errorf("unexpected PEM block %s", block.Type)
-		}
-
-		c, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, c)
-	}
-
-	if len(out) == 0 || strings.TrimSpace(string(data)) != "" {
-		return nil, errors.New("expected PEM certificates")
-	}
-
-	return out, nil
-}
-
-// parseKey reads a PEM private key in PKCS #8, PKCS #1, or SEC 1 form.
-func parseKey(data []byte) (crypto.Signer, error) {
-	block, rest := pem.Decode(data)
-	if block == nil || strings.TrimSpace(string(rest)) != "" {
-		return nil, errors.New("expected one PEM private key")
-	}
-
-	var k any
-	var err error
-	switch block.Type {
-	case blockKey:
-		k, err = x509.ParsePKCS8PrivateKey(block.Bytes)
-	case "RSA PRIVATE KEY":
-		k, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-	case "EC PRIVATE KEY":
-		k, err = x509.ParseECPrivateKey(block.Bytes)
-	default:
-		return nil, fmt.Errorf("unsupported PEM block %s", block.Type)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	signer, ok := k.(crypto.Signer)
-	if !ok {
-		return nil, errors.New("unsupported private key type")
-	}
-
-	return signer, nil
+	pemKey, err = pki.EncodeKey(k)
+	return cert, body, pemKey, err
 }
 
 // keyAlgorithm names a public key's algorithm as ACM does, or "".

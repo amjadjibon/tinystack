@@ -14,12 +14,12 @@ package acm
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/pki"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -35,13 +35,12 @@ var _ api.API = (*Service)(nil)
 type Service struct {
 	store storage.Store
 	now   func() time.Time
-	// ca is the certificate authority once it is loaded or created.
-	ca   *authority
-	caMu sync.Mutex
+	// ca signs requested certificates.
+	ca *pki.Lazy
 }
 
 func New(store storage.Store) *Service {
-	return &Service{store: store, now: time.Now}
+	return &Service{store: store, now: time.Now, ca: pki.NewLazy(store, caKey, caCommonName)}
 }
 
 // certificate is a certificate's record.
