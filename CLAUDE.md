@@ -482,10 +482,11 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `Result.Log`) through `logs.Service.Append`, which creates `/aws/lambda/<name>` and the stream on first use; the
   docker runtime reads the container's output with `docker logs` after each invocation.
   ElastiCache (`services/elasticache`) keeps clusters under `…/elasticache/cluster/<id>`, replication groups under
-  `…/elasticache/replicationgroup/<id>`, subnet groups under `…/elasticache/subnetgroup/<name>`, parameter groups under
-  `…/elasticache/parametergroup/<name>`, and lifecycle events under `…/elasticache/event/<timestamp-seq>`. In records mode,
-  clusters and replication groups settle in `available` immediately; with `elasticache.caches: docker`, cache nodes run as containers
-  networked together with replica-of and AUTH support.
+  `…/elasticache/replication-group/<id>`, serverless caches under `…/elasticache/serverless/<name>`, subnet groups under
+  `…/elasticache/subnet-group/<name>`, parameter groups under `…/elasticache/parameter-group/<name>`, and lifecycle events
+  under `…/elasticache/event/<timestamp-seq>`. In records mode, resources settle in `available` immediately with default
+  localhost endpoints; with `elasticache.caches: docker`, cache nodes run as containers with readiness probes and published
+  host ports. Cache containers do not retain volumes across TinyStack restarts.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for

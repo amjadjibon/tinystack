@@ -70,7 +70,7 @@ def main():
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "5 added, 71 changed, 5 destroyed" in updated, updated
+                assert "5 added, 76 changed, 5 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 terraform("destroy", "-auto-approve", team="platform")

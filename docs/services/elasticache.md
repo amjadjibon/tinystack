@@ -1,6 +1,6 @@
 # ElastiCache design
 
-**State:** Engine-backed candidate. **First useful slice:** create a
+**State:** Current. **First useful slice:** create a
 Redis-compatible cache, receive a usable endpoint, run cache commands, and
 delete it through ElastiCache management APIs. The implementation brief is
 [../elasticache.md](../elasticache.md).

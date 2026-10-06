@@ -30,6 +30,7 @@ provider "aws" {
     ecr            = var.endpoint
     ecs            = var.endpoint
     eks            = var.endpoint
+    elasticache    = var.endpoint
     elbv2          = var.endpoint
     eventbridge    = var.endpoint
     firehose       = var.endpoint
@@ -1586,4 +1587,47 @@ resource "aws_cloudformation_stack" "app" {
 
 output "stack_parameter" {
   value = aws_cloudformation_stack.app.outputs["Parameter"]
+}
+
+resource "aws_elasticache_subnet_group" "cache" {
+  name       = "cache"
+  subnet_ids = [data.aws_subnets.default.ids[0]]
+  tags       = local.tags
+}
+
+resource "aws_elasticache_parameter_group" "cache" {
+  name   = "cache"
+  family = "redis7"
+  tags   = local.tags
+
+  parameter {
+    name  = "maxmemory-policy"
+    value = "allkeys-lru"
+  }
+}
+
+resource "aws_elasticache_cluster" "redis" {
+  cluster_id           = "cache"
+  engine               = "redis"
+  node_type            = "cache.t3.micro"
+  num_cache_nodes      = 1
+  parameter_group_name = aws_elasticache_parameter_group.cache.name
+  subnet_group_name    = aws_elasticache_subnet_group.cache.name
+  tags                 = local.tags
+}
+
+resource "aws_elasticache_replication_group" "rep" {
+  replication_group_id = "rep"
+  description          = "Terraform test replication group"
+  node_type            = "cache.t3.micro"
+  num_cache_clusters   = 2
+  parameter_group_name = aws_elasticache_parameter_group.cache.name
+  subnet_group_name    = aws_elasticache_subnet_group.cache.name
+  tags                 = local.tags
+}
+
+resource "aws_elasticache_serverless_cache" "serverless" {
+  name   = "serverless"
+  engine = "redis"
+  tags   = local.tags
 }
