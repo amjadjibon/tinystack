@@ -1,3 +1,6 @@
 allowBuilds:
   esbuild: true
   lightningcss: true
+minimumReleaseAgeExclude:
+  - '@cloudscape-design/components@3.0.1392'
+  - '@vitejs/plugin-react@6.1.2'
