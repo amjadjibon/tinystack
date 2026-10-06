@@ -157,6 +157,7 @@ var TerraformServices = []string{
 	"ecr",
 	"ecs",
 	"eks",
+	"elasticache",
 	"elbv2",
 	"eventbridge",
 	"firehose",

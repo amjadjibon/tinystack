@@ -11,16 +11,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Identity modes: parse maps access keys to accounts without checking
-// signatures; verify also requires a valid SigV4 signature from a key in
-// SecretKeys.
+// Identity authentication modes: parse reads the access key without verifying
+// signatures; verify checks SigV4 signatures against secret_keys.
 const (
 	IdentityParse  = "parse"
 	IdentityVerify = "verify"
 )
 
-// Storage modes: memory keeps state until the process exits; persistent also
-// writes every commit to state.db in Storage.Path.
+// Storage modes: memory stores state in ephemeral memory; persistent saves it
+// in a bbolt file.
 const (
 	StorageMemory     = "memory"
 	StoragePersistent = "persistent"
@@ -38,6 +37,13 @@ const (
 const (
 	ClustersRecords = "records"
 	ClustersK3s     = "k3s"
+)
+
+// ElastiCache cache modes: records keeps caches as records only; docker also runs
+// each cache node's container with the docker CLI.
+const (
+	CachesRecords = "records"
+	CachesDocker  = "docker"
 )
 
 type Config struct {
@@ -60,6 +66,9 @@ type Config struct {
 	EKS struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"eks"`
+	ElastiCache struct {
+		Caches string `yaml:"caches"`
+	} `yaml:"elasticache"`
 	Server struct {
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
@@ -81,6 +90,7 @@ func Default() Config {
 	c.Identity.Accounts = map[string]string{}
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
+	c.ElastiCache.Caches = CachesRecords
 	return c
 }
 
@@ -168,6 +178,10 @@ func (c *Config) Validate() error {
 
 	if c.EKS.Clusters != ClustersRecords && c.EKS.Clusters != ClustersK3s {
 		return fmt.Errorf("eks.clusters must be records or k3s")
+	}
+
+	if c.ElastiCache.Caches != CachesRecords && c.ElastiCache.Caches != CachesDocker {
+		return fmt.Errorf("elasticache.caches must be records or docker")
 	}
 
 	return nil

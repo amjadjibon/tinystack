@@ -35,6 +35,7 @@ import (
 	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
+	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
@@ -76,6 +77,7 @@ import (
 	ecsdocker "github.com/amjadjibon/tinystack/internal/services/ecs/docker"
 	"github.com/amjadjibon/tinystack/internal/services/eks"
 	"github.com/amjadjibon/tinystack/internal/services/eks/k3s"
+	"github.com/amjadjibon/tinystack/internal/services/elasticache"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
@@ -222,6 +224,8 @@ func newStartCommand() *cobra.Command {
 			scaling := autoscaling.New(store, logger)
 			defer scaling.Stop()
 			balancers := elbv2.New(store, logger)
+			caches := elasticache.New(store)
+			defer caches.Stop()
 			stacks := cloudformation.New(store, logger)
 			// Stop ends the stack runner, which writes to the store.
 			defer stacks.Stop()
@@ -251,6 +255,7 @@ func newStartCommand() *cobra.Command {
 				ecrapi.Descriptor(registry),
 				ecsapi.Descriptor(containers),
 				eksapi.Descriptor(kube),
+				elasticacheapi.Descriptor(caches),
 				apigatewayv2api.Descriptor(httpAPIs),
 				apigatewayapi.Descriptor(restAPIs),
 				appsyncapi.Descriptor(graphQL),
@@ -280,6 +285,7 @@ func newStartCommand() *cobra.Command {
 			timers.UseCaller(caller)
 			scaling.UseCaller(caller)
 			balancers.UseCaller(caller)
+			caches.UseCaller(caller)
 			// CloudFormation manages stack resources with the other
 			// services' operations.
 			stacks.UseCaller(caller)
@@ -353,6 +359,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(scaling.Stop)
 			server.RegisterOnShutdown(containers.Stop)
 			server.RegisterOnShutdown(kube.Stop)
+			server.RegisterOnShutdown(caches.Stop)
 			server.RegisterOnShutdown(stacks.Stop)
 			server.RegisterOnShutdown(graphQL.Stop)
 			// The console has its own listener, so its pages never reach the

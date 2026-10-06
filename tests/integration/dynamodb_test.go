@@ -38,6 +38,7 @@ import (
 	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
+	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
@@ -76,6 +77,7 @@ import (
 	containers "github.com/amjadjibon/tinystack/internal/services/ecr"
 	orchestration "github.com/amjadjibon/tinystack/internal/services/ecs"
 	kubernetes "github.com/amjadjibon/tinystack/internal/services/eks"
+	cacheservice "github.com/amjadjibon/tinystack/internal/services/elasticache"
 	loadbalancers "github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	deliverystreams "github.com/amjadjibon/tinystack/internal/services/firehose"
@@ -190,6 +192,7 @@ func serverStore(
 	scaling := scalinggroups.New(store, logger)
 	balancers := loadbalancers.New(store, logger)
 	tasks := orchestration.New(store)
+	caches := cacheservice.New(store)
 	stacks := cloudformation.New(store, logger)
 	mail := email.New(store, deliveries)
 	identityPools := identitypools.New(store, userPools, roles)
@@ -215,6 +218,7 @@ func serverStore(
 		ecrapi.Descriptor(repositories),
 		ecsapi.Descriptor(tasks),
 		eksapi.Descriptor(kubernetes.New(store, network)),
+		elasticacheapi.Descriptor(caches),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
 		appsyncapi.Descriptor(graphQL),
@@ -242,6 +246,7 @@ func serverStore(
 	timers.UseCaller(caller)
 	scaling.UseCaller(caller)
 	balancers.UseCaller(caller)
+	caches.UseCaller(caller)
 	stacks.UseCaller(caller)
 	logGroups.UseCaller(caller)
 	tables.UseCaller(caller)
@@ -270,6 +275,7 @@ func serverStore(
 	return s, func() {
 		graphQL.Stop()
 		stacks.Stop()
+		caches.Stop()
 		workflows.Stop()
 		firehoses.Stop()
 		monitoring.Stop()

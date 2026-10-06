@@ -159,7 +159,7 @@ var policyTemplates = map[string]policyTemplate{
 		[]string{"states:StartExecution"},
 		[]string{arnOf("states", "stateMachine:${StateMachineName}")},
 	},
-	"SSMParameterReadPolicy": {"ParameterName", []string{
+	"SSMParameterReadPolicy": {memberParameterName, []string{
 		"ssm:DescribeParameters", "ssm:GetParameters", "ssm:GetParameter", "ssm:GetParametersByPath",
 	}, []string{arnOf("ssm", "parameter/${ParameterName}")}},
 	"AWSSecretsManagerGetSecretValuePolicy": {

@@ -84,6 +84,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: containers,
 		icon: "eks",
 	},
+	elasticache: {
+		title: "ElastiCache",
+		category: database,
+		icon: "elasticache",
+	},
 	elbv2: {
 		title: "Elastic Load Balancing",
 		category: networking,
@@ -102,7 +107,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: analytics,
 		icon: "kinesis",
 	},
-	kms: { title: "Key Management Service", category: security, icon: "kms" },
+	kms: {
+		title: "Key Management Service",
+		category: security,
+		icon: "kms",
+	},
 	lambda: { title: "Lambda", category: compute, icon: "lambda" },
 	logs: { title: "CloudWatch Logs", category: management, icon: "logs" },
 	route53: { title: "Route 53", category: networking, icon: "route53" },
@@ -129,12 +138,25 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "sns",
 	},
 	sqs: { title: "Simple Queue Service", category: integration, icon: "sqs" },
-	ssm: { title: "Systems Manager", category: management, icon: "ssm" },
-	sts: { title: "Security Token Service", category: security, icon: "iam" },
+	ssm: {
+		title: "Systems Manager",
+		category: management,
+		icon: "ssm",
+	},
+	sts: {
+		title: "Security Token Service",
+		category: security,
+		icon: "sts",
+	},
 };
 
-// service describes name, falling back to the bare name for a service this
-// console does not know yet.
-export function service(name: string): ServiceInfo {
-	return catalog[name] ?? { title: name, category: "Other" };
+export const serviceNames = Object.keys(catalog).sort();
+
+export function info(service: string): ServiceInfo {
+	return (
+		catalog[service] ?? {
+			title: service,
+			category: "Other",
+		}
+	);
 }

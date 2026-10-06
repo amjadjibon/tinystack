@@ -24,3 +24,6 @@ ecs:
 eks:
   # records keeps EKS clusters as records; k3s also runs their API servers.
   clusters: records
+elasticache:
+  # records keeps caches as records; docker also runs each node in a container.
+  caches: records
