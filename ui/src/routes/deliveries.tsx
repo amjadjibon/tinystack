@@ -22,7 +22,7 @@ function Deliveries() {
 	return (
 		<LogTable<Delivery>
 			title="Deliveries"
-			description="Messages SNS, S3, EventBridge, Lambda, and Cognito delivered in-process, newest first."
+			description="Messages SNS, S3, EventBridge, Lambda, Secrets Manager, Firehose, Cognito, and SES delivered in-process, newest first."
 			fetcher={api.deliveries}
 			onClear={() => api.clear("deliveries")}
 			trackBy={(d) => `${d.time} ${d.via} ${d.target}`}

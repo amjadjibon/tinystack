@@ -16,6 +16,7 @@ const integration = "Application Integration";
 const analytics = "Analytics";
 const management = "Management & Governance";
 const security = "Security, Identity & Compliance";
+const business = "Business Applications";
 
 export const categories = [
 	compute,
@@ -27,6 +28,7 @@ export const categories = [
 	analytics,
 	management,
 	security,
+	business,
 ];
 
 const catalog: Record<string, ServiceInfo> = {
@@ -41,6 +43,8 @@ const catalog: Record<string, ServiceInfo> = {
 		category: networking,
 		icon: "apigateway",
 	},
+	appsync: { title: "AppSync", category: integration, icon: "appsync" },
+	athena: { title: "Athena", category: analytics, icon: "athena" },
 	autoscaling: {
 		title: "EC2 Auto Scaling",
 		category: compute,
@@ -52,6 +56,11 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "cloudformation",
 	},
 	cloudwatch: { title: "CloudWatch", category: management, icon: "cloudwatch" },
+	cognitoidentity: {
+		title: "Cognito Identity Pools",
+		category: security,
+		icon: "cognitoidp",
+	},
 	cognitoidp: { title: "Cognito", category: security, icon: "cognitoidp" },
 	dynamodb: { title: "DynamoDB", category: database, icon: "dynamodb" },
 	dynamodbstreams: {
@@ -86,6 +95,7 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "eventbridge",
 	},
 	firehose: { title: "Data Firehose", category: analytics, icon: "firehose" },
+	glue: { title: "Glue Data Catalog", category: analytics, icon: "glue" },
 	iam: { title: "IAM", category: security, icon: "iam" },
 	kinesis: {
 		title: "Kinesis Data Streams",
@@ -106,6 +116,11 @@ const catalog: Record<string, ServiceInfo> = {
 		title: "Secrets Manager",
 		category: security,
 		icon: "secretsmanager",
+	},
+	sesv2: {
+		title: "Simple Email Service",
+		category: business,
+		icon: "sesv2",
 	},
 	sfn: { title: "Step Functions", category: integration, icon: "sfn" },
 	sns: {
