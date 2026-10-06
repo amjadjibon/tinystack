@@ -17,12 +17,20 @@ import (
 
 const webIdentityAction = "sts:AssumeRoleWithWebIdentity"
 
+// cognitoProvider is the provider of Cognito identity pools' OpenID tokens,
+// which every account trusts without an IAM OIDC provider; its tokens'
+// issuer is https://cognito-identity.amazonaws.com.
+const cognitoProvider = "cognito-identity.amazonaws.com"
+
 // claims are the parts of a web identity token that STS reads.
 type claims struct {
 	Issuer   string          `json:"iss"`
 	Subject  string          `json:"sub"`
 	Audience json.RawMessage `json:"aud"`
-	Expires  float64         `json:"exp"`
+	// Methods are how a Cognito identity authenticated: "authenticated" and
+	// its providers, or "unauthenticated".
+	Methods []string `json:"amr"`
+	Expires float64  `json:"exp"`
 }
 
 func invalidToken(message string) error {
@@ -78,7 +86,9 @@ func checkWebIdentity(in *api.AssumeRoleWithWebIdentityRequest) error {
 // trust policy names the OpenID Connect provider a token came from. The
 // provider must be one of the role's account's, and one of its client IDs the
 // token's audience; the trust policy's conditions can name the provider's
-// "<URL>:aud" and "<URL>:sub" keys. The request needs no signature.
+// "<URL>:aud" and "<URL>:sub" keys. Cognito identity pools' tokens come from
+// cognito-identity.amazonaws.com, which needs no IAM provider and whose
+// conditions can also name its "amr" key. The request needs no signature.
 func (s *Service) AssumeRoleWithWebIdentity(
 	ctx context.Context,
 	in *api.AssumeRoleWithWebIdentityRequest,
@@ -108,31 +118,12 @@ func (s *Service) AssumeRoleWithWebIdentity(
 		return nil, notAuthorized
 	}
 
-	provider, found, err := s.roles.OIDCProvider(ctx, role.Account, token.Issuer)
-	switch {
-	case err != nil:
+	c, audience, err := s.webCaller(ctx, role.Account, token, audiences)
+	if err != nil {
 		return nil, err
-	case !found:
-		return nil, invalidToken("No OpenIDConnect provider found in your account for " + token.Issuer)
 	}
 
-	audience := ""
-	for _, a := range audiences {
-		if slices.Contains(provider.ClientIDs, a) {
-			audience = a
-		}
-	}
-
-	if audience == "" {
-		return nil, invalidToken("Incorrect token audience")
-	}
-
-	url, _ := strings.CutPrefix(provider.ARN, "arn:aws:iam::"+role.Account+":oidc-provider/")
-	c := caller{
-		account: role.Account, federated: provider.ARN, action: webIdentityAction,
-		context: map[string]string{url + ":aud": audience, url + ":sub": token.Subject},
-	}
-	if !trusts(role.TrustPolicy, &c) {
+	if !trusts(role.TrustPolicy, c) {
 		return nil, notAuthorized
 	}
 
@@ -162,6 +153,46 @@ func (s *Service) AssumeRoleWithWebIdentity(
 	})
 
 	return out, err
+}
+
+// webCaller is who a web identity token makes its bearer: the federated
+// principal of its provider, with the audience the provider accepts.
+func (s *Service) webCaller(ctx context.Context, account string, token *claims, audiences []string) (
+	c *caller, audience string, err error,
+) {
+	if token.Issuer == "https://"+cognitoProvider {
+		return &caller{
+			account: account, federated: cognitoProvider, action: webIdentityAction,
+			context: map[string][]string{
+				cognitoProvider + ":aud": audiences, cognitoProvider + ":sub": {token.Subject},
+				cognitoProvider + ":amr": token.Methods,
+			},
+		}, audiences[0], nil
+	}
+
+	provider, found, err := s.roles.OIDCProvider(ctx, account, token.Issuer)
+	switch {
+	case err != nil:
+		return nil, "", err
+	case !found:
+		return nil, "", invalidToken("No OpenIDConnect provider found in your account for " + token.Issuer)
+	}
+
+	for _, a := range audiences {
+		if slices.Contains(provider.ClientIDs, a) {
+			audience = a
+		}
+	}
+
+	if audience == "" {
+		return nil, "", invalidToken("Incorrect token audience")
+	}
+
+	url, _ := strings.CutPrefix(provider.ARN, "arn:aws:iam::"+account+":oidc-provider/")
+	return &caller{
+		account: account, federated: provider.ARN, action: webIdentityAction,
+		context: map[string][]string{url + ":aud": {audience}, url + ":sub": {token.Subject}},
+	}, audience, nil
 }
 
 // UseAccounts lets GetAccessKeyInfo answer for the configured access keys,

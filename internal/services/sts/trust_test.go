@@ -76,9 +76,33 @@ func TestTrusts(t *testing.T) {
 		{"malformed", `{"Statement":"nope"}`, "", root, false},
 	} {
 		c := tc.caller
-		c.action, c.context = "sts:AssumeRole", map[string]string{"sts:externalid": tc.externalID}
+		c.action, c.context = "sts:AssumeRole", map[string][]string{"sts:externalid": present(tc.externalID)}
 		if got := trusts(tc.document, &c); got != tc.want {
 			t.Errorf("%s: got %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestTrustsSetOperators(t *testing.T) {
+	c := caller{
+		account: "111111111111", federated: "cognito-identity.amazonaws.com", action: "sts:AssumeRoleWithWebIdentity",
+		context: map[string][]string{
+			"cognito-identity.amazonaws.com:aud": {"us-east-1:pool"},
+			"cognito-identity.amazonaws.com:amr": {"authenticated", "cognito-idp.us-east-1.amazonaws.com/pool"},
+		},
+	}
+	allow := `{"Statement":{"Effect":"Allow","Principal":{"Federated":"cognito-identity.amazonaws.com"},` +
+		`"Action":"sts:AssumeRoleWithWebIdentity","Condition":`
+	for condition, want := range map[string]bool{
+		`{"ForAnyValue:StringLike":{"cognito-identity.amazonaws.com:amr":"authenticated"}}`:                    true,
+		`{"ForAnyValue:StringLike":{"cognito-identity.amazonaws.com:amr":"unauthenticated"}}`:                  false,
+		`{"ForAllValues:StringLike":{"cognito-identity.amazonaws.com:amr":["authenticated","cognito-idp.*"]}}`: true,
+		`{"ForAllValues:StringEquals":{"cognito-identity.amazonaws.com:amr":"authenticated"}}`:                 false,
+		`{"StringEquals":{"cognito-identity.amazonaws.com:aud":"us-east-1:pool"}}`:                             true,
+		`{"ForSomeValues:StringLike":{"cognito-identity.amazonaws.com:amr":"authenticated"}}`:                  false,
+	} {
+		if got := trusts(allow+condition+`}}`, &c); got != want {
+			t.Errorf("%s: got %v, want %v", condition, got, want)
 		}
 	}
 }
@@ -87,9 +111,9 @@ func TestTrustsWebIdentity(t *testing.T) {
 	provider := "arn:aws:iam::111111111111:oidc-provider/token.actions.githubusercontent.com"
 	c := caller{
 		account: "111111111111", federated: provider, action: "sts:AssumeRoleWithWebIdentity",
-		context: map[string]string{
-			"token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-			"token.actions.githubusercontent.com:sub": "repo:acme/app:ref:refs/heads/main",
+		context: map[string][]string{
+			"token.actions.githubusercontent.com:aud": {"sts.amazonaws.com"},
+			"token.actions.githubusercontent.com:sub": {"repo:acme/app:ref:refs/heads/main"},
 		},
 	}
 	allow := `{"Effect":"Allow","Principal":{"Federated":"` + provider + `"},"Action":"sts:AssumeRoleWithWebIdentity"`

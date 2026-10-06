@@ -29,6 +29,7 @@ import (
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
+	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
@@ -65,6 +66,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	cdn "github.com/amjadjibon/tinystack/internal/services/cloudfront"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
+	identitypools "github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	compute "github.com/amjadjibon/tinystack/internal/services/ec2"
@@ -186,6 +188,7 @@ func serverStore(
 	tasks := orchestration.New(store)
 	stacks := cloudformation.New(store, logger)
 	mail := email.New(store, deliveries)
+	identityPools := identitypools.New(store, userPools, roles)
 
 	services := []catalog.Service{
 		api.Descriptor(tables),
@@ -221,6 +224,7 @@ func serverStore(
 		cloudwatchapi.Descriptor(monitoring),
 		cloudformationapi.Descriptor(stacks),
 		sesv2api.Descriptor(mail),
+		cognitoidentityapi.Descriptor(identityPools),
 	}
 	caller := catalog.NewCaller(services...)
 	workflows.UseCaller(caller)
@@ -236,6 +240,7 @@ func serverStore(
 	functions.UseCaller(caller)
 	graphQL.UseCaller(caller)
 	mail.UseCaller(caller)
+	identityPools.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)

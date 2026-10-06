@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/dop251/goja"
 
@@ -182,7 +183,7 @@ func (j *jsRun) host() *goja.Object {
 	set("invalidation", func(goja.FunctionCall) goja.Value {
 		return raise(&fieldError{Type: errorUnsupported, Message: "TinyStack does not invalidate subscriptions."})
 	})
-	set("autoId", func(goja.FunctionCall) goja.Value { return j.vm.ToValue(uuid()) })
+	set("autoId", func(goja.FunctionCall) goja.Value { return j.vm.ToValue(uuid.NewV4().String()) })
 	set("autoUlid", func(goja.FunctionCall) goja.Value { return j.vm.ToValue(ulid()) })
 	set("base64Encode", func(call goja.FunctionCall) goja.Value {
 		return j.vm.ToValue(base64.StdEncoding.EncodeToString([]byte(call.Argument(0).String())))
@@ -196,14 +197,6 @@ func (j *jsRun) host() *goja.Object {
 		return j.vm.ToValue(string(b))
 	})
 	return host
-}
-
-// uuid is a random version 4 UUID.
-func uuid() string {
-	b := []byte(common.RandomID(32, "0123456789abcdef"))
-	b[12], b[16] = '4', "89ab"[int(b[16])%4]
-	s := string(b)
-	return s[:8] + "-" + s[8:12] + "-" + s[12:16] + "-" + s[16:20] + "-" + s[20:]
 }
 
 // ulid is a ULID: a millisecond timestamp and randomness in Crockford's

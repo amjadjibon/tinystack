@@ -243,7 +243,7 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 		chained := inSession && current.role()
 		c := caller{
 			account: m.AccountID, arns: []string{rootARN(m.AccountID)}, action: "sts:AssumeRole",
-			context: map[string]string{"sts:externalid": common.Value(in.ExternalId)},
+			context: map[string][]string{"sts:externalid": present(common.Value(in.ExternalId))},
 		}
 		switch {
 		case chained:

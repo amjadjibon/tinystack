@@ -11,8 +11,8 @@ import (
 // conditions name it.
 type caller struct {
 	// context holds the condition keys TinyStack knows for the request,
-	// lowercased, with their values; an empty value is absent.
-	context map[string]string
+	// lowercased, with their values; a key without values is absent.
+	context map[string][]string
 	// action is what the caller asks for, such as "sts:AssumeRole".
 	action  string
 	account string
@@ -37,8 +37,9 @@ type statement struct {
 // trusts reports whether a role's trust policy lets c take its action. It
 // evaluates a subset: Allow and Deny statements naming AWS or Federated
 // principals and actions, and StringEquals and StringLike conditions on the
-// keys in c's context. An Allow that uses anything else grants nothing, and a
-// Deny that does applies.
+// keys in c's context, alone or with the ForAnyValue and ForAllValues set
+// operators. An Allow that uses anything else grants nothing, and a Deny that
+// does applies.
 func trusts(document string, c *caller) bool {
 	var policy struct{ Statement json.RawMessage }
 	if json.Unmarshal([]byte(document), &policy) != nil {
@@ -141,13 +142,31 @@ func matchesPrincipal(raw json.RawMessage, c *caller) bool {
 	return false
 }
 
+// present is a condition key's values: none for an empty value.
+func present(value string) []string {
+	if value == "" {
+		return nil
+	}
+
+	return []string{value}
+}
+
 // conditionsHold reports whether a statement's conditions hold, and whether
 // TinyStack knows every one of them: StringEquals and StringLike on the keys
-// in context.
-func conditionsHold(conditions map[string]map[string]json.RawMessage, context map[string]string) (holds, known bool) {
+// in context, which hold when any of the key's values matches, or with
+// ForAllValues when every one does.
+func conditionsHold(conditions map[string]map[string]json.RawMessage, context map[string][]string) (
+	holds, known bool,
+) {
 	holds = true
 	for operator, keys := range conditions {
-		if operator != "StringEquals" && operator != "StringLike" {
+		set, base, qualified := strings.Cut(operator, ":")
+		if !qualified {
+			set, base = "", operator
+		}
+
+		if (base != "StringEquals" && base != "StringLike") ||
+			(set != "" && set != "ForAnyValue" && set != "ForAllValues") {
 			return false, false
 		}
 
@@ -157,13 +176,16 @@ func conditionsHold(conditions map[string]map[string]json.RawMessage, context ma
 				return false, false
 			}
 
-			matched := false
-			for _, want := range values(raw) {
-				matched = matched || (operator == "StringEquals" && want == actual) ||
-					(operator == "StringLike" && like(want, actual, false))
+			matches := func(v string) bool {
+				return slices.ContainsFunc(values(raw), func(want string) bool {
+					return (base == "StringEquals" && want == v) || (base == "StringLike" && like(want, v, false))
+				})
 			}
-
-			holds = holds && actual != "" && matched
+			if set == "ForAllValues" {
+				holds = holds && !slices.ContainsFunc(actual, func(v string) bool { return !matches(v) })
+			} else {
+				holds = holds && slices.ContainsFunc(actual, matches)
+			}
 		}
 	}
 

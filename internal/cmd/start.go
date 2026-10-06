@@ -26,6 +26,7 @@ import (
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
+	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
@@ -63,6 +64,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
+	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
@@ -220,6 +222,7 @@ func newStartCommand() *cobra.Command {
 			// Stop ends the stack runner, which writes to the store.
 			defer stacks.Stop()
 			email := sesv2.New(store, deliveries)
+			identityPools := cognitoidentity.New(store, identities, roles)
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
@@ -257,6 +260,7 @@ func newStartCommand() *cobra.Command {
 				cloudwatchapi.Descriptor(monitoring),
 				cloudformationapi.Descriptor(stacks),
 				sesv2api.Descriptor(email),
+				cognitoidentityapi.Descriptor(identityPools),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.
@@ -280,6 +284,7 @@ func newStartCommand() *cobra.Command {
 			// GraphQL data sources reach DynamoDB and EventBridge.
 			graphQL.UseCaller(caller)
 			email.UseCaller(caller)
+			identityPools.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err

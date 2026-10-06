@@ -127,7 +127,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**, **services/cognitoidentity**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -342,6 +342,18 @@ a per-service `Dialect`), and delivers synchronously through
   live in memory (`Stop`, deferred and a shutdown hook in `start.go`, closes the connections); after a mutation, each
   root field's data goes to the subscriptions whose `@aws_subscribe` names it, whose arguments it equals, and whose
   enhanced filter (`filters.go`, set by the subscription resolver's `extensions.setSubscriptionFilter`) it passes.
+  Cognito identity pools (`services/cognitoidentity`) keep pools (settings, roles, role mappings, and the secret that
+  signs their HS256 OpenID tokens) under `…/cognitoidentity/pool/<pool ID>`, identities under
+  `…/cognitoidentity/identity/<pool ID>/<identity ID>`, and each linked login under
+  `…/cognitoidentity/login/<pool ID>/<provider>/<subject>`; the partition-wide `aws/cognitoidentity/pool/<pool ID>`
+  and `aws/cognitoidentity/identity/<identity ID>` find them from the unsigned GetId, GetOpenIdToken,
+  GetCredentialsForIdentity, and UnlinkIdentity. Logins are user pool ID tokens (`cognitoidp.Service.Verify`),
+  tokens of the account's IAM OpenID Connect providers (`proxy.Verifier`), and the pool's own developer tokens;
+  social providers fail explicitly. GetCredentialsForIdentity picks the role (token or rules role mappings, else
+  the pool's authenticated or unauthenticated role) and exchanges an OpenID token for it with STS's
+  AssumeRoleWithWebIdentity through the `catalog.Caller`. STS trusts `cognito-identity.amazonaws.com` tokens
+  without an IAM provider, with `aud`, `sub`, and `amr` condition keys (`ForAnyValue`/`ForAllValues` operators
+  apply to multivalued keys such as `amr`).
   SES (`services/sesv2`, API v2) keeps email identities (verified as soon as they are created) under
   `…/sesv2/identity/<lowercased address or domain>`, templates under `…/sesv2/template/<name>`, configuration sets
   with their event destinations under `…/sesv2/configuration-set/<name>`, and hourly send counts for `GetAccount`
@@ -471,7 +483,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, and ECS over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, and EventBridge Scheduler over REST
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, ECS, and Cognito identity pools over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, and EventBridge Scheduler over REST
   JSON, Auto Scaling, Elastic Load Balancing, and CloudFormation over Query, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.

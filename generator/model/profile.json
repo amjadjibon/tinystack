@@ -12524,5 +12524,203 @@
         "Tags"
       ]
     }
+  },
+  "cognitoidentity": {
+    "operations": [
+      "CreateIdentityPool",
+      "DescribeIdentityPool",
+      "UpdateIdentityPool",
+      "DeleteIdentityPool",
+      "ListIdentityPools",
+      "GetId",
+      "GetOpenIdToken",
+      "GetCredentialsForIdentity",
+      "GetOpenIdTokenForDeveloperIdentity",
+      "LookupDeveloperIdentity",
+      "UnlinkIdentity",
+      "SetIdentityPoolRoles",
+      "GetIdentityPoolRoles",
+      "ListIdentities",
+      "DescribeIdentity",
+      "DeleteIdentities",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateIdentityPoolInput": [
+        "IdentityPoolName",
+        "AllowUnauthenticatedIdentities",
+        "AllowClassicFlow",
+        "SupportedLoginProviders",
+        "DeveloperProviderName",
+        "OpenIdConnectProviderARNs",
+        "CognitoIdentityProviders",
+        "IdentityPoolTags"
+      ],
+      "IdentityPool": [
+        "IdentityPoolId",
+        "IdentityPoolName",
+        "AllowUnauthenticatedIdentities",
+        "AllowClassicFlow",
+        "SupportedLoginProviders",
+        "DeveloperProviderName",
+        "OpenIdConnectProviderARNs",
+        "CognitoIdentityProviders",
+        "IdentityPoolTags"
+      ],
+      "CognitoIdentityProvider": [
+        "ProviderName",
+        "ClientId",
+        "ServerSideTokenCheck"
+      ],
+      "DescribeIdentityPoolInput": [
+        "IdentityPoolId"
+      ],
+      "DeleteIdentityPoolInput": [
+        "IdentityPoolId"
+      ],
+      "ListIdentityPoolsInput": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListIdentityPoolsResponse": [
+        "IdentityPools",
+        "NextToken"
+      ],
+      "IdentityPoolShortDescription": [
+        "IdentityPoolId",
+        "IdentityPoolName"
+      ],
+      "GetIdInput": [
+        "AccountId",
+        "IdentityPoolId",
+        "Logins"
+      ],
+      "GetIdResponse": [
+        "IdentityId"
+      ],
+      "GetOpenIdTokenInput": [
+        "IdentityId",
+        "Logins"
+      ],
+      "GetOpenIdTokenResponse": [
+        "IdentityId",
+        "Token"
+      ],
+      "GetCredentialsForIdentityInput": [
+        "IdentityId",
+        "Logins",
+        "CustomRoleArn"
+      ],
+      "GetCredentialsForIdentityResponse": [
+        "IdentityId",
+        "Credentials"
+      ],
+      "Credentials": [
+        "AccessKeyId",
+        "SecretKey",
+        "SessionToken",
+        "Expiration"
+      ],
+      "GetOpenIdTokenForDeveloperIdentityInput": [
+        "IdentityPoolId",
+        "IdentityId",
+        "Logins",
+        "TokenDuration"
+      ],
+      "GetOpenIdTokenForDeveloperIdentityResponse": [
+        "IdentityId",
+        "Token"
+      ],
+      "LookupDeveloperIdentityInput": [
+        "IdentityPoolId",
+        "IdentityId",
+        "DeveloperUserIdentifier",
+        "MaxResults",
+        "NextToken"
+      ],
+      "LookupDeveloperIdentityResponse": [
+        "IdentityId",
+        "DeveloperUserIdentifierList",
+        "NextToken"
+      ],
+      "UnlinkIdentityInput": [
+        "IdentityId",
+        "Logins",
+        "LoginsToRemove"
+      ],
+      "SetIdentityPoolRolesInput": [
+        "IdentityPoolId",
+        "Roles",
+        "RoleMappings"
+      ],
+      "GetIdentityPoolRolesInput": [
+        "IdentityPoolId"
+      ],
+      "GetIdentityPoolRolesResponse": [
+        "IdentityPoolId",
+        "Roles",
+        "RoleMappings"
+      ],
+      "RoleMapping": [
+        "Type",
+        "AmbiguousRoleResolution",
+        "RulesConfiguration"
+      ],
+      "RulesConfigurationType": [
+        "Rules"
+      ],
+      "MappingRule": [
+        "Claim",
+        "MatchType",
+        "Value",
+        "RoleARN"
+      ],
+      "ListIdentitiesInput": [
+        "IdentityPoolId",
+        "MaxResults",
+        "NextToken",
+        "HideDisabled"
+      ],
+      "ListIdentitiesResponse": [
+        "IdentityPoolId",
+        "Identities",
+        "NextToken"
+      ],
+      "IdentityDescription": [
+        "IdentityId",
+        "Logins",
+        "CreationDate",
+        "LastModifiedDate"
+      ],
+      "DescribeIdentityInput": [
+        "IdentityId"
+      ],
+      "DeleteIdentitiesInput": [
+        "IdentityIdsToDelete"
+      ],
+      "DeleteIdentitiesResponse": [
+        "UnprocessedIdentityIds"
+      ],
+      "UnprocessedIdentityId": [
+        "IdentityId",
+        "ErrorCode"
+      ],
+      "TagResourceInput": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceInput": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "ListTagsForResourceInput": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
   }
 }
