@@ -146,17 +146,12 @@ const catalog: Record<string, ServiceInfo> = {
 	sts: {
 		title: "Security Token Service",
 		category: security,
-		icon: "sts",
+		icon: "iam",
 	},
 };
 
-export const serviceNames = Object.keys(catalog).sort();
-
-export function info(service: string): ServiceInfo {
-	return (
-		catalog[service] ?? {
-			title: service,
-			category: "Other",
-		}
-	);
+// service describes name, falling back to the bare name for a service this
+// console does not know yet.
+export function service(name: string): ServiceInfo {
+	return catalog[name] ?? { title: name, category: "Other" };
 }
