@@ -96,16 +96,31 @@ func (s *Service) toAPIServerlessCache(r *serverlessCacheRecord) api.ServerlessC
 		snapLimit = &limit
 	}
 
+	var kmsKeyID *string
+	if r.KmsKeyID != "" {
+		kmsKeyID = new(r.KmsKeyID)
+	}
+
+	var dailySnapshotTime *string
+	if r.DailySnapshotTime != "" {
+		dailySnapshotTime = new(r.DailySnapshotTime)
+	}
+
+	var description *string
+	if r.Description != "" {
+		description = new(r.Description)
+	}
+
 	return api.ServerlessCache{
 		ARN:                    new(r.ARN),
 		CacheUsageLimits:       r.CacheUsageLimits,
 		CreateTime:             createTime,
-		DailySnapshotTime:      new(r.DailySnapshotTime),
-		Description:            new(r.Description),
+		DailySnapshotTime:      dailySnapshotTime,
+		Description:            description,
 		Endpoint:               endpoint,
 		Engine:                 new(r.Engine),
 		FullEngineVersion:      new(r.FullEngineVersion),
-		KmsKeyId:               new(r.KmsKeyID),
+		KmsKeyId:               kmsKeyID,
 		MajorEngineVersion:     new(r.MajorEngineVersion),
 		ReaderEndpoint:         readerEndpoint,
 		SecurityGroupIds:       r.SecurityGroupIDs,

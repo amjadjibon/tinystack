@@ -25,24 +25,25 @@ type clusterNode struct {
 }
 
 type clusterRecord struct {
-	CreateTime           time.Time
-	Tags                 map[string]string
-	Status               string
-	SubnetGroupName      string
-	ClusterID            string
-	Engine               string
-	EngineVersion        string
-	NodeType             string
-	AuthToken            string
-	ReplicationGroupID   string
-	ParameterGroupName   string
-	ParameterApplyStatus string
-	PreferredAZ          string
-	Nodes                []clusterNode
-	SecurityGroupIDs     []string
-	NumNodes             int64
-	Port                 int64
-	TransitEncryption    bool
+	CreateTime              time.Time
+	Tags                    map[string]string
+	Status                  string
+	SubnetGroupName         string
+	ClusterID               string
+	Engine                  string
+	EngineVersion           string
+	NodeType                string
+	AuthToken               string
+	ReplicationGroupID      string
+	ParameterGroupName      string
+	ParameterApplyStatus    string
+	PreferredAZ             string
+	Nodes                   []clusterNode
+	SecurityGroupIDs        []string
+	NumNodes                int64
+	Port                    int64
+	TransitEncryption       bool
+	AutoMinorVersionUpgrade bool
 }
 
 func validateClusterID(id string) error {
@@ -159,6 +160,7 @@ func toAPICacheCluster(scope request.Scope, r *clusterRecord, showNodes bool) ap
 		SecurityGroups:            sgMemberships,
 		CacheNodes:                nodes,
 		PreferredAvailabilityZone: new(r.PreferredAZ),
+		AutoMinorVersionUpgrade:   new(r.AutoMinorVersionUpgrade),
 		ARN:                       new(arn),
 	}
 
@@ -348,22 +350,28 @@ func (s *Service) CreateCacheCluster(
 		})
 	}
 
+	autoMinor := true
+	if in.AutoMinorVersionUpgrade != nil {
+		autoMinor = *in.AutoMinorVersionUpgrade
+	}
+
 	record := clusterRecord{
-		CreateTime:           now,
-		Tags:                 tags,
-		SecurityGroupIDs:     in.SecurityGroupIds,
-		Nodes:                nodes,
-		ClusterID:            clusterID,
-		Engine:               spec.Engine,
-		EngineVersion:        spec.EngineVersion,
-		NodeType:             nodeType,
-		Status:               clusterStatus,
-		SubnetGroupName:      subnetGroupName,
-		ParameterGroupName:   paramGroupName,
-		ParameterApplyStatus: applyStatusInSync,
-		PreferredAZ:          prefAZ,
-		NumNodes:             numNodes,
-		Port:                 port,
+		AutoMinorVersionUpgrade: autoMinor,
+		CreateTime:              now,
+		Tags:                    tags,
+		SecurityGroupIDs:        in.SecurityGroupIds,
+		Nodes:                   nodes,
+		ClusterID:               clusterID,
+		Engine:                  spec.Engine,
+		EngineVersion:           spec.EngineVersion,
+		NodeType:                nodeType,
+		Status:                  clusterStatus,
+		SubnetGroupName:         subnetGroupName,
+		ParameterGroupName:      paramGroupName,
+		ParameterApplyStatus:    applyStatusInSync,
+		PreferredAZ:             prefAZ,
+		NumNodes:                numNodes,
+		Port:                    port,
 	}
 
 	key := clusterKey(scope, clusterID)
@@ -511,6 +519,10 @@ func (s *Service) ModifyCacheCluster(
 		}
 
 		existing.EngineVersion = newSpec.EngineVersion
+	}
+
+	if in.AutoMinorVersionUpgrade != nil {
+		existing.AutoMinorVersionUpgrade = *in.AutoMinorVersionUpgrade
 	}
 
 	// Memcached node count modification

@@ -38,6 +38,7 @@ type replicationGroupRecord struct {
 	AuthTokenEnabled          bool
 	TransitEncryptionEnabled  bool
 	AtRestEncryptionEnabled   bool
+	AutoMinorVersionUpgrade   bool
 }
 
 func validateReplicationGroupID(id string) error {
@@ -143,6 +144,10 @@ func (s *Service) CreateReplicationGroup(
 	}
 
 	autoFailover := in.AutomaticFailoverEnabled != nil && *in.AutomaticFailoverEnabled
+	autoMinor := true
+	if in.AutoMinorVersionUpgrade != nil {
+		autoMinor = *in.AutoMinorVersionUpgrade
+	}
 
 	var totalClusters int64 = 1
 	switch {
@@ -319,19 +324,20 @@ func (s *Service) CreateReplicationGroup(
 						Port:       nodePort,
 					},
 				},
-				ClusterID:            memberID,
-				Engine:               spec.Engine,
-				EngineVersion:        spec.EngineVersion,
-				NodeType:             nodeType,
-				Status:               nodeStatus,
-				SubnetGroupName:      subnetGroupName,
-				ParameterGroupName:   paramGroupName,
-				ParameterApplyStatus: applyStatusInSync,
-				ReplicationGroupID:   groupID,
-				AuthToken:            authToken,
-				NumNodes:             1,
-				Port:                 port,
-				TransitEncryption:    transitEnc,
+				ClusterID:               memberID,
+				Engine:                  spec.Engine,
+				EngineVersion:           spec.EngineVersion,
+				NodeType:                nodeType,
+				Status:                  nodeStatus,
+				SubnetGroupName:         subnetGroupName,
+				ParameterGroupName:      paramGroupName,
+				ParameterApplyStatus:    applyStatusInSync,
+				ReplicationGroupID:      groupID,
+				AuthToken:               authToken,
+				NumNodes:                1,
+				Port:                    port,
+				TransitEncryption:       transitEnc,
+				AutoMinorVersionUpgrade: autoMinor,
 			}
 
 			if writeErr := storage.Write(tx, clusterKey(scope, memberID), clRecord); writeErr != nil {
@@ -373,6 +379,7 @@ func (s *Service) CreateReplicationGroup(
 			Port:                      port,
 			AutomaticFailover:         autoFailover,
 			MultiAZ:                   in.MultiAZEnabled != nil && *in.MultiAZEnabled,
+			AutoMinorVersionUpgrade:   autoMinor,
 			AuthTokenEnabled:          authToken != "",
 			TransitEncryptionEnabled:  transitEnc,
 			AtRestEncryptionEnabled:   in.AtRestEncryptionEnabled != nil && *in.AtRestEncryptionEnabled,
@@ -551,6 +558,10 @@ func (s *Service) ModifyReplicationGroup(
 				existing.AuthTokenEnabled = false
 				existing.AuthTokenLastModifiedDate = &now
 			}
+		}
+
+		if in.AutoMinorVersionUpgrade != nil {
+			existing.AutoMinorVersionUpgrade = *in.AutoMinorVersionUpgrade
 		}
 
 		// Manual failover to PrimaryClusterId
@@ -1102,5 +1113,6 @@ func (s *Service) toAPIReplicationGroup(
 		AuthTokenLastModifiedDate:  r.AuthTokenLastModifiedDate,
 		TransitEncryptionEnabled:   new(r.TransitEncryptionEnabled),
 		AtRestEncryptionEnabled:    new(r.AtRestEncryptionEnabled),
+		AutoMinorVersionUpgrade:    new(r.AutoMinorVersionUpgrade),
 	}
 }

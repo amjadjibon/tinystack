@@ -7191,7 +7191,8 @@
         "Tags",
         "Port",
         "PreferredAvailabilityZone",
-        "ReplicationGroupId"
+        "ReplicationGroupId",
+        "AutoMinorVersionUpgrade"
       ],
       "CreateCacheClusterResult": [
         "CacheCluster"
@@ -7223,7 +7224,8 @@
         "SecurityGroups",
         "ReplicationGroupId",
         "SnapshotRetentionLimit",
-        "ARN"
+        "ARN",
+        "AutoMinorVersionUpgrade"
       ],
       "CacheNode": [
         "CacheNodeId",
@@ -7244,7 +7246,8 @@
         "CacheParameterGroupName",
         "ApplyImmediately",
         "EngineVersion",
-        "SnapshotRetentionLimit"
+        "SnapshotRetentionLimit",
+        "AutoMinorVersionUpgrade"
       ],
       "ModifyCacheClusterResult": [
         "CacheCluster"
@@ -7473,7 +7476,8 @@
         "TransitEncryptionEnabled",
         "AtRestEncryptionEnabled",
         "DataTieringEnabled",
-        "ClusterMode"
+        "ClusterMode",
+        "AutoMinorVersionUpgrade"
       ],
       "CreateReplicationGroupResult": [
         "ReplicationGroup"
@@ -7506,7 +7510,8 @@
         "AtRestEncryptionEnabled",
         "ARN",
         "ReplicationGroupCreateTime",
-        "Engine"
+        "Engine",
+        "AutoMinorVersionUpgrade"
       ],
       "NodeGroup": [
         "NodeGroupId",
@@ -7539,7 +7544,8 @@
         "AuthToken",
         "AuthTokenUpdateStrategy",
         "TransitEncryptionEnabled",
-        "ClusterMode"
+        "ClusterMode",
+        "AutoMinorVersionUpgrade"
       ],
       "ModifyReplicationGroupResult": [
         "ReplicationGroup"

@@ -25,6 +25,7 @@ type CreateCacheClusterMessage struct {
 	Port                      *int64   `json:"Port,omitempty" query:"Port"`
 	PreferredAvailabilityZone *string  `json:"PreferredAvailabilityZone,omitempty" query:"PreferredAvailabilityZone"`
 	ReplicationGroupId        *string  `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
+	AutoMinorVersionUpgrade   *bool    `json:"AutoMinorVersionUpgrade,omitempty" query:"AutoMinorVersionUpgrade"`
 }
 
 type Endpoint struct {
@@ -69,6 +70,7 @@ type CacheCluster struct {
 	ReplicationGroupId        *string                    `json:"ReplicationGroupId,omitempty" query:"ReplicationGroupId"`
 	SnapshotRetentionLimit    *int64                     `json:"SnapshotRetentionLimit,omitempty" query:"SnapshotRetentionLimit"`
 	ARN                       *string                    `json:"ARN,omitempty" query:"ARN"`
+	AutoMinorVersionUpgrade   *bool                      `json:"AutoMinorVersionUpgrade,omitempty" query:"AutoMinorVersionUpgrade"`
 }
 
 type CreateCacheClusterResult struct {
@@ -96,6 +98,7 @@ type ModifyCacheClusterMessage struct {
 	ApplyImmediately        *bool    `json:"ApplyImmediately,omitempty" query:"ApplyImmediately"`
 	EngineVersion           *string  `json:"EngineVersion,omitempty" query:"EngineVersion"`
 	SnapshotRetentionLimit  *int64   `json:"SnapshotRetentionLimit,omitempty" query:"SnapshotRetentionLimit"`
+	AutoMinorVersionUpgrade *bool    `json:"AutoMinorVersionUpgrade,omitempty" query:"AutoMinorVersionUpgrade"`
 }
 
 type ModifyCacheClusterResult struct {
@@ -358,6 +361,7 @@ type CreateReplicationGroupMessage struct {
 	AtRestEncryptionEnabled     *bool    `json:"AtRestEncryptionEnabled,omitempty" query:"AtRestEncryptionEnabled"`
 	DataTieringEnabled          *bool    `json:"DataTieringEnabled,omitempty" query:"DataTieringEnabled"`
 	ClusterMode                 *string  `json:"ClusterMode,omitempty" query:"ClusterMode"`
+	AutoMinorVersionUpgrade     *bool    `json:"AutoMinorVersionUpgrade,omitempty" query:"AutoMinorVersionUpgrade"`
 }
 
 type NodeGroupMember struct {
@@ -397,6 +401,7 @@ type ReplicationGroup struct {
 	ARN                        *string     `json:"ARN,omitempty" query:"ARN"`
 	ReplicationGroupCreateTime *time.Time  `json:"ReplicationGroupCreateTime,omitempty" query:"ReplicationGroupCreateTime"`
 	Engine                     *string     `json:"Engine,omitempty" query:"Engine"`
+	AutoMinorVersionUpgrade    *bool       `json:"AutoMinorVersionUpgrade,omitempty" query:"AutoMinorVersionUpgrade"`
 }
 
 type CreateReplicationGroupResult struct {
@@ -431,6 +436,7 @@ type ModifyReplicationGroupMessage struct {
 	AuthTokenUpdateStrategy     *string  `json:"AuthTokenUpdateStrategy,omitempty" query:"AuthTokenUpdateStrategy"`
 	TransitEncryptionEnabled    *bool    `json:"TransitEncryptionEnabled,omitempty" query:"TransitEncryptionEnabled"`
 	ClusterMode                 *string  `json:"ClusterMode,omitempty" query:"ClusterMode"`
+	AutoMinorVersionUpgrade     *bool    `json:"AutoMinorVersionUpgrade,omitempty" query:"AutoMinorVersionUpgrade"`
 }
 
 type ModifyReplicationGroupResult struct {
