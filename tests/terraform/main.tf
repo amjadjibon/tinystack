@@ -1730,6 +1730,47 @@ resource "aws_iot_authorizer" "devices" {
   tags = local.tags
 }
 
+resource "aws_iot_role_alias" "devices" {
+  alias               = "devices"
+  role_arn            = aws_iam_role.lambda.arn
+  credential_duration = 900
+  tags                = local.tags
+}
+
+resource "aws_iot_provisioning_template" "fleet" {
+  name                  = "fleet"
+  description           = "Terraform test fleet of ${var.team}"
+  provisioning_role_arn = aws_iam_role.lambda.arn
+  enabled               = true
+  template_body = jsonencode({
+    Parameters = {
+      SerialNumber                = { Type = "String" }
+      "AWS::IoT::Certificate::Id" = { Type = "String" }
+    }
+    Resources = {
+      thing = {
+        Type       = "AWS::IoT::Thing"
+        Properties = { ThingName = { Ref = "SerialNumber" } }
+      }
+      certificate = {
+        Type       = "AWS::IoT::Certificate"
+        Properties = { CertificateId = { Ref = "AWS::IoT::Certificate::Id" }, Status = "ACTIVE" }
+      }
+    }
+  })
+  tags = local.tags
+}
+
+resource "aws_iot_indexing_configuration" "fleet" {
+  thing_indexing_configuration {
+    thing_indexing_mode              = "REGISTRY_AND_SHADOW"
+    thing_connectivity_indexing_mode = "STATUS"
+  }
+  thing_group_indexing_configuration {
+    thing_group_indexing_mode = "ON"
+  }
+}
+
 data "aws_iot_endpoint" "data" {
   endpoint_type = "iot:Data-ATS"
 }

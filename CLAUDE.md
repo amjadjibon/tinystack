@@ -505,7 +505,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `aws/iot/endpoint/<prefix>`).
   `policy.go` accepts only the policy subset TinyStack will evaluate (no `Principal`; `StringEquals`, `StringLike`, and
   `Bool` conditions; known policy variables), failing others with `MalformedPolicyException`. Billing groups, dynamic
-  groups, CA auto-registration, and certificate transfers fail explicitly.
+  groups, CA auto-registration, certificate transfers, and IoT commands fail explicitly.
   MQTT goes through an embedded `github.com/mochi-mqtt/server/v2` broker per account and Region (`broker.go`, started on
   first use, stopped by `Stop`, deferred and a shutdown hook in `start.go`), which serves each connection with
   `EstablishConnection`: the gateway upgrades `GET /mqtt` (`gateway/mqtt.go`, `Server.UseMQTT`; presigned SigV4 for
@@ -566,7 +566,12 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   single-use ownership token under `…/iot/ownership-token/<token>`) and
   `$aws/provisioning-templates/<name>/provision/json`, which calls the template's pre-provisioning hook through the
   `catalog.Caller`, then creates or updates the thing (and its groups), activates and attaches the certificate, and
-  attaches the policies through the service's own operations.
+  attaches the policies through the service's own operations. Fleet indexing (`indexing.go`) keeps its configuration under
+  `…/iot/indexing/config` and builds no index: SearchIndex reads every thing (or thing group) in one transaction,
+  flattens its registry fields, classic and filtered named shadows (with `hasDelta` and `version`), and broker
+  connectivity into dotted fields, and evaluates the query language (`field:value` with `*`/`?` wildcards, quoted
+  values, `[a TO b]`/`{a TO b}` ranges, `>`/`>=`/`<`/`<=`, AND or juxtaposition, OR, NOT, and parentheses);
+  aggregations, Device Defender, and geolocation filters fail explicitly.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for

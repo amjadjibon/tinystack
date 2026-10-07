@@ -9734,7 +9734,12 @@
       "CreateProvisioningTemplateVersion",
       "DescribeProvisioningTemplateVersion",
       "ListProvisioningTemplateVersions",
-      "DeleteProvisioningTemplateVersion"
+      "DeleteProvisioningTemplateVersion",
+      "UpdateIndexingConfiguration",
+      "GetIndexingConfiguration",
+      "DescribeIndex",
+      "ListIndices",
+      "SearchIndex"
     ],
     "shapes": {
       "CreateThingRequest": [
@@ -10859,7 +10864,91 @@
         "templateName",
         "versionId"
       ],
-      "DeleteProvisioningTemplateVersionResponse": []
+      "DeleteProvisioningTemplateVersionResponse": [],
+      "UpdateIndexingConfigurationRequest": [
+        "thingIndexingConfiguration",
+        "thingGroupIndexingConfiguration"
+      ],
+      "ThingIndexingConfiguration": [
+        "thingIndexingMode",
+        "thingConnectivityIndexingMode",
+        "deviceDefenderIndexingMode",
+        "namedShadowIndexingMode",
+        "managedFields",
+        "customFields",
+        "filter"
+      ],
+      "Field": [
+        "name",
+        "type"
+      ],
+      "IndexingFilter": [
+        "namedShadowNames"
+      ],
+      "ThingGroupIndexingConfiguration": [
+        "thingGroupIndexingMode",
+        "managedFields",
+        "customFields"
+      ],
+      "UpdateIndexingConfigurationResponse": [],
+      "GetIndexingConfigurationRequest": [],
+      "GetIndexingConfigurationResponse": [
+        "thingIndexingConfiguration",
+        "thingGroupIndexingConfiguration"
+      ],
+      "DescribeIndexRequest": [
+        "indexName"
+      ],
+      "DescribeIndexResponse": [
+        "indexName",
+        "indexStatus",
+        "schema"
+      ],
+      "ListIndicesRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "ListIndicesResponse": [
+        "indexNames",
+        "nextToken"
+      ],
+      "SearchIndexRequest": [
+        "indexName",
+        "queryString",
+        "nextToken",
+        "maxResults",
+        "queryVersion"
+      ],
+      "SearchIndexResponse": [
+        "nextToken",
+        "things",
+        "thingGroups"
+      ],
+      "ThingDocument": [
+        "thingName",
+        "thingId",
+        "thingTypeName",
+        "thingGroupNames",
+        "attributes",
+        "shadow",
+        "connectivity"
+      ],
+      "ThingConnectivity": [
+        "connected",
+        "timestamp",
+        "disconnectReason",
+        "keepAliveDuration",
+        "cleanSession",
+        "sessionExpiry",
+        "clientId"
+      ],
+      "ThingGroupDocument": [
+        "thingGroupName",
+        "thingGroupId",
+        "thingGroupDescription",
+        "attributes",
+        "parentGroupNames"
+      ]
     }
   },
   "iotdataplane": {

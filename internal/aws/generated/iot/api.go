@@ -1421,6 +1421,109 @@ type DeleteProvisioningTemplateVersionRequest struct {
 type DeleteProvisioningTemplateVersionResponse struct {
 }
 
+type Field struct {
+	Name *string `json:"name,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
+type IndexingFilter struct {
+	NamedShadowNames []string `json:"namedShadowNames,omitempty"`
+}
+
+type ThingIndexingConfiguration struct {
+	ThingIndexingMode             *string         `json:"thingIndexingMode,omitempty"`
+	ThingConnectivityIndexingMode *string         `json:"thingConnectivityIndexingMode,omitempty"`
+	DeviceDefenderIndexingMode    *string         `json:"deviceDefenderIndexingMode,omitempty"`
+	NamedShadowIndexingMode       *string         `json:"namedShadowIndexingMode,omitempty"`
+	ManagedFields                 []Field         `json:"managedFields,omitempty"`
+	CustomFields                  []Field         `json:"customFields,omitempty"`
+	Filter                        *IndexingFilter `json:"filter,omitempty"`
+}
+
+type ThingGroupIndexingConfiguration struct {
+	ThingGroupIndexingMode *string `json:"thingGroupIndexingMode,omitempty"`
+	ManagedFields          []Field `json:"managedFields,omitempty"`
+	CustomFields           []Field `json:"customFields,omitempty"`
+}
+
+type UpdateIndexingConfigurationRequest struct {
+	ThingIndexingConfiguration      *ThingIndexingConfiguration      `json:"thingIndexingConfiguration,omitempty"`
+	ThingGroupIndexingConfiguration *ThingGroupIndexingConfiguration `json:"thingGroupIndexingConfiguration,omitempty"`
+}
+
+type UpdateIndexingConfigurationResponse struct {
+}
+
+type GetIndexingConfigurationRequest struct {
+}
+
+type GetIndexingConfigurationResponse struct {
+	ThingIndexingConfiguration      *ThingIndexingConfiguration      `json:"thingIndexingConfiguration,omitempty"`
+	ThingGroupIndexingConfiguration *ThingGroupIndexingConfiguration `json:"thingGroupIndexingConfiguration,omitempty"`
+}
+
+type DescribeIndexRequest struct {
+	IndexName *string `json:"-"`
+}
+
+type DescribeIndexResponse struct {
+	IndexName   *string `json:"indexName,omitempty"`
+	IndexStatus *string `json:"indexStatus,omitempty"`
+	Schema      *string `json:"schema,omitempty"`
+}
+
+type ListIndicesRequest struct {
+	NextToken  *string `json:"-"`
+	MaxResults *int64  `json:"-"`
+}
+
+type ListIndicesResponse struct {
+	IndexNames []string `json:"indexNames,omitempty"`
+	NextToken  *string  `json:"nextToken,omitempty"`
+}
+
+type SearchIndexRequest struct {
+	IndexName    *string `json:"indexName,omitempty"`
+	QueryString  *string `json:"queryString,omitempty"`
+	NextToken    *string `json:"nextToken,omitempty"`
+	MaxResults   *int64  `json:"maxResults,omitempty"`
+	QueryVersion *string `json:"queryVersion,omitempty"`
+}
+
+type ThingConnectivity struct {
+	Connected         *bool   `json:"connected,omitempty"`
+	Timestamp         *int64  `json:"timestamp,omitempty"`
+	DisconnectReason  *string `json:"disconnectReason,omitempty"`
+	KeepAliveDuration *int64  `json:"keepAliveDuration,omitempty"`
+	CleanSession      *bool   `json:"cleanSession,omitempty"`
+	SessionExpiry     *int64  `json:"sessionExpiry,omitempty"`
+	ClientId          *string `json:"clientId,omitempty"`
+}
+
+type ThingDocument struct {
+	ThingName       *string            `json:"thingName,omitempty"`
+	ThingId         *string            `json:"thingId,omitempty"`
+	ThingTypeName   *string            `json:"thingTypeName,omitempty"`
+	ThingGroupNames []string           `json:"thingGroupNames,omitempty"`
+	Attributes      map[string]string  `json:"attributes,omitempty"`
+	Shadow          *string            `json:"shadow,omitempty"`
+	Connectivity    *ThingConnectivity `json:"connectivity,omitempty"`
+}
+
+type ThingGroupDocument struct {
+	ThingGroupName        *string           `json:"thingGroupName,omitempty"`
+	ThingGroupId          *string           `json:"thingGroupId,omitempty"`
+	ThingGroupDescription *string           `json:"thingGroupDescription,omitempty"`
+	Attributes            map[string]string `json:"attributes,omitempty"`
+	ParentGroupNames      []string          `json:"parentGroupNames,omitempty"`
+}
+
+type SearchIndexResponse struct {
+	NextToken   *string              `json:"nextToken,omitempty"`
+	Things      []ThingDocument      `json:"things,omitempty"`
+	ThingGroups []ThingGroupDocument `json:"thingGroups,omitempty"`
+}
+
 type API interface {
 	CreateThing(context.Context, *CreateThingRequest) (*CreateThingResponse, error)
 	DescribeThing(context.Context, *DescribeThingRequest) (*DescribeThingResponse, error)
@@ -1520,10 +1623,15 @@ type API interface {
 	DescribeProvisioningTemplateVersion(context.Context, *DescribeProvisioningTemplateVersionRequest) (*DescribeProvisioningTemplateVersionResponse, error)
 	ListProvisioningTemplateVersions(context.Context, *ListProvisioningTemplateVersionsRequest) (*ListProvisioningTemplateVersionsResponse, error)
 	DeleteProvisioningTemplateVersion(context.Context, *DeleteProvisioningTemplateVersionRequest) (*DeleteProvisioningTemplateVersionResponse, error)
+	UpdateIndexingConfiguration(context.Context, *UpdateIndexingConfigurationRequest) (*UpdateIndexingConfigurationResponse, error)
+	GetIndexingConfiguration(context.Context, *GetIndexingConfigurationRequest) (*GetIndexingConfigurationResponse, error)
+	DescribeIndex(context.Context, *DescribeIndexRequest) (*DescribeIndexResponse, error)
+	ListIndices(context.Context, *ListIndicesRequest) (*ListIndicesResponse, error)
+	SearchIndex(context.Context, *SearchIndexRequest) (*SearchIndexResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iot", SigningName: "iot", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CertificateConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CertificateStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 406}, "CertificateValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictingResourceUpdateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStateTransitionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 410}, "MalformedPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RegistrationCodeValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "SqlParseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "VersionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "VersionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iot", SigningName: "iot", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CertificateConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CertificateStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 406}, "CertificateValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictingResourceUpdateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "IndexNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidQueryException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStateTransitionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 410}, "MalformedPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RegistrationCodeValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "SqlParseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "VersionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "VersionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}}, Operations: map[string]catalog.Operation{
 		"CreateThing": {Name: "CreateThing", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AttributePayload": catalog.MemberBinding{Location: "document", Name: "attributePayload"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}, "ThingTypeName": catalog.MemberBinding{Location: "document", Name: "thingTypeName"}}, Output: map[string]catalog.MemberBinding{"ThingArn": catalog.MemberBinding{Location: "document", Name: "thingArn"}, "ThingId": catalog.MemberBinding{Location: "document", Name: "thingId"}, "ThingName": catalog.MemberBinding{Location: "document", Name: "thingName"}}, Method: "POST", URI: "/things/{thingName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateThingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateThing(ctx, input.(*CreateThingRequest))
 		}},
@@ -1815,6 +1923,21 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteProvisioningTemplateVersion": {Name: "DeleteProvisioningTemplateVersion", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateName": catalog.MemberBinding{Location: "label", Name: "templateName"}, "VersionId": catalog.MemberBinding{Location: "label", Name: "versionId"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/provisioning-templates/{templateName}/versions/{versionId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteProvisioningTemplateVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteProvisioningTemplateVersion(ctx, input.(*DeleteProvisioningTemplateVersionRequest))
+		}},
+		"UpdateIndexingConfiguration": {Name: "UpdateIndexingConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ThingGroupIndexingConfiguration": catalog.MemberBinding{Location: "document", Name: "thingGroupIndexingConfiguration"}, "ThingIndexingConfiguration": catalog.MemberBinding{Location: "document", Name: "thingIndexingConfiguration"}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/indexing/config", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateIndexingConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateIndexingConfiguration(ctx, input.(*UpdateIndexingConfigurationRequest))
+		}},
+		"GetIndexingConfiguration": {Name: "GetIndexingConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{}, Output: map[string]catalog.MemberBinding{"ThingGroupIndexingConfiguration": catalog.MemberBinding{Location: "document", Name: "thingGroupIndexingConfiguration"}, "ThingIndexingConfiguration": catalog.MemberBinding{Location: "document", Name: "thingIndexingConfiguration"}}, Method: "GET", URI: "/indexing/config", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetIndexingConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetIndexingConfiguration(ctx, input.(*GetIndexingConfigurationRequest))
+		}},
+		"DescribeIndex": {Name: "DescribeIndex", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"IndexName": catalog.MemberBinding{Location: "label", Name: "indexName"}}, Output: map[string]catalog.MemberBinding{"IndexName": catalog.MemberBinding{Location: "document", Name: "indexName"}, "IndexStatus": catalog.MemberBinding{Location: "document", Name: "indexStatus"}, "Schema": catalog.MemberBinding{Location: "document", Name: "schema"}}, Method: "GET", URI: "/indices/{indexName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeIndexRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeIndex(ctx, input.(*DescribeIndexRequest))
+		}},
+		"ListIndices": {Name: "ListIndices", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}}, Output: map[string]catalog.MemberBinding{"IndexNames": catalog.MemberBinding{Location: "document", Name: "indexNames"}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}}, Method: "GET", URI: "/indices", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListIndicesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListIndices(ctx, input.(*ListIndicesRequest))
+		}},
+		"SearchIndex": {Name: "SearchIndex", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"IndexName": catalog.MemberBinding{Location: "document", Name: "indexName"}, "MaxResults": catalog.MemberBinding{Location: "document", Name: "maxResults"}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}, "QueryString": catalog.MemberBinding{Location: "document", Name: "queryString"}, "QueryVersion": catalog.MemberBinding{Location: "document", Name: "queryVersion"}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}, "ThingGroups": catalog.MemberBinding{Location: "document", Name: "thingGroups"}, "Things": catalog.MemberBinding{Location: "document", Name: "things"}}, Method: "POST", URI: "/indices/search", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &SearchIndexRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SearchIndex(ctx, input.(*SearchIndexRequest))
 		}},
 	}}
 }
