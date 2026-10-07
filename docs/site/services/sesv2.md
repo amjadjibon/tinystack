@@ -17,10 +17,7 @@ Render and inspect email workflows without sending external mail.
 
 ## Implemented behavior
 
-- Identities are verified immediately; templates and configuration sets are stored.
-- SendEmail and bulk email validate senders and render a Handlebars subset.
-- Delivery records contain messages; configuration set events reach SNS, EventBridge and Firehose.
-- Mailbox simulator addresses generate bounce/complaint behavior.
+See the [implemented feature catalogue](catalogue.md#ses-v2) for this service's capabilities.
 
 ## Limitations and future work
 

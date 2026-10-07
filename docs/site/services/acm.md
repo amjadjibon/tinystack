@@ -17,10 +17,7 @@ Issue or import local certificates and exercise certificate lifecycle APIs.
 
 ## Implemented behavior
 
-- Certificate request, describe, listing, deletion and tags.
-- Import/get/export, encrypted exported private keys and options.
-- Requests issue immediately through a TinyStack certificate authority.
-- Issuing helpers are shared with IoT.
+See the [implemented feature catalogue](catalogue.md#certificate-manager) for this service's capabilities.
 
 ## Limitations and future work
 

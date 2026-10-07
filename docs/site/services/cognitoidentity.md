@@ -17,10 +17,7 @@ Link supported logins to identities and exchange them for local STS role credent
 
 ## Implemented behavior
 
-- Identity pools, identities, role mappings, developer tokens and login linking.
-- Cognito user-pool and configured OIDC logins.
-- Authenticated and unauthenticated role selection.
-- Credential exchange through STS AssumeRoleWithWebIdentity.
+See the [implemented feature catalogue](catalogue.md#cognito-identity-pools) for this service's capabilities.
 
 ## Limitations and future work
 

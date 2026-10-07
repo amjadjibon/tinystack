@@ -15,20 +15,31 @@ create a PostgreSQL DB instance, obtain its endpoint, connect to a real local da
 - [ ] Data lifecycle — Decide whether a persistent TinyStack restart reconnects to the same database volume. Delete removes runtime and data unless a documented retained snapshot option is chosen.
 - [ ] Later features — Read replicas, snapshots/restore, parameter groups, subnet groups, failover, IAM database authentication, and non-PostgreSQL engines are separate slices.
 
-Operation names are proposal vocabulary. Before implementation, validate them against the upstream Smithy model
-and pin that model through the synchronizer; metadata HTTP endpoints require their own wire contract.
+## Integration decisions
+
+Management records are account/region-scoped, but SQL data lives in the
+underlying engine. The Docker/runtime adapter owns container, volume, port,
+startup, and shutdown operations; the RDS provider owns AWS validation and
+state transitions. Never run container operations within a store transaction.
+Create must either publish a usable endpoint or end in a visible failure state
+with cleanup. A remote Docker daemon may make `localhost` endpoints unusable;
+endpoint selection is part of runtime configuration.
+
+## Service-specific acceptance checks
+
+Create an instance with the AWS SDK, wait for availability, connect through
+PostgreSQL, create and read a table, restart TinyStack, then delete and verify
+cleanup. Test duplicate identifiers, invalid credentials/options, two accounts
+with the same ID, failed engine startup, port allocation, and graceful shutdown.
+Compare RDS management Query responses with AWS fixtures.
+
 
 ## Decisions before implementation
 
-- Select the operations and members needed for one usable SDK or infrastructure workflow.
-- Define account/region ownership, persistence, restart behavior, and explicit unsupported-input errors.
-- Decide whether calls manage records, execute through an existing TinyStack service, or require a real engine.
-- For engine-backed behavior, define image/version, readiness, endpoint allocation, cleanup, and data retention.
+Use the shared [implementation decisions](../index.md#decisions-before-implementation).
 
 ## Acceptance criteria
 
-Exercise the first slice through an AWS SDK and raw wire requests. Cover modeled success and error responses,
-duplicate/missing resources, pagination where relevant, account/region isolation, and restart behavior.
-Engine-backed services must also demonstrate a usable data-plane endpoint and failed-startup cleanup.
+Apply the shared [acceptance criteria](../index.md#acceptance-criteria) alongside any service-specific checks above.
 
 Follow [adding a service](../../development/adding-services.md). See the [roadmap](../index.md) for shared priorities.

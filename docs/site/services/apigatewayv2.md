@@ -17,9 +17,7 @@ Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT aut
 
 ## Implemented behavior
 
-- API, route, integration, deployment, stage and authorizer CRUD.
-- Auto-deploy stages and Lambda proxy payload formats 1.0 and 2.0.
-- HTTP forwarding, JWT and Lambda authorizers, access logs.
+See the [implemented feature catalogue](catalogue.md#api-gateway-http-apis) for this service's capabilities.
 
 ## Limitations and future work
 

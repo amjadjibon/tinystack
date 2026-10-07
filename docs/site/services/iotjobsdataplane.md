@@ -17,9 +17,7 @@ Let devices claim, inspect, and update snapshot job executions.
 
 ## Implemented behavior
 
-- Pending execution listing, start-next, describe and update.
-- Same implementation serves the MQTT jobs topics.
-- Execution versions reject stale updates with VersionConflictException (HTTP 409).
+See the [implemented feature catalogue](catalogue.md#iot-jobs-data-plane) for this service's capabilities.
 
 ## Limitations and future work
 

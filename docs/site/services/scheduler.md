@@ -17,9 +17,7 @@ Run one-time, rate, and cron schedules against implemented services.
 
 ## Implemented behavior
 
-- Schedule groups and schedule CRUD with time-zone handling.
-- Background runner claims due schedules and invokes targets in-process.
-- Failed deliveries can reach a target SQS dead-letter queue.
+See the [implemented feature catalogue](catalogue.md#eventbridge-scheduler) for this service's capabilities.
 
 ## Limitations and future work
 

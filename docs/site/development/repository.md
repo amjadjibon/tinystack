@@ -29,5 +29,5 @@
 | [docs/catalog.json](https://github.com/amjadjibon/tinystack/blob/main/docs/catalog.json) | Curated service behavior, gaps and future proposals |
 | [scripts/docs.py](https://github.com/amjadjibon/tinystack/blob/main/scripts/docs.py) | Reproducible support pages, navigation and resource registry docs |
 
-`bin/`, `ui/dist/`, `.venv-docs/` and `site/` are build artifacts. The older `docs/DESIGN.md`, implementation briefs,
-and short design notes are local working material; the published site uses current code/profile-derived coverage.
+`bin/`, `ui/dist/`, `.venv-docs/` and `site/` are build artifacts. Product documentation lives in `docs/site/`;
+internal plans and reviews belong under `.spec/`. See the [documentation workflow](documentation.md) before adding pages.

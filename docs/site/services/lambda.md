@@ -17,11 +17,7 @@ Manage functions and execute them in Docker using AWS runtime base images.
 
 ## Implemented behavior
 
-- Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags.
-- Synchronous and asynchronous invocation, retries and destinations.
-- SQS, DynamoDB Streams and Kinesis event source mappings.
-- Resource policies, function URLs and concurrency settings.
-- Logs flow into CloudWatch Logs; tests use an in-process fake runtime.
+See the [implemented feature catalogue](catalogue.md#lambda) for this service's capabilities.
 
 ## Limitations and future work
 

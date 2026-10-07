@@ -17,10 +17,7 @@ Store versioned parameters, labels, tags, and hierarchy queries.
 
 ## Implemented behavior
 
-- String, StringList and SecureString parameter records.
-- Get by name/path, history, labels and version-aware updates.
-- Public EC2 image parameters supplied from the local catalogue.
-- Customer-managed KMS key usability checks.
+See the [implemented feature catalogue](catalogue.md#ssm-parameter-store) for this service's capabilities.
 
 ## Limitations and future work
 

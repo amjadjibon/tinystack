@@ -17,10 +17,7 @@ Query local S3 data through the Glue catalog using an in-memory SQLite SQL engin
 
 ## Implemented behavior
 
-- Workgroups, named queries, query execution metadata, pagination and client tokens.
-- SELECT queries over CSV, delimited text and JSON, including gzip data.
-- Glue catalog DDL, SHOW, DESCRIBE, MSCK REPAIR and partition changes.
-- Query results are retained and written to the configured S3 output location.
+See the [implemented feature catalogue](catalogue.md#athena) for this service's capabilities.
 
 ## Limitations and future work
 

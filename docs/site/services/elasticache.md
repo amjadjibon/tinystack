@@ -17,16 +17,14 @@ Manage Redis, Valkey, and Memcached resources with an optional Docker cache runt
 
 ## Implemented behavior
 
-- Cache clusters, replication groups, serverless caches, subnet groups and parameter groups.
-- Engine metadata, tags and lifecycle events.
-- Docker nodes expose allocated host ports and become available after readiness probes.
-- Records mode returns metadata without starting cache processes.
+See the [implemented feature catalogue](catalogue.md#elasticache) for this service's capabilities.
 
 ## Limitations and future work
 
 - Cache data is lost when containers are removed on shutdown or restart; persistent mode retains metadata only.
 - Host ports can change when nodes restart.
 - Production networking, topology and failover behavior are not reproduced.
+- Multi-shard cluster mode, snapshots/backups and RBAC users/user groups are outside the subset.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

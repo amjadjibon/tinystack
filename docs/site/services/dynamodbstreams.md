@@ -17,9 +17,7 @@ Read the stream records written atomically with DynamoDB item changes.
 
 ## Implemented behavior
 
-- List and describe streams, obtain shard iterators, and read records.
-- Stream view types follow the table configuration.
-- Lambda event source mappings consume stream records in-process.
+See the [implemented feature catalogue](catalogue.md#dynamodb-streams) for this service's capabilities.
 
 ## Limitations and future work
 

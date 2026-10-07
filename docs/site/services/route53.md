@@ -17,9 +17,7 @@ Manage hosted zones and record sets without running a DNS server.
 
 ## Implemented behavior
 
-- Public and private hosted zones, record changes and pagination.
-- Routing policy and alias metadata, VPC associations, health-check records and tags.
-- Private zone VPCs are checked with local EC2.
+See the [implemented feature catalogue](catalogue.md#route-53) for this service's capabilities.
 
 ## Limitations and future work
 

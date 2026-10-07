@@ -17,13 +17,7 @@ Connect devices and manage registry, policies, rules, jobs, provisioning, and fl
 
 ## Implemented behavior
 
-- Things, types, static group trees, certificates, registered CAs, policy versions and attachments.
-- Per-account/region MQTT broker over WebSocket, optional TLS and plain TCP.
-- Topic SQL, Basic Ingest, error actions and local service destinations.
-- Custom Lambda authorizers and default authorizer selection.
-- Snapshot jobs, MQTT job notifications and credentials-provider role aliases.
-- Fleet provisioning templates with ownership tokens and optional hooks.
-- Fleet indexing queries over registry, shadows and connectivity.
+See the [implemented feature catalogue](catalogue.md#iot-core) for this service's capabilities.
 
 ## Limitations and future work
 

@@ -17,9 +17,7 @@ Manage application and network load balancer metadata and invoke HTTP listener b
 
 ## Implemented behavior
 
-- Load balancers, target groups, targets, listeners, listener rules, attributes and tags.
-- Fixed responses, redirects, Lambda targets and HTTP IP targets.
-- Related subnet, security group and certificate checks through local services.
+See the [implemented feature catalogue](catalogue.md#elastic-load-balancing-v2) for this service's capabilities.
 
 ## Limitations and future work
 

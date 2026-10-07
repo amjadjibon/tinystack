@@ -17,10 +17,7 @@ Manage clusters, task definitions, tasks, and services with optional Docker exec
 
 ## Implemented behavior
 
-- Clusters, task definition revisions, service desired count and task lifecycle.
-- Capacity provider metadata and tags.
-- Optional Docker runner starts containers, exposes host ports and captures awslogs output.
-- Services replace tasks when essential containers exit.
+See the [implemented feature catalogue](catalogue.md#ecs) for this service's capabilities.
 
 ## Limitations and future work
 

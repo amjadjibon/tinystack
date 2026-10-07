@@ -589,6 +589,8 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 Keep the implemented service/feature catalogue current with every behavior change: edit `docs/catalog.json`
 (service `features`, `gaps`, and `execution`, or `platform_features`), run `task docs:generate`, then
 `task docs:check`. The published inventory is `docs/site/services/catalogue.md`; future proposals stay in the roadmap.
+Keep product docs under `docs/site/`. Link to the canonical feature catalogue and shared roadmap criteria instead
+of copying them into service pages or creating a parallel `docs/services/` design tree. Internal plans live in `.spec/`.
 
 1. **Operation:** add it to the service's `operations` in `generator/model/profile.json` and add the input and output
    members it needs under `shapes`. Run `task generate`, then implement the new `API` method in `internal/services/<service>`.

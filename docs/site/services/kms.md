@@ -17,10 +17,7 @@ Exercise local cryptographic key and alias workflows.
 
 ## Implemented behavior
 
-- Symmetric AES, HMAC and selected RSA/ECC key types.
-- Encrypt/decrypt, re-encryption, data keys, signing and public-key retrieval.
-- Key lifecycle, aliases, policies, grants and tags.
-- SSM, Secrets Manager and SQS validate usable customer-managed keys.
+See the [implemented feature catalogue](catalogue.md#kms) for this service's capabilities.
 
 ## Limitations and future work
 

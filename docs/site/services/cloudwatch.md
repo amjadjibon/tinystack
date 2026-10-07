@@ -17,10 +17,7 @@ Record metrics, evaluate alarms, and exercise local monitoring integrations.
 
 ## Implemented behavior
 
-- Metrics, statistics, percentile queries and a metric-math subset.
-- Metric/composite alarms, alarm history and dashboards.
-- Background evaluation and state-change EventBridge events.
-- SNS, Lambda and Auto Scaling actions through the caller.
+See the [implemented feature catalogue](catalogue.md#cloudwatch-metrics-and-alarms) for this service's capabilities.
 
 ## Limitations and future work
 

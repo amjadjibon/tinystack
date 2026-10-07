@@ -17,10 +17,7 @@ Manage users and clients, authenticate locally, and issue pool-signed JWTs.
 
 ## Implemented behavior
 
-- User pools, app clients, users, groups, attributes and resource servers.
-- Password and SRP flows, refresh tokens and pool RS256 JWTs.
-- JWKS/OpenID configuration endpoints and client-credentials OAuth tokens.
-- Selected Lambda triggers and inspectable verification/invitation messages.
+See the [implemented feature catalogue](catalogue.md#cognito-user-pools) for this service's capabilities.
 
 ## Limitations and future work
 

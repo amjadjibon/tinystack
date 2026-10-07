@@ -17,11 +17,7 @@ Use queues with visibility timeouts, long polling, FIFO ordering, and dead-lette
 
 ## Implemented behavior
 
-- Queue lifecycle, attributes and tags.
-- Send, receive, delete, visibility updates and batch operations.
-- Long polling waits outside transactions.
-- FIFO deduplication and group ordering.
-- Dead-letter queues and message move tasks.
+See the [implemented feature catalogue](catalogue.md#sqs) for this service's capabilities.
 
 ## Limitations and future work
 

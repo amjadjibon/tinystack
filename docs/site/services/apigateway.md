@@ -17,10 +17,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 
 ## Implemented behavior
 
-- Resource trees, methods, responses, integrations, deployments and stages.
-- Lambda and HTTP proxy execution through gateway data routes.
-- Lambda and Cognito authorizers, API keys and usage plan metadata.
-- Custom domains, base path mappings and access logs.
+See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for this service's capabilities.
 
 ## Limitations and future work
 

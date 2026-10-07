@@ -17,9 +17,7 @@ Write and read ordered shard records and feed local Lambda or Firehose consumers
 
 ## Implemented behavior
 
-- Streams, shards, consumers, shard iterators and record CRUD APIs.
-- Split and merge shard metadata with stable record sequence ordering.
-- Lambda mappings and Firehose sources read records in-process.
+See the [implemented feature catalogue](catalogue.md#kinesis-data-streams) for this service's capabilities.
 
 ## Limitations and future work
 

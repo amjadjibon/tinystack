@@ -17,10 +17,7 @@ Store account-wide identity resources and issue user access keys.
 
 ## Implemented behavior
 
-- Roles, users, groups, membership and instance profiles.
-- Inline and managed policies and policy attachments.
-- OpenID Connect providers and access key lifecycle.
-- Active IAM keys participate in gateway credential resolution.
+See the [implemented feature catalogue](catalogue.md#iam) for this service's capabilities.
 
 ## Limitations and future work
 

@@ -17,10 +17,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 
 ## Implemented behavior
 
-- VPCs, subnets, security groups, internet/NAT gateways and Elastic IPs.
-- Route tables, network ACLs, VPC endpoints and derived network interfaces.
-- Key pairs, instance records, instance profile associations and launch templates.
-- Fixed regional image catalogue and tags.
+See the [implemented feature catalogue](catalogue.md#ec2) for this service's capabilities.
 
 ## Limitations and future work
 

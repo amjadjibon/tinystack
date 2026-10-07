@@ -17,10 +17,7 @@ Issue local session credentials and inspect the resolved caller identity.
 
 ## Implemented behavior
 
-- GetCallerIdentity, AssumeRole, GetSessionToken and AssumeRoleWithWebIdentity.
-- Subset of role trust policies with AWS, Federated and Service principals.
-- Session credentials feed signature verification and account resolution.
-- In-process service role assumption supports the IoT credentials provider.
+See the [implemented feature catalogue](catalogue.md#sts) for this service's capabilities.
 
 ## Limitations and future work
 

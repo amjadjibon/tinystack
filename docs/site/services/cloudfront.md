@@ -17,9 +17,7 @@ Manage distribution and origin access control metadata for infrastructure tests.
 
 ## Implemented behavior
 
-- Distribution lifecycle and ETag-based updates.
-- Alias uniqueness, caller-reference idempotency and tags.
-- Origin access control lifecycle.
+See the [implemented feature catalogue](catalogue.md#cloudfront) for this service's capabilities.
 
 ## Limitations and future work
 

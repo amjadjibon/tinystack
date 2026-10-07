@@ -17,10 +17,7 @@ Manage repositories and push or pull images through a local Docker Registry API.
 
 ## Implemented behavior
 
-- Repository lifecycle, tags, policies and lifecycle rules.
-- Images, manifests, tags, layer uploads and download URLs.
-- Authorization tokens scope Docker Registry requests.
-- The gateway serves registry requests at /v2/.
+See the [implemented feature catalogue](catalogue.md#ecr) for this service's capabilities.
 
 ## Limitations and future work
 

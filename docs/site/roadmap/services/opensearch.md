@@ -15,20 +15,28 @@ create one OpenSearch domain, obtain its endpoint, index a document, search it, 
 - [ ] Persistence — Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.
 - [ ] Later features — Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.
 
-Operation names are proposal vocabulary. Before implementation, validate them against the upstream Smithy model
-and pin that model through the synchronizer; metadata HTTP endpoints require their own wire contract.
+## Integration decisions
+
+Domain metadata is regional and account-scoped. The provider handles AWS
+management requests; the engine handles indexing and search. Do not claim AWS
+security or cluster topology features from an unconfigured single container.
+Proxy/routing must select a domain without leaking one account’s index to
+another. Runtime launch and health checks happen outside storage transactions.
+
+## Service-specific acceptance checks
+
+Create a domain with an AWS SDK, wait until available, index and search through
+the returned endpoint, restart, and delete. Verify index isolation, unsupported
+configuration errors, failed launch cleanup, memory/port limits, tags, and
+management response parity against AWS captures.
+
 
 ## Decisions before implementation
 
-- Select the operations and members needed for one usable SDK or infrastructure workflow.
-- Define account/region ownership, persistence, restart behavior, and explicit unsupported-input errors.
-- Decide whether calls manage records, execute through an existing TinyStack service, or require a real engine.
-- For engine-backed behavior, define image/version, readiness, endpoint allocation, cleanup, and data retention.
+Use the shared [implementation decisions](../index.md#decisions-before-implementation).
 
 ## Acceptance criteria
 
-Exercise the first slice through an AWS SDK and raw wire requests. Cover modeled success and error responses,
-duplicate/missing resources, pagination where relevant, account/region isolation, and restart behavior.
-Engine-backed services must also demonstrate a usable data-plane endpoint and failed-startup cleanup.
+Apply the shared [acceptance criteria](../index.md#acceptance-criteria) alongside any service-specific checks above.
 
 Follow [adding a service](../../development/adding-services.md). See the [roadmap](../index.md) for shared priorities.

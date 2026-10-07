@@ -42,4 +42,20 @@ Athena is already implemented using SQLite; it is not a future DuckDB service.
 4. Runtime cleanup and restart behavior are documented and tested where relevant.
 5. Infrastructure support, diagnostics, the console catalogue, and the docs reflect the delivered scope.
 
+## Decisions before implementation
+
+- Validate proposed operation names against the upstream Smithy model and pin it through the synchronizer.
+  Metadata HTTP endpoints require their own wire contract.
+- Select the operations and members needed for one usable SDK or infrastructure workflow.
+- Define account/region ownership, persistence, restart behavior, and explicit unsupported-input errors.
+- Decide whether calls manage records, execute through an existing TinyStack service, or require a real engine.
+- For engine-backed behavior, define image/version, readiness, endpoint allocation, cleanup, and data retention.
+
+## Acceptance criteria
+
+Exercise the first slice through an AWS SDK and raw wire requests. Cover modeled success and error responses,
+duplicate/missing resources, pagination where relevant, account/region isolation, and restart behavior.
+Engine-backed services must also demonstrate a usable data-plane endpoint and failed-startup cleanup.
+Individual proposal pages add checks specific to their workflow.
+
 The catalogue is deliberately finite: absence from it does not imply an AWS service is supported or scheduled.

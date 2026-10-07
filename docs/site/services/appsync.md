@@ -17,11 +17,7 @@ Run GraphQL APIs with local resolvers and WebSocket subscriptions.
 
 ## Implemented behavior
 
-- GraphQL APIs, API keys, schema/type operations, data sources, functions and resolvers.
-- Unit and pipeline resolvers using APPSYNC_JS or a VTL subset.
-- NONE, Lambda, HTTP, DynamoDB and EventBridge data sources.
-- Authentication with API keys, IAM callers, Cognito, OIDC and Lambda.
-- Lambda resolver batching and enhanced subscription filters.
+See the [implemented feature catalogue](catalogue.md#appsync-graphql) for this service's capabilities.
 
 ## Limitations and future work
 

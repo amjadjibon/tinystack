@@ -17,9 +17,7 @@ Reconcile group membership with local EC2 instance records.
 
 ## Implemented behavior
 
-- Groups, launch configurations, policies, scheduled actions and scaling activities.
-- Desired count changes launch or terminate EC2 records outside transactions.
-- Target tracking creates local CloudWatch alarms.
+See the [implemented feature catalogue](catalogue.md#ec2-auto-scaling) for this service's capabilities.
 
 ## Limitations and future work
 

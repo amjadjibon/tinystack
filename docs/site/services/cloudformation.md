@@ -17,11 +17,7 @@ Create and update local stacks through the same service operations used by SDK c
 
 ## Implemented behavior
 
-- JSON/YAML templates, parameters, conditions, mappings, supported intrinsics and dependency ordering.
-- Stack create/update/delete, rollback, change sets, events and exports.
-- Typed resource registry with validated properties and attributes.
-- Selected SAM resources and event transformations.
-- Resource operations run outside store transactions through the lenient caller.
+See the [implemented feature catalogue](catalogue.md#cloudformation) for this service's capabilities.
 
 ## Limitations and future work
 

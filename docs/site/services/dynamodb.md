@@ -17,11 +17,7 @@ Store typed items and run expressions, transactions, streams, backups, exports, 
 
 ## Implemented behavior
 
-- HASH and optional RANGE keys, global and local secondary indexes, sparse indexes and pagination.
-- Nested condition, projection, filter, update and key expressions.
-- Atomic batch and transaction operations with cancellation reasons and idempotency tokens.
-- TTL sweeps, on-demand backups, latest-state point-in-time restores and S3 exports.
-- PartiQL statements and transaction execution.
+See the [implemented feature catalogue](catalogue.md#dynamodb) for this service's capabilities.
 
 ## Limitations and future work
 

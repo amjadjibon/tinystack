@@ -516,6 +516,7 @@ Manage Redis, Valkey, and Memcached resources with an optional Docker cache runt
 **Execution:** Records / optional Docker. **Selected operations:** 32.
 
 - Cache clusters, replication groups, serverless caches, subnet groups and parameter groups.
+- Single-shard replication groups with replica scaling, primary/reader endpoints, manual and test failover, and AUTH token updates.
 - Engine metadata, tags and lifecycle events.
 - Docker nodes expose allocated host ports and become available after readiness probes.
 - Records mode returns metadata without starting cache processes.
@@ -529,7 +530,7 @@ Store objects, versions, multipart uploads, and event notifications in the share
 **Execution:** Local behavior. **Selected operations:** 55.
 
 - Partition-wide bucket name uniqueness and ownership checks.
-- Object CRUD, listing, metadata, tagging, copy, one byte range and conditional requests.
+- Object CRUD, listing, metadata, tagging, copy, upload checksum validation, one byte range and conditional requests.
 - Multipart upload lifecycle and atomic completion.
 - Versioning, null versions and delete markers.
 - Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge.

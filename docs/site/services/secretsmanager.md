@@ -17,10 +17,7 @@ Manage secret versions, staging labels, deletion windows, and Lambda rotation.
 
 ## Implemented behavior
 
-- Secret lifecycle, binary/string values, version IDs and staging labels.
-- Batch reads, tags and resource policy metadata.
-- Four-step Lambda rotation with background scheduling.
-- Customer-managed KMS key usability checks.
+See the [implemented feature catalogue](catalogue.md#secrets-manager) for this service's capabilities.
 
 ## Limitations and future work
 

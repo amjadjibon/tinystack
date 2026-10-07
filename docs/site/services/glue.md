@@ -17,10 +17,7 @@ Create the databases, tables, and partitions that local Athena queries use.
 
 ## Implemented behavior
 
-- Database CRUD, tags and pagination.
-- Table CRUD and batch deletion.
-- Partition CRUD, batch operations and partition listings.
-- Names are normalized to lowercase; deleting a database removes its tables and partitions.
+See the [implemented feature catalogue](catalogue.md#glue-data-catalog) for this service's capabilities.
 
 ## Limitations and future work
 

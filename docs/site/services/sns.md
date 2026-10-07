@@ -17,10 +17,7 @@ Publish messages to local queues and functions, or confirmed HTTP subscriptions.
 
 ## Implemented behavior
 
-- Topics, tags, subscriptions, filtering and FIFO deduplication.
-- SQS fan-out and asynchronous Lambda invocation.
-- HTTP/HTTPS confirmation and outbound delivery.
-- Email and SMS deliveries are recorded for inspection.
+See the [implemented feature catalogue](catalogue.md#sns) for this service's capabilities.
 
 ## Limitations and future work
 

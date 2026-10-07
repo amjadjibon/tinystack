@@ -17,10 +17,7 @@ Publish to the MQTT broker and manage shadows, retained messages, and connection
 
 ## Implemented behavior
 
-- Publish with QoS 0/1, retained flag and selected MQTT 5 properties.
-- Classic/named shadow get/update/delete and named-shadow listing.
-- Retained-message APIs and connection/subscription APIs.
-- Shadow updates emit accepted/rejected/delta/documents MQTT messages.
+See the [implemented feature catalogue](catalogue.md#iot-data-plane) for this service's capabilities.
 
 ## Limitations and future work
 

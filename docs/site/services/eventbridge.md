@@ -17,11 +17,7 @@ Route events through local buses, patterns, rules, schedules, archives, and repl
 
 ## Implemented behavior
 
-- Default and custom buses, rules, targets and input transformers.
-- Pattern matching shared with other event services.
-- SQS, SNS and Lambda targets in the same account and region.
-- Scheduled rules, durable retry records and SQS dead-letter queues.
-- Archives and synchronous replay.
+See the [implemented feature catalogue](catalogue.md#eventbridge) for this service's capabilities.
 
 ## Limitations and future work
 

@@ -17,11 +17,7 @@ Inspect log events and route local subscription and metric filters.
 
 ## Implemented behavior
 
-- Log groups, streams, retention metadata, tags and paged event reads.
-- PutLogEvents and filter patterns.
-- Subscription delivery to Lambda, Kinesis and Firehose.
-- Metric filters publish local CloudWatch metrics.
-- Logs Insights subset runs synchronously and retains query results.
+See the [implemented feature catalogue](catalogue.md#cloudwatch-logs) for this service's capabilities.
 
 ## Limitations and future work
 

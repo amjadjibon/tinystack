@@ -12,20 +12,13 @@ Implement `GetPositionEstimate`.
 
 - [ ] `GetPositionEstimate`
 
-Operation names are proposal vocabulary. Before implementation, validate them against the upstream Smithy model
-and pin that model through the synchronizer; metadata HTTP endpoints require their own wire contract.
 
 ## Decisions before implementation
 
-- Select the operations and members needed for one usable SDK or infrastructure workflow.
-- Define account/region ownership, persistence, restart behavior, and explicit unsupported-input errors.
-- Decide whether calls manage records, execute through an existing TinyStack service, or require a real engine.
-- For engine-backed behavior, define image/version, readiness, endpoint allocation, cleanup, and data retention.
+Use the shared [implementation decisions](../index.md#decisions-before-implementation).
 
 ## Acceptance criteria
 
-Exercise the first slice through an AWS SDK and raw wire requests. Cover modeled success and error responses,
-duplicate/missing resources, pagination where relevant, account/region isolation, and restart behavior.
-Engine-backed services must also demonstrate a usable data-plane endpoint and failed-startup cleanup.
+Apply the shared [acceptance criteria](../index.md#acceptance-criteria) alongside any service-specific checks above.
 
 Follow [adding a service](../../development/adding-services.md). See the [roadmap](../index.md) for shared priorities.

@@ -17,10 +17,7 @@ Execute a local Amazon States Language subset with service integrations.
 
 ## Implemented behavior
 
-- State machines, versions, aliases, activities, executions and history.
-- JSONPath and JSONata evaluation, supported state types, Retry/Catch and callbacks.
-- In-process AWS SDK integrations can call implemented operations.
-- TestState and redrive support.
+See the [implemented feature catalogue](catalogue.md#step-functions) for this service's capabilities.
 
 ## Limitations and future work
 

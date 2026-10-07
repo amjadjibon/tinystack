@@ -17,9 +17,7 @@ Buffer direct or Kinesis records and deliver them to S3.
 
 ## Implemented behavior
 
-- Delivery streams, tags, direct puts and batch puts.
-- Background buffering and S3 output after size/time thresholds.
-- Kinesis source polling and Lambda processing through the shared caller.
+See the [implemented feature catalogue](catalogue.md#data-firehose) for this service's capabilities.
 
 ## Limitations and future work
 

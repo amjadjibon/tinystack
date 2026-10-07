@@ -17,10 +17,7 @@ Manage Kubernetes cluster metadata and optionally start local k3s API servers.
 
 ## Implemented behavior
 
-- Clusters, node groups, Fargate profiles, add-ons and update metadata.
-- Access entries, access policy associations, pod identity metadata and OIDC configuration.
-- Optional privileged k3s container per cluster with an HTTPS proxy.
-- EKS tokens map callers to the cluster account.
+See the [implemented feature catalogue](catalogue.md#eks) for this service's capabilities.
 
 ## Limitations and future work
 

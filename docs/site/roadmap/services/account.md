@@ -16,20 +16,21 @@ Implement `GetAccountInformation`, `GetContactInformation`, and `ListRegions` fo
 - [ ] `GetRegionOptStatus` — validate `RegionName` and return the same status as `ListRegions` through `POST /getRegionOptStatus`.
 - [ ] Additive `AccountState` — populate `ACTIVE` by default. The field was added on 2026-04-29; newer SDKs expose it while older JSON SDK models can ignore it.
 
-Operation names are proposal vocabulary. Before implementation, validate them against the upstream Smithy model
-and pin that model through the synchronizer; metadata HTTP endpoints require their own wire contract.
+## Integration decisions
+
+Use the AWS Account `2021-02-01` REST JSON model and SigV4 signing name `account`. Resolve the account through `identity.accounts` or `defaults.account`; keep account details and region statuses consistent across calls and restarts. Serve only the caller's account until Organizations delegation exists, and reject another explicit `AccountId`. Encode modeled status codes and errors through the REST JSON codec.
+
+## Service-specific acceptance checks
+
+Call all four paths through an AWS SDK and raw REST JSON requests. Check account isolation, validation errors, region filtering and pagination, and consistent opt-in statuses. Confirm `AccountState` in raw responses and current SDKs, compatibility with an older SDK model, and stable configured details after restart.
+
 
 ## Decisions before implementation
 
-- Select the operations and members needed for one usable SDK or infrastructure workflow.
-- Define account/region ownership, persistence, restart behavior, and explicit unsupported-input errors.
-- Decide whether calls manage records, execute through an existing TinyStack service, or require a real engine.
-- For engine-backed behavior, define image/version, readiness, endpoint allocation, cleanup, and data retention.
+Use the shared [implementation decisions](../index.md#decisions-before-implementation).
 
 ## Acceptance criteria
 
-Exercise the first slice through an AWS SDK and raw wire requests. Cover modeled success and error responses,
-duplicate/missing resources, pagination where relevant, account/region isolation, and restart behavior.
-Engine-backed services must also demonstrate a usable data-plane endpoint and failed-startup cleanup.
+Apply the shared [acceptance criteria](../index.md#acceptance-criteria) alongside any service-specific checks above.
 
 Follow [adding a service](../../development/adding-services.md). See the [roadmap](../index.md) for shared priorities.
