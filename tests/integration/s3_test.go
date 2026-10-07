@@ -20,7 +20,7 @@ import (
 	"github.com/aws/smithy-go"
 )
 
-func s3Client(s *httptest.Server, key, region string) *s3.Client {
+func s3Client(s *httptest.Server, key, region string, opts ...func(*s3.Options)) *s3.Client {
 	return s3.New(
 		s3.Options{
 			Region:       region,
@@ -31,6 +31,7 @@ func s3Client(s *httptest.Server, key, region string) *s3.Client {
 			}),
 			Retryer: aws.NopRetryer{},
 		},
+		opts...,
 	)
 }
 
