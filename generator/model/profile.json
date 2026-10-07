@@ -13123,7 +13123,13 @@
       ],
       "PutObjectOutput": [
         "ETag",
-        "VersionId"
+        "VersionId",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256",
+        "ChecksumType"
       ],
       "GetObjectRequest": [
         "Bucket",
@@ -13146,7 +13152,13 @@
         "Metadata",
         "TagCount",
         "VersionId",
-        "DeleteMarker"
+        "DeleteMarker",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256",
+        "ChecksumType"
       ],
       "HeadObjectRequest": [
         "Bucket",
@@ -13165,7 +13177,13 @@
         "ETag",
         "LastModified",
         "Metadata",
-        "VersionId"
+        "VersionId",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256",
+        "ChecksumType"
       ],
       "DeleteObjectRequest": [
         "Bucket",
@@ -13241,12 +13259,16 @@
         "Metadata",
         "StorageClass",
         "ServerSideEncryption",
-        "ExpectedBucketOwner"
+        "ExpectedBucketOwner",
+        "ChecksumAlgorithm",
+        "ChecksumType"
       ],
       "CreateMultipartUploadOutput": [
         "Bucket",
         "Key",
-        "UploadId"
+        "UploadId",
+        "ChecksumAlgorithm",
+        "ChecksumType"
       ],
       "UploadPartRequest": [
         "Bucket",
@@ -13256,10 +13278,21 @@
         "Body",
         "ContentLength",
         "ContentMD5",
-        "ExpectedBucketOwner"
+        "ExpectedBucketOwner",
+        "ChecksumAlgorithm",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256"
       ],
       "UploadPartOutput": [
-        "ETag"
+        "ETag",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256"
       ],
       "CompleteMultipartUploadRequest": [
         "Bucket",
@@ -13268,21 +13301,39 @@
         "MultipartUpload",
         "ExpectedBucketOwner",
         "IfMatch",
-        "IfNoneMatch"
+        "IfNoneMatch",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256",
+        "ChecksumType",
+        "MpuObjectSize"
       ],
       "CompleteMultipartUploadOutput": [
         "Location",
         "Bucket",
         "Key",
         "ETag",
-        "VersionId"
+        "VersionId",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256",
+        "ChecksumType"
       ],
       "CompletedMultipartUpload": [
         "Parts"
       ],
       "CompletedPart": [
         "PartNumber",
-        "ETag"
+        "ETag",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256"
       ],
       "AbortMultipartUploadRequest": [
         "Bucket",
@@ -13308,13 +13359,20 @@
         "MaxParts",
         "IsTruncated",
         "Parts",
-        "StorageClass"
+        "StorageClass",
+        "ChecksumAlgorithm",
+        "ChecksumType"
       ],
       "Part": [
         "PartNumber",
         "LastModified",
         "ETag",
-        "Size"
+        "Size",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256"
       ],
       "ListMultipartUploadsRequest": [
         "Bucket",
@@ -13370,7 +13428,8 @@
         "StorageClass",
         "ServerSideEncryption",
         "ExpectedBucketOwner",
-        "ExpectedSourceBucketOwner"
+        "ExpectedSourceBucketOwner",
+        "ChecksumAlgorithm"
       ],
       "CopyObjectOutput": [
         "CopyObjectResult",
@@ -13379,7 +13438,13 @@
       ],
       "CopyObjectResult": [
         "ETag",
-        "LastModified"
+        "LastModified",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256",
+        "ChecksumType"
       ],
       "GetObjectTaggingRequest": [
         "Bucket",
