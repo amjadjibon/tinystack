@@ -312,7 +312,9 @@ func (s *Service) UpdateCertificate(
 			"supported.")
 	}
 
+	var changed request.Scope
 	err := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
+		changed = scope
 		c, err := loadCertificate(tx, scope, common.Value(in.CertificateId))
 		if err != nil {
 			return err
@@ -336,6 +338,11 @@ func (s *Service) UpdateCertificate(
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if status != statusActive {
+		// Disconnecting an already disconnected or unconnected certificate is a no-op.
+		s.disconnectCertificates(changed, common.Value(in.CertificateId))
 	}
 
 	return &api.UpdateCertificateOutput{}, nil

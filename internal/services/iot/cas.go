@@ -201,6 +201,8 @@ func (s *Service) UpdateCACertificate(
 		return nil, invalid("The new status must be ACTIVE or INACTIVE.")
 	}
 
+	var changed request.Scope
+	var issued []string
 	err := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
 		c, err := loadCA(tx, scope, common.Value(in.CertificateId))
 		if err != nil {
@@ -211,6 +213,20 @@ func (s *Service) UpdateCACertificate(
 			return nil
 		}
 
+		if status != statusActive {
+			certs, recErr := storage.Records[certificate](tx, scope.Prefix(service, kindCertificate))
+			if recErr != nil {
+				return recErr
+			}
+
+			changed = scope
+			for _, d := range certs {
+				if d.CA == c.ID {
+					issued = append(issued, d.ID)
+				}
+			}
+		}
+
 		c.Status, c.Modified = status, common.Unix(s.now())
 		c.Version++
 		return storage.Write(tx, scope.Key(service, kindCA, c.ID), c)
@@ -218,6 +234,8 @@ func (s *Service) UpdateCACertificate(
 	if err != nil {
 		return nil, err
 	}
+
+	s.disconnectCertificates(changed, issued...)
 
 	return &api.UpdateCACertificateOutput{}, nil
 }

@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -77,8 +78,10 @@ type connection struct {
 	// whether each was authorized, so the hook can tell its ACL checks from
 	// deliveries' (mochi checks both with write false). mu guards it.
 	subscribing map[string]bool
-	// cert is the client certificate presented over mutual TLS, if any.
-	cert *x509.Certificate
+	// cert is the client certificate presented over mutual TLS, if any, and
+	// certID its IoT certificate ID.
+	cert   *x509.Certificate
+	certID string
 	// header and query are an unsigned WebSocket request's, which can carry
 	// a custom authorizer's name and token.
 	header http.Header
@@ -235,6 +238,43 @@ func (s *Service) closeBrokers() {
 		}
 
 		_ = b.server.Close()
+	}
+}
+
+// reasonAuthError is the disconnect reason IoT Core reports for a client that
+// authentication or authorization no longer admits.
+const reasonAuthError = "AUTH_ERROR"
+
+// disconnect records reason for a client's disconnection and disconnects it.
+func (b *broker) disconnect(cl *mqtt.Client, reason string, cause packets.Code) {
+	b.mu.Lock()
+	if info := b.connections[cl.ID]; info != nil {
+		info.reason = reason
+	}
+	b.mu.Unlock()
+	if !cl.Closed() {
+		_ = b.server.DisconnectClient(cl, cause)
+	}
+}
+
+// disconnectCertificates disconnects the scope's live clients that
+// authenticated with one of the device certificates ids, reporting
+// AUTH_ERROR. It runs after the change that stopped the certificates being
+// usable has committed.
+func (s *Service) disconnectCertificates(scope request.Scope, ids ...string) {
+	b := s.existing(scope)
+	if b == nil || len(ids) == 0 {
+		return
+	}
+
+	for _, cl := range b.server.Clients.GetAll() {
+		if cl.Net.Inline {
+			continue
+		}
+
+		if c := connectionOf(cl); c != nil && c.certID != "" && slices.Contains(ids, c.certID) {
+			b.disconnect(cl, reasonAuthError, packets.ErrNotAuthorized)
+		}
 	}
 }
 

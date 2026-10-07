@@ -97,7 +97,7 @@ func (s *Service) handshake(ctx context.Context, conn net.Conn) (*connection, er
 				return err
 			}
 
-			c.cert, c.scope, c.caller, c.principal = cert, scope, id, arn(scope, "cert", id)
+			c.cert, c.certID, c.scope, c.caller, c.principal = cert, id, scope, id, arn(scope, "cert", id)
 			return nil
 		},
 	}

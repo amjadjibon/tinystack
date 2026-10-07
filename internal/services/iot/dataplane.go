@@ -274,14 +274,7 @@ func (d *DataPlane) DeleteConnection(
 		atomic.StoreUint32(&cl.Properties.Will.Flag, 0)
 	}
 
-	b.mu.Lock()
-	if info := b.connections[cl.ID]; info != nil {
-		info.reason = "API_INITIATED_DISCONNECT"
-	}
-	b.mu.Unlock()
-	if !cl.Closed() {
-		_ = b.server.DisconnectClient(cl, packets.ErrAdministrativeAction)
-	}
+	b.disconnect(cl, "API_INITIATED_DISCONNECT", packets.ErrAdministrativeAction)
 
 	if common.Value(in.CleanSession) {
 		cl.ClearInflights()
