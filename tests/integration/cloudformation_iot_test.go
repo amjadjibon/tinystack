@@ -71,7 +71,15 @@ Resources:
         Actions:
           - Republish: {Topic: alerts, RoleArn: "arn:aws:iam::000000000000:role/iot"}
       Tags: [{Key: team, Value: a}]
+  Authorizer:
+    Type: AWS::IoT::Authorizer
+    Properties:
+      AuthorizerFunctionArn: arn:aws:lambda:us-east-1:000000000000:function:auth
+      SigningDisabled: true
+      Status: !Ref Status
+      Tags: [{Key: team, Value: a}]
 Outputs:
+  Authorizer: {Value: !Ref Authorizer}
   Rule: {Value: !Ref Rule}
   RuleArn: {Value: !GetAtt Rule.Arn}
   Thing: {Value: !GetAtt Device.Arn}
@@ -181,6 +189,14 @@ func TestCloudFormationIoT(t *testing.T) {
 		t.Fatalf("%+v %v", rule, err)
 	}
 
+	authorizer, err := devices.DescribeAuthorizer(ctx, &iot.DescribeAuthorizerInput{
+		AuthorizerName: aws.String(outputs["Authorizer"]),
+	})
+	if err != nil || authorizer.AuthorizerDescription.Status != iottypes.AuthorizerStatusInactive ||
+		!aws.ToBool(authorizer.AuthorizerDescription.SigningDisabled) {
+		t.Fatalf("%+v %v", authorizer, err)
+	}
+
 	typ, err := devices.DescribeThingType(ctx, &iot.DescribeThingTypeInput{ThingTypeName: aws.String("sensor")})
 	if err != nil || !typ.ThingTypeMetadata.Deprecated {
 		t.Fatalf("%+v %v", typ, err)
@@ -209,6 +225,11 @@ func TestCloudFormationIoT(t *testing.T) {
 	policies, err := devices.ListPolicies(ctx, &iot.ListPoliciesInput{})
 	if err != nil || len(policies.Policies) != 0 {
 		t.Fatalf("%+v %v", policies, err)
+	}
+
+	authorizers, err := devices.ListAuthorizers(ctx, &iot.ListAuthorizersInput{})
+	if err != nil || len(authorizers.Authorizers) != 0 {
+		t.Fatalf("%+v %v", authorizers, err)
 	}
 
 	rules, err := devices.ListTopicRules(ctx, &iot.ListTopicRulesInput{})

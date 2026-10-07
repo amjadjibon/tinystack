@@ -23,7 +23,8 @@ const (
 
 // UseMQTT serves MQTT over WebSocket: GET /mqtt upgrade requests with the
 // mqtt subprotocol, on any host, as IoT Core's data endpoints serve it. In
-// identity.mode verify only requests presigned with SigV4 connect. Call it
+// identity.mode verify a presigned request must verify; an unsigned one is
+// handed over without a caller, for a custom authorizer to decide. Call it
 // before serving requests.
 func (s *Server) UseMQTT(handler execute.MQTT) {
 	s.mqtt = handler
@@ -46,7 +47,7 @@ func (s *Server) serveMQTT(w http.ResponseWriter, r *http.Request) bool {
 		RawQuery: r.URL.RawQuery, Host: r.Host, Endpoint: "http://" + r.Host, SourceIP: sourceIP, Protocol: r.Proto,
 		Caller: s.mqttCaller(w, r),
 	}
-	if req.Caller == nil && s.cfg.Identity.Mode == config.IdentityVerify {
+	if req.Caller == nil && s.cfg.Identity.Mode == config.IdentityVerify && signed(r) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return true
 	}
@@ -73,6 +74,12 @@ func (s *Server) serveMQTT(w http.ResponseWriter, r *http.Request) bool {
 
 	_ = nc.Close()
 	return true
+}
+
+// signed reports whether a request carries a SigV4 signature, in its
+// Authorization header or presigned query.
+func signed(r *http.Request) bool {
+	return r.Header.Get("Authorization") != "" || r.URL.Query().Get("X-Amz-Signature") != ""
 }
 
 // mqttCaller returns who presigned an MQTT connection request. AWS IoT device

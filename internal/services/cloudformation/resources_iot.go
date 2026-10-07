@@ -8,26 +8,32 @@ import (
 )
 
 const (
-	serviceIoT                 = "iot"
-	memberThingName            = "ThingName"
-	memberThingTypeName        = "ThingTypeName"
-	memberThingGroupName       = "ThingGroupName"
-	memberAttributePayload     = "AttributePayload"
-	memberPrincipal            = "Principal"
-	memberCertificateID        = "CertificateId"
-	memberThingTypeProperties  = "ThingTypeProperties"
-	memberThingGroupProperties = "ThingGroupProperties"
-	memberCertificatePem       = "CertificatePem"
-	memberCertificateMode      = "CertificateMode"
-	propertyDeprecate          = "DeprecateThingType"
-	propertyCACertificatePem   = "CACertificatePem"
-	propertyCSR                = "CertificateSigningRequest"
-	attributeID                = "Id"
-	iotNotFound                = "ResourceNotFoundException"
-	iotActive                  = "ACTIVE"
-	iotInactive                = "INACTIVE"
-	memberRuleName             = "RuleName"
-	memberTopicRulePayload     = "TopicRulePayload"
+	serviceIoT                   = "iot"
+	memberThingName              = "ThingName"
+	memberThingTypeName          = "ThingTypeName"
+	memberThingGroupName         = "ThingGroupName"
+	memberAttributePayload       = "AttributePayload"
+	memberPrincipal              = "Principal"
+	memberCertificateID          = "CertificateId"
+	memberThingTypeProperties    = "ThingTypeProperties"
+	memberThingGroupProperties   = "ThingGroupProperties"
+	memberCertificatePem         = "CertificatePem"
+	memberCertificateMode        = "CertificateMode"
+	propertyDeprecate            = "DeprecateThingType"
+	propertyCACertificatePem     = "CACertificatePem"
+	propertyCSR                  = "CertificateSigningRequest"
+	attributeID                  = "Id"
+	iotNotFound                  = "ResourceNotFoundException"
+	iotActive                    = "ACTIVE"
+	iotInactive                  = "INACTIVE"
+	memberRuleName               = "RuleName"
+	memberTopicRulePayload       = "TopicRulePayload"
+	memberAuthorizerName         = "AuthorizerName"
+	memberAuthorizerFunctionArn  = "AuthorizerFunctionArn"
+	memberTokenKeyName           = "TokenKeyName"
+	memberTokenSigningPublicKeys = "TokenSigningPublicKeys"
+	memberEnableCachingForHTTP   = "EnableCachingForHttp"
+	propertySigningDisabled      = "SigningDisabled"
 	// iotRuleNotFound is how IoT reports a missing topic rule.
 	iotRuleNotFound = "UnauthorizedException"
 )
@@ -258,6 +264,56 @@ func init() {
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, serviceIoT, "DeleteTopicRule", map[string]any{memberRuleName: r.Physical})
 			if gone(err, iotRuleNotFound) {
+				return nil
+			}
+
+			return err
+		},
+	})
+
+	register("AWS::IoT::Authorizer", &resourceType{
+		name: memberAuthorizerName,
+		properties: []string{
+			memberAuthorizerName, memberAuthorizerFunctionArn, propertySigningDisabled, memberStatus,
+			memberTokenKeyName, memberTokenSigningPublicKeys, memberEnableCachingForHTTP, memberTags,
+		},
+		attributes: []string{memberArn},
+		replace:    []string{memberAuthorizerName, propertySigningDisabled},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			name := c.nameOf(p, memberAuthorizerName, 128)
+			params := pick(map[string]any{memberAuthorizerName: name}, p, memberAuthorizerFunctionArn,
+				propertySigningDisabled, memberStatus, memberTokenKeyName, memberTokenSigningPublicKeys,
+				memberEnableCachingForHTTP)
+			if tags := p.tags(); len(tags) > 0 {
+				params[memberTags] = tagList(tags, memberKey, memberValue)
+			}
+
+			out, err := c.call(ctx, serviceIoT, "CreateAuthorizer", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			return name, map[string]any{memberArn: outText(out, "AuthorizerArn")}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			params := pick(map[string]any{memberAuthorizerName: r.Physical}, p, memberAuthorizerFunctionArn,
+				memberStatus, memberTokenKeyName, memberTokenSigningPublicKeys, memberEnableCachingForHTTP)
+			if _, err := c.call(ctx, serviceIoT, "UpdateAuthorizer", params); err != nil {
+				return nil, err
+			}
+
+			return r.Attributes, retag(ctx, c, r.Properties, p, iotTagger(r))
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			// Only an inactive authorizer can be deleted.
+			_, err := c.call(ctx, serviceIoT, "UpdateAuthorizer", map[string]any{
+				memberAuthorizerName: r.Physical, memberStatus: iotInactive,
+			})
+			if err == nil {
+				_, err = c.call(ctx, serviceIoT, "DeleteAuthorizer", map[string]any{memberAuthorizerName: r.Physical})
+			}
+
+			if gone(err, iotNotFound) {
 				return nil
 			}
 

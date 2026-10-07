@@ -71,6 +71,30 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 		allowed := len(event.IdentitySource) == 1 && event.IdentitySource[0] == "let-me-in"
 		body, err := json.Marshal(map[string]any{"isAuthorized": allowed, "context": map[string]any{"user": "fay"}})
 		return lambda.Result{Payload: body}, err
+	case "app.iotAuthorize":
+		// An IoT custom authorizer: the token "let-me-in" may connect and use
+		// the allowed/ topics, for 60 seconds.
+		var event struct {
+			Token string `json:"token"`
+		}
+		if err := json.Unmarshal(payload, &event); err != nil {
+			return lambda.Result{}, err
+		}
+
+		if event.Token != "let-me-in" {
+			return lambda.Result{Payload: []byte(`{"isAuthenticated":false}`)}, nil
+		}
+
+		body, err := json.Marshal(map[string]any{
+			"isAuthenticated": true, "principalId": "device-user", "disconnectAfterInSeconds": 60,
+			"refreshAfterInSeconds": 300,
+			"policyDocuments": []string{`{"Version":"2012-10-17","Statement":[` +
+				`{"Effect":"Allow","Action":"iot:Connect","Resource":"*"},` +
+				`{"Effect":"Allow","Action":["iot:Publish","iot:Receive"],` +
+				`"Resource":"arn:aws:iot:*:*:topic/allowed/*"},` +
+				`{"Effect":"Allow","Action":"iot:Subscribe","Resource":"arn:aws:iot:*:*:topicfilter/allowed/*"}]}`},
+		})
+		return lambda.Result{Payload: body}, err
 	case "app.firehose":
 		// A Firehose processor: records whose data is "drop" are dropped,
 		// "fail" fail, and the rest are upper-cased.

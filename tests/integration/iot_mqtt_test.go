@@ -278,12 +278,22 @@ func (c *mqttClient) message(topic string) packets.Packet {
 
 func (c *mqttClient) connect(id string) byte {
 	c.t.Helper()
-	c.send(&packets.Packet{
-		FixedHeader: packets.FixedHeader{Type: packets.Connect},
-		Connect: packets.ConnectParams{
-			ProtocolName: []byte("MQTT"), ClientIdentifier: id, Clean: true, Keepalive: 60,
-		},
-	})
+	return c.connectAs(id, "", "")
+}
+
+// connectAs connects with a username and password, when they are set.
+func (c *mqttClient) connectAs(id, username, password string) byte {
+	c.t.Helper()
+	params := packets.ConnectParams{ProtocolName: []byte("MQTT"), ClientIdentifier: id, Clean: true, Keepalive: 60}
+	if username != "" {
+		params.UsernameFlag, params.Username = true, []byte(username)
+	}
+
+	if password != "" {
+		params.PasswordFlag, params.Password = true, []byte(password)
+	}
+
+	c.send(&packets.Packet{FixedHeader: packets.FixedHeader{Type: packets.Connect}, Connect: params})
 	pk, err := c.receive()
 	if err != nil {
 		c.t.Fatal(err)
@@ -448,8 +458,13 @@ func TestIoTMQTTPolicies(t *testing.T) {
 
 	// Unsigned connections are refused; IAM callers without IoT policies are
 	// allowed, as IAM policies are not evaluated.
-	if _, err := dialMQTT(t, mqttURL(s)); err == nil {
-		t.Fatal("an unsigned connection was accepted")
+	unsigned, err := dialMQTT(t, mqttURL(s))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if code := unsigned.connect("anyone"); code != packets.ErrBadUsernameOrPassword.Code {
+		t.Fatalf("unsigned connect: reason 0x%x", code)
 	}
 
 	admin := connected(t, presignMQTT(t, s, &aws.Credentials{AccessKeyID: "test", SecretAccessKey: "test"}), "admin")
@@ -457,7 +472,7 @@ func TestIoTMQTTPolicies(t *testing.T) {
 		t.Fatalf("puback 0x%x", code)
 	}
 
-	if _, err := dialMQTT(
+	if _, err = dialMQTT(
 		t,
 		presignMQTT(t, s, &aws.Credentials{AccessKeyID: "test", SecretAccessKey: "bad"}),
 	); err == nil {
@@ -571,19 +586,14 @@ func TestIoTMQTTSDeviceCertificates(t *testing.T) {
 	addr := mqttsAddr(t, s)
 	pool := rootCA(t, s)
 
-	// Connections without a client certificate are rejected during TLS handshake.
-	tlsNoCert := &tls.Config{
-		RootCAs:    pool,
-		ServerName: "127.0.0.1",
+	// Without a client certificate (or a custom authorizer), CONNECT is refused.
+	cl, err := dialMQTTS(t, addr, &tls.Config{RootCAs: pool, ServerName: "127.0.0.1"})
+	if err != nil {
+		t.Fatal(err)
 	}
-	cl, err := dialMQTTS(t, addr, tlsNoCert)
-	if err == nil {
-		// In TLS 1.3, client handshake finishes before server processes client certificate.
-		// Reading or connecting will fail immediately because server sent bad_certificate alert and closed.
-		var b [1]byte
-		if _, readErr := cl.conn.Read(b[:]); readErr == nil {
-			t.Fatal("connection without client certificate was accepted")
-		}
+
+	if code := cl.connect("no-cert"); code != packets.ErrBadUsernameOrPassword.Code {
+		t.Fatalf("connect without a certificate: reason 0x%x", code)
 	}
 
 	iotCli := iotClient(s, "test")

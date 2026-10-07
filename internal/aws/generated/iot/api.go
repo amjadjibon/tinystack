@@ -901,6 +901,135 @@ type DisableTopicRuleRequest struct {
 	RuleName *string `json:"-"`
 }
 
+type CreateAuthorizerRequest struct {
+	AuthorizerName         *string           `json:"-"`
+	AuthorizerFunctionArn  *string           `json:"authorizerFunctionArn,omitempty"`
+	TokenKeyName           *string           `json:"tokenKeyName,omitempty"`
+	TokenSigningPublicKeys map[string]string `json:"tokenSigningPublicKeys,omitempty"`
+	Status                 *string           `json:"status,omitempty"`
+	Tags                   []Tag             `json:"tags,omitempty"`
+	SigningDisabled        *bool             `json:"signingDisabled,omitempty"`
+	EnableCachingForHttp   *bool             `json:"enableCachingForHttp,omitempty"`
+}
+
+type CreateAuthorizerResponse struct {
+	AuthorizerName *string `json:"authorizerName,omitempty"`
+	AuthorizerArn  *string `json:"authorizerArn,omitempty"`
+}
+
+type DescribeAuthorizerRequest struct {
+	AuthorizerName *string `json:"-"`
+}
+
+type AuthorizerDescription struct {
+	AuthorizerName         *string           `json:"authorizerName,omitempty"`
+	AuthorizerArn          *string           `json:"authorizerArn,omitempty"`
+	AuthorizerFunctionArn  *string           `json:"authorizerFunctionArn,omitempty"`
+	TokenKeyName           *string           `json:"tokenKeyName,omitempty"`
+	TokenSigningPublicKeys map[string]string `json:"tokenSigningPublicKeys,omitempty"`
+	Status                 *string           `json:"status,omitempty"`
+	CreationDate           *float64          `json:"creationDate,omitempty"`
+	LastModifiedDate       *float64          `json:"lastModifiedDate,omitempty"`
+	SigningDisabled        *bool             `json:"signingDisabled,omitempty"`
+	EnableCachingForHttp   *bool             `json:"enableCachingForHttp,omitempty"`
+}
+
+type DescribeAuthorizerResponse struct {
+	AuthorizerDescription *AuthorizerDescription `json:"authorizerDescription,omitempty"`
+}
+
+type UpdateAuthorizerRequest struct {
+	AuthorizerName         *string           `json:"-"`
+	AuthorizerFunctionArn  *string           `json:"authorizerFunctionArn,omitempty"`
+	TokenKeyName           *string           `json:"tokenKeyName,omitempty"`
+	TokenSigningPublicKeys map[string]string `json:"tokenSigningPublicKeys,omitempty"`
+	Status                 *string           `json:"status,omitempty"`
+	EnableCachingForHttp   *bool             `json:"enableCachingForHttp,omitempty"`
+}
+
+type UpdateAuthorizerResponse struct {
+	AuthorizerName *string `json:"authorizerName,omitempty"`
+	AuthorizerArn  *string `json:"authorizerArn,omitempty"`
+}
+
+type DeleteAuthorizerRequest struct {
+	AuthorizerName *string `json:"-"`
+}
+
+type DeleteAuthorizerResponse struct {
+}
+
+type ListAuthorizersRequest struct {
+	PageSize       *int64  `json:"-"`
+	Marker         *string `json:"-"`
+	AscendingOrder *bool   `json:"-"`
+	Status         *string `json:"-"`
+}
+
+type AuthorizerSummary struct {
+	AuthorizerName *string `json:"authorizerName,omitempty"`
+	AuthorizerArn  *string `json:"authorizerArn,omitempty"`
+}
+
+type ListAuthorizersResponse struct {
+	Authorizers []AuthorizerSummary `json:"authorizers,omitempty"`
+	NextMarker  *string             `json:"nextMarker,omitempty"`
+}
+
+type SetDefaultAuthorizerRequest struct {
+	AuthorizerName *string `json:"authorizerName,omitempty"`
+}
+
+type SetDefaultAuthorizerResponse struct {
+	AuthorizerName *string `json:"authorizerName,omitempty"`
+	AuthorizerArn  *string `json:"authorizerArn,omitempty"`
+}
+
+type DescribeDefaultAuthorizerRequest struct {
+}
+
+type DescribeDefaultAuthorizerResponse struct {
+	AuthorizerDescription *AuthorizerDescription `json:"authorizerDescription,omitempty"`
+}
+
+type ClearDefaultAuthorizerRequest struct {
+}
+
+type ClearDefaultAuthorizerResponse struct {
+}
+
+type HttpContext struct {
+	Headers     map[string]string `json:"headers,omitempty"`
+	QueryString *string           `json:"queryString,omitempty"`
+}
+
+type MqttContext struct {
+	Username *string `json:"username,omitempty"`
+	Password []byte  `json:"password,omitempty"`
+	ClientId *string `json:"clientId,omitempty"`
+}
+
+type TlsContext struct {
+	ServerName *string `json:"serverName,omitempty"`
+}
+
+type TestInvokeAuthorizerRequest struct {
+	AuthorizerName *string      `json:"-"`
+	Token          *string      `json:"token,omitempty"`
+	TokenSignature *string      `json:"tokenSignature,omitempty"`
+	HttpContext    *HttpContext `json:"httpContext,omitempty"`
+	MqttContext    *MqttContext `json:"mqttContext,omitempty"`
+	TlsContext     *TlsContext  `json:"tlsContext,omitempty"`
+}
+
+type TestInvokeAuthorizerResponse struct {
+	IsAuthenticated          *bool    `json:"isAuthenticated,omitempty"`
+	PrincipalId              *string  `json:"principalId,omitempty"`
+	PolicyDocuments          []string `json:"policyDocuments,omitempty"`
+	RefreshAfterInSeconds    *int64   `json:"refreshAfterInSeconds,omitempty"`
+	DisconnectAfterInSeconds *int64   `json:"disconnectAfterInSeconds,omitempty"`
+}
+
 type API interface {
 	CreateThing(context.Context, *CreateThingRequest) (*CreateThingResponse, error)
 	DescribeThing(context.Context, *DescribeThingRequest) (*DescribeThingResponse, error)
@@ -965,10 +1094,19 @@ type API interface {
 	ListTopicRules(context.Context, *ListTopicRulesRequest) (*ListTopicRulesResponse, error)
 	EnableTopicRule(context.Context, *EnableTopicRuleRequest) (*EnableTopicRuleOutput, error)
 	DisableTopicRule(context.Context, *DisableTopicRuleRequest) (*DisableTopicRuleOutput, error)
+	CreateAuthorizer(context.Context, *CreateAuthorizerRequest) (*CreateAuthorizerResponse, error)
+	DescribeAuthorizer(context.Context, *DescribeAuthorizerRequest) (*DescribeAuthorizerResponse, error)
+	UpdateAuthorizer(context.Context, *UpdateAuthorizerRequest) (*UpdateAuthorizerResponse, error)
+	DeleteAuthorizer(context.Context, *DeleteAuthorizerRequest) (*DeleteAuthorizerResponse, error)
+	ListAuthorizers(context.Context, *ListAuthorizersRequest) (*ListAuthorizersResponse, error)
+	SetDefaultAuthorizer(context.Context, *SetDefaultAuthorizerRequest) (*SetDefaultAuthorizerResponse, error)
+	DescribeDefaultAuthorizer(context.Context, *DescribeDefaultAuthorizerRequest) (*DescribeDefaultAuthorizerResponse, error)
+	ClearDefaultAuthorizer(context.Context, *ClearDefaultAuthorizerRequest) (*ClearDefaultAuthorizerResponse, error)
+	TestInvokeAuthorizer(context.Context, *TestInvokeAuthorizerRequest) (*TestInvokeAuthorizerResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iot", SigningName: "iot", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CertificateConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CertificateStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 406}, "CertificateValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictingResourceUpdateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 410}, "MalformedPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RegistrationCodeValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "SqlParseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "VersionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "VersionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iot", SigningName: "iot", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CertificateConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CertificateStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 406}, "CertificateValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictingResourceUpdateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 410}, "MalformedPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RegistrationCodeValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "SqlParseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "VersionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "VersionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}}, Operations: map[string]catalog.Operation{
 		"CreateThing": {Name: "CreateThing", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AttributePayload": catalog.MemberBinding{Location: "document", Name: "attributePayload"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}, "ThingTypeName": catalog.MemberBinding{Location: "document", Name: "thingTypeName"}}, Output: map[string]catalog.MemberBinding{"ThingArn": catalog.MemberBinding{Location: "document", Name: "thingArn"}, "ThingId": catalog.MemberBinding{Location: "document", Name: "thingId"}, "ThingName": catalog.MemberBinding{Location: "document", Name: "thingName"}}, Method: "POST", URI: "/things/{thingName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateThingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateThing(ctx, input.(*CreateThingRequest))
 		}},
@@ -1157,6 +1295,33 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DisableTopicRule": {Name: "DisableTopicRule", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RuleName": catalog.MemberBinding{Location: "label", Name: "ruleName"}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/rules/{ruleName}/disable", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DisableTopicRuleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DisableTopicRule(ctx, input.(*DisableTopicRuleRequest))
+		}},
+		"CreateAuthorizer": {Name: "CreateAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerFunctionArn": catalog.MemberBinding{Location: "document", Name: "authorizerFunctionArn"}, "AuthorizerName": catalog.MemberBinding{Location: "label", Name: "authorizerName"}, "EnableCachingForHttp": catalog.MemberBinding{Location: "document", Name: "enableCachingForHttp"}, "SigningDisabled": catalog.MemberBinding{Location: "document", Name: "signingDisabled"}, "Status": catalog.MemberBinding{Location: "document", Name: "status"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "TokenKeyName": catalog.MemberBinding{Location: "document", Name: "tokenKeyName"}, "TokenSigningPublicKeys": catalog.MemberBinding{Location: "document", Name: "tokenSigningPublicKeys"}}, Output: map[string]catalog.MemberBinding{"AuthorizerArn": catalog.MemberBinding{Location: "document", Name: "authorizerArn"}, "AuthorizerName": catalog.MemberBinding{Location: "document", Name: "authorizerName"}}, Method: "POST", URI: "/authorizer/{authorizerName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateAuthorizer(ctx, input.(*CreateAuthorizerRequest))
+		}},
+		"DescribeAuthorizer": {Name: "DescribeAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerName": catalog.MemberBinding{Location: "label", Name: "authorizerName"}}, Output: map[string]catalog.MemberBinding{"AuthorizerDescription": catalog.MemberBinding{Location: "document", Name: "authorizerDescription"}}, Method: "GET", URI: "/authorizer/{authorizerName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeAuthorizer(ctx, input.(*DescribeAuthorizerRequest))
+		}},
+		"UpdateAuthorizer": {Name: "UpdateAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerFunctionArn": catalog.MemberBinding{Location: "document", Name: "authorizerFunctionArn"}, "AuthorizerName": catalog.MemberBinding{Location: "label", Name: "authorizerName"}, "EnableCachingForHttp": catalog.MemberBinding{Location: "document", Name: "enableCachingForHttp"}, "Status": catalog.MemberBinding{Location: "document", Name: "status"}, "TokenKeyName": catalog.MemberBinding{Location: "document", Name: "tokenKeyName"}, "TokenSigningPublicKeys": catalog.MemberBinding{Location: "document", Name: "tokenSigningPublicKeys"}}, Output: map[string]catalog.MemberBinding{"AuthorizerArn": catalog.MemberBinding{Location: "document", Name: "authorizerArn"}, "AuthorizerName": catalog.MemberBinding{Location: "document", Name: "authorizerName"}}, Method: "PUT", URI: "/authorizer/{authorizerName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateAuthorizer(ctx, input.(*UpdateAuthorizerRequest))
+		}},
+		"DeleteAuthorizer": {Name: "DeleteAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerName": catalog.MemberBinding{Location: "label", Name: "authorizerName"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/authorizer/{authorizerName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteAuthorizer(ctx, input.(*DeleteAuthorizerRequest))
+		}},
+		"ListAuthorizers": {Name: "ListAuthorizers", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AscendingOrder": catalog.MemberBinding{Location: "query", Name: "isAscendingOrder"}, "Marker": catalog.MemberBinding{Location: "query", Name: "marker"}, "PageSize": catalog.MemberBinding{Location: "query", Name: "pageSize"}, "Status": catalog.MemberBinding{Location: "query", Name: "status"}}, Output: map[string]catalog.MemberBinding{"Authorizers": catalog.MemberBinding{Location: "document", Name: "authorizers"}, "NextMarker": catalog.MemberBinding{Location: "document", Name: "nextMarker"}}, Method: "GET", URI: "/authorizers", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListAuthorizersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListAuthorizers(ctx, input.(*ListAuthorizersRequest))
+		}},
+		"SetDefaultAuthorizer": {Name: "SetDefaultAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerName": catalog.MemberBinding{Location: "document", Name: "authorizerName"}}, Output: map[string]catalog.MemberBinding{"AuthorizerArn": catalog.MemberBinding{Location: "document", Name: "authorizerArn"}, "AuthorizerName": catalog.MemberBinding{Location: "document", Name: "authorizerName"}}, Method: "POST", URI: "/default-authorizer", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &SetDefaultAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetDefaultAuthorizer(ctx, input.(*SetDefaultAuthorizerRequest))
+		}},
+		"DescribeDefaultAuthorizer": {Name: "DescribeDefaultAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{}, Output: map[string]catalog.MemberBinding{"AuthorizerDescription": catalog.MemberBinding{Location: "document", Name: "authorizerDescription"}}, Method: "GET", URI: "/default-authorizer", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeDefaultAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeDefaultAuthorizer(ctx, input.(*DescribeDefaultAuthorizerRequest))
+		}},
+		"ClearDefaultAuthorizer": {Name: "ClearDefaultAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/default-authorizer", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ClearDefaultAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ClearDefaultAuthorizer(ctx, input.(*ClearDefaultAuthorizerRequest))
+		}},
+		"TestInvokeAuthorizer": {Name: "TestInvokeAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerName": catalog.MemberBinding{Location: "label", Name: "authorizerName"}, "HttpContext": catalog.MemberBinding{Location: "document", Name: "httpContext"}, "MqttContext": catalog.MemberBinding{Location: "document", Name: "mqttContext"}, "TlsContext": catalog.MemberBinding{Location: "document", Name: "tlsContext"}, "Token": catalog.MemberBinding{Location: "document", Name: "token"}, "TokenSignature": catalog.MemberBinding{Location: "document", Name: "tokenSignature"}}, Output: map[string]catalog.MemberBinding{"DisconnectAfterInSeconds": catalog.MemberBinding{Location: "document", Name: "disconnectAfterInSeconds"}, "IsAuthenticated": catalog.MemberBinding{Location: "document", Name: "isAuthenticated"}, "PolicyDocuments": catalog.MemberBinding{Location: "document", Name: "policyDocuments"}, "PrincipalId": catalog.MemberBinding{Location: "document", Name: "principalId"}, "RefreshAfterInSeconds": catalog.MemberBinding{Location: "document", Name: "refreshAfterInSeconds"}}, Method: "POST", URI: "/authorizer/{authorizerName}/test", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &TestInvokeAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TestInvokeAuthorizer(ctx, input.(*TestInvokeAuthorizerRequest))
 		}},
 	}}
 }

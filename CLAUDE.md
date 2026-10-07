@@ -521,7 +521,14 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `AssumeRoleWithWebIdentity` with a Cognito token record it, and `execute.Caller.CognitoIdentity` carries it) for
   `iot:Connect`, `Publish`, `Subscribe`, and `Receive`, with the `iot:Certificate.*` and thing variables; a
   certificate with no attached policy is allowed nothing, while other callers with none are allowed, since IAM
-  policies are not evaluated.
+  policies are not evaluated. Custom authorizers (`authorizers.go`, `…/iot/authorizer/<name>`, with the default under
+  `…/iot/default-authorizer/name`) admit connections that present no identity: unsigned WebSockets (the gateway
+  refuses only presigned requests that fail to verify), plain MQTT, and TLS without a certificate. At CONNECT,
+  `custom.go` finds the authorizer named by `x-amz-customauthorizer-name` (in the MQTT username's query, or the
+  WebSocket request's query or headers) or the default one, checks the token's RSA SHA-256 signature unless signing
+  is disabled, and invokes its function through the `catalog.Caller`; the policies it returns govern that connection
+  in every identity mode, and `disconnectAfterInSeconds` ends it. Without an authorizer, such connections are let in
+  only outside verify mode, and never over TLS.
   `iot.Service.DataPlane()` serves the IoT data plane (`Publish` with MQTT 5 properties, retained messages,
   connections and subscriptions from the broker, and shadows).
   Topic rules (`rules.go`) are `…/iot/rule/<name>` records holding the rule's payload; `sql.go` parses the rules SQL

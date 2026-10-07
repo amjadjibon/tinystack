@@ -9699,7 +9699,16 @@
       "DeleteTopicRule",
       "ListTopicRules",
       "EnableTopicRule",
-      "DisableTopicRule"
+      "DisableTopicRule",
+      "CreateAuthorizer",
+      "DescribeAuthorizer",
+      "UpdateAuthorizer",
+      "DeleteAuthorizer",
+      "ListAuthorizers",
+      "SetDefaultAuthorizer",
+      "DescribeDefaultAuthorizer",
+      "ClearDefaultAuthorizer",
+      "TestInvokeAuthorizer"
     ],
     "shapes": {
       "CreateThingRequest": [
@@ -10403,6 +10412,108 @@
       ],
       "DisableTopicRuleRequest": [
         "ruleName"
+      ],
+      "CreateAuthorizerRequest": [
+        "authorizerName",
+        "authorizerFunctionArn",
+        "tokenKeyName",
+        "tokenSigningPublicKeys",
+        "status",
+        "tags",
+        "signingDisabled",
+        "enableCachingForHttp"
+      ],
+      "CreateAuthorizerResponse": [
+        "authorizerName",
+        "authorizerArn"
+      ],
+      "DescribeAuthorizerRequest": [
+        "authorizerName"
+      ],
+      "DescribeAuthorizerResponse": [
+        "authorizerDescription"
+      ],
+      "AuthorizerDescription": [
+        "authorizerName",
+        "authorizerArn",
+        "authorizerFunctionArn",
+        "tokenKeyName",
+        "tokenSigningPublicKeys",
+        "status",
+        "creationDate",
+        "lastModifiedDate",
+        "signingDisabled",
+        "enableCachingForHttp"
+      ],
+      "UpdateAuthorizerRequest": [
+        "authorizerName",
+        "authorizerFunctionArn",
+        "tokenKeyName",
+        "tokenSigningPublicKeys",
+        "status",
+        "enableCachingForHttp"
+      ],
+      "UpdateAuthorizerResponse": [
+        "authorizerName",
+        "authorizerArn"
+      ],
+      "DeleteAuthorizerRequest": [
+        "authorizerName"
+      ],
+      "DeleteAuthorizerResponse": [],
+      "ListAuthorizersRequest": [
+        "pageSize",
+        "marker",
+        "ascendingOrder",
+        "status"
+      ],
+      "ListAuthorizersResponse": [
+        "authorizers",
+        "nextMarker"
+      ],
+      "AuthorizerSummary": [
+        "authorizerName",
+        "authorizerArn"
+      ],
+      "SetDefaultAuthorizerRequest": [
+        "authorizerName"
+      ],
+      "SetDefaultAuthorizerResponse": [
+        "authorizerName",
+        "authorizerArn"
+      ],
+      "DescribeDefaultAuthorizerRequest": [],
+      "DescribeDefaultAuthorizerResponse": [
+        "authorizerDescription"
+      ],
+      "ClearDefaultAuthorizerRequest": [],
+      "ClearDefaultAuthorizerResponse": [],
+      "TestInvokeAuthorizerRequest": [
+        "authorizerName",
+        "token",
+        "tokenSignature",
+        "httpContext",
+        "mqttContext",
+        "tlsContext"
+      ],
+      "HttpContext": [
+        "headers",
+        "queryString"
+      ],
+      "MqttContext": [
+        "username",
+        "password",
+        "clientId"
+      ],
+      "TlsContext": [
+        "serverName"
+      ],
+      "TestInvokeAuthorizerResponse": [
+        "isAuthenticated",
+        "principalId",
+        "policyDocuments",
+        "refreshAfterInSeconds",
+        "disconnectAfterInSeconds"
       ]
     }
   },

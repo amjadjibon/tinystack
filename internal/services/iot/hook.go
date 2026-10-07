@@ -52,9 +52,9 @@ func connectionOf(cl *mqtt.Client) *connection {
 }
 
 //nolint:gocritic // mochi's Hook interface passes packets by value.
-func (h *hook) OnConnectAuthenticate(cl *mqtt.Client, _ packets.Packet) bool {
+func (h *hook) OnConnectAuthenticate(cl *mqtt.Client, pk packets.Packet) bool {
 	c := connectionOf(cl)
-	if c == nil || len(cl.ID) > maxClientID {
+	if c == nil || len(cl.ID) > maxClientID || c.anonymous && !h.customAuthorize(cl, c, &pk) {
 		return false
 	}
 
@@ -81,6 +81,12 @@ const (
 // the principal is that thing's connection.
 func (h *hook) policies(c *connection, clientID string) ([]*policyDocument, map[string]string, error) {
 	vars := map[string]string{varClientID: clientID, varIsAttached: "false"}
+	if c.custom != nil {
+		// A custom authorizer's policies govern its connections in every
+		// identity mode.
+		return c.custom, vars, nil
+	}
+
 	if c.principal == "" {
 		return nil, vars, nil
 	}
@@ -288,6 +294,10 @@ func (h *hook) OnDisconnect(cl *mqtt.Client, err error, expire bool) {
 	c := connectionOf(cl)
 	if c == nil {
 		return
+	}
+
+	if c.expiry != nil {
+		c.expiry.Stop()
 	}
 
 	b := h.broker

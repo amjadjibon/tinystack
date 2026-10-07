@@ -6,6 +6,8 @@ import (
 	"errors"
 	"log/slog"
 	"net"
+	"net/http"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,6 +35,9 @@ const (
 	listenerWebSocket = "websocket"
 	listenerTCP       = "tcp"
 	listenerTLS       = "tls"
+	// anonymousCaller identifies connections without an identity in
+	// lifecycle events.
+	anonymousCaller = "anonymous"
 )
 
 // errStopped is returned for connections that arrive once Stop has run.
@@ -73,8 +78,15 @@ type connection struct {
 	// deliveries' (mochi checks both with write false). mu guards it.
 	subscribing map[string]bool
 	// cert is the client certificate presented over mutual TLS, if any.
-	cert  *x509.Certificate
-	scope request.Scope
+	cert *x509.Certificate
+	// header and query are an unsigned WebSocket request's, which can carry
+	// a custom authorizer's name and token.
+	header http.Header
+	query  url.Values
+	// expiry disconnects a custom-authorized connection when the
+	// authorizer's disconnectAfterInSeconds passes.
+	expiry *time.Timer
+	scope  request.Scope
 	// principal is the IoT principal whose policies apply: a certificate
 	// ARN, a Cognito identity ID, or "" for a caller whose policies are IAM's
 	// alone.
@@ -86,7 +98,16 @@ type connection struct {
 	// thing is the thing the connection is, when its client ID names a
 	// thing attached to its principal.
 	thing string
-	mu    sync.Mutex
+	// serverName is the TLS server name the client asked for.
+	serverName string
+	// custom are the policies a custom authorizer returned for the
+	// connection, which govern it alone; nil if no authorizer let it in.
+	custom []*policyDocument
+	mu     sync.Mutex
+	// anonymous is a connection that presented no identity (an unsigned
+	// WebSocket, plain MQTT, or TLS without a certificate), which a custom
+	// authorizer can let in.
+	anonymous bool
 }
 
 // brokers returns the scope's broker, starting it on first use.
@@ -147,10 +168,14 @@ func (s *Service) serve(c *connection, listener string) error {
 
 // ServeMQTT serves an MQTT connection that arrived over WebSocket until it
 // closes, in the account and Region of the caller that signed it, or the
-// default ones for an unsigned connection (which the gateway refuses in
-// identity.mode verify).
+// default ones for an unsigned connection, which only a custom authorizer
+// lets in under identity.mode verify.
 func (s *Service) ServeMQTT(_ context.Context, r *execute.Request, conn net.Conn) error {
-	c := &connection{Conn: conn, scope: s.defaults, caller: "anonymous"}
+	c := &connection{Conn: conn, scope: s.defaults, caller: anonymousCaller, anonymous: r.Caller == nil}
+	if c.anonymous {
+		c.header, c.query = r.Header, r.Query
+	}
+
 	if r.Caller != nil {
 		c.scope = request.Scope{AccountID: r.Caller.AccountID, Region: r.Caller.Region}
 		c.principal, c.caller = r.Caller.CognitoIdentity, r.Caller.AccessKey
@@ -166,7 +191,7 @@ func (s *Service) ServeMQTT(_ context.Context, r *execute.Request, conn net.Conn
 // in the default account and Region, until l closes or Stop runs.
 func (s *Service) ListenMQTT(l net.Listener) {
 	s.accept(l, func(_ context.Context, conn net.Conn) {
-		c := &connection{Conn: conn, scope: s.defaults, caller: "anonymous"}
+		c := &connection{Conn: conn, scope: s.defaults, caller: anonymousCaller, anonymous: true}
 		if err := s.serve(c, listenerTCP); err != nil {
 			s.logger.Debug("mqtt connection ended", "error", err)
 		}

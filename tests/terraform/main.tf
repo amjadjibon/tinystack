@@ -1708,6 +1708,28 @@ resource "aws_iot_topic_rule" "readings" {
   tags = local.tags
 }
 
+resource "aws_iot_authorizer" "devices" {
+  name                    = "devices"
+  authorizer_function_arn = aws_lambda_function.echo.arn
+  signing_disabled        = false
+  status                  = "ACTIVE"
+  token_key_name          = "token-${var.team}"
+  token_signing_public_keys = {
+    key1 = <<-EOT
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqDm/lcyGIBzORvggk2CG
+      4wXeebMzsrnDkMwQ1LhXHR7WkVph0C8vg4i1cKTM9/9WTfLlDC3fpznVS4mivtCN
+      hJoQz9/hQPxgFk5ldIRKUplyAk1HRKVMl0PBZWa7BB0+EF9lMc0S9j5ieTL39Xqt
+      emFwkdB0oKQygv4X9JEmb5VuarAB0xNh/fMhrEfgaPMbFke7kj01e6TyR/mHnKiq
+      hechCeyvTc6G1PYP2oLxYts9sleMVvRu51fEqjIN0S/66bf7q1KQ7lwkLNDEH3In
+      OBZTkBc7eRHrpMlv4uQOqoB/Sn4E+bPv9dme/34yXQgfOh5WanJp4EGJd9RN14QH
+      HwIDAQAB
+      -----END PUBLIC KEY-----
+    EOT
+  }
+  tags = local.tags
+}
+
 data "aws_iot_endpoint" "data" {
   endpoint_type = "iot:Data-ATS"
 }

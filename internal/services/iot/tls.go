@@ -53,9 +53,24 @@ func (s *Service) handshake(ctx context.Context, conn net.Conn) (*connection, er
 		MinVersion:     tls.VersionTLS12,
 		GetCertificate: s.serverCertificate,
 		// The certificate need not chain to a trusted CA: it must be one IoT
-		// registered, and the handshake proves its key.
-		ClientAuth: tls.RequireAnyClientCert,
+		// registered, and the handshake proves its key. A client without one
+		// needs a custom authorizer.
+		ClientAuth: tls.RequestClientCert,
 		VerifyConnection: func(cs tls.ConnectionState) error {
+			c.serverName = cs.ServerName
+			if len(cs.PeerCertificates) == 0 {
+				c.anonymous, c.caller = true, anonymousCaller
+				return s.store.View(ctx, func(tx storage.ReadTx) error {
+					scope, found, err := endpointScope(tx, cs.ServerName)
+					c.scope = scope
+					if !found {
+						c.scope = s.defaults
+					}
+
+					return err
+				})
+			}
+
 			cert := cs.PeerCertificates[0]
 			id := certificateID(cert)
 			scope, err := s.certificateScope(ctx, id, cs.ServerName)
@@ -88,22 +103,16 @@ func (s *Service) handshake(ctx context.Context, conn net.Conn) (*connection, er
 func (s *Service) certificateScope(ctx context.Context, id, serverName string) (request.Scope, error) {
 	var scope request.Scope
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		found := false
-		if m := endpointName.FindStringSubmatch(serverName); m != nil {
-			account, ok, err := storage.Read[string](tx, prefixIndex+m[1])
-			if err != nil {
-				return err
-			}
-
-			if ok {
-				scope, found = request.Scope{AccountID: *account, Region: m[2]}, true
-			}
+		var found bool
+		var err error
+		if scope, found, err = endpointScope(tx, serverName); err != nil {
+			return err
 		}
 
 		if !found {
-			indexed, ok, err := storage.Read[request.Scope](tx, certificateIndexKey(id))
-			if err != nil {
-				return err
+			indexed, ok, readErr := storage.Read[request.Scope](tx, certificateIndexKey(id))
+			if readErr != nil {
+				return readErr
 			}
 
 			if !ok {
@@ -139,6 +148,22 @@ func (s *Service) certificateScope(ctx context.Context, id, serverName string) (
 	})
 
 	return scope, err
+}
+
+// endpointScope returns the account and Region of a server name that is an
+// account's data endpoint.
+func endpointScope(tx storage.ReadTx, serverName string) (scope request.Scope, found bool, err error) {
+	m := endpointName.FindStringSubmatch(serverName)
+	if m == nil {
+		return request.Scope{}, false, nil
+	}
+
+	account, ok, err := storage.Read[string](tx, prefixIndex+m[1])
+	if err != nil || !ok {
+		return request.Scope{}, false, err
+	}
+
+	return request.Scope{AccountID: *account, Region: m[2]}, true, nil
 }
 
 // serverCertificate returns the listener's certificate for a client's server
