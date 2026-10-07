@@ -28,6 +28,8 @@ elasticache:
   # records keeps caches as records; docker also runs each node in a container.
   caches: records
 iot:
+  # MQTT over TLS with device certificates; 0 turns it off.
+  # mqtts_port: 8883
   # Plain MQTT without authentication, as the default account and Region
   # (identity.mode: parse only); 0 turns it off. MQTT over WebSocket is always
   # served at /mqtt on the server port.

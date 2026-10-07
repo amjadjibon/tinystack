@@ -343,6 +343,7 @@ func newStartCommand() *cobra.Command {
 				caches.UseRuntime(cachedocker.New(), logger)
 			}
 			handler.Handle("deliveries", deliveries)
+			handler.Handle("iot/root-ca.pem", things.RootCA())
 
 			var listenConfig net.ListenConfig
 			listener, err := listenConfig.Listen(
@@ -394,6 +395,21 @@ func newStartCommand() *cobra.Command {
 
 				things.ListenMQTT(mqttListener)
 				logger.Info("mqtt ready", "address", mqttListener.Addr().String())
+			}
+
+			if cfg.IoT.MQTTSPort != 0 {
+				mqttsListener, mqttsErr := listenConfig.Listen(
+					cmd.Context(),
+					"tcp",
+					net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.IoT.MQTTSPort)),
+				)
+				if mqttsErr != nil {
+					_ = listener.Close()
+					return mqttsErr
+				}
+
+				things.ListenMQTTS(mqttsListener)
+				logger.Info("mqtts ready", "address", mqttsListener.Addr().String())
 			}
 
 			// The console has its own listener, so its pages never reach the

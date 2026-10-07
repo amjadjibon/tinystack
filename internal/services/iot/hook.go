@@ -3,6 +3,8 @@ package iot
 import (
 	"cmp"
 	"context"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"net/url"
 	"slices"
@@ -71,18 +73,27 @@ const (
 
 // policies returns the IoT policies that govern a connection, with what the
 // policy variables are for it. No policies means IAM alone governs it, as for
-// every connection outside identity.mode verify and for callers with no
-// attached IoT policy, which TinyStack allows (AWS would also evaluate IAM).
-// A client ID that names a thing attached to the principal is that thing's
-// connection.
+// every connection outside identity.mode verify and for Cognito callers with
+// no attached IoT policy, which TinyStack allows (AWS would also evaluate
+// IAM). A device certificate in verify mode has only its IoT policies, so it
+// is allowed nothing without one. A client ID that names a thing attached to
+// the principal is that thing's connection.
 func (h *hook) policies(c *connection, clientID string) ([]*policyDocument, map[string]string, error) {
 	vars := map[string]string{varClientID: clientID, varIsAttached: "false"}
-	if !h.service.verify || c.principal == "" {
+	if c.principal == "" {
 		return nil, vars, nil
 	}
 
-	vars[varCognitoSub] = c.principal
 	var docs []*policyDocument
+	if c.cert != nil {
+		certificateVariables(vars, c.caller, c.cert)
+		if h.service.verify {
+			docs = []*policyDocument{}
+		}
+	} else {
+		vars[varCognitoSub] = c.principal
+	}
+
 	err := h.service.store.View(context.Background(), func(tx storage.ReadTx) error {
 		p, err := loadPrincipal(tx, c.scope, c.principal)
 		if err != nil {
@@ -103,6 +114,10 @@ func (h *hook) policies(c *connection, clientID string) ([]*policyDocument, map[
 			for k, v := range t.Attributes {
 				vars[varAttribute+k+"]"] = v
 			}
+		}
+
+		if !h.service.verify {
+			return nil
 		}
 
 		names, err := attachedPolicies(tx, c.scope, c.principal, true)
@@ -131,6 +146,24 @@ func (h *hook) policies(c *connection, clientID string) ([]*policyDocument, map[
 	}
 
 	return docs, vars, err
+}
+
+// certificateVariables sets the iot:Certificate.* policy variables of a
+// client certificate: its ID and the first value of each subject and issuer
+// attribute it has.
+func certificateVariables(vars map[string]string, id string, cert *x509.Certificate) {
+	vars["iot:Certificate.Id"] = id
+	for part, name := range map[string]*pkix.Name{"Subject": &cert.Subject, "Issuer": &cert.Issuer} {
+		for attr, values := range map[string][]string{
+			"CommonName": {name.CommonName}, "SerialNumber": {name.SerialNumber}, "Country": name.Country,
+			"Organization": name.Organization, "OrganizationalUnit": name.OrganizationalUnit,
+			"State": name.Province,
+		} {
+			if len(values) > 0 && values[0] != "" {
+				vars["iot:Certificate."+part+"."+attr] = values[0]
+			}
+		}
+	}
 }
 
 // allowed reports whether docs allow action on the resource of the

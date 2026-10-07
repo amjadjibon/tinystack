@@ -76,6 +76,9 @@ type Config struct {
 		ConsolePort int `yaml:"console_port"`
 	} `yaml:"server"`
 	IoT struct {
+		// MQTTSPort serves MQTT over TLS with device certificates; 0 turns
+		// it off.
+		MQTTSPort int `yaml:"mqtts_port"`
 		// MQTTPort serves plain MQTT, without authentication, on Host as the
 		// default account and Region; 0 turns it off.
 		MQTTPort int `yaml:"mqtt_port"`
@@ -189,7 +192,12 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("elasticache.caches must be records or docker")
 	}
 
-	if p := c.IoT.MQTTPort; p < 0 || p > 65535 || (p != 0 && (p == c.Server.Port || p == c.Server.ConsolePort)) {
+	if p := c.IoT.MQTTSPort; p < 0 || p > 65535 || (p != 0 && (p == c.Server.Port || p == c.Server.ConsolePort)) {
+		return fmt.Errorf("iot.mqtts_port must be 0 or another port up to 65535")
+	}
+
+	if p := c.IoT.MQTTPort; p < 0 || p > 65535 ||
+		(p != 0 && (p == c.Server.Port || p == c.Server.ConsolePort || p == c.IoT.MQTTSPort)) {
 		return fmt.Errorf("iot.mqtt_port must be 0 or another port up to 65535")
 	}
 

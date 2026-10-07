@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -282,6 +283,19 @@ func serverStore(
 	h.UseGraphQL(graphQL)
 	h.UseMQTT(devices)
 	h.Handle("deliveries", deliveries)
+	h.Handle("iot/root-ca.pem", devices.RootCA())
+	if cfg.IoT.MQTTSPort != 0 {
+		mqttsListener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		devices.ListenMQTTS(mqttsListener)
+		addr := mqttsListener.Addr().String()
+		h.Handle("iot/mqtts-addr", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write([]byte(addr))
+		}))
+	}
 
 	s = httptest.NewServer(h)
 	return s, func() {

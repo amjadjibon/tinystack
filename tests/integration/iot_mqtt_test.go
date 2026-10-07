@@ -4,8 +4,16 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"io"
+	"math/big"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -18,6 +26,7 @@ import (
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	ci "github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
+	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
 	"github.com/aws/aws-sdk-go-v2/service/iotdataplane"
 	"github.com/coder/websocket"
 	"github.com/mochi-mqtt/server/v2/packets"
@@ -76,6 +85,62 @@ type mqttClient struct {
 	conn net.Conn
 	r    *bufio.Reader
 	ids  uint16
+}
+
+func dialMQTTS(t *testing.T, addr string, tlsConfig *tls.Config) (*mqttClient, error) {
+	t.Helper()
+	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	t.Cleanup(func() { _ = conn.Close() })
+	return &mqttClient{t: t, conn: conn, r: bufio.NewReader(conn)}, nil
+}
+
+func rootCA(t *testing.T, s *httptest.Server) *x509.CertPool {
+	t.Helper()
+	resp, err := s.Client().Get(s.URL + "/_tinystack/iot/root-ca.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("root CA status %d", resp.StatusCode)
+	}
+
+	if ct := resp.Header.Get("Content-Type"); ct != "application/x-pem-file" {
+		t.Fatalf("root CA Content-Type = %s, want application/x-pem-file", ct)
+	}
+
+	pemBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(pemBytes) {
+		t.Fatal("failed to append root CA PEM")
+	}
+
+	return pool
+}
+
+func mqttsAddr(t *testing.T, s *httptest.Server) string {
+	t.Helper()
+	resp, err := s.Client().Get(s.URL + "/_tinystack/iot/mqtts-addr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return string(b)
 }
 
 func dialMQTT(t *testing.T, rawURL string) (*mqttClient, error) {
@@ -492,5 +557,366 @@ func TestIoTMQTTPolicies(t *testing.T) {
 
 	if code := device.publish("devices/other/x", "theirs", false); code != 0 {
 		t.Fatalf("puback 0x%x", code)
+	}
+}
+
+func TestIoTMQTTSDeviceCertificates(t *testing.T) {
+	cfg := testConfig()
+	cfg.Identity.Mode = config.IdentityVerify
+	cfg.Identity.SecretKeys = map[string]string{"test": "test"}
+	cfg.IoT.MQTTSPort = 8883
+	s := serverConfig(t, cfg, &fakeRuntime{})
+	ctx := context.Background()
+
+	addr := mqttsAddr(t, s)
+	pool := rootCA(t, s)
+
+	// Connections without a client certificate are rejected during TLS handshake.
+	tlsNoCert := &tls.Config{
+		RootCAs:    pool,
+		ServerName: "127.0.0.1",
+	}
+	cl, err := dialMQTTS(t, addr, tlsNoCert)
+	if err == nil {
+		// In TLS 1.3, client handshake finishes before server processes client certificate.
+		// Reading or connecting will fail immediately because server sent bad_certificate alert and closed.
+		var b [1]byte
+		if _, readErr := cl.conn.Read(b[:]); readErr == nil {
+			t.Fatal("connection without client certificate was accepted")
+		}
+	}
+
+	iotCli := iotClient(s, "test")
+
+	// Issue a device certificate.
+	certResp, err := iotCli.CreateKeysAndCertificate(ctx, &iot.CreateKeysAndCertificateInput{
+		SetAsActive: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	certID := aws.ToString(certResp.CertificateId)
+	certARN := aws.ToString(certResp.CertificateArn)
+
+	clientCert, err := tls.X509KeyPair(
+		[]byte(aws.ToString(certResp.CertificatePem)),
+		[]byte(aws.ToString(certResp.KeyPair.PrivateKey)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tlsWithCert := &tls.Config{
+		RootCAs:      pool,
+		Certificates: []tls.Certificate{clientCert},
+		ServerName:   "127.0.0.1",
+	}
+
+	// Create a thing and attach the certificate.
+	_, err = iotCli.CreateThingType(ctx, &iot.CreateThingTypeInput{
+		ThingTypeName: aws.String("sensor-type"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = iotCli.CreateThing(ctx, &iot.CreateThingInput{
+		ThingName:     aws.String("sensor-1"),
+		ThingTypeName: aws.String("sensor-type"),
+		AttributePayload: &iottypes.AttributePayload{
+			Attributes: map[string]string{
+				"location": "roof",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = iotCli.AttachThingPrincipal(ctx, &iot.AttachThingPrincipalInput{
+		ThingName: aws.String("sensor-1"),
+		Principal: &certARN,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// In verify mode a certificate without an attached policy is allowed nothing.
+	cl, err = dialMQTTS(t, addr, tlsWithCert)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if code := cl.connect("sensor-1"); code != packets.ErrBadUsernameOrPassword.Code {
+		t.Fatalf("connect without a policy: reason 0x%x", code)
+	}
+
+	// Attach a policy that validates thing-attached variables and certificate variables.
+	topicResource := "arn:aws:iot:us-east-1:000000000000:topic/readings/" +
+		"${iot:Connection.Thing.ThingName}/${iot:Certificate.Id}"
+	filterResource := "arn:aws:iot:us-east-1:000000000000:topicfilter/readings/" +
+		"${iot:Connection.Thing.ThingName}/${iot:Certificate.Id}"
+	policyDoc := `{
+		"Version": "2012-10-17",
+		"Statement": [
+			{
+				"Effect": "Allow",
+				"Action": "iot:Connect",
+				"Resource": "arn:aws:iot:us-east-1:000000000000:client/${iot:Connection.Thing.ThingName}",
+				"Condition": {
+					"StringEquals": {
+						"iot:Connection.Thing.IsAttached": "true",
+						"iot:Connection.Thing.ThingTypeName": "sensor-type",
+						"iot:Connection.Thing.Attributes[location]": "roof",
+						"iot:Certificate.Subject.CommonName": "AWS IoT Certificate"
+					}
+				}
+			},
+			{
+				"Effect": "Allow",
+				"Action": ["iot:Publish", "iot:Receive"],
+				"Resource": "` + topicResource + `"
+			},
+			{
+				"Effect": "Allow",
+				"Action": "iot:Subscribe",
+				"Resource": "` + filterResource + `"
+			}
+		]
+	}`
+
+	_, err = iotCli.CreatePolicy(ctx, &iot.CreatePolicyInput{
+		PolicyName:     aws.String("sensor-policy"),
+		PolicyDocument: &policyDoc,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = iotCli.AttachPolicy(ctx, &iot.AttachPolicyInput{
+		PolicyName: aws.String("sensor-policy"),
+		Target:     &certARN,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Dial MQTTS.
+	cl, err = dialMQTTS(t, addr, tlsWithCert)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Connecting with a mismatched client ID (not sensor-1) is refused by policy.
+	if code := cl.connect("wrong-client"); code != packets.ErrBadUsernameOrPassword.Code {
+		t.Fatalf("connect wrong client: reason 0x%x", code)
+	}
+
+	// Reconnect as sensor-1.
+	cl, err = dialMQTTS(t, addr, tlsWithCert)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if code := cl.connect("sensor-1"); code != 0 {
+		t.Fatalf("connect sensor-1: reason 0x%x", code)
+	}
+
+	topic := "readings/sensor-1/" + certID
+	codes := cl.subscribe(topic)
+	if len(codes) != 1 || codes[0] != 1 {
+		t.Fatalf("suback codes = %v", codes)
+	}
+
+	if code := cl.publish(topic, "temp:25", false); code != 0 {
+		t.Fatalf("puback 0x%x", code)
+	}
+
+	if msg := cl.message(topic); string(msg.Payload) != "temp:25" {
+		t.Fatalf("message = %+v", msg)
+	}
+
+	// Publishing to an unauthorized topic is refused.
+	if code := cl.publish("readings/sensor-2/"+certID, "temp:99", false); code != packets.ErrNotAuthorized.Code {
+		t.Fatalf("puback unauthorized topic: 0x%x", code)
+	}
+
+	// Deactivating certificate causes subsequent TLS handshakes to fail.
+	_, err = iotCli.UpdateCertificate(ctx, &iot.UpdateCertificateInput{
+		CertificateId: &certID,
+		NewStatus:     iottypes.CertificateStatusInactive,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cl, err = dialMQTTS(t, addr, tlsWithCert)
+	if err == nil {
+		var b [1]byte
+		if _, readErr := cl.conn.Read(b[:]); readErr == nil {
+			t.Fatal("connection with inactive certificate was accepted")
+		}
+	}
+
+	// Reactivate certificate.
+	_, err = iotCli.UpdateCertificate(ctx, &iot.UpdateCertificateInput{
+		CertificateId: &certID,
+		NewStatus:     iottypes.CertificateStatusActive,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cl, err = dialMQTTS(t, addr, tlsWithCert)
+	if err != nil {
+		t.Fatalf("dial after reactivation: %v", err)
+	}
+	if code := cl.connect("sensor-1"); code != 0 {
+		t.Fatalf("connect after reactivation: 0x%x", code)
+	}
+}
+
+func TestIoTMQTTSWithCACertificate(t *testing.T) {
+	cfg := testConfig()
+	cfg.IoT.MQTTSPort = 8883
+	s := serverConfig(t, cfg, &fakeRuntime{})
+	ctx := context.Background()
+
+	addr := mqttsAddr(t, s)
+	pool := rootCA(t, s)
+
+	ca := newIoTCA(t)
+	iotCli := iotClient(s, "test")
+
+	regCode, err := iotCli.GetRegistrationCode(ctx, &iot.GetRegistrationCodeInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	registeredCA, err := iotCli.RegisterCACertificate(ctx, &iot.RegisterCACertificateInput{
+		CaCertificate:           &ca.pem,
+		VerificationCertificate: aws.String(ca.sign(t, aws.ToString(regCode.RegistrationCode))),
+		SetAsActive:             true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	caID := aws.ToString(registeredCA.CertificateId)
+
+	// Issue a device certificate signed by this CA.
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		Subject:      pkix.Name{CommonName: "ca-device"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, ca.cert, &key.PublicKey, ca.key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+	clientCert := tls.Certificate{
+		Certificate: [][]byte{der},
+		PrivateKey:  key,
+	}
+
+	registeredCert, err := iotCli.RegisterCertificate(ctx, &iot.RegisterCertificateInput{
+		CertificatePem: aws.String(string(certPEM)),
+		Status:         iottypes.CertificateStatusActive,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tlsCfg := &tls.Config{
+		RootCAs:      pool,
+		Certificates: []tls.Certificate{clientCert},
+		ServerName:   "127.0.0.1",
+	}
+
+	// Connect succeeds.
+	cl, err := dialMQTTS(t, addr, tlsCfg)
+	if err != nil {
+		t.Fatalf("dial ca device: %v", err)
+	}
+	if code := cl.connect("ca-client"); code != 0 {
+		t.Fatalf("connect ca-client: 0x%x", code)
+	}
+
+	// The account's data endpoint, as the server name, gets a certificate for
+	// that name.
+	endpoint, err := iotCli.DescribeEndpoint(ctx, &iot.DescribeEndpointInput{EndpointType: aws.String("iot:Data-ATS")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sniCfg := tlsCfg.Clone()
+	sniCfg.ServerName = aws.ToString(endpoint.EndpointAddress)
+	cl, err = dialMQTTS(t, addr, sniCfg)
+	if err != nil {
+		t.Fatalf("dial the data endpoint: %v", err)
+	}
+
+	if code := cl.connect("ca-client-sni"); code != 0 {
+		t.Fatalf("connect through the data endpoint: 0x%x", code)
+	}
+
+	// Deactivating the CA certificate stops devices signed by it from connecting.
+	_, err = iotCli.UpdateCACertificate(ctx, &iot.UpdateCACertificateInput{
+		CertificateId: &caID,
+		NewStatus:     iottypes.CACertificateStatusInactive,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cl, err = dialMQTTS(t, addr, tlsCfg)
+	if err == nil {
+		var b [1]byte
+		if _, readErr := cl.conn.Read(b[:]); readErr == nil {
+			t.Fatal("connection with inactive CA certificate was accepted")
+		}
+	}
+
+	// Reactivating CA certificate restores connectivity.
+	_, err = iotCli.UpdateCACertificate(ctx, &iot.UpdateCACertificateInput{
+		CertificateId: &caID,
+		NewStatus:     iottypes.CACertificateStatusActive,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cl, err = dialMQTTS(t, addr, tlsCfg)
+	if err != nil {
+		t.Fatalf("dial after CA reactivation: %v", err)
+	}
+	if code := cl.connect("ca-client"); code != 0 {
+		t.Fatalf("connect after CA reactivation: 0x%x", code)
+	}
+
+	// Clean up certificate.
+	certID := aws.ToString(registeredCert.CertificateId)
+	_, err = iotCli.UpdateCertificate(ctx, &iot.UpdateCertificateInput{
+		CertificateId: &certID,
+		NewStatus:     iottypes.CertificateStatusInactive,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = iotCli.DeleteCertificate(ctx, &iot.DeleteCertificateInput{
+		CertificateId: &certID,
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

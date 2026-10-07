@@ -20,6 +20,7 @@ package iot
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -65,12 +66,15 @@ type Service struct {
 	// brokers are the running MQTT brokers by scope, guarded by brokersMu;
 	// nil once stopped.
 	brokers map[request.Scope]*broker
+	// serverCerts caches dynamically issued server TLS certificates by SNI name.
+	serverCerts map[string]*tls.Certificate
 	// defaults is the account and Region of connections that carry no
 	// identity, and verify is whether IoT policies are evaluated
 	// (identity.mode verify).
-	defaults  request.Scope
-	brokersMu sync.Mutex
-	verify    bool
+	defaults      request.Scope
+	brokersMu     sync.Mutex
+	serverCertsMu sync.Mutex
+	verify        bool
 }
 
 // New returns the service. Its MQTT brokers start on first use and run until
@@ -82,7 +86,7 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 
 	return &Service{
 		store: store, ca: pki.NewLazy(store, caKey, caCommonName), now: time.Now, logger: logger,
-		bg: background.New(), brokers: map[request.Scope]*broker{},
+		bg: background.New(), brokers: map[request.Scope]*broker{}, serverCerts: map[string]*tls.Certificate{},
 	}
 }
 

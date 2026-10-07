@@ -2,6 +2,7 @@ package iot
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"log/slog"
 	"net"
@@ -31,6 +32,7 @@ const (
 	maxSessionExpiry  = 3600
 	listenerWebSocket = "websocket"
 	listenerTCP       = "tcp"
+	listenerTLS       = "tls"
 )
 
 // errStopped is returned for connections that arrive once Stop has run.
@@ -70,9 +72,12 @@ type connection struct {
 	// whether each was authorized, so the hook can tell its ACL checks from
 	// deliveries' (mochi checks both with write false). mu guards it.
 	subscribing map[string]bool
-	scope       request.Scope
-	// principal is the IoT principal whose policies apply: a Cognito
-	// identity ID, or "" for a caller whose policies are IAM's alone.
+	// cert is the client certificate presented over mutual TLS, if any.
+	cert  *x509.Certificate
+	scope request.Scope
+	// principal is the IoT principal whose policies apply: a certificate
+	// ARN, a Cognito identity ID, or "" for a caller whose policies are IAM's
+	// alone.
 	principal string
 	// caller identifies the connection in lifecycle events.
 	caller string
@@ -160,6 +165,17 @@ func (s *Service) ServeMQTT(_ context.Context, r *execute.Request, conn net.Conn
 // ListenMQTT serves plain MQTT connections from l, without authentication,
 // in the default account and Region, until l closes or Stop runs.
 func (s *Service) ListenMQTT(l net.Listener) {
+	s.accept(l, func(_ context.Context, conn net.Conn) {
+		c := &connection{Conn: conn, scope: s.defaults, caller: "anonymous"}
+		if err := s.serve(c, listenerTCP); err != nil {
+			s.logger.Debug("mqtt connection ended", "error", err)
+		}
+	})
+}
+
+// accept hands each connection l accepts to serve, in the background, until
+// l closes or Stop runs.
+func (s *Service) accept(l net.Listener, serve func(context.Context, net.Conn)) {
 	s.bg.Go(func(ctx context.Context) {
 		go func() {
 			<-ctx.Done()
@@ -172,12 +188,9 @@ func (s *Service) ListenMQTT(l net.Listener) {
 				return
 			}
 
-			s.bg.Go(func(context.Context) {
-				c := &connection{Conn: conn, scope: s.defaults, caller: "anonymous"}
-				if err := s.serve(c, listenerTCP); err != nil {
-					s.logger.Debug("mqtt connection ended", "error", err)
-				}
-			})
+			if !s.bg.Go(func(ctx context.Context) { serve(ctx, conn) }) {
+				_ = conn.Close()
+			}
 		}
 	})
 }

@@ -25,12 +25,13 @@ import (
 )
 
 const (
-	statusActive   = "ACTIVE"
-	statusInactive = "INACTIVE"
-	statusRevoked  = "REVOKED"
-	modeDefault    = "DEFAULT"
-	modeSNIOnly    = "SNI_ONLY"
-	issuedSubject  = "AWS IoT Certificate"
+	statusActive     = "ACTIVE"
+	statusInactive   = "INACTIVE"
+	statusRevoked    = "REVOKED"
+	modeDefault      = "DEFAULT"
+	modeSNIOnly      = "SNI_ONLY"
+	issuedSubject    = "AWS IoT Certificate"
+	certificateIndex = "aws/" + service + "/" + kindCertificate + "/"
 )
 
 // issuedUntil is when certificates that IoT issues expire, as on AWS.
@@ -51,6 +52,31 @@ type certificate struct {
 	Modified   float64
 	NotBefore  float64
 	NotAfter   float64
+}
+
+// certificateIndexKey is the key of the partition-wide index entry that
+// holds the account and Region in which a certificate is active, so MQTT over
+// TLS can find a client's scope from its certificate.
+func certificateIndexKey(id string) string {
+	return certificateIndex + id
+}
+
+// indexCertificate keeps a certificate's index entry in step with its status.
+// A certificate active in two accounts keeps the first one's entry (a server
+// name can pick the other), and only its own account's change removes it.
+func indexCertificate(tx storage.WriteTx, scope request.Scope, c *certificate) error {
+	key := certificateIndexKey(c.ID)
+	held, found, err := storage.Read[request.Scope](tx, key)
+	switch {
+	case err != nil:
+		return err
+	case c.Status == statusActive && !found:
+		return storage.Write(tx, key, scope)
+	case c.Status != statusActive && found && *held == scope:
+		tx.Delete(key)
+	}
+
+	return nil
 }
 
 func loadCertificate(tx storage.ReadTx, scope request.Scope, id string) (*certificate, error) {
@@ -101,6 +127,10 @@ func (c *certificate) store(tx storage.WriteTx, scope request.Scope) error {
 	key := scope.Key(service, kindCertificate, c.ID)
 	if exists(tx, key) {
 		return alreadyExists("Certificate %s already exists.", c.ID)
+	}
+
+	if err := indexCertificate(tx, scope, c); err != nil {
+		return err
 	}
 
 	return storage.Write(tx, key, c)
@@ -298,6 +328,10 @@ func (s *Service) UpdateCertificate(
 
 		c.Status, c.Modified = status, common.Unix(s.now())
 		c.Version++
+		if err := indexCertificate(tx, scope, c); err != nil {
+			return err
+		}
+
 		return storage.Write(tx, scope.Key(service, kindCertificate, c.ID), c)
 	})
 	if err != nil {

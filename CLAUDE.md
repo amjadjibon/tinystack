@@ -509,13 +509,19 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   first use, stopped by `Stop`, deferred and a shutdown hook in `start.go`), which serves each connection with
   `EstablishConnection`: the gateway upgrades `GET /mqtt` (`gateway/mqtt.go`, `Server.UseMQTT`; presigned SigV4 for
   `iotdevicegateway`, also without `X-Amz-Expires` and with the session token appended after signing, as device SDKs
-  send it) and hands `ServeMQTT` the caller, and `iot.mqtt_port` (parse mode only) serves plain MQTT as the default
-  account and Region (`ListenMQTT`). `hook.go` enforces IoT Core's limits (QoS 1, 128 KB payloads, topic length and
-  levels; clients cannot publish to `$` topics), publishes lifecycle events on `$aws/events/…`, and keeps retained
-  messages in `…/iot/retained/<path-escaped topic>`, from which each broker reloads them. In verify mode it evaluates
-  the IoT policies attached to the caller's Cognito identity (STS sessions from `AssumeRoleWithWebIdentity` with a
-  Cognito token record it, and `execute.Caller.CognitoIdentity` carries it) for `iot:Connect`, `Publish`,
-  `Subscribe`, and `Receive`; callers with no attached IoT policy are allowed, since IAM policies are not evaluated.
+  send it) and hands `ServeMQTT` the caller, `iot.mqtt_port` (parse mode only) serves plain MQTT as the default
+  account and Region (`ListenMQTT`), and `iot.mqtts_port` serves MQTT over TLS (`tls.go`, `ListenMQTTS`): a client
+  presents a registered, active device certificate (whose CA, if any, is active), whose account and Region come from
+  a data endpoint server name or the partition-wide `aws/iot/certificate/<ID>` index of active certificates, and the
+  listener's certificates are signed by the IoT CA that `/_tinystack/iot/root-ca.pem` serves.
+  `hook.go` enforces IoT Core's limits (QoS 1, 128 KB payloads, topic length and levels; clients cannot publish to `$`
+  topics), publishes lifecycle events on `$aws/events/…`, and keeps retained messages in
+  `…/iot/retained/<path-escaped topic>`, from which each broker reloads them. In verify mode it evaluates
+  the IoT policies attached to the caller's device certificate or Cognito identity (STS sessions from
+  `AssumeRoleWithWebIdentity` with a Cognito token record it, and `execute.Caller.CognitoIdentity` carries it) for
+  `iot:Connect`, `Publish`, `Subscribe`, and `Receive`, with the `iot:Certificate.*` and thing variables; a
+  certificate with no attached policy is allowed nothing, while other callers with none are allowed, since IAM
+  policies are not evaluated.
   `iot.Service.DataPlane()` serves the IoT data plane (`Publish` with MQTT 5 properties, retained messages, and
   connections and subscriptions from the broker).
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if

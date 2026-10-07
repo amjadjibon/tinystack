@@ -40,6 +40,15 @@ func TestLoad(t *testing.T) {
 			"plain mqtt with verify",
 			"identity:\n  mode: verify\n  secret_keys:\n    test: secret\niot:\n  mqtt_port: 1883", false,
 		},
+		{"mqtts", "iot:\n  mqtts_port: 8883", true},
+		{"mqtts on the server port", "iot:\n  mqtts_port: 4566", false},
+		{"mqtts on the console port", "iot:\n  mqtts_port: 4567", false},
+		{"mqtts on the mqtt port", "iot:\n  mqtts_port: 1883\n  mqtt_port: 1883", false},
+		{"bad mqtts port", "iot:\n  mqtts_port: 70000", false},
+		{
+			"mqtts with verify",
+			"identity:\n  mode: verify\n  secret_keys:\n    test: secret\niot:\n  mqtts_port: 8883", true,
+		},
 		{"documents", "{}\n---\n{}", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
