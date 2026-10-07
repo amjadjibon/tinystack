@@ -532,6 +532,7 @@ Store objects, versions, multipart uploads, and event notifications in the share
 - Partition-wide bucket name uniqueness and ownership checks.
 - Object CRUD, listing, metadata, tagging, copy, upload checksum validation, one byte range and conditional requests.
 - Multipart upload lifecycle and atomic completion.
+- Stored object checksums (CRC32, CRC32C, CRC64NVME by default, SHA-1, SHA-256) returned with ChecksumMode, composite and full-object multipart checksums, kept through copies and versions.
 - Versioning, null versions and delete markers.
 - Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge.
 - Bucket lifecycle and encryption configuration are stored.
