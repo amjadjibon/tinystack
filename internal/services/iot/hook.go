@@ -40,6 +40,7 @@ func (h *hook) Provides(b byte) bool {
 	return slices.Contains([]byte{
 		mqtt.OnConnectAuthenticate, mqtt.OnACLCheck, mqtt.OnSessionEstablished, mqtt.OnDisconnect,
 		mqtt.OnSubscribe, mqtt.OnSubscribed, mqtt.OnUnsubscribed, mqtt.OnRetainMessage, mqtt.StoredRetainedMessages,
+		mqtt.OnPublish, mqtt.OnPublished,
 	}, b)
 }
 
@@ -367,7 +368,7 @@ func (h *hook) OnRetainMessage(_ *mqtt.Client, pk packets.Packet, r int64) {
 		})
 	})
 	if err != nil {
-		h.service.logger.Warn("iot retained message not stored", "topic", pk.TopicName, "error", err)
+		h.service.logger.Warn("iot retained message not stored", keyTopic, pk.TopicName, "error", err)
 	}
 }
 
@@ -391,10 +392,59 @@ func (h *hook) StoredRetainedMessages() ([]mqttstorage.Message, error) {
 }
 
 // publishable reports whether a client may publish to topic: within IoT
-// Core's limits, and not a reserved topic (shadows and Basic Ingest are not
-// implemented yet, and lifecycle events are IoT Core's own).
+// Core's limits, and not a reserved topic other than Basic Ingest's and the
+// shadow requests (lifecycle events and shadow responses are IoT Core's own).
 func publishable(topic string) bool {
-	return withinLimits(topic) && !strings.HasPrefix(topic, "$")
+	return withinLimits(topic) && (!strings.HasPrefix(topic, "$") || consumed(topic))
+}
+
+// consumed reports whether a topic is one IoT Core consumes instead of
+// delivering: Basic Ingest's and the shadow requests.
+func consumed(topic string) bool {
+	if rule, ok := strings.CutPrefix(topic, ingestPrefix); ok {
+		name, _, _ := strings.Cut(rule, "/")
+		return ruleNamePattern.MatchString(name)
+	}
+
+	_, _, ok := shadowRequest(topic)
+	return ok
+}
+
+// OnPublish keeps Basic Ingest messages and shadow requests from
+// subscribers; OnPublished still sees them.
+//
+//nolint:gocritic // mochi's Hook interface passes packets by value.
+func (h *hook) OnPublish(_ *mqtt.Client, pk packets.Packet) (packets.Packet, error) {
+	if consumed(pk.TopicName) {
+		return pk, packets.CodeSuccessIgnore
+	}
+
+	return pk, nil
+}
+
+// OnPublished runs the rules a message triggers and answers shadow
+// requests.
+//
+//nolint:gocritic // mochi's Hook interface passes packets by value.
+func (h *hook) OnPublished(cl *mqtt.Client, pk packets.Packet) {
+	if h.broker.closing.Load() {
+		return
+	}
+
+	m := &message{scope: h.broker.scope, topic: pk.TopicName, origin: cl.ID, payload: pk.Payload}
+	if c := connectionOf(cl); c != nil {
+		m.clientID, m.principal = cl.ID, c.caller
+	}
+
+	if rest, ok := strings.CutPrefix(pk.TopicName, ingestPrefix); ok {
+		m.ingest, m.topic, _ = strings.Cut(rest, "/")
+	} else if _, _, ok := shadowRequest(pk.TopicName); ok {
+		h.service.bg.Go(func(ctx context.Context) {
+			h.service.serveShadow(ctx, h.broker.scope, pk.TopicName, pk.Payload)
+		})
+	}
+
+	h.service.runRules(m)
 }
 
 // subscribable reports whether a client may subscribe to filter: within IoT

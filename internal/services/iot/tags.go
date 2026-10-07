@@ -14,6 +14,7 @@ import (
 // taggable maps the ARN kinds that take tags to their record kinds.
 var taggable = map[string]string{
 	"thingtype": kindThingType, "thinggroup": kindThingGroup, kindPolicy: kindPolicy, "cacert": kindCA,
+	kindRule: kindRule,
 }
 
 // tagged returns the key of the record an ARN names and its tags.
@@ -36,8 +37,8 @@ func tagged(tx storage.ReadTx, scope request.Scope, resource *string) (key strin
 		return key, record.Tags, nil
 	}
 
-	return "", nil, invalid("%s is not the ARN of a taggable IoT resource (a thing type, thing group, policy, or CA "+
-		"certificate) of this account and Region.", id)
+	return "", nil, invalid("%s is not the ARN of a taggable IoT resource (a thing type, thing group, policy, CA "+
+		"certificate, or topic rule) of this account and Region.", id)
 }
 
 // retag replaces the tags of the resource an ARN names with fn's result,

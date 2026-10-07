@@ -203,7 +203,7 @@ func serverStore(
 	identityPools := identitypools.New(store, userPools, roles)
 	catalogService := datacatalog.New(store)
 	queries := queryengine.New(store, catalogService, objects)
-	devices := things.New(store, logger)
+	devices := things.New(store, deliveries, logger)
 	devices.UseIdentity(
 		request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
 		cfg.Identity.Mode == config.IdentityVerify,
@@ -251,6 +251,7 @@ func serverStore(
 		iotdataplaneapi.Descriptor(devices.DataPlane()),
 	}
 	caller := catalog.NewCaller(services...)
+	devices.UseCaller(caller)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
 	monitoring.UseCaller(caller)

@@ -62,7 +62,18 @@ Resources:
     Properties:
       ThingName: !Ref Device
       Principal: !GetAtt Cert.Arn
+  Rule:
+    Type: AWS::IoT::TopicRule
+    Properties:
+      TopicRulePayload:
+        Sql: !Sub "SELECT * FROM 'floor/${Floor}'"
+        RuleDisabled: false
+        Actions:
+          - Republish: {Topic: alerts, RoleArn: "arn:aws:iam::000000000000:role/iot"}
+      Tags: [{Key: team, Value: a}]
 Outputs:
+  Rule: {Value: !Ref Rule}
+  RuleArn: {Value: !GetAtt Rule.Arn}
   Thing: {Value: !GetAtt Device.Arn}
   Group: {Value: !Ref Fleet}
   Policy: {Value: !Ref Policy}
@@ -98,6 +109,12 @@ func TestCloudFormationIoT(t *testing.T) {
 	thing, err := devices.DescribeThing(ctx, &iot.DescribeThingInput{ThingName: aws.String("probe")})
 	if err != nil || thing.Attributes["floor"] != "3" || thing.Attributes["room"] != "a" {
 		t.Fatalf("%+v %v", thing, err)
+	}
+
+	rule, err := devices.GetTopicRule(ctx, &iot.GetTopicRuleInput{RuleName: aws.String(outputs["Rule"])})
+	if err != nil || aws.ToString(rule.Rule.Sql) != "SELECT * FROM 'floor/3'" ||
+		aws.ToString(rule.RuleArn) != outputs["RuleArn"] || strings.Contains(outputs["Rule"], "-") {
+		t.Fatalf("%+v %v", rule, err)
 	}
 
 	cert := outputs["Cert"]
@@ -159,6 +176,11 @@ func TestCloudFormationIoT(t *testing.T) {
 		t.Fatalf("%+v %v", described, err)
 	}
 
+	rule, err = devices.GetTopicRule(ctx, &iot.GetTopicRuleInput{RuleName: aws.String(outputs["Rule"])})
+	if err != nil || aws.ToString(rule.Rule.Sql) != "SELECT * FROM 'floor/4'" {
+		t.Fatalf("%+v %v", rule, err)
+	}
+
 	typ, err := devices.DescribeThingType(ctx, &iot.DescribeThingTypeInput{ThingTypeName: aws.String("sensor")})
 	if err != nil || !typ.ThingTypeMetadata.Deprecated {
 		t.Fatalf("%+v %v", typ, err)
@@ -187,6 +209,11 @@ func TestCloudFormationIoT(t *testing.T) {
 	policies, err := devices.ListPolicies(ctx, &iot.ListPoliciesInput{})
 	if err != nil || len(policies.Policies) != 0 {
 		t.Fatalf("%+v %v", policies, err)
+	}
+
+	rules, err := devices.ListTopicRules(ctx, &iot.ListTopicRulesInput{})
+	if err != nil || len(rules.Rules) != 0 {
+		t.Fatalf("%+v %v", rules, err)
 	}
 
 	types, err := devices.ListThingTypes(ctx, &iot.ListThingTypesInput{})

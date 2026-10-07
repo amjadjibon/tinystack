@@ -231,7 +231,7 @@ func newStartCommand() *cobra.Command {
 			balancers := elbv2.New(store, logger)
 			caches := elasticache.New(store)
 			defer caches.Stop()
-			things := iot.New(store, logger)
+			things := iot.New(store, deliveries, logger)
 			// Stop disconnects every MQTT client.
 			defer things.Stop()
 			things.UseIdentity(
@@ -313,6 +313,8 @@ func newStartCommand() *cobra.Command {
 			graphQL.UseCaller(caller)
 			email.UseCaller(caller)
 			identityPools.UseCaller(caller)
+			// Topic rules' actions reach the other services.
+			things.UseCaller(caller)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err

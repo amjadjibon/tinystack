@@ -385,7 +385,7 @@ func TestIoTMQTT(t *testing.T) {
 		Topic: aws.String("sensors/d/temp"), UserProperties: aws.String(`[{"a":"b"}]`),
 	})
 	wantCode(t, err, "NotImplemented")
-	_, err = data.Publish(ctx, &iotdataplane.PublishInput{Topic: aws.String("$aws/things/t/shadow/update")})
+	_, err = data.Publish(ctx, &iotdataplane.PublishInput{Topic: aws.String("$aws/events/presence/connected/x")})
 	wantCode(t, err, "InvalidRequestException")
 
 	conn, err := data.GetConnection(ctx, &iotdataplane.GetConnectionInput{

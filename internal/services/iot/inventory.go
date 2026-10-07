@@ -6,11 +6,12 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 // Resources lists every thing, thing type, thing group, certificate, CA
-// certificate, and policy, for the resource browser.
+// certificate, policy, topic rule, and shadow, for the resource browser.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -81,6 +82,26 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 			Type: kind, Name: name, ARN: arn(scope, "cacert", name), Tags: c.Tags,
 			Details: map[string]any{"Status": c.Status, "Mode": c.Mode},
 		}, true, nil
+	case kindRule:
+		r, _, err := storage.Read[topicRule](tx, key)
+		if err != nil {
+			return catalog.Resource{}, false, err
+		}
+
+		return catalog.Resource{
+			Type: kind, Name: name, ARN: arn(scope, kindRule, name), Tags: r.Tags,
+			Details: map[string]any{
+				"SQL": common.Value(r.Payload.Sql), "Disabled": common.Value(r.Payload.RuleDisabled),
+				"Actions": len(r.Payload.Actions),
+			},
+		}, true, nil
+	case kindShadow, kindNamedShadow:
+		r, _, err := storage.Read[shadowRecord](tx, key)
+		if err != nil || r.Deleted {
+			return catalog.Resource{}, false, err
+		}
+
+		return catalog.Resource{Type: kind, Name: name, Details: map[string]any{"Version": r.Version}}, true, nil
 	}
 
 	return catalog.Resource{}, false, nil

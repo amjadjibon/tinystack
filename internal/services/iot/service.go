@@ -28,9 +28,11 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/pki"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -63,10 +65,14 @@ type Service struct {
 	now    func() time.Time
 	logger *slog.Logger
 	bg     *background.Group
+	// caller runs rule actions; deliveries records them.
+	caller     *catalog.Caller
+	deliveries *delivery.Log
 	// brokers are the running MQTT brokers by scope, guarded by brokersMu;
 	// nil once stopped.
 	brokers map[request.Scope]*broker
-	// serverCerts caches dynamically issued server TLS certificates by SNI name.
+	// serverCerts are the MQTT over TLS listener's certificates by name,
+	// guarded by serverCertsMu.
 	serverCerts map[string]*tls.Certificate
 	// defaults is the account and Region of connections that carry no
 	// identity, and verify is whether IoT policies are evaluated
@@ -78,17 +84,27 @@ type Service struct {
 }
 
 // New returns the service. Its MQTT brokers start on first use and run until
-// Stop.
-func New(store storage.Store, logger *slog.Logger) *Service {
+// Stop; deliveries records what topic rules' actions send.
+func New(store storage.Store, deliveries *delivery.Log, logger *slog.Logger) *Service {
 	if logger == nil {
 		logger = slog.Default()
 	}
 
 	return &Service{
-		store: store, ca: pki.NewLazy(store, caKey, caCommonName), now: time.Now, logger: logger,
-		bg: background.New(), brokers: map[request.Scope]*broker{}, serverCerts: map[string]*tls.Certificate{},
+		store:       store,
+		ca:          pki.NewLazy(store, caKey, caCommonName),
+		now:         time.Now,
+		logger:      logger,
+		deliveries:  deliveries,
+		bg:          background.New(),
+		brokers:     map[request.Scope]*broker{},
+		serverCerts: map[string]*tls.Certificate{},
 	}
 }
+
+// UseCaller lets topic rules run their actions. Call it before serving
+// requests.
+func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 // UseIdentity sets the account and Region of connections without an
 // identity, and whether IoT policies are evaluated, as identity.mode verify

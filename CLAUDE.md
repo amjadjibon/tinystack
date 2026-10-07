@@ -504,7 +504,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `aws/iot/endpoint/<prefix>`).
   `policy.go` accepts only the policy subset TinyStack will evaluate (no `Principal`; `StringEquals`, `StringLike`, and
   `Bool` conditions; known policy variables), failing others with `MalformedPolicyException`. Billing groups, dynamic
-  groups, CA auto-registration, and certificate transfers fail explicitly; rules and shadows are not implemented yet.
+  groups, CA auto-registration, and certificate transfers fail explicitly.
   MQTT goes through an embedded `github.com/mochi-mqtt/server/v2` broker per account and Region (`broker.go`, started on
   first use, stopped by `Stop`, deferred and a shutdown hook in `start.go`), which serves each connection with
   `EstablishConnection`: the gateway upgrades `GET /mqtt` (`gateway/mqtt.go`, `Server.UseMQTT`; presigned SigV4 for
@@ -514,7 +514,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   presents a registered, active device certificate (whose CA, if any, is active), whose account and Region come from
   a data endpoint server name or the partition-wide `aws/iot/certificate/<ID>` index of active certificates, and the
   listener's certificates are signed by the IoT CA that `/_tinystack/iot/root-ca.pem` serves.
-  `hook.go` enforces IoT Core's limits (QoS 1, 128 KB payloads, topic length and levels; clients cannot publish to `$`
+  `hook.go` enforces IoT Core's limits (QoS 1, 128 KB payloads, topic length and levels; clients publish to `$`
   topics), publishes lifecycle events on `$aws/events/…`, and keeps retained messages in
   `…/iot/retained/<path-escaped topic>`, from which each broker reloads them. In verify mode it evaluates
   the IoT policies attached to the caller's device certificate or Cognito identity (STS sessions from
@@ -522,8 +522,23 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `iot:Connect`, `Publish`, `Subscribe`, and `Receive`, with the `iot:Certificate.*` and thing variables; a
   certificate with no attached policy is allowed nothing, while other callers with none are allowed, since IAM
   policies are not evaluated.
-  `iot.Service.DataPlane()` serves the IoT data plane (`Publish` with MQTT 5 properties, retained messages, and
-  connections and subscriptions from the broker).
+  `iot.Service.DataPlane()` serves the IoT data plane (`Publish` with MQTT 5 properties, retained messages,
+  connections and subscriptions from the broker, and shadows).
+  Topic rules (`rules.go`) are `…/iot/rule/<name>` records holding the rule's payload; `sql.go` parses the rules SQL
+  (SELECT with `*`, aliases, nested fields, `CASE`, object and array literals, and `IN`; FROM a topic filter; WHERE)
+  and `${…}` substitution templates, and `eval.go` evaluates them with IoT SQL's Undefined (missing fields leave
+  the output, and make comparisons neither true nor false) and its functions (unknown ones fail as
+  `SqlParseException`). The hook's `OnPublished` hands every message, including the broker's own, to `engine.go`,
+  which runs each matching enabled rule in the background: Basic Ingest topics (`$aws/rules/<rule>/…`) run only that
+  rule and, like shadow requests, reach no subscriber (`OnPublish` ignores them). Actions call the other services
+  through the `catalog.Caller` (republish injects the result as the rule's own `$rule/<name>` client, which never
+  reruns that rule), each is recorded in the `delivery.Log`, and failures run the error action with IoT's failure
+  report; actions TinyStack cannot run (HTTP, Kafka, OpenSearch, Timestream, …) and S3's `cannedAcl` are left out of
+  the profile. Shadows (`shadows.go`) are `…/iot/shadow/<thing>` and `…/iot/named-shadow/<thing>/<name>` records
+  (state, per-leaf metadata, and version; a deleted shadow keeps its version). MQTT requests on
+  `$aws/things/<thing>/shadow[/name/<name>]/{get,update,delete}` and the data plane's shadow operations share
+  `getShadow`, `updateShadow`, and `deleteShadow`, which publish the accepted, rejected, delta, and documents
+  messages through the broker after their transaction commits.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for

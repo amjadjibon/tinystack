@@ -9692,7 +9692,14 @@
       "DescribeEndpoint",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "CreateTopicRule",
+      "GetTopicRule",
+      "ReplaceTopicRule",
+      "DeleteTopicRule",
+      "ListTopicRules",
+      "EnableTopicRule",
+      "DisableTopicRule"
     ],
     "shapes": {
       "CreateThingRequest": [
@@ -10231,6 +10238,171 @@
       "ListTagsForResourceResponse": [
         "tags",
         "nextToken"
+      ],
+      "CreateTopicRuleRequest": [
+        "ruleName",
+        "topicRulePayload",
+        "tags"
+      ],
+      "TopicRulePayload": [
+        "sql",
+        "description",
+        "actions",
+        "ruleDisabled",
+        "awsIotSqlVersion",
+        "errorAction"
+      ],
+      "Action": [
+        "dynamoDB",
+        "dynamoDBv2",
+        "lambda",
+        "sns",
+        "sqs",
+        "kinesis",
+        "republish",
+        "s3",
+        "firehose",
+        "cloudwatchMetric",
+        "cloudwatchAlarm",
+        "cloudwatchLogs",
+        "stepFunctions"
+      ],
+      "DynamoDBAction": [
+        "tableName",
+        "roleArn",
+        "operation",
+        "hashKeyField",
+        "hashKeyValue",
+        "hashKeyType",
+        "rangeKeyField",
+        "rangeKeyValue",
+        "rangeKeyType",
+        "payloadField"
+      ],
+      "DynamoDBv2Action": [
+        "roleArn",
+        "putItem"
+      ],
+      "PutItemInput": [
+        "tableName"
+      ],
+      "LambdaAction": [
+        "functionArn"
+      ],
+      "SnsAction": [
+        "targetArn",
+        "roleArn",
+        "messageFormat"
+      ],
+      "SqsAction": [
+        "roleArn",
+        "queueUrl",
+        "useBase64"
+      ],
+      "KinesisAction": [
+        "roleArn",
+        "streamName",
+        "partitionKey"
+      ],
+      "RepublishAction": [
+        "roleArn",
+        "topic",
+        "qos",
+        "headers"
+      ],
+      "MqttHeaders": [
+        "payloadFormatIndicator",
+        "contentType",
+        "responseTopic",
+        "correlationData",
+        "messageExpiry",
+        "userProperties"
+      ],
+      "UserProperty": [
+        "key",
+        "value"
+      ],
+      "S3Action": [
+        "roleArn",
+        "bucketName",
+        "key"
+      ],
+      "FirehoseAction": [
+        "roleArn",
+        "deliveryStreamName",
+        "separator",
+        "batchMode"
+      ],
+      "CloudwatchMetricAction": [
+        "roleArn",
+        "metricNamespace",
+        "metricName",
+        "metricValue",
+        "metricUnit",
+        "metricTimestamp"
+      ],
+      "CloudwatchAlarmAction": [
+        "roleArn",
+        "alarmName",
+        "stateReason",
+        "stateValue"
+      ],
+      "CloudwatchLogsAction": [
+        "roleArn",
+        "logGroupName",
+        "batchMode"
+      ],
+      "StepFunctionsAction": [
+        "executionNamePrefix",
+        "stateMachineName",
+        "roleArn"
+      ],
+      "GetTopicRuleRequest": [
+        "ruleName"
+      ],
+      "GetTopicRuleResponse": [
+        "ruleArn",
+        "rule"
+      ],
+      "TopicRule": [
+        "ruleName",
+        "sql",
+        "description",
+        "createdAt",
+        "actions",
+        "ruleDisabled",
+        "awsIotSqlVersion",
+        "errorAction"
+      ],
+      "ReplaceTopicRuleRequest": [
+        "ruleName",
+        "topicRulePayload"
+      ],
+      "DeleteTopicRuleRequest": [
+        "ruleName"
+      ],
+      "ListTopicRulesRequest": [
+        "topic",
+        "maxResults",
+        "nextToken",
+        "ruleDisabled"
+      ],
+      "ListTopicRulesResponse": [
+        "rules",
+        "nextToken"
+      ],
+      "TopicRuleListItem": [
+        "ruleArn",
+        "ruleName",
+        "topicPattern",
+        "createdAt",
+        "ruleDisabled"
+      ],
+      "EnableTopicRuleRequest": [
+        "ruleName"
+      ],
+      "DisableTopicRuleRequest": [
+        "ruleName"
       ]
     }
   },
@@ -10241,7 +10413,11 @@
       "ListRetainedMessages",
       "GetConnection",
       "DeleteConnection",
-      "ListSubscriptions"
+      "ListSubscriptions",
+      "GetThingShadow",
+      "UpdateThingShadow",
+      "DeleteThingShadow",
+      "ListNamedShadowsForThing"
     ],
     "shapes": {
       "PublishRequest": [
@@ -10314,6 +10490,38 @@
       "SubscriptionSummary": [
         "topicFilter",
         "qos"
+      ],
+      "GetThingShadowRequest": [
+        "thingName",
+        "shadowName"
+      ],
+      "GetThingShadowResponse": [
+        "payload"
+      ],
+      "UpdateThingShadowRequest": [
+        "thingName",
+        "shadowName",
+        "payload"
+      ],
+      "UpdateThingShadowResponse": [
+        "payload"
+      ],
+      "DeleteThingShadowRequest": [
+        "thingName",
+        "shadowName"
+      ],
+      "DeleteThingShadowResponse": [
+        "payload"
+      ],
+      "ListNamedShadowsForThingRequest": [
+        "thingName",
+        "nextToken",
+        "pageSize"
+      ],
+      "ListNamedShadowsForThingResponse": [
+        "results",
+        "nextToken",
+        "timestamp"
       ]
     }
   },

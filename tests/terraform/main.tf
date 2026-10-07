@@ -1688,6 +1688,26 @@ resource "aws_iot_thing_principal_attachment" "probe" {
   principal = aws_iot_certificate.probe.arn
 }
 
+resource "aws_iot_topic_rule" "readings" {
+  name        = "readings"
+  description = "Terraform test readings of ${var.team}"
+  enabled     = true
+  sql         = "SELECT *, topic(2) AS team FROM 'readings/${var.team}'"
+  sql_version = "2016-03-23"
+  sqs {
+    queue_url  = aws_sqs_queue.jobs.url
+    role_arn   = aws_iam_role.lambda.arn
+    use_base64 = false
+  }
+  error_action {
+    republish {
+      topic    = "errors/readings"
+      role_arn = aws_iam_role.lambda.arn
+    }
+  }
+  tags = local.tags
+}
+
 data "aws_iot_endpoint" "data" {
   endpoint_type = "iot:Data-ATS"
 }

@@ -697,6 +697,210 @@ type ListTagsForResourceResponse struct {
 	NextToken *string `json:"nextToken,omitempty"`
 }
 
+type CreateTopicRuleOutput struct{}
+
+type DynamoDBAction struct {
+	TableName     *string `json:"tableName,omitempty"`
+	RoleArn       *string `json:"roleArn,omitempty"`
+	Operation     *string `json:"operation,omitempty"`
+	HashKeyField  *string `json:"hashKeyField,omitempty"`
+	HashKeyValue  *string `json:"hashKeyValue,omitempty"`
+	HashKeyType   *string `json:"hashKeyType,omitempty"`
+	RangeKeyField *string `json:"rangeKeyField,omitempty"`
+	RangeKeyValue *string `json:"rangeKeyValue,omitempty"`
+	RangeKeyType  *string `json:"rangeKeyType,omitempty"`
+	PayloadField  *string `json:"payloadField,omitempty"`
+}
+
+type PutItemInput struct {
+	TableName *string `json:"tableName,omitempty"`
+}
+
+type DynamoDBv2Action struct {
+	RoleArn *string       `json:"roleArn,omitempty"`
+	PutItem *PutItemInput `json:"putItem,omitempty"`
+}
+
+type LambdaAction struct {
+	FunctionArn *string `json:"functionArn,omitempty"`
+}
+
+type SnsAction struct {
+	TargetArn     *string `json:"targetArn,omitempty"`
+	RoleArn       *string `json:"roleArn,omitempty"`
+	MessageFormat *string `json:"messageFormat,omitempty"`
+}
+
+type SqsAction struct {
+	RoleArn   *string `json:"roleArn,omitempty"`
+	QueueUrl  *string `json:"queueUrl,omitempty"`
+	UseBase64 *bool   `json:"useBase64,omitempty"`
+}
+
+type KinesisAction struct {
+	RoleArn      *string `json:"roleArn,omitempty"`
+	StreamName   *string `json:"streamName,omitempty"`
+	PartitionKey *string `json:"partitionKey,omitempty"`
+}
+
+type UserProperty struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+type MqttHeaders struct {
+	PayloadFormatIndicator *string        `json:"payloadFormatIndicator,omitempty"`
+	ContentType            *string        `json:"contentType,omitempty"`
+	ResponseTopic          *string        `json:"responseTopic,omitempty"`
+	CorrelationData        *string        `json:"correlationData,omitempty"`
+	MessageExpiry          *string        `json:"messageExpiry,omitempty"`
+	UserProperties         []UserProperty `json:"userProperties,omitempty"`
+}
+
+type RepublishAction struct {
+	RoleArn *string      `json:"roleArn,omitempty"`
+	Topic   *string      `json:"topic,omitempty"`
+	Qos     *int64       `json:"qos,omitempty"`
+	Headers *MqttHeaders `json:"headers,omitempty"`
+}
+
+type S3Action struct {
+	RoleArn    *string `json:"roleArn,omitempty"`
+	BucketName *string `json:"bucketName,omitempty"`
+	Key        *string `json:"key,omitempty"`
+}
+
+type FirehoseAction struct {
+	RoleArn            *string `json:"roleArn,omitempty"`
+	DeliveryStreamName *string `json:"deliveryStreamName,omitempty"`
+	Separator          *string `json:"separator,omitempty"`
+	BatchMode          *bool   `json:"batchMode,omitempty"`
+}
+
+type CloudwatchMetricAction struct {
+	RoleArn         *string `json:"roleArn,omitempty"`
+	MetricNamespace *string `json:"metricNamespace,omitempty"`
+	MetricName      *string `json:"metricName,omitempty"`
+	MetricValue     *string `json:"metricValue,omitempty"`
+	MetricUnit      *string `json:"metricUnit,omitempty"`
+	MetricTimestamp *string `json:"metricTimestamp,omitempty"`
+}
+
+type CloudwatchAlarmAction struct {
+	RoleArn     *string `json:"roleArn,omitempty"`
+	AlarmName   *string `json:"alarmName,omitempty"`
+	StateReason *string `json:"stateReason,omitempty"`
+	StateValue  *string `json:"stateValue,omitempty"`
+}
+
+type CloudwatchLogsAction struct {
+	RoleArn      *string `json:"roleArn,omitempty"`
+	LogGroupName *string `json:"logGroupName,omitempty"`
+	BatchMode    *bool   `json:"batchMode,omitempty"`
+}
+
+type StepFunctionsAction struct {
+	ExecutionNamePrefix *string `json:"executionNamePrefix,omitempty"`
+	StateMachineName    *string `json:"stateMachineName,omitempty"`
+	RoleArn             *string `json:"roleArn,omitempty"`
+}
+
+type Action struct {
+	DynamoDB         *DynamoDBAction         `json:"dynamoDB,omitempty"`
+	DynamoDBv2       *DynamoDBv2Action       `json:"dynamoDBv2,omitempty"`
+	Lambda           *LambdaAction           `json:"lambda,omitempty"`
+	Sns              *SnsAction              `json:"sns,omitempty"`
+	Sqs              *SqsAction              `json:"sqs,omitempty"`
+	Kinesis          *KinesisAction          `json:"kinesis,omitempty"`
+	Republish        *RepublishAction        `json:"republish,omitempty"`
+	S3               *S3Action               `json:"s3,omitempty"`
+	Firehose         *FirehoseAction         `json:"firehose,omitempty"`
+	CloudwatchMetric *CloudwatchMetricAction `json:"cloudwatchMetric,omitempty"`
+	CloudwatchAlarm  *CloudwatchAlarmAction  `json:"cloudwatchAlarm,omitempty"`
+	CloudwatchLogs   *CloudwatchLogsAction   `json:"cloudwatchLogs,omitempty"`
+	StepFunctions    *StepFunctionsAction    `json:"stepFunctions,omitempty"`
+}
+
+type TopicRulePayload struct {
+	Sql              *string  `json:"sql,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	Actions          []Action `json:"actions,omitempty"`
+	RuleDisabled     *bool    `json:"ruleDisabled,omitempty"`
+	AwsIotSqlVersion *string  `json:"awsIotSqlVersion,omitempty"`
+	ErrorAction      *Action  `json:"errorAction,omitempty"`
+}
+
+type CreateTopicRuleRequest struct {
+	RuleName         *string           `json:"-"`
+	TopicRulePayload *TopicRulePayload `json:"-"`
+	Tags             *string           `json:"-"`
+}
+
+type GetTopicRuleRequest struct {
+	RuleName *string `json:"-"`
+}
+
+type TopicRule struct {
+	RuleName         *string  `json:"ruleName,omitempty"`
+	Sql              *string  `json:"sql,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	CreatedAt        *float64 `json:"createdAt,omitempty"`
+	Actions          []Action `json:"actions,omitempty"`
+	RuleDisabled     *bool    `json:"ruleDisabled,omitempty"`
+	AwsIotSqlVersion *string  `json:"awsIotSqlVersion,omitempty"`
+	ErrorAction      *Action  `json:"errorAction,omitempty"`
+}
+
+type GetTopicRuleResponse struct {
+	RuleArn *string    `json:"ruleArn,omitempty"`
+	Rule    *TopicRule `json:"rule,omitempty"`
+}
+
+type ReplaceTopicRuleOutput struct{}
+
+type ReplaceTopicRuleRequest struct {
+	RuleName         *string           `json:"-"`
+	TopicRulePayload *TopicRulePayload `json:"-"`
+}
+
+type DeleteTopicRuleOutput struct{}
+
+type DeleteTopicRuleRequest struct {
+	RuleName *string `json:"-"`
+}
+
+type ListTopicRulesRequest struct {
+	Topic        *string `json:"-"`
+	MaxResults   *int64  `json:"-"`
+	NextToken    *string `json:"-"`
+	RuleDisabled *bool   `json:"-"`
+}
+
+type TopicRuleListItem struct {
+	RuleArn      *string  `json:"ruleArn,omitempty"`
+	RuleName     *string  `json:"ruleName,omitempty"`
+	TopicPattern *string  `json:"topicPattern,omitempty"`
+	CreatedAt    *float64 `json:"createdAt,omitempty"`
+	RuleDisabled *bool    `json:"ruleDisabled,omitempty"`
+}
+
+type ListTopicRulesResponse struct {
+	Rules     []TopicRuleListItem `json:"rules,omitempty"`
+	NextToken *string             `json:"nextToken,omitempty"`
+}
+
+type EnableTopicRuleOutput struct{}
+
+type EnableTopicRuleRequest struct {
+	RuleName *string `json:"-"`
+}
+
+type DisableTopicRuleOutput struct{}
+
+type DisableTopicRuleRequest struct {
+	RuleName *string `json:"-"`
+}
+
 type API interface {
 	CreateThing(context.Context, *CreateThingRequest) (*CreateThingResponse, error)
 	DescribeThing(context.Context, *DescribeThingRequest) (*DescribeThingResponse, error)
@@ -754,10 +958,17 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	CreateTopicRule(context.Context, *CreateTopicRuleRequest) (*CreateTopicRuleOutput, error)
+	GetTopicRule(context.Context, *GetTopicRuleRequest) (*GetTopicRuleResponse, error)
+	ReplaceTopicRule(context.Context, *ReplaceTopicRuleRequest) (*ReplaceTopicRuleOutput, error)
+	DeleteTopicRule(context.Context, *DeleteTopicRuleRequest) (*DeleteTopicRuleOutput, error)
+	ListTopicRules(context.Context, *ListTopicRulesRequest) (*ListTopicRulesResponse, error)
+	EnableTopicRule(context.Context, *EnableTopicRuleRequest) (*EnableTopicRuleOutput, error)
+	DisableTopicRule(context.Context, *DisableTopicRuleRequest) (*DisableTopicRuleOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iot", SigningName: "iot", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CertificateConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CertificateStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 406}, "CertificateValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 410}, "MalformedPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RegistrationCodeValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "VersionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "VersionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iot", SigningName: "iot", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CertificateConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CertificateStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 406}, "CertificateValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictingResourceUpdateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 410}, "MalformedPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RegistrationCodeValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "SqlParseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "VersionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "VersionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}}, Operations: map[string]catalog.Operation{
 		"CreateThing": {Name: "CreateThing", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AttributePayload": catalog.MemberBinding{Location: "document", Name: "attributePayload"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}, "ThingTypeName": catalog.MemberBinding{Location: "document", Name: "thingTypeName"}}, Output: map[string]catalog.MemberBinding{"ThingArn": catalog.MemberBinding{Location: "document", Name: "thingArn"}, "ThingId": catalog.MemberBinding{Location: "document", Name: "thingId"}, "ThingName": catalog.MemberBinding{Location: "document", Name: "thingName"}}, Method: "POST", URI: "/things/{thingName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateThingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateThing(ctx, input.(*CreateThingRequest))
 		}},
@@ -925,6 +1136,27 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}, "ResourceArn": catalog.MemberBinding{Location: "query", Name: "resourceArn"}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}}, Method: "GET", URI: "/tags", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"CreateTopicRule": {Name: "CreateTopicRule", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RuleName": catalog.MemberBinding{Location: "label", Name: "ruleName"}, "Tags": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging"}, "TopicRulePayload": catalog.MemberBinding{Location: "payload", Name: "topicRulePayload"}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/rules/{ruleName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateTopicRuleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateTopicRule(ctx, input.(*CreateTopicRuleRequest))
+		}},
+		"GetTopicRule": {Name: "GetTopicRule", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RuleName": catalog.MemberBinding{Location: "label", Name: "ruleName"}}, Output: map[string]catalog.MemberBinding{"Rule": catalog.MemberBinding{Location: "document", Name: "rule"}, "RuleArn": catalog.MemberBinding{Location: "document", Name: "ruleArn"}}, Method: "GET", URI: "/rules/{ruleName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetTopicRuleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTopicRule(ctx, input.(*GetTopicRuleRequest))
+		}},
+		"ReplaceTopicRule": {Name: "ReplaceTopicRule", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RuleName": catalog.MemberBinding{Location: "label", Name: "ruleName"}, "TopicRulePayload": catalog.MemberBinding{Location: "payload", Name: "topicRulePayload"}}, Output: map[string]catalog.MemberBinding{}, Method: "PATCH", URI: "/rules/{ruleName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ReplaceTopicRuleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReplaceTopicRule(ctx, input.(*ReplaceTopicRuleRequest))
+		}},
+		"DeleteTopicRule": {Name: "DeleteTopicRule", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RuleName": catalog.MemberBinding{Location: "label", Name: "ruleName"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/rules/{ruleName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteTopicRuleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteTopicRule(ctx, input.(*DeleteTopicRuleRequest))
+		}},
+		"ListTopicRules": {Name: "ListTopicRules", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}, "RuleDisabled": catalog.MemberBinding{Location: "query", Name: "ruleDisabled"}, "Topic": catalog.MemberBinding{Location: "query", Name: "topic"}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}, "Rules": catalog.MemberBinding{Location: "document", Name: "rules"}}, Method: "GET", URI: "/rules", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTopicRulesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListTopicRules(ctx, input.(*ListTopicRulesRequest))
+		}},
+		"EnableTopicRule": {Name: "EnableTopicRule", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RuleName": catalog.MemberBinding{Location: "label", Name: "ruleName"}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/rules/{ruleName}/enable", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &EnableTopicRuleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.EnableTopicRule(ctx, input.(*EnableTopicRuleRequest))
+		}},
+		"DisableTopicRule": {Name: "DisableTopicRule", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RuleName": catalog.MemberBinding{Location: "label", Name: "ruleName"}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/rules/{ruleName}/disable", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DisableTopicRuleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisableTopicRule(ctx, input.(*DisableTopicRuleRequest))
 		}},
 	}}
 }

@@ -93,6 +93,46 @@ type ListSubscriptionsResponse struct {
 	NextToken     *string               `json:"nextToken,omitempty"`
 }
 
+type GetThingShadowRequest struct {
+	ThingName  *string `json:"-"`
+	ShadowName *string `json:"-"`
+}
+
+type GetThingShadowResponse struct {
+	Payload []byte `json:"-"`
+}
+
+type UpdateThingShadowRequest struct {
+	ThingName  *string `json:"-"`
+	ShadowName *string `json:"-"`
+	Payload    []byte  `json:"-"`
+}
+
+type UpdateThingShadowResponse struct {
+	Payload []byte `json:"-"`
+}
+
+type DeleteThingShadowRequest struct {
+	ThingName  *string `json:"-"`
+	ShadowName *string `json:"-"`
+}
+
+type DeleteThingShadowResponse struct {
+	Payload []byte `json:"-"`
+}
+
+type ListNamedShadowsForThingRequest struct {
+	ThingName *string `json:"-"`
+	NextToken *string `json:"-"`
+	PageSize  *int64  `json:"-"`
+}
+
+type ListNamedShadowsForThingResponse struct {
+	Results   []string `json:"results,omitempty"`
+	NextToken *string  `json:"nextToken,omitempty"`
+	Timestamp *int64   `json:"timestamp,omitempty"`
+}
+
 type API interface {
 	Publish(context.Context, *PublishRequest) (*PublishOutput, error)
 	GetRetainedMessage(context.Context, *GetRetainedMessageRequest) (*GetRetainedMessageResponse, error)
@@ -100,10 +140,14 @@ type API interface {
 	GetConnection(context.Context, *GetConnectionRequest) (*GetConnectionResponse, error)
 	DeleteConnection(context.Context, *DeleteConnectionRequest) (*DeleteConnectionOutput, error)
 	ListSubscriptions(context.Context, *ListSubscriptionsRequest) (*ListSubscriptionsResponse, error)
+	GetThingShadow(context.Context, *GetThingShadowRequest) (*GetThingShadowResponse, error)
+	UpdateThingShadow(context.Context, *UpdateThingShadowRequest) (*UpdateThingShadowResponse, error)
+	DeleteThingShadow(context.Context, *DeleteThingShadowRequest) (*DeleteThingShadowResponse, error)
+	ListNamedShadowsForThing(context.Context, *ListNamedShadowsForThingRequest) (*ListNamedShadowsForThingResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iotdataplane", SigningName: "iotdata", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MethodNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 405}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iotdataplane", SigningName: "iotdata", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MethodNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 405}, "RequestEntityTooLargeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 413}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "UnsupportedDocumentEncodingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 415}}, Operations: map[string]catalog.Operation{
 		"Publish": {Name: "Publish", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ContentType": catalog.MemberBinding{Location: "query", Name: "contentType"}, "CorrelationData": catalog.MemberBinding{Location: "header", Name: "x-amz-mqtt5-correlation-data"}, "MessageExpiry": catalog.MemberBinding{Location: "query", Name: "messageExpiry"}, "Payload": catalog.MemberBinding{Location: "payload", Name: "payload"}, "PayloadFormatIndicator": catalog.MemberBinding{Location: "header", Name: "x-amz-mqtt5-payload-format-indicator"}, "Qos": catalog.MemberBinding{Location: "query", Name: "qos"}, "ResponseTopic": catalog.MemberBinding{Location: "query", Name: "responseTopic"}, "Retain": catalog.MemberBinding{Location: "query", Name: "retain"}, "Topic": catalog.MemberBinding{Location: "label", Name: "topic"}, "UserProperties": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-mqtt5-user-properties"}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/topics/{topic}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PublishRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.Publish(ctx, input.(*PublishRequest)) }},
 		"GetRetainedMessage": {Name: "GetRetainedMessage", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Topic": catalog.MemberBinding{Location: "label", Name: "topic"}}, Output: map[string]catalog.MemberBinding{"LastModifiedTime": catalog.MemberBinding{Location: "document", Name: "lastModifiedTime"}, "Payload": catalog.MemberBinding{Location: "document", Name: "payload"}, "Qos": catalog.MemberBinding{Location: "document", Name: "qos"}, "Topic": catalog.MemberBinding{Location: "document", Name: "topic"}}, Method: "GET", URI: "/retainedMessage/{topic}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetRetainedMessageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetRetainedMessage(ctx, input.(*GetRetainedMessageRequest))
@@ -119,6 +163,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListSubscriptions": {Name: "ListSubscriptions", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClientId": catalog.MemberBinding{Location: "label", Name: "clientId"}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}, "Subscriptions": catalog.MemberBinding{Location: "document", Name: "subscriptions"}}, Method: "GET", URI: "/connections/{clientId}/subscriptions", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListSubscriptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListSubscriptions(ctx, input.(*ListSubscriptionsRequest))
+		}},
+		"GetThingShadow": {Name: "GetThingShadow", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ShadowName": catalog.MemberBinding{Location: "query", Name: "name"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{"Payload": catalog.MemberBinding{Location: "payload", Name: "payload"}}, Method: "GET", URI: "/things/{thingName}/shadow", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetThingShadowRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetThingShadow(ctx, input.(*GetThingShadowRequest))
+		}},
+		"UpdateThingShadow": {Name: "UpdateThingShadow", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Payload": catalog.MemberBinding{Location: "payload", Name: "payload"}, "ShadowName": catalog.MemberBinding{Location: "query", Name: "name"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{"Payload": catalog.MemberBinding{Location: "payload", Name: "payload"}}, Method: "POST", URI: "/things/{thingName}/shadow", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateThingShadowRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateThingShadow(ctx, input.(*UpdateThingShadowRequest))
+		}},
+		"DeleteThingShadow": {Name: "DeleteThingShadow", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ShadowName": catalog.MemberBinding{Location: "query", Name: "name"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{"Payload": catalog.MemberBinding{Location: "payload", Name: "payload"}}, Method: "DELETE", URI: "/things/{thingName}/shadow", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteThingShadowRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteThingShadow(ctx, input.(*DeleteThingShadowRequest))
+		}},
+		"ListNamedShadowsForThing": {Name: "ListNamedShadowsForThing", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}, "PageSize": catalog.MemberBinding{Location: "query", Name: "pageSize"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}, "Results": catalog.MemberBinding{Location: "document", Name: "results"}, "Timestamp": catalog.MemberBinding{Location: "document", Name: "timestamp"}}, Method: "GET", URI: "/api/things/shadow/ListNamedShadowsForThing/{thingName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListNamedShadowsForThingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListNamedShadowsForThing(ctx, input.(*ListNamedShadowsForThingRequest))
 		}},
 	}}
 }

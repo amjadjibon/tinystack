@@ -3,6 +3,8 @@ package cloudformation
 import (
 	"context"
 	"maps"
+	"net/url"
+	"strings"
 )
 
 const (
@@ -24,6 +26,10 @@ const (
 	iotNotFound                = "ResourceNotFoundException"
 	iotActive                  = "ACTIVE"
 	iotInactive                = "INACTIVE"
+	memberRuleName             = "RuleName"
+	memberTopicRulePayload     = "TopicRulePayload"
+	// iotRuleNotFound is how IoT reports a missing topic rule.
+	iotRuleNotFound = "UnauthorizedException"
 )
 
 // iotAttributes are the Arn and Id attributes of an IoT resource.
@@ -202,6 +208,56 @@ func init() {
 			}
 
 			if gone(err, iotNotFound) {
+				return nil
+			}
+
+			return err
+		},
+	})
+
+	register("AWS::IoT::TopicRule", &resourceType{
+		name:       memberRuleName,
+		properties: []string{memberRuleName, memberTopicRulePayload, memberTags},
+		attributes: []string{memberArn},
+		replace:    []string{memberRuleName},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			// Rule names take letters, digits, and underscores only.
+			name := p.str(memberRuleName)
+			if name == "" {
+				name = strings.ReplaceAll(c.generate(128), "-", "_")
+			}
+
+			params := map[string]any{memberRuleName: name, memberTopicRulePayload: p[memberTopicRulePayload]}
+			if tags := p.tags(); len(tags) > 0 {
+				header := url.Values{}
+				for k, v := range tags {
+					header.Set(k, v)
+				}
+
+				params[memberTags] = header.Encode()
+			}
+
+			if _, err := c.call(ctx, serviceIoT, "CreateTopicRule", params); err != nil {
+				return "", nil, err
+			}
+
+			arn := "arn:aws:iot:" + c.scope.Region + ":" + c.scope.AccountID + ":rule/" + name
+			return name, map[string]any{memberArn: arn}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			if p.changed(r.Properties, memberTopicRulePayload) {
+				if _, err := c.call(ctx, serviceIoT, "ReplaceTopicRule", map[string]any{
+					memberRuleName: r.Physical, memberTopicRulePayload: p[memberTopicRulePayload],
+				}); err != nil {
+					return nil, err
+				}
+			}
+
+			return r.Attributes, retag(ctx, c, r.Properties, p, iotTagger(r))
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, serviceIoT, "DeleteTopicRule", map[string]any{memberRuleName: r.Physical})
+			if gone(err, iotRuleNotFound) {
 				return nil
 			}
 

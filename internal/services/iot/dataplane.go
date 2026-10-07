@@ -5,13 +5,16 @@ import (
 	"encoding/base64"
 	"maps"
 	"net"
+	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"sync/atomic"
 
 	mqtt "github.com/mochi-mqtt/server/v2"
 	"github.com/mochi-mqtt/server/v2/packets"
 
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -37,7 +40,7 @@ func (d *DataPlane) Publish(ctx context.Context, in *api.PublishRequest) (*api.P
 	switch {
 	case !withinLimits(topic) || topic == "":
 		return nil, invalid("The topic %q is too long or has too many levels.", topic)
-	case topic != "" && topic[0] == '$':
+	case !publishable(topic):
 		return nil, invalid("Publishing to the reserved topic %s is not supported.", topic)
 	case common.Value(in.Qos) < 0 || common.Value(in.Qos) > 1:
 		return nil, invalid("The QoS must be 0 or 1.")
@@ -314,4 +317,144 @@ func (d *DataPlane) ListSubscriptions(
 	}
 
 	return &api.ListSubscriptionsResponse{Subscriptions: selected, NextToken: next}, nil
+}
+
+// dataPlaneError converts a rejected shadow request to the data plane's error.
+func dataPlaneError(f *shadowError) error {
+	code := "InvalidRequestException"
+	switch f.code {
+	case http.StatusNotFound:
+		code = "ResourceNotFoundException"
+	case http.StatusConflict:
+		code = "ConflictException"
+	case http.StatusRequestEntityTooLarge:
+		code = "RequestEntityTooLargeException"
+	case http.StatusInternalServerError:
+		code = "InternalFailureException"
+	}
+
+	return awserror.New(code, f.message)
+}
+
+// shadow resolves the caller's scope and a request's shadow.
+func shadow(ctx context.Context, thing, name *string) (request.Scope, shadowRef, error) {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return request.Scope{}, shadowRef{}, err
+	}
+
+	ref, err := checkShadow(common.Value(thing), common.Value(name))
+	if err != nil {
+		return request.Scope{}, shadowRef{}, invalid("%s.", err)
+	}
+
+	return scope, ref, nil
+}
+
+func (d *DataPlane) GetThingShadow(
+	ctx context.Context,
+	in *api.GetThingShadowRequest,
+) (*api.GetThingShadowResponse, error) {
+	scope, ref, err := shadow(ctx, in.ThingName, in.ShadowName)
+	if err != nil {
+		return nil, err
+	}
+
+	doc, failure := d.s.getShadow(ctx, scope, ref, "")
+	if failure != nil {
+		return nil, dataPlaneError(failure)
+	}
+
+	return &api.GetThingShadowResponse{Payload: encodeResult(doc)}, nil
+}
+
+func (d *DataPlane) UpdateThingShadow(
+	ctx context.Context,
+	in *api.UpdateThingShadowRequest,
+) (*api.UpdateThingShadowResponse, error) {
+	scope, ref, err := shadow(ctx, in.ThingName, in.ShadowName)
+	if err != nil {
+		return nil, err
+	}
+
+	accepted, notes, failure := d.s.updateShadow(ctx, scope, ref, in.Payload)
+	if failure != nil {
+		return nil, dataPlaneError(failure)
+	}
+
+	d.s.notify(scope, notes)
+	return &api.UpdateThingShadowResponse{Payload: encodeResult(accepted)}, nil
+}
+
+func (d *DataPlane) DeleteThingShadow(
+	ctx context.Context,
+	in *api.DeleteThingShadowRequest,
+) (*api.DeleteThingShadowResponse, error) {
+	scope, ref, err := shadow(ctx, in.ThingName, in.ShadowName)
+	if err != nil {
+		return nil, err
+	}
+
+	accepted, notes, failure := d.s.deleteShadow(ctx, scope, ref, nil)
+	if failure != nil {
+		return nil, dataPlaneError(failure)
+	}
+
+	d.s.notify(scope, notes)
+	return &api.DeleteThingShadowResponse{Payload: encodeResult(accepted)}, nil
+}
+
+// maxShadowPage is the most names a ListNamedShadowsForThing page holds.
+const maxShadowPage = 100
+
+func (d *DataPlane) ListNamedShadowsForThing(
+	ctx context.Context,
+	in *api.ListNamedShadowsForThingRequest,
+) (*api.ListNamedShadowsForThingResponse, error) {
+	scope, ref, err := shadow(ctx, in.ThingName, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	n := int(common.Value(in.PageSize))
+	switch {
+	case in.PageSize == nil:
+		n = maxShadowPage
+	case n < 1 || n > maxShadowPage:
+		return nil, invalid("pageSize must be between 1 and %d.", maxShadowPage)
+	}
+
+	var names []string
+	prefix := scope.Prefix(service, kindNamedShadow) + ref.thing + "/"
+	err = d.s.store.View(ctx, func(tx storage.ReadTx) error {
+		for _, key := range tx.Keys(prefix) {
+			r, _, readErr := storage.Read[shadowRecord](tx, key)
+			if readErr != nil {
+				return readErr
+			}
+
+			if !r.Deleted {
+				names = append(names, strings.TrimPrefix(key, prefix))
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	selected, next, err := common.Page(names, func(n string) string { return n }, in.NextToken, n,
+		invalid("The pagination token is invalid."))
+	if err != nil {
+		return nil, err
+	}
+
+	if selected == nil {
+		selected = []string{}
+	}
+
+	return &api.ListNamedShadowsForThingResponse{
+		Results: selected, NextToken: next, Timestamp: new(d.s.now().Unix()),
+	}, nil
 }
