@@ -333,7 +333,7 @@ func (h *hook) event(cl *mqtt.Client, c *connection, kind string, fields map[str
 		return
 	}
 
-	fields["clientId"] = cl.ID
+	fields[keyClientID] = cl.ID
 	fields["timestamp"] = h.service.now().UnixMilli()
 	fields["eventType"] = kind[strings.LastIndex(kind, "/")+1:]
 	fields["sessionIdentifier"] = c.session
@@ -412,7 +412,8 @@ func publishable(topic string) bool {
 }
 
 // consumed reports whether a topic is one IoT Core consumes instead of
-// delivering: Basic Ingest's, and the shadow and jobs requests.
+// delivering: Basic Ingest's, and the shadow, jobs, and fleet provisioning
+// requests.
 func consumed(topic string) bool {
 	if rule, ok := strings.CutPrefix(topic, ingestPrefix); ok {
 		name, _, _ := strings.Cut(rule, "/")
@@ -423,7 +424,11 @@ func consumed(topic string) bool {
 		return true
 	}
 
-	_, _, _, ok := jobsRequest(topic)
+	if _, _, _, ok := jobsRequest(topic); ok {
+		return true
+	}
+
+	_, ok := provisioningRequest(topic)
 	return ok
 }
 
@@ -462,6 +467,15 @@ func (h *hook) OnPublished(cl *mqtt.Client, pk packets.Packet) {
 	} else if _, _, _, ok := jobsRequest(pk.TopicName); ok {
 		h.service.bg.Go(func(ctx context.Context) {
 			h.service.serveJobs(ctx, h.broker.scope, pk.TopicName, pk.Payload)
+		})
+	} else if _, ok := provisioningRequest(pk.TopicName); ok {
+		claim := ""
+		if c := connectionOf(cl); c != nil && c.cert != nil {
+			claim = c.caller
+		}
+
+		h.service.bg.Go(func(ctx context.Context) {
+			h.service.serveFleet(ctx, h.broker.scope, m.clientID, claim, pk.TopicName, pk.Payload)
 		})
 	}
 

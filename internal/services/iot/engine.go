@@ -125,7 +125,7 @@ func (s *Service) runRule(ctx context.Context, m *message, r *topicRule, q *quer
 	}
 
 	report := map[string]any{
-		"ruleName": r.Name, keyTopic: m.topic, "cloudwatchTraceId": e.traceID, "clientId": m.clientID,
+		"ruleName": r.Name, keyTopic: m.topic, "cloudwatchTraceId": e.traceID, keyClientID: m.clientID,
 		"base64OriginalPayload": base64.StdEncoding.EncodeToString(m.payload), "failures": failures,
 	}
 	payload := encodeResult(report)

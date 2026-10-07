@@ -95,6 +95,21 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 				`{"Effect":"Allow","Action":"iot:Subscribe","Resource":"arn:aws:iot:*:*:topicfilter/allowed/*"}]}`},
 		})
 		return lambda.Result{Payload: body}, err
+	case "app.provisionHook":
+		// A fleet provisioning hook: serial number 0 is refused, and every
+		// device is put on floor 9.
+		var event struct {
+			Parameters map[string]string `json:"parameters"`
+		}
+		if err := json.Unmarshal(payload, &event); err != nil {
+			return lambda.Result{}, err
+		}
+
+		body, err := json.Marshal(map[string]any{
+			"allowProvisioning":  event.Parameters["SerialNumber"] != "0",
+			"parameterOverrides": map[string]string{"Floor": "9"},
+		})
+		return lambda.Result{Payload: body}, err
 	case "app.firehose":
 		// A Firehose processor: records whose data is "drop" are dropped,
 		// "fail" fail, and the rest are upper-cased.

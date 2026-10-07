@@ -14,7 +14,8 @@ import (
 const detailStatus = "Status"
 
 // Resources lists every thing, thing type, thing group, certificate, CA
-// certificate, policy, topic rule, job, role alias, and shadow, for the resource browser.
+// certificate, policy, topic rule, job, role alias, provisioning template, and shadow, for the
+// resource browser.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -117,6 +118,16 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 		return catalog.Resource{
 			Type: kind, Name: name, ARN: arn(scope, kindRoleAlias, name), Tags: r.Tags,
 			Details: map[string]any{"RoleArn": r.RoleARN, "DurationSeconds": r.Seconds},
+		}, true, nil
+	case kindTemplate:
+		t, _, err := storage.Read[provisioningTemplate](tx, key)
+		if err != nil {
+			return catalog.Resource{}, false, err
+		}
+
+		return catalog.Resource{
+			Type: kind, Name: name, ARN: arn(scope, arnTemplate, name), Tags: t.Tags,
+			Details: map[string]any{"Enabled": t.Enabled, "DefaultVersion": t.Default},
 		}, true, nil
 	case kindShadow, kindNamedShadow:
 		r, _, err := storage.Read[shadowRecord](tx, key)

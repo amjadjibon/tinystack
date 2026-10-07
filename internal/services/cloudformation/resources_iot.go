@@ -35,6 +35,12 @@ const (
 	memberEnableCachingForHTTP   = "EnableCachingForHttp"
 	propertySigningDisabled      = "SigningDisabled"
 	memberRoleAlias              = "RoleAlias"
+	memberSetAsDefault           = "SetAsDefault"
+	memberTemplateName           = "TemplateName"
+	memberTemplateArn            = "TemplateArn"
+	memberTemplateBody           = "TemplateBody"
+	memberProvisioningRoleArn    = "ProvisioningRoleArn"
+	memberPreProvisioningHook    = "PreProvisioningHook"
 	memberCredentialDuration     = "CredentialDurationSeconds" // #nosec G101 -- a property name, not a credential.
 	// iotRuleNotFound is how IoT reports a missing topic rule.
 	iotRuleNotFound = "UnauthorizedException"
@@ -45,10 +51,13 @@ func iotAttributes(out map[string]any, arnMember, idMember string) map[string]an
 	return map[string]any{memberArn: outText(out, arnMember), attributeID: outText(out, idMember)}
 }
 
-// iotTagger tags an IoT resource by its ARN.
-func iotTagger(r *resource) *tagger {
+// iotTagger tags an IoT resource by its Arn attribute.
+func iotTagger(r *resource) *tagger { return iotTaggerAt(r.Attributes[memberArn]) }
+
+// iotTaggerAt tags the IoT resource an ARN names.
+func iotTaggerAt(resourceARN any) *tagger {
 	return &tagger{
-		target: map[string]any{memberResourceArn: r.Attributes[memberArn]}, service: serviceIoT,
+		target: map[string]any{memberResourceArn: resourceARN}, service: serviceIoT,
 		tag: "TagResource", untag: "UntagResource", key: memberKey, value: memberValue,
 	}
 }
@@ -348,13 +357,71 @@ func init() {
 				return nil, err
 			}
 
-			return r.Attributes, retag(ctx, c, r.Properties, p, &tagger{
-				target: map[string]any{memberResourceArn: r.Attributes["RoleAliasArn"]}, service: serviceIoT,
-				tag: "TagResource", untag: "UntagResource", key: memberKey, value: memberValue,
-			})
+			return r.Attributes, retag(ctx, c, r.Properties, p, iotTaggerAt(r.Attributes["RoleAliasArn"]))
 		},
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, serviceIoT, "DeleteRoleAlias", map[string]any{memberRoleAlias: r.Physical})
+			if gone(err, iotNotFound) {
+				return nil
+			}
+
+			return err
+		},
+	})
+
+	register("AWS::IoT::ProvisioningTemplate", &resourceType{
+		name: memberTemplateName,
+		properties: []string{
+			memberTemplateName, memberDescription, memberEnabled, memberProvisioningRoleArn, memberTemplateBody,
+			"TemplateType", memberPreProvisioningHook, memberTags,
+		},
+		attributes: []string{memberTemplateArn},
+		replace:    []string{memberTemplateName, "TemplateType"},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			name := strings.ReplaceAll(c.nameOf(p, memberTemplateName, 36), ".", "_")
+			params := pick(map[string]any{memberTemplateName: name}, p, memberDescription, memberEnabled,
+				memberProvisioningRoleArn, memberTemplateBody, memberPreProvisioningHook)
+			if typ := p.str("TemplateType"); typ != "" {
+				params["Type"] = typ
+			}
+
+			if tags := p.tags(); len(tags) > 0 {
+				params[memberTags] = tagList(tags, memberKey, memberValue)
+			}
+
+			out, err := c.call(ctx, serviceIoT, "CreateProvisioningTemplate", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			return name, map[string]any{memberTemplateArn: outText(out, memberTemplateArn)}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			if p.changed(r.Properties, memberTemplateBody) {
+				if err := newTemplateVersion(ctx, c, r.Physical, p.str(memberTemplateBody)); err != nil {
+					return nil, err
+				}
+			}
+
+			params := pick(map[string]any{memberTemplateName: r.Physical}, p, memberDescription, memberEnabled,
+				memberProvisioningRoleArn, memberPreProvisioningHook)
+			if !p.has(memberPreProvisioningHook) && props(r.Properties).has(memberPreProvisioningHook) {
+				params["RemovePreProvisioningHook"] = true
+			}
+
+			if _, err := c.call(ctx, serviceIoT, "UpdateProvisioningTemplate", params); err != nil {
+				return nil, err
+			}
+
+			return r.Attributes, retag(ctx, c, r.Properties, p, iotTaggerAt(r.Attributes[memberTemplateArn]))
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(
+				ctx,
+				serviceIoT,
+				"DeleteProvisioningTemplate",
+				map[string]any{memberTemplateName: r.Physical},
+			)
 			if gone(err, iotNotFound) {
 				return nil
 			}
@@ -479,7 +546,7 @@ func newPolicyVersion(ctx context.Context, c *client, name, document string) err
 	}
 
 	_, err := c.call(ctx, serviceIoT, "CreatePolicyVersion", map[string]any{
-		memberPolicyName: name, memberPolicyDocument: document, "SetAsDefault": true,
+		memberPolicyName: name, memberPolicyDocument: document, memberSetAsDefault: true,
 	})
 	return err
 }
@@ -543,4 +610,31 @@ func createCertificate(ctx context.Context, c *client, p props) (map[string]any,
 
 		return c.call(ctx, serviceIoT, "RegisterCertificate", params)
 	}
+}
+
+// newTemplateVersion makes a template body the template's default version,
+// deleting the versions before it so the five-version limit never binds.
+func newTemplateVersion(ctx context.Context, c *client, name, body string) error {
+	out, err := c.call(ctx, serviceIoT, "ListProvisioningTemplateVersions", map[string]any{memberTemplateName: name})
+	if err != nil {
+		return err
+	}
+
+	if _, err = c.call(ctx, serviceIoT, "CreateProvisioningTemplateVersion", map[string]any{
+		memberTemplateName: name, memberTemplateBody: body, memberSetAsDefault: true,
+	}); err != nil {
+		return err
+	}
+
+	versions, _ := out["Versions"].([]any)
+	for _, v := range versions {
+		version, _ := v.(map[string]any)
+		if _, err = c.call(ctx, serviceIoT, "DeleteProvisioningTemplateVersion", map[string]any{
+			memberTemplateName: name, "VersionId": version["VersionId"],
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

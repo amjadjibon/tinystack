@@ -1291,6 +1291,136 @@ type ListRoleAliasesResponse struct {
 	NextMarker  *string  `json:"nextMarker,omitempty"`
 }
 
+type ProvisioningHook struct {
+	PayloadVersion *string `json:"payloadVersion,omitempty"`
+	TargetArn      *string `json:"targetArn,omitempty"`
+}
+
+type CreateProvisioningTemplateRequest struct {
+	TemplateName        *string           `json:"templateName,omitempty"`
+	Description         *string           `json:"description,omitempty"`
+	TemplateBody        *string           `json:"templateBody,omitempty"`
+	Enabled             *bool             `json:"enabled,omitempty"`
+	ProvisioningRoleArn *string           `json:"provisioningRoleArn,omitempty"`
+	PreProvisioningHook *ProvisioningHook `json:"preProvisioningHook,omitempty"`
+	Tags                []Tag             `json:"tags,omitempty"`
+	Type                *string           `json:"type,omitempty"`
+}
+
+type CreateProvisioningTemplateResponse struct {
+	TemplateArn      *string `json:"templateArn,omitempty"`
+	TemplateName     *string `json:"templateName,omitempty"`
+	DefaultVersionId *int64  `json:"defaultVersionId,omitempty"`
+}
+
+type DescribeProvisioningTemplateRequest struct {
+	TemplateName *string `json:"-"`
+}
+
+type DescribeProvisioningTemplateResponse struct {
+	TemplateArn         *string           `json:"templateArn,omitempty"`
+	TemplateName        *string           `json:"templateName,omitempty"`
+	Description         *string           `json:"description,omitempty"`
+	CreationDate        *float64          `json:"creationDate,omitempty"`
+	LastModifiedDate    *float64          `json:"lastModifiedDate,omitempty"`
+	DefaultVersionId    *int64            `json:"defaultVersionId,omitempty"`
+	TemplateBody        *string           `json:"templateBody,omitempty"`
+	Enabled             *bool             `json:"enabled,omitempty"`
+	ProvisioningRoleArn *string           `json:"provisioningRoleArn,omitempty"`
+	PreProvisioningHook *ProvisioningHook `json:"preProvisioningHook,omitempty"`
+	Type                *string           `json:"type,omitempty"`
+}
+
+type UpdateProvisioningTemplateRequest struct {
+	TemplateName              *string           `json:"-"`
+	Description               *string           `json:"description,omitempty"`
+	Enabled                   *bool             `json:"enabled,omitempty"`
+	DefaultVersionId          *int64            `json:"defaultVersionId,omitempty"`
+	ProvisioningRoleArn       *string           `json:"provisioningRoleArn,omitempty"`
+	PreProvisioningHook       *ProvisioningHook `json:"preProvisioningHook,omitempty"`
+	RemovePreProvisioningHook *bool             `json:"removePreProvisioningHook,omitempty"`
+}
+
+type UpdateProvisioningTemplateResponse struct {
+}
+
+type ListProvisioningTemplatesRequest struct {
+	MaxResults *int64  `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type ProvisioningTemplateSummary struct {
+	TemplateArn      *string  `json:"templateArn,omitempty"`
+	TemplateName     *string  `json:"templateName,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	CreationDate     *float64 `json:"creationDate,omitempty"`
+	LastModifiedDate *float64 `json:"lastModifiedDate,omitempty"`
+	Enabled          *bool    `json:"enabled,omitempty"`
+	Type             *string  `json:"type,omitempty"`
+}
+
+type ListProvisioningTemplatesResponse struct {
+	Templates []ProvisioningTemplateSummary `json:"templates,omitempty"`
+	NextToken *string                       `json:"nextToken,omitempty"`
+}
+
+type DeleteProvisioningTemplateRequest struct {
+	TemplateName *string `json:"-"`
+}
+
+type DeleteProvisioningTemplateResponse struct {
+}
+
+type CreateProvisioningTemplateVersionRequest struct {
+	TemplateName *string `json:"-"`
+	TemplateBody *string `json:"templateBody,omitempty"`
+	SetAsDefault *bool   `json:"-"`
+}
+
+type CreateProvisioningTemplateVersionResponse struct {
+	TemplateArn      *string `json:"templateArn,omitempty"`
+	TemplateName     *string `json:"templateName,omitempty"`
+	VersionId        *int64  `json:"versionId,omitempty"`
+	IsDefaultVersion *bool   `json:"isDefaultVersion,omitempty"`
+}
+
+type DescribeProvisioningTemplateVersionRequest struct {
+	TemplateName *string `json:"-"`
+	VersionId    *int64  `json:"-"`
+}
+
+type DescribeProvisioningTemplateVersionResponse struct {
+	VersionId        *int64   `json:"versionId,omitempty"`
+	CreationDate     *float64 `json:"creationDate,omitempty"`
+	TemplateBody     *string  `json:"templateBody,omitempty"`
+	IsDefaultVersion *bool    `json:"isDefaultVersion,omitempty"`
+}
+
+type ListProvisioningTemplateVersionsRequest struct {
+	TemplateName *string `json:"-"`
+	MaxResults   *int64  `json:"-"`
+	NextToken    *string `json:"-"`
+}
+
+type ProvisioningTemplateVersionSummary struct {
+	VersionId        *int64   `json:"versionId,omitempty"`
+	CreationDate     *float64 `json:"creationDate,omitempty"`
+	IsDefaultVersion *bool    `json:"isDefaultVersion,omitempty"`
+}
+
+type ListProvisioningTemplateVersionsResponse struct {
+	Versions  []ProvisioningTemplateVersionSummary `json:"versions,omitempty"`
+	NextToken *string                              `json:"nextToken,omitempty"`
+}
+
+type DeleteProvisioningTemplateVersionRequest struct {
+	TemplateName *string `json:"-"`
+	VersionId    *int64  `json:"-"`
+}
+
+type DeleteProvisioningTemplateVersionResponse struct {
+}
+
 type API interface {
 	CreateThing(context.Context, *CreateThingRequest) (*CreateThingResponse, error)
 	DescribeThing(context.Context, *DescribeThingRequest) (*DescribeThingResponse, error)
@@ -1381,6 +1511,15 @@ type API interface {
 	UpdateRoleAlias(context.Context, *UpdateRoleAliasRequest) (*UpdateRoleAliasResponse, error)
 	DeleteRoleAlias(context.Context, *DeleteRoleAliasRequest) (*DeleteRoleAliasResponse, error)
 	ListRoleAliases(context.Context, *ListRoleAliasesRequest) (*ListRoleAliasesResponse, error)
+	CreateProvisioningTemplate(context.Context, *CreateProvisioningTemplateRequest) (*CreateProvisioningTemplateResponse, error)
+	DescribeProvisioningTemplate(context.Context, *DescribeProvisioningTemplateRequest) (*DescribeProvisioningTemplateResponse, error)
+	UpdateProvisioningTemplate(context.Context, *UpdateProvisioningTemplateRequest) (*UpdateProvisioningTemplateResponse, error)
+	ListProvisioningTemplates(context.Context, *ListProvisioningTemplatesRequest) (*ListProvisioningTemplatesResponse, error)
+	DeleteProvisioningTemplate(context.Context, *DeleteProvisioningTemplateRequest) (*DeleteProvisioningTemplateResponse, error)
+	CreateProvisioningTemplateVersion(context.Context, *CreateProvisioningTemplateVersionRequest) (*CreateProvisioningTemplateVersionResponse, error)
+	DescribeProvisioningTemplateVersion(context.Context, *DescribeProvisioningTemplateVersionRequest) (*DescribeProvisioningTemplateVersionResponse, error)
+	ListProvisioningTemplateVersions(context.Context, *ListProvisioningTemplateVersionsRequest) (*ListProvisioningTemplateVersionsResponse, error)
+	DeleteProvisioningTemplateVersion(context.Context, *DeleteProvisioningTemplateVersionRequest) (*DeleteProvisioningTemplateVersionResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1649,6 +1788,33 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListRoleAliases": {Name: "ListRoleAliases", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AscendingOrder": catalog.MemberBinding{Location: "query", Name: "isAscendingOrder"}, "Marker": catalog.MemberBinding{Location: "query", Name: "marker"}, "PageSize": catalog.MemberBinding{Location: "query", Name: "pageSize"}}, Output: map[string]catalog.MemberBinding{"NextMarker": catalog.MemberBinding{Location: "document", Name: "nextMarker"}, "RoleAliases": catalog.MemberBinding{Location: "document", Name: "roleAliases"}}, Method: "GET", URI: "/role-aliases", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListRoleAliasesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListRoleAliases(ctx, input.(*ListRoleAliasesRequest))
+		}},
+		"CreateProvisioningTemplate": {Name: "CreateProvisioningTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "enabled"}, "PreProvisioningHook": catalog.MemberBinding{Location: "document", Name: "preProvisioningHook"}, "ProvisioningRoleArn": catalog.MemberBinding{Location: "document", Name: "provisioningRoleArn"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "TemplateBody": catalog.MemberBinding{Location: "document", Name: "templateBody"}, "TemplateName": catalog.MemberBinding{Location: "document", Name: "templateName"}, "Type": catalog.MemberBinding{Location: "document", Name: "type"}}, Output: map[string]catalog.MemberBinding{"DefaultVersionId": catalog.MemberBinding{Location: "document", Name: "defaultVersionId"}, "TemplateArn": catalog.MemberBinding{Location: "document", Name: "templateArn"}, "TemplateName": catalog.MemberBinding{Location: "document", Name: "templateName"}}, Method: "POST", URI: "/provisioning-templates", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateProvisioningTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateProvisioningTemplate(ctx, input.(*CreateProvisioningTemplateRequest))
+		}},
+		"DescribeProvisioningTemplate": {Name: "DescribeProvisioningTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateName": catalog.MemberBinding{Location: "label", Name: "templateName"}}, Output: map[string]catalog.MemberBinding{"CreationDate": catalog.MemberBinding{Location: "document", Name: "creationDate"}, "DefaultVersionId": catalog.MemberBinding{Location: "document", Name: "defaultVersionId"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "enabled"}, "LastModifiedDate": catalog.MemberBinding{Location: "document", Name: "lastModifiedDate"}, "PreProvisioningHook": catalog.MemberBinding{Location: "document", Name: "preProvisioningHook"}, "ProvisioningRoleArn": catalog.MemberBinding{Location: "document", Name: "provisioningRoleArn"}, "TemplateArn": catalog.MemberBinding{Location: "document", Name: "templateArn"}, "TemplateBody": catalog.MemberBinding{Location: "document", Name: "templateBody"}, "TemplateName": catalog.MemberBinding{Location: "document", Name: "templateName"}, "Type": catalog.MemberBinding{Location: "document", Name: "type"}}, Method: "GET", URI: "/provisioning-templates/{templateName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeProvisioningTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeProvisioningTemplate(ctx, input.(*DescribeProvisioningTemplateRequest))
+		}},
+		"UpdateProvisioningTemplate": {Name: "UpdateProvisioningTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DefaultVersionId": catalog.MemberBinding{Location: "document", Name: "defaultVersionId"}, "Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Enabled": catalog.MemberBinding{Location: "document", Name: "enabled"}, "PreProvisioningHook": catalog.MemberBinding{Location: "document", Name: "preProvisioningHook"}, "ProvisioningRoleArn": catalog.MemberBinding{Location: "document", Name: "provisioningRoleArn"}, "RemovePreProvisioningHook": catalog.MemberBinding{Location: "document", Name: "removePreProvisioningHook"}, "TemplateName": catalog.MemberBinding{Location: "label", Name: "templateName"}}, Output: map[string]catalog.MemberBinding{}, Method: "PATCH", URI: "/provisioning-templates/{templateName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateProvisioningTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateProvisioningTemplate(ctx, input.(*UpdateProvisioningTemplateRequest))
+		}},
+		"ListProvisioningTemplates": {Name: "ListProvisioningTemplates", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}, "Templates": catalog.MemberBinding{Location: "document", Name: "templates"}}, Method: "GET", URI: "/provisioning-templates", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListProvisioningTemplatesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListProvisioningTemplates(ctx, input.(*ListProvisioningTemplatesRequest))
+		}},
+		"DeleteProvisioningTemplate": {Name: "DeleteProvisioningTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateName": catalog.MemberBinding{Location: "label", Name: "templateName"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/provisioning-templates/{templateName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteProvisioningTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteProvisioningTemplate(ctx, input.(*DeleteProvisioningTemplateRequest))
+		}},
+		"CreateProvisioningTemplateVersion": {Name: "CreateProvisioningTemplateVersion", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"SetAsDefault": catalog.MemberBinding{Location: "query", Name: "setAsDefault"}, "TemplateBody": catalog.MemberBinding{Location: "document", Name: "templateBody"}, "TemplateName": catalog.MemberBinding{Location: "label", Name: "templateName"}}, Output: map[string]catalog.MemberBinding{"IsDefaultVersion": catalog.MemberBinding{Location: "document", Name: "isDefaultVersion"}, "TemplateArn": catalog.MemberBinding{Location: "document", Name: "templateArn"}, "TemplateName": catalog.MemberBinding{Location: "document", Name: "templateName"}, "VersionId": catalog.MemberBinding{Location: "document", Name: "versionId"}}, Method: "POST", URI: "/provisioning-templates/{templateName}/versions", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateProvisioningTemplateVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateProvisioningTemplateVersion(ctx, input.(*CreateProvisioningTemplateVersionRequest))
+		}},
+		"DescribeProvisioningTemplateVersion": {Name: "DescribeProvisioningTemplateVersion", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateName": catalog.MemberBinding{Location: "label", Name: "templateName"}, "VersionId": catalog.MemberBinding{Location: "label", Name: "versionId"}}, Output: map[string]catalog.MemberBinding{"CreationDate": catalog.MemberBinding{Location: "document", Name: "creationDate"}, "IsDefaultVersion": catalog.MemberBinding{Location: "document", Name: "isDefaultVersion"}, "TemplateBody": catalog.MemberBinding{Location: "document", Name: "templateBody"}, "VersionId": catalog.MemberBinding{Location: "document", Name: "versionId"}}, Method: "GET", URI: "/provisioning-templates/{templateName}/versions/{versionId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeProvisioningTemplateVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeProvisioningTemplateVersion(ctx, input.(*DescribeProvisioningTemplateVersionRequest))
+		}},
+		"ListProvisioningTemplateVersions": {Name: "ListProvisioningTemplateVersions", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}, "TemplateName": catalog.MemberBinding{Location: "label", Name: "templateName"}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}, "Versions": catalog.MemberBinding{Location: "document", Name: "versions"}}, Method: "GET", URI: "/provisioning-templates/{templateName}/versions", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListProvisioningTemplateVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListProvisioningTemplateVersions(ctx, input.(*ListProvisioningTemplateVersionsRequest))
+		}},
+		"DeleteProvisioningTemplateVersion": {Name: "DeleteProvisioningTemplateVersion", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateName": catalog.MemberBinding{Location: "label", Name: "templateName"}, "VersionId": catalog.MemberBinding{Location: "label", Name: "versionId"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/provisioning-templates/{templateName}/versions/{versionId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteProvisioningTemplateVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteProvisioningTemplateVersion(ctx, input.(*DeleteProvisioningTemplateVersionRequest))
 		}},
 	}}
 }

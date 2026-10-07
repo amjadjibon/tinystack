@@ -131,7 +131,9 @@ func updateManagedPolicy(ctx context.Context, c *client, r *resource, p props) (
 		}
 
 		out, err := c.call(ctx, "iam", "CreatePolicyVersion", map[string]any{
-			memberPolicyArn: r.Physical, memberPolicyDocument: p.document(memberPolicyDocument), "SetAsDefault": true,
+			memberPolicyArn:      r.Physical,
+			memberPolicyDocument: p.document(memberPolicyDocument),
+			memberSetAsDefault:   true,
 		})
 		if err != nil {
 			return nil, err

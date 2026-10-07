@@ -84,7 +84,17 @@ Resources:
       RoleArn: arn:aws:iam::000000000000:role/iot
       CredentialDurationSeconds: 900
       Tags: [{Key: team, Value: a}]
+  Template:
+    Type: AWS::IoT::ProvisioningTemplate
+    Properties:
+      Description: !Sub "floor ${Floor}"
+      Enabled: true
+      ProvisioningRoleArn: arn:aws:iam::000000000000:role/iot
+      TemplateBody: >-
+        {"Resources": {"certificate": {"Type": "AWS::IoT::Certificate",
+        "Properties": {"CertificateId": {"Ref": "AWS::IoT::Certificate::Id"}}}}}
 Outputs:
+  Template: {Value: !Ref Template}
   Alias: {Value: !Ref Alias}
   AliasArn: {Value: !GetAtt Alias.RoleAliasArn}
   Authorizer: {Value: !Ref Authorizer}
@@ -125,6 +135,14 @@ func TestCloudFormationIoT(t *testing.T) {
 	thing, err := devices.DescribeThing(ctx, &iot.DescribeThingInput{ThingName: aws.String("probe")})
 	if err != nil || thing.Attributes["floor"] != "3" || thing.Attributes["room"] != "a" {
 		t.Fatalf("%+v %v", thing, err)
+	}
+
+	template, err := devices.DescribeProvisioningTemplate(ctx, &iot.DescribeProvisioningTemplateInput{
+		TemplateName: aws.String(outputs["Template"]),
+	})
+	if err != nil || aws.ToString(template.Description) != "floor 3" || !aws.ToBool(template.Enabled) ||
+		strings.Contains(outputs["Template"], ".") {
+		t.Fatalf("%+v %v", template, err)
 	}
 
 	alias, err := devices.DescribeRoleAlias(ctx, &iot.DescribeRoleAliasInput{RoleAlias: aws.String(outputs["Alias"])})
@@ -203,6 +221,13 @@ func TestCloudFormationIoT(t *testing.T) {
 		t.Fatalf("%+v %v", rule, err)
 	}
 
+	template, err = devices.DescribeProvisioningTemplate(ctx, &iot.DescribeProvisioningTemplateInput{
+		TemplateName: aws.String(outputs["Template"]),
+	})
+	if err != nil || aws.ToString(template.Description) != "floor 4" {
+		t.Fatalf("%+v %v", template, err)
+	}
+
 	authorizer, err := devices.DescribeAuthorizer(ctx, &iot.DescribeAuthorizerInput{
 		AuthorizerName: aws.String(outputs["Authorizer"]),
 	})
@@ -239,6 +264,11 @@ func TestCloudFormationIoT(t *testing.T) {
 	policies, err := devices.ListPolicies(ctx, &iot.ListPoliciesInput{})
 	if err != nil || len(policies.Policies) != 0 {
 		t.Fatalf("%+v %v", policies, err)
+	}
+
+	templates, err := devices.ListProvisioningTemplates(ctx, &iot.ListProvisioningTemplatesInput{})
+	if err != nil || len(templates.Templates) != 0 {
+		t.Fatalf("%+v %v", templates, err)
 	}
 
 	aliases, err := devices.ListRoleAliases(ctx, &iot.ListRoleAliasesInput{})

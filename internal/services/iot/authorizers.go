@@ -455,7 +455,7 @@ func (s *Service) invokeAuthorizer(ctx context.Context, scope request.Scope, a *
 
 	if m := r.mqtt; m != nil {
 		protocols = append(protocols, "mqtt")
-		mqtt := map[string]any{"clientId": common.Value(m.ClientId)}
+		mqtt := map[string]any{keyClientID: common.Value(m.ClientId)}
 		if m.Username != nil {
 			mqtt["username"] = *m.Username
 		}

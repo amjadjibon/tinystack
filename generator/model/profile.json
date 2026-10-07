@@ -9725,7 +9725,16 @@
       "DescribeRoleAlias",
       "UpdateRoleAlias",
       "DeleteRoleAlias",
-      "ListRoleAliases"
+      "ListRoleAliases",
+      "CreateProvisioningTemplate",
+      "DescribeProvisioningTemplate",
+      "UpdateProvisioningTemplate",
+      "ListProvisioningTemplates",
+      "DeleteProvisioningTemplate",
+      "CreateProvisioningTemplateVersion",
+      "DescribeProvisioningTemplateVersion",
+      "ListProvisioningTemplateVersions",
+      "DeleteProvisioningTemplateVersion"
     ],
     "shapes": {
       "CreateThingRequest": [
@@ -10744,7 +10753,113 @@
       "ListRoleAliasesResponse": [
         "roleAliases",
         "nextMarker"
-      ]
+      ],
+      "CreateProvisioningTemplateRequest": [
+        "templateName",
+        "description",
+        "templateBody",
+        "enabled",
+        "provisioningRoleArn",
+        "preProvisioningHook",
+        "tags",
+        "type"
+      ],
+      "ProvisioningHook": [
+        "payloadVersion",
+        "targetArn"
+      ],
+      "CreateProvisioningTemplateResponse": [
+        "templateArn",
+        "templateName",
+        "defaultVersionId"
+      ],
+      "DescribeProvisioningTemplateRequest": [
+        "templateName"
+      ],
+      "DescribeProvisioningTemplateResponse": [
+        "templateArn",
+        "templateName",
+        "description",
+        "creationDate",
+        "lastModifiedDate",
+        "defaultVersionId",
+        "templateBody",
+        "enabled",
+        "provisioningRoleArn",
+        "preProvisioningHook",
+        "type"
+      ],
+      "UpdateProvisioningTemplateRequest": [
+        "templateName",
+        "description",
+        "enabled",
+        "defaultVersionId",
+        "provisioningRoleArn",
+        "preProvisioningHook",
+        "removePreProvisioningHook"
+      ],
+      "UpdateProvisioningTemplateResponse": [],
+      "ListProvisioningTemplatesRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListProvisioningTemplatesResponse": [
+        "templates",
+        "nextToken"
+      ],
+      "ProvisioningTemplateSummary": [
+        "templateArn",
+        "templateName",
+        "description",
+        "creationDate",
+        "lastModifiedDate",
+        "enabled",
+        "type"
+      ],
+      "DeleteProvisioningTemplateRequest": [
+        "templateName"
+      ],
+      "DeleteProvisioningTemplateResponse": [],
+      "CreateProvisioningTemplateVersionRequest": [
+        "templateName",
+        "templateBody",
+        "setAsDefault"
+      ],
+      "CreateProvisioningTemplateVersionResponse": [
+        "templateArn",
+        "templateName",
+        "versionId",
+        "isDefaultVersion"
+      ],
+      "DescribeProvisioningTemplateVersionRequest": [
+        "templateName",
+        "versionId"
+      ],
+      "DescribeProvisioningTemplateVersionResponse": [
+        "versionId",
+        "creationDate",
+        "templateBody",
+        "isDefaultVersion"
+      ],
+      "ListProvisioningTemplateVersionsRequest": [
+        "templateName",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListProvisioningTemplateVersionsResponse": [
+        "versions",
+        "nextToken"
+      ],
+      "ProvisioningTemplateVersionSummary": [
+        "versionId",
+        "creationDate",
+        "isDefaultVersion"
+      ],
+      "DeleteProvisioningTemplateVersionRequest": [
+        "templateName",
+        "versionId"
+      ],
+      "DeleteProvisioningTemplateVersionResponse": []
     }
   },
   "iotdataplane": {

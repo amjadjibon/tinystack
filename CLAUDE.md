@@ -559,7 +559,14 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `x-amzn-iot-thingname` names, if any) and, in verify mode, a certificate policy allowing
   `iot:AssumeRoleWithCertificate` on the alias, then calls `sts.Service.AssumeRoleForService` (registered with
   `UseRoleCredentials`), which issues the role's credentials only when its trust policy names the
-  `credentials.iot.amazonaws.com` Service principal.
+  `credentials.iot.amazonaws.com` Service principal. Fleet provisioning templates (`provisioning.go`, `…/iot/provisioning-template/<name>`
+  holding up to 5 versions) are FLEET_PROVISIONING only; their bodies may use Parameters, Mappings, `Ref`,
+  `Fn::Join`, `Fn::Select`, `Fn::Split`, `Fn::Sub`, and `Fn::FindInMap`, and one thing, one certificate, and any
+  policies. `fleet.go` serves `$aws/certificates/create[-from-csr]/json` (an inactive certificate and a one-hour,
+  single-use ownership token under `…/iot/ownership-token/<token>`) and
+  `$aws/provisioning-templates/<name>/provision/json`, which calls the template's pre-provisioning hook through the
+  `catalog.Caller`, then creates or updates the thing (and its groups), activates and attaches the certificate, and
+  attaches the policies through the service's own operations.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for

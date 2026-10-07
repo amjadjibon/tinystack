@@ -15,6 +15,7 @@ import (
 var taggable = map[string]string{
 	"thingtype": kindThingType, "thinggroup": kindThingGroup, kindPolicy: kindPolicy, "cacert": kindCA,
 	kindRule: kindRule, kindAuthorizer: kindAuthorizer, kindJob: kindJob, kindRoleAlias: kindRoleAlias,
+	arnTemplate: kindTemplate,
 }
 
 // tagged returns the key of the record an ARN names and its tags.
@@ -38,7 +39,7 @@ func tagged(tx storage.ReadTx, scope request.Scope, resource *string) (key strin
 	}
 
 	return "", nil, invalid("%s is not the ARN of a taggable IoT resource (a thing type, thing group, policy, CA "+
-		"certificate, topic rule, authorizer, job, or role alias) of this account and Region.", id)
+		"certificate, topic rule, authorizer, job, role alias, or provisioning template) of this account and Region.", id)
 }
 
 // retag replaces the tags of the resource an ARN names with fn's result,
