@@ -6,6 +6,8 @@ TinyStack registers **40 service APIs** with **1,243 selected operations**.
 Every API below implements a subset. Counts describe operation selection in the pinned models, not AWS parity.
 Use a service page for behavior, limitations, exact operation names, wire routes, and SDK examples.
 
+Browse the [implemented services and features catalogue](catalogue.md) for the full capability inventory.
+
 Future services and unimplemented extensions live in the [roadmap](../roadmap/index.md).
 
 ## Analytics

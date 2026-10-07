@@ -21,9 +21,9 @@ Docker-backed runtimes execute functions, containers, Kubernetes clusters, or ca
 
 - **Check a service**
 
-    Find implemented behavior, supported operations, execution modes, and known gaps.
+    Browse implemented services and features, with execution modes and links to known gaps.
 
-    [Service support →](services/index.md)
+    [Implemented catalogue →](services/catalogue.md)
 
 - **Understand the system**
 

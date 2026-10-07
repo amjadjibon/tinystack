@@ -1,4 +1,51 @@
 {
+  "platform_features": [
+    {
+      "title": "AWS wire protocols",
+      "summary": "AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings.",
+      "reference": "architecture/request-flow.md"
+    },
+    {
+      "title": "Identity and resource scope",
+      "summary": "Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, and optional SigV4 verification; general IAM permission evaluation is outside the subset.",
+      "reference": "architecture/identity.md"
+    },
+    {
+      "title": "Transactional storage and persistence",
+      "summary": "Atomic callback transactions, in-memory storage, and optional SQLite commit persistence with resource reload on restart; runtime and in-flight state have separate limits.",
+      "reference": "guides/persistence.md"
+    },
+    {
+      "title": "Cloudscape console",
+      "summary": "Resource inventory/details, recent requests, delivery history, and metrics through a separately served web console.",
+      "reference": "guides/diagnostics.md"
+    },
+    {
+      "title": "Diagnostics",
+      "summary": "Health/resource endpoints, bounded request and delivery logs, model-sensitive body redaction, and Prometheus request metrics.",
+      "reference": "guides/diagnostics.md"
+    },
+    {
+      "title": "CLI and SDK clients",
+      "summary": "Local endpoint overrides for AWS clients, CLI wrappers, and generated Go SDK-compatible APIs.",
+      "reference": "getting-started/clients.md"
+    },
+    {
+      "title": "Infrastructure workflows",
+      "summary": "Selected Terraform AWS provider workflows and local CloudFormation/SAM deployment through the registered resource-type subset.",
+      "reference": "guides/infrastructure.md"
+    },
+    {
+      "title": "Runtime adapters",
+      "summary": "Docker Lambda execution and opt-in ECS Docker tasks, EKS k3s clusters, and ElastiCache Docker nodes; default optional adapters manage records.",
+      "reference": "guides/runtimes.md"
+    },
+    {
+      "title": "Cross-service event delivery",
+      "summary": "Supported notification, rule, and event-source workflows connect local service implementations and record delivery outcomes.",
+      "reference": "guides/events.md"
+    }
+  ],
   "services": {
     "dynamodb": {
       "title": "DynamoDB",

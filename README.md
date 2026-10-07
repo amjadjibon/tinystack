@@ -5,7 +5,9 @@ A single Go binary providing local DynamoDB (with Streams), SQS, SNS, S3, Lambda
 ## Run
 
 For setup, service support and gaps, future proposals, architecture, and development, see the
-[documentation site source](docs/site/index.md). Run `task docs:serve` and open `http://127.0.0.1:8000`.
+[documentation site source](docs/site/index.md). Browse the
+[implemented service and feature catalogue](docs/site/services/catalogue.md).
+Run `task docs:serve` and open `http://127.0.0.1:8000`.
 `task docs:check` validates generated coverage and builds the site. Python 3.11+ is required;
 pinned dependencies install into `.venv-docs/`.
 

@@ -33,6 +33,7 @@ python3 scripts/docs.py
 | --- | --- |
 | Guides, architecture and development explanations | Markdown under `docs/site/` |
 | Service summaries, implemented behavior and gaps | `docs/catalog.json` |
+| Shared platform features | `platform_features` entries in `docs/catalog.json` |
 | Future proposal scope | `future` entries in `docs/catalog.json` |
 | Supported/unimplemented operation names and REST routes | Pinned Smithy models plus `generator/model/profile.json` |
 | Protocol and signing names | Generated service descriptors |
@@ -42,6 +43,9 @@ python3 scripts/docs.py
 | Repository-link template without public API lookups | `docs/overrides/partials/source.html` |
 
 Generated pages have a header identifying their source. Edit the catalogue rather than those pages.
+The [implemented catalogue](../services/catalogue.md) collects shared platform capabilities and every service's
+implemented features in one page. Update feature descriptions, execution modes and limitations in the same change
+that adds, changes or removes behavior. Do not move a proposal into this catalogue before its workflow is implemented.
 The generator compares operation selection with the generated API interface and refuses a mismatch.
 `docs:check` compares expected content without rewriting it, so a new operation or stale page fails validation.
 

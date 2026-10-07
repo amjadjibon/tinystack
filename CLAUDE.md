@@ -586,6 +586,10 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 
 ## Adding an operation or service
 
+Keep the implemented service/feature catalogue current with every behavior change: edit `docs/catalog.json`
+(service `features`, `gaps`, and `execution`, or `platform_features`), run `task docs:generate`, then
+`task docs:check`. The published inventory is `docs/site/services/catalogue.md`; future proposals stay in the roadmap.
+
 1. **Operation:** add it to the service's `operations` in `generator/model/profile.json` and add the input and output
    members it needs under `shapes`. Run `task generate`, then implement the new `API` method in `internal/services/<service>`.
 2. **Service:** pin the upstream Smithy model with `task models:sync -- -ref <current commit> -add <name>[=<file>.json]`. Add a

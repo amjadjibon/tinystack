@@ -99,6 +99,7 @@ nav:
   # GENERATED NAV START
   - Services:
       - Support matrix: services/index.md
+      - Implemented catalogue: services/catalogue.md
       - "Analytics":
           - "Athena": services/athena.md
           - "Glue Data Catalog": services/glue.md
