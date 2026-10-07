@@ -30,6 +30,7 @@ const (
 	keyState        = "state"
 	keyVersion      = "version"
 	keyMetadata     = "metadata"
+	keyMessage      = "message"
 	keyTimestamp    = "timestamp"
 	// The shadow request operations.
 	opGet    = "get"
@@ -636,7 +637,7 @@ func (s *Service) serveShadow(ctx context.Context, scope request.Scope, topic st
 		return
 	}
 
-	rejected := map[string]any{"code": failure.code, "message": failure.message, "timestamp": s.now().Unix()}
+	rejected := map[string]any{"code": failure.code, keyMessage: failure.message, "timestamp": s.now().Unix()}
 	if body, ok := decodePayload(payload).(map[string]any); ok {
 		if token, ok := body["clientToken"].(string); ok {
 			rejected["clientToken"] = token

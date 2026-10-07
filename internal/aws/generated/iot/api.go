@@ -1232,6 +1232,65 @@ type DeleteJobExecutionRequest struct {
 	Force           *bool   `json:"-"`
 }
 
+type CreateRoleAliasRequest struct {
+	RoleAlias                 *string `json:"-"`
+	RoleArn                   *string `json:"roleArn,omitempty"`
+	CredentialDurationSeconds *int64  `json:"credentialDurationSeconds,omitempty"`
+	Tags                      []Tag   `json:"tags,omitempty"`
+}
+
+type CreateRoleAliasResponse struct {
+	RoleAlias    *string `json:"roleAlias,omitempty"`
+	RoleAliasArn *string `json:"roleAliasArn,omitempty"`
+}
+
+type DescribeRoleAliasRequest struct {
+	RoleAlias *string `json:"-"`
+}
+
+type RoleAliasDescription struct {
+	RoleAlias                 *string  `json:"roleAlias,omitempty"`
+	RoleAliasArn              *string  `json:"roleAliasArn,omitempty"`
+	RoleArn                   *string  `json:"roleArn,omitempty"`
+	Owner                     *string  `json:"owner,omitempty"`
+	CredentialDurationSeconds *int64   `json:"credentialDurationSeconds,omitempty"`
+	CreationDate              *float64 `json:"creationDate,omitempty"`
+	LastModifiedDate          *float64 `json:"lastModifiedDate,omitempty"`
+}
+
+type DescribeRoleAliasResponse struct {
+	RoleAliasDescription *RoleAliasDescription `json:"roleAliasDescription,omitempty"`
+}
+
+type UpdateRoleAliasRequest struct {
+	RoleAlias                 *string `json:"-"`
+	RoleArn                   *string `json:"roleArn,omitempty"`
+	CredentialDurationSeconds *int64  `json:"credentialDurationSeconds,omitempty"`
+}
+
+type UpdateRoleAliasResponse struct {
+	RoleAlias    *string `json:"roleAlias,omitempty"`
+	RoleAliasArn *string `json:"roleAliasArn,omitempty"`
+}
+
+type DeleteRoleAliasRequest struct {
+	RoleAlias *string `json:"-"`
+}
+
+type DeleteRoleAliasResponse struct {
+}
+
+type ListRoleAliasesRequest struct {
+	PageSize       *int64  `json:"-"`
+	Marker         *string `json:"-"`
+	AscendingOrder *bool   `json:"-"`
+}
+
+type ListRoleAliasesResponse struct {
+	RoleAliases []string `json:"roleAliases,omitempty"`
+	NextMarker  *string  `json:"nextMarker,omitempty"`
+}
+
 type API interface {
 	CreateThing(context.Context, *CreateThingRequest) (*CreateThingResponse, error)
 	DescribeThing(context.Context, *DescribeThingRequest) (*DescribeThingResponse, error)
@@ -1317,6 +1376,11 @@ type API interface {
 	ListJobExecutionsForThing(context.Context, *ListJobExecutionsForThingRequest) (*ListJobExecutionsForThingResponse, error)
 	CancelJobExecution(context.Context, *CancelJobExecutionRequest) (*CancelJobExecutionOutput, error)
 	DeleteJobExecution(context.Context, *DeleteJobExecutionRequest) (*DeleteJobExecutionOutput, error)
+	CreateRoleAlias(context.Context, *CreateRoleAliasRequest) (*CreateRoleAliasResponse, error)
+	DescribeRoleAlias(context.Context, *DescribeRoleAliasRequest) (*DescribeRoleAliasResponse, error)
+	UpdateRoleAlias(context.Context, *UpdateRoleAliasRequest) (*UpdateRoleAliasResponse, error)
+	DeleteRoleAlias(context.Context, *DeleteRoleAliasRequest) (*DeleteRoleAliasResponse, error)
+	ListRoleAliases(context.Context, *ListRoleAliasesRequest) (*ListRoleAliasesResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1570,6 +1634,21 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteJobExecution": {Name: "DeleteJobExecution", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ExecutionNumber": catalog.MemberBinding{Location: "label", Name: "executionNumber"}, "Force": catalog.MemberBinding{Location: "query", Name: "force"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "NamespaceId": catalog.MemberBinding{Location: "unsupported:query", Name: "namespaceId"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/things/{thingName}/jobs/{jobId}/executionNumber/{executionNumber}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteJobExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteJobExecution(ctx, input.(*DeleteJobExecutionRequest))
+		}},
+		"CreateRoleAlias": {Name: "CreateRoleAlias", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"CredentialDurationSeconds": catalog.MemberBinding{Location: "document", Name: "credentialDurationSeconds"}, "RoleAlias": catalog.MemberBinding{Location: "label", Name: "roleAlias"}, "RoleArn": catalog.MemberBinding{Location: "document", Name: "roleArn"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}}, Output: map[string]catalog.MemberBinding{"RoleAlias": catalog.MemberBinding{Location: "document", Name: "roleAlias"}, "RoleAliasArn": catalog.MemberBinding{Location: "document", Name: "roleAliasArn"}}, Method: "POST", URI: "/role-aliases/{roleAlias}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateRoleAliasRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateRoleAlias(ctx, input.(*CreateRoleAliasRequest))
+		}},
+		"DescribeRoleAlias": {Name: "DescribeRoleAlias", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RoleAlias": catalog.MemberBinding{Location: "label", Name: "roleAlias"}}, Output: map[string]catalog.MemberBinding{"RoleAliasDescription": catalog.MemberBinding{Location: "document", Name: "roleAliasDescription"}}, Method: "GET", URI: "/role-aliases/{roleAlias}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeRoleAliasRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeRoleAlias(ctx, input.(*DescribeRoleAliasRequest))
+		}},
+		"UpdateRoleAlias": {Name: "UpdateRoleAlias", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"CredentialDurationSeconds": catalog.MemberBinding{Location: "document", Name: "credentialDurationSeconds"}, "RoleAlias": catalog.MemberBinding{Location: "label", Name: "roleAlias"}, "RoleArn": catalog.MemberBinding{Location: "document", Name: "roleArn"}}, Output: map[string]catalog.MemberBinding{"RoleAlias": catalog.MemberBinding{Location: "document", Name: "roleAlias"}, "RoleAliasArn": catalog.MemberBinding{Location: "document", Name: "roleAliasArn"}}, Method: "PUT", URI: "/role-aliases/{roleAlias}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateRoleAliasRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateRoleAlias(ctx, input.(*UpdateRoleAliasRequest))
+		}},
+		"DeleteRoleAlias": {Name: "DeleteRoleAlias", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RoleAlias": catalog.MemberBinding{Location: "label", Name: "roleAlias"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/role-aliases/{roleAlias}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteRoleAliasRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteRoleAlias(ctx, input.(*DeleteRoleAliasRequest))
+		}},
+		"ListRoleAliases": {Name: "ListRoleAliases", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AscendingOrder": catalog.MemberBinding{Location: "query", Name: "isAscendingOrder"}, "Marker": catalog.MemberBinding{Location: "query", Name: "marker"}, "PageSize": catalog.MemberBinding{Location: "query", Name: "pageSize"}}, Output: map[string]catalog.MemberBinding{"NextMarker": catalog.MemberBinding{Location: "document", Name: "nextMarker"}, "RoleAliases": catalog.MemberBinding{Location: "document", Name: "roleAliases"}}, Method: "GET", URI: "/role-aliases", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListRoleAliasesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListRoleAliases(ctx, input.(*ListRoleAliasesRequest))
 		}},
 	}}
 }

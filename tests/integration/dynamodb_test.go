@@ -254,6 +254,7 @@ func serverStore(
 	}
 	caller := catalog.NewCaller(services...)
 	devices.UseCaller(caller)
+	devices.UseRoleCredentials(stsService.AssumeRoleForService)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
 	monitoring.UseCaller(caller)

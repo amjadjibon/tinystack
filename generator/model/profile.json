@@ -9720,7 +9720,12 @@
       "ListJobExecutionsForJob",
       "ListJobExecutionsForThing",
       "CancelJobExecution",
-      "DeleteJobExecution"
+      "DeleteJobExecution",
+      "CreateRoleAlias",
+      "DescribeRoleAlias",
+      "UpdateRoleAlias",
+      "DeleteRoleAlias",
+      "ListRoleAliases"
     ],
     "shapes": {
       "CreateThingRequest": [
@@ -10692,6 +10697,53 @@
         "thingName",
         "executionNumber",
         "force"
+      ],
+      "CreateRoleAliasRequest": [
+        "roleAlias",
+        "roleArn",
+        "credentialDurationSeconds",
+        "tags"
+      ],
+      "CreateRoleAliasResponse": [
+        "roleAlias",
+        "roleAliasArn"
+      ],
+      "DescribeRoleAliasRequest": [
+        "roleAlias"
+      ],
+      "DescribeRoleAliasResponse": [
+        "roleAliasDescription"
+      ],
+      "RoleAliasDescription": [
+        "roleAlias",
+        "roleAliasArn",
+        "roleArn",
+        "owner",
+        "credentialDurationSeconds",
+        "creationDate",
+        "lastModifiedDate"
+      ],
+      "UpdateRoleAliasRequest": [
+        "roleAlias",
+        "roleArn",
+        "credentialDurationSeconds"
+      ],
+      "UpdateRoleAliasResponse": [
+        "roleAlias",
+        "roleAliasArn"
+      ],
+      "DeleteRoleAliasRequest": [
+        "roleAlias"
+      ],
+      "DeleteRoleAliasResponse": [],
+      "ListRoleAliasesRequest": [
+        "pageSize",
+        "marker",
+        "ascendingOrder"
+      ],
+      "ListRoleAliasesResponse": [
+        "roleAliases",
+        "nextMarker"
       ]
     }
   },

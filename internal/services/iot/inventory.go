@@ -10,8 +10,11 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
+// detailStatus is the resource browser's status detail.
+const detailStatus = "Status"
+
 // Resources lists every thing, thing type, thing group, certificate, CA
-// certificate, policy, topic rule, job, and shadow, for the resource browser.
+// certificate, policy, topic rule, job, role alias, and shadow, for the resource browser.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -70,7 +73,7 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 
 		return catalog.Resource{
 			Type: kind, Name: name, ARN: arn(scope, "cert", name),
-			Details: map[string]any{"Status": c.Status, "Mode": c.Mode},
+			Details: map[string]any{detailStatus: c.Status, "Mode": c.Mode},
 		}, true, nil
 	case kindCA:
 		c, _, err := storage.Read[caCertificate](tx, key)
@@ -80,7 +83,7 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 
 		return catalog.Resource{
 			Type: kind, Name: name, ARN: arn(scope, "cacert", name), Tags: c.Tags,
-			Details: map[string]any{"Status": c.Status, "Mode": c.Mode},
+			Details: map[string]any{detailStatus: c.Status, "Mode": c.Mode},
 		}, true, nil
 	case kindRule:
 		r, _, err := storage.Read[topicRule](tx, key)
@@ -103,7 +106,17 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 
 		return catalog.Resource{
 			Type: kind, Name: name, ARN: arn(scope, kindJob, name), Tags: j.Tags,
-			Details: map[string]any{"Status": j.Status, "Executions": j.Executions},
+			Details: map[string]any{detailStatus: j.Status, "Executions": j.Executions},
+		}, true, nil
+	case kindRoleAlias:
+		r, _, err := storage.Read[roleAlias](tx, key)
+		if err != nil {
+			return catalog.Resource{}, false, err
+		}
+
+		return catalog.Resource{
+			Type: kind, Name: name, ARN: arn(scope, kindRoleAlias, name), Tags: r.Tags,
+			Details: map[string]any{"RoleArn": r.RoleARN, "DurationSeconds": r.Seconds},
 		}, true, nil
 	case kindShadow, kindNamedShadow:
 		r, _, err := storage.Read[shadowRecord](tx, key)

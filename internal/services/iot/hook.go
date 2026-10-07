@@ -58,7 +58,7 @@ func (h *hook) OnConnectAuthenticate(cl *mqtt.Client, pk packets.Packet) bool {
 		return false
 	}
 
-	docs, vars, err := h.policies(c, cl.ID)
+	docs, vars, err := h.policies(context.Background(), c, cl.ID)
 	c.thing = vars[varThingName]
 	return err == nil && h.allowed(c, docs, vars, "iot:Connect", "client/"+cl.ID)
 }
@@ -79,7 +79,9 @@ const (
 // IAM). A device certificate in verify mode has only its IoT policies, so it
 // is allowed nothing without one. A client ID that names a thing attached to
 // the principal is that thing's connection.
-func (h *hook) policies(c *connection, clientID string) ([]*policyDocument, map[string]string, error) {
+func (h *hook) policies(ctx context.Context, c *connection, clientID string) (
+	[]*policyDocument, map[string]string, error,
+) {
 	vars := map[string]string{varClientID: clientID, varIsAttached: "false"}
 	if c.custom != nil {
 		// A custom authorizer's policies govern its connections in every
@@ -101,7 +103,7 @@ func (h *hook) policies(c *connection, clientID string) ([]*policyDocument, map[
 		vars[varCognitoSub] = c.principal
 	}
 
-	err := h.service.store.View(context.Background(), func(tx storage.ReadTx) error {
+	err := h.service.store.View(ctx, func(tx storage.ReadTx) error {
 		p, err := loadPrincipal(tx, c.scope, c.principal)
 		if err != nil {
 			return err
@@ -189,8 +191,8 @@ func (h *hook) allowed(c *connection, docs []*policyDocument, vars map[string]st
 
 // authorize reports whether a connection's current policies allow action on
 // resource.
-func (h *hook) authorize(c *connection, clientID, action, resource string) bool {
-	docs, vars, err := h.policies(c, clientID)
+func (h *hook) authorize(ctx context.Context, c *connection, clientID, action, resource string) bool {
+	docs, vars, err := h.policies(ctx, c, clientID)
 	return err == nil && h.allowed(c, docs, vars, action, resource)
 }
 
@@ -201,7 +203,7 @@ func (h *hook) OnACLCheck(cl *mqtt.Client, topic string, write bool) bool {
 	}
 
 	if write {
-		return publishable(topic) && h.authorize(c, cl.ID, "iot:Publish", "topic/"+topic)
+		return publishable(topic) && h.authorize(context.Background(), c, cl.ID, "iot:Publish", "topic/"+topic)
 	}
 
 	// A SUBSCRIBE's filters were authorized by OnSubscribe; anything else is
@@ -213,7 +215,7 @@ func (h *hook) OnACLCheck(cl *mqtt.Client, topic string, write bool) bool {
 		return allowed
 	}
 
-	return h.authorize(c, cl.ID, "iot:Receive", "topic/"+topic)
+	return h.authorize(context.Background(), c, cl.ID, "iot:Receive", "topic/"+topic)
 }
 
 //nolint:gocritic // mochi's Hook interface passes packets by value.
@@ -225,7 +227,8 @@ func (h *hook) OnSubscribe(cl *mqtt.Client, pk packets.Packet) packets.Packet {
 
 	decided := map[string]bool{}
 	for _, f := range pk.Filters {
-		decided[f.Filter] = subscribable(f.Filter) && h.authorize(c, cl.ID, "iot:Subscribe", "topicfilter/"+f.Filter)
+		decided[f.Filter] = subscribable(f.Filter) && h.authorize(context.Background(), c, cl.ID, "iot:Subscribe",
+			"topicfilter/"+f.Filter)
 	}
 
 	c.mu.Lock()

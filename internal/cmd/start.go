@@ -317,6 +317,8 @@ func newStartCommand() *cobra.Command {
 			identityPools.UseCaller(caller)
 			// Topic rules' actions reach the other services.
 			things.UseCaller(caller)
+			// The credentials provider exchanges certificates for role credentials.
+			things.UseRoleCredentials(tokens.AssumeRoleForService)
 			handler, err := gateway.New(cfg, logger, services...)
 			if err != nil {
 				return err

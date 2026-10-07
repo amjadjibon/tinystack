@@ -34,6 +34,8 @@ const (
 	memberTokenSigningPublicKeys = "TokenSigningPublicKeys"
 	memberEnableCachingForHTTP   = "EnableCachingForHttp"
 	propertySigningDisabled      = "SigningDisabled"
+	memberRoleAlias              = "RoleAlias"
+	memberCredentialDuration     = "CredentialDurationSeconds" // #nosec G101 -- a property name, not a credential.
 	// iotRuleNotFound is how IoT reports a missing topic rule.
 	iotRuleNotFound = "UnauthorizedException"
 )
@@ -313,6 +315,46 @@ func init() {
 				_, err = c.call(ctx, serviceIoT, "DeleteAuthorizer", map[string]any{memberAuthorizerName: r.Physical})
 			}
 
+			if gone(err, iotNotFound) {
+				return nil
+			}
+
+			return err
+		},
+	})
+
+	register("AWS::IoT::RoleAlias", &resourceType{
+		name:       memberRoleAlias,
+		properties: []string{memberRoleAlias, memberRoleArn, memberCredentialDuration, memberTags},
+		attributes: []string{"RoleAliasArn"},
+		replace:    []string{memberRoleAlias},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			name := c.nameOf(p, memberRoleAlias, 128)
+			params := pick(map[string]any{memberRoleAlias: name}, p, memberRoleArn, memberCredentialDuration)
+			if tags := p.tags(); len(tags) > 0 {
+				params[memberTags] = tagList(tags, memberKey, memberValue)
+			}
+
+			out, err := c.call(ctx, serviceIoT, "CreateRoleAlias", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			return name, map[string]any{"RoleAliasArn": outText(out, "RoleAliasArn")}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			if _, err := c.call(ctx, serviceIoT, "UpdateRoleAlias", pick(map[string]any{memberRoleAlias: r.Physical}, p,
+				memberRoleArn, memberCredentialDuration)); err != nil {
+				return nil, err
+			}
+
+			return r.Attributes, retag(ctx, c, r.Properties, p, &tagger{
+				target: map[string]any{memberResourceArn: r.Attributes["RoleAliasArn"]}, service: serviceIoT,
+				tag: "TagResource", untag: "UntagResource", key: memberKey, value: memberValue,
+			})
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, serviceIoT, "DeleteRoleAlias", map[string]any{memberRoleAlias: r.Physical})
 			if gone(err, iotNotFound) {
 				return nil
 			}

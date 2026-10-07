@@ -20,6 +20,9 @@ type caller struct {
 	// federated is the ARN of the identity provider a web identity token came
 	// from, which Federated principals name; it is empty for AWS callers.
 	federated string
+	// service is the AWS service principal that asks, which Service
+	// principals name, such as credentials.iot.amazonaws.com.
+	service string
 	// arns are the principal ARNs that name an AWS caller: the account root,
 	// and the IAM user, or for a role session both the role and the session.
 	arns []string
@@ -36,8 +39,8 @@ type statement struct {
 }
 
 // trusts reports whether a role's trust policy lets c take its action. It
-// evaluates a subset: Allow and Deny statements naming AWS or Federated
-// principals and actions, and StringEquals and StringLike conditions on the
+// evaluates a subset: Allow and Deny statements naming AWS, Federated, or
+// Service principals and actions, and StringEquals and StringLike conditions on the
 // keys in c's context, alone or with the ForAnyValue and ForAllValues set
 // operators. An Allow that uses anything else grants nothing, and a Deny that
 // does applies.
@@ -118,6 +121,10 @@ func matchesPrincipal(raw json.RawMessage, c *caller) bool {
 
 	if c.federated != "" {
 		return slices.Contains(values(byType["Federated"]), c.federated)
+	}
+
+	if c.service != "" {
+		return slices.Contains(values(byType["Service"]), c.service)
 	}
 
 	for _, p := range values(byType["AWS"]) {

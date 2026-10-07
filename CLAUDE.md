@@ -227,7 +227,8 @@ a per-service `Dialect`), and delivers synchronously through
   partition-wide `aws/iam/access-key/<key ID>`, which `iam.Service.AccessKey` reads. STS
   `AssumeRole` and `AssumeRoleWithWebIdentity` (`sts/web.go`, which finds the token issuer's provider through
   `iam.Service.OIDCProvider` and does not verify token signatures) check the role's trust policy (`sts/trust.go`, a
-  documented subset) through `iam.Service.RoleByARN`
+  documented subset, with AWS, Federated, and Service principals; `AssumeRoleForService` is the in-process path for
+  service principals) through `iam.Service.RoleByARN`
   and stores each session under the partition-wide `aws/sts/session/<access key>` (where `GetSessionToken` also stores
   sessions that act as the calling user, with no role); `sts.Service.Credentials` (the
   gateway's credential lookup) resolves those sessions and then active IAM access keys, and `GetCallerIdentity`
@@ -552,7 +553,13 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   executions are all terminal completes. `iot.Service.JobsDataPlane()` serves the `iot-jobs-data` API, and
   `jobsdata.go` shares it with the MQTT topics `$aws/things/<thing>/jobs/{get,start-next,<job ID>/get,<job ID>/update}`;
   `changeExecutions` compares a thing's pending executions before and after each change to publish `notify` and
-  `notify-next`.
+  `notify-next`. Role aliases (`credentials.go`, `…/iot/rolealias/<alias>`) back the credentials provider: a TLS
+  connection on `iot.mqtts_port` whose first bytes are an HTTP request (rather than an MQTT CONNECT) is served
+  `GET /role-aliases/<alias>/credentials`, which requires a device certificate (attached to the thing that
+  `x-amzn-iot-thingname` names, if any) and, in verify mode, a certificate policy allowing
+  `iot:AssumeRoleWithCertificate` on the alias, then calls `sts.Service.AssumeRoleForService` (registered with
+  `UseRoleCredentials`), which issues the role's credentials only when its trust policy names the
+  `credentials.iot.amazonaws.com` Service principal.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for

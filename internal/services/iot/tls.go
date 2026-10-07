@@ -1,6 +1,7 @@
 package iot
 
 import (
+	"bufio"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -12,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -25,11 +27,14 @@ const handshakeTimeout = 10 * time.Second
 
 // endpointName matches the data endpoint names DescribeEndpoint reports,
 // capturing the account's prefix and the Region.
-var endpointName = regexp.MustCompile(`^([0-9a-z]+)(?:-ats)?\.iot\.([a-z]{2}(?:-[a-z]+)+-\d)\.localhost$`)
+var endpointName = regexp.MustCompile(
+	`^([0-9a-z]+)(?:-ats)?\.(?:credentials\.)?iot\.([a-z]{2}(?:-[a-z]+)+-\d)\.localhost$`)
 
-// ListenMQTTS serves MQTT over TLS from l, until l closes or Stop runs. Each
-// client presents an active device certificate, which decides its account
-// and Region and is the principal whose policies apply.
+// ListenMQTTS serves MQTT over TLS from l, until l closes or Stop runs. A
+// client's active device certificate decides its account and Region and is
+// the principal whose policies apply; a client without one needs a custom
+// authorizer. A connection that starts with an HTTP request is the
+// credentials provider's instead.
 func (s *Service) ListenMQTTS(l net.Listener) {
 	s.accept(l, func(ctx context.Context, conn net.Conn) {
 		c, err := s.handshake(ctx, conn)
@@ -39,6 +44,20 @@ func (s *Service) ListenMQTTS(l net.Listener) {
 			return
 		}
 
+		r := bufio.NewReader(c.Conn)
+		_ = conn.SetReadDeadline(time.Now().Add(handshakeTimeout))
+		first, err := r.Peek(1)
+		_ = conn.SetReadDeadline(time.Time{})
+		switch {
+		case err != nil:
+			_ = c.Close()
+			return
+		case isHTTP(first):
+			s.serveCredentials(ctx, c, r)
+			return
+		}
+
+		c.Conn = &bufferedConn{Conn: c.Conn, r: r}
 		if err := s.serve(c, listenerTLS); err != nil {
 			s.logger.Debug("mqtts connection ended", "error", err)
 		}
@@ -168,7 +187,8 @@ func endpointScope(tx storage.ReadTx, serverName string) (scope request.Scope, f
 
 // serverCertificate returns the listener's certificate for a client's server
 // name, signed by the IoT certificate authority: one per Region for the data
-// endpoints (*.iot.<region>.localhost), and one for localhost and the
+// and credentials endpoints (*.iot.<region>.localhost and
+// *.credentials.iot.<region>.localhost), and one for localhost and the
 // loopback addresses otherwise.
 func (s *Service) serverCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	name := "localhost"
@@ -204,6 +224,8 @@ func (s *Service) serverCertificate(hello *tls.ClientHelloInfo) (*tls.Certificat
 	}
 	if name == "localhost" {
 		tmpl.IPAddresses = []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback}
+	} else {
+		tmpl.DNSNames = append(tmpl.DNSNames, strings.Replace(name, "*.iot.", "*.credentials.iot.", 1))
 	}
 
 	cert, _, err := ca.Issue(tmpl, key.Public())

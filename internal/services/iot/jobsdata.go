@@ -567,7 +567,7 @@ func (s *Service) serveJobs(ctx context.Context, scope request.Scope, topic stri
 	reply := accepted
 	suffix := "/accepted"
 	if f != nil {
-		reply, suffix = map[string]any{"code": f.code, "message": f.message}, "/rejected"
+		reply, suffix = map[string]any{"code": f.code, keyMessage: f.message}, "/rejected"
 		if f.state != nil {
 			reply["executionState"] = f.state
 		}

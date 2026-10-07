@@ -68,6 +68,8 @@ type Service struct {
 	// caller runs rule actions; deliveries records them.
 	caller     *catalog.Caller
 	deliveries *delivery.Log
+	// roleCredentials issues role alias credentials.
+	roleCredentials RoleCredentials
 	// brokers are the running MQTT brokers by scope, guarded by brokersMu;
 	// nil once stopped.
 	brokers map[request.Scope]*broker

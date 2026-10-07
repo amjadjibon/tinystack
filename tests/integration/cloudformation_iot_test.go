@@ -78,7 +78,15 @@ Resources:
       SigningDisabled: true
       Status: !Ref Status
       Tags: [{Key: team, Value: a}]
+  Alias:
+    Type: AWS::IoT::RoleAlias
+    Properties:
+      RoleArn: arn:aws:iam::000000000000:role/iot
+      CredentialDurationSeconds: 900
+      Tags: [{Key: team, Value: a}]
 Outputs:
+  Alias: {Value: !Ref Alias}
+  AliasArn: {Value: !GetAtt Alias.RoleAliasArn}
   Authorizer: {Value: !Ref Authorizer}
   Rule: {Value: !Ref Rule}
   RuleArn: {Value: !GetAtt Rule.Arn}
@@ -117,6 +125,12 @@ func TestCloudFormationIoT(t *testing.T) {
 	thing, err := devices.DescribeThing(ctx, &iot.DescribeThingInput{ThingName: aws.String("probe")})
 	if err != nil || thing.Attributes["floor"] != "3" || thing.Attributes["room"] != "a" {
 		t.Fatalf("%+v %v", thing, err)
+	}
+
+	alias, err := devices.DescribeRoleAlias(ctx, &iot.DescribeRoleAliasInput{RoleAlias: aws.String(outputs["Alias"])})
+	if err != nil || aws.ToInt32(alias.RoleAliasDescription.CredentialDurationSeconds) != 900 ||
+		aws.ToString(alias.RoleAliasDescription.RoleAliasArn) != outputs["AliasArn"] {
+		t.Fatalf("%+v %v", alias, err)
 	}
 
 	rule, err := devices.GetTopicRule(ctx, &iot.GetTopicRuleInput{RuleName: aws.String(outputs["Rule"])})
@@ -225,6 +239,11 @@ func TestCloudFormationIoT(t *testing.T) {
 	policies, err := devices.ListPolicies(ctx, &iot.ListPoliciesInput{})
 	if err != nil || len(policies.Policies) != 0 {
 		t.Fatalf("%+v %v", policies, err)
+	}
+
+	aliases, err := devices.ListRoleAliases(ctx, &iot.ListRoleAliasesInput{})
+	if err != nil || len(aliases.RoleAliases) != 0 {
+		t.Fatalf("%+v %v", aliases, err)
 	}
 
 	authorizers, err := devices.ListAuthorizers(ctx, &iot.ListAuthorizersInput{})

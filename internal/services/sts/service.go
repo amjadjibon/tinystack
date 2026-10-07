@@ -290,6 +290,50 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 	return out, err
 }
 
+// AssumeRoleForService issues credentials for a role to an AWS service
+// principal, such as IoT's credentials provider, when the role's trust
+// policy names that service. Other services call it in-process; no API
+// operation reaches it.
+func (s *Service) AssumeRoleForService(
+	ctx context.Context,
+	principal, roleARN, sessionName string,
+	seconds int64,
+) (accessKey, secret, token string, expires time.Time, err error) {
+	role, exists, err := s.roles.RoleByARN(ctx, roleARN)
+	if err != nil {
+		return "", "", "", time.Time{}, err
+	}
+
+	c := &caller{service: principal, action: "sts:AssumeRole"}
+	if !exists || !trusts(role.TrustPolicy, c) {
+		return "", "", "", time.Time{}, denied(fmt.Sprintf("%s is not authorized to perform: sts:AssumeRole on "+
+			"resource: %s", principal, roleARN))
+	}
+
+	duration, err := sessionDuration(&seconds, role.MaxSessionDuration, false)
+	if err != nil {
+		return "", "", "", time.Time{}, err
+	}
+
+	now := s.now()
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		issued := &session{
+			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID, Name: sessionName,
+			Expires: now.Add(duration).Unix(),
+		}
+		credentials, issueErr := issue(tx, issued, now)
+		if issueErr != nil {
+			return issueErr
+		}
+
+		accessKey, secret, token = *credentials.AccessKeyId, *credentials.SecretAccessKey, *credentials.SessionToken
+		expires = *credentials.Expiration
+		return nil
+	})
+
+	return accessKey, secret, token, expires, err
+}
+
 // GetSessionToken issues temporary credentials that act as the caller: an
 // IAM user or the account's root user.
 func (s *Service) GetSessionToken(
