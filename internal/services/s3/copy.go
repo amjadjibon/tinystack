@@ -130,6 +130,11 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		return nil, err
 	}
 
+	algorithm := common.Value(in.ChecksumAlgorithm)
+	if algorithmErr := validAlgorithm(algorithm); algorithmErr != nil {
+		return nil, algorithmErr
+	}
+
 	if sourceBucket == common.Value(in.Bucket) && sourceKey == common.Value(in.Key) && sourceVersion == "" &&
 		metadataDirective == directiveCopy &&
 		taggingDirective == directiveCopy && in.StorageClass == nil {
@@ -188,6 +193,18 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		}
 
 		body, _ := tx.Get(data)
+
+		// The copy keeps the source's checksum unless a new algorithm is asked for or the
+		// source has none, which S3 would have given the default.
+		if algorithm != "" || obj.Checksum == nil {
+			use := algorithm
+			if use == "" {
+				use = defaultChecksum
+			}
+
+			obj.Checksum = &checksum{Algorithm: use, Value: sum(use, body), Type: typeFullObject}
+		}
+
 		obj.LastModified = s.now().UnixMilli()
 		status, putErr := putCurrent(tx, target, *in.Key, &obj, body)
 		written = reported(status, &obj)
@@ -206,11 +223,14 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		version: common.Value(written),
 		size:    obj.Size,
 	})
+	result := &api.CopyObjectResult{
+		ETag:         new(obj.ETag),
+		LastModified: new(time.UnixMilli(obj.LastModified).UTC()),
+	}
+	obj.Checksum.apply(result)
+
 	return &api.CopyObjectOutput{
-		CopyObjectResult: &api.CopyObjectResult{
-			ETag:         new(obj.ETag),
-			LastModified: new(time.UnixMilli(obj.LastModified).UTC()),
-		},
+		CopyObjectResult:    result,
 		VersionId:           written,
 		CopySourceVersionId: copied,
 	}, nil

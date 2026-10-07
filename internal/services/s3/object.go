@@ -36,8 +36,10 @@ const (
 
 // object is the stored metadata of one object; its bytes are a separate record.
 type object struct {
-	Metadata    map[string]string `json:",omitempty"`
-	Tags        map[string]string `json:",omitempty"`
+	Metadata map[string]string `json:",omitempty"`
+	Tags     map[string]string `json:",omitempty"`
+	// Checksum is the stored checksum, absent on objects written before it was kept.
+	Checksum    *checksum `json:",omitempty"`
 	ETag        string
 	ContentType string
 	// VersionID is empty for the null version.
@@ -76,7 +78,7 @@ func validKey(key *string) error {
 	return nil
 }
 
-// verify checks Content-MD5 and any flexible checksums the client sent.
+// verify checks the Content-MD5 the client sent.
 func verify(in *api.PutObjectRequest) error {
 	if in.ContentMD5 != nil {
 		want, err := base64.StdEncoding.DecodeString(*in.ContentMD5)
@@ -87,29 +89,6 @@ func verify(in *api.PutObjectRequest) error {
 		if got := md5.Sum(in.Body); !bytes.Equal(got[:], want) { // #nosec G401 -- S3 protocol digest.
 			return fail(http.StatusBadRequest, "BadDigest",
 				"The Content-MD5 you specified did not match what we received.")
-		}
-	}
-
-	if a := common.Value(in.ChecksumAlgorithm); a != "" && checksums()[a] == nil {
-		return fail(http.StatusBadRequest, "InvalidRequest", "Checksum algorithm "+a+" is not supported")
-	}
-
-	for name, sent := range map[string]*string{
-		"CRC32":     in.ChecksumCRC32,
-		"CRC32C":    in.ChecksumCRC32C,
-		"CRC64NVME": in.ChecksumCRC64NVME,
-		"SHA1":      in.ChecksumSHA1,
-		"SHA256":    in.ChecksumSHA256,
-	} {
-		if sent == nil {
-			continue
-		}
-
-		h := checksums()[name]()
-		_, _ = h.Write(in.Body)
-		if base64.StdEncoding.EncodeToString(h.Sum(nil)) != *sent {
-			return fail(http.StatusBadRequest, "BadDigest",
-				"The "+name+" you specified did not match the calculated checksum.")
 		}
 	}
 
@@ -167,6 +146,13 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		return nil, guardErr
 	}
 
+	stored, err := checksumOf(in, in.Body, "")
+	if err != nil {
+		return nil, err
+	}
+
+	stored.Type = typeFullObject
+
 	tags, err := headerTags(in.Tagging)
 	if err != nil {
 		return nil, err
@@ -180,6 +166,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		LastModified: s.now().UnixMilli(),
 		Metadata:     in.Metadata,
 		Tags:         tags,
+		Checksum:     &stored,
 	}
 
 	if obj.ContentType == "" {
@@ -230,7 +217,10 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		version: common.Value(version),
 		size:    obj.Size,
 	})
-	return &api.PutObjectOutput{ETag: new(obj.ETag), VersionId: version}, nil
+	out := &api.PutObjectOutput{ETag: new(obj.ETag), VersionId: version}
+	obj.Checksum.apply(out)
+
+	return out, nil
 }
 
 // target names an object, or one version of it, in a request.
@@ -324,6 +314,11 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 		return nil, err
 	}
 
+	report, err := reporting(in.ChecksumMode)
+	if err != nil {
+		return nil, err
+	}
+
 	obj, body := &f.obj, f.body
 	out := &api.GetObjectOutput{
 		Body:          body,
@@ -348,6 +343,9 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 		out.ContentLength = new(interval.end - interval.start + 1)
 		out.ContentRange = new(fmt.Sprintf("bytes %d-%d/%d", interval.start, interval.end, obj.Size))
 		out.AcceptRanges = new("bytes")
+	} else if report {
+		// S3 reports no full-object checksum for part of an object.
+		obj.Checksum.apply(out)
 	}
 
 	return out, nil
@@ -356,6 +354,11 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*api.HeadObjectOutput, error) {
 	f, err := s.read(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, in.IfMatch,
 		in.IfNoneMatch, false)
+	if err != nil {
+		return nil, err
+	}
+
+	report, err := reporting(in.ChecksumMode)
 	if err != nil {
 		return nil, err
 	}
@@ -377,6 +380,8 @@ func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*a
 
 		out.ContentLength = new(interval.end - interval.start + 1)
 		out.AcceptRanges = new("bytes")
+	} else if report {
+		obj.Checksum.apply(out)
 	}
 
 	return out, nil

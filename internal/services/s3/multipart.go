@@ -27,11 +27,25 @@ type upload struct {
 	Metadata    map[string]string
 	Key         string
 	ContentType string
-	Initiated   int64
+	// ChecksumAlgorithm and ChecksumType are what the upload was created with, or the default.
+	ChecksumAlgorithm string `json:",omitempty"`
+	ChecksumType      string `json:",omitempty"`
+	Initiated         int64
+}
+
+// kind returns the upload's checksum algorithm and type.
+func (u *upload) kind() (algorithm, typ string) {
+	if u.ChecksumAlgorithm == "" {
+		return defaultChecksum, typeFullObject
+	}
+
+	return u.ChecksumAlgorithm, u.ChecksumType
 }
 
 type uploadPart struct {
-	ETag         string
+	ETag string
+	// Checksum is the part's digest under the upload's algorithm.
+	Checksum     string `json:",omitempty"`
 	Size         int64
 	LastModified int64
 }
@@ -95,6 +109,10 @@ func (s *Service) CreateMultipartUpload(
 	if metadataSize > maxMetadataBytes {
 		return nil, fail(http.StatusBadRequest, "MetadataTooLarge", "Metadata exceeds the supported limit")
 	}
+	algorithm, checksumType, err := uploadType(in.ChecksumAlgorithm, in.ChecksumType)
+	if err != nil {
+		return nil, err
+	}
 	idBytes := make([]byte, 24)
 	if _, err = rand.Read(idBytes); err != nil {
 		return nil, err
@@ -105,6 +123,9 @@ func (s *Service) CreateMultipartUpload(
 		ContentType: common.Value(in.ContentType),
 		Metadata:    in.Metadata,
 		Initiated:   s.now().UnixMilli(),
+
+		ChecksumAlgorithm: algorithm,
+		ChecksumType:      checksumType,
 	}
 	if u.ContentType == "" {
 		u.ContentType = defaultType
@@ -119,7 +140,12 @@ func (s *Service) CreateMultipartUpload(
 	if err != nil {
 		return nil, err
 	}
-	return &api.CreateMultipartUploadOutput{Bucket: in.Bucket, Key: in.Key, UploadId: &id}, nil
+	out := &api.CreateMultipartUploadOutput{Bucket: in.Bucket, Key: in.Key, UploadId: &id}
+	if in.ChecksumAlgorithm != nil {
+		out.ChecksumAlgorithm, out.ChecksumType = &algorithm, &checksumType
+	}
+
+	return out, nil
 }
 
 func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*api.UploadPartOutput, error) {
@@ -147,24 +173,35 @@ func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*a
 			return nil, fail(400, "BadDigest", "Content-MD5 does not match")
 		}
 	}
-	sum := md5.Sum(in.Body) // #nosec G401 -- S3 part ETag.
-	etag := `"` + hex.EncodeToString(sum[:]) + `"`
+	md5Sum := md5.Sum(in.Body) // #nosec G401 -- S3 part ETag.
+	etag := `"` + hex.EncodeToString(md5Sum[:]) + `"`
+	var partChecksum checksum
 	p := uploadPart{ETag: etag, Size: int64(len(in.Body)), LastModified: s.now().UnixMilli()}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		bucket, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
 			return resolveErr
 		}
-		if _, loadErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId)); loadErr != nil {
+		u, loadErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId))
+		if loadErr != nil {
 			return loadErr
 		}
+		algorithm, _ := u.kind()
+		stored, checkErr := checksumOf(in, in.Body, algorithm)
+		if checkErr != nil {
+			return checkErr
+		}
+		p.Checksum, partChecksum = stored.Value, stored
 		tx.Put(partKey(bucket, *in.UploadId, n), in.Body)
 		return writeJSON(tx, partMetaKey(bucket, *in.UploadId, n), &p)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &api.UploadPartOutput{ETag: &etag}, nil
+	out := &api.UploadPartOutput{ETag: &etag}
+	partChecksum.apply(out)
+
+	return out, nil
 }
 
 func (s *Service) CompleteMultipartUpload(
@@ -195,6 +232,7 @@ func (s *Service) CompleteMultipartUpload(
 	var etag string
 	var size int64
 	var version *string
+	var stored *checksum
 	var cfg *api.NotificationConfiguration
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		bucket, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
@@ -211,7 +249,9 @@ func (s *Service) CompleteMultipartUpload(
 		if loadErr != nil {
 			return loadErr
 		}
+		algorithm, checksumType := u.kind()
 		var body, digests []byte
+		var partSums []string
 		last := int64(0)
 		for i, requested := range in.MultipartUpload.Parts {
 			n := common.Value(requested.PartNumber)
@@ -228,6 +268,10 @@ func (s *Service) CompleteMultipartUpload(
 				strings.Trim(*requested.ETag, `"`) != strings.Trim(p.ETag, `"`) {
 				return fail(400, "InvalidPart", "A part is missing or its ETag does not match")
 			}
+			if partErr := checkPart(&requested, algorithm, p.Checksum); partErr != nil {
+				return partErr
+			}
+			partSums = append(partSums, p.Checksum)
 			if i < len(in.MultipartUpload.Parts)-1 && p.Size < minMultipartPart {
 				return fail(400, "EntityTooSmall", "Every nonfinal part must be at least 5 MiB")
 			}
@@ -245,6 +289,11 @@ func (s *Service) CompleteMultipartUpload(
 			}
 			digests = append(digests, digest...)
 		}
+		final, checksumErr := completedChecksum(in, algorithm, checksumType, body, partSums)
+		if checksumErr != nil {
+			return checksumErr
+		}
+		stored = &final
 		var existing object
 		found, readErr := readJSON(tx, bucket+"/o/"+*in.Key, &existing)
 		if readErr != nil {
@@ -260,7 +309,7 @@ func (s *Service) CompleteMultipartUpload(
 		etag = fmt.Sprintf(`"%x-%d"`, finalSum, len(in.MultipartUpload.Parts))
 		obj := object{
 			ETag: etag, ContentType: u.ContentType, Metadata: u.Metadata,
-			Size: int64(len(body)), LastModified: s.now().UnixMilli(),
+			Size: int64(len(body)), LastModified: s.now().UnixMilli(), Checksum: stored,
 		}
 		status, writeErr := putCurrent(tx, bucket, *in.Key, &obj, body)
 		if writeErr != nil {
@@ -280,9 +329,12 @@ func (s *Service) CompleteMultipartUpload(
 		bucket: *in.Bucket, key: *in.Key, etag: etag, version: common.Value(version), size: size,
 	})
 	location := "/" + *in.Bucket + "/" + url.PathEscape(*in.Key)
-	return &api.CompleteMultipartUploadOutput{
+	out := &api.CompleteMultipartUploadOutput{
 		Location: &location, Bucket: in.Bucket, Key: in.Key, ETag: &etag, VersionId: version,
-	}, nil
+	}
+	stored.apply(out)
+
+	return out, nil
 }
 
 const restMultipartLimit = 64 << 20
@@ -347,9 +399,12 @@ func (s *Service) ListParts(ctx context.Context, in *api.ListPartsRequest) (*api
 		if resolveErr != nil {
 			return resolveErr
 		}
-		if _, loadErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId)); loadErr != nil {
+		u, loadErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId))
+		if loadErr != nil {
 			return loadErr
 		}
+		algorithm, checksumType := u.kind()
+		out.ChecksumAlgorithm, out.ChecksumType = &algorithm, &checksumType
 		var nums []int64
 		prefix := bucket + "/pm/" + *in.UploadId + "/"
 		for _, k := range tx.Keys(prefix) {
@@ -367,10 +422,12 @@ func (s *Service) ListParts(ctx context.Context, in *api.ListPartsRequest) (*api
 			if _, readErr := readJSON(tx, partMetaKey(bucket, *in.UploadId, n), &p); readErr != nil {
 				return readErr
 			}
-			out.Parts = append(out.Parts, api.Part{
+			part := api.Part{
 				PartNumber: &n, ETag: &p.ETag, Size: &p.Size,
 				LastModified: new(time.UnixMilli(p.LastModified).UTC()),
-			})
+			}
+			(&checksum{Algorithm: algorithm, Value: p.Checksum}).apply(&part)
+			out.Parts = append(out.Parts, part)
 		}
 		if *out.IsTruncated && len(nums) > 0 {
 			out.NextPartNumberMarker = new(strconv.FormatInt(nums[len(nums)-1], 10))
@@ -482,4 +539,62 @@ func (s *Service) ListMultipartUploads(
 		return nil
 	})
 	return out, err
+}
+
+// checkPart checks the checksum a completion request lists for a part against
+// the one the part was uploaded with.
+func checkPart(requested *api.CompletedPart, algorithm, stored string) error {
+	for name, value := range sentChecksums(requested) {
+		if name != algorithm {
+			return fail(http.StatusBadRequest, "InvalidRequest",
+				"Checksum Type mismatch occurred, expected checksum Type: "+algorithm+", actual checksum Type: "+name)
+		}
+
+		if value != stored {
+			return fail(http.StatusBadRequest, "InvalidPart", "The checksum of a part does not match the uploaded part")
+		}
+	}
+
+	return nil
+}
+
+// completedChecksum is the checksum of a completed upload: a COMPOSITE one
+// combines the parts' digests, and a FULL_OBJECT one covers all the bytes.
+// Anything the request states about the whole object must agree.
+func completedChecksum(
+	in *api.CompleteMultipartUploadRequest, algorithm, checksumType string, body []byte, partSums []string,
+) (checksum, error) {
+	if t := common.Value(in.ChecksumType); t != "" && t != checksumType {
+		return checksum{}, fail(http.StatusBadRequest, "InvalidRequest",
+			"The upload was created using the "+checksumType+" checksum type; the request used "+t+".")
+	}
+
+	if in.MpuObjectSize != nil && *in.MpuObjectSize != int64(len(body)) {
+		return checksum{}, fail(http.StatusBadRequest, "InvalidRequest",
+			"The provided 'x-amz-mp-object-size' header value does not match what was computed.")
+	}
+
+	c := checksum{Algorithm: algorithm, Type: checksumType}
+	if checksumType == typeFullObject {
+		c.Value = sum(algorithm, body)
+	} else {
+		var err error
+		if c.Value, err = compositeOf(algorithm, partSums); err != nil {
+			return checksum{}, fail(http.StatusBadRequest, "InvalidPart", "A part has no usable checksum")
+		}
+	}
+
+	for name, value := range sentChecksums(in) {
+		if name != algorithm {
+			return checksum{}, fail(http.StatusBadRequest, "InvalidRequest",
+				"Checksum Type mismatch occurred, expected checksum Type: "+algorithm+", actual checksum Type: "+name)
+		}
+
+		if value != c.Value {
+			return checksum{}, fail(http.StatusBadRequest, "BadDigest",
+				"The "+name+" you specified did not match the calculated checksum.")
+		}
+	}
+
+	return c, nil
 }
