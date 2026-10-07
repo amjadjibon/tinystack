@@ -1,0 +1,203 @@
+site_name: TinyStack
+site_description: Local AWS APIs, service coverage, architecture, and contributor guides.
+repo_url: https://github.com/amjadjibon/tinystack
+repo_name: amjadjibon/tinystack
+edit_uri: edit/main/docs/site/
+docs_dir: docs/site
+site_dir: site
+strict: true
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  font: false
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - scheme: default
+      primary: custom
+      accent: orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      accent: orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: warn
+  links:
+    not_found: warn
+    anchors: warn
+    unrecognized_links: warn
+    absolute_links: warn
+
+extra_css:
+  - assets/styles.css
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Quickstart: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+      - CLI and SDK clients: getting-started/clients.md
+  - Guides:
+      - Infrastructure workflows: guides/infrastructure.md
+      - CloudFormation resource types: guides/cloudformation-resources.md
+      - Event-driven workflows: guides/events.md
+      - Docker runtimes: guides/runtimes.md
+      - IoT devices: guides/iot.md
+      - Console and diagnostics: guides/diagnostics.md
+      - Persistence and restart: guides/persistence.md
+      - Troubleshooting: guides/troubleshooting.md
+  - Architecture:
+      - System overview: architecture/index.md
+      - Request and protocol flow: architecture/request-flow.md
+      - Identity and scoping: architecture/identity.md
+      - Storage transactions: architecture/storage.md
+      - Events and runtimes: architecture/events-runtimes.md
+      - Model generation: architecture/generation.md
+  - Development:
+      - Local setup: development/index.md
+      - Repository map: development/repository.md
+      - Adding services and operations: development/adding-services.md
+      - Tests and compatibility: development/testing.md
+      - Console development: development/console.md
+      - Documentation workflow: development/documentation.md
+  # GENERATED NAV START
+  - Services:
+      - Support matrix: services/index.md
+      - "Analytics":
+          - "Athena": services/athena.md
+          - "Glue Data Catalog": services/glue.md
+      - "Compute and containers":
+          - "EC2": services/ec2.md
+          - "EC2 Auto Scaling": services/autoscaling.md
+          - "ECR": services/ecr.md
+          - "ECS": services/ecs.md
+          - "EKS": services/eks.md
+          - "Lambda": services/lambda.md
+      - "Configuration and operations":
+          - "CloudFormation": services/cloudformation.md
+          - "CloudWatch Logs": services/logs.md
+          - "CloudWatch metrics and alarms": services/cloudwatch.md
+          - "SSM Parameter Store": services/ssm.md
+          - "Secrets Manager": services/secretsmanager.md
+      - "Identity and security":
+          - "Certificate Manager": services/acm.md
+          - "Cognito identity pools": services/cognitoidentity.md
+          - "Cognito user pools": services/cognitoidp.md
+          - "IAM": services/iam.md
+          - "KMS": services/kms.md
+          - "STS": services/sts.md
+      - "Internet of Things":
+          - "IoT Core": services/iot.md
+          - "IoT Data Plane": services/iotdataplane.md
+          - "IoT Jobs Data Plane": services/iotjobsdataplane.md
+      - "Messaging and events":
+          - "Data Firehose": services/firehose.md
+          - "EventBridge": services/eventbridge.md
+          - "EventBridge Scheduler": services/scheduler.md
+          - "Kinesis Data Streams": services/kinesis.md
+          - "SNS": services/sns.md
+          - "SQS": services/sqs.md
+      - "Networking and APIs":
+          - "API Gateway HTTP APIs": services/apigatewayv2.md
+          - "API Gateway REST APIs": services/apigateway.md
+          - "AppSync GraphQL": services/appsync.md
+          - "CloudFront": services/cloudfront.md
+          - "Elastic Load Balancing v2": services/elbv2.md
+          - "Route 53": services/route53.md
+      - "Storage and databases":
+          - "DynamoDB": services/dynamodb.md
+          - "DynamoDB Streams": services/dynamodbstreams.md
+          - "ElastiCache": services/elasticache.md
+          - "S3": services/s3.md
+      - "Workflow and email":
+          - "SES v2": services/sesv2.md
+          - "Step Functions": services/sfn.md
+  - Roadmap:
+      - Priorities and policy: roadmap/index.md
+      - Future catalogue: roadmap/catalogue.md
+      - Service and extension proposals:
+          - "AWS Account": roadmap/services/account.md
+          - "AWS Backup": roadmap/services/backup.md
+          - "AWS Batch": roadmap/services/batch.md
+          - "AWS Config": roadmap/services/config.md
+          - "AWS Signer": roadmap/services/signer.md
+          - "Amazon Bedrock control plane": roadmap/services/bedrock.md
+          - "Amazon Inspector": roadmap/services/inspector2.md
+          - "Amazon Location": roadmap/services/location.md
+          - "Amazon MQ": roadmap/services/mq.md
+          - "Amazon MSK": roadmap/services/msk.md
+          - "Amazon MWAA": roadmap/services/mwaa.md
+          - "AppConfig": roadmap/services/appconfig.md
+          - "AppSync Events": roadmap/services/appsync-events.md
+          - "Aurora DSQL": roadmap/services/dsql.md
+          - "Bedrock Agent Runtime": roadmap/services/bedrock-agent-runtime.md
+          - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md
+          - "Bedrock Agents": roadmap/services/bedrock-agent.md
+          - "Bedrock Runtime": roadmap/services/bedrock-runtime.md
+          - "Cloud Control API": roadmap/services/cloudcontrol.md
+          - "Cloud Map": roadmap/services/servicediscovery.md
+          - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
+          - "CloudTrail": roadmap/services/cloudtrail.md
+          - "CodeBuild": roadmap/services/codebuild.md
+          - "Cost and Usage Reports": roadmap/services/cur.md
+          - "EC2 Instance Metadata": roadmap/services/imds.md
+          - "ECS Task Metadata": roadmap/services/ecs-metadata.md
+          - "EFS": roadmap/services/efs.md
+          - "EMR": roadmap/services/emr.md
+          - "EventBridge Pipes": roadmap/services/pipes.md
+          - "IoT Wireless": roadmap/services/iotwireless.md
+          - "Lambda Core": roadmap/services/lambda-core.md
+          - "Lambda Durable Execution": roadmap/services/lambda-durable.md
+          - "Lambda MicroVMs": roadmap/services/lambda-microvms.md
+          - "MediaConnect": roadmap/services/mediaconnect.md
+          - "OpenSearch Service": roadmap/services/opensearch.md
+          - "Organizations": roadmap/services/organizations.md
+          - "RDS": roadmap/services/rds.md
+          - "RDS Data API": roadmap/services/rds-data.md
+          - "Resource Groups": roadmap/services/resource-groups.md
+          - "Resource Groups Tagging API": roadmap/services/tagging.md
+          - "S3 Files": roadmap/services/s3files.md
+          - "S3 Tables": roadmap/services/s3tables.md
+          - "SES v1": roadmap/services/ses.md
+          - "Transcribe": roadmap/services/transcribe.md
+          - "Transfer Family": roadmap/services/transfer.md
+          - "Translate": roadmap/services/translate.md
+          - "WAF Classic": roadmap/services/waf-v1.md
+          - "WAF v2": roadmap/services/waf.md
+  # GENERATED NAV END

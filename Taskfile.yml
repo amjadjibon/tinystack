@@ -105,6 +105,43 @@ tasks:
     cmds:
       - docker compose up --build {{.CLI_ARGS}}
 
+  docs:install:
+    desc: "Create the isolated MkDocs environment and install pinned dependencies"
+    sources:
+      - docs/requirements.txt
+    generates:
+      - .venv-docs/.installed
+    cmds:
+      - python3 -m venv .venv-docs
+      - .venv-docs/bin/python -m pip install --disable-pip-version-check -r docs/requirements.txt
+      - touch .venv-docs/.installed
+
+  docs:generate:
+    desc: "Refresh service support, roadmap, navigation, and CloudFormation resource documentation"
+    cmds:
+      - python3 scripts/docs.py
+
+  docs:build:
+    desc: "Build the MkDocs site strictly into site/"
+    deps: [docs:install]
+    cmds:
+      - task docs:generate
+      - .venv-docs/bin/mkdocs build --strict
+
+  docs:check:
+    desc: "Check generated documentation freshness and build with strict link/nav validation"
+    deps: [docs:install]
+    cmds:
+      - python3 scripts/docs.py --check
+      - .venv-docs/bin/mkdocs build --strict
+
+  docs:serve:
+    desc: "Serve MkDocs with live reload on http://127.0.0.1:8000"
+    deps: [docs:install]
+    cmds:
+      - task docs:generate
+      - .venv-docs/bin/mkdocs serve -a 127.0.0.1:8000
+
   down:
     desc: "Stop the Docker Compose stack (task down -- -v also deletes its state)"
     cmds:

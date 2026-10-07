@@ -1,0 +1,1032 @@
+{
+  "services": {
+    "dynamodb": {
+      "title": "DynamoDB",
+      "category": "Storage and databases",
+      "summary": "Store typed items and run expressions, transactions, streams, backups, exports, and PartiQL locally.",
+      "features": [
+        "HASH and optional RANGE keys, global and local secondary indexes, sparse indexes and pagination",
+        "Nested condition, projection, filter, update and key expressions",
+        "Atomic batch and transaction operations with cancellation reasons and idempotency tokens",
+        "TTL sweeps, on-demand backups, latest-state point-in-time restores and S3 exports",
+        "PartiQL statements and transaction execution"
+      ],
+      "gaps": [
+        "Index queries scan the table and are immediately consistent; no independent index storage",
+        "No throughput enforcement or capacity accounting; batch writes do not simulate throttling",
+        "Point-in-time restores retain the latest state, not historical snapshots",
+        "Legacy expression parameters, replica management and Kinesis streaming are outside the subset"
+      ],
+      "execution": "Local behavior",
+      "package": "dynamodb"
+    },
+    "dynamodbstreams": {
+      "title": "DynamoDB Streams",
+      "category": "Storage and databases",
+      "summary": "Read the stream records written atomically with DynamoDB item changes.",
+      "features": [
+        "List and describe streams, obtain shard iterators, and read records",
+        "Stream view types follow the table configuration",
+        "Lambda event source mappings consume stream records in-process"
+      ],
+      "gaps": [
+        "No shard splits or production-scale stream behavior",
+        "Only the fields selected in the profile are supported"
+      ],
+      "execution": "Local behavior",
+      "package": "dynamodb"
+    },
+    "s3": {
+      "title": "S3",
+      "category": "Storage and databases",
+      "summary": "Store objects, versions, multipart uploads, and event notifications in the shared local store.",
+      "features": [
+        "Partition-wide bucket name uniqueness and ownership checks",
+        "Object CRUD, listing, metadata, tagging, copy, one byte range and conditional requests",
+        "Multipart upload lifecycle and atomic completion",
+        "Versioning, null versions and delete markers",
+        "Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge",
+        "Bucket lifecycle and encryption configuration are stored"
+      ],
+      "gaps": [
+        "Lifecycle rules do not expire or transition objects",
+        "Encryption settings are metadata; objects are not encrypted as an AWS S3 data plane would encrypt them",
+        "No website endpoint, POST uploads, stored checksum retrieval or general ACL/policy evaluation",
+        "Objects remain in memory even when commits are persisted to SQLite"
+      ],
+      "execution": "Local behavior",
+      "package": "s3"
+    },
+    "elasticache": {
+      "title": "ElastiCache",
+      "category": "Storage and databases",
+      "summary": "Manage Redis, Valkey, and Memcached resources with an optional Docker cache runtime.",
+      "features": [
+        "Cache clusters, replication groups, serverless caches, subnet groups and parameter groups",
+        "Engine metadata, tags and lifecycle events",
+        "Docker nodes expose allocated host ports and become available after readiness probes",
+        "Records mode returns metadata without starting cache processes"
+      ],
+      "gaps": [
+        "Cache data is lost when containers are removed on shutdown or restart; persistent mode retains metadata only",
+        "Host ports can change when nodes restart",
+        "Production networking, topology and failover behavior are not reproduced"
+      ],
+      "execution": "Records / optional Docker",
+      "package": "elasticache"
+    },
+    "glue": {
+      "title": "Glue Data Catalog",
+      "category": "Analytics",
+      "summary": "Create the databases, tables, and partitions that local Athena queries use.",
+      "features": [
+        "Database CRUD, tags and pagination",
+        "Table CRUD and batch deletion",
+        "Partition CRUD, batch operations and partition listings",
+        "Names are normalized to lowercase; deleting a database removes its tables and partitions"
+      ],
+      "gaps": [
+        "Only Data Catalog operations are implemented",
+        "ETL jobs, crawlers, workflows and production engines are not implemented"
+      ],
+      "execution": "Local behavior",
+      "package": "glue"
+    },
+    "athena": {
+      "title": "Athena",
+      "category": "Analytics",
+      "summary": "Query local S3 data through the Glue catalog using an in-memory SQLite SQL engine.",
+      "features": [
+        "Workgroups, named queries, query execution metadata, pagination and client tokens",
+        "SELECT queries over CSV, delimited text and JSON, including gzip data",
+        "Glue catalog DDL, SHOW, DESCRIBE, MSCK REPAIR and partition changes",
+        "Query results are retained and written to the configured S3 output location"
+      ],
+      "gaps": [
+        "Queries complete inside StartQueryExecution; there is no distributed query engine",
+        "SQL is a documented SQLite-backed subset, not full Trino semantics",
+        "Parquet, ORC, Avro, Iceberg, CTAS and INSERT are rejected"
+      ],
+      "execution": "SQLite SQL engine",
+      "package": "athena"
+    },
+    "sqs": {
+      "title": "SQS",
+      "category": "Messaging and events",
+      "summary": "Use queues with visibility timeouts, long polling, FIFO ordering, and dead-letter workflows.",
+      "features": [
+        "Queue lifecycle, attributes and tags",
+        "Send, receive, delete, visibility updates and batch operations",
+        "Long polling waits outside transactions",
+        "FIFO deduplication and group ordering",
+        "Dead-letter queues and message move tasks"
+      ],
+      "gaps": [
+        "No throughput enforcement or IAM/resource policy evaluation",
+        "No message groups on standard queues or FIFO message move tasks",
+        "DeleteQueue does not enforce the AWS name-reuse delay"
+      ],
+      "execution": "Local behavior",
+      "package": "sqs"
+    },
+    "sns": {
+      "title": "SNS",
+      "category": "Messaging and events",
+      "summary": "Publish messages to local queues and functions, or confirmed HTTP subscriptions.",
+      "features": [
+        "Topics, tags, subscriptions, filtering and FIFO deduplication",
+        "SQS fan-out and asynchronous Lambda invocation",
+        "HTTP/HTTPS confirmation and outbound delivery",
+        "Email and SMS deliveries are recorded for inspection"
+      ],
+      "gaps": [
+        "Email and SMS are recorded, not sent to providers",
+        "No mobile application or Firehose subscriptions, delivery retries or message signatures",
+        "Topic policies are stored but not evaluated; no cross-account subscriptions"
+      ],
+      "execution": "Local behavior",
+      "package": "sns"
+    },
+    "eventbridge": {
+      "title": "EventBridge",
+      "category": "Messaging and events",
+      "summary": "Route events through local buses, patterns, rules, schedules, archives, and replays.",
+      "features": [
+        "Default and custom buses, rules, targets and input transformers",
+        "Pattern matching shared with other event services",
+        "SQS, SNS and Lambda targets in the same account and region",
+        "Scheduled rules, durable retry records and SQS dead-letter queues",
+        "Archives and synchronous replay"
+      ],
+      "gaps": [
+        "No partner buses, cross-account routing or additional target service families",
+        "Bus policies are stored but not evaluated",
+        "Replays run synchronously and cannot be cancelled",
+        "Cron does not support L, W or #"
+      ],
+      "execution": "Local behavior",
+      "package": "eventbridge"
+    },
+    "scheduler": {
+      "title": "EventBridge Scheduler",
+      "category": "Messaging and events",
+      "summary": "Run one-time, rate, and cron schedules against implemented services.",
+      "features": [
+        "Schedule groups and schedule CRUD with time-zone handling",
+        "Background runner claims due schedules and invokes targets in-process",
+        "Failed deliveries can reach a target SQS dead-letter queue"
+      ],
+      "gaps": [
+        "No delivery retries; a failed run goes directly to its dead-letter queue",
+        "Flexible windows do not delay execution",
+        "ECS, SageMaker and CodeBuild templated targets are unsupported",
+        "KMS key ARNs are stored without customer-managed encryption"
+      ],
+      "execution": "Local behavior",
+      "package": "scheduler"
+    },
+    "kinesis": {
+      "title": "Kinesis Data Streams",
+      "category": "Messaging and events",
+      "summary": "Write and read ordered shard records and feed local Lambda or Firehose consumers.",
+      "features": [
+        "Streams, shards, consumers, shard iterators and record CRUD APIs",
+        "Split and merge shard metadata with stable record sequence ordering",
+        "Lambda mappings and Firehose sources read records in-process"
+      ],
+      "gaps": [
+        "No SubscribeToShard enhanced fan-out delivery or throughput enforcement",
+        "Resource policies, production record-size settings and warm throughput are outside the subset",
+        "KMS encryption settings are stored without encrypting stream records"
+      ],
+      "execution": "Local behavior",
+      "package": "kinesis"
+    },
+    "firehose": {
+      "title": "Data Firehose",
+      "category": "Messaging and events",
+      "summary": "Buffer direct or Kinesis records and deliver them to S3.",
+      "features": [
+        "Delivery streams, tags, direct puts and batch puts",
+        "Background buffering and S3 output after size/time thresholds",
+        "Kinesis source polling and Lambda processing through the shared caller"
+      ],
+      "gaps": [
+        "Only S3 destinations are implemented",
+        "No HTTP, Redshift, OpenSearch, Splunk, Snowflake or Iceberg destinations",
+        "No MSK/database sources, dynamic partitioning, format conversion, encryption or S3 backup behavior"
+      ],
+      "execution": "Local behavior",
+      "package": "firehose"
+    },
+    "lambda": {
+      "title": "Lambda",
+      "category": "Compute and containers",
+      "summary": "Manage functions and execute them in Docker using AWS runtime base images.",
+      "features": [
+        "Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags",
+        "Synchronous and asynchronous invocation, retries and destinations",
+        "SQS, DynamoDB Streams and Kinesis event source mappings",
+        "Resource policies, function URLs and concurrency settings",
+        "Logs flow into CloudWatch Logs; tests use an in-process fake runtime"
+      ],
+      "gaps": [
+        "Executing deployed functions requires Docker",
+        "Provisioned concurrency does not pre-start environments",
+        "Resource policies are stored but not evaluated",
+        "No ImageConfig or event sources beyond the three implemented families",
+        "Asynchronous work in flight is lost on restart"
+      ],
+      "execution": "Docker runtime",
+      "package": "lambda"
+    },
+    "ec2": {
+      "title": "EC2",
+      "category": "Compute and containers",
+      "summary": "Model networking and instance lifecycle for SDK and infrastructure tests.",
+      "features": [
+        "VPCs, subnets, security groups, internet/NAT gateways and Elastic IPs",
+        "Route tables, network ACLs, VPC endpoints and derived network interfaces",
+        "Key pairs, instance records, instance profile associations and launch templates",
+        "Fixed regional image catalogue and tags"
+      ],
+      "gaps": [
+        "Instances are records; no virtual machines boot and no guest software runs",
+        "Networking configuration does not create a real VPC, NAT or firewall",
+        "State transitions settle immediately",
+        "The large upstream EC2 API remains mostly outside the selected profile"
+      ],
+      "execution": "Records only",
+      "package": "ec2"
+    },
+    "autoscaling": {
+      "title": "EC2 Auto Scaling",
+      "category": "Compute and containers",
+      "summary": "Reconcile group membership with local EC2 instance records.",
+      "features": [
+        "Groups, launch configurations, policies, scheduled actions and scaling activities",
+        "Desired count changes launch or terminate EC2 records outside transactions",
+        "Target tracking creates local CloudWatch alarms"
+      ],
+      "gaps": [
+        "No mixed-instance policies, warm pools, lifecycle hooks or instance refreshes",
+        "No load balancer attachments, predictive scaling, notification delivery or metrics collection",
+        "Instances remain metadata-only"
+      ],
+      "execution": "EC2 record reconciliation",
+      "package": "autoscaling"
+    },
+    "ecr": {
+      "title": "ECR",
+      "category": "Compute and containers",
+      "summary": "Manage repositories and push or pull images through a local Docker Registry API.",
+      "features": [
+        "Repository lifecycle, tags, policies and lifecycle rules",
+        "Images, manifests, tags, layer uploads and download URLs",
+        "Authorization tokens scope Docker Registry requests",
+        "The gateway serves registry requests at /v2/"
+      ],
+      "gaps": [
+        "No replication, pull-through cache, scanning results, signing or KMS encryption",
+        "Registry policies and tag mutability exclusions are outside the subset",
+        "Deleted images do not trigger layer garbage collection"
+      ],
+      "execution": "Local behavior",
+      "package": "ecr"
+    },
+    "ecs": {
+      "title": "ECS",
+      "category": "Compute and containers",
+      "summary": "Manage clusters, task definitions, tasks, and services with optional Docker execution.",
+      "features": [
+        "Clusters, task definition revisions, service desired count and task lifecycle",
+        "Capacity provider metadata and tags",
+        "Optional Docker runner starts containers, exposes host ports and captures awslogs output",
+        "Services replace tasks when essential containers exit"
+      ],
+      "gaps": [
+        "Records mode starts no containers",
+        "Docker mode omits health checks, secrets, volumes, dependencies, task networking and resource limits",
+        "No container instances, load balancer integration, Service Connect, placement or execute command"
+      ],
+      "execution": "Records / optional Docker",
+      "package": "ecs"
+    },
+    "eks": {
+      "title": "EKS",
+      "category": "Compute and containers",
+      "summary": "Manage Kubernetes cluster metadata and optionally start local k3s API servers.",
+      "features": [
+        "Clusters, node groups, Fargate profiles, add-ons and update metadata",
+        "Access entries, access policy associations, pod identity metadata and OIDC configuration",
+        "Optional privileged k3s container per cluster with an HTTPS proxy",
+        "EKS tokens map callers to the cluster account"
+      ],
+      "gaps": [
+        "Records mode starts no Kubernetes API",
+        "k3s mode makes accepted account principals administrators; IAM authorization is not reproduced",
+        "Cluster data and upgrades do not persist across restart",
+        "No Auto Mode, Outposts, hybrid nodes or CloudWatch log delivery"
+      ],
+      "execution": "Records / optional k3s",
+      "package": "eks"
+    },
+    "apigateway": {
+      "title": "API Gateway REST APIs",
+      "category": "Networking and APIs",
+      "summary": "Manage and invoke REST APIs with deployments, stages, proxy integrations, and authorizers.",
+      "features": [
+        "Resource trees, methods, responses, integrations, deployments and stages",
+        "Lambda and HTTP proxy execution through gateway data routes",
+        "Lambda and Cognito authorizers, API keys and usage plan metadata",
+        "Custom domains, base path mappings and access logs"
+      ],
+      "gaps": [
+        "No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation",
+        "Throttling, quotas, caching, canaries and authorizer caching are not enforced",
+        "No mutual TLS, import/export or general policy evaluation"
+      ],
+      "execution": "Local behavior",
+      "package": "apigateway"
+    },
+    "apigatewayv2": {
+      "title": "API Gateway HTTP APIs",
+      "category": "Networking and APIs",
+      "summary": "Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT authorizers.",
+      "features": [
+        "API, route, integration, deployment, stage and authorizer CRUD",
+        "Auto-deploy stages and Lambda proxy payload formats 1.0 and 2.0",
+        "HTTP forwarding, JWT and Lambda authorizers, access logs"
+      ],
+      "gaps": [
+        "WebSocket APIs are not implemented",
+        "No VPC links, parameter mappings, throttling, caching or authorizer caching",
+        "Only the selected HTTP API management members are supported"
+      ],
+      "execution": "Local behavior",
+      "package": "apigatewayv2"
+    },
+    "appsync": {
+      "title": "AppSync GraphQL",
+      "category": "Networking and APIs",
+      "summary": "Run GraphQL APIs with local resolvers and WebSocket subscriptions.",
+      "features": [
+        "GraphQL APIs, API keys, schema/type operations, data sources, functions and resolvers",
+        "Unit and pipeline resolvers using APPSYNC_JS or a VTL subset",
+        "NONE, Lambda, HTTP, DynamoDB and EventBridge data sources",
+        "Authentication with API keys, IAM callers, Cognito, OIDC and Lambda",
+        "Lambda resolver batching and enhanced subscription filters"
+      ],
+      "gaps": [
+        "JavaScript utilities and VTL form a local subset of AppSync runtimes",
+        "Subscriptions live in memory and close on shutdown",
+        "AppSync Events is a separate unimplemented surface",
+        "Production scaling, caching and every upstream resolver/data-source option are not reproduced"
+      ],
+      "execution": "Local behavior",
+      "package": "appsync"
+    },
+    "elbv2": {
+      "title": "Elastic Load Balancing v2",
+      "category": "Networking and APIs",
+      "summary": "Manage application and network load balancer metadata and invoke HTTP listener behavior.",
+      "features": [
+        "Load balancers, target groups, targets, listeners, listener rules, attributes and tags",
+        "Fixed responses, redirects, Lambda targets and HTTP IP targets",
+        "Related subnet, security group and certificate checks through local services"
+      ],
+      "gaps": [
+        "No Gateway load balancers or real raw TCP/UDP forwarding",
+        "HTTPS listener metadata is served over plain HTTP; no TLS termination",
+        "No health probes, stickiness, authenticate actions, access-log delivery or capacity reservations",
+        "EC2 record targets cannot run applications"
+      ],
+      "execution": "HTTP data plane",
+      "package": "elbv2"
+    },
+    "route53": {
+      "title": "Route 53",
+      "category": "Networking and APIs",
+      "summary": "Manage hosted zones and record sets without running a DNS server.",
+      "features": [
+        "Public and private hosted zones, record changes and pagination",
+        "Routing policy and alias metadata, VPC associations, health-check records and tags",
+        "Private zone VPCs are checked with local EC2"
+      ],
+      "gaps": [
+        "No DNS listener and no endpoint probing for health checks",
+        "No traffic policies, reusable delegation sets, query logging, DNSSEC or CIDR collections"
+      ],
+      "execution": "Records only",
+      "package": "route53"
+    },
+    "cloudfront": {
+      "title": "CloudFront",
+      "category": "Networking and APIs",
+      "summary": "Manage distribution and origin access control metadata for infrastructure tests.",
+      "features": [
+        "Distribution lifecycle and ETag-based updates",
+        "Alias uniqueness, caller-reference idempotency and tags",
+        "Origin access control lifecycle"
+      ],
+      "gaps": [
+        "No CDN caching, edge delivery or origin proxy runtime",
+        "Only selected distribution/configuration fields are implemented",
+        "CloudFront KeyValueStore is a separate future candidate"
+      ],
+      "execution": "Records only",
+      "package": "cloudfront"
+    },
+    "iam": {
+      "title": "IAM",
+      "category": "Identity and security",
+      "summary": "Store account-wide identity resources and issue user access keys.",
+      "features": [
+        "Roles, users, groups, membership and instance profiles",
+        "Inline and managed policies and policy attachments",
+        "OpenID Connect providers and access key lifecycle",
+        "Active IAM keys participate in gateway credential resolution"
+      ],
+      "gaps": [
+        "Permission policies are stored but not evaluated",
+        "No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries",
+        "No access-key usage tracking"
+      ],
+      "execution": "Local behavior",
+      "package": "iam"
+    },
+    "sts": {
+      "title": "STS",
+      "category": "Identity and security",
+      "summary": "Issue local session credentials and inspect the resolved caller identity.",
+      "features": [
+        "GetCallerIdentity, AssumeRole, GetSessionToken and AssumeRoleWithWebIdentity",
+        "Subset of role trust policies with AWS, Federated and Service principals",
+        "Session credentials feed signature verification and account resolution",
+        "In-process service role assumption supports the IoT credentials provider"
+      ],
+      "gaps": [
+        "Web identity token signatures are not checked by STS",
+        "No MFA, SAML, federation tokens, session tags or session policies",
+        "Temporary credentials used to create Lambda functions do not provide a usable runtime secret"
+      ],
+      "execution": "Local behavior",
+      "package": "sts"
+    },
+    "cognitoidp": {
+      "title": "Cognito user pools",
+      "category": "Identity and security",
+      "summary": "Manage users and clients, authenticate locally, and issue pool-signed JWTs.",
+      "features": [
+        "User pools, app clients, users, groups, attributes and resource servers",
+        "Password and SRP flows, refresh tokens and pool RS256 JWTs",
+        "JWKS/OpenID configuration endpoints and client-credentials OAuth tokens",
+        "Selected Lambda triggers and inspectable verification/invitation messages"
+      ],
+      "gaps": [
+        "No hosted UI, pool domains, social identity providers or broader OAuth grants",
+        "No required MFA sign-in, custom/passwordless authentication, device tracking or threat protection",
+        "Messages are recorded in diagnostics rather than emailed/SMSed"
+      ],
+      "execution": "Local behavior",
+      "package": "cognitoidp",
+      "tests": "cognito"
+    },
+    "cognitoidentity": {
+      "title": "Cognito identity pools",
+      "category": "Identity and security",
+      "summary": "Link supported logins to identities and exchange them for local STS role credentials.",
+      "features": [
+        "Identity pools, identities, role mappings, developer tokens and login linking",
+        "Cognito user-pool and configured OIDC logins",
+        "Authenticated and unauthenticated role selection",
+        "Credential exchange through STS AssumeRoleWithWebIdentity"
+      ],
+      "gaps": [
+        "Social login providers are rejected",
+        "STS and IAM limitations apply to issued credentials",
+        "Only selected pool and mapping members are implemented"
+      ],
+      "execution": "Local behavior",
+      "package": "cognitoidentity"
+    },
+    "kms": {
+      "title": "KMS",
+      "category": "Identity and security",
+      "summary": "Exercise local cryptographic key and alias workflows.",
+      "features": [
+        "Symmetric AES, HMAC and selected RSA/ECC key types",
+        "Encrypt/decrypt, re-encryption, data keys, signing and public-key retrieval",
+        "Key lifecycle, aliases, policies, grants and tags",
+        "SSM, Secrets Manager and SQS validate usable customer-managed keys"
+      ],
+      "gaps": [
+        "Policies and grants are stored but not evaluated",
+        "No key-material rotation, imports, custom key stores or multi-region keys",
+        "No KEY_AGREEMENT, secp256k1, SM2, ML-DSA or attestation recipient behavior",
+        "Local ciphertext formats are emulator-specific"
+      ],
+      "execution": "Local behavior",
+      "package": "kms"
+    },
+    "acm": {
+      "title": "Certificate Manager",
+      "category": "Identity and security",
+      "summary": "Issue or import local certificates and exercise certificate lifecycle APIs.",
+      "features": [
+        "Certificate request, describe, listing, deletion and tags",
+        "Import/get/export, encrypted exported private keys and options",
+        "Requests issue immediately through a TinyStack certificate authority",
+        "Issuing helpers are shared with IoT"
+      ],
+      "gaps": [
+        "No DNS/email validation wait, Private CA, renewal or ACME",
+        "Only exportable certificates retain private keys",
+        "Certificates are local CA certificates, not publicly trusted"
+      ],
+      "execution": "Local behavior",
+      "package": "acm"
+    },
+    "ssm": {
+      "title": "SSM Parameter Store",
+      "category": "Configuration and operations",
+      "summary": "Store versioned parameters, labels, tags, and hierarchy queries.",
+      "features": [
+        "String, StringList and SecureString parameter records",
+        "Get by name/path, history, labels and version-aware updates",
+        "Public EC2 image parameters supplied from the local catalogue",
+        "Customer-managed KMS key usability checks"
+      ],
+      "gaps": [
+        "SecureString values are stored as plaintext; undecrypted reads return a placeholder",
+        "Only Parameter Store is implemented, not the broader Systems Manager API",
+        "No parameter policies, shared parameters, advanced data types or quotas"
+      ],
+      "execution": "Local behavior",
+      "package": "ssm"
+    },
+    "secretsmanager": {
+      "title": "Secrets Manager",
+      "category": "Configuration and operations",
+      "summary": "Manage secret versions, staging labels, deletion windows, and Lambda rotation.",
+      "features": [
+        "Secret lifecycle, binary/string values, version IDs and staging labels",
+        "Batch reads, tags and resource policy metadata",
+        "Four-step Lambda rotation with background scheduling",
+        "Customer-managed KMS key usability checks"
+      ],
+      "gaps": [
+        "No replication, managed/external rotation or enforced rotation windows",
+        "Resource policies are stored but not evaluated",
+        "Values remain local store data; KMS validation does not imply AWS at-rest encryption"
+      ],
+      "execution": "Local behavior",
+      "package": "secretsmanager"
+    },
+    "logs": {
+      "title": "CloudWatch Logs",
+      "category": "Configuration and operations",
+      "summary": "Inspect log events and route local subscription and metric filters.",
+      "features": [
+        "Log groups, streams, retention metadata, tags and paged event reads",
+        "PutLogEvents and filter patterns",
+        "Subscription delivery to Lambda, Kinesis and Firehose",
+        "Metric filters publish local CloudWatch metrics",
+        "Logs Insights subset runs synchronously and retains query results"
+      ],
+      "gaps": [
+        "Logs Insights is a local query-language subset",
+        "Production ingestion, retention scheduling and scale limits are not reproduced",
+        "Unselected log-management APIs are unsupported"
+      ],
+      "execution": "Local behavior",
+      "package": "logs"
+    },
+    "cloudwatch": {
+      "title": "CloudWatch metrics and alarms",
+      "category": "Configuration and operations",
+      "summary": "Record metrics, evaluate alarms, and exercise local monitoring integrations.",
+      "features": [
+        "Metrics, statistics, percentile queries and a metric-math subset",
+        "Metric/composite alarms, alarm history and dashboards",
+        "Background evaluation and state-change EventBridge events",
+        "SNS, Lambda and Auto Scaling actions through the caller"
+      ],
+      "gaps": [
+        "No anomaly detection, Metrics Insights, metric streams or insight rules",
+        "No EC2/Systems Manager actions or alarm mute rules",
+        "Services do not automatically publish AWS namespace metrics",
+        "Local retention is 15 days for datapoints and 30 days for alarm history"
+      ],
+      "execution": "Local behavior",
+      "package": "cloudwatch"
+    },
+    "cloudformation": {
+      "title": "CloudFormation",
+      "category": "Configuration and operations",
+      "summary": "Create and update local stacks through the same service operations used by SDK clients.",
+      "features": [
+        "JSON/YAML templates, parameters, conditions, mappings, supported intrinsics and dependency ordering",
+        "Stack create/update/delete, rollback, change sets, events and exports",
+        "Typed resource registry with validated properties and attributes",
+        "Selected SAM resources and event transformations",
+        "Resource operations run outside store transactions through the lenient caller"
+      ],
+      "gaps": [
+        "Only resource types and properties registered in resources*.go are supported",
+        "No stack sets, nested stacks, custom resources, imports or drift detection",
+        "No macros/AWS::Include, policies with unsupported semantics or snapshot deletion behavior",
+        "IAM capabilities are checked but permission policies and service roles are not evaluated"
+      ],
+      "execution": "Local behavior",
+      "package": "cloudformation"
+    },
+    "sfn": {
+      "title": "Step Functions",
+      "category": "Workflow and email",
+      "summary": "Execute a local Amazon States Language subset with service integrations.",
+      "features": [
+        "State machines, versions, aliases, activities, executions and history",
+        "JSONPath and JSONata evaluation, supported state types, Retry/Catch and callbacks",
+        "In-process AWS SDK integrations can call implemented operations",
+        "TestState and redrive support"
+      ],
+      "gaps": [
+        "No distributed Map, map runs, execution retention or IAM role checks",
+        "JSONPath filters and recursive descent are outside the subset",
+        "Running executions abort after restart; activity queues and task tokens are in memory"
+      ],
+      "execution": "Local behavior",
+      "package": "sfn"
+    },
+    "sesv2": {
+      "title": "SES v2",
+      "category": "Workflow and email",
+      "summary": "Render and inspect email workflows without sending external mail.",
+      "features": [
+        "Identities are verified immediately; templates and configuration sets are stored",
+        "SendEmail and bulk email validate senders and render a Handlebars subset",
+        "Delivery records contain messages; configuration set events reach SNS, EventBridge and Firehose",
+        "Mailbox simulator addresses generate bounce/complaint behavior"
+      ],
+      "gaps": [
+        "No SMTP or real outbound email delivery",
+        "SES v1 is not registered",
+        "Identity verification is immediate; template rendering and sending limits are local approximations"
+      ],
+      "execution": "Recorded delivery",
+      "package": "sesv2"
+    },
+    "iot": {
+      "title": "IoT Core",
+      "category": "Internet of Things",
+      "summary": "Connect devices and manage registry, policies, rules, jobs, provisioning, and fleet searches.",
+      "features": [
+        "Things, types, static group trees, certificates, registered CAs, policy versions and attachments",
+        "Per-account/region MQTT broker over WebSocket, optional TLS and plain TCP",
+        "Topic SQL, Basic Ingest, error actions and local service destinations",
+        "Custom Lambda authorizers and default authorizer selection",
+        "Snapshot jobs, MQTT job notifications and credentials-provider role aliases",
+        "Fleet provisioning templates with ownership tokens and optional hooks",
+        "Fleet indexing queries over registry, shadows and connectivity"
+      ],
+      "gaps": [
+        "HTTP rule actions and topic rule destinations remain deferred",
+        "Certificate revocation does not disconnect already-connected devices",
+        "Custom authorizer refreshAfterInSeconds is not acted on",
+        "No billing/dynamic groups, certificate transfers, CA auto-registration, continuous jobs or job rollout/retry/scheduling settings",
+        "Fleet SearchIndex scans local records; no aggregations, Device Defender or geolocation",
+        "MQTT session/in-flight state stays in memory; retained messages persist"
+      ],
+      "execution": "MQTT broker / local APIs",
+      "package": "iot"
+    },
+    "iotdataplane": {
+      "title": "IoT Data Plane",
+      "category": "Internet of Things",
+      "summary": "Publish to the MQTT broker and manage shadows, retained messages, and connections.",
+      "features": [
+        "Publish with QoS 0/1, retained flag and selected MQTT 5 properties",
+        "Classic/named shadow get/update/delete and named-shadow listing",
+        "Retained-message APIs and connection/subscription APIs",
+        "Shadow updates emit accepted/rejected/delta/documents MQTT messages"
+      ],
+      "gaps": [
+        "Publish userProperties requires generator support and is not implemented",
+        "MQTT broker accepts at most QoS 1 and 128 KB payloads",
+        "Connections and subscriptions are in memory",
+        "The SDK needs an explicit local BaseEndpoint override"
+      ],
+      "execution": "Local behavior",
+      "package": "iot"
+    },
+    "iotjobsdataplane": {
+      "title": "IoT Jobs Data Plane",
+      "category": "Internet of Things",
+      "summary": "Let devices claim, inspect, and update snapshot job executions.",
+      "features": [
+        "Pending execution listing, start-next, describe and update",
+        "Same implementation serves the MQTT jobs topics",
+        "Execution versions reject stale updates with VersionConflictException (HTTP 409)"
+      ],
+      "gaps": [
+        "StartCommandExecution and the IoT commands surface are not implemented",
+        "Jobs inherit the control-plane snapshot-only limits",
+        "VersionConflictException is an emulator extension outside the pinned data-plane error model",
+        "The SDK needs an explicit local BaseEndpoint override"
+      ],
+      "execution": "Local behavior",
+      "package": "iot"
+    }
+  },
+  "future": {
+    "account": {
+      "title": "AWS Account",
+      "state": "Proposed",
+      "slice": "Implement `GetAccountInformation`, `GetContactInformation`, and `ListRegions` for the caller's account.",
+      "features": "- [ ] `GetAccountInformation` \u2014 return `AccountId`, `AccountName`, `AccountCreatedDate`, and `AccountState` through `POST /getAccountInformation`.\n- [ ] `GetContactInformation` \u2014 return configured primary contact details through `POST /getContactInformation`.\n- [ ] `ListRegions` \u2014 return region opt-in statuses through `POST /listRegions`, with `RegionOptStatusContains`, `MaxResults`, and `NextToken`.\n- [ ] `GetRegionOptStatus` \u2014 validate `RegionName` and return the same status as `ListRegions` through `POST /getRegionOptStatus`.\n- [ ] Additive `AccountState` \u2014 populate `ACTIVE` by default. The field was added on 2026-04-29; newer SDKs expose it while older JSON SDK models can ignore it."
+    },
+    "appconfig": {
+      "title": "AppConfig",
+      "state": "Proposed",
+      "slice": "Implement `CreateApplication`, `GetApplication`, `ListApplications`.",
+      "features": "- [ ] `CreateApplication`\n- [ ] `GetApplication`\n- [ ] `ListApplications`\n- [ ] `UpdateApplication`\n- [ ] `DeleteApplication`\n- [ ] `CreateEnvironment`\n- [ ] `GetEnvironment`\n- [ ] `ListEnvironments`\n- [ ] `UpdateEnvironment`\n- [ ] `DeleteEnvironment`\n- [ ] `CreateConfigurationProfile`\n- [ ] `GetConfigurationProfile`\n- [ ] `ListConfigurationProfiles`\n- [ ] `UpdateConfigurationProfile`\n- [ ] `DeleteConfigurationProfile`"
+    },
+    "appsync-events": {
+      "title": "AppSync Events",
+      "state": "Proposed",
+      "slice": "Implement `CreateApi`, `GetApi`, `ListApis`.",
+      "features": "- [ ] `CreateApi`\n- [ ] `GetApi`\n- [ ] `ListApis`\n- [ ] `CreateChannelNamespace`\n- [ ] `Publish`\n- [ ] `Subscribe`"
+    },
+    "backup": {
+      "title": "AWS Backup",
+      "state": "Proposed",
+      "slice": "Implement `CreateBackupVault`, `DescribeBackupVault`, `DeleteBackupVault`.",
+      "features": "- [ ] `CreateBackupVault`\n- [ ] `DescribeBackupVault`\n- [ ] `DeleteBackupVault`\n- [ ] `ListBackupVaults`\n- [ ] `CreateBackupPlan`\n- [ ] `GetBackupPlan`\n- [ ] `UpdateBackupPlan`\n- [ ] `DeleteBackupPlan`\n- [ ] `ListBackupPlans`\n- [ ] `ListBackupPlanVersions`\n- [ ] `CreateBackupSelection`\n- [ ] `GetBackupSelection`\n- [ ] `DeleteBackupSelection`\n- [ ] `ListBackupSelections`\n- [ ] `StartBackupJob`"
+    },
+    "batch": {
+      "title": "AWS Batch",
+      "state": "Proposed",
+      "slice": "Implement `CreateComputeEnvironment`, `DescribeComputeEnvironments`, `CreateJobQueue`.",
+      "features": "- [ ] `CreateComputeEnvironment`\n- [ ] `DescribeComputeEnvironments`\n- [ ] `CreateJobQueue`\n- [ ] `RegisterJobDefinition`\n- [ ] `SubmitJob`\n- [ ] `DescribeJobs`"
+    },
+    "bedrock-agent-runtime": {
+      "title": "Bedrock Agent Runtime",
+      "state": "Proposed",
+      "slice": "Implement `InvokeAgent`, `InvokeInlineAgent`, `GetAgentMemory`.",
+      "features": "- [ ] `InvokeAgent`\n- [ ] `InvokeInlineAgent`\n- [ ] `GetAgentMemory`\n- [ ] `DeleteAgentMemory`\n- [ ] `CreateSession`\n- [ ] `GetSession`\n- [ ] `UpdateSession`\n- [ ] `DeleteSession`\n- [ ] `ListSessions`\n- [ ] `CreateInvocation`\n- [ ] `ListInvocations`\n- [ ] `PutInvocationStep`\n- [ ] `GetInvocationStep`\n- [ ] `ListInvocationSteps`\n- [ ] `InvokeFlow`"
+    },
+    "bedrock-agent": {
+      "title": "Bedrock Agents",
+      "state": "Proposed",
+      "slice": "Implement `CreateAgent`, `GetAgent`, `ListAgents`.",
+      "features": "- [ ] `CreateAgent`\n- [ ] `GetAgent`\n- [ ] `ListAgents`\n- [ ] `PrepareAgent`"
+    },
+    "bedrock-agentcore": {
+      "title": "Bedrock AgentCore",
+      "state": "Proposed",
+      "slice": "Implement `CreateAgentRuntime`, `GetAgentRuntime`, `ListAgentRuntimes`.",
+      "features": "- [ ] `CreateAgentRuntime`\n- [ ] `GetAgentRuntime`\n- [ ] `ListAgentRuntimes`\n- [ ] `UpdateAgentRuntime`\n- [ ] `DeleteAgentRuntime`\n- [ ] `ListAgentRuntimeVersions`\n- [ ] `CreateAgentRuntimeEndpoint`\n- [ ] `GetAgentRuntimeEndpoint`\n- [ ] `ListAgentRuntimeEndpoints`\n- [ ] `UpdateAgentRuntimeEndpoint`\n- [ ] `DeleteAgentRuntimeEndpoint`\n- [ ] `InvokeAgentRuntime`"
+    },
+    "bedrock-runtime": {
+      "title": "Bedrock Runtime",
+      "state": "Proposed",
+      "slice": "Implement `InvokeModel`, `InvokeModelWithResponseStream`, `StartAsyncInvoke`.",
+      "features": "- [ ] `InvokeModel`\n- [ ] `InvokeModelWithResponseStream`\n- [ ] `StartAsyncInvoke`\n- [ ] `GetAsyncInvoke`\n- [ ] `ListAsyncInvokes`\n- [ ] `InvokeModelWithBidirectionalStream`"
+    },
+    "bedrock": {
+      "title": "Amazon Bedrock control plane",
+      "state": "Proposed",
+      "slice": "Implement `ListFoundationModels`, `GetFoundationModel`, `ListInferenceProfiles`.",
+      "features": "- [ ] `ListFoundationModels`\n- [ ] `GetFoundationModel`\n- [ ] `ListInferenceProfiles`\n- [ ] `GetInferenceProfile`"
+    },
+    "cloudcontrol": {
+      "title": "Cloud Control API",
+      "state": "Proposed",
+      "slice": "Implement `CreateResource`, `GetResource`, and `GetResourceRequestStatus`.",
+      "features": "- [ ] `ListResourceRequests`\n- [ ] `GetResourceRequestStatus`\n- [ ] `CreateResource`\n- [ ] `GetResource`\n- [ ] `UpdateResource`\n- [ ] `DeleteResource`\n- [ ] `ListResources`\n- [ ] `CancelResourceRequest`"
+    },
+    "cloudfront-keyvaluestore": {
+      "title": "CloudFront KeyValueStore",
+      "state": "Proposed",
+      "slice": "Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`.",
+      "features": "- [ ] `DescribeKeyValueStore`\n- [ ] `ListKeys`\n- [ ] `GetKey`\n- [ ] `PutKey`\n- [ ] `DeleteKey`\n- [ ] `UpdateKeys`"
+    },
+    "cloudtrail": {
+      "title": "CloudTrail",
+      "state": "Proposed",
+      "slice": "Implement `CreateTrail`, `DeleteTrail`, `GetTrail`.",
+      "features": "- [ ] `CreateTrail`\n- [ ] `DeleteTrail`\n- [ ] `GetTrail`\n- [ ] `DescribeTrails`\n- [ ] `GetTrailStatus`\n- [ ] `StartLogging`\n- [ ] `StopLogging`\n- [ ] `PutEventSelectors`\n- [ ] `GetEventSelectors`\n- [ ] `AddTags`\n- [ ] `ListTags`\n- [ ] `RemoveTags`"
+    },
+    "codebuild": {
+      "title": "CodeBuild",
+      "state": "Proposed",
+      "slice": "Implement `CreateProject`, `BatchGetProjects`, `ListProjects`.",
+      "features": "- [ ] `CreateProject`\n- [ ] `BatchGetProjects`\n- [ ] `ListProjects`\n- [ ] `UpdateProject`\n- [ ] `DeleteProject`\n- [ ] `StartBuild`\n- [ ] `BatchGetBuilds`\n- [ ] `StopBuild`\n- [ ] `ListBuilds`\n- [ ] `ListBuildsForProject`\n- [ ] `BatchDeleteBuilds`"
+    },
+    "config": {
+      "title": "AWS Config",
+      "state": "Proposed",
+      "slice": "Implement `PutConfigRule`, `DescribeConfigRules`, `DeleteConfigRule`.",
+      "features": "- [ ] `PutConfigRule`\n- [ ] `DescribeConfigRules`\n- [ ] `DeleteConfigRule`\n- [ ] `PutConfigurationRecorder`\n- [ ] `DescribeConfigurationRecorders`\n- [ ] `DescribeConfigurationRecorderStatus`\n- [ ] `PutDeliveryChannel`\n- [ ] `DescribeDeliveryChannels`\n- [ ] `DescribeDeliveryChannelStatus`\n- [ ] `StartConfigurationRecorder`\n- [ ] `StopConfigurationRecorder`\n- [ ] `DescribeComplianceByConfigRule`\n- [ ] `GetComplianceDetailsByConfigRule`\n- [ ] `DescribeConfigRuleEvaluationStatus`"
+    },
+    "cur": {
+      "title": "Cost and Usage Reports",
+      "state": "Proposed",
+      "slice": "Implement `DeleteReportDefinition`, `DescribeReportDefinitions`, `ListTagsForResource`.",
+      "features": "- [ ] `DeleteReportDefinition`\n- [ ] `DescribeReportDefinitions`\n- [ ] `ListTagsForResource`\n- [ ] `ModifyReportDefinition`\n- [ ] `PutReportDefinition`\n- [ ] `TagResource`\n- [ ] `UntagResource`"
+    },
+    "dsql": {
+      "title": "Aurora DSQL",
+      "state": "Proposed",
+      "slice": "Implement `CreateCluster`, `GetCluster`, `ListClusters`.",
+      "features": "- [ ] `CreateCluster`\n- [ ] `GetCluster`\n- [ ] `ListClusters`\n- [ ] `UpdateCluster`\n- [ ] `DeleteCluster`"
+    },
+    "ecs-metadata": {
+      "title": "ECS Task Metadata",
+      "state": "Proposed",
+      "slice": "Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`.",
+      "features": "- [ ] `GetTaskMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` \u2014 serve the matching ECS task metadata V4 HTTP route."
+    },
+    "efs": {
+      "title": "EFS",
+      "state": "Proposed",
+      "slice": "Implement `CreateFileSystem`, `DescribeFileSystems`, `DeleteFileSystem`.",
+      "features": "- [ ] `CreateFileSystem`\n- [ ] `DescribeFileSystems`\n- [ ] `DeleteFileSystem`\n- [ ] `UpdateFileSystem`\n- [ ] `CreateMountTarget`\n- [ ] `DescribeMountTargets`\n- [ ] `DeleteMountTarget`\n- [ ] `DescribeMountTargetSecurityGroups`\n- [ ] `ModifyMountTargetSecurityGroups`\n- [ ] `CreateAccessPoint`\n- [ ] `DescribeAccessPoints`\n- [ ] `DeleteAccessPoint`\n- [ ] `TagResource`\n- [ ] `UntagResource`\n- [ ] `ListTagsForResource`"
+    },
+    "emr": {
+      "title": "EMR",
+      "state": "Proposed",
+      "slice": "Implement `RunJobFlow`, `DescribeCluster`, `ListClusters`.",
+      "features": "- [ ] `RunJobFlow`\n- [ ] `DescribeCluster`\n- [ ] `ListClusters`\n- [ ] `ModifyCluster`\n- [ ] `SetTerminationProtection`\n- [ ] `SetVisibleToAllUsers`\n- [ ] `AddJobFlowSteps`\n- [ ] `DescribeStep`\n- [ ] `ListSteps`\n- [ ] `CancelSteps`\n- [ ] `AddInstanceFleet`\n- [ ] `ListInstanceFleets`\n- [ ] `ModifyInstanceFleet`\n- [ ] `AddInstanceGroups`\n- [ ] `ListInstanceGroups`"
+    },
+    "imds": {
+      "title": "EC2 Instance Metadata",
+      "state": "Proposed",
+      "slice": "Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`.",
+      "features": "- [ ] `GetInstanceIdentityDocument` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` \u2014 serve the corresponding IMDS HTTP path."
+    },
+    "inspector2": {
+      "title": "Amazon Inspector",
+      "state": "Proposed",
+      "slice": "Implement `ListFindings`, `ListCoverage`, `CreateFilter`.",
+      "features": "- [ ] `ListFindings`\n- [ ] `ListCoverage`\n- [ ] `CreateFilter`\n- [ ] `GetConfiguration`"
+    },
+    "iotwireless": {
+      "title": "IoT Wireless",
+      "state": "Proposed",
+      "slice": "Implement `GetPositionEstimate`.",
+      "features": "- [ ] `GetPositionEstimate`"
+    },
+    "lambda-core": {
+      "title": "Lambda Core",
+      "state": "Proposed",
+      "slice": "Implement `CreateNetworkConnector`, `GetNetworkConnector`, `ListNetworkConnectors`.",
+      "features": "- [ ] `CreateNetworkConnector`\n- [ ] `GetNetworkConnector`\n- [ ] `ListNetworkConnectors`\n- [ ] `UpdateNetworkConnector`\n- [ ] `DeleteNetworkConnector`"
+    },
+    "lambda-durable": {
+      "title": "Lambda Durable Execution",
+      "state": "Proposed",
+      "slice": "Implement `CheckpointDurableExecution`, `GetDurableExecutionState`, `GetDurableExecution`.",
+      "features": "- [ ] `CheckpointDurableExecution`\n- [ ] `GetDurableExecutionState`\n- [ ] `GetDurableExecution`\n- [ ] `GetDurableExecutionHistory`\n- [ ] `ListDurableExecutionsByFunction`\n- [ ] `StopDurableExecution`"
+    },
+    "lambda-microvms": {
+      "title": "Lambda MicroVMs",
+      "state": "Proposed",
+      "slice": "Implement `CreateMicrovmImage`, `RunMicrovm`, `GetMicrovm`.",
+      "features": "- [ ] `CreateMicrovmImage`\n- [ ] `RunMicrovm`\n- [ ] `GetMicrovm`\n- [ ] `ListMicrovms`\n- [ ] `SuspendMicrovm`\n- [ ] `ResumeMicrovm`\n- [ ] `TerminateMicrovm`"
+    },
+    "location": {
+      "title": "Amazon Location",
+      "state": "Proposed",
+      "slice": "Implement `CreateTracker`, `DescribeTracker`, `UpdateTracker`.",
+      "features": "- [ ] `CreateTracker`\n- [ ] `DescribeTracker`\n- [ ] `UpdateTracker`\n- [ ] `ListTrackers`\n- [ ] `DeleteTracker`\n- [ ] `BatchUpdateDevicePosition`\n- [ ] `GetDevicePosition`\n- [ ] `BatchGetDevicePosition`\n- [ ] `GetDevicePositionHistory`\n- [ ] `RequestBasedUsage`\n- [ ] `AssociateTrackerConsumer`"
+    },
+    "mediaconnect": {
+      "title": "MediaConnect",
+      "state": "Proposed",
+      "slice": "Implement `CreateFlow`, `DescribeFlow`, `ListFlows`.",
+      "features": "- [ ] `CreateFlow`\n- [ ] `DescribeFlow`\n- [ ] `ListFlows`\n- [ ] `UpdateFlow`\n- [ ] `DescribeFlowSourceMetadata`\n- [ ] `DescribeFlowSourceThumbnail`\n- [ ] `ListBridges`\n- [ ] `ListEntitlements`\n- [ ] `ListGateways`\n- [ ] `ListGatewayInstances`\n- [ ] `ListOfferings`\n- [ ] `ListReservations`\n- [ ] `DescribeBridge`\n- [ ] `DescribeGateway`\n- [ ] `DescribeGatewayInstance`"
+    },
+    "mq": {
+      "title": "Amazon MQ",
+      "state": "Proposed",
+      "slice": "Implement `CreateBroker`, `DescribeBroker`, `ListBrokers`.",
+      "features": "- [ ] `CreateBroker`\n- [ ] `DescribeBroker`\n- [ ] `ListBrokers`\n- [ ] `DeleteBroker`\n- [ ] `UpdateBroker`"
+    },
+    "msk": {
+      "title": "Amazon MSK",
+      "state": "Proposed",
+      "slice": "Implement `CreateCluster`, `ListClusters`, `DescribeCluster`.",
+      "features": "- [ ] `CreateCluster`\n- [ ] `ListClusters`\n- [ ] `DescribeCluster`\n- [ ] `DeleteCluster`\n- [ ] `GetBootstrapBrokers`\n- [ ] `ListNodes`\n- [ ] `CreateConfiguration`\n- [ ] `ListConfigurations`\n- [ ] `DescribeConfiguration`\n- [ ] `ListConfigurationRevisions`\n- [ ] `DescribeConfigurationRevision`\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `TagResource`"
+    },
+    "mwaa": {
+      "title": "Amazon MWAA",
+      "state": "Proposed",
+      "slice": "Implement `CreateEnvironment`, `GetEnvironment`, `DeleteEnvironment`.",
+      "features": "- [ ] `CreateEnvironment`\n- [ ] `GetEnvironment`\n- [ ] `DeleteEnvironment`\n- [ ] `UpdateEnvironment`\n- [ ] `ListEnvironments`\n- [ ] `CreateWebLoginToken`\n- [ ] `CreateCliToken`"
+    },
+    "opensearch": {
+      "title": "OpenSearch Service",
+      "state": "Runtime decision required",
+      "slice": "create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls.",
+      "features": "- [ ] Management \u2014 Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime \u2014 Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence \u2014 Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features \u2014 Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs."
+    },
+    "organizations": {
+      "title": "Organizations",
+      "state": "Proposed",
+      "slice": "Implement `DescribeOrganization`, `ListRoots`, `ListAccounts`.",
+      "features": "- [ ] `DescribeOrganization`\n- [ ] `ListRoots`\n- [ ] `ListAccounts`\n- [ ] `DescribeAccount`\n- [ ] `CreateOrganizationalUnit`"
+    },
+    "pipes": {
+      "title": "EventBridge Pipes",
+      "state": "Proposed",
+      "slice": "Implement `ListPipes`, `CreatePipe`, `DescribePipe`.",
+      "features": "- [ ] `ListPipes`\n- [ ] `CreatePipe`\n- [ ] `DescribePipe`\n- [ ] `UpdatePipe`\n- [ ] `DeletePipe`\n- [ ] `StartPipe`\n- [ ] `StopPipe`\n- [ ] `ListTagsForResource`\n- [ ] `TagResource`\n- [ ] `UntagResource`"
+    },
+    "rds-data": {
+      "title": "RDS Data API",
+      "state": "Proposed",
+      "slice": "Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`.",
+      "features": "- [ ] `ExecuteStatement`\n- [ ] `BeginTransaction`\n- [ ] `CommitTransaction`\n- [ ] `RollbackTransaction`\n- [ ] `BatchExecuteStatement`"
+    },
+    "rds": {
+      "title": "RDS",
+      "state": "Runtime decision required",
+      "slice": "create a PostgreSQL DB instance, obtain its endpoint, connect to a real local database, and delete it through RDS-style management calls.",
+      "features": "- [ ] Management \u2014 `CreateDBInstance`, `DescribeDBInstances`, `ModifyDBInstance`, `DeleteDBInstance`, and tag/list operations for a single supported PostgreSQL engine/version family. Validate identifier, size, credentials, storage, and delete options.\n- [ ] Runtime \u2014 Start one isolated PostgreSQL container per instance or a safely isolated shared engine; allocate a stable reachable host/port and persist the instance-to-runtime mapping. Health checks drive creating \u2192 available \u2192 deleting state.\n- [ ] Data lifecycle \u2014 Decide whether a persistent TinyStack restart reconnects to the same database volume. Delete removes runtime and data unless a documented retained snapshot option is chosen.\n- [ ] Later features \u2014 Read replicas, snapshots/restore, parameter groups, subnet groups, failover, IAM database authentication, and non-PostgreSQL engines are separate slices."
+    },
+    "resource-groups": {
+      "title": "Resource Groups",
+      "state": "Proposed",
+      "slice": "Implement `CreateGroup`, `GetGroup`, `DeleteGroup`.",
+      "features": "- [ ] `CreateGroup`\n- [ ] `GetGroup`\n- [ ] `DeleteGroup`\n- [ ] `UpdateGroup`\n- [ ] `ListGroups`\n- [ ] `GetGroupQuery`\n- [ ] `UpdateGroupQuery`\n- [ ] `GetGroupConfiguration`\n- [ ] `PutGroupConfiguration`\n- [ ] `ListGroupResources`\n- [ ] `ListGroupingStatuses`\n- [ ] `SearchResources`\n- [ ] `GetTags`\n- [ ] `GetAccountSettings`\n- [ ] `UpdateAccountSettings`"
+    },
+    "s3files": {
+      "title": "S3 Files",
+      "state": "Proposed",
+      "slice": "Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`.",
+      "features": "- [ ] `CreateFileSystem`\n- [ ] `GetFileSystem`\n- [ ] `ListFileSystems`\n- [ ] `DeleteFileSystem`\n- [ ] `CreateMountTarget`\n- [ ] `GetMountTarget`\n- [ ] `ListMountTargets`\n- [ ] `DeleteMountTarget`\n- [ ] `UpdateMountTarget`\n- [ ] `CreateAccessPoint`\n- [ ] `GetAccessPoint`\n- [ ] `ListAccessPoints`\n- [ ] `DeleteAccessPoint`\n- [ ] `GetFileSystemPolicy`\n- [ ] `PutFileSystemPolicy`"
+    },
+    "s3tables": {
+      "title": "S3 Tables",
+      "state": "Proposed",
+      "slice": "Implement `CreateTableBucket`, `ListTableBuckets`, `GetTableBucket`.",
+      "features": "- [ ] `CreateTableBucket`\n- [ ] `ListTableBuckets`\n- [ ] `GetTableBucket`\n- [ ] `DeleteTableBucket`\n- [ ] `CreateNamespace`\n- [ ] `ListNamespaces`\n- [ ] `GetNamespace`\n- [ ] `DeleteNamespace`\n- [ ] `CreateTable`\n- [ ] `ListTables`\n- [ ] `GetTable`\n- [ ] `DeleteTable`\n- [ ] `GetTableMetadataLocation`\n- [ ] `UpdateTableMetadataLocation`"
+    },
+    "servicediscovery": {
+      "title": "Cloud Map",
+      "state": "Proposed",
+      "slice": "Implement `CreatePrivateDnsNamespace`, `CreateService`, `RegisterInstance`.",
+      "features": "- [ ] `CreatePrivateDnsNamespace`\n- [ ] `CreateService`\n- [ ] `RegisterInstance`\n- [ ] `DiscoverInstances`\n- [ ] `DeregisterInstance`"
+    },
+    "ses": {
+      "title": "SES v1",
+      "state": "Proposed",
+      "slice": "Implement `SendEmail`, `SendRawEmail`, `SendTemplatedEmail`.",
+      "features": "- [ ] `SendEmail`\n- [ ] `SendRawEmail`\n- [ ] `SendTemplatedEmail`\n- [ ] `SendBulkTemplatedEmail`\n- [ ] `VerifyEmailIdentity`\n- [ ] `VerifyEmailAddress`\n- [ ] `VerifyDomainIdentity`\n- [ ] `VerifyDomainDkim`\n- [ ] `ListIdentities`\n- [ ] `GetIdentityVerificationAttributes`\n- [ ] `DeleteIdentity`\n- [ ] `GetSendQuota`\n- [ ] `GetSendStatistics`\n- [ ] `ListVerifiedEmailAddresses`\n- [ ] `CreateConfigurationSet`"
+    },
+    "signer": {
+      "title": "AWS Signer",
+      "state": "Proposed",
+      "slice": "Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`.",
+      "features": "- [ ] `StartSigningJob`\n- [ ] `DescribeSigningJob`\n- [ ] `ListSigningJobs`\n- [ ] `PutSigningProfile`\n- [ ] `GetSigningProfile`"
+    },
+    "tagging": {
+      "title": "Resource Groups Tagging API",
+      "state": "Proposed",
+      "slice": "Implement `GetResources`, `GetTagKeys`, `GetTagValues`.",
+      "features": "- [ ] `GetResources`\n- [ ] `GetTagKeys`\n- [ ] `GetTagValues`\n- [ ] `TagResources`\n- [ ] `UntagResources`"
+    },
+    "transcribe": {
+      "title": "Transcribe",
+      "state": "Proposed",
+      "slice": "Implement `StartTranscriptionJob`, `GetTranscriptionJob`, `ListTranscriptionJobs`.",
+      "features": "- [ ] `StartTranscriptionJob`\n- [ ] `GetTranscriptionJob`\n- [ ] `ListTranscriptionJobs`\n- [ ] `DeleteTranscriptionJob`\n- [ ] `TagResource`\n- [ ] `UntagResource`\n- [ ] `ListTagsForResource`"
+    },
+    "transfer": {
+      "title": "Transfer Family",
+      "state": "Proposed",
+      "slice": "Implement `CreateServer`, `DescribeServer`, `DeleteServer`.",
+      "features": "- [ ] `CreateServer`\n- [ ] `DescribeServer`\n- [ ] `DeleteServer`\n- [ ] `ListServers`\n- [ ] `StartServer`\n- [ ] `StopServer`\n- [ ] `CreateUser`\n- [ ] `DescribeUser`\n- [ ] `DeleteUser`\n- [ ] `ListUsers`\n- [ ] `ImportSshPublicKey`\n- [ ] `DeleteSshPublicKey`"
+    },
+    "translate": {
+      "title": "Translate",
+      "state": "Proposed",
+      "slice": "Implement `StartTextTranslationJob`, `DescribeTextTranslationJob`, `ListTextTranslationJobs`.",
+      "features": "- [ ] `StartTextTranslationJob`\n- [ ] `DescribeTextTranslationJob`\n- [ ] `ListTextTranslationJobs`\n- [ ] `StopTextTranslationJob`\n- [ ] `ListLanguages`\n- [ ] `TagResource`\n- [ ] `UntagResource`\n- [ ] `ListTagsForResource`"
+    },
+    "waf-v1": {
+      "title": "WAF Classic",
+      "state": "Proposed",
+      "slice": "Implement `ListWebACLs`, `GetWebACL`, `ListRules`.",
+      "features": "- [ ] `ListWebACLs`\n- [ ] `GetWebACL`\n- [ ] `ListRules`\n- [ ] `GetChangeToken`"
+    },
+    "waf": {
+      "title": "WAF v2",
+      "state": "Proposed",
+      "slice": "Implement `CreateWebACL`, `GetWebACL`, `UpdateWebACL`.",
+      "features": "- [ ] `CreateWebACL`\n- [ ] `GetWebACL`\n- [ ] `UpdateWebACL`\n- [ ] `DeleteWebACL`\n- [ ] `ListWebACLs`\n- [ ] `AssociateWebACL`\n- [ ] `DisassociateWebACL`\n- [ ] `GetWebACLForResource`\n- [ ] `ListResourcesForWebACL`\n- [ ] `CreateIPSet`\n- [ ] `GetIPSet`\n- [ ] `UpdateIPSet`\n- [ ] `DeleteIPSet`\n- [ ] `ListIPSets`\n- [ ] `CreateRuleGroup`"
+    }
+  }
+}

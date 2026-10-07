@@ -22,6 +22,9 @@ task test:sam   # python3 tests/sam/sam.py — sam deploy, redeploy, and sam del
 task all        # generate, lint, test, build
 task ui:dev     # console (ui/) dev server on :4568, proxying /_tinystack to TINYSTACK_URL (default :4566)
 task ui:check   # Biome lint/format and tsc for the console; task ui:build builds ui/dist/client
+task docs:serve # MkDocs live reload on :8000; installs pinned dependencies into .venv-docs
+task docs:check # check catalogue/profile freshness and build docs with strict link/nav validation
+task docs:generate # regenerate service/roadmap pages and resource inventory from docs/catalog.json and code
 task up         # docker compose up --build: TinyStack on :4566, its console on :4567 (task down [-- -v])
 ```
 

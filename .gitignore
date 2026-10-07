@@ -23,3 +23,8 @@ go.work
 
 # Local build output
 /bin/
+
+# Documentation build output and isolated Python environment
+/site/
+/.venv-docs/
+**/__pycache__/

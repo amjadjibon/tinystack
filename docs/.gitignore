@@ -1,0 +1,9 @@
+*
+!.gitignore
+!catalog.json
+!requirements.in
+!requirements.txt
+!site/
+!site/**
+!overrides/
+!overrides/**
