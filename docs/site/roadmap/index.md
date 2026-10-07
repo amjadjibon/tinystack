@@ -8,7 +8,6 @@ Proposals have no assigned release date and are not implementation promises.
 
 | Area | Current boundary | Next useful slice |
 | --- | --- | --- |
-| IoT certificate lifecycle | Revocation rejects new certificate connections, but existing devices remain connected | Disconnect affected active sessions and cover the lifecycle event |
 | IoT rules | Local service actions work; HTTP actions and destinations are deferred | Destination confirmation, HTTP delivery, errors and integration coverage |
 | MQTT 5 properties | Selected publish properties work; `userProperties` is absent | Add generator support and SDK-to-device coverage |
 | IoT authorizers | Disconnect timing is enforced; refresh timing is unused | Define and implement reauthorization behavior |

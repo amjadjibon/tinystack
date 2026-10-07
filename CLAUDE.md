@@ -525,7 +525,9 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   `AssumeRoleWithWebIdentity` with a Cognito token record it, and `execute.Caller.CognitoIdentity` carries it) for
   `iot:Connect`, `Publish`, `Subscribe`, and `Receive`, with the `iot:Certificate.*` and thing variables; a
   certificate with no attached policy is allowed nothing, while other callers with none are allowed, since IAM
-  policies are not evaluated. Custom authorizers (`authorizers.go`, `…/iot/authorizer/<name>`, with the default under
+  policies are not evaluated. After `UpdateCertificate` commits INACTIVE or REVOKED (or `UpdateCACertificate`
+  INACTIVE), `disconnectCertificates` drops the live clients of those certificates with reason `AUTH_ERROR`. Custom
+  authorizers (`authorizers.go`, `…/iot/authorizer/<name>`, with the default under
   `…/iot/default-authorizer/name`) admit connections that present no identity: unsigned WebSockets (the gateway
   refuses only presigned requests that fail to verify), plain MQTT, and TLS without a certificate. At CONNECT,
   `custom.go` finds the authorizer named by `x-amz-customauthorizer-name` (in the MQTT username's query, or the

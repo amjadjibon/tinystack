@@ -737,13 +737,13 @@
         "Per-account/region MQTT broker over WebSocket, optional TLS and plain TCP",
         "Topic SQL, Basic Ingest, error actions and local service destinations",
         "Custom Lambda authorizers and default authorizer selection",
+        "Deactivating or revoking a certificate, or deactivating its CA, disconnects its live MQTT clients with AUTH_ERROR",
         "Snapshot jobs, MQTT job notifications and credentials-provider role aliases",
         "Fleet provisioning templates with ownership tokens and optional hooks",
         "Fleet indexing queries over registry, shadows and connectivity"
       ],
       "gaps": [
         "HTTP rule actions and topic rule destinations remain deferred",
-        "Certificate revocation does not disconnect already-connected devices",
         "Custom authorizer refreshAfterInSeconds is not acted on",
         "No billing/dynamic groups, certificate transfers, CA auto-registration, continuous jobs or job rollout/retry/scheduling settings",
         "Fleet SearchIndex scans local records; no aggregations, Device Defender or geolocation",
