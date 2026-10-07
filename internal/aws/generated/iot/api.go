@@ -1030,6 +1030,208 @@ type TestInvokeAuthorizerResponse struct {
 	DisconnectAfterInSeconds *int64   `json:"disconnectAfterInSeconds,omitempty"`
 }
 
+type CreateJobRequest struct {
+	JobId           *string  `json:"-"`
+	Targets         []string `json:"targets,omitempty"`
+	Document        *string  `json:"document,omitempty"`
+	Description     *string  `json:"description,omitempty"`
+	TargetSelection *string  `json:"targetSelection,omitempty"`
+	Tags            []Tag    `json:"tags,omitempty"`
+}
+
+type CreateJobResponse struct {
+	JobArn      *string `json:"jobArn,omitempty"`
+	JobId       *string `json:"jobId,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
+type DescribeJobRequest struct {
+	JobId *string `json:"-"`
+}
+
+type JobProcessDetails struct {
+	ProcessingTargets        []string `json:"processingTargets,omitempty"`
+	NumberOfCanceledThings   *int64   `json:"numberOfCanceledThings,omitempty"`
+	NumberOfSucceededThings  *int64   `json:"numberOfSucceededThings,omitempty"`
+	NumberOfFailedThings     *int64   `json:"numberOfFailedThings,omitempty"`
+	NumberOfRejectedThings   *int64   `json:"numberOfRejectedThings,omitempty"`
+	NumberOfQueuedThings     *int64   `json:"numberOfQueuedThings,omitempty"`
+	NumberOfInProgressThings *int64   `json:"numberOfInProgressThings,omitempty"`
+	NumberOfRemovedThings    *int64   `json:"numberOfRemovedThings,omitempty"`
+	NumberOfTimedOutThings   *int64   `json:"numberOfTimedOutThings,omitempty"`
+}
+
+type Job struct {
+	JobArn            *string            `json:"jobArn,omitempty"`
+	JobId             *string            `json:"jobId,omitempty"`
+	TargetSelection   *string            `json:"targetSelection,omitempty"`
+	Status            *string            `json:"status,omitempty"`
+	ForceCanceled     *bool              `json:"forceCanceled,omitempty"`
+	ReasonCode        *string            `json:"reasonCode,omitempty"`
+	Comment           *string            `json:"comment,omitempty"`
+	Targets           []string           `json:"targets,omitempty"`
+	Description       *string            `json:"description,omitempty"`
+	CreatedAt         *float64           `json:"createdAt,omitempty"`
+	LastUpdatedAt     *float64           `json:"lastUpdatedAt,omitempty"`
+	CompletedAt       *float64           `json:"completedAt,omitempty"`
+	JobProcessDetails *JobProcessDetails `json:"jobProcessDetails,omitempty"`
+	IsConcurrent      *bool              `json:"isConcurrent,omitempty"`
+}
+
+type DescribeJobResponse struct {
+	Job *Job `json:"job,omitempty"`
+}
+
+type ListJobsRequest struct {
+	Status          *string `json:"-"`
+	TargetSelection *string `json:"-"`
+	MaxResults      *int64  `json:"-"`
+	NextToken       *string `json:"-"`
+	ThingGroupName  *string `json:"-"`
+	ThingGroupId    *string `json:"-"`
+}
+
+type JobSummary struct {
+	JobArn          *string  `json:"jobArn,omitempty"`
+	JobId           *string  `json:"jobId,omitempty"`
+	ThingGroupId    *string  `json:"thingGroupId,omitempty"`
+	TargetSelection *string  `json:"targetSelection,omitempty"`
+	Status          *string  `json:"status,omitempty"`
+	CreatedAt       *float64 `json:"createdAt,omitempty"`
+	LastUpdatedAt   *float64 `json:"lastUpdatedAt,omitempty"`
+	CompletedAt     *float64 `json:"completedAt,omitempty"`
+	IsConcurrent    *bool    `json:"isConcurrent,omitempty"`
+}
+
+type ListJobsResponse struct {
+	Jobs      []JobSummary `json:"jobs,omitempty"`
+	NextToken *string      `json:"nextToken,omitempty"`
+}
+
+type UpdateJobOutput struct{}
+
+type UpdateJobRequest struct {
+	JobId       *string `json:"-"`
+	Description *string `json:"description,omitempty"`
+}
+
+type CancelJobRequest struct {
+	JobId      *string `json:"-"`
+	ReasonCode *string `json:"reasonCode,omitempty"`
+	Comment    *string `json:"comment,omitempty"`
+	Force      *bool   `json:"-"`
+}
+
+type CancelJobResponse struct {
+	JobArn      *string `json:"jobArn,omitempty"`
+	JobId       *string `json:"jobId,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
+type DeleteJobOutput struct{}
+
+type DeleteJobRequest struct {
+	JobId *string `json:"-"`
+	Force *bool   `json:"-"`
+}
+
+type GetJobDocumentRequest struct {
+	JobId *string `json:"-"`
+}
+
+type GetJobDocumentResponse struct {
+	Document *string `json:"document,omitempty"`
+}
+
+type DescribeJobExecutionRequest struct {
+	JobId           *string `json:"-"`
+	ThingName       *string `json:"-"`
+	ExecutionNumber *int64  `json:"-"`
+}
+
+type JobExecutionStatusDetails struct {
+	DetailsMap map[string]string `json:"detailsMap,omitempty"`
+}
+
+type JobExecution struct {
+	JobId           *string                    `json:"jobId,omitempty"`
+	Status          *string                    `json:"status,omitempty"`
+	ForceCanceled   *bool                      `json:"forceCanceled,omitempty"`
+	StatusDetails   *JobExecutionStatusDetails `json:"statusDetails,omitempty"`
+	ThingArn        *string                    `json:"thingArn,omitempty"`
+	QueuedAt        *float64                   `json:"queuedAt,omitempty"`
+	StartedAt       *float64                   `json:"startedAt,omitempty"`
+	LastUpdatedAt   *float64                   `json:"lastUpdatedAt,omitempty"`
+	ExecutionNumber *int64                     `json:"executionNumber,omitempty"`
+	VersionNumber   *int64                     `json:"versionNumber,omitempty"`
+}
+
+type DescribeJobExecutionResponse struct {
+	Execution *JobExecution `json:"execution,omitempty"`
+}
+
+type ListJobExecutionsForJobRequest struct {
+	JobId      *string `json:"-"`
+	Status     *string `json:"-"`
+	MaxResults *int64  `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type JobExecutionSummary struct {
+	Status          *string  `json:"status,omitempty"`
+	QueuedAt        *float64 `json:"queuedAt,omitempty"`
+	StartedAt       *float64 `json:"startedAt,omitempty"`
+	LastUpdatedAt   *float64 `json:"lastUpdatedAt,omitempty"`
+	ExecutionNumber *int64   `json:"executionNumber,omitempty"`
+}
+
+type JobExecutionSummaryForJob struct {
+	ThingArn            *string              `json:"thingArn,omitempty"`
+	JobExecutionSummary *JobExecutionSummary `json:"jobExecutionSummary,omitempty"`
+}
+
+type ListJobExecutionsForJobResponse struct {
+	ExecutionSummaries []JobExecutionSummaryForJob `json:"executionSummaries,omitempty"`
+	NextToken          *string                     `json:"nextToken,omitempty"`
+}
+
+type ListJobExecutionsForThingRequest struct {
+	ThingName  *string `json:"-"`
+	Status     *string `json:"-"`
+	MaxResults *int64  `json:"-"`
+	NextToken  *string `json:"-"`
+	JobId      *string `json:"-"`
+}
+
+type JobExecutionSummaryForThing struct {
+	JobId               *string              `json:"jobId,omitempty"`
+	JobExecutionSummary *JobExecutionSummary `json:"jobExecutionSummary,omitempty"`
+}
+
+type ListJobExecutionsForThingResponse struct {
+	ExecutionSummaries []JobExecutionSummaryForThing `json:"executionSummaries,omitempty"`
+	NextToken          *string                       `json:"nextToken,omitempty"`
+}
+
+type CancelJobExecutionOutput struct{}
+
+type CancelJobExecutionRequest struct {
+	JobId           *string           `json:"-"`
+	ThingName       *string           `json:"-"`
+	Force           *bool             `json:"-"`
+	ExpectedVersion *int64            `json:"expectedVersion,omitempty"`
+	StatusDetails   map[string]string `json:"statusDetails,omitempty"`
+}
+
+type DeleteJobExecutionOutput struct{}
+
+type DeleteJobExecutionRequest struct {
+	JobId           *string `json:"-"`
+	ThingName       *string `json:"-"`
+	ExecutionNumber *int64  `json:"-"`
+	Force           *bool   `json:"-"`
+}
+
 type API interface {
 	CreateThing(context.Context, *CreateThingRequest) (*CreateThingResponse, error)
 	DescribeThing(context.Context, *DescribeThingRequest) (*DescribeThingResponse, error)
@@ -1103,10 +1305,22 @@ type API interface {
 	DescribeDefaultAuthorizer(context.Context, *DescribeDefaultAuthorizerRequest) (*DescribeDefaultAuthorizerResponse, error)
 	ClearDefaultAuthorizer(context.Context, *ClearDefaultAuthorizerRequest) (*ClearDefaultAuthorizerResponse, error)
 	TestInvokeAuthorizer(context.Context, *TestInvokeAuthorizerRequest) (*TestInvokeAuthorizerResponse, error)
+	CreateJob(context.Context, *CreateJobRequest) (*CreateJobResponse, error)
+	DescribeJob(context.Context, *DescribeJobRequest) (*DescribeJobResponse, error)
+	ListJobs(context.Context, *ListJobsRequest) (*ListJobsResponse, error)
+	UpdateJob(context.Context, *UpdateJobRequest) (*UpdateJobOutput, error)
+	CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error)
+	DeleteJob(context.Context, *DeleteJobRequest) (*DeleteJobOutput, error)
+	GetJobDocument(context.Context, *GetJobDocumentRequest) (*GetJobDocumentResponse, error)
+	DescribeJobExecution(context.Context, *DescribeJobExecutionRequest) (*DescribeJobExecutionResponse, error)
+	ListJobExecutionsForJob(context.Context, *ListJobExecutionsForJobRequest) (*ListJobExecutionsForJobResponse, error)
+	ListJobExecutionsForThing(context.Context, *ListJobExecutionsForThingRequest) (*ListJobExecutionsForThingResponse, error)
+	CancelJobExecution(context.Context, *CancelJobExecutionRequest) (*CancelJobExecutionOutput, error)
+	DeleteJobExecution(context.Context, *DeleteJobExecutionRequest) (*DeleteJobExecutionOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iot", SigningName: "iot", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CertificateConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CertificateStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 406}, "CertificateValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictingResourceUpdateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 410}, "MalformedPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RegistrationCodeValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "SqlParseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "VersionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "VersionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iot", SigningName: "iot", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"CertificateConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "CertificateStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 406}, "CertificateValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictingResourceUpdateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStateTransitionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 410}, "MalformedPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RegistrationCodeValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "SqlParseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "VersionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "VersionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}}, Operations: map[string]catalog.Operation{
 		"CreateThing": {Name: "CreateThing", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AttributePayload": catalog.MemberBinding{Location: "document", Name: "attributePayload"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}, "ThingTypeName": catalog.MemberBinding{Location: "document", Name: "thingTypeName"}}, Output: map[string]catalog.MemberBinding{"ThingArn": catalog.MemberBinding{Location: "document", Name: "thingArn"}, "ThingId": catalog.MemberBinding{Location: "document", Name: "thingId"}, "ThingName": catalog.MemberBinding{Location: "document", Name: "thingName"}}, Method: "POST", URI: "/things/{thingName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateThingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateThing(ctx, input.(*CreateThingRequest))
 		}},
@@ -1322,6 +1536,40 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"TestInvokeAuthorizer": {Name: "TestInvokeAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerName": catalog.MemberBinding{Location: "label", Name: "authorizerName"}, "HttpContext": catalog.MemberBinding{Location: "document", Name: "httpContext"}, "MqttContext": catalog.MemberBinding{Location: "document", Name: "mqttContext"}, "TlsContext": catalog.MemberBinding{Location: "document", Name: "tlsContext"}, "Token": catalog.MemberBinding{Location: "document", Name: "token"}, "TokenSignature": catalog.MemberBinding{Location: "document", Name: "tokenSignature"}}, Output: map[string]catalog.MemberBinding{"DisconnectAfterInSeconds": catalog.MemberBinding{Location: "document", Name: "disconnectAfterInSeconds"}, "IsAuthenticated": catalog.MemberBinding{Location: "document", Name: "isAuthenticated"}, "PolicyDocuments": catalog.MemberBinding{Location: "document", Name: "policyDocuments"}, "PrincipalId": catalog.MemberBinding{Location: "document", Name: "principalId"}, "RefreshAfterInSeconds": catalog.MemberBinding{Location: "document", Name: "refreshAfterInSeconds"}}, Method: "POST", URI: "/authorizer/{authorizerName}/test", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &TestInvokeAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.TestInvokeAuthorizer(ctx, input.(*TestInvokeAuthorizerRequest))
+		}},
+		"CreateJob": {Name: "CreateJob", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Description": catalog.MemberBinding{Location: "document", Name: "description"}, "Document": catalog.MemberBinding{Location: "document", Name: "document"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags"}, "TargetSelection": catalog.MemberBinding{Location: "document", Name: "targetSelection"}, "Targets": catalog.MemberBinding{Location: "document", Name: "targets"}}, Output: map[string]catalog.MemberBinding{"Description": catalog.MemberBinding{Location: "document", Name: "description"}, "JobArn": catalog.MemberBinding{Location: "document", Name: "jobArn"}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId"}}, Method: "PUT", URI: "/jobs/{jobId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateJob(ctx, input.(*CreateJobRequest))
+		}},
+		"DescribeJob": {Name: "DescribeJob", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BeforeSubstitution": catalog.MemberBinding{Location: "unsupported:query", Name: "beforeSubstitution"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}}, Output: map[string]catalog.MemberBinding{"Job": catalog.MemberBinding{Location: "document", Name: "job"}}, Method: "GET", URI: "/jobs/{jobId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeJob(ctx, input.(*DescribeJobRequest))
+		}},
+		"ListJobs": {Name: "ListJobs", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NamespaceId": catalog.MemberBinding{Location: "unsupported:query", Name: "namespaceId"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}, "Status": catalog.MemberBinding{Location: "query", Name: "status"}, "TargetSelection": catalog.MemberBinding{Location: "query", Name: "targetSelection"}, "ThingGroupId": catalog.MemberBinding{Location: "query", Name: "thingGroupId"}, "ThingGroupName": catalog.MemberBinding{Location: "query", Name: "thingGroupName"}}, Output: map[string]catalog.MemberBinding{"Jobs": catalog.MemberBinding{Location: "document", Name: "jobs"}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}}, Method: "GET", URI: "/jobs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.ListJobs(ctx, input.(*ListJobsRequest)) }},
+		"UpdateJob": {Name: "UpdateJob", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Description": catalog.MemberBinding{Location: "document", Name: "description"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "NamespaceId": catalog.MemberBinding{Location: "unsupported:query", Name: "namespaceId"}}, Output: map[string]catalog.MemberBinding{}, Method: "PATCH", URI: "/jobs/{jobId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateJob(ctx, input.(*UpdateJobRequest))
+		}},
+		"CancelJob": {Name: "CancelJob", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Comment": catalog.MemberBinding{Location: "document", Name: "comment"}, "Force": catalog.MemberBinding{Location: "query", Name: "force"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "ReasonCode": catalog.MemberBinding{Location: "document", Name: "reasonCode"}}, Output: map[string]catalog.MemberBinding{"Description": catalog.MemberBinding{Location: "document", Name: "description"}, "JobArn": catalog.MemberBinding{Location: "document", Name: "jobArn"}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId"}}, Method: "PUT", URI: "/jobs/{jobId}/cancel", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CancelJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CancelJob(ctx, input.(*CancelJobRequest))
+		}},
+		"DeleteJob": {Name: "DeleteJob", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Force": catalog.MemberBinding{Location: "query", Name: "force"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "NamespaceId": catalog.MemberBinding{Location: "unsupported:query", Name: "namespaceId"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/jobs/{jobId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteJob(ctx, input.(*DeleteJobRequest))
+		}},
+		"GetJobDocument": {Name: "GetJobDocument", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BeforeSubstitution": catalog.MemberBinding{Location: "unsupported:query", Name: "beforeSubstitution"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}}, Output: map[string]catalog.MemberBinding{"Document": catalog.MemberBinding{Location: "document", Name: "document"}}, Method: "GET", URI: "/jobs/{jobId}/job-document", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetJobDocumentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetJobDocument(ctx, input.(*GetJobDocumentRequest))
+		}},
+		"DescribeJobExecution": {Name: "DescribeJobExecution", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ExecutionNumber": catalog.MemberBinding{Location: "query", Name: "executionNumber"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{"Execution": catalog.MemberBinding{Location: "document", Name: "execution"}}, Method: "GET", URI: "/things/{thingName}/jobs/{jobId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeJobExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeJobExecution(ctx, input.(*DescribeJobExecutionRequest))
+		}},
+		"ListJobExecutionsForJob": {Name: "ListJobExecutionsForJob", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}, "Status": catalog.MemberBinding{Location: "query", Name: "status"}}, Output: map[string]catalog.MemberBinding{"ExecutionSummaries": catalog.MemberBinding{Location: "document", Name: "executionSummaries"}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}}, Method: "GET", URI: "/jobs/{jobId}/things", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListJobExecutionsForJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListJobExecutionsForJob(ctx, input.(*ListJobExecutionsForJobRequest))
+		}},
+		"ListJobExecutionsForThing": {Name: "ListJobExecutionsForThing", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"JobId": catalog.MemberBinding{Location: "query", Name: "jobId"}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults"}, "NamespaceId": catalog.MemberBinding{Location: "unsupported:query", Name: "namespaceId"}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken"}, "Status": catalog.MemberBinding{Location: "query", Name: "status"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{"ExecutionSummaries": catalog.MemberBinding{Location: "document", Name: "executionSummaries"}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken"}}, Method: "GET", URI: "/things/{thingName}/jobs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListJobExecutionsForThingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListJobExecutionsForThing(ctx, input.(*ListJobExecutionsForThingRequest))
+		}},
+		"CancelJobExecution": {Name: "CancelJobExecution", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ExpectedVersion": catalog.MemberBinding{Location: "document", Name: "expectedVersion"}, "Force": catalog.MemberBinding{Location: "query", Name: "force"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "StatusDetails": catalog.MemberBinding{Location: "document", Name: "statusDetails"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/things/{thingName}/jobs/{jobId}/cancel", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CancelJobExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CancelJobExecution(ctx, input.(*CancelJobExecutionRequest))
+		}},
+		"DeleteJobExecution": {Name: "DeleteJobExecution", UnitOutput: true, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ExecutionNumber": catalog.MemberBinding{Location: "label", Name: "executionNumber"}, "Force": catalog.MemberBinding{Location: "query", Name: "force"}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId"}, "NamespaceId": catalog.MemberBinding{Location: "unsupported:query", Name: "namespaceId"}, "ThingName": catalog.MemberBinding{Location: "label", Name: "thingName"}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/things/{thingName}/jobs/{jobId}/executionNumber/{executionNumber}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteJobExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteJobExecution(ctx, input.(*DeleteJobExecutionRequest))
 		}},
 	}}
 }

@@ -545,7 +545,14 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   (state, per-leaf metadata, and version; a deleted shadow keeps its version). MQTT requests on
   `$aws/things/<thing>/shadow[/name/<name>]/{get,update,delete}` and the data plane's shadow operations share
   `getShadow`, `updateShadow`, and `deleteShadow`, which publish the accepted, rejected, delta, and documents
-  messages through the broker after their transaction commits.
+  messages through the broker after their transaction commits. Jobs (`jobs.go`) are `…/iot/job/<ID>` records
+  (document, targets, status, and an execution counter) and `…/iot/job-execution/<thing>/<job ID>` executions;
+  CreateJob resolves its thing and thing group targets (with child groups) once, as SNAPSHOT jobs do (continuous
+  jobs, rollouts, aborts, retries, timeouts, schedules, and document sources fail explicitly), and a job whose
+  executions are all terminal completes. `iot.Service.JobsDataPlane()` serves the `iot-jobs-data` API, and
+  `jobsdata.go` shares it with the MQTT topics `$aws/things/<thing>/jobs/{get,start-next,<job ID>/get,<job ID>/update}`;
+  `changeExecutions` compares a thing's pending executions before and after each change to publish `notify` and
+  `notify-next`.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for
@@ -567,7 +574,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, ECS, Cognito identity pools, Glue, and Athena over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, and EventBridge Scheduler over REST
-  JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, IoT and the IoT data plane over REST JSON, MQTT clients over WebSocket, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, IoT, the IoT data plane, and the IoT Jobs data plane over REST JSON, MQTT clients over WebSocket, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real

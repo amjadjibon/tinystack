@@ -11,7 +11,7 @@ import (
 )
 
 // Resources lists every thing, thing type, thing group, certificate, CA
-// certificate, policy, topic rule, and shadow, for the resource browser.
+// certificate, policy, topic rule, job, and shadow, for the resource browser.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -94,6 +94,16 @@ func resource(tx storage.ReadTx, scope request.Scope, key, rest string) (catalog
 				"SQL": common.Value(r.Payload.Sql), "Disabled": common.Value(r.Payload.RuleDisabled),
 				"Actions": len(r.Payload.Actions),
 			},
+		}, true, nil
+	case kindJob:
+		j, _, err := storage.Read[job](tx, key)
+		if err != nil {
+			return catalog.Resource{}, false, err
+		}
+
+		return catalog.Resource{
+			Type: kind, Name: name, ARN: arn(scope, kindJob, name), Tags: j.Tags,
+			Details: map[string]any{"Status": j.Status, "Executions": j.Executions},
 		}, true, nil
 	case kindShadow, kindNamedShadow:
 		r, _, err := storage.Read[shadowRecord](tx, key)

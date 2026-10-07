@@ -9708,7 +9708,19 @@
       "SetDefaultAuthorizer",
       "DescribeDefaultAuthorizer",
       "ClearDefaultAuthorizer",
-      "TestInvokeAuthorizer"
+      "TestInvokeAuthorizer",
+      "CreateJob",
+      "DescribeJob",
+      "ListJobs",
+      "UpdateJob",
+      "CancelJob",
+      "DeleteJob",
+      "GetJobDocument",
+      "DescribeJobExecution",
+      "ListJobExecutionsForJob",
+      "ListJobExecutionsForThing",
+      "CancelJobExecution",
+      "DeleteJobExecution"
     ],
     "shapes": {
       "CreateThingRequest": [
@@ -10514,6 +10526,172 @@
         "policyDocuments",
         "refreshAfterInSeconds",
         "disconnectAfterInSeconds"
+      ],
+      "CreateJobRequest": [
+        "jobId",
+        "targets",
+        "document",
+        "description",
+        "targetSelection",
+        "tags"
+      ],
+      "CreateJobResponse": [
+        "jobArn",
+        "jobId",
+        "description"
+      ],
+      "DescribeJobRequest": [
+        "jobId"
+      ],
+      "DescribeJobResponse": [
+        "job"
+      ],
+      "Job": [
+        "jobArn",
+        "jobId",
+        "targetSelection",
+        "status",
+        "forceCanceled",
+        "reasonCode",
+        "comment",
+        "targets",
+        "description",
+        "createdAt",
+        "lastUpdatedAt",
+        "completedAt",
+        "jobProcessDetails",
+        "isConcurrent"
+      ],
+      "JobProcessDetails": [
+        "processingTargets",
+        "numberOfCanceledThings",
+        "numberOfSucceededThings",
+        "numberOfFailedThings",
+        "numberOfRejectedThings",
+        "numberOfQueuedThings",
+        "numberOfInProgressThings",
+        "numberOfRemovedThings",
+        "numberOfTimedOutThings"
+      ],
+      "ListJobsRequest": [
+        "status",
+        "targetSelection",
+        "maxResults",
+        "nextToken",
+        "thingGroupName",
+        "thingGroupId"
+      ],
+      "ListJobsResponse": [
+        "jobs",
+        "nextToken"
+      ],
+      "JobSummary": [
+        "jobArn",
+        "jobId",
+        "thingGroupId",
+        "targetSelection",
+        "status",
+        "createdAt",
+        "lastUpdatedAt",
+        "completedAt",
+        "isConcurrent"
+      ],
+      "UpdateJobRequest": [
+        "jobId",
+        "description"
+      ],
+      "CancelJobRequest": [
+        "jobId",
+        "reasonCode",
+        "comment",
+        "force"
+      ],
+      "CancelJobResponse": [
+        "jobArn",
+        "jobId",
+        "description"
+      ],
+      "DeleteJobRequest": [
+        "jobId",
+        "force"
+      ],
+      "GetJobDocumentRequest": [
+        "jobId"
+      ],
+      "GetJobDocumentResponse": [
+        "document"
+      ],
+      "DescribeJobExecutionRequest": [
+        "jobId",
+        "thingName",
+        "executionNumber"
+      ],
+      "DescribeJobExecutionResponse": [
+        "execution"
+      ],
+      "JobExecution": [
+        "jobId",
+        "status",
+        "forceCanceled",
+        "statusDetails",
+        "thingArn",
+        "queuedAt",
+        "startedAt",
+        "lastUpdatedAt",
+        "executionNumber",
+        "versionNumber"
+      ],
+      "JobExecutionStatusDetails": [
+        "detailsMap"
+      ],
+      "ListJobExecutionsForJobRequest": [
+        "jobId",
+        "status",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListJobExecutionsForJobResponse": [
+        "executionSummaries",
+        "nextToken"
+      ],
+      "JobExecutionSummaryForJob": [
+        "thingArn",
+        "jobExecutionSummary"
+      ],
+      "JobExecutionSummary": [
+        "status",
+        "queuedAt",
+        "startedAt",
+        "lastUpdatedAt",
+        "executionNumber"
+      ],
+      "ListJobExecutionsForThingRequest": [
+        "thingName",
+        "status",
+        "maxResults",
+        "nextToken",
+        "jobId"
+      ],
+      "ListJobExecutionsForThingResponse": [
+        "executionSummaries",
+        "nextToken"
+      ],
+      "JobExecutionSummaryForThing": [
+        "jobId",
+        "jobExecutionSummary"
+      ],
+      "CancelJobExecutionRequest": [
+        "jobId",
+        "thingName",
+        "force",
+        "expectedVersion",
+        "statusDetails"
+      ],
+      "DeleteJobExecutionRequest": [
+        "jobId",
+        "thingName",
+        "executionNumber",
+        "force"
       ]
     }
   },
@@ -10633,6 +10811,78 @@
         "results",
         "nextToken",
         "timestamp"
+      ]
+    }
+  },
+  "iotjobsdataplane": {
+    "operations": [
+      "DescribeJobExecution",
+      "GetPendingJobExecutions",
+      "StartNextPendingJobExecution",
+      "UpdateJobExecution"
+    ],
+    "shapes": {
+      "DescribeJobExecutionRequest": [
+        "jobId",
+        "thingName",
+        "includeJobDocument",
+        "executionNumber"
+      ],
+      "DescribeJobExecutionResponse": [
+        "execution"
+      ],
+      "JobExecution": [
+        "jobId",
+        "thingName",
+        "status",
+        "statusDetails",
+        "queuedAt",
+        "startedAt",
+        "lastUpdatedAt",
+        "versionNumber",
+        "executionNumber",
+        "jobDocument"
+      ],
+      "GetPendingJobExecutionsRequest": [
+        "thingName"
+      ],
+      "GetPendingJobExecutionsResponse": [
+        "inProgressJobs",
+        "queuedJobs"
+      ],
+      "JobExecutionSummary": [
+        "jobId",
+        "queuedAt",
+        "startedAt",
+        "lastUpdatedAt",
+        "versionNumber",
+        "executionNumber"
+      ],
+      "StartNextPendingJobExecutionRequest": [
+        "thingName",
+        "statusDetails"
+      ],
+      "StartNextPendingJobExecutionResponse": [
+        "execution"
+      ],
+      "UpdateJobExecutionRequest": [
+        "jobId",
+        "thingName",
+        "status",
+        "statusDetails",
+        "expectedVersion",
+        "includeJobExecutionState",
+        "includeJobDocument",
+        "executionNumber"
+      ],
+      "UpdateJobExecutionResponse": [
+        "executionState",
+        "jobDocument"
+      ],
+      "JobExecutionState": [
+        "status",
+        "statusDetails",
+        "versionNumber"
       ]
     }
   },

@@ -30,6 +30,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.64.1
 	github.com/aws/aws-sdk-go-v2/service/iot v1.84.1
 	github.com/aws/aws-sdk-go-v2/service/iotdataplane v1.40.1
+	github.com/aws/aws-sdk-go-v2/service/iotjobsdataplane v1.38.2
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.56.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0

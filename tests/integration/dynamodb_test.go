@@ -47,6 +47,7 @@ import (
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
+	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -249,6 +250,7 @@ func serverStore(
 		athenaapi.Descriptor(queries),
 		iotapi.Descriptor(devices),
 		iotdataplaneapi.Descriptor(devices.DataPlane()),
+		iotjobsdataplaneapi.Descriptor(devices.JobsDataPlane()),
 	}
 	caller := catalog.NewCaller(services...)
 	devices.UseCaller(caller)

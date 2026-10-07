@@ -409,14 +409,18 @@ func publishable(topic string) bool {
 }
 
 // consumed reports whether a topic is one IoT Core consumes instead of
-// delivering: Basic Ingest's and the shadow requests.
+// delivering: Basic Ingest's, and the shadow and jobs requests.
 func consumed(topic string) bool {
 	if rule, ok := strings.CutPrefix(topic, ingestPrefix); ok {
 		name, _, _ := strings.Cut(rule, "/")
 		return ruleNamePattern.MatchString(name)
 	}
 
-	_, _, ok := shadowRequest(topic)
+	if _, _, ok := shadowRequest(topic); ok {
+		return true
+	}
+
+	_, _, _, ok := jobsRequest(topic)
 	return ok
 }
 
@@ -451,6 +455,10 @@ func (h *hook) OnPublished(cl *mqtt.Client, pk packets.Packet) {
 	} else if _, _, ok := shadowRequest(pk.TopicName); ok {
 		h.service.bg.Go(func(ctx context.Context) {
 			h.service.serveShadow(ctx, h.broker.scope, pk.TopicName, pk.Payload)
+		})
+	} else if _, _, _, ok := jobsRequest(pk.TopicName); ok {
+		h.service.bg.Go(func(ctx context.Context) {
+			h.service.serveJobs(ctx, h.broker.scope, pk.TopicName, pk.Payload)
 		})
 	}
 

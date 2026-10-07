@@ -43,6 +43,7 @@ import (
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
+	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -288,6 +289,7 @@ func newStartCommand() *cobra.Command {
 				athenaapi.Descriptor(queries),
 				iotapi.Descriptor(things),
 				iotdataplaneapi.Descriptor(things.DataPlane()),
+				iotjobsdataplaneapi.Descriptor(things.JobsDataPlane()),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.
