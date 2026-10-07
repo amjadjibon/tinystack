@@ -43,7 +43,12 @@ export function ConsoleHeader() {
 	return (
 		<div id={headerID} style={{ position: "sticky", top: 0, zIndex: 1002 }}>
 			<TopNavigation
-				identity={{ href: "/", title: "TinyStack", onFollow: follow }}
+				identity={{
+					href: "/",
+					title: "TinyStack",
+					logo: { src: "/tinystack.svg", alt: "" },
+					onFollow: follow,
+				}}
 				search={
 					<ServiceSearch
 						query={query}

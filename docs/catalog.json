@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "Resource inventory/details, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "Categorized service catalog with AWS icons, resource inventory/details, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {

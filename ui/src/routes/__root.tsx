@@ -22,7 +22,12 @@ export const Route = createRootRoute({
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
-			{ rel: "icon", href: "/aws-icons/cloudformation.svg" },
+			{
+				rel: "icon",
+				type: "image/svg+xml",
+				sizes: "any",
+				href: "/tinystack.svg",
+			},
 		],
 	}),
 	shellComponent: RootDocument,

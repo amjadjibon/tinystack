@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 48 48" role="img" aria-label="TinyStack">
+  <rect width="48" height="48" rx="10" fill="#192b3f"/>
+  <path d="M8 14 24 6l16 8-16 8z" fill="#ffad42"/>
+  <path d="m8 22 16 8 16-8v7l-16 8-16-8z" fill="#c5d3e1"/>
+  <path d="m8 33 16 8 16-8v5l-16 8-16-8z" fill="#7c96af"/>
+</svg>

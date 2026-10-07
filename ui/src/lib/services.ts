@@ -57,6 +57,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "cloudformation",
 	},
+	cloudfront: { title: "CloudFront", category: networking, icon: "cloudfront" },
 	cloudwatch: { title: "CloudWatch", category: management, icon: "cloudwatch" },
 	cognitoidentity: {
 		title: "Cognito Identity Pools",
@@ -105,6 +106,12 @@ const catalog: Record<string, ServiceInfo> = {
 	glue: { title: "Glue Data Catalog", category: analytics, icon: "glue" },
 	iam: { title: "IAM", category: security, icon: "iam" },
 	iot: { title: "IoT Core", category: iot, icon: "iot" },
+	iotdataplane: { title: "IoT Data Plane", category: iot, icon: "iot" },
+	iotjobsdataplane: {
+		title: "IoT Jobs Data Plane",
+		category: iot,
+		icon: "iot",
+	},
 	kinesis: {
 		title: "Kinesis Data Streams",
 		category: analytics,
