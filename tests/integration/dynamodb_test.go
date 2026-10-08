@@ -53,6 +53,7 @@ import (
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
+	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
@@ -97,6 +98,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	pipelines "github.com/amjadjibon/tinystack/internal/services/pipes"
+	groupservice "github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	taggingapi "github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	zones "github.com/amjadjibon/tinystack/internal/services/route53"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
@@ -210,6 +212,7 @@ func serverStore(
 	mail := email.New(store, deliveries)
 	identityPools := identitypools.New(store, userPools, roles)
 	resourceTags := taggingapi.New()
+	resourceGroups := groupservice.New(store)
 	catalogService := datacatalog.New(store)
 	queries := queryengine.New(store, catalogService, objects)
 	devices := things.New(store, deliveries, logger)
@@ -262,6 +265,7 @@ func serverStore(
 		iotdataplaneapi.Descriptor(devices.DataPlane()),
 		iotjobsdataplaneapi.Descriptor(devices.JobsDataPlane()),
 		resourcegroupstaggingapiapi.Descriptor(resourceTags),
+		resourcegroupsapi.Descriptor(resourceGroups),
 	}
 	caller := catalog.NewCaller(services...)
 	devices.UseCaller(caller)
@@ -283,6 +287,7 @@ func serverStore(
 	mail.UseCaller(caller)
 	identityPools.UseCaller(caller)
 	resourceTags.UseCaller(caller)
+	resourceGroups.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
