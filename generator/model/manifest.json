@@ -127,6 +127,10 @@
       "path": "codegen/sdk-codegen/aws-models/pipes.json",
       "sha256": "bb7d3031f9252fd8d9f935873105f1ee1182594213204b000aa457b6ab49f2e3"
     },
+    "resourcegroups": {
+      "path": "codegen/sdk-codegen/aws-models/resource-groups.json",
+      "sha256": "e7a2836714a15a780ed216f81f59b9eb3b197fc95029e55edf42606d6dc5cc02"
+    },
     "resourcegroupstaggingapi": {
       "path": "codegen/sdk-codegen/aws-models/resource-groups-tagging-api.json",
       "sha256": "e29f2eb712bc3f803dca480fed1caf0aa7582d08a41607116feda022c53e156e"
