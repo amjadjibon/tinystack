@@ -6,19 +6,17 @@
 package resourcegroupstaggingapi
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"maps"
 	"slices"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
-	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/listing"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 )
 
@@ -31,9 +29,6 @@ const (
 	// maxTagFilters and maxFilterValues bound GetResources' TagFilters.
 	maxTagFilters   = 50
 	maxFilterValues = 20
-	// globalRegion is the Region whose callers see global resources (IAM,
-	// Route 53), which have no Region of their own.
-	globalRegion = "us-east-1"
 )
 
 var _ api.API = (*Service)(nil)
@@ -56,78 +51,18 @@ func invalid(format string, args ...any) error {
 
 func invalidToken() error { return invalid("The pagination token is invalid.") }
 
-// resources returns the resources in the caller's account and Region, ordered
-// by ARN. Global resources belong to globalRegion, as AWS returns them.
-func (s *Service) resources(ctx context.Context) ([]catalog.Owned, error) {
-	m, err := request.Regional(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	all, err := s.caller.Resources(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var out []catalog.Owned
-	for _, r := range all {
-		if r.ARN != "" && r.Account == m.AccountID && cmp.Or(r.Region, globalRegion) == m.Region {
-			out = append(out, r)
-		}
-	}
-
-	slices.SortFunc(out, func(a, b catalog.Owned) int { return cmp.Compare(a.ARN, b.ARN) })
-
-	return slices.CompactFunc(out, func(a, b catalog.Owned) bool { return a.ARN == b.ARN }), nil
-}
-
 // tagged returns the scope's resources that have tags, which are the ones
 // GetResources, GetTagKeys, and GetTagValues report.
 func (s *Service) tagged(ctx context.Context) ([]catalog.Owned, error) {
-	resources, err := s.resources(ctx)
+	resources, err := listing.Scoped(ctx, s.caller)
 
-	return slices.DeleteFunc(resources, func(r catalog.Owned) bool { return len(r.Tags) == 0 }), err
+	return listing.Tagged(resources), err
 }
 
-// resourceType returns the service and resource type an ARN names, as
-// ResourceTypeFilters write them ("ec2:instance"). An ARN whose resource has
-// no type prefix (an SQS queue, an S3 bucket) takes its inventory's type.
-func resourceType(r *catalog.Owned) (service, kind string) {
-	parts := strings.SplitN(r.ARN, ":", 6)
-	if len(parts) < 6 {
-		return "", ""
-	}
-
-	if i := strings.IndexAny(parts[5], "/:"); i >= 0 {
-		return parts[2], parts[5][:i]
-	}
-
-	return parts[2], r.Type
-}
-
-// matchesType reports whether r is of one of the types filters name, as
-// "service" or "service:type"; no filters match every resource.
-func matchesType(r *catalog.Owned, filters []string) bool {
-	if len(filters) == 0 {
-		return true
-	}
-
-	service, kind := resourceType(r)
-
-	return slices.ContainsFunc(filters, func(f string) bool { return f == service || f == service+":"+kind })
-}
-
-// matchesTags reports whether r passes every filter: it has the filter's key
-// and, when the filter lists values, one of them.
-func matchesTags(r *catalog.Owned, filters []api.TagFilter) bool {
-	for _, f := range filters {
-		v, ok := r.Tags[common.Value(f.Key)]
-		if !ok || len(f.Values) > 0 && !slices.Contains(f.Values, v) {
-			return false
-		}
-	}
-
-	return true
+// tagFilters converts GetResources' TagFilters.
+func tagFilters(filters []api.TagFilter) []listing.TagFilter {
+	return listing.TagFilters(filters, func(f api.TagFilter) *string { return f.Key },
+		func(f api.TagFilter) []string { return f.Values })
 }
 
 func checkGetResources(in *api.GetResourcesInput) error {
@@ -170,14 +105,15 @@ func (s *Service) GetResources(ctx context.Context, in *api.GetResourcesInput) (
 	var resources []catalog.Owned
 	var err error
 	if len(in.ResourceARNList) > 0 {
-		resources, err = s.resources(ctx)
+		resources, err = listing.Scoped(ctx, s.caller)
 		resources = slices.DeleteFunc(resources, func(r catalog.Owned) bool {
 			return !slices.Contains(in.ResourceARNList, r.ARN)
 		})
 	} else {
+		filters := tagFilters(in.TagFilters)
 		resources, err = s.tagged(ctx)
 		resources = slices.DeleteFunc(resources, func(r catalog.Owned) bool {
-			return !matchesType(&r, in.ResourceTypeFilters) || !matchesTags(&r, in.TagFilters)
+			return !listing.MatchesType(&r, in.ResourceTypeFilters) || !listing.MatchesTags(&r, filters)
 		})
 	}
 

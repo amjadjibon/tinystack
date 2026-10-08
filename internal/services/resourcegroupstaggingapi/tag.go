@@ -10,6 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
+	"github.com/amjadjibon/tinystack/internal/services/listing"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 )
 
@@ -281,7 +282,7 @@ func (s *Service) apply(
 		return nil, invalid("ResourceARNList must name 1 to %d resources.", maxTaggedARNs)
 	}
 
-	resources, err := s.resources(ctx)
+	resources, err := listing.Scoped(ctx, s.caller)
 	if err != nil {
 		return nil, err
 	}
