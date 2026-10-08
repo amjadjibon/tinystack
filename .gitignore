@@ -28,3 +28,6 @@ go.work
 /site/
 /.venv-docs/
 **/__pycache__/
+
+# Task
+.task/
