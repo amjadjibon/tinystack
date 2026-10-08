@@ -426,3 +426,19 @@ func TestUnsupportedWireTraitsFail(t *testing.T) {
 		})
 	}
 }
+
+func TestOperationTraitsDropHTTPForNonREST(t *testing.T) {
+	traits := map[string]json.RawMessage{"smithy.api#http": json.RawMessage(`{"method":"POST","uri":"/Op"}`)}
+
+	if got := operationTraits(traits, false); len(got) != 0 {
+		t.Errorf("non-REST operation kept %v", got)
+	}
+
+	if got := operationTraits(traits, true); len(got) != 1 {
+		t.Errorf("REST operation lost its http trait: %v", got)
+	}
+
+	if len(traits) != 1 {
+		t.Error("operationTraits modified its input")
+	}
+}

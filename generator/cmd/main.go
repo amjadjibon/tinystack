@@ -268,6 +268,21 @@ func checkTraits(traits map[string]json.RawMessage, rest bool) error {
 	return nil
 }
 
+// operationTraits returns an operation's traits without the http trait the
+// non-REST protocols ignore: Smithy's AWS JSON and Query protocols carry the
+// operation in the target or action, so models such as the Resource Groups
+// Tagging API's list a POST path that no client sends.
+func operationTraits(traits map[string]json.RawMessage, rest bool) map[string]json.RawMessage {
+	if _, ok := traits["smithy.api#http"]; rest || !ok {
+		return traits
+	}
+
+	traits = maps.Clone(traits)
+	delete(traits, "smithy.api#http")
+
+	return traits
+}
+
 // xmlMemberTraits returns a member's traits without the REST XML traits the
 // codec implements on members: xmlAttribute, and an xmlNamespace that declares
 // a prefix, which it records for prefixed attribute names.
@@ -891,7 +906,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 			return nil, fmt.Errorf("unknown operation %s", op)
 		}
 
-		if guardErr := checkTraits(s.Traits, g.rest); guardErr != nil {
+		if guardErr := checkTraits(operationTraits(s.Traits, g.rest), g.rest); guardErr != nil {
 			return nil, guardErr
 		}
 
