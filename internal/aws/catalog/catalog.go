@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"slices"
 )
 
@@ -78,6 +79,34 @@ type Resource struct {
 // lists, across every account and region.
 type Inventory interface {
 	Resources(context.Context) ([]Resource, error)
+}
+
+// Owned is a resource labeled with the name of the service that holds it.
+type Owned struct {
+	Service string `json:"service"`
+	Resource
+}
+
+// Resources lists the resources of every service that has an Inventory, in
+// every account and region.
+func Resources(ctx context.Context, services map[string]*Service) ([]Owned, error) {
+	var out []Owned
+	for name, service := range services {
+		if service.Inventory == nil {
+			continue
+		}
+
+		resources, err := service.Inventory.Resources(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
+		}
+
+		for i := range resources {
+			out = append(out, Owned{Service: name, Resource: resources[i]})
+		}
+	}
+
+	return out, nil
 }
 
 // InventoryOf returns api's Inventory, or nil if it has none.

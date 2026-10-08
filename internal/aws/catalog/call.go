@@ -41,6 +41,10 @@ func NewCaller(services ...Service) *Caller {
 // string.
 func (c *Caller) Lenient() *Caller { return &Caller{services: c.services, lenient: true} }
 
+// Resources lists the resources of every service the caller reaches, in every
+// account and region.
+func (c *Caller) Resources(ctx context.Context) ([]Owned, error) { return Resources(ctx, c.services) }
+
 // Call runs operation of the service named service with params in ctx, which
 // carries the caller's request metadata. It reports an unknown service or
 // operation, and parameters that do not fit the operation's input, as
