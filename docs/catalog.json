@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "Categorized service catalog with AWS icons, resource inventory/details, IAM management workflows, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "Categorized service catalog with AWS icons, resource inventory/details, IAM and S3 management workflows, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -94,14 +94,16 @@
         "Stored object checksums (CRC32, CRC32C, CRC64NVME by default, SHA-1, SHA-256) returned with ChecksumMode, composite and full-object multipart checksums, kept through copies and versions",
         "Versioning, null versions and delete markers",
         "Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge",
-        "Bucket lifecycle and encryption configuration are stored"
+        "Bucket lifecycle and encryption configuration are stored",
+        "AWS-style console for scoped bucket creation, empty/delete, folder and object browsing, uploads/downloads/copies, version deletion, object tags and bucket configuration"
       ],
       "gaps": [
         "Lifecycle rules do not expire or transition objects",
         "Encryption settings are metadata; objects are not encrypted as an AWS S3 data plane would encrypt them",
         "No website endpoint, POST uploads or general ACL/policy evaluation",
         "Objects remain in memory even when commits are persisted to SQLite",
-        "REST payloads and completed multipart objects are limited to 64 MiB; larger objects need a streaming/storage design"
+        "REST payloads and completed multipart objects are limited to 64 MiB; larger objects need a streaming/storage design",
+        "Console uploads are limited to 1 MiB per file; object browsing and management require parse mode, while verify mode exposes bucket inventory only"
       ],
       "execution": "Local behavior",
       "package": "s3"

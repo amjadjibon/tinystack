@@ -52,16 +52,16 @@ so a retry continues remaining changes after a partial failure. These workflows 
 leaves completed changes in place, and a lost response can require checking the resource before retrying.
 User permissions include policies inherited through groups; inherited policies are managed from the group page.
 
-`GET /_tinystack/actions` returns the default account/region and whether IAM and signature verification are enabled.
+`GET /_tinystack/actions` returns the default account/region and whether IAM, S3 and signature verification are enabled.
 `POST /_tinystack/actions` accepts `service`, `operation`, `account` and an SDK-style `input` object. The gateway
-restricts operations to the IAM console allowlist, validates the account, and invokes the strict `catalog.Caller`.
+restricts operations to explicit service allowlists, validates the account and S3 Region, and invokes the strict `catalog.Caller`.
 It records requests and metrics through the same inspector path, including sensitive-operation redaction.
 Responses contain `output` and `request_id`; errors contain `code`, `message` and `request_id`.
 
 Writes require JSON and reject cross-origin browser requests. The Vite proxy preserves the browser's Host
 so the origin check works in development. In verify mode the endpoint checks SigV4 credentials, requires the
 signed account to match the action account, and rejects unsigned writes. The UI currently supplies no credentials,
-so it shows read-only IAM pages in verify mode. It never falls back to unsigned mutations.
+so it shows read-only IAM pages and S3 bucket inventory in verify mode. It never falls back to unsigned mutations.
 
 Access-key secrets are shown only in the creation-result dialog, kept in component memory, and discarded when
 the dialog closes or the resource page changes. They are never stored in browser storage or the request inspector.
@@ -71,3 +71,31 @@ account switching, policy JSON validation and the one-time key dialog.
 
 Follow [Cloudscape](https://cloudscape.design/) for console components and use the official
 [AWS architecture icon package](https://aws.amazon.com/architecture/icons/) when adding service icons.
+
+## S3 management
+
+`/services/s3` provides account/Region selection, a bucket table, creation and empty/delete dialogs,
+and bucket tabs for objects, properties, permissions and management. Resource inventory links open this view.
+Objects use delimiter-based folder navigation and server-side prefix filtering within the current folder, with 100 entries per page.
+Deleting a selected folder removes its current objects recursively; older versions remain.
+The versions view includes noncurrent versions and delete markers. Individual versions can be downloaded,
+copied or permanently deleted; current-object deletion keeps the service's versioning behavior.
+Folders are zero-byte objects with a trailing slash. Object details show metadata, checksums and editable tags.
+
+Multi-file uploads validate and read every file before writing; each file is limited to 1 MiB so its base64 body
+fits the gateway's 2 MiB JSON request bound. Use AWS CLI/SDK requests for larger files. Downloads use a blob with
+a download filename so object HTML is not rendered within the console origin. The S3 action transport uses
+`catalog.Caller.Base64Blobs()` to encode/decode all blobs as base64, including valid UTF-8 content. Other callers
+keep their existing text/JSON blob behavior. S3 actions add a required `region` to the action envelope, and verify
+mode requires it to match the signed Region along with the service and account.
+
+Settings call the existing S3 APIs for versioning, tags, encryption, notifications, website configuration,
+public access blocking, policy, ownership, CORS and lifecycle rules. Complex configurations use JSON editors.
+The UI explains the existing metadata-only encryption, stored lifecycle rules, website and policy limitations.
+
+Destructive dialogs require typed confirmation. Empty reads all pages before deleting versions and markers in
+batches, aborts unfinished multipart uploads, and checks for new data before reporting success. Successful API
+steps are retained while a dialog stays open, so retries continue remaining work. Closing a failed dialog leaves
+completed changes in place; these workflows are not transactions. Lost responses or concurrent external writes
+can require checking the bucket before retrying. Verify mode retains bucket inventory but cannot browse objects
+or settings without signed requests, so use the CLI/SDK.

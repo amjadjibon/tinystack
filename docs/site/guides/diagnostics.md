@@ -22,6 +22,14 @@ User creation can select groups, copy permissions from another user, or attach p
 users and policies together; role creation selects a trusted entity before permissions. Permission tables distinguish
 direct policies from inherited group policies.
 
+Open **S3** to select an account and Region, create buckets, browse folders and object versions, upload multiple
+files, download or copy objects, and edit object tags. Bucket tabs manage versioning, tags, encryption, event
+notifications, website configuration, policy, ownership, public access blocking, CORS and lifecycle rules.
+Console uploads are limited to 1 MiB per file; use the CLI or SDK for larger files. Bucket Empty removes all
+versions, delete markers and unfinished multipart uploads after typed confirmation. Bucket Delete requires an
+empty bucket. Failed workflows retain completed changes and can retry remaining steps while the dialog stays open.
+In verify mode only S3 bucket inventory is available; use signed CLI/SDK requests for objects and settings.
+
 ## Endpoints
 
 | Method and path | Result |
@@ -29,7 +37,7 @@ direct policies from inherited group policies.
 | `GET /_tinystack/health` | Registered service list and health information |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
 | `GET /_tinystack/actions` | Console action capabilities and default account/region |
-| `POST /_tinystack/actions` | Selected IAM operations with an explicit account and SDK-style input |
+| `POST /_tinystack/actions` | Selected IAM/S3 operations with an explicit account, S3 Region and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |
