@@ -30,13 +30,16 @@ const (
 	expiredToken
 )
 
-const requestExpired = "RequestExpired"
+const (
+	requestExpired = "RequestExpired"
+	accessDenied   = "AccessDenied"
+)
 
 // authCodes are the error codes each protocol family's services use for
 // authentication failures.
 var authCodes = map[string][5]string{
 	catalog.RESTXML: {
-		"AccessDenied", "InvalidAccessKeyId", "SignatureDoesNotMatch", "RequestTimeTooSkewed", "ExpiredToken",
+		accessDenied, "InvalidAccessKeyId", "SignatureDoesNotMatch", "RequestTimeTooSkewed", "ExpiredToken",
 	},
 	catalog.AWSQuery: {
 		"MissingAuthenticationToken", "InvalidClientTokenId", "SignatureDoesNotMatch", requestExpired, "ExpiredToken",
@@ -158,7 +161,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 	err = sigv4.Verify(r, a, secret, payloadHash, s3, time.Now())
 	switch {
 	case errors.Is(err, sigv4.ErrExpired) && a.Expires != 0 && protocol == catalog.RESTXML:
-		return &awserror.Error{Code: "AccessDenied", Message: "Request has expired", StatusCode: http.StatusForbidden}
+		return &awserror.Error{Code: accessDenied, Message: "Request has expired", StatusCode: http.StatusForbidden}
 	case errors.Is(err, sigv4.ErrExpired):
 		return authError(protocol, expired)
 	case errors.Is(err, sigv4.ErrMalformed):

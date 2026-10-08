@@ -39,11 +39,12 @@ const (
 )
 
 type Server struct {
-	services map[string]*catalog.Service
-	routes   map[string][]route
-	logger   *slog.Logger
-	requests *recent.Log[Record]
-	metrics  *metrics
+	services      map[string]*catalog.Service
+	consoleCaller *catalog.Caller
+	routes        map[string][]route
+	logger        *slog.Logger
+	requests      *recent.Log[Record]
+	metrics       *metrics
 	// internal serves TinyStack's own endpoints under /_tinystack/.
 	internal    map[string]http.Handler
 	credentials CredentialLookup
@@ -131,11 +132,13 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	}
 
 	s.health = health
+	s.consoleCaller = catalog.NewCaller(services...)
 	s.internal = map[string]http.Handler{
 		"/_tinystack/health":    http.HandlerFunc(s.serveHealth),
 		"/_tinystack/requests":  s.requests,
 		"/_tinystack/resources": http.HandlerFunc(s.serveResources),
 		"/_tinystack/metrics":   http.HandlerFunc(s.serveMetrics),
+		"/_tinystack/actions":   http.HandlerFunc(s.serveConsoleActions),
 	}
 
 	return s, nil
