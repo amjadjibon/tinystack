@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appsync v1.62.1
 	github.com/aws/aws-sdk-go-v2/service/athena v1.66.1
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.78.1
+	github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.2
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.81.1
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.74.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.73.0
@@ -51,6 +52,7 @@ require (
 	github.com/aws/smithy-go v1.28.2
 	github.com/coder/websocket v1.8.15
 	github.com/dop251/goja v0.0.0-20261004200024-481fdb442bb4
+	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/recolabs/gnata v0.5.2
 	github.com/spf13/cobra v1.10.2
