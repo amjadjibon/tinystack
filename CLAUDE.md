@@ -60,7 +60,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 - A service's `Resources` method (`inventory.go`, `catalog.Inventory`) feeds `/_tinystack/resources` and the
   Resource Groups Tagging API, which tags through each service's own operations (`resourcegroupstaggingapi/tag.go`).
   Resource Groups queries run against the same listing (`services/listing`), with CloudFormation-style types from
-  `resourcegroups/types.go`.
+  `resourcegroups/types.go`. Cloud Control exposes S3 bucket and SQS queue handlers through
+  `cloudformation.ResourceProvider`, reads live service state, and stores only request history. Its writes finish
+  synchronously; interrupted requests become failed when the journal is reopened.
 - Container runtimes (Lambda, ECS, EKS k3s, ElastiCache) are optional and shell out to the docker CLI
   (`services/dockercli`); without them, resources are records only.
 

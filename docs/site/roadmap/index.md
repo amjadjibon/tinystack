@@ -23,7 +23,7 @@ General IAM permission evaluation is a broader architecture decision, not a fiel
 
 | Candidate group | Examples | Decision needed |
 | --- | --- | --- |
-| Infrastructure records | Account, Organizations, Resource Groups, Cloud Control, AppConfig | What SDK/Terraform workflow does the first slice unblock? |
+| Infrastructure records | Account, Organizations, AppConfig | What SDK/Terraform workflow does the first slice unblock? |
 | Event and orchestration extensions | EventBridge Pipes, AppSync Events, Batch, CodeBuild | Which sources, targets and execution runtimes actually run? |
 | Engine-backed data services | RDS, OpenSearch, MSK, MQ, EFS, Aurora DSQL | Engine version, endpoints, readiness, resource isolation and durable data |
 | AI and media services | Bedrock families, Transcribe, Translate, MediaConnect | Fixture-based behavior versus a real local/backend execution engine |

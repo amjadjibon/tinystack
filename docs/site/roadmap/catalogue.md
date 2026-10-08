@@ -25,7 +25,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Bedrock AgentCore](services/bedrock-agentcore.md) | Proposed | Implement `CreateAgentRuntime`, `GetAgentRuntime`, `ListAgentRuntimes`. |
 | [Bedrock Agents](services/bedrock-agent.md) | Proposed | Implement `CreateAgent`, `GetAgent`, `ListAgents`. |
 | [Bedrock Runtime](services/bedrock-runtime.md) | Proposed | Implement `InvokeModel`, `InvokeModelWithResponseStream`, `StartAsyncInvoke`. |
-| [Cloud Control API](services/cloudcontrol.md) | Proposed | Implement `CreateResource`, `GetResource`, and `GetResourceRequestStatus`. |
 | [Cloud Map](services/servicediscovery.md) | Proposed | Implement `CreatePrivateDnsNamespace`, `CreateService`, `RegisterInstance`. |
 | [CloudFront KeyValueStore](services/cloudfront-keyvaluestore.md) | Proposed | Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`. |
 | [CloudTrail](services/cloudtrail.md) | Proposed | Implement `CreateTrail`, `DeleteTrail`, `GetTrail`. |

@@ -883,6 +883,33 @@
       ],
       "execution": "Local behavior",
       "package": "pipes"
+    },
+    "cloudcontrol": {
+      "title": "Cloud Control API",
+      "category": "Configuration and operations",
+      "summary": "Manage live S3 buckets and SQS queues with the CloudFormation resource handlers and a durable request journal.",
+      "features": [
+        "CreateResource, GetResource, UpdateResource, DeleteResource and ListResources for AWS::S3::Bucket and AWS::SQS::Queue",
+        "BucketName, Tags and VersioningConfiguration.Status (Enabled or Suspended) for buckets; queue names, FIFO settings, supported queue attributes and tags for queues",
+        "Generated resource names when omitted; identifiers are bucket names or queue URLs, as in the resource schemas",
+        "Reads live state from S3 and SQS, including resources created directly or through CloudFormation; lists identifiers with pagination",
+        "RFC 6902 JSON Patch updates with add, remove, replace, move, copy and test; create-only and read-only changes fail explicitly",
+        "Synchronous writes return SUCCESS or FAILED ProgressEvents with modeled handler error codes and request tokens",
+        "GetResourceRequestStatus and paginated ListResourceRequests with operation and status filters; request history is account/Region scoped and visible for seven days",
+        "ClientToken replays the original progress event for 36 hours and rejects conflicting requests; concurrent writes to the same resource are rejected",
+        "Request history and client tokens survive persistent restart; interrupted writes become FAILED and release resource locks",
+        "Created resources appear under S3 or SQS in the console inventory, Resource Groups and Tagging API; Cloud Control creates no separate resource copies"
+      ],
+      "gaps": [
+        "Only AWS::S3::Bucket and AWS::SQS::Queue are exposed, even though CloudFormation supports more resource types",
+        "No asynchronous polling, cancellation, hooks, private type versions or role assumption; CancelResourceRequest is not selected, and RoleArn, TypeVersionId and ListResources.ResourceModel are rejected",
+        "Bucket configuration beyond tags and versioning, queue Policy and any properties outside the shared handler subset are rejected",
+        "Writes may partially apply before a downstream failure or process interruption; no automatic rollback or replay of interrupted writes",
+        "ListResources returns identifiers; GetResource returns the supported live properties and read-only Arn (and QueueUrl for queues)",
+        "Resource models contain only the supported property subset; general IAM permission evaluation is not implemented"
+      ],
+      "execution": "Local behavior",
+      "package": "cloudcontrol"
     }
   },
   "future": {
@@ -890,7 +917,7 @@
       "title": "AWS Account",
       "state": "Proposed",
       "slice": "Implement `GetAccountInformation`, `GetContactInformation`, and `ListRegions` for the caller's account.",
-      "features": "- [ ] `GetAccountInformation` — return `AccountId`, `AccountName`, `AccountCreatedDate`, and `AccountState` through `POST /getAccountInformation`.\n- [ ] `GetContactInformation` — return configured primary contact details through `POST /getContactInformation`.\n- [ ] `ListRegions` — return region opt-in statuses through `POST /listRegions`, with `RegionOptStatusContains`, `MaxResults`, and `NextToken`.\n- [ ] `GetRegionOptStatus` — validate `RegionName` and return the same status as `ListRegions` through `POST /getRegionOptStatus`.\n- [ ] Additive `AccountState` — populate `ACTIVE` by default. The field was added on 2026-04-29; newer SDKs expose it while older JSON SDK models can ignore it.",
+      "features": "- [ ] `GetAccountInformation` \u2014 return `AccountId`, `AccountName`, `AccountCreatedDate`, and `AccountState` through `POST /getAccountInformation`.\n- [ ] `GetContactInformation` \u2014 return configured primary contact details through `POST /getContactInformation`.\n- [ ] `ListRegions` \u2014 return region opt-in statuses through `POST /listRegions`, with `RegionOptStatusContains`, `MaxResults`, and `NextToken`.\n- [ ] `GetRegionOptStatus` \u2014 validate `RegionName` and return the same status as `ListRegions` through `POST /getRegionOptStatus`.\n- [ ] Additive `AccountState` \u2014 populate `ACTIVE` by default. The field was added on 2026-04-29; newer SDKs expose it while older JSON SDK models can ignore it.",
       "integration": "Use the AWS Account `2021-02-01` REST JSON model and SigV4 signing name `account`. Resolve the account through `identity.accounts` or `defaults.account`; keep account details and region statuses consistent across calls and restarts. Serve only the caller's account until Organizations delegation exists, and reject another explicit `AccountId`. Encode modeled status codes and errors through the REST JSON codec.",
       "acceptance": "Call all four paths through an AWS SDK and raw REST JSON requests. Check account isolation, validation errors, region filtering and pagination, and consistent opt-in statuses. Confirm `AccountState` in raw responses and current SDKs, compatibility with an older SDK model, and stable configured details after restart."
     },
@@ -948,12 +975,6 @@
       "slice": "Implement `ListFoundationModels`, `GetFoundationModel`, `ListInferenceProfiles`.",
       "features": "- [ ] `ListFoundationModels`\n- [ ] `GetFoundationModel`\n- [ ] `ListInferenceProfiles`\n- [ ] `GetInferenceProfile`"
     },
-    "cloudcontrol": {
-      "title": "Cloud Control API",
-      "state": "Proposed",
-      "slice": "Implement `CreateResource`, `GetResource`, and `GetResourceRequestStatus`.",
-      "features": "- [ ] `ListResourceRequests`\n- [ ] `GetResourceRequestStatus`\n- [ ] `CreateResource`\n- [ ] `GetResource`\n- [ ] `UpdateResource`\n- [ ] `DeleteResource`\n- [ ] `ListResources`\n- [ ] `CancelResourceRequest`"
-    },
     "cloudfront-keyvaluestore": {
       "title": "CloudFront KeyValueStore",
       "state": "Proposed",
@@ -997,7 +1018,7 @@
       "title": "ECS Task Metadata",
       "state": "Proposed",
       "slice": "Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`.",
-      "features": "- [ ] `GetTaskMetadata` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` — serve the matching ECS task metadata V4 HTTP route.",
+      "features": "- [ ] `GetTaskMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` \u2014 serve the matching ECS task metadata V4 HTTP route.",
       "acceptance": "Call the `/v4/<token>` metadata routes over HTTP. Check valid and unknown tokens, task and container metadata, stats, and token isolation."
     },
     "efs": {
@@ -1016,7 +1037,7 @@
       "title": "EC2 Instance Metadata",
       "state": "Proposed",
       "slice": "Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`.",
-      "features": "- [ ] `GetInstanceIdentityDocument` — serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` — serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` — serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` — serve the corresponding IMDS HTTP path.",
+      "features": "- [ ] `GetInstanceIdentityDocument` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` \u2014 serve the corresponding IMDS HTTP path.",
       "acceptance": "Call `/latest/` metadata routes over HTTP. Check IMDSv2 token issuance, credential and identity paths, expiry, and instance isolation."
     },
     "inspector2": {
@@ -1084,8 +1105,8 @@
       "title": "OpenSearch Service",
       "state": "Runtime decision required",
       "slice": "create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls.",
-      "features": "- [ ] Management — Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime — Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence — Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features — Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
-      "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account’s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
+      "features": "- [ ] Management \u2014 Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime \u2014 Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence \u2014 Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features \u2014 Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
+      "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account\u2019s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
       "acceptance": "Create a domain with an AWS SDK, wait until available, index and search through\nthe returned endpoint, restart, and delete. Verify index isolation, unsupported\nconfiguration errors, failed launch cleanup, memory/port limits, tags, and\nmanagement response parity against AWS captures."
     },
     "organizations": {
@@ -1105,7 +1126,7 @@
       "title": "RDS",
       "state": "Runtime decision required",
       "slice": "create a PostgreSQL DB instance, obtain its endpoint, connect to a real local database, and delete it through RDS-style management calls.",
-      "features": "- [ ] Management — `CreateDBInstance`, `DescribeDBInstances`, `ModifyDBInstance`, `DeleteDBInstance`, and tag/list operations for a single supported PostgreSQL engine/version family. Validate identifier, size, credentials, storage, and delete options.\n- [ ] Runtime — Start one isolated PostgreSQL container per instance or a safely isolated shared engine; allocate a stable reachable host/port and persist the instance-to-runtime mapping. Health checks drive creating → available → deleting state.\n- [ ] Data lifecycle — Decide whether a persistent TinyStack restart reconnects to the same database volume. Delete removes runtime and data unless a documented retained snapshot option is chosen.\n- [ ] Later features — Read replicas, snapshots/restore, parameter groups, subnet groups, failover, IAM database authentication, and non-PostgreSQL engines are separate slices.",
+      "features": "- [ ] Management \u2014 `CreateDBInstance`, `DescribeDBInstances`, `ModifyDBInstance`, `DeleteDBInstance`, and tag/list operations for a single supported PostgreSQL engine/version family. Validate identifier, size, credentials, storage, and delete options.\n- [ ] Runtime \u2014 Start one isolated PostgreSQL container per instance or a safely isolated shared engine; allocate a stable reachable host/port and persist the instance-to-runtime mapping. Health checks drive creating \u2192 available \u2192 deleting state.\n- [ ] Data lifecycle \u2014 Decide whether a persistent TinyStack restart reconnects to the same database volume. Delete removes runtime and data unless a documented retained snapshot option is chosen.\n- [ ] Later features \u2014 Read replicas, snapshots/restore, parameter groups, subnet groups, failover, IAM database authentication, and non-PostgreSQL engines are separate slices.",
       "integration": "Management records are account/region-scoped, but SQL data lives in the\nunderlying engine. The Docker/runtime adapter owns container, volume, port,\nstartup, and shutdown operations; the RDS provider owns AWS validation and\nstate transitions. Never run container operations within a store transaction.\nCreate must either publish a usable endpoint or end in a visible failure state\nwith cleanup. A remote Docker daemon may make `localhost` endpoints unusable;\nendpoint selection is part of runtime configuration.",
       "acceptance": "Create an instance with the AWS SDK, wait for availability, connect through\nPostgreSQL, create and read a table, restart TinyStack, then delete and verify\ncleanup. Test duplicate identifiers, invalid credentials/options, two accounts\nwith the same ID, failed engine startup, port allocation, and graceful shutdown.\nCompare RDS management Query responses with AWS fixtures."
     },

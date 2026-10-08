@@ -111,6 +111,7 @@ nav:
           - "EKS": services/eks.md
           - "Lambda": services/lambda.md
       - "Configuration and operations":
+          - "Cloud Control API": services/cloudcontrol.md
           - "CloudFormation": services/cloudformation.md
           - "CloudWatch Logs": services/logs.md
           - "CloudWatch metrics and alarms": services/cloudwatch.md
@@ -175,7 +176,6 @@ nav:
           - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md
           - "Bedrock Agents": roadmap/services/bedrock-agent.md
           - "Bedrock Runtime": roadmap/services/bedrock-runtime.md
-          - "Cloud Control API": roadmap/services/cloudcontrol.md
           - "Cloud Map": roadmap/services/servicediscovery.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
           - "CloudTrail": roadmap/services/cloudtrail.md
