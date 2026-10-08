@@ -41,6 +41,25 @@ Implement its backend inventory first, add catalogue metadata and an appropriate
 and table components. Keep account/region and error details visible. Verify loading, empty states, paging/filtering,
 and the diagnostic links against a running server.
 
+## Console layout
+
+The console opens with an AWS-style dark shell, orange primary actions, and a dashboard of recently visited
+services, getting-started links, server health, scoped resource counts and recent requests. **Add widgets** selects
+which cards to show; **Reset to default layout** restores all cards. Widget visibility, service visit history and
+display settings are stored in the browser. The display menu supports light mode and compact density.
+The shortcut strip opens recently visited and common available services. **All services** opens `/services`,
+which retains the categorized service catalogue and resource counts. Health and request cards show actual local
+server data; error totals refer to the retained request log.
+
+## Account and Region selection
+
+The shared top bar provides account and Region menus. Choose a known scope from the menu or use
+**Switch account** / **Switch Region** to enter another valid account ID or Region. Selections are remembered
+in browser storage across services and reloads; explicit account/Region values in a resource link take precedence.
+Switching scope returns to the service's resource list. IAM, Route 53 and CloudFront display **Global** and retain
+the selected Region for the next regional service. Service inventory tables use the selected account and Region,
+including global resources in the selected account. The all-resource and diagnostic pages remain server-wide.
+
 ## IAM management
 
 `/services/iam` uses dedicated IAM navigation, account-wide lists, creation forms and detail tabs.
@@ -74,7 +93,7 @@ Follow [Cloudscape](https://cloudscape.design/) for console components and use t
 
 ## S3 management
 
-`/services/s3` provides account/Region selection, a bucket table, creation and empty/delete dialogs,
+`/services/s3` uses the shared top-bar account/Region selection and provides a bucket table, creation and empty/delete dialogs,
 and bucket tabs for objects, properties, permissions and management. Resource inventory links open this view.
 Objects use delimiter-based folder navigation and server-side prefix filtering within the current folder, with 100 entries per page.
 Deleting a selected folder removes its current objects recursively; older versions remain.

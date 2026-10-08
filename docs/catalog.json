@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "Categorized service catalog with AWS icons, resource inventory/details, IAM and S3 management workflows, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM and S3 management workflows, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
