@@ -48,6 +48,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
@@ -95,6 +96,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/pipes"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
@@ -223,6 +225,9 @@ func newStartCommand() *cobra.Command {
 			firehoses := firehose.New(store, streams, deliveries, logger)
 			// Stop ends the flusher, which writes to the store.
 			defer firehoses.Stop()
+			pipelines := pipes.New(store, queues, streams, tables.Streams(), logger)
+			// Stop ends the pipe runner, which writes to the store.
+			defer pipelines.Stop()
 			monitoring := cloudwatch.New(store, logger)
 			defer monitoring.Stop()
 			dns := route53.New(store)
@@ -284,6 +289,7 @@ func newStartCommand() *cobra.Command {
 				elbv2api.Descriptor(balancers),
 				acmapi.Descriptor(acm.New(store)),
 				firehoseapi.Descriptor(firehoses),
+				pipesapi.Descriptor(pipelines),
 				cloudwatchapi.Descriptor(monitoring),
 				cloudformationapi.Descriptor(stacks),
 				sesv2api.Descriptor(email),
@@ -300,6 +306,8 @@ func newStartCommand() *cobra.Command {
 			caller := catalog.NewCaller(services...)
 			workflows.UseCaller(caller)
 			firehoses.UseCaller(caller)
+			// Pipes enrich and deliver to Lambda, SQS, SNS, EventBridge, Step Functions, and Kinesis.
+			pipelines.UseCaller(caller)
 			monitoring.UseCaller(caller)
 			dns.UseCaller(caller)
 			timers.UseCaller(caller)
@@ -386,6 +394,7 @@ func newStartCommand() *cobra.Command {
 			server.RegisterOnShutdown(secrets.Stop)
 			server.RegisterOnShutdown(workflows.Stop)
 			server.RegisterOnShutdown(firehoses.Stop)
+			server.RegisterOnShutdown(pipelines.Stop)
 			server.RegisterOnShutdown(monitoring.Stop)
 			server.RegisterOnShutdown(timers.Stop)
 			server.RegisterOnShutdown(scaling.Stop)
