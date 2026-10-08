@@ -24,6 +24,7 @@ import (
 	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
+	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
@@ -73,6 +74,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/appsync"
 	"github.com/amjadjibon/tinystack/internal/services/athena"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
+	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
@@ -250,6 +252,11 @@ func newStartCommand() *cobra.Command {
 				request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
 				cfg.Identity.Mode == config.IdentityVerify,
 			)
+			control, err := cloudcontrol.New(store)
+			if err != nil {
+				return err
+			}
+
 			stacks := cloudformation.New(store, logger)
 			// Stop ends the stack runner, which writes to the store.
 			defer stacks.Stop()
@@ -296,6 +303,7 @@ func newStartCommand() *cobra.Command {
 				firehoseapi.Descriptor(firehoses),
 				pipesapi.Descriptor(pipelines),
 				cloudwatchapi.Descriptor(monitoring),
+				cloudcontrolapi.Descriptor(control),
 				cloudformationapi.Descriptor(stacks),
 				sesapi.Descriptor(ses.New(email)),
 				sesv2api.Descriptor(email),
@@ -323,6 +331,7 @@ func newStartCommand() *cobra.Command {
 			caches.UseCaller(caller)
 			// CloudFormation manages stack resources with the other
 			// services' operations.
+			control.UseCaller(caller)
 			stacks.UseCaller(caller)
 			// Subscription filters deliver to Lambda, Kinesis, and Firehose.
 			logGroups.UseCaller(caller)

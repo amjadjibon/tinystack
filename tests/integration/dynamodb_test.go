@@ -28,6 +28,7 @@ import (
 	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
+	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
@@ -76,6 +77,7 @@ import (
 	graphqlapis "github.com/amjadjibon/tinystack/internal/services/appsync"
 	queryengine "github.com/amjadjibon/tinystack/internal/services/athena"
 	scalinggroups "github.com/amjadjibon/tinystack/internal/services/autoscaling"
+	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	cdn "github.com/amjadjibon/tinystack/internal/services/cloudfront"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
@@ -208,6 +210,11 @@ func serverStore(
 	balancers := loadbalancers.New(store, logger)
 	tasks := orchestration.New(store)
 	caches := cacheservice.New(store)
+	control, err := cloudcontrol.New(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	stacks := cloudformation.New(store, logger)
 	mail := email.New(store, deliveries)
 	identityPools := identitypools.New(store, userPools, roles)
@@ -255,6 +262,7 @@ func serverStore(
 		firehoseapi.Descriptor(firehoses),
 		pipesapi.Descriptor(pipes),
 		cloudwatchapi.Descriptor(monitoring),
+		cloudcontrolapi.Descriptor(control),
 		cloudformationapi.Descriptor(stacks),
 		sesapi.Descriptor(ses.New(mail)),
 		sesv2api.Descriptor(mail),
@@ -279,6 +287,7 @@ func serverStore(
 	scaling.UseCaller(caller)
 	balancers.UseCaller(caller)
 	caches.UseCaller(caller)
+	control.UseCaller(caller)
 	stacks.UseCaller(caller)
 	logGroups.UseCaller(caller)
 	tables.UseCaller(caller)
