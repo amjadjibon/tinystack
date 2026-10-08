@@ -2017,6 +2017,96 @@
       ]
     }
   },
+  "cloudcontrol": {
+    "operations": [
+      "CreateResource",
+      "GetResource",
+      "UpdateResource",
+      "DeleteResource",
+      "ListResources",
+      "GetResourceRequestStatus",
+      "ListResourceRequests"
+    ],
+    "shapes": {
+      "CreateResourceInput": [
+        "TypeName",
+        "ClientToken",
+        "DesiredState"
+      ],
+      "CreateResourceOutput": [
+        "ProgressEvent"
+      ],
+      "ProgressEvent": [
+        "TypeName",
+        "Identifier",
+        "RequestToken",
+        "Operation",
+        "OperationStatus",
+        "EventTime",
+        "ResourceModel",
+        "StatusMessage",
+        "ErrorCode"
+      ],
+      "GetResourceInput": [
+        "TypeName",
+        "Identifier"
+      ],
+      "GetResourceOutput": [
+        "TypeName",
+        "ResourceDescription"
+      ],
+      "ResourceDescription": [
+        "Identifier",
+        "Properties"
+      ],
+      "UpdateResourceInput": [
+        "TypeName",
+        "ClientToken",
+        "Identifier",
+        "PatchDocument"
+      ],
+      "UpdateResourceOutput": [
+        "ProgressEvent"
+      ],
+      "DeleteResourceInput": [
+        "TypeName",
+        "ClientToken",
+        "Identifier"
+      ],
+      "DeleteResourceOutput": [
+        "ProgressEvent"
+      ],
+      "ListResourcesInput": [
+        "TypeName",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListResourcesOutput": [
+        "TypeName",
+        "ResourceDescriptions",
+        "NextToken"
+      ],
+      "GetResourceRequestStatusInput": [
+        "RequestToken"
+      ],
+      "GetResourceRequestStatusOutput": [
+        "ProgressEvent"
+      ],
+      "ListResourceRequestsInput": [
+        "MaxResults",
+        "NextToken",
+        "ResourceRequestStatusFilter"
+      ],
+      "ResourceRequestStatusFilter": [
+        "Operations",
+        "OperationStatuses"
+      ],
+      "ListResourceRequestsOutput": [
+        "ResourceRequestStatusSummaries",
+        "NextToken"
+      ]
+    }
+  },
   "cloudformation": {
     "operations": [
       "CreateStack",
