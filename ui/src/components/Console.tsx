@@ -202,6 +202,9 @@ export type ConsoleLayoutProps = {
 	splitPanel?: ReactNode;
 	splitPanelOpen?: boolean;
 	onSplitPanelToggle?: (open: boolean) => void;
+	navigationItems?: SideNavigationProps.Item[];
+	navigationHeader?: { text: string; href: string };
+	activeHref?: string;
 };
 
 // ConsoleLayout is the AWS console page frame: side navigation, breadcrumbs,
@@ -213,6 +216,9 @@ export function ConsoleLayout({
 	splitPanel,
 	splitPanelOpen,
 	onSplitPanelToggle,
+	navigationItems,
+	navigationHeader,
+	activeHref,
 }: ConsoleLayoutProps) {
 	const follow = useFollow();
 	const { pathname } = useLocation();
@@ -232,9 +238,9 @@ export function ConsoleLayout({
 			onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
 			navigation={
 				<SideNavigation
-					header={{ href: "/", text: "TinyStack" }}
-					activeHref={pathname}
-					items={navigation(data?.services ?? [])}
+					header={navigationHeader ?? { href: "/", text: "TinyStack" }}
+					activeHref={activeHref ?? pathname}
+					items={navigationItems ?? navigation(data?.services ?? [])}
 					onFollow={follow}
 				/>
 			}

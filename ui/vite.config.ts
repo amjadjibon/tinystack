@@ -9,7 +9,9 @@ const tinystack = process.env.TINYSTACK_URL ?? "http://127.0.0.1:4566";
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
-	server: { proxy: { "/_tinystack": tinystack } },
+	server: {
+		proxy: { "/_tinystack": { target: tinystack, changeOrigin: false } },
+	},
 	ssr: { noExternal: [/^@cloudscape-design\//] },
 	plugins: [devtools(), tanstackStart({ spa: { enabled: true } }), viteReact()],
 });

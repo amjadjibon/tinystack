@@ -1,4 +1,4 @@
-// The console only reads and clears TinyStack's own /_tinystack/ endpoints.
+// The console uses TinyStack's own /_tinystack/ endpoints.
 // In development Vite proxies them to the running server.
 
 export type Health = {
@@ -100,6 +100,31 @@ export function parseMetrics(text: string): MetricSeries[] {
 }
 
 export const api = {
+	actionCapabilities: async (): Promise<{
+		account: string;
+		region: string;
+		iam: boolean;
+		requires_signature: boolean;
+	}> => (await get("/actions")).json(),
+	action: async <T>(
+		service: string,
+		operation: string,
+		account: string,
+		input: Record<string, unknown>,
+	): Promise<T> => {
+		const response = await fetch(`${base}/actions`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ service, operation, account, input }),
+		});
+		const body = await response.json();
+		if (!response.ok) {
+			throw new Error(
+				`${body.code}: ${body.message}${body.request_id ? ` (Request ID: ${body.request_id})` : ""}`,
+			);
+		}
+		return body.output;
+	},
 	health: async (): Promise<Health> => (await get("/health")).json(),
 	resources: () => list<Resource>("/resources", "resources"),
 	requests: () => list<RequestRecord>("/requests", "requests"),

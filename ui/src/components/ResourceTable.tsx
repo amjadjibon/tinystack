@@ -14,11 +14,15 @@ import {
 } from "@cloudscape-design/components";
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
+import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { useFollow } from "#/lib/useFollow";
 import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "iam" && iamKinds.includes(r.type as IAMKind)) {
+		return iamHref(r.type as IAMKind, r.account, r.name);
+	}
 	const search = new URLSearchParams({
 		type: r.type,
 		name: r.name,
