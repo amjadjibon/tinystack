@@ -147,6 +147,10 @@
       "path": "codegen/sdk-codegen/aws-models/secrets-manager.json",
       "sha256": "b1bce4d92db3876e6811dd5900a26e4b6b9af15833425dc7a07a5e23886fa886"
     },
+    "ses": {
+      "path": "codegen/sdk-codegen/aws-models/ses.json",
+      "sha256": "fe57af14c0cb78e4886218f5d39bb199bbe490a0dd3f35d2509523a3c1442239"
+    },
     "sesv2": {
       "path": "codegen/sdk-codegen/aws-models/sesv2.json",
       "sha256": "d7bbdda897ee0d26c9a8f04cc7d0de71ea6de2215cf02f8a342cbfe2ecca9250"
