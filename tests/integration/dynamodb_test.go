@@ -52,6 +52,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
@@ -93,6 +94,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	taggingapi "github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	zones "github.com/amjadjibon/tinystack/internal/services/route53"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	schedules "github.com/amjadjibon/tinystack/internal/services/scheduler"
@@ -202,6 +204,7 @@ func serverStore(
 	stacks := cloudformation.New(store, logger)
 	mail := email.New(store, deliveries)
 	identityPools := identitypools.New(store, userPools, roles)
+	resourceTags := taggingapi.New()
 	catalogService := datacatalog.New(store)
 	queries := queryengine.New(store, catalogService, objects)
 	devices := things.New(store, deliveries, logger)
@@ -251,6 +254,7 @@ func serverStore(
 		iotapi.Descriptor(devices),
 		iotdataplaneapi.Descriptor(devices.DataPlane()),
 		iotjobsdataplaneapi.Descriptor(devices.JobsDataPlane()),
+		resourcegroupstaggingapiapi.Descriptor(resourceTags),
 	}
 	caller := catalog.NewCaller(services...)
 	devices.UseCaller(caller)
@@ -270,6 +274,7 @@ func serverStore(
 	graphQL.UseCaller(caller)
 	mail.UseCaller(caller)
 	identityPools.UseCaller(caller)
+	resourceTags.UseCaller(caller)
 	h, err := gateway.New(cfg, logger, services...)
 	if err != nil {
 		t.Fatal(err)
