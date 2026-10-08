@@ -21,6 +21,8 @@ import (
 
 const consoleIAM = "iam"
 
+const consoleS3 = "s3"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -37,13 +39,32 @@ var consoleIAMOperations = strings.Fields(`
 	RemoveRoleFromInstanceProfile ListInstanceProfilesForRole
 `)
 
+var consoleS3Operations = strings.Fields(`
+	CreateBucket DeleteBucket HeadBucket ListBuckets
+	ListObjectsV2 ListObjectVersions HeadObject GetObject PutObject CopyObject DeleteObject DeleteObjects
+	ListMultipartUploads AbortMultipartUpload
+	GetBucketVersioning PutBucketVersioning GetBucketTagging PutBucketTagging DeleteBucketTagging
+	GetObjectTagging PutObjectTagging DeleteObjectTagging
+	GetBucketPolicy PutBucketPolicy DeleteBucketPolicy
+	GetBucketCors PutBucketCors DeleteBucketCors
+	GetBucketEncryption PutBucketEncryption DeleteBucketEncryption
+	GetPublicAccessBlock PutPublicAccessBlock DeletePublicAccessBlock
+	GetBucketOwnershipControls PutBucketOwnershipControls DeleteBucketOwnershipControls
+	GetBucketLifecycleConfiguration PutBucketLifecycleConfiguration DeleteBucketLifecycle
+	GetBucketWebsite PutBucketWebsite DeleteBucketWebsite
+	GetBucketNotificationConfiguration PutBucketNotificationConfiguration
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
+
+var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
 
 type consoleAction struct {
 	Input     map[string]any `json:"input"`
 	Service   string         `json:"service"`
 	Operation string         `json:"operation"`
 	Account   string         `json:"account"`
+	Region    string         `json:"region,omitempty"`
 }
 
 func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
@@ -52,9 +73,10 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if r.Method == http.MethodGet && r.URL.RawQuery == "" {
 		_, iam := s.services[consoleIAM]
+		_, s3 := s.services[consoleS3]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
-			consoleIAM: iam, "requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
+			consoleIAM: iam, consoleS3: s3, "requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
 	}
@@ -112,15 +134,28 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if in.Service != consoleIAM || c.service == nil || !slices.Contains(consoleIAMOperations, in.Operation) {
+	operations := consoleIAMOperations
+	if in.Service == consoleS3 {
+		operations = consoleS3Operations
+	}
+
+	c.service = s.services[in.Service]
+	if (in.Service != consoleIAM && in.Service != consoleS3) || c.service == nil ||
+		!slices.Contains(operations, in.Operation) {
 		s.consoleFail(w, c, awserror.New("UnknownOperationException",
 			"This operation is not available in the console."))
 		return
 	}
 
 	c.meta.Operation = in.Operation
+	c.meta.Service = in.Service
 	if !consoleAccount.MatchString(in.Account) || in.Input == nil {
 		s.consoleFail(w, c, awserror.Validation("A 12-digit account and an input object are required."))
+		return
+	}
+
+	if in.Service == consoleS3 && !consoleRegion.MatchString(in.Region) {
+		s.consoleFail(w, c, awserror.Validation("S3 console actions require a valid region."))
 		return
 	}
 
@@ -142,19 +177,28 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if signedService != consoleIAM || c.meta.AccountID != in.Account {
+		if signedService != in.Service || c.meta.AccountID != in.Account ||
+			(in.Service == consoleS3 && c.meta.Region != in.Region) {
 			s.consoleFail(w, c, &awserror.Error{
-				Code: accessDenied, Message: "The action account must match credentials signed for IAM.",
+				Code: accessDenied, Message: "The action scope must match the signed service, account and region.",
 				StatusCode: http.StatusForbidden,
 			})
 			return
 		}
 	} else {
 		c.meta.AccountID = in.Account
+		if in.Service == consoleS3 {
+			c.meta.Region = in.Region
+		}
 	}
 
 	c.meta.Protocol = "console"
-	output, err := s.consoleCaller.Call(request.WithMetadata(r.Context(), c.meta), in.Service, in.Operation, in.Input)
+	caller := s.consoleCaller
+	if in.Service == consoleS3 {
+		caller = caller.Base64Blobs()
+	}
+
+	output, err := caller.Call(request.WithMetadata(r.Context(), c.meta), in.Service, in.Operation, in.Input)
 	if err != nil {
 		s.consoleFail(w, c, err)
 		return

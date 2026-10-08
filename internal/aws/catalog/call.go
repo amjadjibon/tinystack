@@ -23,7 +23,8 @@ type Caller struct {
 	services map[string]*Service
 	// lenient takes text for numbers and booleans, and numbers and booleans
 	// for text, as CloudFormation templates write them.
-	lenient bool
+	lenient     bool
+	base64Blobs bool
 }
 
 // NewCaller returns a Caller for services, found by their names.
@@ -39,7 +40,15 @@ func NewCaller(services ...Service) *Caller {
 // Lenient returns a Caller for the same services that converts scalars as
 // CloudFormation does: "5" sets a number, "true" a boolean, and 5 or true a
 // string.
-func (c *Caller) Lenient() *Caller { return &Caller{services: c.services, lenient: true} }
+func (c *Caller) Lenient() *Caller {
+	return &Caller{services: c.services, lenient: true, base64Blobs: c.base64Blobs}
+}
+
+// Base64Blobs returns a caller that encodes and decodes every blob as base64,
+// so JSON transports can round-trip binary data without confusing it with text.
+func (c *Caller) Base64Blobs() *Caller {
+	return &Caller{services: c.services, lenient: c.lenient, base64Blobs: true}
+}
 
 // Resources lists the resources of every service the caller reaches, in every
 // account and region.
@@ -63,7 +72,8 @@ func (c *Caller) Call(ctx context.Context, service, operation string, params map
 	}
 
 	input := op.NewInput()
-	if err := (assigner{lenient: c.lenient}).assign(reflect.ValueOf(input).Elem(), params, operation); err != nil {
+	if err := (assigner{lenient: c.lenient, base64Blobs: c.base64Blobs}).
+		assign(reflect.ValueOf(input).Elem(), params, operation); err != nil {
 		return nil, awserror.Validation("%s", err.Error())
 	}
 
@@ -72,7 +82,7 @@ func (c *Caller) Call(ctx context.Context, service, operation string, params map
 		return nil, err
 	}
 
-	out, _ := export(reflect.ValueOf(output)).(map[string]any)
+	out, _ := export(reflect.ValueOf(output), c.base64Blobs).(map[string]any)
 	if out == nil {
 		out = map[string]any{}
 	}
@@ -83,7 +93,7 @@ func (c *Caller) Call(ctx context.Context, service, operation string, params map
 var timeType = reflect.TypeFor[time.Time]()
 
 // assigner sets generated values from JSON-like ones.
-type assigner struct{ lenient bool }
+type assigner struct{ lenient, base64Blobs bool }
 
 // assign sets dst, a generated type, from a JSON-like value.
 func (a assigner) assign(dst reflect.Value, src any, path string) error {
@@ -122,7 +132,7 @@ func (a assigner) assign(dst reflect.Value, src any, path string) error {
 		}
 	case reflect.Slice:
 		if dst.Type().Elem().Kind() == reflect.Uint8 {
-			return assignBlob(dst, src, mismatch)
+			return assignBlob(dst, src, mismatch, a.base64Blobs)
 		}
 
 		list, ok := src.([]any)
@@ -236,7 +246,22 @@ func assignScalar(dst reflect.Value, src any, mismatch error) error {
 
 // assignBlob takes a blob as text, or as the JSON of any other value, as
 // Step Functions passes a Lambda payload.
-func assignBlob(dst reflect.Value, src any, mismatch error) error {
+func assignBlob(dst reflect.Value, src any, mismatch error, base64Blobs bool) error {
+	if base64Blobs {
+		text, ok := src.(string)
+		if !ok {
+			return mismatch
+		}
+
+		data, err := base64.StdEncoding.DecodeString(text)
+		if err != nil {
+			return fmt.Errorf("invalid base64 blob: %w", err)
+		}
+
+		dst.SetBytes(data)
+		return nil
+	}
+
 	switch v := src.(type) {
 	case string:
 		dst.SetBytes([]byte(v))
@@ -275,14 +300,14 @@ func assignTime(dst reflect.Value, src any, mismatch error) error {
 // export renders a generated value as a JSON-like value keyed by Go field
 // names, leaving out unset members. Blobs become text when they are UTF-8,
 // and base64 otherwise.
-func export(v reflect.Value) any {
+func export(v reflect.Value, base64Blobs bool) any {
 	switch v.Kind() {
 	case reflect.Pointer, reflect.Interface:
 		if v.IsNil() {
 			return nil
 		}
 
-		return export(v.Elem())
+		return export(v.Elem(), base64Blobs)
 	case reflect.Struct:
 		if v.Type() == timeType {
 			t, _ := v.Interface().(time.Time)
@@ -296,7 +321,7 @@ func export(v reflect.Value) any {
 				continue
 			}
 
-			if e := export(v.Field(i)); e != nil {
+			if e := export(v.Field(i), base64Blobs); e != nil {
 				out[f.Name] = e
 			}
 		}
@@ -308,7 +333,7 @@ func export(v reflect.Value) any {
 		}
 
 		if v.Type().Elem().Kind() == reflect.Uint8 {
-			if b := v.Bytes(); utf8.Valid(b) {
+			if b := v.Bytes(); !base64Blobs && utf8.Valid(b) {
 				return string(b)
 			}
 
@@ -317,7 +342,7 @@ func export(v reflect.Value) any {
 
 		out := make([]any, v.Len())
 		for i := range out {
-			out[i] = export(v.Index(i))
+			out[i] = export(v.Index(i), base64Blobs)
 		}
 
 		return out
@@ -328,7 +353,7 @@ func export(v reflect.Value) any {
 
 		out := map[string]any{}
 		for _, k := range v.MapKeys() {
-			out[k.String()] = export(v.MapIndex(k))
+			out[k.String()] = export(v.MapIndex(k), base64Blobs)
 		}
 
 		return out
