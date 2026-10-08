@@ -582,8 +582,7 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   through `catalog.Resources`), and it reports the caller's account and Region (global resources, which have no
   Region, to us-east-1). GetResources and the key and value listings report tagged resources only; TagResources and
   UntagResources find each ARN in that listing and call its service's own tag operations (`tag.go`'s `taggers`, by
-  service name; S3 replaces the bucket's whole tag set), reporting per-resource errors in `FailedResourcesMap`. EC2
-  has no inventory, so its resources are not found.
+  service name; S3 replaces the bucket's whole tag set), reporting per-resource errors in `FailedResourcesMap`.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for

@@ -21,7 +21,6 @@ See the [implemented feature catalogue](catalogue.md#resource-groups-tagging-api
 
 ## Limitations and future work
 
-- EC2 resources are not found, because EC2 lists no resource inventory.
 - Resources whose tags were all removed are not reported, unlike AWS's previously tagged resources.
 - No compliance details, tag policies, report creation or TagsPerResource limits.
 - CloudFormation stacks, ElastiCache and Auto Scaling resources cannot be tagged through this API.

@@ -65,6 +65,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 - Route tables, network ACLs, VPC endpoints and derived network interfaces.
 - Key pairs, instance records, instance profile associations and launch templates.
 - Fixed regional image catalogue and tags.
+- Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags.
 
 [Supported operations](ec2.md#supported-operations) · [Limitations](ec2.md#limitations-and-future-work)
 

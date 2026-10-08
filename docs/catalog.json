@@ -299,7 +299,8 @@
         "VPCs, subnets, security groups, internet/NAT gateways and Elastic IPs",
         "Route tables, network ACLs, VPC endpoints and derived network interfaces",
         "Key pairs, instance records, instance profile associations and launch templates",
-        "Fixed regional image catalogue and tags"
+        "Fixed regional image catalogue and tags",
+        "Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags"
       ],
       "gaps": [
         "Instances are records; no virtual machines boot and no guest software runs",
@@ -801,7 +802,6 @@
         "Global IAM and Route 53 resources are reported to us-east-1 callers"
       ],
       "gaps": [
-        "EC2 resources are not found, because EC2 lists no resource inventory",
         "Resources whose tags were all removed are not reported, unlike AWS's previously tagged resources",
         "No compliance details, tag policies, report creation or TagsPerResource limits",
         "CloudFormation stacks, ElastiCache and Auto Scaling resources cannot be tagged through this API"
