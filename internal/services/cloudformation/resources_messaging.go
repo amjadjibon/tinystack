@@ -9,10 +9,10 @@ import (
 // queueAttributes are the AWS::SQS::Queue properties that are queue
 // attributes, with the values SQS's defaults restore when one is removed.
 var queueAttributes = map[string]string{
-	memberContentBasedDeduplication: textFalse, "DeduplicationScope": "", "DelaySeconds": "0",
-	"FifoThroughputLimit": "", "KmsDataKeyReusePeriodSeconds": "", memberKmsMasterKeyID: "",
-	"MaximumMessageSize": "262144", "MessageRetentionPeriod": "345600", "ReceiveMessageWaitTimeSeconds": "0",
-	"RedriveAllowPolicy": "", "RedrivePolicy": "", "SqsManagedSseEnabled": "", "VisibilityTimeout": "30",
+	memberContentBasedDeduplication: textFalse, "DeduplicationScope": "", propertyDelaySeconds: "0",
+	"FifoThroughputLimit": "", propertyKmsReusePeriod: "", memberKmsMasterKeyID: "",
+	propertyMaximumMessageSize: "262144", propertyMessageRetention: "345600", propertyReceiveWait: "0",
+	propertyRedriveAllowPolicy: "", propertyRedrivePolicy: "", propertyManagedSse: "", propertyVisibilityTimeout: "30",
 }
 
 // topicAttributes are the AWS::SNS::Topic properties that are topic
@@ -26,16 +26,19 @@ var topicAttributes = map[string]string{
 // subscriptionAttributes are the AWS::SNS::Subscription properties that are
 // subscription attributes.
 var subscriptionAttributes = map[string]string{
-	"RawMessageDelivery": textFalse, "FilterPolicy": "", "FilterPolicyScope": "MessageAttributes", "RedrivePolicy": "",
+	"RawMessageDelivery":  textFalse,
+	"FilterPolicy":        "",
+	"FilterPolicyScope":   "MessageAttributes",
+	propertyRedrivePolicy: "",
 }
 
 func init() {
 	register("AWS::SQS::Queue", &resourceType{
 		name: memberQueueName,
 		properties: append(slices.Sorted(maps.Keys(queueAttributes)),
-			memberQueueName, "FifoQueue", memberTags),
+			memberQueueName, propertyFifoQueue, memberTags),
 		attributes: []string{memberArn, memberQueueName, memberQueueURL},
-		replace:    []string{memberQueueName, "FifoQueue"},
+		replace:    []string{memberQueueName, propertyFifoQueue},
 		create:     createQueue,
 		update:     updateQueue,
 		remove: func(ctx context.Context, c *client, r *resource) error {
@@ -106,7 +109,7 @@ func queueAttributeValues(p props) map[string]any {
 
 func createQueue(ctx context.Context, c *client, p props) (physical string, attributes map[string]any, err error) {
 	name := p.str(memberQueueName)
-	fifo := p.truth("FifoQueue")
+	fifo := p.truth(propertyFifoQueue)
 	if name == "" {
 		name = c.generate(80)
 		if fifo {
@@ -116,7 +119,7 @@ func createQueue(ctx context.Context, c *client, p props) (physical string, attr
 
 	attributes = queueAttributeValues(p)
 	if fifo {
-		attributes["FifoQueue"] = textTrue
+		attributes[propertyFifoQueue] = textTrue
 	}
 
 	params := map[string]any{memberQueueName: name, memberAttributes: attributes}

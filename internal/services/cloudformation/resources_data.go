@@ -8,7 +8,7 @@ import (
 func init() {
 	register("AWS::S3::Bucket", &resourceType{
 		name:       memberBucketName,
-		properties: []string{memberBucketName, memberTags, "VersioningConfiguration"},
+		properties: []string{memberBucketName, memberTags, propertyVersioning},
 		attributes: []string{memberArn, "DomainName", "DualStackDomainName", "RegionalDomainName", "WebsiteURL"},
 		replace:    []string{memberBucketName},
 		create:     createBucket,
@@ -167,17 +167,17 @@ func configureBucket(ctx context.Context, c *client, name string, old, p props) 
 		}
 	}
 
-	if !p.changed(old, "VersioningConfiguration") {
+	if !p.changed(old, propertyVersioning) {
 		return nil
 	}
 
 	status := "Suspended"
-	if v, ok := p["VersioningConfiguration"].(map[string]any); ok {
+	if v, ok := p[propertyVersioning].(map[string]any); ok {
 		status = scalarText(v["Status"])
 	}
 
 	_, err := c.call(ctx, "s3", "PutBucketVersioning", map[string]any{
-		memberBucket: name, "VersioningConfiguration": map[string]any{memberStatus: status},
+		memberBucket: name, propertyVersioning: map[string]any{memberStatus: status},
 	})
 	return err
 }

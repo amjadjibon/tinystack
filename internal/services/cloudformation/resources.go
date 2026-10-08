@@ -18,6 +18,18 @@ import (
 // Template keywords, and the member and property names several resource
 // types share.
 const (
+	propertyVersioning         = "VersioningConfiguration"
+	propertyFifoQueue          = "FifoQueue"
+	propertyDelaySeconds       = "DelaySeconds"
+	propertyKmsReusePeriod     = "KmsDataKeyReusePeriodSeconds"
+	propertyMaximumMessageSize = "MaximumMessageSize"
+	propertyMessageRetention   = "MessageRetentionPeriod"
+	propertyReceiveWait        = "ReceiveMessageWaitTimeSeconds"
+	propertyRedriveAllowPolicy = "RedriveAllowPolicy"
+	propertyRedrivePolicy      = "RedrivePolicy"
+	propertyManagedSse         = "SqsManagedSseEnabled"
+	propertyVisibilityTimeout  = "VisibilityTimeout"
+
 	keyCondition         = "Condition"
 	fnGetAtt             = "Fn::GetAtt"
 	fnSub                = "Fn::Sub"
