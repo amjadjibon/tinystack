@@ -145,6 +145,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: security,
 		icon: "secretsmanager",
 	},
+	ses: {
+		title: "Simple Email Service (v1)",
+		category: business,
+		icon: "sesv2",
+	},
 	sesv2: {
 		title: "Simple Email Service",
 		category: business,
