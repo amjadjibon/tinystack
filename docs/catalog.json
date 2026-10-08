@@ -788,6 +788,26 @@
       ],
       "execution": "Local behavior",
       "package": "iot"
+    },
+    "resourcegroupstaggingapi": {
+      "title": "Resource Groups Tagging API",
+      "category": "Configuration and operations",
+      "summary": "Find and tag resources across services by tag, resource type, or ARN.",
+      "features": [
+        "GetResources with tag filters, resource type filters, ARN lists and pagination",
+        "GetTagKeys and GetTagValues across the caller's account and Region",
+        "TagResources and UntagResources through each owning service's own tag operations, with per-resource failures",
+        "Reads every service's resource inventory; keeps no records of its own",
+        "Global IAM and Route 53 resources are reported to us-east-1 callers"
+      ],
+      "gaps": [
+        "EC2 resources are not found, because EC2 lists no resource inventory",
+        "Resources whose tags were all removed are not reported, unlike AWS's previously tagged resources",
+        "No compliance details, tag policies, report creation or TagsPerResource limits",
+        "CloudFormation stacks, ElastiCache and Auto Scaling resources cannot be tagged through this API"
+      ],
+      "execution": "Local behavior",
+      "package": "resourcegroupstaggingapi"
     }
   },
   "future": {
@@ -1055,12 +1075,6 @@
       "state": "Proposed",
       "slice": "Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`.",
       "features": "- [ ] `StartSigningJob`\n- [ ] `DescribeSigningJob`\n- [ ] `ListSigningJobs`\n- [ ] `PutSigningProfile`\n- [ ] `GetSigningProfile`"
-    },
-    "tagging": {
-      "title": "Resource Groups Tagging API",
-      "state": "Proposed",
-      "slice": "Implement `GetResources`, `GetTagKeys`, `GetTagValues`.",
-      "features": "- [ ] `GetResources`\n- [ ] `GetTagKeys`\n- [ ] `GetTagValues`\n- [ ] `TagResources`\n- [ ] `UntagResources`"
     },
     "transcribe": {
       "title": "Transcribe",

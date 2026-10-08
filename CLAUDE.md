@@ -130,7 +130,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**, **services/cognitoidentity**, **services/glue**, **services/athena**, **services/elasticache**, **services/iot**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**, **services/cognitoidentity**, **services/glue**, **services/athena**, **services/elasticache**, **services/iot**, **services/resourcegroupstaggingapi**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -577,6 +577,13 @@ registered types; `processed` renders the expansion for `GetTemplate`.
   connectivity into dotted fields, and evaluates the query language (`field:value` with `*`/`?` wildcards, quoted
   values, `[a TO b]`/`{a TO b}` ranges, `>`/`>=`/`<`/`<=`, AND or juxtaposition, OR, NOT, and parentheses);
   aggregations, Device Defender, and geolocation filters fail explicitly.
+  The Resource Groups Tagging API (`services/resourcegroupstaggingapi`) keeps no records: `UseCaller` hands it the
+  `catalog.Caller`, whose `Resources` lists every service's `catalog.Inventory` (as `/_tinystack/resources` does,
+  through `catalog.Resources`), and it reports the caller's account and Region (global resources, which have no
+  Region, to us-east-1). GetResources and the key and value listings report tagged resources only; TagResources and
+  UntagResources find each ARN in that listing and call its service's own tag operations (`tag.go`'s `taggers`, by
+  service name; S3 replaces the bucket's whole tag set), reporting per-resource errors in `FailedResourcesMap`. EC2
+  has no inventory, so its resources are not found.
 - **storage**: the `Store` interface runs serializable `View`/`Update` callback transactions. `Update` commits only if
   the callback succeeds and rolls back otherwise. Callbacks must not do external I/O, and handles must not escape the
   callback. `Keys(prefix)` returns the matching keys in order (staged writes included), so list operations ask for
@@ -604,7 +611,7 @@ of copying them into service pages or creating a parallel `docs/services/` desig
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
   XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, ECS, Cognito identity pools, Glue, and Athena over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, and EventBridge Scheduler over REST
-  JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, IoT, the IoT data plane, and the IoT Jobs data plane over REST JSON, MQTT clients over WebSocket, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
+  JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, IoT, the IoT data plane, and the IoT Jobs data plane over REST JSON, the Resource Groups Tagging API over JSON 1.1, MQTT clients over WebSocket, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
 - `tests/terraform` (`task test:terraform`, opt-in) applies, updates, and destroys `main.tf` with the real

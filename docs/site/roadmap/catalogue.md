@@ -46,7 +46,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [RDS](services/rds.md) | Runtime decision required | create a PostgreSQL DB instance, obtain its endpoint, connect to a real local database, and delete it through RDS-style management calls. |
 | [RDS Data API](services/rds-data.md) | Proposed | Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`. |
 | [Resource Groups](services/resource-groups.md) | Proposed | Implement `CreateGroup`, `GetGroup`, `DeleteGroup`. |
-| [Resource Groups Tagging API](services/tagging.md) | Proposed | Implement `GetResources`, `GetTagKeys`, `GetTagValues`. |
 | [S3 Files](services/s3files.md) | Proposed | Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`. |
 | [S3 Tables](services/s3tables.md) | Proposed | Implement `CreateTableBucket`, `ListTableBuckets`, `GetTableBucket`. |
 | [SES v1](services/ses.md) | Proposed | Implement `SendEmail`, `SendRawEmail`, `SendTemplatedEmail`. |
