@@ -889,7 +889,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		return nil, fmt.Errorf("profile selects no operations")
 	}
 
-	outputs := map[string]string{}
+	outputs, inputNames := map[string]string{}, map[string]string{}
 	inputs := map[string]bool{}
 	for _, op := range profile.Operations {
 		s := g.model.Shapes[prefix+op]
@@ -910,13 +910,19 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 			return nil, guardErr
 		}
 
+		g.roots[s.Input.Target], g.roots[s.Output.Target] = true, true
+		outputs[op], inputNames[op] = short(s.Output.Target), short(s.Input.Target)
+		ids := []string{s.Input.Target}
 		if s.Input.Target == unitShape {
-			return nil, fmt.Errorf("%s: operations without input are not supported", op)
+			// An operation without input takes an empty struct, as a unit output is one.
+			inputNames[op], ids = op+"Input", nil
+			if _, exists := g.model.Shapes[prefix+inputNames[op]]; exists {
+				return nil, fmt.Errorf("%s: unit input name collides with a model shape", op)
+			}
+
+			fmt.Fprintf(&g.out, "type %s struct{}\n\n", inputNames[op])
 		}
 
-		g.roots[s.Input.Target], g.roots[s.Output.Target] = true, true
-		outputs[op] = short(s.Output.Target)
-		ids := []string{s.Input.Target}
 		if s.Output.Target == unitShape {
 			outputs[op] = op + "Output"
 			if _, exists := g.model.Shapes[prefix+outputs[op]]; exists {
@@ -937,8 +943,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 
 	fmt.Fprintln(&g.out, "type API interface {")
 	for _, op := range profile.Operations {
-		s := g.model.Shapes[prefix+op]
-		fmt.Fprintf(&g.out, "%s(context.Context,*%s)(*%s,error)\n", op, short(s.Input.Target), outputs[op])
+		fmt.Fprintf(&g.out, "%s(context.Context,*%s)(*%s,error)\n", op, inputNames[op], outputs[op])
 	}
 
 	fmt.Fprintln(&g.out, "}")
@@ -987,9 +992,9 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 			g.sensitive(s.Input.Target, map[string]bool{}) || g.sensitive(s.Output.Target, map[string]bool{}),
 			anonymous(s.Traits),
 			bindings,
-			short(s.Input.Target),
+			inputNames[op],
 			op,
-			short(s.Input.Target),
+			inputNames[op],
 		)
 	}
 
