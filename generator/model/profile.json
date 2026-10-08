@@ -15986,5 +15986,266 @@
         "Source"
       ]
     }
+  },
+  "resourcegroups": {
+    "operations": [
+      "CreateGroup",
+      "GetGroup",
+      "DeleteGroup",
+      "UpdateGroup",
+      "ListGroups",
+      "GetGroupQuery",
+      "UpdateGroupQuery",
+      "GetGroupConfiguration",
+      "PutGroupConfiguration",
+      "ListGroupResources",
+      "ListGroupingStatuses",
+      "SearchResources",
+      "GetTags",
+      "Tag",
+      "Untag",
+      "GetAccountSettings",
+      "UpdateAccountSettings"
+    ],
+    "shapes": {
+      "CreateGroupInput": [
+        "Name",
+        "Description",
+        "ResourceQuery",
+        "Tags",
+        "Configuration",
+        "Criticality",
+        "Owner",
+        "DisplayName"
+      ],
+      "CreateGroupOutput": [
+        "Group",
+        "ResourceQuery",
+        "Tags",
+        "GroupConfiguration"
+      ],
+      "GetGroupInput": [
+        "GroupName",
+        "Group"
+      ],
+      "GetGroupOutput": [
+        "Group"
+      ],
+      "DeleteGroupInput": [
+        "GroupName",
+        "Group"
+      ],
+      "DeleteGroupOutput": [
+        "Group"
+      ],
+      "UpdateGroupInput": [
+        "GroupName",
+        "Group",
+        "Description",
+        "Criticality",
+        "Owner",
+        "DisplayName"
+      ],
+      "UpdateGroupOutput": [
+        "Group"
+      ],
+      "ListGroupsInput": [
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListGroupsOutput": [
+        "GroupIdentifiers",
+        "Groups",
+        "NextToken"
+      ],
+      "GetGroupQueryInput": [
+        "GroupName",
+        "Group"
+      ],
+      "GetGroupQueryOutput": [
+        "GroupQuery"
+      ],
+      "UpdateGroupQueryInput": [
+        "GroupName",
+        "Group",
+        "ResourceQuery"
+      ],
+      "UpdateGroupQueryOutput": [
+        "GroupQuery"
+      ],
+      "GetGroupConfigurationInput": [
+        "Group"
+      ],
+      "GetGroupConfigurationOutput": [
+        "GroupConfiguration"
+      ],
+      "PutGroupConfigurationInput": [
+        "Group",
+        "Configuration"
+      ],
+      "ListGroupResourcesInput": [
+        "GroupName",
+        "Group",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListGroupResourcesOutput": [
+        "Resources",
+        "ResourceIdentifiers",
+        "NextToken",
+        "QueryErrors"
+      ],
+      "ListGroupingStatusesInput": [
+        "Group",
+        "MaxResults",
+        "Filters",
+        "NextToken"
+      ],
+      "ListGroupingStatusesOutput": [
+        "Group",
+        "GroupingStatuses",
+        "NextToken"
+      ],
+      "SearchResourcesInput": [
+        "ResourceQuery",
+        "MaxResults",
+        "NextToken"
+      ],
+      "SearchResourcesOutput": [
+        "ResourceIdentifiers",
+        "NextToken",
+        "QueryErrors"
+      ],
+      "GetTagsInput": [
+        "Arn"
+      ],
+      "GetTagsOutput": [
+        "Arn",
+        "Tags"
+      ],
+      "TagInput": [
+        "Arn",
+        "Tags"
+      ],
+      "TagOutput": [
+        "Arn",
+        "Tags"
+      ],
+      "UntagInput": [
+        "Arn",
+        "Keys"
+      ],
+      "UntagOutput": [
+        "Arn",
+        "Keys"
+      ],
+      "GetAccountSettingsOutput": [
+        "AccountSettings"
+      ],
+      "UpdateAccountSettingsInput": [
+        "GroupLifecycleEventsDesiredStatus"
+      ],
+      "UpdateAccountSettingsOutput": [
+        "AccountSettings"
+      ],
+      "Group": [
+        "GroupArn",
+        "Name",
+        "Description",
+        "Criticality",
+        "Owner",
+        "DisplayName"
+      ],
+      "GroupIdentifier": [
+        "GroupName",
+        "GroupArn",
+        "Description",
+        "Criticality",
+        "Owner",
+        "DisplayName"
+      ],
+      "GroupQuery": [
+        "GroupName",
+        "ResourceQuery"
+      ],
+      "ResourceQuery": [
+        "Type",
+        "Query"
+      ],
+      "GroupConfiguration": [
+        "Configuration",
+        "ProposedConfiguration",
+        "Status",
+        "FailureReason"
+      ],
+      "GroupConfigurationItem": [
+        "Type",
+        "Parameters"
+      ],
+      "GroupConfigurationParameter": [
+        "Name",
+        "Values"
+      ],
+      "GroupFilter": [
+        "Name",
+        "Values"
+      ],
+      "ResourceFilter": [
+        "Name",
+        "Values"
+      ],
+      "ListGroupResourcesItem": [
+        "Identifier",
+        "Status"
+      ],
+      "ResourceIdentifier": [
+        "ResourceArn",
+        "ResourceType"
+      ],
+      "QueryError": [
+        "ErrorCode",
+        "Message"
+      ],
+      "GroupingStatusesItem": [
+        "ResourceArn",
+        "Action",
+        "Status",
+        "ErrorMessage",
+        "ErrorCode",
+        "UpdatedAt"
+      ],
+      "ListGroupingStatusesFilter": [
+        "Name",
+        "Values"
+      ],
+      "AccountSettings": [
+        "GroupLifecycleEventsDesiredStatus",
+        "GroupLifecycleEventsStatus",
+        "GroupLifecycleEventsStatusMessage"
+      ],
+      "BadRequestException": [
+        "Message"
+      ],
+      "NotFoundException": [
+        "Message"
+      ],
+      "ForbiddenException": [
+        "Message"
+      ],
+      "MethodNotAllowedException": [
+        "Message"
+      ],
+      "TooManyRequestsException": [
+        "Message"
+      ],
+      "InternalServerErrorException": [
+        "Message"
+      ],
+      "UnauthorizedException": [
+        "Message"
+      ]
+    }
   }
 }
