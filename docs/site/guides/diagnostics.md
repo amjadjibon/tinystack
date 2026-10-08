@@ -9,12 +9,27 @@ curl -fsS http://127.0.0.1:4566/_tinystack/deliveries
 Build with `task build` and open `http://127.0.0.1:4567` for the Cloudscape console. It shows resources,
 resource details, recent requests, deliveries and metrics from these same diagnostic handlers.
 
+Open **IAM** for account selection and dedicated user, user group, role and policy pages. Create and edit
+identities, attach or detach policies, manage group membership, edit trust policies and tags, and create,
+deactivate or delete access keys. A new access-key secret is shown once; copy it before closing the dialog.
+Policy edits create a new default version, and the policy versions tab lets you switch defaults or delete
+older versions. Deletion conflicts show the dependencies that must be removed first.
+
+IAM forms are available in the default `identity.mode: parse`. With `identity.mode: verify`, the console shows
+read-only IAM pages; use signed AWS CLI or SDK calls for management. TinyStack stores permission policies but
+does not evaluate them for general service access. Role pages manage EC2 instance profiles; OIDC providers use the AWS API.
+User creation can select groups, copy permissions from another user, or attach policies directly. Group creation selects
+users and policies together; role creation selects a trusted entity before permissions. Permission tables distinguish
+direct policies from inherited group policies.
+
 ## Endpoints
 
 | Method and path | Result |
 | --- | --- |
 | `GET /_tinystack/health` | Registered service list and health information |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
+| `GET /_tinystack/actions` | Console action capabilities and default account/region |
+| `POST /_tinystack/actions` | Selected IAM operations with an explicit account and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |

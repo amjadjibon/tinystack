@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "Categorized service catalog with AWS icons, resource inventory/details, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "Categorized service catalog with AWS icons, resource inventory/details, IAM management workflows, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -497,12 +497,15 @@
         "Roles, users, groups, membership and instance profiles",
         "Inline and managed policies and policy attachments",
         "OpenID Connect providers and access key lifecycle",
-        "Active IAM keys participate in gateway credential resolution"
+        "Active IAM keys participate in gateway credential resolution",
+        "IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions"
       ],
       "gaps": [
         "Permission policies are stored but not evaluated",
         "No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries",
-        "No access-key usage tracking"
+        "No access-key usage tracking",
+        "IAM console forms require parse mode; verify mode keeps the UI read-only and requires signed API requests",
+        "OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console"
       ],
       "execution": "Local behavior",
       "package": "iam"

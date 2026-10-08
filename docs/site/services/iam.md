@@ -24,6 +24,8 @@ See the [implemented feature catalogue](catalogue.md#iam) for this service's cap
 - Permission policies are stored but not evaluated.
 - No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries.
 - No access-key usage tracking.
+- IAM console forms require parse mode; verify mode keeps the UI read-only and requires signed API requests.
+- OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
