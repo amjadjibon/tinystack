@@ -1,192 +1,394 @@
 import {
-	Badge,
+	Alert,
 	Box,
-	ColumnLayout,
-	Container,
+	Button,
+	Checkbox,
 	ContentLayout,
-	Grid,
 	Header,
-	KeyValuePairs,
+	Icon,
 	Link,
+	Modal,
 	SpaceBetween,
 	StatusIndicator,
 } from "@cloudscape-design/components";
 import { createFileRoute } from "@tanstack/react-router";
+import { type ReactNode, useEffect, useState } from "react";
 import { ConsoleLayout } from "#/components/Console";
 import { RequestStatus } from "#/components/RequestStatus";
 import { ServiceIcon } from "#/components/ServiceIcon";
-import { api, type Resource } from "#/lib/api";
+import { api } from "#/lib/api";
 import { useHealth } from "#/lib/health";
-import { categories, service } from "#/lib/services";
+import { useScope } from "#/lib/scope";
+import { useServiceHistory } from "#/lib/serviceHistory";
+import { service } from "#/lib/services";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
 
 export const Route = createFileRoute("/")({ component: Home });
+const widgetLabels = {
+	recent: "Recently visited",
+	welcome: "Welcome to TinyStack",
+	health: "TinyStack health",
+	resources: "Resources",
+	requests: "Recent requests",
+};
+type WidgetID = keyof typeof widgetLabels;
+const defaults = Object.keys(widgetLabels) as WidgetID[];
+const layoutKey = "tinystack.console.home-widgets";
 
 function Home() {
 	const health = useHealth();
-	const resources = usePoll(api.resources);
+	const { inventory, account, region } = useScope();
 	const requests = usePoll(api.requests);
-
+	const recent = useServiceHistory().filter((name) =>
+		health.data?.services.includes(name),
+	);
+	const follow = useFollow();
+	const [visible, setVisible] = useState<WidgetID[]>(defaults);
+	const [draft, setDraft] = useState<WidgetID[] | null>(null);
+	useEffect(() => {
+		try {
+			const saved = JSON.parse(localStorage.getItem(layoutKey) ?? "null");
+			if (Array.isArray(saved))
+				setVisible(defaults.filter((id) => saved.includes(id)));
+		} catch {
+			/* The default layout works without saved preferences. */
+		}
+	}, []);
+	const saveLayout = (next: WidgetID[]) => {
+		setVisible(next);
+		try {
+			localStorage.setItem(layoutKey, JSON.stringify(next));
+		} catch {
+			/* Keep the session's layout. */
+		}
+	};
+	const resources = (inventory.data ?? []).filter(
+		(r) =>
+			r.account === account &&
+			(!r.region || r.region === "global" || r.region === region),
+	);
+	const errors = requests.data?.filter((r) => r.status >= 400).length;
+	const welcomeLinks = [
+		{
+			href: "/services",
+			icon: "grid-view" as const,
+			title: "Explore your services",
+			text: "Find the AWS services available on your local endpoint.",
+		},
+		{
+			href: "/resources",
+			icon: "folder" as const,
+			title: "Manage your resources",
+			text: "Browse resources, inspect their configuration, and open service consoles.",
+		},
+		{
+			href: "/requests",
+			icon: "command-prompt" as const,
+			title: "Inspect API requests",
+			text: "See API calls, responses, and errors as you develop.",
+		},
+	];
 	return (
 		<ConsoleLayout
 			contentType="dashboard"
-			breadcrumbs={[{ text: "Console Home", href: "/" }]}
+			breadcrumbs={[]}
+			navigationHeader={{ text: "Console home", href: "/" }}
+			navigationItems={[
+				{ type: "link", text: "All services", href: "/services" },
+				{ type: "link", text: "All resources", href: "/resources" },
+				{ type: "divider" },
+				{ type: "link", text: "Request inspector", href: "/requests" },
+				{ type: "link", text: "Deliveries", href: "/deliveries" },
+				{ type: "link", text: "Metrics", href: "/metrics" },
+			]}
 			content={
 				<ContentLayout
 					header={
 						<Header
 							variant="h1"
-							description="A local AWS endpoint for development and tests."
+							actions={
+								<SpaceBetween direction="horizontal" size="s">
+									<Button onClick={() => saveLayout(defaults)}>
+										Reset to default layout
+									</Button>
+									<Button
+										variant="primary"
+										iconName="add-plus"
+										onClick={() => setDraft([...visible])}
+									>
+										Add widgets
+									</Button>
+								</SpaceBetween>
+							}
 						>
-							Console Home
+							Console home
 						</Header>
 					}
 				>
-					<Grid
-						gridDefinition={[
-							{ colspan: 12 },
-							{ colspan: { default: 12, l: 8 } },
-							{ colspan: { default: 12, l: 4 } },
-						]}
-					>
-						<Container header={<Header variant="h2">Overview</Header>}>
-							<KeyValuePairs
-								columns={4}
-								items={[
-									{
-										label: "Status",
-										value: health.data ? (
-											<StatusIndicator>Running</StatusIndicator>
-										) : (
-											<StatusIndicator
-												type={health.error ? "error" : "loading"}
-											>
-												{health.error ? "Unreachable" : "Connecting"}
-											</StatusIndicator>
-										),
-									},
-									{ label: "Storage", value: health.data?.storage ?? "-" },
-									{
-										label: "Services",
-										value: health.data?.services.length ?? "-",
-									},
-									{ label: "Resources", value: resources.data?.length ?? "-" },
-								]}
-							/>
-						</Container>
-						<Services
-							names={health.data?.services ?? []}
-							resources={resources.data ?? []}
-						/>
-						<RecentRequests requests={requests.data ?? []} />
-					</Grid>
+					<div className="console-dashboard">
+						{visible.includes("recent") && (
+							<Widget
+								id="recent"
+								wide
+								action={
+									<Button href="/services" onFollow={follow}>
+										All services
+									</Button>
+								}
+							>
+								{recent.length ? (
+									<ul className="dashboard-service-list">
+										{recent.map((name) => (
+											<li key={name}>
+												<ServiceIcon name={name} size="large" />
+												<Link
+													href={`/services/${name}`}
+													onFollow={follow}
+													variant="primary"
+												>
+													{service(name).title}
+												</Link>
+											</li>
+										))}
+									</ul>
+								) : (
+									<div className="dashboard-empty">
+										<Icon name="history" size="large" />
+										<Box variant="p">
+											Your recently visited services appear here.
+										</Box>
+										<Link href="/services" onFollow={follow}>
+											Explore all services
+										</Link>
+									</div>
+								)}
+							</Widget>
+						)}
+						{visible.includes("welcome") && (
+							<Widget id="welcome">
+								<div className="dashboard-welcome">
+									{welcomeLinks.map((item) => (
+										<div key={item.href} className="dashboard-welcome-row">
+											<span className="dashboard-welcome-icon">
+												<Icon name={item.icon} size="large" />
+											</span>
+											<div>
+												<Link
+													href={item.href}
+													onFollow={follow}
+													variant="primary"
+												>
+													{item.title}
+												</Link>
+												<p>{item.text}</p>
+											</div>
+										</div>
+									))}
+								</div>
+							</Widget>
+						)}
+						{visible.includes("health") && (
+							<Widget
+								id="health"
+								footer={
+									<Link href="/metrics" onFollow={follow} variant="primary">
+										View metrics
+									</Link>
+								}
+							>
+								<div className="dashboard-health-row">
+									<span>Server status</span>
+									<StatusIndicator
+										type={
+											health.data
+												? "success"
+												: health.error
+													? "error"
+													: "loading"
+										}
+									>
+										{health.data
+											? "Running"
+											: health.error
+												? "Unreachable"
+												: "Connecting"}
+									</StatusIndicator>
+								</div>
+								<div className="dashboard-health-row">
+									<span>Available services</span>
+									<strong className="dashboard-number">
+										{health.data?.services.length ?? "—"}
+									</strong>
+								</div>
+								<div className="dashboard-health-row">
+									<span>Request errors</span>
+									<strong className="dashboard-number">{errors ?? "—"}</strong>
+									<small>In the retained request log</small>
+								</div>
+								<div className="dashboard-health-row">
+									<span>Storage</span>
+									<strong>{health.data?.storage ?? "—"}</strong>
+								</div>
+							</Widget>
+						)}
+						{visible.includes("resources") && (
+							<Widget
+								id="resources"
+								wide
+								action={
+									<Button href="/resources" onFollow={follow}>
+										View resources
+									</Button>
+								}
+							>
+								<p className="dashboard-description">
+									Resources in account {account || "…"} · {region || "…"},
+									including global services.
+								</p>
+								{inventory.error ? (
+									<Alert type="error">{inventory.error}</Alert>
+								) : (
+									<div className="dashboard-resource-counts">
+										<div>
+											<span>Total resources</span>
+											<strong className="dashboard-number">
+												{inventory.data ? resources.length : "—"}
+											</strong>
+										</div>
+										<div>
+											<span>Services with resources</span>
+											<strong className="dashboard-number">
+												{inventory.data
+													? new Set(resources.map((r) => r.service)).size
+													: "—"}
+											</strong>
+										</div>
+									</div>
+								)}
+								<div className="dashboard-resource-links">
+									<Link href="/services/iam" onFollow={follow}>
+										Identity and Access Management
+									</Link>
+									<Link href="/services/s3" onFollow={follow}>
+										Amazon S3
+									</Link>
+								</div>
+							</Widget>
+						)}
+						{visible.includes("requests") && (
+							<Widget
+								id="requests"
+								wide
+								action={
+									<Button href="/requests" onFollow={follow}>
+										View all requests
+									</Button>
+								}
+							>
+								{requests.error ? (
+									<Alert type="error">{requests.error}</Alert>
+								) : !requests.data?.length ? (
+									<Box color="text-body-secondary">
+										API requests appear here when you use TinyStack.
+									</Box>
+								) : (
+									<ul className="dashboard-request-list">
+										{requests.data.slice(0, 5).map((r) => (
+											<li key={r.request_id}>
+												{r.service && (
+													<ServiceIcon name={r.service} size="small" />
+												)}
+												<span>{r.operation || `${r.method} ${r.path}`}</span>
+												<RequestStatus status={r.status} />
+											</li>
+										))}
+									</ul>
+								)}
+							</Widget>
+						)}
+					</div>
+					{!visible.length && (
+						<Box textAlign="center" padding="xxl">
+							Choose Add widgets to customize your console home.
+						</Box>
+					)}
+					{draft && (
+						<Modal
+							visible
+							header="Add widgets"
+							onDismiss={() => setDraft(null)}
+							footer={
+								<Box float="right">
+									<SpaceBetween direction="horizontal" size="xs">
+										<Button variant="link" onClick={() => setDraft(null)}>
+											Cancel
+										</Button>
+										<Button
+											variant="primary"
+											onClick={() => {
+												saveLayout(draft);
+												setDraft(null);
+											}}
+										>
+											Save layout
+										</Button>
+									</SpaceBetween>
+								</Box>
+							}
+						>
+							<SpaceBetween size="m">
+								<Box>Select the widgets to display on your console home.</Box>
+								{defaults.map((id) => (
+									<Checkbox
+										key={id}
+										checked={draft.includes(id)}
+										onChange={({ detail }) =>
+											setDraft(
+												detail.checked
+													? defaults.filter(
+															(item) => item === id || draft.includes(item),
+														)
+													: draft.filter((item) => item !== id),
+											)
+										}
+									>
+										{widgetLabels[id]}
+									</Checkbox>
+								))}
+							</SpaceBetween>
+						</Modal>
+					)}
 				</ContentLayout>
 			}
 		/>
 	);
 }
 
-function Services({
-	names,
-	resources,
+function Widget({
+	id,
+	wide = false,
+	action,
+	footer,
+	children,
 }: {
-	names: string[];
-	resources: Resource[];
+	id: WidgetID;
+	wide?: boolean;
+	action?: ReactNode;
+	footer?: ReactNode;
+	children: ReactNode;
 }) {
-	const follow = useFollow();
-	const counts = new Map<string, number>();
-	for (const r of resources)
-		counts.set(r.service, (counts.get(r.service) ?? 0) + 1);
-
-	const groups = new Map<string, string[]>();
-	for (const name of names) {
-		const { category } = service(name);
-		groups.set(category, [...(groups.get(category) ?? []), name]);
-	}
-
-	const order = (c: string) =>
-		categories.includes(c) ? categories.indexOf(c) : categories.length;
-	const sorted = [...groups.entries()].sort(([a], [b]) => order(a) - order(b));
-
 	return (
-		<Container
-			header={
-				<Header
-					variant="h2"
-					counter={`(${names.length})`}
-					description="Every service this TinyStack serves."
-				>
-					Services
-				</Header>
-			}
+		<section
+			className={`dashboard-widget ${wide ? "dashboard-widget-wide" : ""} dashboard-widget-${id}`}
+			aria-labelledby={`widget-${id}`}
 		>
-			<ColumnLayout columns={3} variant="text-grid">
-				{sorted.map(([category, members]) => (
-					<SpaceBetween key={category} size="xs">
-						<Box variant="h3">{category}</Box>
-						{members
-							.sort((a, b) => service(a).title.localeCompare(service(b).title))
-							.map((name) => (
-								<span
-									key={name}
-									style={{ display: "flex", alignItems: "center", gap: 8 }}
-								>
-									<ServiceIcon name={name} />
-									<Link href={`/services/${name}`} onFollow={follow}>
-										{service(name).title}
-									</Link>
-									{counts.get(name) ? (
-										<Badge color="blue">{counts.get(name)}</Badge>
-									) : null}
-								</span>
-							))}
-					</SpaceBetween>
-				))}
-			</ColumnLayout>
-		</Container>
-	);
-}
-
-function RecentRequests({
-	requests,
-}: {
-	requests: Awaited<ReturnType<typeof api.requests>>;
-}) {
-	const follow = useFollow();
-	const recent = requests.slice(0, 8);
-
-	return (
-		<Container
-			header={<Header variant="h2">Recent requests</Header>}
-			footer={
-				<Box textAlign="center">
-					<Link href="/requests" onFollow={follow} variant="primary">
-						View all requests
-					</Link>
-				</Box>
-			}
-		>
-			{recent.length === 0 ? (
-				<Box color="text-status-inactive">No requests yet.</Box>
-			) : (
-				<SpaceBetween size="s">
-					{recent.map((r) => (
-						<div
-							key={r.request_id}
-							style={{ display: "flex", alignItems: "center", gap: 8 }}
-						>
-							{r.service && <ServiceIcon name={r.service} size="small" />}
-							<Box variant="span" fontWeight="bold">
-								{r.operation || `${r.method} ${r.path}`}
-							</Box>
-							<span style={{ marginLeft: "auto" }}>
-								<RequestStatus status={r.status} />
-							</span>
-						</div>
-					))}
-				</SpaceBetween>
-			)}
-		</Container>
+			<div className="dashboard-widget-header">
+				<h2 id={`widget-${id}`}>{widgetLabels[id]}</h2>
+				{action}
+			</div>
+			<div className="dashboard-widget-content">{children}</div>
+			{footer && <div className="dashboard-widget-footer">{footer}</div>}
+		</section>
 	);
 }

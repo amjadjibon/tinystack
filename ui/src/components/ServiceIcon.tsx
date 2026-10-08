@@ -23,7 +23,7 @@ export function ServiceIcon({
 			alt=""
 			width={px}
 			height={px}
-			style={{ borderRadius: 4, verticalAlign: "middle", flexShrink: 0 }}
+			style={{ borderRadius: 0, verticalAlign: "middle", flexShrink: 0 }}
 			draggable={false}
 		/>
 	);

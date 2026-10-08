@@ -8,6 +8,7 @@ import {
 	Button,
 	Flashbar,
 	FormField,
+	Link,
 	Modal,
 	SideNavigation,
 	type SideNavigationProps,
@@ -19,15 +20,19 @@ import { Density, Mode } from "@cloudscape-design/global-styles";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { useHealth } from "#/lib/health";
+import { regionLabel } from "#/lib/regions";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
+import { useServiceHistory } from "#/lib/serviceHistory";
 import { service } from "#/lib/services";
 import {
+	applyConsoleTheme,
 	applyPreferences,
 	loadPreferences,
 	type Preferences,
 } from "#/lib/theme";
 import { useFollow } from "#/lib/useFollow";
+import { ServiceIcon } from "./ServiceIcon";
 
 const headerID = "console-header";
 
@@ -40,6 +45,10 @@ export function ConsoleHeader() {
 	const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
 	const [query, setQuery] = useState("");
 	const scope = useScope();
+	const recent = useServiceHistory();
+	const shortcuts = [...new Set([...recent, "iam", "s3", "ec2", "lambda"])]
+		.filter((name) => data?.services.includes(name))
+		.slice(0, 6);
 	const [scopeDialog, setScopeDialog] = useState<"account" | "region" | null>(
 		null,
 	);
@@ -58,14 +67,14 @@ export function ConsoleHeader() {
 				}
 			: {
 					type: "menu-dropdown",
-					text: scope.region || "Region",
+					text: regionLabel(scope.region) || "Region",
 					title: "AWS Region",
 					ariaLabel: `AWS Region: ${scope.region || "Choose Region"}`,
 					disableTextCollapse: true,
 					items: [
 						...scope.regions.map((region) => ({
 							id: region,
-							text: region,
+							text: `${regionLabel(region)} (${region})`,
 							itemType: "checkbox" as const,
 							checked: region === scope.region,
 						})),
@@ -78,7 +87,7 @@ export function ConsoleHeader() {
 				},
 		{
 			type: "menu-dropdown",
-			text: scope.account || "Account",
+			text: scope.account ? `Account (${scope.account})` : "Account",
 			title: "AWS account",
 			ariaLabel: `AWS account: ${scope.account || "Choose account"}`,
 			disableTextCollapse: true,
@@ -102,6 +111,10 @@ export function ConsoleHeader() {
 			? /^\d{12}$/.test(scopeDraft)
 			: validRegion(scopeDraft);
 
+	useEffect(() => {
+		const theme = applyConsoleTheme();
+		return theme.reset;
+	}, []);
 	useEffect(() => applyPreferences(preferences), [preferences]);
 
 	const matches = (data?.services ?? []).filter((name) =>
@@ -120,22 +133,33 @@ export function ConsoleHeader() {
 					onFollow: follow,
 				}}
 				search={
-					<ServiceSearch
-						query={query}
-						matches={matches}
-						onChange={setQuery}
-						onSelect={(name) => {
-							setQuery("");
-							navigate({ href: `/services/${name}` });
-						}}
-					/>
+					<div className="console-search-group">
+						<Button
+							variant="icon"
+							iconName="grid-view"
+							ariaLabel="All services"
+							href="/services"
+							onFollow={follow}
+						/>
+						<ServiceSearch
+							query={query}
+							matches={matches}
+							onChange={setQuery}
+							onSelect={(name) => {
+								setQuery("");
+								navigate({ href: `/services/${name}` });
+							}}
+						/>
+					</div>
 				}
 				utilities={[
 					{
 						type: "button",
-						text: data ? `${data.storage} storage` : "Connecting…",
-						iconName: data ? "status-positive" : "status-pending",
-						title: "TinyStack server status",
+						iconName: "command-prompt",
+						ariaLabel: "Request inspector",
+						title: "Request inspector",
+						href: "/requests",
+						onFollow: follow,
 					},
 					{
 						type: "menu-dropdown",
@@ -205,6 +229,18 @@ export function ConsoleHeader() {
 					overflowMenuDismissIconAriaLabel: "Close menu",
 				}}
 			/>
+			<nav className="console-shortcuts" aria-label="Service shortcuts">
+				{shortcuts.map((name) => (
+					<Link key={name} href={`/services/${name}`} onFollow={follow}>
+						<ServiceIcon name={name} size="small" />
+						<span>
+							{name === "iam" || name === "s3" || name === "ec2"
+								? name.toUpperCase()
+								: service(name).title}
+						</span>
+					</Link>
+				))}
+			</nav>
 			{scopeDialog && (
 				<Modal
 					visible
@@ -297,7 +333,8 @@ function ServiceSearch({
 
 function navigation(services: string[]): SideNavigationProps.Item[] {
 	return [
-		{ type: "link", text: "Console Home", href: "/" },
+		{ type: "link", text: "Console home", href: "/" },
+		{ type: "link", text: "All services", href: "/services" },
 		{ type: "link", text: "All resources", href: "/resources" },
 		{ type: "divider" },
 		{
@@ -362,23 +399,36 @@ export function ConsoleLayout({
 		<AppLayout
 			headerSelector={`#${headerID}`}
 			contentType={contentType}
+			ariaLabels={{
+				navigation: "Side navigation",
+				navigationToggle: "Open side navigation",
+				navigationClose: "Close side navigation",
+			}}
+			maxContentWidth={Number.MAX_VALUE}
 			toolsHide
 			navigationOpen={navigationOpen}
 			onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
 			navigation={
 				<SideNavigation
-					header={navigationHeader ?? { href: "/", text: "TinyStack" }}
+					header={navigationHeader ?? { href: "/", text: "Console home" }}
 					activeHref={activeHref ?? pathname}
-					items={navigationItems ?? navigation(data?.services ?? [])}
+					items={
+						navigationItems ??
+						navigation(
+							contentType === "dashboard" ? [] : (data?.services ?? []),
+						)
+					}
 					onFollow={follow}
 				/>
 			}
 			breadcrumbs={
-				<BreadcrumbGroup
-					items={[{ text: "TinyStack", href: "/" }, ...breadcrumbs]}
-					onFollow={follow}
-					ariaLabel="Breadcrumbs"
-				/>
+				contentType !== "dashboard" && (
+					<BreadcrumbGroup
+						items={[{ text: "TinyStack", href: "/" }, ...breadcrumbs]}
+						onFollow={follow}
+						ariaLabel="Breadcrumbs"
+					/>
+				)
 			}
 			notifications={
 				error && (

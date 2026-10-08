@@ -12,6 +12,7 @@ import { ConsoleHeader, ConsoleLayout } from "#/components/Console";
 import { EmptyState } from "#/components/EmptyState";
 import { HealthProvider } from "#/lib/health";
 import { ScopeProvider } from "#/lib/scope";
+import { ServiceHistoryProvider } from "#/lib/serviceHistory";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -57,8 +58,10 @@ function Root() {
 	return (
 		<HealthProvider>
 			<ScopeProvider>
-				<ConsoleHeader />
-				<Outlet />
+				<ServiceHistoryProvider>
+					<ConsoleHeader />
+					<Outlet />
+				</ServiceHistoryProvider>
 			</ScopeProvider>
 		</HealthProvider>
 	);

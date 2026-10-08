@@ -80,7 +80,7 @@ function S3Page() {
 			navigationItems={[
 				{ type: "link", text: "Buckets", href: s3Href({ account, region }) },
 				{ type: "divider" },
-				{ type: "link", text: "All services", href: "/" },
+				{ type: "link", text: "All services", href: "/services" },
 				{ type: "link", text: "Request inspector", href: "/requests" },
 			]}
 			breadcrumbs={[

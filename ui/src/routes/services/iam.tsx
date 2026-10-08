@@ -106,7 +106,7 @@ function IAMPage() {
 					})),
 				},
 				{ type: "divider" },
-				{ type: "link", text: "All services", href: "/" },
+				{ type: "link", text: "All services", href: "/services" },
 				{ type: "link", text: "Request inspector", href: "/requests" },
 			]}
 			breadcrumbs={[
