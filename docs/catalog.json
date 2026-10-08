@@ -808,6 +808,32 @@
       ],
       "execution": "Local behavior",
       "package": "resourcegroupstaggingapi"
+    },
+    "pipes": {
+      "title": "EventBridge Pipes",
+      "category": "Messaging and events",
+      "summary": "Connect SQS queues and Kinesis or DynamoDB streams to targets with filtering and Lambda enrichment.",
+      "features": [
+        "CreatePipe, DescribePipe, UpdatePipe, DeletePipe, ListPipes with filters and pagination, StartPipe and StopPipe",
+        "Pipes settle at once in RUNNING or STOPPED; responses report the transitional state",
+        "Tags on pipes through TagResource, UntagResource and ListTagsForResource, and through the Resource Groups Tagging API",
+        "SQS sources read in-process; messages are deleted after delivery or when a filter drops them",
+        "Kinesis and DynamoDB stream sources with TRIM_HORIZON or LATEST and a per-pipe cursor",
+        "FilterCriteria event patterns shared with Lambda event source mappings",
+        "Lambda enrichment, and InputTemplate with JSON paths and aws.pipes variables on enrichment and target",
+        "Lambda, SQS, SNS, EventBridge, Step Functions and Kinesis targets, called in-process; Lambda and Step Functions receive the batch as a JSON array",
+        "Resources appear in the resource inventory"
+      ],
+      "gaps": [
+        "MQ, Kafka, MSK and other sources, and ECS, Batch, Firehose, HTTP and other targets fail CreatePipe explicitly",
+        "No batching windows, parallelization, dead-letter queues, retry limits or partial batch failure handling; a failed delivery is retried on the next visit",
+        "AT_TIMESTAMP starting positions, log configuration and KMS keys are not supported",
+        "Only Lambda enrichments; API destination and HTTP enrichment parameters are not supported",
+        "JSON paths in EventBridge target parameters and [*] wildcards in templates are not supported",
+        "Role ARNs are checked for shape only; IAM policies are not evaluated"
+      ],
+      "execution": "Local behavior",
+      "package": "pipes"
     }
   },
   "future": {
@@ -1019,12 +1045,6 @@
       "slice": "Implement `DescribeOrganization`, `ListRoots`, `ListAccounts`.",
       "features": "- [ ] `DescribeOrganization`\n- [ ] `ListRoots`\n- [ ] `ListAccounts`\n- [ ] `DescribeAccount`\n- [ ] `CreateOrganizationalUnit`",
       "integration": "The proposed resource scope is account-wide; define persistence and cross-service effects accordingly."
-    },
-    "pipes": {
-      "title": "EventBridge Pipes",
-      "state": "Proposed",
-      "slice": "Implement `ListPipes`, `CreatePipe`, `DescribePipe`.",
-      "features": "- [ ] `ListPipes`\n- [ ] `CreatePipe`\n- [ ] `DescribePipe`\n- [ ] `UpdatePipe`\n- [ ] `DeletePipe`\n- [ ] `StartPipe`\n- [ ] `StopPipe`\n- [ ] `ListTagsForResource`\n- [ ] `TagResource`\n- [ ] `UntagResource`"
     },
     "rds-data": {
       "title": "RDS Data API",

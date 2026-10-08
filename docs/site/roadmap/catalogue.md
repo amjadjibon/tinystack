@@ -35,7 +35,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [ECS Task Metadata](services/ecs-metadata.md) | Proposed | Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`. |
 | [EFS](services/efs.md) | Proposed | Implement `CreateFileSystem`, `DescribeFileSystems`, `DeleteFileSystem`. |
 | [EMR](services/emr.md) | Proposed | Implement `RunJobFlow`, `DescribeCluster`, `ListClusters`. |
-| [EventBridge Pipes](services/pipes.md) | Proposed | Implement `ListPipes`, `CreatePipe`, `DescribePipe`. |
 | [IoT Wireless](services/iotwireless.md) | Proposed | Implement `GetPositionEstimate`. |
 | [Lambda Core](services/lambda-core.md) | Proposed | Implement `CreateNetworkConnector`, `GetNetworkConnector`, `ListNetworkConnectors`. |
 | [Lambda Durable Execution](services/lambda-durable.md) | Proposed | Implement `CheckpointDurableExecution`, `GetDurableExecutionState`, `GetDurableExecution`. |

@@ -131,6 +131,7 @@ nav:
       - "Messaging and events":
           - "Data Firehose": services/firehose.md
           - "EventBridge": services/eventbridge.md
+          - "EventBridge Pipes": services/pipes.md
           - "EventBridge Scheduler": services/scheduler.md
           - "Kinesis Data Streams": services/kinesis.md
           - "SNS": services/sns.md
@@ -182,7 +183,6 @@ nav:
           - "ECS Task Metadata": roadmap/services/ecs-metadata.md
           - "EFS": roadmap/services/efs.md
           - "EMR": roadmap/services/emr.md
-          - "EventBridge Pipes": roadmap/services/pipes.md
           - "IoT Wireless": roadmap/services/iotwireless.md
           - "Lambda Core": roadmap/services/lambda-core.md
           - "Lambda Durable Execution": roadmap/services/lambda-durable.md

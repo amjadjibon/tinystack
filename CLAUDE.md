@@ -130,7 +130,7 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   **services/eventbridge**, **services/ssm**, **services/secretsmanager**, **services/kms**, **services/iam**,
   **services/sts**, **services/ec2**, **services/cognitoidp**, **services/ecr**, **services/ecs**, **services/eks**,
   **services/apigateway**, **services/apigatewayv2**, **services/sfn**, **services/kinesis**,
-  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**, **services/cognitoidentity**, **services/glue**, **services/athena**, **services/elasticache**, **services/iot**, **services/resourcegroupstaggingapi**: behavior only (API Gateway's outbound HTTP proxying and JWKS
+  **services/firehose**, **services/cloudwatch**, **services/acm**, **services/route53**, **services/scheduler**, **services/pipes**, **services/autoscaling**, **services/elbv2**, **services/cloudformation**, **services/appsync**, **services/sesv2**, **services/cognitoidentity**, **services/glue**, **services/athena**, **services/elasticache**, **services/iot**, **services/resourcegroupstaggingapi**: behavior only (API Gateway's outbound HTTP proxying and JWKS
   reads live in `services/apigateway/proxy`), with
   no HTTP dependencies.
   Each table, queue, or topic is stored as **one JSON-serialized record** under `account/region/<service>/<name>`
@@ -442,6 +442,23 @@ a per-service `Dialect`), and delivers synchronously through
   (or, for a finished `DELETE` schedule, removes) the schedule in the transaction that claims the run, and then invokes
   the target through the `catalog.Caller`, sending failures to the target's SQS dead-letter queue. `services/schedule`
   evaluates `cron` in the schedule's time zone (`Schedule.In`).
+  EventBridge Pipes (`services/pipes`) keeps each pipe (source, enrichment, target and their parameters, tags, and a
+  stream source's cursors) under `…/pipes/pipe/<name>`; the partition-wide `aws/pipes/index/<account>/<region>/<name>`
+  lists the pipes whose desired state is RUNNING. Pipes settle at once in RUNNING or STOPPED, and responses report the
+  transitional state. `validate.go` fails CreatePipe and UpdatePipe explicitly for any source other than an SQS queue,
+  a Kinesis stream, or a DynamoDB stream, any enrichment other than a Lambda function, any target other than Lambda,
+  SQS, SNS, EventBridge, Step Functions, or Kinesis, and for options it does not run (batching windows, `AT_TIMESTAMP`);
+  it also checks that the source exists and compiles `FilterCriteria` with `services/pattern`. The runner (started by
+  `New`, stopped by `Stop`, deferred and a shutdown hook in `start.go`) visits the index every second and moves up to
+  100 batches of each pipe (`run.go`): an SQS queue is read in-process through `sqs.Service` and its messages are
+  deleted after the target accepts them (or when a filter drops them; a failed delivery leaves them to return after
+  their visibility timeout), a Kinesis stream through `kinesis.Service.Shards` and `Records` with a cursor per shard,
+  and a DynamoDB stream through `dynamodb.Streams` with the last sequence number, both advanced in the pipe's record
+  only after delivery. Records are shaped like Lambda's event source records (Kinesis records in the flat form
+  Pipes uses) and passed on as a JSON array, not wrapped in `Records`. `target.go` enriches the batch with a Lambda
+  function, renders `InputTemplate`s (`template.go`: `<$.path>` and `<aws.pipes.*>` references, checked when the pipe is
+  saved), and calls the target through the `catalog.Caller` outside transactions: Lambda and Step Functions receive the
+  batch as an array, and SQS, SNS, EventBridge, and Kinesis one call per item.
   EC2 Auto Scaling (`services/autoscaling`) keeps each group (its `DescribeAutoScalingGroups` settings, members,
   subnets, cooldown, and launch retry time) under `…/autoscaling/group/<name>`, launch configurations under
   `…/autoscaling/launch-configuration/<name>`, and policies, scheduled actions, and activities under
@@ -609,7 +626,7 @@ of copying them into service pages or creating a parallel `docs/services/` desig
 ## Tests
 
 - `tests/integration` runs the official AWS Go SDK v2 (DynamoDB and DynamoDB Streams, SQS over JSON, SNS, IAM, and STS over Query, EC2 over EC2 Query, S3 over REST
-  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, ECS, Cognito identity pools, Glue, and Athena over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, and EventBridge Scheduler over REST
+  XML, Lambda over REST JSON, CloudWatch Logs, EventBridge, SSM, Secrets Manager, KMS, Cognito, ECR, ECS, Cognito identity pools, Glue, and Athena over JSON 1.1, Step Functions over JSON 1.0, Kinesis and Firehose over JSON 1.1, CloudWatch over RPC v2 CBOR, ACM over JSON 1.1, Route 53 over REST XML, EKS, API Gateway, AppSync, SES, EventBridge Scheduler, and EventBridge Pipes over REST
   JSON, Auto Scaling, Elastic Load Balancing, CloudFormation, and ElastiCache over Query, IoT, the IoT data plane, and the IoT Jobs data plane over REST JSON, the Resource Groups Tagging API over JSON 1.1, MQTT clients over WebSocket, plus Docker Registry API calls and requests to API Gateway APIs, AppSync GraphQL APIs and their WebSocket subscriptions, and load balancers) against an `httptest` server built the same way as `start.go` (`serverWith` takes a Lambda
   runtime; the default `fakeRuntime` runs handlers in-process), plus raw AWS Query, S3, and Lambda wire tests. Prefer
   adding behavior coverage here.
