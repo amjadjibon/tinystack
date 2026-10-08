@@ -813,6 +813,32 @@
       "execution": "Local behavior",
       "package": "iot"
     },
+    "resourcegroups": {
+      "title": "Resource Groups",
+      "category": "Configuration and operations",
+      "summary": "Group resources with tag-based or CloudFormation stack queries, resolved against the same resources the Tagging API lists.",
+      "features": [
+        "CreateGroup, GetGroup, UpdateGroup, DeleteGroup and ListGroups with resource-type, configuration-type, owner, display-name and criticality filters and pagination",
+        "Groups addressed by name or ARN; names are unique per account and Region and are validated as the model specifies",
+        "TAG_FILTERS_1_0 queries with ResourceTypeFilters (AWS::AllSupported or CloudFormation-style types such as AWS::SQS::Queue) and TagFilters, evaluated against every service's resource inventory in the caller's account and Region",
+        "CLOUDFORMATION_STACK_1_0 queries that list a stack's resources, matched to inventory resources by physical ID",
+        "ListGroupResources with resource type filters and pagination, and SearchResources for ad hoc queries; unknown resource types and missing stacks are reported in QueryErrors",
+        "GetGroupQuery, UpdateGroupQuery, GetGroupConfiguration and PutGroupConfiguration",
+        "Tags on groups through Tag, Untag and GetTags, and through the Resource Groups Tagging API",
+        "GetAccountSettings and UpdateAccountSettings, which settle at once",
+        "Groups appear in the resource inventory"
+      ],
+      "gaps": [
+        "GroupResources and UngroupResources are not supported, so configuration-based groups have no members and ListGroupingStatuses is always empty",
+        "Group configurations are stored but not validated beyond their shape; service-linked behavior such as capacity reservation pools is not run",
+        "Resource types are derived from each inventory type (AWS::<Service>::<Type>); types of services TinyStack has no inventory for report RESOURCE_TYPE_NOT_SUPPORTED",
+        "Stack queries match resources by physical ID, so stack resources absent from the inventory are left out, and an inactive stack reports as not existing",
+        "Group lifecycle events and application tags are not emitted; the name/ID group form is not accepted",
+        "IAM policies are not evaluated"
+      ],
+      "execution": "Local behavior",
+      "package": "resourcegroups"
+    },
     "resourcegroupstaggingapi": {
       "title": "Resource Groups Tagging API",
       "category": "Configuration and operations",
@@ -1082,12 +1108,6 @@
       "features": "- [ ] Management — `CreateDBInstance`, `DescribeDBInstances`, `ModifyDBInstance`, `DeleteDBInstance`, and tag/list operations for a single supported PostgreSQL engine/version family. Validate identifier, size, credentials, storage, and delete options.\n- [ ] Runtime — Start one isolated PostgreSQL container per instance or a safely isolated shared engine; allocate a stable reachable host/port and persist the instance-to-runtime mapping. Health checks drive creating → available → deleting state.\n- [ ] Data lifecycle — Decide whether a persistent TinyStack restart reconnects to the same database volume. Delete removes runtime and data unless a documented retained snapshot option is chosen.\n- [ ] Later features — Read replicas, snapshots/restore, parameter groups, subnet groups, failover, IAM database authentication, and non-PostgreSQL engines are separate slices.",
       "integration": "Management records are account/region-scoped, but SQL data lives in the\nunderlying engine. The Docker/runtime adapter owns container, volume, port,\nstartup, and shutdown operations; the RDS provider owns AWS validation and\nstate transitions. Never run container operations within a store transaction.\nCreate must either publish a usable endpoint or end in a visible failure state\nwith cleanup. A remote Docker daemon may make `localhost` endpoints unusable;\nendpoint selection is part of runtime configuration.",
       "acceptance": "Create an instance with the AWS SDK, wait for availability, connect through\nPostgreSQL, create and read a table, restart TinyStack, then delete and verify\ncleanup. Test duplicate identifiers, invalid credentials/options, two accounts\nwith the same ID, failed engine startup, port allocation, and graceful shutdown.\nCompare RDS management Query responses with AWS fixtures."
-    },
-    "resource-groups": {
-      "title": "Resource Groups",
-      "state": "Proposed",
-      "slice": "Implement `CreateGroup`, `GetGroup`, `DeleteGroup`.",
-      "features": "- [ ] `CreateGroup`\n- [ ] `GetGroup`\n- [ ] `DeleteGroup`\n- [ ] `UpdateGroup`\n- [ ] `ListGroups`\n- [ ] `GetGroupQuery`\n- [ ] `UpdateGroupQuery`\n- [ ] `GetGroupConfiguration`\n- [ ] `PutGroupConfiguration`\n- [ ] `ListGroupResources`\n- [ ] `ListGroupingStatuses`\n- [ ] `SearchResources`\n- [ ] `GetTags`\n- [ ] `GetAccountSettings`\n- [ ] `UpdateAccountSettings`"
     },
     "s3files": {
       "title": "S3 Files",

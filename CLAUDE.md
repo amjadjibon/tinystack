@@ -59,6 +59,8 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   deferred in `start.go` and registered with `server.RegisterOnShutdown`.
 - A service's `Resources` method (`inventory.go`, `catalog.Inventory`) feeds `/_tinystack/resources` and the
   Resource Groups Tagging API, which tags through each service's own operations (`resourcegroupstaggingapi/tag.go`).
+  Resource Groups queries run against the same listing (`services/listing`), with CloudFormation-style types from
+  `resourcegroups/types.go`.
 - Container runtimes (Lambda, ECS, EKS k3s, ElastiCache) are optional and shell out to the docker CLI
   (`services/dockercli`); without them, resources are records only.
 

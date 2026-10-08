@@ -114,6 +114,7 @@ nav:
           - "CloudFormation": services/cloudformation.md
           - "CloudWatch Logs": services/logs.md
           - "CloudWatch metrics and alarms": services/cloudwatch.md
+          - "Resource Groups": services/resourcegroups.md
           - "Resource Groups Tagging API": services/resourcegroupstaggingapi.md
           - "SSM Parameter Store": services/ssm.md
           - "Secrets Manager": services/secretsmanager.md
@@ -193,7 +194,6 @@ nav:
           - "Organizations": roadmap/services/organizations.md
           - "RDS": roadmap/services/rds.md
           - "RDS Data API": roadmap/services/rds-data.md
-          - "Resource Groups": roadmap/services/resource-groups.md
           - "S3 Files": roadmap/services/s3files.md
           - "S3 Tables": roadmap/services/s3tables.md
           - "Transcribe": roadmap/services/transcribe.md
