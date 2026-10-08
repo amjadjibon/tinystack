@@ -12684,6 +12684,74 @@
       ]
     }
   },
+  "resourcegroupstaggingapi": {
+    "operations": [
+      "GetResources",
+      "GetTagKeys",
+      "GetTagValues",
+      "TagResources",
+      "UntagResources"
+    ],
+    "shapes": {
+      "GetResourcesInput": [
+        "PaginationToken",
+        "TagFilters",
+        "ResourcesPerPage",
+        "ResourceTypeFilters",
+        "ResourceARNList"
+      ],
+      "GetResourcesOutput": [
+        "PaginationToken",
+        "ResourceTagMappingList"
+      ],
+      "ResourceTagMapping": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagFilter": [
+        "Key",
+        "Values"
+      ],
+      "GetTagKeysInput": [
+        "PaginationToken"
+      ],
+      "GetTagKeysOutput": [
+        "PaginationToken",
+        "TagKeys"
+      ],
+      "GetTagValuesInput": [
+        "PaginationToken",
+        "Key"
+      ],
+      "GetTagValuesOutput": [
+        "PaginationToken",
+        "TagValues"
+      ],
+      "TagResourcesInput": [
+        "ResourceARNList",
+        "Tags"
+      ],
+      "TagResourcesOutput": [
+        "FailedResourcesMap"
+      ],
+      "UntagResourcesInput": [
+        "ResourceARNList",
+        "TagKeys"
+      ],
+      "UntagResourcesOutput": [
+        "FailedResourcesMap"
+      ],
+      "FailureInfo": [
+        "StatusCode",
+        "ErrorCode",
+        "ErrorMessage"
+      ]
+    }
+  },
   "route53": {
     "operations": [
       "CreateHostedZone",
