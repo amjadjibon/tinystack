@@ -15540,5 +15540,227 @@
         "Account"
       ]
     }
+  },
+  "pipes": {
+    "operations": [
+      "CreatePipe",
+      "DescribePipe",
+      "UpdatePipe",
+      "DeletePipe",
+      "ListPipes",
+      "StartPipe",
+      "StopPipe",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreatePipeRequest": [
+        "Name",
+        "Description",
+        "DesiredState",
+        "Source",
+        "SourceParameters",
+        "Enrichment",
+        "EnrichmentParameters",
+        "Target",
+        "TargetParameters",
+        "RoleArn",
+        "Tags"
+      ],
+      "CreatePipeResponse": [
+        "Arn",
+        "Name",
+        "DesiredState",
+        "CurrentState",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "DescribePipeRequest": [
+        "Name"
+      ],
+      "DescribePipeResponse": [
+        "Arn",
+        "Name",
+        "Description",
+        "DesiredState",
+        "CurrentState",
+        "StateReason",
+        "Source",
+        "SourceParameters",
+        "Enrichment",
+        "EnrichmentParameters",
+        "Target",
+        "TargetParameters",
+        "RoleArn",
+        "Tags",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "UpdatePipeRequest": [
+        "Name",
+        "Description",
+        "DesiredState",
+        "SourceParameters",
+        "Enrichment",
+        "EnrichmentParameters",
+        "Target",
+        "TargetParameters",
+        "RoleArn"
+      ],
+      "UpdatePipeResponse": [
+        "Arn",
+        "Name",
+        "DesiredState",
+        "CurrentState",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "DeletePipeRequest": [
+        "Name"
+      ],
+      "DeletePipeResponse": [
+        "Arn",
+        "Name",
+        "DesiredState",
+        "CurrentState",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "StartPipeRequest": [
+        "Name"
+      ],
+      "StartPipeResponse": [
+        "Arn",
+        "Name",
+        "DesiredState",
+        "CurrentState",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "StopPipeRequest": [
+        "Name"
+      ],
+      "StopPipeResponse": [
+        "Arn",
+        "Name",
+        "DesiredState",
+        "CurrentState",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "ListPipesRequest": [
+        "NamePrefix",
+        "DesiredState",
+        "CurrentState",
+        "SourcePrefix",
+        "TargetPrefix",
+        "NextToken",
+        "Limit"
+      ],
+      "ListPipesResponse": [
+        "Pipes",
+        "NextToken"
+      ],
+      "Pipe": [
+        "Name",
+        "Arn",
+        "DesiredState",
+        "CurrentState",
+        "StateReason",
+        "CreationTime",
+        "LastModifiedTime",
+        "Source",
+        "Target",
+        "Enrichment"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "PipeSourceParameters": [
+        "FilterCriteria",
+        "KinesisStreamParameters",
+        "DynamoDBStreamParameters",
+        "SqsQueueParameters"
+      ],
+      "UpdatePipeSourceParameters": [
+        "FilterCriteria",
+        "KinesisStreamParameters",
+        "DynamoDBStreamParameters",
+        "SqsQueueParameters"
+      ],
+      "FilterCriteria": [
+        "Filters"
+      ],
+      "Filter": [
+        "Pattern"
+      ],
+      "PipeSourceKinesisStreamParameters": [
+        "BatchSize",
+        "MaximumBatchingWindowInSeconds",
+        "StartingPosition",
+        "StartingPositionTimestamp"
+      ],
+      "UpdatePipeSourceKinesisStreamParameters": [
+        "BatchSize",
+        "MaximumBatchingWindowInSeconds"
+      ],
+      "PipeSourceDynamoDBStreamParameters": [
+        "BatchSize",
+        "MaximumBatchingWindowInSeconds",
+        "StartingPosition"
+      ],
+      "UpdatePipeSourceDynamoDBStreamParameters": [
+        "BatchSize",
+        "MaximumBatchingWindowInSeconds"
+      ],
+      "PipeSourceSqsQueueParameters": [
+        "BatchSize",
+        "MaximumBatchingWindowInSeconds"
+      ],
+      "UpdatePipeSourceSqsQueueParameters": [
+        "BatchSize",
+        "MaximumBatchingWindowInSeconds"
+      ],
+      "PipeEnrichmentParameters": [
+        "InputTemplate"
+      ],
+      "PipeTargetParameters": [
+        "InputTemplate",
+        "LambdaFunctionParameters",
+        "StepFunctionStateMachineParameters",
+        "KinesisStreamParameters",
+        "SqsQueueParameters",
+        "EventBridgeEventBusParameters"
+      ],
+      "PipeTargetLambdaFunctionParameters": [
+        "InvocationType"
+      ],
+      "PipeTargetStateMachineParameters": [
+        "InvocationType"
+      ],
+      "PipeTargetKinesisStreamParameters": [
+        "PartitionKey"
+      ],
+      "PipeTargetSqsQueueParameters": [
+        "MessageGroupId",
+        "MessageDeduplicationId"
+      ],
+      "PipeTargetEventBridgeEventBusParameters": [
+        "DetailType",
+        "Source"
+      ]
+    }
   }
 }
