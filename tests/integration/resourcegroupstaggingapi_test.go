@@ -10,6 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sdk "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
@@ -21,12 +23,12 @@ import (
 	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
-func taggingClient(s *httptest.Server, key, region string) *tagging.Client {
+func taggingClient(s *httptest.Server, region string) *tagging.Client {
 	return tagging.New(tagging.Options{
 		Region:       region,
 		BaseEndpoint: aws.String(s.URL),
 		Credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
-			return aws.Credentials{AccessKeyID: key, SecretAccessKey: "test"}, nil
+			return aws.Credentials{AccessKeyID: "test", SecretAccessKey: "test"}, nil
 		}),
 		Retryer: aws.NopRetryer{},
 	})
@@ -145,7 +147,7 @@ func sortedARNs(list ...string) []string {
 func TestResourceGroupsTaggingRead(t *testing.T) {
 	s := server(t)
 	r := createTaggedResources(t, s)
-	c := taggingClient(s, "test", "us-east-1")
+	c := taggingClient(s, "us-east-1")
 	ctx := context.Background()
 
 	all, err := c.GetResources(ctx, &tagging.GetResourcesInput{})
@@ -237,7 +239,7 @@ func TestResourceGroupsTaggingRead(t *testing.T) {
 		t.Fatalf("GetTagValues = %+v, %v", values, err)
 	}
 
-	elsewhere, err := taggingClient(s, "test", "eu-west-1").GetResources(ctx, &tagging.GetResourcesInput{})
+	elsewhere, err := taggingClient(s, "eu-west-1").GetResources(ctx, &tagging.GetResourcesInput{})
 	if err != nil || len(elsewhere.ResourceTagMappingList) != 1 ||
 		*elsewhere.ResourceTagMappingList[0].ResourceARN == r.table {
 		t.Fatalf("eu-west-1 GetResources = %+v, %v", elsewhere, err)
@@ -256,7 +258,7 @@ func TestResourceGroupsTaggingRead(t *testing.T) {
 func TestResourceGroupsTaggingWrite(t *testing.T) {
 	s := server(t)
 	r := createTaggedResources(t, s)
-	c := taggingClient(s, "test", "us-east-1")
+	c := taggingClient(s, "us-east-1")
 	ctx := context.Background()
 	missing := "arn:aws:sqs:us-east-1:000000000000:missing"
 
@@ -335,4 +337,98 @@ func TestResourceGroupsTaggingWrite(t *testing.T) {
 		ResourceARNList: []string{r.queue}, Tags: map[string]string{"aws:reserved": "x"},
 	})
 	code(t, err, "InvalidParameterException")
+}
+
+func TestResourceGroupsTaggingEC2(t *testing.T) {
+	s := server(t)
+	e := ec2Client(s, "test", "us-east-1")
+	c := taggingClient(s, "us-east-1")
+	ctx := context.Background()
+
+	vpc, err := e.CreateVpc(ctx, &ec2.CreateVpcInput{
+		CidrBlock: aws.String("10.9.0.0/16"),
+		TagSpecifications: []ec2types.TagSpecification{{
+			ResourceType: ec2types.ResourceTypeVpc, Tags: ec2Tags("env", "ec2test"),
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vpcID := aws.ToString(vpc.Vpc.VpcId)
+	vpcARN := "arn:aws:ec2:us-east-1:000000000000:vpc/" + vpcID
+
+	launched, err := e.RunInstances(ctx, &ec2.RunInstancesInput{
+		ImageId: latestImage(t, s), MinCount: aws.Int32(1), MaxCount: aws.Int32(1),
+		TagSpecifications: []ec2types.TagSpecification{{
+			ResourceType: ec2types.ResourceTypeInstance, Tags: ec2Tags("env", "ec2test"),
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	instanceID := aws.ToString(launched.Instances[0].InstanceId)
+	instanceARN := "arn:aws:ec2:us-east-1:000000000000:instance/" + instanceID
+
+	found, err := c.GetResources(ctx, &tagging.GetResourcesInput{
+		TagFilters: []taggingtypes.TagFilter{{Key: aws.String("env"), Values: []string{"ec2test"}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := arns(found.ResourceTagMappingList), sortedARNs(vpcARN, instanceARN); !slices.Equal(got, want) {
+		t.Fatalf("GetResources = %v, want %v", got, want)
+	}
+
+	vpcs, err := c.GetResources(ctx, &tagging.GetResourcesInput{ResourceTypeFilters: []string{"ec2:vpc"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := arns(vpcs.ResourceTagMappingList); !slices.Equal(got, []string{vpcARN}) {
+		t.Fatalf("ec2:vpc = %v", got)
+	}
+
+	tagged, err := c.TagResources(ctx, &tagging.TagResourcesInput{
+		ResourceARNList: []string{vpcARN, instanceARN}, Tags: map[string]string{"owner": "me"},
+	})
+	if err != nil || len(tagged.FailedResourcesMap) != 0 {
+		t.Fatalf("TagResources = %+v, %v", tagged, err)
+	}
+
+	described, err := e.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{VpcIds: []string{vpcID}})
+	if err != nil || len(described.Vpcs) != 1 || len(described.Vpcs[0].Tags) != 2 {
+		t.Fatalf("DescribeVpcs = %+v, %v", described, err)
+	}
+
+	untagged, err := c.UntagResources(ctx, &tagging.UntagResourcesInput{
+		ResourceARNList: []string{vpcARN, instanceARN}, TagKeys: []string{"owner"},
+	})
+	if err != nil || len(untagged.FailedResourcesMap) != 0 {
+		t.Fatalf("UntagResources = %+v, %v", untagged, err)
+	}
+
+	tags, err := e.DescribeTags(ctx, &ec2.DescribeTagsInput{Filters: []ec2types.Filter{
+		{Name: aws.String("key"), Values: []string{"owner"}},
+	}})
+	if err != nil || len(tags.Tags) != 0 {
+		t.Fatalf("DescribeTags = %+v, %v", tags, err)
+	}
+
+	described, err = e.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{VpcIds: []string{vpcID}})
+	if err != nil || len(described.Vpcs[0].Tags) != 1 {
+		t.Fatalf("DescribeVpcs = %+v, %v", described, err)
+	}
+
+	// A terminated instance leaves the inventory.
+	if _, err = e.TerminateInstances(ctx, &ec2.TerminateInstancesInput{InstanceIds: []string{instanceID}}); err != nil {
+		t.Fatal(err)
+	}
+
+	found, err = c.GetResources(ctx, &tagging.GetResourcesInput{ResourceTypeFilters: []string{"ec2:instance"}})
+	if err != nil || len(found.ResourceTagMappingList) != 0 {
+		t.Fatalf("after terminate = %+v, %v", found, err)
+	}
 }
