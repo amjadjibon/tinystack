@@ -223,6 +223,7 @@ var taggers = map[string]tagger{
 	"kms":     resourceOperations("kms", "KeyId", keyPairs),
 	"lambda":  resourceOperations("lambda", "Resource", plain),
 	"logs":    resourceOperations("logs", "ResourceArn", plain),
+	"pipes":   resourceOperations("pipes", "ResourceArn", plain),
 	"route53": operations(
 		"route53",
 		"ChangeTagsForResource",
