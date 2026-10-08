@@ -129,6 +129,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: integration,
 		icon: "eventbridge",
 	},
+	resourcegroups: { title: "Resource Groups", category: management },
 	resourcegroupstaggingapi: {
 		title: "Resource Groups Tagging API",
 		category: management,
