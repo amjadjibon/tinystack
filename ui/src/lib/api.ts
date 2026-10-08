@@ -104,6 +104,7 @@ export const api = {
 		account: string;
 		region: string;
 		iam: boolean;
+		s3: boolean;
 		requires_signature: boolean;
 	}> => (await get("/actions")).json(),
 	action: async <T>(
@@ -111,11 +112,12 @@ export const api = {
 		operation: string,
 		account: string,
 		input: Record<string, unknown>,
+		region?: string,
 	): Promise<T> => {
 		const response = await fetch(`${base}/actions`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ service, operation, account, input }),
+			body: JSON.stringify({ service, operation, account, region, input }),
 		});
 		const body = await response.json();
 		if (!response.ok) {

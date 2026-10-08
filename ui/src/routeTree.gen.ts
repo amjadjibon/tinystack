@@ -15,6 +15,7 @@ import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
+import { Route as ServicesS3RouteImport } from './routes/services/s3'
 import { Route as ServicesServiceIndexRouteImport } from './routes/services/$service.index'
 import { Route as ServicesServiceResourceRouteImport } from './routes/services/$service.resource'
 
@@ -48,6 +49,11 @@ const ServicesIamRoute = ServicesIamRouteImport.update({
   path: '/services/iam',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesS3Route = ServicesS3RouteImport.update({
+  id: '/services/s3',
+  path: '/services/s3',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesServiceIndexRoute = ServicesServiceIndexRouteImport.update({
   id: '/services/$service/',
   path: '/services/$service/',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/s3': typeof ServicesS3Route
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service/': typeof ServicesServiceIndexRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/s3': typeof ServicesS3Route
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service': typeof ServicesServiceIndexRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/s3': typeof ServicesS3Route
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service/': typeof ServicesServiceIndexRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/services/iam'
+    | '/services/s3'
     | '/services/$service/resource'
     | '/services/$service/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/services/iam'
+    | '/services/s3'
     | '/services/$service/resource'
     | '/services/$service'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/services/iam'
+    | '/services/s3'
     | '/services/$service/resource'
     | '/services/$service/'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
   ServicesIamRoute: typeof ServicesIamRoute
+  ServicesS3Route: typeof ServicesS3Route
   ServicesServiceResourceRoute: typeof ServicesServiceResourceRoute
   ServicesServiceIndexRoute: typeof ServicesServiceIndexRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesIamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/s3': {
+      id: '/services/s3'
+      path: '/services/s3'
+      fullPath: '/services/s3'
+      preLoaderRoute: typeof ServicesS3RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/$service/': {
       id: '/services/$service/'
       path: '/services/$service'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
   ServicesIamRoute: ServicesIamRoute,
+  ServicesS3Route: ServicesS3Route,
   ServicesServiceResourceRoute: ServicesServiceResourceRoute,
   ServicesServiceIndexRoute: ServicesServiceIndexRoute,
 }

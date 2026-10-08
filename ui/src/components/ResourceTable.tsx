@@ -15,11 +15,15 @@ import {
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
+import { s3Href } from "#/lib/s3";
 import { useFollow } from "#/lib/useFollow";
 import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "s3" && r.type === "bucket") {
+		return s3Href({ account: r.account, region: r.region, bucket: r.name });
+	}
 	if (r.service === "iam" && iamKinds.includes(r.type as IAMKind)) {
 		return iamHref(r.type as IAMKind, r.account, r.name);
 	}
