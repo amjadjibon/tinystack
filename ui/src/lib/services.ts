@@ -52,6 +52,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: compute,
 		icon: "autoscaling",
 	},
+	cloudcontrol: {
+		title: "Cloud Control API",
+		category: management,
+		icon: "cloudformation",
+	},
 	cloudformation: {
 		title: "CloudFormation",
 		category: management,
