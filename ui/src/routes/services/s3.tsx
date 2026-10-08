@@ -1,7 +1,6 @@
 import { useCollection } from "@cloudscape-design/collection-hooks";
 import {
 	Alert,
-	Autosuggest,
 	Box,
 	Button,
 	Checkbox,
@@ -22,7 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ConsoleLayout } from "#/components/Console";
 import { S3Bucket } from "#/components/s3/S3Bucket";
 import { S3Dialog } from "#/components/s3/S3Dialog";
-import { api, type Resource } from "#/lib/api";
+import type { Resource } from "#/lib/api";
 import {
 	emptyBucketSteps,
 	type S3Scope,
@@ -32,8 +31,8 @@ import {
 	sizeLabel,
 	validRegion,
 } from "#/lib/s3";
+import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
-import { usePoll } from "#/lib/usePoll";
 
 export const Route = createFileRoute("/services/s3")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -49,22 +48,14 @@ export const Route = createFileRoute("/services/s3")({
 function S3Page() {
 	const search = Route.useSearch();
 	const navigate = useNavigate();
-	const inventory = usePoll(api.resources);
-	const capabilities = usePoll(api.actionCapabilities, 15000);
-	const account = search.account || capabilities.data?.account || "";
-	const region = search.region || capabilities.data?.region || "";
+	const { account, region, inventory, capabilities } = useScope();
 	const scope = useMemo(
 		() => ({ account, region, bucket: search.bucket }),
 		[account, region, search.bucket],
 	);
-	const [accountDraft, setAccountDraft] = useState(account);
-	const [regionDraft, setRegionDraft] = useState(region);
 	const [notice, setNotice] = useState("");
-	useEffect(() => {
-		setAccountDraft(account);
-		setRegionDraft(region);
-		setNotice("");
-	}, [account, region]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: clear the previous scope’s success notice when switching.
+	useEffect(() => setNotice(""), [account, region]);
 	const enabled =
 		!!capabilities.data?.s3 &&
 		!capabilities.data.requires_signature &&
@@ -74,22 +65,6 @@ function S3Page() {
 		!!capabilities.data?.s3 && !capabilities.data.requires_signature;
 	const go = (next: S3Scope, prefix = "", key = "", version = "") =>
 		navigate({ to: "/services/s3", search: { ...next, prefix, key, version } });
-	const accounts = [
-		...new Set([
-			capabilities.data?.account,
-			...(inventory.data ?? []).map((r) => r.account),
-		]),
-	]
-		.filter((value): value is string => !!value)
-		.sort();
-	const regions = [
-		...new Set([
-			capabilities.data?.region,
-			...(inventory.data ?? []).map((r) => r.region),
-		]),
-	]
-		.filter((value): value is string => !!value && value !== "global")
-		.sort();
 	const refresh = (message: string) => {
 		inventory.reload();
 		setNotice(message);
@@ -127,52 +102,6 @@ function S3Page() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					<SpaceBetween direction="horizontal" size="m">
-						<FormField
-							label="AWS account"
-							errorText={
-								accountDraft && !/^\d{12}$/.test(accountDraft)
-									? "Enter a 12-digit account ID."
-									: undefined
-							}
-						>
-							<Autosuggest
-								value={accountDraft}
-								options={accounts.map((value) => ({ value }))}
-								ariaLabel="AWS account"
-								enteredTextLabel={(value) => `Use account ${value}`}
-								onChange={({ detail }) => setAccountDraft(detail.value)}
-							/>
-						</FormField>
-						<FormField
-							label="AWS Region"
-							errorText={
-								regionDraft && !validRegion(regionDraft)
-									? "Enter a Region such as us-east-1."
-									: undefined
-							}
-						>
-							<Autosuggest
-								value={regionDraft}
-								options={regions.map((value) => ({ value }))}
-								ariaLabel="AWS Region"
-								enteredTextLabel={(value) => `Use Region ${value}`}
-								onChange={({ detail }) => setRegionDraft(detail.value)}
-							/>
-						</FormField>
-						<Button
-							disabled={
-								!/^\d{12}$/.test(accountDraft) ||
-								!validRegion(regionDraft) ||
-								(account === accountDraft && region === regionDraft)
-							}
-							onClick={() =>
-								go({ account: accountDraft, region: regionDraft, bucket: "" })
-							}
-						>
-							Switch scope
-						</Button>
-					</SpaceBetween>
 					{notice && (
 						<Flashbar
 							items={[

@@ -11,6 +11,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ConsoleHeader, ConsoleLayout } from "#/components/Console";
 import { EmptyState } from "#/components/EmptyState";
 import { HealthProvider } from "#/lib/health";
+import { ScopeProvider } from "#/lib/scope";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -55,8 +56,10 @@ function NotFound() {
 function Root() {
 	return (
 		<HealthProvider>
-			<ConsoleHeader />
-			<Outlet />
+			<ScopeProvider>
+				<ConsoleHeader />
+				<Outlet />
+			</ScopeProvider>
 		</HealthProvider>
 	);
 }

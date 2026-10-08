@@ -2,17 +2,25 @@ import {
 	AppLayout,
 	type AppLayoutProps,
 	Autosuggest,
+	Box,
 	BreadcrumbGroup,
 	type BreadcrumbGroupProps,
+	Button,
 	Flashbar,
+	FormField,
+	Modal,
 	SideNavigation,
 	type SideNavigationProps,
+	SpaceBetween,
 	TopNavigation,
+	type TopNavigationProps,
 } from "@cloudscape-design/components";
 import { Density, Mode } from "@cloudscape-design/global-styles";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { useHealth } from "#/lib/health";
+import { validRegion } from "#/lib/s3";
+import { useScope } from "#/lib/scope";
 import { service } from "#/lib/services";
 import {
 	applyPreferences,
@@ -24,13 +32,75 @@ import { useFollow } from "#/lib/useFollow";
 const headerID = "console-header";
 
 // ConsoleHeader is the top bar every page shares: the TinyStack identity,
-// a service search, and the display settings.
+// a service search, account/Region menus, and the display settings.
 export function ConsoleHeader() {
 	const navigate = useNavigate();
 	const follow = useFollow();
 	const { data } = useHealth();
 	const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
 	const [query, setQuery] = useState("");
+	const scope = useScope();
+	const [scopeDialog, setScopeDialog] = useState<"account" | "region" | null>(
+		null,
+	);
+	const [scopeDraft, setScopeDraft] = useState("");
+	const openScopeDialog = (kind: "account" | "region") => {
+		setScopeDraft(scope[kind]);
+		setScopeDialog(kind);
+	};
+	const scopeUtilities: TopNavigationProps.Utility[] = [
+		scope.global
+			? {
+					type: "button",
+					text: "Global",
+					ariaLabel: "Global service",
+					title: "This service is global",
+				}
+			: {
+					type: "menu-dropdown",
+					text: scope.region || "Region",
+					title: "AWS Region",
+					ariaLabel: `AWS Region: ${scope.region || "Choose Region"}`,
+					disableTextCollapse: true,
+					items: [
+						...scope.regions.map((region) => ({
+							id: region,
+							text: region,
+							itemType: "checkbox" as const,
+							checked: region === scope.region,
+						})),
+						{ id: "switch", text: "Switch Region…" },
+					],
+					onItemClick: ({ detail }) =>
+						detail.id === "switch"
+							? openScopeDialog("region")
+							: scope.switchScope({ region: detail.id }),
+				},
+		{
+			type: "menu-dropdown",
+			text: scope.account || "Account",
+			title: "AWS account",
+			ariaLabel: `AWS account: ${scope.account || "Choose account"}`,
+			disableTextCollapse: true,
+			items: [
+				...scope.accounts.map((account) => ({
+					id: account,
+					text: account,
+					itemType: "checkbox" as const,
+					checked: account === scope.account,
+				})),
+				{ id: "switch", text: "Switch account…" },
+			],
+			onItemClick: ({ detail }) =>
+				detail.id === "switch"
+					? openScopeDialog("account")
+					: scope.switchScope({ account: detail.id }),
+		},
+	];
+	const validDraft =
+		scopeDialog === "account"
+			? /^\d{12}$/.test(scopeDraft)
+			: validRegion(scopeDraft);
 
 	useEffect(() => applyPreferences(preferences), [preferences]);
 
@@ -126,8 +196,67 @@ export function ConsoleHeader() {
 							}
 						},
 					},
+					...scopeUtilities,
 				]}
+				i18nStrings={{
+					overflowMenuTriggerText: "More",
+					overflowMenuTitleText: "Console menu",
+					overflowMenuBackIconAriaLabel: "Back",
+					overflowMenuDismissIconAriaLabel: "Close menu",
+				}}
 			/>
+			{scopeDialog && (
+				<Modal
+					visible
+					header={
+						scopeDialog === "account" ? "Switch account" : "Switch Region"
+					}
+					onDismiss={() => setScopeDialog(null)}
+					footer={
+						<Box float="right">
+							<SpaceBetween direction="horizontal" size="xs">
+								<Button variant="link" onClick={() => setScopeDialog(null)}>
+									Cancel
+								</Button>
+								<Button
+									variant="primary"
+									disabled={!validDraft || scopeDraft === scope[scopeDialog]}
+									onClick={() => {
+										scope.switchScope({ [scopeDialog]: scopeDraft });
+										setScopeDialog(null);
+									}}
+								>
+									Switch {scopeDialog === "account" ? "account" : "Region"}
+								</Button>
+							</SpaceBetween>
+						</Box>
+					}
+				>
+					<FormField
+						label={scopeDialog === "account" ? "AWS account" : "AWS Region"}
+						errorText={
+							scopeDraft && !validDraft
+								? scopeDialog === "account"
+									? "Enter a 12-digit account ID."
+									: "Enter a Region such as us-east-1."
+								: undefined
+						}
+					>
+						<Autosuggest
+							value={scopeDraft}
+							options={(scopeDialog === "account"
+								? scope.accounts
+								: scope.regions
+							).map((value) => ({ value }))}
+							ariaLabel={
+								scopeDialog === "account" ? "AWS account" : "AWS Region"
+							}
+							enteredTextLabel={(value) => `Use ${value}`}
+							onChange={({ detail }) => setScopeDraft(detail.value)}
+						/>
+					</FormField>
+				</Modal>
+			)}
 		</div>
 	);
 }

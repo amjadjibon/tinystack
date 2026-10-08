@@ -1,15 +1,12 @@
 import { useCollection } from "@cloudscape-design/collection-hooks";
 import {
 	Alert,
-	Autosuggest,
-	Badge,
 	Box,
 	Button,
 	ColumnLayout,
 	Container,
 	ContentLayout,
 	Flashbar,
-	FormField,
 	Header,
 	KeyValuePairs,
 	Link,
@@ -24,7 +21,7 @@ import { ConsoleLayout } from "#/components/Console";
 import { EmptyState } from "#/components/EmptyState";
 import { IAMCreate } from "#/components/iam/IAMCreate";
 import { IAMDetail } from "#/components/iam/IAMDetail";
-import { api, type Resource } from "#/lib/api";
+import type { Resource } from "#/lib/api";
 import {
 	type IAMKind,
 	type IAMSection,
@@ -32,8 +29,8 @@ import {
 	iamKinds,
 	iamLabels,
 } from "#/lib/iam";
+import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
-import { usePoll } from "#/lib/usePoll";
 
 type IAMSearch = {
 	section: IAMSection;
@@ -56,15 +53,10 @@ export const Route = createFileRoute("/services/iam")({
 function IAMPage() {
 	const search = Route.useSearch();
 	const navigate = useNavigate();
-	const inventory = usePoll(api.resources);
-	const capabilities = usePoll(api.actionCapabilities, 15000);
-	const account = search.account || capabilities.data?.account || "";
-	const [accountDraft, setAccountDraft] = useState(account);
+	const { account, inventory, capabilities } = useScope();
 	const [notice, setNotice] = useState("");
-	useEffect(() => {
-		setAccountDraft(account);
-		setNotice("");
-	}, [account]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: clear the previous scope’s success notice when switching.
+	useEffect(() => setNotice(""), [account]);
 	const resources = (inventory.data ?? []).filter(
 		(r) => r.service === "iam" && r.account === account,
 	);
@@ -72,14 +64,6 @@ function IAMPage() {
 		!!capabilities.data?.iam &&
 		!capabilities.data.requires_signature &&
 		/^\d{12}$/.test(account);
-	const accounts = [
-		...new Set([
-			capabilities.data?.account ?? "",
-			...(inventory.data ?? []).map((r) => r.account),
-		]),
-	]
-		.filter(Boolean)
-		.sort();
 	const go = (
 		section: IAMSection,
 		name = "",
@@ -138,37 +122,6 @@ function IAMPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					<SpaceBetween direction="horizontal" size="l" alignItems="center">
-						<FormField
-							label="AWS account"
-							errorText={
-								accountDraft && !/^\d{12}$/.test(accountDraft)
-									? "Enter a 12-digit account ID."
-									: undefined
-							}
-						>
-							<Autosuggest
-								value={accountDraft}
-								options={accounts.map((value) => ({ value }))}
-								ariaLabel="AWS account"
-								placeholder="12-digit account ID"
-								onChange={({ detail }) => setAccountDraft(detail.value)}
-								onSelect={({ detail }) =>
-									detail.value && go(search.section, "", false, detail.value)
-								}
-								enteredTextLabel={(value) => `Use account ${value}`}
-							/>
-						</FormField>
-						<Button
-							disabled={
-								!/^\d{12}$/.test(accountDraft) || accountDraft === account
-							}
-							onClick={() => go(search.section, "", false, accountDraft)}
-						>
-							Switch account
-						</Button>
-						<Badge color="grey">Global service</Badge>
-					</SpaceBetween>
 					{notice && (
 						<Flashbar
 							items={[
