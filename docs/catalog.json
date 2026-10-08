@@ -719,15 +719,38 @@
         "Identities are verified immediately; templates and configuration sets are stored",
         "SendEmail and bulk email validate senders and render a Handlebars subset",
         "Delivery records contain messages; configuration set events reach SNS, EventBridge and Firehose",
-        "Mailbox simulator addresses generate bounce/complaint behavior"
+        "Mailbox simulator addresses generate bounce/complaint behavior",
+        "Identities, templates, configuration sets and send counts are shared with SES v1"
       ],
       "gaps": [
         "No SMTP or real outbound email delivery",
-        "SES v1 is not registered",
         "Identity verification is immediate; template rendering and sending limits are local approximations"
       ],
       "execution": "Recorded delivery",
       "package": "sesv2"
+    },
+    "ses": {
+      "title": "SES v1",
+      "category": "Workflow and email",
+      "summary": "Send and verify email with the classic SES Query API over the same state as SES v2.",
+      "features": [
+        "Same signing name as SES v2: form requests reach v1 and REST JSON requests reach v2",
+        "VerifyEmailIdentity, VerifyEmailAddress, VerifyDomainIdentity and VerifyDomainDkim verify immediately, with three DKIM tokens for a domain",
+        "ListIdentities, GetIdentityVerificationAttributes, ListVerifiedEmailAddresses and DeleteIdentity read and write the identities SES v2 stores",
+        "SendEmail, SendRawEmail (MIME parsed with net/mail), SendTemplatedEmail and SendBulkTemplatedEmail check the sender, render templates, and record messages in the delivery log",
+        "CreateTemplate, GetTemplate, UpdateTemplate, DeleteTemplate and ListTemplates share SES v2 templates",
+        "CreateConfigurationSet, DeleteConfigurationSet, ListConfigurationSets and DescribeConfigurationSet share SES v2 configuration sets, whose events a send publishes",
+        "GetSendQuota and GetSendStatistics report the hourly send counts SES v2 keeps"
+      ],
+      "gaps": [
+        "No SMTP or real outbound email delivery",
+        "Configuration set event destinations, tracking, delivery and reputation options, receipt rules, identity policies, notification and MAIL FROM settings, and custom verification emails are not implemented",
+        "SendEmail rejects ReturnPath, SourceArn and ReturnPathArn; sending authorization is not evaluated",
+        "DescribeConfigurationSet returns only the name, and GetSendStatistics reports hourly rather than 15-minute data points with no bounces, complaints or rejects",
+        "Identity verification is immediate; domain verification tokens are derived from the domain"
+      ],
+      "execution": "Recorded delivery",
+      "package": "ses"
     },
     "iot": {
       "title": "IoT Core",
@@ -841,7 +864,7 @@
       "title": "AWS Account",
       "state": "Proposed",
       "slice": "Implement `GetAccountInformation`, `GetContactInformation`, and `ListRegions` for the caller's account.",
-      "features": "- [ ] `GetAccountInformation` \u2014 return `AccountId`, `AccountName`, `AccountCreatedDate`, and `AccountState` through `POST /getAccountInformation`.\n- [ ] `GetContactInformation` \u2014 return configured primary contact details through `POST /getContactInformation`.\n- [ ] `ListRegions` \u2014 return region opt-in statuses through `POST /listRegions`, with `RegionOptStatusContains`, `MaxResults`, and `NextToken`.\n- [ ] `GetRegionOptStatus` \u2014 validate `RegionName` and return the same status as `ListRegions` through `POST /getRegionOptStatus`.\n- [ ] Additive `AccountState` \u2014 populate `ACTIVE` by default. The field was added on 2026-04-29; newer SDKs expose it while older JSON SDK models can ignore it.",
+      "features": "- [ ] `GetAccountInformation` — return `AccountId`, `AccountName`, `AccountCreatedDate`, and `AccountState` through `POST /getAccountInformation`.\n- [ ] `GetContactInformation` — return configured primary contact details through `POST /getContactInformation`.\n- [ ] `ListRegions` — return region opt-in statuses through `POST /listRegions`, with `RegionOptStatusContains`, `MaxResults`, and `NextToken`.\n- [ ] `GetRegionOptStatus` — validate `RegionName` and return the same status as `ListRegions` through `POST /getRegionOptStatus`.\n- [ ] Additive `AccountState` — populate `ACTIVE` by default. The field was added on 2026-04-29; newer SDKs expose it while older JSON SDK models can ignore it.",
       "integration": "Use the AWS Account `2021-02-01` REST JSON model and SigV4 signing name `account`. Resolve the account through `identity.accounts` or `defaults.account`; keep account details and region statuses consistent across calls and restarts. Serve only the caller's account until Organizations delegation exists, and reject another explicit `AccountId`. Encode modeled status codes and errors through the REST JSON codec.",
       "acceptance": "Call all four paths through an AWS SDK and raw REST JSON requests. Check account isolation, validation errors, region filtering and pagination, and consistent opt-in statuses. Confirm `AccountState` in raw responses and current SDKs, compatibility with an older SDK model, and stable configured details after restart."
     },
@@ -948,7 +971,7 @@
       "title": "ECS Task Metadata",
       "state": "Proposed",
       "slice": "Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`.",
-      "features": "- [ ] `GetTaskMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` \u2014 serve the matching ECS task metadata V4 HTTP route.",
+      "features": "- [ ] `GetTaskMetadata` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` — serve the matching ECS task metadata V4 HTTP route.",
       "acceptance": "Call the `/v4/<token>` metadata routes over HTTP. Check valid and unknown tokens, task and container metadata, stats, and token isolation."
     },
     "efs": {
@@ -967,7 +990,7 @@
       "title": "EC2 Instance Metadata",
       "state": "Proposed",
       "slice": "Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`.",
-      "features": "- [ ] `GetInstanceIdentityDocument` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` \u2014 serve the corresponding IMDS HTTP path.",
+      "features": "- [ ] `GetInstanceIdentityDocument` — serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` — serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` — serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` — serve the corresponding IMDS HTTP path.",
       "acceptance": "Call `/latest/` metadata routes over HTTP. Check IMDSv2 token issuance, credential and identity paths, expiry, and instance isolation."
     },
     "inspector2": {
@@ -1035,8 +1058,8 @@
       "title": "OpenSearch Service",
       "state": "Runtime decision required",
       "slice": "create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls.",
-      "features": "- [ ] Management \u2014 Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime \u2014 Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence \u2014 Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features \u2014 Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
-      "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account\u2019s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
+      "features": "- [ ] Management — Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime — Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence — Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features — Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
+      "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account’s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
       "acceptance": "Create a domain with an AWS SDK, wait until available, index and search through\nthe returned endpoint, restart, and delete. Verify index isolation, unsupported\nconfiguration errors, failed launch cleanup, memory/port limits, tags, and\nmanagement response parity against AWS captures."
     },
     "organizations": {
@@ -1056,7 +1079,7 @@
       "title": "RDS",
       "state": "Runtime decision required",
       "slice": "create a PostgreSQL DB instance, obtain its endpoint, connect to a real local database, and delete it through RDS-style management calls.",
-      "features": "- [ ] Management \u2014 `CreateDBInstance`, `DescribeDBInstances`, `ModifyDBInstance`, `DeleteDBInstance`, and tag/list operations for a single supported PostgreSQL engine/version family. Validate identifier, size, credentials, storage, and delete options.\n- [ ] Runtime \u2014 Start one isolated PostgreSQL container per instance or a safely isolated shared engine; allocate a stable reachable host/port and persist the instance-to-runtime mapping. Health checks drive creating \u2192 available \u2192 deleting state.\n- [ ] Data lifecycle \u2014 Decide whether a persistent TinyStack restart reconnects to the same database volume. Delete removes runtime and data unless a documented retained snapshot option is chosen.\n- [ ] Later features \u2014 Read replicas, snapshots/restore, parameter groups, subnet groups, failover, IAM database authentication, and non-PostgreSQL engines are separate slices.",
+      "features": "- [ ] Management — `CreateDBInstance`, `DescribeDBInstances`, `ModifyDBInstance`, `DeleteDBInstance`, and tag/list operations for a single supported PostgreSQL engine/version family. Validate identifier, size, credentials, storage, and delete options.\n- [ ] Runtime — Start one isolated PostgreSQL container per instance or a safely isolated shared engine; allocate a stable reachable host/port and persist the instance-to-runtime mapping. Health checks drive creating → available → deleting state.\n- [ ] Data lifecycle — Decide whether a persistent TinyStack restart reconnects to the same database volume. Delete removes runtime and data unless a documented retained snapshot option is chosen.\n- [ ] Later features — Read replicas, snapshots/restore, parameter groups, subnet groups, failover, IAM database authentication, and non-PostgreSQL engines are separate slices.",
       "integration": "Management records are account/region-scoped, but SQL data lives in the\nunderlying engine. The Docker/runtime adapter owns container, volume, port,\nstartup, and shutdown operations; the RDS provider owns AWS validation and\nstate transitions. Never run container operations within a store transaction.\nCreate must either publish a usable endpoint or end in a visible failure state\nwith cleanup. A remote Docker daemon may make `localhost` endpoints unusable;\nendpoint selection is part of runtime configuration.",
       "acceptance": "Create an instance with the AWS SDK, wait for availability, connect through\nPostgreSQL, create and read a table, restart TinyStack, then delete and verify\ncleanup. Test duplicate identifiers, invalid credentials/options, two accounts\nwith the same ID, failed engine startup, port allocation, and graceful shutdown.\nCompare RDS management Query responses with AWS fixtures."
     },
@@ -1083,12 +1106,6 @@
       "state": "Proposed",
       "slice": "Implement `CreatePrivateDnsNamespace`, `CreateService`, `RegisterInstance`.",
       "features": "- [ ] `CreatePrivateDnsNamespace`\n- [ ] `CreateService`\n- [ ] `RegisterInstance`\n- [ ] `DiscoverInstances`\n- [ ] `DeregisterInstance`"
-    },
-    "ses": {
-      "title": "SES v1",
-      "state": "Proposed",
-      "slice": "Implement `SendEmail`, `SendRawEmail`, `SendTemplatedEmail`.",
-      "features": "- [ ] `SendEmail`\n- [ ] `SendRawEmail`\n- [ ] `SendTemplatedEmail`\n- [ ] `SendBulkTemplatedEmail`\n- [ ] `VerifyEmailIdentity`\n- [ ] `VerifyEmailAddress`\n- [ ] `VerifyDomainIdentity`\n- [ ] `VerifyDomainDkim`\n- [ ] `ListIdentities`\n- [ ] `GetIdentityVerificationAttributes`\n- [ ] `DeleteIdentity`\n- [ ] `GetSendQuota`\n- [ ] `GetSendStatistics`\n- [ ] `ListVerifiedEmailAddresses`\n- [ ] `CreateConfigurationSet`"
     },
     "signer": {
       "title": "AWS Signer",

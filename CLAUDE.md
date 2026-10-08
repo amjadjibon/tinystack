@@ -31,8 +31,9 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 
 - **gateway** picks the wire protocol from headers before anything else (JSON 1.0/1.1, RPC v2 CBOR, Query, EC2
   Query, REST XML, REST JSON), resolves account and Region from the SigV4 credential scope, checks signatures only
-  in `identity.mode: verify`, decodes the input, and puts `request.Metadata` in the context. Codecs live in
-  `internal/aws/protocol/*`; they are driven entirely by generated tags and bindings.
+  in `identity.mode: verify`, decodes the input, and puts `request.Metadata` in the context. A form request to a
+  signing name that a Query service shares with a REST one (SES v1 beside SES v2) goes to the Query service.
+  Codecs live in `internal/aws/protocol/*`; they are driven entirely by generated tags and bindings.
 - **generated** (`internal/aws/generated/<service>/api.go`): wire types, the `API` interface, and `Descriptor`.
   **Never hand-edit them, the Smithy models in `generator/model/`, or `manifest.json`.** `profile.json` whitelists
   each service's `operations` and the `shapes` members it supports; change it, then `task generate`.

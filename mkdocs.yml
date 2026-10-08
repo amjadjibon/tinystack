@@ -149,6 +149,7 @@ nav:
           - "ElastiCache": services/elasticache.md
           - "S3": services/s3.md
       - "Workflow and email":
+          - "SES v1": services/ses.md
           - "SES v2": services/sesv2.md
           - "Step Functions": services/sfn.md
   - Roadmap:
@@ -195,7 +196,6 @@ nav:
           - "Resource Groups": roadmap/services/resource-groups.md
           - "S3 Files": roadmap/services/s3files.md
           - "S3 Tables": roadmap/services/s3tables.md
-          - "SES v1": roadmap/services/ses.md
           - "Transcribe": roadmap/services/transcribe.md
           - "Transfer Family": roadmap/services/transfer.md
           - "Translate": roadmap/services/translate.md

@@ -47,7 +47,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Resource Groups](services/resource-groups.md) | Proposed | Implement `CreateGroup`, `GetGroup`, `DeleteGroup`. |
 | [S3 Files](services/s3files.md) | Proposed | Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`. |
 | [S3 Tables](services/s3tables.md) | Proposed | Implement `CreateTableBucket`, `ListTableBuckets`, `GetTableBucket`. |
-| [SES v1](services/ses.md) | Proposed | Implement `SendEmail`, `SendRawEmail`, `SendTemplatedEmail`. |
 | [Transcribe](services/transcribe.md) | Proposed | Implement `StartTranscriptionJob`, `GetTranscriptionJob`, `ListTranscriptionJobs`. |
 | [Transfer Family](services/transfer.md) | Proposed | Implement `CreateServer`, `DescribeServer`, `DeleteServer`. |
 | [Translate](services/translate.md) | Proposed | Implement `StartTextTranslationJob`, `DescribeTextTranslationJob`, `ListTextTranslationJobs`. |

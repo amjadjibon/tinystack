@@ -22,7 +22,6 @@ See the [implemented feature catalogue](catalogue.md#ses-v2) for this service's 
 ## Limitations and future work
 
 - No SMTP or real outbound email delivery.
-- SES v1 is not registered.
 - Identity verification is immediate; template rendering and sending limits are local approximations.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
