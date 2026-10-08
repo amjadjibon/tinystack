@@ -58,6 +58,7 @@ import (
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
 	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -101,6 +102,7 @@ import (
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
 	schedules "github.com/amjadjibon/tinystack/internal/services/scheduler"
 	secrets "github.com/amjadjibon/tinystack/internal/services/secretsmanager"
+	"github.com/amjadjibon/tinystack/internal/services/ses"
 	email "github.com/amjadjibon/tinystack/internal/services/sesv2"
 	stepfunctions "github.com/amjadjibon/tinystack/internal/services/sfn"
 	topics "github.com/amjadjibon/tinystack/internal/services/sns"
@@ -251,6 +253,7 @@ func serverStore(
 		pipesapi.Descriptor(pipes),
 		cloudwatchapi.Descriptor(monitoring),
 		cloudformationapi.Descriptor(stacks),
+		sesapi.Descriptor(ses.New(mail)),
 		sesv2api.Descriptor(mail),
 		cognitoidentityapi.Descriptor(identityPools),
 		glueapi.Descriptor(catalogService),

@@ -54,6 +54,7 @@ import (
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
 	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
@@ -102,6 +103,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
+	"github.com/amjadjibon/tinystack/internal/services/ses"
 	"github.com/amjadjibon/tinystack/internal/services/sesv2"
 	"github.com/amjadjibon/tinystack/internal/services/sfn"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
@@ -292,6 +294,7 @@ func newStartCommand() *cobra.Command {
 				pipesapi.Descriptor(pipelines),
 				cloudwatchapi.Descriptor(monitoring),
 				cloudformationapi.Descriptor(stacks),
+				sesapi.Descriptor(ses.New(email)),
 				sesv2api.Descriptor(email),
 				cognitoidentityapi.Descriptor(identityPools),
 				glueapi.Descriptor(dataCatalog),
