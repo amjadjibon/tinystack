@@ -52,6 +52,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
@@ -94,6 +95,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	pipelines "github.com/amjadjibon/tinystack/internal/services/pipes"
 	taggingapi "github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	zones "github.com/amjadjibon/tinystack/internal/services/route53"
 	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
@@ -193,6 +195,7 @@ func serverStore(
 	}
 
 	firehoses := deliverystreams.New(store, streams, deliveries, logger)
+	pipes := pipelines.New(store, sqsService, streams, tables.Streams(), logger)
 	monitoring := cloudwatch.New(store, logger)
 	dns := zones.New(store)
 	distributions := cdn.New(store)
@@ -245,6 +248,7 @@ func serverStore(
 		elbv2api.Descriptor(balancers),
 		acmapi.Descriptor(certificates.New(store)),
 		firehoseapi.Descriptor(firehoses),
+		pipesapi.Descriptor(pipes),
 		cloudwatchapi.Descriptor(monitoring),
 		cloudformationapi.Descriptor(stacks),
 		sesv2api.Descriptor(mail),
@@ -261,6 +265,7 @@ func serverStore(
 	devices.UseRoleCredentials(stsService.AssumeRoleForService)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
+	pipes.UseCaller(caller)
 	monitoring.UseCaller(caller)
 	dns.UseCaller(caller)
 	timers.UseCaller(caller)
@@ -314,6 +319,7 @@ func serverStore(
 		caches.Stop()
 		workflows.Stop()
 		firehoses.Stop()
+		pipes.Stop()
 		monitoring.Stop()
 		timers.Stop()
 		scaling.Stop()
