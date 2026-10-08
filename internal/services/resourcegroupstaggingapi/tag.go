@@ -250,6 +250,7 @@ var taggers = map[string]tagger{
 			return putBucketTags(ctx, c, r, tagging.Remove(maps.Clone(r.Tags), keys))
 		},
 	},
+	"resourcegroups": operations("resourcegroups", "Tag", "Untag", byARN("Arn"), "Tags", plain, "Keys", names),
 	"scheduler":      resourceOperations("scheduler", "ResourceArn", pairs),
 	"secretsmanager": resourceOperations("secretsmanager", "SecretId", pairs),
 	"sesv2":          resourceOperations("sesv2", "ResourceArn", pairs),

@@ -49,6 +49,7 @@ import (
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
+	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
@@ -98,6 +99,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
+	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
@@ -259,6 +261,7 @@ func newStartCommand() *cobra.Command {
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
 			tags := resourcegroupstaggingapi.New()
+			groups := resourcegroups.New(store)
 			services := []catalog.Service{
 				dynamodbapi.Descriptor(tables),
 				dynamodbstreamsapi.Descriptor(tables.Streams()),
@@ -303,6 +306,7 @@ func newStartCommand() *cobra.Command {
 				iotdataplaneapi.Descriptor(things.DataPlane()),
 				iotjobsdataplaneapi.Descriptor(things.JobsDataPlane()),
 				resourcegroupstaggingapiapi.Descriptor(tags),
+				resourcegroupsapi.Descriptor(groups),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.
@@ -335,6 +339,8 @@ func newStartCommand() *cobra.Command {
 			// The Tagging API reads every service's resources and tags them
 			// through their own operations.
 			tags.UseCaller(caller)
+			// Groups resolve their queries against the same resources, and read CloudFormation stacks.
+			groups.UseCaller(caller)
 			// The credentials provider exchanges certificates for role credentials.
 			things.UseRoleCredentials(tokens.AssumeRoleForService)
 			handler, err := gateway.New(cfg, logger, services...)
