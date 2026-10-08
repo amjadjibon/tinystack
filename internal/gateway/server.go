@@ -527,6 +527,12 @@ func (s *Server) restServices(r *http.Request) []*catalog.Service {
 		name = "s3"
 	}
 
+	// A form request to a name that a Query service also signs with, such as
+	// SES v1 beside the REST JSON SES v2, is that Query service's.
+	if (contentType == formContentType || queryGET(r)) && s.signsQuery(name) {
+		return nil
+	}
+
 	var out []*catalog.Service
 	for _, service := range s.services {
 		if restProtocol(service) != "" && service.SigningName == name {
@@ -536,6 +542,17 @@ func (s *Server) restServices(r *http.Request) []*catalog.Service {
 
 	slices.SortFunc(out, func(a, b *catalog.Service) int { return strings.Compare(a.Name, b.Name) })
 	return out
+}
+
+// signsQuery reports whether a Query service signs with name.
+func (s *Server) signsQuery(name string) bool {
+	for _, service := range s.services {
+		if isQuery(service) && service.SigningName == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *Server) decode(
