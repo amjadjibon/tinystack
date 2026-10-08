@@ -14421,6 +14421,230 @@
       ]
     }
   },
+  "ses": {
+    "operations": [
+      "SendEmail",
+      "SendRawEmail",
+      "SendTemplatedEmail",
+      "SendBulkTemplatedEmail",
+      "VerifyEmailIdentity",
+      "VerifyEmailAddress",
+      "VerifyDomainIdentity",
+      "VerifyDomainDkim",
+      "ListIdentities",
+      "GetIdentityVerificationAttributes",
+      "DeleteIdentity",
+      "GetSendQuota",
+      "GetSendStatistics",
+      "ListVerifiedEmailAddresses",
+      "CreateTemplate",
+      "GetTemplate",
+      "UpdateTemplate",
+      "DeleteTemplate",
+      "ListTemplates",
+      "CreateConfigurationSet",
+      "DeleteConfigurationSet",
+      "ListConfigurationSets",
+      "DescribeConfigurationSet"
+    ],
+    "shapes": {
+      "SendEmailRequest": [
+        "Source",
+        "Destination",
+        "Message",
+        "ReplyToAddresses",
+        "Tags",
+        "ConfigurationSetName"
+      ],
+      "SendEmailResponse": [
+        "MessageId"
+      ],
+      "SendRawEmailRequest": [
+        "Source",
+        "Destinations",
+        "RawMessage",
+        "Tags",
+        "ConfigurationSetName"
+      ],
+      "SendRawEmailResponse": [
+        "MessageId"
+      ],
+      "SendTemplatedEmailRequest": [
+        "Source",
+        "Destination",
+        "ReplyToAddresses",
+        "Tags",
+        "ConfigurationSetName",
+        "Template",
+        "TemplateArn",
+        "TemplateData"
+      ],
+      "SendTemplatedEmailResponse": [
+        "MessageId"
+      ],
+      "SendBulkTemplatedEmailRequest": [
+        "Source",
+        "ReplyToAddresses",
+        "ConfigurationSetName",
+        "DefaultTags",
+        "Template",
+        "TemplateArn",
+        "DefaultTemplateData",
+        "Destinations"
+      ],
+      "SendBulkTemplatedEmailResponse": [
+        "Status"
+      ],
+      "BulkEmailDestination": [
+        "Destination",
+        "ReplacementTags",
+        "ReplacementTemplateData"
+      ],
+      "BulkEmailDestinationStatus": [
+        "Status",
+        "Error",
+        "MessageId"
+      ],
+      "Destination": [
+        "ToAddresses",
+        "CcAddresses",
+        "BccAddresses"
+      ],
+      "Message": [
+        "Subject",
+        "Body"
+      ],
+      "Body": [
+        "Text",
+        "Html"
+      ],
+      "Content": [
+        "Data",
+        "Charset"
+      ],
+      "RawMessage": [
+        "Data"
+      ],
+      "MessageTag": [
+        "Name",
+        "Value"
+      ],
+      "VerifyEmailIdentityRequest": [
+        "EmailAddress"
+      ],
+      "VerifyEmailAddressRequest": [
+        "EmailAddress"
+      ],
+      "VerifyDomainIdentityRequest": [
+        "Domain"
+      ],
+      "VerifyDomainIdentityResponse": [
+        "VerificationToken"
+      ],
+      "VerifyDomainDkimRequest": [
+        "Domain"
+      ],
+      "VerifyDomainDkimResponse": [
+        "DkimTokens"
+      ],
+      "ListIdentitiesRequest": [
+        "IdentityType",
+        "NextToken",
+        "MaxItems"
+      ],
+      "ListIdentitiesResponse": [
+        "Identities",
+        "NextToken"
+      ],
+      "GetIdentityVerificationAttributesRequest": [
+        "Identities"
+      ],
+      "GetIdentityVerificationAttributesResponse": [
+        "VerificationAttributes"
+      ],
+      "IdentityVerificationAttributes": [
+        "VerificationStatus",
+        "VerificationToken"
+      ],
+      "DeleteIdentityRequest": [
+        "Identity"
+      ],
+      "GetSendQuotaResponse": [
+        "Max24HourSend",
+        "MaxSendRate",
+        "SentLast24Hours"
+      ],
+      "GetSendStatisticsResponse": [
+        "SendDataPoints"
+      ],
+      "SendDataPoint": [
+        "Timestamp",
+        "DeliveryAttempts",
+        "Bounces",
+        "Complaints",
+        "Rejects"
+      ],
+      "ListVerifiedEmailAddressesResponse": [
+        "VerifiedEmailAddresses"
+      ],
+      "CreateTemplateRequest": [
+        "Template"
+      ],
+      "UpdateTemplateRequest": [
+        "Template"
+      ],
+      "Template": [
+        "TemplateName",
+        "SubjectPart",
+        "TextPart",
+        "HtmlPart"
+      ],
+      "GetTemplateRequest": [
+        "TemplateName"
+      ],
+      "GetTemplateResponse": [
+        "Template"
+      ],
+      "DeleteTemplateRequest": [
+        "TemplateName"
+      ],
+      "ListTemplatesRequest": [
+        "NextToken",
+        "MaxItems"
+      ],
+      "ListTemplatesResponse": [
+        "TemplatesMetadata",
+        "NextToken"
+      ],
+      "TemplateMetadata": [
+        "Name",
+        "CreatedTimestamp"
+      ],
+      "CreateConfigurationSetRequest": [
+        "ConfigurationSet"
+      ],
+      "DeleteConfigurationSetRequest": [
+        "ConfigurationSetName"
+      ],
+      "ListConfigurationSetsRequest": [
+        "NextToken",
+        "MaxItems"
+      ],
+      "ListConfigurationSetsResponse": [
+        "ConfigurationSets",
+        "NextToken"
+      ],
+      "DescribeConfigurationSetRequest": [
+        "ConfigurationSetName"
+      ],
+      "DescribeConfigurationSetResponse": [
+        "ConfigurationSet"
+      ],
+      "ConfigurationSet": [
+        "Name"
+      ]
+    }
+  },
   "sesv2": {
     "operations": [
       "CreateEmailIdentity",
