@@ -26,7 +26,10 @@ type configSet struct {
 func loadConfigSet(tx storage.ReadTx, scope request.Scope, name *string) (*configSet, error) {
 	c, ok, err := storage.Read[configSet](tx, scope.Key(service, kindConfigSet, common.Value(name)))
 	if err != nil || !ok {
-		return nil, common.ErrorsOr(err, notFound("Configuration set %s does not exist.", common.Value(name)))
+		return nil, common.ErrorsOr(
+			err,
+			notFound(kindConfigSet, "Configuration set %s does not exist.", common.Value(name)),
+		)
 	}
 
 	return c, nil
@@ -188,7 +191,7 @@ func (c *configSet) destination(name *string) (int, error) {
 		return common.Value(d.Name) == common.Value(name)
 	})
 	if i < 0 {
-		return 0, notFound("Event destination %s does not exist.", common.Value(name))
+		return 0, notFound("event-destination", "Event destination %s does not exist.", common.Value(name))
 	}
 
 	return i, nil

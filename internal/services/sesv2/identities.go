@@ -40,7 +40,10 @@ func (i *identity) dkim() *api.DkimAttributes {
 func loadIdentity(tx storage.ReadTx, scope request.Scope, name *string) (*identity, error) {
 	i, ok, err := storage.Read[identity](tx, identityKey(scope, common.Value(name)))
 	if err != nil || !ok {
-		return nil, common.ErrorsOr(err, notFound("Email identity %s does not exist.", common.Value(name)))
+		return nil, common.ErrorsOr(
+			err,
+			notFound(kindIdentity, "Email identity %s does not exist.", common.Value(name)),
+		)
 	}
 
 	return i, nil

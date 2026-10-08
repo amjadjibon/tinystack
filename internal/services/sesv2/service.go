@@ -16,6 +16,7 @@ package sesv2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -68,8 +69,31 @@ func badRequest(format string, args ...any) error {
 	return awserror.New("BadRequestException", fmt.Sprintf(format, args...))
 }
 
-func notFound(format string, args ...any) error {
-	return awserror.New("NotFoundException", fmt.Sprintf(format, args...))
+// missing is a NotFoundException that remembers what was not found, which API
+// v1 reports under a code of its own.
+type missing struct {
+	err  *awserror.Error
+	kind string
+}
+
+func (m *missing) Error() string { return m.err.Error() }
+
+func (m *missing) Unwrap() error { return m.err }
+
+func notFound(kind, format string, args ...any) error {
+	return &missing{err: awserror.New("NotFoundException", fmt.Sprintf(format, args...)), kind: kind}
+}
+
+// Missing returns the kind of resource, "identity", "template",
+// "configuration-set", or "event-destination", that err reports as not found,
+// or "" when it reports anything else.
+func Missing(err error) string {
+	var m *missing
+	if errors.As(err, &m) {
+		return m.kind
+	}
+
+	return ""
 }
 
 func alreadyExists(format string, args ...any) error {

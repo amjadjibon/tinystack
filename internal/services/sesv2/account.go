@@ -80,3 +80,24 @@ func (s *Service) GetAccount(ctx context.Context, _ *api.GetAccountRequest) (*ap
 		},
 	}, nil
 }
+
+// SentByHour returns how many messages the caller's Region sent in each of the
+// last 24 hours, keyed by the Unix hour, for API v1's GetSendStatistics.
+func (s *Service) SentByHour(ctx context.Context) (map[int64]int64, error) {
+	out := map[int64]int64{}
+	err := s.view(ctx, func(tx storage.ReadTx, scope request.Scope) error {
+		c, _, err := storage.Read[sending](tx, sendingKey(scope))
+		if c != nil {
+			hour := s.now().Unix() / 3600
+			for h, n := range c.Hours {
+				if h > hour-24 {
+					out[h] = n
+				}
+			}
+		}
+
+		return err
+	})
+
+	return out, err
+}

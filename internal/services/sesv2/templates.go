@@ -28,7 +28,7 @@ type template struct {
 func loadTemplate(tx storage.ReadTx, scope request.Scope, name *string) (*template, error) {
 	t, ok, err := storage.Read[template](tx, scope.Key(service, kindTemplate, common.Value(name)))
 	if err != nil || !ok {
-		return nil, common.ErrorsOr(err, notFound("Template %s does not exist.", common.Value(name)))
+		return nil, common.ErrorsOr(err, notFound(kindTemplate, "Template %s does not exist.", common.Value(name)))
 	}
 
 	return t, nil
