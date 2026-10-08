@@ -48,6 +48,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
@@ -94,6 +95,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
@@ -249,6 +251,7 @@ func newStartCommand() *cobra.Command {
 			parameters := ssm.New(store, keys)
 			// Systems Manager publishes the IDs of EC2's images.
 			parameters.UsePublicParameters(ec2.PublicParameters)
+			tags := resourcegroupstaggingapi.New()
 			services := []catalog.Service{
 				dynamodbapi.Descriptor(tables),
 				dynamodbstreamsapi.Descriptor(tables.Streams()),
@@ -290,6 +293,7 @@ func newStartCommand() *cobra.Command {
 				iotapi.Descriptor(things),
 				iotdataplaneapi.Descriptor(things.DataPlane()),
 				iotjobsdataplaneapi.Descriptor(things.JobsDataPlane()),
+				resourcegroupstaggingapiapi.Descriptor(tags),
 			}
 			// Step Functions' Task states and Firehose's deliveries call the
 			// other services in-process.
@@ -317,6 +321,9 @@ func newStartCommand() *cobra.Command {
 			identityPools.UseCaller(caller)
 			// Topic rules' actions reach the other services.
 			things.UseCaller(caller)
+			// The Tagging API reads every service's resources and tags them
+			// through their own operations.
+			tags.UseCaller(caller)
 			// The credentials provider exchanges certificates for role credentials.
 			things.UseRoleCredentials(tokens.AssumeRoleForService)
 			handler, err := gateway.New(cfg, logger, services...)
