@@ -122,6 +122,11 @@ func resourceOperations(service, arnMember string, encode func(map[string]string
 	return operations(service, "TagResource", "UntagResource", byARN(arnMember), "Tags", encode, "TagKeys", names)
 }
 
+// resourceID names an EC2 resource by the last segment of its ARN.
+func resourceID(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
+	return map[string]any{"Resources": []any{r.ARN[strings.LastIndex(r.ARN, "/")+1:]}}, nil
+}
+
 // queue names an SQS queue by the URL GetQueueUrl reports for it.
 func queue(ctx context.Context, c *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
 	out, err := c.Call(ctx, "sqs", "GetQueueUrl", map[string]any{"QueueName": r.Name})
@@ -189,6 +194,7 @@ var taggers = map[string]tagger{
 		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
 			return map[string]any{"ResourceArns": []any{r.ARN}}, nil
 		}, "Tags", pairs, "TagKeys", names),
+	"ec2":         operations("ec2", "CreateTags", "DeleteTags", resourceID, "Tags", pairs, "Tags", keyOnly),
 	"eventbridge": resourceOperations("eventbridge", "ResourceARN", pairs),
 	"firehose": operations("firehose", "TagDeliveryStream", "UntagDeliveryStream",
 		byName("DeliveryStreamName", nil), "Tags", pairs, "TagKeys", names),

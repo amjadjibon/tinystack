@@ -2,7 +2,7 @@
 // without HTTP dependencies. It keeps no records of its own: it reads the
 // resources and tags the other services list in their inventories, and tags
 // and untags them through each service's own tag operations
-// (catalog.Caller). EC2 lists no inventory, so its resources are not found.
+// (catalog.Caller).
 package resourcegroupstaggingapi
 
 import (
