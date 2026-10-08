@@ -124,6 +124,10 @@ const catalog: Record<string, ServiceInfo> = {
 	},
 	lambda: { title: "Lambda", category: compute, icon: "lambda" },
 	logs: { title: "CloudWatch Logs", category: management, icon: "logs" },
+	resourcegroupstaggingapi: {
+		title: "Resource Groups Tagging API",
+		category: management,
+	},
 	route53: { title: "Route 53", category: networking, icon: "route53" },
 	s3: { title: "S3", category: storage, icon: "s3" },
 	scheduler: {
