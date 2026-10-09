@@ -35,6 +35,8 @@ const consoleLogs = "logs"
 
 const consoleDynamoDB = "dynamodb"
 
+const consoleEventBridge = "eventbridge"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -89,13 +91,24 @@ var consoleLambdaOperations = strings.Fields(`
 	ListTags TagResource UntagResource
 `)
 
-// Lambda's monitor tab reads CloudWatch logs without exposing log mutations.
-var consoleLogsOperations = strings.Fields(`FilterLogEvents`)
+var consoleLogsOperations = strings.Fields(`
+	CreateLogGroup DeleteLogGroup DescribeLogGroups
+	CreateLogStream DeleteLogStream DescribeLogStreams GetLogEvents FilterLogEvents PutLogEvents
+	PutRetentionPolicy DeleteRetentionPolicy TagResource UntagResource ListTagsForResource
+	StartQuery GetQueryResults DescribeQueries
+`)
 
 var consoleDynamoDBOperations = strings.Fields(`
 	CreateTable DeleteTable DescribeTable ListTables UpdateTable
 	GetItem PutItem UpdateItem DeleteItem Query Scan
 	DescribeTimeToLive UpdateTimeToLive ListTagsOfResource TagResource UntagResource
+`)
+
+var consoleEventBridgeOperations = strings.Fields(`
+	CreateEventBus UpdateEventBus DeleteEventBus DescribeEventBus ListEventBuses
+	PutRule DescribeRule ListRules EnableRule DisableRule DeleteRule
+	PutTargets RemoveTargets ListTargetsByRule TestEventPattern PutEvents
+	TagResource UntagResource ListTagsForResource
 `)
 
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
@@ -122,11 +135,13 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, lambda := s.services[consoleLambda]
 		_, logs := s.services[consoleLogs]
 		_, dynamodb := s.services[consoleDynamoDB]
+		_, eventbridge := s.services[consoleEventBridge]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			consoleLambda: lambda, consoleLogs: logs,
 			consoleDynamoDB:      dynamodb,
+			consoleEventBridge:   eventbridge,
 			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -201,6 +216,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleLogsOperations
 	case consoleDynamoDB:
 		operations = consoleDynamoDBOperations
+	case consoleEventBridge:
+		operations = consoleEventBridgeOperations
 	}
 
 	c.service = s.services[in.Service]
@@ -245,7 +262,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if signedService != in.Service || c.meta.AccountID != in.Account ||
+		if signedService != c.service.SigningName || c.meta.AccountID != in.Account ||
 			(regional && c.meta.Region != in.Region) {
 			s.consoleFail(w, c, &awserror.Error{
 				Code: accessDenied, Message: "The action scope must match the signed service, account and region.",
@@ -260,6 +277,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	c.meta.Service = in.Service
 	c.meta.Protocol = "console"
 	// Confirmation URLs must use the AWS listener when the action arrived on
 	// the separately served console. Direct API callers keep their request host.

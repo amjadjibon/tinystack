@@ -267,7 +267,7 @@ func TestConsoleLambdaValidationAndSignatures(t *testing.T) {
 		{map[string]any{"Unknown": true}, "lambda", "ListFunctions", "us-east-1"},
 		{map[string]any{}, "lambda", "PublishVersion", "us-east-1"},
 		{map[string]any{"Code": map[string]any{"ZipFile": "not base64"}}, "lambda", "CreateFunction", "us-east-1"},
-		{map[string]any{"LogGroupName": "/aws/lambda/test"}, "logs", "DeleteLogGroup", "us-east-1"},
+		{map[string]any{"DestinationName": "console-export"}, "logs", "CreateExportTask", "us-east-1"},
 	} {
 		consoleResponse(t, s, consoleLambdaRequest(t, s, tc.service, tc.operation,
 			"000000000000", tc.region, tc.input), http.StatusBadRequest)
