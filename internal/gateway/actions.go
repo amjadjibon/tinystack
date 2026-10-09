@@ -29,6 +29,10 @@ const consoleSQS = "sqs"
 
 const consoleSNS = "sns"
 
+const consoleLambda = "lambda"
+
+const consoleLogs = "logs"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -75,6 +79,17 @@ var consoleSNSOperations = strings.Fields(`
 	TagResource UntagResource ListTagsForResource
 `)
 
+var consoleLambdaOperations = strings.Fields(`
+	CreateFunction DeleteFunction GetFunction ListFunctions
+	UpdateFunctionCode UpdateFunctionConfiguration Invoke
+	CreateEventSourceMapping GetEventSourceMapping ListEventSourceMappings
+	UpdateEventSourceMapping DeleteEventSourceMapping
+	ListTags TagResource UntagResource
+`)
+
+// Lambda's monitor tab reads CloudWatch logs without exposing log mutations.
+var consoleLogsOperations = strings.Fields(`FilterLogEvents`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -96,9 +111,12 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, s3 := s.services[consoleS3]
 		_, sqs := s.services[consoleSQS]
 		_, sns := s.services[consoleSNS]
+		_, lambda := s.services[consoleLambda]
+		_, logs := s.services[consoleLogs]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
+			consoleLambda: lambda, consoleLogs: logs,
 			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -167,6 +185,10 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleSQSOperations
 	case consoleSNS:
 		operations = consoleSNSOperations
+	case consoleLambda:
+		operations = consoleLambdaOperations
+	case consoleLogs:
+		operations = consoleLogsOperations
 	}
 
 	c.service = s.services[in.Service]
