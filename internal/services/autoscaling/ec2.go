@@ -11,7 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/common"
 )
 
-// errNoCaller reports a request that needs another service before start.go
+// errNoCaller reports a request that needs another service before app.New
 // wired one in.
 const (
 	fieldName  = "Name"

@@ -74,7 +74,7 @@ type departure struct {
 // that are unhealthy or that EC2 no longer runs, terminates the members a
 // smaller capacity leaves over (by the group's termination policy), and
 // launches instances into the zones with the fewest members. cause, when not
-// empty, starts the cause of each activity. It does nothing before start.go
+// empty, starts the cause of each activity. It does nothing before app.New
 // wires in the caller.
 //
 //nolint:gocyclo,cyclop // The steps of one pass.

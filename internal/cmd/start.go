@@ -17,103 +17,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/amjadjibon/tinystack/internal/aws/catalog"
-	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
-	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
-	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
-	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
-	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
-	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
-	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
-	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
-	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
-	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
-	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
-	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
-	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
-	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
-	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
-	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
-	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
-	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
-	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
-	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
-	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
-	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
-	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
-	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
-	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
-	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
-	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
-	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
-	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
-	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
-	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
-	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
-	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
-	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
-	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
-	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
-	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
-	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
-	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
-	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
-	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
-	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
-	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
-	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
-	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
-	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/app"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/console"
-	"github.com/amjadjibon/tinystack/internal/delivery"
-	"github.com/amjadjibon/tinystack/internal/gateway"
-	"github.com/amjadjibon/tinystack/internal/services/acm"
-	"github.com/amjadjibon/tinystack/internal/services/apigateway"
-	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
-	"github.com/amjadjibon/tinystack/internal/services/appsync"
-	"github.com/amjadjibon/tinystack/internal/services/athena"
-	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
-	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
-	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
-	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
-	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
-	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
-	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
-	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
-	"github.com/amjadjibon/tinystack/internal/services/ec2"
-	"github.com/amjadjibon/tinystack/internal/services/ecr"
-	"github.com/amjadjibon/tinystack/internal/services/ecs"
-	ecsdocker "github.com/amjadjibon/tinystack/internal/services/ecs/docker"
-	"github.com/amjadjibon/tinystack/internal/services/eks"
-	"github.com/amjadjibon/tinystack/internal/services/eks/k3s"
-	"github.com/amjadjibon/tinystack/internal/services/elasticache"
-	cachedocker "github.com/amjadjibon/tinystack/internal/services/elasticache/docker"
-	"github.com/amjadjibon/tinystack/internal/services/elbv2"
-	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
-	"github.com/amjadjibon/tinystack/internal/services/firehose"
-	"github.com/amjadjibon/tinystack/internal/services/glue"
-	"github.com/amjadjibon/tinystack/internal/services/iam"
-	"github.com/amjadjibon/tinystack/internal/services/iot"
-	"github.com/amjadjibon/tinystack/internal/services/kinesis"
-	"github.com/amjadjibon/tinystack/internal/services/kms"
-	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
-	"github.com/amjadjibon/tinystack/internal/services/logs"
-	"github.com/amjadjibon/tinystack/internal/services/pipes"
-	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
-	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
-	"github.com/amjadjibon/tinystack/internal/services/route53"
-	"github.com/amjadjibon/tinystack/internal/services/s3"
-	"github.com/amjadjibon/tinystack/internal/services/scheduler"
-	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
-	"github.com/amjadjibon/tinystack/internal/services/ses"
-	"github.com/amjadjibon/tinystack/internal/services/sesv2"
-	"github.com/amjadjibon/tinystack/internal/services/sfn"
-	"github.com/amjadjibon/tinystack/internal/services/sns"
-	"github.com/amjadjibon/tinystack/internal/services/sqs"
-	"github.com/amjadjibon/tinystack/internal/services/ssm"
-	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/storage"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 	"github.com/amjadjibon/tinystack/internal/storage/sqlite"
@@ -161,228 +68,14 @@ func newStartCommand() *cobra.Command {
 				}
 			}()
 
-			deliveries := delivery.New()
-			tables := dynamodb.New(store)
-			// Stop ends the TTL sweeper, which writes to the store.
-			defer tables.Stop()
-			keys := kms.New(store)
-			queues := sqs.New(store, keys)
-			// Stop ends the message mover, which writes to the store.
-			defer queues.Stop()
-			logGroups := logs.New(store)
-			functions := lambda.New(
-				store,
-				queues,
-				tables.Streams(),
-				logGroups,
-				docker.New(),
-				logger,
-				cfg.Identity.SecretKeys,
-				deliveries,
-			)
-			// Stop removes function containers; it must finish before exit.
-			defer functions.Stop()
-			streams := kinesis.New(store)
-			functions.UseKinesis(streams)
-			if guardErr := functions.Resume(cmd.Context()); guardErr != nil {
-				return guardErr
-			}
-
-			topics := sns.New(store, queues, functions, deliveries)
-			// Stop ends HTTP deliveries in flight.
-			defer topics.Stop()
-			rules := eventbridge.New(store, queues, topics, functions, deliveries)
-			// Stop ends the scheduler, which writes to the store.
-			defer rules.Stop()
-			buckets := s3.New(store, queues, topics, functions, rules, deliveries)
-			secrets := secretsmanager.New(store, keys, functions, deliveries)
-			// Stop ends the rotation scheduler and running rotations.
-			defer secrets.Stop()
-			functions.UseObjects(buckets.Object)
-			roles := iam.New(store)
-			tokens := sts.New(store, roles)
-			tokens.UseAccounts(cfg.Identity.Accounts, cfg.Defaults.Account)
-			identities := cognitoidp.New(store, functions, deliveries)
-			registry := ecr.New(store)
-			containers := ecs.New(store)
-			if cfg.ECS.Containers == config.ContainersDocker {
-				containers.UseRuntime(ecsdocker.New(), logGroups.Append, logger)
-			}
-
-			// Stop ends the task runner and removes task containers.
-			defer containers.Stop()
-			httpAPIs := apigatewayv2.New(store, functions, logGroups)
-			restAPIs := apigateway.New(store, functions, logGroups, identities)
-			graphQL := appsync.New(store, functions, identities)
-			// Stop closes real-time connections, which shutdown leaves open.
-			defer graphQL.Stop()
-			network := ec2.New(store)
-			network.UseInstanceProfiles(roles.InstanceProfileOf)
-			kube := eks.New(store, network)
-			// Stop ends the cluster runner and removes k3s containers.
-			defer kube.Stop()
-			workflows, err := sfn.New(store, logGroups, logger)
+			tinystack, err := app.New(cmd.Context(), cfg, store, docker.New(), logger)
 			if err != nil {
 				return err
 			}
 
-			// Stop ends running executions.
-			defer workflows.Stop()
-			firehoses := firehose.New(store, streams, deliveries, logger)
-			// Stop ends the flusher, which writes to the store.
-			defer firehoses.Stop()
-			pipelines := pipes.New(store, queues, streams, tables.Streams(), logger)
-			// Stop ends the pipe runner, which writes to the store.
-			defer pipelines.Stop()
-			monitoring := cloudwatch.New(store, logger)
-			defer monitoring.Stop()
-			dns := route53.New(store)
-			cdn := cloudfront.New(store)
-			timers := scheduler.New(store, logger)
-			defer timers.Stop()
-			scaling := autoscaling.New(store, logger)
-			defer scaling.Stop()
-			balancers := elbv2.New(store, logger)
-			caches := elasticache.New(store)
-			defer caches.Stop()
-			things := iot.New(store, deliveries, logger)
-			// Stop disconnects every MQTT client.
-			defer things.Stop()
-			things.UseIdentity(
-				request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
-				cfg.Identity.Mode == config.IdentityVerify,
-			)
-			control, err := cloudcontrol.New(store)
-			if err != nil {
-				return err
-			}
-
-			stacks := cloudformation.New(store, logger)
-			// Stop ends the stack runner, which writes to the store.
-			defer stacks.Stop()
-			email := sesv2.New(store, deliveries)
-			identityPools := cognitoidentity.New(store, identities, roles)
-			dataCatalog := glue.New(store)
-			queries := athena.New(store, dataCatalog, buckets)
-			parameters := ssm.New(store, keys)
-			// Systems Manager publishes the IDs of EC2's images.
-			parameters.UsePublicParameters(ec2.PublicParameters)
-			tags := resourcegroupstaggingapi.New()
-			groups := resourcegroups.New(store)
-			services := []catalog.Service{
-				dynamodbapi.Descriptor(tables),
-				dynamodbstreamsapi.Descriptor(tables.Streams()),
-				sqsapi.Descriptor(queues),
-				snsapi.Descriptor(topics),
-				s3api.Descriptor(buckets),
-				lambdaapi.Descriptor(functions),
-				eventbridgeapi.Descriptor(rules),
-				iamapi.Descriptor(roles),
-				stsapi.Descriptor(tokens),
-				ssmapi.Descriptor(parameters),
-				secretsmanagerapi.Descriptor(secrets),
-				logsapi.Descriptor(logGroups),
-				kmsapi.Descriptor(keys),
-				ec2api.Descriptor(network),
-				cognitoidpapi.Descriptor(identities),
-				ecrapi.Descriptor(registry),
-				ecsapi.Descriptor(containers),
-				eksapi.Descriptor(kube),
-				elasticacheapi.Descriptor(caches),
-				apigatewayv2api.Descriptor(httpAPIs),
-				apigatewayapi.Descriptor(restAPIs),
-				appsyncapi.Descriptor(graphQL),
-				sfnapi.Descriptor(workflows),
-				kinesisapi.Descriptor(streams),
-				route53api.Descriptor(dns),
-				cloudfrontapi.Descriptor(cdn),
-				schedulerapi.Descriptor(timers),
-				autoscalingapi.Descriptor(scaling),
-				elbv2api.Descriptor(balancers),
-				acmapi.Descriptor(acm.New(store)),
-				firehoseapi.Descriptor(firehoses),
-				pipesapi.Descriptor(pipelines),
-				cloudwatchapi.Descriptor(monitoring),
-				cloudcontrolapi.Descriptor(control),
-				cloudformationapi.Descriptor(stacks),
-				sesapi.Descriptor(ses.New(email)),
-				sesv2api.Descriptor(email),
-				cognitoidentityapi.Descriptor(identityPools),
-				glueapi.Descriptor(dataCatalog),
-				athenaapi.Descriptor(queries),
-				iotapi.Descriptor(things),
-				iotdataplaneapi.Descriptor(things.DataPlane()),
-				iotjobsdataplaneapi.Descriptor(things.JobsDataPlane()),
-				resourcegroupstaggingapiapi.Descriptor(tags),
-				resourcegroupsapi.Descriptor(groups),
-			}
-			// Step Functions' Task states and Firehose's deliveries call the
-			// other services in-process.
-			caller := catalog.NewCaller(services...)
-			workflows.UseCaller(caller)
-			firehoses.UseCaller(caller)
-			// Pipes enrich and deliver to Lambda, SQS, SNS, EventBridge, Step Functions, and Kinesis.
-			pipelines.UseCaller(caller)
-			monitoring.UseCaller(caller)
-			dns.UseCaller(caller)
-			timers.UseCaller(caller)
-			scaling.UseCaller(caller)
-			balancers.UseCaller(caller)
-			caches.UseCaller(caller)
-			// CloudFormation manages stack resources with the other
-			// services' operations.
-			control.UseCaller(caller)
-			stacks.UseCaller(caller)
-			// Subscription filters deliver to Lambda, Kinesis, and Firehose.
-			logGroups.UseCaller(caller)
-			// Table exports write to S3.
-			tables.UseCaller(caller)
-			// Asynchronous invocations send results to their destinations.
-			functions.UseCaller(caller)
-			// GraphQL data sources reach DynamoDB and EventBridge.
-			graphQL.UseCaller(caller)
-			email.UseCaller(caller)
-			identityPools.UseCaller(caller)
-			// Topic rules' actions reach the other services.
-			things.UseCaller(caller)
-			// The Tagging API reads every service's resources and tags them
-			// through their own operations.
-			tags.UseCaller(caller)
-			// Groups resolve their queries against the same resources, and read CloudFormation stacks.
-			groups.UseCaller(caller)
-			// The credentials provider exchanges certificates for role credentials.
-			things.UseRoleCredentials(tokens.AssumeRoleForService)
-			handler, err := gateway.New(cfg, logger, services...)
-			if err != nil {
-				return err
-			}
-
-			handler.UseCredentials(tokens.Credentials)
-			handler.UseDocuments(identities.Documents)
-			handler.UseTokens(identities.Token)
-			handler.UseRegistry(registry)
-			handler.UseCORS(buckets.CORS)
-			handler.UseAPIs(httpAPIs, restAPIs)
-			handler.UseDomains(restAPIs.Domains())
-			handler.UseLoadBalancers(balancers)
-			handler.UseFunctionURLs(functions.URLs())
-			handler.UseGraphQL(graphQL)
-			handler.UseMQTT(things)
-			if cfg.EKS.Clusters == config.ClustersK3s {
-				// Cluster endpoints accept the EKS tokens the gateway's
-				// credentials sign.
-				clusters, k3sErr := k3s.New(handler.KubernetesAccount, logger)
-				if k3sErr != nil {
-					return k3sErr
-				}
-
-				kube.UseRuntime(clusters, logger)
-			}
-			if cfg.ElastiCache.Caches == config.CachesDocker {
-				caches.UseRuntime(cachedocker.New(), logger)
-			}
-			handler.Handle("deliveries", deliveries)
-			handler.Handle("iot/root-ca.pem", things.RootCA())
+			// Deferred after the store's close so it runs first: nothing writes
+			// to the store once Stop returns.
+			defer tinystack.Stop()
 
 			var listenConfig net.ListenConfig
 			listener, err := listenConfig.Listen(
@@ -395,7 +88,7 @@ func newStartCommand() *cobra.Command {
 			}
 
 			server := &http.Server{
-				Handler:           handler,
+				Handler:           tinystack.Gateway,
 				ReadHeaderTimeout: 5 * time.Second,
 				ReadTimeout:       30 * time.Second,
 				// Synchronous Lambda invocations may run for the 15-minute
@@ -404,24 +97,7 @@ func newStartCommand() *cobra.Command {
 				IdleTimeout:  60 * time.Second,
 			}
 
-			server.RegisterOnShutdown(queues.Stop)
-			server.RegisterOnShutdown(topics.Stop)
-			server.RegisterOnShutdown(tables.Stop)
-			server.RegisterOnShutdown(functions.Stop)
-			server.RegisterOnShutdown(rules.Stop)
-			server.RegisterOnShutdown(secrets.Stop)
-			server.RegisterOnShutdown(workflows.Stop)
-			server.RegisterOnShutdown(firehoses.Stop)
-			server.RegisterOnShutdown(pipelines.Stop)
-			server.RegisterOnShutdown(monitoring.Stop)
-			server.RegisterOnShutdown(timers.Stop)
-			server.RegisterOnShutdown(scaling.Stop)
-			server.RegisterOnShutdown(containers.Stop)
-			server.RegisterOnShutdown(kube.Stop)
-			server.RegisterOnShutdown(caches.Stop)
-			server.RegisterOnShutdown(stacks.Stop)
-			server.RegisterOnShutdown(graphQL.Stop)
-			server.RegisterOnShutdown(things.Stop)
+			tinystack.StopOnShutdown(server)
 			if cfg.IoT.MQTTPort != 0 {
 				mqttListener, mqttErr := listenConfig.Listen(
 					cmd.Context(),
@@ -433,7 +109,7 @@ func newStartCommand() *cobra.Command {
 					return mqttErr
 				}
 
-				things.ListenMQTT(mqttListener)
+				tinystack.IoT.ListenMQTT(mqttListener)
 				logger.Info("mqtt ready", "address", mqttListener.Addr().String())
 			}
 
@@ -448,7 +124,7 @@ func newStartCommand() *cobra.Command {
 					return mqttsErr
 				}
 
-				things.ListenMQTTS(mqttsListener)
+				tinystack.IoT.ListenMQTTS(mqttsListener)
 				logger.Info("mqtts ready", "address", mqttsListener.Addr().String())
 			}
 
@@ -464,7 +140,7 @@ func newStartCommand() *cobra.Command {
 					cmd.Context(),
 					net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.ConsolePort)),
 					files,
-					handler.Internal(),
+					tinystack.Gateway.Internal(),
 				)
 				if err != nil {
 					_ = listener.Close()
@@ -486,7 +162,7 @@ func newStartCommand() *cobra.Command {
 				"storage",
 				cfg.Storage.Mode,
 				"services",
-				"dynamodb,dynamodbstreams,eventbridge,iam,kms,lambda,logs,s3,secretsmanager,sns,sqs,ssm,sts",
+				strings.Join(tinystack.Services, ","),
 			)
 			select {
 			case err = <-done:

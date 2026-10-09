@@ -21,98 +21,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/smithy-go"
 
-	"github.com/amjadjibon/tinystack/internal/aws/catalog"
-	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
-	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
-	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
-	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
-	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
-	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
-	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
-	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
-	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
-	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
-	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
-	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
-	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
-	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
-	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
-	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
-	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
-	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
-	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
-	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
-	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
-	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
-	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
-	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
-	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
-	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
-	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
-	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
-	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
-	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
-	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
-	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
-	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
-	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
-	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
-	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
-	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
-	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
-	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
-	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
-	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
-	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
-	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
-	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
-	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
-	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/app"
 	"github.com/amjadjibon/tinystack/internal/config"
-	"github.com/amjadjibon/tinystack/internal/delivery"
-	"github.com/amjadjibon/tinystack/internal/gateway"
-	certificates "github.com/amjadjibon/tinystack/internal/services/acm"
-	restapis "github.com/amjadjibon/tinystack/internal/services/apigateway"
-	apigateways "github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
-	graphqlapis "github.com/amjadjibon/tinystack/internal/services/appsync"
-	queryengine "github.com/amjadjibon/tinystack/internal/services/athena"
-	scalinggroups "github.com/amjadjibon/tinystack/internal/services/autoscaling"
-	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
-	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
-	cdn "github.com/amjadjibon/tinystack/internal/services/cloudfront"
-	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
-	identitypools "github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
-	identities "github.com/amjadjibon/tinystack/internal/services/cognitoidp"
-	provider "github.com/amjadjibon/tinystack/internal/services/dynamodb"
-	compute "github.com/amjadjibon/tinystack/internal/services/ec2"
-	containers "github.com/amjadjibon/tinystack/internal/services/ecr"
-	orchestration "github.com/amjadjibon/tinystack/internal/services/ecs"
-	kubernetes "github.com/amjadjibon/tinystack/internal/services/eks"
-	cacheservice "github.com/amjadjibon/tinystack/internal/services/elasticache"
-	loadbalancers "github.com/amjadjibon/tinystack/internal/services/elbv2"
-	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
-	deliverystreams "github.com/amjadjibon/tinystack/internal/services/firehose"
-	datacatalog "github.com/amjadjibon/tinystack/internal/services/glue"
-	principals "github.com/amjadjibon/tinystack/internal/services/iam"
-	things "github.com/amjadjibon/tinystack/internal/services/iot"
-	datastreams "github.com/amjadjibon/tinystack/internal/services/kinesis"
-	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
-	"github.com/amjadjibon/tinystack/internal/services/logs"
-	pipelines "github.com/amjadjibon/tinystack/internal/services/pipes"
-	groupservice "github.com/amjadjibon/tinystack/internal/services/resourcegroups"
-	taggingapi "github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
-	zones "github.com/amjadjibon/tinystack/internal/services/route53"
-	buckets "github.com/amjadjibon/tinystack/internal/services/s3"
-	schedules "github.com/amjadjibon/tinystack/internal/services/scheduler"
-	secrets "github.com/amjadjibon/tinystack/internal/services/secretsmanager"
-	"github.com/amjadjibon/tinystack/internal/services/ses"
-	email "github.com/amjadjibon/tinystack/internal/services/sesv2"
-	stepfunctions "github.com/amjadjibon/tinystack/internal/services/sfn"
-	topics "github.com/amjadjibon/tinystack/internal/services/sns"
-	queues "github.com/amjadjibon/tinystack/internal/services/sqs"
-	parameters "github.com/amjadjibon/tinystack/internal/services/ssm"
-	tokens "github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/storage"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
@@ -122,7 +33,7 @@ func server(t *testing.T) *httptest.Server {
 	return serverWith(t, &fakeRuntime{})
 }
 
-// serverWith builds the server like start.go, with runtime running Lambda code.
+// serverWith builds the server with app.New, with runtime running Lambda code.
 func serverWith(t *testing.T, runtime lambda.Runtime) *httptest.Server {
 	t.Helper()
 	return serverConfig(t, testConfig(), runtime)
@@ -135,7 +46,7 @@ func testConfig() config.Config {
 	return cfg
 }
 
-// serverConfig builds the server like start.go from cfg.
+// serverConfig builds the server with app.New from cfg.
 //
 //nolint:gocritic // Tests build each configuration by value.
 func serverConfig(t *testing.T, cfg config.Config, runtime lambda.Runtime) *httptest.Server {
@@ -145,7 +56,7 @@ func serverConfig(t *testing.T, cfg config.Config, runtime lambda.Runtime) *http
 	return s
 }
 
-// serverStore builds the server like start.go, with every service sharing
+// serverStore builds the server with app.New, with every service sharing
 // store. stop shuts the server down.
 //
 //nolint:gocritic // Tests build each configuration by value.
@@ -156,197 +67,27 @@ func serverStore(
 	store storage.Store,
 ) (s *httptest.Server, stop func()) {
 	t.Helper()
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	deliveries := delivery.New()
-	tables := provider.New(store)
-	keys := kms.New(store)
-	sqsService := queues.New(store, keys)
-	logGroups := logs.New(store)
-	functions := lambda.New(
-		store,
-		sqsService,
-		tables.Streams(),
-		logGroups,
-		runtime,
-		logger,
-		cfg.Identity.SecretKeys,
-		deliveries,
-	)
-	streams := datastreams.New(store)
-	functions.UseKinesis(streams)
-	if err := functions.Resume(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-
-	snsService := topics.New(store, sqsService, functions, deliveries)
-	rules := eventbridge.New(store, sqsService, snsService, functions, deliveries)
-	objects := buckets.New(store, sqsService, snsService, functions, rules, deliveries)
-	functions.UseObjects(objects.Object)
-	secretsService := secrets.New(store, keys, functions, deliveries)
-	roles := principals.New(store)
-	stsService := tokens.New(store, roles)
-	stsService.UseAccounts(cfg.Identity.Accounts, cfg.Defaults.Account)
-	userPools := identities.New(store, functions, deliveries)
-	repositories := containers.New(store)
-	network := compute.New(store)
-	network.UseInstanceProfiles(roles.InstanceProfileOf)
-	httpAPIs := apigateways.New(store, functions, logGroups)
-	restAPIs := restapis.New(store, functions, logGroups, userPools)
-	graphQL := graphqlapis.New(store, functions, userPools)
-	ssmService := parameters.New(store, keys)
-	ssmService.UsePublicParameters(compute.PublicParameters)
-	workflows, err := stepfunctions.New(store, logGroups, logger)
+	tinystack, err := app.New(context.Background(), cfg, store, runtime, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	firehoses := deliverystreams.New(store, streams, deliveries, logger)
-	pipes := pipelines.New(store, sqsService, streams, tables.Streams(), logger)
-	monitoring := cloudwatch.New(store, logger)
-	dns := zones.New(store)
-	distributions := cdn.New(store)
-	timers := schedules.New(store, logger)
-	scaling := scalinggroups.New(store, logger)
-	balancers := loadbalancers.New(store, logger)
-	tasks := orchestration.New(store)
-	caches := cacheservice.New(store)
-	control, err := cloudcontrol.New(store)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	stacks := cloudformation.New(store, logger)
-	mail := email.New(store, deliveries)
-	identityPools := identitypools.New(store, userPools, roles)
-	resourceTags := taggingapi.New()
-	resourceGroups := groupservice.New(store)
-	catalogService := datacatalog.New(store)
-	queries := queryengine.New(store, catalogService, objects)
-	devices := things.New(store, deliveries, logger)
-	devices.UseIdentity(
-		request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
-		cfg.Identity.Mode == config.IdentityVerify,
-	)
-
-	services := []catalog.Service{
-		api.Descriptor(tables),
-		dynamodbstreamsapi.Descriptor(tables.Streams()),
-		sqsapi.Descriptor(sqsService),
-		snsapi.Descriptor(snsService),
-		s3api.Descriptor(objects),
-		lambdaapi.Descriptor(functions),
-		eventbridgeapi.Descriptor(rules),
-		iamapi.Descriptor(roles),
-		stsapi.Descriptor(stsService),
-		ssmapi.Descriptor(ssmService),
-		secretsmanagerapi.Descriptor(secretsService),
-		logsapi.Descriptor(logGroups),
-		kmsapi.Descriptor(keys),
-		ec2api.Descriptor(network),
-		cognitoidpapi.Descriptor(userPools),
-		ecrapi.Descriptor(repositories),
-		ecsapi.Descriptor(tasks),
-		eksapi.Descriptor(kubernetes.New(store, network)),
-		elasticacheapi.Descriptor(caches),
-		apigatewayv2api.Descriptor(httpAPIs),
-		apigatewayapi.Descriptor(restAPIs),
-		appsyncapi.Descriptor(graphQL),
-		sfnapi.Descriptor(workflows),
-		kinesisapi.Descriptor(streams),
-		route53api.Descriptor(dns),
-		cloudfrontapi.Descriptor(distributions),
-		schedulerapi.Descriptor(timers),
-		autoscalingapi.Descriptor(scaling),
-		elbv2api.Descriptor(balancers),
-		acmapi.Descriptor(certificates.New(store)),
-		firehoseapi.Descriptor(firehoses),
-		pipesapi.Descriptor(pipes),
-		cloudwatchapi.Descriptor(monitoring),
-		cloudcontrolapi.Descriptor(control),
-		cloudformationapi.Descriptor(stacks),
-		sesapi.Descriptor(ses.New(mail)),
-		sesv2api.Descriptor(mail),
-		cognitoidentityapi.Descriptor(identityPools),
-		glueapi.Descriptor(catalogService),
-		athenaapi.Descriptor(queries),
-		iotapi.Descriptor(devices),
-		iotdataplaneapi.Descriptor(devices.DataPlane()),
-		iotjobsdataplaneapi.Descriptor(devices.JobsDataPlane()),
-		resourcegroupstaggingapiapi.Descriptor(resourceTags),
-		resourcegroupsapi.Descriptor(resourceGroups),
-	}
-	caller := catalog.NewCaller(services...)
-	devices.UseCaller(caller)
-	devices.UseRoleCredentials(stsService.AssumeRoleForService)
-	workflows.UseCaller(caller)
-	firehoses.UseCaller(caller)
-	pipes.UseCaller(caller)
-	monitoring.UseCaller(caller)
-	dns.UseCaller(caller)
-	timers.UseCaller(caller)
-	scaling.UseCaller(caller)
-	balancers.UseCaller(caller)
-	caches.UseCaller(caller)
-	control.UseCaller(caller)
-	stacks.UseCaller(caller)
-	logGroups.UseCaller(caller)
-	tables.UseCaller(caller)
-	functions.UseCaller(caller)
-	graphQL.UseCaller(caller)
-	mail.UseCaller(caller)
-	identityPools.UseCaller(caller)
-	resourceTags.UseCaller(caller)
-	resourceGroups.UseCaller(caller)
-	h, err := gateway.New(cfg, logger, services...)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	h.UseCredentials(stsService.Credentials)
-	h.UseDocuments(userPools.Documents)
-	h.UseTokens(userPools.Token)
-	h.UseRegistry(repositories)
-	h.UseCORS(objects.CORS)
-	h.UseAPIs(httpAPIs, restAPIs)
-	h.UseDomains(restAPIs.Domains())
-	h.UseLoadBalancers(balancers)
-	h.UseFunctionURLs(functions.URLs())
-	h.UseGraphQL(graphQL)
-	h.UseMQTT(devices)
-	h.Handle("deliveries", deliveries)
-	h.Handle("iot/root-ca.pem", devices.RootCA())
 	if cfg.IoT.MQTTSPort != 0 {
 		mqttsListener, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		devices.ListenMQTTS(mqttsListener)
+		tinystack.IoT.ListenMQTTS(mqttsListener)
 		addr := mqttsListener.Addr().String()
-		h.Handle("iot/mqtts-addr", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		tinystack.Gateway.Handle("iot/mqtts-addr", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, _ = w.Write([]byte(addr))
 		}))
 	}
 
-	s = httptest.NewServer(h)
+	s = httptest.NewServer(tinystack.Gateway)
 	return s, func() {
-		devices.Stop()
-		graphQL.Stop()
-		stacks.Stop()
-		caches.Stop()
-		workflows.Stop()
-		firehoses.Stop()
-		pipes.Stop()
-		monitoring.Stop()
-		timers.Stop()
-		scaling.Stop()
-		tasks.Stop()
-		secretsService.Stop()
-		rules.Stop()
-		snsService.Stop()
-		sqsService.Stop()
-		functions.Stop()
-		tables.Stop()
+		tinystack.Stop()
 		s.Close()
 	}
 }

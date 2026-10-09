@@ -41,7 +41,7 @@ type Service struct {
 
 func New() *Service { return &Service{} }
 
-// UseCaller hands over the caller that reaches every other service. start.go
+// UseCaller hands over the caller that reaches every other service. app.New
 // calls it before the gateway serves requests.
 func (s *Service) UseCaller(c *catalog.Caller) { s.caller = c }
 

@@ -174,7 +174,7 @@ def render():
     manifest = read_json("generator/model/manifest.json")
     if set(catalog["services"]) != set(profiles):
         raise ValueError("Service catalogue and profiles differ; document every enabled service")
-    registered = set(re.findall(r'\b(\w+)api\.Descriptor\(', (ROOT / "internal/cmd/start.go").read_text()))
+    registered = set(re.findall(r'\b(\w+)api\.Descriptor\(', (ROOT / "internal/app/app.go").read_text()))
     if registered != set(profiles):
         raise ValueError("Startup registrations and profiles differ; audit the service catalogue")
     groups = defaultdict(list)

@@ -63,7 +63,7 @@ type Service struct {
 // New returns a Resource Groups service over store.
 func New(store storage.Store) *Service { return &Service{store: store} }
 
-// UseCaller hands over the caller that reaches every other service. start.go
+// UseCaller hands over the caller that reaches every other service. app.New
 // calls it before the gateway serves requests.
 func (s *Service) UseCaller(c *catalog.Caller) { s.caller = c }
 
