@@ -14,6 +14,7 @@ import {
 } from "@cloudscape-design/components";
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
+import { gatewayHref } from "#/lib/apigateway";
 import { cloudwatchHref } from "#/lib/cloudwatch";
 import { dynamoHref } from "#/lib/dynamodb";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
@@ -28,6 +29,19 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (
+		(r.service === "apigateway" && r.type === "rest-api") ||
+		(r.service === "apigatewayv2" && r.type === "http-api")
+	)
+		return gatewayHref(
+			{
+				account: r.account,
+				region: r.region,
+				kind: r.service as "apigateway" | "apigatewayv2",
+				apiId: String(r.details?.ApiId ?? ""),
+			},
+			"routes",
+		);
 	if (
 		r.service === "cloudwatch" &&
 		(r.type === "alarm" || r.type === "dashboard")

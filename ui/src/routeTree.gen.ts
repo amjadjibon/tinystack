@@ -15,6 +15,8 @@ import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as ServicesApigatewayRouteImport } from './routes/services/apigateway'
+import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apigatewayv2'
 import { Route as ServicesCloudwatchRouteImport } from './routes/services/cloudwatch'
 import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
@@ -55,6 +57,16 @@ const ResourcesRoute = ResourcesRouteImport.update({
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesApigatewayRoute = ServicesApigatewayRouteImport.update({
+  id: '/services/apigateway',
+  path: '/services/apigateway',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesApigatewayv2Route = ServicesApigatewayv2RouteImport.update({
+  id: '/services/apigatewayv2',
+  path: '/services/apigatewayv2',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesCloudwatchRoute = ServicesCloudwatchRouteImport.update({
@@ -119,6 +131,8 @@ export interface FileRoutesByFullPath {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/apigateway': typeof ServicesApigatewayRoute
+  '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -138,6 +152,8 @@ export interface FileRoutesByTo {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/apigateway': typeof ServicesApigatewayRoute
+  '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -158,6 +174,8 @@ export interface FileRoutesById {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/apigateway': typeof ServicesApigatewayRoute
+  '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -179,6 +197,8 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/apigateway'
+    | '/services/apigatewayv2'
     | '/services/cloudwatch'
     | '/services/dynamodb'
     | '/services/eventbridge'
@@ -198,6 +218,8 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/apigateway'
+    | '/services/apigatewayv2'
     | '/services/cloudwatch'
     | '/services/dynamodb'
     | '/services/eventbridge'
@@ -217,6 +239,8 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/apigateway'
+    | '/services/apigatewayv2'
     | '/services/cloudwatch'
     | '/services/dynamodb'
     | '/services/eventbridge'
@@ -237,6 +261,8 @@ export interface RootRouteChildren {
   MetricsRoute: typeof MetricsRoute
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
+  ServicesApigatewayRoute: typeof ServicesApigatewayRoute
+  ServicesApigatewayv2Route: typeof ServicesApigatewayv2Route
   ServicesCloudwatchRoute: typeof ServicesCloudwatchRoute
   ServicesDynamodbRoute: typeof ServicesDynamodbRoute
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
@@ -293,6 +319,20 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services/'
       preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/apigateway': {
+      id: '/services/apigateway'
+      path: '/services/apigateway'
+      fullPath: '/services/apigateway'
+      preLoaderRoute: typeof ServicesApigatewayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/apigatewayv2': {
+      id: '/services/apigatewayv2'
+      path: '/services/apigatewayv2'
+      fullPath: '/services/apigatewayv2'
+      preLoaderRoute: typeof ServicesApigatewayv2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/cloudwatch': {
@@ -381,6 +421,8 @@ const rootRouteChildren: RootRouteChildren = {
   MetricsRoute: MetricsRoute,
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
+  ServicesApigatewayRoute: ServicesApigatewayRoute,
+  ServicesApigatewayv2Route: ServicesApigatewayv2Route,
   ServicesCloudwatchRoute: ServicesCloudwatchRoute,
   ServicesDynamodbRoute: ServicesDynamodbRoute,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,

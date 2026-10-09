@@ -112,6 +112,8 @@ export const api = {
 		dynamodb: boolean;
 		eventbridge: boolean;
 		cloudwatch: boolean;
+		apigateway: boolean;
+		apigatewayv2: boolean;
 		requires_signature: boolean;
 	}> => (await get("/actions")).json(),
 	action: async <T>(
