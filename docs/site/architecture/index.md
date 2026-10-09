@@ -9,7 +9,8 @@ The service packages implement behavior over typed inputs; protocol codecs handl
 
 | Layer | Owns | Source |
 | --- | --- | --- |
-| CLI and startup | Configuration, construction, service registration, runtime wiring and shutdown | `internal/cmd/start.go` |
+| CLI and startup | Configuration, storage, listeners, console and signal handling | `internal/cmd/start.go` |
+| Assembly | Service construction, registration, cross-service wiring and stop order | `internal/app/` |
 | Gateway | Protocol classification, identity, routing, decoding, response encoding and diagnostics | `internal/gateway/` |
 | Generated catalogue | API interfaces, types, operation bindings, modeled errors and capabilities | `internal/aws/generated/` |
 | Protocol codecs | AWS JSON, Query, EC2 Query, REST XML/JSON and RPC v2 CBOR envelopes | `internal/aws/protocol/` |

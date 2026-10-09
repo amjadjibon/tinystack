@@ -31,10 +31,9 @@ Then complete these boundaries:
 | Behavior | Implement service methods and compile-time API conformance |
 | Ownership | Use regional or account-wide request helpers and define name uniqueness |
 | Storage | Keep atomic changes inside callbacks and I/O outside them |
-| Startup | Construct and register the descriptor in `internal/cmd/start.go` |
-| Test server | Register equivalent wiring in `tests/integration/dynamodb_test.go` |
+| Assembly | Construct the service and register the descriptor in `internal/app/app.go` (startup and tests share it) |
 | Cross-service calls | Add `UseCaller` or narrow interfaces and preserve explicit scope |
-| Lifecycle | Own goroutines with `background.Group`; add `Stop`, defer cleanup and shutdown hooks |
+| Lifecycle | Own goroutines with `background.Group`; add `Stop` and register it with `a.onStop` in `internal/app` |
 | Inventory | Implement `Resources(context.Context)` for the resource browser where applicable |
 | Console | Add title/category/icon in `ui/src/lib/services.ts` |
 | CLI wrappers | Add the supported Terraform endpoint key in `internal/localcli/cli.go` if the provider exposes it |

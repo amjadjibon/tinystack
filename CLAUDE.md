@@ -26,8 +26,9 @@ Debug endpoints: `/_tinystack/health`, `requests`, `resources`, `deliveries`, `m
 
 ## Architecture
 
-Request flow: `cmd/tinystack` → `internal/cmd/start.go` (wires every service) → `internal/gateway.Server` →
-generated `catalog.Operation` → `internal/services/<service>.Service` → `internal/storage.Store`.
+Request flow: `cmd/tinystack` → `internal/cmd/start.go` (config, listeners, shutdown) → `internal/app` (wires every
+service) → `internal/gateway.Server` → generated `catalog.Operation` → `internal/services/<service>.Service` →
+`internal/storage.Store`.
 
 - **gateway** picks the wire protocol from headers before anything else (JSON 1.0/1.1, RPC v2 CBOR, Query, EC2
   Query, REST XML, REST JSON), resolves account and Region from the SigV4 credential scope, checks signatures only
@@ -52,11 +53,11 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
   (IAM, Route 53, CloudFront) drop the Region. Cross-account lookups use partition-wide `aws/<service>/...` keys.
 - Tags live in the resource's own record; limits come from `services/tagging`.
 - Cross-service calls happen outside transactions: either in-process through another service's exported methods
-  (e.g. `sqs.Service.Deliver`), or through the `catalog.Caller` that `start.go` hands over with `UseCaller`, which
+  (e.g. `sqs.Service.Deliver`), or through the `catalog.Caller` that `internal/app` hands over with `UseCaller`, which
   runs any registered operation with SDK-style field names. Deliveries and side effects run after the commit.
 - Background work (pollers, schedulers, sweepers) uses `services/background.Group`, visits a partition-wide
   `aws/<service>/index/<account>/<region>/...` every second, and claims each step in a transaction. `Stop` is
-  deferred in `start.go` and registered with `server.RegisterOnShutdown`.
+  registered with `a.onStop` in `internal/app`, which runs it on shutdown, newest service first.
 - A service's `Resources` method (`inventory.go`, `catalog.Inventory`) feeds `/_tinystack/resources` and the
   Resource Groups Tagging API, which tags through each service's own operations (`resourcegroupstaggingapi/tag.go`).
   Resource Groups queries run against the same listing (`services/listing`), with CloudFormation-style types from
@@ -70,15 +71,15 @@ generated `catalog.Operation` → `internal/services/<service>.Service` → `int
 
 1. **Operation:** add it and its members to `generator/model/profile.json`, `task generate`, implement the method.
 2. **Service:** `task models:sync -- -ref <pinned commit> -add <name>`, add a `profile.json` entry, generate, write
-   `internal/services/<service>` (with `inventory.go`), and register `api.Descriptor(...)` in both
-   `internal/cmd/start.go` and the shared test server in `tests/integration/dynamodb_test.go`. Also add the
+   `internal/services/<service>` (with `inventory.go`), and construct it and register `api.Descriptor(...)` in
+   `internal/app/app.go`, which both `start.go` and the integration tests build. Also add the
    `tag.go` tagger, the console entry in `ui/src/lib/services.ts`, and the SDK client as a direct `go.mod` dependency.
 3. **Docs, for every behavior change:** edit `docs/catalog.json` (features, gaps, execution), `task docs:generate`,
    `task docs:check`. Product docs live under `docs/site/`; internal plans in `.spec/`.
 
 ## Tests
 
-`tests/integration` drives the official AWS Go SDK v2 against an `httptest` server built like `start.go`
+`tests/integration` drives the official AWS Go SDK v2 against an `httptest` server built by `internal/app`
 (`serverWith` takes a Lambda runtime; the default runs handlers in-process). Prefer adding behavior coverage there.
 Tests use ephemeral ports and never contact AWS.
 
