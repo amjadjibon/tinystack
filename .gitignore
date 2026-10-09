@@ -23,6 +23,7 @@ go.work
 
 # Local build output
 /bin/
+/tmp/
 
 # Documentation build output and isolated Python environment
 /site/
