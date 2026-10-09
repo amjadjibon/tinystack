@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda and DynamoDB management workflows, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge and CloudWatch Logs management workflows, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -219,13 +219,16 @@
         "Pattern matching shared with other event services",
         "SQS, SNS and Lambda targets in the same account and region",
         "Scheduled rules, durable retry records and SQS dead-letter queues",
-        "Archives and synchronous replay"
+        "Archives and synchronous replay",
+        "AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection"
       ],
       "gaps": [
         "No partner buses, cross-account routing or additional target service families",
         "Bus policies are stored but not evaluated",
         "Replays run synchronously and cannot be cancelled",
-        "Cron does not support L, W or #"
+        "Cron does not support L, W or #",
+        "Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests",
+        "Bus permissions, archives and replay management use the AWS API rather than console forms"
       ],
       "execution": "Local behavior",
       "package": "eventbridge"
@@ -663,12 +666,15 @@
         "PutLogEvents and filter patterns",
         "Subscription delivery to Lambda, Kinesis and Firehose",
         "Metric filters publish local CloudWatch metrics",
-        "Logs Insights subset runs synchronously and retains query results"
+        "Logs Insights subset runs synchronously and retains query results",
+        "AWS-style console for scoped log groups and streams, retention and tags, explicit event searches with time/stream/term filters, older/newer event paging and details, individual event ingestion and Logs Insights results; Lambda monitor links open their log groups"
       ],
       "gaps": [
         "Logs Insights is a local query-language subset",
         "Production ingestion, retention scheduling and scale limits are not reproduced",
-        "Unselected log-management APIs are unsupported"
+        "Unselected log-management APIs are unsupported",
+        "Verify mode exposes group/stream inventory; event reads, queries and management require signed CLI/SDK requests",
+        "Subscription and metric filters use the AWS API rather than console forms"
       ],
       "execution": "Local behavior",
       "package": "logs"

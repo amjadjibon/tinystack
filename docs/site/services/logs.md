@@ -24,6 +24,8 @@ See the [implemented feature catalogue](catalogue.md#cloudwatch-logs) for this s
 - Logs Insights is a local query-language subset.
 - Production ingestion, retention scheduling and scale limits are not reproduced.
 - Unselected log-management APIs are unsupported.
+- Verify mode exposes group/stream inventory; event reads, queries and management require signed CLI/SDK requests.
+- Subscription and metric filters use the AWS API rather than console forms.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

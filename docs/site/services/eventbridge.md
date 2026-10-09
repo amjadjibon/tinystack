@@ -25,6 +25,8 @@ See the [implemented feature catalogue](catalogue.md#eventbridge) for this servi
 - Bus policies are stored but not evaluated.
 - Replays run synchronously and cannot be cancelled.
 - Cron does not support L, W or #.
+- Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests.
+- Bus permissions, archives and replay management use the AWS API rather than console forms.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

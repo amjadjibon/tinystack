@@ -104,6 +104,46 @@ In verify mode only DynamoDB table inventory is available in the console. Use si
 and management. Backups, restores, exports, PartiQL, batch and transaction operations use the AWS API. Multi-step
 settings changes retain completed steps after a failure and allow retrying the remaining work while the dialog is open.
 
+Open **EventBridge** to create and edit custom event buses, browse the implicit default bus, and manage rules in the
+selected account and Region. Rules accept event patterns, schedules, or both; schedules require the default bus.
+Use **Test pattern** with a sample event envelope to check matching without sending anything. Enabled schedules
+execute automatically in UTC; editing a schedule restarts its timing. Rule creation checks for an existing name;
+the underlying PutRule API updates by name and does not provide a conditional-create guarantee.
+
+Add up to five Lambda, SQS or SNS targets from the local resource selector or by ARN. Target options use SDK-style
+JSON for constant input (a JSON string), input paths or transformers, execution roles, retry policy, standard SQS
+dead-letter destinations and FIFO message-group IDs. Saving replaces that target's options while retaining the other
+targets. Rule deletion requires typing its name and removes its targets first; bus deletion requires an empty rule list.
+Completed deletion steps remain in place after failures. Disabling a rule stops new matching and scheduling;
+previously queued delivery retries can continue.
+
+**Send event** publishes one event with a source, detail type, JSON detail and optional resource ARNs. Publication
+reports an event ID only after the entry is accepted; it does not guarantee target delivery. The rule and bus
+**Deliveries** tabs show recent payloads and errors. History is bounded, payload previews are truncated, and history
+resets on restart. Custom buses and rules support tags. Bus permissions, archives and replays use the AWS API;
+bus policies are stored but not evaluated. Verify mode provides inventory and deliveries, with signed CLI/SDK
+requests required for management and publication. Signed EventBridge requests use the AWS signing name `events`.
+
+Open **CloudWatch Logs** for log groups and streams in the selected account and Region. Create groups with a class,
+retention and tags; create or delete streams, edit retention and tags, or delete a group after typing its name.
+Group and stream deletion removes their events. Reducing retention hides expired events immediately; a later write
+removes those events from storage. Lambda's **Monitor** tab links directly to its log group.
+
+**Search events** reads a group with optional stream prefixes, ISO 8601 start/end times and term filters. Terms and
+quoted phrases must match; `-term` excludes a term and `?term` matches an optional term. JSON and regex filter patterns
+are unsupported. End times are exclusive. Stream pages open at their latest events, support older/newer paging,
+and disable continuation when the returned token stops advancing. Filtering a stream switches to chronological
+search results. Paging retains the settings from the last search or refresh; event reads are not polled. Open an
+event's timestamp for its complete message and ingestion time.
+
+**Add log event** appends one message to a stream, timestamped now or at a supplied ISO 8601 time. Messages may use
+up to 1 MiB minus 26 bytes; timestamps must be within retention, at most 14 days old and no more than two hours ahead.
+Writes also process attached subscription and metric filters. **Logs Insights** runs a query for one selected group
+and time range, showing fields, query ID, status and scanned/matched counts. The local query subset includes fields,
+display, filter, parse, sort, limit and stats; queries complete synchronously. Refresh results retries a result read
+without starting another query. Subscription and metric filters use the AWS API. Verify mode provides group/stream
+inventory, with signed CLI/SDK requests required for event reads, queries and management.
+
 ## Endpoints
 
 | Method and path | Result |
@@ -111,7 +151,7 @@ settings changes retain completed steps after a failure and allow retrying the r
 | `GET /_tinystack/health` | Registered service list and health information |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
 | `GET /_tinystack/actions` | Console action capabilities and default account/region |
-| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda/DynamoDB operations and CloudWatch FilterLogEvents with an explicit account, regional scope except IAM and SDK-style input |
+| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda/DynamoDB/EventBridge/CloudWatch Logs operations with an explicit account, regional scope except IAM and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |
