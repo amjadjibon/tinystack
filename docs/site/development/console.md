@@ -31,9 +31,10 @@ task ui:build
 task build
 ```
 
-The build writes `ui/dist/client`. The `console` Go build tag makes `ui/console.go` embed those files.
-The console listener serves static files, proxies `/_tinystack/` internally, and falls back to `_shell.html`
-for client-side routes. The AWS listener does not serve console navigation.
+The build writes `ui/dist/client`, then `ui/scripts/compress.mjs` gzips every file into `ui/dist/console`. The
+`console` Go build tag makes `ui/console.go` embed the gzipped files. The console listener sends them as-is to
+clients that accept gzip and decompresses them for the rest, proxies `/_tinystack/` internally, and falls back to
+`_shell.html` for client-side routes. The AWS listener does not serve console navigation.
 
 ## Add a service view
 

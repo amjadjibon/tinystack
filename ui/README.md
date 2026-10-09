@@ -13,7 +13,7 @@ It only reads TinyStack's own endpoints (`/_tinystack/health`, `resources`, `req
 
 ## Build
 
-`task build` builds this app and embeds `dist/client` in `bin/tinystack` (the `console` build tag,
+`task build` builds this app, gzips it into `dist/console`, and embeds that in `bin/tinystack` (the `console` build tag,
 `console.go`), which serves it on `http://localhost:4567` (`--console-port`, `0` turns it off)
 along with the `/_tinystack` endpoints. `task up` does the same in Docker. `task build:noui`
 (`docker build --target noui .`) builds TinyStack without it.
