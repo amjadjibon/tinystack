@@ -42,6 +42,19 @@ Queue purge and deletion require typing the queue name. Purge clears all message
 and repeat purges within 60 seconds fail. FIFO deduplication history is retained. Tags and policies use JSON editors;
 queue access policies are stored but not evaluated. In verify mode only queue inventory is available in the console.
 
+Open **SNS** for standard and FIFO topics, topic configuration, access policies and tags. Topic and subscription
+lists use the shared account and Region selectors. Create SQS, Lambda, HTTP/HTTPS, email or SMS subscriptions;
+FIFO topics support SQS endpoints. Subscriptions can use raw delivery and message-attribute or message-body filters.
+The protocol and endpoint cannot be edited after creation; delete and recreate the subscription to change them.
+
+HTTP/HTTPS and email subscriptions remain pending until confirmed. Use the token from the endpoint’s confirmation
+message to **Confirm subscription**, or request another confirmation from its details page. Email/SMS messages are
+recorded locally. The topic’s **Deliveries** tab includes confirmation requests, payloads and delivery errors.
+**Publish message** supports subjects, binary attributes (base64), protocol-specific JSON payloads and FIFO group and
+deduplication IDs. Successful publication reports acceptance; check delivery history for subscriber outcomes.
+Filtered messages produce no delivery records. History is bounded and resets on restart. In verify mode SNS inventory
+and delivery inspection are available, with management through signed CLI/SDK requests.
+
 ## Endpoints
 
 | Method and path | Result |
@@ -49,7 +62,7 @@ queue access policies are stored but not evaluated. In verify mode only queue in
 | `GET /_tinystack/health` | Registered service list and health information |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
 | `GET /_tinystack/actions` | Console action capabilities and default account/region |
-| `POST /_tinystack/actions` | Selected IAM/S3/SQS operations with an explicit account, regional scope for S3/SQS and SDK-style input |
+| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS operations with an explicit account, regional scope for S3/SQS/SNS and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |

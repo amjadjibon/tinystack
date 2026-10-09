@@ -24,6 +24,7 @@ See the [implemented feature catalogue](catalogue.md#sns) for this service's cap
 - Email and SMS are recorded, not sent to providers.
 - No mobile application or Firehose subscriptions, delivery retries or message signatures.
 - Topic policies are stored but not evaluated; no cross-account subscriptions.
+- Console management requires parse mode; verify mode exposes topic/subscription inventory and delivery history and requires signed CLI or SDK requests for actions.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
