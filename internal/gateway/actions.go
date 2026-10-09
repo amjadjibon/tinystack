@@ -45,6 +45,8 @@ const consoleHTTPAPI = "apigatewayv2"
 
 const consoleSFN = "sfn"
 
+const consoleEC2 = "ec2"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -154,6 +156,26 @@ var consoleSFNOperations = strings.Fields(`
 	StopExecution GetExecutionHistory ListTagsForResource TagResource UntagResource
 `)
 
+var consoleEC2Operations = strings.Fields(`
+ DescribeAvailabilityZones DescribeImages DescribeInstances DescribeInstanceStatus
+ RunInstances StartInstances StopInstances RebootInstances TerminateInstances
+ DescribeIamInstanceProfileAssociations AssociateIamInstanceProfile ReplaceIamInstanceProfileAssociation
+ DisassociateIamInstanceProfile DescribeKeyPairs CreateKeyPair ImportKeyPair DeleteKeyPair
+ DescribeVpcs CreateVpc DeleteVpc DescribeVpcAttribute ModifyVpcAttribute
+ DescribeSubnets CreateSubnet DeleteSubnet ModifySubnetAttribute
+ DescribeSecurityGroups CreateSecurityGroup DeleteSecurityGroup DescribeSecurityGroupRules
+ AuthorizeSecurityGroupIngress AuthorizeSecurityGroupEgress RevokeSecurityGroupIngress RevokeSecurityGroupEgress
+ DescribeInternetGateways CreateInternetGateway AttachInternetGateway DetachInternetGateway DeleteInternetGateway
+ DescribeRouteTables CreateRouteTable DeleteRouteTable CreateRoute ReplaceRoute DeleteRoute
+ AssociateRouteTable DisassociateRouteTable ReplaceRouteTableAssociation
+ DescribeAddresses AllocateAddress AssociateAddress DisassociateAddress ReleaseAddress
+ DescribeNatGateways CreateNatGateway DeleteNatGateway
+ DescribeNetworkAcls CreateNetworkAcl DeleteNetworkAcl CreateNetworkAclEntry ReplaceNetworkAclEntry
+ DeleteNetworkAclEntry ReplaceNetworkAclAssociation
+ DescribeVpcEndpoints CreateVpcEndpoint ModifyVpcEndpoint DeleteVpcEndpoints DescribeNetworkInterfaces
+ CreateTags DeleteTags DescribeTags
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -183,6 +205,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, restAPI := s.services[consoleAPIGateway]
 		_, httpAPI := s.services[consoleHTTPAPI]
 		_, sfn := s.services[consoleSFN]
+		_, ec2 := s.services[consoleEC2]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
@@ -193,6 +216,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleAPIGateway:    restAPI,
 			consoleHTTPAPI:       httpAPI,
 			consoleSFN:           sfn,
+			consoleEC2:           ec2,
 			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -277,6 +301,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleHTTPAPIOperations
 	case consoleSFN:
 		operations = consoleSFNOperations
+	case consoleEC2:
+		operations = consoleEC2Operations
 	}
 
 	c.service = s.services[in.Service]

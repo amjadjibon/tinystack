@@ -286,10 +286,11 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
 		capabilities["eventbridge"] != true ||
 		capabilities["logs"] != true || capabilities["cloudwatch"] != true ||
-		capabilities["apigateway"] != true || capabilities["apigatewayv2"] != true || capabilities["sfn"] != true {
+		capabilities["apigateway"] != true || capabilities["apigatewayv2"] != true || capabilities["sfn"] != true ||
+		capabilities["ec2"] != true {
 		t.Fatal(capabilities)
 	}
-	for _, service := range []string{"eventbridge", "logs", "cloudwatch", "apigateway", "apigatewayv2", "sfn"} {
+	for _, service := range []string{"eventbridge", "logs", "cloudwatch", "apigateway", "apigatewayv2", "sfn", "ec2"} {
 		operation := "ListEventBuses"
 		if service == "logs" {
 			operation = "DescribeLogGroups"
@@ -302,6 +303,9 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		}
 		if service == "apigatewayv2" {
 			operation = "GetApis"
+		}
+		if service == "ec2" {
+			operation = "DescribeVpcs"
 		}
 		if service == "sfn" {
 			operation = "ListStateMachines"
@@ -340,6 +344,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"apigateway", "apigateway", "GetRestApis"},
 		{"apigatewayv2", "apigateway", "GetApis"},
 		{"sfn", "states", "ListStateMachines"},
+		{"ec2", "ec2", "DescribeVpcs"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing
