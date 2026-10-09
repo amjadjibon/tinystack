@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard and API Gateway HTTP/REST management workflows, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST and Step Functions management workflows, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -739,12 +739,16 @@
         "State machines, versions, aliases, activities, executions and history",
         "JSONPath and JSONata evaluation, supported state types, Retry/Catch and callbacks",
         "In-process AWS SDK integrations can call implemented operations",
-        "TestState and redrive support"
+        "TestState and redrive support",
+        "AWS-style console for scoped state machine creation, ASL validation and editing, execution roles, logging configuration and tags",
+        "Console starts and stops Standard executions with paginated execution history, input, output and failure details; Express workflows return synchronous results"
       ],
       "gaps": [
         "No distributed Map, map runs, execution retention or IAM role checks",
         "JSONPath filters and recursive descent are outside the subset",
-        "Running executions abort after restart; activity queues and task tokens are in memory"
+        "Running executions abort after restart; activity queues and task tokens are in memory",
+        "Express execution results are not retained; console results last until leaving or reloading the page",
+        "Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console shows read-only inventory"
       ],
       "execution": "Local behavior",
       "package": "sfn"
