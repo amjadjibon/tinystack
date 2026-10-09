@@ -280,21 +280,28 @@ func TestConsoleCloudWatchLogsLifecyclePagingAndInsights(t *testing.T) {
 	scoped("DeleteLogGroup", map[string]any{})
 }
 
-func TestConsoleEventsAndLogsValidationAndSignatures(t *testing.T) {
+func TestConsoleMonitoringAndAPIGatewayValidationAndSignatures(t *testing.T) {
 	srv := server(t)
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
 		capabilities["eventbridge"] != true ||
-		capabilities["logs"] != true || capabilities["cloudwatch"] != true {
+		capabilities["logs"] != true || capabilities["cloudwatch"] != true ||
+		capabilities["apigateway"] != true || capabilities["apigatewayv2"] != true {
 		t.Fatal(capabilities)
 	}
-	for _, service := range []string{"eventbridge", "logs", "cloudwatch"} {
+	for _, service := range []string{"eventbridge", "logs", "cloudwatch", "apigateway", "apigatewayv2"} {
 		operation := "ListEventBuses"
 		if service == "logs" {
 			operation = "DescribeLogGroups"
 		}
 		if service == "cloudwatch" {
 			operation = "ListMetrics"
+		}
+		if service == "apigateway" {
+			operation = "GetRestApis"
+		}
+		if service == "apigatewayv2" {
+			operation = "GetApis"
 		}
 		for _, region := range []string{"", "../us-east-1"} {
 			consoleResponse(
@@ -327,6 +334,8 @@ func TestConsoleEventsAndLogsValidationAndSignatures(t *testing.T) {
 		{"eventbridge", "events", "ListEventBuses"},
 		{"logs", "logs", "DescribeLogGroups"},
 		{"cloudwatch", "monitoring", "ListMetrics"},
+		{"apigateway", "apigateway", "GetRestApis"},
+		{"apigatewayv2", "apigateway", "GetApis"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing

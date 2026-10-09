@@ -39,6 +39,10 @@ const consoleEventBridge = "eventbridge"
 
 const consoleCloudWatch = "cloudwatch"
 
+const consoleAPIGateway = "apigateway"
+
+const consoleHTTPAPI = "apigatewayv2"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -121,6 +125,27 @@ var consoleCloudWatchOperations = strings.Fields(`
 	TagResource UntagResource ListTagsForResource
 `)
 
+var consoleHTTPAPIOperations = strings.Fields(`
+	CreateApi GetApi GetApis UpdateApi DeleteApi DeleteCorsConfiguration
+	CreateRoute GetRoute GetRoutes UpdateRoute DeleteRoute
+	CreateIntegration GetIntegration GetIntegrations UpdateIntegration DeleteIntegration
+	CreateStage GetStage GetStages UpdateStage DeleteStage
+	CreateDeployment GetDeployment GetDeployments UpdateDeployment DeleteDeployment
+	CreateAuthorizer GetAuthorizer GetAuthorizers UpdateAuthorizer DeleteAuthorizer
+	GetTags TagResource UntagResource InvokeApi
+`)
+
+var consoleRESTAPIOperations = strings.Fields(`
+	CreateRestApi GetRestApi GetRestApis UpdateRestApi DeleteRestApi
+	CreateResource GetResource GetResources UpdateResource DeleteResource
+	PutMethod GetMethod UpdateMethod DeleteMethod
+	PutIntegration GetIntegration UpdateIntegration DeleteIntegration
+	CreateStage GetStage GetStages UpdateStage DeleteStage
+	CreateDeployment GetDeployment GetDeployments UpdateDeployment DeleteDeployment
+	CreateAuthorizer GetAuthorizer GetAuthorizers UpdateAuthorizer DeleteAuthorizer
+	GetTags TagResource UntagResource InvokeApi
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -147,6 +172,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, dynamodb := s.services[consoleDynamoDB]
 		_, eventbridge := s.services[consoleEventBridge]
 		_, cloudwatch := s.services[consoleCloudWatch]
+		_, restAPI := s.services[consoleAPIGateway]
+		_, httpAPI := s.services[consoleHTTPAPI]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
@@ -154,6 +181,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleDynamoDB:      dynamodb,
 			consoleEventBridge:   eventbridge,
 			consoleCloudWatch:    cloudwatch,
+			consoleAPIGateway:    restAPI,
+			consoleHTTPAPI:       httpAPI,
 			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -232,6 +261,10 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleEventBridgeOperations
 	case consoleCloudWatch:
 		operations = consoleCloudWatchOperations
+	case consoleAPIGateway:
+		operations = consoleRESTAPIOperations
+	case consoleHTTPAPI:
+		operations = consoleHTTPAPIOperations
 	}
 
 	c.service = s.services[in.Service]
@@ -309,7 +342,13 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		caller = caller.Base64Blobs()
 	}
 
-	output, err := caller.Call(request.WithMetadata(r.Context(), c.meta), in.Service, in.Operation, in.Input)
+	var output any
+	var err error
+	if in.Operation == "InvokeApi" && (in.Service == consoleAPIGateway || in.Service == consoleHTTPAPI) {
+		output, err = s.consoleInvokeAPI(r, c, caller, in)
+	} else {
+		output, err = caller.Call(request.WithMetadata(r.Context(), c.meta), in.Service, in.Operation, in.Input)
+	}
 	if err != nil {
 		s.consoleFail(w, c, err)
 		return
