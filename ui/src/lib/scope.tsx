@@ -93,6 +93,8 @@ function useScopeState() {
 			"table",
 			"bus",
 			"rule",
+			"group",
+			"stream",
 			"prefix",
 			"key",
 			"version",

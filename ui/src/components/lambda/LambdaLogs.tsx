@@ -4,6 +4,7 @@ import {
 	Button,
 	Container,
 	Header,
+	Link,
 	SpaceBetween,
 	Table,
 } from "@cloudscape-design/components";
@@ -11,6 +12,8 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "#/lib/api";
 import { errorText } from "#/lib/consoleActions";
 import type { LambdaScope } from "#/lib/lambda";
+import { logsHref } from "#/lib/logs";
+import { useFollow } from "#/lib/useFollow";
 
 type LogEvent = {
 	Timestamp?: number;
@@ -25,6 +28,7 @@ export function LambdaLogs({
 	scope: LambdaScope;
 	enabled: boolean;
 }) {
+	const follow = useFollow();
 	const [events, setEvents] = useState<LogEvent[]>([]);
 	const [next, setNext] = useState<string>();
 	const [busy, setBusy] = useState(false);
@@ -95,6 +99,16 @@ export function LambdaLogs({
 					description={`Log group ${group} · Events from the last hour.`}
 					actions={
 						<SpaceBetween direction="horizontal" size="xs">
+							<Link
+								href={logsHref({
+									account: scope.account,
+									region: scope.region,
+									group,
+								})}
+								onFollow={follow}
+							>
+								Open in CloudWatch Logs
+							</Link>
 							<Button
 								iconName="refresh"
 								ariaLabel="Refresh function logs"

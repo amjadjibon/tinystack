@@ -19,6 +19,7 @@ import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
+import { Route as ServicesLogsRouteImport } from './routes/services/logs'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
 import { Route as ServicesSnsRouteImport } from './routes/services/sns'
 import { Route as ServicesSqsRouteImport } from './routes/services/sqs'
@@ -75,6 +76,11 @@ const ServicesLambdaRoute = ServicesLambdaRouteImport.update({
   path: '/services/lambda',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesLogsRoute = ServicesLogsRouteImport.update({
+  id: '/services/logs',
+  path: '/services/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesS3Route = ServicesS3RouteImport.update({
   id: '/services/s3',
   path: '/services/s3',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
+  '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
+  '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
+  '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
+    | '/services/logs'
     | '/services/s3'
     | '/services/sns'
     | '/services/sqs'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
+    | '/services/logs'
     | '/services/s3'
     | '/services/sns'
     | '/services/sqs'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
+    | '/services/logs'
     | '/services/s3'
     | '/services/sns'
     | '/services/sqs'
@@ -217,6 +229,7 @@ export interface RootRouteChildren {
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
   ServicesIamRoute: typeof ServicesIamRoute
   ServicesLambdaRoute: typeof ServicesLambdaRoute
+  ServicesLogsRoute: typeof ServicesLogsRoute
   ServicesS3Route: typeof ServicesS3Route
   ServicesSnsRoute: typeof ServicesSnsRoute
   ServicesSqsRoute: typeof ServicesSqsRoute
@@ -297,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesLambdaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/logs': {
+      id: '/services/logs'
+      path: '/services/logs'
+      fullPath: '/services/logs'
+      preLoaderRoute: typeof ServicesLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/s3': {
       id: '/services/s3'
       path: '/services/s3'
@@ -345,6 +365,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
   ServicesIamRoute: ServicesIamRoute,
   ServicesLambdaRoute: ServicesLambdaRoute,
+  ServicesLogsRoute: ServicesLogsRoute,
   ServicesS3Route: ServicesS3Route,
   ServicesSnsRoute: ServicesSnsRoute,
   ServicesSqsRoute: ServicesSqsRoute,

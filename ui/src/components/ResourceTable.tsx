@@ -18,6 +18,7 @@ import { dynamoHref } from "#/lib/dynamodb";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { lambdaHref } from "#/lib/lambda";
+import { logsHref } from "#/lib/logs";
 import { s3Href } from "#/lib/s3";
 import { snsHref } from "#/lib/sns";
 import { sqsHref } from "#/lib/sqs";
@@ -26,6 +27,8 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "logs" && r.type === "log-group")
+		return logsHref({ account: r.account, region: r.region, group: r.name });
 	if (
 		r.service === "eventbridge" &&
 		(r.type === "event-bus" || r.type === "rule")
