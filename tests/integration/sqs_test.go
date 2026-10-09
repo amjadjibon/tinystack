@@ -1031,7 +1031,7 @@ func TestSQSQueryProtocol(t *testing.T) {
 			params: url.Values{"Action": {"DeleteMessage"}, "QueueUrl": {created.QueueURL}, "ReceiptHandle": {"x"}},
 			code:   "ReceiptHandleIsInvalid", status: 404,
 		},
-		{name: "unknown action", params: url.Values{"Action": {"PurgeQueue"}}, code: "InvalidAction", status: 400},
+		{name: "unknown action", params: url.Values{"Action": {"UnknownAction"}}, code: "InvalidAction", status: 400},
 		{name: "missing action", params: url.Values{"QueueName": {"x"}}, code: "MissingAction", status: 400},
 		{
 			name:   "unknown parameter",

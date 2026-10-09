@@ -15394,6 +15394,7 @@
     "operations": [
       "CreateQueue",
       "DeleteQueue",
+      "PurgeQueue",
       "ListQueues",
       "GetQueueUrl",
       "SendMessage",
@@ -15617,6 +15618,9 @@
       "RemovePermissionRequest": [
         "QueueUrl",
         "Label"
+      ],
+      "PurgeQueueRequest": [
+        "QueueUrl"
       ]
     }
   },

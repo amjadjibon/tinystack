@@ -23,6 +23,8 @@ const consoleIAM = "iam"
 
 const consoleS3 = "s3"
 
+const consoleSQS = "sqs"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -55,6 +57,13 @@ var consoleS3Operations = strings.Fields(`
 	GetBucketNotificationConfiguration PutBucketNotificationConfiguration
 `)
 
+var consoleSQSOperations = strings.Fields(`
+	CreateQueue DeleteQueue GetQueueUrl ListQueues GetQueueAttributes SetQueueAttributes PurgeQueue
+	SendMessage ReceiveMessage DeleteMessage ChangeMessageVisibility
+	TagQueue UntagQueue ListQueueTags
+	ListDeadLetterSourceQueues StartMessageMoveTask ListMessageMoveTasks CancelMessageMoveTask
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -74,9 +83,11 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet && r.URL.RawQuery == "" {
 		_, iam := s.services[consoleIAM]
 		_, s3 := s.services[consoleS3]
+		_, sqs := s.services[consoleSQS]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
-			consoleIAM: iam, consoleS3: s3, "requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
+			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs,
+			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
 	}
@@ -138,9 +149,12 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	if in.Service == consoleS3 {
 		operations = consoleS3Operations
 	}
+	if in.Service == consoleSQS {
+		operations = consoleSQSOperations
+	}
 
 	c.service = s.services[in.Service]
-	if (in.Service != consoleIAM && in.Service != consoleS3) || c.service == nil ||
+	if (in.Service != consoleIAM && in.Service != consoleS3 && in.Service != consoleSQS) || c.service == nil ||
 		!slices.Contains(operations, in.Operation) {
 		s.consoleFail(w, c, awserror.New("UnknownOperationException",
 			"This operation is not available in the console."))
@@ -154,8 +168,13 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if in.Service == consoleS3 && !consoleRegion.MatchString(in.Region) {
-		s.consoleFail(w, c, awserror.Validation("S3 console actions require a valid region."))
+	regional := in.Service == consoleS3 || in.Service == consoleSQS
+	if regional && !consoleRegion.MatchString(in.Region) {
+		s.consoleFail(
+			w,
+			c,
+			awserror.Validation("%s console actions require a valid region.", strings.ToUpper(in.Service)),
+		)
 		return
 	}
 
@@ -178,7 +197,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if signedService != in.Service || c.meta.AccountID != in.Account ||
-			(in.Service == consoleS3 && c.meta.Region != in.Region) {
+			(regional && c.meta.Region != in.Region) {
 			s.consoleFail(w, c, &awserror.Error{
 				Code: accessDenied, Message: "The action scope must match the signed service, account and region.",
 				StatusCode: http.StatusForbidden,
@@ -187,14 +206,14 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		c.meta.AccountID = in.Account
-		if in.Service == consoleS3 {
+		if regional {
 			c.meta.Region = in.Region
 		}
 	}
 
 	c.meta.Protocol = "console"
 	caller := s.consoleCaller
-	if in.Service == consoleS3 {
+	if in.Service == consoleS3 || in.Service == consoleSQS {
 		caller = caller.Base64Blobs()
 	}
 

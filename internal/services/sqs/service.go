@@ -127,6 +127,7 @@ type queue struct {
 	Attempts     map[string]attempt `json:",omitempty"`
 	Tags         map[string]string  `json:",omitempty"`
 	Messages     []message
+	LastPurge    *int64 `json:",omitempty"`
 	Settings     settings
 	CreatedAt    int64
 	LastModified int64
