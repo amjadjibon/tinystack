@@ -25,6 +25,8 @@ See the [implemented feature catalogue](catalogue.md#ec2) for this service's cap
 - Networking configuration does not create a real VPC, NAT or firewall.
 - State transitions settle immediately.
 - The large upstream EC2 API remains mostly outside the selected profile.
+- Console AMIs and derived network interfaces are read-only; launch templates use the AWS CLI or SDK.
+- Verify mode shows scoped inventory; detailed EC2/VPC reads and management require signed CLI/SDK requests.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

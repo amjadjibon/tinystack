@@ -14,7 +14,7 @@ feature manages records or needs a Docker runtime.
 | AWS wire protocols | AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings. | [Details](../architecture/request-flow.md) |
 | Identity and resource scope | Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, and optional SigV4 verification; general IAM permission evaluation is outside the subset. | [Details](../architecture/identity.md) |
 | Transactional storage and persistence | Atomic callback transactions, in-memory storage, and optional SQLite commit persistence with resource reload on restart; runtime and in-flight state have separate limits. | [Details](../guides/persistence.md) |
-| Cloudscape console | AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST and Step Functions management workflows, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
+| Cloudscape console | AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
 | Diagnostics | Health/resource endpoints, bounded request and delivery logs, model-sensitive body redaction, and Prometheus request metrics. | [Details](../guides/diagnostics.md) |
 | CLI and SDK clients | Local endpoint overrides for AWS clients, CLI wrappers, and generated Go SDK-compatible APIs. | [Details](../getting-started/clients.md) |
 | Infrastructure workflows | Selected Terraform AWS provider workflows and local CloudFormation/SAM deployment through the registered resource-type subset. | [Details](../guides/infrastructure.md) |
@@ -66,6 +66,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 - Key pairs, instance records, instance profile associations and launch templates.
 - Fixed regional image catalogue and tags.
 - Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags.
+- AWS-style EC2 and VPC consoles with scoped instance launch/start/stop/reboot/termination, AMIs, generated/imported key pairs with one-time private key display, IAM instance profiles, VPC DNS settings and subnet public IPv4 settings, security rules, route tables and subnet associations, gateways, Elastic IPs, NAT gateways, network ACL rules and associations, endpoint configuration, tags, and links between related resources.
 
 [Supported operations](ec2.md#supported-operations) · [Limitations](ec2.md#limitations-and-future-work)
 

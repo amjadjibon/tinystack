@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST and Step Functions management workflows, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -319,13 +319,16 @@
         "Route tables, network ACLs, VPC endpoints and derived network interfaces",
         "Key pairs, instance records, instance profile associations and launch templates",
         "Fixed regional image catalogue and tags",
-        "Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags"
+        "Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags",
+        "AWS-style EC2 and VPC consoles with scoped instance launch/start/stop/reboot/termination, AMIs, generated/imported key pairs with one-time private key display, IAM instance profiles, VPC DNS settings and subnet public IPv4 settings, security rules, route tables and subnet associations, gateways, Elastic IPs, NAT gateways, network ACL rules and associations, endpoint configuration, tags, and links between related resources"
       ],
       "gaps": [
         "Instances are records; no virtual machines boot and no guest software runs",
         "Networking configuration does not create a real VPC, NAT or firewall",
         "State transitions settle immediately",
-        "The large upstream EC2 API remains mostly outside the selected profile"
+        "The large upstream EC2 API remains mostly outside the selected profile",
+        "Console AMIs and derived network interfaces are read-only; launch templates use the AWS CLI or SDK",
+        "Verify mode shows scoped inventory; detailed EC2/VPC reads and management require signed CLI/SDK requests"
       ],
       "execution": "Records only",
       "package": "ec2"
