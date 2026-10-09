@@ -17,12 +17,12 @@ tasks:
     desc: "Build bin/tinystack with the web console built in (needs Node.js and pnpm)"
     deps: [ui:build]
     cmds:
-      - go build -tags console -o bin/tinystack ./cmd/tinystack
+      - go build -tags console -trimpath -ldflags="-s -w" -o bin/tinystack ./cmd/tinystack
 
   build:noui:
     desc: "Build bin/tinystack-noui without the web console (needs only Go)"
     cmds:
-      - go build -o bin/tinystack-noui ./cmd/tinystack
+      - go build -trimpath -ldflags="-s -w" -o bin/tinystack-noui ./cmd/tinystack
 
   build:tools:
     desc: "Build bin/aws-local, bin/terraform-local, and bin/sam-local wrappers (and symlinks awslocal, tflocal, samlocal)"
