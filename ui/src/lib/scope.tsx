@@ -98,6 +98,8 @@ function useScopeState() {
 			"alarm",
 			"dashboard",
 			"machine",
+			"id",
+			"vpc",
 			"execution",
 			"apiId",
 			"resourceId",

@@ -9,7 +9,7 @@ import {
 } from "@cloudscape-design/components";
 import { ServiceIcon } from "#/components/ServiceIcon";
 import type { Resource } from "#/lib/api";
-import { categories, service } from "#/lib/services";
+import { categories, consoleServiceNames, service } from "#/lib/services";
 import { useFollow } from "#/lib/useFollow";
 
 export function ServiceCatalog({
@@ -20,9 +20,28 @@ export function ServiceCatalog({
 	resources: Resource[];
 }) {
 	const follow = useFollow();
+	names = consoleServiceNames(names);
 	const counts = new Map<string, number>();
 	for (const r of resources)
 		counts.set(r.service, (counts.get(r.service) ?? 0) + 1);
+	counts.set(
+		"vpc",
+		resources.filter(
+			(r) =>
+				r.service === "ec2" &&
+				[
+					"vpc",
+					"subnet",
+					"route-table",
+					"internet-gateway",
+					"elastic-ip",
+					"natgateway",
+					"security-group",
+					"network-acl",
+					"vpc-endpoint",
+				].includes(r.type),
+		).length,
+	);
 
 	const groups = new Map<string, string[]>();
 	for (const name of names) {

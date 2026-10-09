@@ -20,7 +20,7 @@ import { api } from "#/lib/api";
 import { useHealth } from "#/lib/health";
 import { useScope } from "#/lib/scope";
 import { useServiceHistory } from "#/lib/serviceHistory";
-import { service } from "#/lib/services";
+import { consoleServiceNames, service } from "#/lib/services";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
 
@@ -41,7 +41,7 @@ function Home() {
 	const { inventory, account, region } = useScope();
 	const requests = usePoll(api.requests);
 	const recent = useServiceHistory().filter((name) =>
-		health.data?.services.includes(name),
+		consoleServiceNames(health.data?.services ?? []).includes(name),
 	);
 	const follow = useFollow();
 	const [visible, setVisible] = useState<WidgetID[]>(defaults);

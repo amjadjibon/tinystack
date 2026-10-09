@@ -19,6 +19,7 @@ import { Route as ServicesApigatewayRouteImport } from './routes/services/apigat
 import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apigatewayv2'
 import { Route as ServicesCloudwatchRouteImport } from './routes/services/cloudwatch'
 import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
+import { Route as ServicesEc2RouteImport } from './routes/services/ec2'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
@@ -27,6 +28,7 @@ import { Route as ServicesS3RouteImport } from './routes/services/s3'
 import { Route as ServicesSfnRouteImport } from './routes/services/sfn'
 import { Route as ServicesSnsRouteImport } from './routes/services/sns'
 import { Route as ServicesSqsRouteImport } from './routes/services/sqs'
+import { Route as ServicesVpcRouteImport } from './routes/services/vpc'
 import { Route as ServicesServiceIndexRouteImport } from './routes/services/$service.index'
 import { Route as ServicesServiceResourceRouteImport } from './routes/services/$service.resource'
 
@@ -80,6 +82,11 @@ const ServicesDynamodbRoute = ServicesDynamodbRouteImport.update({
   path: '/services/dynamodb',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesEc2Route = ServicesEc2RouteImport.update({
+  id: '/services/ec2',
+  path: '/services/ec2',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesEventbridgeRoute = ServicesEventbridgeRouteImport.update({
   id: '/services/eventbridge',
   path: '/services/eventbridge',
@@ -120,6 +127,11 @@ const ServicesSqsRoute = ServicesSqsRouteImport.update({
   path: '/services/sqs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesVpcRoute = ServicesVpcRouteImport.update({
+  id: '/services/vpc',
+  path: '/services/vpc',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesServiceIndexRoute = ServicesServiceIndexRouteImport.update({
   id: '/services/$service/',
   path: '/services/$service/',
@@ -141,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
+  '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
@@ -149,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
+  '/services/vpc': typeof ServicesVpcRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service/': typeof ServicesServiceIndexRoute
@@ -163,6 +177,7 @@ export interface FileRoutesByTo {
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
+  '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
@@ -171,6 +186,7 @@ export interface FileRoutesByTo {
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
+  '/services/vpc': typeof ServicesVpcRoute
   '/services': typeof ServicesIndexRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service': typeof ServicesServiceIndexRoute
@@ -186,6 +202,7 @@ export interface FileRoutesById {
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
+  '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
@@ -194,6 +211,7 @@ export interface FileRoutesById {
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
+  '/services/vpc': typeof ServicesVpcRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
   '/services/$service/': typeof ServicesServiceIndexRoute
@@ -210,6 +228,7 @@ export interface FileRouteTypes {
     | '/services/apigatewayv2'
     | '/services/cloudwatch'
     | '/services/dynamodb'
+    | '/services/ec2'
     | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
@@ -218,6 +237,7 @@ export interface FileRouteTypes {
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
+    | '/services/vpc'
     | '/services/'
     | '/services/$service/resource'
     | '/services/$service/'
@@ -232,6 +252,7 @@ export interface FileRouteTypes {
     | '/services/apigatewayv2'
     | '/services/cloudwatch'
     | '/services/dynamodb'
+    | '/services/ec2'
     | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
@@ -240,6 +261,7 @@ export interface FileRouteTypes {
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
+    | '/services/vpc'
     | '/services'
     | '/services/$service/resource'
     | '/services/$service'
@@ -254,6 +276,7 @@ export interface FileRouteTypes {
     | '/services/apigatewayv2'
     | '/services/cloudwatch'
     | '/services/dynamodb'
+    | '/services/ec2'
     | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
@@ -262,6 +285,7 @@ export interface FileRouteTypes {
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
+    | '/services/vpc'
     | '/services/'
     | '/services/$service/resource'
     | '/services/$service/'
@@ -277,6 +301,7 @@ export interface RootRouteChildren {
   ServicesApigatewayv2Route: typeof ServicesApigatewayv2Route
   ServicesCloudwatchRoute: typeof ServicesCloudwatchRoute
   ServicesDynamodbRoute: typeof ServicesDynamodbRoute
+  ServicesEc2Route: typeof ServicesEc2Route
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
   ServicesIamRoute: typeof ServicesIamRoute
   ServicesLambdaRoute: typeof ServicesLambdaRoute
@@ -285,6 +310,7 @@ export interface RootRouteChildren {
   ServicesSfnRoute: typeof ServicesSfnRoute
   ServicesSnsRoute: typeof ServicesSnsRoute
   ServicesSqsRoute: typeof ServicesSqsRoute
+  ServicesVpcRoute: typeof ServicesVpcRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ServicesServiceResourceRoute: typeof ServicesServiceResourceRoute
   ServicesServiceIndexRoute: typeof ServicesServiceIndexRoute
@@ -362,6 +388,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesDynamodbRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/ec2': {
+      id: '/services/ec2'
+      path: '/services/ec2'
+      fullPath: '/services/ec2'
+      preLoaderRoute: typeof ServicesEc2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/eventbridge': {
       id: '/services/eventbridge'
       path: '/services/eventbridge'
@@ -418,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesSqsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/vpc': {
+      id: '/services/vpc'
+      path: '/services/vpc'
+      fullPath: '/services/vpc'
+      preLoaderRoute: typeof ServicesVpcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/$service/': {
       id: '/services/$service/'
       path: '/services/$service'
@@ -445,6 +485,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesApigatewayv2Route: ServicesApigatewayv2Route,
   ServicesCloudwatchRoute: ServicesCloudwatchRoute,
   ServicesDynamodbRoute: ServicesDynamodbRoute,
+  ServicesEc2Route: ServicesEc2Route,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
   ServicesIamRoute: ServicesIamRoute,
   ServicesLambdaRoute: ServicesLambdaRoute,
@@ -453,6 +494,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesSfnRoute: ServicesSfnRoute,
   ServicesSnsRoute: ServicesSnsRoute,
   ServicesSqsRoute: ServicesSqsRoute,
+  ServicesVpcRoute: ServicesVpcRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ServicesServiceResourceRoute: ServicesServiceResourceRoute,
   ServicesServiceIndexRoute: ServicesServiceIndexRoute,

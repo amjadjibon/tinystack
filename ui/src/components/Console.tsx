@@ -24,7 +24,7 @@ import { regionLabel } from "#/lib/regions";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { useServiceHistory } from "#/lib/serviceHistory";
-import { service } from "#/lib/services";
+import { consoleServiceNames, service } from "#/lib/services";
 import {
 	applyConsoleTheme,
 	applyPreferences,
@@ -46,8 +46,9 @@ export function ConsoleHeader() {
 	const [query, setQuery] = useState("");
 	const scope = useScope();
 	const recent = useServiceHistory();
+	const names = consoleServiceNames(data?.services ?? []);
 	const shortcuts = [...new Set([...recent, "iam", "s3", "ec2", "lambda"])]
-		.filter((name) => data?.services.includes(name))
+		.filter((name) => names.includes(name))
 		.slice(0, 6);
 	const [scopeDialog, setScopeDialog] = useState<"account" | "region" | null>(
 		null,
@@ -117,7 +118,7 @@ export function ConsoleHeader() {
 	}, []);
 	useEffect(() => applyPreferences(preferences), [preferences]);
 
-	const matches = (data?.services ?? []).filter((name) =>
+	const matches = names.filter((name) =>
 		`${name} ${service(name).title}`
 			.toLowerCase()
 			.includes(query.toLowerCase()),
@@ -332,6 +333,7 @@ function ServiceSearch({
 }
 
 function navigation(services: string[]): SideNavigationProps.Item[] {
+	services = consoleServiceNames(services);
 	return [
 		{ type: "link", text: "Console home", href: "/" },
 		{ type: "link", text: "All services", href: "/services" },

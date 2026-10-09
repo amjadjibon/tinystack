@@ -34,6 +34,7 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	vpc: { title: "VPC", category: networking, icon: "ec2" },
 	acm: { title: "Certificate Manager", category: security, icon: "acm" },
 	apigateway: {
 		title: "API Gateway",
@@ -184,4 +185,11 @@ const catalog: Record<string, ServiceInfo> = {
 // console does not know yet.
 export function service(name: string): ServiceInfo {
 	return catalog[name] ?? { title: name, category: "Other" };
+}
+
+// VPC is a console area backed by EC2, rather than a separate API service.
+export function consoleServiceNames(names: string[]): string[] {
+	return names.includes("ec2") && !names.includes("vpc")
+		? [...names, "vpc"]
+		: names;
 }

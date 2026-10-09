@@ -17,6 +17,7 @@ import type { Resource } from "#/lib/api";
 import { gatewayHref } from "#/lib/apigateway";
 import { cloudwatchHref } from "#/lib/cloudwatch";
 import { dynamoHref } from "#/lib/dynamodb";
+import { ec2Href, ec2Kinds, ec2Sections } from "#/lib/ec2";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { lambdaHref } from "#/lib/lambda";
@@ -30,6 +31,17 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "ec2") {
+		const section = ec2Sections.find((k) => ec2Kinds[k].type === r.type);
+		if (section)
+			return ec2Href({
+				account: r.account,
+				region: r.region,
+				area: ["instances", "keys", "images"].includes(section) ? "ec2" : "vpc",
+				section,
+				id: r.arn.split("/").at(-1) ?? r.name,
+			});
+	}
 	if (r.service === "sfn" && r.type === "state-machine")
 		return sfnHref({ account: r.account, region: r.region, machine: r.name });
 	if (
