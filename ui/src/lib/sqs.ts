@@ -22,7 +22,8 @@ export type MoveTask = {
 	ApproximateNumberOfMessagesToMove: number;
 	StartedTimestamp: number;
 };
-export type SQSStep = { label: string; run: () => Promise<unknown> };
+export type { ActionStep as SQSStep } from "./consoleActions";
+export { errorText, integer, jsonObject, stringMap } from "./consoleActions";
 export function sqsHref(scope: SQSScope, create = false) {
 	const search = new URLSearchParams({
 		account: scope.account,
@@ -50,39 +51,6 @@ export function queueCall<T = Record<string, unknown>>(
 	input: Record<string, unknown> = {},
 ) {
 	return sqsCall<T>(scope, operation, { QueueUrl: queuePath(scope), ...input });
-}
-export function errorText(error: unknown) {
-	return error instanceof Error ? error.message : String(error);
-}
-export function jsonObject(
-	text: string,
-	label: string,
-): Record<string, unknown> {
-	let value: unknown;
-	try {
-		value = JSON.parse(text);
-	} catch {
-		throw new Error(`${label} must be valid JSON.`);
-	}
-	if (!value || typeof value !== "object" || Array.isArray(value))
-		throw new Error(`${label} must be a JSON object.`);
-	return value as Record<string, unknown>;
-}
-export function stringMap(text: string, label: string): Record<string, string> {
-	const value = jsonObject(text, label);
-	if (Object.values(value).some((v) => typeof v !== "string"))
-		throw new Error(`${label} values must be strings.`);
-	return value as Record<string, string>;
-}
-export function integer(text: string, label: string, min: number, max: number) {
-	if (
-		!/^\d+$/.test(text) ||
-		!Number.isSafeInteger(Number(text)) ||
-		Number(text) < min ||
-		Number(text) > max
-	)
-		throw new Error(`${label} must be an integer from ${min} to ${max}.`);
-	return Number(text);
 }
 export const queueNumbers = [
 	{
