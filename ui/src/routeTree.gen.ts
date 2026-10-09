@@ -15,6 +15,7 @@ import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as ServicesCloudwatchRouteImport } from './routes/services/cloudwatch'
 import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
@@ -54,6 +55,11 @@ const ResourcesRoute = ResourcesRouteImport.update({
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesCloudwatchRoute = ServicesCloudwatchRouteImport.update({
+  id: '/services/cloudwatch',
+  path: '/services/cloudwatch',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesDynamodbRoute = ServicesDynamodbRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/cloudwatch'
     | '/services/dynamodb'
     | '/services/eventbridge'
     | '/services/iam'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/cloudwatch'
     | '/services/dynamodb'
     | '/services/eventbridge'
     | '/services/iam'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/cloudwatch'
     | '/services/dynamodb'
     | '/services/eventbridge'
     | '/services/iam'
@@ -225,6 +237,7 @@ export interface RootRouteChildren {
   MetricsRoute: typeof MetricsRoute
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
+  ServicesCloudwatchRoute: typeof ServicesCloudwatchRoute
   ServicesDynamodbRoute: typeof ServicesDynamodbRoute
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
   ServicesIamRoute: typeof ServicesIamRoute
@@ -280,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services/'
       preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/cloudwatch': {
+      id: '/services/cloudwatch'
+      path: '/services/cloudwatch'
+      fullPath: '/services/cloudwatch'
+      preLoaderRoute: typeof ServicesCloudwatchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/dynamodb': {
@@ -361,6 +381,7 @@ const rootRouteChildren: RootRouteChildren = {
   MetricsRoute: MetricsRoute,
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
+  ServicesCloudwatchRoute: ServicesCloudwatchRoute,
   ServicesDynamodbRoute: ServicesDynamodbRoute,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
   ServicesIamRoute: ServicesIamRoute,

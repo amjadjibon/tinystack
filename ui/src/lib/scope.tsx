@@ -95,6 +95,8 @@ function useScopeState() {
 			"rule",
 			"group",
 			"stream",
+			"alarm",
+			"dashboard",
 			"prefix",
 			"key",
 			"version",

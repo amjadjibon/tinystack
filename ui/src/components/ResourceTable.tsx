@@ -14,6 +14,7 @@ import {
 } from "@cloudscape-design/components";
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
+import { cloudwatchHref } from "#/lib/cloudwatch";
 import { dynamoHref } from "#/lib/dynamodb";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
@@ -27,6 +28,14 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (
+		r.service === "cloudwatch" &&
+		(r.type === "alarm" || r.type === "dashboard")
+	)
+		return cloudwatchHref(
+			{ account: r.account, region: r.region, [r.type]: r.name },
+			r.type === "alarm" ? "alarms" : "dashboards",
+		);
 	if (r.service === "logs" && r.type === "log-group")
 		return logsHref({ account: r.account, region: r.region, group: r.name });
 	if (
