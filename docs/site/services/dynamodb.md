@@ -25,6 +25,8 @@ See the [implemented feature catalogue](catalogue.md#dynamodb) for this service'
 - No throughput enforcement or capacity accounting; batch writes do not simulate throttling.
 - Point-in-time restores retain the latest state, not historical snapshots.
 - Legacy expression parameters, replica management and Kinesis streaming are outside the subset.
+- Verify mode shows table inventory; item reads and management require signed CLI/SDK requests.
+- Backups, restores, exports, PartiQL, batch and transaction operations use the AWS API rather than console forms.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

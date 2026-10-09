@@ -68,13 +68,41 @@ show the response, function errors and the last 4 KiB of logs. Asynchronous invo
 Dry run validates the function without executing it. Console test events are limited to 1 MiB. Execution requires
 Docker on the TinyStack host; configuration and inventory do not. Logs are created after a completed invocation.
 
-**Triggers** adds SQS mappings and standard SNS subscriptions. SQS mappings can be enabled or disabled and edited
+**Triggers** adds SQS mappings and standard SNS subscriptions. Connect DynamoDB streams from a table's
+**Streams and Lambda** tab; their mappings also appear in the function's trigger list. SQS mappings can be enabled or disabled and edited
 for batch size, batching window, filters and partial batch failure reporting. Enabled mappings consume messages;
 successful and filtered SQS messages are deleted. SNS invokes asynchronously and its subscription filters can be
 edited from the trigger list. Function deletion requires typing the function name and first removes its listed event
 source mappings, retaining completed steps on failure. CloudWatch logs and SNS subscriptions remain. Versions,
 aliases, layers, concurrency and function URLs use the AWS API. Verify mode shows function/trigger inventory and
 requires signed CLI/SDK requests for management, invocation and log reads.
+
+Open **DynamoDB** to create tables with partition and optional sort keys, on-demand or provisioned capacity,
+global and local secondary indexes, tags and streams. Table pages show keys, capacity, item counts, sizes and ARNs.
+Add or delete global indexes from **Indexes**; local indexes are selected at table creation. Capacity settings are
+stored without throughput enforcement or charges. Table deletion requires typing its name and removes its items and indexes.
+
+**Explore items** supports explicit query and scan on a table or index, key conditions, filters, projections,
+expression aliases, consistent reads where supported, sort order and page limits. Reads run only when requested.
+The limit counts evaluated items before filtering; an empty result can still have a next page. Pagination keeps
+the query from the last run until you run the form again. Items use DynamoDB JSON: numbers stay strings, binary
+values use base64, and sets, lists and maps retain their types.
+
+Create avoids overwriting an existing primary key. Before editing or deleting an index or projected result, the
+console loads the complete item from its table. Editing keeps primary keys immutable, updates only changed attributes,
+and checks their previous values to detect concurrent changes. Close and reopen the item after a conflict.
+Deletion requires typing `delete`; query results that omit primary keys cannot be edited or deleted.
+
+**Additional settings** edits capacity, tags and TTL. Store expiry as epoch seconds in a Number attribute; enabling
+TTL allows the background sweeper to delete expired items. Changing the TTL attribute disables the old setting first.
+**Streams and Lambda** enables streams, selects their view, and connects an existing Lambda function with a starting
+position, batch size, retry count and partial batch failure reporting. Changing the stream view creates a new stream ARN;
+existing mappings remain attached to their original stream. Enabled mappings consume changes and require Docker for
+function execution. Table deletion leaves mappings in place; disable or delete them when retiring a stream.
+
+In verify mode only DynamoDB table inventory is available in the console. Use signed CLI/SDK requests for item reads
+and management. Backups, restores, exports, PartiQL, batch and transaction operations use the AWS API. Multi-step
+settings changes retain completed steps after a failure and allow retrying the remaining work while the dialog is open.
 
 ## Endpoints
 
@@ -83,7 +111,7 @@ requires signed CLI/SDK requests for management, invocation and log reads.
 | `GET /_tinystack/health` | Registered service list and health information |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
 | `GET /_tinystack/actions` | Console action capabilities and default account/region |
-| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda operations and CloudWatch FilterLogEvents with an explicit account, regional scope except IAM and SDK-style input |
+| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda/DynamoDB operations and CloudWatch FilterLogEvents with an explicit account, regional scope except IAM and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |
