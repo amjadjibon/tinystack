@@ -19,7 +19,7 @@ import (
 )
 
 // persistent starts a server on the SQLite store in dir. stop shuts the server
-// down and closes the store, as start.go does on exit.
+// down and closes the store, as app.Run does on exit.
 func persistent(t *testing.T, dir string, runtime *fakeRuntime) (s *httptest.Server, stop func()) {
 	t.Helper()
 	store, err := sqlite.Open(context.Background(), dir)

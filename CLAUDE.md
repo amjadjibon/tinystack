@@ -26,9 +26,9 @@ Debug endpoints: `/_tinystack/health`, `requests`, `resources`, `deliveries`, `m
 
 ## Architecture
 
-Request flow: `cmd/tinystack` → `internal/cmd/start.go` (config, listeners, shutdown) → `internal/app` (wires every
-service) → `internal/gateway.Server` → generated `catalog.Operation` → `internal/services/<service>.Service` →
-`internal/storage.Store`.
+Request flow: `cmd/tinystack` → `internal/cmd/start.go` (flags, config) → `internal/app` (storage, wires every
+service, listeners, shutdown) → `internal/gateway.Server` → generated `catalog.Operation` →
+`internal/services/<service>.Service` → `internal/storage.Store`.
 
 - **gateway** picks the wire protocol from headers before anything else (JSON 1.0/1.1, RPC v2 CBOR, Query, EC2
   Query, REST XML, REST JSON), resolves account and Region from the SigV4 credential scope, checks signatures only
@@ -72,7 +72,7 @@ service) → `internal/gateway.Server` → generated `catalog.Operation` → `in
 1. **Operation:** add it and its members to `generator/model/profile.json`, `task generate`, implement the method.
 2. **Service:** `task models:sync -- -ref <pinned commit> -add <name>`, add a `profile.json` entry, generate, write
    `internal/services/<service>` (with `inventory.go`), and construct it and register `api.Descriptor(...)` in
-   `internal/app/app.go`, which both `start.go` and the integration tests build. Also add the
+   `internal/app/app.go`, which both `app.Run` and the integration tests build. Also add the
    `tag.go` tagger, the console entry in `ui/src/lib/services.ts`, and the SDK client as a direct `go.mod` dependency.
 3. **Docs, for every behavior change:** edit `docs/catalog.json` (features, gaps, execution), `task docs:generate`,
    `task docs:check`. Product docs live under `docs/site/`; internal plans in `.spec/`.
