@@ -16,11 +16,14 @@ import { useState } from "react";
 import type { Resource } from "#/lib/api";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { s3Href } from "#/lib/s3";
+import { sqsHref } from "#/lib/sqs";
 import { useFollow } from "#/lib/useFollow";
 import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "sqs" && r.type === "queue")
+		return sqsHref({ account: r.account, region: r.region, queue: r.name });
 	if (r.service === "s3" && r.type === "bucket") {
 		return s3Href({ account: r.account, region: r.region, bucket: r.name });
 	}
