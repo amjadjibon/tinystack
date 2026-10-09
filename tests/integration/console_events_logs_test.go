@@ -287,11 +287,16 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		capabilities["eventbridge"] != true ||
 		capabilities["logs"] != true || capabilities["cloudwatch"] != true ||
 		capabilities["apigateway"] != true || capabilities["apigatewayv2"] != true || capabilities["sfn"] != true ||
-		capabilities["ec2"] != true {
+		capabilities["ec2"] != true || capabilities["secretsmanager"] != true {
 		t.Fatal(capabilities)
 	}
-	for _, service := range []string{"eventbridge", "logs", "cloudwatch", "apigateway", "apigatewayv2", "sfn", "ec2"} {
+	for _, service := range []string{
+		"eventbridge", "logs", "cloudwatch", "apigateway", "apigatewayv2", "sfn", "ec2", "secretsmanager",
+	} {
 		operation := "ListEventBuses"
+		if service == "secretsmanager" {
+			operation = "ListSecrets"
+		}
 		if service == "logs" {
 			operation = "DescribeLogGroups"
 		}
@@ -345,6 +350,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"apigatewayv2", "apigateway", "GetApis"},
 		{"sfn", "states", "ListStateMachines"},
 		{"ec2", "ec2", "DescribeVpcs"},
+		{"secretsmanager", "secretsmanager", "ListSecrets"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing

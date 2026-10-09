@@ -47,6 +47,8 @@ const consoleSFN = "sfn"
 
 const consoleEC2 = "ec2"
 
+const consoleSecretsManager = "secretsmanager"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -176,6 +178,13 @@ var consoleEC2Operations = strings.Fields(`
  CreateTags DeleteTags DescribeTags
 `)
 
+var consoleSecretsManagerOperations = strings.Fields(`
+ CreateSecret DescribeSecret ListSecrets UpdateSecret DeleteSecret RestoreSecret
+ PutSecretValue GetSecretValue ListSecretVersionIds UpdateSecretVersionStage
+ TagResource UntagResource GetResourcePolicy ValidateResourcePolicy PutResourcePolicy DeleteResourcePolicy
+ RotateSecret CancelRotateSecret GetRandomPassword
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -206,18 +215,20 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, httpAPI := s.services[consoleHTTPAPI]
 		_, sfn := s.services[consoleSFN]
 		_, ec2 := s.services[consoleEC2]
+		_, secretsmanager := s.services[consoleSecretsManager]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			consoleLambda: lambda, consoleLogs: logs,
-			consoleDynamoDB:      dynamodb,
-			consoleEventBridge:   eventbridge,
-			consoleCloudWatch:    cloudwatch,
-			consoleAPIGateway:    restAPI,
-			consoleHTTPAPI:       httpAPI,
-			consoleSFN:           sfn,
-			consoleEC2:           ec2,
-			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
+			consoleDynamoDB:       dynamodb,
+			consoleEventBridge:    eventbridge,
+			consoleCloudWatch:     cloudwatch,
+			consoleAPIGateway:     restAPI,
+			consoleHTTPAPI:        httpAPI,
+			consoleSFN:            sfn,
+			consoleEC2:            ec2,
+			consoleSecretsManager: secretsmanager,
+			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
 	}
@@ -303,6 +314,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleSFNOperations
 	case consoleEC2:
 		operations = consoleEC2Operations
+	case consoleSecretsManager:
+		operations = consoleSecretsManagerOperations
 	}
 
 	c.service = s.services[in.Service]

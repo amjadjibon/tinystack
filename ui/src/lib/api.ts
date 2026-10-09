@@ -116,6 +116,7 @@ export const api = {
 		apigatewayv2: boolean;
 		sfn: boolean;
 		ec2: boolean;
+		secretsmanager: boolean;
 		requires_signature: boolean;
 	}> => (await get("/actions")).json(),
 	action: async <T>(
