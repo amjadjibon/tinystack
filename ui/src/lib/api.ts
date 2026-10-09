@@ -110,6 +110,7 @@ export const api = {
 		lambda: boolean;
 		logs: boolean;
 		dynamodb: boolean;
+		eventbridge: boolean;
 		requires_signature: boolean;
 	}> => (await get("/actions")).json(),
 	action: async <T>(

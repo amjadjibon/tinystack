@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
 import { dynamoHref } from "#/lib/dynamodb";
+import { eventHref, inventoryRule } from "#/lib/eventbridge";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { lambdaHref } from "#/lib/lambda";
 import { s3Href } from "#/lib/s3";
@@ -25,6 +26,22 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (
+		r.service === "eventbridge" &&
+		(r.type === "event-bus" || r.type === "rule")
+	)
+		return eventHref(
+			{
+				account: r.account,
+				region: r.region,
+				bus:
+					r.type === "rule"
+						? (inventoryRule(r).EventBusName ?? "default")
+						: r.name,
+				rule: r.type === "rule" ? r.name : undefined,
+			},
+			r.type === "rule" ? "rules" : "buses",
+		);
 	if (r.service === "dynamodb" && r.type === "table")
 		return dynamoHref({ account: r.account, region: r.region, table: r.name });
 	if (r.service === "lambda" && r.type === "function")

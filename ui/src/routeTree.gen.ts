@@ -16,6 +16,7 @@ import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
+import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
@@ -57,6 +58,11 @@ const ServicesIndexRoute = ServicesIndexRouteImport.update({
 const ServicesDynamodbRoute = ServicesDynamodbRouteImport.update({
   id: '/services/dynamodb',
   path: '/services/dynamodb',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesEventbridgeRoute = ServicesEventbridgeRouteImport.update({
+  id: '/services/eventbridge',
+  path: '/services/eventbridge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesIamRoute = ServicesIamRouteImport.update({
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
+  '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/s3': typeof ServicesS3Route
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
+  '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/s3': typeof ServicesS3Route
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
+  '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/s3': typeof ServicesS3Route
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/services/dynamodb'
+    | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
     | '/services/s3'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/services/dynamodb'
+    | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
     | '/services/s3'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/services/dynamodb'
+    | '/services/eventbridge'
     | '/services/iam'
     | '/services/lambda'
     | '/services/s3'
@@ -202,6 +214,7 @@ export interface RootRouteChildren {
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
   ServicesDynamodbRoute: typeof ServicesDynamodbRoute
+  ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
   ServicesIamRoute: typeof ServicesIamRoute
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesS3Route: typeof ServicesS3Route
@@ -263,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesDynamodbRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/eventbridge': {
+      id: '/services/eventbridge'
+      path: '/services/eventbridge'
+      fullPath: '/services/eventbridge'
+      preLoaderRoute: typeof ServicesEventbridgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/iam': {
       id: '/services/iam'
       path: '/services/iam'
@@ -322,6 +342,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
   ServicesDynamodbRoute: ServicesDynamodbRoute,
+  ServicesEventbridgeRoute: ServicesEventbridgeRoute,
   ServicesIamRoute: ServicesIamRoute,
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesS3Route: ServicesS3Route,

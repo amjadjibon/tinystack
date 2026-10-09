@@ -91,6 +91,8 @@ function useScopeState() {
 			"subscription",
 			"function",
 			"table",
+			"bus",
+			"rule",
 			"prefix",
 			"key",
 			"version",
