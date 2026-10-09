@@ -24,6 +24,9 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-http-apis) for 
 - WebSocket APIs are not implemented.
 - No VPC links, parameter mappings, throttling, caching or authorizer caching.
 - Only the selected HTTP API management members are supported.
+- Custom domains and API mappings use the AWS API rather than console forms.
+- Console management requires identity.mode: parse; verify mode retains resource inventory and requires signed CLI/SDK requests.
+- Console test requests execute deployed snapshots; automatic stages publish draft changes immediately, manual stages require a new deployment. AWS_IAM tests require signed execute-api CLI/SDK requests. Console action JSON is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

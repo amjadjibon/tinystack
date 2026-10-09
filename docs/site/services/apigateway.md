@@ -24,6 +24,9 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for 
 - No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation.
 - Throttling, quotas, caching, canaries and authorizer caching are not enforced.
 - No mutual TLS, import/export or general policy evaluation.
+- Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms.
+- Console management requires identity.mode: parse; verify mode retains resource inventory and requires signed CLI/SDK requests.
+- Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

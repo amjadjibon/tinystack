@@ -14,7 +14,7 @@ feature manages records or needs a Docker runtime.
 | AWS wire protocols | AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings. | [Details](../architecture/request-flow.md) |
 | Identity and resource scope | Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, and optional SigV4 verification; general IAM permission evaluation is outside the subset. | [Details](../architecture/identity.md) |
 | Transactional storage and persistence | Atomic callback transactions, in-memory storage, and optional SQLite commit persistence with resource reload on restart; runtime and in-flight state have separate limits. | [Details](../guides/persistence.md) |
-| Cloudscape console | AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard management workflows, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
+| Cloudscape console | AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard and API Gateway HTTP/REST management workflows, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
 | Diagnostics | Health/resource endpoints, bounded request and delivery logs, model-sensitive body redaction, and Prometheus request metrics. | [Details](../guides/diagnostics.md) |
 | CLI and SDK clients | Local endpoint overrides for AWS clients, CLI wrappers, and generated Go SDK-compatible APIs. | [Details](../getting-started/clients.md) |
 | Infrastructure workflows | Selected Terraform AWS provider workflows and local CloudFormation/SAM deployment through the registered resource-type subset. | [Details](../guides/infrastructure.md) |
@@ -495,6 +495,7 @@ Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT aut
 - API, route, integration, deployment, stage and authorizer CRUD.
 - Auto-deploy stages and Lambda proxy payload formats 1.0 and 2.0.
 - HTTP forwarding, JWT and Lambda authorizers, access logs.
+- AWS-style console for scoped HTTP API creation and CORS settings, routes, Lambda/HTTP integrations, JWT/Lambda authorizers, auto/manual stages, deployment snapshots, API/stage tags, and explicit deployed-stage request testing.
 
 [Supported operations](apigatewayv2.md#supported-operations) · [Limitations](apigatewayv2.md#limitations-and-future-work)
 
@@ -508,6 +509,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 - Lambda and HTTP proxy execution through gateway data routes.
 - Lambda and Cognito authorizers, API keys and usage plan metadata.
 - Custom domains, base path mappings and access logs.
+- AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing.
 
 [Supported operations](apigateway.md#supported-operations) · [Limitations](apigateway.md#limitations-and-future-work)
 
