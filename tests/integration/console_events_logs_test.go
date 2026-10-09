@@ -285,13 +285,16 @@ func TestConsoleEventsAndLogsValidationAndSignatures(t *testing.T) {
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
 		capabilities["eventbridge"] != true ||
-		capabilities["logs"] != true {
+		capabilities["logs"] != true || capabilities["cloudwatch"] != true {
 		t.Fatal(capabilities)
 	}
-	for _, service := range []string{"eventbridge", "logs"} {
+	for _, service := range []string{"eventbridge", "logs", "cloudwatch"} {
 		operation := "ListEventBuses"
 		if service == "logs" {
 			operation = "DescribeLogGroups"
+		}
+		if service == "cloudwatch" {
+			operation = "ListMetrics"
 		}
 		for _, region := range []string{"", "../us-east-1"} {
 			consoleResponse(
@@ -321,7 +324,9 @@ func TestConsoleEventsAndLogsValidationAndSignatures(t *testing.T) {
 	}
 	verified := verifyingServer(t)
 	for _, tc := range []struct{ service, signing, operation string }{
-		{"eventbridge", "events", "ListEventBuses"}, {"logs", "logs", "DescribeLogGroups"},
+		{"eventbridge", "events", "ListEventBuses"},
+		{"logs", "logs", "DescribeLogGroups"},
+		{"cloudwatch", "monitoring", "ListMetrics"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing

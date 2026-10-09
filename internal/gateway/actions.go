@@ -37,6 +37,8 @@ const consoleDynamoDB = "dynamodb"
 
 const consoleEventBridge = "eventbridge"
 
+const consoleCloudWatch = "cloudwatch"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -111,6 +113,14 @@ var consoleEventBridgeOperations = strings.Fields(`
 	TagResource UntagResource ListTagsForResource
 `)
 
+var consoleCloudWatchOperations = strings.Fields(`
+	ListMetrics GetMetricData GetMetricStatistics PutMetricData
+	PutMetricAlarm PutCompositeAlarm DescribeAlarms DescribeAlarmsForMetric DescribeAlarmHistory
+	DeleteAlarms SetAlarmState EnableAlarmActions DisableAlarmActions
+	PutDashboard GetDashboard ListDashboards DeleteDashboards
+	TagResource UntagResource ListTagsForResource
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -136,12 +146,14 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, logs := s.services[consoleLogs]
 		_, dynamodb := s.services[consoleDynamoDB]
 		_, eventbridge := s.services[consoleEventBridge]
+		_, cloudwatch := s.services[consoleCloudWatch]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			consoleLambda: lambda, consoleLogs: logs,
 			consoleDynamoDB:      dynamodb,
 			consoleEventBridge:   eventbridge,
+			consoleCloudWatch:    cloudwatch,
 			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -218,6 +230,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleDynamoDBOperations
 	case consoleEventBridge:
 		operations = consoleEventBridgeOperations
+	case consoleCloudWatch:
+		operations = consoleCloudWatchOperations
 	}
 
 	c.service = s.services[in.Service]
