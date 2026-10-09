@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +26,8 @@ const consoleIAM = "iam"
 const consoleS3 = "s3"
 
 const consoleSQS = "sqs"
+
+const consoleSNS = "sns"
 
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
@@ -64,6 +68,13 @@ var consoleSQSOperations = strings.Fields(`
 	ListDeadLetterSourceQueues StartMessageMoveTask ListMessageMoveTasks CancelMessageMoveTask
 `)
 
+var consoleSNSOperations = strings.Fields(`
+	CreateTopic DeleteTopic ListTopics GetTopicAttributes SetTopicAttributes
+	Subscribe ConfirmSubscription Unsubscribe ListSubscriptions ListSubscriptionsByTopic
+	GetSubscriptionAttributes SetSubscriptionAttributes Publish
+	TagResource UntagResource ListTagsForResource
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -84,9 +95,10 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, iam := s.services[consoleIAM]
 		_, s3 := s.services[consoleS3]
 		_, sqs := s.services[consoleSQS]
+		_, sns := s.services[consoleSNS]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
-			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs,
+			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -145,17 +157,20 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	operations := consoleIAMOperations
-	if in.Service == consoleS3 {
+	var operations []string
+	switch in.Service {
+	case consoleIAM:
+		operations = consoleIAMOperations
+	case consoleS3:
 		operations = consoleS3Operations
-	}
-	if in.Service == consoleSQS {
+	case consoleSQS:
 		operations = consoleSQSOperations
+	case consoleSNS:
+		operations = consoleSNSOperations
 	}
 
 	c.service = s.services[in.Service]
-	if (in.Service != consoleIAM && in.Service != consoleS3 && in.Service != consoleSQS) || c.service == nil ||
-		!slices.Contains(operations, in.Operation) {
+	if c.service == nil || !slices.Contains(operations, in.Operation) {
 		s.consoleFail(w, c, awserror.New("UnknownOperationException",
 			"This operation is not available in the console."))
 		return
@@ -168,7 +183,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	regional := in.Service == consoleS3 || in.Service == consoleSQS
+	regional := in.Service != consoleIAM
 	if regional && !consoleRegion.MatchString(in.Region) {
 		s.consoleFail(
 			w,
@@ -212,8 +227,19 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.meta.Protocol = "console"
+	// Confirmation URLs must use the AWS listener when the action arrived on
+	// the separately served console. Direct API callers keep their request host.
+	host := r.Host
+	if hostname, port, splitErr := net.SplitHostPort(host); splitErr == nil &&
+		port == strconv.Itoa(s.cfg.Server.ConsolePort) {
+		host = net.JoinHostPort(hostname, strconv.Itoa(s.cfg.Server.Port))
+	}
+	c.meta.Endpoint = "http://" + host
+	if r.TLS != nil {
+		c.meta.Endpoint = "https://" + host
+	}
 	caller := s.consoleCaller
-	if in.Service == consoleS3 || in.Service == consoleSQS {
+	if regional {
 		caller = caller.Base64Blobs()
 	}
 

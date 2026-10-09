@@ -9,10 +9,13 @@ import (
 
 // subscriptionView is a subscription as the resource browser shows it.
 type subscriptionView struct {
-	SubscriptionArn    string
-	Protocol           string
-	Endpoint           string
-	RawMessageDelivery bool
+	SubscriptionArn     string
+	Protocol            string
+	Endpoint            string
+	FilterPolicy        string
+	FilterPolicyScope   string
+	RawMessageDelivery  bool
+	PendingConfirmation bool
 }
 
 // Resources lists every topic with its attributes and subscriptions, for the
@@ -35,10 +38,13 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			subscriptions := make([]subscriptionView, 0, len(t.Subscriptions))
 			for _, sub := range t.Subscriptions {
 				subscriptions = append(subscriptions, subscriptionView{
-					SubscriptionArn:    arn + ":" + sub.ID,
-					Protocol:           sub.Protocol,
-					Endpoint:           sub.Endpoint,
-					RawMessageDelivery: sub.Raw,
+					SubscriptionArn:     arn + ":" + sub.ID,
+					Protocol:            sub.Protocol,
+					Endpoint:            sub.Endpoint,
+					FilterPolicy:        sub.FilterPolicy,
+					FilterPolicyScope:   sub.FilterPolicyScope,
+					RawMessageDelivery:  sub.Raw,
+					PendingConfirmation: sub.Pending,
 				})
 			}
 

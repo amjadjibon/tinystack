@@ -90,13 +90,19 @@ func (s *Service) GetTopicAttributes(
 
 	arn := keyARN(key)
 	owner := strings.Split(arn, ":")[4]
+	pending := 0
+	for _, sub := range t.Subscriptions {
+		if sub.Pending {
+			pending++
+		}
+	}
 	attributes := map[string]string{
 		attrTopicArn:             arn,
 		"Owner":                  owner,
 		attrPolicy:               defaultPolicy(arn, owner),
 		attrDisplayName:          "",
-		"SubscriptionsConfirmed": strconv.Itoa(len(t.Subscriptions)),
-		"SubscriptionsPending":   "0",
+		"SubscriptionsConfirmed": strconv.Itoa(len(t.Subscriptions) - pending),
+		"SubscriptionsPending":   strconv.Itoa(pending),
 		"SubscriptionsDeleted":   "0",
 	}
 
