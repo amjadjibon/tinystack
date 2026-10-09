@@ -24,6 +24,7 @@ import { Route as ServicesIamRouteImport } from './routes/services/iam'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
+import { Route as ServicesSfnRouteImport } from './routes/services/sfn'
 import { Route as ServicesSnsRouteImport } from './routes/services/sns'
 import { Route as ServicesSqsRouteImport } from './routes/services/sqs'
 import { Route as ServicesServiceIndexRouteImport } from './routes/services/$service.index'
@@ -104,6 +105,11 @@ const ServicesS3Route = ServicesS3RouteImport.update({
   path: '/services/s3',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesSfnRoute = ServicesSfnRouteImport.update({
+  id: '/services/sfn',
+  path: '/services/sfn',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesSnsRoute = ServicesSnsRouteImport.update({
   id: '/services/sns',
   path: '/services/sns',
@@ -140,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
+  '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
   '/services/': typeof ServicesIndexRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByTo {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
+  '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
   '/services': typeof ServicesIndexRoute
@@ -183,6 +191,7 @@ export interface FileRoutesById {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
+  '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
   '/services/': typeof ServicesIndexRoute
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/s3'
+    | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
     | '/services/'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/s3'
+    | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
     | '/services'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/s3'
+    | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
     | '/services/'
@@ -270,6 +282,7 @@ export interface RootRouteChildren {
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesLogsRoute: typeof ServicesLogsRoute
   ServicesS3Route: typeof ServicesS3Route
+  ServicesSfnRoute: typeof ServicesSfnRoute
   ServicesSnsRoute: typeof ServicesSnsRoute
   ServicesSqsRoute: typeof ServicesSqsRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesS3RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/sfn': {
+      id: '/services/sfn'
+      path: '/services/sfn'
+      fullPath: '/services/sfn'
+      preLoaderRoute: typeof ServicesSfnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/sns': {
       id: '/services/sns'
       path: '/services/sns'
@@ -430,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesLogsRoute: ServicesLogsRoute,
   ServicesS3Route: ServicesS3Route,
+  ServicesSfnRoute: ServicesSfnRoute,
   ServicesSnsRoute: ServicesSnsRoute,
   ServicesSqsRoute: ServicesSqsRoute,
   ServicesIndexRoute: ServicesIndexRoute,

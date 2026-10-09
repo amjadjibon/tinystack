@@ -114,6 +114,7 @@ export const api = {
 		cloudwatch: boolean;
 		apigateway: boolean;
 		apigatewayv2: boolean;
+		sfn: boolean;
 		requires_signature: boolean;
 	}> => (await get("/actions")).json(),
 	action: async <T>(

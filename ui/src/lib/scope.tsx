@@ -97,6 +97,8 @@ function useScopeState() {
 			"stream",
 			"alarm",
 			"dashboard",
+			"machine",
+			"execution",
 			"apiId",
 			"resourceId",
 			"method",

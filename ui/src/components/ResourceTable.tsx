@@ -22,6 +22,7 @@ import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { lambdaHref } from "#/lib/lambda";
 import { logsHref } from "#/lib/logs";
 import { s3Href } from "#/lib/s3";
+import { sfnHref } from "#/lib/sfn";
 import { snsHref } from "#/lib/sns";
 import { sqsHref } from "#/lib/sqs";
 import { useFollow } from "#/lib/useFollow";
@@ -29,6 +30,8 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "sfn" && r.type === "state-machine")
+		return sfnHref({ account: r.account, region: r.region, machine: r.name });
 	if (
 		(r.service === "apigateway" && r.type === "rest-api") ||
 		(r.service === "apigatewayv2" && r.type === "http-api")
