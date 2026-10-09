@@ -43,6 +43,8 @@ const consoleAPIGateway = "apigateway"
 
 const consoleHTTPAPI = "apigatewayv2"
 
+const consoleSFN = "sfn"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -146,6 +148,12 @@ var consoleRESTAPIOperations = strings.Fields(`
 	GetTags TagResource UntagResource InvokeApi
 `)
 
+var consoleSFNOperations = strings.Fields(`
+	CreateStateMachine DescribeStateMachine ListStateMachines UpdateStateMachine DeleteStateMachine
+	ValidateStateMachineDefinition StartExecution StartSyncExecution DescribeExecution ListExecutions
+	StopExecution GetExecutionHistory ListTagsForResource TagResource UntagResource
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -174,6 +182,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, cloudwatch := s.services[consoleCloudWatch]
 		_, restAPI := s.services[consoleAPIGateway]
 		_, httpAPI := s.services[consoleHTTPAPI]
+		_, sfn := s.services[consoleSFN]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
@@ -183,6 +192,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleCloudWatch:    cloudwatch,
 			consoleAPIGateway:    restAPI,
 			consoleHTTPAPI:       httpAPI,
+			consoleSFN:           sfn,
 			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -265,6 +275,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleRESTAPIOperations
 	case consoleHTTPAPI:
 		operations = consoleHTTPAPIOperations
+	case consoleSFN:
+		operations = consoleSFNOperations
 	}
 
 	c.service = s.services[in.Service]
