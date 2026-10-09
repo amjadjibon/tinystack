@@ -33,6 +33,8 @@ const consoleLambda = "lambda"
 
 const consoleLogs = "logs"
 
+const consoleDynamoDB = "dynamodb"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -90,6 +92,12 @@ var consoleLambdaOperations = strings.Fields(`
 // Lambda's monitor tab reads CloudWatch logs without exposing log mutations.
 var consoleLogsOperations = strings.Fields(`FilterLogEvents`)
 
+var consoleDynamoDBOperations = strings.Fields(`
+	CreateTable DeleteTable DescribeTable ListTables UpdateTable
+	GetItem PutItem UpdateItem DeleteItem Query Scan
+	DescribeTimeToLive UpdateTimeToLive ListTagsOfResource TagResource UntagResource
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -113,10 +121,12 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, sns := s.services[consoleSNS]
 		_, lambda := s.services[consoleLambda]
 		_, logs := s.services[consoleLogs]
+		_, dynamodb := s.services[consoleDynamoDB]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			consoleLambda: lambda, consoleLogs: logs,
+			consoleDynamoDB:      dynamodb,
 			"requires_signature": s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -189,6 +199,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleLambdaOperations
 	case consoleLogs:
 		operations = consoleLogsOperations
+	case consoleDynamoDB:
+		operations = consoleDynamoDBOperations
 	}
 
 	c.service = s.services[in.Service]
