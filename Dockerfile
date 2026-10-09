@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # docker build .               TinyStack with the web console on :4567
-# docker build --target noui . TinyStack without the console (no Node.js stage)
+# docker build --target headless . TinyStack without the console (no Node.js stage)
 
 FROM node:24-alpine AS console
 
@@ -20,7 +20,7 @@ COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .
 
-FROM source AS build-noui
+FROM source AS build-headless
 
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/tinystack ./cmd/tinystack
@@ -44,9 +44,9 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=5s \
 ENTRYPOINT ["tinystack"]
 CMD ["start", "--host", "0.0.0.0", "--port", "4566"]
 
-FROM runtime AS noui
+FROM runtime AS headless
 
-COPY --from=build-noui /out/tinystack /usr/local/bin/tinystack
+COPY --from=build-headless /out/tinystack /usr/local/bin/tinystack
 EXPOSE 4566
 
 # The default target, last so a plain docker build picks it.

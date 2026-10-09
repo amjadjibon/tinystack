@@ -5,8 +5,8 @@
 From the repository root, with Go **1.27 or newer** and [Task](https://taskfile.dev):
 
 ```sh
-task build:noui
-./bin/tinystack-noui start
+task build:headless
+./bin/tinystack-headless start
 ```
 
 Keep the server running. In another terminal:

@@ -1,8 +1,8 @@
 # Develop the Cloudscape console
 
 ```sh
-task build:noui
-./bin/tinystack-noui start
+task build:headless
+./bin/tinystack-headless start
 ```
 
 In another terminal:

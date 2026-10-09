@@ -8,7 +8,7 @@ TinyStack is a single Go binary that emulates AWS services on one local endpoint
 
 ```sh
 task build          # console (ui/) + go build -tags console -o bin/tinystack ./cmd/tinystack
-task build:noui     # Go only, no console
+task build:headless # Go only, no console
 task test           # go test -race ./...
 task lint           # go vet + golangci-lint
 task generate       # regenerate internal/aws/generated/<service>/api.go

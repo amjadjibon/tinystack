@@ -1,7 +1,7 @@
 # Set up a development checkout
 
 ```sh
-task build:noui
+task build:headless
 task generate
 ```
 
@@ -26,7 +26,7 @@ fake runtimes by default; they do not contact AWS.
 ## Run the server and tests
 
 ```sh
-./bin/tinystack-noui start --config examples/tinystack.yaml
+./bin/tinystack-headless start --config examples/tinystack.yaml
 ```
 
 In another terminal, or after stopping the server:
@@ -42,7 +42,7 @@ Use [test selection](testing.md) for changes outside IoT.
 
 | Task | Result |
 | --- | --- |
-| `task build:noui` | `bin/tinystack-noui`, no UI dependency |
+| `task build:headless` | `bin/tinystack-headless`, no UI dependency |
 | `task build` | Console build embedded in `bin/tinystack` |
 | `task build:tools` | Local CLI wrappers and aliases |
 | `task generate` | Reproduce generated AWS APIs |

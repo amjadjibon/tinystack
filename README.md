@@ -15,7 +15,7 @@ Requires Go 1.27 or newer.
 
 ```sh
 task build            # bin/tinystack with the web console built in (needs Node.js and pnpm)
-task build:noui       # bin/tinystack-noui without the console (needs only Go)
+task build:headless   # bin/tinystack-headless without the console (needs only Go)
 ./bin/tinystack start
 ```
 
@@ -24,12 +24,12 @@ The server listens on `http://127.0.0.1:4566`, and the web console on
 or SIGTERM. By default all state is in memory and disappears on exit. Use `--host`,
 `--port`, `--console-port` (`0` turns the console off), or
 `--config examples/tinystack.yaml` to change settings. Health is available at
-`GET /_tinystack/health`. The build without the console (`task build:noui`, or a plain
+`GET /_tinystack/health`. The build without the console (`task build:headless`, or a plain
 `go build ./cmd/tinystack`) is the same server and only serves port 4566.
 
 `docker compose up --build` (`task up`) runs the console build in a container on both
 ports and keeps its state in the `tinystack-data` volume (`task down -- -v` resets it).
-`docker build --target noui .` builds the image without the console.
+`docker build --target headless .` builds the image without the console.
 
 To keep state across restarts, set a persistent storage directory (`~` expands to
 your home directory):

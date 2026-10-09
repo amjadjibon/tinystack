@@ -4,8 +4,8 @@ TinyStack is a single Go binary serving local AWS APIs for development, integrat
 Use your existing AWS CLI, SDK, Terraform, or SAM tooling against `http://127.0.0.1:4566`.
 
 ```sh
-task build:noui
-./bin/tinystack-noui start
+task build:headless
+./bin/tinystack-headless start
 ```
 
 State lives in memory by default. The optional Cloudscape console runs on port `4567`;

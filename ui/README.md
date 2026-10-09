@@ -15,15 +15,15 @@ It only reads TinyStack's own endpoints (`/_tinystack/health`, `resources`, `req
 
 `task build` builds this app, gzips it into `dist/console`, and embeds that in `bin/tinystack` (the `console` build tag,
 `console.go`), which serves it on `http://localhost:4567` (`--console-port`, `0` turns it off)
-along with the `/_tinystack` endpoints. `task up` does the same in Docker. `task build:noui`
-(`docker build --target noui .`) builds TinyStack without it.
+along with the `/_tinystack` endpoints. `task up` does the same in Docker. `task build:headless`
+(`docker build --target headless .`) builds TinyStack without it.
 
 ## Develop
 
 From the repository root:
 
 ```sh
-task build:noui && ./bin/tinystack-noui start   # TinyStack on :4566, no built-in console
+task build:headless && ./bin/tinystack-headless start   # TinyStack on :4566, no built-in console
 task ui:dev                           # http://localhost:4568 with hot reload (installs dependencies first)
 task ui:check                         # Biome lint and format, and tsc
 ```

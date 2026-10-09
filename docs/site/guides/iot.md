@@ -27,7 +27,7 @@ iot:
 Stop any previous server on the same API port, then run:
 
 ```sh
-./bin/tinystack-noui start --config mqtt.yaml
+./bin/tinystack-headless start --config mqtt.yaml
 ```
 
 A subscriber in another terminal:

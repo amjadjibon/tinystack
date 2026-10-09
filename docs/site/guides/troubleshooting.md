@@ -4,7 +4,7 @@
 
 ```sh
 curl -fsS http://127.0.0.1:4566/_tinystack/health
-./bin/tinystack-noui start --help
+./bin/tinystack-headless start --help
 ```
 
 Check endpoint, bind address and port. Loopback inside Docker points at that container. On bind errors,
