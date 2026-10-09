@@ -89,6 +89,7 @@ function useScopeState() {
 			"queue",
 			"topic",
 			"subscription",
+			"function",
 			"prefix",
 			"key",
 			"version",

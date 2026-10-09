@@ -107,6 +107,8 @@ export const api = {
 		s3: boolean;
 		sqs: boolean;
 		sns: boolean;
+		lambda: boolean;
+		logs: boolean;
 		requires_signature: boolean;
 	}> => (await get("/actions")).json(),
 	action: async <T>(

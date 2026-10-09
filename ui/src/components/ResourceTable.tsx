@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
+import { lambdaHref } from "#/lib/lambda";
 import { s3Href } from "#/lib/s3";
 import { snsHref } from "#/lib/sns";
 import { sqsHref } from "#/lib/sqs";
@@ -23,6 +24,12 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "lambda" && r.type === "function")
+		return lambdaHref({
+			account: r.account,
+			region: r.region,
+			functionName: r.name,
+		});
 	if (r.service === "sns" && r.type === "topic")
 		return snsHref({ account: r.account, region: r.region, topic: r.name });
 	if (r.service === "sqs" && r.type === "queue")
