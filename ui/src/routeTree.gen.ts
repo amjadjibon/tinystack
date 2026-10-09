@@ -25,6 +25,7 @@ import { Route as ServicesIamRouteImport } from './routes/services/iam'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
+import { Route as ServicesSecretsmanagerRouteImport } from './routes/services/secretsmanager'
 import { Route as ServicesSfnRouteImport } from './routes/services/sfn'
 import { Route as ServicesSnsRouteImport } from './routes/services/sns'
 import { Route as ServicesSqsRouteImport } from './routes/services/sqs'
@@ -112,6 +113,11 @@ const ServicesS3Route = ServicesS3RouteImport.update({
   path: '/services/s3',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesSecretsmanagerRoute = ServicesSecretsmanagerRouteImport.update({
+  id: '/services/secretsmanager',
+  path: '/services/secretsmanager',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesSfnRoute = ServicesSfnRouteImport.update({
   id: '/services/sfn',
   path: '/services/sfn',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
+  '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
@@ -183,6 +190,7 @@ export interface FileRoutesByTo {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
+  '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/s3': typeof ServicesS3Route
+  '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/s3'
+    | '/services/secretsmanager'
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/s3'
+    | '/services/secretsmanager'
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/s3'
+    | '/services/secretsmanager'
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
@@ -307,6 +319,7 @@ export interface RootRouteChildren {
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesLogsRoute: typeof ServicesLogsRoute
   ServicesS3Route: typeof ServicesS3Route
+  ServicesSecretsmanagerRoute: typeof ServicesSecretsmanagerRoute
   ServicesSfnRoute: typeof ServicesSfnRoute
   ServicesSnsRoute: typeof ServicesSnsRoute
   ServicesSqsRoute: typeof ServicesSqsRoute
@@ -430,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesS3RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/secretsmanager': {
+      id: '/services/secretsmanager'
+      path: '/services/secretsmanager'
+      fullPath: '/services/secretsmanager'
+      preLoaderRoute: typeof ServicesSecretsmanagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/sfn': {
       id: '/services/sfn'
       path: '/services/sfn'
@@ -491,6 +511,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesLogsRoute: ServicesLogsRoute,
   ServicesS3Route: ServicesS3Route,
+  ServicesSecretsmanagerRoute: ServicesSecretsmanagerRoute,
   ServicesSfnRoute: ServicesSfnRoute,
   ServicesSnsRoute: ServicesSnsRoute,
   ServicesSqsRoute: ServicesSqsRoute,

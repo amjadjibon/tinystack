@@ -86,6 +86,7 @@ function useScopeState() {
 			"type",
 			"create",
 			"bucket",
+			"secret",
 			"queue",
 			"topic",
 			"subscription",

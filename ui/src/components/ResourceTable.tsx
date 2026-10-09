@@ -23,6 +23,7 @@ import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { lambdaHref } from "#/lib/lambda";
 import { logsHref } from "#/lib/logs";
 import { s3Href } from "#/lib/s3";
+import { secretHref } from "#/lib/secretsmanager";
 import { sfnHref } from "#/lib/sfn";
 import { snsHref } from "#/lib/sns";
 import { sqsHref } from "#/lib/sqs";
@@ -31,6 +32,12 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "secretsmanager" && r.type === "secret")
+		return secretHref({
+			account: r.account,
+			region: r.region,
+			secret: r.arn || r.name,
+		});
 	if (r.service === "ec2") {
 		const section = ec2Sections.find((k) => ec2Kinds[k].type === r.type);
 		if (section)
