@@ -14,7 +14,7 @@ feature manages records or needs a Docker runtime.
 | AWS wire protocols | AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings. | [Details](../architecture/request-flow.md) |
 | Identity and resource scope | Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, and optional SigV4 verification; general IAM permission evaluation is outside the subset. | [Details](../architecture/identity.md) |
 | Transactional storage and persistence | Atomic callback transactions, in-memory storage, and optional SQLite commit persistence with resource reload on restart; runtime and in-flight state have separate limits. | [Details](../guides/persistence.md) |
-| Cloudscape console | AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS and SNS management workflows, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
+| Cloudscape console | AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS and Lambda management workflows, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
 | Diagnostics | Health/resource endpoints, bounded request and delivery logs, model-sensitive body redaction, and Prometheus request metrics. | [Details](../guides/diagnostics.md) |
 | CLI and SDK clients | Local endpoint overrides for AWS clients, CLI wrappers, and generated Go SDK-compatible APIs. | [Details](../getting-started/clients.md) |
 | Infrastructure workflows | Selected Terraform AWS provider workflows and local CloudFormation/SAM deployment through the registered resource-type subset. | [Details](../guides/infrastructure.md) |
@@ -131,6 +131,7 @@ Manage functions and execute them in Docker using AWS runtime base images.
 - SQS, DynamoDB Streams and Kinesis event source mappings.
 - Resource policies, function URLs and concurrency settings.
 - Logs flow into CloudWatch Logs; tests use an in-process fake runtime.
+- AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, SNS subscriptions and paginated CloudWatch logs.
 
 [Supported operations](lambda.md#supported-operations) · [Limitations](lambda.md#limitations-and-future-work)
 

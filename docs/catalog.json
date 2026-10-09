@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS and SNS management workflows, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS and Lambda management workflows, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -288,14 +288,18 @@
         "Synchronous and asynchronous invocation, retries and destinations",
         "SQS, DynamoDB Streams and Kinesis event source mappings",
         "Resource policies, function URLs and concurrency settings",
-        "Logs flow into CloudWatch Logs; tests use an in-process fake runtime"
+        "Logs flow into CloudWatch Logs; tests use an in-process fake runtime",
+        "AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, SNS subscriptions and paginated CloudWatch logs"
       ],
       "gaps": [
         "Executing deployed functions requires Docker",
         "Provisioned concurrency does not pre-start environments",
         "Resource policies are stored but not evaluated",
         "No ImageConfig or event sources beyond the three implemented families",
-        "Asynchronous work in flight is lost on restart"
+        "Asynchronous work in flight is lost on restart",
+        "Console ZIP uploads and test events are limited to 1 MiB; larger deployment packages can be copied from S3",
+        "In identity.mode: verify the console shows function and trigger inventory; management, invocation and log reads require signed CLI/SDK requests",
+        "Console manages $LATEST; versions, aliases, layers, concurrency and function URLs use the AWS API"
       ],
       "execution": "Docker runtime",
       "package": "lambda"

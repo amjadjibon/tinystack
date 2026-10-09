@@ -55,6 +55,27 @@ deduplication IDs. Successful publication reports acceptance; check delivery his
 Filtered messages produce no delivery records. History is bounded and resets on restart. In verify mode SNS inventory
 and delivery inspection are available, with management through signed CLI/SDK requests.
 
+Open **Lambda** for function management in the selected account and Region. Create a ZIP or container-image
+function with an IAM execution role, runtime, handler, architecture, memory, timeout, environment variables and tags.
+Deploy ZIP packages by direct upload (up to 1 MiB) or by copying an S3 object, optionally at a specific version.
+Container-image functions accept an image URI that Docker can pull. **Code** replaces the $LATEST deployment;
+**Configuration** edits runtime settings, the execution role, environment variables and tags. Code and configuration
+edits check the revision captured when the dialog opened; after a concurrent change, close the dialog and refresh.
+
+**Test** explicitly invokes the function with JSON and an optional existing version or alias. Synchronous invocations
+show the response, function errors and the last 4 KiB of logs. Asynchronous invocation reports event acceptance;
+**Monitor** reads the function's CloudWatch log group for the last hour, with refresh and continuation controls.
+Dry run validates the function without executing it. Console test events are limited to 1 MiB. Execution requires
+Docker on the TinyStack host; configuration and inventory do not. Logs are created after a completed invocation.
+
+**Triggers** adds SQS mappings and standard SNS subscriptions. SQS mappings can be enabled or disabled and edited
+for batch size, batching window, filters and partial batch failure reporting. Enabled mappings consume messages;
+successful and filtered SQS messages are deleted. SNS invokes asynchronously and its subscription filters can be
+edited from the trigger list. Function deletion requires typing the function name and first removes its listed event
+source mappings, retaining completed steps on failure. CloudWatch logs and SNS subscriptions remain. Versions,
+aliases, layers, concurrency and function URLs use the AWS API. Verify mode shows function/trigger inventory and
+requires signed CLI/SDK requests for management, invocation and log reads.
+
 ## Endpoints
 
 | Method and path | Result |
@@ -62,7 +83,7 @@ and delivery inspection are available, with management through signed CLI/SDK re
 | `GET /_tinystack/health` | Registered service list and health information |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
 | `GET /_tinystack/actions` | Console action capabilities and default account/region |
-| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS operations with an explicit account, regional scope for S3/SQS/SNS and SDK-style input |
+| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda operations and CloudWatch FilterLogEvents with an explicit account, regional scope except IAM and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |
