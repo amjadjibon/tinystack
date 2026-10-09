@@ -25,6 +25,10 @@ See the [implemented feature catalogue](catalogue.md#cloudwatch-metrics-and-alar
 - No EC2/Systems Manager actions or alarm mute rules.
 - Services do not automatically publish AWS namespace metrics.
 - Local retention is 15 days for datapoints and 30 days for alarm history.
+- Verify mode exposes alarm and dashboard inventory; metric reads, configurations and management require signed CLI/SDK requests.
+- Console graphs support up to ten selected metrics and 10,000 data points; partial results require a narrower range or larger period.
+- Dashboard previews support metric queries and plain text, with up to ten queries and one Region per metric widget; other widget types and layout remain in source.
+- Dashboards are scoped by account and Region locally; CloudWatch requests use the AWS signing name monitoring.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

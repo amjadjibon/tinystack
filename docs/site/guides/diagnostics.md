@@ -144,6 +144,47 @@ display, filter, parse, sort, limit and stats; queries complete synchronously. R
 without starting another query. Subscription and metric filters use the AWS API. Verify mode provides group/stream
 inventory, with signed CLI/SDK requests required for event reads, queries and management.
 
+Open **CloudWatch** to browse metrics, alarms and dashboards in the selected account and Region. On **Metrics**,
+filter by namespace or name, select up to ten dimension combinations, choose a statistic and period, and graph
+their values. Start/end times use ISO 8601 and end times are exclusive. Graphs keep the last requested selection,
+statistic, period and time range; editing controls does not change displayed results until another read.
+**Last hour** refreshes the range. Reads are explicit, with no automatic polling of metric values.
+Percentiles are available alongside Average, Sum, Minimum, Maximum and SampleCount. Graphs show up to 10,000 data
+points; partial results are identified and require a narrower range or larger period. Missing points remain absent.
+
+**Publish metric** writes one custom data point at the current time with dimensions, value and unit. Custom
+namespaces cannot start with `AWS/`. Services do not automatically publish AWS namespace metrics locally.
+Publication can affect alarm evaluation and trigger configured actions. Select one metric and use **Create alarm**
+to prefill its namespace, name and dimensions, or create an alarm directly from **Alarms**.
+
+Metric alarms support a statistic or percentile, threshold, comparison, evaluation periods, datapoints to alarm
+and missing-data treatment. Existing metric-math alarms retain their queries in an editable JSON field.
+Composite alarms combine existing names with ALARM, OK or INSUFFICIENT_DATA predicates, AND, OR, NOT and parentheses.
+Actions accept up to five SNS, Lambda or Auto Scaling ARNs per state; the selector offers SNS topics and Lambda
+functions from the same scope. Editing preserves the alarm's unit and low-sample percentile settings. Tags have
+their own editor. Creation checks for an existing name, but PutMetricAlarm/PutCompositeAlarm update by name and
+cannot guarantee conditional creation during concurrent writes.
+
+Alarm details show the current state, reason and configuration, with metric graphs, action ARNs, tags, and history.
+History is paginated and can be filtered by configuration, state or action changes. **Disable actions** keeps
+evaluation running. **Set state** explicitly tests state changes: it can invoke enabled actions and emit an
+EventBridge state-change event. A metric alarm's override lasts until its computed state changes or one period
+passes; a composite override lasts until its computed state changes. Deleting an alarm requires typing its name
+and stops its evaluation. Metric reads do not support the 20-second period used by some high-resolution alarms;
+those alarms expose their configuration without a graph.
+
+**Dashboards** supports creating, editing and deleting AWS-style JSON widget definitions, plus tags. Creation
+checks for an existing name; PutDashboard remains an upsert. Metric previews support namespace/name/dimensions,
+dot shorthand, metric math, statistic, period, label, visibility and a widget Region. Each metric preview supports
+up to ten queries and one Region, with cross-account previews unavailable. Text widgets render as plain text;
+other widget types and layout remain in the source. Each metric widget has explicit time controls. Dashboards
+are stored by account and Region locally, although their ARNs omit Region. Deletion requires typing the name.
+Completed dashboard creation/tagging steps remain in place after failure, with retry for unfinished steps.
+
+Verify mode exposes alarm/dashboard inventory; signed CLI/SDK requests are required for metric reads,
+configuration inspection and management. Signed CloudWatch requests use the AWS signing name `monitoring`.
+Local metric retention is 15 days; alarm history is retained for 30 days.
+
 ## Endpoints
 
 | Method and path | Result |
@@ -151,7 +192,7 @@ inventory, with signed CLI/SDK requests required for event reads, queries and ma
 | `GET /_tinystack/health` | Registered service list and health information |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
 | `GET /_tinystack/actions` | Console action capabilities and default account/region |
-| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda/DynamoDB/EventBridge/CloudWatch Logs operations with an explicit account, regional scope except IAM and SDK-style input |
+| `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda/DynamoDB/EventBridge/CloudWatch Logs/CloudWatch operations with an explicit account, regional scope except IAM and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |
