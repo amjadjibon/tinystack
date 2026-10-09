@@ -255,6 +255,7 @@ Manage secret versions, staging labels, deletion windows, and Lambda rotation.
 - Batch reads, tags and resource policy metadata.
 - Four-step Lambda rotation with background scheduling.
 - Customer-managed KMS key usability checks.
+- AWS-style console for scoped secret creation, key/value or plaintext and binary values, explicit retrieve/hide/copy, password generation, versions and staging labels, metadata and KMS key edits, tags, resource policies, Lambda rotation configuration and immediate rotation, and scheduled deletion with restore or permanent deletion.
 
 [Supported operations](secretsmanager.md#supported-operations) · [Limitations](secretsmanager.md#limitations-and-future-work)
 

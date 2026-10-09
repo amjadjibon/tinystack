@@ -24,6 +24,7 @@ See the [implemented feature catalogue](catalogue.md#secrets-manager) for this s
 - No replication, managed/external rotation or enforced rotation windows.
 - Resource policies are stored but not evaluated.
 - Values remain local store data; KMS validation does not imply AWS at-rest encryption.
+- Verify mode exposes secret metadata inventory; values, versions, policies, rotation and management require signed AWS CLI or SDK requests.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

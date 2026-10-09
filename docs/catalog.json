@@ -658,12 +658,14 @@
         "Secret lifecycle, binary/string values, version IDs and staging labels",
         "Batch reads, tags and resource policy metadata",
         "Four-step Lambda rotation with background scheduling",
-        "Customer-managed KMS key usability checks"
+        "Customer-managed KMS key usability checks",
+        "AWS-style console for scoped secret creation, key/value or plaintext and binary values, explicit retrieve/hide/copy, password generation, versions and staging labels, metadata and KMS key edits, tags, resource policies, Lambda rotation configuration and immediate rotation, and scheduled deletion with restore or permanent deletion"
       ],
       "gaps": [
         "No replication, managed/external rotation or enforced rotation windows",
         "Resource policies are stored but not evaluated",
-        "Values remain local store data; KMS validation does not imply AWS at-rest encryption"
+        "Values remain local store data; KMS validation does not imply AWS at-rest encryption",
+        "Verify mode exposes secret metadata inventory; values, versions, policies, rotation and management require signed AWS CLI or SDK requests"
       ],
       "execution": "Local behavior",
       "package": "secretsmanager"
