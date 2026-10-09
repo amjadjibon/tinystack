@@ -17,7 +17,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM and S3 management workflows, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, service shortcuts and visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3 and SQS management workflows, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -172,12 +172,16 @@
         "Send, receive, delete, visibility updates and batch operations",
         "Long polling waits outside transactions",
         "FIFO deduplication and group ordering",
-        "Dead-letter queues and message move tasks"
+        "Dead-letter queues and message move tasks",
+        "AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management",
+        "PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard"
       ],
       "gaps": [
         "No throughput enforcement or IAM/resource policy evaluation",
         "No message groups on standard queues or FIFO message move tasks",
-        "DeleteQueue does not enforce the AWS name-reuse delay"
+        "DeleteQueue does not enforce the AWS name-reuse delay",
+        "Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained",
+        "Console management requires parse mode; verify mode exposes queue inventory and requires signed CLI or SDK requests for actions"
       ],
       "execution": "Local behavior",
       "package": "sqs"

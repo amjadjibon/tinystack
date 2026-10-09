@@ -30,6 +30,18 @@ versions, delete markers and unfinished multipart uploads after typed confirmati
 empty bucket. Failed workflows retain completed changes and can retry remaining steps while the dialog stays open.
 In verify mode only S3 bucket inventory is available; use signed CLI/SDK requests for objects and settings.
 
+Open **SQS** for standard and FIFO queue creation and configuration in the account and Region selected in the
+shared top bar. Queue details include message counts, encryption settings, dead-letter targets, permissions and tags.
+Use **Send and receive messages** to send bodies and attributes, inspect messages, change visibility, or delete a
+received message. Polling is explicit: it hides received messages for the chosen visibility timeout and increases
+their receive count. Polling again replaces the displayed results; messages return unless deleted.
+
+The **Dead-letter queue redrive** tab lists source queues and standard-queue move tasks. Start a task to return
+messages to their original source queues or choose another destination; cancel a running task to stop further moves.
+Queue purge and deletion require typing the queue name. Purge clears all messages immediately while retaining settings,
+and repeat purges within 60 seconds fail. FIFO deduplication history is retained. Tags and policies use JSON editors;
+queue access policies are stored but not evaluated. In verify mode only queue inventory is available in the console.
+
 ## Endpoints
 
 | Method and path | Result |
@@ -37,7 +49,7 @@ In verify mode only S3 bucket inventory is available; use signed CLI/SDK request
 | `GET /_tinystack/health` | Registered service list and health information |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
 | `GET /_tinystack/actions` | Console action capabilities and default account/region |
-| `POST /_tinystack/actions` | Selected IAM/S3 operations with an explicit account, S3 Region and SDK-style input |
+| `POST /_tinystack/actions` | Selected IAM/S3/SQS operations with an explicit account, regional scope for S3/SQS and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |

@@ -13,7 +13,7 @@ Use queues with visibility timeouts, long polling, FIFO ordering, and dead-lette
 | API version | `2012-11-05` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 22 of 23 in the pinned model |
+| Selected operations | 23 of 23 in the pinned model |
 
 ## Implemented behavior
 
@@ -24,6 +24,8 @@ See the [implemented feature catalogue](catalogue.md#sqs) for this service's cap
 - No throughput enforcement or IAM/resource policy evaluation.
 - No message groups on standard queues or FIFO message move tasks.
 - DeleteQueue does not enforce the AWS name-reuse delay.
+- Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained.
+- Console management requires parse mode; verify mode exposes queue inventory and requires signed CLI or SDK requests for actions.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -51,6 +53,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListMessageMoveTasks` | `POST /` |
 | `ListQueueTags` | `POST /` |
 | `ListQueues` | `POST /` |
+| `PurgeQueue` | `POST /` |
 | `ReceiveMessage` | `POST /` |
 | `RemovePermission` | `POST /` |
 | `SendMessage` | `POST /` |
@@ -62,11 +65,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "1 modeled operation outside the implementation"
-
-    These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
-
-    - `PurgeQueue`
+All operations in this pinned model are selected. Member and behavior limits still apply.
 
 ## Source and examples
 
