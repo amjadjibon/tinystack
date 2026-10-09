@@ -109,6 +109,7 @@ export const api = {
 		sns: boolean;
 		lambda: boolean;
 		logs: boolean;
+		dynamodb: boolean;
 		requires_signature: boolean;
 	}> => (await get("/actions")).json(),
 	action: async <T>(

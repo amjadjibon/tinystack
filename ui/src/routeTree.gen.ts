@@ -15,6 +15,7 @@ import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
@@ -51,6 +52,11 @@ const ResourcesRoute = ResourcesRouteImport.update({
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesDynamodbRoute = ServicesDynamodbRouteImport.update({
+  id: '/services/dynamodb',
+  path: '/services/dynamodb',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesIamRoute = ServicesIamRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/s3': typeof ServicesS3Route
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/s3': typeof ServicesS3Route
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/s3': typeof ServicesS3Route
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/dynamodb'
     | '/services/iam'
     | '/services/lambda'
     | '/services/s3'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/dynamodb'
     | '/services/iam'
     | '/services/lambda'
     | '/services/s3'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/services/dynamodb'
     | '/services/iam'
     | '/services/lambda'
     | '/services/s3'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   MetricsRoute: typeof MetricsRoute
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
+  ServicesDynamodbRoute: typeof ServicesDynamodbRoute
   ServicesIamRoute: typeof ServicesIamRoute
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesS3Route: typeof ServicesS3Route
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services/'
       preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/dynamodb': {
+      id: '/services/dynamodb'
+      path: '/services/dynamodb'
+      fullPath: '/services/dynamodb'
+      preLoaderRoute: typeof ServicesDynamodbRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/iam': {
@@ -301,6 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   MetricsRoute: MetricsRoute,
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
+  ServicesDynamodbRoute: ServicesDynamodbRoute,
   ServicesIamRoute: ServicesIamRoute,
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesS3Route: ServicesS3Route,

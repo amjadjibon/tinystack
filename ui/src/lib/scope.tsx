@@ -90,6 +90,7 @@ function useScopeState() {
 			"topic",
 			"subscription",
 			"function",
+			"table",
 			"prefix",
 			"key",
 			"version",

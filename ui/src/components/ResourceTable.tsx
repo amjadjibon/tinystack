@@ -14,6 +14,7 @@ import {
 } from "@cloudscape-design/components";
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
+import { dynamoHref } from "#/lib/dynamodb";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { lambdaHref } from "#/lib/lambda";
 import { s3Href } from "#/lib/s3";
@@ -24,6 +25,8 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "dynamodb" && r.type === "table")
+		return dynamoHref({ account: r.account, region: r.region, table: r.name });
 	if (r.service === "lambda" && r.type === "function")
 		return lambdaHref({
 			account: r.account,

@@ -155,7 +155,7 @@ export function LambdaTriggers({
 					<Header
 						variant="h2"
 						counter={`(${triggers.length})`}
-						description="SQS event source mappings and SNS subscriptions connected to this function."
+						description="Queue and stream event source mappings and SNS subscriptions connected to this function."
 						actions={
 							<SpaceBetween direction="horizontal" size="xs">
 								<Button
@@ -345,7 +345,7 @@ export function LambdaTriggers({
 										? 10
 										: source.includes(":sqs:")
 											? 10000
-											: 1000,
+											: 10000,
 								),
 								MaximumBatchingWindowInSeconds: integer(
 									window,
@@ -435,7 +435,7 @@ export function LambdaTriggers({
 											label="Batch size"
 											constraintText={
 												source && !source.includes(":sqs:")
-													? "1–1,000 records for stream mappings."
+													? "1–10,000 records for stream mappings."
 													: "1–10,000 for standard SQS; up to 10 for FIFO. Batches over 10 require a batching window of at least 1 second."
 											}
 										>
