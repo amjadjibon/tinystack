@@ -86,7 +86,7 @@ tasks:
       - pnpm dev
 
   ui:build:
-    desc: "Build the console into ui/dist/client"
+    desc: "Build the console into ui/dist/client and gzip it into ui/dist/console"
     dir: ui
     deps: [ui:install]
     cmds:

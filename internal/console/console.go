@@ -3,21 +3,26 @@
 package console
 
 import (
+	"bytes"
+	"cmp"
+	"compress/gzip"
+	"io"
 	"io/fs"
+	"mime"
 	"net/http"
 	"path"
 	"strings"
 )
 
-// Handler serves files, the console's build, and sends /_tinystack/ paths to
-// api. Paths that name no file are the app's routes and get its shell page.
+// Handler serves files, the console's build with every file stored gzipped as
+// name.gz, and sends /_tinystack/ paths to api. Paths that name no file are the
+// app's routes and get its shell page.
 func Handler(files fs.FS, api http.Handler) (http.Handler, error) {
-	shell, err := fs.ReadFile(files, "_shell.html")
+	shell, err := gunzip(files, "_shell.html.gz")
 	if err != nil {
 		return nil, err
 	}
 
-	static := http.FileServerFS(files)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/_tinystack/") {
 			api.ServeHTTP(w, r)
@@ -33,13 +38,28 @@ func Handler(files fs.FS, api http.Handler) (http.Handler, error) {
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Content-Security-Policy", "frame-ancestors 'none'")
 		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
-		if info, statErr := fs.Stat(files, name); name != "" && statErr == nil && !info.IsDir() {
+		compressed := name + ".gz"
+		if info, statErr := fs.Stat(files, compressed); name != "" && statErr == nil && !info.IsDir() {
 			// Vite fingerprints everything under assets/.
 			if strings.HasPrefix(name, "assets/") {
 				h.Set("Cache-Control", "public, max-age=31536000, immutable")
 			}
 
-			static.ServeHTTP(w, r)
+			h.Set("Content-Type", cmp.Or(mime.TypeByExtension(path.Ext(name)), "application/octet-stream"))
+			h.Add("Vary", "Accept-Encoding")
+			if acceptsGzip(r) {
+				h.Set("Content-Encoding", "gzip")
+				http.ServeFileFS(w, r, files, compressed)
+				return
+			}
+
+			body, gunzipErr := gunzip(files, compressed)
+			if gunzipErr != nil {
+				http.Error(w, gunzipErr.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			http.ServeContent(w, r, name, info.ModTime(), bytes.NewReader(body))
 			return
 		}
 
@@ -49,4 +69,36 @@ func Handler(files fs.FS, api http.Handler) (http.Handler, error) {
 			_, _ = w.Write(shell)
 		}
 	}), nil
+}
+
+// acceptsGzip reports whether the request's Accept-Encoding takes gzip.
+func acceptsGzip(r *http.Request) bool {
+	for _, field := range r.Header.Values("Accept-Encoding") {
+		for coding := range strings.SplitSeq(field, ",") {
+			name, params, _ := strings.Cut(coding, ";")
+			if name = strings.TrimSpace(name); !strings.EqualFold(name, "gzip") && name != "*" {
+				continue
+			}
+
+			q, weighted := strings.CutPrefix(strings.TrimSpace(params), "q=")
+			return !weighted || strings.Trim(q, "0.") != ""
+		}
+	}
+
+	return false
+}
+
+func gunzip(files fs.FS, name string) ([]byte, error) {
+	f, err := files.Open(name)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = f.Close() }()
+	zr, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.ReadAll(zr)
 }

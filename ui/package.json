@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 4568",
     "generate-routes": "tsr generate",
-    "build": "vite build",
+    "build": "vite build && node scripts/compress.mjs",
     "preview": "vite preview",
     "format": "biome format",
     "lint": "biome lint",

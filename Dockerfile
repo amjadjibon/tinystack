@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 FROM source AS build
 
-COPY --from=console /ui/dist/client ui/dist/client
+COPY --from=console /ui/dist/console ui/dist/console
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -tags console -trimpath -ldflags="-s -w" -o /out/tinystack ./cmd/tinystack
 

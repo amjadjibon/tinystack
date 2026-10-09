@@ -9,12 +9,12 @@ import (
 	"io/fs"
 )
 
-//go:embed all:dist/client
+//go:embed all:dist/console
 var dist embed.FS
 
-// Files returns the built console.
+// Files returns the built console, each file stored as name.gz.
 func Files() fs.FS {
-	files, err := fs.Sub(dist, "dist/client")
+	files, err := fs.Sub(dist, "dist/console")
 	if err != nil {
 		panic(err)
 	}
