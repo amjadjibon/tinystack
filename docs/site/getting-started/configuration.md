@@ -34,6 +34,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `identity.accounts` | `{}` | Nonempty access-key IDs mapped to 12-digit account IDs |
 | `identity.secret_keys` | Unset | Nonempty secrets keyed by access-key ID; required in `verify`, forbidden in `parse` |
 | `storage.mode` | `memory` | `memory` or `persistent` |
+| `storage.s3_max_object_bytes` | `268435456` (256 MiB) | `1`–`5368709120` (5 GiB); limits S3 PUTs, individual parts and completed objects; uploads still buffer in memory |
 | `storage.path` | Unset | Required in `persistent`, forbidden in `memory`; `~` expands to your home directory |
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |
@@ -63,7 +64,8 @@ storage:
 ./bin/tinystack start --config local.yaml
 ```
 
-The database is `<storage.path>/state.db`. [Restart behavior](../guides/persistence.md) distinguishes
+The database is `<storage.path>/state.db`; S3 bytes are immutable files in `<storage.path>/blobs/`.
+Memory mode uses a temporary blob directory removed on shutdown. [Restart behavior](../guides/persistence.md) distinguishes
 durable records from in-memory sessions and external container data.
 
 ## Verify signatures across two accounts

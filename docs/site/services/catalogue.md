@@ -720,13 +720,14 @@ Manage PostgreSQL, MySQL and MariaDB instances with an optional Docker database 
 
 #### S3
 
-Store objects, versions, multipart uploads, and event notifications in the shared local store.
+Store object metadata in the shared store and object/version/multipart bytes in local files.
 
 **Execution:** Local behavior. **Selected operations:** 55.
 
 - Partition-wide bucket name uniqueness and ownership checks.
 - Object CRUD, listing, metadata, tagging, copy, upload checksum validation, one byte range and conditional requests.
-- Multipart upload lifecycle and atomic completion.
+- Multipart upload lifecycle and atomic completion, concatenating part files without buffering the complete object.
+- Disk-backed objects and parts in both storage modes, streaming HTTP downloads including byte ranges, startup migration and orphan collection with transactional counts for shared file references.
 - Stored object checksums (CRC32, CRC32C, CRC64NVME by default, SHA-1, SHA-256) returned with ChecksumMode, composite and full-object multipart checksums, kept through copies and versions.
 - Versioning, null versions and delete markers.
 - Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge.

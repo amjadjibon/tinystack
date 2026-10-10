@@ -57,7 +57,8 @@ S3 virtual-host bucket names are folded into the resource path. `CopyObject` is 
 ## Input limits and errors
 
 The gateway limits ordinary decoded inputs to **2 MiB**, supports gzip decoding for modeled compression,
-and limits REST payloads to **64 MiB**. Each service can impose smaller operation limits.
+and limits REST document and non-S3 payloads to **64 MiB**. S3 PUT/part payloads use
+`storage.s3_max_object_bytes` (256 MiB by default); HTTP object GETs stream from disk. Each service can impose smaller operation limits.
 The REST layer decodes supported AWS chunked bodies.
 
 Services return `awserror` values. Descriptor error bindings determine protocol codes, statuses, and message
