@@ -23,6 +23,7 @@ import (
 	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
+	backupapi "github.com/amjadjibon/tinystack/internal/aws/generated/backup"
 	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
@@ -80,6 +81,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/appsync"
 	"github.com/amjadjibon/tinystack/internal/services/athena"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
+	"github.com/amjadjibon/tinystack/internal/services/backup"
 	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
@@ -301,6 +303,7 @@ func build(
 	configurations := appconfig.New(store)
 	trails := cloudtrail.New(store, buckets)
 	configRecords := configservice.New(store, buckets)
+	backupRecords := backup.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
 	a.onStop(databases.Stop)
@@ -362,6 +365,7 @@ func build(
 		appconfigdataapi.Descriptor(configurations.Data()),
 		cloudtrailapi.Descriptor(trails),
 		configapi.Descriptor(configRecords),
+		backupapi.Descriptor(backupRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),

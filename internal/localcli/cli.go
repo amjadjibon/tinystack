@@ -153,6 +153,7 @@ var TerraformServices = []string{
 	"cognitoidentity",
 	"cognitoidp",
 	"configservice",
+	"backup",
 	"dynamodb",
 	"ec2",
 	"ecr",
