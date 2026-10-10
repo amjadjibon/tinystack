@@ -3,13 +3,16 @@ package gateway
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"io"
 	"net/http"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -175,6 +178,136 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 	return nil
 }
 
+type tempFileCloser struct {
+	*os.File
+	path string
+	once sync.Once
+}
+
+func newTempFileCloser(f *os.File) *tempFileCloser {
+	return &tempFileCloser{File: f, path: f.Name()}
+}
+
+func (t *tempFileCloser) Close() error {
+	var err error
+	t.once.Do(func() {
+		err = t.File.Close()
+		_ = os.Remove(t.path)
+	})
+	return err
+}
+
+func (s *Server) spoolAndHash(
+	w http.ResponseWriter,
+	r *http.Request,
+	c *call,
+	limit int64,
+	declared string,
+) (res string, retErr error) {
+	origBody := r.Body
+	if origBody != nil {
+		defer func() {
+			_ = origBody.Close()
+		}()
+	}
+
+	if err := r.Context().Err(); err != nil {
+		return "", err
+	}
+
+	f, err := os.CreateTemp("", "tinystack-upload-*")
+	if err != nil {
+		return "", err
+	}
+
+	closer := newTempFileCloser(f)
+	if c != nil {
+		c.addCleanup(closer.Close)
+	}
+	defer func() {
+		if retErr != nil {
+			_ = closer.Close()
+		}
+	}()
+
+	h := sha256.New()
+	mw := io.MultiWriter(f, h)
+	reader := http.MaxBytesReader(w, origBody, limit)
+	buf := make([]byte, 32*1024)
+	var totalRead int64
+
+	for {
+		if err := r.Context().Err(); err != nil {
+			retErr = err
+			return "", retErr
+		}
+
+		n, rerr := reader.Read(buf)
+		if err := r.Context().Err(); err != nil {
+			return "", err
+		}
+		if n > 0 {
+			totalRead += int64(n)
+			if _, werr := mw.Write(buf[:n]); werr != nil {
+				retErr = werr
+				return "", retErr
+			}
+		}
+
+		if rerr != nil {
+			if errors.Is(rerr, io.EOF) {
+				break
+			}
+			if err := r.Context().Err(); err != nil {
+				retErr = err
+				return "", retErr
+			}
+			if errors.Is(rerr, context.Canceled) || errors.Is(rerr, context.DeadlineExceeded) {
+				retErr = rerr
+				return "", retErr
+			}
+			if _, tooLarge := errors.AsType[*http.MaxBytesError](rerr); tooLarge {
+				retErr = rest.TooLarge()
+				return "", retErr
+			}
+			if errors.Is(rerr, io.ErrUnexpectedEOF) {
+				retErr = awserror.New(
+					"IncompleteBody",
+					"You did not provide the number of bytes specified by the Content-Length HTTP header.",
+				)
+				return "", retErr
+			}
+			retErr = awserror.Validation("Cannot read request body: %v", rerr)
+			return "", retErr
+		}
+	}
+
+	if r.ContentLength >= 0 && totalRead != r.ContentLength {
+		retErr = awserror.New(
+			"IncompleteBody",
+			"You did not provide the number of bytes specified by the Content-Length HTTP header.",
+		)
+		return "", retErr
+	}
+
+	computed := hex.EncodeToString(h.Sum(nil))
+	if declared != "" && declared != computed {
+		retErr = awserror.New(
+			"XAmzContentSHA256Mismatch",
+			"The provided 'x-amz-content-sha256' header does not match what was computed.",
+		)
+		return "", retErr
+	}
+
+	if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
+		retErr = seekErr
+		return "", retErr
+	}
+
+	r.Body = closer
+	return computed, nil
+}
+
 // payloadHash returns the payload hash the client signed. S3 may sign an
 // unsigned-payload literal; everything else signs the SHA-256 of the body,
 // which must match any X-Amz-Content-Sha256 the client sent.
@@ -186,6 +319,10 @@ func (s *Server) payloadHash(w http.ResponseWriter, r *http.Request, c *call, s3
 
 	if s3 && strings.HasPrefix(declared, "STREAMING-") {
 		return "", rest.NotImplemented("TinyStack does not verify signed streaming (aws-chunked) payloads.")
+	}
+
+	if s3 && (c.meta.Operation == opPutObject || c.meta.Operation == opUploadPart) {
+		return s.spoolAndHash(w, r, c, s.restBodyLimit(c), declared)
 	}
 
 	body, err := s.readBody(w, r, c)

@@ -165,7 +165,10 @@ func (s *Service) CreateMultipartUpload(
 }
 
 func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*api.UploadPartOutput, error) {
-	if int64(len(in.Body)) > s.maxObjectBytes {
+	payload := request.ResponsePayload(ctx)
+	isStream := payload != nil && payload.Stream != nil
+
+	if !isStream && int64(len(in.Body)) > s.maxObjectBytes {
 		return nil, fail(400, "EntityTooLarge", "Part exceeds configured limit")
 	}
 
@@ -183,16 +186,41 @@ func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*a
 		return nil, fail(http.StatusBadRequest, "InvalidArgument", "Part number must be from 1 to 10000")
 	}
 
-	if in.ContentLength != nil && *in.ContentLength != int64(len(in.Body)) {
+	if !isStream && in.ContentLength != nil && *in.ContentLength != int64(len(in.Body)) {
 		return nil, fail(http.StatusBadRequest, "IncompleteBody", "Content length does not match the uploaded part")
 	}
 
-	blob, md5Sum, values, err := s.writeBody(in.Body)
+	var (
+		blob   storage.Blob
+		md5Sum []byte
+		values map[string]string
+	)
+	if isStream {
+		blob, md5Sum, values, err = s.writeStream(payload.Stream)
+	} else {
+		blob, md5Sum, values, err = s.writeBody(in.Body)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	defer s.blobs.Release(blob)
+	committed := false
+	defer func() {
+		if !committed {
+			s.blobs.Discard(blob)
+		} else {
+			s.blobs.Release(blob)
+		}
+	}()
+
+	if payload != nil && payload.Trailers != nil {
+		applyTrailers(in, payload.Trailers())
+	}
+
+	if in.ContentLength != nil && *in.ContentLength != blob.Size {
+		return nil, fail(http.StatusBadRequest, "IncompleteBody", "Content length does not match the uploaded part")
+	}
+
 	if in.ContentMD5 != nil {
 		want, decodeErr := base64.StdEncoding.DecodeString(*in.ContentMD5)
 		if decodeErr != nil || len(want) != md5.Size {
@@ -206,7 +234,7 @@ func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*a
 
 	etag := `"` + hex.EncodeToString(md5Sum) + `"`
 	var partChecksum checksum
-	p := uploadPart{ETag: etag, Size: int64(len(in.Body)), LastModified: s.now().UnixMilli()}
+	p := uploadPart{ETag: etag, Size: blob.Size, LastModified: s.now().UnixMilli()}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		bucket, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
@@ -231,6 +259,7 @@ func (s *Service) UploadPart(ctx context.Context, in *api.UploadPartRequest) (*a
 	if err != nil {
 		return nil, err
 	}
+	committed = true
 
 	out := &api.UploadPartOutput{ETag: &etag}
 	partChecksum.apply(out)

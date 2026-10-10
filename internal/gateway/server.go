@@ -96,10 +96,30 @@ type call struct {
 	failure *awserror.Error
 	meta    request.Metadata
 	// body is the raw AWS Query form, kept to hash it for authentication.
+	payload    *request.Payload
+	cleanups   []func() error
 	body       []byte
 	head       bool
 	injected   bool
 	faultError bool
+}
+
+func (c *call) addCleanup(fn func() error) {
+	c.cleanups = append(c.cleanups, fn)
+}
+
+func (c *call) close() {
+	for i := len(c.cleanups) - 1; i >= 0; i-- {
+		_ = c.cleanups[i]()
+	}
+	if c.payload != nil {
+		if c.payload.Body != nil {
+			_ = c.payload.Body.Close()
+		}
+		if c.payload.Stream != nil {
+			_ = c.payload.Stream.Close()
+		}
+	}
 }
 
 //nolint:gocritic // Snapshot scalar server configuration instead of sharing mutable caller fields.
@@ -787,6 +807,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		s.record(r, c, start, body, cw)
+		if c != nil {
+			c.close()
+		}
 	}()
 
 	if err == nil {
@@ -811,15 +834,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := request.WithMetadata(r.Context(), c.meta)
-	payload := &request.Payload{}
-	if c.service.SigningName == "s3" && c.meta.Operation == "GetObject" {
-		ctx = request.WithPayload(ctx, payload)
-	}
-	defer func() {
-		if payload.Body != nil {
-			_ = payload.Body.Close()
+	if c.service.SigningName == "s3" {
+		switch c.meta.Operation {
+		case opGetObject, opPutObject, opUploadPart:
+			if c.payload == nil {
+				c.payload = &request.Payload{}
+			}
+			ctx = request.WithPayload(ctx, c.payload)
 		}
-	}()
+	}
 	output, err := op.Invoke(ctx, input)
 	if err != nil {
 		s.fail(w, c, err)
@@ -830,11 +853,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status := binding.StatusCode
 	switch m.Protocol {
 	case catalog.RESTXML:
-		if payload.Body != nil {
+		if c.payload != nil && c.payload.Body != nil {
 			response := restbindings.Encode(w, &binding, output)
 			w.WriteHeader(response.Status)
 			if !c.head {
-				_, _ = io.Copy(w, payload.Body)
+				_, _ = io.Copy(w, c.payload.Body)
 			}
 		} else {
 			restxml.Write(w, &binding, output, c.head)

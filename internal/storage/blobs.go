@@ -51,7 +51,7 @@ type BlobStore struct {
 	retired   map[string]bool
 	dir       string
 	fileMu    sync.Mutex
-	writeMu   sync.Mutex
+	writeMu   sync.RWMutex
 	temporary bool
 }
 
@@ -78,15 +78,16 @@ func OpenBlobs(dir string) (*BlobStore, error) {
 // Write publishes a durable immutable file before returning a pinned reference.
 // The caller releases the pin after committing the reference (or abandoning it).
 func (s *BlobStore) Write(r io.Reader) (Blob, error) {
-	s.writeMu.Lock()
-	defer s.writeMu.Unlock()
+	s.writeMu.RLock()
+	defer s.writeMu.RUnlock()
 	f, err := os.CreateTemp(s.dir, ".pending-")
 	if err != nil {
 		return Blob{}, err
 	}
 
 	defer func() { _ = f.Close(); _ = os.Remove(f.Name()) }()
-	size, err := io.Copy(f, r)
+	buf := make([]byte, 32*1024)
+	size, err := io.CopyBuffer(f, r, buf)
 	if err != nil {
 		return Blob{}, err
 	}
@@ -144,6 +145,18 @@ func (s *BlobStore) Release(b Blob) {
 				delete(s.retired, b.ID)
 			}
 		}
+	}
+}
+
+// Discard unpins and immediately removes an unpublished file.
+func (s *BlobStore) Discard(b Blob) {
+	s.fileMu.Lock()
+	defer s.fileMu.Unlock()
+	s.pins[b.ID]--
+	if s.pins[b.ID] <= 0 {
+		delete(s.pins, b.ID)
+		delete(s.retired, b.ID)
+		_ = os.Remove(filepath.Join(s.dir, b.ID))
 	}
 }
 

@@ -98,8 +98,8 @@ func (r *partsReader) Close() error {
 	return nil
 }
 
-// writeBody computes protocol digests during the copy to the immutable file.
-func (s *Service) writeBody(body []byte) (blob storage.Blob, md5Sum []byte, values map[string]string, err error) {
+// writeStream streams r to an immutable file while computing protocol digests.
+func (s *Service) writeStream(r io.Reader) (blob storage.Blob, md5Sum []byte, values map[string]string, err error) {
 	if s.blobErr != nil {
 		return storage.Blob{}, nil, nil, s.blobErr
 	}
@@ -113,7 +113,7 @@ func (s *Service) writeBody(body []byte) (blob storage.Blob, md5Sum []byte, valu
 		writers = append(writers, digest)
 	}
 
-	blob, err = s.blobs.Write(io.TeeReader(bytes.NewReader(body), io.MultiWriter(writers...)))
+	blob, err = s.blobs.Write(io.TeeReader(r, io.MultiWriter(writers...)))
 	if err != nil {
 		return storage.Blob{}, nil, nil, err
 	}
@@ -124,6 +124,11 @@ func (s *Service) writeBody(body []byte) (blob storage.Blob, md5Sum []byte, valu
 	}
 
 	return blob, md5Digest.Sum(nil), values, nil
+}
+
+// writeBody computes protocol digests during the copy to the immutable file.
+func (s *Service) writeBody(body []byte) (blob storage.Blob, md5Sum []byte, values map[string]string, err error) {
+	return s.writeStream(bytes.NewReader(body))
 }
 
 // bodyStore is private to S3. Other services use the unwrapped record store.

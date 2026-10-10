@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/common"
 )
@@ -53,6 +54,38 @@ func sentChecksums(in any) map[string]string {
 	}
 
 	return sent
+}
+
+// applyTrailers copies trailing checksum and Content-MD5 headers received after stream EOF into input fields.
+func applyTrailers(in any, trailers http.Header) {
+	if in == nil || len(trailers) == 0 {
+		return
+	}
+	v := reflect.ValueOf(in)
+	if v.Kind() != reflect.Pointer || v.IsNil() {
+		return
+	}
+	elem := v.Elem()
+	if elem.Kind() != reflect.Struct {
+		return
+	}
+
+	setField := func(name, val string) {
+		f := elem.FieldByName(name)
+		if f.IsValid() && f.Kind() == reflect.Pointer && f.Type().Elem().Kind() == reflect.String {
+			f.Set(reflect.ValueOf(new(val)))
+		}
+	}
+
+	for algorithm := range checksums() {
+		headerKey := "x-amz-checksum-" + strings.ToLower(algorithm)
+		if val := trailers.Get(headerKey); val != "" {
+			setField("Checksum"+algorithm, val)
+		}
+	}
+	if md5Val := trailers.Get("content-md5"); md5Val != "" {
+		setField("ContentMD5", md5Val)
+	}
 }
 
 // validAlgorithm rejects an algorithm TinyStack cannot compute.

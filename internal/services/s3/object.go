@@ -108,7 +108,10 @@ func matches(condition, etag string) bool {
 }
 
 func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api.PutObjectOutput, error) {
-	if int64(len(in.Body)) > s.maxObjectBytes {
+	payload := request.ResponsePayload(ctx)
+	isStream := payload != nil && payload.Stream != nil
+
+	if !isStream && int64(len(in.Body)) > s.maxObjectBytes {
 		return nil, fail(400, "EntityTooLarge", "Object exceeds configured limit")
 	}
 
@@ -147,12 +150,37 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 			"Your metadata headers exceed the maximum allowed metadata size")
 	}
 
-	blob, digest, values, err := s.writeBody(in.Body)
+	var (
+		blob   storage.Blob
+		digest []byte
+		values map[string]string
+	)
+	if isStream {
+		blob, digest, values, err = s.writeStream(payload.Stream)
+	} else {
+		blob, digest, values, err = s.writeBody(in.Body)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	defer s.blobs.Release(blob)
+	committed := false
+	defer func() {
+		if !committed {
+			s.blobs.Discard(blob)
+		} else {
+			s.blobs.Release(blob)
+		}
+	}()
+
+	if payload != nil && payload.Trailers != nil {
+		applyTrailers(in, payload.Trailers())
+	}
+
+	if in.ContentLength != nil && *in.ContentLength != blob.Size {
+		return nil, fail(http.StatusBadRequest, "IncompleteBody", "Content length does not match the uploaded body")
+	}
+
 	if guardErr := verify(in, digest); guardErr != nil {
 		return nil, guardErr
 	}
@@ -172,7 +200,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 	obj := object{
 		ETag:         `"` + hex.EncodeToString(digest) + `"`,
 		ContentType:  common.Value(in.ContentType),
-		Size:         int64(len(in.Body)),
+		Size:         blob.Size,
 		LastModified: s.now().UnixMilli(),
 		Metadata:     in.Metadata,
 		Tags:         tags,
@@ -216,6 +244,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 	if err != nil {
 		return nil, err
 	}
+	committed = true
 
 	version := reported(status, &obj)
 	s.notify(ctx, m, cfg, objectEvent{

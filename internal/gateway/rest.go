@@ -11,11 +11,17 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/rest"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 )
 
 // restMaxBody bounds REST document payloads and non-S3 services.
-const restMaxBody = 64 << 20
+const (
+	restMaxBody  = 64 << 20
+	opPutObject  = "PutObject"
+	opUploadPart = "UploadPart"
+	opGetObject  = "GetObject"
+)
 
 // restProtocol returns the REST protocol a service speaks, or "".
 func restProtocol(service *catalog.Service) string {
@@ -91,7 +97,7 @@ func routes(service *catalog.Service) []route {
 		// ordinary object operations. Their upload query parameters distinguish
 		// the operations even when the optional x-id parameter is absent.
 		switch name {
-		case "UploadPart":
+		case opUploadPart:
 			rt.required = []string{"uploadId", "partNumber"}
 		case "ListParts", "CompleteMultipartUpload", "AbortMultipartUpload":
 			rt.required = []string{"uploadId"}
@@ -254,6 +260,21 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 // decodeREST reads and decodes a REST request into the operation input.
 func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op *catalog.Operation) (any, error) {
 	binding := op.Bindings[c.meta.Protocol]
+	if c.service.SigningName == "s3" && (c.meta.Operation == opPutObject || c.meta.Operation == opUploadPart) {
+		stream, trailers, streamErr := rest.StreamBody(w, r, s.cfg.Storage.MaxObjectBytes)
+		if streamErr != nil {
+			return nil, streamErr
+		}
+		if c.payload == nil {
+			c.payload = &request.Payload{}
+		}
+		c.payload.Stream = stream
+		c.payload.Trailers = trailers
+
+		input := op.NewInput()
+		return input, rest.Decode(r, &binding, c.labels, nil, input, nil)
+	}
+
 	body, err := rest.ReadBody(w, r, s.restBodyLimit(c))
 	if err != nil {
 		if _, ok := err.(*awserror.Error); ok { //nolint:errorlint // ReadBody returns awserror values directly.
@@ -273,7 +294,7 @@ func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op 
 
 // restBodyLimit lifts the cap only for S3 object and multipart part uploads.
 func (s *Server) restBodyLimit(c *call) int64 {
-	if c.service.SigningName == "s3" && (c.meta.Operation == "PutObject" || c.meta.Operation == "UploadPart") {
+	if c.service.SigningName == "s3" && (c.meta.Operation == opPutObject || c.meta.Operation == opUploadPart) {
 		return s.cfg.Storage.MaxObjectBytes
 	}
 	return restMaxBody

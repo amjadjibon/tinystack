@@ -7,6 +7,7 @@ package rest
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -86,62 +87,347 @@ func ReadBody(w http.ResponseWriter, r *http.Request, limit int64) ([]byte, erro
 	return body, err
 }
 
-// dechunk decodes "size[;chunk-signature=...]\r\ndata\r\n" chunks up to the
-// zero-length chunk, then reads "name:value" trailers into header.
-func dechunk(r *bufio.Reader, header http.Header) ([]byte, error) {
-	malformed := func(err error) error {
-		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-			return TooLarge()
-		}
+type chunkState int
 
-		return invalid("Malformed aws-chunked request body")
-	}
+const (
+	stateChunkHeader chunkState = iota
+	stateChunkData
+	stateChunkCRLF
+	stateTrailers
+	stateEOF
+)
 
-	var body bytes.Buffer
+const (
+	maxFramingLine       = 4096
+	maxDelimiterLine     = 64
+	maxAggregateTrailers = 64 << 10 // 64 KiB
+	maxTrailerCount      = 128
+)
+
+var errFramingTooLarge = errors.New("framing line too long")
+
+func readBoundedLine(r *bufio.Reader, maxLen int) (string, error) {
+	var buf []byte
 	for {
-		line, err := r.ReadString('\n')
+		chunk, isPrefix, err := r.ReadLine()
 		if err != nil {
-			return nil, malformed(err)
+			return "", err
 		}
-
-		sizeText, _, _ := strings.Cut(strings.TrimRight(line, "\r\n"), ";")
-		size, err := strconv.ParseInt(strings.TrimSpace(sizeText), 16, 64)
-		if err != nil || size < 0 {
-			return nil, malformed(nil)
+		if len(buf)+len(chunk) > maxLen {
+			return "", errFramingTooLarge
 		}
-
-		if size == 0 {
+		buf = append(buf, chunk...)
+		if !isPrefix {
 			break
 		}
+	}
+	return string(buf), nil
+}
 
-		if _, err = io.CopyN(&body, r, size); err != nil {
-			return nil, malformed(err)
-		}
+type chunkReader struct {
+	r                 *bufio.Reader
+	header            http.Header
+	remaining         int64
+	totalTrailerBytes int
+	trailerCount      int
+	state             chunkState
+}
 
-		if crlf, crlfErr := r.ReadString('\n'); crlfErr != nil || strings.TrimRight(crlf, "\r\n") != "" {
-			return nil, malformed(nil)
-		}
+func (c *chunkReader) malformed(err error) error {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+		return TooLarge()
+	}
+
+	return invalid("Malformed aws-chunked request body")
+}
+
+func (c *chunkReader) Read(p []byte) (int, error) {
+	if len(p) == 0 {
+		return 0, nil
 	}
 
 	for {
-		line, err := r.ReadString('\n')
-		if err != nil && !errors.Is(err, io.EOF) {
-			return nil, malformed(err)
-		}
-
-		if line = strings.TrimRight(line, "\r\n"); line != "" {
-			name, value, ok := strings.Cut(line, ":")
-			if !ok {
-				return nil, malformed(nil)
+		switch c.state {
+		case stateChunkHeader:
+			line, err := readBoundedLine(c.r, maxFramingLine)
+			if err != nil {
+				return 0, c.malformed(err)
 			}
 
-			header.Set(strings.TrimSpace(name), strings.TrimSpace(value))
-		}
-		// A blank line or the end of the body ends the trailers.
-		if line == "" || errors.Is(err, io.EOF) {
-			return body.Bytes(), nil
+			sizeText, _, _ := strings.Cut(line, ";")
+			size, err := strconv.ParseInt(strings.TrimSpace(sizeText), 16, 64)
+			if err != nil || size < 0 {
+				return 0, c.malformed(nil)
+			}
+
+			if size == 0 {
+				c.state = stateTrailers
+				continue
+			}
+
+			c.remaining = size
+			c.state = stateChunkData
+
+		case stateChunkData:
+			toRead := len(p)
+			if int64(toRead) > c.remaining {
+				toRead = int(c.remaining)
+			}
+
+			n, err := c.r.Read(p[:toRead])
+			c.remaining -= int64(n)
+			if c.remaining == 0 {
+				c.state = stateChunkCRLF
+			}
+
+			if err != nil && !errors.Is(err, io.EOF) {
+				return n, c.malformed(err)
+			}
+
+			if n > 0 {
+				return n, nil
+			}
+
+			if errors.Is(err, io.EOF) && c.remaining > 0 {
+				return 0, c.malformed(err)
+			}
+
+		case stateChunkCRLF:
+			crlf, err := readBoundedLine(c.r, maxDelimiterLine)
+			if err != nil || crlf != "" {
+				return 0, c.malformed(err)
+			}
+
+			c.state = stateChunkHeader
+
+		case stateTrailers:
+			for {
+				line, err := readBoundedLine(c.r, maxFramingLine)
+				if err != nil {
+					return 0, c.malformed(err)
+				}
+
+				if line == "" {
+					break
+				}
+
+				c.totalTrailerBytes += len(line)
+				c.trailerCount++
+				if c.totalTrailerBytes > maxAggregateTrailers || c.trailerCount > maxTrailerCount {
+					return 0, c.malformed(errFramingTooLarge)
+				}
+
+				name, value, ok := strings.Cut(line, ":")
+				if !ok {
+					return 0, c.malformed(nil)
+				}
+
+				if c.header != nil {
+					c.header.Set(strings.TrimSpace(name), strings.TrimSpace(value))
+				}
+			}
+
+			extra, err := c.r.Peek(1)
+			if len(extra) > 0 {
+				return 0, c.malformed(nil)
+			}
+			if !errors.Is(err, io.EOF) {
+				return 0, c.malformed(err)
+			}
+
+			c.state = stateEOF
+			return 0, io.EOF
+
+		case stateEOF:
+			return 0, io.EOF
 		}
 	}
+}
+
+// NewChunkReader decodes "size[;chunk-signature=...]\r\ndata\r\n" chunks up to the
+// zero-length chunk, then reads "name:value" trailers into header.
+func NewChunkReader(r *bufio.Reader, header http.Header) io.Reader {
+	return &chunkReader{r: r, header: header}
+}
+
+// dechunk decodes "size[;chunk-signature=...]\\r\\ndata\\r\\n" chunks up to the
+// zero-length chunk, then reads "name:value" trailers into header.
+func dechunk(r *bufio.Reader, header http.Header) ([]byte, error) {
+	return io.ReadAll(NewChunkReader(r, header))
+}
+
+// StreamLimiter bounds decoded bytes read from an upload and validates expected lengths.
+type StreamLimiter struct {
+	r           io.Reader
+	closer      io.Closer
+	trailers    http.Header
+	req         *http.Request
+	maxBytes    int64
+	expectedLen int64
+	readBytes   int64
+}
+
+func incompleteBody() error {
+	return awserror.New(
+		"IncompleteBody",
+		"You did not provide the number of bytes specified by the Content-Length HTTP header.",
+	)
+}
+
+func (s *StreamLimiter) Read(p []byte) (int, error) {
+	if s.req != nil && s.req.Context().Err() != nil {
+		return 0, s.req.Context().Err()
+	}
+
+	n, err := s.r.Read(p)
+	s.readBytes += int64(n)
+	if s.readBytes > s.maxBytes {
+		return n, TooLarge()
+	}
+
+	if s.expectedLen >= 0 && s.readBytes > s.expectedLen {
+		return n, incompleteBody()
+	}
+
+	if err != nil {
+		if s.req != nil && s.req.Context().Err() != nil {
+			return n, s.req.Context().Err()
+		}
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return n, err
+		}
+
+		if errors.Is(err, io.EOF) {
+			if s.expectedLen >= 0 && s.readBytes != s.expectedLen {
+				return n, incompleteBody()
+			}
+
+			if s.req != nil {
+				for k, vals := range s.req.Trailer {
+					for _, v := range vals {
+						s.trailers.Add(k, v)
+					}
+					lower := strings.ToLower(k)
+					if (strings.HasPrefix(lower, "x-amz-checksum-") || lower == "content-md5") &&
+						s.trailers.Get(k) == "" {
+						return n, invalid("Missing advertised trailer: %s", k)
+					}
+				}
+
+				for _, headerName := range []string{"x-amz-trailer", "Trailer"} {
+					for _, advertised := range s.req.Header.Values(headerName) {
+						for _, name := range strings.Split(advertised, ",") {
+							name = strings.TrimSpace(name)
+							if name == "" {
+								continue
+							}
+							lower := strings.ToLower(name)
+							match := headerName == "x-amz-trailer" ||
+								strings.HasPrefix(lower, "x-amz-checksum-") ||
+								lower == "content-md5"
+							if match && s.trailers.Get(name) == "" {
+								return n, invalid("Missing advertised trailer: %s", name)
+							}
+						}
+					}
+				}
+			}
+		} else if errors.Is(err, io.ErrUnexpectedEOF) {
+			return n, incompleteBody()
+		} else if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			return n, TooLarge()
+		}
+	}
+
+	return n, err
+}
+
+func (s *StreamLimiter) Close() error {
+	if s.closer != nil {
+		return s.closer.Close()
+	}
+
+	return nil
+}
+
+func (s *StreamLimiter) Trailers() http.Header {
+	return s.trailers
+}
+
+// StreamBody prepares a bounded streaming reader for an upload request, decoding
+// aws-chunked streams on the fly and validating declared bounds.
+func StreamBody(w http.ResponseWriter, r *http.Request, maxBytes int64) (io.ReadCloser, func() http.Header, error) {
+	encodings := strings.Split(r.Header.Get("Content-Encoding"), ",")
+	chunked := strings.HasPrefix(r.Header.Get("X-Amz-Content-Sha256"), "STREAMING-")
+	kept := encodings[:0]
+	for _, encoding := range encodings {
+		if encoding = strings.TrimSpace(encoding); encoding == awsChunked {
+			chunked = true
+		} else if encoding != "" {
+			kept = append(kept, encoding)
+		}
+	}
+
+	r.Header.Del("Content-Encoding")
+	if len(kept) > 0 {
+		r.Header.Set("Content-Encoding", strings.Join(kept, ","))
+	}
+
+	trailers := make(http.Header)
+	var expectedLen int64 = -1
+	var bodyReader io.Reader
+
+	if chunked {
+		if decodedLenStr := r.Header.Get("x-amz-decoded-content-length"); decodedLenStr != "" {
+			l, err := strconv.ParseInt(strings.TrimSpace(decodedLenStr), 10, 64)
+			if err != nil || l < 0 {
+				return nil, nil, invalid("x-amz-decoded-content-length must be a non-negative integer")
+			}
+			expectedLen = l
+			r.Header.Set("Content-Length", strconv.FormatInt(l, 10))
+		} else {
+			r.Header.Del("Content-Length")
+		}
+
+		if expectedLen > maxBytes {
+			return nil, nil, TooLarge()
+		}
+
+		encodedLimit := maxBytes + max(8<<20, maxBytes/8)
+		reader := http.MaxBytesReader(w, r.Body, encodedLimit)
+		bodyReader = NewChunkReader(bufio.NewReader(reader), trailers)
+	} else {
+		if clStr := r.Header.Get("Content-Length"); clStr != "" {
+			l, err := strconv.ParseInt(strings.TrimSpace(clStr), 10, 64)
+			if err != nil || l < 0 {
+				return nil, nil, invalid("Content-Length must be a non-negative integer")
+			}
+			expectedLen = l
+		} else if r.ContentLength >= 0 {
+			expectedLen = r.ContentLength
+		}
+
+		if expectedLen > maxBytes {
+			return nil, nil, TooLarge()
+		}
+
+		reader := http.MaxBytesReader(w, r.Body, maxBytes)
+		bodyReader = reader
+	}
+
+	limiter := &StreamLimiter{
+		r:           bodyReader,
+		closer:      r.Body,
+		maxBytes:    maxBytes,
+		expectedLen: expectedLen,
+		trailers:    trailers,
+		req:         r,
+	}
+
+	return limiter, limiter.Trailers, nil
 }
 
 // fields calls fn for each bound member of a generated structure.
