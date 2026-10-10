@@ -14,12 +14,15 @@ import (
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
+	appconfigapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfig"
+	appconfigdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfigdata"
 	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	cloudtrailapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudtrail"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
@@ -67,12 +70,14 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
+	"github.com/amjadjibon/tinystack/internal/services/appconfig"
 	"github.com/amjadjibon/tinystack/internal/services/appsync"
 	"github.com/amjadjibon/tinystack/internal/services/athena"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/services/cloudtrail"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
@@ -261,6 +266,9 @@ func build(
 	balancers := elbv2.New(store, logger)
 	organizationsService := organizations.New(store)
 	discovery := servicediscovery.New(store)
+	configurations := appconfig.New(store)
+	trails := cloudtrail.New(store, buckets)
+	a.onReset(trails.Reset)
 	databases := rds.New(store)
 	a.onStop(databases.Stop)
 	a.onReset(databases.Reset)
@@ -316,6 +324,9 @@ func build(
 		elasticacheapi.Descriptor(caches),
 		organizationsapi.Descriptor(organizationsService),
 		servicediscoveryapi.Descriptor(discovery),
+		appconfigapi.Descriptor(configurations),
+		appconfigdataapi.Descriptor(configurations.Data()),
+		cloudtrailapi.Descriptor(trails),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
@@ -386,6 +397,7 @@ func build(
 		return nil, err
 	}
 
+	handler.UseManagementEvents(trails.Record)
 	handler.UseCredentials(tokens.Credentials)
 	handler.UseDocuments(identities.Documents)
 	handler.UseTokens(identities.Token)

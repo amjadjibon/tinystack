@@ -39,12 +39,13 @@ const (
 )
 
 type Server struct {
-	services      map[string]*catalog.Service
-	consoleCaller *catalog.Caller
-	routes        map[string][]route
-	logger        *slog.Logger
-	requests      *recent.Log[Record]
-	metrics       *metrics
+	managementEvents func(context.Context, *catalog.ManagementEvent) error
+	services         map[string]*catalog.Service
+	consoleCaller    *catalog.Caller
+	routes           map[string][]route
+	logger           *slog.Logger
+	requests         *recent.Log[Record]
+	metrics          *metrics
 	// internal serves TinyStack's own endpoints under /_tinystack/.
 	internal    map[string]http.Handler
 	credentials CredentialLookup
@@ -165,6 +166,12 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	}
 
 	return s, nil
+}
+
+// UseManagementEvents observes completed external AWS requests only. Console and
+// catalog.Caller operations bypass ServeHTTP and cannot enter this hook.
+func (s *Server) UseManagementEvents(record func(context.Context, *catalog.ManagementEvent) error) {
+	s.managementEvents = record
 }
 
 // UseCredentials resolves access keys that are not configured, such as IAM
@@ -871,6 +878,26 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 
 	if c.service != nil && c.service.Operations[m.Operation].Sensitive {
 		rec.RequestBody, rec.ResponseBody = redacted, redacted
+	}
+
+	if s.managementEvents != nil && c.service != nil && m.Operation != "" {
+		source := r.RemoteAddr
+		if host, _, err := net.SplitHostPort(source); err == nil {
+			source = host
+		}
+		event := &catalog.ManagementEvent{
+			Metadata: *m, Time: rec.Time, SourceIPAddress: source,
+			UserAgent: r.UserAgent(), ErrorCode: rec.ErrorCode, ErrorMessage: rec.ErrorMessage,
+		}
+		if c.service.Operations[m.Operation].Sensitive && event.ErrorMessage != "" {
+			event.ErrorMessage = redacted
+		}
+		if m.Service == "s3" && c.labels["Bucket"] != "" {
+			event.Resources = []catalog.EventResource{{Type: "AWS::S3::Bucket", Name: c.labels["Bucket"]}}
+		}
+		if err := s.managementEvents(context.WithoutCancel(r.Context()), event); err != nil {
+			s.logger.Error("record management event", "error", err)
+		}
 	}
 
 	s.requests.Add(rec)

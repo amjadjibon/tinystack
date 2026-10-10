@@ -17157,5 +17157,556 @@
         "Tags"
       ]
     }
+  },
+  "appconfig": {
+    "operations": [
+      "CreateApplication",
+      "GetApplication",
+      "UpdateApplication",
+      "DeleteApplication",
+      "CreateEnvironment",
+      "GetEnvironment",
+      "UpdateEnvironment",
+      "DeleteEnvironment",
+      "CreateConfigurationProfile",
+      "GetConfigurationProfile",
+      "UpdateConfigurationProfile",
+      "DeleteConfigurationProfile",
+      "CreateDeploymentStrategy",
+      "GetDeploymentStrategy",
+      "UpdateDeploymentStrategy",
+      "DeleteDeploymentStrategy",
+      "ListApplications",
+      "ListEnvironments",
+      "ListConfigurationProfiles",
+      "ListDeploymentStrategies",
+      "CreateHostedConfigurationVersion",
+      "GetHostedConfigurationVersion",
+      "ListHostedConfigurationVersions",
+      "DeleteHostedConfigurationVersion",
+      "StartDeployment",
+      "StopDeployment",
+      "GetDeployment",
+      "ListDeployments",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateApplicationRequest": [
+        "Name",
+        "Description",
+        "Tags"
+      ],
+      "Application": [
+        "Id",
+        "Name",
+        "Description"
+      ],
+      "CreateConfigurationProfileRequest": [
+        "ApplicationId",
+        "Name",
+        "Description",
+        "LocationUri",
+        "Validators",
+        "Tags",
+        "Type"
+      ],
+      "Validator": [
+        "Type",
+        "Content"
+      ],
+      "ConfigurationProfile": [
+        "ApplicationId",
+        "Id",
+        "Name",
+        "Description",
+        "LocationUri",
+        "Validators",
+        "Type"
+      ],
+      "CreateDeploymentStrategyRequest": [
+        "Name",
+        "Description",
+        "DeploymentDurationInMinutes",
+        "FinalBakeTimeInMinutes",
+        "GrowthFactor",
+        "GrowthType",
+        "ReplicateTo",
+        "Tags"
+      ],
+      "DeploymentStrategy": [
+        "Id",
+        "Name",
+        "Description",
+        "DeploymentDurationInMinutes",
+        "GrowthType",
+        "GrowthFactor",
+        "FinalBakeTimeInMinutes",
+        "ReplicateTo"
+      ],
+      "CreateEnvironmentRequest": [
+        "ApplicationId",
+        "Name",
+        "Description",
+        "Tags"
+      ],
+      "Environment": [
+        "ApplicationId",
+        "Id",
+        "Name",
+        "Description",
+        "State"
+      ],
+      "CreateHostedConfigurationVersionRequest": [
+        "ApplicationId",
+        "ConfigurationProfileId",
+        "Description",
+        "Content",
+        "ContentType",
+        "LatestVersionNumber",
+        "VersionLabel"
+      ],
+      "HostedConfigurationVersion": [
+        "ApplicationId",
+        "ConfigurationProfileId",
+        "VersionNumber",
+        "Description",
+        "Content",
+        "ContentType",
+        "VersionLabel"
+      ],
+      "DeleteApplicationRequest": [
+        "ApplicationId"
+      ],
+      "DeleteConfigurationProfileRequest": [
+        "ApplicationId",
+        "ConfigurationProfileId"
+      ],
+      "DeleteDeploymentStrategyRequest": [
+        "DeploymentStrategyId"
+      ],
+      "DeleteEnvironmentRequest": [
+        "EnvironmentId",
+        "ApplicationId"
+      ],
+      "DeleteHostedConfigurationVersionRequest": [
+        "ApplicationId",
+        "ConfigurationProfileId",
+        "VersionNumber"
+      ],
+      "GetApplicationRequest": [
+        "ApplicationId"
+      ],
+      "GetConfigurationProfileRequest": [
+        "ApplicationId",
+        "ConfigurationProfileId"
+      ],
+      "GetDeploymentRequest": [
+        "ApplicationId",
+        "EnvironmentId",
+        "DeploymentNumber"
+      ],
+      "Deployment": [
+        "ApplicationId",
+        "EnvironmentId",
+        "DeploymentStrategyId",
+        "ConfigurationProfileId",
+        "DeploymentNumber",
+        "ConfigurationName",
+        "ConfigurationLocationUri",
+        "ConfigurationVersion",
+        "Description",
+        "DeploymentDurationInMinutes",
+        "GrowthType",
+        "GrowthFactor",
+        "FinalBakeTimeInMinutes",
+        "State",
+        "PercentageComplete",
+        "StartedAt",
+        "CompletedAt",
+        "VersionLabel"
+      ],
+      "GetDeploymentStrategyRequest": [
+        "DeploymentStrategyId"
+      ],
+      "GetEnvironmentRequest": [
+        "ApplicationId",
+        "EnvironmentId"
+      ],
+      "GetHostedConfigurationVersionRequest": [
+        "ApplicationId",
+        "ConfigurationProfileId",
+        "VersionNumber"
+      ],
+      "ListApplicationsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "Applications": [
+        "Items",
+        "NextToken"
+      ],
+      "ListConfigurationProfilesRequest": [
+        "ApplicationId",
+        "MaxResults",
+        "NextToken",
+        "Type"
+      ],
+      "ConfigurationProfiles": [
+        "Items",
+        "NextToken"
+      ],
+      "ConfigurationProfileSummary": [
+        "ApplicationId",
+        "Id",
+        "Name",
+        "LocationUri",
+        "ValidatorTypes",
+        "Type"
+      ],
+      "ListDeploymentStrategiesRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "DeploymentStrategies": [
+        "Items",
+        "NextToken"
+      ],
+      "ListDeploymentsRequest": [
+        "ApplicationId",
+        "EnvironmentId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "Deployments": [
+        "Items",
+        "NextToken"
+      ],
+      "DeploymentSummary": [
+        "DeploymentNumber",
+        "ConfigurationProfileId",
+        "ConfigurationName",
+        "ConfigurationVersion",
+        "DeploymentDurationInMinutes",
+        "GrowthType",
+        "GrowthFactor",
+        "FinalBakeTimeInMinutes",
+        "State",
+        "PercentageComplete",
+        "StartedAt",
+        "CompletedAt",
+        "VersionLabel",
+        "Type"
+      ],
+      "ListEnvironmentsRequest": [
+        "ApplicationId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "Environments": [
+        "Items",
+        "NextToken"
+      ],
+      "ListHostedConfigurationVersionsRequest": [
+        "ApplicationId",
+        "ConfigurationProfileId",
+        "MaxResults",
+        "NextToken",
+        "VersionLabel"
+      ],
+      "HostedConfigurationVersions": [
+        "Items",
+        "NextToken"
+      ],
+      "HostedConfigurationVersionSummary": [
+        "ApplicationId",
+        "ConfigurationProfileId",
+        "VersionNumber",
+        "Description",
+        "ContentType",
+        "VersionLabel"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ResourceTags": [
+        "Tags"
+      ],
+      "StartDeploymentRequest": [
+        "ApplicationId",
+        "EnvironmentId",
+        "DeploymentStrategyId",
+        "ConfigurationProfileId",
+        "ConfigurationVersion",
+        "Description",
+        "Tags"
+      ],
+      "StopDeploymentRequest": [
+        "ApplicationId",
+        "EnvironmentId",
+        "DeploymentNumber",
+        "AllowRevert"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UpdateApplicationRequest": [
+        "ApplicationId",
+        "Name",
+        "Description"
+      ],
+      "UpdateConfigurationProfileRequest": [
+        "ApplicationId",
+        "ConfigurationProfileId",
+        "Name",
+        "Description",
+        "Validators"
+      ],
+      "UpdateDeploymentStrategyRequest": [
+        "DeploymentStrategyId",
+        "Description",
+        "DeploymentDurationInMinutes",
+        "FinalBakeTimeInMinutes",
+        "GrowthFactor",
+        "GrowthType"
+      ],
+      "UpdateEnvironmentRequest": [
+        "ApplicationId",
+        "EnvironmentId",
+        "Name",
+        "Description"
+      ]
+    }
+  },
+  "appconfigdata": {
+    "operations": [
+      "StartConfigurationSession",
+      "GetLatestConfiguration"
+    ],
+    "shapes": {
+      "GetLatestConfigurationRequest": [
+        "ConfigurationToken"
+      ],
+      "GetLatestConfigurationResponse": [
+        "NextPollConfigurationToken",
+        "NextPollIntervalInSeconds",
+        "ContentType",
+        "Configuration",
+        "VersionLabel"
+      ],
+      "StartConfigurationSessionRequest": [
+        "ApplicationIdentifier",
+        "EnvironmentIdentifier",
+        "ConfigurationProfileIdentifier",
+        "RequiredMinimumPollIntervalInSeconds"
+      ],
+      "StartConfigurationSessionResponse": [
+        "InitialConfigurationToken"
+      ]
+    }
+  },
+  "cloudtrail": {
+    "operations": [
+      "CreateTrail",
+      "GetTrail",
+      "DescribeTrails",
+      "UpdateTrail",
+      "DeleteTrail",
+      "GetTrailStatus",
+      "StartLogging",
+      "StopLogging",
+      "PutEventSelectors",
+      "GetEventSelectors",
+      "AddTags",
+      "RemoveTags",
+      "ListTags",
+      "LookupEvents"
+    ],
+    "shapes": {
+      "AddTagsRequest": [
+        "ResourceId",
+        "TagsList"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "AddTagsResponse": [],
+      "CreateTrailRequest": [
+        "Name",
+        "S3BucketName",
+        "S3KeyPrefix",
+        "TagsList"
+      ],
+      "CreateTrailResponse": [
+        "Name",
+        "S3BucketName",
+        "S3KeyPrefix",
+        "IncludeGlobalServiceEvents",
+        "TrailARN"
+      ],
+      "DeleteTrailRequest": [
+        "Name"
+      ],
+      "DeleteTrailResponse": [],
+      "DescribeTrailsRequest": [
+        "trailNameList"
+      ],
+      "DescribeTrailsResponse": [
+        "trailList"
+      ],
+      "Trail": [
+        "Name",
+        "S3BucketName",
+        "S3KeyPrefix",
+        "IncludeGlobalServiceEvents",
+        "HomeRegion",
+        "TrailARN",
+        "HasCustomEventSelectors",
+        "HasInsightSelectors"
+      ],
+      "GetEventSelectorsRequest": [
+        "TrailName"
+      ],
+      "GetEventSelectorsResponse": [
+        "TrailARN",
+        "EventSelectors",
+        "AdvancedEventSelectors"
+      ],
+      "EventSelector": [
+        "ReadWriteType",
+        "IncludeManagementEvents",
+        "DataResources",
+        "ExcludeManagementEventSources"
+      ],
+      "DataResource": [
+        "Type",
+        "Values"
+      ],
+      "AdvancedEventSelector": [
+        "Name",
+        "FieldSelectors"
+      ],
+      "AdvancedFieldSelector": [
+        "Field",
+        "Equals",
+        "StartsWith",
+        "EndsWith",
+        "NotEquals",
+        "NotStartsWith",
+        "NotEndsWith"
+      ],
+      "GetTrailRequest": [
+        "Name"
+      ],
+      "GetTrailResponse": [
+        "Trail"
+      ],
+      "GetTrailStatusRequest": [
+        "Name"
+      ],
+      "GetTrailStatusResponse": [
+        "IsLogging",
+        "LatestDeliveryError",
+        "LatestNotificationError",
+        "LatestDeliveryTime",
+        "LatestNotificationTime",
+        "StartLoggingTime",
+        "StopLoggingTime",
+        "LatestCloudWatchLogsDeliveryError",
+        "LatestCloudWatchLogsDeliveryTime",
+        "LatestDigestDeliveryTime",
+        "LatestDigestDeliveryError",
+        "LatestDeliveryAttemptTime",
+        "LatestNotificationAttemptTime",
+        "LatestNotificationAttemptSucceeded",
+        "LatestDeliveryAttemptSucceeded",
+        "TimeLoggingStarted",
+        "TimeLoggingStopped"
+      ],
+      "ListTagsRequest": [
+        "ResourceIdList",
+        "NextToken"
+      ],
+      "ListTagsResponse": [
+        "ResourceTagList",
+        "NextToken"
+      ],
+      "ResourceTag": [
+        "ResourceId",
+        "TagsList"
+      ],
+      "LookupEventsRequest": [
+        "LookupAttributes",
+        "StartTime",
+        "EndTime",
+        "MaxResults",
+        "NextToken"
+      ],
+      "LookupAttribute": [
+        "AttributeKey",
+        "AttributeValue"
+      ],
+      "LookupEventsResponse": [
+        "Events",
+        "NextToken"
+      ],
+      "Event": [
+        "EventId",
+        "EventName",
+        "ReadOnly",
+        "AccessKeyId",
+        "EventTime",
+        "EventSource",
+        "Username",
+        "Resources",
+        "CloudTrailEvent"
+      ],
+      "Resource": [
+        "ResourceType",
+        "ResourceName"
+      ],
+      "PutEventSelectorsRequest": [
+        "TrailName",
+        "EventSelectors",
+        "AdvancedEventSelectors"
+      ],
+      "PutEventSelectorsResponse": [
+        "TrailARN",
+        "EventSelectors",
+        "AdvancedEventSelectors"
+      ],
+      "RemoveTagsRequest": [
+        "ResourceId",
+        "TagsList"
+      ],
+      "RemoveTagsResponse": [],
+      "StartLoggingRequest": [
+        "Name"
+      ],
+      "StartLoggingResponse": [],
+      "StopLoggingRequest": [
+        "Name"
+      ],
+      "StopLoggingResponse": [],
+      "UpdateTrailRequest": [
+        "Name",
+        "S3BucketName",
+        "S3KeyPrefix"
+      ],
+      "UpdateTrailResponse": [
+        "Name",
+        "S3BucketName",
+        "S3KeyPrefix",
+        "IncludeGlobalServiceEvents",
+        "TrailARN"
+      ]
+    }
   }
 }

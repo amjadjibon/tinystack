@@ -7,12 +7,15 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/acm v1.50.1
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.50.0
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.44.0
+	github.com/aws/aws-sdk-go-v2/service/appconfig v1.54.2
+	github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.32.2
 	github.com/aws/aws-sdk-go-v2/service/appsync v1.62.1
 	github.com/aws/aws-sdk-go-v2/service/athena v1.66.1
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.78.1
 	github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.2
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.81.1
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.74.0
+	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.65.2
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.73.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.89.0
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.42.1

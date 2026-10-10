@@ -135,6 +135,9 @@ nav:
           - "IoT Data Plane": services/iotdataplane.md
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md
       - "Management and governance":
+          - "AppConfig": services/appconfig.md
+          - "AppConfig Data": services/appconfigdata.md
+          - "CloudTrail": services/cloudtrail.md
           - "Organizations": services/organizations.md
       - "Messaging and events":
           - "Data Firehose": services/firehose.md
@@ -178,7 +181,6 @@ nav:
           - "Amazon MQ": roadmap/services/mq.md
           - "Amazon MSK": roadmap/services/msk.md
           - "Amazon MWAA": roadmap/services/mwaa.md
-          - "AppConfig": roadmap/services/appconfig.md
           - "AppSync Events": roadmap/services/appsync-events.md
           - "Aurora DSQL": roadmap/services/dsql.md
           - "Bedrock Agent Runtime": roadmap/services/bedrock-agent-runtime.md
@@ -186,7 +188,6 @@ nav:
           - "Bedrock Agents": roadmap/services/bedrock-agent.md
           - "Bedrock Runtime": roadmap/services/bedrock-runtime.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
-          - "CloudTrail": roadmap/services/cloudtrail.md
           - "CodeBuild": roadmap/services/codebuild.md
           - "Cost and Usage Reports": roadmap/services/cur.md
           - "EC2 Instance Metadata": roadmap/services/imds.md

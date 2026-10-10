@@ -15,6 +15,14 @@
       "path": "codegen/sdk-codegen/aws-models/apigatewayv2.json",
       "sha256": "e10bcf53a23a41be2d4a255087e87effb1cf5c29756a54ae7b92fbee8d892f96"
     },
+    "appconfig": {
+      "path": "codegen/sdk-codegen/aws-models/appconfig.json",
+      "sha256": "2d468eca10b726a87b4f2bc293ca4e5811593e97e75cf2365bb7b997bf23821f"
+    },
+    "appconfigdata": {
+      "path": "codegen/sdk-codegen/aws-models/appconfigdata.json",
+      "sha256": "342986a2c40ec444b3599b07c00fea070a4baf4fcec88e2b23f58ecc06e515a7"
+    },
     "appsync": {
       "path": "codegen/sdk-codegen/aws-models/appsync.json",
       "sha256": "9bbe3b89c7b07c112268fa83682fa26ceab779b02e509c16e5d42643f965318e"
@@ -38,6 +46,10 @@
     "cloudfront": {
       "path": "codegen/sdk-codegen/aws-models/cloudfront.json",
       "sha256": "f82d5851098bb2461eb8d18798fcd4eed6d6d46344d1e35a581d10eb775d9058"
+    },
+    "cloudtrail": {
+      "path": "codegen/sdk-codegen/aws-models/cloudtrail.json",
+      "sha256": "bd8f2aa63bdd108977ad464a6981e1ba1bd96818b67c069b62f1fac2190dfbb1"
     },
     "cloudwatch": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch.json",

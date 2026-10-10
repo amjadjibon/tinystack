@@ -34,6 +34,13 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	appconfig: { title: "AppConfig", category: management, icon: "appconfig" },
+	appconfigdata: {
+		title: "AppConfig Data",
+		category: management,
+		icon: "appconfig",
+	},
+	cloudtrail: { title: "CloudTrail", category: management, icon: "cloudtrail" },
 	vpc: { title: "VPC", category: networking, icon: "ec2" },
 	acm: { title: "Certificate Manager", category: security, icon: "acm" },
 	apigateway: {
