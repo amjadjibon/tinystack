@@ -22,6 +22,7 @@ import { eventHref, inventoryRule } from "#/lib/eventbridge";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { lambdaHref } from "#/lib/lambda";
 import { logsHref } from "#/lib/logs";
+import { rdsHref } from "#/lib/rds";
 import { s3Href } from "#/lib/s3";
 import { secretHref } from "#/lib/secretsmanager";
 import { sfnHref } from "#/lib/sfn";
@@ -32,6 +33,14 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "rds")
+		return rdsHref({
+			account: r.account,
+			region: r.region,
+			...(r.type === "db-instance"
+				? { database: r.name }
+				: { section: r.type === "db-subnet-group" ? "subnets" : "parameters" }),
+		});
 	if (r.service === "secretsmanager" && r.type === "secret")
 		return secretHref({
 			account: r.account,

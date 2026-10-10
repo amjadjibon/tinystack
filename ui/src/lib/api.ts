@@ -117,6 +117,7 @@ export const api = {
 		sfn: boolean;
 		ec2: boolean;
 		secretsmanager: boolean;
+		rds: boolean;
 		requires_signature: boolean;
 	}> => (await get("/actions")).json(),
 	action: async <T>(

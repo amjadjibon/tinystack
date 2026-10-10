@@ -1,0 +1,109 @@
+import { api } from "./api";
+export type RDSScope = {
+	account: string;
+	region: string;
+	database?: string;
+	section?: string;
+};
+export type Tag = { Key: string; Value: string };
+export type DBInstance = {
+	DBInstanceIdentifier: string;
+	DBInstanceArn: string;
+	Engine: string;
+	EngineVersion: string;
+	DBInstanceStatus: string;
+	DBInstanceClass: string;
+	MasterUsername: string;
+	DBName?: string;
+	AllocatedStorage?: number;
+	InstanceCreateTime?: string | number;
+	Endpoint?: { Address: string; Port: number };
+	DBSubnetGroup?: { DBSubnetGroupName: string };
+	DBParameterGroups?: { DBParameterGroupName: string }[];
+	TagList?: Tag[];
+};
+export type DBGroup = {
+	DBSubnetGroupName?: string;
+	DBSubnetGroupDescription?: string;
+	VpcId?: string;
+	Subnets?: { SubnetIdentifier: string }[];
+	DBParameterGroupName?: string;
+	DBParameterGroupFamily?: string;
+	Description?: string;
+};
+export const engines = [
+	{
+		value: "postgres",
+		label: "PostgreSQL",
+		versions: ["14", "15", "16", "17"],
+	},
+	{ value: "mysql", label: "MySQL", versions: ["8.0"] },
+	{ value: "mariadb", label: "MariaDB", versions: ["11"] },
+];
+export function rdsHref(s: RDSScope) {
+	const p = new URLSearchParams({ account: s.account, region: s.region });
+	if (s.database) p.set("database", s.database);
+	if (s.section) p.set("section", s.section);
+	return `/services/rds?${p}`;
+}
+export function rdsCall<T = Record<string, unknown>>(
+	s: RDSScope,
+	operation: string,
+	input: Record<string, unknown> = {},
+): Promise<T> {
+	return api.action("rds", operation, s.account, input, s.region);
+}
+export async function rdsPages<T>(
+	s: RDSScope,
+	operation: string,
+	key: string,
+	input: Record<string, unknown> = {},
+): Promise<T[]> {
+	const items: T[] = [],
+		seen = new Set<string>();
+	let marker: string | undefined;
+	do {
+		const out = await rdsCall<Record<string, unknown>>(s, operation, {
+			...input,
+			MaxRecords: 100,
+			...(marker ? { Marker: marker } : {}),
+		});
+		items.push(...((out[key] as T[] | undefined) ?? []));
+		marker = out.Marker as string | undefined;
+		if (marker && seen.has(marker))
+			throw new Error("The server returned a repeated page marker.");
+		if (marker) seen.add(marker);
+	} while (marker);
+	return items;
+}
+export function validateName(name: string, max = 63) {
+	if (
+		!/^[a-zA-Z][a-zA-Z0-9-]*$/.test(name) ||
+		name.length > max ||
+		name.includes("--") ||
+		name.endsWith("-")
+	)
+		throw new Error(
+			`Identifier must start with a letter, contain only letters, numbers and hyphens, and have at most ${max} characters. Consecutive or trailing hyphens are forbidden.`,
+		);
+}
+export function validatePassword(password: string) {
+	if (
+		password.length < 8 ||
+		password.length > 41 ||
+		/[^!-~]|[/@"]/.test(password)
+	)
+		throw new Error(
+			"Password must contain 8–41 printable ASCII characters, excluding spaces, /, @ and double quotes.",
+		);
+}
+export const rdsTags = (tags: Record<string, string>) =>
+	Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
+export const runtimeNote =
+	"SQL connections require rds.instances: docker and a working local Docker daemon. In records mode, no database listens on the endpoint. Class and storage are metadata; parameter groups do not apply engine settings.";
+
+export function rdsDate(value?: string | number) {
+	if (value === undefined) return "—";
+	const date = new Date(typeof value === "number" ? value * 1000 : value);
+	return Number.isNaN(date.getTime()) ? "—" : date.toISOString();
+}
