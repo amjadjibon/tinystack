@@ -32,3 +32,6 @@ go.work
 
 # Task
 .task/
+
+# Internal plans and notes
+/.spec/
