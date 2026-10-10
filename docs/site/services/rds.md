@@ -31,6 +31,7 @@ See the [implemented feature catalogue](catalogue.md#rds) for this service's cap
 - Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources.
 - Failed initial startup or readiness timeout marks the instance failed and removes its container and fresh volume; recovery failures retain an existing volume.
 - CloudFormation endpoint attributes do not refresh when a later container recreation changes the host port.
+- Verify mode exposes database metadata inventory; RDS management and full group metadata require signed AWS CLI or SDK requests.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

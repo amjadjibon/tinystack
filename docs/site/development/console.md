@@ -120,3 +120,27 @@ steps are retained while a dialog stays open, so retries continue remaining work
 completed changes in place; these workflows are not transactions. Lost responses or concurrent external writes
 can require checking the bucket before retrying. Verify mode retains bucket inventory but cannot browse objects
 or settings without signed requests, so use the CLI/SDK.
+
+## RDS workflows
+
+Open **RDS → Databases** in the selected account and Region. Create a database with PostgreSQL 14–17,
+MySQL 8.0 or MariaDB 11, credentials, class, storage, optional matching groups and tags. Select a database
+for Stop, Start, Reboot, Modify or Delete; the action menu follows the current status. Status refreshes
+every five seconds, including during Docker startup. Modify applies password and class changes immediately.
+
+Open the identifier for its summary, endpoint copy button, Configuration and Tags tabs. Connectivity
+provides copyable `psql`/`mysql` commands that prompt for a password and a URL with a password placeholder.
+Use **Tags → Edit tags** to add or remove tags. Delete requires typing the identifier and always sends
+`SkipFinalSnapshot=true`, because snapshots are unsupported.
+
+The **Subnet groups** and **Parameter groups** sections list, create and delete groups. Subnet groups
+require existing EC2 subnets in one VPC; parameter families match the supported engine versions. Groups
+in use cannot be deleted. Parameter settings, class limits and storage limits are not applied to SQL engines.
+
+SQL connections require `rds.instances: docker` and a working local Docker daemon; the default records
+mode has no SQL listener. The health endpoint does not expose RDS runtime availability, so the console
+shows this general note. In verify mode, management uses signed CLI/SDK requests; the console shows
+available database inventory metadata.
+
+The RDS service icon is bundled locally from the official AWS Architecture Icons package
+(`Architecture-Service-Icons_07312026/Arch_Databases/32/Arch_Amazon-RDS_32.svg`), like the other service icons.

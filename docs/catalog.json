@@ -991,7 +991,8 @@
         "MasterUserPassword changes execute ALTER ROLE/ALTER USER in Docker; DBInstanceClass and AllocatedStorage are metadata; modifications apply immediately",
         "Startup removes orphaned RDS containers and volumes whose ownership ARN has no instance record",
         "Omitted DBName uses the instance identifier with hyphens replaced by underscores for the Docker database name; default AllocatedStorage is 20 GiB of metadata",
-        "CloudFormation DBInstance creation waits for availability before publishing endpoint attributes"
+        "CloudFormation DBInstance creation waits for availability before publishing endpoint attributes",
+        "AWS-style scoped console for databases, engine selection, connection commands and URLs, status polling, immediate password/class changes, tags, stop/start/reboot, confirmed deletion without snapshots, and subnet and parameter group creation and deletion"
       ],
       "gaps": [
         "Records mode has no SQL listener: endpoints use 127.0.0.1 and the engine default port, matching the ElastiCache records-only convention",
@@ -1003,7 +1004,8 @@
         "Host ports can change after container recreation; no advertise host setting exists, so a remote Docker daemon is unsupported",
         "Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources",
         "Failed initial startup or readiness timeout marks the instance failed and removes its container and fresh volume; recovery failures retain an existing volume",
-        "CloudFormation endpoint attributes do not refresh when a later container recreation changes the host port"
+        "CloudFormation endpoint attributes do not refresh when a later container recreation changes the host port",
+        "Verify mode exposes database metadata inventory; RDS management and full group metadata require signed AWS CLI or SDK requests"
       ],
       "execution": "Records / optional Docker",
       "package": "rds"

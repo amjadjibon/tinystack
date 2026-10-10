@@ -630,6 +630,7 @@ Manage PostgreSQL, MySQL and MariaDB instances with an optional Docker database 
 - Startup removes orphaned RDS containers and volumes whose ownership ARN has no instance record.
 - Omitted DBName uses the instance identifier with hyphens replaced by underscores for the Docker database name; default AllocatedStorage is 20 GiB of metadata.
 - CloudFormation DBInstance creation waits for availability before publishing endpoint attributes.
+- AWS-style scoped console for databases, engine selection, connection commands and URLs, status polling, immediate password/class changes, tags, stop/start/reboot, confirmed deletion without snapshots, and subnet and parameter group creation and deletion.
 
 [Supported operations](rds.md#supported-operations) · [Limitations](rds.md#limitations-and-future-work)
 
