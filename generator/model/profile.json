@@ -3656,6 +3656,158 @@
       ]
     }
   },
+  "config": {
+    "operations": [
+      "DeleteConfigRule",
+      "DeleteConfigurationRecorder",
+      "DeleteDeliveryChannel",
+      "DescribeConfigRules",
+      "DescribeConfigurationRecorders",
+      "DescribeConfigurationRecorderStatus",
+      "DescribeDeliveryChannels",
+      "DescribeDeliveryChannelStatus",
+      "ListTagsForResource",
+      "PutConfigRule",
+      "PutConfigurationRecorder",
+      "PutDeliveryChannel",
+      "StartConfigurationRecorder",
+      "StopConfigurationRecorder",
+      "TagResource",
+      "UntagResource"
+    ],
+    "shapes": {
+      "ConfigRule": [
+        "ConfigRuleArn",
+        "ConfigRuleId",
+        "ConfigRuleName",
+        "ConfigRuleState",
+        "Description",
+        "InputParameters",
+        "Scope",
+        "Source"
+      ],
+      "ConfigSnapshotDeliveryProperties": [
+        "deliveryFrequency"
+      ],
+      "ConfigurationRecorder": [
+        "arn",
+        "name",
+        "recordingGroup",
+        "roleARN"
+      ],
+      "ConfigurationRecorderStatus": [
+        "arn",
+        "lastStartTime",
+        "lastStopTime",
+        "name",
+        "recording"
+      ],
+      "DeleteConfigRuleRequest": [
+        "ConfigRuleName"
+      ],
+      "DeleteConfigurationRecorderRequest": [
+        "ConfigurationRecorderName"
+      ],
+      "DeleteDeliveryChannelRequest": [
+        "DeliveryChannelName"
+      ],
+      "DeliveryChannel": [
+        "configSnapshotDeliveryProperties",
+        "name",
+        "s3BucketName",
+        "s3KeyPrefix",
+        "snsTopicARN"
+      ],
+      "DeliveryChannelStatus": [
+        "name"
+      ],
+      "DescribeConfigRulesRequest": [
+        "ConfigRuleNames",
+        "NextToken"
+      ],
+      "DescribeConfigRulesResponse": [
+        "ConfigRules",
+        "NextToken"
+      ],
+      "DescribeConfigurationRecorderStatusRequest": [
+        "ConfigurationRecorderNames"
+      ],
+      "DescribeConfigurationRecorderStatusResponse": [
+        "ConfigurationRecordersStatus"
+      ],
+      "DescribeConfigurationRecordersRequest": [
+        "ConfigurationRecorderNames"
+      ],
+      "DescribeConfigurationRecordersResponse": [
+        "ConfigurationRecorders"
+      ],
+      "DescribeDeliveryChannelStatusRequest": [
+        "DeliveryChannelNames"
+      ],
+      "DescribeDeliveryChannelStatusResponse": [
+        "DeliveryChannelsStatus"
+      ],
+      "DescribeDeliveryChannelsRequest": [
+        "DeliveryChannelNames"
+      ],
+      "DescribeDeliveryChannelsResponse": [
+        "DeliveryChannels"
+      ],
+      "ListTagsForResourceRequest": [
+        "Limit",
+        "NextToken",
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "NextToken",
+        "Tags"
+      ],
+      "PutConfigRuleRequest": [
+        "ConfigRule",
+        "Tags"
+      ],
+      "PutConfigurationRecorderRequest": [
+        "ConfigurationRecorder",
+        "Tags"
+      ],
+      "PutDeliveryChannelRequest": [
+        "DeliveryChannel"
+      ],
+      "RecordingGroup": [
+        "allSupported",
+        "includeGlobalResourceTypes",
+        "resourceTypes"
+      ],
+      "Scope": [
+        "ComplianceResourceId",
+        "ComplianceResourceTypes",
+        "TagKey",
+        "TagValue"
+      ],
+      "Source": [
+        "Owner",
+        "SourceIdentifier"
+      ],
+      "StartConfigurationRecorderRequest": [
+        "ConfigurationRecorderName"
+      ],
+      "StopConfigurationRecorderRequest": [
+        "ConfigurationRecorderName"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ]
+    }
+  },
   "dynamodb": {
     "operations": [
       "CreateTable",

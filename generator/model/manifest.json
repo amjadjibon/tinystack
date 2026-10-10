@@ -67,6 +67,10 @@
       "path": "codegen/sdk-codegen/aws-models/cognito-identity-provider.json",
       "sha256": "3379f96d8708b44b7181cfcd64bb024aed20edc8b79e7e739753691751232ca4"
     },
+    "config": {
+      "path": "codegen/sdk-codegen/aws-models/config-service.json",
+      "sha256": "66e1706ad7d4481ba51aa54f17d3df9f249e290293a6cd141e3903a2eb5e1782"
+    },
     "dynamodb": {
       "path": "codegen/sdk-codegen/aws-models/dynamodb.json",
       "sha256": "889458e11643e5f4b240af1d2f1fd0271d06ebf44d88fb571853aa5c8e1ae438"
