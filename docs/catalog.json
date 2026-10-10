@@ -1218,6 +1218,37 @@
       ],
       "execution": "Records",
       "package": "account"
+    },
+    "wafv2": {
+      "title": "WAF v2",
+      "category": "Identity and security",
+      "summary": "Persist scoped web ACLs, IP sets, rule groups, tags and regional association metadata without inspecting traffic.",
+      "features": [
+        "22 AWS JSON 1.1 operations for Create/Get/Update/Delete/ListWebACL, IPSet and RuleGroup, four regional association APIs and three tag APIs; SDK signing name wafv2 and target prefix AWSWAF_20190729 come from the pinned Smithy model",
+        "Stable names, UUIDs, resource ARNs and internal creation timestamps; descriptions, Allow/Block DefaultAction, VisibilityConfig booleans and metric names, declared immutable RuleGroup Capacity and selected Rules persist atomically",
+        "REGIONAL records are isolated by account and Region; CLOUDFRONT records use us-east-1 and global ARN paths, with separate name namespaces and pagination cursors",
+        "Rules support only direct IPSetReferenceStatement in ACLs/groups and RuleGroupReferenceStatement in ACLs; exact existing same-account/Region/scope references, unique names/priorities and required visibility configuration",
+        "Direct IP references select exactly one Allow, Block or Count Action; ACL rule-group references select exactly one None or Count OverrideAction without Action; these are configuration records only",
+        "IPV4 and IPV6 CIDRs, including individual /32 and /128 addresses, empty address arrays and all nonzero prefix lengths; at most 10000 addresses, with atomic family/range validation and immutable family",
+        "Get/List/Create return current configuration LockToken; Update/Delete compare tokens and write/rotate in one serializable store transaction, with exactly one concurrent winner for a shared old token; tokens survive SQLite restart and tag/association changes",
+        "Association replacement, idempotent disassociation, empty GetWebACLForResource when unassociated and sorted ListResourcesForWebACL; default APPLICATION_LOAD_BALANCER or explicit API_GATEWAY filters",
+        "Creation tags, atomic TagResource/UntagResource, validated unique keys and 50-tag limit; deterministic tag pagination; generic inventory, Resource Groups Tagging API, official WAF console catalogue icon and Terraform wafv2 endpoint",
+        "List and tag pagination use Limit 1-100 and cursors bound to account, Region, operation and WAF scope or ARN; resources sort by name/UUID and tags by key, with resume after deletion",
+        "CloudFormation AWS::WAFv2::WebACL, IPSet, RuleGroup and WebACLAssociation selected properties; name|id|scope Ref, Arn/Id GetAtt on configuration resources, live lock-token fetch for update/delete, tag replacement at 50 tags, compensation and stack rollback; shared reset clears all WAF records"
+      ],
+      "gaps": [
+        "Records only: no request evaluation, filtering, ingress integration, network enforcement, sampled requests, CloudWatch metrics, CAPTCHA/challenges, logging engine or runtime counters; VisibilityConfig is stored requested metadata",
+        "Only aws commercial partition and the finite commercial Region allowlist in internal/services/wafv2/service.go; CLOUDFRONT outside us-east-1 fails. Global associations through CloudFront distribution workflows are not implemented",
+        "Association ResourceArn supports only arn:aws:elasticloadbalancing:REGION:ACCOUNT:loadbalancer/app/NAME/16-hex-ID and arn:aws:apigateway:REGION::/restapis/10-character-ID/stages/STAGE. These are format-only metadata, without owning-service lookup; accountless API Gateway ARNs are stored under the caller account",
+        "No managed rule groups, rate, regex, byte/geo/size/SQL/XSS/label match or composite statements; forwarded IP configuration, excluded rules, rule action overrides, labels, custom responses/request headers, data protection and advanced ACL/group fields are rejected even when null, false or empty",
+        "Rule-group Capacity is declared metadata (1-5000), preserved by updates; no WCU estimation, capacity consumption output or CheckCapacity. At most 50 direct reference rules per ACL/group and 100 records of each type per account/Region/scope",
+        "Names support 1-128 ASCII letters/digits/underscore/hyphen. Descriptions use the exact pinned pattern and 256-character limit; metric names use the pinned pattern and 1-255 limit, excluding All and Default_Action. IPv4-mapped IPv6 CIDRs are rejected; CIDRs are preserved as supplied",
+        "Update requests provide complete selected desired state; omitted description/rules clear those fields. Family and capacity cannot be updated through the WAF APIs. Deleting referenced IP sets/groups or associated ACLs returns WAFAssociatedItemException",
+        "CloudFormation properties are Name/Scope/Description/Tags plus Addresses/IPAddressVersion for IPSet, Rules/VisibilityConfig/Capacity for RuleGroup, Rules/VisibilityConfig/DefaultAction for WebACL, and ResourceArn/WebACLArn for associations. Configuration name/scope and IP family/group capacity changes require replacement; Arn and Id are the only configuration GetAtt attributes",
+        "CloudFormation tag updates are a local extension to the AWS documentation creation-only note: unrelated live tags remain, removals free capacity before replacement and failed tag/configuration calls compensate. No mutation console, WAF Classic or additional WAF resources"
+      ],
+      "execution": "Records only",
+      "package": "wafv2"
     }
   },
   "future": {
@@ -1432,12 +1463,6 @@
       "state": "Proposed",
       "slice": "Implement `ListWebACLs`, `GetWebACL`, `ListRules`.",
       "features": "- [ ] `ListWebACLs`\n- [ ] `GetWebACL`\n- [ ] `ListRules`\n- [ ] `GetChangeToken`"
-    },
-    "waf": {
-      "title": "WAF v2",
-      "state": "Proposed",
-      "slice": "Implement `CreateWebACL`, `GetWebACL`, `UpdateWebACL`.",
-      "features": "- [ ] `CreateWebACL`\n- [ ] `GetWebACL`\n- [ ] `UpdateWebACL`\n- [ ] `DeleteWebACL`\n- [ ] `ListWebACLs`\n- [ ] `AssociateWebACL`\n- [ ] `DisassociateWebACL`\n- [ ] `GetWebACLForResource`\n- [ ] `ListResourcesForWebACL`\n- [ ] `CreateIPSet`\n- [ ] `GetIPSet`\n- [ ] `UpdateIPSet`\n- [ ] `DeleteIPSet`\n- [ ] `ListIPSets`\n- [ ] `CreateRuleGroup`"
     }
   }
 }

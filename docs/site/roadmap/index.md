@@ -27,7 +27,7 @@ General IAM permission evaluation is a broader architecture decision, not a fiel
 | Event and orchestration extensions | EventBridge Pipes, AppSync Events, Batch, CodeBuild | Which sources, targets and execution runtimes actually run? |
 | Engine-backed data services | OpenSearch, MSK, MQ, EFS, Aurora DSQL | Engine version, endpoints, readiness, resource isolation and durable data |
 | AI and media services | Bedrock families, Transcribe, Translate, MediaConnect | Fixture-based behavior versus a real local/backend execution engine |
-| Additional governance/security | CloudTrail and Config depth, Backup, WAF, Inspector, Signer | How to generate meaningful local events, findings or policy effects |
+| Additional governance/security | CloudTrail, Config, Backup and WAF v2 depth; Inspector, Signer | How to generate meaningful local events, findings or policy effects |
 
 Config now implements rules, recorder/channel configuration, requested state and tags as records only.
 Capture, compliance evaluation and delivery remain follow-ups.

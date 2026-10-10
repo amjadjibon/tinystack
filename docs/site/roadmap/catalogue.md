@@ -41,4 +41,3 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Transfer Family](services/transfer.md) | Proposed | Implement `CreateServer`, `DescribeServer`, `DeleteServer`. |
 | [Translate](services/translate.md) | Proposed | Implement `StartTextTranslationJob`, `DescribeTextTranslationJob`, `ListTextTranslationJobs`. |
 | [WAF Classic](services/waf-v1.md) | Proposed | Implement `ListWebACLs`, `GetWebACL`, `ListRules`. |
-| [WAF v2](services/waf.md) | Proposed | Implement `CreateWebACL`, `GetWebACL`, `UpdateWebACL`. |
