@@ -96,6 +96,9 @@ func TestTerraformOverrideConfig(t *testing.T) {
 
 	provider := parsed["provider"].(map[string]any)["aws"].(map[string]any)
 	endpoints := provider["endpoints"].(map[string]any)
+	if endpoints["wafv2"] != "http://127.0.0.1:4566" {
+		t.Fatalf("expected WAF v2 endpoint, got %v", endpoints["wafv2"])
+	}
 	if endpoints["backup"] != "http://127.0.0.1:4566" {
 		t.Fatalf("expected Backup endpoint, got %v", endpoints["backup"])
 	}
