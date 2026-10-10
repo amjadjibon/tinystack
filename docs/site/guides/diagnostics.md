@@ -197,9 +197,15 @@ Local metric retention is 15 days; alarm history is retained for 30 days.
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |
 | `DELETE /_tinystack/deliveries` | Clear delivery history |
+| `GET /_tinystack/faults` | Active ordered [fault rules](fault-injection.md) |
+| `POST /_tinystack/faults` | Replace rules with a JSON array |
+| `PATCH /_tinystack/faults` | Append rules |
+| `DELETE /_tinystack/faults` | Remove exact rules; `[]` clears all |
+| `GET/POST/PATCH/DELETE /_localstack/chaos/faults` | LocalStack-compatible fault rule alias |
+| `GET/POST /_localstack/chaos/effects` | Global latency in milliseconds: `{ "latency": 100 }` |
 | `GET /_tinystack/metrics` | Prometheus counters and duration summary |
 | `GET /_tinystack/init` | Init script state per stage and script; `/_tinystack/init/<stage>` for one stage. Also at `/_localstack/init` |
-| `POST /_tinystack/reset` | Clear all stored state; `?init=1` then re-runs the `ready` scripts. See [Init hooks and reset](init-hooks.md) |
+| `POST /_tinystack/reset` | Clear all stored state and restore configured fault rules; `?init=1` then re-runs the `ready` scripts. See [Init hooks and reset](init-hooks.md) |
 | `GET /_localstack/health` | Service list in LocalStack's shape, for tools that wait on it |
 | `GET /_tinystack/iot/root-ca.pem` | Local IoT root CA certificate |
 
@@ -214,6 +220,7 @@ curl -fsS http://127.0.0.1:4566/_tinystack/requests \
   | jq '.requests[] | select(.error_code)'
 ```
 
+Injected errors and latency mark records with `injected: true`.
 Records contain request ID, service/operation/protocol, scope, status, error, duration and truncated bodies.
 The first 4 KiB of ordinary bodies are kept with full sizes; model-marked sensitive operations redact both bodies.
 JSON summaries also go to stderr.
@@ -229,3 +236,5 @@ A publisher can succeed while a downstream delivery fails.
 `tinystack_requests_total` and `tinystack_request_duration_seconds` use catalogue service, operation and HTTP-status
 labels. Unknown operations use an empty operation label. These differ from metric records stored by the local
 CloudWatch API. Request logs, delivery logs and gateway metrics reset on restart even with persistent storage.
+
+`tinystack_injected_requests_total` counts attempts affected by injected errors or latency, using the same labels.

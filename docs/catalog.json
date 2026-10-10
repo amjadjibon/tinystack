@@ -1,6 +1,11 @@
 {
   "platform_features": [
     {
+      "title": "Fault injection",
+      "summary": "Ordered gateway rules inject protocol-correct AWS errors and cancellable latency by service, operation, Region and account, with probability, startup configuration, reset restoration, diagnostics and LocalStack Chaos API aliases.",
+      "reference": "guides/fault-injection.md"
+    },
+    {
       "title": "AWS wire protocols",
       "summary": "AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings.",
       "reference": "architecture/request-flow.md"

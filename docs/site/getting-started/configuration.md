@@ -27,6 +27,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `server.host` | `127.0.0.1` | Nonempty bind address |
 | `server.port` | `4566` | `1`–`65535` |
 | `server.console_port` | `4567` | `0` or a different port up to `65535`; requires a console build |
+| `faults` | `[]` | Ordered [fault injection rules](../guides/fault-injection.md), with error, latency and probability; reset restores this list |
 | `defaults.account` | `"000000000000"` | Exactly 12 digits; quote it in YAML |
 | `defaults.region` | `us-east-1` | Nonempty region |
 | `identity.mode` | `parse` | `parse` or `verify` |
@@ -84,3 +85,18 @@ regional hostname, then the configured default. General IAM permission evaluatio
 
 Defaults and validation are defined in
 [config.go](https://github.com/amjadjibon/tinystack/blob/main/internal/config/config.go).
+
+## Inject faults at startup
+
+```yaml
+faults:
+  - service: dynamodb
+    operation: ListTables
+    probability: 0.5
+    latencyMs: 80
+    error:
+      code: ThrottlingException
+      statusCode: 400
+```
+
+See [Fault injection](../guides/fault-injection.md) for matching, validation, runtime updates and reset behavior.

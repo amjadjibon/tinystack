@@ -11,6 +11,7 @@ feature manages records or needs a Docker runtime.
 
 | Feature | Implemented behavior | Reference |
 | --- | --- | --- |
+| Fault injection | Ordered gateway rules inject protocol-correct AWS errors and cancellable latency by service, operation, Region and account, with probability, startup configuration, reset restoration, diagnostics and LocalStack Chaos API aliases. | [Details](../guides/fault-injection.md) |
 | AWS wire protocols | AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings. | [Details](../architecture/request-flow.md) |
 | Identity and resource scope | Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, and optional SigV4 verification; general IAM permission evaluation is outside the subset. | [Details](../architecture/identity.md) |
 | Transactional storage and persistence | Atomic callback transactions, in-memory storage, and optional SQLite commit persistence with resource reload on restart; runtime and in-flight state have separate limits. | [Details](../guides/persistence.md) |

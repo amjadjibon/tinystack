@@ -1,0 +1,11 @@
+# Startup rules are restored by POST /_tinystack/reset.
+faults:
+  - service: dynamodb
+    operation: ListTables
+    region: us-east-1
+    probability: 0.5
+    latencyMs: 80
+    error:
+      code: ThrottlingException
+      statusCode: 400
+      message: Retry this request
