@@ -45,6 +45,8 @@ See [storage architecture](../architecture/storage.md).
 RDS volumes are separate from SQLite and must be backed up separately. Delete with
 `SkipFinalSnapshot=true` or call the reset endpoint to remove recorded containers and volumes.
 Shutdown retains RDS volumes; the next Docker runtime removes volumes and containers whose instance records are absent.
+On Docker runtime startup, RDS clears saved endpoints and marks active instances `creating` until the recreated
+engine passes its readiness probe. Wait for `available` and read the new endpoint before reconnecting.
 
 ## S3 object files
 

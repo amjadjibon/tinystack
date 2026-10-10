@@ -445,7 +445,9 @@ func build(
 	}
 
 	if cfg.RDS.Instances == config.InstancesDocker {
-		databases.UseRuntime(rdsdocker.New())
+		if err = databases.UseRuntime(rdsdocker.New()); err != nil {
+			return nil, err
+		}
 	}
 
 	if cfg.ElastiCache.Caches == config.CachesDocker {

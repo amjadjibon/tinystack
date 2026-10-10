@@ -62,10 +62,40 @@ func (s *Service) spec(scope request.Scope, r *record) *Spec {
 	}
 }
 
-func (s *Service) UseRuntime(rt Runtime) {
+func (s *Service) UseRuntime(rt Runtime) error {
+	// Persisted endpoints belong to the previous runtime. Invalidate them before
+	// serving requests; the poller republishes availability after a fresh probe.
+	err := s.store.Update(context.Background(), func(tx storage.WriteTx) error {
+		for _, key := range tx.Keys(indexPrefix) {
+			parts := strings.Split(strings.TrimPrefix(key, indexPrefix), "/")
+			if len(parts) != 3 {
+				continue
+			}
+			scope := request.Scope{AccountID: parts[0], Region: parts[1]}
+			r, readErr := readRecord(tx, scope, kindDB, parts[2])
+			if readErr != nil {
+				return readErr
+			}
+			r.Container = ""
+			r.Instance.Endpoint = nil
+			status := common.Value(r.Instance.DBInstanceStatus)
+			if status != stopped && status != failed {
+				r.Instance.DBInstanceStatus = new(creating)
+				r.Since = time.Now().UTC()
+			}
+			if writeErr := writeRecord(tx, scope, r); writeErr != nil {
+				return writeErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("prepare RDS runtime recovery: %w", err)
+	}
 	s.runtime = rt
 	s.bg = background.New()
 	s.bg.Every(time.Second, s.visit)
+	return nil
 }
 
 // Stop waits for background I/O and removes containers, retaining database volumes.

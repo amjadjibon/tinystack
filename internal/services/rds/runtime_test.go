@@ -226,6 +226,44 @@ func TestRuntimeRecoveryFailureRetainsData(t *testing.T) {
 	}
 }
 
+func TestRuntimeRecoveryInvalidatesAvailability(t *testing.T) {
+	store := &memory.Store{}
+	s := New(store)
+	s.runtime = &fakeRuntime{ready: true}
+	ctx := runtimeContext()
+	runtimeCreate(t, s, "recovery-db")
+	s.visit(ctx)
+	s.Stop()
+
+	recovered := New(store)
+	rt := &fakeRuntime{}
+	if err := recovered.UseRuntime(rt); err != nil {
+		t.Fatal(err)
+	}
+	// Drive readiness explicitly so the assertions do not race the poller.
+	recovered.bg.Stop()
+	t.Cleanup(recovered.Stop)
+	out, err := recovered.DescribeDBInstances(ctx, &api.DescribeDBInstancesMessage{
+		DBInstanceIdentifier: new("recovery-db"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if common.Value(out.DBInstances[0].DBInstanceStatus) != creating || out.DBInstances[0].Endpoint != nil {
+		t.Fatalf("restart advertised stale availability: %+v", out.DBInstances[0])
+	}
+
+	recovered.visit(ctx)
+	if runtimeStatus(t, recovered, "recovery-db") != creating {
+		t.Fatal("became available before readiness")
+	}
+	rt.ready = true
+	recovered.visit(ctx)
+	if runtimeStatus(t, recovered, "recovery-db") != available {
+		t.Fatal("did not become available after readiness")
+	}
+}
+
 func TestRuntimeOrphanCleanup(t *testing.T) {
 	rt := &fakeRuntime{ready: true}
 	s := New(&memory.Store{})
