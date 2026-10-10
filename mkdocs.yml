@@ -136,6 +136,7 @@ nav:
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md
       - "Management and governance":
           - "AWS Account": services/account.md
+          - "AWS Config": services/config.md
           - "AppConfig": services/appconfig.md
           - "AppConfig Data": services/appconfigdata.md
           - "CloudTrail": services/cloudtrail.md
@@ -173,7 +174,6 @@ nav:
       - Service and extension proposals:
           - "AWS Backup": roadmap/services/backup.md
           - "AWS Batch": roadmap/services/batch.md
-          - "AWS Config": roadmap/services/config.md
           - "AWS Signer": roadmap/services/signer.md
           - "Amazon Bedrock control plane": roadmap/services/bedrock.md
           - "Amazon Inspector": roadmap/services/inspector2.md

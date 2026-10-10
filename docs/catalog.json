@@ -1134,6 +1134,36 @@
       "execution": "Trail records / bounded local event history",
       "package": "cloudtrail"
     },
+    "config": {
+      "title": "AWS Config",
+      "category": "Management and governance",
+      "summary": "Persist regional rule, recorder and delivery-channel metadata without resource capture, compliance evaluation or delivery.",
+      "features": [
+        "16 AWS JSON 1.1 operations for rule upsert/describe/delete, recorder and delivery-channel configuration/status/lifecycle, and resource tags",
+        "Managed rule metadata for REQUIRED_TAGS, S3_BUCKET_PUBLIC_READ_PROHIBITED, S3_BUCKET_PUBLIC_WRITE_PROHIBITED and EC2_INSTANCE_NO_PUBLIC_IP; Source Owner AWS only",
+        "Rules retain generated IDs and ARNs on update by name, ID or ARN; description, JSON-object input parameters and resource type/ID or tag scope persist atomically",
+        "Explicit resource type metadata supports AWS::S3::Bucket, AWS::EC2::Instance, AWS::IAM::Role and AWS::Lambda::Function; omitted recorder group defaults to allSupported=true and includeGlobalResourceTypes=false",
+        "One customer managed recorder and one delivery channel per account/Region, default names when omitted, same-account role ARN validation, and local S3 destination existence checks",
+        "Start/Stop persist requested recorder state and transition timestamps; a delivery channel is required to start and cannot be deleted while the recorder is started",
+        "Channel metadata retains S3 bucket/prefix, same-account/Region standard SNS topic ARN and snapshot frequency; no SNS topic lookup or permission evaluation",
+        "Creation-only Put tags for rules and recorders, atomic TagResource/UntagResource, deterministic rule pages of 25 and tag pages with Limit 1-100",
+        "Account/Region isolation, SQLite reload of configuration/tags/requested state, reset through the shared store, inventory, Resource Groups Tagging API, console catalogue and Terraform configservice endpoint",
+        "CloudFormation ConfigRule, ConfigurationRecorder and DeliveryChannel selected properties support create/update/delete; recorder creation leaves requested recording stopped"
+      ],
+      "gaps": [
+        "Records only: recording=true represents requested control-plane state, not active resource capture; lastStatus and recording-event results are absent",
+        "Delivery status returns the channel name without history, snapshot or stream results; no S3/SNS writes, background delivery, compliance evaluation, Lambda invocation or remediation",
+        "CUSTOM_LAMBDA/CUSTOM_POLICY, SourceDetails, custom policy details, rule lifecycle state writes, MaximumExecutionFrequency and evaluation modes are unsupported",
+        "Service-linked recorders, recording modes/overrides, exclusion/recording strategies, connector fields and explicit resource types outside the four listed types are unsupported; allSupported is metadata only",
+        "KMS delivery, cross-account/Region SNS ARNs, FIFO SNS topics, aggregators, conformance packs, organization Config and external resource gathering are unsupported",
+        "Names are limited to letters, digits, hyphens and underscores (rules 1-128, recorder/channel 1-256); rule rename requires delete/create and singleton names cannot change until deletion",
+        "IAM role existence/trust, bucket policies and delivery permissions are not evaluated; destination bucket must already exist locally in the caller's account",
+        "CloudFormation omits Compliance, EvaluationModes, MaximumExecutionFrequency, recording modes, StartedOnCreate and KMS properties; no automatic start, capture or delivery. Explicit DependsOn is needed from channel to recorder",
+        "Delivery channels have no AWS resource ARN or tags; their metadata appears in generic inventory, while tag APIs support rules and recorders only; no mutation console pages"
+      ],
+      "execution": "Records only",
+      "package": "config"
+    },
     "account": {
       "title": "AWS Account",
       "category": "Management and governance",
@@ -1218,12 +1248,6 @@
       "state": "Proposed",
       "slice": "Implement `CreateProject`, `BatchGetProjects`, `ListProjects`.",
       "features": "- [ ] `CreateProject`\n- [ ] `BatchGetProjects`\n- [ ] `ListProjects`\n- [ ] `UpdateProject`\n- [ ] `DeleteProject`\n- [ ] `StartBuild`\n- [ ] `BatchGetBuilds`\n- [ ] `StopBuild`\n- [ ] `ListBuilds`\n- [ ] `ListBuildsForProject`\n- [ ] `BatchDeleteBuilds`"
-    },
-    "config": {
-      "title": "AWS Config",
-      "state": "Proposed",
-      "slice": "Implement `PutConfigRule`, `DescribeConfigRules`, `DeleteConfigRule`.",
-      "features": "- [ ] `PutConfigRule`\n- [ ] `DescribeConfigRules`\n- [ ] `DeleteConfigRule`\n- [ ] `PutConfigurationRecorder`\n- [ ] `DescribeConfigurationRecorders`\n- [ ] `DescribeConfigurationRecorderStatus`\n- [ ] `PutDeliveryChannel`\n- [ ] `DescribeDeliveryChannels`\n- [ ] `DescribeDeliveryChannelStatus`\n- [ ] `StartConfigurationRecorder`\n- [ ] `StopConfigurationRecorder`\n- [ ] `DescribeComplianceByConfigRule`\n- [ ] `GetComplianceDetailsByConfigRule`\n- [ ] `DescribeConfigRuleEvaluationStatus`"
     },
     "cur": {
       "title": "Cost and Usage Reports",
