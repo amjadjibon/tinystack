@@ -18158,5 +18158,315 @@
         "TrailARN"
       ]
     }
+  },
+  "wafv2": {
+    "operations": [
+      "CreateWebACL",
+      "GetWebACL",
+      "UpdateWebACL",
+      "DeleteWebACL",
+      "ListWebACLs",
+      "CreateIPSet",
+      "GetIPSet",
+      "UpdateIPSet",
+      "DeleteIPSet",
+      "ListIPSets",
+      "CreateRuleGroup",
+      "GetRuleGroup",
+      "UpdateRuleGroup",
+      "DeleteRuleGroup",
+      "ListRuleGroups",
+      "AssociateWebACL",
+      "DisassociateWebACL",
+      "GetWebACLForResource",
+      "ListResourcesForWebACL",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateWebACLRequest": [
+        "Name",
+        "Scope",
+        "DefaultAction",
+        "Description",
+        "Rules",
+        "VisibilityConfig",
+        "Tags"
+      ],
+      "CreateWebACLResponse": [
+        "Summary"
+      ],
+      "GetWebACLRequest": [
+        "Name",
+        "Scope",
+        "Id"
+      ],
+      "GetWebACLResponse": [
+        "WebACL",
+        "LockToken"
+      ],
+      "UpdateWebACLRequest": [
+        "Name",
+        "Scope",
+        "Id",
+        "DefaultAction",
+        "Description",
+        "Rules",
+        "VisibilityConfig",
+        "LockToken"
+      ],
+      "UpdateWebACLResponse": [
+        "NextLockToken"
+      ],
+      "DeleteWebACLRequest": [
+        "Name",
+        "Scope",
+        "Id",
+        "LockToken"
+      ],
+      "DeleteWebACLResponse": [],
+      "ListWebACLsRequest": [
+        "Scope",
+        "NextMarker",
+        "Limit"
+      ],
+      "ListWebACLsResponse": [
+        "NextMarker",
+        "WebACLs"
+      ],
+      "CreateIPSetRequest": [
+        "Name",
+        "Scope",
+        "Description",
+        "IPAddressVersion",
+        "Addresses",
+        "Tags"
+      ],
+      "CreateIPSetResponse": [
+        "Summary"
+      ],
+      "GetIPSetRequest": [
+        "Name",
+        "Scope",
+        "Id"
+      ],
+      "GetIPSetResponse": [
+        "IPSet",
+        "LockToken"
+      ],
+      "UpdateIPSetRequest": [
+        "Name",
+        "Scope",
+        "Id",
+        "Description",
+        "Addresses",
+        "LockToken"
+      ],
+      "UpdateIPSetResponse": [
+        "NextLockToken"
+      ],
+      "DeleteIPSetRequest": [
+        "Name",
+        "Scope",
+        "Id",
+        "LockToken"
+      ],
+      "DeleteIPSetResponse": [],
+      "ListIPSetsRequest": [
+        "Scope",
+        "NextMarker",
+        "Limit"
+      ],
+      "ListIPSetsResponse": [
+        "NextMarker",
+        "IPSets"
+      ],
+      "CreateRuleGroupRequest": [
+        "Name",
+        "Scope",
+        "Capacity",
+        "Description",
+        "Rules",
+        "VisibilityConfig",
+        "Tags"
+      ],
+      "CreateRuleGroupResponse": [
+        "Summary"
+      ],
+      "GetRuleGroupRequest": [
+        "Name",
+        "Scope",
+        "Id"
+      ],
+      "GetRuleGroupResponse": [
+        "RuleGroup",
+        "LockToken"
+      ],
+      "UpdateRuleGroupRequest": [
+        "Name",
+        "Scope",
+        "Id",
+        "Description",
+        "Rules",
+        "VisibilityConfig",
+        "LockToken"
+      ],
+      "UpdateRuleGroupResponse": [
+        "NextLockToken"
+      ],
+      "DeleteRuleGroupRequest": [
+        "Name",
+        "Scope",
+        "Id",
+        "LockToken"
+      ],
+      "DeleteRuleGroupResponse": [],
+      "ListRuleGroupsRequest": [
+        "Scope",
+        "NextMarker",
+        "Limit"
+      ],
+      "ListRuleGroupsResponse": [
+        "NextMarker",
+        "RuleGroups"
+      ],
+      "AssociateWebACLRequest": [
+        "WebACLArn",
+        "ResourceArn"
+      ],
+      "AssociateWebACLResponse": [],
+      "DisassociateWebACLRequest": [
+        "ResourceArn"
+      ],
+      "DisassociateWebACLResponse": [],
+      "GetWebACLForResourceRequest": [
+        "ResourceArn"
+      ],
+      "GetWebACLForResourceResponse": [
+        "WebACL"
+      ],
+      "ListResourcesForWebACLRequest": [
+        "WebACLArn",
+        "ResourceType"
+      ],
+      "ListResourcesForWebACLResponse": [
+        "ResourceArns"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "NextMarker",
+        "Limit",
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "NextMarker",
+        "TagInfoForResource"
+      ],
+      "WebACLSummary": [
+        "Name",
+        "Id",
+        "Description",
+        "LockToken",
+        "ARN"
+      ],
+      "IPSetSummary": [
+        "Name",
+        "Id",
+        "Description",
+        "LockToken",
+        "ARN"
+      ],
+      "RuleGroupSummary": [
+        "Name",
+        "Id",
+        "Description",
+        "LockToken",
+        "ARN"
+      ],
+      "IPSet": [
+        "Name",
+        "Id",
+        "ARN",
+        "Description",
+        "IPAddressVersion",
+        "Addresses"
+      ],
+      "TagInfoForResource": [
+        "ResourceARN",
+        "TagList"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "VisibilityConfig": [
+        "SampledRequestsEnabled",
+        "CloudWatchMetricsEnabled",
+        "MetricName"
+      ],
+      "DefaultAction": [
+        "Block",
+        "Allow"
+      ],
+      "OverrideAction": [
+        "Count",
+        "None"
+      ],
+      "WebACL": [
+        "Name",
+        "Id",
+        "ARN",
+        "DefaultAction",
+        "Description",
+        "Rules",
+        "VisibilityConfig"
+      ],
+      "RuleGroup": [
+        "Name",
+        "Id",
+        "ARN",
+        "Capacity",
+        "Description",
+        "Rules",
+        "VisibilityConfig"
+      ],
+      "Rule": [
+        "Name",
+        "Priority",
+        "Statement",
+        "Action",
+        "OverrideAction",
+        "VisibilityConfig"
+      ],
+      "Statement": [
+        "IPSetReferenceStatement",
+        "RuleGroupReferenceStatement"
+      ],
+      "IPSetReferenceStatement": [
+        "ARN"
+      ],
+      "RuleGroupReferenceStatement": [
+        "ARN"
+      ],
+      "RuleAction": [
+        "Allow",
+        "Block",
+        "Count"
+      ],
+      "AllowAction": [],
+      "BlockAction": [],
+      "CountAction": [],
+      "NoneAction": []
+    }
   }
 }

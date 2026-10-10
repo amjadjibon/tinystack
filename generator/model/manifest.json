@@ -218,6 +218,10 @@
     "sts": {
       "path": "codegen/sdk-codegen/aws-models/sts.json",
       "sha256": "3012bfe1c6d44b4348ed03888085fd0b7a506e4da3335250280537b85e834864"
+    },
+    "wafv2": {
+      "path": "codegen/sdk-codegen/aws-models/wafv2.json",
+      "sha256": "0c5a241cea430b965f960950905f2c5a8b3814e10ae0da9ec7e9e2d05a3b5e8b"
     }
   }
 }
