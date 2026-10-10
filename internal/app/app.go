@@ -60,6 +60,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
+	"github.com/amjadjibon/tinystack/internal/inithooks"
 	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
@@ -115,11 +116,19 @@ type App struct {
 	Gateway *gateway.Server
 	// IoT accepts MQTT connections on listeners the caller opens.
 	IoT *iot.Service
+	// Init runs the init scripts and reports how they went. Run runs the
+	// boot, start, ready, and shutdown stages; New runs none of them.
+	Init *inithooks.Runner
 	// Services lists the registered services' names.
 	Services []string
 
-	stops []func()
-	once  sync.Once
+	store      storage.Store
+	deliveries *delivery.Log
+	stops      []func()
+	// resets clear in-memory state that a cleared store leaves behind.
+	resets  []func(context.Context)
+	once    sync.Once
+	resetMu sync.Mutex
 }
 
 // New builds every service over store, wires them through the gateway, and
@@ -132,8 +141,23 @@ type App struct {
 //nolint:gocritic,contextcheck // See above.
 func New(
 	ctx context.Context, cfg config.Config, store storage.Store, runtime lambda.Runtime, logger *slog.Logger,
+) (*App, error) {
+	return build(ctx, cfg, store, runtime, logger, inithooks.New(cfg, logger))
+}
+
+// build is New with the runner of init scripts, which Run has already used to
+// run the boot stage.
+//
+//nolint:gocritic,contextcheck // See New.
+func build(
+	ctx context.Context,
+	cfg config.Config,
+	store storage.Store,
+	runtime lambda.Runtime,
+	logger *slog.Logger,
+	hooks *inithooks.Runner,
 ) (a *App, err error) {
-	a = &App{}
+	a = &App{store: store, Init: hooks}
 	defer func() {
 		if err != nil {
 			a.Stop()
@@ -141,6 +165,7 @@ func New(
 	}()
 
 	deliveries := delivery.New()
+	a.deliveries = deliveries
 	tables := dynamodb.New(store)
 	// Stop ends the TTL sweeper, which writes to the store.
 	a.onStop(tables.Stop)
@@ -161,6 +186,9 @@ func New(
 	)
 	// Stop removes function containers; it must finish before exit.
 	a.onStop(functions.Stop)
+	// Reset ends the pollers first, so they do not write what the reset clears.
+	a.onReset(functions.Reset)
+	a.onReset(queues.Reset)
 	streams := kinesis.New(store)
 	functions.UseKinesis(streams)
 	if err = functions.Resume(ctx); err != nil {
@@ -190,6 +218,7 @@ func New(
 
 	// Stop ends the task runner and removes task containers.
 	a.onStop(containers.Stop)
+	a.onReset(containers.Reset)
 	httpAPIs := apigatewayv2.New(store, functions, logGroups)
 	restAPIs := apigateway.New(store, functions, logGroups, identities)
 	graphQL := appsync.New(store, functions, identities)
@@ -200,6 +229,7 @@ func New(
 	kube := eks.New(store, network)
 	// Stop ends the cluster runner and removes k3s containers.
 	a.onStop(kube.Stop)
+	a.onReset(kube.Reset)
 	workflows, err := sfn.New(store, logGroups, logger)
 	if err != nil {
 		return nil, err
@@ -224,9 +254,11 @@ func New(
 	balancers := elbv2.New(store, logger)
 	caches := elasticache.New(store)
 	a.onStop(caches.Stop)
+	a.onReset(caches.Reset)
 	things := iot.New(store, deliveries, logger)
 	// Stop disconnects every MQTT client.
 	a.onStop(things.Stop)
+	a.onReset(things.Reset)
 	things.UseIdentity(
 		request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
 		cfg.Identity.Mode == config.IdentityVerify,
@@ -246,6 +278,8 @@ func New(
 	parameters := ssm.New(store, keys)
 	// Systems Manager publishes the IDs of EC2's images.
 	parameters.UsePublicParameters(ec2.PublicParameters)
+	certificates := acm.New(store)
+	a.onReset(certificates.Reset)
 	tags := resourcegroupstaggingapi.New()
 	groups := resourcegroups.New(store)
 	services := []catalog.Service{
@@ -278,7 +312,7 @@ func New(
 		schedulerapi.Descriptor(timers),
 		autoscalingapi.Descriptor(scaling),
 		elbv2api.Descriptor(balancers),
-		acmapi.Descriptor(acm.New(store)),
+		acmapi.Descriptor(certificates),
 		firehoseapi.Descriptor(firehoses),
 		pipesapi.Descriptor(pipelines),
 		cloudwatchapi.Descriptor(monitoring),
@@ -364,6 +398,16 @@ func New(
 
 	handler.Handle("deliveries", deliveries)
 	handler.Handle("iot/root-ca.pem", things.RootCA())
+	handler.Handle("reset", http.HandlerFunc(a.serveReset))
+	// LocalStack's path answers the same, for tools that wait on it. Scripts
+	// must end before the services they call stop, so this stop is registered last.
+	for _, prefix := range []string{"/_tinystack/init", "/_localstack/init"} {
+		for _, path := range inithooks.Paths(prefix) {
+			handler.HandlePath(path, hooks)
+		}
+	}
+
+	a.onStop(hooks.Stop)
 	a.Gateway = handler
 	a.IoT = things
 	for _, service := range services {
@@ -391,6 +435,12 @@ func (a *App) StopOnShutdown(server *http.Server) {
 	for _, stop := range a.stops {
 		server.RegisterOnShutdown(stop)
 	}
+}
+
+// onReset has Reset call reset, before it clears the store, so the service
+// can read its records.
+func (a *App) onReset(reset func(context.Context)) {
+	a.resets = append(a.resets, reset)
 }
 
 func (a *App) onStop(stop func()) {

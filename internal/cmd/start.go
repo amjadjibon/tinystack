@@ -10,7 +10,7 @@ import (
 )
 
 func newStartCommand() *cobra.Command {
-	var configPath, host string
+	var configPath, host, initDir string
 	var port, consolePort int
 	start := &cobra.Command{
 		Use:   "start",
@@ -33,6 +33,10 @@ func newStartCommand() *cobra.Command {
 				cfg.Server.ConsolePort = consolePort
 			}
 
+			if cmd.Flags().Changed("init-dir") {
+				cfg.Init.Dir = initDir
+			}
+
 			if guardErr := cfg.Validate(); guardErr != nil {
 				return guardErr
 			}
@@ -46,5 +50,8 @@ func newStartCommand() *cobra.Command {
 	start.Flags().StringVar(&host, "host", "127.0.0.1", "listen host")
 	start.Flags().IntVar(&port, "port", 4566, "listen port")
 	start.Flags().IntVar(&consolePort, "console-port", 4567, "web console port (0 turns it off)")
+	start.Flags().StringVar(
+		&initDir, "init-dir", config.DefaultInitDir, "directory of <stage>.d init scripts (empty turns them off)",
+	)
 	return start
 }

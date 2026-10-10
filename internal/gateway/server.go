@@ -63,7 +63,9 @@ type Server struct {
 	// domains serves API Gateway custom domain names; see UseDomains.
 	domains Domains
 	health  []byte
-	cfg     config.Config
+	// localStackHealth answers LocalStack's /_localstack/health.
+	localStackHealth []byte
+	cfg              config.Config
 }
 
 // CredentialLookup returns the credentials of an access key TinyStack issued,
@@ -132,6 +134,19 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	}
 
 	s.health = health
+	states := map[string]string{}
+	for _, name := range names {
+		states[name] = "running"
+	}
+
+	// The shape of LocalStack's health endpoint, which tools poll to wait for it.
+	s.localStackHealth, err = json.Marshal(map[string]any{
+		"services": states, "edition": "community", "version": "tinystack",
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	s.consoleCaller = catalog.NewCaller(services...)
 	s.internal = map[string]http.Handler{
 		"/_tinystack/health":    http.HandlerFunc(s.serveHealth),
@@ -139,6 +154,7 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		"/_tinystack/resources": http.HandlerFunc(s.serveResources),
 		"/_tinystack/metrics":   http.HandlerFunc(s.serveMetrics),
 		"/_tinystack/actions":   http.HandlerFunc(s.serveConsoleActions),
+		"/_localstack/health":   http.HandlerFunc(s.serveLocalStackHealth),
 	}
 
 	return s, nil
@@ -224,7 +240,19 @@ func (s *Server) serveDocument(w http.ResponseWriter, r *http.Request) bool {
 
 // Handle serves h at /_tinystack/<name>. Call it before serving requests.
 func (s *Server) Handle(name string, h http.Handler) {
-	s.internal["/_tinystack/"+name] = h
+	s.HandlePath("/_tinystack/"+name, h)
+}
+
+// HandlePath serves h at path, which starts with "/_" so that it never names an
+// S3 bucket, such as LocalStack's /_localstack/ paths. Call it before serving
+// requests.
+func (s *Server) HandlePath(path string, h http.Handler) {
+	s.internal[path] = h
+}
+
+// ClearRequests forgets the requests the inspector kept.
+func (s *Server) ClearRequests() {
+	s.requests.Clear()
 }
 
 // Internal serves only TinyStack's own /_tinystack/ endpoints, answering 404
@@ -694,6 +722,18 @@ func (s *Server) serveHealth(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(s.health)
+}
+
+func (s *Server) serveLocalStackHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method == http.MethodGet {
+		_, _ = w.Write(s.localStackHealth)
+	}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

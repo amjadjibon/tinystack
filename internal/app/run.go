@@ -14,9 +14,14 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/inithooks"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
 	"github.com/amjadjibon/tinystack/ui"
 )
+
+// shutdownScriptsTimeout bounds the shutdown stage, so a stuck script cannot
+// keep TinyStack from exiting.
+const shutdownScriptsTimeout = 30 * time.Second
 
 // Run opens the configured storage, assembles TinyStack with the Docker Lambda
 // runtime, and serves it, plus the MQTT listeners and the web console, until
@@ -29,6 +34,9 @@ import (
 //
 //nolint:gocritic // Configuration is passed by value like config.Load returns it.
 func Run(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
+	hooks := inithooks.New(cfg, logger)
+	// Nothing listens yet, so boot scripts cannot reach TinyStack itself.
+	hooks.Run(ctx, inithooks.Boot)
 	store, closeStore, err := openStore(ctx, cfg.Storage.Mode, cfg.Storage.Path)
 	if err != nil {
 		return err
@@ -41,7 +49,7 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 		}
 	}()
 
-	tinystack, err := New(ctx, cfg, store, docker.New(), logger)
+	tinystack, err := build(ctx, cfg, store, docker.New(), logger, hooks)
 	if err != nil {
 		return err
 	}
@@ -50,6 +58,8 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 	// to the store once Stop returns.
 	defer tinystack.Stop()
 
+	// The services exist but nothing listens yet.
+	hooks.Run(ctx, inithooks.Start)
 	return serve(ctx, cfg, tinystack, logger)
 }
 
@@ -145,6 +155,8 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 		"services",
 		strings.Join(tinystack.Services, ","),
 	)
+	// The listener is bound, so requests queue even before Serve takes them.
+	tinystack.Init.Go(inithooks.Ready)
 	select {
 	case err = <-done:
 		if errors.Is(err, http.ErrServerClosed) {
@@ -157,6 +169,12 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 	case <-signalCtx.Done():
 	}
 
+	// Ready scripts still running end, then the shutdown scripts run while
+	// the listeners and the services still work.
+	tinystack.Init.Stop()
+	scripts, stopScripts := context.WithTimeout(context.WithoutCancel(ctx), shutdownScriptsTimeout)
+	tinystack.Init.Run(scripts, inithooks.Shutdown)
+	stopScripts()
 	shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if consoleServer != nil {

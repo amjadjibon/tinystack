@@ -46,6 +46,13 @@ const (
 	CachesDocker  = "docker"
 )
 
+// Init script directories: TinyStack's own and LocalStack's, which are read
+// when they exist.
+const (
+	DefaultInitDir           = "/etc/tinystack/init"
+	DefaultLocalStackInitDir = "/etc/localstack/init"
+)
+
 type Config struct {
 	Identity struct {
 		Accounts   map[string]string `yaml:"accounts"`
@@ -69,6 +76,17 @@ type Config struct {
 	ElastiCache struct {
 		Caches string `yaml:"caches"`
 	} `yaml:"elasticache"`
+	// Init configures the init hooks: scripts that run at the boot, start,
+	// ready, and shutdown stages.
+	Init struct {
+		// Dir holds TinyStack's init scripts, in <stage>.d directories; empty
+		// turns them off.
+		Dir string `yaml:"dir"`
+		// LocalStackDir holds LocalStack's init scripts, which run after
+		// TinyStack's own so mounted LocalStack directories work unchanged;
+		// empty turns them off.
+		LocalStackDir string `yaml:"localstack_dir"`
+	} `yaml:"init"`
 	Server struct {
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
@@ -99,6 +117,8 @@ func Default() Config {
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
 	c.ElastiCache.Caches = CachesRecords
+	c.Init.Dir = DefaultInitDir
+	c.Init.LocalStackDir = DefaultLocalStackInitDir
 	return c
 }
 
