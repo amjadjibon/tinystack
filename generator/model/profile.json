@@ -1,4 +1,65 @@
 {
+  "account": {
+    "operations": [
+      "GetAccountInformation",
+      "GetContactInformation",
+      "GetRegionOptStatus",
+      "ListRegions"
+    ],
+    "shapes": {
+      "ContactInformation": [
+        "AddressLine1",
+        "AddressLine2",
+        "AddressLine3",
+        "City",
+        "CompanyName",
+        "CountryCode",
+        "DistrictOrCounty",
+        "FullName",
+        "PhoneNumber",
+        "PostalCode",
+        "StateOrRegion",
+        "WebsiteUrl"
+      ],
+      "GetAccountInformationRequest": [
+        "AccountId"
+      ],
+      "GetAccountInformationResponse": [
+        "AccountCreatedDate",
+        "AccountId",
+        "AccountName",
+        "AccountState"
+      ],
+      "GetContactInformationRequest": [
+        "AccountId"
+      ],
+      "GetContactInformationResponse": [
+        "ContactInformation"
+      ],
+      "GetRegionOptStatusRequest": [
+        "AccountId",
+        "RegionName"
+      ],
+      "GetRegionOptStatusResponse": [
+        "RegionName",
+        "RegionOptStatus"
+      ],
+      "ListRegionsRequest": [
+        "AccountId",
+        "MaxResults",
+        "NextToken",
+        "RegionOptStatusContains"
+      ],
+      "ListRegionsResponse": [
+        "NextToken",
+        "Regions"
+      ],
+      "Region": [
+        "RegionName",
+        "RegionOptStatus"
+      ]
+    }
+  },
   "acm": {
     "operations": [
       "RequestCertificate",

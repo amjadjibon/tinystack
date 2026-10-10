@@ -3,6 +3,10 @@
   "commit": "2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da",
   "license": "LICENSE.aws-sdk-go-v2",
   "models": {
+    "account": {
+      "path": "codegen/sdk-codegen/aws-models/account.json",
+      "sha256": "1194d60fe798d222a7acb845bb9751e0156fe98ce72cd12db7a51126b86f274b"
+    },
     "acm": {
       "path": "codegen/sdk-codegen/aws-models/acm.json",
       "sha256": "fa93fbde7850011b26052855a3dfe18729f049029df9b59cabd8161c309035dc"
