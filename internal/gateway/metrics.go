@@ -19,8 +19,9 @@ type metricKey struct {
 }
 
 type metricValue struct {
-	count   int64
-	seconds float64
+	count    int64
+	seconds  float64
+	injected int64
 }
 
 // metrics counts requests and their durations by service, operation, and status.
@@ -51,6 +52,10 @@ func (m *metrics) add(c *call, status int, seconds float64) {
 	}
 
 	v.count++
+	if c.injected {
+		v.injected++
+	}
+
 	v.seconds += seconds
 }
 
@@ -72,6 +77,14 @@ func (m *metrics) write(w http.ResponseWriter) {
 	b.WriteString("# TYPE tinystack_requests_total counter\n")
 	for i, k := range keys {
 		fmt.Fprintf(&b, "tinystack_requests_total{%s} %d\n", k.labels(), values[i].count)
+	}
+
+	b.WriteString("# HELP tinystack_injected_requests_total AWS requests with injected errors or latency.\n")
+	b.WriteString("# TYPE tinystack_injected_requests_total counter\n")
+	for i, k := range keys {
+		if values[i].injected > 0 {
+			fmt.Fprintf(&b, "tinystack_injected_requests_total{%s} %d\n", k.labels(), values[i].injected)
+		}
 	}
 
 	b.WriteString("# HELP tinystack_request_duration_seconds Time spent serving AWS requests.\n")

@@ -421,6 +421,7 @@ func build(
 
 	a.onStop(hooks.Stop)
 	a.Gateway = handler
+	a.onReset(func(context.Context) { handler.ResetFaults() })
 	a.IoT = things
 	for _, service := range services {
 		a.Services = append(a.Services, service.Name)

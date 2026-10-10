@@ -9,6 +9,8 @@ import (
 	"regexp"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/amjadjibon/tinystack/internal/faults"
 )
 
 // Identity authentication modes: parse reads the access key without verifying
@@ -60,6 +62,7 @@ const (
 )
 
 type Config struct {
+	Faults   []faults.Rule `yaml:"faults"`
 	Identity struct {
 		Accounts   map[string]string `yaml:"accounts"`
 		SecretKeys map[string]string `yaml:"secret_keys"`
@@ -159,6 +162,10 @@ func Load(path string) (Config, error) {
 }
 
 func (c *Config) Validate() error {
+	if err := faults.Validate(c.Faults); err != nil {
+		return err
+	}
+
 	account := regexp.MustCompile(`^\d{12}$`)
 	if !account.MatchString(c.Defaults.Account) {
 		return fmt.Errorf("defaults.account must have 12 digits")

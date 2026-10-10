@@ -65,6 +65,7 @@ type Server struct {
 	health  []byte
 	// localStackHealth answers LocalStack's /_localstack/health.
 	localStackHealth []byte
+	faults           faultState
 	cfg              config.Config
 }
 
@@ -93,8 +94,10 @@ type call struct {
 	failure *awserror.Error
 	meta    request.Metadata
 	// body is the raw AWS Query form, kept to hash it for authentication.
-	body []byte
-	head bool
+	body       []byte
+	head       bool
+	injected   bool
+	faultError bool
 }
 
 //nolint:gocritic // Snapshot scalar server configuration instead of sharing mutable caller fields.
@@ -147,14 +150,18 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		return nil, err
 	}
 
+	s.faults.reset(cfg.Faults)
 	s.consoleCaller = catalog.NewCaller(services...)
 	s.internal = map[string]http.Handler{
-		"/_tinystack/health":    http.HandlerFunc(s.serveHealth),
-		"/_tinystack/requests":  s.requests,
-		"/_tinystack/resources": http.HandlerFunc(s.serveResources),
-		"/_tinystack/metrics":   http.HandlerFunc(s.serveMetrics),
-		"/_tinystack/actions":   http.HandlerFunc(s.serveConsoleActions),
-		"/_localstack/health":   http.HandlerFunc(s.serveLocalStackHealth),
+		"/_tinystack/health":         http.HandlerFunc(s.serveHealth),
+		"/_tinystack/faults":         http.HandlerFunc(s.serveFaults),
+		"/_localstack/chaos/faults":  http.HandlerFunc(s.serveFaults),
+		"/_localstack/chaos/effects": http.HandlerFunc(s.serveEffects),
+		"/_tinystack/requests":       s.requests,
+		"/_tinystack/resources":      http.HandlerFunc(s.serveResources),
+		"/_tinystack/metrics":        http.HandlerFunc(s.serveMetrics),
+		"/_tinystack/actions":        http.HandlerFunc(s.serveConsoleActions),
+		"/_localstack/health":        http.HandlerFunc(s.serveLocalStackHealth),
 	}
 
 	return s, nil
@@ -681,7 +688,10 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	namespace, messageMember := "", ""
 	if c.service != nil {
 		if binding, ok := c.service.Errors[e.Code]; ok {
-			e.StatusCode = binding.StatusCode
+			if !c.faultError {
+				e.StatusCode = binding.StatusCode
+			}
+
 			e.QueryCode = binding.QueryCode
 			messageMember = binding.MessageMember
 		}
@@ -743,6 +753,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.HasPrefix(r.URL.Path, "/_tinystack/") || strings.HasPrefix(r.URL.Path, "/_localstack/") {
+		http.NotFound(w, r)
+		return
+	}
+
 	if s.serveDocument(w, r) || s.serveToken(w, r) || s.serveRegistry(w, r) || s.serveMQTT(w, r) || s.serveAPI(w, r) ||
 		s.servePreflight(w, r) {
 		return
@@ -779,6 +794,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	op, input, err := s.decode(w, r, c, contentType)
 	if err != nil {
 		s.fail(w, c, err)
+		return
+	}
+
+	if faultErr := s.inject(r.Context(), c); faultErr != nil {
+		s.fail(w, c, faultErr)
 		return
 	}
 
@@ -823,6 +843,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturingBody, w *capturingWriter) {
 	m := &c.meta
 	rec := Record{
+		Injected:     c.injected,
 		Time:         start.UTC(),
 		RequestID:    m.RequestID,
 		Method:       r.Method,
@@ -864,6 +885,7 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 		"region", rec.Region,
 		"status", rec.Status,
 		"error_code", rec.ErrorCode,
+		"injected", rec.Injected,
 		"duration_ms", rec.DurationMS,
 	)
 }

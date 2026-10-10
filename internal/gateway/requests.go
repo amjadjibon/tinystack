@@ -35,6 +35,7 @@ type Record struct {
 	RequestSize  int64     `json:"request_size"`
 	ResponseSize int64     `json:"response_size"`
 	DurationMS   float64   `json:"duration_ms"`
+	Injected     bool      `json:"injected,omitempty"`
 }
 
 // capture keeps the first recent.MaxText bytes written to it and counts them all.
