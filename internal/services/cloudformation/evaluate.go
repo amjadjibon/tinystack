@@ -237,6 +237,9 @@ func (e *evaluator) ref(name string) (any, error) {
 		return nil, templateError("resource %s is not created, so Ref cannot refer to it", name)
 	}
 
+	if r.Type == "AWS::WAFv2::WebACLAssociation" {
+		return wafAssociationRef(props(r.Properties)), nil
+	}
 	return r.Physical, nil
 }
 

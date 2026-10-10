@@ -379,7 +379,15 @@ func (s *Service) perform(ctx context.Context,
 	case stepCreate, stepSwap:
 		return types[next.typ].create(ctx, c, next.props)
 	case stepDiscard:
-		return "", nil, types[next.typ].remove(ctx, c, st.Replaced[0].Resource)
+		retired := st.Replaced[0].Resource
+		// A rollback can restore the exact association that an earlier swap
+		// retired. It is one metadata record, so cleanup must keep its active
+		// owner's incarnation rather than disassociating the restored target.
+		if retired.Type == "AWS::WAFv2::WebACLAssociation" && r != nil && r.Type == retired.Type &&
+			r.Physical == retired.Physical {
+			return "", nil, nil
+		}
+		return "", nil, types[next.typ].remove(ctx, c, retired)
 	case stepUpdate:
 		attributes, err := types[next.typ].update(ctx, c, r, next.props)
 		return r.Physical, attributes, err
