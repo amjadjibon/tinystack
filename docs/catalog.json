@@ -1014,6 +1014,55 @@
       ],
       "execution": "Records / optional Docker",
       "package": "rds"
+    },
+    "organizations": {
+      "title": "Organizations",
+      "category": "Management and governance",
+      "summary": "Manage global organization, account, hierarchy and SCP records.",
+      "features": [
+        "Create/describe/delete an organization with ALL (default) or CONSOLIDATED_BILLING; caller becomes the management account",
+        "Immediate successful account creation and status lookup; describe/list/move/remove member accounts; lists paginate with MaxResults 1\u201320",
+        "Root and OU hierarchy with five nested OU levels, duplicate-name checks, empty-OU and member-free organization deletion",
+        "SCP JSON records, policy attachments and root enable/disable; AWS-managed FullAWSAccess is attached by default",
+        "Global records under <management-account>/organizations/state and partition-wide aws/organizations/account/<account> membership index; SigV4-resolved members can DescribeOrganization, other supported calls require management",
+        "Tags, inventory, Resource Groups Tagging API and console catalogue; CloudFormation OrganizationalUnit and Policy selected properties",
+        "New accounts and OUs receive FullAWSAccess when SCPs are enabled; AWS-managed policy content cannot be changed or deleted"
+      ],
+      "gaps": [
+        "SCPs are records and do not enforce permissions; other policy types, delegated administration, invitations, handshakes and service access are unsupported",
+        "CreateAccount RoleName and IamUserAccessToBilling are rejected; no IAM role, credentials or billing configuration is provisioned; STS credential resolution works but Organizations does not change IAM/STS behavior",
+        "Management account email/name are local defaults (<account>@tinystack.local and Management account); account removal does not implement AWS billing prerequisites",
+        "CloudFormation Account and ResourcePolicy are unsupported; no Organizations management console pages",
+        "Input members outside the generated profile and unsupported enum/filter values fail explicitly"
+      ],
+      "execution": "Records",
+      "package": "organizations"
+    },
+    "servicediscovery": {
+      "title": "Cloud Map",
+      "category": "Networking and content delivery",
+      "summary": "Manage regional Cloud Map records and discover registered instances through the SDK data plane.",
+      "features": [
+        "HTTP, public DNS and private DNS namespace records with immediate SUCCESS operations; get/list/delete and HTTP description updates",
+        "Service records with DNS routing/TTL configuration and custom health checks; empty-service/namespace deletion checks and duplicate-name errors",
+        "Register/deregister/get/list instances, health status and immediate custom-health changes; service instance revisions update with registrations and health changes",
+        "DiscoverInstances supports required QueryParameters, preferred OptionalParameters with fallback, HEALTHY (default), UNHEALTHY, ALL and HEALTHY_OR_ELSE_ALL filtering, MaxResults 1\u20131000 and DiscoverInstancesRevision",
+        "Namespace filters TYPE/NAME/HTTP_NAME, service filter NAMESPACE_ID and operation STATUS/TYPE/NAMESPACE_ID/SERVICE_ID filters; EQ/IN (one value) and BEGINS_WITH; list pagination MaxResults 1\u2013100",
+        "Regional/account-scoped records, resource tags, diagnostic inventory, Resource Groups Tagging API and official-icon console catalogue",
+        "CloudFormation HttpNamespace, PrivateDnsNamespace, Service and Instance with selected properties; operations complete synchronously",
+        "CreatorRequestId/UpdaterRequestId replay committed namespace/service/registration/HTTP-update results within the account and Region; changed inputs reject reused tokens"
+      ],
+      "gaps": [
+        "DNS namespaces and DnsConfig are records only: no Route 53 hosted zones or DNS records are created; Vpc is stored as namespace metadata",
+        "Route 53 HealthCheckConfig, DNS namespace Properties and DNS namespace updates are unsupported; custom failure threshold is fixed at 1",
+        "Shared namespaces and OwnerAccount discovery/operation inputs are rejected; cross-account sharing and ECS serviceRegistries are unsupported",
+        "Instance attributes are records; no ECS task registration, DNS validation/probing or asynchronous health propagation",
+        "CloudFormation public namespace and advanced properties, and management console pages are unsupported",
+        "Unknown filter names/conditions and profile-excluded input members fail explicitly",
+        "SDKs prefix DiscoverInstances hosts with data-, so http://localhost:4566 or an IP endpoint becomes an unresolvable data-localhost; use http://tinystack.localhost:4566 (data-tinystack.localhost resolves to loopback per RFC 6761) or disable the host prefix in the client (Go: smithyhttp.DisableEndpointHostPrefix)"
+      ],
+      "execution": "Records / HTTP discovery",
+      "package": "servicediscovery"
     }
   },
   "future": {
@@ -1213,13 +1262,6 @@
       "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account\u2019s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
       "acceptance": "Create a domain with an AWS SDK, wait until available, index and search through\nthe returned endpoint, restart, and delete. Verify index isolation, unsupported\nconfiguration errors, failed launch cleanup, memory/port limits, tags, and\nmanagement response parity against AWS captures."
     },
-    "organizations": {
-      "title": "Organizations",
-      "state": "Proposed",
-      "slice": "Implement `DescribeOrganization`, `ListRoots`, `ListAccounts`.",
-      "features": "- [ ] `DescribeOrganization`\n- [ ] `ListRoots`\n- [ ] `ListAccounts`\n- [ ] `DescribeAccount`\n- [ ] `CreateOrganizationalUnit`",
-      "integration": "The proposed resource scope is account-wide; define persistence and cross-service effects accordingly."
-    },
     "rds-data": {
       "title": "RDS Data API",
       "state": "Proposed",
@@ -1237,12 +1279,6 @@
       "state": "Proposed",
       "slice": "Implement `CreateTableBucket`, `ListTableBuckets`, `GetTableBucket`.",
       "features": "- [ ] `CreateTableBucket`\n- [ ] `ListTableBuckets`\n- [ ] `GetTableBucket`\n- [ ] `DeleteTableBucket`\n- [ ] `CreateNamespace`\n- [ ] `ListNamespaces`\n- [ ] `GetNamespace`\n- [ ] `DeleteNamespace`\n- [ ] `CreateTable`\n- [ ] `ListTables`\n- [ ] `GetTable`\n- [ ] `DeleteTable`\n- [ ] `GetTableMetadataLocation`\n- [ ] `UpdateTableMetadataLocation`"
-    },
-    "servicediscovery": {
-      "title": "Cloud Map",
-      "state": "Proposed",
-      "slice": "Implement `CreatePrivateDnsNamespace`, `CreateService`, `RegisterInstance`.",
-      "features": "- [ ] `CreatePrivateDnsNamespace`\n- [ ] `CreateService`\n- [ ] `RegisterInstance`\n- [ ] `DiscoverInstances`\n- [ ] `DeregisterInstance`"
     },
     "signer": {
       "title": "AWS Signer",

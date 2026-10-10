@@ -25,7 +25,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Bedrock AgentCore](services/bedrock-agentcore.md) | Proposed | Implement `CreateAgentRuntime`, `GetAgentRuntime`, `ListAgentRuntimes`. |
 | [Bedrock Agents](services/bedrock-agent.md) | Proposed | Implement `CreateAgent`, `GetAgent`, `ListAgents`. |
 | [Bedrock Runtime](services/bedrock-runtime.md) | Proposed | Implement `InvokeModel`, `InvokeModelWithResponseStream`, `StartAsyncInvoke`. |
-| [Cloud Map](services/servicediscovery.md) | Proposed | Implement `CreatePrivateDnsNamespace`, `CreateService`, `RegisterInstance`. |
 | [CloudFront KeyValueStore](services/cloudfront-keyvaluestore.md) | Proposed | Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`. |
 | [CloudTrail](services/cloudtrail.md) | Proposed | Implement `CreateTrail`, `DeleteTrail`, `GetTrail`. |
 | [CodeBuild](services/codebuild.md) | Proposed | Implement `CreateProject`, `BatchGetProjects`, `ListProjects`. |
@@ -40,7 +39,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Lambda MicroVMs](services/lambda-microvms.md) | Proposed | Implement `CreateMicrovmImage`, `RunMicrovm`, `GetMicrovm`. |
 | [MediaConnect](services/mediaconnect.md) | Proposed | Implement `CreateFlow`, `DescribeFlow`, `ListFlows`. |
 | [OpenSearch Service](services/opensearch.md) | Runtime decision required | create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls. |
-| [Organizations](services/organizations.md) | Proposed | Implement `DescribeOrganization`, `ListRoots`, `ListAccounts`. |
 | [RDS Data API](services/rds-data.md) | Proposed | Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`. |
 | [S3 Files](services/s3files.md) | Proposed | Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`. |
 | [S3 Tables](services/s3tables.md) | Proposed | Implement `CreateTableBucket`, `ListTableBuckets`, `GetTableBucket`. |
