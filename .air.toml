@@ -1,12 +1,17 @@
-# go tool air (task dev): rebuilds the headless binary and restarts it on Go changes.
+# go tool air (task dev): rebuilds TinyStack with the console and restarts it when Go or console sources change.
+# task ui:build skips the console build when nothing under ui/ changed.
 root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o tmp/tinystack ./cmd/tinystack"
+cmd = "task ui:build && go build -tags console -o tmp/tinystack ./cmd/tinystack"
 entrypoint = ["tmp/tinystack", "start"]
-include_ext = ["go"]
-exclude_dir = [".git", ".task", ".venv-docs", "bin", "docs", "site", "tests", "tmp", "ui"]
+include_ext = ["go", "ts", "tsx", "css", "svg"]
+exclude_dir = [
+  ".git", ".task", ".venv-docs", "bin", "docs", "site", "tests", "tmp",
+  "ui/.tanstack", "ui/dist", "ui/node_modules",
+]
+exclude_file = ["ui/src/routeTree.gen.ts"]
 exclude_regex = ["_test\\.go$"]
 delay = 500
 kill_delay = "5s"

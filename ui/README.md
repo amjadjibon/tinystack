@@ -23,7 +23,7 @@ along with the `/_tinystack` endpoints. `task up` does the same in Docker. `task
 From the repository root:
 
 ```sh
-task dev                              # TinyStack on :4566, rebuilt on Go changes, no built-in console
+task dev                              # TinyStack on :4566, console on :4567, rebuilt on Go or ui/ changes
 task ui:dev                           # http://localhost:4568 with hot reload (installs dependencies first)
 task ui:check                         # Biome lint and format, and tsc
 ```

@@ -25,7 +25,7 @@ tasks:
       - go build -trimpath -ldflags="-s -w" -o bin/tinystack-headless ./cmd/tinystack
 
   dev:
-    desc: "Run TinyStack headless and rebuild it on Go changes (task dev -- --port 4566)"
+    desc: "Run TinyStack with the console and rebuild it on Go or console changes (task dev -- --port 4566)"
     cmds:
       - go tool air -- {{.CLI_ARGS}}
 
@@ -94,6 +94,18 @@ tasks:
     desc: "Build the console into ui/dist/client and gzip it into ui/dist/console"
     dir: ui
     deps: [ui:install]
+    sources:
+      - src/**/*
+      - public/**/*
+      - scripts/**/*
+      - package.json
+      - pnpm-lock.yaml
+      - tsconfig.json
+      - tsr.config.json
+      - vite.config.ts
+      - exclude: src/routeTree.gen.ts
+    generates:
+      - dist/console/**/*
     cmds:
       - pnpm build
 
