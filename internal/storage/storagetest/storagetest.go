@@ -23,6 +23,45 @@ func Run(t *testing.T, open func(t *testing.T) storage.Store) {
 	t.Run("concurrent updates", func(t *testing.T) { concurrentUpdates(t, open(t)) })
 	t.Run("copies", func(t *testing.T) { copies(t, open(t)) })
 	t.Run("keys", func(t *testing.T) { keys(t, open(t)) })
+	t.Run("clear", func(t *testing.T) { clearAll(t, open(t)) })
+}
+
+// clearAll checks that Clear removes every record, however many, and leaves the
+// store usable.
+func clearAll(t *testing.T, s storage.Store) {
+	t.Helper()
+	ctx := context.Background()
+	err := s.Update(ctx, func(tx storage.WriteTx) error {
+		for i := range 300 {
+			tx.Put(fmt.Sprintf("a/%03d", i), []byte("x"))
+			tx.Put(fmt.Sprintf("b/%03d", i), []byte("y"))
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = storage.Clear(ctx, s); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := Snapshot(t, s); len(got) != 0 {
+		t.Fatalf("%d records left after Clear", len(got))
+	}
+
+	err = s.Update(ctx, func(tx storage.WriteTx) error {
+		tx.Put("a/new", []byte("z"))
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := Snapshot(t, s); len(got) != 1 {
+		t.Fatalf("got %d records after writing to a cleared store", len(got))
+	}
 }
 
 func transactions(t *testing.T, open func(t *testing.T) storage.Store) {

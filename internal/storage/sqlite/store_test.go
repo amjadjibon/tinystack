@@ -114,3 +114,29 @@ func TestUnknownSchema(t *testing.T) {
 		t.Fatalf("open: %v", err)
 	}
 }
+
+func TestClearPersists(t *testing.T) {
+	dir := t.TempDir()
+	ctx := context.Background()
+	s := open(t, dir)
+	err := s.Update(ctx, func(tx storage.WriteTx) error {
+		tx.Put("a", []byte("1"))
+		tx.Put("b", []byte("2"))
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = storage.Clear(ctx, s); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := storagetest.Snapshot(t, open(t, dir)); len(got) != 0 {
+		t.Fatalf("a reopened store holds %d records after Clear", len(got))
+	}
+}

@@ -25,6 +25,19 @@ type Store interface {
 	Update(context.Context, func(WriteTx) error) error
 }
 
+// Clear deletes every record in one transaction, so concurrent callers see the
+// state before or after, never part of it. Services that poll the store find it
+// empty and carry on.
+func Clear(ctx context.Context, store Store) error {
+	return store.Update(ctx, func(tx WriteTx) error {
+		for _, key := range tx.Keys("") {
+			tx.Delete(key)
+		}
+
+		return nil
+	})
+}
+
 // Scoped splits a key laid out as "<account>/<region>/<service>/<rest>" and
 // reports whether it belongs to service.
 func Scoped(key, service string) (account, region, rest string, ok bool) {
