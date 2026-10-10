@@ -96,6 +96,9 @@ func TestTerraformOverrideConfig(t *testing.T) {
 
 	provider := parsed["provider"].(map[string]any)["aws"].(map[string]any)
 	endpoints := provider["endpoints"].(map[string]any)
+	if endpoints["configservice"] != "http://127.0.0.1:4566" {
+		t.Fatalf("expected Config endpoint set, got %v", endpoints["configservice"])
+	}
 	if endpoints["dynamodb"] != "http://127.0.0.1:4566" {
 		t.Fatalf("expected dynamodb endpoint set, got %v", endpoints["dynamodb"])
 	}

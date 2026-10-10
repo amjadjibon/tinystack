@@ -22,6 +22,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.89.0
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.42.1
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.75.0
+	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.3
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.70.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.43.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.338.1
