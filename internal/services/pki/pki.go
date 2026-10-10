@@ -99,6 +99,14 @@ func (l *Lazy) Get(ctx context.Context, now time.Time) (*Authority, error) {
 	return l.ca, nil
 }
 
+// Reset forgets the cached authority, so the next Get reads the stored one or,
+// after the store was cleared, creates a new one.
+func (l *Lazy) Reset() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.ca = nil
+}
+
 func newRecord(commonName string, now time.Time) (*record, error) {
 	k, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {

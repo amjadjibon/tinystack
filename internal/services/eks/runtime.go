@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -88,6 +89,13 @@ func (s *Service) Stop() {
 
 	if r.bg.Stop() {
 		r.runtime.Close()
+	}
+}
+
+// Reset removes every API server the runtime started.
+func (s *Service) Reset(context.Context) {
+	if s.runner != nil {
+		common.ResetRuntime(s.runner.runtime)
 	}
 }
 

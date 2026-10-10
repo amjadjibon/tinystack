@@ -414,10 +414,19 @@ func (r *Runtime) Remove(ctx context.Context, id string) {
 	_, _ = dockercli.Run(ctx, nil, "rm", "-f", "-v", id)
 }
 
-// Close removes every cluster the runtime started and waits for the removals.
+// Close removes every cluster the runtime started, refuses new ones, and waits
+// for the removals.
 func (r *Runtime) Close() {
 	r.mu.Lock()
 	r.closed = true
+	r.mu.Unlock()
+	r.Reset()
+}
+
+// Reset removes every cluster the runtime started and waits for the removals.
+// Unlike Close, the runtime keeps serving.
+func (r *Runtime) Reset() {
+	r.mu.Lock()
 	ids := slices.Collect(maps.Keys(r.endpoints))
 	r.mu.Unlock()
 	var wg sync.WaitGroup

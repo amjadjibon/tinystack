@@ -70,6 +70,16 @@ func New(store storage.Store, keys *kms.Service) *Service {
 // and waits for the message mover.
 func (s *Service) Stop() { s.bg.Stop() }
 
+// Reset wakes every long poll, which then finds its queue gone.
+func (s *Service) Reset(context.Context) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for key, ch := range s.ready {
+		close(ch)
+		delete(s.ready, key)
+	}
+}
+
 // watch returns a channel closed by the next change to the queue. Register it
 // before claiming so a change between the claim and the wait is not lost.
 func (s *Service) watch(key string) <-chan struct{} {

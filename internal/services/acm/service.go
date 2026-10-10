@@ -12,6 +12,7 @@
 package acm
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -42,6 +43,10 @@ type Service struct {
 func New(store storage.Store) *Service {
 	return &Service{store: store, now: time.Now, ca: pki.NewLazy(store, caKey, caCommonName)}
 }
+
+// Reset forgets the cached certificate authority, which a cleared store no
+// longer holds.
+func (s *Service) Reset(context.Context) { s.ca.Reset() }
 
 // certificate is a certificate's record.
 type certificate struct {

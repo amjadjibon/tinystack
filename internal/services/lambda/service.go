@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"regexp"
 	"slices"
@@ -167,6 +168,20 @@ func (s *Service) Stop() {
 	if s.bg.Stop() {
 		s.runtime.Close()
 	}
+}
+
+// Reset ends every event source mapping's poller and removes the warm
+// environments, so nothing keeps running for functions that no longer exist.
+// Call it before the store is cleared.
+func (s *Service) Reset(context.Context) {
+	s.mu.Lock()
+	ids := slices.Collect(maps.Keys(s.pollers))
+	s.mu.Unlock()
+	for _, id := range ids {
+		<-s.stopPoller(id)
+	}
+
+	common.ResetRuntime(s.runtime)
 }
 
 // function is the stored configuration of one function: $LATEST, or a

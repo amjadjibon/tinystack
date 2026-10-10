@@ -17,6 +17,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -76,6 +77,9 @@ func (s *Service) Stop() {
 		s.runtime.Close()
 	}
 }
+
+// Reset removes every container the runtime started.
+func (s *Service) Reset(context.Context) { common.ResetRuntime(s.runtime) }
 
 func invalidParameterValue(format string, args ...any) error {
 	return awserror.New("InvalidParameterValueException", fmt.Sprintf(format, args...))

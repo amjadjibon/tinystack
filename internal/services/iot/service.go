@@ -115,6 +115,16 @@ func (s *Service) UseIdentity(defaults request.Scope, verify bool) {
 	s.defaults, s.verify = defaults, verify
 }
 
+// Reset forgets the certificate authority and the certificates it signed for
+// the MQTT over TLS listener, which a cleared store no longer holds. Connected
+// MQTT clients and the brokers' in-memory session state stay.
+func (s *Service) Reset(context.Context) {
+	s.ca.Reset()
+	s.serverCertsMu.Lock()
+	defer s.serverCertsMu.Unlock()
+	clear(s.serverCerts)
+}
+
 // Stop disconnects every MQTT client and stops the brokers and listeners.
 func (s *Service) Stop() {
 	s.closeBrokers()

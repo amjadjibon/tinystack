@@ -153,10 +153,19 @@ func (r *Runtime) Release(arn string) {
 	}
 }
 
-// Close removes every container and waits for the removals.
+// Close removes every container, refuses new ones, and waits for the removals.
 func (r *Runtime) Close() {
 	r.mu.Lock()
 	r.closed = true
+	r.mu.Unlock()
+	r.Reset()
+}
+
+// Reset removes every container and waits for the removals. Unlike Close, the
+// runtime keeps serving, so functions start fresh containers on their next
+// invocation.
+func (r *Runtime) Reset() {
+	r.mu.Lock()
 	var all []*container
 	for _, p := range r.pools {
 		all = append(all, p.idle...)

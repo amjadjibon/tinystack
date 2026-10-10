@@ -17,6 +17,7 @@
 package ecs
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -76,6 +77,15 @@ func (s *Service) Stop() {
 	if s.bg.Stop() && s.runtime != nil {
 		s.runtime.Close()
 	}
+}
+
+// Reset removes every container the runtime started and forgets how far task
+// logs were shipped.
+func (s *Service) Reset(context.Context) {
+	s.mu.Lock()
+	clear(s.cursors)
+	s.mu.Unlock()
+	common.ResetRuntime(s.runtime)
 }
 
 func invalidParameter(format string, args ...any) error {
