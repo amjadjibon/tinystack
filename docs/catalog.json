@@ -1133,17 +1133,31 @@
       ],
       "execution": "Trail records / bounded local event history",
       "package": "cloudtrail"
+    },
+    "account": {
+      "title": "AWS Account",
+      "category": "Management and governance",
+      "summary": "Read-only account metadata, primary contact details, and region opt-in statuses for the calling account.",
+      "features": [
+        "GetAccountInformation returns AccountId, AccountName (defaults to TinyStack Account), AccountCreatedDate (defaults to 2024-01-01T00:00:00Z UTC), and AccountState (ACTIVE) for the caller",
+        "GetContactInformation retrieves primary contact details configured via startup configuration (accounts block), returning ResourceNotFoundException when unconfigured",
+        "ListRegions returns opt-in statuses for a selected subset of 28 commercial regions (17 enabled by default, 11 opt-in disabled by default), with RegionOptStatusContains filtering and MaxResults/NextToken pagination",
+        "GetRegionOptStatus validates RegionName against the 28-region commercial subset and returns the opt-in status including configured per-account overrides",
+        "Startup accounts configuration source supports per-account metadata, primary contact information, and region overrides persisted under <account>/account/state across restarts",
+        "Multi-account caller isolation rejecting malformed (including explicit empty string) or cross-account AccountId without Organizations delegation",
+        "Console catalogue entry with Management & Governance category and official icon"
+      ],
+      "gaps": [
+        "Selected 28 commercial regions subset (17 standard, 11 opt-in) rather than full commercial AWS global region catalogue or GovCloud/China partitions",
+        "Read-only/records-only first slice: mutation operations like EnableRegion, DisableRegion, PutContactInformation, and AlternateContact APIs are not implemented",
+        "Organizations delegation and cross-account access are not supported; requests with another explicit AccountId are rejected with AccessDeniedException",
+        "Account has no ordinary resource lifecycle or mutation UI; no CloudFormation resource types are registered"
+      ],
+      "execution": "Records",
+      "package": "account"
     }
   },
   "future": {
-    "account": {
-      "title": "AWS Account",
-      "state": "Proposed",
-      "slice": "Implement `GetAccountInformation`, `GetContactInformation`, and `ListRegions` for the caller's account.",
-      "features": "- [ ] `GetAccountInformation` \u2014 return `AccountId`, `AccountName`, `AccountCreatedDate`, and `AccountState` through `POST /getAccountInformation`.\n- [ ] `GetContactInformation` \u2014 return configured primary contact details through `POST /getContactInformation`.\n- [ ] `ListRegions` \u2014 return region opt-in statuses through `POST /listRegions`, with `RegionOptStatusContains`, `MaxResults`, and `NextToken`.\n- [ ] `GetRegionOptStatus` \u2014 validate `RegionName` and return the same status as `ListRegions` through `POST /getRegionOptStatus`.\n- [ ] Additive `AccountState` \u2014 populate `ACTIVE` by default. The field was added on 2026-04-29; newer SDKs expose it while older JSON SDK models can ignore it.",
-      "integration": "Use the AWS Account `2021-02-01` REST JSON model and SigV4 signing name `account`. Resolve the account through `identity.accounts` or `defaults.account`; keep account details and region statuses consistent across calls and restarts. Serve only the caller's account until Organizations delegation exists, and reject another explicit `AccountId`. Encode modeled status codes and errors through the REST JSON codec.",
-      "acceptance": "Call all four paths through an AWS SDK and raw REST JSON requests. Check account isolation, validation errors, region filtering and pagination, and consistent opt-in statuses. Confirm `AccountState` in raw responses and current SDKs, compatibility with an older SDK model, and stable configured details after restart."
-    },
     "appsync-events": {
       "title": "AppSync Events",
       "state": "Proposed",

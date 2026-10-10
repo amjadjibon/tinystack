@@ -7,7 +7,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 
 | Service or extension | Status | First useful slice |
 | --- | --- | --- |
-| [AWS Account](services/account.md) | Proposed | Implement `GetAccountInformation`, `GetContactInformation`, and `ListRegions` for the caller's account. |
 | [AWS Backup](services/backup.md) | Proposed | Implement `CreateBackupVault`, `DescribeBackupVault`, `DeleteBackupVault`. |
 | [AWS Batch](services/batch.md) | Proposed | Implement `CreateComputeEnvironment`, `DescribeComputeEnvironments`, `CreateJobQueue`. |
 | [AWS Config](services/config.md) | Proposed | Implement `PutConfigRule`, `DescribeConfigRules`, `DeleteConfigRule`. |

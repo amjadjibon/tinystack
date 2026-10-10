@@ -33,8 +33,9 @@ Use `./bin/tinystack start --help` for the current command help.
 | `identity.mode` | `parse` | `parse` or `verify` |
 | `identity.accounts` | `{}` | Nonempty access-key IDs mapped to 12-digit account IDs |
 | `identity.secret_keys` | Unset | Nonempty secrets keyed by access-key ID; required in `verify`, forbidden in `parse` |
+| `accounts` | `{}` | Optional fixtures keyed by 12-digit account ID for metadata, primary contact and region opt-in overrides |
 | `storage.mode` | `memory` | `memory` or `persistent` |
-| `storage.s3_max_object_bytes` | `268435456` (256 MiB) | `1`–`5368709120` (5 GiB); limits S3 PUTs, individual parts and completed objects; uploads still buffer in memory |
+| `storage.s3_max_object_bytes` | `268435456` (256 MiB) | `1`–`5368709120` (5 GiB); limits S3 PUTs, individual parts and completed objects; uploads use bounded HTTP streaming |
 | `storage.path` | Unset | Required in `persistent`, forbidden in `memory`; `~` expands to your home directory |
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |
@@ -87,6 +88,43 @@ regional hostname, then the configured default. General IAM permission evaluatio
 
 Defaults and validation are defined in
 [config.go](https://github.com/amjadjibon/tinystack/blob/main/internal/config/config.go).
+
+## Account metadata and contact configuration
+
+TinyStack provides an AWS Account service endpoint with deterministic fallback metadata (`2024-01-01T00:00:00Z` creation date, `TinyStack Account` name, `ACTIVE` state) and read-only region opt-in statuses for a selected subset of 28 commercial regions (17 enabled by default, 11 opt-in disabled by default).
+
+Custom account metadata, primary contact information, and region opt-in overrides can be configured under the `accounts` block keyed by 12-digit Account ID:
+
+```yaml
+accounts:
+  "123456789012":
+    name: "Production Account"
+    created_date: "2023-05-15T00:00:00Z"
+    state: "ACTIVE"
+    contact:
+      full_name: "Operations Admin"
+      company_name: "Example Corp"
+      address_line1: "123 Main St"
+      city: "Seattle"
+      state_or_region: "WA"
+      postal_code: "98101"
+      country_code: "US"
+      phone_number: "+12065550100"
+      website_url: "https://example.com"
+    regions:
+      af-south-1: "ENABLED"
+      ap-east-1: "ENABLED"
+```
+
+Configured account fixtures are seeded into the store at startup under `<accountID>/account/state`.
+
+### Seed precedence and reset behavior
+
+- **Seed Precedence**: Supplied non-empty fields in configuration override stored metadata at startup.
+- **Contact Replacement**: A configured contact replaces any prior contact information. Omitting startup contact preserves an existing stored contact; `ResourceNotFoundException` applies when no configured/persisted contact exists.
+- **Region Overrides Merge**: Configured `regions` entries merge into existing region opt-in mappings rather than clearing omitted regions.
+- **Persistence across Configuration Removal**: When using persistent storage (`storage.mode: persistent`), removing an account from the startup configuration preserves existing persisted records in the database.
+- **Reset Semantics**: A system reset clears stored account fixture records. Startup seeding runs again only on server restart. Unconfigured accounts fallback to default metadata with no primary contact.
 
 ## Inject faults at startup
 

@@ -135,6 +135,7 @@ nav:
           - "IoT Data Plane": services/iotdataplane.md
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md
       - "Management and governance":
+          - "AWS Account": services/account.md
           - "AppConfig": services/appconfig.md
           - "AppConfig Data": services/appconfigdata.md
           - "CloudTrail": services/cloudtrail.md
@@ -170,7 +171,6 @@ nav:
       - Priorities and policy: roadmap/index.md
       - Future catalogue: roadmap/catalogue.md
       - Service and extension proposals:
-          - "AWS Account": roadmap/services/account.md
           - "AWS Backup": roadmap/services/backup.md
           - "AWS Batch": roadmap/services/batch.md
           - "AWS Config": roadmap/services/config.md
