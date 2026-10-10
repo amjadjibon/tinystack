@@ -134,6 +134,8 @@ nav:
           - "IoT Core": services/iot.md
           - "IoT Data Plane": services/iotdataplane.md
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md
+      - "Management and governance":
+          - "Organizations": services/organizations.md
       - "Messaging and events":
           - "Data Firehose": services/firehose.md
           - "EventBridge": services/eventbridge.md
@@ -149,6 +151,8 @@ nav:
           - "CloudFront": services/cloudfront.md
           - "Elastic Load Balancing v2": services/elbv2.md
           - "Route 53": services/route53.md
+      - "Networking and content delivery":
+          - "Cloud Map": services/servicediscovery.md
       - "Storage and databases":
           - "DynamoDB": services/dynamodb.md
           - "DynamoDB Streams": services/dynamodbstreams.md
@@ -181,7 +185,6 @@ nav:
           - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md
           - "Bedrock Agents": roadmap/services/bedrock-agent.md
           - "Bedrock Runtime": roadmap/services/bedrock-runtime.md
-          - "Cloud Map": roadmap/services/servicediscovery.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
           - "CloudTrail": roadmap/services/cloudtrail.md
           - "CodeBuild": roadmap/services/codebuild.md
@@ -196,7 +199,6 @@ nav:
           - "Lambda MicroVMs": roadmap/services/lambda-microvms.md
           - "MediaConnect": roadmap/services/mediaconnect.md
           - "OpenSearch Service": roadmap/services/opensearch.md
-          - "Organizations": roadmap/services/organizations.md
           - "RDS Data API": roadmap/services/rds-data.md
           - "S3 Files": roadmap/services/s3files.md
           - "S3 Tables": roadmap/services/s3tables.md

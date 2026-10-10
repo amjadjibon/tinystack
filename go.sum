@@ -100,6 +100,8 @@ github.com/aws/aws-sdk-go-v2/service/kms v1.61.1 h1:BNBCE5IGMCehEPpSbPqhdyV4ZS9Y
 github.com/aws/aws-sdk-go-v2/service/kms v1.61.1/go.mod h1:XBCtQL8tXGOCYe8ExoWRURhDQ5QnfyWbP9px5DNsuog=
 github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0 h1:fJUTGbCN/EKBq/TIR84MDI0qr4eY9qNaw19dT+S2LCA=
 github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0/go.mod h1:jUmFXtUKRVCKTaKap+NgL32pmSkVehamqqMENlGMApk=
+github.com/aws/aws-sdk-go-v2/service/organizations v1.61.1 h1:Lys55ILmrIt7CrHsbPH9aGeKEZjWzk9Pu1Bdc1xcEz8=
+github.com/aws/aws-sdk-go-v2/service/organizations v1.61.1/go.mod h1:NdiEqRmcl9tcUF7op+S04yRPKEFt+fkKO45BuIl47Gg=
 github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2 h1:bbg+PoMofK/aFmwHqPB0Z7u2t0pwxNejpzwK+RVM/0A=
 github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2/go.mod h1:4XVfSih6SKlffDTR5vU7uOThAgoT2BDouvQp6H+URtE=
 github.com/aws/aws-sdk-go-v2/service/rds v1.116.0 h1:ZeKihUvAdbIzUZ206cOu4Kc30c3wEbi9jf/8NKFgCL0=
@@ -116,6 +118,8 @@ github.com/aws/aws-sdk-go-v2/service/scheduler v1.25.1 h1:dEyv+S5q7FY4gIkgRloypA
 github.com/aws/aws-sdk-go-v2/service/scheduler v1.25.1/go.mod h1:dHIDVQXOyMDYden9vNkPn87JpMGVKZYCDAUcpVw1/kM=
 github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.1 h1:xYoGDAZtoSXI5wOfjv1jzG1AUOdXZthz4YL9DFvunrQ=
 github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.1/go.mod h1:dgXxccOMNsXm/eOkrQbBfxm4a6H8IiRphA7z69RG8hM=
+github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.49.2 h1:ja05kTsDnxuKJLD7W2oaxJZlmjePXHqiH7FVSfxUdR4=
+github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.49.2/go.mod h1:TIdmJZDfC5Yf04cBGvPHEtXoUk2rEWr9zYtWyNEy/lk=
 github.com/aws/aws-sdk-go-v2/service/ses v1.42.2 h1:vRqVH0R5nfjn0H7tuyK7wK7DbdflVnBG6wZ6t2ljLho=
 github.com/aws/aws-sdk-go-v2/service/ses v1.42.2/go.mod h1:6yxhDdUZ2pwgKLc3VAOwwp1uelsC8yGqzZO+UkVz7hw=
 github.com/aws/aws-sdk-go-v2/service/sesv2 v1.77.0 h1:hl/wkCN+oqbGVuZh6CJ4nbzJUq91KXaOi30ub+n8kjo=

@@ -16494,5 +16494,668 @@
         "ParameterApplyStatus"
       ]
     }
+  },
+  "organizations": {
+    "operations": [
+      "CreateOrganization",
+      "DescribeOrganization",
+      "DeleteOrganization",
+      "CreateAccount",
+      "DescribeCreateAccountStatus",
+      "DescribeAccount",
+      "ListAccounts",
+      "ListAccountsForParent",
+      "MoveAccount",
+      "RemoveAccountFromOrganization",
+      "ListRoots",
+      "CreateOrganizationalUnit",
+      "DescribeOrganizationalUnit",
+      "UpdateOrganizationalUnit",
+      "DeleteOrganizationalUnit",
+      "ListOrganizationalUnitsForParent",
+      "ListParents",
+      "ListChildren",
+      "CreatePolicy",
+      "DescribePolicy",
+      "UpdatePolicy",
+      "DeletePolicy",
+      "ListPolicies",
+      "AttachPolicy",
+      "DetachPolicy",
+      "ListPoliciesForTarget",
+      "ListTargetsForPolicy",
+      "EnablePolicyType",
+      "DisablePolicyType",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateOrganizationRequest": [
+        "FeatureSet"
+      ],
+      "CreateOrganizationResponse": [
+        "Organization"
+      ],
+      "Organization": [
+        "Id",
+        "Arn",
+        "FeatureSet",
+        "MasterAccountArn",
+        "MasterAccountId",
+        "MasterAccountEmail",
+        "AvailablePolicyTypes"
+      ],
+      "PolicyTypeSummary": [
+        "Type",
+        "Status"
+      ],
+      "DescribeOrganizationResponse": [
+        "Organization"
+      ],
+      "CreateAccountRequest": [
+        "Email",
+        "AccountName",
+        "Tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "CreateAccountResponse": [
+        "CreateAccountStatus"
+      ],
+      "CreateAccountStatus": [
+        "Id",
+        "AccountName",
+        "State",
+        "RequestedTimestamp",
+        "CompletedTimestamp",
+        "AccountId"
+      ],
+      "DescribeCreateAccountStatusRequest": [
+        "CreateAccountRequestId"
+      ],
+      "DescribeCreateAccountStatusResponse": [
+        "CreateAccountStatus"
+      ],
+      "DescribeAccountRequest": [
+        "AccountId"
+      ],
+      "DescribeAccountResponse": [
+        "Account"
+      ],
+      "Account": [
+        "Id",
+        "Arn",
+        "Email",
+        "Name",
+        "Status",
+        "State",
+        "JoinedMethod",
+        "JoinedTimestamp"
+      ],
+      "ListAccountsRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListAccountsResponse": [
+        "Accounts",
+        "NextToken"
+      ],
+      "ListAccountsForParentRequest": [
+        "ParentId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListAccountsForParentResponse": [
+        "Accounts",
+        "NextToken"
+      ],
+      "MoveAccountRequest": [
+        "AccountId",
+        "SourceParentId",
+        "DestinationParentId"
+      ],
+      "RemoveAccountFromOrganizationRequest": [
+        "AccountId"
+      ],
+      "ListRootsRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListRootsResponse": [
+        "Roots",
+        "NextToken"
+      ],
+      "Root": [
+        "Id",
+        "Arn",
+        "Name",
+        "PolicyTypes"
+      ],
+      "CreateOrganizationalUnitRequest": [
+        "ParentId",
+        "Name",
+        "Tags"
+      ],
+      "CreateOrganizationalUnitResponse": [
+        "OrganizationalUnit"
+      ],
+      "OrganizationalUnit": [
+        "Id",
+        "Arn",
+        "Name"
+      ],
+      "DescribeOrganizationalUnitRequest": [
+        "OrganizationalUnitId"
+      ],
+      "DescribeOrganizationalUnitResponse": [
+        "OrganizationalUnit"
+      ],
+      "UpdateOrganizationalUnitRequest": [
+        "OrganizationalUnitId",
+        "Name"
+      ],
+      "UpdateOrganizationalUnitResponse": [
+        "OrganizationalUnit"
+      ],
+      "DeleteOrganizationalUnitRequest": [
+        "OrganizationalUnitId"
+      ],
+      "ListOrganizationalUnitsForParentRequest": [
+        "ParentId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListOrganizationalUnitsForParentResponse": [
+        "OrganizationalUnits",
+        "NextToken"
+      ],
+      "ListParentsRequest": [
+        "ChildId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListParentsResponse": [
+        "Parents",
+        "NextToken"
+      ],
+      "Parent": [
+        "Id",
+        "Type"
+      ],
+      "ListChildrenRequest": [
+        "ParentId",
+        "ChildType",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListChildrenResponse": [
+        "Children",
+        "NextToken"
+      ],
+      "Child": [
+        "Id",
+        "Type"
+      ],
+      "CreatePolicyRequest": [
+        "Content",
+        "Description",
+        "Name",
+        "Type",
+        "Tags"
+      ],
+      "CreatePolicyResponse": [
+        "Policy"
+      ],
+      "Policy": [
+        "PolicySummary",
+        "Content"
+      ],
+      "PolicySummary": [
+        "Id",
+        "Arn",
+        "Name",
+        "Description",
+        "Type",
+        "AwsManaged"
+      ],
+      "DescribePolicyRequest": [
+        "PolicyId"
+      ],
+      "DescribePolicyResponse": [
+        "Policy"
+      ],
+      "UpdatePolicyRequest": [
+        "PolicyId",
+        "Name",
+        "Description",
+        "Content"
+      ],
+      "UpdatePolicyResponse": [
+        "Policy"
+      ],
+      "DeletePolicyRequest": [
+        "PolicyId"
+      ],
+      "ListPoliciesRequest": [
+        "Filter",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListPoliciesResponse": [
+        "Policies",
+        "NextToken"
+      ],
+      "AttachPolicyRequest": [
+        "PolicyId",
+        "TargetId"
+      ],
+      "DetachPolicyRequest": [
+        "PolicyId",
+        "TargetId"
+      ],
+      "ListPoliciesForTargetRequest": [
+        "TargetId",
+        "Filter",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListPoliciesForTargetResponse": [
+        "Policies",
+        "NextToken"
+      ],
+      "ListTargetsForPolicyRequest": [
+        "PolicyId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListTargetsForPolicyResponse": [
+        "Targets",
+        "NextToken"
+      ],
+      "PolicyTargetSummary": [
+        "TargetId",
+        "Arn",
+        "Name",
+        "Type"
+      ],
+      "EnablePolicyTypeRequest": [
+        "RootId",
+        "PolicyType"
+      ],
+      "EnablePolicyTypeResponse": [
+        "Root"
+      ],
+      "DisablePolicyTypeRequest": [
+        "RootId",
+        "PolicyType"
+      ],
+      "DisablePolicyTypeResponse": [
+        "Root"
+      ],
+      "TagResourceRequest": [
+        "ResourceId",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceId",
+        "TagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceId",
+        "NextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags",
+        "NextToken"
+      ]
+    }
+  },
+  "servicediscovery": {
+    "operations": [
+      "CreateHttpNamespace",
+      "CreatePrivateDnsNamespace",
+      "CreatePublicDnsNamespace",
+      "GetOperation",
+      "ListOperations",
+      "GetNamespace",
+      "ListNamespaces",
+      "DeleteNamespace",
+      "UpdateHttpNamespace",
+      "CreateService",
+      "GetService",
+      "ListServices",
+      "UpdateService",
+      "DeleteService",
+      "RegisterInstance",
+      "DeregisterInstance",
+      "GetInstance",
+      "ListInstances",
+      "GetInstancesHealthStatus",
+      "UpdateInstanceCustomHealthStatus",
+      "DiscoverInstances",
+      "DiscoverInstancesRevision",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateHttpNamespaceRequest": [
+        "Name",
+        "CreatorRequestId",
+        "Description",
+        "Tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "CreateHttpNamespaceResponse": [
+        "OperationId"
+      ],
+      "CreatePrivateDnsNamespaceRequest": [
+        "Name",
+        "CreatorRequestId",
+        "Description",
+        "Vpc",
+        "Tags"
+      ],
+      "CreatePrivateDnsNamespaceResponse": [
+        "OperationId"
+      ],
+      "CreatePublicDnsNamespaceRequest": [
+        "Name",
+        "CreatorRequestId",
+        "Description",
+        "Tags"
+      ],
+      "CreatePublicDnsNamespaceResponse": [
+        "OperationId"
+      ],
+      "GetOperationRequest": [
+        "OperationId"
+      ],
+      "GetOperationResponse": [
+        "Operation"
+      ],
+      "Operation": [
+        "Id",
+        "OwnerAccount",
+        "Type",
+        "Status",
+        "CreateDate",
+        "UpdateDate",
+        "Targets"
+      ],
+      "ListOperationsRequest": [
+        "NextToken",
+        "MaxResults",
+        "Filters"
+      ],
+      "OperationFilter": [
+        "Name",
+        "Values",
+        "Condition"
+      ],
+      "ListOperationsResponse": [
+        "Operations",
+        "NextToken"
+      ],
+      "OperationSummary": [
+        "Id",
+        "Status"
+      ],
+      "GetNamespaceRequest": [
+        "Id"
+      ],
+      "GetNamespaceResponse": [
+        "Namespace"
+      ],
+      "Namespace": [
+        "Id",
+        "Arn",
+        "Name",
+        "Type",
+        "Description",
+        "ServiceCount",
+        "Properties",
+        "CreateDate",
+        "CreatorRequestId"
+      ],
+      "NamespaceProperties": [
+        "HttpProperties"
+      ],
+      "HttpProperties": [
+        "HttpName"
+      ],
+      "ListNamespacesRequest": [
+        "NextToken",
+        "MaxResults",
+        "Filters"
+      ],
+      "NamespaceFilter": [
+        "Name",
+        "Values",
+        "Condition"
+      ],
+      "ListNamespacesResponse": [
+        "Namespaces",
+        "NextToken"
+      ],
+      "NamespaceSummary": [
+        "Id",
+        "Arn",
+        "Name",
+        "Type",
+        "Description",
+        "ServiceCount",
+        "Properties",
+        "CreateDate"
+      ],
+      "DeleteNamespaceRequest": [
+        "Id"
+      ],
+      "DeleteNamespaceResponse": [
+        "OperationId"
+      ],
+      "UpdateHttpNamespaceRequest": [
+        "Id",
+        "UpdaterRequestId",
+        "Namespace"
+      ],
+      "HttpNamespaceChange": [
+        "Description"
+      ],
+      "UpdateHttpNamespaceResponse": [
+        "OperationId"
+      ],
+      "CreateServiceRequest": [
+        "Name",
+        "NamespaceId",
+        "CreatorRequestId",
+        "Description",
+        "DnsConfig",
+        "HealthCheckCustomConfig",
+        "Tags",
+        "Type"
+      ],
+      "DnsConfig": [
+        "NamespaceId",
+        "RoutingPolicy",
+        "DnsRecords"
+      ],
+      "DnsRecord": [
+        "Type",
+        "TTL"
+      ],
+      "HealthCheckCustomConfig": [
+        "FailureThreshold"
+      ],
+      "CreateServiceResponse": [
+        "Service"
+      ],
+      "Service": [
+        "Id",
+        "Arn",
+        "Name",
+        "NamespaceId",
+        "Description",
+        "InstanceCount",
+        "DnsConfig",
+        "Type",
+        "HealthCheckCustomConfig",
+        "CreateDate",
+        "CreatorRequestId"
+      ],
+      "GetServiceRequest": [
+        "Id"
+      ],
+      "GetServiceResponse": [
+        "Service"
+      ],
+      "ListServicesRequest": [
+        "NextToken",
+        "MaxResults",
+        "Filters"
+      ],
+      "ServiceFilter": [
+        "Name",
+        "Values",
+        "Condition"
+      ],
+      "ListServicesResponse": [
+        "Services",
+        "NextToken"
+      ],
+      "ServiceSummary": [
+        "Id",
+        "Arn",
+        "Name",
+        "Type",
+        "Description",
+        "InstanceCount",
+        "DnsConfig",
+        "HealthCheckCustomConfig",
+        "CreateDate"
+      ],
+      "UpdateServiceRequest": [
+        "Id",
+        "Service"
+      ],
+      "ServiceChange": [
+        "Description",
+        "DnsConfig"
+      ],
+      "DnsConfigChange": [
+        "DnsRecords"
+      ],
+      "UpdateServiceResponse": [
+        "OperationId"
+      ],
+      "DeleteServiceRequest": [
+        "Id"
+      ],
+      "DeleteServiceResponse": [],
+      "RegisterInstanceRequest": [
+        "ServiceId",
+        "InstanceId",
+        "CreatorRequestId",
+        "Attributes"
+      ],
+      "RegisterInstanceResponse": [
+        "OperationId"
+      ],
+      "DeregisterInstanceRequest": [
+        "ServiceId",
+        "InstanceId"
+      ],
+      "DeregisterInstanceResponse": [
+        "OperationId"
+      ],
+      "GetInstanceRequest": [
+        "ServiceId",
+        "InstanceId"
+      ],
+      "GetInstanceResponse": [
+        "Instance"
+      ],
+      "Instance": [
+        "Id",
+        "CreatorRequestId",
+        "Attributes"
+      ],
+      "ListInstancesRequest": [
+        "ServiceId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListInstancesResponse": [
+        "Instances",
+        "NextToken"
+      ],
+      "InstanceSummary": [
+        "Id",
+        "Attributes"
+      ],
+      "GetInstancesHealthStatusRequest": [
+        "ServiceId",
+        "Instances",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetInstancesHealthStatusResponse": [
+        "Status",
+        "NextToken"
+      ],
+      "UpdateInstanceCustomHealthStatusRequest": [
+        "ServiceId",
+        "InstanceId",
+        "Status"
+      ],
+      "DiscoverInstancesRequest": [
+        "NamespaceName",
+        "ServiceName",
+        "MaxResults",
+        "QueryParameters",
+        "OptionalParameters",
+        "HealthStatus"
+      ],
+      "DiscoverInstancesResponse": [
+        "Instances",
+        "InstancesRevision"
+      ],
+      "HttpInstanceSummary": [
+        "InstanceId",
+        "NamespaceName",
+        "ServiceName",
+        "HealthStatus",
+        "Attributes"
+      ],
+      "DiscoverInstancesRevisionRequest": [
+        "NamespaceName",
+        "ServiceName"
+      ],
+      "DiscoverInstancesRevisionResponse": [
+        "InstancesRevision"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
   }
 }

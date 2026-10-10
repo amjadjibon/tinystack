@@ -42,6 +42,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	organizationsapi "github.com/amjadjibon/tinystack/internal/aws/generated/organizations"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
@@ -50,6 +51,7 @@ import (
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	servicediscoveryapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicediscovery"
 	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
 	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
@@ -93,6 +95,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/organizations"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
 	"github.com/amjadjibon/tinystack/internal/services/rds"
 	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
@@ -102,6 +105,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
+	"github.com/amjadjibon/tinystack/internal/services/servicediscovery"
 	"github.com/amjadjibon/tinystack/internal/services/ses"
 	"github.com/amjadjibon/tinystack/internal/services/sesv2"
 	"github.com/amjadjibon/tinystack/internal/services/sfn"
@@ -255,6 +259,8 @@ func build(
 	scaling := autoscaling.New(store, logger)
 	a.onStop(scaling.Stop)
 	balancers := elbv2.New(store, logger)
+	organizationsService := organizations.New(store)
+	discovery := servicediscovery.New(store)
 	databases := rds.New(store)
 	a.onStop(databases.Stop)
 	a.onReset(databases.Reset)
@@ -308,6 +314,8 @@ func build(
 		ecsapi.Descriptor(containers),
 		eksapi.Descriptor(kube),
 		elasticacheapi.Descriptor(caches),
+		organizationsapi.Descriptor(organizationsService),
+		servicediscoveryapi.Descriptor(discovery),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
