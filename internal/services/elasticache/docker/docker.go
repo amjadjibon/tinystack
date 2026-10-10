@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -70,28 +69,13 @@ func (r *Runtime) Start(ctx context.Context, spec *elasticache.NodeSpec) (elasti
 		return elasticache.Started{}, fmt.Errorf("runtime is closed")
 	}
 
-	port, portErr := hostPort(ctx, id, spec.Port)
+	port, portErr := dockercli.HostPort(ctx, id, spec.Port)
 	if portErr != nil {
 		r.Remove(ctx, id)
 		return elasticache.Started{}, portErr
 	}
 
 	return elasticache.Started{ID: id, Port: port}, nil
-}
-
-func hostPort(ctx context.Context, id string, containerPort int64) (int64, error) {
-	out, err := dockercli.Run(ctx, nil, "port", id, strconv.FormatInt(containerPort, 10)+"/tcp")
-	if err != nil {
-		return 0, err
-	}
-
-	first, _, _ := strings.Cut(out, "\n")
-	n, parseErr := strconv.ParseInt(first[strings.LastIndex(first, ":")+1:], 10, 64)
-	if parseErr != nil {
-		return 0, fmt.Errorf("docker port %s: unexpected output %q", id, out)
-	}
-
-	return n, nil
 }
 
 func (r *Runtime) Running(ctx context.Context, id string) (bool, error) {
@@ -107,33 +91,7 @@ func (r *Runtime) Running(ctx context.Context, id string) (bool, error) {
 }
 
 func (r *Runtime) ListLabeled(ctx context.Context, label string) (map[string]string, error) {
-	out, err := dockercli.Run(
-		ctx,
-		nil,
-		"ps",
-		"-a",
-		"--filter",
-		"label="+label,
-		"--format",
-		"{{.ID}} {{.Label \""+label+"\"}}",
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	res := map[string]string{}
-	for line := range strings.SplitSeq(out, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		parts := strings.Fields(line)
-		if len(parts) >= 2 {
-			res[parts[0]] = parts[1]
-		}
-	}
-
-	return res, nil
+	return dockercli.ListLabeled(ctx, label)
 }
 
 func (r *Runtime) Remove(ctx context.Context, id string) {

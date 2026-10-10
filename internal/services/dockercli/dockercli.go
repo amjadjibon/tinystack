@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -29,4 +30,51 @@ func Run(ctx context.Context, stdin io.Reader, args ...string) (string, error) {
 // Gone reports whether err is Run's error for a container that does not exist.
 func Gone(err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()), "no such")
+}
+
+// HostPort returns the loopback host port Docker allocated for a published TCP port.
+func HostPort(ctx context.Context, id string, containerPort int64) (int64, error) {
+	out, err := Run(ctx, nil, "port", id, strconv.FormatInt(containerPort, 10)+"/tcp")
+	if err != nil {
+		return 0, err
+	}
+
+	first, _, _ := strings.Cut(out, "\n")
+	n, parseErr := strconv.ParseInt(first[strings.LastIndex(first, ":")+1:], 10, 64)
+	if parseErr != nil {
+		return 0, fmt.Errorf("docker port %s: unexpected output %q", id, out)
+	}
+
+	return n, nil
+}
+
+// ListLabeled returns container IDs and the values of their ownership label.
+func ListLabeled(ctx context.Context, label string) (map[string]string, error) {
+	out, err := Run(
+		ctx,
+		nil,
+		"ps",
+		"-a",
+		"--filter",
+		"label="+label,
+		"--format",
+		"{{.ID}} {{.Label \""+label+"\"}}",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	res := map[string]string{}
+	for line := range strings.SplitSeq(out, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) >= 2 {
+			res[parts[0]] = parts[1]
+		}
+	}
+
+	return res, nil
 }
