@@ -7,7 +7,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 
 | Service or extension | Status | First useful slice |
 | --- | --- | --- |
-| [AWS Backup](services/backup.md) | Proposed | Implement `CreateBackupVault`, `DescribeBackupVault`, `DeleteBackupVault`. |
 | [AWS Batch](services/batch.md) | Proposed | Implement `CreateComputeEnvironment`, `DescribeComputeEnvironments`, `CreateJobQueue`. |
 | [AWS Signer](services/signer.md) | Proposed | Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`. |
 | [Amazon Bedrock control plane](services/bedrock.md) | Proposed | Implement `ListFoundationModels`, `GetFoundationModel`, `ListInferenceProfiles`. |

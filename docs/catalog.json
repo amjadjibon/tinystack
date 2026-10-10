@@ -1134,6 +1134,39 @@
       "execution": "Trail records / bounded local event history",
       "package": "cloudtrail"
     },
+    "backup": {
+      "title": "AWS Backup",
+      "category": "Management and governance",
+      "summary": "Persist regional vaults, immutable backup-plan versions and resource-selection metadata without running backups.",
+      "features": [
+        "17 REST JSON operations for vault CRUD, plan CRUD and version listing, resource-selection CRUD and vault/plan tags",
+        "Vault names, stable ARNs and millisecond creation dates; optional same-account/Region KMS key ARN metadata (UUID or multi-Region key ID, not aliases); recovery-point count is always zero",
+        "Named plans with 1-10 unique named rules, existing regional target vaults, supported UTC cron expressions, start/completion windows, cold-storage and deletion lifecycle days, and up to 10 RecoveryPointTags per rule",
+        "Each update creates an immutable version with a new version ID and creation timestamp; plan IDs/ARNs remain stable and rule IDs are retained for unchanged rule names; exact VersionId retrieval and version pagination",
+        "Selections store names, role ARNs, up to 500 unique explicit commercial resource ARNs without wildcards and up to 30 unique STRINGEQUALS tag selectors; explicit resources and selectors can coexist as metadata",
+        "Selection IDs are distinct even when display names repeat; at most 100 selections and 10 tag-based selections per plan; plan deletion requires removing selections first",
+        "Deleting a plan removes the current version from GetBackupPlan while preserving older version retrieval; ListBackupPlans IncludeDeleted and version lists retain deletion metadata",
+        "Regional CreatorRequestId replay for vaults/plans and per-plan replay for selections returns the original creation identity without overwriting records; token/name checks and writes are atomic",
+        "Creation tags and atomic TagResource/UntagResource on vaults/plans with shared tag validation and 50-tag limit; paginated ListTags and Resource Groups Tagging API integration",
+        "Deterministic ID/name sorting, MaxResults 1-1000, resume-after-deletion cursors bound to account, Region, operation and filter/parent; vault-type/shared and IncludeDeleted filters",
+        "Account/Region isolation, SQLite restart and shared reset; generic inventory, official console catalogue icon and Terraform backup endpoint",
+        "CloudFormation BackupVault, BackupPlan and BackupSelection selected properties, stable Ref/GetAtt, plan and tag updates, selection replacement, rollback and deletion"
+      ],
+      "gaps": [
+        "Records only: no schedule execution, resource membership scan, IAM role existence/trust or permission checks, KMS lookup/key creation/encryption, data protection, backup/restore/copy jobs or recovery points",
+        "StartBackupJob and job/recovery-point List/Get APIs, vault locks, notifications and access policies, reports, legal holds, organization policies, cross-account runtime and scheduling previews are absent",
+        "Plans reject AdvancedBackupSettings, ScanSettings, copy/index/scan actions, continuous backups, air-gapped targets, timezone and archive-opt-in lifecycle members; unsupported members fail explicitly even when set to false or empty arrays",
+        "Cron metadata uses the existing parser: six UTC fields with ranges/lists/steps; rate expressions and L/W/# cron syntax are rejected. Omitted schedules default to cron(0 5 ? * * *)",
+        "Lifecycle supports days 1-36500 with cold storage at least 90 days before deletion; omit DeleteAfterDays for indefinite retention. Start windows support 60-52560000 minutes, completion windows 1-52560000",
+        "Selections reject wildcards, NotResources and Conditions; role/resource ARNs are shape-validated commercial references only and are not resolved; ListOfTags is stored OR-selector metadata without matching resources",
+        "Plan names are unique among active plans and support 1-200 alphanumeric/dash/underscore/dot characters; vault names 2-50 without dots, rule/selection/token names 1-50. Plans retain up to 2000 versions; at most 300 vaults and 300 active plans per account/Region",
+        "Supplied CreatorRequestId tokens contain 1-50 alphanumeric/dash/underscore/dot characters. Replays return the original create result even after a plan update; vault/selection tokens are removed with their records, plan tokens remain with deletion history",
+        "No fabricated default vault or KMS key: create target vaults explicitly; EncryptionKeyArn is absent when omitted. Vault deletion is permitted when empty even if a plan references it",
+        "CloudFormation supports BackupVaultName/BackupVaultTags/EncryptionKeyArn, BackupPlan/BackupPlanTags and BackupSelection/BackupPlanId; policy, lock, notifications and all other properties are rejected. Vault name/key changes and selection changes require replacement; no mutation console"
+      ],
+      "execution": "Records only",
+      "package": "backup"
+    },
     "config": {
       "title": "AWS Config",
       "category": "Management and governance",
@@ -1193,12 +1226,6 @@
       "state": "Proposed",
       "slice": "Implement `CreateApi`, `GetApi`, `ListApis`.",
       "features": "- [ ] `CreateApi`\n- [ ] `GetApi`\n- [ ] `ListApis`\n- [ ] `CreateChannelNamespace`\n- [ ] `Publish`\n- [ ] `Subscribe`"
-    },
-    "backup": {
-      "title": "AWS Backup",
-      "state": "Proposed",
-      "slice": "Implement `CreateBackupVault`, `DescribeBackupVault`, `DeleteBackupVault`.",
-      "features": "- [ ] `CreateBackupVault`\n- [ ] `DescribeBackupVault`\n- [ ] `DeleteBackupVault`\n- [ ] `ListBackupVaults`\n- [ ] `CreateBackupPlan`\n- [ ] `GetBackupPlan`\n- [ ] `UpdateBackupPlan`\n- [ ] `DeleteBackupPlan`\n- [ ] `ListBackupPlans`\n- [ ] `ListBackupPlanVersions`\n- [ ] `CreateBackupSelection`\n- [ ] `GetBackupSelection`\n- [ ] `DeleteBackupSelection`\n- [ ] `ListBackupSelections`\n- [ ] `StartBackupJob`"
     },
     "batch": {
       "title": "AWS Batch",
