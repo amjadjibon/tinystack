@@ -30,6 +30,7 @@ import (
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
+	configapi "github.com/amjadjibon/tinystack/internal/aws/generated/config"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
@@ -86,6 +87,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
+	configservice "github.com/amjadjibon/tinystack/internal/services/config"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
@@ -298,6 +300,7 @@ func build(
 	discovery := servicediscovery.New(store)
 	configurations := appconfig.New(store)
 	trails := cloudtrail.New(store, buckets)
+	configRecords := configservice.New(store, buckets)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
 	a.onStop(databases.Stop)
@@ -358,6 +361,7 @@ func build(
 		appconfigapi.Descriptor(configurations),
 		appconfigdataapi.Descriptor(configurations.Data()),
 		cloudtrailapi.Descriptor(trails),
+		configapi.Descriptor(configRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),

@@ -189,6 +189,7 @@ var taggers = map[string]tagger{
 		names,
 	),
 	"servicediscovery": resourceOperations("servicediscovery", "ResourceARN", pairs),
+	"config":           resourceOperations("config", "ResourceArn", pairs),
 	"appconfig":        resourceOperations("appconfig", "ResourceArn", plain),
 	"cloudtrail": operations("cloudtrail", "AddTags", "RemoveTags", byARN("ResourceId"),
 		"TagsList", pairs, "TagsList", keyOnly),

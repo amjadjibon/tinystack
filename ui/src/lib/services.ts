@@ -45,6 +45,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "appconfig",
 	},
+	config: { title: "AWS Config", category: management, icon: "config" },
 	cloudtrail: { title: "CloudTrail", category: management, icon: "cloudtrail" },
 	vpc: { title: "VPC", category: networking, icon: "ec2" },
 	acm: { title: "Certificate Manager", category: security, icon: "acm" },

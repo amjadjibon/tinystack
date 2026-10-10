@@ -152,6 +152,7 @@ var TerraformServices = []string{
 	"cloudwatch",
 	"cognitoidentity",
 	"cognitoidp",
+	"configservice",
 	"dynamodb",
 	"ec2",
 	"ecr",
