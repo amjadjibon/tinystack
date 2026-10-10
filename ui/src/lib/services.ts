@@ -93,6 +93,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: containers,
 		icon: "eks",
 	},
+	rds: {
+		title: "Relational Database Service",
+		category: database,
+		icon: "rds",
+	},
 	elasticache: {
 		title: "ElastiCache",
 		category: database,

@@ -26,6 +26,8 @@ func TestLoad(t *testing.T) {
 		{"memory with path", "storage:\n  path: /tmp/tinystack", false},
 		{"bad storage mode", "storage:\n  mode: disk", false},
 		{"docker containers", "ecs:\n  containers: docker", true},
+		{"docker databases", "rds:\n  instances: docker", true},
+		{"bad databases", "rds:\n  instances: podman", false},
 		{"bad containers", "ecs:\n  containers: podman", false},
 		{"k3s clusters", "eks:\n  clusters: k3s", true},
 		{"bad clusters", "eks:\n  clusters: kind", false},

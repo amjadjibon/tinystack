@@ -152,6 +152,7 @@ nav:
           - "DynamoDB": services/dynamodb.md
           - "DynamoDB Streams": services/dynamodbstreams.md
           - "ElastiCache": services/elasticache.md
+          - "RDS": services/rds.md
           - "S3": services/s3.md
       - "Workflow and email":
           - "SES v1": services/ses.md
@@ -195,7 +196,6 @@ nav:
           - "MediaConnect": roadmap/services/mediaconnect.md
           - "OpenSearch Service": roadmap/services/opensearch.md
           - "Organizations": roadmap/services/organizations.md
-          - "RDS": roadmap/services/rds.md
           - "RDS Data API": roadmap/services/rds-data.md
           - "S3 Files": roadmap/services/s3files.md
           - "S3 Tables": roadmap/services/s3tables.md

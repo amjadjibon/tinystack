@@ -131,6 +131,10 @@
       "path": "codegen/sdk-codegen/aws-models/pipes.json",
       "sha256": "bb7d3031f9252fd8d9f935873105f1ee1182594213204b000aa457b6ab49f2e3"
     },
+    "rds": {
+      "path": "codegen/sdk-codegen/aws-models/rds.json",
+      "sha256": "95d7e865d920e45ce621242bc4aa44dbd386fa096550011b6b67b28b40063853"
+    },
     "resourcegroups": {
       "path": "codegen/sdk-codegen/aws-models/resource-groups.json",
       "sha256": "e7a2836714a15a780ed216f81f59b9eb3b197fc95029e55edf42606d6dc5cc02"

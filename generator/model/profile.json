@@ -16341,5 +16341,158 @@
         "Message"
       ]
     }
+  },
+  "rds": {
+    "operations": [
+      "CreateDBInstance",
+      "DescribeDBInstances",
+      "DeleteDBInstance",
+      "ModifyDBInstance",
+      "StopDBInstance",
+      "StartDBInstance",
+      "RebootDBInstance",
+      "CreateDBSubnetGroup",
+      "DescribeDBSubnetGroups",
+      "DeleteDBSubnetGroup",
+      "CreateDBParameterGroup",
+      "DescribeDBParameterGroups",
+      "DeleteDBParameterGroup",
+      "AddTagsToResource",
+      "RemoveTagsFromResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateDBInstanceMessage": [
+        "DBInstanceIdentifier",
+        "DBInstanceClass",
+        "Engine",
+        "EngineVersion",
+        "MasterUsername",
+        "MasterUserPassword",
+        "DBName",
+        "AllocatedStorage",
+        "DBSubnetGroupName",
+        "DBParameterGroupName",
+        "Tags"
+      ],
+      "DescribeDBInstancesMessage": [
+        "DBInstanceIdentifier",
+        "Filters",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DeleteDBInstanceMessage": [
+        "DBInstanceIdentifier",
+        "SkipFinalSnapshot"
+      ],
+      "ModifyDBInstanceMessage": [
+        "DBInstanceIdentifier",
+        "DBInstanceClass",
+        "MasterUserPassword",
+        "ApplyImmediately"
+      ],
+      "StopDBInstanceMessage": [
+        "DBInstanceIdentifier"
+      ],
+      "StartDBInstanceMessage": [
+        "DBInstanceIdentifier"
+      ],
+      "RebootDBInstanceMessage": [
+        "DBInstanceIdentifier"
+      ],
+      "CreateDBSubnetGroupMessage": [
+        "DBSubnetGroupName",
+        "DBSubnetGroupDescription",
+        "SubnetIds",
+        "Tags"
+      ],
+      "DescribeDBSubnetGroupsMessage": [
+        "DBSubnetGroupName",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DeleteDBSubnetGroupMessage": [
+        "DBSubnetGroupName"
+      ],
+      "CreateDBParameterGroupMessage": [
+        "DBParameterGroupName",
+        "DBParameterGroupFamily",
+        "Description",
+        "Tags"
+      ],
+      "DescribeDBParameterGroupsMessage": [
+        "DBParameterGroupName",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DeleteDBParameterGroupMessage": [
+        "DBParameterGroupName"
+      ],
+      "AddTagsToResourceMessage": [
+        "ResourceName",
+        "Tags"
+      ],
+      "RemoveTagsFromResourceMessage": [
+        "ResourceName",
+        "TagKeys"
+      ],
+      "ListTagsForResourceMessage": [
+        "ResourceName"
+      ],
+      "Filter": [
+        "Name",
+        "Values"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "DBInstance": [
+        "DBInstanceIdentifier",
+        "DBInstanceClass",
+        "Engine",
+        "EngineVersion",
+        "DBInstanceStatus",
+        "MasterUsername",
+        "DBName",
+        "AllocatedStorage",
+        "Endpoint",
+        "InstanceCreateTime",
+        "DBSubnetGroup",
+        "DBParameterGroups",
+        "DBInstanceArn",
+        "TagList"
+      ],
+      "Endpoint": [
+        "Address",
+        "Port"
+      ],
+      "DBSubnetGroup": [
+        "DBSubnetGroupName",
+        "DBSubnetGroupDescription",
+        "VpcId",
+        "SubnetGroupStatus",
+        "Subnets",
+        "DBSubnetGroupArn"
+      ],
+      "Subnet": [
+        "SubnetIdentifier",
+        "SubnetAvailabilityZone",
+        "SubnetStatus"
+      ],
+      "AvailabilityZone": [
+        "Name"
+      ],
+      "DBParameterGroup": [
+        "DBParameterGroupName",
+        "DBParameterGroupFamily",
+        "Description",
+        "DBParameterGroupArn"
+      ],
+      "DBParameterGroupStatus": [
+        "DBParameterGroupName",
+        "ParameterApplyStatus"
+      ]
+    }
   }
 }

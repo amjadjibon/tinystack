@@ -102,6 +102,8 @@ github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0 h1:fJUTGbCN/EKBq/TIR84MDI0q
 github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0/go.mod h1:jUmFXtUKRVCKTaKap+NgL32pmSkVehamqqMENlGMApk=
 github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2 h1:bbg+PoMofK/aFmwHqPB0Z7u2t0pwxNejpzwK+RVM/0A=
 github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2/go.mod h1:4XVfSih6SKlffDTR5vU7uOThAgoT2BDouvQp6H+URtE=
+github.com/aws/aws-sdk-go-v2/service/rds v1.116.0 h1:ZeKihUvAdbIzUZ206cOu4Kc30c3wEbi9jf/8NKFgCL0=
+github.com/aws/aws-sdk-go-v2/service/rds v1.116.0/go.mod h1:JBRYWpz5oXQtHgQC+X8LX9lh0FBCwRHJlWEIT+TTLaE=
 github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.2 h1:K41hzV+jAx0FjM/cIPsI08hiCzpJwnDb6JZ6ESq317g=
 github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.2/go.mod h1:RSSIpYFyLDpLx88Wdm/3Apn7bxHyTC/t4xkx2ZJX6lE=
 github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.41.2 h1:32rwvTSa3LpwgndcsWcPPa4BGqMX/eXx0OmmWrvzce4=
@@ -256,6 +258,8 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/kyokomi/emoji/v2 v2.2.13 h1:GhTfQa67venUUvmleTNFnb+bi7S3aocF7ZCXU9fSO7U=
 github.com/kyokomi/emoji/v2 v2.2.13/go.mod h1:JUcn42DTdsXJo1SWanHh4HKDEyPaR5CqkmoirZZP9qE=
+github.com/lib/pq v1.10.9 h1:YXG7RB+JIjhP29X+OtkiDnYaXQwpS4JEWq7dtCCRUEw=
+github.com/lib/pq v1.10.9/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/makeworld-the-better-one/dither/v2 v2.4.0 h1:Az/dYXiTcwcRSe59Hzw4RI1rSnAZns+1msaCXetrMFE=
 github.com/makeworld-the-better-one/dither/v2 v2.4.0/go.mod h1:VBtN8DXO7SNtyGmLiGA7IsFeKrBkQPze1/iAeM95arc=
 github.com/marekm4/color-extractor v1.2.1 h1:3Zb2tQsn6bITZ8MBVhc33Qn1k5/SEuZ18mrXGUqIwn0=

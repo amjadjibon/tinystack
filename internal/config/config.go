@@ -53,6 +53,12 @@ const (
 	DefaultLocalStackInitDir = "/etc/localstack/init"
 )
 
+// RDS instance modes reuse the optional container runtime modes.
+const (
+	InstancesRecords = "records"
+	InstancesDocker  = "docker"
+)
+
 type Config struct {
 	Identity struct {
 		Accounts   map[string]string `yaml:"accounts"`
@@ -73,6 +79,9 @@ type Config struct {
 	EKS struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"eks"`
+	RDS struct {
+		Instances string `yaml:"instances"`
+	} `yaml:"rds"`
 	ElastiCache struct {
 		Caches string `yaml:"caches"`
 	} `yaml:"elasticache"`
@@ -117,6 +126,7 @@ func Default() Config {
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
 	c.ElastiCache.Caches = CachesRecords
+	c.RDS.Instances = InstancesRecords
 	c.Init.Dir = DefaultInitDir
 	c.Init.LocalStackDir = DefaultLocalStackInitDir
 	return c
@@ -206,6 +216,10 @@ func (c *Config) Validate() error {
 
 	if c.EKS.Clusters != ClustersRecords && c.EKS.Clusters != ClustersK3s {
 		return fmt.Errorf("eks.clusters must be records or k3s")
+	}
+
+	if c.RDS.Instances != InstancesRecords && c.RDS.Instances != InstancesDocker {
+		return fmt.Errorf("rds.instances must be records or docker")
 	}
 
 	if c.ElastiCache.Caches != CachesRecords && c.ElastiCache.Caches != CachesDocker {

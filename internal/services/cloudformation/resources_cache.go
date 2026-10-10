@@ -12,7 +12,7 @@ func init() {
 		properties: []string{
 			memberClusterName,
 			memberEngine,
-			"EngineVersion",
+			memberEngineVersion,
 			"CacheNodeType",
 			"NumCacheNodes",
 			memberCacheSubnetGroupName,
@@ -45,8 +45,8 @@ func init() {
 				params[memberEngine] = v
 			}
 
-			if v := p.str("EngineVersion"); v != "" {
-				params["EngineVersion"] = v
+			if v := p.str(memberEngineVersion); v != "" {
+				params[memberEngineVersion] = v
 			}
 
 			if v := p.str("CacheNodeType"); v != "" {
@@ -102,8 +102,8 @@ func init() {
 				params["NumCacheNodes"] = v
 			}
 
-			if v := p.str("EngineVersion"); v != "" {
-				params["EngineVersion"] = v
+			if v := p.str(memberEngineVersion); v != "" {
+				params[memberEngineVersion] = v
 			}
 
 			if v := p.str(memberCacheParameterGroupName); v != "" {
@@ -282,7 +282,7 @@ func init() {
 			memberReplicationGroupID,
 			memberReplicationGroupDescription,
 			memberEngine,
-			"EngineVersion",
+			memberEngineVersion,
 			"CacheNodeType",
 			"NumCacheClusters",
 			"ReplicasPerNodeGroup",
@@ -324,8 +324,8 @@ func init() {
 			if v := p.str(memberEngine); v != "" {
 				params[memberEngine] = v
 			}
-			if v := p.str("EngineVersion"); v != "" {
-				params["EngineVersion"] = v
+			if v := p.str(memberEngineVersion); v != "" {
+				params[memberEngineVersion] = v
 			}
 			if v := p.str("CacheNodeType"); v != "" {
 				params["CacheNodeType"] = v

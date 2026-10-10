@@ -41,7 +41,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [MediaConnect](services/mediaconnect.md) | Proposed | Implement `CreateFlow`, `DescribeFlow`, `ListFlows`. |
 | [OpenSearch Service](services/opensearch.md) | Runtime decision required | create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls. |
 | [Organizations](services/organizations.md) | Proposed | Implement `DescribeOrganization`, `ListRoots`, `ListAccounts`. |
-| [RDS](services/rds.md) | Runtime decision required | create a PostgreSQL DB instance, obtain its endpoint, connect to a real local database, and delete it through RDS-style management calls. |
 | [RDS Data API](services/rds-data.md) | Proposed | Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`. |
 | [S3 Files](services/s3files.md) | Proposed | Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`. |
 | [S3 Tables](services/s3tables.md) | Proposed | Implement `CreateTableBucket`, `ListTableBuckets`, `GetTableBucket`. |

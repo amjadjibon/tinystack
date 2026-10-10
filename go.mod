@@ -36,6 +36,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2
+	github.com/aws/aws-sdk-go-v2/service/rds v1.116.0
 	github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.2
 	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.41.2
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.1
@@ -53,6 +54,7 @@ require (
 	github.com/coder/websocket v1.8.15
 	github.com/dop251/goja v0.0.0-20261004200024-481fdb442bb4
 	github.com/evanphx/json-patch/v5 v5.9.11
+	github.com/lib/pq v1.10.9
 	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/recolabs/gnata v0.5.2
 	github.com/spf13/cobra v1.10.2

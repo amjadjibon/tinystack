@@ -972,6 +972,41 @@
       ],
       "execution": "Local behavior",
       "package": "cloudcontrol"
+    },
+    "rds": {
+      "title": "RDS",
+      "category": "Storage and databases",
+      "summary": "Manage PostgreSQL, MySQL and MariaDB instances with an optional Docker database runtime.",
+      "features": [
+        "Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors",
+        "PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; other engines and versions fail explicitly",
+        "Describe instances supports db-instance-id, engine and db-subnet-group exact-value filters; MaxRecords 20\u2013100 and Marker pagination also work for subnet and parameter group lists",
+        "Subnet groups validate existing EC2 subnets in one VPC; parameter groups are records with engine-family validation and in-use deletion checks",
+        "Instance and group tags, diagnostic inventory and Resource Groups Tagging API integration",
+        "CloudFormation AWS::RDS::DBInstance and AWS::RDS::DBSubnetGroup with selected properties",
+        "Set rds.instances: docker to start real databases; default rds.instances: records returns available records immediately",
+        "Docker uses credentials and database names in engine image environment variables, free host ports bound to 127.0.0.1, and TCP plus pg_isready/mysqladmin ping/mariadb-admin ping readiness checks",
+        "Named volumes per account/Region/instance retain SQL data across container and persistent TinyStack restarts; available instances recreate or reattach containers from stored records",
+        "StopDBInstance stops the container, StartDBInstance starts it, and RebootDBInstance restarts it; TinyStack shutdown removes containers and retains volumes; reset and deletion remove containers and volumes",
+        "MasterUserPassword changes execute ALTER ROLE/ALTER USER in Docker; DBInstanceClass and AllocatedStorage are metadata; modifications apply immediately",
+        "Startup removes orphaned RDS containers and volumes whose ownership ARN has no instance record",
+        "Omitted DBName uses the instance identifier with hyphens replaced by underscores for the Docker database name; default AllocatedStorage is 20 GiB of metadata",
+        "CloudFormation DBInstance creation waits for availability before publishing endpoint attributes"
+      ],
+      "gaps": [
+        "Records mode has no SQL listener: endpoints use 127.0.0.1 and the engine default port, matching the ElastiCache records-only convention",
+        "AllocatedStorage does not enforce a volume size; DBInstanceClass does not change CPU or memory limits; network topology and AWS availability behavior are not reproduced",
+        "EngineVersion accepts only the listed major tags, not arbitrary AWS minor/patch versions; image tags are floating within the chosen major",
+        "Parameter groups are records only; engine parameters are not applied",
+        "Snapshots, replicas, clusters/Aurora, Multi-AZ, IAM DB authentication, managed master passwords/Secrets Manager, option groups, events and proxies are unsupported; input members outside the profile fail explicitly",
+        "Delete requires SkipFinalSnapshot=true; final snapshots and snapshot identifiers are rejected; ApplyImmediately=false rejects deferred changes",
+        "Host ports can change after container recreation; no advertise host setting exists, so a remote Docker daemon is unsupported",
+        "Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources",
+        "Failed initial startup or readiness timeout marks the instance failed and removes its container and fresh volume; recovery failures retain an existing volume",
+        "CloudFormation endpoint attributes do not refresh when a later container recreation changes the host port"
+      ],
+      "execution": "Records / optional Docker",
+      "package": "rds"
     }
   },
   "future": {
@@ -1183,14 +1218,6 @@
       "state": "Proposed",
       "slice": "Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`.",
       "features": "- [ ] `ExecuteStatement`\n- [ ] `BeginTransaction`\n- [ ] `CommitTransaction`\n- [ ] `RollbackTransaction`\n- [ ] `BatchExecuteStatement`"
-    },
-    "rds": {
-      "title": "RDS",
-      "state": "Runtime decision required",
-      "slice": "create a PostgreSQL DB instance, obtain its endpoint, connect to a real local database, and delete it through RDS-style management calls.",
-      "features": "- [ ] Management \u2014 `CreateDBInstance`, `DescribeDBInstances`, `ModifyDBInstance`, `DeleteDBInstance`, and tag/list operations for a single supported PostgreSQL engine/version family. Validate identifier, size, credentials, storage, and delete options.\n- [ ] Runtime \u2014 Start one isolated PostgreSQL container per instance or a safely isolated shared engine; allocate a stable reachable host/port and persist the instance-to-runtime mapping. Health checks drive creating \u2192 available \u2192 deleting state.\n- [ ] Data lifecycle \u2014 Decide whether a persistent TinyStack restart reconnects to the same database volume. Delete removes runtime and data unless a documented retained snapshot option is chosen.\n- [ ] Later features \u2014 Read replicas, snapshots/restore, parameter groups, subnet groups, failover, IAM database authentication, and non-PostgreSQL engines are separate slices.",
-      "integration": "Management records are account/region-scoped, but SQL data lives in the\nunderlying engine. The Docker/runtime adapter owns container, volume, port,\nstartup, and shutdown operations; the RDS provider owns AWS validation and\nstate transitions. Never run container operations within a store transaction.\nCreate must either publish a usable endpoint or end in a visible failure state\nwith cleanup. A remote Docker daemon may make `localhost` endpoints unusable;\nendpoint selection is part of runtime configuration.",
-      "acceptance": "Create an instance with the AWS SDK, wait for availability, connect through\nPostgreSQL, create and read a table, restart TinyStack, then delete and verify\ncleanup. Test duplicate identifiers, invalid credentials/options, two accounts\nwith the same ID, failed engine startup, port allocation, and graceful shutdown.\nCompare RDS management Query responses with AWS fixtures."
     },
     "s3files": {
       "title": "S3 Files",

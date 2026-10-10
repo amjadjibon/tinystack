@@ -25,11 +25,12 @@ General IAM permission evaluation is a broader architecture decision, not a fiel
 | --- | --- | --- |
 | Infrastructure records | Account, Organizations, AppConfig | What SDK/Terraform workflow does the first slice unblock? |
 | Event and orchestration extensions | EventBridge Pipes, AppSync Events, Batch, CodeBuild | Which sources, targets and execution runtimes actually run? |
-| Engine-backed data services | RDS, OpenSearch, MSK, MQ, EFS, Aurora DSQL | Engine version, endpoints, readiness, resource isolation and durable data |
+| Engine-backed data services | OpenSearch, MSK, MQ, EFS, Aurora DSQL | Engine version, endpoints, readiness, resource isolation and durable data |
 | AI and media services | Bedrock families, Transcribe, Translate, MediaConnect | Fixture-based behavior versus a real local/backend execution engine |
 | Additional governance/security | CloudTrail, Config, Backup, WAF, Inspector, Signer | How to generate meaningful local events, findings or policy effects |
 
-RDS and OpenSearch proposals explicitly require runtime decisions. Other data-plane services also need
+RDS now implements instance management with an optional Docker database runtime. The OpenSearch proposal
+requires runtime decisions. Other data-plane services also need
 such decisions before a metadata-only API can claim usable execution support.
 Athena is already implemented using SQLite; it is not a future DuckDB service.
 

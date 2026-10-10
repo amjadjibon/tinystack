@@ -27,6 +27,9 @@ eks:
 elasticache:
   # records keeps caches as records; docker also runs each node in a container.
   caches: records
+rds:
+  # records has no SQL listener; docker runs database containers with named data volumes.
+  instances: records
 iot:
   # MQTT over TLS with device certificates; 0 turns it off.
   # mqtts_port: 8883

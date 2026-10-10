@@ -178,6 +178,8 @@ func errUntaggable(r *catalog.Owned) error {
 // taggers are the taggers of the services whose resources this API tags, by
 // service name.
 var taggers = map[string]tagger{
+	"rds": operations("rds", "AddTagsToResource", "RemoveTagsFromResource", byARN("ResourceName"),
+		"Tags", pairs, "TagKeys", names),
 	"acm": operations("acm", "AddTagsToCertificate", "RemoveTagsFromCertificate", byARN("CertificateArn"),
 		"Tags", pairs, "Tags", keyOnly),
 	"apigateway":      resourceOperations("apigateway", "ResourceArn", plain),

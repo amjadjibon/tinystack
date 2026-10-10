@@ -43,6 +43,7 @@ import (
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
+	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
@@ -93,6 +94,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
+	"github.com/amjadjibon/tinystack/internal/services/rds"
+	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
@@ -252,6 +255,9 @@ func build(
 	scaling := autoscaling.New(store, logger)
 	a.onStop(scaling.Stop)
 	balancers := elbv2.New(store, logger)
+	databases := rds.New(store)
+	a.onStop(databases.Stop)
+	a.onReset(databases.Reset)
 	caches := elasticache.New(store)
 	a.onStop(caches.Stop)
 	a.onReset(caches.Reset)
@@ -302,6 +308,7 @@ func build(
 		ecsapi.Descriptor(containers),
 		eksapi.Descriptor(kube),
 		elasticacheapi.Descriptor(caches),
+		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
 		appsyncapi.Descriptor(graphQL),
@@ -342,6 +349,7 @@ func build(
 	scaling.UseCaller(caller)
 	balancers.UseCaller(caller)
 	caches.UseCaller(caller)
+	databases.UseCaller(caller)
 	// CloudFormation manages stack resources with the other services'
 	// operations.
 	control.UseCaller(caller)
@@ -390,6 +398,10 @@ func build(
 		}
 
 		kube.UseRuntime(clusters, logger)
+	}
+
+	if cfg.RDS.Instances == config.InstancesDocker {
+		databases.UseRuntime(rdsdocker.New())
 	}
 
 	if cfg.ElastiCache.Caches == config.CachesDocker {
