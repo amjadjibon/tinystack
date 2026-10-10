@@ -163,3 +163,42 @@ def slow(event, context):
 		t.Fatal("released function kept its pool")
 	}
 }
+
+func TestDockerHotReload(t *testing.T) {
+	if os.Getenv("TINYSTACK_DOCKER_TESTS") != "1" {
+		t.Skip("set TINYSTACK_DOCKER_TESTS=1 to run functions in Docker")
+	}
+
+	dir := t.TempDir()
+	r := New()
+	defer r.Close()
+	fn := &lambda.Function{
+		ARN:  "arn:aws:lambda:us-east-1:000000000000:function:hot-reload",
+		Name: "hot-reload", Runtime: "python3.14", Handler: "app.echo",
+		PackageType: "Zip", Revision: "1", HotReloadPath: dir, Timeout: 5 * time.Second,
+	}
+	ctx := context.Background()
+	var previous string
+	for _, value := range []string{"first", "second-version"} {
+		code := "value = '" + value + "'\ndef echo(event, context): return value\n"
+		if err := os.WriteFile(dir+"/app.py", []byte(code), 0o600); err != nil {
+			t.Fatal(err)
+		}
+
+		for range 2 {
+			result, err := r.Invoke(ctx, fn, []byte(`{}`))
+			if err != nil || result.Error || string(result.Payload) != `"`+value+`"` {
+				t.Fatalf("result %+v, error %v", result, err)
+			}
+		}
+
+		r.mu.Lock()
+		id := r.pools[fn.ARN].idle[0].id
+		r.mu.Unlock()
+		if id == previous {
+			t.Fatal("code change reused the old warm container")
+		}
+
+		previous = id
+	}
+}

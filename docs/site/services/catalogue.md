@@ -129,6 +129,7 @@ Manage functions and execute them in Docker using AWS runtime base images.
 **Execution:** Docker runtime. **Selected operations:** 50.
 
 - Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags.
+- LocalStack-compatible hot reload using S3Bucket=hot-reload and an absolute host directory; see [CLI and Terraform examples](../guides/lambda-hot-reload.md).
 - Synchronous and asynchronous invocation, retries and destinations.
 - SQS, DynamoDB Streams and Kinesis event source mappings.
 - Resource policies, function URLs and concurrency settings.

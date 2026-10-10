@@ -140,6 +140,10 @@ func (s *Service) UseObjects(read ObjectReader) { s.objects = read }
 // when the request is made, so later changes to the object do not affect the
 // function.
 func (s *Service) deploymentPackage(ctx context.Context, zipFile []byte, bucket, key, version *string) ([]byte, error) {
+	if common.Value(bucket) == hotReloadBucket {
+		return nil, invalid("Hot reload is not supported for layers")
+	}
+
 	if bucket == nil && key == nil && version == nil {
 		return zipFile, nil
 	}
@@ -187,18 +191,19 @@ func (s *Service) Reset(context.Context) {
 // function is the stored configuration of one function: $LATEST, or a
 // published version, which never changes.
 type function struct {
-	Environment  map[string]string `json:",omitempty"`
-	Tags         map[string]string `json:",omitempty"`
-	Name         string
-	Runtime      string `json:",omitempty"`
-	Role         string
-	Handler      string `json:",omitempty"`
-	Description  string `json:",omitempty"`
-	PackageType  string
-	ImageURI     string `json:",omitempty"`
-	Architecture string `json:",omitempty"`
-	CodeSha256   string
-	LastModified string
+	Environment   map[string]string `json:",omitempty"`
+	Tags          map[string]string `json:",omitempty"`
+	Name          string
+	Runtime       string `json:",omitempty"`
+	Role          string
+	Handler       string `json:",omitempty"`
+	Description   string `json:",omitempty"`
+	PackageType   string
+	ImageURI      string `json:",omitempty"`
+	HotReloadPath string `json:",omitempty"`
+	Architecture  string `json:",omitempty"`
+	CodeSha256    string
+	LastModified  string
 	// Version is the number of a published version, or empty for $LATEST.
 	Version string `json:",omitempty"`
 	// Source is the $LATEST revision a version was published from.
@@ -587,8 +592,20 @@ func (fn *function) setArchitecture(architectures []string) error {
 
 // setCode validates a Zip package or image URI for fn's package type and
 // records its size and hash. It returns the package bytes of a Zip function.
-func (fn *function) setCode(zipFile []byte, imageURI *string) ([]byte, error) {
+func (fn *function) setCode(zipFile []byte, imageURI *string, directory string) ([]byte, error) {
 	sum := sha256.New()
+	fn.HotReloadPath = directory
+	if directory != "" {
+		if fn.PackageType != packageZip || imageURI != nil {
+			return nil, invalid("Hot reload requires a Zip function without ImageUri")
+		}
+
+		sum.Write([]byte(directory))
+		fn.CodeSize = 0
+		fn.CodeSha256 = base64.StdEncoding.EncodeToString(sum.Sum(nil))
+		return nil, nil
+	}
+
 	if fn.PackageType == packageImage {
 		if common.Value(imageURI) == "" || len(zipFile) > 0 {
 			return nil, invalid("Image functions need Code.ImageUri")
@@ -616,7 +633,7 @@ func (fn *function) setCode(zipFile []byte, imageURI *string) ([]byte, error) {
 
 // newFunction validates CreateFunction input into a function record and its
 // deployment package; zipFile is the Zip package the request gives.
-func newFunction(in *api.CreateFunctionRequest, zipFile []byte) (*function, []byte, error) {
+func newFunction(in *api.CreateFunctionRequest, zipFile []byte, directory string) (*function, []byte, error) {
 	fn := &function{
 		Name:        common.Value(in.FunctionName),
 		PackageType: common.Value(in.PackageType),
@@ -663,7 +680,7 @@ func newFunction(in *api.CreateFunctionRequest, zipFile []byte) (*function, []by
 		return nil, nil, invalid("Code is required")
 	}
 
-	code, err := fn.setCode(zipFile, in.Code.ImageUri)
+	code, err := fn.setCode(zipFile, in.Code.ImageUri, directory)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -681,15 +698,16 @@ func (s *Service) CreateFunction(
 	}
 
 	var zipFile []byte
+	var directory string
 	if in.Code != nil {
-		zipFile, err = s.deploymentPackage(ctx, in.Code.ZipFile, in.Code.S3Bucket, in.Code.S3Key,
+		zipFile, directory, err = s.functionCode(ctx, in.Code.ZipFile, in.Code.S3Bucket, in.Code.S3Key,
 			in.Code.S3ObjectVersion)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	fn, code, err := newFunction(in, zipFile)
+	fn, code, err := newFunction(in, zipFile, directory)
 	if err != nil {
 		return nil, err
 	}
@@ -793,6 +811,10 @@ func (s *Service) GetFunction(ctx context.Context, in *api.GetFunctionRequest) (
 		Code:          &api.FunctionCodeLocation{RepositoryType: new("S3")},
 		Tags:          fn.Tags,
 	}
+	if fn.HotReloadPath != "" {
+		out.Code = &api.FunctionCodeLocation{RepositoryType: new("hot-reload")}
+	}
+
 	if fn.PackageType == packageImage {
 		out.Code = &api.FunctionCodeLocation{RepositoryType: new("ECR"), ImageUri: new(fn.ImageURI)}
 	}

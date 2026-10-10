@@ -4,7 +4,8 @@
 // in their own image; both images contain the Lambda Runtime Interface
 // Emulator, which serves invocations on port 8080. Code is copied into the
 // container with "docker cp" instead of a bind mount, so it works with remote
-// and VM-backed daemons (Colima, Docker Desktop) alike. Warm containers are
+// and VM-backed daemons (Colima, Docker Desktop) alike. Hot reload instead
+// bind-mounts a live host directory read-only at /var/task. Warm containers are
 // pooled per function and reused until the function changes or is deleted.
 package docker
 
@@ -13,6 +14,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -208,14 +210,31 @@ func start(ctx context.Context, client *http.Client, fn *lambda.Function) (*cont
 			return nil, fmt.Errorf("runtime %s is not supported", fn.Runtime)
 		}
 
-		archive, err := tarball(fn.Code)
-		if err != nil {
-			return nil, err
+		if fn.HotReloadPath != "" {
+			// CSV quoting keeps commas in host paths valid for Docker --mount.
+			var mount strings.Builder
+			writer := csv.NewWriter(&mount)
+			if err := writer.Write([]string{
+				"type=bind", "source=" + fn.HotReloadPath,
+				"target=/var/task", "readonly",
+			}); err != nil {
+				return nil, err
+			}
+
+			writer.Flush()
+			args = append(args, "--mount", strings.TrimSuffix(mount.String(), "\n"))
+		} else {
+			archive, err := tarball(fn.Code)
+			if err != nil {
+				return nil, err
+			}
+
+			code = archive
 		}
 
-		code = archive
 		for _, layer := range fn.Layers {
-			if archive, err = tarball(layer); err != nil {
+			archive, err := tarball(layer)
+			if err != nil {
 				return nil, err
 			}
 
@@ -351,6 +370,17 @@ func tarball(code []byte) (io.Reader, error) {
 
 // Invoke runs one invocation in a warm or new container.
 func (r *Runtime) Invoke(ctx context.Context, fn *lambda.Function, payload []byte) (lambda.Result, error) {
+	if fn.HotReloadPath != "" {
+		stamp, err := fingerprint(fn.HotReloadPath)
+		if err != nil {
+			return lambda.Result{}, err
+		}
+
+		reloaded := *fn
+		reloaded.Revision += "/" + stamp
+		fn = &reloaded
+	}
+
 	c, err := r.acquire(ctx, fn)
 	if err != nil {
 		return lambda.Result{}, err

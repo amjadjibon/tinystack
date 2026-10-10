@@ -17,7 +17,7 @@ func (s *Service) UpdateFunctionCode(
 	ctx context.Context,
 	in *api.UpdateFunctionCodeRequest,
 ) (*api.FunctionConfiguration, error) {
-	zipFile, err := s.deploymentPackage(ctx, in.ZipFile, in.S3Bucket, in.S3Key, in.S3ObjectVersion)
+	zipFile, directory, err := s.functionCode(ctx, in.ZipFile, in.S3Bucket, in.S3Key, in.S3ObjectVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func (s *Service) UpdateFunctionCode(
 			return nil, err
 		}
 
-		return fn.setCode(zipFile, in.ImageUri)
+		return fn.setCode(zipFile, in.ImageUri, directory)
 	})
 }
 
@@ -121,7 +121,9 @@ func (s *Service) update(
 			return changeErr
 		}
 
-		if code != nil {
+		if fn.HotReloadPath != "" {
+			tx.Delete(m.Key("lambda", kindCode, name))
+		} else if code != nil {
 			tx.Put(m.Key("lambda", kindCode, name), code)
 		}
 

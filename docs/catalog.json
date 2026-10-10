@@ -297,6 +297,7 @@
       "summary": "Manage functions and execute them in Docker using AWS runtime base images.",
       "features": [
         "Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags",
+        "LocalStack-compatible hot reload using S3Bucket=hot-reload and an absolute host directory; see [CLI and Terraform examples](../guides/lambda-hot-reload.md)",
         "Synchronous and asynchronous invocation, retries and destinations",
         "SQS, DynamoDB Streams and Kinesis event source mappings",
         "Resource policies, function URLs and concurrency settings",
@@ -305,6 +306,8 @@
       ],
       "gaps": [
         "Executing deployed functions requires Docker",
+        "Hot reload mounts /var/task read-only and replaces warm containers on tree mtime/size/mode changes; compiled code must be rebuilt by the user",
+        "Hot reload does not support image packages, live layers, symlinks or special files; published versions retain a live directory reference rather than a code snapshot",
         "Provisioned concurrency does not pre-start environments",
         "Resource policies are stored but not evaluated",
         "No ImageConfig or event sources beyond the three implemented families",

@@ -24,6 +24,8 @@ type Function struct {
 	// Revision identifies the code and configuration; a runtime must not reuse
 	// an environment started for a different revision.
 	Revision string
+	// HotReloadPath is a live host directory, mutually exclusive with Code.
+	HotReloadPath string
 	// Code is the deployment package of Zip functions.
 	Code []byte
 	// Layers are the packages of the function's layers, in order; each is
@@ -52,6 +54,13 @@ type Runtime interface {
 	Release(arn string)
 	// Close discards every environment.
 	Close()
+}
+
+// DirectoryRuntime opts into running live host directories. Other runtimes
+// are rejected before invocation instead of silently ignoring the code reference.
+type DirectoryRuntime interface {
+	Runtime
+	SupportsDirectories() bool
 }
 
 // runtimes maps the supported managed runtimes to their AWS base images, which

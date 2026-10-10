@@ -84,21 +84,22 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 	}
 
 	return &Function{
-		Environment:  env,
-		ARN:          fn.arn(scope),
-		Name:         fn.Name,
-		Version:      fn.version(),
-		Region:       scope.Region,
-		Runtime:      fn.Runtime,
-		Handler:      fn.Handler,
-		PackageType:  fn.PackageType,
-		ImageURI:     fn.ImageURI,
-		Architecture: fn.Architecture,
-		Revision:     fn.CodeSha256 + "/" + fn.LastModified + "/" + fn.RevisionID,
-		Code:         code,
-		Layers:       layers,
-		Timeout:      time.Duration(fn.Timeout) * time.Second,
-		MemorySize:   fn.MemorySize,
+		Environment:   env,
+		ARN:           fn.arn(scope),
+		Name:          fn.Name,
+		Version:       fn.version(),
+		Region:        scope.Region,
+		Runtime:       fn.Runtime,
+		Handler:       fn.Handler,
+		PackageType:   fn.PackageType,
+		ImageURI:      fn.ImageURI,
+		Architecture:  fn.Architecture,
+		Revision:      fn.CodeSha256 + "/" + fn.LastModified + "/" + fn.RevisionID,
+		Code:          code,
+		HotReloadPath: fn.HotReloadPath,
+		Layers:        layers,
+		Timeout:       time.Duration(fn.Timeout) * time.Second,
+		MemorySize:    fn.MemorySize,
 	}, nil
 }
 
@@ -114,6 +115,14 @@ func (s *Service) run(
 	fn, err := s.prepare(ctx, scope, name, qualifier)
 	if err != nil {
 		return Result{}, "", "", err
+	}
+
+	if fn.HotReloadPath != "" {
+		runtime, ok := s.runtime.(DirectoryRuntime)
+		if !ok || !runtime.SupportsDirectories() {
+			return Result{}, "", "", invalid("Hot reload invocation requires the Docker runtime; " +
+				"the in-process runtime does not support host directories")
+		}
 	}
 
 	release, err := s.acquire(ctx, scope, name)
