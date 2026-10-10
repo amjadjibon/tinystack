@@ -65,6 +65,13 @@ func TypeOf(r *catalog.Owned) (service, kind string) {
 		return "", ""
 	}
 
+	// WAF puts its deployment scope before the resource type in the ARN.
+	if parts[2] == "wafv2" {
+		path := strings.Split(parts[5], "/")
+		if len(path) == 4 && (path[0] == "regional" || path[0] == "global") {
+			return parts[2], path[1]
+		}
+	}
 	if i := strings.IndexAny(parts[5], "/:"); i >= 0 {
 		return parts[2], parts[5][:i]
 	}

@@ -708,6 +708,11 @@ func inflate(r *http.Request, body io.Reader) ([]byte, error) {
 
 func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	e := awserror.From(err)
+	// WAF uses its prefixed modeled parameter error for malformed/unsupported
+	// JSON members, including fields rejected before the service is invoked.
+	if c.service != nil && c.service.Name == "wafv2" && e.Code == "ValidationException" {
+		e.Code = "WAFInvalidParameterException"
+	}
 	c.failure = e
 	for name, value := range e.Headers {
 		w.Header().Set(name, value)

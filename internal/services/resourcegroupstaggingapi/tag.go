@@ -189,6 +189,7 @@ var taggers = map[string]tagger{
 		names,
 	),
 	"servicediscovery": resourceOperations("servicediscovery", "ResourceARN", pairs),
+	"wafv2":            resourceOperations("wafv2", "ResourceARN", pairs),
 	"backup": operations("backup", "TagResource", "UntagResource", byARN("ResourceArn"),
 		"Tags", plain, "TagKeyList", names),
 	"config":    resourceOperations("config", "ResourceArn", pairs),

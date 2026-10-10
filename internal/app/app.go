@@ -68,6 +68,7 @@ import (
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
+	wafv2api "github.com/amjadjibon/tinystack/internal/aws/generated/wafv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
@@ -127,6 +128,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
+	"github.com/amjadjibon/tinystack/internal/services/wafv2"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -304,6 +306,7 @@ func build(
 	trails := cloudtrail.New(store, buckets)
 	configRecords := configservice.New(store, buckets)
 	backupRecords := backup.New(store)
+	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
 	a.onStop(databases.Stop)
@@ -366,6 +369,7 @@ func build(
 		cloudtrailapi.Descriptor(trails),
 		configapi.Descriptor(configRecords),
 		backupapi.Descriptor(backupRecords),
+		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
