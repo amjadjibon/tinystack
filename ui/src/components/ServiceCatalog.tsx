@@ -7,6 +7,7 @@ import {
 	Link,
 	SpaceBetween,
 } from "@cloudscape-design/components";
+import { FavoriteButton } from "#/components/FavoriteButton";
 import { ServiceIcon } from "#/components/ServiceIcon";
 import type { Resource } from "#/lib/api";
 import { categories, consoleServiceNames, service } from "#/lib/services";
@@ -59,7 +60,7 @@ export function ServiceCatalog({
 				<Header
 					variant="h2"
 					counter={`(${names.length})`}
-					description="Every service this TinyStack serves."
+					description="Every service this TinyStack serves. Star a service to add it to the favorites bar."
 				>
 					Services
 				</Header>
@@ -76,6 +77,7 @@ export function ServiceCatalog({
 									key={name}
 									style={{ display: "flex", alignItems: "center", gap: 8 }}
 								>
+									<FavoriteButton name={name} />
 									<ServiceIcon name={name} />
 									<Link href={`/services/${name}`} onFollow={follow}>
 										{service(name).title}

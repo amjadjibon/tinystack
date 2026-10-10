@@ -8,7 +8,6 @@ import {
 	Button,
 	Flashbar,
 	FormField,
-	Link,
 	Modal,
 	SideNavigation,
 	type SideNavigationProps,
@@ -17,13 +16,13 @@ import {
 	type TopNavigationProps,
 } from "@cloudscape-design/components";
 import { Density, Mode } from "@cloudscape-design/global-styles";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
+import { useFavorites } from "#/lib/favorites";
 import { useHealth } from "#/lib/health";
 import { regionLabel } from "#/lib/regions";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
-import { useServiceHistory } from "#/lib/serviceHistory";
 import { consoleServiceNames, service } from "#/lib/services";
 import {
 	applyConsoleTheme,
@@ -37,7 +36,8 @@ import { ServiceIcon } from "./ServiceIcon";
 const headerID = "console-header";
 
 // ConsoleHeader is the top bar every page shares: the TinyStack identity,
-// a service search, account/Region menus, and the display settings.
+// a service search, account/Region menus, the display settings, and the
+// favorites bar of starred services.
 export function ConsoleHeader() {
 	const navigate = useNavigate();
 	const follow = useFollow();
@@ -45,11 +45,8 @@ export function ConsoleHeader() {
 	const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
 	const [query, setQuery] = useState("");
 	const scope = useScope();
-	const recent = useServiceHistory();
 	const names = consoleServiceNames(data?.services ?? []);
-	const shortcuts = [...new Set([...recent, "iam", "s3", "ec2", "lambda"])]
-		.filter((name) => names.includes(name))
-		.slice(0, 6);
+	const favorites = useFavorites().filter((name) => names.includes(name));
 	const [scopeDialog, setScopeDialog] = useState<"account" | "region" | null>(
 		null,
 	);
@@ -230,18 +227,16 @@ export function ConsoleHeader() {
 					overflowMenuDismissIconAriaLabel: "Close menu",
 				}}
 			/>
-			<nav className="console-shortcuts" aria-label="Service shortcuts">
-				{shortcuts.map((name) => (
-					<Link key={name} href={`/services/${name}`} onFollow={follow}>
-						<ServiceIcon name={name} size="small" />
-						<span>
-							{name === "iam" || name === "s3" || name === "ec2"
-								? name.toUpperCase()
-								: service(name).title}
-						</span>
-					</Link>
-				))}
-			</nav>
+			{favorites.length > 0 && (
+				<nav className="console-favorites" aria-label="Favorites">
+					{favorites.map((name) => (
+						<Link key={name} to="/services/$service" params={{ service: name }}>
+							<ServiceIcon name={name} size="small" />
+							{service(name).title}
+						</Link>
+					))}
+				</nav>
+			)}
 			{scopeDialog && (
 				<Modal
 					visible

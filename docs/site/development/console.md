@@ -48,7 +48,8 @@ The console opens with an AWS-style dark shell, orange primary actions, and a da
 services, getting-started links, server health, scoped resource counts and recent requests. **Add widgets** selects
 which cards to show; **Reset to default layout** restores all cards. Widget visibility, service visit history and
 display settings are stored in the browser. The display menu supports light mode and compact density.
-The shortcut strip opens recently visited and common available services. **All services** opens `/services`,
+Star a service in **All services** to put it on the favorites bar under the top bar; the bar is hidden until
+something is starred, and favorites are stored in the browser. **All services** opens `/services`,
 which retains the categorized service catalogue and resource counts. Health and request cards show actual local
 server data; error totals refer to the retained request log.
 
