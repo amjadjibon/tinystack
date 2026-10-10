@@ -80,6 +80,7 @@ nav:
       - Docker runtimes: guides/runtimes.md
       - IoT devices: guides/iot.md
       - Console and diagnostics: guides/diagnostics.md
+      - Init hooks and reset: guides/init-hooks.md
       - Persistence and restart: guides/persistence.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:

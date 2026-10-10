@@ -26,6 +26,7 @@ See the [implemented feature catalogue](catalogue.md#iot-core) for this service'
 - No billing/dynamic groups, certificate transfers, CA auto-registration, continuous jobs or job rollout/retry/scheduling settings.
 - Fleet SearchIndex scans local records; no aggregations, Device Defender or geolocation.
 - MQTT session/in-flight state stays in memory; retained messages persist.
+- Reset keeps connected MQTT clients and the broker's in-memory session state.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

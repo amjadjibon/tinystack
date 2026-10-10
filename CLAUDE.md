@@ -23,7 +23,9 @@ task all            # generate, lint, test, build
 Single test: `go test -race ./tests/integration -run TestName`.
 Opt-in suites: `task test:docker` (real Lambda/ECS/EKS containers), `task test:terraform`, `task test:sam`, `task smoke`.
 Run: `./bin/tinystack start [--port 4566] [--console-port 4567] [--config examples/tinystack.yaml]`.
-Debug endpoints: `/_tinystack/health`, `requests`, `resources`, `deliveries`, `metrics`.
+Debug endpoints: `/_tinystack/health`, `requests`, `resources`, `deliveries`, `metrics`, `init` (script status), and
+`POST /_tinystack/reset` (clears all state; `?init=1` re-runs the ready scripts). LocalStack paths `/_localstack/health`
+and `/_localstack/init` are aliases. Init scripts: `init.dir` / `--init-dir`, stages in `internal/inithooks`.
 
 ## Architecture
 

@@ -25,6 +25,7 @@ See the [implemented feature catalogue](catalogue.md#elasticache) for this servi
 - Host ports can change when nodes restart.
 - Production networking, topology and failover behavior are not reproduced.
 - Multi-shard cluster mode, snapshots/backups and RBAC users/user groups are outside the subset.
+- Reset removes the cache containers it started; a node starting during the reset can outlive it until shutdown.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

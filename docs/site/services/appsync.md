@@ -25,6 +25,7 @@ See the [implemented feature catalogue](catalogue.md#appsync-graphql) for this s
 - Subscriptions live in memory and close on shutdown.
 - AppSync Events is a separate unimplemented surface.
 - Production scaling, caching and every upstream resolver/data-source option are not reproduced.
+- Reset keeps real-time WebSocket connections and their subscriptions.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

@@ -25,6 +25,7 @@ See the [implemented feature catalogue](catalogue.md#eks) for this service's cap
 - k3s mode makes accepted account principals administrators; IAM authorization is not reproduced.
 - Cluster data and upgrades do not persist across restart.
 - No Auto Mode, Outposts, hybrid nodes or CloudWatch log delivery.
+- Reset removes the k3s containers it started; a cluster starting during the reset can outlive it until shutdown.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

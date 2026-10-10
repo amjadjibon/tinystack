@@ -26,6 +26,11 @@
       "reference": "guides/diagnostics.md"
     },
     {
+      "title": "Init hooks and reset",
+      "summary": "LocalStack-style boot, start, ready and shutdown scripts (also read from /etc/localstack/init) with a status endpoint, and a POST reset endpoint that clears all stored state and can re-run the ready scripts.",
+      "reference": "guides/init-hooks.md"
+    },
+    {
       "title": "CLI and SDK clients",
       "summary": "Local endpoint overrides for AWS clients, CLI wrappers, and generated Go SDK-compatible APIs.",
       "reference": "getting-started/clients.md"
@@ -126,7 +131,8 @@
         "Cache data is lost when containers are removed on shutdown or restart; persistent mode retains metadata only",
         "Host ports can change when nodes restart",
         "Production networking, topology and failover behavior are not reproduced",
-        "Multi-shard cluster mode, snapshots/backups and RBAC users/user groups are outside the subset"
+        "Multi-shard cluster mode, snapshots/backups and RBAC users/user groups are outside the subset",
+        "Reset removes the cache containers it started; a node starting during the reset can outlive it until shutdown"
       ],
       "execution": "Records / optional Docker",
       "package": "elasticache"
@@ -305,7 +311,8 @@
         "Asynchronous work in flight is lost on restart",
         "Console ZIP uploads and test events are limited to 1 MiB; larger deployment packages can be copied from S3",
         "In identity.mode: verify the console shows function and trigger inventory; management, invocation and log reads require signed CLI/SDK requests",
-        "Console manages $LATEST; versions, aliases, layers, concurrency and function URLs use the AWS API"
+        "Console manages $LATEST; versions, aliases, layers, concurrency and function URLs use the AWS API",
+        "Reset ends event source mapping pollers and removes warm Docker containers; asynchronous invocations already running can still write records back"
       ],
       "execution": "Docker runtime",
       "package": "lambda"
@@ -381,7 +388,8 @@
       "gaps": [
         "Records mode starts no containers",
         "Docker mode omits health checks, secrets, volumes, dependencies, task networking and resource limits",
-        "No container instances, load balancer integration, Service Connect, placement or execute command"
+        "No container instances, load balancer integration, Service Connect, placement or execute command",
+        "Reset removes the task containers it started; a container starting during the reset can outlive it until shutdown"
       ],
       "execution": "Records / optional Docker",
       "package": "ecs"
@@ -400,7 +408,8 @@
         "Records mode starts no Kubernetes API",
         "k3s mode makes accepted account principals administrators; IAM authorization is not reproduced",
         "Cluster data and upgrades do not persist across restart",
-        "No Auto Mode, Outposts, hybrid nodes or CloudWatch log delivery"
+        "No Auto Mode, Outposts, hybrid nodes or CloudWatch log delivery",
+        "Reset removes the k3s containers it started; a cluster starting during the reset can outlive it until shutdown"
       ],
       "execution": "Records / optional k3s",
       "package": "eks"
@@ -463,7 +472,8 @@
         "JavaScript utilities and VTL form a local subset of AppSync runtimes",
         "Subscriptions live in memory and close on shutdown",
         "AppSync Events is a separate unimplemented surface",
-        "Production scaling, caching and every upstream resolver/data-source option are not reproduced"
+        "Production scaling, caching and every upstream resolver/data-source option are not reproduced",
+        "Reset keeps real-time WebSocket connections and their subscriptions"
       ],
       "execution": "Local behavior",
       "package": "appsync"
@@ -753,7 +763,8 @@
         "JSONPath filters and recursive descent are outside the subset",
         "Running executions abort after restart; activity queues and task tokens are in memory",
         "Express execution results are not retained; console results last until leaving or reloading the page",
-        "Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console shows read-only inventory"
+        "Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console shows read-only inventory",
+        "Reset does not stop executions already running"
       ],
       "execution": "Local behavior",
       "package": "sfn"
@@ -818,7 +829,8 @@
         "Custom authorizer refreshAfterInSeconds is not acted on",
         "No billing/dynamic groups, certificate transfers, CA auto-registration, continuous jobs or job rollout/retry/scheduling settings",
         "Fleet SearchIndex scans local records; no aggregations, Device Defender or geolocation",
-        "MQTT session/in-flight state stays in memory; retained messages persist"
+        "MQTT session/in-flight state stays in memory; retained messages persist",
+        "Reset keeps connected MQTT clients and the broker's in-memory session state"
       ],
       "execution": "MQTT broker / local APIs",
       "package": "iot"

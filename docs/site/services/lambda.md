@@ -29,6 +29,7 @@ See the [implemented feature catalogue](catalogue.md#lambda) for this service's 
 - Console ZIP uploads and test events are limited to 1 MiB; larger deployment packages can be copied from S3.
 - In identity.mode: verify the console shows function and trigger inventory; management, invocation and log reads require signed CLI/SDK requests.
 - Console manages $LATEST; versions, aliases, layers, concurrency and function URLs use the AWS API.
+- Reset ends event source mapping pollers and removes warm Docker containers; asynchronous invocations already running can still write records back.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

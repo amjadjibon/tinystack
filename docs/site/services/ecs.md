@@ -24,6 +24,7 @@ See the [implemented feature catalogue](catalogue.md#ecs) for this service's cap
 - Records mode starts no containers.
 - Docker mode omits health checks, secrets, volumes, dependencies, task networking and resource limits.
 - No container instances, load balancer integration, Service Connect, placement or execute command.
+- Reset removes the task containers it started; a container starting during the reset can outlive it until shutdown.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

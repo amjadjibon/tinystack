@@ -16,6 +16,7 @@ configuration is validated again.
 | `--host HOST` | Override `server.host` |
 | `--port PORT` | Override `server.port` |
 | `--console-port PORT` | Override `server.console_port`; `0` disables the console |
+| `--init-dir DIR` | Override `init.dir`; empty turns TinyStack's init scripts off |
 
 Use `./bin/tinystack start --help` for the current command help.
 
@@ -36,8 +37,12 @@ Use `./bin/tinystack start --help` for the current command help.
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |
 | `elasticache.caches` | `records` | `records` or `docker` |
+| `init.dir` | `/etc/tinystack/init` | Directory of `<stage>.d` init scripts; empty turns it off; missing is fine |
+| `init.localstack_dir` | `/etc/localstack/init` | LocalStack's script directory, read after `init.dir`; empty turns it off |
 | `iot.mqtts_port` | `0` | `0` disables TLS MQTT; otherwise a distinct port up to `65535` |
 | `iot.mqtt_port` | `0` | `0` disables plain MQTT; otherwise a distinct port up to `65535`; requires `parse` |
+
+[Init hooks](../guides/init-hooks.md) run the scripts in those directories at the boot, start, ready and shutdown stages.
 
 HTTP, console, and enabled MQTT listeners cannot share ports. A bind failure stops startup.
 MQTT over WebSocket uses `/mqtt` on the main HTTP port without an extra listener setting.

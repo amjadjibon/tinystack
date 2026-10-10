@@ -198,6 +198,9 @@ Local metric retention is 15 days; alarm history is retained for 30 days.
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |
 | `DELETE /_tinystack/deliveries` | Clear delivery history |
 | `GET /_tinystack/metrics` | Prometheus counters and duration summary |
+| `GET /_tinystack/init` | Init script state per stage and script; `/_tinystack/init/<stage>` for one stage. Also at `/_localstack/init` |
+| `POST /_tinystack/reset` | Clear all stored state; `?init=1` then re-runs the `ready` scripts. See [Init hooks and reset](init-hooks.md) |
+| `GET /_localstack/health` | Service list in LocalStack's shape, for tools that wait on it |
 | `GET /_tinystack/iot/root-ca.pem` | Local IoT root CA certificate |
 
 These internal handlers are also reachable on the console listener when it is running.
