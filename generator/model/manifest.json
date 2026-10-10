@@ -39,6 +39,10 @@
       "path": "codegen/sdk-codegen/aws-models/auto-scaling.json",
       "sha256": "a99be352817555cab17666710b0f383b7ab0157714255a6930da3998369ca217"
     },
+    "backup": {
+      "path": "codegen/sdk-codegen/aws-models/backup.json",
+      "sha256": "90435200c25b574c152eb1df691927396a002b9378e00d90a5c749fe60b7973d"
+    },
     "cloudcontrol": {
       "path": "codegen/sdk-codegen/aws-models/cloudcontrol.json",
       "sha256": "ec2ed017988bfa9acdd47f24d164558416a9b5becc57c8088eb92799016ce1d9"

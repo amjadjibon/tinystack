@@ -2078,6 +2078,243 @@
       ]
     }
   },
+  "backup": {
+    "operations": [
+      "CreateBackupVault",
+      "DescribeBackupVault",
+      "ListBackupVaults",
+      "DeleteBackupVault",
+      "CreateBackupPlan",
+      "GetBackupPlan",
+      "UpdateBackupPlan",
+      "DeleteBackupPlan",
+      "ListBackupPlans",
+      "ListBackupPlanVersions",
+      "CreateBackupSelection",
+      "GetBackupSelection",
+      "DeleteBackupSelection",
+      "ListBackupSelections",
+      "TagResource",
+      "UntagResource",
+      "ListTags"
+    ],
+    "shapes": {
+      "CreateBackupVaultInput": [
+        "BackupVaultName",
+        "BackupVaultTags",
+        "EncryptionKeyArn",
+        "CreatorRequestId"
+      ],
+      "CreateBackupVaultOutput": [
+        "BackupVaultName",
+        "BackupVaultArn",
+        "CreationDate"
+      ],
+      "DescribeBackupVaultInput": [
+        "BackupVaultName"
+      ],
+      "DescribeBackupVaultOutput": [
+        "BackupVaultName",
+        "BackupVaultArn",
+        "EncryptionKeyArn",
+        "CreationDate",
+        "CreatorRequestId",
+        "NumberOfRecoveryPoints"
+      ],
+      "ListBackupVaultsInput": [
+        "ByVaultType",
+        "ByShared",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListBackupVaultsOutput": [
+        "BackupVaultList",
+        "NextToken"
+      ],
+      "DeleteBackupVaultInput": [
+        "BackupVaultName"
+      ],
+      "CreateBackupPlanInput": [
+        "BackupPlan",
+        "BackupPlanTags",
+        "CreatorRequestId"
+      ],
+      "CreateBackupPlanOutput": [
+        "BackupPlanId",
+        "BackupPlanArn",
+        "CreationDate",
+        "VersionId"
+      ],
+      "GetBackupPlanInput": [
+        "BackupPlanId",
+        "VersionId"
+      ],
+      "GetBackupPlanOutput": [
+        "BackupPlan",
+        "BackupPlanId",
+        "BackupPlanArn",
+        "VersionId",
+        "CreatorRequestId",
+        "CreationDate",
+        "DeletionDate"
+      ],
+      "UpdateBackupPlanInput": [
+        "BackupPlanId",
+        "BackupPlan"
+      ],
+      "UpdateBackupPlanOutput": [
+        "BackupPlanId",
+        "BackupPlanArn",
+        "CreationDate",
+        "VersionId"
+      ],
+      "DeleteBackupPlanInput": [
+        "BackupPlanId"
+      ],
+      "DeleteBackupPlanOutput": [
+        "BackupPlanId",
+        "BackupPlanArn",
+        "DeletionDate",
+        "VersionId"
+      ],
+      "ListBackupPlansInput": [
+        "NextToken",
+        "MaxResults",
+        "IncludeDeleted"
+      ],
+      "ListBackupPlansOutput": [
+        "NextToken",
+        "BackupPlansList"
+      ],
+      "ListBackupPlanVersionsInput": [
+        "BackupPlanId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListBackupPlanVersionsOutput": [
+        "NextToken",
+        "BackupPlanVersionsList"
+      ],
+      "CreateBackupSelectionInput": [
+        "BackupPlanId",
+        "BackupSelection",
+        "CreatorRequestId"
+      ],
+      "CreateBackupSelectionOutput": [
+        "SelectionId",
+        "BackupPlanId",
+        "CreationDate"
+      ],
+      "GetBackupSelectionInput": [
+        "BackupPlanId",
+        "SelectionId"
+      ],
+      "GetBackupSelectionOutput": [
+        "BackupSelection",
+        "SelectionId",
+        "BackupPlanId",
+        "CreationDate",
+        "CreatorRequestId"
+      ],
+      "DeleteBackupSelectionInput": [
+        "BackupPlanId",
+        "SelectionId"
+      ],
+      "ListBackupSelectionsInput": [
+        "BackupPlanId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListBackupSelectionsOutput": [
+        "NextToken",
+        "BackupSelectionsList"
+      ],
+      "TagResourceInput": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceInput": [
+        "ResourceArn",
+        "TagKeyList"
+      ],
+      "ListTagsInput": [
+        "ResourceArn",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListTagsOutput": [
+        "NextToken",
+        "Tags"
+      ],
+      "BackupPlanInput": [
+        "BackupPlanName",
+        "Rules"
+      ],
+      "BackupPlan": [
+        "BackupPlanName",
+        "Rules"
+      ],
+      "BackupRuleInput": [
+        "RuleName",
+        "TargetBackupVaultName",
+        "ScheduleExpression",
+        "StartWindowMinutes",
+        "CompletionWindowMinutes",
+        "Lifecycle",
+        "RecoveryPointTags"
+      ],
+      "BackupRule": [
+        "RuleName",
+        "TargetBackupVaultName",
+        "ScheduleExpression",
+        "StartWindowMinutes",
+        "CompletionWindowMinutes",
+        "Lifecycle",
+        "RecoveryPointTags",
+        "RuleId"
+      ],
+      "Lifecycle": [
+        "MoveToColdStorageAfterDays",
+        "DeleteAfterDays"
+      ],
+      "BackupSelection": [
+        "SelectionName",
+        "IamRoleArn",
+        "Resources",
+        "ListOfTags"
+      ],
+      "Condition": [
+        "ConditionType",
+        "ConditionKey",
+        "ConditionValue"
+      ],
+      "BackupVaultListMember": [
+        "BackupVaultName",
+        "BackupVaultArn",
+        "CreationDate",
+        "EncryptionKeyArn",
+        "CreatorRequestId",
+        "NumberOfRecoveryPoints"
+      ],
+      "BackupPlansListMember": [
+        "BackupPlanArn",
+        "BackupPlanId",
+        "CreationDate",
+        "DeletionDate",
+        "VersionId",
+        "BackupPlanName",
+        "CreatorRequestId"
+      ],
+      "BackupSelectionsListMember": [
+        "SelectionId",
+        "SelectionName",
+        "BackupPlanId",
+        "CreationDate",
+        "CreatorRequestId",
+        "IamRoleArn"
+      ]
+    }
+  },
   "cloudcontrol": {
     "operations": [
       "CreateResource",
