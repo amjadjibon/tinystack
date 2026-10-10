@@ -82,6 +82,7 @@ nav:
       - IoT devices: guides/iot.md
       - Console and diagnostics: guides/diagnostics.md
       - Init hooks and reset: guides/init-hooks.md
+      - Testcontainers for Go: guides/testcontainers.md
       - Persistence and restart: guides/persistence.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:

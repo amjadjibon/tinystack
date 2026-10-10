@@ -60,6 +60,19 @@ tasks:
     cmds:
       - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 ./internal/services/lambda/docker ./internal/services/ecs/docker ./internal/services/eks/k3s ./internal/services/elasticache/docker
 
+  test:testcontainers:
+    desc: "Test the separate Go Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
+    dir: testcontainers
+    cmds:
+      - go test -race -count=1 -v ./...
+
+  lint:testcontainers:
+    desc: "Vet and lint the separate Go Testcontainers module"
+    dir: testcontainers
+    cmds:
+      - go vet ./...
+      - golangci-lint run --allow-serial-runners --config ../.golangci.yml ./...
+
   smoke:
     cmds:
       - python3 tests/awscli/smoke.py
