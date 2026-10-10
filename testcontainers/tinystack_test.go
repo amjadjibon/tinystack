@@ -2,9 +2,11 @@ package tinystack_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,10 +16,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/moby/moby/api/types/build"
-	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 
 	tinystack "github.com/amjadjibon/tinystack/testcontainers"
 )
@@ -41,15 +42,17 @@ func TestContainer(t *testing.T) {
 	if image == "" {
 		root, err := filepath.Abs("..")
 		require.NoError(t, err)
-		opts = append(opts, testcontainers.WithDockerfile(testcontainers.FromDockerfile{
-			Context:        root,
-			Dockerfile:     "Dockerfile",
-			BuildLogWriter: os.Stdout,
-			BuildOptionsModifier: func(options *client.ImageBuildOptions) {
-				options.Target = "headless"
-				options.Version = build.BuilderBuildKit
-			},
-		}))
+		// The Dockerfile needs BuildKit's cache mounts. Testcontainers' image
+		// builder does not establish a BuildKit session; the Docker CLI does.
+		image = fmt.Sprintf("tinystack-test:%d", time.Now().UnixNano())
+		build := exec.CommandContext(ctx, "docker", "build", "--target", "headless", "--tag", image, root)
+		build.Stdout, build.Stderr = os.Stdout, os.Stderr
+		require.NoError(t, build.Run())
+		t.Cleanup(func() {
+			if output, cleanupErr := exec.Command("docker", "image", "rm", image).CombinedOutput(); cleanupErr != nil {
+				t.Errorf("remove test image: %v: %s", cleanupErr, output)
+			}
+		})
 	}
 
 	ctr, err := tinystack.Run(ctx, image, opts...)
@@ -84,7 +87,7 @@ func TestContainer(t *testing.T) {
 	require.Equal(t, "10-ready.sh", status.Scripts[0].Name)
 	require.Equal(t, "SUCCESSFUL", status.Scripts[0].State)
 	require.Equal(t, new(0), status.Scripts[0].ExitCode)
-	code, output, err := ctr.Exec(ctx, []string{"cat", "/tmp/tinystack-ready"})
+	code, output, err := ctr.Exec(ctx, []string{"cat", "/tmp/tinystack-ready"}, tcexec.Multiplexed())
 	require.NoError(t, err)
 	require.Zero(t, code)
 	marker, err := io.ReadAll(output)

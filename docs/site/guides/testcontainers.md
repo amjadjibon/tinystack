@@ -110,9 +110,10 @@ task test:testcontainers
 task lint:testcontainers
 ```
 
-The tests build the repository's Dockerfile locally with `testcontainers.FromDockerfile`, BuildKit, and the
-`headless` target. They load YAML configuration, check that a ready script ran, create an S3 bucket and SQS queue,
-then verify reset removes both. To use an existing image instead of building:
+The tests build the repository's Dockerfile locally with `docker build` and the `headless` target, then pass the
+image to Testcontainers. The Docker CLI supplies the BuildKit session needed by the Dockerfile's cache mounts;
+use the same daemon for the CLI and Testcontainers. They load YAML configuration, check that a ready script ran,
+create an S3 bucket and SQS queue, then verify reset removes both. To use an existing image instead of building:
 
 ```sh
 TINYSTACK_IMAGE=tinystack:test task test:testcontainers
