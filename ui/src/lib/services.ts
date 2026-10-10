@@ -34,6 +34,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	account: {
+		title: "AWS Account",
+		category: management,
+		icon: "organizations",
+	},
 	appconfig: { title: "AppConfig", category: management, icon: "appconfig" },
 	appconfigdata: {
 		title: "AppConfig Data",

@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	accountapi "github.com/amjadjibon/tinystack/internal/aws/generated/account"
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
@@ -70,6 +71,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/inithooks"
+	"github.com/amjadjibon/tinystack/internal/services/account"
 	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
@@ -289,6 +291,10 @@ func build(
 	a.onStop(scaling.Stop)
 	balancers := elbv2.New(store, logger)
 	organizationsService := organizations.New(store)
+	accounts := account.New(store)
+	if err = accounts.SeedFromConfig(ctx, cfg.Accounts); err != nil {
+		return nil, err
+	}
 	discovery := servicediscovery.New(store)
 	configurations := appconfig.New(store)
 	trails := cloudtrail.New(store, buckets)
@@ -347,6 +353,7 @@ func build(
 		eksapi.Descriptor(kube),
 		elasticacheapi.Descriptor(caches),
 		organizationsapi.Descriptor(organizationsService),
+		accountapi.Descriptor(accounts),
 		servicediscoveryapi.Descriptor(discovery),
 		appconfigapi.Descriptor(configurations),
 		appconfigdataapi.Descriptor(configurations.Data()),

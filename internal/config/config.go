@@ -7,6 +7,9 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strings"
+	"time"
+	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
 
@@ -61,8 +64,123 @@ const (
 	InstancesDocker  = "docker"
 )
 
+// ValidAccountStates holds modeled AWS account states.
+var ValidAccountStates = map[string]bool{
+	"PENDING_ACTIVATION": true,
+	"ACTIVE":             true,
+	"SUSPENDED":          true,
+	"CLOSED":             true,
+}
+
+var validAccountStates = ValidAccountStates
+
+// ValidRegionOptStatuses holds modeled AWS region opt-in statuses.
+var ValidRegionOptStatuses = map[string]bool{
+	"ENABLED":            true,
+	"ENABLING":           true,
+	"DISABLING":          true,
+	"DISABLED":           true,
+	"ENABLED_BY_DEFAULT": true,
+}
+
+var validRegionOptStatuses = ValidRegionOptStatuses
+
+var (
+	phoneNumberPattern = regexp.MustCompile(`^\+[\s0-9()-]+$`)
+	countryCodePattern = regexp.MustCompile(`^[A-Za-z]{2}$`)
+
+	stateOrRegionRequiredCountries = map[string]bool{
+		"US": true,
+		"CA": true,
+		"GB": true,
+		"DE": true,
+		"JP": true,
+		"IN": true,
+		"BR": true,
+	}
+)
+
+// AccountContactConfig holds primary contact details configured for an account.
+type AccountContactConfig struct {
+	AddressLine1     string `yaml:"address_line1"`
+	AddressLine2     string `yaml:"address_line2"`
+	AddressLine3     string `yaml:"address_line3"`
+	City             string `yaml:"city"`
+	CompanyName      string `yaml:"company_name"`
+	CountryCode      string `yaml:"country_code"`
+	DistrictOrCounty string `yaml:"district_or_county"`
+	FullName         string `yaml:"full_name"`
+	PhoneNumber      string `yaml:"phone_number"`
+	PostalCode       string `yaml:"postal_code"`
+	StateOrRegion    string `yaml:"state_or_region"`
+	WebsiteURL       string `yaml:"website_url"`
+}
+
+// Validate checks contact fields against the pinned AWS model constraints.
+func (c *AccountContactConfig) Validate() error {
+	if c == nil {
+		return nil
+	}
+	if l := utf8.RuneCountInString(c.FullName); l < 1 || l > 50 {
+		return fmt.Errorf("full_name is required and must be between 1 and 50 characters")
+	}
+	if l := utf8.RuneCountInString(c.AddressLine1); l < 1 || l > 60 {
+		return fmt.Errorf("address_line1 is required and must be between 1 and 60 characters")
+	}
+	if l := utf8.RuneCountInString(c.AddressLine2); l > 60 {
+		return fmt.Errorf("address_line2 must be at most 60 characters")
+	}
+	if l := utf8.RuneCountInString(c.AddressLine3); l > 60 {
+		return fmt.Errorf("address_line3 must be at most 60 characters")
+	}
+	if l := utf8.RuneCountInString(c.City); l < 1 || l > 50 {
+		return fmt.Errorf("city is required and must be between 1 and 50 characters")
+	}
+	if !countryCodePattern.MatchString(c.CountryCode) {
+		return fmt.Errorf("country_code is required and must be a 2-letter ISO-3166 country code")
+	}
+	countryUpper := strings.ToUpper(c.CountryCode)
+	lState := utf8.RuneCountInString(c.StateOrRegion)
+	if stateOrRegionRequiredCountries[countryUpper] && lState < 1 {
+		return fmt.Errorf("state_or_region is required for country %s", c.CountryCode)
+	}
+	if lState > 50 {
+		return fmt.Errorf("state_or_region must be at most 50 characters")
+	}
+	if l := utf8.RuneCountInString(c.DistrictOrCounty); l > 50 {
+		return fmt.Errorf("district_or_county must be at most 50 characters")
+	}
+	if l := utf8.RuneCountInString(c.PostalCode); l < 1 || l > 20 {
+		return fmt.Errorf("postal_code is required and must be between 1 and 20 characters")
+	}
+	if l := utf8.RuneCountInString(c.PhoneNumber); l < 1 || l > 20 ||
+		!phoneNumberPattern.MatchString(c.PhoneNumber) {
+		return fmt.Errorf(
+			"phone_number is required, must be between 1 and 20 characters, " +
+				"and must match format ^[+][\\s0-9()-]+$",
+		)
+	}
+	if l := utf8.RuneCountInString(c.CompanyName); l > 50 {
+		return fmt.Errorf("company_name must be at most 50 characters")
+	}
+	if l := utf8.RuneCountInString(c.WebsiteURL); l > 256 {
+		return fmt.Errorf("website_url must be at most 256 characters")
+	}
+	return nil
+}
+
+// AccountConfig holds metadata, primary contact details, and region opt-in overrides for an account.
+type AccountConfig struct {
+	Contact     *AccountContactConfig `yaml:"contact"`
+	Regions     map[string]string     `yaml:"regions"`
+	Name        string                `yaml:"name"`
+	CreatedDate string                `yaml:"created_date"`
+	State       string                `yaml:"state"`
+}
+
 type Config struct {
-	Faults   []faults.Rule `yaml:"faults"`
+	Accounts map[string]AccountConfig `yaml:"accounts"`
+	Faults   []faults.Rule            `yaml:"faults"`
 	Identity struct {
 		Accounts   map[string]string `yaml:"accounts"`
 		SecretKeys map[string]string `yaml:"secret_keys"`
@@ -119,6 +237,7 @@ type Config struct {
 // Default returns loopback-only defaults using ephemeral memory.
 func Default() Config {
 	var c Config
+	c.Accounts = map[string]AccountConfig{}
 	c.Server.Host = "127.0.0.1"
 	c.Server.Port = 4566
 	c.Server.ConsolePort = 4567
@@ -176,6 +295,33 @@ func (c *Config) Validate() error {
 	for key, id := range c.Identity.Accounts {
 		if key == "" || !account.MatchString(id) {
 			return fmt.Errorf("invalid identity mapping for %q", key)
+		}
+	}
+
+	for id, acct := range c.Accounts {
+		if !account.MatchString(id) {
+			return fmt.Errorf("accounts key must have 12 digits: %q", id)
+		}
+		if acct.CreatedDate != "" {
+			if _, err := time.Parse(time.RFC3339, acct.CreatedDate); err != nil {
+				return fmt.Errorf("invalid created_date for account %q: %w", id, err)
+			}
+		}
+		if acct.State != "" && !validAccountStates[acct.State] {
+			return fmt.Errorf("invalid account state %q for account %q", acct.State, id)
+		}
+		if acct.Contact != nil {
+			if err := acct.Contact.Validate(); err != nil {
+				return fmt.Errorf("invalid contact for account %q: %w", id, err)
+			}
+		}
+		for reg, status := range acct.Regions {
+			if reg == "" {
+				return fmt.Errorf("empty region name for account %q", id)
+			}
+			if !validRegionOptStatuses[status] {
+				return fmt.Errorf("invalid region opt status %q for region %q in account %q", status, reg, id)
+			}
 		}
 	}
 
