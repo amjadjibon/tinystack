@@ -18,7 +18,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Amazon MQ](services/mq.md) | Proposed | Implement `CreateBroker`, `DescribeBroker`, `ListBrokers`. |
 | [Amazon MSK](services/msk.md) | Proposed | Implement `CreateCluster`, `ListClusters`, `DescribeCluster`. |
 | [Amazon MWAA](services/mwaa.md) | Proposed | Implement `CreateEnvironment`, `GetEnvironment`, `DeleteEnvironment`. |
-| [AppConfig](services/appconfig.md) | Proposed | Implement `CreateApplication`, `GetApplication`, `ListApplications`. |
 | [AppSync Events](services/appsync-events.md) | Proposed | Implement `CreateApi`, `GetApi`, `ListApis`. |
 | [Aurora DSQL](services/dsql.md) | Proposed | Implement `CreateCluster`, `GetCluster`, `ListClusters`. |
 | [Bedrock Agent Runtime](services/bedrock-agent-runtime.md) | Proposed | Implement `InvokeAgent`, `InvokeInlineAgent`, `GetAgentMemory`. |
@@ -26,7 +25,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Bedrock Agents](services/bedrock-agent.md) | Proposed | Implement `CreateAgent`, `GetAgent`, `ListAgents`. |
 | [Bedrock Runtime](services/bedrock-runtime.md) | Proposed | Implement `InvokeModel`, `InvokeModelWithResponseStream`, `StartAsyncInvoke`. |
 | [CloudFront KeyValueStore](services/cloudfront-keyvaluestore.md) | Proposed | Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`. |
-| [CloudTrail](services/cloudtrail.md) | Proposed | Implement `CreateTrail`, `DeleteTrail`, `GetTrail`. |
 | [CodeBuild](services/codebuild.md) | Proposed | Implement `CreateProject`, `BatchGetProjects`, `ListProjects`. |
 | [Cost and Usage Reports](services/cur.md) | Proposed | Implement `DeleteReportDefinition`, `DescribeReportDefinitions`, `ListTagsForResource`. |
 | [EC2 Instance Metadata](services/imds.md) | Proposed | Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`. |

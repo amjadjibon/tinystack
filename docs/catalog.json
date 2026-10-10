@@ -1063,6 +1063,73 @@
       ],
       "execution": "Records / HTTP discovery",
       "package": "servicediscovery"
+    },
+    "appconfig": {
+      "title": "AppConfig",
+      "category": "Management and governance",
+      "summary": "Manage hosted configuration and deploy it immediately to regional environments.",
+      "features": [
+        "Application, environment, hosted configuration profile and deployment strategy CRUD, pagination and tags; duplicate names and missing resources fail with modeled errors",
+        "Binary hosted version creation and retrieval through REST payloads and Content-Type headers; monotonic version numbers, optimistic LatestVersionNumber and unique version labels",
+        "All four AWS predefined deployment strategies; builtins are immutable and custom strategies accept LINEAR/EXPONENTIAL growth with ReplicateTo NONE",
+        "Start/Get/List/Stop deployments; deployments complete immediately with 100 percent progress, and the environment becomes READY_FOR_DEPLOYMENT; AllowRevert restores the previous hosted version of the latest deployment and marks the environment REVERTED",
+        "Inventory and Resource Groups Tagging API; console catalogue entries with official AWS architecture icons",
+        "CloudFormation Application, Environment, ConfigurationProfile, HostedConfigurationVersion, DeploymentStrategy and Deployment with selected properties; application/environment/profile/strategy metadata and tags update in place",
+        "Regional/account isolation; records, content and sessions persist with SQLite; reset clears all state"
+      ],
+      "gaps": [
+        "Only hosted LocationUri is supported; S3, SSM and Secrets Manager retrieval and retrieval roles fail explicitly",
+        "Validators are stored records and never executed; AWS.AppConfig.FeatureFlags content is accepted without schema or feature validation",
+        "Strategy durations and bake times are metadata; no gradual rollout, monitoring, alarm rollback or background deployment ticker",
+        "Extensions, Lambda agent layer, KMS encryption, experiments, account settings and deletion protection checks are unsupported; members outside the profile fail explicitly",
+        "StopDeployment requires AllowRevert=true because deployment completes synchronously; only the latest completed deployment can be reverted",
+        "Applications and profiles require child deletion first; deleting an environment removes its deployment history; deployed hosted versions cannot be deleted",
+        "CloudFormation deletion of Deployment reverts the latest deployment; hosted versions/deployments and trail property changes use replacement; management pages are absent"
+      ],
+      "execution": "Hosted configuration / immediate deployment",
+      "package": "appconfig"
+    },
+    "appconfigdata": {
+      "title": "AppConfig Data",
+      "category": "Management and governance",
+      "summary": "Poll deployed hosted configuration through configuration session tokens on the same endpoint.",
+      "features": [
+        "StartConfigurationSession resolves application, environment and profile IDs or names in the caller account and Region",
+        "GetLatestConfiguration returns binary deployed content on first poll and after a version change, and an empty body on unchanged polls",
+        "Opaque random 64-character single-use tokens expire 24 hours after issuance; each poll returns a replacement token and poll interval",
+        "Default interval 60 seconds, configurable between 15 and 86400; expired sessions are pruned when sessions are created",
+        "Shares appconfig signing name; REST route disambiguation serves /configurationsessions and /configuration alongside control-plane routes"
+      ],
+      "gaps": [
+        "Poll intervals are advisory and are not enforced; no AppConfig agent or caching daemon",
+        "Hosted configurations only; feature-flag evaluation and KMS encryption are unsupported"
+      ],
+      "execution": "Hosted configuration polling",
+      "package": "appconfig"
+    },
+    "cloudtrail": {
+      "title": "CloudTrail",
+      "category": "Management and governance",
+      "summary": "Manage regional trail records and look up external SDK management request history.",
+      "features": [
+        "Trail create/get/describe/update/delete, logging status and start/stop records; S3 destination bucket existence is checked via the S3 service outside transactions",
+        "Basic and advanced event selectors are stored trail configuration; selectors do not filter independent event history",
+        "Trail tags, inventory, Resource Groups Tagging API, console catalogue and CloudFormation AWS::CloudTrail::Trail with selected properties",
+        "Completed external gateway AWS operations generate per-account/Region events whether or not a trail exists or is logging; internal catalog.Caller and console actions are excluded",
+        "Event ID/name/source/time, caller access key as Username, ReadOnly, user identity, Region, source IP, user agent, request ID and modeled failure code/message; S3 bucket resources are exposed where routes identify them",
+        "LookupEvents supports one EventId, EventName, EventSource, Username, ReadOnly, AccessKeyId, ResourceName or ResourceType attribute, inclusive time range, MaxResults 1\u201350 and filter-bound cursor pagination newest first",
+        "History stores at most the newest 1000 events per account/Region and drops events older than 90 days; persistent storage survives restart and reset clears history"
+      ],
+      "gaps": [
+        "Trail logging is records only: no S3 log files, digest delivery, CloudWatch Logs delivery, SNS notification, log validation or KMS encryption",
+        "Multi-Region and organization trails, shadow trails and IncludeGlobalServiceEvents configuration are unsupported and fail explicitly",
+        "Event selectors do not execute delivery and data-event collection is not modeled separately; event history describes gateway AWS operations",
+        "Request parameters and response bodies are always omitted to prevent secrets entering history; sensitive operation error messages use the gateway redaction marker",
+        "Username is the access key rather than resolved IAM user name; resource enrichment currently includes only S3 bucket route labels",
+        "History bound is fixed at 1000, not configurable; no CloudTrail Lake, Insights, channels or management console pages"
+      ],
+      "execution": "Trail records / bounded local event history",
+      "package": "cloudtrail"
     }
   },
   "future": {
@@ -1073,12 +1140,6 @@
       "features": "- [ ] `GetAccountInformation` \u2014 return `AccountId`, `AccountName`, `AccountCreatedDate`, and `AccountState` through `POST /getAccountInformation`.\n- [ ] `GetContactInformation` \u2014 return configured primary contact details through `POST /getContactInformation`.\n- [ ] `ListRegions` \u2014 return region opt-in statuses through `POST /listRegions`, with `RegionOptStatusContains`, `MaxResults`, and `NextToken`.\n- [ ] `GetRegionOptStatus` \u2014 validate `RegionName` and return the same status as `ListRegions` through `POST /getRegionOptStatus`.\n- [ ] Additive `AccountState` \u2014 populate `ACTIVE` by default. The field was added on 2026-04-29; newer SDKs expose it while older JSON SDK models can ignore it.",
       "integration": "Use the AWS Account `2021-02-01` REST JSON model and SigV4 signing name `account`. Resolve the account through `identity.accounts` or `defaults.account`; keep account details and region statuses consistent across calls and restarts. Serve only the caller's account until Organizations delegation exists, and reject another explicit `AccountId`. Encode modeled status codes and errors through the REST JSON codec.",
       "acceptance": "Call all four paths through an AWS SDK and raw REST JSON requests. Check account isolation, validation errors, region filtering and pagination, and consistent opt-in statuses. Confirm `AccountState` in raw responses and current SDKs, compatibility with an older SDK model, and stable configured details after restart."
-    },
-    "appconfig": {
-      "title": "AppConfig",
-      "state": "Proposed",
-      "slice": "Implement `CreateApplication`, `GetApplication`, `ListApplications`.",
-      "features": "- [ ] `CreateApplication`\n- [ ] `GetApplication`\n- [ ] `ListApplications`\n- [ ] `UpdateApplication`\n- [ ] `DeleteApplication`\n- [ ] `CreateEnvironment`\n- [ ] `GetEnvironment`\n- [ ] `ListEnvironments`\n- [ ] `UpdateEnvironment`\n- [ ] `DeleteEnvironment`\n- [ ] `CreateConfigurationProfile`\n- [ ] `GetConfigurationProfile`\n- [ ] `ListConfigurationProfiles`\n- [ ] `UpdateConfigurationProfile`\n- [ ] `DeleteConfigurationProfile`"
     },
     "appsync-events": {
       "title": "AppSync Events",
@@ -1134,12 +1195,6 @@
       "slice": "Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`.",
       "features": "- [ ] `DescribeKeyValueStore`\n- [ ] `ListKeys`\n- [ ] `GetKey`\n- [ ] `PutKey`\n- [ ] `DeleteKey`\n- [ ] `UpdateKeys`",
       "integration": "The proposed resource scope is account-wide; define persistence and cross-service effects accordingly."
-    },
-    "cloudtrail": {
-      "title": "CloudTrail",
-      "state": "Proposed",
-      "slice": "Implement `CreateTrail`, `DeleteTrail`, `GetTrail`.",
-      "features": "- [ ] `CreateTrail`\n- [ ] `DeleteTrail`\n- [ ] `GetTrail`\n- [ ] `DescribeTrails`\n- [ ] `GetTrailStatus`\n- [ ] `StartLogging`\n- [ ] `StopLogging`\n- [ ] `PutEventSelectors`\n- [ ] `GetEventSelectors`\n- [ ] `AddTags`\n- [ ] `ListTags`\n- [ ] `RemoveTags`"
     },
     "codebuild": {
       "title": "CodeBuild",
