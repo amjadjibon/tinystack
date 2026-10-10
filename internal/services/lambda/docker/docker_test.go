@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 )
 
@@ -169,7 +171,21 @@ func TestDockerHotReload(t *testing.T) {
 		t.Skip("set TINYSTACK_DOCKER_TESTS=1 to run functions in Docker")
 	}
 
-	dir := t.TempDir()
+	// Colima shares the home directory, but not macOS's /var/folders temp root.
+	// Keep this bind-mounted fixture in the repository and remove it after use.
+	dir, err := os.MkdirTemp(".", ".hot-reload-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if cleanupErr := os.RemoveAll(dir); cleanupErr != nil {
+			t.Error(cleanupErr)
+		}
+	})
+	dir, err = filepath.Abs(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
 	r := New()
 	defer r.Close()
 	fn := &lambda.Function{
@@ -181,8 +197,30 @@ func TestDockerHotReload(t *testing.T) {
 	var previous string
 	for _, value := range []string{"first", "second-version"} {
 		code := "value = '" + value + "'\ndef echo(event, context): return value\n"
-		if err := os.WriteFile(dir+"/app.py", []byte(code), 0o600); err != nil {
-			t.Fatal(err)
+		if writeErr := os.WriteFile(dir+"/app.py", []byte(code), 0o600); writeErr != nil {
+			t.Fatal(writeErr)
+		}
+		if previous != "" {
+			// VM mounts can cache the old size/content. Wait for the edit to be
+			// visible inside Docker before testing container replacement.
+			mountCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			for {
+				content, readErr := dockercli.Run(mountCtx, nil, "exec", previous, "cat", "/var/task/app.py")
+				if readErr != nil {
+					cancel()
+					t.Fatal(readErr)
+				}
+				if content == strings.TrimSpace(code) {
+					break
+				}
+				select {
+				case <-mountCtx.Done():
+					cancel()
+					t.Fatalf("edit not visible in Docker: %q", content)
+				case <-time.After(50 * time.Millisecond):
+				}
+			}
+			cancel()
 		}
 
 		for range 2 {

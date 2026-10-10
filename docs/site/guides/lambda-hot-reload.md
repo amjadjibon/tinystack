@@ -65,6 +65,11 @@ Every supported ZIP runtime mounts the directory **read-only at `/var/task`**, t
 used for extracted ZIP packages. Normal ZIP layers still load into `/opt`. Docker must be
 able to bind-mount the host path; remote Docker daemons need that same path on their host,
 and Docker Desktop needs file sharing enabled for the directory.
+With Colima on macOS, keep the directory under your home directory (for example, in the
+repository). The default macOS temporary directory under `/var/folders` is not shared by
+Colima unless you configure an additional mount.
+VM file sharing can delay an edit's visibility inside the container. Invoke after the
+mount reflects the edit; restarting a warm container does not refresh the VM's filesystem cache.
 
 Before every Docker invocation, TinyStack fingerprints the tree's relative names, sizes,
 modification times and modes. A change replaces the function's warm container pool.
