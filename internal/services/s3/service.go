@@ -4,8 +4,10 @@
 // "aws/s3/buckets/<name>" maps each name to its owning account and region and
 // is written in the same transaction as the bucket's regional metadata under
 // "<account>/<region>/s3/<name>". Objects live below that regional key: object
-// metadata under ".../o/<key>" and object bytes under ".../d/<key>", with
-// noncurrent versions and delete markers as described in versions.go.
+// metadata under ".../o/<key>" and immutable body references under ".../db/<key>", with
+// noncurrent versions and delete markers as described in versions.go. Historical
+// and multipart body references use "/bb/" and "/pb/". S3 owns legacy raw-body
+// migration, transactional reference counts and collection; storage owns file mechanics.
 package s3
 
 import (
@@ -42,17 +44,22 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
+	store   *bodyStore
+	blobs   *storage.BlobStore
+	blobErr error
 	// queues, topics, functions, and events receive bucket notifications,
 	// which deliveries records.
-	queues     *sqs.Service
-	topics     *sns.Service
-	functions  *lambda.Service
-	events     *eventbridge.Service
-	deliveries *delivery.Log
-	now        func() time.Time
+	queues         *sqs.Service
+	topics         *sns.Service
+	functions      *lambda.Service
+	events         *eventbridge.Service
+	deliveries     *delivery.Log
+	now            func() time.Time
+	maxObjectBytes int64
 }
 
+// New owns the supplied file facility, or creates a temporary one for standalone use.
+// With supplied files, call Resume before serving requests. Stop closes the facility.
 func New(
 	store storage.Store,
 	queues *sqs.Service,
@@ -60,9 +67,18 @@ func New(
 	functions *lambda.Service,
 	events *eventbridge.Service,
 	deliveries *delivery.Log,
+	files ...*storage.BlobStore,
 ) *Service {
-	return &Service{
-		store:      store,
+	var blobs *storage.BlobStore
+	var blobErr error
+	if len(files) > 0 {
+		blobs = files[0]
+	} else {
+		blobs, blobErr = storage.OpenBlobs("")
+	}
+	s := &Service{
+		blobs: blobs, blobErr: blobErr, maxObjectBytes: 256 << 20,
+		store:      &bodyStore{Store: store, blobs: blobs},
 		queues:     queues,
 		topics:     topics,
 		functions:  functions,
@@ -70,6 +86,10 @@ func New(
 		deliveries: deliveries,
 		now:        time.Now,
 	}
+	if len(files) == 0 {
+		s.blobErr = s.Resume(context.Background())
+	}
+	return s
 }
 
 // bucketIndex is the partition-wide record that reserves a bucket name.
@@ -371,4 +391,15 @@ func (s *Service) ListBuckets(ctx context.Context, in *api.ListBucketsRequest) (
 
 	out.Buckets = buckets
 	return out, nil
+}
+
+// UseMaxObjectBytes sets the upload and completed-object bound configured by the app.
+func (s *Service) UseMaxObjectBytes(limit int64) { s.maxObjectBytes = limit }
+
+// Stop collects orphan files, closes the facility and removes its temporary directory in memory mode.
+func (s *Service) Stop() {
+	if s.blobs != nil {
+		_ = s.collect(context.Background())
+		_ = s.blobs.Close()
+	}
 }

@@ -1,7 +1,10 @@
 package s3
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"io"
 	"maps"
 	"net/http"
 	"net/url"
@@ -143,6 +146,62 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 			"redirect location or encryption attributes.")
 	}
 
+	var snapshot []byte
+	var sourceObject object
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		source, resolveErr := resolveSource(tx, m, sourceBucket, in.ExpectedSourceBucketOwner)
+		if resolveErr != nil {
+			return resolveErr
+		}
+
+		obj, data, readErr := locate(tx, source, sourceKey, sourceVersion)
+		if readErr != nil {
+			return readErr
+		}
+
+		sourceObject = obj
+		snapshot, _ = tx.Get(data)
+		if blob, ok := storage.BlobReference(snapshot); ok {
+			s.blobs.Pin(blob)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defer s.releaseBody(snapshot)
+	var replacement *checksum
+	if algorithm != "" || sourceObject.Checksum == nil {
+		use := algorithm
+		if use == "" {
+			use = defaultChecksum
+		}
+
+		reader, openErr := s.openBody(snapshot)
+		if openErr != nil {
+			return nil, openErr
+		}
+
+		digest := checksums()[use]()
+		_, hashErr := io.Copy(digest, reader)
+		closeErr := reader.Close()
+		if hashErr != nil {
+			return nil, hashErr
+		}
+
+		if closeErr != nil {
+			return nil, closeErr
+		}
+
+		replacement = &checksum{
+			Algorithm: use,
+			Value:     base64.StdEncoding.EncodeToString(digest.Sum(nil)),
+			Type:      typeFullObject,
+		}
+	}
+
 	var obj object
 	var cfg *api.NotificationConfiguration
 	var copied, written *string
@@ -194,15 +253,12 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 
 		body, _ := tx.Get(data)
 
-		// The copy keeps the source's checksum unless a new algorithm is asked for or the
-		// source has none, which S3 would have given the default.
-		if algorithm != "" || obj.Checksum == nil {
-			use := algorithm
-			if use == "" {
-				use = defaultChecksum
-			}
+		if !bytes.Equal(body, snapshot) {
+			return fail(409, "OperationAborted", "Source changed during copy; retry the request")
+		}
 
-			obj.Checksum = &checksum{Algorithm: use, Value: sum(use, body), Type: typeFullObject}
+		if replacement != nil {
+			obj.Checksum = replacement
 		}
 
 		obj.LastModified = s.now().UnixMilli()
@@ -227,6 +283,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		ETag:         new(obj.ETag),
 		LastModified: new(time.UnixMilli(obj.LastModified).UTC()),
 	}
+
 	obj.Checksum.apply(result)
 
 	return &api.CopyObjectOutput{

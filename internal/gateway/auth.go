@@ -219,7 +219,7 @@ func (s *Server) readBody(w http.ResponseWriter, r *http.Request, c *call) ([]by
 	limit := int64(maxBody)
 	isREST := restProtocol(c.service) == c.meta.Protocol
 	if isREST {
-		limit = restMaxBody
+		limit = s.restBodyLimit(c)
 	}
 
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, limit))

@@ -68,7 +68,7 @@ func validAlgorithm(algorithm string) error {
 // its algorithm with ChecksumAlgorithm or by sending one value; expect is the
 // algorithm an upload fixed, if any. With none named the default is CRC64NVME,
 // as S3 computes. A sent value must match the body.
-func checksumOf(in any, body []byte, expect string) (checksum, error) {
+func checksumOf(in any, values map[string]string, expect string) (checksum, error) {
 	sent := sentChecksums(in)
 	if len(sent) > 1 {
 		return checksum{}, fail(http.StatusBadRequest, "InvalidRequest",
@@ -102,7 +102,7 @@ func checksumOf(in any, body []byte, expect string) (checksum, error) {
 		algorithm = defaultChecksum
 	}
 
-	c := checksum{Algorithm: algorithm, Value: sum(algorithm, body)}
+	c := checksum{Algorithm: algorithm, Value: values[algorithm]}
 	if want, ok := sent[algorithm]; ok && want != c.Value {
 		return checksum{}, fail(http.StatusBadRequest, "BadDigest",
 			"The "+algorithm+" you specified did not match the calculated checksum.")

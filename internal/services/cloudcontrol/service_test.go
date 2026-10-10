@@ -26,7 +26,9 @@ func testService(t *testing.T) (s *Service, store *memory.Store, ctx context.Con
 		t.Fatal(err)
 	}
 
-	objects = s3api.Descriptor(s3.New(store, nil, nil, nil, nil, nil))
+	buckets := s3.New(store, nil, nil, nil, nil, nil)
+	t.Cleanup(buckets.Stop)
+	objects = s3api.Descriptor(buckets)
 	s.UseCaller(catalog.NewCaller(objects))
 	ctx = request.WithMetadata(context.Background(), request.Metadata{
 		Scope: request.Scope{AccountID: "000000000000", Region: "us-east-1"}, Endpoint: "http://localhost:4566",

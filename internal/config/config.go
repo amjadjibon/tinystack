@@ -73,8 +73,9 @@ type Config struct {
 		Region  string `yaml:"region"`
 	} `yaml:"defaults"`
 	Storage struct {
-		Mode string `yaml:"mode"`
-		Path string `yaml:"path"`
+		Mode           string `yaml:"mode"`
+		Path           string `yaml:"path"`
+		MaxObjectBytes int64  `yaml:"s3_max_object_bytes"`
 	} `yaml:"storage"`
 	ECS struct {
 		Containers string `yaml:"containers"`
@@ -124,6 +125,7 @@ func Default() Config {
 	c.Defaults.Account = "000000000000"
 	c.Defaults.Region = "us-east-1"
 	c.Storage.Mode = StorageMemory
+	c.Storage.MaxObjectBytes = 256 << 20
 	c.Identity.Mode = IdentityParse
 	c.Identity.Accounts = map[string]string{}
 	c.ECS.Containers = ContainersRecords
@@ -202,6 +204,10 @@ func (c *Config) Validate() error {
 
 	if c.Server.ConsolePort < 0 || c.Server.ConsolePort > 65535 || c.Server.ConsolePort == c.Server.Port {
 		return fmt.Errorf("server.console_port must be 0 or another port up to 65535")
+	}
+
+	if c.Storage.MaxObjectBytes < 1 || c.Storage.MaxObjectBytes > 5<<30 {
+		return fmt.Errorf("storage.s3_max_object_bytes must be between 1 and 5368709120")
 	}
 
 	switch c.Storage.Mode {

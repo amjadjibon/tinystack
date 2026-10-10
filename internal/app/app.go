@@ -7,7 +7,10 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
@@ -213,7 +216,28 @@ func build(
 	rules := eventbridge.New(store, queues, topics, functions, deliveries)
 	// Stop ends the scheduler, which writes to the store.
 	a.onStop(rules.Stop)
-	buckets := s3.New(store, queues, topics, functions, rules, deliveries)
+	blobDir := ""
+	if cfg.Storage.Mode == config.StoragePersistent {
+		blobDir = cfg.Storage.Path
+		if blobDir == "~" || strings.HasPrefix(blobDir, "~/") {
+			home, homeErr := os.UserHomeDir()
+			if homeErr != nil {
+				return nil, homeErr
+			}
+			blobDir = filepath.Join(home, blobDir[1:])
+		}
+	}
+	blobs, blobErr := storage.OpenBlobs(blobDir)
+	if blobErr != nil {
+		return nil, blobErr
+	}
+	buckets := s3.New(store, queues, topics, functions, rules, deliveries, blobs)
+	a.onStop(buckets.Stop)
+	a.onReset(buckets.Reset)
+	if resumeErr := buckets.Resume(ctx); resumeErr != nil {
+		return nil, resumeErr
+	}
+	buckets.UseMaxObjectBytes(cfg.Storage.MaxObjectBytes)
 	secrets := secretsmanager.New(store, keys, functions, deliveries)
 	// Stop ends the rotation scheduler and running rotations.
 	a.onStop(secrets.Stop)

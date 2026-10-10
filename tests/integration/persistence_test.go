@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 
+	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/storage/sqlite"
 )
 
@@ -27,7 +28,9 @@ func persistent(t *testing.T, dir string, runtime *fakeRuntime) (s *httptest.Ser
 		t.Fatal(err)
 	}
 
-	s, stopServer := serverStore(t, testConfig(), runtime, store)
+	cfg := testConfig()
+	cfg.Storage.Mode, cfg.Storage.Path = config.StoragePersistent, dir
+	s, stopServer := serverStore(t, cfg, runtime, store)
 	return s, func() {
 		stopServer()
 		if closeErr := store.Close(); closeErr != nil {

@@ -20,10 +20,10 @@ import (
 // then only be suspended, never turned off.
 //
 // The current version of a key is always ".../o/<key>" with its bytes at
-// ".../d/<key>", so ListObjectsV2 reads only current objects. Every other
+// ".../db/<key>", so ListObjectsV2 reads only current objects. Every other
 // version, and every delete marker, is in the key's history record
 // ".../v/<key>", newest first; a noncurrent version's bytes are at
-// ".../b/<version ID>/<key>". When a key has no current object, the newest
+// ".../bb/<version ID>/<key>". When a key has no current object, the newest
 // history entry is a delete marker, which is then the latest version.
 const (
 	versioningEnabled   = "Enabled"
@@ -105,7 +105,7 @@ func saveHistory(tx storage.WriteTx, bucket, key string, h []object) error {
 
 // bodyKey is where the bytes of a noncurrent version are stored.
 func bodyKey(bucket, key string, obj *object) string {
-	return bucket + "/b/" + versionOf(obj) + "/" + key
+	return bucket + "/bb/" + versionOf(obj) + "/" + key
 }
 
 // archive moves the current object of key, if any, to the front of h.
@@ -116,10 +116,10 @@ func archive(tx storage.WriteTx, bucket, key string, h []object) ([]object, erro
 		return h, err
 	}
 
-	body, _ := tx.Get(bucket + "/d/" + key)
+	body, _ := tx.Get(bucket + "/db/" + key)
 	tx.Put(bodyKey(bucket, key, &current), body)
 	tx.Delete(bucket + "/o/" + key)
-	tx.Delete(bucket + "/d/" + key)
+	tx.Delete(bucket + "/db/" + key)
 	return append([]object{current}, h...), nil
 }
 
@@ -146,7 +146,7 @@ func promote(tx storage.WriteTx, bucket, key string, h []object) ([]object, erro
 	next := h[0]
 	body, _ := tx.Get(bodyKey(bucket, key, &next))
 	tx.Delete(bodyKey(bucket, key, &next))
-	tx.Put(bucket+"/d/"+key, body)
+	tx.Put(bucket+"/db/"+key, body)
 	return h[1:], writeJSON(tx, bucket+"/o/"+key, &next)
 }
 
@@ -182,7 +182,7 @@ func putCurrent(tx storage.WriteTx, bucket, key string, obj *object, body []byte
 		}
 	}
 
-	tx.Put(bucket+"/d/"+key, body)
+	tx.Put(bucket+"/db/"+key, body)
 	return status, writeJSON(tx, bucket+"/o/"+key, obj)
 }
 
@@ -204,7 +204,7 @@ func deleteCurrent(tx storage.WriteTx, bucket, key string, now int64) (removal, 
 	if status == "" {
 		_, found := tx.Get(bucket + "/o/" + key)
 		tx.Delete(bucket + "/o/" + key)
-		tx.Delete(bucket + "/d/" + key)
+		tx.Delete(bucket + "/db/" + key)
 		return removal{removed: found}, nil
 	}
 
@@ -245,7 +245,7 @@ func deleteVersion(tx storage.WriteTx, bucket, key, version string) (removal, er
 		return out, err
 	case found && versionOf(&current) == version:
 		tx.Delete(bucket + "/o/" + key)
-		tx.Delete(bucket + "/d/" + key)
+		tx.Delete(bucket + "/db/" + key)
 		out.removed = true
 	default:
 		i := slices.IndexFunc(h, func(o object) bool { return versionOf(&o) == version })
@@ -275,7 +275,7 @@ func locate(tx storage.ReadTx, bucket, key, version string) (obj object, data st
 	}
 
 	if found && (version == "" || versionOf(&obj) == version) {
-		return obj, bucket + "/d/" + key, nil
+		return obj, bucket + "/db/" + key, nil
 	}
 
 	h, err := history(tx, bucket, key)
@@ -314,7 +314,7 @@ func rewrite(tx storage.WriteTx, bucket, key, version string, fn func(*object)) 
 	}
 
 	fn(&obj)
-	if data == bucket+"/d/"+key {
+	if data == bucket+"/db/"+key {
 		return &obj, writeJSON(tx, bucket+"/o/"+key, &obj)
 	}
 

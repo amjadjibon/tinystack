@@ -12,6 +12,7 @@ import (
 	"hash"
 	"hash/crc32"
 	"hash/crc64"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -79,14 +80,14 @@ func validKey(key *string) error {
 }
 
 // verify checks the Content-MD5 the client sent.
-func verify(in *api.PutObjectRequest) error {
+func verify(in *api.PutObjectRequest, digest []byte) error {
 	if in.ContentMD5 != nil {
 		want, err := base64.StdEncoding.DecodeString(*in.ContentMD5)
 		if err != nil || len(want) != md5.Size {
 			return fail(http.StatusBadRequest, "InvalidDigest", "The Content-MD5 you specified was invalid.")
 		}
 
-		if got := md5.Sum(in.Body); !bytes.Equal(got[:], want) { // #nosec G401 -- S3 protocol digest.
+		if !bytes.Equal(digest, want) {
 			return fail(http.StatusBadRequest, "BadDigest",
 				"The Content-MD5 you specified did not match what we received.")
 		}
@@ -107,6 +108,10 @@ func matches(condition, etag string) bool {
 }
 
 func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api.PutObjectOutput, error) {
+	if int64(len(in.Body)) > s.maxObjectBytes {
+		return nil, fail(400, "EntityTooLarge", "Object exceeds configured limit")
+	}
+
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
@@ -142,11 +147,17 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 			"Your metadata headers exceed the maximum allowed metadata size")
 	}
 
-	if guardErr := verify(in); guardErr != nil {
+	blob, digest, values, err := s.writeBody(in.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	defer s.blobs.Release(blob)
+	if guardErr := verify(in, digest); guardErr != nil {
 		return nil, guardErr
 	}
 
-	stored, err := checksumOf(in, in.Body, "")
+	stored, err := checksumOf(in, values, "")
 	if err != nil {
 		return nil, err
 	}
@@ -158,9 +169,8 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		return nil, err
 	}
 
-	sum := md5.Sum(in.Body) // #nosec G401 -- S3 ETags are MD5 digests.
 	obj := object{
-		ETag:         `"` + hex.EncodeToString(sum[:]) + `"`,
+		ETag:         `"` + hex.EncodeToString(digest) + `"`,
 		ContentType:  common.Value(in.ContentType),
 		Size:         int64(len(in.Body)),
 		LastModified: s.now().UnixMilli(),
@@ -200,7 +210,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		}
 
 		var putErr error
-		status, putErr = putCurrent(tx, key, *in.Key, &obj, in.Body)
+		status, putErr = putCurrent(tx, key, *in.Key, &obj, blob.Record())
 		return putErr
 	})
 	if err != nil {
@@ -238,6 +248,9 @@ type found struct {
 // read loads the current object, or the named version, and applies If-Match
 // and If-None-Match.
 func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *string, withBody bool) (*found, error) {
+	if s.blobErr != nil {
+		return nil, s.blobErr
+	}
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
@@ -271,6 +284,9 @@ func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *stri
 
 		if withBody {
 			f.body, _ = tx.Get(data)
+			if blob, ok := storage.BlobReference(f.body); ok {
+				s.blobs.Pin(blob)
+			}
 		}
 
 		return nil
@@ -280,10 +296,12 @@ func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *stri
 	}
 
 	if ifMatch != nil && !matches(*ifMatch, f.obj.ETag) {
+		s.releaseBody(f.body)
 		return nil, preconditionFailed()
 	}
 
 	if ifNoneMatch != nil && matches(*ifNoneMatch, f.obj.ETag) {
+		s.releaseBody(f.body)
 		return nil, fail(http.StatusNotModified, "NotModified", "Not Modified")
 	}
 
@@ -304,7 +322,14 @@ func (s *Service) Object(ctx context.Context, bucket, key, version string) ([]by
 		return nil, err
 	}
 
-	return f.body, nil
+	defer s.releaseBody(f.body)
+	reader, err := s.openBody(f.body)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = reader.Close() }()
+	return io.ReadAll(reader)
 }
 
 func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api.GetObjectOutput, error) {
@@ -314,14 +339,25 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 		return nil, err
 	}
 
+	defer s.releaseBody(f.body)
 	report, err := reporting(in.ChecksumMode)
 	if err != nil {
 		return nil, err
 	}
 
-	obj, body := &f.obj, f.body
+	obj := &f.obj
+	reader, err := s.openBody(f.body)
+	if err != nil {
+		return nil, err
+	}
+
+	transferred := false
+	defer func() {
+		if !transferred {
+			_ = reader.Close()
+		}
+	}()
 	out := &api.GetObjectOutput{
-		Body:          body,
 		VersionId:     f.version,
 		ContentLength: new(obj.Size),
 		ContentType:   new(obj.ContentType),
@@ -329,6 +365,7 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
 	}
+
 	if len(obj.Tags) > 0 {
 		out.TagCount = new(int64(len(obj.Tags)))
 	}
@@ -339,13 +376,26 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 			return nil, rangeErr
 		}
 
-		out.Body = body[interval.start : interval.end+1]
+		if _, seekErr := reader.Seek(interval.start, io.SeekStart); seekErr != nil {
+			return nil, seekErr
+		}
+
 		out.ContentLength = new(interval.end - interval.start + 1)
 		out.ContentRange = new(fmt.Sprintf("bytes %d-%d/%d", interval.start, interval.end, obj.Size))
 		out.AcceptRanges = new("bytes")
 	} else if report {
 		// S3 reports no full-object checksum for part of an object.
 		obj.Checksum.apply(out)
+	}
+
+	if payload := request.ResponsePayload(ctx); payload != nil {
+		payload.Body = &limitedBody{Reader: io.LimitReader(reader, *out.ContentLength), Closer: reader}
+		transferred = true
+	} else {
+		out.Body, err = io.ReadAll(io.LimitReader(reader, *out.ContentLength))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return out, nil
@@ -372,6 +422,7 @@ func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*a
 		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
 	}
+
 	if in.Range != nil {
 		interval, rangeErr := parseRange(*in.Range, obj.Size)
 		if rangeErr != nil {
@@ -430,6 +481,7 @@ func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest)
 	e := objectEvent{
 		name: "ObjectRemoved:Delete", reason: "DeleteObject", bucket: *in.Bucket, key: *in.Key, version: r.version,
 	}
+
 	if r.marker && in.VersionId == nil {
 		e.name = "ObjectRemoved:DeleteMarkerCreated"
 	}
@@ -512,6 +564,7 @@ func (s *Service) DeleteObjects(ctx context.Context, in *api.DeleteObjectsReques
 					name: "ObjectRemoved:Delete", reason: "DeleteObjects", bucket: *in.Bucket,
 					key: *o.Key, version: r.version,
 				}
+
 				if r.marker && o.VersionId == nil {
 					e.name = "ObjectRemoved:DeleteMarkerCreated"
 				}

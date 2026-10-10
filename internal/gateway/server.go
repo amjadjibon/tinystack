@@ -25,6 +25,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/awsjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/query"
+	restbindings "github.com/amjadjibon/tinystack/internal/aws/protocol/rest"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restjson"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/rpcv2cbor"
@@ -608,7 +609,7 @@ func (s *Server) decode(
 ) (catalog.Operation, any, error) {
 	op, ok := c.service.Operations[c.meta.Operation]
 	if restProtocol(c.service) == c.meta.Protocol {
-		input, err := decodeREST(w, r, c, &op)
+		input, err := s.decodeREST(w, r, c, &op)
 		return op, input, err
 	}
 
@@ -809,7 +810,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := op.Invoke(request.WithMetadata(r.Context(), c.meta), input)
+	ctx := request.WithMetadata(r.Context(), c.meta)
+	payload := &request.Payload{}
+	if c.service.SigningName == "s3" && c.meta.Operation == "GetObject" {
+		ctx = request.WithPayload(ctx, payload)
+	}
+	defer func() {
+		if payload.Body != nil {
+			_ = payload.Body.Close()
+		}
+	}()
+	output, err := op.Invoke(ctx, input)
 	if err != nil {
 		s.fail(w, c, err)
 		return
@@ -819,7 +830,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status := binding.StatusCode
 	switch m.Protocol {
 	case catalog.RESTXML:
-		restxml.Write(w, &binding, output, c.head)
+		if payload.Body != nil {
+			response := restbindings.Encode(w, &binding, output)
+			w.WriteHeader(response.Status)
+			if !c.head {
+				_, _ = io.Copy(w, payload.Body)
+			}
+		} else {
+			restxml.Write(w, &binding, output, c.head)
+		}
 		return
 	case catalog.RESTJSON:
 		restjson.Write(w, &binding, output)
