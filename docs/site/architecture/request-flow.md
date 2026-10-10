@@ -57,9 +57,16 @@ S3 virtual-host bucket names are folded into the resource path. `CopyObject` is 
 ## Input limits and errors
 
 The gateway limits ordinary decoded inputs to **2 MiB**, supports gzip decoding for modeled compression,
-and limits REST document and non-S3 payloads to **64 MiB**. S3 PUT/part payloads use
-`storage.s3_max_object_bytes` (256 MiB by default); HTTP object GETs stream from disk. Each service can impose smaller operation limits.
-The REST layer decodes supported AWS chunked bodies.
+and limits REST document and non-S3 payloads to **64 MiB**. S3 PutObject and UploadPart stream HTTP request
+bodies directly into blob files with memory bounded by a fixed-size buffer, using `storage.s3_max_object_bytes`
+(256 MiB by default, up to 5 GiB) as an upper bound on decoded data; HTTP object GETs stream from disk.
+Generated in-process PutObject and UploadPart calls using byte-slice shapes, in-process reads (e.g. Lambda runtime
+`Object()` helper), and console download/preview buffers still buffer bytes in memory (console uploads are limited
+to 1 MiB). In verify mode, only signed hexadecimal or empty hash uploads spool to temporary disk files for SHA-256
+validation before operation dispatch; `UNSIGNED-PAYLOAD`, supported unsigned-trailer forms
+(`STREAMING-UNSIGNED-PAYLOAD-TRAILER`), and usual presigned S3 uploads stream directly without that spool.
+Signed aws-chunked (`STREAMING-AWS4-HMAC-SHA256-*`) uploads remain unsupported and fail with `NotImplemented`.
+The REST layer decodes ordinary, chunked, and aws-chunked bodies with trailing checksum validation on the fly.
 
 Services return `awserror` values. Descriptor error bindings determine protocol codes, statuses, and message
 member names. Query-compatible JSON replies include `X-Amzn-Query-Error`; REST JSON uses `X-Amzn-ErrorType`.

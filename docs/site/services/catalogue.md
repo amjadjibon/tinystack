@@ -728,6 +728,7 @@ Store object metadata in the shared store and object/version/multipart bytes in 
 - Object CRUD, listing, metadata, tagging, copy, upload checksum validation, one byte range and conditional requests.
 - Multipart upload lifecycle and atomic completion, concatenating part files without buffering the complete object.
 - Disk-backed objects and parts in both storage modes, streaming HTTP downloads including byte ranges, startup migration and orphan collection with transactional counts for shared file references.
+- Streaming HTTP uploads for PutObject and UploadPart directly into disk-backed blob files with bounded memory, supporting ordinary, chunked and aws-chunked formats with trailing checksum validation.
 - Stored object checksums (CRC32, CRC32C, CRC64NVME by default, SHA-1, SHA-256) returned with ChecksumMode, composite and full-object multipart checksums, kept through copies and versions.
 - Versioning, null versions and delete markers.
 - Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge.

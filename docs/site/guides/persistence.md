@@ -66,8 +66,12 @@ schema unchanged. Opening an old store still initially loads its embedded bytes 
 load only references. Older TinyStack binaries cannot read the new reference records.
 
 HTTP GET and Range GET stream from files. Multipart completion streams files into the final blob while computing
-its checksum. REST upload decoding (including aws-chunked uploads) still buffers the request, as do generated
-in-process `GetObject`, `Object` helpers and console downloads/previews. Signature verification can retain an
-additional upload buffer. The default object/part/completed-object limit is 256 MiB, configured by
-`storage.s3_max_object_bytes` (1 byte through 5 GiB). Raising it increases upload memory requirements; multipart
-uploads with small parts avoid buffering the whole object. Other services retain their existing REST limits.
+its checksum. HTTP PutObject and UploadPart stream request bodies directly into blob files with memory bounded by
+a fixed-size buffer, supporting ordinary, chunked, and aws-chunked formats with trailing checksum validation.
+In verify mode, only signed hexadecimal or empty hash uploads spool to temporary disk files for SHA-256 validation
+before operation dispatch; `UNSIGNED-PAYLOAD`, supported unsigned-trailer forms (`STREAMING-UNSIGNED-PAYLOAD-TRAILER`),
+and usual presigned S3 uploads stream directly without that spool. Signed aws-chunked (`STREAMING-AWS4-HMAC-SHA256-*`) uploads remain
+unsupported and fail with `NotImplemented`. Generated in-process PutObject and UploadPart calls using byte-slice
+shapes, in-process reads (such as Lambda `Object()` helpers), and console download/preview buffers still buffer
+bytes in memory; console uploads are limited to 1 MiB. The default object/part/completed-object limit is 256 MiB,
+configured by `storage.s3_max_object_bytes` (1 byte through 5 GiB). Other services retain their existing REST limits.
