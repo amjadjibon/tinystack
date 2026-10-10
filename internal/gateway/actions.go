@@ -49,6 +49,8 @@ const consoleEC2 = "ec2"
 
 const consoleSecretsManager = "secretsmanager"
 
+const consoleRDS = "rds"
+
 // Console actions are an explicit subset of the registered SDK operations.
 // IAM is account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
@@ -185,6 +187,13 @@ var consoleSecretsManagerOperations = strings.Fields(`
  RotateSecret CancelRotateSecret GetRandomPassword
 `)
 
+var consoleRDSOperations = strings.Fields(`
+ CreateDBInstance DescribeDBInstances ModifyDBInstance DeleteDBInstance StopDBInstance StartDBInstance RebootDBInstance
+ CreateDBSubnetGroup DescribeDBSubnetGroups DeleteDBSubnetGroup
+ CreateDBParameterGroup DescribeDBParameterGroups DeleteDBParameterGroup
+ AddTagsToResource RemoveTagsFromResource ListTagsForResource
+`)
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -216,6 +225,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, sfn := s.services[consoleSFN]
 		_, ec2 := s.services[consoleEC2]
 		_, secretsmanager := s.services[consoleSecretsManager]
+		_, rds := s.services[consoleRDS]
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
@@ -228,6 +238,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleSFN:            sfn,
 			consoleEC2:            ec2,
 			consoleSecretsManager: secretsmanager,
+			consoleRDS:            rds,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 		})
 		return
@@ -316,6 +327,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleEC2Operations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
+	case consoleRDS:
+		operations = consoleRDSOperations
 	}
 
 	c.service = s.services[in.Service]
