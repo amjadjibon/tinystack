@@ -293,7 +293,7 @@ func signedWithHeader(t *testing.T, r *http.Request, at time.Time) *http.Request
 	signer := v4.NewSigner(func(o *v4.SignerOptions) { o.DisableURIPathEscaping = true })
 	credentials := aws.Credentials{AccessKeyID: "test", SecretAccessKey: "test"}
 	payloadHash := r.Header.Get("X-Amz-Content-Sha256")
-	if err := signer.SignHTTP(context.Background(), credentials, r, payloadHash, "s3", "us-east-1", at); err != nil {
+	if err := signer.SignHTTP(r.Context(), credentials, r, payloadHash, "s3", "us-east-1", at); err != nil {
 		t.Fatal(err)
 	}
 
