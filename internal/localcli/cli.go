@@ -158,6 +158,7 @@ var TerraformServices = []string{
 	"batch",
 	"codebuild",
 	"mq",
+	"kafka",
 	"wafv2",
 	"dynamodb",
 	"ec2",

@@ -37,6 +37,7 @@ export const categories = [
 
 const catalog: Record<string, ServiceInfo> = {
 	mq: { title: "Amazon MQ", category: integration, icon: "mq" },
+	kafka: { title: "Amazon MSK", category: analytics, icon: "msk" },
 	account: {
 		title: "AWS Account",
 		category: management,
