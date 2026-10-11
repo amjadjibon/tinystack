@@ -383,6 +383,9 @@ func (s *Service) perform(ctx context.Context,
 		if id, attrs, ok := batchRestoreReplacement(st, next); ok {
 			return id, attrs, nil
 		}
+		if id, attrs, ok := codebuildRestoreReplacement(st, next); ok {
+			return id, attrs, nil
+		}
 		return types[next.typ].create(ctx, c, next.props)
 	case stepDiscard:
 		retired := st.Replaced[0].Resource
@@ -390,7 +393,7 @@ func (s *Service) perform(ctx context.Context,
 		// earlier swap. Cleanup must keep the incarnation owned by the active
 		// resource rather than deleting the restored record.
 		restored := retired.Type == "AWS::WAFv2::WebACLAssociation" ||
-			isEFSResource(retired.Type) || isBatchResource(retired.Type)
+			isEFSResource(retired.Type) || isBatchResource(retired.Type) || retired.Type == codebuildProjectType
 		if restored && r != nil &&
 			r.Type == retired.Type &&
 			r.Physical == retired.Physical {
@@ -398,6 +401,15 @@ func (s *Service) perform(ctx context.Context,
 		}
 		return "", nil, types[next.typ].remove(ctx, c, retired)
 	case stepUpdate:
+		if st.Op.Rollback && r.Type == codebuildProjectType {
+			if reflect.DeepEqual(props(r.Properties), next.props) {
+				attrs, readErr := codebuildRead(ctx, c, r.Physical)
+				return r.Physical, attrs, readErr
+			}
+			if attrs, found, restoreErr := codebuildRestoreUpdate(ctx, c, r, next.props); found {
+				return r.Physical, attrs, restoreErr
+			}
+		}
 		attributes, err := types[next.typ].update(ctx, c, r, next.props)
 		return r.Physical, attributes, err
 	case stepReplace:
