@@ -179,6 +179,7 @@ func errUntaggable(r *catalog.Owned) error {
 // service name.
 var taggers = map[string]tagger{
 	"kafka": operations("kafka", "TagResource", "UntagResource", byARN("ResourceArn"), "Tags", plain, "TagKeys", names),
+	"mwaa":  operations("mwaa", "TagResource", "UntagResource", byARN("ResourceArn"), "Tags", plain, "tagKeys", names),
 	"mq":    operations("mq", "CreateTags", "DeleteTags", byARN("ResourceArn"), "Tags", plain, "TagKeys", names),
 	"codebuild": {
 		tag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {
