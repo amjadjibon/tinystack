@@ -18468,5 +18468,188 @@
       "CountAction": [],
       "NoneAction": []
     }
+  },
+  "efs": {
+    "operations": [
+      "CreateFileSystem",
+      "DescribeFileSystems",
+      "UpdateFileSystem",
+      "DeleteFileSystem",
+      "CreateMountTarget",
+      "DescribeMountTargets",
+      "DeleteMountTarget",
+      "DescribeMountTargetSecurityGroups",
+      "ModifyMountTargetSecurityGroups",
+      "CreateAccessPoint",
+      "DescribeAccessPoints",
+      "DeleteAccessPoint",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateFileSystemRequest": [
+        "CreationToken",
+        "PerformanceMode",
+        "Encrypted",
+        "KmsKeyId",
+        "ThroughputMode",
+        "ProvisionedThroughputInMibps",
+        "Tags"
+      ],
+      "FileSystemDescription": [
+        "OwnerId",
+        "CreationToken",
+        "FileSystemId",
+        "FileSystemArn",
+        "CreationTime",
+        "LifeCycleState",
+        "Name",
+        "NumberOfMountTargets",
+        "SizeInBytes",
+        "PerformanceMode",
+        "Encrypted",
+        "KmsKeyId",
+        "ThroughputMode",
+        "ProvisionedThroughputInMibps",
+        "Tags"
+      ],
+      "DescribeFileSystemsRequest": [
+        "MaxItems",
+        "Marker",
+        "CreationToken",
+        "FileSystemId"
+      ],
+      "DescribeFileSystemsResponse": [
+        "Marker",
+        "FileSystems",
+        "NextMarker"
+      ],
+      "UpdateFileSystemRequest": [
+        "FileSystemId",
+        "ThroughputMode",
+        "ProvisionedThroughputInMibps"
+      ],
+      "DeleteFileSystemRequest": [
+        "FileSystemId"
+      ],
+      "CreateMountTargetRequest": [
+        "FileSystemId",
+        "SubnetId",
+        "IpAddress",
+        "IpAddressType",
+        "SecurityGroups"
+      ],
+      "MountTargetDescription": [
+        "OwnerId",
+        "MountTargetId",
+        "FileSystemId",
+        "SubnetId",
+        "LifeCycleState",
+        "IpAddress",
+        "AvailabilityZoneId",
+        "AvailabilityZoneName",
+        "VpcId"
+      ],
+      "DescribeMountTargetsRequest": [
+        "MaxItems",
+        "Marker",
+        "FileSystemId",
+        "MountTargetId",
+        "AccessPointId"
+      ],
+      "DescribeMountTargetsResponse": [
+        "Marker",
+        "MountTargets",
+        "NextMarker"
+      ],
+      "DeleteMountTargetRequest": [
+        "MountTargetId"
+      ],
+      "DescribeMountTargetSecurityGroupsRequest": [
+        "MountTargetId"
+      ],
+      "DescribeMountTargetSecurityGroupsResponse": [
+        "SecurityGroups"
+      ],
+      "ModifyMountTargetSecurityGroupsRequest": [
+        "MountTargetId",
+        "SecurityGroups"
+      ],
+      "CreateAccessPointRequest": [
+        "ClientToken",
+        "Tags",
+        "FileSystemId",
+        "PosixUser",
+        "RootDirectory"
+      ],
+      "AccessPointDescription": [
+        "ClientToken",
+        "Name",
+        "Tags",
+        "AccessPointId",
+        "AccessPointArn",
+        "FileSystemId",
+        "PosixUser",
+        "RootDirectory",
+        "OwnerId",
+        "LifeCycleState"
+      ],
+      "DescribeAccessPointsRequest": [
+        "MaxResults",
+        "NextToken",
+        "AccessPointId",
+        "FileSystemId"
+      ],
+      "DescribeAccessPointsResponse": [
+        "AccessPoints",
+        "NextToken"
+      ],
+      "DeleteAccessPointRequest": [
+        "AccessPointId"
+      ],
+      "TagResourceRequest": [
+        "ResourceId",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceId",
+        "TagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags",
+        "NextToken"
+      ],
+      "PosixUser": [
+        "Uid",
+        "Gid",
+        "SecondaryGids"
+      ],
+      "RootDirectory": [
+        "Path",
+        "CreationInfo"
+      ],
+      "CreationInfo": [
+        "OwnerUid",
+        "OwnerGid",
+        "Permissions"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "FileSystemSize": [
+        "Value",
+        "Timestamp",
+        "ValueInIA",
+        "ValueInStandard",
+        "ValueInArchive"
+      ]
+    }
   }
 }

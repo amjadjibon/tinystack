@@ -95,6 +95,10 @@
       "path": "codegen/sdk-codegen/aws-models/ecs.json",
       "sha256": "b66c352b2df9d1007429c157f036aee781f4736b9757b877e37fb51eb61856a7"
     },
+    "efs": {
+      "path": "codegen/sdk-codegen/aws-models/efs.json",
+      "sha256": "c4cd724b07e79cc458cbe8ceb790af6569e299c69aee029650ac931d7ae7f8e8"
+    },
     "eks": {
       "path": "codegen/sdk-codegen/aws-models/eks.json",
       "sha256": "8aaad1b255330361760760b20c58c186d2e6776088577d169b203d050a09de10"
