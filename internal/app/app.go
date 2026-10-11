@@ -50,6 +50,7 @@ import (
 	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
 	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
+	kafkaapi "github.com/amjadjibon/tinystack/internal/aws/generated/kafka"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -113,6 +114,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/glue"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/iot"
+	"github.com/amjadjibon/tinystack/internal/services/kafka"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
@@ -318,6 +320,7 @@ func build(
 	batchRecords := batch.New(store, network)
 	buildProjects := codebuild.New(store)
 	brokers := mq.New(store, network)
+	kafkaClusters := kafka.New(store, network)
 	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -385,6 +388,7 @@ func build(
 		batchapi.Descriptor(batchRecords),
 		codebuildapi.Descriptor(buildProjects),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
+		kafkaapi.Descriptor(kafkaClusters),
 		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
@@ -432,6 +436,7 @@ func build(
 	// operations.
 	control.UseCaller(caller)
 	stacks.UseMQ(brokers)
+	stacks.UseMSK(kafkaClusters)
 	stacks.UseCaller(caller)
 	// Subscription filters deliver to Lambda, Kinesis, and Firehose.
 	logGroups.UseCaller(caller)

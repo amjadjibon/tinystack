@@ -53,6 +53,7 @@ type Service struct {
 	store  storage.Store
 	caller *catalog.Caller
 	mq     mqRecords
+	msk    mskRecords
 	logger *slog.Logger
 	now    func() time.Time
 	bg     *background.Group

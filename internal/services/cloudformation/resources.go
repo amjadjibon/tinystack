@@ -221,6 +221,9 @@ func register(name string, t *resourceType) { types[name] = t }
 
 // replaces reports whether going from old to p replaces a resource.
 func (t *resourceType) replaces(old, p props) bool {
+	if t == types[mskClusterType] {
+		return mskReplaces(old, p)
+	}
 	if t.update == nil {
 		return true
 	}
@@ -244,6 +247,7 @@ func (t *resourceType) createsFirst(old, p props) bool {
 // client calls other services for one stack resource.
 type client struct {
 	mq       mqRecords
+	msk      mskRecords
 	caller   *catalog.Caller
 	scope    request.Scope
 	endpoint string
