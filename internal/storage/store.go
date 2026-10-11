@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 )
 
@@ -23,6 +24,46 @@ type WriteTx interface {
 type Store interface {
 	View(context.Context, func(ReadTx) error) error
 	Update(context.Context, func(WriteTx) error) error
+}
+
+// Record is an opaque key-value pair.
+type Record struct {
+	Key   string
+	Value []byte
+}
+
+type recordWire struct {
+	Key   []byte `json:"key"`
+	Value []byte `json:"value"`
+}
+
+// MarshalJSON encodes Record with key and value as lossless base64 byte slices.
+func (r Record) MarshalJSON() ([]byte, error) {
+	val := r.Value
+	if val == nil {
+		val = []byte{}
+	}
+
+	return json.Marshal(recordWire{
+		Key:   []byte(r.Key),
+		Value: val,
+	})
+}
+
+// UnmarshalJSON decodes Record with key and value from base64 byte slices.
+func (r *Record) UnmarshalJSON(data []byte) error {
+	var w recordWire
+	if err := json.Unmarshal(data, &w); err != nil {
+		return err
+	}
+
+	r.Key = string(w.Key)
+	r.Value = w.Value
+	if r.Value == nil {
+		r.Value = []byte{}
+	}
+
+	return nil
 }
 
 // Clear deletes every record in one transaction, so concurrent callers see the

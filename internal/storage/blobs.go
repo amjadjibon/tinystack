@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +20,22 @@ type Blob struct {
 }
 
 const blobMarker = "tinystack:blob:1:"
+
+// ValidateBlobID reports whether id is a valid 32-character lowercase hex blob identifier.
+func ValidateBlobID(id string) error {
+	if len(id) != 32 {
+		return fmt.Errorf("invalid blob ID %q: expected 32 characters, got %d", id, len(id))
+	}
+
+	for i := range id {
+		c := id[i]
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return fmt.Errorf("invalid blob ID %q: must contain only lowercase hexadecimal digits", id)
+		}
+	}
+
+	return nil
+}
 
 // BlobReference decodes an opaque file reference.
 func BlobReference(data []byte) (Blob, bool) {
@@ -66,9 +83,11 @@ func OpenBlobs(dir string) (*BlobStore, error) {
 		dir = filepath.Join(dir, "blobs")
 		err = os.MkdirAll(dir, 0o700)
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &BlobStore{
 		dir: dir, temporary: temporary,
 		pins: map[string]int{}, retired: map[string]bool{},
@@ -111,6 +130,7 @@ func (s *BlobStore) Write(r io.Reader) (Blob, error) {
 	if renameErr := os.Rename(f.Name(), filepath.Join(s.dir, b.ID)); renameErr != nil {
 		return Blob{}, renameErr
 	}
+
 	// Sync the directory so a committed reference survives a power loss as well
 	// as a process crash. The directory is owned by this store.
 	d, err := os.Open(s.dir) // #nosec G304 -- configured storage directory.
@@ -175,10 +195,12 @@ func (s *BlobStore) Retire(candidates, live map[string]bool) {
 	for id := range live {
 		delete(s.retired, id)
 	}
+
 	for id := range candidates {
 		if live[id] {
 			continue
 		}
+
 		s.retired[id] = true
 		if s.pins[id] == 0 {
 			if err := os.Remove(filepath.Join(s.dir, id)); err == nil || errors.Is(err, os.ErrNotExist) {
@@ -213,17 +235,21 @@ func (s *BlobStore) Collect(live map[string]bool) error {
 	if err != nil {
 		return err
 	}
+
 	for _, entry := range entries {
 		id := entry.Name()
 		if !live[id] {
 			if s.pins[id] > 0 {
 				continue
 			}
+
 			if err := os.Remove(filepath.Join(s.dir, id)); err != nil {
 				return err
 			}
+
 			delete(s.retired, id)
 		}
 	}
+
 	return nil
 }
