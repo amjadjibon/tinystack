@@ -178,6 +178,19 @@ func errUntaggable(r *catalog.Owned) error {
 // taggers are the taggers of the services whose resources this API tags, by
 // service name.
 var taggers = map[string]tagger{
+	"codebuild": {
+		tag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {
+			merged := maps.Clone(r.Tags)
+			if merged == nil {
+				merged = map[string]string{}
+			}
+			maps.Copy(merged, tags)
+			return putCodeBuildTags(ctx, c, r, merged)
+		},
+		untag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, keys []string) error {
+			return putCodeBuildTags(ctx, c, r, tagging.Remove(maps.Clone(r.Tags), keys))
+		},
+	},
 	"organizations": operations(
 		"organizations",
 		"TagResource",
@@ -381,4 +394,10 @@ func (s *Service) UntagResources(
 	}
 
 	return &api.UntagResourcesOutput{FailedResourcesMap: failed}, nil
+}
+
+// CodeBuild tags are replaced through UpdateProject; it has no tag endpoints.
+func putCodeBuildTags(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {
+	_, err := c.Call(ctx, "codebuild", "UpdateProject", map[string]any{"Name": r.Name, "Tags": pairs(tags)})
+	return err
 }

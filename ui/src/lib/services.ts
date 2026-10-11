@@ -17,6 +17,7 @@ const analytics = "Analytics";
 const iot = "Internet of Things";
 const management = "Management & Governance";
 const security = "Security, Identity & Compliance";
+const developerTools = "Developer Tools";
 const business = "Business Applications";
 
 export const categories = [
@@ -31,6 +32,7 @@ export const categories = [
 	management,
 	security,
 	business,
+	developerTools,
 ];
 
 const catalog: Record<string, ServiceInfo> = {
@@ -46,6 +48,11 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "appconfig",
 	},
 	wafv2: { title: "WAF v2", category: security, icon: "wafv2" },
+	codebuild: {
+		title: "CodeBuild",
+		category: developerTools,
+		icon: "codebuild",
+	},
 	batch: { title: "AWS Batch", category: compute, icon: "batch" },
 	efs: { title: "Elastic File System", category: storage, icon: "efs" },
 	backup: { title: "AWS Backup", category: management, icon: "backup" },

@@ -30,6 +30,7 @@ import (
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
 	cloudtrailapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudtrail"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
+	codebuildapi "github.com/amjadjibon/tinystack/internal/aws/generated/codebuild"
 	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	configapi "github.com/amjadjibon/tinystack/internal/aws/generated/config"
@@ -91,6 +92,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
 	"github.com/amjadjibon/tinystack/internal/services/cloudtrail"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
+	"github.com/amjadjibon/tinystack/internal/services/codebuild"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	configservice "github.com/amjadjibon/tinystack/internal/services/config"
@@ -312,6 +314,7 @@ func build(
 	backupRecords := backup.New(store)
 	fileSystems := efs.New(store, network)
 	batchRecords := batch.New(store, network)
+	buildProjects := codebuild.New(store)
 	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -377,6 +380,7 @@ func build(
 		backupapi.Descriptor(backupRecords),
 		efsapi.Descriptor(fileSystems),
 		batchapi.Descriptor(batchRecords),
+		codebuildapi.Descriptor(buildProjects),
 		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
