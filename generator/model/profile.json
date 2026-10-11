@@ -18651,5 +18651,208 @@
         "ValueInArchive"
       ]
     }
+  },
+  "batch": {
+    "operations": [
+      "CreateComputeEnvironment",
+      "DescribeComputeEnvironments",
+      "UpdateComputeEnvironment",
+      "DeleteComputeEnvironment",
+      "CreateJobQueue",
+      "DescribeJobQueues",
+      "UpdateJobQueue",
+      "DeleteJobQueue",
+      "RegisterJobDefinition",
+      "DescribeJobDefinitions",
+      "DeregisterJobDefinition",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateComputeEnvironmentRequest": [
+        "computeEnvironmentName",
+        "type",
+        "state",
+        "computeResources",
+        "serviceRole",
+        "tags"
+      ],
+      "ComputeResource": [
+        "type",
+        "allocationStrategy",
+        "minvCpus",
+        "maxvCpus",
+        "desiredvCpus",
+        "instanceTypes",
+        "subnets",
+        "securityGroupIds",
+        "instanceRole"
+      ],
+      "CreateComputeEnvironmentResponse": [
+        "computeEnvironmentName",
+        "computeEnvironmentArn"
+      ],
+      "DescribeComputeEnvironmentsRequest": [
+        "computeEnvironments",
+        "maxResults",
+        "nextToken"
+      ],
+      "DescribeComputeEnvironmentsResponse": [
+        "computeEnvironments",
+        "nextToken"
+      ],
+      "ComputeEnvironmentDetail": [
+        "computeEnvironmentName",
+        "computeEnvironmentArn",
+        "type",
+        "state",
+        "status",
+        "statusReason",
+        "computeResources",
+        "serviceRole",
+        "tags"
+      ],
+      "UpdateComputeEnvironmentRequest": [
+        "computeEnvironment",
+        "state",
+        "computeResources",
+        "serviceRole"
+      ],
+      "ComputeResourceUpdate": [
+        "minvCpus",
+        "maxvCpus",
+        "desiredvCpus"
+      ],
+      "UpdateComputeEnvironmentResponse": [
+        "computeEnvironmentName",
+        "computeEnvironmentArn"
+      ],
+      "DeleteComputeEnvironmentRequest": [
+        "computeEnvironment"
+      ],
+      "DeleteComputeEnvironmentResponse": [],
+      "CreateJobQueueRequest": [
+        "jobQueueName",
+        "state",
+        "priority",
+        "computeEnvironmentOrder",
+        "tags"
+      ],
+      "ComputeEnvironmentOrder": [
+        "order",
+        "computeEnvironment"
+      ],
+      "CreateJobQueueResponse": [
+        "jobQueueName",
+        "jobQueueArn"
+      ],
+      "DescribeJobQueuesRequest": [
+        "jobQueues",
+        "maxResults",
+        "nextToken"
+      ],
+      "DescribeJobQueuesResponse": [
+        "jobQueues",
+        "nextToken"
+      ],
+      "JobQueueDetail": [
+        "jobQueueName",
+        "jobQueueArn",
+        "state",
+        "status",
+        "statusReason",
+        "priority",
+        "computeEnvironmentOrder",
+        "tags"
+      ],
+      "UpdateJobQueueRequest": [
+        "jobQueue",
+        "state",
+        "priority",
+        "computeEnvironmentOrder"
+      ],
+      "UpdateJobQueueResponse": [
+        "jobQueueName",
+        "jobQueueArn"
+      ],
+      "DeleteJobQueueRequest": [
+        "jobQueue"
+      ],
+      "DeleteJobQueueResponse": [],
+      "RegisterJobDefinitionRequest": [
+        "jobDefinitionName",
+        "type",
+        "parameters",
+        "containerProperties",
+        "tags",
+        "platformCapabilities"
+      ],
+      "ContainerProperties": [
+        "image",
+        "vcpus",
+        "memory",
+        "command",
+        "jobRoleArn",
+        "executionRoleArn",
+        "environment",
+        "resourceRequirements"
+      ],
+      "KeyValuePair": [
+        "name",
+        "value"
+      ],
+      "ResourceRequirement": [
+        "value",
+        "type"
+      ],
+      "RegisterJobDefinitionResponse": [
+        "jobDefinitionName",
+        "jobDefinitionArn",
+        "revision"
+      ],
+      "DescribeJobDefinitionsRequest": [
+        "jobDefinitions",
+        "jobDefinitionName",
+        "status",
+        "maxResults",
+        "nextToken"
+      ],
+      "DescribeJobDefinitionsResponse": [
+        "jobDefinitions",
+        "nextToken"
+      ],
+      "JobDefinition": [
+        "jobDefinitionName",
+        "jobDefinitionArn",
+        "revision",
+        "status",
+        "type",
+        "parameters",
+        "containerProperties",
+        "tags",
+        "platformCapabilities"
+      ],
+      "DeregisterJobDefinitionRequest": [
+        "jobDefinition"
+      ],
+      "DeregisterJobDefinitionResponse": [],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ]
+    }
   }
 }
