@@ -7,7 +7,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 
 | Service or extension | Status | First useful slice |
 | --- | --- | --- |
-| [AWS Batch](services/batch.md) | Proposed | Implement `CreateComputeEnvironment`, `DescribeComputeEnvironments`, `CreateJobQueue`. |
+| [AWS Batch job execution](services/batch-runtime.md) | Proposed | Extend the implemented metadata subset with an explicitly configured execution engine. |
 | [AWS Signer](services/signer.md) | Proposed | Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`. |
 | [Amazon Bedrock control plane](services/bedrock.md) | Proposed | Implement `ListFoundationModels`, `GetFoundationModel`, `ListInferenceProfiles`. |
 | [Amazon Inspector](services/inspector2.md) | Proposed | Implement `ListFindings`, `ListCoverage`, `CreateFilter`. |

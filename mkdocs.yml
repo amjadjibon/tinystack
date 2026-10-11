@@ -87,6 +87,7 @@ nav:
       - Persistence and restart: guides/persistence.md
       - State fixtures: guides/state-fixtures.md
       - EFS records: guides/efs-records.md
+      - Batch records: guides/batch-records.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
@@ -110,6 +111,7 @@ nav:
           - "Athena": services/athena.md
           - "Glue Data Catalog": services/glue.md
       - "Compute and containers":
+          - "AWS Batch": services/batch.md
           - "EC2": services/ec2.md
           - "EC2 Auto Scaling": services/autoscaling.md
           - "ECR": services/ecr.md
@@ -178,7 +180,7 @@ nav:
       - Priorities and policy: roadmap/index.md
       - Future catalogue: roadmap/catalogue.md
       - Service and extension proposals:
-          - "AWS Batch": roadmap/services/batch.md
+          - "AWS Batch job execution": roadmap/services/batch-runtime.md
           - "AWS Signer": roadmap/services/signer.md
           - "Amazon Bedrock control plane": roadmap/services/bedrock.md
           - "Amazon Inspector": roadmap/services/inspector2.md
