@@ -238,6 +238,121 @@ func ValidateExportPaths(
 	return absDir, absOut, nil
 }
 
+// ValidateImportPaths validates the input archive and destination storage directory paths,
+// checking for archive existence and regularity, destination non-existence (fresh-destination semantics),
+// parent directory existence and permissions, and critical hazard overlaps.
+func ValidateImportPaths(
+	inputFile, storageDir string,
+) (absInputFile, absStorageDir string, err error) {
+	if strings.TrimSpace(inputFile) == "" {
+		return "", "", errors.New("input file is required")
+	}
+
+	if strings.TrimSpace(storageDir) == "" {
+		return "", "", errors.New("storage directory is required")
+	}
+
+	expandedInput, err := expandHome(inputFile)
+	if err != nil {
+		return "", "", err
+	}
+
+	absInput, err := filepath.Abs(filepath.Clean(expandedInput))
+	if err != nil {
+		return "", "", fmt.Errorf("resolve input file path: %w", err)
+	}
+
+	inputStat, err := os.Stat(absInput)
+	if err != nil {
+		return "", "", fmt.Errorf("input archive %q does not exist: %w", inputFile, err)
+	}
+
+	if inputStat.IsDir() {
+		return "", "", fmt.Errorf("input archive path %q is a directory", inputFile)
+	}
+
+	if !inputStat.Mode().IsRegular() {
+		return "", "", fmt.Errorf("input archive path %q is not a regular file", inputFile)
+	}
+
+	expandedDir, err := expandHome(storageDir)
+	if err != nil {
+		return "", "", err
+	}
+
+	absDir, err := filepath.Abs(filepath.Clean(expandedDir))
+	if err != nil {
+		return "", "", fmt.Errorf("resolve storage directory path: %w", err)
+	}
+
+	if absDir == "/" || absDir == "." {
+		return "", "", fmt.Errorf("invalid storage directory path %q", storageDir)
+	}
+
+	// Conservative fresh-destination semantics: destination must NOT already exist (even empty).
+	_, err = os.Lstat(absDir)
+	if err == nil {
+		return "", "", fmt.Errorf(
+			"destination storage directory %q already exists: import requires a new destination directory",
+			absDir,
+		)
+	}
+	if !os.IsNotExist(err) {
+		return "", "", fmt.Errorf("stat destination storage directory %q: %w", absDir, err)
+	}
+
+	// Parent directory must exist and be a directory.
+	parentDir := filepath.Dir(absDir)
+	parentStat, err := os.Stat(parentDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", "", fmt.Errorf("destination parent directory %q does not exist", parentDir)
+		}
+		return "", "", fmt.Errorf("stat destination parent directory %q: %w", parentDir, err)
+	}
+
+	if !parentStat.IsDir() {
+		return "", "", fmt.Errorf("destination parent path %q is not a directory", parentDir)
+	}
+
+	// Hazard checks: resolve symlinks to detect overlap.
+	evalParent, evalParentErr := filepath.EvalSymlinks(parentDir)
+	if evalParentErr != nil {
+		evalParent = parentDir
+	}
+
+	evalInput, evalInputErr := filepath.EvalSymlinks(absInput)
+	if evalInputErr != nil {
+		evalInput = absInput
+	}
+
+	evalDest := filepath.Join(evalParent, filepath.Base(absDir))
+
+	// Hazard 1: Destination matches input archive.
+	for _, candDest := range []string{absDir, evalDest} {
+		for _, candInput := range []string{absInput, evalInput} {
+			if candDest == candInput {
+				return "", "", fmt.Errorf("cannot import: destination path matches input archive (%s)", absDir)
+			}
+		}
+	}
+
+	// Hazard 2: Destination directory would contain input archive.
+	for _, candDest := range []string{absDir, evalDest} {
+		for _, candInput := range []string{absInput, evalInput} {
+			rel, relErr := filepath.Rel(candDest, candInput)
+			if relErr == nil && rel != "." && !strings.HasPrefix(rel, "..") {
+				return "", "", fmt.Errorf(
+					"cannot import: destination directory would contain input archive (%s)",
+					absDir,
+				)
+			}
+		}
+	}
+
+	return absInput, absDir, nil
+}
+
 func expandHome(path string) (string, error) {
 	if strings.HasPrefix(path, "~/") || path == "~" {
 		home, err := os.UserHomeDir()
@@ -347,6 +462,11 @@ func openArchiveReader(archivePath string) (*archiveReader, error) {
 	return ar, nil
 }
 
+// blobSink receives blob data streamed during archive reading/validation.
+type blobSink interface {
+	CreateBlob(ctx context.Context, id string, size int64) (io.WriteCloser, error)
+}
+
 // ValidateArchive inspects and validates an archive without extracting or mutating state.
 // It verifies format version, member ordering, canonical names, SHA-256 hashes, and bounds.
 func ValidateArchive(ctx context.Context, archivePath string) (*Manifest, error) {
@@ -356,6 +476,13 @@ func ValidateArchive(ctx context.Context, archivePath string) (*Manifest, error)
 
 // InspectArchive reads and thoroughly validates an archive, returning the manifest and records.
 func InspectArchive(ctx context.Context, archivePath string) (*Manifest, []Record, error) {
+	return readAndValidateArchive(ctx, archivePath, nil)
+}
+
+// readAndValidateArchive parses an archive stream in a single pass, validating manifest,
+// records, blob entries, and trailers. If sink is non-nil, blob streams are concurrently
+// written to the sink.
+func readAndValidateArchive(ctx context.Context, archivePath string, sink blobSink) (*Manifest, []Record, error) {
 	ar, err := openArchiveReader(archivePath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("open archive %s: %w", archivePath, err)
@@ -668,9 +795,33 @@ func InspectArchive(ctx context.Context, archivePath string) (*Manifest, []Recor
 			}
 
 			blobHasher := sha256.New()
-			copied, copyErr := copyBufferContext(ctx, blobHasher, io.LimitReader(ar.tr, MaxBlobSize+1), buf)
+			var destWriter io.Writer = blobHasher
+			var blobCloser io.Closer
+			if sink != nil {
+				w, createErr := sink.CreateBlob(ctx, blobID, bm.Size)
+				if createErr != nil {
+					return nil, nil, fmt.Errorf("create blob %s: %w", blobID, createErr)
+				}
+				blobCloser = w
+				destWriter = io.MultiWriter(w, blobHasher)
+			}
+
+			copied, copyErr := copyBufferContext(ctx, destWriter, io.LimitReader(ar.tr, MaxBlobSize+1), buf)
+
+			var closeErr error
+			if blobCloser != nil {
+				closeErr = blobCloser.Close()
+			}
+
 			if copyErr != nil {
+				if closeErr != nil {
+					return nil, nil, fmt.Errorf("stream blob %s: %w", blobID, errors.Join(copyErr, closeErr))
+				}
 				return nil, nil, fmt.Errorf("stream blob %s: %w", blobID, copyErr)
+			}
+
+			if closeErr != nil {
+				return nil, nil, fmt.Errorf("close blob %s: %w", blobID, closeErr)
 			}
 
 			if copied != bm.Size {
@@ -781,12 +932,13 @@ func InspectArchive(ctx context.Context, archivePath string) (*Manifest, []Recor
 
 func validateSHA256Hex(s string) error {
 	if len(s) != 64 {
-		return fmt.Errorf("expected 64 hex characters, got length %d", len(s))
+		return fmt.Errorf("invalid sha256 hex length: got %d, expected 64", len(s))
 	}
 
-	for _, c := range s {
+	for i := range len(s) {
+		c := s[i]
 		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
-			return fmt.Errorf("contains non-hex or uppercase character %q", c)
+			return fmt.Errorf("invalid sha256 hex character at index %d: %c", i, c)
 		}
 	}
 

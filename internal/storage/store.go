@@ -1,8 +1,13 @@
 package storage
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"strings"
 )
 
@@ -50,15 +55,99 @@ func (r Record) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON decodes Record with key and value from base64 byte slices.
+// UnmarshalJSON decodes Record with key and value from base64 strings.
+// It strictly validates the v1 wire format: key and value must both be present
+// as string-encoded base64 values, without duplicates, nulls, or numeric arrays.
 func (r *Record) UnmarshalJSON(data []byte) error {
-	var w recordWire
-	if err := json.Unmarshal(data, &w); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	tok, err := dec.Token()
+	if err != nil {
 		return err
 	}
+	delim, ok := tok.(json.Delim)
+	if !ok || delim != '{' {
+		return errors.New("record must be a JSON object")
+	}
 
-	r.Key = string(w.Key)
-	r.Value = w.Value
+	var (
+		hasKey   bool
+		hasValue bool
+		keyStr   string
+		valStr   string
+	)
+
+	for dec.More() {
+		propTok, pErr := dec.Token()
+		if pErr != nil {
+			return pErr
+		}
+		prop, isStr := propTok.(string)
+		if !isStr {
+			return errors.New("record object property key must be a string")
+		}
+
+		valTok, vErr := dec.Token()
+		if vErr != nil {
+			return vErr
+		}
+		strVal, isValStr := valTok.(string)
+		if !isValStr {
+			return fmt.Errorf("record field %q must be a base64 string", prop)
+		}
+
+		switch prop {
+		case "key":
+			if hasKey {
+				return errors.New("duplicate key field in record")
+			}
+			hasKey = true
+			keyStr = strVal
+		case "value":
+			if hasValue {
+				return errors.New("duplicate value field in record")
+			}
+			hasValue = true
+			valStr = strVal
+		default:
+			return fmt.Errorf("unexpected field in record: %q", prop)
+		}
+	}
+
+	tok, err = dec.Token()
+	if err != nil {
+		return err
+	}
+	delim, ok = tok.(json.Delim)
+	if !ok || delim != '}' {
+		return errors.New("malformed record JSON object")
+	}
+
+	if dec.More() {
+		return errors.New("unexpected trailing tokens in record JSON")
+	}
+	if _, eofErr := dec.Token(); eofErr != io.EOF {
+		return errors.New("unexpected trailing content in record JSON")
+	}
+
+	if !hasKey {
+		return errors.New("missing required key field in record")
+	}
+	if !hasValue {
+		return errors.New("missing required value field in record")
+	}
+
+	keyBytes, err := base64.StdEncoding.DecodeString(keyStr)
+	if err != nil {
+		return fmt.Errorf("decode record key base64: %w", err)
+	}
+
+	valBytes, err := base64.StdEncoding.DecodeString(valStr)
+	if err != nil {
+		return fmt.Errorf("decode record value base64: %w", err)
+	}
+
+	r.Key = string(keyBytes)
+	r.Value = valBytes
 	if r.Value == nil {
 		r.Value = []byte{}
 	}
