@@ -24,7 +24,7 @@ const (
 )
 
 // newID returns an EC2 resource ID: prefix, a dash, and 17 hex digits.
-func newID(prefix string) string { return prefix + "-" + common.RandomID(17) }
+func newID(prefix string) string { return prefix + "-" + common.RandomID(17, "0123456789abcdef") }
 
 // list decodes every record of kind in scope, ordered by ID.
 func list[T any](tx storage.ReadTx, scope request.Scope, kind string) ([]*T, error) {
