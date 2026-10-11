@@ -12,7 +12,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Amazon Bedrock control plane](services/bedrock.md) | Proposed | Implement `ListFoundationModels`, `GetFoundationModel`, `ListInferenceProfiles`. |
 | [Amazon Inspector](services/inspector2.md) | Proposed | Implement `ListFindings`, `ListCoverage`, `CreateFilter`. |
 | [Amazon Location](services/location.md) | Proposed | Implement `CreateTracker`, `DescribeTracker`, `UpdateTracker`. |
-| [Amazon MQ](services/mq.md) | Proposed | Implement `CreateBroker`, `DescribeBroker`, `ListBrokers`. |
+| [Amazon MQ configuration, users and runtime](services/mq-runtime.md) | Future extensions | Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices. |
 | [Amazon MSK](services/msk.md) | Proposed | Implement `CreateCluster`, `ListClusters`, `DescribeCluster`. |
 | [Amazon MWAA](services/mwaa.md) | Proposed | Implement `CreateEnvironment`, `GetEnvironment`, `DeleteEnvironment`. |
 | [AppSync Events](services/appsync-events.md) | Proposed | Implement `CreateApi`, `GetApi`, `ListApis`. |
