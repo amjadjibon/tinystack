@@ -54,6 +54,7 @@ type Service struct {
 	caller *catalog.Caller
 	mq     mqRecords
 	msk    mskRecords
+	mwaa   mwaaRecords
 	logger *slog.Logger
 	now    func() time.Time
 	bg     *background.Group

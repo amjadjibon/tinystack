@@ -377,6 +377,7 @@ func (s *Service) perform(ctx context.Context,
 		caller:   s.caller,
 		mq:       s.mq,
 		msk:      s.msk,
+		mwaa:     s.mwaa,
 		scope:    scope,
 		endpoint: st.Endpoint,
 		stack:    st.Name,
@@ -398,8 +399,20 @@ func (s *Service) perform(ctx context.Context,
 			return "", nil, e
 		}
 	}
+	if r != nil && r.Type == mwaaEnvironmentType && !st.Op.Rollback &&
+		(next.kind == stepSwap || next.kind == stepUpdate) {
+		if _, e := mwaaParams(next.props); e != nil {
+			return "", nil, e
+		}
+		if e := mwaaUnsupportedChanges(props(r.Properties), next.props); e != nil {
+			return "", nil, e
+		}
+	}
 	switch next.kind {
 	case stepCreate, stepSwap:
+		if id, attrs, ok := mwaaRestoreReplacement(st, next); ok {
+			return id, attrs, nil
+		}
 		if id, attrs, ok := mskRestoreReplacement(st, next); ok {
 			return id, attrs, nil
 		}
@@ -423,7 +436,8 @@ func (s *Service) perform(ctx context.Context,
 		// resource rather than deleting the restored record.
 		restored := retired.Type == "AWS::WAFv2::WebACLAssociation" ||
 			isEFSResource(retired.Type) || isBatchResource(retired.Type) ||
-			retired.Type == codebuildProjectType || retired.Type == mqBrokerType || retired.Type == mskClusterType
+			retired.Type == codebuildProjectType || retired.Type == mqBrokerType || retired.Type == mskClusterType ||
+			retired.Type == mwaaEnvironmentType
 		if restored && r != nil &&
 			r.Type == retired.Type &&
 			r.Physical == retired.Physical {
@@ -431,6 +445,15 @@ func (s *Service) perform(ctx context.Context,
 		}
 		return "", nil, types[next.typ].remove(ctx, c, retired)
 	case stepUpdate:
+		if st.Op.Rollback && r.Type == mwaaEnvironmentType {
+			if reflect.DeepEqual(props(r.Properties), next.props) {
+				attrs, e := mwaaRead(ctx, c, r.Physical)
+				return r.Physical, attrs, e
+			}
+			if attrs, found, e := mwaaRestoreUpdate(ctx, c, r, next.props); found {
+				return r.Physical, attrs, e
+			}
+		}
 		if st.Op.Rollback && r.Type == mskClusterType {
 			if reflect.DeepEqual(props(r.Properties), next.props) {
 				attrs, e := mskRead(ctx, c, r.Physical)
