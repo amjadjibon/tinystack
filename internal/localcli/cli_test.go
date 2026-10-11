@@ -99,6 +99,9 @@ func TestTerraformOverrideConfig(t *testing.T) {
 	if endpoints["wafv2"] != "http://127.0.0.1:4566" {
 		t.Fatalf("expected WAF v2 endpoint, got %v", endpoints["wafv2"])
 	}
+	if endpoints["batch"] != "http://127.0.0.1:4566" {
+		t.Fatalf("expected Batch endpoint, got %v", endpoints["batch"])
+	}
 	if endpoints["efs"] != "http://127.0.0.1:4566" {
 		t.Fatalf("expected EFS endpoint, got %v", endpoints["efs"])
 	}

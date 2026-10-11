@@ -24,6 +24,7 @@ import (
 	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	backupapi "github.com/amjadjibon/tinystack/internal/aws/generated/backup"
+	batchapi "github.com/amjadjibon/tinystack/internal/aws/generated/batch"
 	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
@@ -84,6 +85,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/athena"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/backup"
+	"github.com/amjadjibon/tinystack/internal/services/batch"
 	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
@@ -309,6 +311,7 @@ func build(
 	configRecords := configservice.New(store, buckets)
 	backupRecords := backup.New(store)
 	fileSystems := efs.New(store, network)
+	batchRecords := batch.New(store, network)
 	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -373,6 +376,7 @@ func build(
 		configapi.Descriptor(configRecords),
 		backupapi.Descriptor(backupRecords),
 		efsapi.Descriptor(fileSystems),
+		batchapi.Descriptor(batchRecords),
 		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),

@@ -286,7 +286,13 @@ func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op 
 
 	input := op.NewInput()
 	if c.meta.Protocol == catalog.RESTJSON {
-		return input, restjson.Decode(r, &binding, c.labels, body, input)
+		if decodeErr := restjson.Decode(r, &binding, c.labels, body, input); decodeErr != nil {
+			return input, decodeErr
+		}
+		if c.service.Name == "batch" {
+			return input, batchUniqueJSON(body)
+		}
+		return input, nil
 	}
 
 	return input, restxml.Decode(r, &binding, c.labels, body, input)

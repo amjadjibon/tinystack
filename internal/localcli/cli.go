@@ -155,6 +155,7 @@ var TerraformServices = []string{
 	"configservice",
 	"backup",
 	"efs",
+	"batch",
 	"wafv2",
 	"dynamodb",
 	"ec2",
