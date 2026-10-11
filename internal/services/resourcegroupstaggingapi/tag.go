@@ -178,6 +178,7 @@ func errUntaggable(r *catalog.Owned) error {
 // taggers are the taggers of the services whose resources this API tags, by
 // service name.
 var taggers = map[string]tagger{
+	"mq": operations("mq", "CreateTags", "DeleteTags", byARN("ResourceArn"), "Tags", plain, "TagKeys", names),
 	"codebuild": {
 		tag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {
 			merged := maps.Clone(r.Tags)

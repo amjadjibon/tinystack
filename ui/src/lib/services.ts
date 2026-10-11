@@ -36,6 +36,7 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	mq: { title: "Amazon MQ", category: integration, icon: "mq" },
 	account: {
 		title: "AWS Account",
 		category: management,

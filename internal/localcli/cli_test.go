@@ -99,6 +99,9 @@ func TestTerraformOverrideConfig(t *testing.T) {
 	if endpoints["wafv2"] != "http://127.0.0.1:4566" {
 		t.Fatalf("expected WAF v2 endpoint, got %v", endpoints["wafv2"])
 	}
+	if endpoints["mq"] != "http://127.0.0.1:4566" {
+		t.Fatalf("expected Amazon MQ endpoint, got %v", endpoints["mq"])
+	}
 	if endpoints["codebuild"] != "http://127.0.0.1:4566" {
 		t.Fatalf("expected CodeBuild endpoint, got %v", endpoints["codebuild"])
 	}
