@@ -90,6 +90,7 @@ nav:
       - Batch records: guides/batch-records.md
       - CodeBuild records: guides/codebuild-records.md
       - Amazon MQ records: guides/mq-records.md
+      - Amazon MSK records: guides/msk-records.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
@@ -110,6 +111,7 @@ nav:
       - Support matrix: services/index.md
       - Implemented catalogue: services/catalogue.md
       - "Analytics":
+          - "Amazon MSK": services/kafka.md
           - "Athena": services/athena.md
           - "Glue Data Catalog": services/glue.md
       - "Application Integration":
@@ -192,7 +194,7 @@ nav:
           - "Amazon Inspector": roadmap/services/inspector2.md
           - "Amazon Location": roadmap/services/location.md
           - "Amazon MQ configuration, users and runtime": roadmap/services/mq-runtime.md
-          - "Amazon MSK": roadmap/services/msk.md
+          - "Amazon MSK configuration, security and runtime": roadmap/services/msk-runtime.md
           - "Amazon MWAA": roadmap/services/mwaa.md
           - "AppSync Events": roadmap/services/appsync-events.md
           - "Aurora DSQL": roadmap/services/dsql.md

@@ -13,7 +13,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Amazon Inspector](services/inspector2.md) | Proposed | Implement `ListFindings`, `ListCoverage`, `CreateFilter`. |
 | [Amazon Location](services/location.md) | Proposed | Implement `CreateTracker`, `DescribeTracker`, `UpdateTracker`. |
 | [Amazon MQ configuration, users and runtime](services/mq-runtime.md) | Future extensions | Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices. |
-| [Amazon MSK](services/msk.md) | Proposed | Implement `CreateCluster`, `ListClusters`, `DescribeCluster`. |
+| [Amazon MSK configuration, security and runtime](services/msk-runtime.md) | Future extensions | Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices. |
 | [Amazon MWAA](services/mwaa.md) | Proposed | Implement `CreateEnvironment`, `GetEnvironment`, `DeleteEnvironment`. |
 | [AppSync Events](services/appsync-events.md) | Proposed | Implement `CreateApi`, `GetApi`, `ListApis`. |
 | [Aurora DSQL](services/dsql.md) | Proposed | Implement `CreateCluster`, `GetCluster`, `ListClusters`. |

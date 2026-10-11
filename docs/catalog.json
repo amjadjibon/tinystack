@@ -1363,6 +1363,29 @@
       ],
       "execution": "Records only",
       "package": "mq"
+    },
+    "kafka": {
+      "title": "Amazon MSK",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "summary": "Store provisioned Standard cluster configuration, monitoring settings and tags without a Kafka runtime.",
+      "gaps": [
+        "No brokers, listeners, containers, endpoints, DNS, nodes, bootstrap strings, topics, producer/consumer traffic, runtime state or asynchronous cluster-operation ARN",
+        "No serverless/V2, configurations/revisions, SCRAM/credentials, auth/encryption/KMS/IAM enforcement, logging/open monitoring, tiered storage, networking allocation or metrics delivery; excluded fields reject even false/null/empty",
+        "Finite versions/instances/Regions and explicit groups/storage are local boundaries; no changing latest version or default VPC/group/storage inference. NumberOfBrokerNodes follows the pinned 1-15 model, not larger current AWS quotas",
+        "CloudFormation version/count/instance/storage mutations and explicit immutable-choice removals fail before writing; mutable optional monitoring removal restores DEFAULT. No Terraform runtime waiter or dedicated mutation console",
+        "The [records guide](../guides/msk-records.md) lists every selected member, nested constraint, default, tag/revision/network/CF boundary and executable lifecycle; remaining APIs and runtime are [future scope](../roadmap/services/msk-runtime.md)"
+      ],
+      "execution": "Configuration records only",
+      "package": "kafka",
+      "features": [
+        "Eight pinned Kafka REST JSON operations: CreateCluster, DescribeCluster, ListClusters, DeleteCluster, UpdateMonitoring, ListTagsForResource, TagResource and UntagResource",
+        "Commercial account/Region/name/UUID cluster ARNs, scoped name uniqueness, creation timestamp, deeply retained broker/network/EBS/version/monitoring metadata and opaque optimistic configuration revisions",
+        "Finite creation matrix: explicit Kafka 3.8.x/3.9.x and kafka.m5.large/xlarge, us-east-1/us-west-1/us-west-2, 2-3 scoped EC2 subnets in distinct AZs (exactly 2 in us-west-1), nodes evenly distributed, explicit security groups and EBS volume size",
+        "Atomic monitoring CAS, optional delete CAS, tag merges/removals with MSK limits, scope/API/filter-bound deterministic list cursors that survive cursor deletion",
+        "CloudFormation AWS::MSK::Cluster Ref/GetAtt Arn and CurrentVersion, owned/external tags plus monitoring in one write, actual live-state compensation with fresh revisions, safe create-first immutable replacement and collision rollback",
+        "SQLite restart, offline archive export/import and reset use the existing storage lifecycle; inventory reports RecordsOnly=true and ExecutionReady=false; real RGTA tag operations, official icon and Terraform kafka endpoint key"
+      ]
     }
   },
   "future": {
@@ -1499,12 +1522,6 @@
       "slice": "Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices.",
       "features": "- [ ] Configuration CRUD and broker associations\n- [ ] ActiveMQ user CRUD and readable console/group metadata\n- [ ] Engine/version/instance discovery extensions\n- [ ] Authentication, LDAP/OAuth, replication and resource sharing\n- [ ] Real broker runtime, endpoints, readiness, reboot and cleanup\n- [ ] Messaging protocols and RabbitMQ management API"
     },
-    "msk": {
-      "title": "Amazon MSK",
-      "state": "Proposed",
-      "slice": "Implement `CreateCluster`, `ListClusters`, `DescribeCluster`.",
-      "features": "- [ ] `CreateCluster`\n- [ ] `ListClusters`\n- [ ] `DescribeCluster`\n- [ ] `DeleteCluster`\n- [ ] `GetBootstrapBrokers`\n- [ ] `ListNodes`\n- [ ] `CreateConfiguration`\n- [ ] `ListConfigurations`\n- [ ] `DescribeConfiguration`\n- [ ] `ListConfigurationRevisions`\n- [ ] `DescribeConfigurationRevision`\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `TagResource`"
-    },
     "mwaa": {
       "title": "Amazon MWAA",
       "state": "Proposed",
@@ -1573,6 +1590,12 @@
       "slice": "Extend the implemented metadata subset with an explicitly configured execution engine.",
       "features": "- [ ] SubmitJob\n- [ ] DescribeJobs and ListJobs\n- [ ] CancelJob and TerminateJob\n- [ ] Scheduler and worker readiness\n- [ ] Scheduling policies and fair-share queues\n- [ ] Consumable resources\n- [ ] Fargate, Spot, EKS and advanced job definitions",
       "integration": "The current Batch API persists records only. Runtime adapters need readiness, lifecycle, restart and cleanup contracts before any job execution success is exposed."
+    },
+    "msk-runtime": {
+      "title": "Amazon MSK configuration, security and runtime",
+      "state": "Future extensions",
+      "slice": "Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices.",
+      "features": "- [ ] `GetBootstrapBrokers`\n- [ ] `ListNodes`\n- [ ] `CreateConfiguration`\n- [ ] `ListConfigurations`\n- [ ] `DescribeConfiguration`\n- [ ] `ListConfigurationRevisions`\n- [ ] `DescribeConfigurationRevision`\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `UpdateClusterKafkaVersion`, `UpdateBrokerCount`, `UpdateBrokerType`, `UpdateBrokerStorage`\n- [ ] Serverless and V2 cluster APIs\n- [ ] Real Kafka brokers, endpoints, DNS, readiness, node/operation state and cleanup\n- [ ] Topics and producer/consumer data plane\n- [ ] Client authentication/encryption enforcement, logging and open monitoring"
     }
   }
 }
