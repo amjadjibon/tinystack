@@ -1386,6 +1386,29 @@
         "CloudFormation AWS::MSK::Cluster Ref/GetAtt Arn and CurrentVersion, owned/external tags plus monitoring in one write, actual live-state compensation with fresh revisions, safe create-first immutable replacement and collision rollback",
         "SQLite restart, offline archive export/import and reset use the existing storage lifecycle; inventory reports RecordsOnly=true and ExecutionReady=false; real RGTA tag operations, official icon and Terraform kafka endpoint key"
       ]
+    },
+    "mwaa": {
+      "title": "Amazon MWAA",
+      "category": "Application Integration",
+      "scope": "Account and Region",
+      "summary": "Store Apache Airflow environment configuration and tags without provisioning or running Airflow.",
+      "execution": "Configuration records only",
+      "package": "mwaa",
+      "features": [
+        "Eight pinned MWAA REST JSON environment and tag APIs with airflow signing and commercial airflow environment ARNs",
+        "Finite creation matrix: explicit Airflow 2.10.3/2.11.0, mw1.small/medium, us-east-1/us-west-2; deeply retained role, bucket, DAG prefix, scoped network and worker/scheduler settings",
+        "Atomic scoped name uniqueness, complete candidate updates, tag merges/removals and final owned/external CloudFormation tag sets; deterministic scope/API-bound pagination that resumes after cursor deletion",
+        "Actual scoped EC2 subnet/group and S3 account/Region/versioning/public-access metadata validation without allocation, artifact downloads or IAM evaluation",
+        "AWS::MWAA::Environment Ref name/GetAtt Arn, documented optional defaults, live-state rollback guarded by fresh internal revisions and safe create-first name/subnet replacement",
+        "SQLite restart, offline archive export/import, reset, RecordsOnly=true/ExecutionReady=false inventory, RGTA, official icon and Terraform mwaa endpoint key"
+      ],
+      "gaps": [
+        "No Airflow execution, schedulers/workers/webserver, DAGs/tasks, provisioning, credentials, tokens, metrics/log delivery, lifecycle Status/LastUpdate or runtime URLs/queues/endpoints/readiness",
+        "No advanced artifacts, AirflowConfigurationOptions, logging, KMS, webserver access/scaling, maintenance or endpoint management; excluded fields reject even false/null/empty",
+        "Version and security-group mutations are unsupported, including combined CloudFormation rename; finite Regions/classes and explicit version are local boundaries",
+        "Reference checks do not verify route tables, private routing, ingress/egress, IAM trust/permissions, encryption or DAG contents; no existing DAG folder object is required",
+        "The [records guide](../guides/mwaa-records.md) lists all selected members/defaults/errors/update/tag/CF boundaries and an executable lifecycle; token and execution work remains [future scope](../roadmap/services/mwaa-runtime.md)"
+      ]
     }
   },
   "future": {
@@ -1522,11 +1545,11 @@
       "slice": "Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices.",
       "features": "- [ ] Configuration CRUD and broker associations\n- [ ] ActiveMQ user CRUD and readable console/group metadata\n- [ ] Engine/version/instance discovery extensions\n- [ ] Authentication, LDAP/OAuth, replication and resource sharing\n- [ ] Real broker runtime, endpoints, readiness, reboot and cleanup\n- [ ] Messaging protocols and RabbitMQ management API"
     },
-    "mwaa": {
-      "title": "Amazon MWAA",
-      "state": "Proposed",
-      "slice": "Implement `CreateEnvironment`, `GetEnvironment`, `DeleteEnvironment`.",
-      "features": "- [ ] `CreateEnvironment`\n- [ ] `GetEnvironment`\n- [ ] `DeleteEnvironment`\n- [ ] `UpdateEnvironment`\n- [ ] `ListEnvironments`\n- [ ] `CreateWebLoginToken`\n- [ ] `CreateCliToken`"
+    "mwaa-runtime": {
+      "title": "Amazon MWAA tokens and execution",
+      "state": "Future extensions",
+      "slice": "Environment configuration records and tags are implemented. Tokens, Airflow APIs and actual execution require a separate runtime contract.",
+      "features": "- [ ] `CreateWebLoginToken`\n- [ ] `CreateCliToken`\n- [ ] `InvokeRestApi`\n- [ ] Airflow DAG/task execution, scheduler/worker/webserver lifecycle and readiness\n- [ ] Real URLs/endpoints, credentials, log and metrics delivery\n- [ ] Advanced artifacts, configuration, encryption and network configuration updates"
     },
     "opensearch": {
       "title": "OpenSearch Service",

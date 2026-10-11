@@ -91,6 +91,7 @@ nav:
       - CodeBuild records: guides/codebuild-records.md
       - Amazon MQ records: guides/mq-records.md
       - Amazon MSK records: guides/msk-records.md
+      - Amazon MWAA records: guides/mwaa-records.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
@@ -116,6 +117,7 @@ nav:
           - "Glue Data Catalog": services/glue.md
       - "Application Integration":
           - "Amazon MQ": services/mq.md
+          - "Amazon MWAA": services/mwaa.md
       - "Compute and containers":
           - "AWS Batch": services/batch.md
           - "EC2": services/ec2.md
@@ -195,7 +197,7 @@ nav:
           - "Amazon Location": roadmap/services/location.md
           - "Amazon MQ configuration, users and runtime": roadmap/services/mq-runtime.md
           - "Amazon MSK configuration, security and runtime": roadmap/services/msk-runtime.md
-          - "Amazon MWAA": roadmap/services/mwaa.md
+          - "Amazon MWAA tokens and execution": roadmap/services/mwaa-runtime.md
           - "AppSync Events": roadmap/services/appsync-events.md
           - "Aurora DSQL": roadmap/services/dsql.md
           - "Bedrock Agent Runtime": roadmap/services/bedrock-agent-runtime.md
