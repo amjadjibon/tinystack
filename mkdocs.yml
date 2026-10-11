@@ -88,6 +88,7 @@ nav:
       - State fixtures: guides/state-fixtures.md
       - EFS records: guides/efs-records.md
       - Batch records: guides/batch-records.md
+      - CodeBuild records: guides/codebuild-records.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
@@ -127,6 +128,8 @@ nav:
           - "Resource Groups Tagging API": services/resourcegroupstaggingapi.md
           - "SSM Parameter Store": services/ssm.md
           - "Secrets Manager": services/secretsmanager.md
+      - "Developer Tools":
+          - "CodeBuild": services/codebuild.md
       - "Identity and security":
           - "Certificate Manager": services/acm.md
           - "Cognito identity pools": services/cognitoidentity.md
@@ -195,7 +198,7 @@ nav:
           - "Bedrock Agents": roadmap/services/bedrock-agent.md
           - "Bedrock Runtime": roadmap/services/bedrock-runtime.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
-          - "CodeBuild": roadmap/services/codebuild.md
+          - "CodeBuild build execution": roadmap/services/codebuild-runtime.md
           - "Cost and Usage Reports": roadmap/services/cur.md
           - "EC2 Instance Metadata": roadmap/services/imds.md
           - "ECS Task Metadata": roadmap/services/ecs-metadata.md

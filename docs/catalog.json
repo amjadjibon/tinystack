@@ -1311,6 +1311,32 @@
       ],
       "execution": "Records only",
       "package": "batch"
+    },
+    "codebuild": {
+      "title": "CodeBuild",
+      "category": "Developer Tools",
+      "summary": "Persist regional build-project configuration and tags without starting builds or provisioning workers.",
+      "features": [
+        "Five AWS JSON 1.1 project metadata operations: CreateProject, BatchGetProjects, ListProjects, UpdateProject and DeleteProject",
+        "Stable scoped names and commercial ARNs, creation and successful-update timestamps; complete nested configuration survives SQLite restart and offline export/import with shared reset",
+        "Finite NO_SOURCE/GITHUB/CODECOMMIT/S3 source metadata, NO_ARTIFACTS/S3 artifact metadata and LINUX_CONTAINER environments with SMALL/MEDIUM/LARGE compute classes, image tags/digests, variables and privileged-mode configuration",
+        "Caller-account IAM role ARN syntax without role lookup; descriptions, source versions and build/queue timeout configuration with documented 60-minute defaults",
+        "Atomic effective-candidate updates, replacement tags including empty-list clearing, modeled CodeBuild tag limits and characters, concurrent name uniqueness and scope isolation",
+        "Batch reads accept names or ARNs; lists use fixed 100-project pages, all three sort criteria and both orders with scope/sort-bound deletion-resilient cursors",
+        "CloudFormation AWS::CodeBuild::Project with Ref name/GetAtt Arn, mutable configuration and owned tags in one atomic write, optional-property defaults, create-first name replacement and rollback of previous live configuration",
+        "Resource browser marks RecordsOnly=true and ExecutionReady=false; Resource Groups Tagging API uses real UpdateProject tag replacement; official AWS icon and Terraform codebuild endpoint"
+      ],
+      "gaps": [
+        "No StartBuild, build history/status, batch builds, workers, image pulls, source checkout, artifact publication, logs, webhook execution, report groups or report generation",
+        "No credential import/authentication API or stored source tokens, IAM/KMS evaluation, secret resolution or network provisioning. EncryptionKey is excluded; no fabricated default encryption key, badge, URL or runtime identifier",
+        "Source authentication, webhook/status reporting, Git submodules/SSL flags, secondary sources/artifacts, cache, VPC, logs, filesystems, Docker server, fleets, registry credentials and advanced settings fail explicitly even false/null/empty",
+        "Finite local validation restricts Git provider URLs, bucket/key references, Docker image format and environment variable names/count/value lengths. References are configuration only; bucket/role/image/secret existence and access are not checked",
+        "Update/Delete require names; BatchGetProjects alone accepts project ARNs. Cross-scope ARNs are reported in projectsNotFound; shared project access is absent. Duplicate request identifiers collapse in first-input order",
+        "Nested source/artifact/environment objects supplied to UpdateProject replace that configuration with create-style defaults. Omitted top-level members retain their previous values. A successful compensating CloudFormation update advances LastModified while preserving Created/Arn",
+        "No dedicated mutation console. The [records guide](../guides/codebuild-records.md) lists every selected member, nested boundary, default, tag/reference/update rule and executable lifecycle"
+      ],
+      "execution": "Records only",
+      "package": "codebuild"
     }
   },
   "future": {
@@ -1357,11 +1383,12 @@
       "features": "- [ ] `DescribeKeyValueStore`\n- [ ] `ListKeys`\n- [ ] `GetKey`\n- [ ] `PutKey`\n- [ ] `DeleteKey`\n- [ ] `UpdateKeys`",
       "integration": "The proposed resource scope is account-wide; define persistence and cross-service effects accordingly."
     },
-    "codebuild": {
-      "title": "CodeBuild",
-      "state": "Proposed",
-      "slice": "Implement `CreateProject`, `BatchGetProjects`, `ListProjects`.",
-      "features": "- [ ] `CreateProject`\n- [ ] `BatchGetProjects`\n- [ ] `ListProjects`\n- [ ] `UpdateProject`\n- [ ] `DeleteProject`\n- [ ] `StartBuild`\n- [ ] `BatchGetBuilds`\n- [ ] `StopBuild`\n- [ ] `ListBuilds`\n- [ ] `ListBuildsForProject`\n- [ ] `BatchDeleteBuilds`"
+    "codebuild-runtime": {
+      "title": "CodeBuild build execution",
+      "state": "Proposed extension",
+      "slice": "Extend the implemented project metadata with an explicit build execution/runtime contract.",
+      "features": "- [ ] `StartBuild`\n- [ ] `BatchGetBuilds`\n- [ ] `StopBuild`\n- [ ] `ListBuilds`\n- [ ] `ListBuildsForProject`\n- [ ] `BatchDeleteBuilds`\n- [ ] Batch builds, workers, source checkout and artifact publication\n- [ ] Webhooks, report groups and report generation",
+      "integration": "Project metadata is delivered; build execution must define workers, lifecycle, logs, artifacts, credentials and readiness separately."
     },
     "cur": {
       "title": "Cost and Usage Reports",
