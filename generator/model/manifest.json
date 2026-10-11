@@ -242,6 +242,10 @@
     "kafka": {
       "path": "codegen/sdk-codegen/aws-models/kafka.json",
       "sha256": "26a7e667ad7c2ce3d32dafcb2f6bf9cf8677d8f07c5e07f5e7adec8dc7c068ca"
+    },
+    "mwaa": {
+      "path": "codegen/sdk-codegen/aws-models/mwaa.json",
+      "sha256": "a2211dca4ba8ef2d62ea1a00d69813099069ffb9d986d63b56e1c20c7eaa0353"
     }
   }
 }

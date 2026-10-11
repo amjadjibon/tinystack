@@ -19194,5 +19194,98 @@
         "TagKeys"
       ]
     }
+  },
+  "mwaa": {
+    "operations": [
+      "CreateEnvironment",
+      "GetEnvironment",
+      "ListEnvironments",
+      "UpdateEnvironment",
+      "DeleteEnvironment",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource"
+    ],
+    "shapes": {
+      "CreateEnvironmentInput": [
+        "Name",
+        "ExecutionRoleArn",
+        "SourceBucketArn",
+        "DagS3Path",
+        "NetworkConfiguration",
+        "AirflowVersion",
+        "EnvironmentClass",
+        "MinWorkers",
+        "MaxWorkers",
+        "Schedulers",
+        "Tags"
+      ],
+      "CreateEnvironmentOutput": [
+        "Arn"
+      ],
+      "GetEnvironmentInput": [
+        "Name"
+      ],
+      "GetEnvironmentOutput": [
+        "Environment"
+      ],
+      "Environment": [
+        "Name",
+        "Arn",
+        "CreatedAt",
+        "ExecutionRoleArn",
+        "SourceBucketArn",
+        "DagS3Path",
+        "NetworkConfiguration",
+        "AirflowVersion",
+        "EnvironmentClass",
+        "MinWorkers",
+        "MaxWorkers",
+        "Schedulers",
+        "Tags"
+      ],
+      "NetworkConfiguration": [
+        "SubnetIds",
+        "SecurityGroupIds"
+      ],
+      "ListEnvironmentsInput": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListEnvironmentsOutput": [
+        "Environments",
+        "NextToken"
+      ],
+      "UpdateEnvironmentInput": [
+        "Name",
+        "ExecutionRoleArn",
+        "SourceBucketArn",
+        "DagS3Path",
+        "EnvironmentClass",
+        "MinWorkers",
+        "MaxWorkers",
+        "Schedulers"
+      ],
+      "UpdateEnvironmentOutput": [
+        "Arn"
+      ],
+      "DeleteEnvironmentInput": [
+        "Name"
+      ],
+      "ListTagsForResourceInput": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "Tags"
+      ],
+      "TagResourceInput": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceInput": [
+        "ResourceArn",
+        "tagKeys"
+      ]
+    }
   }
 }
