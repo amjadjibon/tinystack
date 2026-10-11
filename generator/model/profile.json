@@ -18854,5 +18854,113 @@
         "tags"
       ]
     }
+  },
+  "codebuild": {
+    "operations": [
+      "CreateProject",
+      "BatchGetProjects",
+      "ListProjects",
+      "UpdateProject",
+      "DeleteProject"
+    ],
+    "shapes": {
+      "CreateProjectInput": [
+        "name",
+        "description",
+        "source",
+        "sourceVersion",
+        "artifacts",
+        "environment",
+        "serviceRole",
+        "timeoutInMinutes",
+        "queuedTimeoutInMinutes",
+        "tags"
+      ],
+      "CreateProjectOutput": [
+        "project"
+      ],
+      "UpdateProjectInput": [
+        "name",
+        "description",
+        "source",
+        "sourceVersion",
+        "artifacts",
+        "environment",
+        "serviceRole",
+        "timeoutInMinutes",
+        "queuedTimeoutInMinutes",
+        "tags"
+      ],
+      "UpdateProjectOutput": [
+        "project"
+      ],
+      "BatchGetProjectsInput": [
+        "names"
+      ],
+      "BatchGetProjectsOutput": [
+        "projects",
+        "projectsNotFound"
+      ],
+      "ListProjectsInput": [
+        "sortBy",
+        "sortOrder",
+        "nextToken"
+      ],
+      "ListProjectsOutput": [
+        "projects",
+        "nextToken"
+      ],
+      "DeleteProjectInput": [
+        "name"
+      ],
+      "DeleteProjectOutput": [],
+      "Project": [
+        "name",
+        "description",
+        "source",
+        "sourceVersion",
+        "artifacts",
+        "environment",
+        "serviceRole",
+        "timeoutInMinutes",
+        "queuedTimeoutInMinutes",
+        "tags",
+        "arn",
+        "created",
+        "lastModified"
+      ],
+      "ProjectSource": [
+        "type",
+        "location",
+        "buildspec",
+        "gitCloneDepth"
+      ],
+      "ProjectArtifacts": [
+        "type",
+        "location",
+        "name",
+        "path",
+        "namespaceType",
+        "packaging",
+        "overrideArtifactName",
+        "encryptionDisabled"
+      ],
+      "ProjectEnvironment": [
+        "type",
+        "image",
+        "computeType",
+        "environmentVariables",
+        "privilegedMode"
+      ],
+      "EnvironmentVariable": [
+        "name",
+        "value",
+        "type"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ]
+    }
   }
 }

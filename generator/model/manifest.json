@@ -230,6 +230,10 @@
     "batch": {
       "path": "codegen/sdk-codegen/aws-models/batch.json",
       "sha256": "e1b89247b861859dc54cbff160bb38ac4c9479dadb1c9c7b06b607e08c102708"
+    },
+    "codebuild": {
+      "path": "codegen/sdk-codegen/aws-models/codebuild.json",
+      "sha256": "1ce14cc44bc93ad4f6624780bc31449af06f37f118ee51d618d00d6714ab95da"
     }
   }
 }
