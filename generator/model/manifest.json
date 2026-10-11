@@ -234,6 +234,10 @@
     "codebuild": {
       "path": "codegen/sdk-codegen/aws-models/codebuild.json",
       "sha256": "1ce14cc44bc93ad4f6624780bc31449af06f37f118ee51d618d00d6714ab95da"
+    },
+    "mq": {
+      "path": "codegen/sdk-codegen/aws-models/mq.json",
+      "sha256": "794d596e11bf8ffaa7cab670105546464f23fa23662c6264317c73fd86a7e7bb"
     }
   }
 }

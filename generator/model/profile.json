@@ -18962,5 +18962,140 @@
         "value"
       ]
     }
+  },
+  "mq": {
+    "operations": [
+      "CreateBroker",
+      "DescribeBroker",
+      "ListBrokers",
+      "UpdateBroker",
+      "DeleteBroker",
+      "CreateTags",
+      "ListTags",
+      "DeleteTags"
+    ],
+    "shapes": {
+      "CreateBrokerRequest": [
+        "AutoMinorVersionUpgrade",
+        "BrokerName",
+        "CreatorRequestId",
+        "DeploymentMode",
+        "EncryptionOptions",
+        "EngineType",
+        "EngineVersion",
+        "HostInstanceType",
+        "Logs",
+        "MaintenanceWindowStartTime",
+        "PubliclyAccessible",
+        "SecurityGroups",
+        "SubnetIds",
+        "Tags",
+        "Users"
+      ],
+      "CreateBrokerResponse": [
+        "BrokerArn",
+        "BrokerId"
+      ],
+      "DescribeBrokerRequest": [
+        "BrokerId"
+      ],
+      "DescribeBrokerResponse": [
+        "AutoMinorVersionUpgrade",
+        "BrokerName",
+        "DeploymentMode",
+        "EncryptionOptions",
+        "EngineType",
+        "EngineVersion",
+        "HostInstanceType",
+        "Logs",
+        "MaintenanceWindowStartTime",
+        "PubliclyAccessible",
+        "SecurityGroups",
+        "SubnetIds",
+        "Tags",
+        "Users",
+        "BrokerArn",
+        "BrokerId",
+        "Created"
+      ],
+      "UpdateBrokerRequest": [
+        "BrokerId",
+        "AutoMinorVersionUpgrade",
+        "EngineVersion",
+        "HostInstanceType",
+        "Logs",
+        "MaintenanceWindowStartTime",
+        "SecurityGroups"
+      ],
+      "UpdateBrokerResponse": [
+        "BrokerId",
+        "AutoMinorVersionUpgrade",
+        "EngineVersion",
+        "HostInstanceType",
+        "Logs",
+        "MaintenanceWindowStartTime",
+        "SecurityGroups"
+      ],
+      "DeleteBrokerRequest": [
+        "BrokerId"
+      ],
+      "DeleteBrokerResponse": [
+        "BrokerId"
+      ],
+      "ListBrokersRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListBrokersResponse": [
+        "BrokerSummaries",
+        "NextToken"
+      ],
+      "BrokerSummary": [
+        "BrokerArn",
+        "BrokerId",
+        "BrokerName",
+        "Created",
+        "DeploymentMode",
+        "EngineType",
+        "HostInstanceType"
+      ],
+      "CreateTagsRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "ListTagsRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsResponse": [
+        "Tags"
+      ],
+      "DeleteTagsRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "User": [
+        "Username",
+        "Password"
+      ],
+      "UserSummary": [
+        "Username"
+      ],
+      "EncryptionOptions": [
+        "UseAwsOwnedKey"
+      ],
+      "Logs": [
+        "General",
+        "Audit"
+      ],
+      "LogsSummary": [
+        "General",
+        "Audit"
+      ],
+      "WeeklyStartTime": [
+        "DayOfWeek",
+        "TimeOfDay",
+        "TimeZone"
+      ]
+    }
   }
 }
