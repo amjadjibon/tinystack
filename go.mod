@@ -47,6 +47,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0
 	github.com/aws/aws-sdk-go-v2/service/mq v1.36.2
+	github.com/aws/aws-sdk-go-v2/service/mwaa v1.48.4
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.116.0
