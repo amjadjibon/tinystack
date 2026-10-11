@@ -37,6 +37,8 @@ Use separate directories for separate servers. Stop the existing owner before re
 An unsupported schema version fails rather than guessing at the format.
 For a filesystem backup, stop TinyStack cleanly and copy the directory. SQLite can have WAL files while running;
 copying only a live `state.db` does not guarantee a complete snapshot.
+To export a portable, verified fixture archive of committed records and S3 blob files, stop TinyStack and use
+`tinystack state export`. See the [State fixtures guide](state-fixtures.md).
 
 Compose stores records in the `tinystack-data` volume. `task down` retains it; `task down -- -v` deletes it.
 To reset native state, stop the server and select a new empty directory, keeping the old directory for recovery.

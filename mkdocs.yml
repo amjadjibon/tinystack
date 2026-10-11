@@ -85,6 +85,7 @@ nav:
       - Fault injection: guides/fault-injection.md
       - Testcontainers for Go: guides/testcontainers.md
       - Persistence and restart: guides/persistence.md
+      - State fixtures: guides/state-fixtures.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
