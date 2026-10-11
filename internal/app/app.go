@@ -54,6 +54,7 @@ import (
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	mqapi "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
 	organizationsapi "github.com/amjadjibon/tinystack/internal/aws/generated/organizations"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
@@ -116,6 +117,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/mq"
 	"github.com/amjadjibon/tinystack/internal/services/organizations"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
 	"github.com/amjadjibon/tinystack/internal/services/rds"
@@ -315,6 +317,7 @@ func build(
 	fileSystems := efs.New(store, network)
 	batchRecords := batch.New(store, network)
 	buildProjects := codebuild.New(store)
+	brokers := mq.New(store, network)
 	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -381,6 +384,7 @@ func build(
 		efsapi.Descriptor(fileSystems),
 		batchapi.Descriptor(batchRecords),
 		codebuildapi.Descriptor(buildProjects),
+		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
@@ -398,7 +402,7 @@ func build(
 		pipesapi.Descriptor(pipelines),
 		cloudwatchapi.Descriptor(monitoring),
 		cloudcontrolapi.Descriptor(control),
-		cloudformationapi.Descriptor(stacks),
+		cloudformation.ProtectTemplates(cloudformationapi.Descriptor(stacks)),
 		sesapi.Descriptor(ses.New(email)),
 		sesv2api.Descriptor(email),
 		cognitoidentityapi.Descriptor(identityPools),
@@ -427,6 +431,7 @@ func build(
 	// CloudFormation manages stack resources with the other services'
 	// operations.
 	control.UseCaller(caller)
+	stacks.UseMQ(brokers)
 	stacks.UseCaller(caller)
 	// Subscription filters deliver to Lambda, Kinesis, and Firehose.
 	logGroups.UseCaller(caller)

@@ -243,6 +243,7 @@ func (t *resourceType) createsFirst(old, p props) bool {
 
 // client calls other services for one stack resource.
 type client struct {
+	mq       mqRecords
 	caller   *catalog.Caller
 	scope    request.Scope
 	endpoint string

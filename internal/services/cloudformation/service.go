@@ -52,6 +52,7 @@ var _ api.API = (*Service)(nil)
 type Service struct {
 	store  storage.Store
 	caller *catalog.Caller
+	mq     mqRecords
 	logger *slog.Logger
 	now    func() time.Time
 	bg     *background.Group

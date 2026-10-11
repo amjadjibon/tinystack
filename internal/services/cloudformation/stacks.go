@@ -732,6 +732,7 @@ func (s *Service) GetTemplate(ctx context.Context, in *api.GetTemplateInput) (*a
 		body = processed(body)
 	}
 
+	body = mqRedactTemplate(body)
 	return &api.GetTemplateOutput{TemplateBody: &body, StagesAvailable: []string{"Original", stageProcessed}}, nil
 }
 

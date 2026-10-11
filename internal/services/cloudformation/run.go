@@ -373,14 +373,24 @@ func importer(tx storage.ReadTx, scope request.Scope) func(string) (string, erro
 func (s *Service) perform(ctx context.Context,
 	scope request.Scope, st *stack, next *step,
 ) (physical string, attributes map[string]any, err error) {
-	c := &client{caller: s.caller, scope: scope, endpoint: st.Endpoint, stack: st.Name, logical: next.logical}
+	c := &client{caller: s.caller, mq: s.mq, scope: scope, endpoint: st.Endpoint, stack: st.Name, logical: next.logical}
 	r := st.Resources[next.logical]
+	if r != nil && r.Type == mqBrokerType && !st.Op.Rollback &&
+		(next.kind == stepSwap || next.kind == stepUpdate) &&
+		props(r.Properties).has(mqEncryptionOptions) && !next.props.has(mqEncryptionOptions) {
+		return "", nil, validation(
+			"Removing MQ EncryptionOptions is unsupported; retain the explicit AWS-owned-key choice",
+		)
+	}
 	switch next.kind {
 	case stepCreate, stepSwap:
 		if id, attrs, ok := efsRestoreReplacement(st, next); ok {
 			return id, attrs, nil
 		}
 		if id, attrs, ok := batchRestoreReplacement(st, next); ok {
+			return id, attrs, nil
+		}
+		if id, attrs, ok := mqRestoreReplacement(st, next); ok {
 			return id, attrs, nil
 		}
 		if id, attrs, ok := codebuildRestoreReplacement(st, next); ok {
@@ -393,7 +403,8 @@ func (s *Service) perform(ctx context.Context,
 		// earlier swap. Cleanup must keep the incarnation owned by the active
 		// resource rather than deleting the restored record.
 		restored := retired.Type == "AWS::WAFv2::WebACLAssociation" ||
-			isEFSResource(retired.Type) || isBatchResource(retired.Type) || retired.Type == codebuildProjectType
+			isEFSResource(retired.Type) || isBatchResource(retired.Type) ||
+			retired.Type == codebuildProjectType || retired.Type == mqBrokerType
 		if restored && r != nil &&
 			r.Type == retired.Type &&
 			r.Physical == retired.Physical {
@@ -401,6 +412,15 @@ func (s *Service) perform(ctx context.Context,
 		}
 		return "", nil, types[next.typ].remove(ctx, c, retired)
 	case stepUpdate:
+		if st.Op.Rollback && r.Type == mqBrokerType {
+			if reflect.DeepEqual(props(r.Properties), next.props) {
+				attrs, readErr := mqRead(ctx, c, r.Physical)
+				return r.Physical, attrs, readErr
+			}
+			if attrs, found, restoreErr := mqRestoreUpdate(ctx, c, r, next.props); found {
+				return r.Physical, attrs, restoreErr
+			}
+		}
 		if st.Op.Rollback && r.Type == codebuildProjectType {
 			if reflect.DeepEqual(props(r.Properties), next.props) {
 				attrs, readErr := codebuildRead(ctx, c, r.Physical)
@@ -877,6 +897,9 @@ func (s *Service) event(
 	}
 
 	if p != nil {
+		if typ == mqBrokerType {
+			p = mqEventProperties(p)
+		}
 		data, _ := json.Marshal(p)
 		e.Properties = string(data)
 	}
