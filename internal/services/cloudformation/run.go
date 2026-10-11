@@ -377,13 +377,17 @@ func (s *Service) perform(ctx context.Context,
 	r := st.Resources[next.logical]
 	switch next.kind {
 	case stepCreate, stepSwap:
+		if id, attrs, ok := efsRestoreReplacement(st, next); ok {
+			return id, attrs, nil
+		}
 		return types[next.typ].create(ctx, c, next.props)
 	case stepDiscard:
 		retired := st.Replaced[0].Resource
-		// A rollback can restore the exact association that an earlier swap
-		// retired. It is one metadata record, so cleanup must keep its active
-		// owner's incarnation rather than disassociating the restored target.
-		if retired.Type == "AWS::WAFv2::WebACLAssociation" && r != nil && r.Type == retired.Type &&
+		// A rollback can restore an association or EFS record retired by an
+		// earlier swap. Cleanup must keep the incarnation owned by the active
+		// resource rather than deleting the restored record.
+		if (retired.Type == "AWS::WAFv2::WebACLAssociation" || isEFSResource(retired.Type)) && r != nil &&
+			r.Type == retired.Type &&
 			r.Physical == retired.Physical {
 			return "", nil, nil
 		}
@@ -481,6 +485,7 @@ func (s *Service) record(
 		if next.kind == stepSwap && physical != r.Physical && next.decl.UpdateReplacePolicy != policyRetain {
 			old := *r
 			st.Replaced = append(st.Replaced, &replaced{Logical: next.logical, Resource: &old})
+			efsOrderRetired(st)
 		}
 
 		r.Type, r.Physical, r.Status, r.Reason, r.Updated = next.typ, physical, status, "", now
