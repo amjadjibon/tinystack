@@ -26,7 +26,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Cost and Usage Reports](services/cur.md) | Proposed | Implement `DeleteReportDefinition`, `DescribeReportDefinitions`, `ListTagsForResource`. |
 | [EC2 Instance Metadata](services/imds.md) | Proposed | Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`. |
 | [ECS Task Metadata](services/ecs-metadata.md) | Proposed | Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`. |
-| [EFS](services/efs.md) | Proposed | Implement `CreateFileSystem`, `DescribeFileSystems`, `DeleteFileSystem`. |
 | [EMR](services/emr.md) | Proposed | Implement `RunJobFlow`, `DescribeCluster`, `ListClusters`. |
 | [IoT Wireless](services/iotwireless.md) | Proposed | Implement `GetPositionEstimate`. |
 | [Lambda Core](services/lambda-core.md) | Proposed | Implement `CreateNetworkConnector`, `GetNetworkConnector`, `ListNetworkConnectors`. |

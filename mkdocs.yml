@@ -86,6 +86,7 @@ nav:
       - Testcontainers for Go: guides/testcontainers.md
       - Persistence and restart: guides/persistence.md
       - State fixtures: guides/state-fixtures.md
+      - EFS records: guides/efs-records.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
@@ -161,6 +162,8 @@ nav:
           - "Route 53": services/route53.md
       - "Networking and content delivery":
           - "Cloud Map": services/servicediscovery.md
+      - "Storage":
+          - "Amazon EFS": services/efs.md
       - "Storage and databases":
           - "DynamoDB": services/dynamodb.md
           - "DynamoDB Streams": services/dynamodbstreams.md
@@ -194,7 +197,6 @@ nav:
           - "Cost and Usage Reports": roadmap/services/cur.md
           - "EC2 Instance Metadata": roadmap/services/imds.md
           - "ECS Task Metadata": roadmap/services/ecs-metadata.md
-          - "EFS": roadmap/services/efs.md
           - "EMR": roadmap/services/emr.md
           - "IoT Wireless": roadmap/services/iotwireless.md
           - "Lambda Core": roadmap/services/lambda-core.md

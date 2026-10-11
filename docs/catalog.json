@@ -1249,6 +1249,39 @@
       ],
       "execution": "Records only",
       "package": "wafv2"
+    },
+    "efs": {
+      "title": "Amazon EFS",
+      "category": "Storage",
+      "summary": "Persist regional file-system, mount-target and access-point metadata without a mountable NFS filesystem.",
+      "features": [
+        "15 REST JSON operations for file-system CRUD, mount-target CRUD/security-group replacement, access-point CRUD and resource tags; SDK signing name elasticfilesystem from the pinned model",
+        "Stable fs/fsmt/fsap IDs, filesystem/access-point ARNs, creation tokens, account/Region ownership, encryption/KMS metadata, performance and throughput configuration, POSIX user/root metadata and creation tags",
+        "FileSystemAlreadyExists and AccessPointAlreadyExists return original identifiers on token reuse without mutating initial records, including conflicting retries; tokens are scoped to account/Region and removed with records",
+        "Locally available metadata defaults: generalPurpose performance, bursting throughput, Encrypted=false, zero size/usage values and a fixed creation-time size timestamp. Mount-target count reflects stored records; no real data storage is represented",
+        "Atomic throughput updates with bursting/provisioned/elastic modes, provisioned 1-3414 MiBps including fractions; maxIO cannot use elastic. Identity, immutable settings and previous state survive failed updates",
+        "Existing scoped EC2 subnet/group lookup in the same transaction; no default VPC seeding or EC2 changes. One VPC per filesystem and one target per local AZ; IPv4 CIDR validation and deterministic unused EFS metadata addresses; at most five unique groups",
+        "Access points persist UID/GID, up to 16 secondary groups and optional root path/creation owner/mode settings. IDs are 0-4294967295, paths at most four non-dot-prefixed components and 100 Unicode characters; modes 3-4 octal digits",
+        "Filesystem/access-point references accept IDs or same-account/Region commercial ARNs; mount targets accept IDs only. Both mount targets and access points must be deleted before their filesystem; dependency errors preserve all state",
+        "Validated unique tags, modeled lengths/character sets/reserved prefixes and 50-tag limit; deterministic sorted retrieval, inventory and Resource Groups Tagging API filters elasticfilesystem:file-system/access-point",
+        "Scoped/filter-bound deterministic pagination with default 100 and positive requested sizes capped at 1000; stable ID/key order and resume after cursor deletion",
+        "SQLite restart, offline export/import fixtures and shared reset retain exact identifiers/configuration/relations/tokens; default app assembly, verified SigV4, resource browser, official console icon and Terraform efs endpoint",
+        "CloudFormation FileSystem/MountTarget/AccessPoint Ref/GetAtt, mutable throughput/security-group/tag updates and immutable replacement. EFS-specific retirement orders children first and restores original incarnations during rollback; 50-tag replacement and failed-tag compensation preserve unrelated tags"
+      ],
+      "gaps": [
+        "Records only: no NFS server, mount listener, mountable filesystem, filesystem bytes, POSIX execution, EC2 interfaces or real IP allocation, IAM/KMS evaluation, backup/replication/lifecycle jobs or throughput cooldown/capacity simulation",
+        "CreateFileSystem supports CreationToken/PerformanceMode/Encrypted/KmsKeyId/ThroughputMode/ProvisionedThroughputInMibps/Tags; AvailabilityZoneName (One Zone), Backup and FileSystemProtection are excluded. Shared decoder rejects unsupported members as NotImplemented even when false/null/empty",
+        "KmsKeyId accepts UUID/mrk IDs, aliases and same-account/Region commercial key/alias ARNs as format-only metadata; omitted KmsKeyId remains absent, even for encrypted records. No default KMS key or ARN is fabricated",
+        "CreateMountTarget supports FileSystemId/SubnetId/IpAddress/IpAddressType=IPV4_ONLY/SecurityGroups. EC2 has IPv4 subnets only: IPv6/DUAL_STACK and Ipv6Address are rejected. NetworkInterfaceId is omitted. Metadata address checks cover EFS records only, not EC2 instances/interfaces; EC2 deletion has no EFS dependency guard",
+        "Creation defaults to the existing VPC default security group when no groups are provided. ModifyMountTargetSecurityGroups replaces the list; an empty list clears it. AZ names/IDs come directly from local EC2 subnet records",
+        "CreateAccessPoint supports ClientToken/FileSystemId/PosixUser/RootDirectory/Tags including every selected nested member. Omitted root path defaults to /; optional CreationInfo requires all its fields. No paths/users/groups are created or verified on disk",
+        "Tokens contain 1-64 printable ASCII characters; at most 1000 filesystems per account/Region and 10000 access points per filesystem, without adjustable quotas",
+        "CloudFormation FileSystem: Encrypted/KmsKeyId/PerformanceMode/ThroughputMode/ProvisionedThroughputInMibps/FileSystemTags; MountTarget: FileSystemId/SubnetId/IpAddress/IpAddressType/SecurityGroups; AccessPoint: FileSystemId/ClientToken/PosixUser/RootDirectory/AccessPointTags. Unsupported properties are rejected",
+        "Immutable filesystem settings, mount placement/address and access-point token/POSIX/root settings require replacement. Reusing an explicit access-point token or creating a replacement mount in an occupied AZ/address fails safely with rollback; change the token/placement/address as needed",
+        "No dedicated mutation console. Follow the [executable records workflow](../guides/efs-records.md) for exact supported members, defaults, reference rules and CLI commands"
+      ],
+      "execution": "Records only",
+      "package": "efs"
     }
   },
   "future": {
@@ -1327,12 +1360,6 @@
       "slice": "Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`.",
       "features": "- [ ] `GetTaskMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` \u2014 serve the matching ECS task metadata V4 HTTP route.",
       "acceptance": "Call the `/v4/<token>` metadata routes over HTTP. Check valid and unknown tokens, task and container metadata, stats, and token isolation."
-    },
-    "efs": {
-      "title": "EFS",
-      "state": "Proposed",
-      "slice": "Implement `CreateFileSystem`, `DescribeFileSystems`, `DeleteFileSystem`.",
-      "features": "- [ ] `CreateFileSystem`\n- [ ] `DescribeFileSystems`\n- [ ] `DeleteFileSystem`\n- [ ] `UpdateFileSystem`\n- [ ] `CreateMountTarget`\n- [ ] `DescribeMountTargets`\n- [ ] `DeleteMountTarget`\n- [ ] `DescribeMountTargetSecurityGroups`\n- [ ] `ModifyMountTargetSecurityGroups`\n- [ ] `CreateAccessPoint`\n- [ ] `DescribeAccessPoints`\n- [ ] `DeleteAccessPoint`\n- [ ] `TagResource`\n- [ ] `UntagResource`\n- [ ] `ListTagsForResource`"
     },
     "emr": {
       "title": "EMR",
