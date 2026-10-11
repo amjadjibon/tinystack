@@ -238,6 +238,10 @@
     "mq": {
       "path": "codegen/sdk-codegen/aws-models/mq.json",
       "sha256": "794d596e11bf8ffaa7cab670105546464f23fa23662c6264317c73fd86a7e7bb"
+    },
+    "kafka": {
+      "path": "codegen/sdk-codegen/aws-models/kafka.json",
+      "sha256": "26a7e667ad7c2ce3d32dafcb2f6bf9cf8677d8f07c5e07f5e7adec8dc7c068ca"
     }
   }
 }

@@ -19097,5 +19097,102 @@
         "TimeZone"
       ]
     }
+  },
+  "kafka": {
+    "operations": [
+      "CreateCluster",
+      "DescribeCluster",
+      "ListClusters",
+      "DeleteCluster",
+      "UpdateMonitoring",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource"
+    ],
+    "shapes": {
+      "CreateClusterRequest": [
+        "BrokerNodeGroupInfo",
+        "ClusterName",
+        "KafkaVersion",
+        "NumberOfBrokerNodes",
+        "EnhancedMonitoring",
+        "Tags"
+      ],
+      "CreateClusterResponse": [
+        "ClusterArn",
+        "ClusterName"
+      ],
+      "DescribeClusterRequest": [
+        "ClusterArn"
+      ],
+      "DescribeClusterResponse": [
+        "ClusterInfo"
+      ],
+      "ClusterInfo": [
+        "BrokerNodeGroupInfo",
+        "ClusterArn",
+        "ClusterName",
+        "CreationTime",
+        "CurrentBrokerSoftwareInfo",
+        "CurrentVersion",
+        "EnhancedMonitoring",
+        "NumberOfBrokerNodes",
+        "Tags"
+      ],
+      "BrokerNodeGroupInfo": [
+        "BrokerAZDistribution",
+        "ClientSubnets",
+        "InstanceType",
+        "SecurityGroups",
+        "StorageInfo"
+      ],
+      "StorageInfo": [
+        "EbsStorageInfo"
+      ],
+      "EBSStorageInfo": [
+        "VolumeSize"
+      ],
+      "BrokerSoftwareInfo": [
+        "KafkaVersion"
+      ],
+      "ListClustersRequest": [
+        "ClusterNameFilter",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListClustersResponse": [
+        "ClusterInfoList",
+        "NextToken"
+      ],
+      "DeleteClusterRequest": [
+        "ClusterArn",
+        "CurrentVersion"
+      ],
+      "DeleteClusterResponse": [
+        "ClusterArn"
+      ],
+      "UpdateMonitoringRequest": [
+        "ClusterArn",
+        "CurrentVersion",
+        "EnhancedMonitoring"
+      ],
+      "UpdateMonitoringResponse": [
+        "ClusterArn"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ]
+    }
   }
 }
