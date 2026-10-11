@@ -76,6 +76,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/vektah/gqlparser/v2 v2.5.60
 	golang.org/x/crypto v0.57.0
+	golang.org/x/sys v0.48.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.60.1
 )
@@ -125,7 +126,6 @@ require (
 	github.com/tidwall/gjson v1.20.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.2 // indirect
-	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	modernc.org/libc v1.77.1 // indirect
