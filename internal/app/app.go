@@ -37,6 +37,7 @@ import (
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	ecrapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecr"
 	ecsapi "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
+	efsapi "github.com/amjadjibon/tinystack/internal/aws/generated/efs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
@@ -96,6 +97,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 	ecsdocker "github.com/amjadjibon/tinystack/internal/services/ecs/docker"
+	"github.com/amjadjibon/tinystack/internal/services/efs"
 	"github.com/amjadjibon/tinystack/internal/services/eks"
 	"github.com/amjadjibon/tinystack/internal/services/eks/k3s"
 	"github.com/amjadjibon/tinystack/internal/services/elasticache"
@@ -306,6 +308,7 @@ func build(
 	trails := cloudtrail.New(store, buckets)
 	configRecords := configservice.New(store, buckets)
 	backupRecords := backup.New(store)
+	fileSystems := efs.New(store, network)
 	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -369,6 +372,7 @@ func build(
 		cloudtrailapi.Descriptor(trails),
 		configapi.Descriptor(configRecords),
 		backupapi.Descriptor(backupRecords),
+		efsapi.Descriptor(fileSystems),
 		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),

@@ -46,6 +46,7 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "appconfig",
 	},
 	wafv2: { title: "WAF v2", category: security, icon: "wafv2" },
+	efs: { title: "Elastic File System", category: storage, icon: "efs" },
 	backup: { title: "AWS Backup", category: management, icon: "backup" },
 	config: { title: "AWS Config", category: management, icon: "config" },
 	cloudtrail: { title: "CloudTrail", category: management, icon: "cloudtrail" },

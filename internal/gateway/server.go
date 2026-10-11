@@ -713,6 +713,10 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	if c.service != nil && c.service.Name == "wafv2" && e.Code == "ValidationException" {
 		e.Code = "WAFInvalidParameterException"
 	}
+	if c.service != nil && c.service.Name == "efs" && e.Code == "ValidationException" {
+		e.Code = "BadRequest"
+		e.Fields = map[string]any{"ErrorCode": "BadRequest"}
+	}
 	c.failure = e
 	for name, value := range e.Headers {
 		w.Header().Set(name, value)
