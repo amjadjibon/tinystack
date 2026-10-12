@@ -62,6 +62,7 @@ var namespaces = map[string]string{
 	"sqs":                    "SQS",
 	"ssm":                    "SSM",
 	"xray":                   "XRay",
+	"codepipeline":           "CodePipeline",
 	"acmpca":                 "ACMPCA",
 	"verifiedpermissions":    "VerifiedPermissions",
 }
