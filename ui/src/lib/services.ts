@@ -40,6 +40,7 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	s3tables: { title: "Amazon S3 Tables", category: storage, icon: "s3" },
 	location: {
 		title: "Amazon Location Service",
 		category: frontend,

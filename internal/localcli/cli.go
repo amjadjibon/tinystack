@@ -162,6 +162,7 @@ var TerraformServices = []string{
 	"mwaa",
 	"transfer",
 	"location",
+	"s3tables",
 	"wafv2",
 	"dynamodb",
 	"ec2",
