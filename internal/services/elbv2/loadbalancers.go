@@ -1,6 +1,7 @@
 package elbv2
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"fmt"
@@ -40,6 +41,14 @@ var (
 		},
 	}
 )
+
+func hostedZone(kind, region string) string {
+	return cmp.Or(hostedZones[kind][region], hostedZones[kind]["us-east-1"])
+}
+
+// ClassicHostedZone is the Route 53 zone of a Classic Load Balancer's DNS name, which AWS shares with
+// Application Load Balancers in each Region.
+func ClassicHostedZone(region string) string { return hostedZone(typeApplication, region) }
 
 // balancer is a load balancer's record.
 type balancer struct {
@@ -249,10 +258,7 @@ func (s *Service) CreateLoadBalancer(
 		dns = label + ".elb." + m.Region + ".amazonaws.com"
 	}
 
-	zone := hostedZones[kind][m.Region]
-	if zone == "" {
-		zone = hostedZones[kind]["us-east-1"]
-	}
+	zone := hostedZone(kind, m.Region)
 
 	defaults := applicationAttributes
 	if kind == typeNetwork {

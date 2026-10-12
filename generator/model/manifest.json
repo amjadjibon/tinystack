@@ -123,6 +123,10 @@
       "path": "codegen/sdk-codegen/aws-models/elasticache.json",
       "sha256": "ce148a82d179361fe511f058c8da388cfa7d6a01843e67ab78a544f2a35f4b58"
     },
+    "elb": {
+      "path": "codegen/sdk-codegen/aws-models/elastic-load-balancing.json",
+      "sha256": "34cc3bd9a7042e010b153c9e04d8673c66018179065cc8f2333f7e5c9a26e588"
+    },
     "elbv2": {
       "path": "codegen/sdk-codegen/aws-models/elastic-load-balancing-v2.json",
       "sha256": "34547fbf1a15abc429406c1ebfe20672022fa7a9b43bdb6df73d10c345a746dc"

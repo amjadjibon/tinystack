@@ -20931,5 +20931,197 @@
         "resourceShare"
       ]
     }
+  },
+  "elb": {
+    "operations": [
+      "AddTags",
+      "ConfigureHealthCheck",
+      "CreateLoadBalancer",
+      "CreateLoadBalancerListeners",
+      "DeleteLoadBalancer",
+      "DeleteLoadBalancerListeners",
+      "DeregisterInstancesFromLoadBalancer",
+      "DescribeInstanceHealth",
+      "DescribeLoadBalancerAttributes",
+      "DescribeLoadBalancers",
+      "DescribeTags",
+      "ModifyLoadBalancerAttributes",
+      "RegisterInstancesWithLoadBalancer",
+      "RemoveTags"
+    ],
+    "shapes": {
+      "AccessLog": [
+        "Enabled",
+        "S3BucketName",
+        "EmitInterval",
+        "S3BucketPrefix"
+      ],
+      "AddTagsInput": [
+        "LoadBalancerNames",
+        "Tags"
+      ],
+      "AddTagsOutput": [],
+      "ConfigureHealthCheckInput": [
+        "LoadBalancerName",
+        "HealthCheck"
+      ],
+      "ConfigureHealthCheckOutput": [
+        "HealthCheck"
+      ],
+      "ConnectionDraining": [
+        "Enabled",
+        "Timeout"
+      ],
+      "ConnectionSettings": [
+        "IdleTimeout"
+      ],
+      "CreateAccessPointInput": [
+        "LoadBalancerName",
+        "Listeners",
+        "AvailabilityZones",
+        "Subnets",
+        "SecurityGroups",
+        "Scheme",
+        "Tags"
+      ],
+      "CreateAccessPointOutput": [
+        "DNSName"
+      ],
+      "CreateLoadBalancerListenerInput": [
+        "LoadBalancerName",
+        "Listeners"
+      ],
+      "CreateLoadBalancerListenerOutput": [],
+      "CrossZoneLoadBalancing": [
+        "Enabled"
+      ],
+      "DeleteAccessPointInput": [
+        "LoadBalancerName"
+      ],
+      "DeleteAccessPointOutput": [],
+      "DeleteLoadBalancerListenerInput": [
+        "LoadBalancerName",
+        "LoadBalancerPorts"
+      ],
+      "DeleteLoadBalancerListenerOutput": [],
+      "DeregisterEndPointsInput": [
+        "LoadBalancerName",
+        "Instances"
+      ],
+      "DeregisterEndPointsOutput": [
+        "Instances"
+      ],
+      "DescribeAccessPointsInput": [
+        "LoadBalancerNames",
+        "Marker",
+        "PageSize"
+      ],
+      "DescribeAccessPointsOutput": [
+        "LoadBalancerDescriptions",
+        "NextMarker"
+      ],
+      "DescribeEndPointStateInput": [
+        "LoadBalancerName",
+        "Instances"
+      ],
+      "DescribeEndPointStateOutput": [
+        "InstanceStates"
+      ],
+      "DescribeLoadBalancerAttributesInput": [
+        "LoadBalancerName"
+      ],
+      "DescribeLoadBalancerAttributesOutput": [
+        "LoadBalancerAttributes"
+      ],
+      "DescribeTagsInput": [
+        "LoadBalancerNames"
+      ],
+      "DescribeTagsOutput": [
+        "TagDescriptions"
+      ],
+      "HealthCheck": [
+        "Target",
+        "Interval",
+        "Timeout",
+        "UnhealthyThreshold",
+        "HealthyThreshold"
+      ],
+      "Instance": [
+        "InstanceId"
+      ],
+      "InstanceState": [
+        "InstanceId",
+        "State",
+        "ReasonCode",
+        "Description"
+      ],
+      "Listener": [
+        "Protocol",
+        "LoadBalancerPort",
+        "InstanceProtocol",
+        "InstancePort",
+        "SSLCertificateId"
+      ],
+      "ListenerDescription": [
+        "Listener"
+      ],
+      "LoadBalancerAttributes": [
+        "CrossZoneLoadBalancing",
+        "AccessLog",
+        "ConnectionDraining",
+        "ConnectionSettings"
+      ],
+      "LoadBalancerDescription": [
+        "LoadBalancerName",
+        "DNSName",
+        "CanonicalHostedZoneName",
+        "CanonicalHostedZoneNameID",
+        "ListenerDescriptions",
+        "AvailabilityZones",
+        "Subnets",
+        "VPCId",
+        "Instances",
+        "HealthCheck",
+        "SourceSecurityGroup",
+        "SecurityGroups",
+        "CreatedTime",
+        "Scheme"
+      ],
+      "ModifyLoadBalancerAttributesInput": [
+        "LoadBalancerName",
+        "LoadBalancerAttributes"
+      ],
+      "ModifyLoadBalancerAttributesOutput": [
+        "LoadBalancerName",
+        "LoadBalancerAttributes"
+      ],
+      "RegisterEndPointsInput": [
+        "LoadBalancerName",
+        "Instances"
+      ],
+      "RegisterEndPointsOutput": [
+        "Instances"
+      ],
+      "RemoveTagsInput": [
+        "LoadBalancerNames",
+        "Tags"
+      ],
+      "RemoveTagsOutput": [],
+      "SourceSecurityGroup": [
+        "OwnerAlias",
+        "GroupName"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagDescription": [
+        "LoadBalancerName",
+        "Tags"
+      ],
+      "TagKeyOnly": [
+        "Key"
+      ]
+    }
   }
 }

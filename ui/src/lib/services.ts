@@ -176,6 +176,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: database,
 		icon: "elasticache",
 	},
+	elb: {
+		title: "Elastic Load Balancing (Classic)",
+		category: networking,
+		icon: "elb",
+	},
 	elbv2: {
 		title: "Elastic Load Balancing",
 		category: networking,

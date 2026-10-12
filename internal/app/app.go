@@ -44,6 +44,7 @@ import (
 	efsapi "github.com/amjadjibon/tinystack/internal/aws/generated/efs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
+	elbapi "github.com/amjadjibon/tinystack/internal/aws/generated/elb"
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
@@ -121,6 +122,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/eks/k3s"
 	"github.com/amjadjibon/tinystack/internal/services/elasticache"
 	cachedocker "github.com/amjadjibon/tinystack/internal/services/elasticache/docker"
+	"github.com/amjadjibon/tinystack/internal/services/elb"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
@@ -355,6 +357,7 @@ func build(
 	ramRecords := ram.New(store)
 	privateAuthorities := acmpca.New(store, buckets)
 	redshiftRecords := redshift.New(store, network)
+	classicBalancers := elb.New(store, network)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
 	a.onStop(databases.Stop)
@@ -434,6 +437,7 @@ func build(
 		ramapi.Descriptor(ramRecords),
 		acmpcaapi.Descriptor(privateAuthorities),
 		redshiftapi.Descriptor(redshiftRecords),
+		elbapi.Descriptor(classicBalancers),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),

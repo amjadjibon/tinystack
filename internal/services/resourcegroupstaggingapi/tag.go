@@ -271,6 +271,10 @@ var taggers = map[string]tagger{
 	"ecr":             resourceOperations("ecr", "ResourceArn", pairs),
 	"ecs":             resourceOperations("ecs", "ResourceArn", pairs),
 	"eks":             resourceOperations("eks", "ResourceArn", plain),
+	"elb": operations("elb", "AddTags", "RemoveTags",
+		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
+			return map[string]any{"LoadBalancerNames": []any{r.Name}}, nil
+		}, "Tags", pairs, "Tags", keyOnly),
 	"elbv2": operations("elbv2", "AddTags", "RemoveTags",
 		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
 			return map[string]any{"ResourceArns": []any{r.ARN}}, nil

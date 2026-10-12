@@ -533,13 +533,21 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 		}
 
 		if name != "" && service.SigningName == name {
-			candidates = []*catalog.Service{service}
-			break
+			candidates = append(candidates, service)
+			continue
 		}
 
 		if _, ok := service.Operations[c.meta.Operation]; ok && name == "" {
 			candidates = append(candidates, service)
 		}
+	}
+
+	// Services that share a signing name and an action, such as Classic and
+	// v2 Elastic Load Balancing, are told apart by the request's API Version.
+	if len(candidates) > 1 {
+		candidates = slices.DeleteFunc(candidates, func(service *catalog.Service) bool {
+			return !servesVersion(service, c.meta.Operation, c.form.Get("Version"))
+		})
 	}
 
 	if len(candidates) != 1 {
@@ -553,6 +561,23 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 	}
 
 	return nil
+}
+
+// servesVersion reports whether a Query service has the operation at the API
+// version; a request without a Version matches any service that has it.
+func servesVersion(service *catalog.Service, operation, version string) bool {
+	op, ok := service.Operations[operation]
+	if !ok {
+		return false
+	}
+
+	for protocol, binding := range op.Bindings {
+		if formProtocol(protocol) && (version == "" || binding.Version == version) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // queryGET reports whether a request is an AWS Query request sent as a GET to
