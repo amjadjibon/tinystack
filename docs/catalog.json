@@ -1647,6 +1647,34 @@
         "CREATING, EXPIRED and FAILED authorities are never produced, no quota (LimitExceededException) is enforced, and a CRL bucket is only checked for existence, not for a bucket policy",
         "CloudFormation CertificateSigningRequest cannot be produced: Fn::GetAtt of it fails template validation; CertificateAuthorityActivation and Certificate resources are not supported"
       ]
+    },
+    "elb": {
+      "title": "Elastic Load Balancing (Classic)",
+      "category": "Networking and APIs",
+      "scope": "Account and Region",
+      "summary": "Store Classic Load Balancer listeners, placement, health check, instance and attribute settings as configuration records without routing traffic.",
+      "execution": "Configuration records only",
+      "package": "elb",
+      "features": [
+        "Fourteen pinned AWS Query (2012-06-01) load balancer, listener, health check, instance, attribute and tag operations with AWS SDK v2 coverage, served beside Elastic Load Balancing v2 under the shared elasticloadbalancing signing name and told apart by API version",
+        "CreateLoadBalancer, DescribeLoadBalancers (names filter, Marker/PageSize) and idempotent DeleteLoadBalancer with documented name, scheme, protocol, port and listener rules, an internal- or plain <name>-<digits>.<region>.elb.amazonaws.com DNS name and a Route 53 hosted zone ID",
+        "Scoped EC2 subnet checks (one subnet per Availability Zone, one VPC), Availability Zone validation for load balancers without a VPC, and security group checks that default to the VPC's default group",
+        "CreateLoadBalancerListeners and DeleteLoadBalancerListeners, with DuplicateListener for a used port, matching back-end protocols and secure/plain InstancePort consistency checked on the whole listener set",
+        "ConfigureHealthCheck with Target format, interval, timeout and threshold ranges, and Timeout below Interval",
+        "RegisterInstancesWithLoadBalancer and DeregisterInstancesFromLoadBalancer against scoped EC2 instances; DescribeInstanceHealth reports Unknown for registered instances because nothing checks health",
+        "DescribeLoadBalancerAttributes and ModifyLoadBalancerAttributes for CrossZoneLoadBalancing, ConnectionDraining, ConnectionSettings.IdleTimeout and AccessLog, validated as a whole before one write",
+        "AddTags, RemoveTags and DescribeTags with the 50-tag limit; RGTA and Resource Groups integration",
+        "AWS::ElasticLoadBalancing::LoadBalancer CloudFormation lifecycle with Ref and DNSName, CanonicalHostedZoneName, CanonicalHostedZoneNameID and SourceSecurityGroup GetAtt; listeners, health check, instances, attributes and tags update in place, while name, subnets, zones, security groups and scheme replace the load balancer",
+        "RecordsOnly=true and ExecutionReady=false inventory, official AWS icon and Terraform elb endpoint key"
+      ],
+      "gaps": [
+        "No traffic: listeners do not accept connections, nothing forwards to instances and no health checks run",
+        "No policies: stickiness, SSL negotiation and backend authentication policies, SetLoadBalancerPoliciesOfListener and SetLoadBalancerListenerSSLCertificate are excluded, and CloudFormation fails Policies, AppCookieStickinessPolicy, LBCookieStickinessPolicy and Listener PolicyNames explicitly",
+        "No AttachLoadBalancerToSubnets, DetachLoadBalancerFromSubnets, Enable/DisableAvailabilityZonesForLoadBalancer or ApplySecurityGroupsToLoadBalancer; CloudFormation replaces the load balancer when those properties change",
+        "SSLCertificateId is required for HTTPS and SSL listeners but not looked up in ACM or IAM; no account limits (DescribeAccountLimits) or AdditionalAttributes",
+        "A load balancer outside a VPC, created with AvailabilityZones, takes no security groups or internal scheme and reports no VPC",
+        "CanonicalHostedZoneNameID is known for eight Regions and us-east-1's value elsewhere; the source security group is always amazon-elb/amazon-elb-sg"
+      ]
     }
   },
   "future": {
@@ -1901,6 +1929,12 @@
       "slice": "Extend records-only certificate authorities with certificate signing so an authority can become ACTIVE and issue and revoke certificates.",
       "features": "- [ ] GetCertificateAuthorityCsr and ImportCertificateAuthorityCertificate with real key generation\n- [ ] ACTIVE and DISABLED authorities, Serial, NotBefore and NotAfter\n- [ ] IssueCertificate, GetCertificate, GetCertificateAuthorityCertificate and RevokeCertificate\n- [ ] CRL generation and OCSP for enabled revocation settings\n- [ ] Audit reports, permissions and resource policies\n- [ ] CloudFormation CertificateAuthorityActivation and Certificate resources",
       "integration": "The current Private CA API persists certificate authority records and tags only; no cryptography is performed."
+    },
+    "elb-policies": {
+      "title": "Elastic Load Balancing (Classic) policies and traffic",
+      "state": "Proposed",
+      "slice": "Extend the records-only Classic Load Balancer control plane with policies, placement changes and a data plane.",
+      "features": "- [ ] Stickiness, SSL negotiation and backend authentication policies\n- [ ] Attach/detach subnets, enable/disable Availability Zones and apply security groups\n- [ ] Certificate lookup for HTTPS and SSL listeners\n- [ ] Listener traffic and instance health checks"
     }
   }
 }

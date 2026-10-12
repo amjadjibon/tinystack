@@ -183,6 +183,7 @@ nav:
           - "API Gateway REST APIs": services/apigateway.md
           - "AppSync GraphQL": services/appsync.md
           - "CloudFront": services/cloudfront.md
+          - "Elastic Load Balancing (Classic)": services/elb.md
           - "Elastic Load Balancing v2": services/elbv2.md
           - "Route 53": services/route53.md
       - "Networking and content delivery":
@@ -232,6 +233,7 @@ nav:
           - "EC2 Instance Metadata": roadmap/services/imds.md
           - "ECS Task Metadata": roadmap/services/ecs-metadata.md
           - "EMR": roadmap/services/emr.md
+          - "Elastic Load Balancing (Classic) policies and traffic": roadmap/services/elb-policies.md
           - "IoT Wireless": roadmap/services/iotwireless.md
           - "Lambda Core": roadmap/services/lambda-core.md
           - "Lambda Durable Execution": roadmap/services/lambda-durable.md
