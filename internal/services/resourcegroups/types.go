@@ -25,6 +25,7 @@ var namespaces = map[string]string{
 	"cloudfront":             "CloudFront",
 	"cloudtrail":             "CloudTrail",
 	"cloudwatch":             "CloudWatch",
+	"codecommit":             "CodeCommit",
 	"cognitoidentity":        "Cognito",
 	"cognitoidp":             "Cognito",
 	"dynamodb":               "DynamoDB",
