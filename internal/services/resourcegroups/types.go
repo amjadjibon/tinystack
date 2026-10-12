@@ -10,6 +10,7 @@ import (
 // resource types ("sqs" to "AWS::SQS::..."). A service missing here has no
 // resource types a group can select.
 var namespaces = map[string]string{
+	"redshift":               "Redshift",
 	"applicationautoscaling": "ApplicationAutoScaling",
 	"acm":                    "CertificateManager",
 	"apigateway":             "ApiGateway",
@@ -60,6 +61,9 @@ var namespaces = map[string]string{
 // typeNames are the CloudFormation names of the inventory types whose name is
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
+	"redshift/cluster":                    "Cluster",
+	"redshift/subnetgroup":                "ClusterSubnetGroup",
+	"redshift/parametergroup":             "ClusterParameterGroup",
 	"apigatewayv2/http-api":               "Api",
 	"appsync/graphql-api":                 "GraphQLApi",
 	"athena/workgroup":                    "WorkGroup",
