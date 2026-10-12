@@ -8,6 +8,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | Service or extension | Status | First useful slice |
 | --- | --- | --- |
 | [AWS Batch job execution](services/batch-runtime.md) | Proposed | Extend the implemented metadata subset with an explicitly configured execution engine. |
+| [AWS Private CA certificate issuance](services/acmpca-issuance.md) | Proposed | Extend records-only certificate authorities with certificate signing so an authority can become ACTIVE and issue and revoke certificates. |
 | [AWS Resource Access Manager cross-account access and invitations runtime](services/ram-runtime.md) | Proposed | Extend records-only resource shares to cross-account invitations, managed permissions, and real cross-account resource access. |
 | [AWS Signer](services/signer.md) | Proposed | Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`. |
 | [AWS X-Ray trace ingestion and telemetry runtime](services/xray-runtime.md) | Proposed | Extend records-only groups and sampling rules to trace ingestion, telemetry processing, and service map analysis. |

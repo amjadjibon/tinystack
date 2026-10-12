@@ -120,5 +120,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/route53)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/route53/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/route53.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
-- SDK integration examples: [route53_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/route53_test.go), [route53resolver_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/route53resolver_test.go).
+- SDK integration examples: [route53_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/route53_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -1620,6 +1620,33 @@
         "Customer managed permissions and policy creation are excluded",
         "AWS Organizations integration and EnableSharingWithAwsOrganization are excluded"
       ]
+    },
+    "acmpca": {
+      "title": "AWS Private CA",
+      "category": "Identity and security",
+      "scope": "Account and Region",
+      "summary": "Store private certificate authorities, their revocation settings and tags as records without any cryptography.",
+      "execution": "Configuration records only",
+      "package": "acmpca",
+      "features": [
+        "Nine pinned AWS JSON 1.1 operations: Create, Describe, List, Update, Delete and Restore for certificate authorities, plus TagCertificateAuthority, UntagCertificateAuthority and ListTags, with AWS SDK v2 integration",
+        "ROOT and SUBORDINATE authorities validate the documented key and signing algorithm pairs (RSA with SHA*WITHRSA, EC with SHA*WITHECDSA, ML-DSA with its own name, SM2 with SM3WITHSM2 in China Regions), the X.500 subject fields with their model limits, usage mode and key storage security standard",
+        "CreateCertificateAuthority honours IdempotencyToken for five minutes and returns the same ARN for a repeated token",
+        "CRL and OCSP settings are validated metadata: a disabled block carries only Enabled=false, an enabled CRL names an S3 bucket that must exist in the account and Region, CNAMEs take no protocol prefix; no CRL is written and no responder runs",
+        "New authorities start PENDING_CERTIFICATE. UpdateCertificateAuthority changes the status of ACTIVE and DISABLED authorities only and replaces the supplied CRL or OCSP block; a rejected update leaves the record unchanged",
+        "DeleteCertificateAuthority keeps the authority as DELETED for PermanentDeletionTimeInDays (7 to 30, default 30) with RestorableUntil; an ACTIVE authority must be disabled first, RestoreCertificateAuthority returns the status it had, and an authority past its window disappears (removed lazily on read)",
+        "Tags on create and with TagCertificateAuthority, UntagCertificateAuthority (a tag with a value is removed only when it matches) and ListTags, plus Resource Groups Tagging API support",
+        "AWS::ACMPCA::CertificateAuthority CloudFormation resource with Ref and Fn::GetAtt Arn; revocation configuration and tags update in place and other properties replace the authority",
+        "RecordsOnly=true / ExecutionReady=false inventory, official AWS Private CA icon and Terraform acmpca endpoint key"
+      ],
+      "gaps": [
+        "Authorities stay PENDING_CERTIFICATE: no key pair is generated and no certificate is imported or issued, so none becomes ACTIVE or DISABLED through the API (ImportCertificateAuthorityCertificate, GetCertificateAuthorityCsr, GetCertificateAuthorityCertificate, IssueCertificate, GetCertificate and RevokeCertificate are not implemented)",
+        "UpdateCertificateAuthority also changes the revocation settings of a PENDING_CERTIFICATE authority, although the API reference says the authority must be ACTIVE or DISABLED, so that infrastructure code can configure revocation before a certificate is installed; its status can be changed only from ACTIVE or DISABLED",
+        "No CRL generation, S3 writes, OCSP responder, audit reports (CreateCertificateAuthorityAuditReport), permissions, resource policies or CA sharing; ListCertificateAuthorities ResourceOwner OTHER_ACCOUNTS is always empty",
+        "CsrExtensions, CustomAttributes, CrlType, CustomPath and CrlDistributionPointExtensionConfiguration are rejected as not implemented; Serial, NotBefore, NotAfter and FailureReason are never returned",
+        "CREATING, EXPIRED and FAILED authorities are never produced, no quota (LimitExceededException) is enforced, and a CRL bucket is only checked for existence, not for a bucket policy",
+        "CloudFormation CertificateSigningRequest cannot be produced: Fn::GetAtt of it fails template validation; CertificateAuthorityActivation and Certificate resources are not supported"
+      ]
     }
   },
   "future": {
@@ -1867,6 +1894,13 @@
       "slice": "Extend records-only resource shares to cross-account invitations, managed permissions, and real cross-account resource access.",
       "features": "- [ ] Resource share invitations and acceptance lifecycle\n- [ ] Customer managed and AWS managed permissions\n- [ ] Real cross-account resource authorization and sharing\n- [ ] Integration with AWS Organizations sharing enablement",
       "integration": "The current RAM API persists resource share configuration and associations records only; cross-account invitations and real authorization are excluded."
+    },
+    "acmpca-issuance": {
+      "title": "AWS Private CA certificate issuance",
+      "state": "Proposed",
+      "slice": "Extend records-only certificate authorities with certificate signing so an authority can become ACTIVE and issue and revoke certificates.",
+      "features": "- [ ] GetCertificateAuthorityCsr and ImportCertificateAuthorityCertificate with real key generation\n- [ ] ACTIVE and DISABLED authorities, Serial, NotBefore and NotAfter\n- [ ] IssueCertificate, GetCertificate, GetCertificateAuthorityCertificate and RevokeCertificate\n- [ ] CRL generation and OCSP for enabled revocation settings\n- [ ] Audit reports, permissions and resource policies\n- [ ] CloudFormation CertificateAuthorityActivation and Certificate resources",
+      "integration": "The current Private CA API persists certificate authority records and tags only; no cryptography is performed."
     }
   }
 }

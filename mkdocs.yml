@@ -146,6 +146,7 @@ nav:
       - "Front-End Web & Mobile":
           - "Amazon Location Service": services/location.md
       - "Identity and security":
+          - "AWS Private CA": services/acmpca.md
           - "Certificate Manager": services/acm.md
           - "Cognito identity pools": services/cognitoidentity.md
           - "Cognito user pools": services/cognitoidp.md
@@ -207,6 +208,7 @@ nav:
       - Future catalogue: roadmap/catalogue.md
       - Service and extension proposals:
           - "AWS Batch job execution": roadmap/services/batch-runtime.md
+          - "AWS Private CA certificate issuance": roadmap/services/acmpca-issuance.md
           - "AWS Resource Access Manager cross-account access and invitations runtime": roadmap/services/ram-runtime.md
           - "AWS Signer": roadmap/services/signer.md
           - "AWS X-Ray trace ingestion and telemetry runtime": roadmap/services/xray-runtime.md
