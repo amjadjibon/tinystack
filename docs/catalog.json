@@ -1699,6 +1699,56 @@
         "Template-linked policies and policy templates (CreatePolicyTemplate, GetPolicyTemplate, ListPolicyTemplates, UpdatePolicyTemplate, DeletePolicyTemplate) are not supported",
         "Identity sources (CreateIdentitySource, GetIdentitySource, ListIdentitySources, UpdateIdentitySource, DeleteIdentitySource) are not supported"
       ]
+    },
+    "identitystore": {
+      "title": "AWS IAM Identity Center \u2014 Identity Store",
+      "category": "Identity and security",
+      "scope": "Account-wide",
+      "summary": "Store Identity Center users, groups and group memberships without directory synchronization or sign-in.",
+      "execution": "Configuration records only",
+      "package": "identitystore",
+      "features": [
+        "Eighteen pinned AWS JSON 1.1 user, group and membership operations with AWS SDK v2 coverage",
+        "One stable account-wide identity store shared with SSO Admin; callers discover its ID through ListInstances",
+        "Users with UserName, DisplayName, GivenName/FamilyName and one primary email; groups with unique DisplayName and optional Description",
+        "Atomic attribute updates validate complete candidates, reject unsupported paths/fields, and enforce case-insensitive username/group-name uniqueness",
+        "UniqueAttribute lookups, exact UserName/DisplayName filters, memberships and membership-existence queries; deleting users/groups removes their memberships",
+        "Deterministic cursor pagination with MaxResults 1-100; RecordsOnly=true / ExecutionReady=false inventory",
+        "AWS::IdentityStore::Group and GroupMembership CloudFormation lifecycle with composite ID|IdentityStoreId Ref and GroupId/MembershipId GetAtt; Terraform identitystore endpoint and official IAM Identity Center icon"
+      ],
+      "gaps": [
+        "No sign-in, SCIM, external identity providers, directory synchronization, identity store management, extensions or additional user attributes",
+        "No tagging API exists for Identity Store; resources are untagged",
+        "Only userName, displayName, name, name.givenName, name.familyName and emails update paths, plus group displayName/description; removing required names fails",
+        "Identity store IDs must match the account\u2019s built-in store; additional stores and legacy identity stores are excluded",
+        "No membership Describe operation, revision concurrency controls, service quotas or attribute indexes; unsupported modeled input members reject through the generated AWS JSON decoder"
+      ]
+    },
+    "ssoadmin": {
+      "title": "AWS IAM Identity Center \u2014 SSO Admin",
+      "category": "Identity and security",
+      "scope": "Account-wide",
+      "summary": "Store permission sets, policies, tags and account assignments without creating IAM roles or enabling sign-in.",
+      "execution": "Configuration records only",
+      "package": "ssoadmin",
+      "features": [
+        "Twenty-two pinned AWS JSON 1.1 instance discovery, permission set, policy, assignment and tag operations with AWS SDK v2 coverage",
+        "One deterministic ACTIVE instance per account with stable InstanceArn and IdentityStoreId shared with Identity Store",
+        "Permission set CRUD with Name, Description, ISO-8601 time durations of one to twelve hours (default PT1H), RelayState and up to 50 tags",
+        "JSON inline policy storage with documented size/pattern limits, plus up to 25 AWS managed policy ARN attachments",
+        "USER/GROUP account assignments validate Identity Store principals atomically; create/delete return stored SUCCEEDED request statuses without provisioning roles",
+        "Active assignment accounts exposed by ListAccountsForProvisionedPermissionSet; permission set deletion rejects while assignments exist",
+        "Native permission set tags, RGTA tagging, Resource Groups types, cursor pagination and records-only inventory",
+        "AWS::SSO::PermissionSet and Assignment CloudFormation lifecycle; permission set Ref ARN|InstanceArn and PermissionSetArn GetAtt, assignment composite Ref; Terraform ssoadmin endpoint and official IAM Identity Center icon"
+      ],
+      "gaps": [
+        "No IAM role provisioning, sign-in, federation, identity synchronization, authorization or real execution; provisioning/account listing means active assignment metadata only",
+        "No instance creation/deletion, explicit ProvisionPermissionSet, applications, trusted token issuers, customer-managed policy references, permissions boundaries or access control attributes",
+        "Permission set policies are stored rather than evaluated; AWS managed policy ARN format is validated without IAM policy existence checks",
+        "CloudFormation rejects CustomerManagedPolicyReferences/PermissionsBoundary and removal of Description/RelayStateType; Name/InstanceArn changes replace, omitted SessionDuration resets PT1H, removed inline/managed policies and tags are reconciled",
+        "Account assignment status lookup is supported; status-list operations and provisioning-status filters are excluded",
+        "Global resource tagging inventory is visible in us-east-1, following the shared global-resource listing convention"
+      ]
     }
   },
   "future": {
@@ -1959,6 +2009,13 @@
       "state": "Proposed",
       "slice": "Extend the records-only Classic Load Balancer control plane with policies, placement changes and a data plane.",
       "features": "- [ ] Stickiness, SSL negotiation and backend authentication policies\n- [ ] Attach/detach subnets, enable/disable Availability Zones and apply security groups\n- [ ] Certificate lookup for HTTPS and SSL listeners\n- [ ] Listener traffic and instance health checks"
+    },
+    "identitysso-extension": {
+      "title": "IAM Identity Center additional control plane and sign-in",
+      "state": "Proposed",
+      "slice": "Extend the user/group, membership, permission set and assignment records with separately designed provisioning and identity execution.",
+      "features": "- [ ] Additional user attributes, extensions and revision controls\n- [ ] Explicit provisioning and IAM role lifecycle\n- [ ] Customer managed policy references and permissions boundaries\n- [ ] Applications, trusted token issuers and access control attributes\n- [ ] Sign-in, federation and identity provider synchronization",
+      "integration": "Identity Store and SSO Admin currently share one built-in account-wide instance and store configuration records only."
     }
   }
 }

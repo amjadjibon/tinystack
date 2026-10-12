@@ -146,6 +146,8 @@ nav:
       - "Front-End Web & Mobile":
           - "Amazon Location Service": services/location.md
       - "Identity and security":
+          - "AWS IAM Identity Center \u2014 Identity Store": services/identitystore.md
+          - "AWS IAM Identity Center \u2014 SSO Admin": services/ssoadmin.md
           - "AWS Private CA": services/acmpca.md
           - "Amazon Verified Permissions": services/verifiedpermissions.md
           - "Certificate Manager": services/acm.md
@@ -235,6 +237,7 @@ nav:
           - "ECS Task Metadata": roadmap/services/ecs-metadata.md
           - "EMR": roadmap/services/emr.md
           - "Elastic Load Balancing (Classic) policies and traffic": roadmap/services/elb-policies.md
+          - "IAM Identity Center additional control plane and sign-in": roadmap/services/identitysso-extension.md
           - "IoT Wireless": roadmap/services/iotwireless.md
           - "Lambda Core": roadmap/services/lambda-core.md
           - "Lambda Durable Execution": roadmap/services/lambda-durable.md

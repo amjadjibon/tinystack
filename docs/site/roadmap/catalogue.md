@@ -33,6 +33,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [ECS Task Metadata](services/ecs-metadata.md) | Proposed | Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`. |
 | [EMR](services/emr.md) | Proposed | Implement `RunJobFlow`, `DescribeCluster`, `ListClusters`. |
 | [Elastic Load Balancing (Classic) policies and traffic](services/elb-policies.md) | Proposed | Extend the records-only Classic Load Balancer control plane with policies, placement changes and a data plane. |
+| [IAM Identity Center additional control plane and sign-in](services/identitysso-extension.md) | Proposed | Extend the user/group, membership, permission set and assignment records with separately designed provisioning and identity execution. |
 | [IoT Wireless](services/iotwireless.md) | Proposed | Implement `GetPositionEstimate`. |
 | [Lambda Core](services/lambda-core.md) | Proposed | Implement `CreateNetworkConnector`, `GetNetworkConnector`, `ListNetworkConnectors`. |
 | [Lambda Durable Execution](services/lambda-durable.md) | Proposed | Implement `CheckpointDurableExecution`, `GetDurableExecutionState`, `GetDurableExecution`. |
