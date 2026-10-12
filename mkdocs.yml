@@ -93,6 +93,7 @@ nav:
       - Amazon MSK records: guides/msk-records.md
       - Amazon MWAA records: guides/mwaa-records.md
       - Transfer Family records: guides/transfer-records.md
+      - Amazon Location tracker records: guides/location-records.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
@@ -138,6 +139,8 @@ nav:
           - "Secrets Manager": services/secretsmanager.md
       - "Developer Tools":
           - "CodeBuild": services/codebuild.md
+      - "Front-End Web & Mobile":
+          - "Amazon Location Service": services/location.md
       - "Identity and security":
           - "Certificate Manager": services/acm.md
           - "Cognito identity pools": services/cognitoidentity.md
@@ -197,7 +200,7 @@ nav:
           - "AWS Signer": roadmap/services/signer.md
           - "Amazon Bedrock control plane": roadmap/services/bedrock.md
           - "Amazon Inspector": roadmap/services/inspector2.md
-          - "Amazon Location": roadmap/services/location.md
+          - "Amazon Location runtime and broader records": roadmap/services/location-runtime.md
           - "Amazon MQ configuration, users and runtime": roadmap/services/mq-runtime.md
           - "Amazon MSK configuration, security and runtime": roadmap/services/msk-runtime.md
           - "Amazon MWAA tokens and execution": roadmap/services/mwaa-runtime.md

@@ -1432,6 +1432,27 @@
         "CF SshPublicKeys is excluded; independently imported public-key IDs survive updates and live-state compensation. CF banner removal is rejected; explicit empty clears it",
         "The [records guide](../guides/transfer-records.md) lists every member/default/error/tag/key/CF boundary and executable CLI lifecycle. StartServer/StopServer and additional runtime/records scope remain [future work](../roadmap/services/transfer-runtime.md)"
       ]
+    },
+    "location": {
+      "title": "Amazon Location Service",
+      "category": "Front-End Web & Mobile",
+      "scope": "Account and Region",
+      "summary": "Persist tracker configuration and tags without device positions, geofence evaluation or location events.",
+      "execution": "Configuration records only",
+      "package": "location",
+      "features": [
+        "Eight pinned REST JSON tracker/tag operations; location SDK/local identity with geo signing and exact scoped commercial tracker ARNs",
+        "TrackerName, Description and TimeBased/DistanceBased/AccuracyBased filtering metadata; documented default TimeBased, atomic updates and stable creation identity",
+        "50 final tag keys, Unicode boundaries, atomic merge/removal, real RGTA dispatch, scope/API/incarnation-bound deterministic pagination and typed modeled errors",
+        "AWS::Location::Tracker typed create/read/update/delete and name replacement; Ref name, GetAtt Arn/TrackerArn/CreateTime/UpdateTime, atomic config/final owned/external tags and guarded live-state compensation",
+        "SQLite restart, offline archive export/import, reset, RecordsOnly=true/ExecutionReady=false inventory, official icon and Terraform location endpoint key"
+      ],
+      "gaps": [
+        "PositionFiltering is a configuration record only; no device positions/history, consumer associations, geofences, event delivery, encryption/IAM or execution readiness",
+        "PricingPlan/PricingPlanDataSource, KmsKeyId, EventBridgeEnabled and KmsKeyEnableGeospatialQueries are excluded, including false/null/empty inputs; no invented idempotency token",
+        "CF Description removal rejects (explicit empty clears); PositionFiltering removal restores TimeBased; compensation restores exact prior public timestamps with a fresh private revision guard",
+        "The exhaustive [records guide](../guides/location-records.md) describes selected members/defaults/limits/errors/scope/tags/CF and an executable lifecycle. Device positions, deprecated pricing decisions and consumer associations remain [future scope](../roadmap/services/location-runtime.md)"
+      ]
     }
   },
   "future": {
@@ -1550,12 +1571,14 @@
       "slice": "Implement `CreateMicrovmImage`, `RunMicrovm`, `GetMicrovm`.",
       "features": "- [ ] `CreateMicrovmImage`\n- [ ] `RunMicrovm`\n- [ ] `GetMicrovm`\n- [ ] `ListMicrovms`\n- [ ] `SuspendMicrovm`\n- [ ] `ResumeMicrovm`\n- [ ] `TerminateMicrovm`"
     },
-    "location": {
-      "title": "Amazon Location",
+    "location-runtime": {
+      "title": "Amazon Location runtime and broader records",
       "state": "Proposed",
-      "slice": "Implement `CreateTracker`, `DescribeTracker`, `UpdateTracker`.",
-      "features": "- [ ] `CreateTracker`\n- [ ] `DescribeTracker`\n- [ ] `UpdateTracker`\n- [ ] `ListTrackers`\n- [ ] `DeleteTracker`\n- [ ] `BatchUpdateDevicePosition`\n- [ ] `GetDevicePosition`\n- [ ] `BatchGetDevicePosition`\n- [ ] `GetDevicePositionHistory`\n- [ ] `RequestBasedUsage`\n- [ ] `AssociateTrackerConsumer`"
+      "slice": "Implement device-position ingestion, retrieval/history and tracker consumer associations with explicit runtime semantics.",
+      "features": "- [ ] BatchUpdateDevicePosition\n- [ ] GetDevicePosition\n- [ ] BatchGetDevicePosition\n- [ ] GetDevicePositionHistory\n- [ ] ListDevicePositions and position filtering/evaluation\n- [ ] AssociateTrackerConsumer, DisassociateTrackerConsumer and ListTrackerConsumers\n- [ ] RequestBasedUsage/deprecated PricingPlan metadata compatibility decision (a pricing value, not an API)\n- [ ] Geofences and location-event delivery\n- [ ] KMS and geospatial-query eligibility\n- [ ] Maps, search, places, routes and other Location data planes",
+      "integration": "Tracker configuration CRUD and tags are implemented records only. See the [records guide](../../guides/location-records.md). PositionFiltering metadata does not imply filtered device positions or event delivery."
     },
+
     "mediaconnect": {
       "title": "MediaConnect",
       "state": "Proposed",

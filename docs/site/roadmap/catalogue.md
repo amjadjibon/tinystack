@@ -11,7 +11,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [AWS Signer](services/signer.md) | Proposed | Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`. |
 | [Amazon Bedrock control plane](services/bedrock.md) | Proposed | Implement `ListFoundationModels`, `GetFoundationModel`, `ListInferenceProfiles`. |
 | [Amazon Inspector](services/inspector2.md) | Proposed | Implement `ListFindings`, `ListCoverage`, `CreateFilter`. |
-| [Amazon Location](services/location.md) | Proposed | Implement `CreateTracker`, `DescribeTracker`, `UpdateTracker`. |
+| [Amazon Location runtime and broader records](services/location-runtime.md) | Proposed | Implement device-position ingestion, retrieval/history and tracker consumer associations with explicit runtime semantics. |
 | [Amazon MQ configuration, users and runtime](services/mq-runtime.md) | Future extensions | Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices. |
 | [Amazon MSK configuration, security and runtime](services/msk-runtime.md) | Future extensions | Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices. |
 | [Amazon MWAA tokens and execution](services/mwaa-runtime.md) | Future extensions | Environment configuration records and tags are implemented. Tokens, Airflow APIs and actual execution require a separate runtime contract. |
