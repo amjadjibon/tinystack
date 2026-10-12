@@ -16,6 +16,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Amazon MSK configuration, security and runtime](services/msk-runtime.md) | Future extensions | Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices. |
 | [Amazon MWAA tokens and execution](services/mwaa-runtime.md) | Future extensions | Environment configuration records and tags are implemented. Tokens, Airflow APIs and actual execution require a separate runtime contract. |
 | [AppSync Events](services/appsync-events.md) | Proposed | Implement `CreateApi`, `GetApi`, `ListApis`. |
+| [Application Auto Scaling execution and advanced policies](services/applicationautoscaling-runtime.md) | Proposed | Extend records-only configuration to a truthful capacity and metric evaluation contract. |
 | [Aurora DSQL](services/dsql.md) | Proposed | Implement `CreateCluster`, `GetCluster`, `ListClusters`. |
 | [Bedrock Agent Runtime](services/bedrock-agent-runtime.md) | Proposed | Implement `InvokeAgent`, `InvokeInlineAgent`, `GetAgentMemory`. |
 | [Bedrock AgentCore](services/bedrock-agentcore.md) | Proposed | Implement `CreateAgentRuntime`, `GetAgentRuntime`, `ListAgentRuntimes`. |

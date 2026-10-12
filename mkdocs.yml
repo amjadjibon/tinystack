@@ -154,6 +154,8 @@ nav:
           - "IoT Core": services/iot.md
           - "IoT Data Plane": services/iotdataplane.md
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md
+      - "Management & Governance":
+          - "Application Auto Scaling": services/applicationautoscaling.md
       - "Management and governance":
           - "AWS Account": services/account.md
           - "AWS Backup": services/backup.md
@@ -207,6 +209,7 @@ nav:
           - "Amazon MSK configuration, security and runtime": roadmap/services/msk-runtime.md
           - "Amazon MWAA tokens and execution": roadmap/services/mwaa-runtime.md
           - "AppSync Events": roadmap/services/appsync-events.md
+          - "Application Auto Scaling execution and advanced policies": roadmap/services/applicationautoscaling-runtime.md
           - "Aurora DSQL": roadmap/services/dsql.md
           - "Bedrock Agent Runtime": roadmap/services/bedrock-agent-runtime.md
           - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md

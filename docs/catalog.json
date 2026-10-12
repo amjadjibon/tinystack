@@ -1475,6 +1475,30 @@
         "CF requires explicit WithoutMetadata: Yes, excludes WarehouseLocation GetAtt and advanced schema/maintenance/encryption/metrics/replication properties; public version tokens remain fresh after effective rename compensation",
         "The exhaustive [records guide](../guides/s3tables-records.md) lists all selected members, names, parents, tags, pages, tokens, CF boundaries and the executable CLI lifecycle; [runtime scope](../roadmap/services/s3tables-runtime.md) retains GetTableMetadataLocation and UpdateTableMetadataLocation as future work"
       ]
+    },
+    "applicationautoscaling": {
+      "title": "Application Auto Scaling",
+      "category": "Management & Governance",
+      "scope": "Account and Region",
+      "summary": "Store scalable targets, scaling policies and scheduled actions as configuration records without changing resource capacity.",
+      "execution": "Configuration records only",
+      "package": "applicationautoscaling",
+      "features": [
+        "Twelve pinned AWS JSON 1.1 target, policy, scheduled-action and tag operations with AWS SDK v2 integration",
+        "Scalable target identity is ServiceNamespace, ResourceId and ScalableDimension; registration upserts preserve ARN and creation time, merge supplied suspension flags, validate namespace/dimension enums and pairing, and require nonnegative MinCapacity <= MaxCapacity",
+        "TargetTrackingScaling with predefined or simple customized metrics, target value and cooldowns; StepScaling with adjustment type, step intervals, cooldown, aggregation and minimum adjustment metadata; policy upserts preserve ARN and return an empty Alarms list",
+        "Scheduled action at/rate/cron schedule, IANA timezone, start/end times and target capacity bounds stored as metadata; policy/action writes require a registered target and deregistration atomically deletes both child kinds",
+        "Describe filters and deterministic MaxResults/NextToken pagination (1-50, default 50), with tokens bound to account, Region, API and filters; target ARN tags and RGTA tagging",
+        "AWS::ApplicationAutoScaling::ScalableTarget create/update/delete with Ref ResourceId|ScalableDimension|ServiceNamespace; ScalingPolicy create/update/delete using ScalingTargetId or explicit target identity, Ref ARN and GetAtt Arn",
+        "RecordsOnly=true / ExecutionReady=false inventory, official AWS Application Auto Scaling icon and Terraform applicationautoscaling endpoint"
+      ],
+      "gaps": [
+        "No capacity adjustments, referenced resource existence checks, IAM role creation/evaluation, CloudWatch alarms, metric evaluation, scaling activities, forecasts or runtime; omitted RoleARN uses conventional service-linked ARN metadata (EMR requires an explicit role)",
+        "Predictive scaling and customized metric math/Metrics are excluded and reject explicitly; custom metrics support only MetricName, Namespace, Dimensions, Statistic and Unit. Predefined metric names are validated but metric-to-resource eligibility is not evaluated Excluded member names reject with ValidationException through the existing shared AWS JSON decoder (REST JSON uses NotImplemented).",
+        "Cron L/W/# expressions are explicitly unsupported by the shared schedule parser; actions never run. PutScheduledAction updates retain omitted members and replace supplied ScalableTargetAction/configuration objects",
+        "Tags apply only to scalable target ARNs, at most 50 keys; RegisterScalableTarget tags are create-only and existing targets must use TagResource",
+        "CloudFormation ScheduledActions, tags and undocumented ScalableTarget GetAtt attributes are excluded; removing an explicit CF RoleARN rejects (supply the desired role). Suspension omission resets false in CF; other target identity changes replace resources. CF does not implement service-specific live-state compensation beyond the shared template rollback"
+      ]
     }
   },
   "future": {
@@ -1688,6 +1712,13 @@
       "state": "Future extensions",
       "slice": "Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices.",
       "features": "- [ ] `GetBootstrapBrokers`\n- [ ] `ListNodes`\n- [ ] `CreateConfiguration`\n- [ ] `ListConfigurations`\n- [ ] `DescribeConfiguration`\n- [ ] `ListConfigurationRevisions`\n- [ ] `DescribeConfigurationRevision`\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `UpdateClusterKafkaVersion`, `UpdateBrokerCount`, `UpdateBrokerType`, `UpdateBrokerStorage`\n- [ ] Serverless and V2 cluster APIs\n- [ ] Real Kafka brokers, endpoints, DNS, readiness, node/operation state and cleanup\n- [ ] Topics and producer/consumer data plane\n- [ ] Client authentication/encryption enforcement, logging and open monitoring"
+    },
+    "applicationautoscaling-runtime": {
+      "title": "Application Auto Scaling execution and advanced policies",
+      "state": "Proposed",
+      "slice": "Extend records-only configuration to a truthful capacity and metric evaluation contract.",
+      "features": "- [ ] Real capacity changes and resource integration\n- [ ] CloudWatch alarm creation and metric evaluation\n- [ ] Scaling activities\n- [ ] Predictive scaling, forecasts and metric math\n- [ ] CloudFormation nested scheduled actions and wider schedule syntax",
+      "integration": "Scalable targets, simple policies, scheduled-action metadata and target tags are implemented records only; no scaling execution is claimed."
     }
   }
 }
