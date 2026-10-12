@@ -254,6 +254,7 @@ type client struct {
 	mwaa     mwaaRecords
 	transfer transferRecords
 	location locationRecords
+	s3tables s3tablesRecords
 	caller   *catalog.Caller
 	scope    request.Scope
 	endpoint string

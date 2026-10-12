@@ -57,6 +57,7 @@ type Service struct {
 	mwaa     mwaaRecords
 	transfer transferRecords
 	location locationRecords
+	s3tables s3tablesRecords
 	logger   *slog.Logger
 	now      func() time.Time
 	bg       *background.Group

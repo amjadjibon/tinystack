@@ -380,6 +380,7 @@ func (s *Service) perform(ctx context.Context,
 		mwaa:     s.mwaa,
 		transfer: s.transfer,
 		location: s.location,
+		s3tables: s.s3tables,
 		scope:    scope,
 		endpoint: st.Endpoint,
 		stack:    st.Name,
@@ -421,8 +422,17 @@ func (s *Service) perform(ctx context.Context,
 			return "", nil, e
 		}
 	}
+	if r != nil && isS3TablesResource(r.Type) && !st.Op.Rollback && (next.kind == stepSwap || next.kind == stepUpdate) {
+		if _, e := s3tablesParams(r.Type, next.props, c.scope); e != nil {
+			return "", nil, e
+		}
+	}
 	switch next.kind {
 	case stepCreate, stepSwap:
+		if id, attrs, ok := s3tablesRestoreReplacement(st, next); ok {
+			live, e := s3tablesRead(ctx, c, &resource{Type: next.typ, Physical: id, Attributes: attrs})
+			return id, live, e
+		}
 		if id, attrs, ok := locationRestoreReplacement(st, next); ok {
 			return id, attrs, nil
 		}
@@ -450,6 +460,9 @@ func (s *Service) perform(ctx context.Context,
 		return types[next.typ].create(ctx, c, next.props)
 	case stepDiscard:
 		retired := st.Replaced[0].Resource
+		if isS3TablesResource(retired.Type) && sameS3TablesIdentity(r, retired) {
+			return "", nil, nil
+		}
 		// A rollback can restore an association, EFS or Batch record retired by an
 		// earlier swap. Cleanup must keep the incarnation owned by the active
 		// resource rather than deleting the restored record.
@@ -464,6 +477,15 @@ func (s *Service) perform(ctx context.Context,
 		}
 		return "", nil, types[next.typ].remove(ctx, c, retired)
 	case stepUpdate:
+		if st.Op.Rollback && isS3TablesResource(r.Type) {
+			if reflect.DeepEqual(props(r.Properties), next.props) {
+				attrs, e := s3tablesRead(ctx, c, r)
+				return r.Physical, attrs, e
+			}
+			if attrs, found, e := s3tablesRestoreUpdate(ctx, c, r, next.props); found {
+				return r.Physical, attrs, e
+			}
+		}
 		if st.Op.Rollback && r.Type == locationTrackerType {
 			if reflect.DeepEqual(props(r.Properties), next.props) {
 				attrs, e := locationRead(ctx, c, r.Physical)
@@ -607,11 +629,19 @@ func (s *Service) record(
 			status = statusUpdateComplete
 		}
 
-		if next.kind == stepSwap && physical != r.Physical && next.decl.UpdateReplacePolicy != policyRetain {
+		identityChanged := physical != r.Physical
+		if isS3TablesResource(r.Type) {
+			identityChanged = !sameS3TablesIdentity(
+				r,
+				&resource{Type: next.typ, Physical: physical, Attributes: attributes},
+			)
+		}
+		if next.kind == stepSwap && identityChanged && next.decl.UpdateReplacePolicy != policyRetain {
 			old := *r
 			st.Replaced = append(st.Replaced, &replaced{Logical: next.logical, Resource: &old})
 			efsOrderRetired(st)
 			batchOrderRetired(st)
+			s3tablesOrderRetired(st)
 		}
 
 		r.Type, r.Physical, r.Status, r.Reason, r.Updated = next.typ, physical, status, "", now

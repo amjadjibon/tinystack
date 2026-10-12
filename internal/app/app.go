@@ -65,6 +65,7 @@ import (
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	s3tablesapi "github.com/amjadjibon/tinystack/internal/aws/generated/s3tables"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	servicediscoveryapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicediscovery"
@@ -133,6 +134,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
+	"github.com/amjadjibon/tinystack/internal/services/s3tables"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/servicediscovery"
@@ -330,6 +332,7 @@ func build(
 	airflowEnvironments := mwaa.New(store, network, buckets)
 	transferRecords := transfer.New(store)
 	locationTrackers := location.New(store)
+	tableRecords := s3tables.New(store)
 	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -400,6 +403,7 @@ func build(
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),
 		locationapi.Descriptor(locationTrackers),
+		s3tablesapi.Descriptor(tableRecords),
 		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),
 		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
@@ -452,6 +456,7 @@ func build(
 	stacks.UseMWAA(airflowEnvironments)
 	stacks.UseTransfer(transferRecords)
 	stacks.UseLocation(locationTrackers)
+	stacks.UseS3Tables(tableRecords)
 	stacks.UseCaller(caller)
 	// Subscription filters deliver to Lambda, Kinesis, and Firehose.
 	logGroups.UseCaller(caller)
