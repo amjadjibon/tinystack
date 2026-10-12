@@ -11,6 +11,8 @@ import (
 // resource types a group can select.
 var namespaces = map[string]string{
 	"redshift":               "Redshift",
+	"identitystore":          "IdentityStore",
+	"ssoadmin":               "SSO",
 	"applicationautoscaling": "ApplicationAutoScaling",
 	"acm":                    "CertificateManager",
 	"apigateway":             "ApiGateway",
