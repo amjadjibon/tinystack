@@ -20,6 +20,7 @@ import (
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	appconfigapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfig"
 	appconfigdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfigdata"
+	applicationautoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/applicationautoscaling"
 	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
@@ -88,6 +89,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/appconfig"
+	"github.com/amjadjibon/tinystack/internal/services/applicationautoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/appsync"
 	"github.com/amjadjibon/tinystack/internal/services/athena"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
@@ -331,6 +333,7 @@ func build(
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
 	transferRecords := transfer.New(store)
+	applicationScaling := applicationautoscaling.New(store)
 	locationTrackers := location.New(store)
 	tableRecords := s3tables.New(store)
 	wafRecords := wafv2.New(store)
@@ -402,6 +405,7 @@ func build(
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),
+		applicationautoscalingapi.Descriptor(applicationScaling),
 		locationapi.Descriptor(locationTrackers),
 		s3tablesapi.Descriptor(tableRecords),
 		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),

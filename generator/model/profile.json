@@ -19737,5 +19737,210 @@
         "tableBucketId"
       ]
     }
+  },
+  "applicationautoscaling": {
+    "operations": [
+      "RegisterScalableTarget",
+      "DescribeScalableTargets",
+      "DeregisterScalableTarget",
+      "PutScalingPolicy",
+      "DescribeScalingPolicies",
+      "DeleteScalingPolicy",
+      "PutScheduledAction",
+      "DescribeScheduledActions",
+      "DeleteScheduledAction",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "RegisterScalableTargetRequest": [
+        "ServiceNamespace",
+        "ResourceId",
+        "ScalableDimension",
+        "MinCapacity",
+        "MaxCapacity",
+        "RoleARN",
+        "SuspendedState",
+        "Tags"
+      ],
+      "RegisterScalableTargetResponse": [
+        "ScalableTargetARN"
+      ],
+      "DescribeScalableTargetsRequest": [
+        "ServiceNamespace",
+        "ResourceIds",
+        "ScalableDimension",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeScalableTargetsResponse": [
+        "ScalableTargets",
+        "NextToken"
+      ],
+      "DeregisterScalableTargetRequest": [
+        "ServiceNamespace",
+        "ResourceId",
+        "ScalableDimension"
+      ],
+      "PutScalingPolicyRequest": [
+        "PolicyName",
+        "ServiceNamespace",
+        "ResourceId",
+        "ScalableDimension",
+        "PolicyType",
+        "StepScalingPolicyConfiguration",
+        "TargetTrackingScalingPolicyConfiguration"
+      ],
+      "PutScalingPolicyResponse": [
+        "PolicyARN",
+        "Alarms"
+      ],
+      "DescribeScalingPoliciesRequest": [
+        "PolicyNames",
+        "ServiceNamespace",
+        "ResourceId",
+        "ScalableDimension",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeScalingPoliciesResponse": [
+        "ScalingPolicies",
+        "NextToken"
+      ],
+      "DeleteScalingPolicyRequest": [
+        "PolicyName",
+        "ServiceNamespace",
+        "ResourceId",
+        "ScalableDimension"
+      ],
+      "PutScheduledActionRequest": [
+        "ServiceNamespace",
+        "Schedule",
+        "Timezone",
+        "ScheduledActionName",
+        "ResourceId",
+        "ScalableDimension",
+        "StartTime",
+        "EndTime",
+        "ScalableTargetAction"
+      ],
+      "DescribeScheduledActionsRequest": [
+        "ScheduledActionNames",
+        "ServiceNamespace",
+        "ResourceId",
+        "ScalableDimension",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeScheduledActionsResponse": [
+        "ScheduledActions",
+        "NextToken"
+      ],
+      "DeleteScheduledActionRequest": [
+        "ServiceNamespace",
+        "ScheduledActionName",
+        "ResourceId",
+        "ScalableDimension"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "ScalableTarget": [
+        "ServiceNamespace",
+        "ResourceId",
+        "ScalableDimension",
+        "MinCapacity",
+        "MaxCapacity",
+        "RoleARN",
+        "CreationTime",
+        "SuspendedState",
+        "ScalableTargetARN"
+      ],
+      "SuspendedState": [
+        "DynamicScalingInSuspended",
+        "DynamicScalingOutSuspended",
+        "ScheduledScalingSuspended"
+      ],
+      "ScalingPolicy": [
+        "PolicyARN",
+        "PolicyName",
+        "ServiceNamespace",
+        "ResourceId",
+        "ScalableDimension",
+        "PolicyType",
+        "StepScalingPolicyConfiguration",
+        "TargetTrackingScalingPolicyConfiguration",
+        "Alarms",
+        "CreationTime"
+      ],
+      "ScheduledAction": [
+        "ScheduledActionName",
+        "ScheduledActionARN",
+        "ServiceNamespace",
+        "Schedule",
+        "Timezone",
+        "ResourceId",
+        "ScalableDimension",
+        "StartTime",
+        "EndTime",
+        "ScalableTargetAction",
+        "CreationTime"
+      ],
+      "ScalableTargetAction": [
+        "MinCapacity",
+        "MaxCapacity"
+      ],
+      "StepScalingPolicyConfiguration": [
+        "AdjustmentType",
+        "StepAdjustments",
+        "MinAdjustmentMagnitude",
+        "Cooldown",
+        "MetricAggregationType"
+      ],
+      "StepAdjustment": [
+        "MetricIntervalLowerBound",
+        "MetricIntervalUpperBound",
+        "ScalingAdjustment"
+      ],
+      "TargetTrackingScalingPolicyConfiguration": [
+        "TargetValue",
+        "PredefinedMetricSpecification",
+        "CustomizedMetricSpecification",
+        "ScaleOutCooldown",
+        "ScaleInCooldown",
+        "DisableScaleIn"
+      ],
+      "PredefinedMetricSpecification": [
+        "PredefinedMetricType",
+        "ResourceLabel"
+      ],
+      "CustomizedMetricSpecification": [
+        "MetricName",
+        "Namespace",
+        "Dimensions",
+        "Statistic",
+        "Unit"
+      ],
+      "MetricDimension": [
+        "Name",
+        "Value"
+      ],
+      "Alarm": [
+        "AlarmName",
+        "AlarmARN"
+      ]
+    }
   }
 }

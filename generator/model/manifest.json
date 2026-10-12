@@ -27,6 +27,10 @@
       "path": "codegen/sdk-codegen/aws-models/appconfigdata.json",
       "sha256": "342986a2c40ec444b3599b07c00fea070a4baf4fcec88e2b23f58ecc06e515a7"
     },
+    "applicationautoscaling": {
+      "path": "codegen/sdk-codegen/aws-models/application-auto-scaling.json",
+      "sha256": "c92a9b567ff43cbc0a32d1579aa1be3f382eb9c3ff146e8252de5a58e0d375ea"
+    },
     "appsync": {
       "path": "codegen/sdk-codegen/aws-models/appsync.json",
       "sha256": "9bbe3b89c7b07c112268fa83682fa26ceab779b02e509c16e5d42643f965318e"
@@ -42,6 +46,10 @@
     "backup": {
       "path": "codegen/sdk-codegen/aws-models/backup.json",
       "sha256": "90435200c25b574c152eb1df691927396a002b9378e00d90a5c749fe60b7973d"
+    },
+    "batch": {
+      "path": "codegen/sdk-codegen/aws-models/batch.json",
+      "sha256": "e1b89247b861859dc54cbff160bb38ac4c9479dadb1c9c7b06b607e08c102708"
     },
     "cloudcontrol": {
       "path": "codegen/sdk-codegen/aws-models/cloudcontrol.json",
@@ -62,6 +70,10 @@
     "cloudwatch": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch.json",
       "sha256": "b1abe105489d574be25364ad5cc4a67f5782f4cc6bcf6439a587625bacc9c62a"
+    },
+    "codebuild": {
+      "path": "codegen/sdk-codegen/aws-models/codebuild.json",
+      "sha256": "1ce14cc44bc93ad4f6624780bc31449af06f37f118ee51d618d00d6714ab95da"
     },
     "cognitoidentity": {
       "path": "codegen/sdk-codegen/aws-models/cognito-identity.json",
@@ -139,6 +151,10 @@
       "path": "codegen/sdk-codegen/aws-models/iot-jobs-data-plane.json",
       "sha256": "1d0bb33a614079680209994902fe734ad68f30be2a026fd618f329a7264d4622"
     },
+    "kafka": {
+      "path": "codegen/sdk-codegen/aws-models/kafka.json",
+      "sha256": "26a7e667ad7c2ce3d32dafcb2f6bf9cf8677d8f07c5e07f5e7adec8dc7c068ca"
+    },
     "kinesis": {
       "path": "codegen/sdk-codegen/aws-models/kinesis.json",
       "sha256": "b3cd88f396f3591df7f1a809957379a9c8afba1e593e3eb38ee7d99afb689636"
@@ -151,9 +167,21 @@
       "path": "codegen/sdk-codegen/aws-models/lambda.json",
       "sha256": "5a19f9e4a3cf9f56d9efdadb0fa0f3b41e9cf174337dcd13a94668856eddb88c"
     },
+    "location": {
+      "path": "codegen/sdk-codegen/aws-models/location.json",
+      "sha256": "b6afe8e89a91ebf6cedb12595cadaa8168aa08483160017904d8b44d3daa8d89"
+    },
     "logs": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch-logs.json",
       "sha256": "308aa3e4d27c48f1233a6c286e970948a64a9eb157ee446b8227364eb7d8c49b"
+    },
+    "mq": {
+      "path": "codegen/sdk-codegen/aws-models/mq.json",
+      "sha256": "794d596e11bf8ffaa7cab670105546464f23fa23662c6264317c73fd86a7e7bb"
+    },
+    "mwaa": {
+      "path": "codegen/sdk-codegen/aws-models/mwaa.json",
+      "sha256": "a2211dca4ba8ef2d62ea1a00d69813099069ffb9d986d63b56e1c20c7eaa0353"
     },
     "organizations": {
       "path": "codegen/sdk-codegen/aws-models/organizations.json",
@@ -182,6 +210,10 @@
     "s3": {
       "path": "codegen/sdk-codegen/aws-models/s3.json",
       "sha256": "57431518807d8565e103b9bcc8f2610950e725645e28374e746bdf8e300cc37a"
+    },
+    "s3tables": {
+      "path": "codegen/sdk-codegen/aws-models/s3tables.json",
+      "sha256": "8b92d3d062c80f66dd9b2c600ff15230656e715cea567ddbfc750e446b20927d"
     },
     "scheduler": {
       "path": "codegen/sdk-codegen/aws-models/scheduler.json",
@@ -223,41 +255,13 @@
       "path": "codegen/sdk-codegen/aws-models/sts.json",
       "sha256": "3012bfe1c6d44b4348ed03888085fd0b7a506e4da3335250280537b85e834864"
     },
-    "wafv2": {
-      "path": "codegen/sdk-codegen/aws-models/wafv2.json",
-      "sha256": "0c5a241cea430b965f960950905f2c5a8b3814e10ae0da9ec7e9e2d05a3b5e8b"
-    },
-    "batch": {
-      "path": "codegen/sdk-codegen/aws-models/batch.json",
-      "sha256": "e1b89247b861859dc54cbff160bb38ac4c9479dadb1c9c7b06b607e08c102708"
-    },
-    "codebuild": {
-      "path": "codegen/sdk-codegen/aws-models/codebuild.json",
-      "sha256": "1ce14cc44bc93ad4f6624780bc31449af06f37f118ee51d618d00d6714ab95da"
-    },
-    "mq": {
-      "path": "codegen/sdk-codegen/aws-models/mq.json",
-      "sha256": "794d596e11bf8ffaa7cab670105546464f23fa23662c6264317c73fd86a7e7bb"
-    },
-    "kafka": {
-      "path": "codegen/sdk-codegen/aws-models/kafka.json",
-      "sha256": "26a7e667ad7c2ce3d32dafcb2f6bf9cf8677d8f07c5e07f5e7adec8dc7c068ca"
-    },
-    "mwaa": {
-      "path": "codegen/sdk-codegen/aws-models/mwaa.json",
-      "sha256": "a2211dca4ba8ef2d62ea1a00d69813099069ffb9d986d63b56e1c20c7eaa0353"
-    },
     "transfer": {
       "path": "codegen/sdk-codegen/aws-models/transfer.json",
       "sha256": "dacf9d6638d8a4f4621ebc438aa8dab7589e757b16037ea8acf50cb292e1db83"
     },
-    "location": {
-      "path": "codegen/sdk-codegen/aws-models/location.json",
-      "sha256": "b6afe8e89a91ebf6cedb12595cadaa8168aa08483160017904d8b44d3daa8d89"
-    },
-    "s3tables": {
-      "path": "codegen/sdk-codegen/aws-models/s3tables.json",
-      "sha256": "8b92d3d062c80f66dd9b2c600ff15230656e715cea567ddbfc750e446b20927d"
+    "wafv2": {
+      "path": "codegen/sdk-codegen/aws-models/wafv2.json",
+      "sha256": "0c5a241cea430b965f960950905f2c5a8b3814e10ae0da9ec7e9e2d05a3b5e8b"
     }
   }
 }

@@ -90,6 +90,11 @@ const catalog: Record<string, ServiceInfo> = {
 	},
 	appsync: { title: "AppSync", category: integration, icon: "appsync" },
 	athena: { title: "Athena", category: analytics, icon: "athena" },
+	applicationautoscaling: {
+		title: "Application Auto Scaling",
+		category: management,
+		icon: "applicationautoscaling",
+	},
 	autoscaling: {
 		title: "EC2 Auto Scaling",
 		category: compute,

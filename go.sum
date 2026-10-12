@@ -50,6 +50,8 @@ github.com/aws/aws-sdk-go-v2/service/appconfig v1.54.2 h1:pzbJOMvbM9SGb7OYutbof3
 github.com/aws/aws-sdk-go-v2/service/appconfig v1.54.2/go.mod h1:EqKxrEOF2RNY3WR11bXFlF6yJqDsW9eboz7A840tC5E=
 github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.32.2 h1:V7rYeOl7CMrsIaKp5j4odM99l3bhz/toWrIHTvIh49c=
 github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.32.2/go.mod h1:upH0NZclv65xcacNcDN+FWcDMTMp1uf/AeqI7Ok34C0=
+github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.43.0 h1:sqVI20xw4oTYCoq2+vZcvi3qypf6fF2e10t62TVHTEw=
+github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.43.0/go.mod h1:WX6l+g9LpWdNUtUTPCRNDyaX9xM8ZfIOns+gKNNy5bo=
 github.com/aws/aws-sdk-go-v2/service/appsync v1.62.1 h1:vCaG1zbdNuSGr1W+S67QPz2YOlX3NPZzknS5Ebq9tps=
 github.com/aws/aws-sdk-go-v2/service/appsync v1.62.1/go.mod h1:OlBz2a3wTUTQz4jRGVpZbdUeaVxuATMSTSgux2GutxE=
 github.com/aws/aws-sdk-go-v2/service/athena v1.66.1 h1:cy+Nz+SWQwDRfEI9OIac/i95u17ZBddpaPerdK/NJ5Q=
