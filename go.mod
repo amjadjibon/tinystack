@@ -57,8 +57,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/mq v1.36.2
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.48.4
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.31.1
+	github.com/aws/aws-sdk-go-v2/service/opensearch v1.85.1
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2
+	github.com/aws/aws-sdk-go-v2/service/ram v1.45.4
 	github.com/aws/aws-sdk-go-v2/service/rds v1.116.0
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.55.0
 	github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.2
@@ -79,6 +81,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.35.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1
 	github.com/aws/aws-sdk-go-v2/service/transfer v1.85.0
+	github.com/aws/aws-sdk-go-v2/service/verifiedpermissions v1.41.4
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.71.1
 	github.com/aws/aws-sdk-go-v2/service/xray v1.45.4
 	github.com/aws/smithy-go v1.28.5
@@ -110,9 +113,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/opensearch v1.85.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ram v1.45.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/verifiedpermissions v1.41.4 // indirect
 	github.com/bep/godartsass/v2 v2.5.0 // indirect
 	github.com/bep/golibsass v1.2.0 // indirect
 	github.com/bits-and-blooms/bitset v1.24.5 // indirect
