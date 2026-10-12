@@ -246,6 +246,10 @@
     "mwaa": {
       "path": "codegen/sdk-codegen/aws-models/mwaa.json",
       "sha256": "a2211dca4ba8ef2d62ea1a00d69813099069ffb9d986d63b56e1c20c7eaa0353"
+    },
+    "transfer": {
+      "path": "codegen/sdk-codegen/aws-models/transfer.json",
+      "sha256": "dacf9d6638d8a4f4621ebc438aa8dab7589e757b16037ea8acf50cb292e1db83"
     }
   }
 }

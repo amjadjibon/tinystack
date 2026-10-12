@@ -19287,5 +19287,191 @@
         "tagKeys"
       ]
     }
+  },
+  "transfer": {
+    "operations": [
+      "CreateServer",
+      "DescribeServer",
+      "ListServers",
+      "UpdateServer",
+      "DeleteServer",
+      "CreateUser",
+      "DescribeUser",
+      "ListUsers",
+      "UpdateUser",
+      "DeleteUser",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "ImportSshPublicKey",
+      "DeleteSshPublicKey"
+    ],
+    "shapes": {
+      "CreateServerRequest": [
+        "Domain",
+        "EndpointType",
+        "IdentityProviderType",
+        "Protocols",
+        "SecurityPolicyName",
+        "PreAuthenticationLoginBanner",
+        "Tags"
+      ],
+      "CreateServerResponse": [
+        "ServerId"
+      ],
+      "DescribeServerRequest": [
+        "ServerId"
+      ],
+      "DescribeServerResponse": [
+        "Server"
+      ],
+      "ListServersRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListServersResponse": [
+        "NextToken",
+        "Servers"
+      ],
+      "UpdateServerRequest": [
+        "ServerId",
+        "EndpointType",
+        "IdentityProviderType",
+        "Protocols",
+        "SecurityPolicyName",
+        "PreAuthenticationLoginBanner"
+      ],
+      "UpdateServerResponse": [
+        "ServerId"
+      ],
+      "DeleteServerRequest": [
+        "ServerId"
+      ],
+      "CreateUserRequest": [
+        "ServerId",
+        "UserName",
+        "Role",
+        "HomeDirectory",
+        "HomeDirectoryType",
+        "SshPublicKeyBody",
+        "Tags"
+      ],
+      "CreateUserResponse": [
+        "ServerId",
+        "UserName"
+      ],
+      "DescribeUserRequest": [
+        "ServerId",
+        "UserName"
+      ],
+      "DescribeUserResponse": [
+        "ServerId",
+        "User"
+      ],
+      "ListUsersRequest": [
+        "MaxResults",
+        "NextToken",
+        "ServerId"
+      ],
+      "ListUsersResponse": [
+        "NextToken",
+        "ServerId",
+        "Users"
+      ],
+      "UpdateUserRequest": [
+        "ServerId",
+        "UserName",
+        "Role",
+        "HomeDirectory",
+        "HomeDirectoryType"
+      ],
+      "UpdateUserResponse": [
+        "ServerId",
+        "UserName"
+      ],
+      "DeleteUserRequest": [
+        "ServerId",
+        "UserName"
+      ],
+      "ListTagsForResourceRequest": [
+        "Arn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "Arn",
+        "NextToken",
+        "Tags"
+      ],
+      "TagResourceRequest": [
+        "Arn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "Arn",
+        "TagKeys"
+      ],
+      "ImportSshPublicKeyRequest": [
+        "ServerId",
+        "SshPublicKeyBody",
+        "UserName"
+      ],
+      "ImportSshPublicKeyResponse": [
+        "ServerId",
+        "SshPublicKeyId",
+        "UserName"
+      ],
+      "DeleteSshPublicKeyRequest": [
+        "ServerId",
+        "SshPublicKeyId",
+        "UserName"
+      ],
+      "DescribedServer": [
+        "Arn",
+        "ServerId",
+        "Domain",
+        "EndpointType",
+        "IdentityProviderType",
+        "Protocols",
+        "SecurityPolicyName",
+        "PreAuthenticationLoginBanner",
+        "Tags",
+        "UserCount"
+      ],
+      "ListedServer": [
+        "Arn",
+        "ServerId",
+        "Domain",
+        "EndpointType",
+        "IdentityProviderType",
+        "UserCount"
+      ],
+      "DescribedUser": [
+        "Arn",
+        "UserName",
+        "Role",
+        "HomeDirectory",
+        "HomeDirectoryType",
+        "Tags",
+        "SshPublicKeys"
+      ],
+      "ListedUser": [
+        "Arn",
+        "UserName",
+        "Role",
+        "HomeDirectory",
+        "HomeDirectoryType",
+        "SshPublicKeyCount"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "SshPublicKey": [
+        "DateImported",
+        "SshPublicKeyBody",
+        "SshPublicKeyId"
+      ]
+    }
   }
 }
