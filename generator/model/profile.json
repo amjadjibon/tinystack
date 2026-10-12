@@ -19942,5 +19942,159 @@
         "AlarmARN"
       ]
     }
+  },
+  "xray": {
+    "operations": [
+      "CreateGroup",
+      "CreateSamplingRule",
+      "DeleteGroup",
+      "DeleteSamplingRule",
+      "GetGroup",
+      "GetGroups",
+      "GetSamplingRules",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateGroup",
+      "UpdateSamplingRule"
+    ],
+    "shapes": {
+      "CreateGroupRequest": [
+        "GroupName",
+        "FilterExpression",
+        "InsightsConfiguration",
+        "Tags"
+      ],
+      "CreateGroupResult": [
+        "Group"
+      ],
+      "CreateSamplingRuleRequest": [
+        "SamplingRule",
+        "Tags"
+      ],
+      "CreateSamplingRuleResult": [
+        "SamplingRuleRecord"
+      ],
+      "DeleteGroupRequest": [
+        "GroupName",
+        "GroupARN"
+      ],
+      "DeleteGroupResult": [],
+      "DeleteSamplingRuleRequest": [
+        "RuleName",
+        "RuleARN"
+      ],
+      "DeleteSamplingRuleResult": [
+        "SamplingRuleRecord"
+      ],
+      "GetGroupRequest": [
+        "GroupName",
+        "GroupARN"
+      ],
+      "GetGroupResult": [
+        "Group"
+      ],
+      "GetGroupsRequest": [
+        "NextToken"
+      ],
+      "GetGroupsResult": [
+        "Groups",
+        "NextToken"
+      ],
+      "GetSamplingRulesRequest": [
+        "NextToken"
+      ],
+      "GetSamplingRulesResult": [
+        "SamplingRuleRecords",
+        "NextToken"
+      ],
+      "Group": [
+        "GroupName",
+        "GroupARN",
+        "FilterExpression",
+        "InsightsConfiguration"
+      ],
+      "GroupSummary": [
+        "GroupName",
+        "GroupARN",
+        "FilterExpression",
+        "InsightsConfiguration"
+      ],
+      "InsightsConfiguration": [
+        "InsightsEnabled",
+        "NotificationsEnabled"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceARN",
+        "NextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags",
+        "NextToken"
+      ],
+      "SamplingRule": [
+        "RuleName",
+        "RuleARN",
+        "ResourceARN",
+        "Priority",
+        "FixedRate",
+        "ReservoirSize",
+        "ServiceName",
+        "ServiceType",
+        "Host",
+        "HTTPMethod",
+        "URLPath",
+        "Version",
+        "Attributes"
+      ],
+      "SamplingRuleRecord": [
+        "SamplingRule",
+        "CreatedAt",
+        "ModifiedAt"
+      ],
+      "SamplingRuleUpdate": [
+        "RuleName",
+        "RuleARN",
+        "ResourceARN",
+        "Priority",
+        "FixedRate",
+        "ReservoirSize",
+        "Host",
+        "ServiceName",
+        "ServiceType",
+        "HTTPMethod",
+        "URLPath",
+        "Attributes"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateGroupRequest": [
+        "GroupName",
+        "GroupARN",
+        "FilterExpression",
+        "InsightsConfiguration"
+      ],
+      "UpdateGroupResult": [
+        "Group"
+      ],
+      "UpdateSamplingRuleRequest": [
+        "SamplingRuleUpdate"
+      ],
+      "UpdateSamplingRuleResult": [
+        "SamplingRuleRecord"
+      ]
+    }
   }
 }

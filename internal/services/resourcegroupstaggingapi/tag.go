@@ -179,6 +179,7 @@ func errUntaggable(r *catalog.Owned) error {
 // service name.
 var taggers = map[string]tagger{
 	"applicationautoscaling": resourceOperations("applicationautoscaling", "ResourceARN", plain),
+	"xray":                   resourceOperations("xray", "ResourceARN", pairs),
 	"s3tables": operations(
 		"s3tables",
 		"TagResource",

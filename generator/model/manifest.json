@@ -262,6 +262,10 @@
     "wafv2": {
       "path": "codegen/sdk-codegen/aws-models/wafv2.json",
       "sha256": "0c5a241cea430b965f960950905f2c5a8b3814e10ae0da9ec7e9e2d05a3b5e8b"
+    },
+    "xray": {
+      "path": "codegen/sdk-codegen/aws-models/xray.json",
+      "sha256": "4ecfdc502234eb1ab83edf8950d1b4cb083b14565a30118e1e7ec783a751212a"
     }
   }
 }

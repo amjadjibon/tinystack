@@ -71,6 +71,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: developerTools,
 		icon: "codebuild",
 	},
+	xray: {
+		title: "AWS X-Ray",
+		category: developerTools,
+		icon: "xray",
+	},
 	batch: { title: "AWS Batch", category: compute, icon: "batch" },
 	efs: { title: "Elastic File System", category: storage, icon: "efs" },
 	backup: { title: "AWS Backup", category: management, icon: "backup" },

@@ -79,6 +79,7 @@ import (
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	transferapi "github.com/amjadjibon/tinystack/internal/aws/generated/transfer"
 	wafv2api "github.com/amjadjibon/tinystack/internal/aws/generated/wafv2"
+	xrayapi "github.com/amjadjibon/tinystack/internal/aws/generated/xray"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
@@ -149,6 +150,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/services/transfer"
 	"github.com/amjadjibon/tinystack/internal/services/wafv2"
+	"github.com/amjadjibon/tinystack/internal/services/xray"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -337,6 +339,7 @@ func build(
 	locationTrackers := location.New(store)
 	tableRecords := s3tables.New(store)
 	wafRecords := wafv2.New(store)
+	xrayRecords := xray.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
 	a.onStop(databases.Stop)
@@ -410,6 +413,7 @@ func build(
 		s3tablesapi.Descriptor(tableRecords),
 		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),
 		wafv2api.Descriptor(wafRecords),
+		xrayapi.Descriptor(xrayRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
