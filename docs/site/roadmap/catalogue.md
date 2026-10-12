@@ -35,7 +35,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Lambda Durable Execution](services/lambda-durable.md) | Proposed | Implement `CheckpointDurableExecution`, `GetDurableExecutionState`, `GetDurableExecution`. |
 | [Lambda MicroVMs](services/lambda-microvms.md) | Proposed | Implement `CreateMicrovmImage`, `RunMicrovm`, `GetMicrovm`. |
 | [MediaConnect](services/mediaconnect.md) | Proposed | Implement `CreateFlow`, `DescribeFlow`, `ListFlows`. |
-| [OpenSearch Service](services/opensearch.md) | Runtime decision required | create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls. |
+| [OpenSearch Service runtime engine](services/opensearch-runtime.md) | Runtime decision required | create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls. |
 | [RDS Data API](services/rds-data.md) | Proposed | Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`. |
 | [S3 Files](services/s3files.md) | Proposed | Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`. |
 | [S3 Tables runtime and broader metadata](services/s3tables-runtime.md) | Proposed | Define a coherent metadata-location and actual Iceberg file/runtime contract beyond the implemented customer metadata records. |

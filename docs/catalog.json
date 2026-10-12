@@ -1549,6 +1549,29 @@
         "Encryption configuration and resource policies are excluded (PutEncryptionConfig, PutResourcePolicy)",
         "The built-in Default sampling rule cannot be deleted; deletion attempts reject with InvalidRequestException"
       ]
+    },
+    "opensearch": {
+      "title": "Amazon OpenSearch Service",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "summary": "Store OpenSearch and Elasticsearch domain configurations and tags as records without running search clusters.",
+      "execution": "Configuration records only",
+      "package": "opensearch",
+      "features": [
+        "Ten pinned REST JSON domain, domain config, and tag operations with AWS SDK v2 integration",
+        "Deterministic domain lifecycle with unique names, cluster config, EBS options, encryption at rest, node-to-node encryption, endpoint options, and access policies",
+        "Deterministic domain ARN (arn:aws:es:<region>:<account>:domain/<name>) and metadata endpoint (search-<name>-<random>.<region>.es.amazonaws.com)",
+        "Domain configuration retrieval with option statuses (Active, version, dates) and atomic updates",
+        "ListDomainNames filtering by OpenSearch and Elasticsearch engine types",
+        "Resource tagging on domain ARNs with AddTags, ListTags, RemoveTags, and RGTA support",
+        "AWS::OpenSearchService::Domain CloudFormation resource with Ref DomainName, Fn::GetAtt (Arn, DomainArn, DomainEndpoint, Id), and retagging",
+        "RecordsOnly=true / ExecutionReady=false inventory, official AWS OpenSearch Service icon and Terraform opensearch endpoint key"
+      ],
+      "gaps": [
+        "Configuration records only; no live OpenSearch or Elasticsearch engine, cluster nodes, indexing, search queries, or ingestion runtime",
+        "VPC options, Cognito authentication, SAML/IAM identity federation, and automated snapshot pauses are excluded from the initial domain slice",
+        "Package management, outbound/inbound connections, direct query, application integration, and serverless collections require separate implementations"
+      ]
     }
   },
   "future": {
@@ -1698,14 +1721,6 @@
       "slice": "Environment configuration records and tags are implemented. Tokens, Airflow APIs and actual execution require a separate runtime contract.",
       "features": "- [ ] `CreateWebLoginToken`\n- [ ] `CreateCliToken`\n- [ ] `InvokeRestApi`\n- [ ] Airflow DAG/task execution, scheduler/worker/webserver lifecycle and readiness\n- [ ] Real URLs/endpoints, credentials, log and metrics delivery\n- [ ] Advanced artifacts, configuration, encryption and network configuration updates"
     },
-    "opensearch": {
-      "title": "OpenSearch Service",
-      "state": "Runtime decision required",
-      "slice": "create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls.",
-      "features": "- [ ] Management \u2014 Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime \u2014 Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence \u2014 Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features \u2014 Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
-      "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account\u2019s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
-      "acceptance": "Create a domain with an AWS SDK, wait until available, index and search through\nthe returned endpoint, restart, and delete. Verify index isolation, unsupported\nconfiguration errors, failed launch cleanup, memory/port limits, tags, and\nmanagement response parity against AWS captures."
-    },
     "rds-data": {
       "title": "RDS Data API",
       "state": "Proposed",
@@ -1782,6 +1797,14 @@
       "slice": "Extend records-only groups and sampling rules to trace ingestion, telemetry processing, and service map analysis.",
       "features": "- [ ] PutTraceSegments\\n- [ ] PutTelemetryRecords\\n- [ ] GetTraceSummaries\\n- [ ] BatchGetTraces\\n- [ ] GetServiceGraph\\n- [ ] GetSamplingTargets\\n- [ ] PutEncryptionConfig and PutResourcePolicy",
       "integration": "The current X-Ray API persists group and sampling rule configuration records only; trace ingestion and graph generation are excluded."
+    },
+    "opensearch-runtime": {
+      "title": "OpenSearch Service runtime engine",
+      "state": "Runtime decision required",
+      "slice": "create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls.",
+      "features": "- [ ] Management \u2014 Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime \u2014 Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence \u2014 Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features \u2014 Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
+      "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account\u2019s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
+      "acceptance": "Create a domain with an AWS SDK, wait until available, index and search through\nthe returned endpoint, restart, and delete. Verify index isolation, unsupported\nconfiguration errors, failed launch cleanup, memory/port limits, tags, and\nmanagement response parity against AWS captures."
     }
   }
 }

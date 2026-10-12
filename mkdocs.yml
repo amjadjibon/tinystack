@@ -116,6 +116,7 @@ nav:
       - Implemented catalogue: services/catalogue.md
       - "Analytics":
           - "Amazon MSK": services/kafka.md
+          - "Amazon OpenSearch Service": services/opensearch.md
           - "Amazon Redshift": services/redshift.md
           - "Athena": services/athena.md
           - "Glue Data Catalog": services/glue.md
@@ -230,7 +231,7 @@ nav:
           - "Lambda Durable Execution": roadmap/services/lambda-durable.md
           - "Lambda MicroVMs": roadmap/services/lambda-microvms.md
           - "MediaConnect": roadmap/services/mediaconnect.md
-          - "OpenSearch Service": roadmap/services/opensearch.md
+          - "OpenSearch Service runtime engine": roadmap/services/opensearch-runtime.md
           - "RDS Data API": roadmap/services/rds-data.md
           - "S3 Files": roadmap/services/s3files.md
           - "S3 Tables runtime and broader metadata": roadmap/services/s3tables-runtime.md
