@@ -19473,5 +19473,83 @@
         "SshPublicKeyId"
       ]
     }
+  },
+  "location": {
+    "operations": [
+      "CreateTracker",
+      "DescribeTracker",
+      "ListTrackers",
+      "UpdateTracker",
+      "DeleteTracker",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource"
+    ],
+    "shapes": {
+      "CreateTrackerRequest": [
+        "TrackerName",
+        "Description",
+        "PositionFiltering",
+        "Tags"
+      ],
+      "CreateTrackerResponse": [
+        "TrackerName",
+        "TrackerArn",
+        "CreateTime"
+      ],
+      "DescribeTrackerRequest": [
+        "TrackerName"
+      ],
+      "DescribeTrackerResponse": [
+        "TrackerName",
+        "TrackerArn",
+        "Description",
+        "Tags",
+        "CreateTime",
+        "UpdateTime",
+        "PositionFiltering"
+      ],
+      "ListTrackersRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListTrackersResponse": [
+        "Entries",
+        "NextToken"
+      ],
+      "ListTrackersResponseEntry": [
+        "TrackerName",
+        "Description",
+        "CreateTime",
+        "UpdateTime"
+      ],
+      "UpdateTrackerRequest": [
+        "TrackerName",
+        "Description",
+        "PositionFiltering"
+      ],
+      "UpdateTrackerResponse": [
+        "TrackerName",
+        "TrackerArn",
+        "UpdateTime"
+      ],
+      "DeleteTrackerRequest": [
+        "TrackerName"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ]
+    }
   }
 }

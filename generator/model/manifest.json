@@ -250,6 +250,10 @@
     "transfer": {
       "path": "codegen/sdk-codegen/aws-models/transfer.json",
       "sha256": "dacf9d6638d8a4f4621ebc438aa8dab7589e757b16037ea8acf50cb292e1db83"
+    },
+    "location": {
+      "path": "codegen/sdk-codegen/aws-models/location.json",
+      "sha256": "b6afe8e89a91ebf6cedb12595cadaa8168aa08483160017904d8b44d3daa8d89"
     }
   }
 }
