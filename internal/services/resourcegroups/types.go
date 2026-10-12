@@ -61,6 +61,7 @@ var namespaces = map[string]string{
 	"ssm":                    "SSM",
 	"xray":                   "XRay",
 	"acmpca":                 "ACMPCA",
+	"verifiedpermissions":    "VerifiedPermissions",
 }
 
 // typeNames are the CloudFormation names of the inventory types whose name is
@@ -89,6 +90,8 @@ var typeNames = map[string]string{
 	"iot/thingtype":                       "ThingType",
 	"sesv2/identity":                      "EmailIdentity",
 	"sesv2/template":                      "Template",
+	"verifiedpermissions/policy-store":    "PolicyStore",
+	"verifiedpermissions/policy":          "Policy",
 }
 
 // pascal writes a kebab-case inventory type as a CloudFormation name.
