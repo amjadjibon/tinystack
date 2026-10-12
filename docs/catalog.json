@@ -982,12 +982,12 @@
       "package": "cloudcontrol"
     },
     "rds": {
-      "title": "RDS",
+      "title": "RDS, DocumentDB and Neptune",
       "category": "Storage and databases",
-      "summary": "Manage PostgreSQL, MySQL and MariaDB instances with an optional Docker database runtime.",
+      "summary": "Manage RDS instances with an optional Docker runtime, plus records-only DocumentDB and Neptune clusters and members.",
       "features": [
         "Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors",
-        "PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; other engines and versions fail explicitly",
+        "PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; DocumentDB and Neptune cluster members use records only; other engines and versions fail explicitly",
         "Describe instances supports db-instance-id, engine and db-subnet-group exact-value filters; MaxRecords 20\u2013100 and Marker pagination also work for subnet and parameter group lists",
         "Subnet groups validate existing EC2 subnets in one VPC; parameter groups are records with engine-family validation and in-use deletion checks",
         "Instance and group tags, diagnostic inventory and Resource Groups Tagging API integration",
@@ -1000,20 +1000,33 @@
         "Startup removes orphaned RDS containers and volumes whose ownership ARN has no instance record",
         "Omitted DBName uses the instance identifier with hyphens replaced by underscores for the Docker database name; default AllocatedStorage is 20 GiB of metadata",
         "CloudFormation DBInstance creation waits for availability before publishing endpoint attributes",
-        "AWS-style scoped console for databases, engine selection, connection commands and URLs, status polling, immediate password/class changes, tags, stop/start/reboot, confirmed deletion without snapshots, and subnet and parameter group creation and deletion"
+        "AWS-style scoped console for databases, engine selection, connection commands and URLs, status polling, immediate password/class changes, tags, stop/start/reboot, confirmed deletion without snapshots, and subnet and parameter group creation and deletion",
+        "DocumentDB (Engine docdb) and Neptune (Engine neptune) SDKs use the existing RDS Query API: create, describe, modify and delete records-only clusters and cluster member instances, scoped by account and Region",
+        "Cluster identifiers, DocumentDB credentials, retention 1\u201335 days, ports 1150\u201365535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation",
+        "DocumentDB versions 3.6, 4.0 and 5.0 (default); Neptune versions 1.2.1.0 and 1.3.2.0 (default); default ports 27017 and 8182 respectively; stable resource IDs and AWS-style cluster/reader endpoints report metadata only",
+        "DescribeDBClusters shares both engines across RDS, DocumentDB and Neptune clients; engine, db-cluster-id and db-cluster-resource-id filters select exact values; MaxRecords 20\u2013100 (default 100) uses stable Marker cursors",
+        "Cluster member endpoints and ports follow their parent cluster; DBClusterMembers tracks membership and writer metadata; cluster deletion requires no members, no deletion protection and SkipFinalSnapshot=true",
+        "CloudFormation AWS::DocDB::DBCluster/DBInstance and AWS::Neptune::DBCluster/DBInstance share a provider: selected mutable properties and tags update, immutable properties replace, version changes fail and roll back; Ref and cluster/instance endpoint attributes are supported",
+        "Cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS"
       ],
       "gaps": [
         "Records mode has no SQL listener: endpoints use 127.0.0.1 and the engine default port, matching the ElastiCache records-only convention",
         "AllocatedStorage does not enforce a volume size; DBInstanceClass does not change CPU or memory limits; network topology and AWS availability behavior are not reproduced",
         "EngineVersion accepts only the listed major tags, not arbitrary AWS minor/patch versions; image tags are floating within the chosen major",
         "Parameter groups are records only; engine parameters are not applied",
-        "Snapshots, replicas, clusters/Aurora, Multi-AZ, IAM DB authentication, managed master passwords/Secrets Manager, option groups, events and proxies are unsupported; input members outside the profile fail explicitly",
+        "Snapshots, SQL replicas, Aurora/Multi-AZ clusters, Multi-AZ instances, IAM DB authentication, managed master passwords/Secrets Manager, option groups, events and proxies are unsupported; input members outside the profile fail explicitly",
         "Delete requires SkipFinalSnapshot=true; final snapshots and snapshot identifiers are rejected; ApplyImmediately=false rejects deferred changes",
         "Host ports can change after container recreation; no advertise host setting exists, so a remote Docker daemon is unsupported",
         "Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources",
         "Failed initial startup or readiness timeout marks the instance failed and removes its container and fresh volume; recovery failures retain an existing volume",
         "CloudFormation endpoint attributes do not refresh when a later container recreation changes the host port",
-        "Verify mode exposes database metadata inventory; RDS management and full group metadata require signed AWS CLI or SDK requests"
+        "Verify mode exposes database metadata inventory; RDS management and full group metadata require signed AWS CLI or SDK requests",
+        "DocumentDB and Neptune have no containers, database engine, listeners, MongoDB/graph queries, failover or backup execution; available statuses and endpoints represent records only, even when RDS Docker mode is enabled",
+        "DocumentDB/Neptune engine version changes, cluster snapshots, global clusters, cluster parameter groups, cluster start/stop, DocumentDB Elastic and input members outside the profile fail explicitly",
+        "Cluster subnet groups and security groups must exist in the request scope and share a VPC when supplied; omitted networking does not provision default networking or enforce AWS Availability Zone coverage",
+        "Cluster members accept identifier, class, matching engine, parent cluster and tags; inherited database settings and member start/stop/reboot requests fail explicitly; class changes and ApplyImmediately are metadata only",
+        "Cluster snapshots are unsupported: deletion requires SkipFinalSnapshot=true and rejects FinalDBSnapshotIdentifier; CloudFormation deletion skips snapshots; cluster ApplyImmediately=false still applies metadata synchronously",
+        "Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8\u2013100 printable ASCII characters except slash, double quote and at sign; passwords are not stored or returned"
       ],
       "execution": "Records / optional Docker",
       "package": "rds"

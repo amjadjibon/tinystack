@@ -202,7 +202,7 @@ nav:
           - "DynamoDB": services/dynamodb.md
           - "DynamoDB Streams": services/dynamodbstreams.md
           - "ElastiCache": services/elasticache.md
-          - "RDS": services/rds.md
+          - "RDS, DocumentDB and Neptune": services/rds.md
           - "S3": services/s3.md
       - "Workflow and email":
           - "SES v1": services/ses.md
