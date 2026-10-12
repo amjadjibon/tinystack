@@ -46,6 +46,7 @@ var namespaces = map[string]string{
 	"organizations":          "Organizations",
 	"pipes":                  "Pipes",
 	"resourcegroups":         "ResourceGroups",
+	"route53resolver":        "Route53Resolver",
 	"route53":                "Route53",
 	"s3":                     "S3",
 	"scheduler":              "Scheduler",
