@@ -240,6 +240,9 @@ func (e *evaluator) ref(name string) (any, error) {
 	if r.Type == "AWS::WAFv2::WebACLAssociation" {
 		return wafAssociationRef(props(r.Properties)), nil
 	}
+	if r.Type == transferUserType {
+		return r.Attributes[transferUserName], nil
+	}
 	return r.Physical, nil
 }
 

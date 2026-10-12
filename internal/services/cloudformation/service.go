@@ -50,14 +50,15 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store  storage.Store
-	caller *catalog.Caller
-	mq     mqRecords
-	msk    mskRecords
-	mwaa   mwaaRecords
-	logger *slog.Logger
-	now    func() time.Time
-	bg     *background.Group
+	store    storage.Store
+	caller   *catalog.Caller
+	mq       mqRecords
+	msk      mskRecords
+	mwaa     mwaaRecords
+	transfer transferRecords
+	logger   *slog.Logger
+	now      func() time.Time
+	bg       *background.Group
 	// wake starts a visit before the next tick, after an operation commits.
 	wake chan struct{}
 	// busy holds the stacks whose operations are advancing.

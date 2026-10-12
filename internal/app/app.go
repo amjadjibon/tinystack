@@ -74,6 +74,7 @@ import (
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
+	transferapi "github.com/amjadjibon/tinystack/internal/aws/generated/transfer"
 	wafv2api "github.com/amjadjibon/tinystack/internal/aws/generated/wafv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
@@ -140,6 +141,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
+	"github.com/amjadjibon/tinystack/internal/services/transfer"
 	"github.com/amjadjibon/tinystack/internal/services/wafv2"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -324,6 +326,7 @@ func build(
 	brokers := mq.New(store, network)
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
+	transferRecords := transfer.New(store)
 	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -393,6 +396,7 @@ func build(
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),
+		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),
 		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
@@ -442,6 +446,7 @@ func build(
 	stacks.UseMQ(brokers)
 	stacks.UseMSK(kafkaClusters)
 	stacks.UseMWAA(airflowEnvironments)
+	stacks.UseTransfer(transferRecords)
 	stacks.UseCaller(caller)
 	// Subscription filters deliver to Lambda, Kinesis, and Firehose.
 	logGroups.UseCaller(caller)
