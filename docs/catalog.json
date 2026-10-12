@@ -1572,6 +1572,32 @@
         "VPC options, Cognito authentication, SAML/IAM identity federation, and automated snapshot pauses are excluded from the initial domain slice",
         "Package management, outbound/inbound connections, direct query, application integration, and serverless collections require separate implementations"
       ]
+    },
+    "route53resolver": {
+      "title": "Amazon Route 53 Resolver",
+      "category": "Networking and content delivery",
+      "scope": "Account and Region",
+      "summary": "Store Resolver endpoints, rules and VPC associations as records without allocating network interfaces or forwarding DNS queries.",
+      "execution": "Configuration records only",
+      "package": "route53resolver",
+      "features": [
+        "Seventeen pinned AWS JSON 1.1 endpoint, rule, association and tag APIs with AWS SDK v2 integration",
+        "INBOUND/OUTBOUND endpoint CRUD with CreatorRequestId retries, scoped ARNs, IPv4 subnet configurations, EC2 subnet and security-group validation, and name updates",
+        "FORWARD/SYSTEM rule CRUD with trailing-dot domain normalization, outbound endpoint references, IPv4 targets, default port 53 and atomic configuration updates",
+        "VPC association CRUD with scoped EC2 existence checks, duplicate/domain conflict detection and endpoint/rule deletion guards",
+        "Tags on endpoint/rule creates and ARNs, stable cursor pagination, RGTA and Resource Groups integration",
+        "AWS::Route53Resolver::ResolverEndpoint, ResolverRule and ResolverRuleAssociation CloudFormation resources with ID references and documented attributes",
+        "RecordsOnly=true / ExecutionReady=false inventory, official Amazon Route 53 icon and Terraform route53resolver endpoint key"
+      ],
+      "gaps": [
+        "No DNS forwarding, recursive resolution, network interfaces, IP allocation or runtime; OPERATIONAL/COMPLETE are metadata status values",
+        "Only IPv4 INBOUND/OUTBOUND endpoints and FORWARD/SYSTEM rules; INBOUND_DELEGATION, DELEGATE, IPv6, protocols and advanced settings are excluded",
+        "Endpoint IP configuration count follows the pinned model (2\u201320); only endpoint Name can be updated, and ListResolverEndpointIpAddresses is excluded",
+        "List filters, autodefined Internet Resolver rules and AWS-managed RECURSIVE rules are excluded",
+        "No DNS Firewall, query logging, Outposts, Resolver/DNSSEC configuration or rule sharing policies",
+        "CloudFormation rejects endpoint IpAddresses and Tags updates and removal of endpoint Name or rule Name/TargetIps/ResolverEndpointId; immutable changes use replacement",
+        "CloudFormation endpoint/rule Ref returns the resource ID used by their primary identifier; association Ref returns its association ID"
+      ]
     }
   },
   "future": {
@@ -1805,6 +1831,13 @@
       "features": "- [ ] Management \u2014 Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime \u2014 Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence \u2014 Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features \u2014 Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
       "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account\u2019s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
       "acceptance": "Create a domain with an AWS SDK, wait until available, index and search through\nthe returned endpoint, restart, and delete. Verify index isolation, unsupported\nconfiguration errors, failed launch cleanup, memory/port limits, tags, and\nmanagement response parity against AWS captures."
+    },
+    "route53resolver-runtime": {
+      "title": "Route 53 Resolver DNS Firewall, query logging and runtime",
+      "state": "Proposed",
+      "slice": "Extend the records-only endpoint, rule and association slice with separate advanced control-plane and truthful DNS execution contracts.",
+      "features": "- [ ] DNS Firewall rule groups and associations\n- [ ] Resolver query logging configurations and associations\n- [ ] Resolver/DNSSEC configuration and sharing policies\n- [ ] IPv6, delegation, protocols, endpoint address mutations and list filters\n- [ ] Stable AWS-managed Internet Resolver rules\n- [ ] Real DNS forwarding, network/IP allocation and lifecycle readiness",
+      "integration": "Current endpoint, rule and VPC association APIs store records only. DNS and network runtime require separate implementation."
     }
   }
 }

@@ -185,6 +185,7 @@ nav:
           - "Elastic Load Balancing v2": services/elbv2.md
           - "Route 53": services/route53.md
       - "Networking and content delivery":
+          - "Amazon Route 53 Resolver": services/route53resolver.md
           - "Cloud Map": services/servicediscovery.md
       - "Storage":
           - "Amazon EFS": services/efs.md
@@ -233,6 +234,7 @@ nav:
           - "MediaConnect": roadmap/services/mediaconnect.md
           - "OpenSearch Service runtime engine": roadmap/services/opensearch-runtime.md
           - "RDS Data API": roadmap/services/rds-data.md
+          - "Route 53 Resolver DNS Firewall, query logging and runtime": roadmap/services/route53resolver-runtime.md
           - "S3 Files": roadmap/services/s3files.md
           - "S3 Tables runtime and broader metadata": roadmap/services/s3tables-runtime.md
           - "Transcribe": roadmap/services/transcribe.md

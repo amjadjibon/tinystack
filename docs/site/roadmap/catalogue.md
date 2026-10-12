@@ -37,6 +37,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [MediaConnect](services/mediaconnect.md) | Proposed | Implement `CreateFlow`, `DescribeFlow`, `ListFlows`. |
 | [OpenSearch Service runtime engine](services/opensearch-runtime.md) | Runtime decision required | create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls. |
 | [RDS Data API](services/rds-data.md) | Proposed | Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`. |
+| [Route 53 Resolver DNS Firewall, query logging and runtime](services/route53resolver-runtime.md) | Proposed | Extend the records-only endpoint, rule and association slice with separate advanced control-plane and truthful DNS execution contracts. |
 | [S3 Files](services/s3files.md) | Proposed | Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`. |
 | [S3 Tables runtime and broader metadata](services/s3tables-runtime.md) | Proposed | Define a coherent metadata-location and actual Iceberg file/runtime contract beyond the implemented customer metadata records. |
 | [Transcribe](services/transcribe.md) | Proposed | Implement `StartTranscriptionJob`, `GetTranscriptionJob`, `ListTranscriptionJobs`. |
