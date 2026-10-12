@@ -82,6 +82,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: developerTools,
 		icon: "codebuild",
 	},
+	codecommit: {
+		title: "CodeCommit",
+		category: developerTools,
+		icon: "codecommit",
+	},
 	opensearch: {
 		title: "OpenSearch Service",
 		category: analytics,

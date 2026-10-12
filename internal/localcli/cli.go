@@ -159,6 +159,7 @@ var TerraformServices = []string{
 	"batch",
 	"codebuild",
 	"codepipeline",
+	"codecommit",
 	"mq",
 	"kafka",
 	"mwaa",

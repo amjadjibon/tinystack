@@ -19357,6 +19357,96 @@
       ]
     }
   },
+  "codecommit": {
+    "operations": [
+      "CreateRepository",
+      "DeleteRepository",
+      "GetRepository",
+      "ListRepositories",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateRepositoryDescription",
+      "UpdateRepositoryName"
+    ],
+    "shapes": {
+      "CreateRepositoryInput": [
+        "kmsKeyId",
+        "repositoryDescription",
+        "repositoryName",
+        "tags"
+      ],
+      "CreateRepositoryOutput": [
+        "repositoryMetadata"
+      ],
+      "DeleteRepositoryInput": [
+        "repositoryName"
+      ],
+      "DeleteRepositoryOutput": [
+        "repositoryId"
+      ],
+      "GetRepositoryInput": [
+        "repositoryName"
+      ],
+      "GetRepositoryOutput": [
+        "repositoryMetadata"
+      ],
+      "ListRepositoriesInput": [
+        "nextToken",
+        "order",
+        "sortBy"
+      ],
+      "ListRepositoriesOutput": [
+        "nextToken",
+        "repositories"
+      ],
+      "ListTagsForResourceInput": [
+        "nextToken",
+        "resourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "nextToken",
+        "tags"
+      ],
+      "RepositoryDescription": [
+        "accountId",
+        "repositoryId",
+        "repositoryName"
+      ],
+      "RepositoryMetadata": [
+        "Arn",
+        "accountId",
+        "cloneUrlHttp",
+        "cloneUrlSsh",
+        "creationDate",
+        "kmsKeyId",
+        "lastModifiedDate",
+        "repositoryDescription",
+        "repositoryId",
+        "repositoryName"
+      ],
+      "RepositoryNameIdPair": [
+        "repositoryId",
+        "repositoryName"
+      ],
+      "TagResourceInput": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceInput": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UpdateRepositoryDescriptionInput": [
+        "repositoryDescription",
+        "repositoryName"
+      ],
+      "UpdateRepositoryNameInput": [
+        "newName",
+        "oldName"
+      ]
+    }
+  },
   "mq": {
     "operations": [
       "CreateBroker",
