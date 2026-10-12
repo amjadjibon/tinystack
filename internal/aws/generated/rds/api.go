@@ -24,6 +24,7 @@ type CreateDBInstanceMessage struct {
 	DBSubnetGroupName    *string `json:"DBSubnetGroupName,omitempty" query:"DBSubnetGroupName"`
 	DBParameterGroupName *string `json:"DBParameterGroupName,omitempty" query:"DBParameterGroupName"`
 	Tags                 []Tag   `json:"Tags,omitempty" query:"Tags,member=Tag"`
+	DBClusterIdentifier  *string `json:"DBClusterIdentifier,omitempty" query:"DBClusterIdentifier"`
 }
 
 type Endpoint struct {
@@ -70,6 +71,7 @@ type DBInstance struct {
 	DBParameterGroups    []DBParameterGroupStatus `json:"DBParameterGroups,omitempty" query:"DBParameterGroups,member=DBParameterGroup"`
 	DBInstanceArn        *string                  `json:"DBInstanceArn,omitempty" query:"DBInstanceArn"`
 	TagList              []Tag                    `json:"TagList,omitempty" query:"TagList,member=Tag"`
+	DBClusterIdentifier  *string                  `json:"DBClusterIdentifier,omitempty" query:"DBClusterIdentifier"`
 }
 
 type CreateDBInstanceResult struct {
@@ -222,6 +224,95 @@ type TagListMessage struct {
 	TagList []Tag `json:"TagList,omitempty" query:"TagList,member=Tag"`
 }
 
+type CreateDBClusterMessage struct {
+	DBClusterIdentifier   *string  `json:"DBClusterIdentifier,omitempty" query:"DBClusterIdentifier"`
+	Engine                *string  `json:"Engine,omitempty" query:"Engine"`
+	EngineVersion         *string  `json:"EngineVersion,omitempty" query:"EngineVersion"`
+	MasterUsername        *string  `json:"MasterUsername,omitempty" query:"MasterUsername"`
+	MasterUserPassword    *string  `json:"MasterUserPassword,omitempty" query:"MasterUserPassword"`
+	Port                  *int64   `json:"Port,omitempty" query:"Port"`
+	DBSubnetGroupName     *string  `json:"DBSubnetGroupName,omitempty" query:"DBSubnetGroupName"`
+	VpcSecurityGroupIds   []string `json:"VpcSecurityGroupIds,omitempty" query:"VpcSecurityGroupIds,member=VpcSecurityGroupId"`
+	BackupRetentionPeriod *int64   `json:"BackupRetentionPeriod,omitempty" query:"BackupRetentionPeriod"`
+	StorageEncrypted      *bool    `json:"StorageEncrypted,omitempty" query:"StorageEncrypted"`
+	KmsKeyId              *string  `json:"KmsKeyId,omitempty" query:"KmsKeyId"`
+	DeletionProtection    *bool    `json:"DeletionProtection,omitempty" query:"DeletionProtection"`
+	Tags                  []Tag    `json:"Tags,omitempty" query:"Tags,member=Tag"`
+}
+
+type VpcSecurityGroupMembership struct {
+	VpcSecurityGroupId *string `json:"VpcSecurityGroupId,omitempty" query:"VpcSecurityGroupId"`
+	Status             *string `json:"Status,omitempty" query:"Status"`
+}
+
+type DBClusterMember struct {
+	DBInstanceIdentifier *string `json:"DBInstanceIdentifier,omitempty" query:"DBInstanceIdentifier"`
+	IsClusterWriter      *bool   `json:"IsClusterWriter,omitempty" query:"IsClusterWriter"`
+}
+
+type DBCluster struct {
+	DBClusterIdentifier   *string                      `json:"DBClusterIdentifier,omitempty" query:"DBClusterIdentifier"`
+	Engine                *string                      `json:"Engine,omitempty" query:"Engine"`
+	EngineVersion         *string                      `json:"EngineVersion,omitempty" query:"EngineVersion"`
+	MasterUsername        *string                      `json:"MasterUsername,omitempty" query:"MasterUsername"`
+	Port                  *int64                       `json:"Port,omitempty" query:"Port"`
+	DBSubnetGroup         *string                      `json:"DBSubnetGroup,omitempty" query:"DBSubnetGroup"`
+	VpcSecurityGroups     []VpcSecurityGroupMembership `json:"VpcSecurityGroups,omitempty" query:"VpcSecurityGroups,member=VpcSecurityGroupMembership"`
+	BackupRetentionPeriod *int64                       `json:"BackupRetentionPeriod,omitempty" query:"BackupRetentionPeriod"`
+	StorageEncrypted      *bool                        `json:"StorageEncrypted,omitempty" query:"StorageEncrypted"`
+	KmsKeyId              *string                      `json:"KmsKeyId,omitempty" query:"KmsKeyId"`
+	DeletionProtection    *bool                        `json:"DeletionProtection,omitempty" query:"DeletionProtection"`
+	TagList               []Tag                        `json:"TagList,omitempty" query:"TagList,member=Tag"`
+	Endpoint              *string                      `json:"Endpoint,omitempty" query:"Endpoint"`
+	ReaderEndpoint        *string                      `json:"ReaderEndpoint,omitempty" query:"ReaderEndpoint"`
+	Status                *string                      `json:"Status,omitempty" query:"Status"`
+	DbClusterResourceId   *string                      `json:"DbClusterResourceId,omitempty" query:"DbClusterResourceId"`
+	DBClusterArn          *string                      `json:"DBClusterArn,omitempty" query:"DBClusterArn"`
+	DBClusterMembers      []DBClusterMember            `json:"DBClusterMembers,omitempty" query:"DBClusterMembers,member=DBClusterMember"`
+	ClusterCreateTime     *time.Time                   `json:"ClusterCreateTime,omitempty" query:"ClusterCreateTime"`
+}
+
+type CreateDBClusterResult struct {
+	DBCluster *DBCluster `json:"DBCluster,omitempty" query:"DBCluster"`
+}
+
+type DescribeDBClustersMessage struct {
+	DBClusterIdentifier *string  `json:"DBClusterIdentifier,omitempty" query:"DBClusterIdentifier"`
+	Filters             []Filter `json:"Filters,omitempty" query:"Filters,member=Filter"`
+	Marker              *string  `json:"Marker,omitempty" query:"Marker"`
+	MaxRecords          *int64   `json:"MaxRecords,omitempty" query:"MaxRecords"`
+}
+
+type DBClusterMessage struct {
+	DBClusters []DBCluster `json:"DBClusters,omitempty" query:"DBClusters,member=DBCluster"`
+	Marker     *string     `json:"Marker,omitempty" query:"Marker"`
+}
+
+type ModifyDBClusterMessage struct {
+	DBClusterIdentifier   *string  `json:"DBClusterIdentifier,omitempty" query:"DBClusterIdentifier"`
+	BackupRetentionPeriod *int64   `json:"BackupRetentionPeriod,omitempty" query:"BackupRetentionPeriod"`
+	Port                  *int64   `json:"Port,omitempty" query:"Port"`
+	VpcSecurityGroupIds   []string `json:"VpcSecurityGroupIds,omitempty" query:"VpcSecurityGroupIds,member=VpcSecurityGroupId"`
+	DeletionProtection    *bool    `json:"DeletionProtection,omitempty" query:"DeletionProtection"`
+	MasterUserPassword    *string  `json:"MasterUserPassword,omitempty" query:"MasterUserPassword"`
+	EngineVersion         *string  `json:"EngineVersion,omitempty" query:"EngineVersion"`
+	ApplyImmediately      *bool    `json:"ApplyImmediately,omitempty" query:"ApplyImmediately"`
+}
+
+type ModifyDBClusterResult struct {
+	DBCluster *DBCluster `json:"DBCluster,omitempty" query:"DBCluster"`
+}
+
+type DeleteDBClusterMessage struct {
+	DBClusterIdentifier       *string `json:"DBClusterIdentifier,omitempty" query:"DBClusterIdentifier"`
+	SkipFinalSnapshot         *bool   `json:"SkipFinalSnapshot,omitempty" query:"SkipFinalSnapshot"`
+	FinalDBSnapshotIdentifier *string `json:"FinalDBSnapshotIdentifier,omitempty" query:"FinalDBSnapshotIdentifier"`
+}
+
+type DeleteDBClusterResult struct {
+	DBCluster *DBCluster `json:"DBCluster,omitempty" query:"DBCluster"`
+}
+
 type API interface {
 	CreateDBInstance(context.Context, *CreateDBInstanceMessage) (*CreateDBInstanceResult, error)
 	DescribeDBInstances(context.Context, *DescribeDBInstancesMessage) (*DBInstanceMessage, error)
@@ -239,10 +330,14 @@ type API interface {
 	AddTagsToResource(context.Context, *AddTagsToResourceMessage) (*AddTagsToResourceOutput, error)
 	RemoveTagsFromResource(context.Context, *RemoveTagsFromResourceMessage) (*RemoveTagsFromResourceOutput, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceMessage) (*TagListMessage, error)
+	CreateDBCluster(context.Context, *CreateDBClusterMessage) (*CreateDBClusterResult, error)
+	DescribeDBClusters(context.Context, *DescribeDBClustersMessage) (*DBClusterMessage, error)
+	ModifyDBCluster(context.Context, *ModifyDBClusterMessage) (*ModifyDBClusterResult, error)
+	DeleteDBCluster(context.Context, *DeleteDBClusterMessage) (*DeleteDBClusterResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "rds", SigningName: "rds", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://rds.amazonaws.com/doc/2014-10-31/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"AuthorizationNotFoundFault": catalog.ErrorBinding{QueryCode: "AuthorizationNotFound", MessageMember: "", StatusCode: 404}, "BackupPolicyNotFoundFault": catalog.ErrorBinding{QueryCode: "BackupPolicyNotFoundFault", MessageMember: "", StatusCode: 404}, "BlueGreenDeploymentNotFoundFault": catalog.ErrorBinding{QueryCode: "BlueGreenDeploymentNotFoundFault", MessageMember: "", StatusCode: 404}, "CertificateNotFoundFault": catalog.ErrorBinding{QueryCode: "CertificateNotFound", MessageMember: "", StatusCode: 404}, "DBClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "DBClusterNotFoundFault", MessageMember: "", StatusCode: 404}, "DBInstanceAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBInstanceAlreadyExists", MessageMember: "", StatusCode: 400}, "DBInstanceAutomatedBackupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBInstanceAutomatedBackupQuotaExceeded", MessageMember: "", StatusCode: 400}, "DBInstanceNotFoundFault": catalog.ErrorBinding{QueryCode: "DBInstanceNotFound", MessageMember: "", StatusCode: 404}, "DBParameterGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBParameterGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "DBParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBParameterGroupNotFound", MessageMember: "", StatusCode: 404}, "DBParameterGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBParameterGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "DBProxyEndpointNotFoundFault": catalog.ErrorBinding{QueryCode: "DBProxyEndpointNotFoundFault", MessageMember: "", StatusCode: 404}, "DBProxyNotFoundFault": catalog.ErrorBinding{QueryCode: "DBProxyNotFoundFault", MessageMember: "", StatusCode: 404}, "DBProxyTargetGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBProxyTargetGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "DBSecurityGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBSecurityGroupNotFound", MessageMember: "", StatusCode: 404}, "DBShardGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBShardGroupNotFound", MessageMember: "", StatusCode: 404}, "DBSnapshotAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBSnapshotAlreadyExists", MessageMember: "", StatusCode: 400}, "DBSnapshotNotFoundFault": catalog.ErrorBinding{QueryCode: "DBSnapshotNotFound", MessageMember: "", StatusCode: 404}, "DBSnapshotTenantDatabaseNotFoundFault": catalog.ErrorBinding{QueryCode: "DBSnapshotTenantDatabaseNotFoundFault", MessageMember: "", StatusCode: 404}, "DBSubnetGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBSubnetGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "DBSubnetGroupDoesNotCoverEnoughAZs": catalog.ErrorBinding{QueryCode: "DBSubnetGroupDoesNotCoverEnoughAZs", MessageMember: "", StatusCode: 400}, "DBSubnetGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBSubnetGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "DBSubnetGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBSubnetGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "DBSubnetQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBSubnetQuotaExceededFault", MessageMember: "", StatusCode: 400}, "DBUpgradeDependencyFailureFault": catalog.ErrorBinding{QueryCode: "DBUpgradeDependencyFailure", MessageMember: "", StatusCode: 400}, "DomainNotFoundFault": catalog.ErrorBinding{QueryCode: "DomainNotFoundFault", MessageMember: "", StatusCode: 404}, "InstanceQuotaExceededFault": catalog.ErrorBinding{QueryCode: "InstanceQuotaExceeded", MessageMember: "", StatusCode: 400}, "InsufficientDBInstanceCapacityFault": catalog.ErrorBinding{QueryCode: "InsufficientDBInstanceCapacity", MessageMember: "", StatusCode: 400}, "IntegrationNotFoundFault": catalog.ErrorBinding{QueryCode: "IntegrationNotFoundFault", MessageMember: "", StatusCode: 404}, "InvalidDBClusterEndpointStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBClusterEndpointStateFault", MessageMember: "", StatusCode: 400}, "InvalidDBClusterStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBClusterStateFault", MessageMember: "", StatusCode: 400}, "InvalidDBInstanceStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBInstanceState", MessageMember: "", StatusCode: 400}, "InvalidDBParameterGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBParameterGroupState", MessageMember: "", StatusCode: 400}, "InvalidDBSecurityGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBSecurityGroupState", MessageMember: "", StatusCode: 400}, "InvalidDBSubnetGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBSubnetGroupStateFault", MessageMember: "", StatusCode: 400}, "InvalidDBSubnetStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBSubnetStateFault", MessageMember: "", StatusCode: 400}, "InvalidSubnet": catalog.ErrorBinding{QueryCode: "InvalidSubnet", MessageMember: "", StatusCode: 400}, "InvalidVPCNetworkStateFault": catalog.ErrorBinding{QueryCode: "InvalidVPCNetworkStateFault", MessageMember: "", StatusCode: 400}, "KMSKeyNotAccessibleFault": catalog.ErrorBinding{QueryCode: "KMSKeyNotAccessibleFault", MessageMember: "", StatusCode: 400}, "NetworkTypeNotSupported": catalog.ErrorBinding{QueryCode: "NetworkTypeNotSupported", MessageMember: "", StatusCode: 400}, "OptionGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "OptionGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "ProvisionedIopsNotAvailableInAZFault": catalog.ErrorBinding{QueryCode: "ProvisionedIopsNotAvailableInAZFault", MessageMember: "", StatusCode: 400}, "SnapshotQuotaExceededFault": catalog.ErrorBinding{QueryCode: "SnapshotQuotaExceeded", MessageMember: "", StatusCode: 400}, "StorageQuotaExceededFault": catalog.ErrorBinding{QueryCode: "StorageQuotaExceeded", MessageMember: "", StatusCode: 400}, "StorageTypeNotSupportedFault": catalog.ErrorBinding{QueryCode: "StorageTypeNotSupported", MessageMember: "", StatusCode: 400}, "TenantDatabaseNotFoundFault": catalog.ErrorBinding{QueryCode: "TenantDatabaseNotFound", MessageMember: "", StatusCode: 404}, "TenantDatabaseQuotaExceededFault": catalog.ErrorBinding{QueryCode: "TenantDatabaseQuotaExceeded", MessageMember: "", StatusCode: 400}, "VpcEncryptionControlViolationException": catalog.ErrorBinding{QueryCode: "VpcEncryptionControlViolationException", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "rds", SigningName: "rds", Inventory: catalog.InventoryOf(api), TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://rds.amazonaws.com/doc/2014-10-31/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"AuthorizationNotFoundFault": catalog.ErrorBinding{QueryCode: "AuthorizationNotFound", MessageMember: "", StatusCode: 404}, "BackupPolicyNotFoundFault": catalog.ErrorBinding{QueryCode: "BackupPolicyNotFoundFault", MessageMember: "", StatusCode: 404}, "BlueGreenDeploymentNotFoundFault": catalog.ErrorBinding{QueryCode: "BlueGreenDeploymentNotFoundFault", MessageMember: "", StatusCode: 404}, "CertificateNotFoundFault": catalog.ErrorBinding{QueryCode: "CertificateNotFound", MessageMember: "", StatusCode: 404}, "DBClusterAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBClusterAlreadyExistsFault", MessageMember: "", StatusCode: 400}, "DBClusterAutomatedBackupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBClusterAutomatedBackupQuotaExceededFault", MessageMember: "", StatusCode: 400}, "DBClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "DBClusterNotFoundFault", MessageMember: "", StatusCode: 404}, "DBClusterParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBClusterParameterGroupNotFound", MessageMember: "", StatusCode: 404}, "DBClusterQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBClusterQuotaExceededFault", MessageMember: "", StatusCode: 403}, "DBClusterRoleQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBClusterRoleQuotaExceeded", MessageMember: "", StatusCode: 400}, "DBClusterSnapshotAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBClusterSnapshotAlreadyExistsFault", MessageMember: "", StatusCode: 400}, "DBInstanceAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBInstanceAlreadyExists", MessageMember: "", StatusCode: 400}, "DBInstanceAutomatedBackupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBInstanceAutomatedBackupQuotaExceeded", MessageMember: "", StatusCode: 400}, "DBInstanceNotFoundFault": catalog.ErrorBinding{QueryCode: "DBInstanceNotFound", MessageMember: "", StatusCode: 404}, "DBParameterGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBParameterGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "DBParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBParameterGroupNotFound", MessageMember: "", StatusCode: 404}, "DBParameterGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBParameterGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "DBProxyEndpointNotFoundFault": catalog.ErrorBinding{QueryCode: "DBProxyEndpointNotFoundFault", MessageMember: "", StatusCode: 404}, "DBProxyNotFoundFault": catalog.ErrorBinding{QueryCode: "DBProxyNotFoundFault", MessageMember: "", StatusCode: 404}, "DBProxyTargetGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBProxyTargetGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "DBSecurityGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBSecurityGroupNotFound", MessageMember: "", StatusCode: 404}, "DBShardGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBShardGroupNotFound", MessageMember: "", StatusCode: 404}, "DBSnapshotAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBSnapshotAlreadyExists", MessageMember: "", StatusCode: 400}, "DBSnapshotNotFoundFault": catalog.ErrorBinding{QueryCode: "DBSnapshotNotFound", MessageMember: "", StatusCode: 404}, "DBSnapshotTenantDatabaseNotFoundFault": catalog.ErrorBinding{QueryCode: "DBSnapshotTenantDatabaseNotFoundFault", MessageMember: "", StatusCode: 404}, "DBSubnetGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "DBSubnetGroupAlreadyExists", MessageMember: "", StatusCode: 400}, "DBSubnetGroupDoesNotCoverEnoughAZs": catalog.ErrorBinding{QueryCode: "DBSubnetGroupDoesNotCoverEnoughAZs", MessageMember: "", StatusCode: 400}, "DBSubnetGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "DBSubnetGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "DBSubnetGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBSubnetGroupQuotaExceeded", MessageMember: "", StatusCode: 400}, "DBSubnetQuotaExceededFault": catalog.ErrorBinding{QueryCode: "DBSubnetQuotaExceededFault", MessageMember: "", StatusCode: 400}, "DBUpgradeDependencyFailureFault": catalog.ErrorBinding{QueryCode: "DBUpgradeDependencyFailure", MessageMember: "", StatusCode: 400}, "DomainNotFoundFault": catalog.ErrorBinding{QueryCode: "DomainNotFoundFault", MessageMember: "", StatusCode: 404}, "GlobalClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "GlobalClusterNotFoundFault", MessageMember: "", StatusCode: 404}, "InstanceQuotaExceededFault": catalog.ErrorBinding{QueryCode: "InstanceQuotaExceeded", MessageMember: "", StatusCode: 400}, "InsufficientDBInstanceCapacityFault": catalog.ErrorBinding{QueryCode: "InsufficientDBInstanceCapacity", MessageMember: "", StatusCode: 400}, "InsufficientStorageClusterCapacityFault": catalog.ErrorBinding{QueryCode: "InsufficientStorageClusterCapacity", MessageMember: "", StatusCode: 400}, "IntegrationNotFoundFault": catalog.ErrorBinding{QueryCode: "IntegrationNotFoundFault", MessageMember: "", StatusCode: 404}, "InvalidDBClusterEndpointStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBClusterEndpointStateFault", MessageMember: "", StatusCode: 400}, "InvalidDBClusterSnapshotStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBClusterSnapshotStateFault", MessageMember: "", StatusCode: 400}, "InvalidDBClusterStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBClusterStateFault", MessageMember: "", StatusCode: 400}, "InvalidDBInstanceStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBInstanceState", MessageMember: "", StatusCode: 400}, "InvalidDBParameterGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBParameterGroupState", MessageMember: "", StatusCode: 400}, "InvalidDBSecurityGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBSecurityGroupState", MessageMember: "", StatusCode: 400}, "InvalidDBSubnetGroupFault": catalog.ErrorBinding{QueryCode: "InvalidDBSubnetGroupFault", MessageMember: "", StatusCode: 400}, "InvalidDBSubnetGroupStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBSubnetGroupStateFault", MessageMember: "", StatusCode: 400}, "InvalidDBSubnetStateFault": catalog.ErrorBinding{QueryCode: "InvalidDBSubnetStateFault", MessageMember: "", StatusCode: 400}, "InvalidGlobalClusterStateFault": catalog.ErrorBinding{QueryCode: "InvalidGlobalClusterStateFault", MessageMember: "", StatusCode: 400}, "InvalidSubnet": catalog.ErrorBinding{QueryCode: "InvalidSubnet", MessageMember: "", StatusCode: 400}, "InvalidVPCNetworkStateFault": catalog.ErrorBinding{QueryCode: "InvalidVPCNetworkStateFault", MessageMember: "", StatusCode: 400}, "KMSKeyNotAccessibleFault": catalog.ErrorBinding{QueryCode: "KMSKeyNotAccessibleFault", MessageMember: "", StatusCode: 400}, "NetworkTypeNotSupported": catalog.ErrorBinding{QueryCode: "NetworkTypeNotSupported", MessageMember: "", StatusCode: 400}, "OptionGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "OptionGroupNotFoundFault", MessageMember: "", StatusCode: 404}, "ProvisionedIopsNotAvailableInAZFault": catalog.ErrorBinding{QueryCode: "ProvisionedIopsNotAvailableInAZFault", MessageMember: "", StatusCode: 400}, "SnapshotQuotaExceededFault": catalog.ErrorBinding{QueryCode: "SnapshotQuotaExceeded", MessageMember: "", StatusCode: 400}, "StorageQuotaExceededFault": catalog.ErrorBinding{QueryCode: "StorageQuotaExceeded", MessageMember: "", StatusCode: 400}, "StorageTypeNotAvailableFault": catalog.ErrorBinding{QueryCode: "StorageTypeNotAvailableFault", MessageMember: "", StatusCode: 400}, "StorageTypeNotSupportedFault": catalog.ErrorBinding{QueryCode: "StorageTypeNotSupported", MessageMember: "", StatusCode: 400}, "TenantDatabaseNotFoundFault": catalog.ErrorBinding{QueryCode: "TenantDatabaseNotFound", MessageMember: "", StatusCode: 404}, "TenantDatabaseQuotaExceededFault": catalog.ErrorBinding{QueryCode: "TenantDatabaseQuotaExceeded", MessageMember: "", StatusCode: 400}, "VpcEncryptionControlViolationException": catalog.ErrorBinding{QueryCode: "VpcEncryptionControlViolationException", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateDBInstance": {Name: "CreateDBInstance", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateDBInstance", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateDBInstanceMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateDBInstance(ctx, input.(*CreateDBInstanceMessage))
 		}},
@@ -290,6 +385,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListTagsForResource", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceMessage))
+		}},
+		"CreateDBCluster": {Name: "CreateDBCluster", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateDBCluster", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateDBClusterMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateDBCluster(ctx, input.(*CreateDBClusterMessage))
+		}},
+		"DescribeDBClusters": {Name: "DescribeDBClusters", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeDBClusters", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeDBClustersMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeDBClusters(ctx, input.(*DescribeDBClustersMessage))
+		}},
+		"ModifyDBCluster": {Name: "ModifyDBCluster", UnitOutput: false, Sensitive: true, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyDBCluster", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyDBClusterMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyDBCluster(ctx, input.(*ModifyDBClusterMessage))
+		}},
+		"DeleteDBCluster": {Name: "DeleteDBCluster", UnitOutput: false, Sensitive: false, Anonymous: false, Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteDBCluster", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteDBClusterMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteDBCluster(ctx, input.(*DeleteDBClusterMessage))
 		}},
 	}}
 }

@@ -17132,7 +17132,11 @@
       "DeleteDBParameterGroup",
       "AddTagsToResource",
       "RemoveTagsFromResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "CreateDBCluster",
+      "DescribeDBClusters",
+      "ModifyDBCluster",
+      "DeleteDBCluster"
     ],
     "shapes": {
       "CreateDBInstanceMessage": [
@@ -17146,7 +17150,8 @@
         "AllocatedStorage",
         "DBSubnetGroupName",
         "DBParameterGroupName",
-        "Tags"
+        "Tags",
+        "DBClusterIdentifier"
       ],
       "DescribeDBInstancesMessage": [
         "DBInstanceIdentifier",
@@ -17234,7 +17239,8 @@
         "DBSubnetGroup",
         "DBParameterGroups",
         "DBInstanceArn",
-        "TagList"
+        "TagList",
+        "DBClusterIdentifier"
       ],
       "Endpoint": [
         "Address",
@@ -17265,6 +17271,71 @@
       "DBParameterGroupStatus": [
         "DBParameterGroupName",
         "ParameterApplyStatus"
+      ],
+      "CreateDBClusterMessage": [
+        "DBClusterIdentifier",
+        "Engine",
+        "EngineVersion",
+        "MasterUsername",
+        "MasterUserPassword",
+        "Port",
+        "DBSubnetGroupName",
+        "VpcSecurityGroupIds",
+        "BackupRetentionPeriod",
+        "StorageEncrypted",
+        "KmsKeyId",
+        "DeletionProtection",
+        "Tags"
+      ],
+      "DescribeDBClustersMessage": [
+        "DBClusterIdentifier",
+        "Filters",
+        "Marker",
+        "MaxRecords"
+      ],
+      "ModifyDBClusterMessage": [
+        "DBClusterIdentifier",
+        "BackupRetentionPeriod",
+        "Port",
+        "VpcSecurityGroupIds",
+        "DeletionProtection",
+        "MasterUserPassword",
+        "EngineVersion",
+        "ApplyImmediately"
+      ],
+      "DeleteDBClusterMessage": [
+        "DBClusterIdentifier",
+        "SkipFinalSnapshot",
+        "FinalDBSnapshotIdentifier"
+      ],
+      "DBCluster": [
+        "DBClusterIdentifier",
+        "Engine",
+        "EngineVersion",
+        "MasterUsername",
+        "Port",
+        "DBSubnetGroup",
+        "VpcSecurityGroups",
+        "BackupRetentionPeriod",
+        "StorageEncrypted",
+        "KmsKeyId",
+        "DeletionProtection",
+        "TagList",
+        "Endpoint",
+        "ReaderEndpoint",
+        "Status",
+        "DbClusterResourceId",
+        "DBClusterArn",
+        "DBClusterMembers",
+        "ClusterCreateTime"
+      ],
+      "DBClusterMember": [
+        "DBInstanceIdentifier",
+        "IsClusterWriter"
+      ],
+      "VpcSecurityGroupMembership": [
+        "VpcSecurityGroupId",
+        "Status"
       ]
     }
   },

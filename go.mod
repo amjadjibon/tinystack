@@ -29,6 +29,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.42.1
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.75.0
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.3
+	github.com/aws/aws-sdk-go-v2/service/docdb v1.33.1
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.70.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.43.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.338.1
@@ -54,6 +55,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/location v1.59.2
 	github.com/aws/aws-sdk-go-v2/service/mq v1.36.2
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.48.4
+	github.com/aws/aws-sdk-go-v2/service/neptune v1.31.1
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.116.0
@@ -126,6 +128,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect

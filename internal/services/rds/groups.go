@@ -238,6 +238,19 @@ func (s *Service) deleteGroup(ctx context.Context, kind, name string) error {
 			}
 		}
 
+		if kind == kindSubnet {
+			clusters, err := storage.Records[record](tx, scope.Prefix(serviceName, kindCluster))
+			if err != nil {
+				return err
+			}
+
+			for _, r := range clusters {
+				if common.Value(r.Cluster.DBSubnetGroup) == group.Name {
+					return awserror.New("InvalidDBSubnetGroupStateFault", "Group is in use by a cluster")
+				}
+			}
+		}
+
 		tx.Delete(scope.Key(serviceName, kind, group.Name))
 		return nil
 	})

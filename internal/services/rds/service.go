@@ -21,9 +21,11 @@ import (
 const (
 	serviceName   = "rds"
 	kindDB        = "db"
+	kindCluster   = "cluster"
 	kindSubnet    = "subgrp"
 	kindParameter = "pg"
 	available     = "available"
+	engineFilter  = "engine"
 	creating      = "creating"
 	stopped       = "stopped"
 	failed        = "failed"
@@ -44,14 +46,16 @@ var (
 	sqlName            = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
 )
 
-// Records live at <account>/<region>/rds/<db|subgrp|pg>/<name>.
-// Passwords are private storage fields and never appear in inventory or API output.
+// Records live at <account>/<region>/rds/<db|cluster|subgrp|pg>/<name>.
+// SQL passwords are private storage fields; cluster passwords are discarded after validation.
+// Credentials never appear in inventory or API output.
 type record struct {
 	Since        time.Time
 	Name         string
 	Kind         string
 	Tags         map[string]string
 	Instance     *api.DBInstance
+	Cluster      *api.DBCluster
 	Subnet       *api.DBSubnetGroup
 	Parameter    *api.DBParameterGroup
 	Password     string
@@ -77,6 +81,8 @@ func invalid(message string) error { return awserror.New("InvalidParameterValue"
 func resourceError(kind, suffix, name string) error {
 	shape := "DBInstance"
 	switch kind {
+	case kindCluster:
+		shape = "DBCluster"
 	case kindSubnet:
 		shape = "DBSubnetGroup"
 	case kindParameter:

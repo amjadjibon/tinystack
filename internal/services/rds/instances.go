@@ -70,6 +70,14 @@ func (s *Service) CreateDBInstance(
 		return nil, err
 	}
 
+	if common.Value(in.Engine) == engineDocDB || common.Value(in.Engine) == engineNeptune {
+		return s.createClusterInstance(ctx, in)
+	}
+
+	if in.DBClusterIdentifier != nil {
+		return nil, invalid("DBClusterIdentifier requires Engine docdb or neptune")
+	}
+
 	id := strings.ToLower(common.Value(in.DBInstanceIdentifier))
 	if !validName(id, 63) {
 		return nil, invalid("Invalid DBInstanceIdentifier")
@@ -191,7 +199,7 @@ func (s *Service) DescribeDBInstances(
 				return nil, invalid("Filter wildcards are unsupported")
 			}
 		}
-		if !slices.Contains([]string{"db-instance-id", "engine", subnetType}, common.Value(f.Name)) ||
+		if !slices.Contains([]string{"db-instance-id", engineFilter, subnetType}, common.Value(f.Name)) ||
 			len(f.Values) == 0 {
 			return nil, invalid("Unsupported filter or empty filter Values")
 		}
@@ -208,7 +216,7 @@ func (s *Service) DescribeDBInstances(
 		for _, f := range in.Filters {
 			value := r.Name
 			switch common.Value(f.Name) {
-			case "engine":
+			case engineFilter:
 				value = common.Value(r.Instance.Engine)
 			case subnetType:
 				value = ""
@@ -244,10 +252,6 @@ func (s *Service) DeleteDBInstance(
 	ctx context.Context,
 	in *api.DeleteDBInstanceMessage,
 ) (*api.DeleteDBInstanceResult, error) {
-	if !common.Value(in.SkipFinalSnapshot) {
-		return nil, invalid("Snapshots are unsupported; set SkipFinalSnapshot=true")
-	}
-
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
@@ -263,6 +267,20 @@ func (s *Service) DeleteDBInstance(
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if r.Instance.DBClusterIdentifier != nil {
+		e := s.store.Update(ctx, func(tx storage.WriteTx) error { return deleteClusterMember(tx, scope, r) })
+		if e != nil {
+			return nil, e
+		}
+
+		r.Instance.DBInstanceStatus = new("deleting")
+		return &api.DeleteDBInstanceResult{DBInstance: instance(r)}, nil
+	}
+
+	if !common.Value(in.SkipFinalSnapshot) {
+		return nil, invalid("Snapshots are unsupported; set SkipFinalSnapshot=true")
 	}
 
 	if s.runtime != nil {
@@ -303,6 +321,10 @@ func (s *Service) change(
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	if r.Instance.DBClusterIdentifier != nil {
+		return s.changeClusterMember(ctx, scope, r, in)
 	}
 
 	status := common.Value(r.Instance.DBInstanceStatus)

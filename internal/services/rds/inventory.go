@@ -29,11 +29,24 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			typ := map[string]string{kindDB: "db-instance", kindSubnet: subnetType, kindParameter: "db-parameter-group"}[r.Kind]
+			typ := map[string]string{
+				kindDB: "db-instance", kindCluster: "db-cluster",
+				kindSubnet: subnetType, kindParameter: "db-parameter-group",
+			}[r.Kind]
 			details := map[string]any{}
 			if r.Instance != nil {
 				details["Engine"] = common.Value(r.Instance.Engine)
 				details["Status"] = common.Value(r.Instance.DBInstanceStatus)
+				if r.Instance.DBClusterIdentifier != nil {
+					details["RecordsOnly"] = true
+					details["DBClusterIdentifier"] = common.Value(r.Instance.DBClusterIdentifier)
+				}
+			}
+
+			if r.Cluster != nil {
+				details["Engine"] = common.Value(r.Cluster.Engine)
+				details["Status"] = common.Value(r.Cluster.Status)
+				details["RecordsOnly"] = true
 			}
 
 			out = append(out, catalog.Resource{

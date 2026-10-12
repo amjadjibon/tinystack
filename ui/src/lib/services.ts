@@ -187,7 +187,7 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "eks",
 	},
 	rds: {
-		title: "Relational Database Service",
+		title: "RDS, DocumentDB and Neptune",
 		category: database,
 		icon: "rds",
 	},
