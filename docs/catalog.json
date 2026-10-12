@@ -1675,6 +1675,30 @@
         "A load balancer outside a VPC, created with AvailabilityZones, takes no security groups or internal scheme and reports no VPC",
         "CanonicalHostedZoneNameID is known for eight Regions and us-east-1's value elsewhere; the source security group is always amazon-elb/amazon-elb-sg"
       ]
+    },
+    "verifiedpermissions": {
+      "title": "Amazon Verified Permissions",
+      "category": "Identity and security",
+      "scope": "Account and Region",
+      "summary": "Store policy stores, Cedar schemas, static policies and tags as records without the Cedar authorization engine.",
+      "execution": "Configuration records only",
+      "package": "verifiedpermissions",
+      "features": [
+        "15 pinned AWS JSON 1.0 operations: CreatePolicyStore, GetPolicyStore, ListPolicyStores, UpdatePolicyStore, DeletePolicyStore, PutSchema, GetSchema, CreatePolicy, GetPolicy, ListPolicies, UpdatePolicy, DeletePolicy, TagResource, UntagResource, ListTagsForResource, with AWS SDK v2 integration",
+        "Policy stores support ValidationSettings (OFF and STRICT validation modes), Description, clientToken idempotency, and cascading deletion of associated schemas, policies, and policy tokens",
+        "PutSchema validates that the cedarJson definition is syntactically valid JSON and extracts sorted top-level namespace keys; GetSchema returns stored cedarJson and namespaces",
+        "Policies support static policy definitions with statement validation (extracting Permit or Forbid effect from leading permit( or forbid( keywords), clientToken idempotency, and deletion",
+        "Template-linked policy creation is rejected with an explicit ValidationException",
+        "Tags supported on policy stores via TagResource, UntagResource, ListTagsForResource, and Resource Groups Tagging API",
+        "CloudFormation resources AWS::VerifiedPermissions::PolicyStore (Ref/GetAtt PolicyStoreId, Arn; ValidationSettings, Schema.CedarJson, Description, Tags) and AWS::VerifiedPermissions::Policy (Ref/GetAtt PolicyId, PolicyStoreId, PolicyType; Definition.Static; Definition.TemplateLinked fails explicitly and triggers clean rollback)",
+        "RecordsOnly=true / ExecutionReady=false catalog inventory resource representation, official console icon, and Terraform endpoint key"
+      ],
+      "gaps": [
+        "Cedar schema validation is not performed in STRICT mode; schema definitions are stored as JSON records without validating policy syntax against Cedar entity/action schemas",
+        "Cedar authorization evaluation engine (IsAuthorized, IsAuthorizedWithToken, BatchIsAuthorized) is not implemented and will be delivered in a future slice",
+        "Template-linked policies and policy templates (CreatePolicyTemplate, GetPolicyTemplate, ListPolicyTemplates, UpdatePolicyTemplate, DeletePolicyTemplate) are not supported",
+        "Identity sources (CreateIdentitySource, GetIdentitySource, ListIdentitySources, UpdateIdentitySource, DeleteIdentitySource) are not supported"
+      ]
     }
   },
   "future": {

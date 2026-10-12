@@ -147,6 +147,7 @@ nav:
           - "Amazon Location Service": services/location.md
       - "Identity and security":
           - "AWS Private CA": services/acmpca.md
+          - "Amazon Verified Permissions": services/verifiedpermissions.md
           - "Certificate Manager": services/acm.md
           - "Cognito identity pools": services/cognitoidentity.md
           - "Cognito user pools": services/cognitoidp.md
