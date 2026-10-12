@@ -139,6 +139,7 @@ nav:
           - "SSM Parameter Store": services/ssm.md
           - "Secrets Manager": services/secretsmanager.md
       - "Developer Tools":
+          - "AWS X-Ray": services/xray.md
           - "CodeBuild": services/codebuild.md
       - "Front-End Web & Mobile":
           - "Amazon Location Service": services/location.md
@@ -202,6 +203,7 @@ nav:
       - Service and extension proposals:
           - "AWS Batch job execution": roadmap/services/batch-runtime.md
           - "AWS Signer": roadmap/services/signer.md
+          - "AWS X-Ray trace ingestion and telemetry runtime": roadmap/services/xray-runtime.md
           - "Amazon Bedrock control plane": roadmap/services/bedrock.md
           - "Amazon Inspector": roadmap/services/inspector2.md
           - "Amazon Location runtime and broader records": roadmap/services/location-runtime.md

@@ -9,6 +9,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | --- | --- | --- |
 | [AWS Batch job execution](services/batch-runtime.md) | Proposed | Extend the implemented metadata subset with an explicitly configured execution engine. |
 | [AWS Signer](services/signer.md) | Proposed | Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`. |
+| [AWS X-Ray trace ingestion and telemetry runtime](services/xray-runtime.md) | Proposed | Extend records-only groups and sampling rules to trace ingestion, telemetry processing, and service map analysis. |
 | [Amazon Bedrock control plane](services/bedrock.md) | Proposed | Implement `ListFoundationModels`, `GetFoundationModel`, `ListInferenceProfiles`. |
 | [Amazon Inspector](services/inspector2.md) | Proposed | Implement `ListFindings`, `ListCoverage`, `CreateFilter`. |
 | [Amazon Location runtime and broader records](services/location-runtime.md) | Proposed | Implement device-position ingestion, retrieval/history and tracker consumer associations with explicit runtime semantics. |
