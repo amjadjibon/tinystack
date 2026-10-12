@@ -1500,6 +1500,34 @@
         "CloudFormation ScheduledActions, tags and undocumented ScalableTarget GetAtt attributes are excluded; removing an explicit CF RoleARN rejects (supply the desired role). Suspension omission resets false in CF; other target identity changes replace resources. CF does not implement service-specific live-state compensation beyond the shared template rollback"
       ]
     },
+    "redshift": {
+      "title": "Amazon Redshift",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "summary": "Store provisioned cluster, subnet group and parameter group metadata without running a warehouse.",
+      "execution": "Configuration records only",
+      "package": "redshift",
+      "features": [
+        "Fourteen pinned AWS Query cluster, subnet group, parameter group and native tag operations with AWS SDK v2 coverage",
+        "Cluster create, describe, modify and delete with documented naming, node/count, password, database, port and retention validation; passwords are omitted from records",
+        "Available cluster status and Redshift endpoint/namespace ARN metadata, with stable creation time and defaults",
+        "Scoped EC2 subnet existence and shared VPC checks, atomic subnet group updates, and group-in-use deletion protection",
+        "Stable built-in default.redshift-1.0 parameter group and custom redshift-1.0 parameter group metadata",
+        "CreateTags, DescribeTags and DeleteTags on cluster, subnetgroup and parametergroup ARNs; RGTA and Resource Groups integration",
+        "AWS::Redshift::Cluster, AWS::Redshift::ClusterSubnetGroup and AWS::Redshift::ClusterParameterGroup CloudFormation lifecycle and tags; cluster Ref and Endpoint.Address/Endpoint.Port GetAtt",
+        "RecordsOnly=true and ExecutionReady=false inventory, official AWS icon and Terraform redshift endpoint key"
+      ],
+      "gaps": [
+        "No SQL, database runtime, JDBC/ODBC listener, Redshift Data API or Redshift Serverless; advertised endpoints are metadata only",
+        "No snapshots, restore, pause/resume/reboot/resize, logging, usage limits, IAM role association, datashares or scheduled actions",
+        "DeleteCluster requires SkipFinalClusterSnapshot=true; final snapshot requests fail explicitly",
+        "ModifyCluster excludes resize and rename inputs; CloudFormation rejects resize changes, while immutable identity/database/subnet changes use replacement",
+        "No parameter values: ModifyClusterParameterGroup, DescribeClusterParameters and ResetClusterParameterGroup are excluded; CloudFormation rejects non-empty Parameters",
+        "Describe tag-key/value filters are excluded; DescribeTags supports resource name/type and Marker/MaxRecords only",
+        "VPC security group IDs are format-validated metadata; EC2 security group existence and runtime network provisioning are excluded",
+        "Automated snapshot retention and encryption fields are metadata only; the built-in default parameter group and its tags are immutable"
+      ]
+    },
     "xray": {
       "title": "AWS X-Ray",
       "category": "Developer Tools",
@@ -1524,6 +1552,12 @@
     }
   },
   "future": {
+    "redshift-runtime": {
+      "title": "Amazon Redshift runtime and snapshots",
+      "state": "Proposed",
+      "slice": "Extend the records-only control plane with explicit runtime and snapshot support.",
+      "features": "- [ ] SQL warehouse runtime and JDBC/ODBC execution\n- [ ] Snapshot create/list/delete/restore and final snapshots\n- [ ] Pause/resume/reboot/resize lifecycle\n- [ ] Parameter values and application\n- [ ] Redshift Data API and Serverless"
+    },
     "appsync-events": {
       "title": "AppSync Events",
       "state": "Proposed",

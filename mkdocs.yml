@@ -116,6 +116,7 @@ nav:
       - Implemented catalogue: services/catalogue.md
       - "Analytics":
           - "Amazon MSK": services/kafka.md
+          - "Amazon Redshift": services/redshift.md
           - "Athena": services/athena.md
           - "Glue Data Catalog": services/glue.md
       - "Application Integration":
@@ -210,6 +211,7 @@ nav:
           - "Amazon MQ configuration, users and runtime": roadmap/services/mq-runtime.md
           - "Amazon MSK configuration, security and runtime": roadmap/services/msk-runtime.md
           - "Amazon MWAA tokens and execution": roadmap/services/mwaa-runtime.md
+          - "Amazon Redshift runtime and snapshots": roadmap/services/redshift-runtime.md
           - "AppSync Events": roadmap/services/appsync-events.md
           - "Application Auto Scaling execution and advanced policies": roadmap/services/applicationautoscaling-runtime.md
           - "Aurora DSQL": roadmap/services/dsql.md
