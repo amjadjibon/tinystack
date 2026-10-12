@@ -59,6 +59,7 @@ var namespaces = map[string]string{
 	"sqs":                    "SQS",
 	"ssm":                    "SSM",
 	"xray":                   "XRay",
+	"acmpca":                 "ACMPCA",
 }
 
 // typeNames are the CloudFormation names of the inventory types whose name is
