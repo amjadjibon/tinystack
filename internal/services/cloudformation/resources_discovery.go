@@ -7,69 +7,8 @@ import (
 
 // These record resources complete their Cloud Map operations synchronously.
 func init() {
-	for _, kind := range []string{"Http", "PrivateDns"} {
-		register("AWS::ServiceDiscovery::"+kind+"Namespace", &resourceType{
-			name:       memberName,
-			properties: []string{memberName, memberDescription, memberDiscoveryVPC, memberTags},
-			attributes: []string{
-				memberArn,
-				"Id",
-			},
-			replace: []string{memberName, memberDescription, memberDiscoveryVPC, memberTags},
-			create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
-				params := map[string]any{memberName: c.nameOf(p, memberName, 1024)}
-				for _, key := range []string{memberDescription, memberDiscoveryVPC} {
-					if v, ok := p[key]; ok {
-						params[key] = v
-					}
-				}
-
-				if kind == "Http" {
-					if _, ok := p[memberDiscoveryVPC]; ok {
-						return "", nil, fmt.Errorf("vpc is only supported for PrivateDnsNamespace")
-					}
-				}
-
-				if ts := p.tags(); len(ts) > 0 {
-					params[memberTags] = tagList(ts, memberKey, memberValue)
-				}
-
-				out, err := c.call(ctx, "servicediscovery", "Create"+kind+"Namespace", params)
-				if err != nil {
-					return "", nil, err
-				}
-
-				op, err := c.call(
-					ctx,
-					"servicediscovery",
-					"GetOperation",
-					map[string]any{"OperationId": out["OperationId"]},
-				)
-				if err != nil {
-					return "", nil, err
-				}
-
-				operation, _ := op["Operation"].(map[string]any)
-				targets, _ := operation["Targets"].(map[string]any)
-				id, _ := targets["NAMESPACE"].(string)
-				details, err := c.call(ctx, "servicediscovery", "GetNamespace", map[string]any{"Id": id})
-				if err != nil {
-					return "", nil, err
-				}
-
-				ns, _ := details["Namespace"].(map[string]any)
-				return id, map[string]any{"Id": id, memberArn: ns[memberArn]}, nil
-			},
-			remove: func(ctx context.Context, c *client, r *resource) error {
-				_, err := c.call(ctx, "servicediscovery", "DeleteNamespace", map[string]any{"Id": r.Physical})
-				if gone(err, "NamespaceNotFound") {
-					return nil
-				}
-
-				return err
-			},
-		})
-	}
+	registerNamespace("AWS::ServiceDiscovery::HttpNamespace", "Http")
+	registerNamespace("AWS::ServiceDiscovery::PrivateDnsNamespace", "PrivateDns")
 
 	register("AWS::ServiceDiscovery::Service", &resourceType{
 		name: memberName,
@@ -171,3 +110,68 @@ const (
 )
 
 const memberDiscoveryVPC = "Vpc"
+
+// registerNamespace registers a Cloud Map namespace type whose operations are named after kind.
+func registerNamespace(name, kind string) {
+	register(name, &resourceType{
+		name:       memberName,
+		properties: []string{memberName, memberDescription, memberDiscoveryVPC, memberTags},
+		attributes: []string{
+			memberArn,
+			"Id",
+		},
+		replace: []string{memberName, memberDescription, memberDiscoveryVPC, memberTags},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			params := map[string]any{memberName: c.nameOf(p, memberName, 1024)}
+			for _, key := range []string{memberDescription, memberDiscoveryVPC} {
+				if v, ok := p[key]; ok {
+					params[key] = v
+				}
+			}
+
+			if kind == "Http" {
+				if _, ok := p[memberDiscoveryVPC]; ok {
+					return "", nil, fmt.Errorf("vpc is only supported for PrivateDnsNamespace")
+				}
+			}
+
+			if ts := p.tags(); len(ts) > 0 {
+				params[memberTags] = tagList(ts, memberKey, memberValue)
+			}
+
+			out, err := c.call(ctx, "servicediscovery", "Create"+kind+"Namespace", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			op, err := c.call(
+				ctx,
+				"servicediscovery",
+				"GetOperation",
+				map[string]any{"OperationId": out["OperationId"]},
+			)
+			if err != nil {
+				return "", nil, err
+			}
+
+			operation, _ := op["Operation"].(map[string]any)
+			targets, _ := operation["Targets"].(map[string]any)
+			id, _ := targets["NAMESPACE"].(string)
+			details, err := c.call(ctx, "servicediscovery", "GetNamespace", map[string]any{"Id": id})
+			if err != nil {
+				return "", nil, err
+			}
+
+			ns, _ := details["Namespace"].(map[string]any)
+			return id, map[string]any{"Id": id, memberArn: ns[memberArn]}, nil
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "servicediscovery", "DeleteNamespace", map[string]any{"Id": r.Physical})
+			if gone(err, "NamespaceNotFound") {
+				return nil
+			}
+
+			return err
+		},
+	})
+}

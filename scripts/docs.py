@@ -256,8 +256,18 @@ def render():
         nav.append(f"          - {json.dumps(info['title'])}: roadmap/services/{key}.md")
     pages["roadmap/catalogue.md"] = "\n".join(future_index) + "\n"
     resources = {}
-    for file in sorted((ROOT / "internal/services/cloudformation").glob("resources*.go")):
-        for name in re.findall(r'\bregister\w*\("(AWS::[^"\s]+)"', file.read_text()):
+    files = sorted((ROOT / "internal/services/cloudformation").glob("resources*.go"))
+    # Registrations name a type either literally or through a package constant.
+    constants = {
+        ident: value for file in files
+        for ident, value in re.findall(r'\b(\w+)\s*=\s*"(AWS::\w+::\w+)"', file.read_text())
+    }
+    for file in files:
+        # Helpers such as registerHTTPChild forward a parameter; their callers pass the literal names.
+        for literal, ident in re.findall(r'(?<!func )\bregister\w*\(\s*(?:"(AWS::\w+::\w+)"|(\w+)\s*,)', file.read_text()):
+            name = literal or constants.get(ident)
+            if name is None:
+                continue
             if name in resources:
                 raise ValueError(f"Duplicate CloudFormation registration: {name}")
             resources[name] = file.relative_to(ROOT).as_posix()
