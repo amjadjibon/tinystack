@@ -3,6 +3,8 @@ package cloudformation
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -103,6 +105,11 @@ func init() {
 			return name, attrs, nil
 		},
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			// Version upgrades are outside the records-only slice; never drop the change silently.
+			if fmt.Sprint(r.Properties["EngineVersion"]) != fmt.Sprint(p["EngineVersion"]) {
+				return nil, errors.New("EngineVersion upgrades are not supported")
+			}
+
 			params := pick(
 				map[string]any{memberDomainName: r.Physical},
 				p,

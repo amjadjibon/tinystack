@@ -136,6 +136,27 @@ func TestCloudFormationOpenSearchLifecycle(t *testing.T) {
 		t.Fatalf("unexpected updated tags: %+v (err: %v)", tags, err)
 	}
 
+	// An engine upgrade is unsupported and must roll back instead of being silently ignored.
+	_, err = cf.UpdateStack(
+		ctx,
+		&cfn.UpdateStackInput{
+			StackName: aws.String("opensearch-stack"),
+			TemplateBody: aws.String(
+				strings.Replace(openSearchTemplate(3, "Prod"), "OpenSearch_2.11", "OpenSearch_2.13", 1),
+			),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantStatus(ctx, t, cf, "opensearch-stack", cfntypes.StackStatusUpdateRollbackComplete)
+
+	desc, err = osC.DescribeDomain(ctx, &sdk.DescribeDomainInput{DomainName: aws.String("cfn-test-domain")})
+	if err != nil || aws.ToString(desc.DomainStatus.EngineVersion) != "OpenSearch_2.11" {
+		t.Fatal(desc, err)
+	}
+
 	// 3. Delete Stack
 	_, err = cf.DeleteStack(ctx, &cfn.DeleteStackInput{
 		StackName: aws.String("opensearch-stack"),
