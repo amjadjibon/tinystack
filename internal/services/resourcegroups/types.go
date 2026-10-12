@@ -32,6 +32,7 @@ var namespaces = map[string]string{
 	"eks":                    "EKS",
 	"elasticache":            "ElastiCache",
 	"rds":                    "RDS",
+	"ram":                    "RAM",
 	"elbv2":                  "ElasticLoadBalancingV2",
 	"eventbridge":            "Events",
 	"firehose":               "KinesisFirehose",
