@@ -33,6 +33,7 @@ import (
 	cloudtrailapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudtrail"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	codebuildapi "github.com/amjadjibon/tinystack/internal/aws/generated/codebuild"
+	codepipelineapi "github.com/amjadjibon/tinystack/internal/aws/generated/codepipeline"
 	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	configapi "github.com/amjadjibon/tinystack/internal/aws/generated/config"
@@ -112,6 +113,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudtrail"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/codebuild"
+	"github.com/amjadjibon/tinystack/internal/services/codepipeline"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	configservice "github.com/amjadjibon/tinystack/internal/services/config"
@@ -349,6 +351,7 @@ func build(
 	fileSystems := efs.New(store, network)
 	batchRecords := batch.New(store, network)
 	buildProjects := codebuild.New(store)
+	codePipelines := codepipeline.New(store)
 	brokers := mq.New(store, network)
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
@@ -432,6 +435,7 @@ func build(
 		efsapi.Descriptor(fileSystems),
 		batchapi.Descriptor(batchRecords),
 		codebuildapi.Descriptor(buildProjects),
+		codepipelineapi.Descriptor(codePipelines),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),

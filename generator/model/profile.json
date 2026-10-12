@@ -21797,5 +21797,153 @@
       ],
       "UpdatePermissionSetResponse": []
     }
+  },
+  "codepipeline": {
+    "operations": [
+      "CreatePipeline",
+      "GetPipeline",
+      "GetPipelineState",
+      "ListPipelines",
+      "UpdatePipeline",
+      "DeletePipeline",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreatePipelineInput": [
+        "pipeline",
+        "tags"
+      ],
+      "CreatePipelineOutput": [
+        "pipeline",
+        "tags"
+      ],
+      "GetPipelineInput": [
+        "name",
+        "version"
+      ],
+      "GetPipelineOutput": [
+        "pipeline",
+        "metadata"
+      ],
+      "GetPipelineStateInput": [
+        "name"
+      ],
+      "GetPipelineStateOutput": [
+        "pipelineName",
+        "pipelineVersion",
+        "stageStates",
+        "created",
+        "updated"
+      ],
+      "StageState": [
+        "stageName",
+        "actionStates"
+      ],
+      "ActionState": [
+        "actionName"
+      ],
+      "ListPipelinesInput": [
+        "nextToken",
+        "maxResults"
+      ],
+      "ListPipelinesOutput": [
+        "pipelines",
+        "nextToken"
+      ],
+      "PipelineSummary": [
+        "name",
+        "version",
+        "pipelineType",
+        "executionMode",
+        "created",
+        "updated"
+      ],
+      "UpdatePipelineInput": [
+        "pipeline"
+      ],
+      "UpdatePipelineOutput": [
+        "pipeline"
+      ],
+      "DeletePipelineInput": [
+        "name"
+      ],
+      "TagResourceInput": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceInput": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "ListTagsForResourceInput": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "tags"
+      ],
+      "PipelineMetadata": [
+        "pipelineArn",
+        "created",
+        "updated"
+      ],
+      "PipelineDeclaration": [
+        "name",
+        "roleArn",
+        "artifactStore",
+        "artifactStores",
+        "stages",
+        "version",
+        "executionMode",
+        "pipelineType",
+        "variables"
+      ],
+      "ArtifactStore": [
+        "type",
+        "location",
+        "encryptionKey"
+      ],
+      "EncryptionKey": [
+        "id",
+        "type"
+      ],
+      "StageDeclaration": [
+        "name",
+        "actions"
+      ],
+      "ActionDeclaration": [
+        "name",
+        "actionTypeId",
+        "runOrder",
+        "configuration",
+        "outputArtifacts",
+        "inputArtifacts",
+        "roleArn",
+        "region",
+        "namespace"
+      ],
+      "ActionTypeId": [
+        "category",
+        "owner",
+        "provider",
+        "version"
+      ],
+      "InputArtifact": [
+        "name"
+      ],
+      "OutputArtifact": [
+        "name"
+      ],
+      "PipelineVariableDeclaration": [
+        "name",
+        "defaultValue",
+        "description"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ]
+    }
   }
 }

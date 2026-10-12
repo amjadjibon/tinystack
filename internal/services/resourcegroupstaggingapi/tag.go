@@ -193,6 +193,7 @@ var taggers = map[string]tagger{
 	),
 	"route53resolver":     resourceOperations("route53resolver", "ResourceArn", pairs),
 	"xray":                resourceOperations("xray", "ResourceARN", pairs),
+	"codepipeline":        resourceOperations("codepipeline", "ResourceArn", pairs),
 	"verifiedpermissions": resourceOperations("verifiedpermissions", "ResourceArn", plain),
 	"ram":                 resourceOperations("ram", "ResourceShareArn", pairs),
 	"ssoadmin": operations("ssoadmin", "TagResource", "UntagResource",

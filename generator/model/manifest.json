@@ -79,6 +79,10 @@
       "path": "codegen/sdk-codegen/aws-models/codebuild.json",
       "sha256": "1ce14cc44bc93ad4f6624780bc31449af06f37f118ee51d618d00d6714ab95da"
     },
+    "codepipeline": {
+      "path": "codegen/sdk-codegen/aws-models/codepipeline.json",
+      "sha256": "8ac61eba1387c6a3d99afa12c29efa05bde3427dd56e2e2ddb26928b3d8298bc"
+    },
     "cognitoidentity": {
       "path": "codegen/sdk-codegen/aws-models/cognito-identity.json",
       "sha256": "fcd689121fb95b1e796b20749d45de982e223ace60e5dd2d4b3f841fd03cd9f5"
