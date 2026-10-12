@@ -182,6 +182,7 @@ var TerraformServices = []string{
 	"lambda",
 	"logs",
 	"opensearch",
+	"route53resolver",
 	"route53",
 	"s3",
 	"scheduler",

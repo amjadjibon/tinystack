@@ -67,6 +67,7 @@ import (
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
+	route53resolverapi "github.com/amjadjibon/tinystack/internal/aws/generated/route53resolver"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	s3tablesapi "github.com/amjadjibon/tinystack/internal/aws/generated/s3tables"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
@@ -140,6 +141,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
+	"github.com/amjadjibon/tinystack/internal/services/route53resolver"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/s3tables"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
@@ -344,6 +346,7 @@ func build(
 	tableRecords := s3tables.New(store)
 	wafRecords := wafv2.New(store)
 	opensearchRecords := opensearch.New(store)
+	resolverRecords := route53resolver.New(store, network)
 	xrayRecords := xray.New(store)
 	redshiftRecords := redshift.New(store, network)
 	a.onReset(trails.Reset)
@@ -420,6 +423,7 @@ func build(
 		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),
 		wafv2api.Descriptor(wafRecords),
 		opensearchapi.Descriptor(opensearchRecords),
+		route53resolverapi.Descriptor(resolverRecords),
 		xrayapi.Descriptor(xrayRecords),
 		redshiftapi.Descriptor(redshiftRecords),
 		rdsapi.Descriptor(databases),

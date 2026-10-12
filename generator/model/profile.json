@@ -20477,5 +20477,208 @@
         "Status"
       ]
     }
+  },
+  "route53resolver": {
+    "operations": [
+      "AssociateResolverRule",
+      "CreateResolverEndpoint",
+      "CreateResolverRule",
+      "DeleteResolverEndpoint",
+      "DeleteResolverRule",
+      "DisassociateResolverRule",
+      "GetResolverEndpoint",
+      "GetResolverRule",
+      "GetResolverRuleAssociation",
+      "ListResolverEndpoints",
+      "ListResolverRuleAssociations",
+      "ListResolverRules",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateResolverEndpoint",
+      "UpdateResolverRule"
+    ],
+    "shapes": {
+      "AssociateResolverRuleRequest": [
+        "Name",
+        "ResolverRuleId",
+        "VPCId"
+      ],
+      "AssociateResolverRuleResponse": [
+        "ResolverRuleAssociation"
+      ],
+      "CreateResolverEndpointRequest": [
+        "CreatorRequestId",
+        "Direction",
+        "IpAddresses",
+        "Name",
+        "SecurityGroupIds",
+        "Tags"
+      ],
+      "CreateResolverEndpointResponse": [
+        "ResolverEndpoint"
+      ],
+      "CreateResolverRuleRequest": [
+        "CreatorRequestId",
+        "DomainName",
+        "Name",
+        "ResolverEndpointId",
+        "RuleType",
+        "Tags",
+        "TargetIps"
+      ],
+      "CreateResolverRuleResponse": [
+        "ResolverRule"
+      ],
+      "DeleteResolverEndpointRequest": [
+        "ResolverEndpointId"
+      ],
+      "DeleteResolverEndpointResponse": [
+        "ResolverEndpoint"
+      ],
+      "DeleteResolverRuleRequest": [
+        "ResolverRuleId"
+      ],
+      "DeleteResolverRuleResponse": [
+        "ResolverRule"
+      ],
+      "DisassociateResolverRuleRequest": [
+        "ResolverRuleId",
+        "VPCId"
+      ],
+      "DisassociateResolverRuleResponse": [
+        "ResolverRuleAssociation"
+      ],
+      "GetResolverEndpointRequest": [
+        "ResolverEndpointId"
+      ],
+      "GetResolverEndpointResponse": [
+        "ResolverEndpoint"
+      ],
+      "GetResolverRuleAssociationRequest": [
+        "ResolverRuleAssociationId"
+      ],
+      "GetResolverRuleAssociationResponse": [
+        "ResolverRuleAssociation"
+      ],
+      "GetResolverRuleRequest": [
+        "ResolverRuleId"
+      ],
+      "GetResolverRuleResponse": [
+        "ResolverRule"
+      ],
+      "IpAddressRequest": [
+        "Ip",
+        "SubnetId"
+      ],
+      "ListResolverEndpointsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListResolverEndpointsResponse": [
+        "MaxResults",
+        "NextToken",
+        "ResolverEndpoints"
+      ],
+      "ListResolverRuleAssociationsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListResolverRuleAssociationsResponse": [
+        "MaxResults",
+        "NextToken",
+        "ResolverRuleAssociations"
+      ],
+      "ListResolverRulesRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListResolverRulesResponse": [
+        "MaxResults",
+        "NextToken",
+        "ResolverRules"
+      ],
+      "ListTagsForResourceRequest": [
+        "MaxResults",
+        "NextToken",
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "NextToken",
+        "Tags"
+      ],
+      "ResolverEndpoint": [
+        "Arn",
+        "CreationTime",
+        "CreatorRequestId",
+        "Direction",
+        "HostVPCId",
+        "Id",
+        "IpAddressCount",
+        "ModificationTime",
+        "Name",
+        "SecurityGroupIds",
+        "Status"
+      ],
+      "ResolverRule": [
+        "Arn",
+        "CreationTime",
+        "CreatorRequestId",
+        "DomainName",
+        "Id",
+        "ModificationTime",
+        "Name",
+        "OwnerId",
+        "ResolverEndpointId",
+        "RuleType",
+        "ShareStatus",
+        "Status",
+        "TargetIps"
+      ],
+      "ResolverRuleAssociation": [
+        "Id",
+        "Name",
+        "ResolverRuleId",
+        "Status",
+        "VPCId"
+      ],
+      "ResolverRuleConfig": [
+        "Name",
+        "ResolverEndpointId",
+        "TargetIps"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "TargetAddress": [
+        "Ip",
+        "Port"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateResolverEndpointRequest": [
+        "Name",
+        "ResolverEndpointId"
+      ],
+      "UpdateResolverEndpointResponse": [
+        "ResolverEndpoint"
+      ],
+      "UpdateResolverRuleRequest": [
+        "Config",
+        "ResolverRuleId"
+      ],
+      "UpdateResolverRuleResponse": [
+        "ResolverRule"
+      ]
+    }
   }
 }

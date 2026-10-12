@@ -215,6 +215,10 @@
       "path": "codegen/sdk-codegen/aws-models/route-53.json",
       "sha256": "49310b259a022b7f59fee7ec292ae482761aca40c61dc073f189b9170ab552d9"
     },
+    "route53resolver": {
+      "path": "codegen/sdk-codegen/aws-models/route53resolver.json",
+      "sha256": "2f71da28bb668d385ea78d599339b957b54c6accf2d0dc7e7b29cfc1099aa166"
+    },
     "s3": {
       "path": "codegen/sdk-codegen/aws-models/s3.json",
       "sha256": "57431518807d8565e103b9bcc8f2610950e725645e28374e746bdf8e300cc37a"

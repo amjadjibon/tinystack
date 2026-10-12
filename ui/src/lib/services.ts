@@ -88,6 +88,11 @@ const catalog: Record<string, ServiceInfo> = {
 	config: { title: "AWS Config", category: management, icon: "config" },
 	cloudtrail: { title: "CloudTrail", category: management, icon: "cloudtrail" },
 	vpc: { title: "VPC", category: networking, icon: "ec2" },
+	route53resolver: {
+		title: "Route 53 Resolver",
+		category: networking,
+		icon: "route53",
+	},
 	acm: { title: "Certificate Manager", category: security, icon: "acm" },
 	apigateway: {
 		title: "API Gateway",

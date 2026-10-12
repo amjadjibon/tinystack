@@ -191,7 +191,8 @@ var taggers = map[string]tagger{
 		"TagKeys",
 		names,
 	),
-	"xray": resourceOperations("xray", "ResourceARN", pairs),
+	"route53resolver": resourceOperations("route53resolver", "ResourceArn", pairs),
+	"xray":            resourceOperations("xray", "ResourceARN", pairs),
 	"s3tables": operations(
 		"s3tables",
 		"TagResource",

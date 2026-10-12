@@ -57,6 +57,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.2
 	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.41.2
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.1
+	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.30.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.0
 	github.com/aws/aws-sdk-go-v2/service/s3tables v1.11.0
 	github.com/aws/aws-sdk-go-v2/service/scheduler v1.25.1
