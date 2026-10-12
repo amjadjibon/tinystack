@@ -65,6 +65,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.79.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1
+	github.com/aws/aws-sdk-go-v2/service/transfer v1.85.0
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.71.1
 	github.com/aws/smithy-go v1.28.5
 	github.com/coder/websocket v1.8.15
