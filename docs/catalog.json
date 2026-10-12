@@ -1409,6 +1409,29 @@
         "Reference checks do not verify route tables, private routing, ingress/egress, IAM trust/permissions, encryption or DAG contents; no existing DAG folder object is required",
         "The [records guide](../guides/mwaa-records.md) lists all selected members/defaults/errors/update/tag/CF boundaries and an executable lifecycle; token and execution work remains [future scope](../roadmap/services/mwaa-runtime.md)"
       ]
+    },
+    "transfer": {
+      "title": "AWS Transfer Family",
+      "category": "Migration & Modernization",
+      "scope": "Account and Region",
+      "summary": "Store SFTP server, service-managed user, public-key and tag configuration without a file-transfer runtime.",
+      "execution": "Configuration records only",
+      "package": "transfer",
+      "features": [
+        "Fifteen pinned AWS JSON 1.1 server/user/tag/key operations with transfer signing, real scoped server IDs and server/user ARNs",
+        "Finite SFTP + SERVICE_MANAGED + S3 + PUBLIC server metadata; fixed explicitly selected API security policies, banner updates and actual local user counts",
+        "Atomic service-managed user uniqueness, same-account role ARN syntax, explicit PATH directory references and RSA/ECDSA/ED25519 public-key records with generated key IDs and import timestamps",
+        "Final candidate updates and tags, 50-key local quota, normalized-key duplicate detection, cascading server deletion and deterministic scope/API/resource-bound pagination",
+        "AWS::Transfer::Server Ref ARN/GetAtt Arn and ServerId; AWS::Transfer::User Ref username/GetAtt Arn, ServerId and UserName; atomic config/owned/external tags, actual live-state snapshots and guarded compensation",
+        "SQLite restart, offline archive export/import, reset, RecordsOnly=true/ExecutionReady=false inventory, real RGTA dispatch, official icon and Terraform transfer endpoint key"
+      ],
+      "gaps": [
+        "No SFTP/FTP/FTPS/AS2 listener, authentication, authorization, file transfers, runtime State/readiness, endpoint DNS/IP allocation, host private keys/fingerprints, metrics or successful start/stop stub",
+        "Only explicit SFTP/PUBLIC and a finite fixed policy set; VPC/EFS/certificates/custom identity, logging, workflow/connector, IP/storage/protocol advanced options are excluded, even false/null/empty",
+        "HomeDirectory is an explicit stored absolute path, not verified files; no IAM trust/existence enforcement, logical mappings, policies, POSIX or sessions. PATH is the fixed local directory-type default",
+        "CF SshPublicKeys is excluded; independently imported public-key IDs survive updates and live-state compensation. CF banner removal is rejected; explicit empty clears it",
+        "The [records guide](../guides/transfer-records.md) lists every member/default/error/tag/key/CF boundary and executable CLI lifecycle. StartServer/StopServer and additional runtime/records scope remain [future work](../roadmap/services/transfer-runtime.md)"
+      ]
     }
   },
   "future": {
@@ -1589,11 +1612,12 @@
       "slice": "Implement `StartTranscriptionJob`, `GetTranscriptionJob`, `ListTranscriptionJobs`.",
       "features": "- [ ] `StartTranscriptionJob`\n- [ ] `GetTranscriptionJob`\n- [ ] `ListTranscriptionJobs`\n- [ ] `DeleteTranscriptionJob`\n- [ ] `TagResource`\n- [ ] `UntagResource`\n- [ ] `ListTagsForResource`"
     },
-    "transfer": {
-      "title": "Transfer Family",
+    "transfer-runtime": {
+      "title": "Transfer Family runtime and advanced configuration",
       "state": "Proposed",
-      "slice": "Implement `CreateServer`, `DescribeServer`, `DeleteServer`.",
-      "features": "- [ ] `CreateServer`\n- [ ] `DescribeServer`\n- [ ] `DeleteServer`\n- [ ] `ListServers`\n- [ ] `StartServer`\n- [ ] `StopServer`\n- [ ] `CreateUser`\n- [ ] `DescribeUser`\n- [ ] `DeleteUser`\n- [ ] `ListUsers`\n- [ ] `ImportSshPublicKey`\n- [ ] `DeleteSshPublicKey`"
+      "slice": "Extend the implemented server/user/public-key records with explicitly configured runtime and advanced records.",
+      "features": "- [ ] StartServer and StopServer with real lifecycle/readiness\n- [ ] SFTP/FTP/FTPS/AS2 listeners, authentication and file transfers\n- [ ] Endpoint DNS/IP allocation, host-key ownership, runtime restart and cleanup\n- [ ] VPC/EFS/certificates/custom identity providers\n- [ ] Logical directories, session policies, POSIX and advanced user options\n- [ ] CloudFormation ownership/reconciliation of SshPublicKeys\n- [ ] Workflows, connectors, execution and transfer results\n- [ ] Security-policy discovery and wider eligible configuration matrix\n- [ ] Logging, metrics and other advanced server metadata",
+      "integration": "The implemented slice stores records only; no State, endpoint, fingerprint or execution readiness is fabricated. See the [records guide](../../guides/transfer-records.md). Runtime success requires an explicit adapter and lifecycle contract."
     },
     "translate": {
       "title": "Translate",

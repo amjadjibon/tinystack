@@ -92,6 +92,7 @@ nav:
       - Amazon MQ records: guides/mq-records.md
       - Amazon MSK records: guides/msk-records.md
       - Amazon MWAA records: guides/mwaa-records.md
+      - Transfer Family records: guides/transfer-records.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
@@ -165,6 +166,8 @@ nav:
           - "Kinesis Data Streams": services/kinesis.md
           - "SNS": services/sns.md
           - "SQS": services/sqs.md
+      - "Migration & Modernization":
+          - "AWS Transfer Family": services/transfer.md
       - "Networking and APIs":
           - "API Gateway HTTP APIs": services/apigatewayv2.md
           - "API Gateway REST APIs": services/apigateway.md
@@ -220,7 +223,7 @@ nav:
           - "S3 Files": roadmap/services/s3files.md
           - "S3 Tables": roadmap/services/s3tables.md
           - "Transcribe": roadmap/services/transcribe.md
-          - "Transfer Family": roadmap/services/transfer.md
+          - "Transfer Family runtime and advanced configuration": roadmap/services/transfer-runtime.md
           - "Translate": roadmap/services/translate.md
           - "WAF Classic": roadmap/services/waf-v1.md
   # GENERATED NAV END
