@@ -62,6 +62,7 @@ import (
 	organizationsapi "github.com/amjadjibon/tinystack/internal/aws/generated/organizations"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
+	redshiftapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshift"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
@@ -133,6 +134,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
 	"github.com/amjadjibon/tinystack/internal/services/rds"
 	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
+	"github.com/amjadjibon/tinystack/internal/services/redshift"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
@@ -340,6 +342,7 @@ func build(
 	tableRecords := s3tables.New(store)
 	wafRecords := wafv2.New(store)
 	xrayRecords := xray.New(store)
+	redshiftRecords := redshift.New(store, network)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
 	a.onStop(databases.Stop)
@@ -414,6 +417,7 @@ func build(
 		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),
 		wafv2api.Descriptor(wafRecords),
 		xrayapi.Descriptor(xrayRecords),
+		redshiftapi.Descriptor(redshiftRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),

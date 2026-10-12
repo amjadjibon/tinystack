@@ -53,6 +53,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.61.1
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.32.2
 	github.com/aws/aws-sdk-go-v2/service/rds v1.116.0
+	github.com/aws/aws-sdk-go-v2/service/redshift v1.55.0
 	github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.2
 	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.41.2
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.1

@@ -16531,6 +16531,205 @@
       ]
     }
   },
+  "redshift": {
+    "operations": [
+      "CreateCluster",
+      "CreateClusterParameterGroup",
+      "CreateClusterSubnetGroup",
+      "CreateTags",
+      "DeleteCluster",
+      "DeleteClusterParameterGroup",
+      "DeleteClusterSubnetGroup",
+      "DeleteTags",
+      "DescribeClusterParameterGroups",
+      "DescribeClusterSubnetGroups",
+      "DescribeClusters",
+      "DescribeTags",
+      "ModifyCluster",
+      "ModifyClusterSubnetGroup"
+    ],
+    "shapes": {
+      "AvailabilityZone": [
+        "Name"
+      ],
+      "Cluster": [
+        "ClusterIdentifier",
+        "NodeType",
+        "NumberOfNodes",
+        "MasterUsername",
+        "DBName",
+        "Endpoint",
+        "ClusterStatus",
+        "ClusterCreateTime",
+        "ClusterNamespaceArn",
+        "ClusterSubnetGroupName",
+        "ClusterParameterGroups",
+        "VpcSecurityGroups",
+        "PubliclyAccessible",
+        "Encrypted",
+        "AutomatedSnapshotRetentionPeriod",
+        "Tags"
+      ],
+      "ClusterParameterGroup": [
+        "ParameterGroupName",
+        "ParameterGroupFamily",
+        "Description",
+        "Tags"
+      ],
+      "ClusterParameterGroupStatus": [
+        "ParameterGroupName",
+        "ParameterApplyStatus"
+      ],
+      "ClusterParameterGroupsMessage": [
+        "ParameterGroups",
+        "Marker"
+      ],
+      "ClusterSubnetGroup": [
+        "ClusterSubnetGroupName",
+        "Description",
+        "VpcId",
+        "SubnetGroupStatus",
+        "Subnets",
+        "Tags"
+      ],
+      "ClusterSubnetGroupMessage": [
+        "ClusterSubnetGroups",
+        "Marker"
+      ],
+      "ClustersMessage": [
+        "Clusters",
+        "Marker"
+      ],
+      "CreateClusterMessage": [
+        "ClusterIdentifier",
+        "NodeType",
+        "ClusterType",
+        "NumberOfNodes",
+        "MasterUsername",
+        "MasterUserPassword",
+        "DBName",
+        "Port",
+        "ClusterSubnetGroupName",
+        "ClusterParameterGroupName",
+        "VpcSecurityGroupIds",
+        "PubliclyAccessible",
+        "Encrypted",
+        "AutomatedSnapshotRetentionPeriod",
+        "Tags"
+      ],
+      "CreateClusterParameterGroupMessage": [
+        "ParameterGroupName",
+        "ParameterGroupFamily",
+        "Description",
+        "Tags"
+      ],
+      "CreateClusterParameterGroupResult": [
+        "ClusterParameterGroup"
+      ],
+      "CreateClusterResult": [
+        "Cluster"
+      ],
+      "CreateClusterSubnetGroupMessage": [
+        "ClusterSubnetGroupName",
+        "Description",
+        "SubnetIds",
+        "Tags"
+      ],
+      "CreateClusterSubnetGroupResult": [
+        "ClusterSubnetGroup"
+      ],
+      "CreateTagsMessage": [
+        "ResourceName",
+        "Tags"
+      ],
+      "DeleteClusterMessage": [
+        "ClusterIdentifier",
+        "SkipFinalClusterSnapshot",
+        "FinalClusterSnapshotIdentifier"
+      ],
+      "DeleteClusterParameterGroupMessage": [
+        "ParameterGroupName"
+      ],
+      "DeleteClusterResult": [
+        "Cluster"
+      ],
+      "DeleteClusterSubnetGroupMessage": [
+        "ClusterSubnetGroupName"
+      ],
+      "DeleteTagsMessage": [
+        "ResourceName",
+        "TagKeys"
+      ],
+      "DescribeClusterParameterGroupsMessage": [
+        "ParameterGroupName",
+        "Marker",
+        "MaxRecords"
+      ],
+      "DescribeClusterSubnetGroupsMessage": [
+        "ClusterSubnetGroupName",
+        "Marker",
+        "MaxRecords"
+      ],
+      "DescribeClustersMessage": [
+        "ClusterIdentifier",
+        "Marker",
+        "MaxRecords"
+      ],
+      "DescribeTagsMessage": [
+        "ResourceName",
+        "ResourceType",
+        "Marker",
+        "MaxRecords"
+      ],
+      "Endpoint": [
+        "Address",
+        "Port"
+      ],
+      "ModifyClusterMessage": [
+        "ClusterIdentifier",
+        "MasterUserPassword",
+        "Port",
+        "ClusterParameterGroupName",
+        "VpcSecurityGroupIds",
+        "PubliclyAccessible",
+        "Encrypted",
+        "AutomatedSnapshotRetentionPeriod"
+      ],
+      "ModifyClusterResult": [
+        "Cluster"
+      ],
+      "ModifyClusterSubnetGroupMessage": [
+        "ClusterSubnetGroupName",
+        "Description",
+        "SubnetIds"
+      ],
+      "ModifyClusterSubnetGroupResult": [
+        "ClusterSubnetGroup"
+      ],
+      "Subnet": [
+        "SubnetIdentifier",
+        "SubnetAvailabilityZone",
+        "SubnetStatus"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TaggedResource": [
+        "ResourceName",
+        "ResourceType",
+        "Tag"
+      ],
+      "TaggedResourceListMessage": [
+        "TaggedResources",
+        "Marker"
+      ],
+      "VpcSecurityGroupMembership": [
+        "VpcSecurityGroupId",
+        "Status"
+      ]
+    }
+  },
   "resourcegroups": {
     "operations": [
       "CreateGroup",

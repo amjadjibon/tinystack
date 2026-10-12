@@ -191,6 +191,7 @@ var TerraformServices = []string{
 	"sqs",
 	"ssm",
 	"sts",
+	"redshift",
 	"xray",
 }
 

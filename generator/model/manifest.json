@@ -195,6 +195,10 @@
       "path": "codegen/sdk-codegen/aws-models/rds.json",
       "sha256": "95d7e865d920e45ce621242bc4aa44dbd386fa096550011b6b67b28b40063853"
     },
+    "redshift": {
+      "path": "codegen/sdk-codegen/aws-models/redshift.json",
+      "sha256": "84ddb5e87015ded06f389c13343f1c30c3172f1b680c8db328306de0f94d5b0f"
+    },
     "resourcegroups": {
       "path": "codegen/sdk-codegen/aws-models/resource-groups.json",
       "sha256": "e7a2836714a15a780ed216f81f59b9eb3b197fc95029e55edf42606d6dc5cc02"
