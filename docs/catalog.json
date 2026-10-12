@@ -1453,6 +1453,28 @@
         "CF Description removal rejects (explicit empty clears); PositionFiltering removal restores TimeBased; compensation restores exact prior public timestamps with a fresh private revision guard",
         "The exhaustive [records guide](../guides/location-records.md) describes selected members/defaults/limits/errors/scope/tags/CF and an executable lifecycle. Device positions, deprecated pricing decisions and consumer associations remain [future scope](../roadmap/services/location-runtime.md)"
       ]
+    },
+    "s3tables": {
+      "title": "Amazon S3 Tables",
+      "category": "Storage",
+      "scope": "Account and Region",
+      "summary": "Persist customer table buckets, one-level namespaces, table identities, rename versions and tags without Iceberg files or a query runtime.",
+      "execution": "Metadata records only",
+      "package": "s3tables",
+      "features": [
+        "Sixteen pinned REST JSON hierarchy/tag operations using s3tables signing, exact scoped commercial bucket/table ARNs and canonical table UUIDs",
+        "Separate atomic bucket/namespace/table records with actual ownership/timestamps/format metadata, stable rename identity and optional version checks",
+        "Dependency-safe parent deletion, deep ownership, atomic tag merges and final overflow rejection, real RGTA dispatch",
+        "Deterministic prefix/namespace pages, 1-1000 limits and scope/API/filter/parent/cursor incarnation-bound continuation tokens",
+        "Typed AWS::S3Tables::TableBucket, Namespace and WithoutMetadata: Yes Table resources with genuine Ref/GetAtt, atomic rename/final tags, live compensation with fresh tokens and hierarchy replacement cleanup",
+        "SQLite restart, offline archive export/import, reset, RecordsOnly=true/ExecutionReady=false inventory, official S3 icon and Terraform s3tables endpoint key"
+      ],
+      "gaps": [
+        "Customer metadata only; no AWS-managed buckets/tables, namespace ARNs, warehouse/metadata/data files, Iceberg REST catalog, queries, object I/O, maintenance, replication, integrations, encryption/IAM execution or readiness",
+        "CreateTable metadata/schema, encryption and storage-class options are excluded; GetTable omits warehouseLocation, metadataLocation and managed-service results",
+        "CF requires explicit WithoutMetadata: Yes, excludes WarehouseLocation GetAtt and advanced schema/maintenance/encryption/metrics/replication properties; public version tokens remain fresh after effective rename compensation",
+        "The exhaustive [records guide](../guides/s3tables-records.md) lists all selected members, names, parents, tags, pages, tokens, CF boundaries and the executable CLI lifecycle; [runtime scope](../roadmap/services/s3tables-runtime.md) retains GetTableMetadataLocation and UpdateTableMetadataLocation as future work"
+      ]
     }
   },
   "future": {
@@ -1578,7 +1600,6 @@
       "features": "- [ ] BatchUpdateDevicePosition\n- [ ] GetDevicePosition\n- [ ] BatchGetDevicePosition\n- [ ] GetDevicePositionHistory\n- [ ] ListDevicePositions and position filtering/evaluation\n- [ ] AssociateTrackerConsumer, DisassociateTrackerConsumer and ListTrackerConsumers\n- [ ] RequestBasedUsage/deprecated PricingPlan metadata compatibility decision (a pricing value, not an API)\n- [ ] Geofences and location-event delivery\n- [ ] KMS and geospatial-query eligibility\n- [ ] Maps, search, places, routes and other Location data planes",
       "integration": "Tracker configuration CRUD and tags are implemented records only. See the [records guide](../../guides/location-records.md). PositionFiltering metadata does not imply filtered device positions or event delivery."
     },
-
     "mediaconnect": {
       "title": "MediaConnect",
       "state": "Proposed",
@@ -1617,11 +1638,12 @@
       "slice": "Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`.",
       "features": "- [ ] `CreateFileSystem`\n- [ ] `GetFileSystem`\n- [ ] `ListFileSystems`\n- [ ] `DeleteFileSystem`\n- [ ] `CreateMountTarget`\n- [ ] `GetMountTarget`\n- [ ] `ListMountTargets`\n- [ ] `DeleteMountTarget`\n- [ ] `UpdateMountTarget`\n- [ ] `CreateAccessPoint`\n- [ ] `GetAccessPoint`\n- [ ] `ListAccessPoints`\n- [ ] `DeleteAccessPoint`\n- [ ] `GetFileSystemPolicy`\n- [ ] `PutFileSystemPolicy`"
     },
-    "s3tables": {
-      "title": "S3 Tables",
+    "s3tables-runtime": {
+      "title": "S3 Tables runtime and broader metadata",
       "state": "Proposed",
-      "slice": "Implement `CreateTableBucket`, `ListTableBuckets`, `GetTableBucket`.",
-      "features": "- [ ] `CreateTableBucket`\n- [ ] `ListTableBuckets`\n- [ ] `GetTableBucket`\n- [ ] `DeleteTableBucket`\n- [ ] `CreateNamespace`\n- [ ] `ListNamespaces`\n- [ ] `GetNamespace`\n- [ ] `DeleteNamespace`\n- [ ] `CreateTable`\n- [ ] `ListTables`\n- [ ] `GetTable`\n- [ ] `DeleteTable`\n- [ ] `GetTableMetadataLocation`\n- [ ] `UpdateTableMetadataLocation`"
+      "slice": "Define a coherent metadata-location and actual Iceberg file/runtime contract beyond the implemented customer metadata records.",
+      "features": "- [ ] GetTableMetadataLocation\n- [ ] UpdateTableMetadataLocation\n- [ ] Genuine warehouse and metadata/data-file ownership with object reads/writes\n- [ ] Iceberg REST catalog and query-engine integration\n- [ ] Table schemas/nested types, partition specs and sort orders\n- [ ] Maintenance, compaction, snapshots, expiration and replication\n- [ ] AWS-managed buckets/tables and catalog analytics integrations\n- [ ] Encryption/KMS/IAM execution and runtime readiness\n- [ ] CloudFormation schema-backed Table, WarehouseLocation and advanced maintenance/encryption/storage/metrics/replication properties",
+      "integration": "Sixteen hierarchy/tag APIs and three finite CloudFormation resource subsets are implemented records only. See the [records guide](../../guides/s3tables-records.md). Metadata-location calls must not succeed until truthful file ownership and version semantics are implemented."
     },
     "signer": {
       "title": "AWS Signer",

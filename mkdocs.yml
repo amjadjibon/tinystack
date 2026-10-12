@@ -94,6 +94,7 @@ nav:
       - Amazon MWAA records: guides/mwaa-records.md
       - Transfer Family records: guides/transfer-records.md
       - Amazon Location tracker records: guides/location-records.md
+      - S3 Tables metadata records: guides/s3tables-records.md
       - Troubleshooting: guides/troubleshooting.md
   - Architecture:
       - System overview: architecture/index.md
@@ -182,6 +183,7 @@ nav:
           - "Cloud Map": services/servicediscovery.md
       - "Storage":
           - "Amazon EFS": services/efs.md
+          - "Amazon S3 Tables": services/s3tables.md
       - "Storage and databases":
           - "DynamoDB": services/dynamodb.md
           - "DynamoDB Streams": services/dynamodbstreams.md
@@ -224,7 +226,7 @@ nav:
           - "OpenSearch Service": roadmap/services/opensearch.md
           - "RDS Data API": roadmap/services/rds-data.md
           - "S3 Files": roadmap/services/s3files.md
-          - "S3 Tables": roadmap/services/s3tables.md
+          - "S3 Tables runtime and broader metadata": roadmap/services/s3tables-runtime.md
           - "Transcribe": roadmap/services/transcribe.md
           - "Transfer Family runtime and advanced configuration": roadmap/services/transfer-runtime.md
           - "Translate": roadmap/services/translate.md
