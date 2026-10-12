@@ -425,6 +425,8 @@ type tagger struct {
 	service, tag, untag string
 	// key and value name a tag list's members; empty means tags are a map.
 	key, value string
+	// member names the tag payload member on the tag operation; empty means memberTags ("Tags").
+	member string
 }
 
 // retag moves a resource's tags from old's Tags property to p's.
@@ -443,9 +445,13 @@ func retag(ctx context.Context, c *client, old, p props, t *tagger) error {
 	}
 
 	params := maps.Clone(t.target)
-	params[memberTags] = tagMap(set)
+	tagMember := memberTags
+	if t.member != "" {
+		tagMember = t.member
+	}
+	params[tagMember] = tagMap(set)
 	if t.key != "" {
-		params[memberTags] = tagList(set, t.key, t.value)
+		params[tagMember] = tagList(set, t.key, t.value)
 	}
 
 	_, err := c.call(ctx, t.service, t.tag, params)

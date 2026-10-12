@@ -42,6 +42,7 @@ var namespaces = map[string]string{
 	"kms":                    "KMS",
 	"lambda":                 "Lambda",
 	"logs":                   "Logs",
+	"opensearch":             "OpenSearchService",
 	"organizations":          "Organizations",
 	"pipes":                  "Pipes",
 	"resourcegroups":         "ResourceGroups",
