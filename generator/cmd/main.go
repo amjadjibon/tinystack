@@ -205,6 +205,12 @@ func (g *generator) typeName(id string) (string, error) {
 		return "float64", nil
 	case shapeBlob:
 		return "[]byte", nil
+	case "document":
+		if g.xml || g.query || g.cbor {
+			return "", fmt.Errorf("document shapes require a JSON protocol: %s", id)
+		}
+
+		return "any", nil
 	case shapeStructure, shapeUnion:
 		return short(id), nil
 	case shapeList:
