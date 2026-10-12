@@ -141,6 +141,7 @@ nav:
           - "SSM Parameter Store": services/ssm.md
           - "Secrets Manager": services/secretsmanager.md
       - "Developer Tools":
+          - "AWS CodeCommit": services/codecommit.md
           - "AWS X-Ray": services/xray.md
           - "CodeBuild": services/codebuild.md
           - "CodePipeline": services/codepipeline.md
@@ -213,6 +214,7 @@ nav:
       - Future catalogue: roadmap/catalogue.md
       - Service and extension proposals:
           - "AWS Batch job execution": roadmap/services/batch-runtime.md
+          - "AWS CodeCommit git hosting": roadmap/services/codecommit-git-hosting.md
           - "AWS Private CA certificate issuance": roadmap/services/acmpca-issuance.md
           - "AWS Resource Access Manager cross-account access and invitations runtime": roadmap/services/ram-runtime.md
           - "AWS Signer": roadmap/services/signer.md
