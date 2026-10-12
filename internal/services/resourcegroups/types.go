@@ -83,6 +83,7 @@ var typeNames = map[string]string{
 	"ec2/vpc":                             "VPC",
 	"ec2/vpc-endpoint":                    "VPCEndpoint",
 	"organizations/ou":                    "OrganizationalUnit",
+	"rds/db-cluster":                      "DBCluster",
 	"rds/db-instance":                     "DBInstance",
 	"rds/db-subnet-group":                 "DBSubnetGroup",
 	"rds/db-parameter-group":              "DBParameterGroup",
@@ -118,6 +119,17 @@ func resourceType(r *catalog.Owned) (string, bool) {
 		return "", false
 	}
 
+	if r.Service == "rds" && (r.Type == "db-cluster" || r.Type == "db-instance") {
+		if details, hasDetails := r.Details.(map[string]any); hasDetails {
+			switch details["Engine"] {
+			case "docdb":
+				namespace = "DocDB"
+			case "neptune":
+				namespace = "Neptune"
+			}
+		}
+	}
+
 	name, ok := typeNames[r.Service+"/"+r.Type]
 	if !ok {
 		name = pascal(r.Type)
@@ -132,6 +144,10 @@ func knownNamespace(resourceType string) bool {
 	parts := strings.Split(resourceType, "::")
 	if len(parts) != 3 {
 		return false
+	}
+
+	if parts[1] == "DocDB" || parts[1] == "Neptune" {
+		return true
 	}
 
 	for _, namespace := range namespaces {

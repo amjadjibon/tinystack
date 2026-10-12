@@ -445,6 +445,9 @@ func (s *Service) perform(ctx context.Context,
 		if id, attrs, ok := mskRestoreReplacement(st, next); ok {
 			return id, attrs, nil
 		}
+		if id, attrs, ok := clusterRestoreReplacement(st, next); ok {
+			return id, attrs, nil
+		}
 		if id, attrs, ok := efsRestoreReplacement(st, next); ok {
 			return id, attrs, nil
 		}
@@ -467,7 +470,7 @@ func (s *Service) perform(ctx context.Context,
 		// earlier swap. Cleanup must keep the incarnation owned by the active
 		// resource rather than deleting the restored record.
 		restored := retired.Type == "AWS::WAFv2::WebACLAssociation" ||
-			isEFSResource(retired.Type) || isBatchResource(retired.Type) ||
+			isEFSResource(retired.Type) || isBatchResource(retired.Type) || isDBClusterResource(retired.Type) ||
 			retired.Type == codebuildProjectType || retired.Type == mqBrokerType || retired.Type == mskClusterType ||
 			retired.Type == mwaaEnvironmentType || isTransferResource(retired.Type) || retired.Type == locationTrackerType
 		if restored && r != nil &&
@@ -639,6 +642,7 @@ func (s *Service) record(
 		if next.kind == stepSwap && identityChanged && next.decl.UpdateReplacePolicy != policyRetain {
 			old := *r
 			st.Replaced = append(st.Replaced, &replaced{Logical: next.logical, Resource: &old})
+			clusterOrderRetired(st)
 			efsOrderRetired(st)
 			batchOrderRetired(st)
 			s3tablesOrderRetired(st)
@@ -646,6 +650,7 @@ func (s *Service) record(
 
 		r.Type, r.Physical, r.Status, r.Reason, r.Updated = next.typ, physical, status, "", now
 		r.Properties, r.Attributes = next.props, attributes
+		clusterRefreshMemberAttributes(st, r)
 		settle(r, next.decl)
 		return s.event(tx, scope, st, next.logical, physical, next.typ, status, "", next.props)
 	case stepReplace:
