@@ -147,6 +147,10 @@
       "path": "codegen/sdk-codegen/aws-models/iam.json",
       "sha256": "c0cec5eeceeffdf03f310ae41c30d072041dbc274bc5a388cad525847de1bec2"
     },
+    "identitystore": {
+      "path": "codegen/sdk-codegen/aws-models/identitystore.json",
+      "sha256": "0e34a86506baa1241ebb058605633523c87c2bcf3e18b261135969850ba015c9"
+    },
     "iot": {
       "path": "codegen/sdk-codegen/aws-models/iot.json",
       "sha256": "b844c77e44c5fa65fc0666fd4085e65338c150adbdf0e88b201f2fe1f5a48568"
@@ -274,6 +278,10 @@
     "ssm": {
       "path": "codegen/sdk-codegen/aws-models/ssm.json",
       "sha256": "8aac35e07b6511821a0704008decdc8a0b69bc8deeb6ab3efadc5426a3225ef7"
+    },
+    "ssoadmin": {
+      "path": "codegen/sdk-codegen/aws-models/sso-admin.json",
+      "sha256": "75ec61342df3973c1e7c1350199fa9074cf1542ed0edfb024f056c0d27b6a10b"
     },
     "sts": {
       "path": "codegen/sdk-codegen/aws-models/sts.json",

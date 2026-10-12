@@ -21328,5 +21328,474 @@
         "mode"
       ]
     }
+  },
+  "identitystore": {
+    "operations": [
+      "CreateGroup",
+      "CreateGroupMembership",
+      "CreateUser",
+      "DeleteGroup",
+      "DeleteGroupMembership",
+      "DeleteUser",
+      "DescribeGroup",
+      "DescribeUser",
+      "GetGroupId",
+      "GetGroupMembershipId",
+      "GetUserId",
+      "IsMemberInGroups",
+      "ListGroupMemberships",
+      "ListGroupMembershipsForMember",
+      "ListGroups",
+      "ListUsers",
+      "UpdateGroup",
+      "UpdateUser"
+    ],
+    "shapes": {
+      "AlternateIdentifier": [
+        "UniqueAttribute"
+      ],
+      "AttributeOperation": [
+        "AttributePath",
+        "AttributeValue"
+      ],
+      "CreateGroupMembershipRequest": [
+        "IdentityStoreId",
+        "GroupId",
+        "MemberId"
+      ],
+      "CreateGroupMembershipResponse": [
+        "IdentityStoreId",
+        "MembershipId"
+      ],
+      "CreateGroupRequest": [
+        "IdentityStoreId",
+        "DisplayName",
+        "Description"
+      ],
+      "CreateGroupResponse": [
+        "IdentityStoreId",
+        "GroupId"
+      ],
+      "CreateUserRequest": [
+        "IdentityStoreId",
+        "UserName",
+        "DisplayName",
+        "Name",
+        "Emails"
+      ],
+      "CreateUserResponse": [
+        "IdentityStoreId",
+        "UserId"
+      ],
+      "DeleteGroupMembershipRequest": [
+        "IdentityStoreId",
+        "MembershipId"
+      ],
+      "DeleteGroupMembershipResponse": [],
+      "DeleteGroupRequest": [
+        "IdentityStoreId",
+        "GroupId"
+      ],
+      "DeleteGroupResponse": [],
+      "DeleteUserRequest": [
+        "IdentityStoreId",
+        "UserId"
+      ],
+      "DeleteUserResponse": [],
+      "DescribeGroupRequest": [
+        "IdentityStoreId",
+        "GroupId"
+      ],
+      "DescribeGroupResponse": [
+        "IdentityStoreId",
+        "GroupId",
+        "DisplayName",
+        "Description"
+      ],
+      "DescribeUserRequest": [
+        "IdentityStoreId",
+        "UserId"
+      ],
+      "DescribeUserResponse": [
+        "IdentityStoreId",
+        "UserId",
+        "UserName",
+        "DisplayName",
+        "Name",
+        "Emails"
+      ],
+      "Email": [
+        "Value",
+        "Type",
+        "Primary"
+      ],
+      "Filter": [
+        "AttributePath",
+        "AttributeValue"
+      ],
+      "GetGroupIdRequest": [
+        "IdentityStoreId",
+        "AlternateIdentifier"
+      ],
+      "GetGroupIdResponse": [
+        "IdentityStoreId",
+        "GroupId"
+      ],
+      "GetGroupMembershipIdRequest": [
+        "IdentityStoreId",
+        "GroupId",
+        "MemberId"
+      ],
+      "GetGroupMembershipIdResponse": [
+        "IdentityStoreId",
+        "MembershipId"
+      ],
+      "GetUserIdRequest": [
+        "IdentityStoreId",
+        "AlternateIdentifier"
+      ],
+      "GetUserIdResponse": [
+        "IdentityStoreId",
+        "UserId"
+      ],
+      "Group": [
+        "IdentityStoreId",
+        "GroupId",
+        "DisplayName",
+        "Description"
+      ],
+      "GroupMembership": [
+        "IdentityStoreId",
+        "MembershipId",
+        "GroupId",
+        "MemberId"
+      ],
+      "GroupMembershipExistenceResult": [
+        "GroupId",
+        "MemberId",
+        "MembershipExists"
+      ],
+      "IsMemberInGroupsRequest": [
+        "IdentityStoreId",
+        "MemberId",
+        "GroupIds"
+      ],
+      "IsMemberInGroupsResponse": [
+        "Results"
+      ],
+      "ListGroupMembershipsForMemberRequest": [
+        "IdentityStoreId",
+        "MemberId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListGroupMembershipsForMemberResponse": [
+        "GroupMemberships",
+        "NextToken"
+      ],
+      "ListGroupMembershipsRequest": [
+        "IdentityStoreId",
+        "GroupId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListGroupMembershipsResponse": [
+        "GroupMemberships",
+        "NextToken"
+      ],
+      "ListGroupsRequest": [
+        "IdentityStoreId",
+        "MaxResults",
+        "NextToken",
+        "Filters"
+      ],
+      "ListGroupsResponse": [
+        "Groups",
+        "NextToken"
+      ],
+      "ListUsersRequest": [
+        "IdentityStoreId",
+        "MaxResults",
+        "NextToken",
+        "Filters"
+      ],
+      "ListUsersResponse": [
+        "Users",
+        "NextToken"
+      ],
+      "MemberId": [
+        "UserId"
+      ],
+      "Name": [
+        "GivenName",
+        "FamilyName"
+      ],
+      "UniqueAttribute": [
+        "AttributePath",
+        "AttributeValue"
+      ],
+      "UpdateGroupRequest": [
+        "IdentityStoreId",
+        "GroupId",
+        "Operations"
+      ],
+      "UpdateGroupResponse": [],
+      "UpdateUserRequest": [
+        "IdentityStoreId",
+        "UserId",
+        "Operations"
+      ],
+      "UpdateUserResponse": [],
+      "User": [
+        "IdentityStoreId",
+        "UserId",
+        "UserName",
+        "DisplayName",
+        "Name",
+        "Emails"
+      ]
+    }
+  },
+  "ssoadmin": {
+    "operations": [
+      "AttachManagedPolicyToPermissionSet",
+      "CreateAccountAssignment",
+      "CreatePermissionSet",
+      "DeleteAccountAssignment",
+      "DeleteInlinePolicyFromPermissionSet",
+      "DeletePermissionSet",
+      "DescribeAccountAssignmentCreationStatus",
+      "DescribeAccountAssignmentDeletionStatus",
+      "DescribeInstance",
+      "DescribePermissionSet",
+      "DetachManagedPolicyFromPermissionSet",
+      "GetInlinePolicyForPermissionSet",
+      "ListAccountAssignments",
+      "ListAccountsForProvisionedPermissionSet",
+      "ListInstances",
+      "ListManagedPoliciesInPermissionSet",
+      "ListPermissionSets",
+      "ListTagsForResource",
+      "PutInlinePolicyToPermissionSet",
+      "TagResource",
+      "UntagResource",
+      "UpdatePermissionSet"
+    ],
+    "shapes": {
+      "AccountAssignment": [
+        "AccountId",
+        "PermissionSetArn",
+        "PrincipalType",
+        "PrincipalId"
+      ],
+      "AccountAssignmentOperationStatus": [
+        "Status",
+        "RequestId",
+        "FailureReason",
+        "TargetId",
+        "TargetType",
+        "PermissionSetArn",
+        "PrincipalType",
+        "PrincipalId",
+        "CreatedDate"
+      ],
+      "AttachManagedPolicyToPermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn",
+        "ManagedPolicyArn"
+      ],
+      "AttachManagedPolicyToPermissionSetResponse": [],
+      "AttachedManagedPolicy": [
+        "Name",
+        "Arn"
+      ],
+      "CreateAccountAssignmentRequest": [
+        "InstanceArn",
+        "TargetId",
+        "TargetType",
+        "PermissionSetArn",
+        "PrincipalType",
+        "PrincipalId"
+      ],
+      "CreateAccountAssignmentResponse": [
+        "AccountAssignmentCreationStatus"
+      ],
+      "CreatePermissionSetRequest": [
+        "Name",
+        "Description",
+        "InstanceArn",
+        "SessionDuration",
+        "RelayState",
+        "Tags"
+      ],
+      "CreatePermissionSetResponse": [
+        "PermissionSet"
+      ],
+      "DeleteAccountAssignmentRequest": [
+        "InstanceArn",
+        "TargetId",
+        "TargetType",
+        "PermissionSetArn",
+        "PrincipalType",
+        "PrincipalId"
+      ],
+      "DeleteAccountAssignmentResponse": [
+        "AccountAssignmentDeletionStatus"
+      ],
+      "DeleteInlinePolicyFromPermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn"
+      ],
+      "DeleteInlinePolicyFromPermissionSetResponse": [],
+      "DeletePermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn"
+      ],
+      "DeletePermissionSetResponse": [],
+      "DescribeAccountAssignmentCreationStatusRequest": [
+        "InstanceArn",
+        "AccountAssignmentCreationRequestId"
+      ],
+      "DescribeAccountAssignmentCreationStatusResponse": [
+        "AccountAssignmentCreationStatus"
+      ],
+      "DescribeAccountAssignmentDeletionStatusRequest": [
+        "InstanceArn",
+        "AccountAssignmentDeletionRequestId"
+      ],
+      "DescribeAccountAssignmentDeletionStatusResponse": [
+        "AccountAssignmentDeletionStatus"
+      ],
+      "DescribeInstanceRequest": [
+        "InstanceArn"
+      ],
+      "DescribeInstanceResponse": [
+        "InstanceArn",
+        "IdentityStoreId",
+        "OwnerAccountId",
+        "Status"
+      ],
+      "DescribePermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn"
+      ],
+      "DescribePermissionSetResponse": [
+        "PermissionSet"
+      ],
+      "DetachManagedPolicyFromPermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn",
+        "ManagedPolicyArn"
+      ],
+      "DetachManagedPolicyFromPermissionSetResponse": [],
+      "GetInlinePolicyForPermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn"
+      ],
+      "GetInlinePolicyForPermissionSetResponse": [
+        "InlinePolicy"
+      ],
+      "InstanceMetadata": [
+        "InstanceArn",
+        "IdentityStoreId",
+        "OwnerAccountId",
+        "Status"
+      ],
+      "ListAccountAssignmentsRequest": [
+        "InstanceArn",
+        "AccountId",
+        "PermissionSetArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListAccountAssignmentsResponse": [
+        "AccountAssignments",
+        "NextToken"
+      ],
+      "ListAccountsForProvisionedPermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListAccountsForProvisionedPermissionSetResponse": [
+        "AccountIds",
+        "NextToken"
+      ],
+      "ListInstancesRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListInstancesResponse": [
+        "Instances",
+        "NextToken"
+      ],
+      "ListManagedPoliciesInPermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListManagedPoliciesInPermissionSetResponse": [
+        "AttachedManagedPolicies",
+        "NextToken"
+      ],
+      "ListPermissionSetsRequest": [
+        "InstanceArn",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListPermissionSetsResponse": [
+        "PermissionSets",
+        "NextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "InstanceArn",
+        "ResourceArn",
+        "NextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags",
+        "NextToken"
+      ],
+      "PermissionSet": [
+        "Name",
+        "PermissionSetArn",
+        "Description",
+        "CreatedDate",
+        "SessionDuration",
+        "RelayState"
+      ],
+      "PutInlinePolicyToPermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn",
+        "InlinePolicy"
+      ],
+      "PutInlinePolicyToPermissionSetResponse": [],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "InstanceArn",
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "InstanceArn",
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdatePermissionSetRequest": [
+        "InstanceArn",
+        "PermissionSetArn",
+        "Description",
+        "SessionDuration",
+        "RelayState"
+      ],
+      "UpdatePermissionSetResponse": []
+    }
   }
 }

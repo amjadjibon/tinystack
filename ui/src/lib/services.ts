@@ -40,6 +40,16 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	identitystore: {
+		title: "Identity Center — Identity Store",
+		category: security,
+		icon: "identitysso",
+	},
+	ssoadmin: {
+		title: "Identity Center — SSO Admin",
+		category: security,
+		icon: "identitysso",
+	},
 	redshift: { title: "Amazon Redshift", category: analytics, icon: "redshift" },
 	s3tables: { title: "Amazon S3 Tables", category: storage, icon: "s3" },
 	location: {

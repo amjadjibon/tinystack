@@ -195,6 +195,15 @@ var taggers = map[string]tagger{
 	"xray":                resourceOperations("xray", "ResourceARN", pairs),
 	"verifiedpermissions": resourceOperations("verifiedpermissions", "ResourceArn", plain),
 	"ram":                 resourceOperations("ram", "ResourceShareArn", pairs),
+	"ssoadmin": operations("ssoadmin", "TagResource", "UntagResource",
+		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
+			details, ok := r.Details.(map[string]any)
+			if !ok {
+				return nil, awserror.Validation("Missing Identity Center instance metadata")
+			}
+
+			return map[string]any{"ResourceArn": r.ARN, "InstanceArn": details["InstanceArn"]}, nil
+		}, "Tags", pairs, "TagKeys", names),
 	"acmpca": operations("acmpca", "TagCertificateAuthority", "UntagCertificateAuthority",
 		byARN("CertificateAuthorityArn"), "Tags", pairs, "Tags", keyOnly),
 	"s3tables": operations(

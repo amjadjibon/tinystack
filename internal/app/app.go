@@ -50,6 +50,7 @@ import (
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
+	identitystoreapi "github.com/amjadjibon/tinystack/internal/aws/generated/identitystore"
 	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
 	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
@@ -82,6 +83,7 @@ import (
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
+	ssoadminapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssoadmin"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	transferapi "github.com/amjadjibon/tinystack/internal/aws/generated/transfer"
 	verifiedpermissionsapi "github.com/amjadjibon/tinystack/internal/aws/generated/verifiedpermissions"
@@ -129,6 +131,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
 	"github.com/amjadjibon/tinystack/internal/services/glue"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
+	"github.com/amjadjibon/tinystack/internal/services/identitystore"
 	"github.com/amjadjibon/tinystack/internal/services/iot"
 	"github.com/amjadjibon/tinystack/internal/services/kafka"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
@@ -160,6 +163,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
+	"github.com/amjadjibon/tinystack/internal/services/ssoadmin"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/services/transfer"
 	"github.com/amjadjibon/tinystack/internal/services/verifiedpermissions"
@@ -356,6 +360,8 @@ func build(
 	opensearchRecords := opensearch.New(store)
 	resolverRecords := route53resolver.New(store, network)
 	xrayRecords := xray.New(store)
+	identityStoreRecords := identitystore.New(store)
+	ssoAdminRecords := ssoadmin.New(store)
 	ramRecords := ram.New(store)
 	privateAuthorities := acmpca.New(store, buckets)
 	verifiedpermissionsRecords := verifiedpermissions.New(store)
@@ -437,6 +443,8 @@ func build(
 		opensearchapi.Descriptor(opensearchRecords),
 		route53resolverapi.Descriptor(resolverRecords),
 		xrayapi.Descriptor(xrayRecords),
+		identitystoreapi.Descriptor(identityStoreRecords),
+		ssoadminapi.Descriptor(ssoAdminRecords),
 		ramapi.Descriptor(ramRecords),
 		acmpcaapi.Descriptor(privateAuthorities),
 		verifiedpermissionsapi.Descriptor(verifiedpermissionsRecords),

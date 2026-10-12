@@ -42,6 +42,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.52.1
 	github.com/aws/aws-sdk-go-v2/service/glue v1.167.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.64.1
+	github.com/aws/aws-sdk-go-v2/service/identitystore v1.30.0
 	github.com/aws/aws-sdk-go-v2/service/iot v1.84.1
 	github.com/aws/aws-sdk-go-v2/service/iotdataplane v1.40.1
 	github.com/aws/aws-sdk-go-v2/service/iotjobsdataplane v1.38.2
@@ -71,6 +72,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sns v1.47.2
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.79.0
+	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.35.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1
 	github.com/aws/aws-sdk-go-v2/service/transfer v1.85.0
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.71.1
