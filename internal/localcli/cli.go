@@ -160,6 +160,7 @@ var TerraformServices = []string{
 	"mq",
 	"kafka",
 	"mwaa",
+	"transfer",
 	"wafv2",
 	"dynamodb",
 	"ec2",

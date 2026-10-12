@@ -721,6 +721,9 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	if c.service != nil && c.service.Name == "batch" && e.Code == validationException {
 		e.Code = "ClientException"
 	}
+	if c.service != nil && c.service.Name == "transfer" && e.Code == validationException {
+		e.Code = "InvalidRequestException"
+	}
 	c.failure = e
 	for name, value := range e.Headers {
 		w.Header().Set(name, value)

@@ -194,6 +194,9 @@ var taggers = map[string]tagger{
 			return putCodeBuildTags(ctx, c, r, tagging.Remove(maps.Clone(r.Tags), keys))
 		},
 	},
+	"transfer": operations(
+		"transfer", "TagResource", "UntagResource", byARN("Arn"), "Tags", pairs, "TagKeys", names,
+	),
 	"organizations": operations(
 		"organizations",
 		"TagResource",

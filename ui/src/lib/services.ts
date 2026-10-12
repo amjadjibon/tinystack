@@ -18,6 +18,7 @@ const iot = "Internet of Things";
 const management = "Management & Governance";
 const security = "Security, Identity & Compliance";
 const developerTools = "Developer Tools";
+const migration = "Migration & Modernization";
 const business = "Business Applications";
 
 export const categories = [
@@ -33,9 +34,15 @@ export const categories = [
 	security,
 	business,
 	developerTools,
+	migration,
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	transfer: {
+		title: "AWS Transfer Family",
+		category: migration,
+		icon: "transfer",
+	},
 	mwaa: { title: "Amazon MWAA", category: integration, icon: "mwaa" },
 	mq: { title: "Amazon MQ", category: integration, icon: "mq" },
 	kafka: { title: "Amazon MSK", category: analytics, icon: "msk" },
