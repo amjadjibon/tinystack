@@ -51,7 +51,7 @@ func init() {
 	})
 	register("AWS::Config::ConfigurationRecorder", &resourceType{
 		name: memberName, properties: []string{memberName, "RoleARN", "RecordingGroup"},
-		replace: []string{memberName}, attributes: []string{"ResourceARN"},
+		replace: []string{memberName}, attributes: []string{memberResourceARN},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
 			name, err := configSingletonName(p)
 			if err != nil {

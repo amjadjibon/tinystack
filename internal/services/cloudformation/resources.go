@@ -227,6 +227,9 @@ func (t *resourceType) replaces(old, p props) bool {
 	if t == types[mskClusterType] {
 		return mskReplaces(old, p)
 	}
+	if t == types[xraySamplingRuleType] {
+		return xraySamplingRuleReplaces(old, p)
+	}
 	if t.update == nil {
 		return true
 	}
