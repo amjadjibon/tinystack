@@ -59,6 +59,7 @@ import (
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	mqapi "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
 	mwaaapi "github.com/amjadjibon/tinystack/internal/aws/generated/mwaa"
+	opensearchapi "github.com/amjadjibon/tinystack/internal/aws/generated/opensearch"
 	organizationsapi "github.com/amjadjibon/tinystack/internal/aws/generated/organizations"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
@@ -130,6 +131,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/mq"
 	"github.com/amjadjibon/tinystack/internal/services/mwaa"
+	"github.com/amjadjibon/tinystack/internal/services/opensearch"
 	"github.com/amjadjibon/tinystack/internal/services/organizations"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
 	"github.com/amjadjibon/tinystack/internal/services/rds"
@@ -341,6 +343,7 @@ func build(
 	locationTrackers := location.New(store)
 	tableRecords := s3tables.New(store)
 	wafRecords := wafv2.New(store)
+	opensearchRecords := opensearch.New(store)
 	xrayRecords := xray.New(store)
 	redshiftRecords := redshift.New(store, network)
 	a.onReset(trails.Reset)
@@ -416,6 +419,7 @@ func build(
 		s3tablesapi.Descriptor(tableRecords),
 		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),
 		wafv2api.Descriptor(wafRecords),
+		opensearchapi.Descriptor(opensearchRecords),
 		xrayapi.Descriptor(xrayRecords),
 		redshiftapi.Descriptor(redshiftRecords),
 		rdsapi.Descriptor(databases),

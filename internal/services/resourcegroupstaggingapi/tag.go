@@ -181,7 +181,17 @@ var taggers = map[string]tagger{
 	"redshift": operations("redshift", "CreateTags", "DeleteTags", byARN("ResourceName"),
 		"Tags", pairs, "TagKeys", names),
 	"applicationautoscaling": resourceOperations("applicationautoscaling", "ResourceARN", plain),
-	"xray":                   resourceOperations("xray", "ResourceARN", pairs),
+	"opensearch": operations(
+		"opensearch",
+		"AddTags",
+		"RemoveTags",
+		byARN("ARN"),
+		"TagList",
+		pairs,
+		"TagKeys",
+		names,
+	),
+	"xray": resourceOperations("xray", "ResourceARN", pairs),
 	"s3tables": operations(
 		"s3tables",
 		"TagResource",

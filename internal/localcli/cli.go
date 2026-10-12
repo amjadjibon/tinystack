@@ -181,6 +181,7 @@ var TerraformServices = []string{
 	"kms",
 	"lambda",
 	"logs",
+	"opensearch",
 	"route53",
 	"s3",
 	"scheduler",

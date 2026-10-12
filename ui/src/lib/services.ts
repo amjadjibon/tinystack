@@ -72,6 +72,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: developerTools,
 		icon: "codebuild",
 	},
+	opensearch: {
+		title: "OpenSearch Service",
+		category: analytics,
+		icon: "opensearch",
+	},
 	xray: {
 		title: "AWS X-Ray",
 		category: developerTools,

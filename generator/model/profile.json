@@ -20295,5 +20295,187 @@
         "SamplingRuleRecord"
       ]
     }
+  },
+  "opensearch": {
+    "operations": [
+      "AddTags",
+      "CreateDomain",
+      "DeleteDomain",
+      "DescribeDomain",
+      "DescribeDomainConfig",
+      "DescribeDomains",
+      "ListDomainNames",
+      "ListTags",
+      "RemoveTags",
+      "UpdateDomainConfig"
+    ],
+    "shapes": {
+      "AccessPoliciesStatus": [
+        "Options",
+        "Status"
+      ],
+      "AddTagsRequest": [
+        "ARN",
+        "TagList"
+      ],
+      "ClusterConfig": [
+        "DedicatedMasterCount",
+        "DedicatedMasterEnabled",
+        "DedicatedMasterType",
+        "InstanceCount",
+        "InstanceType",
+        "ZoneAwarenessEnabled"
+      ],
+      "ClusterConfigStatus": [
+        "Options",
+        "Status"
+      ],
+      "CreateDomainRequest": [
+        "AccessPolicies",
+        "ClusterConfig",
+        "DomainEndpointOptions",
+        "DomainName",
+        "EBSOptions",
+        "EncryptionAtRestOptions",
+        "EngineVersion",
+        "NodeToNodeEncryptionOptions",
+        "TagList"
+      ],
+      "CreateDomainResponse": [
+        "DomainStatus"
+      ],
+      "DeleteDomainRequest": [
+        "DomainName"
+      ],
+      "DeleteDomainResponse": [
+        "DomainStatus"
+      ],
+      "DescribeDomainConfigRequest": [
+        "DomainName"
+      ],
+      "DescribeDomainConfigResponse": [
+        "DomainConfig"
+      ],
+      "DescribeDomainRequest": [
+        "DomainName"
+      ],
+      "DescribeDomainResponse": [
+        "DomainStatus"
+      ],
+      "DescribeDomainsRequest": [
+        "DomainNames"
+      ],
+      "DescribeDomainsResponse": [
+        "DomainStatusList"
+      ],
+      "DomainConfig": [
+        "AccessPolicies",
+        "ClusterConfig",
+        "DomainEndpointOptions",
+        "EBSOptions",
+        "EncryptionAtRestOptions",
+        "EngineVersion",
+        "NodeToNodeEncryptionOptions"
+      ],
+      "DomainEndpointOptions": [
+        "CustomEndpoint",
+        "CustomEndpointEnabled",
+        "EnforceHTTPS",
+        "TLSSecurityPolicy"
+      ],
+      "DomainEndpointOptionsStatus": [
+        "Options",
+        "Status"
+      ],
+      "DomainInfo": [
+        "DomainName",
+        "EngineType"
+      ],
+      "DomainStatus": [
+        "ARN",
+        "AccessPolicies",
+        "ClusterConfig",
+        "Created",
+        "Deleted",
+        "DomainEndpointOptions",
+        "DomainId",
+        "DomainName",
+        "EBSOptions",
+        "EncryptionAtRestOptions",
+        "Endpoint",
+        "EngineVersion",
+        "NodeToNodeEncryptionOptions",
+        "Processing"
+      ],
+      "EBSOptions": [
+        "EBSEnabled",
+        "Iops",
+        "Throughput",
+        "VolumeSize",
+        "VolumeType"
+      ],
+      "EBSOptionsStatus": [
+        "Options",
+        "Status"
+      ],
+      "EncryptionAtRestOptions": [
+        "Enabled",
+        "KmsKeyId"
+      ],
+      "EncryptionAtRestOptionsStatus": [
+        "Options",
+        "Status"
+      ],
+      "ListDomainNamesRequest": [
+        "EngineType"
+      ],
+      "ListDomainNamesResponse": [
+        "DomainNames"
+      ],
+      "ListTagsRequest": [
+        "ARN"
+      ],
+      "ListTagsResponse": [
+        "TagList"
+      ],
+      "NodeToNodeEncryptionOptions": [
+        "Enabled"
+      ],
+      "NodeToNodeEncryptionOptionsStatus": [
+        "Options",
+        "Status"
+      ],
+      "OptionStatus": [
+        "CreationDate",
+        "PendingDeletion",
+        "State",
+        "UpdateDate",
+        "UpdateVersion"
+      ],
+      "RemoveTagsRequest": [
+        "ARN",
+        "TagKeys"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "UpdateDomainConfigRequest": [
+        "AccessPolicies",
+        "ClusterConfig",
+        "DomainEndpointOptions",
+        "DomainName",
+        "EBSOptions",
+        "EncryptionAtRestOptions",
+        "NodeToNodeEncryptionOptions"
+      ],
+      "UpdateDomainConfigResponse": [
+        "DomainConfig"
+      ],
+      "VersionStatus": [
+        "Options",
+        "Status"
+      ]
+    }
   }
 }

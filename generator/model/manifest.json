@@ -183,6 +183,10 @@
       "path": "codegen/sdk-codegen/aws-models/mwaa.json",
       "sha256": "a2211dca4ba8ef2d62ea1a00d69813099069ffb9d986d63b56e1c20c7eaa0353"
     },
+    "opensearch": {
+      "path": "codegen/sdk-codegen/aws-models/opensearch.json",
+      "sha256": "4c6088d3719024e75a431ceb8e57a315191aaa492a008c901606c98619204fbb"
+    },
     "organizations": {
       "path": "codegen/sdk-codegen/aws-models/organizations.json",
       "sha256": "895ce464aaefe314645c311bf19712755144af4a6c8c3931fe3fb95a5e0850af"
