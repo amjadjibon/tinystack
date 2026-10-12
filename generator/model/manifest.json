@@ -195,6 +195,10 @@
       "path": "codegen/sdk-codegen/aws-models/pipes.json",
       "sha256": "bb7d3031f9252fd8d9f935873105f1ee1182594213204b000aa457b6ab49f2e3"
     },
+    "ram": {
+      "path": "codegen/sdk-codegen/aws-models/ram.json",
+      "sha256": "90d464170a4b3bd07e2dd8b088be54d5206dc2fd7071f37164a4201023fda1b6"
+    },
     "rds": {
       "path": "codegen/sdk-codegen/aws-models/rds.json",
       "sha256": "95d7e865d920e45ce621242bc4aa44dbd386fa096550011b6b67b28b40063853"

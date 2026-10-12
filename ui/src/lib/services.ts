@@ -93,6 +93,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: networking,
 		icon: "route53",
 	},
+	ram: {
+		title: "Resource Access Manager",
+		category: security,
+		icon: "ram",
+	},
 	acm: { title: "Certificate Manager", category: security, icon: "acm" },
 	apigateway: {
 		title: "API Gateway",

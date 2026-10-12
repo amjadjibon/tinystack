@@ -20680,5 +20680,132 @@
         "ResolverRule"
       ]
     }
+  },
+  "ram": {
+    "operations": [
+      "AssociateResourceShare",
+      "CreateResourceShare",
+      "DeleteResourceShare",
+      "DisassociateResourceShare",
+      "GetResourceShareAssociations",
+      "GetResourceShares",
+      "TagResource",
+      "UntagResource",
+      "UpdateResourceShare"
+    ],
+    "shapes": {
+      "AssociateResourceShareRequest": [
+        "clientToken",
+        "principals",
+        "resourceArns",
+        "resourceShareArn"
+      ],
+      "AssociateResourceShareResponse": [
+        "clientToken",
+        "resourceShareAssociations"
+      ],
+      "CreateResourceShareRequest": [
+        "allowExternalPrincipals",
+        "clientToken",
+        "name",
+        "principals",
+        "resourceArns",
+        "tags"
+      ],
+      "CreateResourceShareResponse": [
+        "clientToken",
+        "resourceShare"
+      ],
+      "DeleteResourceShareRequest": [
+        "clientToken",
+        "resourceShareArn"
+      ],
+      "DeleteResourceShareResponse": [
+        "clientToken",
+        "returnValue"
+      ],
+      "DisassociateResourceShareRequest": [
+        "clientToken",
+        "principals",
+        "resourceArns",
+        "resourceShareArn"
+      ],
+      "DisassociateResourceShareResponse": [
+        "clientToken",
+        "resourceShareAssociations"
+      ],
+      "GetResourceShareAssociationsRequest": [
+        "associationStatus",
+        "associationType",
+        "maxResults",
+        "nextToken",
+        "principal",
+        "resourceArn",
+        "resourceShareArns"
+      ],
+      "GetResourceShareAssociationsResponse": [
+        "nextToken",
+        "resourceShareAssociations"
+      ],
+      "GetResourceSharesRequest": [
+        "maxResults",
+        "name",
+        "nextToken",
+        "resourceOwner",
+        "resourceShareArns",
+        "resourceShareStatus"
+      ],
+      "GetResourceSharesResponse": [
+        "nextToken",
+        "resourceShares"
+      ],
+      "ResourceShare": [
+        "allowExternalPrincipals",
+        "creationTime",
+        "featureSet",
+        "lastUpdatedTime",
+        "name",
+        "owningAccountId",
+        "resourceShareArn",
+        "status",
+        "statusMessage",
+        "tags"
+      ],
+      "ResourceShareAssociation": [
+        "associatedEntity",
+        "associationType",
+        "creationTime",
+        "external",
+        "lastUpdatedTime",
+        "resourceShareArn",
+        "resourceShareName",
+        "status",
+        "statusMessage"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ],
+      "TagResourceRequest": [
+        "resourceShareArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceShareArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateResourceShareRequest": [
+        "allowExternalPrincipals",
+        "clientToken",
+        "name",
+        "resourceShareArn"
+      ],
+      "UpdateResourceShareResponse": [
+        "clientToken",
+        "resourceShare"
+      ]
+    }
   }
 }

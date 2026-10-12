@@ -62,6 +62,7 @@ import (
 	opensearchapi "github.com/amjadjibon/tinystack/internal/aws/generated/opensearch"
 	organizationsapi "github.com/amjadjibon/tinystack/internal/aws/generated/organizations"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
+	ramapi "github.com/amjadjibon/tinystack/internal/aws/generated/ram"
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	redshiftapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshift"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
@@ -135,6 +136,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/opensearch"
 	"github.com/amjadjibon/tinystack/internal/services/organizations"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
+	"github.com/amjadjibon/tinystack/internal/services/ram"
 	"github.com/amjadjibon/tinystack/internal/services/rds"
 	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
 	"github.com/amjadjibon/tinystack/internal/services/redshift"
@@ -348,6 +350,7 @@ func build(
 	opensearchRecords := opensearch.New(store)
 	resolverRecords := route53resolver.New(store, network)
 	xrayRecords := xray.New(store)
+	ramRecords := ram.New(store)
 	redshiftRecords := redshift.New(store, network)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -425,6 +428,7 @@ func build(
 		opensearchapi.Descriptor(opensearchRecords),
 		route53resolverapi.Descriptor(resolverRecords),
 		xrayapi.Descriptor(xrayRecords),
+		ramapi.Descriptor(ramRecords),
 		redshiftapi.Descriptor(redshiftRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),
