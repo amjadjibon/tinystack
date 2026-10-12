@@ -234,6 +234,130 @@
       ]
     }
   },
+  "acmpca": {
+    "operations": [
+      "CreateCertificateAuthority",
+      "DeleteCertificateAuthority",
+      "DescribeCertificateAuthority",
+      "ListCertificateAuthorities",
+      "ListTags",
+      "RestoreCertificateAuthority",
+      "TagCertificateAuthority",
+      "UntagCertificateAuthority",
+      "UpdateCertificateAuthority"
+    ],
+    "shapes": {
+      "ASN1Subject": [
+        "CommonName",
+        "Country",
+        "DistinguishedNameQualifier",
+        "GenerationQualifier",
+        "GivenName",
+        "Initials",
+        "Locality",
+        "Organization",
+        "OrganizationalUnit",
+        "Pseudonym",
+        "SerialNumber",
+        "State",
+        "Surname",
+        "Title"
+      ],
+      "CertificateAuthority": [
+        "Arn",
+        "CertificateAuthorityConfiguration",
+        "CreatedAt",
+        "KeyStorageSecurityStandard",
+        "LastStateChangeAt",
+        "OwnerAccount",
+        "RestorableUntil",
+        "RevocationConfiguration",
+        "Status",
+        "Type",
+        "UsageMode"
+      ],
+      "CertificateAuthorityConfiguration": [
+        "KeyAlgorithm",
+        "SigningAlgorithm",
+        "Subject"
+      ],
+      "CreateCertificateAuthorityRequest": [
+        "CertificateAuthorityConfiguration",
+        "CertificateAuthorityType",
+        "IdempotencyToken",
+        "KeyStorageSecurityStandard",
+        "RevocationConfiguration",
+        "Tags",
+        "UsageMode"
+      ],
+      "CreateCertificateAuthorityResponse": [
+        "CertificateAuthorityArn"
+      ],
+      "CrlConfiguration": [
+        "CustomCname",
+        "Enabled",
+        "ExpirationInDays",
+        "S3BucketName",
+        "S3ObjectAcl"
+      ],
+      "DeleteCertificateAuthorityRequest": [
+        "CertificateAuthorityArn",
+        "PermanentDeletionTimeInDays"
+      ],
+      "DescribeCertificateAuthorityRequest": [
+        "CertificateAuthorityArn"
+      ],
+      "DescribeCertificateAuthorityResponse": [
+        "CertificateAuthority"
+      ],
+      "ListCertificateAuthoritiesRequest": [
+        "MaxResults",
+        "NextToken",
+        "ResourceOwner"
+      ],
+      "ListCertificateAuthoritiesResponse": [
+        "CertificateAuthorities",
+        "NextToken"
+      ],
+      "ListTagsRequest": [
+        "CertificateAuthorityArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListTagsResponse": [
+        "NextToken",
+        "Tags"
+      ],
+      "OcspConfiguration": [
+        "Enabled",
+        "OcspCustomCname"
+      ],
+      "RestoreCertificateAuthorityRequest": [
+        "CertificateAuthorityArn"
+      ],
+      "RevocationConfiguration": [
+        "CrlConfiguration",
+        "OcspConfiguration"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagCertificateAuthorityRequest": [
+        "CertificateAuthorityArn",
+        "Tags"
+      ],
+      "UntagCertificateAuthorityRequest": [
+        "CertificateAuthorityArn",
+        "Tags"
+      ],
+      "UpdateCertificateAuthorityRequest": [
+        "CertificateAuthorityArn",
+        "RevocationConfiguration",
+        "Status"
+      ]
+    }
+  },
   "apigateway": {
     "operations": [
       "CreateRestApi",

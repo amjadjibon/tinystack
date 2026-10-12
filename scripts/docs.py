@@ -52,6 +52,8 @@ def service_page(key, info, profile, manifest):
     shapes = model["shapes"]
     service = next(s for s in shapes.values() if s["type"] == "service")
     modeled = {name.split("#")[-1]: s for name, s in shapes.items() if s["type"] == "operation"}
+    # Newer upstream models drop the service version; the documentation ID ends with the API version.
+    version = service.get("version") or re.search(r"\d{4}-\d{2}-\d{2}$", service["traits"]["aws.api#service"]["docId"]).group()
     enabled = set(profile["operations"])
     signing, protocols, generated = descriptor(key)
     if enabled != generated or not enabled <= modeled.keys():
@@ -64,7 +66,13 @@ def service_page(key, info, profile, manifest):
         route = f"{http.get('method', 'POST')} {http.get('uri', '/')}"
         route = route.replace("|", "\\|")
         rows.append(f"| `{name}` | `{route}` |")
-    tests = sorted((ROOT / "tests/integration").glob(f"{info.get('tests', info['package'])}*_test.go"))
+    # Match the package name exactly or as a "<package>_" prefix so acm does not pick up acmpca tests.
+    prefix = info.get("tests", info["package"])
+    tests = sorted(
+        path
+        for path in (ROOT / "tests/integration").glob(f"{prefix}*_test.go")
+        if path.stem == f"{prefix}_test" or path.stem.startswith(f"{prefix}_")
+    )
     test_links = ", ".join(source(str(p.relative_to(ROOT)), p.name) for p in tests)
     omitted = "All operations in this pinned model are selected. Member and behavior limits still apply."
     if unsupported:
@@ -87,7 +95,7 @@ def service_page(key, info, profile, manifest):
 | Service ID | `{key}` |
 | Signing name | `{signing}` |
 | Wire protocol | {', '.join(protocols)} |
-| API version | `{service['version']}` |
+| API version | `{version}` |
 | Scope | {scope} |
 | Execution | {info['execution']} |
 | Selected operations | {len(enabled)} of {len(modeled)} in the pinned model |

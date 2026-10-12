@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.20.12
 	github.com/aws/aws-sdk-go-v2/service/account v1.42.3
 	github.com/aws/aws-sdk-go-v2/service/acm v1.50.1
+	github.com/aws/aws-sdk-go-v2/service/acmpca v1.56.4
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.50.0
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.44.0
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.54.2

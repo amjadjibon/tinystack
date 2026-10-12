@@ -11,6 +11,10 @@
       "path": "codegen/sdk-codegen/aws-models/acm.json",
       "sha256": "fa93fbde7850011b26052855a3dfe18729f049029df9b59cabd8161c309035dc"
     },
+    "acmpca": {
+      "path": "codegen/sdk-codegen/aws-models/acm-pca.json",
+      "sha256": "c7b3d0f1b98cd004ac33ed58e45b27ae0ca67a656ee89304bbbac88825bd0e47"
+    },
     "apigateway": {
       "path": "codegen/sdk-codegen/aws-models/api-gateway.json",
       "sha256": "51f7bb0a8c434669394c0887bacefaefdae66994122229fbac87e6d0f1da859a"

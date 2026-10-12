@@ -196,6 +196,7 @@ var TerraformServices = []string{
 	"ram",
 	"redshift",
 	"xray",
+	"acmpca",
 }
 
 // TerraformOverrideConfig generates the JSON structure for a Terraform provider override.

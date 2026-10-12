@@ -16,6 +16,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	accountapi "github.com/amjadjibon/tinystack/internal/aws/generated/account"
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
+	acmpcaapi "github.com/amjadjibon/tinystack/internal/aws/generated/acmpca"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	appconfigapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfig"
@@ -91,6 +92,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/inithooks"
 	"github.com/amjadjibon/tinystack/internal/services/account"
 	"github.com/amjadjibon/tinystack/internal/services/acm"
+	"github.com/amjadjibon/tinystack/internal/services/acmpca"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/appconfig"
@@ -351,6 +353,7 @@ func build(
 	resolverRecords := route53resolver.New(store, network)
 	xrayRecords := xray.New(store)
 	ramRecords := ram.New(store)
+	privateAuthorities := acmpca.New(store, buckets)
 	redshiftRecords := redshift.New(store, network)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -429,6 +432,7 @@ func build(
 		route53resolverapi.Descriptor(resolverRecords),
 		xrayapi.Descriptor(xrayRecords),
 		ramapi.Descriptor(ramRecords),
+		acmpcaapi.Descriptor(privateAuthorities),
 		redshiftapi.Descriptor(redshiftRecords),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),

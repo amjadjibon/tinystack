@@ -99,6 +99,11 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "ram",
 	},
 	acm: { title: "Certificate Manager", category: security, icon: "acm" },
+	acmpca: {
+		title: "Private CA",
+		category: security,
+		icon: "acmpca",
+	},
 	apigateway: {
 		title: "API Gateway",
 		category: networking,

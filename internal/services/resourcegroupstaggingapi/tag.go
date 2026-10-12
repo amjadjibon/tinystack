@@ -194,6 +194,8 @@ var taggers = map[string]tagger{
 	"route53resolver": resourceOperations("route53resolver", "ResourceArn", pairs),
 	"xray":            resourceOperations("xray", "ResourceARN", pairs),
 	"ram":             resourceOperations("ram", "ResourceShareArn", pairs),
+	"acmpca": operations("acmpca", "TagCertificateAuthority", "UntagCertificateAuthority",
+		byARN("CertificateAuthorityArn"), "Tags", pairs, "Tags", keyOnly),
 	"s3tables": operations(
 		"s3tables",
 		"TagResource",
