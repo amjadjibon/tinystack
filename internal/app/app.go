@@ -54,6 +54,7 @@ import (
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	locationapi "github.com/amjadjibon/tinystack/internal/aws/generated/location"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
 	mqapi "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
 	mwaaapi "github.com/amjadjibon/tinystack/internal/aws/generated/mwaa"
@@ -120,6 +121,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
+	"github.com/amjadjibon/tinystack/internal/services/location"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/mq"
 	"github.com/amjadjibon/tinystack/internal/services/mwaa"
@@ -327,6 +329,7 @@ func build(
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
 	transferRecords := transfer.New(store)
+	locationTrackers := location.New(store)
 	wafRecords := wafv2.New(store)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -396,6 +399,7 @@ func build(
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),
+		locationapi.Descriptor(locationTrackers),
 		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),
 		wafv2api.Descriptor(wafRecords),
 		rdsapi.Descriptor(databases),
@@ -447,6 +451,7 @@ func build(
 	stacks.UseMSK(kafkaClusters)
 	stacks.UseMWAA(airflowEnvironments)
 	stacks.UseTransfer(transferRecords)
+	stacks.UseLocation(locationTrackers)
 	stacks.UseCaller(caller)
 	// Subscription filters deliver to Lambda, Kinesis, and Firehose.
 	logGroups.UseCaller(caller)

@@ -56,6 +56,7 @@ type Service struct {
 	msk      mskRecords
 	mwaa     mwaaRecords
 	transfer transferRecords
+	location locationRecords
 	logger   *slog.Logger
 	now      func() time.Time
 	bg       *background.Group

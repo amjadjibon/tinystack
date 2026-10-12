@@ -379,6 +379,7 @@ func (s *Service) perform(ctx context.Context,
 		msk:      s.msk,
 		mwaa:     s.mwaa,
 		transfer: s.transfer,
+		location: s.location,
 		scope:    scope,
 		endpoint: st.Endpoint,
 		stack:    st.Name,
@@ -414,8 +415,17 @@ func (s *Service) perform(ctx context.Context,
 			return "", nil, e
 		}
 	}
+	if r != nil && r.Type == locationTrackerType && !st.Op.Rollback &&
+		(next.kind == stepSwap || next.kind == stepUpdate) {
+		if e := locationPreflight(props(r.Properties), next.props); e != nil {
+			return "", nil, e
+		}
+	}
 	switch next.kind {
 	case stepCreate, stepSwap:
+		if id, attrs, ok := locationRestoreReplacement(st, next); ok {
+			return id, attrs, nil
+		}
 		if id, attrs, ok := transferRestoreReplacement(st, next); ok {
 			return id, attrs, nil
 		}
@@ -446,7 +456,7 @@ func (s *Service) perform(ctx context.Context,
 		restored := retired.Type == "AWS::WAFv2::WebACLAssociation" ||
 			isEFSResource(retired.Type) || isBatchResource(retired.Type) ||
 			retired.Type == codebuildProjectType || retired.Type == mqBrokerType || retired.Type == mskClusterType ||
-			retired.Type == mwaaEnvironmentType || isTransferResource(retired.Type)
+			retired.Type == mwaaEnvironmentType || isTransferResource(retired.Type) || retired.Type == locationTrackerType
 		if restored && r != nil &&
 			r.Type == retired.Type &&
 			r.Physical == retired.Physical {
@@ -454,6 +464,15 @@ func (s *Service) perform(ctx context.Context,
 		}
 		return "", nil, types[next.typ].remove(ctx, c, retired)
 	case stepUpdate:
+		if st.Op.Rollback && r.Type == locationTrackerType {
+			if reflect.DeepEqual(props(r.Properties), next.props) {
+				attrs, e := locationRead(ctx, c, r.Physical)
+				return r.Physical, attrs, e
+			}
+			if attrs, found, e := locationRestoreUpdate(ctx, c, r, next.props); found {
+				return r.Physical, attrs, e
+			}
+		}
 		if st.Op.Rollback && isTransferResource(r.Type) {
 			if reflect.DeepEqual(props(r.Properties), next.props) {
 				attrs, e := transferRead(ctx, c, r)

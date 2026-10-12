@@ -253,6 +253,7 @@ type client struct {
 	msk      mskRecords
 	mwaa     mwaaRecords
 	transfer transferRecords
+	location locationRecords
 	caller   *catalog.Caller
 	scope    request.Scope
 	endpoint string
