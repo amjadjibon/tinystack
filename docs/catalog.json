@@ -1598,6 +1598,28 @@
         "CloudFormation rejects endpoint IpAddresses and Tags updates and removal of endpoint Name or rule Name/TargetIps/ResolverEndpointId; immutable changes use replacement",
         "CloudFormation endpoint/rule Ref returns the resource ID used by their primary identifier; association Ref returns its association ID"
       ]
+    },
+    "ram": {
+      "title": "AWS Resource Access Manager",
+      "category": "Security, Identity & Compliance",
+      "scope": "Account and Region",
+      "summary": "Store resource shares and resource/principal associations as configuration records without real cross-account access or invitations.",
+      "execution": "Configuration records only",
+      "package": "ram",
+      "features": [
+        "Nine pinned REST JSON resource share, association, and tag operations with AWS SDK v2 integration",
+        "Deterministic resource share lifecycle with unique ARNs, names, allowExternalPrincipals controls, and scoped storage",
+        "Deterministic resource and principal associations with status ASSOCIATED and DISASSOCIATED",
+        "Resource tagging on resource share ARNs with TagResource, UntagResource, and RGTA support",
+        "AWS::RAM::ResourceShare CloudFormation resource with Ref and Fn::GetAtt returning Arn, and association reconciliation on update",
+        "RecordsOnly=true / ExecutionReady=false inventory, official AWS RAM icon and Terraform ram endpoint key"
+      ],
+      "gaps": [
+        "Configuration records only; no invitations, real cross-account access, or authorization enforcement",
+        "Managed permissions and permission associations are excluded (AssociateResourceSharePermission, etc.)",
+        "Customer managed permissions and policy creation are excluded",
+        "AWS Organizations integration and EnableSharingWithAwsOrganization are excluded"
+      ]
     }
   },
   "future": {
@@ -1838,6 +1860,13 @@
       "slice": "Extend the records-only endpoint, rule and association slice with separate advanced control-plane and truthful DNS execution contracts.",
       "features": "- [ ] DNS Firewall rule groups and associations\n- [ ] Resolver query logging configurations and associations\n- [ ] Resolver/DNSSEC configuration and sharing policies\n- [ ] IPv6, delegation, protocols, endpoint address mutations and list filters\n- [ ] Stable AWS-managed Internet Resolver rules\n- [ ] Real DNS forwarding, network/IP allocation and lifecycle readiness",
       "integration": "Current endpoint, rule and VPC association APIs store records only. DNS and network runtime require separate implementation."
+    },
+    "ram-runtime": {
+      "title": "AWS Resource Access Manager cross-account access and invitations runtime",
+      "state": "Proposed",
+      "slice": "Extend records-only resource shares to cross-account invitations, managed permissions, and real cross-account resource access.",
+      "features": "- [ ] Resource share invitations and acceptance lifecycle\n- [ ] Customer managed and AWS managed permissions\n- [ ] Real cross-account resource authorization and sharing\n- [ ] Integration with AWS Organizations sharing enablement",
+      "integration": "The current RAM API persists resource share configuration and associations records only; cross-account invitations and real authorization are excluded."
     }
   }
 }

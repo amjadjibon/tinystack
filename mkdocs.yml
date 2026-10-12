@@ -187,6 +187,8 @@ nav:
       - "Networking and content delivery":
           - "Amazon Route 53 Resolver": services/route53resolver.md
           - "Cloud Map": services/servicediscovery.md
+      - "Security, Identity & Compliance":
+          - "AWS Resource Access Manager": services/ram.md
       - "Storage":
           - "Amazon EFS": services/efs.md
           - "Amazon S3 Tables": services/s3tables.md
@@ -205,6 +207,7 @@ nav:
       - Future catalogue: roadmap/catalogue.md
       - Service and extension proposals:
           - "AWS Batch job execution": roadmap/services/batch-runtime.md
+          - "AWS Resource Access Manager cross-account access and invitations runtime": roadmap/services/ram-runtime.md
           - "AWS Signer": roadmap/services/signer.md
           - "AWS X-Ray trace ingestion and telemetry runtime": roadmap/services/xray-runtime.md
           - "Amazon Bedrock control plane": roadmap/services/bedrock.md
