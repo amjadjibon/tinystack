@@ -20,6 +20,7 @@ const security = "Security, Identity & Compliance";
 const developerTools = "Developer Tools";
 const migration = "Migration & Modernization";
 const business = "Business Applications";
+const frontend = "Front-End Web & Mobile";
 
 export const categories = [
 	compute,
@@ -35,9 +36,15 @@ export const categories = [
 	business,
 	developerTools,
 	migration,
+	frontend,
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	location: {
+		title: "Amazon Location Service",
+		category: frontend,
+		icon: "location",
+	},
 	transfer: {
 		title: "AWS Transfer Family",
 		category: migration,

@@ -161,6 +161,7 @@ var TerraformServices = []string{
 	"kafka",
 	"mwaa",
 	"transfer",
+	"location",
 	"wafv2",
 	"dynamodb",
 	"ec2",

@@ -178,6 +178,17 @@ func errUntaggable(r *catalog.Owned) error {
 // taggers are the taggers of the services whose resources this API tags, by
 // service name.
 var taggers = map[string]tagger{
+	"location": operations(
+		"location",
+		"TagResource",
+		"UntagResource",
+		byARN("ResourceArn"),
+		"Tags",
+		plain,
+		"TagKeys",
+		names,
+	),
+
 	"kafka": operations("kafka", "TagResource", "UntagResource", byARN("ResourceArn"), "Tags", plain, "TagKeys", names),
 	"mwaa":  operations("mwaa", "TagResource", "UntagResource", byARN("ResourceArn"), "Tags", plain, "tagKeys", names),
 	"mq":    operations("mq", "CreateTags", "DeleteTags", byARN("ResourceArn"), "Tags", plain, "TagKeys", names),
