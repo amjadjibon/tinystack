@@ -143,6 +143,7 @@ nav:
       - "Developer Tools":
           - "AWS X-Ray": services/xray.md
           - "CodeBuild": services/codebuild.md
+          - "CodePipeline": services/codepipeline.md
       - "Front-End Web & Mobile":
           - "Amazon Location Service": services/location.md
       - "Identity and security":
@@ -232,6 +233,7 @@ nav:
           - "Bedrock Runtime": roadmap/services/bedrock-runtime.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
           - "CodeBuild build execution": roadmap/services/codebuild-runtime.md
+          - "CodePipeline execution and release automation": roadmap/services/codepipeline-execution.md
           - "Cost and Usage Reports": roadmap/services/cur.md
           - "EC2 Instance Metadata": roadmap/services/imds.md
           - "ECS Task Metadata": roadmap/services/ecs-metadata.md

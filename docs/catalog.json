@@ -1749,6 +1749,32 @@
         "Account assignment status lookup is supported; status-list operations and provisioning-status filters are excluded",
         "Global resource tagging inventory is visible in us-east-1, following the shared global-resource listing convention"
       ]
+    },
+    "codepipeline": {
+      "title": "CodePipeline",
+      "category": "Developer Tools",
+      "scope": "Account and Region",
+      "summary": "Store pipeline declarations and tags without running pipelines, approvals or stage transitions.",
+      "execution": "Configuration records only",
+      "package": "codepipeline",
+      "features": [
+        "Nine pinned AWS JSON 1.1 operations: CreatePipeline, GetPipeline, GetPipelineState, ListPipelines, UpdatePipeline, DeletePipeline, TagResource, UntagResource and ListTagsForResource with AWS SDK v2 integration",
+        "Pipeline declarations stored per account and Region with unique names, scoped ARNs, creation and update timestamps and a version that starts at 1 and grows by one on every successful UpdatePipeline",
+        "Whole-candidate validation on create and update, so a rejected update leaves the stored pipeline unchanged: exactly one of artifactStore and artifactStores (with a store for the pipeline Region and for every action Region), at least two stages with unique names, Source actions only in the first stage and nothing else there, unique action names per stage, action category, owner, provider, version and runOrder checks, unique output artifact names and every input artifact produced by an earlier stage or an earlier run order",
+        "V1 and V2 pipeline types with SUPERSEDED, QUEUED and PARALLEL execution modes and pipeline variables; variables and the QUEUED and PARALLEL modes require V2, and a declaration that uses one without naming a type becomes V2",
+        "ListPipelines with maxResults up to 1000 and deletion-resilient cursors; GetPipelineState lists the stages and actions of a pipeline with no executions; DeletePipeline succeeds for unknown names because the operation models no not-found error",
+        "Pipeline tagging with TagResource, UntagResource, ListTagsForResource and the Resource Groups Tagging API, with the shared 50-tag limit",
+        "AWS::CodePipeline::Pipeline CloudFormation resource with Ref returning the pipeline name and Fn::GetAtt Version, in-place updates that add a version, tag changes that keep the version and name replacement",
+        "RecordsOnly=true / ExecutionReady=false inventory, official AWS CodePipeline icon and Terraform codepipeline endpoint key"
+      ],
+      "gaps": [
+        "Declarations only; no pipeline execution, source change detection, stage transitions, approvals, jobs, webhooks or custom action types (StartPipelineExecution, GetPipelineExecution, ListPipelineExecutions and the other execution APIs are not selected)",
+        "Only the current pipeline version is retained; GetPipeline for another version fails with PipelineVersionNotFoundException, and the version in a submitted declaration is ignored because the service sets it",
+        "Triggers, stage blockers and conditions (onFailure, onSuccess, beforeEntry), action commands, environment variables, output variables and timeouts, and output artifact files are not selected and fail with NotImplemented",
+        "Provider-specific action rules (valid providers per category, artifact counts and configuration keys) and account quotas for pipelines, stages and actions are not enforced",
+        "ListTagsForResource returns every tag in one response, as the operation documents, and does not accept nextToken or maxResults",
+        "CloudFormation Triggers, DisableInboundStageTransitions, stage conditions and RestartExecutionOnUpdate set to true fail the stack operation instead of being ignored"
+      ]
     }
   },
   "future": {
@@ -2016,6 +2042,13 @@
       "slice": "Extend the user/group, membership, permission set and assignment records with separately designed provisioning and identity execution.",
       "features": "- [ ] Additional user attributes, extensions and revision controls\n- [ ] Explicit provisioning and IAM role lifecycle\n- [ ] Customer managed policy references and permissions boundaries\n- [ ] Applications, trusted token issuers and access control attributes\n- [ ] Sign-in, federation and identity provider synchronization",
       "integration": "Identity Store and SSO Admin currently share one built-in account-wide instance and store configuration records only."
+    },
+    "codepipeline-execution": {
+      "title": "CodePipeline execution and release automation",
+      "state": "Proposed",
+      "slice": "Extend records-only pipeline declarations to executions, stage transitions, approvals and triggers.",
+      "features": "- [ ] StartPipelineExecution, GetPipelineExecution, ListPipelineExecutions and StopPipelineExecution\n- [ ] Stage transitions, retry and rollback of stage executions\n- [ ] Manual approval results and action executions\n- [ ] Triggers, stage conditions and source change detection\n- [ ] Webhooks, jobs and custom action types\n- [ ] Retained pipeline versions",
+      "integration": "The current CodePipeline API stores pipeline declarations and tags only; nothing runs, so pipeline state lists stages and actions without executions."
     }
   }
 }
