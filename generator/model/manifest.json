@@ -283,6 +283,10 @@
       "path": "codegen/sdk-codegen/aws-models/transfer.json",
       "sha256": "dacf9d6638d8a4f4621ebc438aa8dab7589e757b16037ea8acf50cb292e1db83"
     },
+    "verifiedpermissions": {
+      "path": "codegen/sdk-codegen/aws-models/verifiedpermissions.json",
+      "sha256": "53fb712d34ce2a48a238358e2057b019513c5d94cff8e84820aa61f3c6093123"
+    },
     "wafv2": {
       "path": "codegen/sdk-codegen/aws-models/wafv2.json",
       "sha256": "0c5a241cea430b965f960950905f2c5a8b3814e10ae0da9ec7e9e2d05a3b5e8b"

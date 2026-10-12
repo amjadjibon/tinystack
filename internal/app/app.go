@@ -84,6 +84,7 @@ import (
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	transferapi "github.com/amjadjibon/tinystack/internal/aws/generated/transfer"
+	verifiedpermissionsapi "github.com/amjadjibon/tinystack/internal/aws/generated/verifiedpermissions"
 	wafv2api "github.com/amjadjibon/tinystack/internal/aws/generated/wafv2"
 	xrayapi "github.com/amjadjibon/tinystack/internal/aws/generated/xray"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -161,6 +162,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/services/transfer"
+	"github.com/amjadjibon/tinystack/internal/services/verifiedpermissions"
 	"github.com/amjadjibon/tinystack/internal/services/wafv2"
 	"github.com/amjadjibon/tinystack/internal/services/xray"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -356,6 +358,7 @@ func build(
 	xrayRecords := xray.New(store)
 	ramRecords := ram.New(store)
 	privateAuthorities := acmpca.New(store, buckets)
+	verifiedpermissionsRecords := verifiedpermissions.New(store)
 	redshiftRecords := redshift.New(store, network)
 	classicBalancers := elb.New(store, network)
 	a.onReset(trails.Reset)
@@ -436,6 +439,7 @@ func build(
 		xrayapi.Descriptor(xrayRecords),
 		ramapi.Descriptor(ramRecords),
 		acmpcaapi.Descriptor(privateAuthorities),
+		verifiedpermissionsapi.Descriptor(verifiedpermissionsRecords),
 		redshiftapi.Descriptor(redshiftRecords),
 		elbapi.Descriptor(classicBalancers),
 		rdsapi.Descriptor(databases),

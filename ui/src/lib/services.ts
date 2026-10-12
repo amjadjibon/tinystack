@@ -104,6 +104,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: security,
 		icon: "acmpca",
 	},
+	verifiedpermissions: {
+		title: "Amazon Verified Permissions",
+		category: security,
+		icon: "verifiedpermissions",
+	},
 	apigateway: {
 		title: "API Gateway",
 		category: networking,

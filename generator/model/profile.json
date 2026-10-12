@@ -21123,5 +21123,210 @@
         "Key"
       ]
     }
+  },
+  "verifiedpermissions": {
+    "operations": [
+      "CreatePolicy",
+      "CreatePolicyStore",
+      "DeletePolicy",
+      "DeletePolicyStore",
+      "GetPolicy",
+      "GetPolicyStore",
+      "GetSchema",
+      "ListPolicies",
+      "ListPolicyStores",
+      "ListTagsForResource",
+      "PutSchema",
+      "TagResource",
+      "UntagResource",
+      "UpdatePolicy",
+      "UpdatePolicyStore"
+    ],
+    "shapes": {
+      "CreatePolicyInput": [
+        "clientToken",
+        "definition",
+        "policyStoreId"
+      ],
+      "CreatePolicyOutput": [
+        "createdDate",
+        "effect",
+        "lastUpdatedDate",
+        "policyId",
+        "policyStoreId",
+        "policyType"
+      ],
+      "CreatePolicyStoreInput": [
+        "clientToken",
+        "description",
+        "tags",
+        "validationSettings"
+      ],
+      "CreatePolicyStoreOutput": [
+        "arn",
+        "createdDate",
+        "lastUpdatedDate",
+        "policyStoreId"
+      ],
+      "DeletePolicyInput": [
+        "policyId",
+        "policyStoreId"
+      ],
+      "DeletePolicyStoreInput": [
+        "policyStoreId"
+      ],
+      "GetPolicyInput": [
+        "policyId",
+        "policyStoreId"
+      ],
+      "GetPolicyOutput": [
+        "createdDate",
+        "definition",
+        "effect",
+        "lastUpdatedDate",
+        "policyId",
+        "policyStoreId",
+        "policyType"
+      ],
+      "GetPolicyStoreInput": [
+        "policyStoreId"
+      ],
+      "GetPolicyStoreOutput": [
+        "arn",
+        "createdDate",
+        "description",
+        "lastUpdatedDate",
+        "policyStoreId",
+        "validationSettings"
+      ],
+      "GetSchemaInput": [
+        "policyStoreId"
+      ],
+      "GetSchemaOutput": [
+        "createdDate",
+        "lastUpdatedDate",
+        "namespaces",
+        "policyStoreId",
+        "schema"
+      ],
+      "ListPoliciesInput": [
+        "maxResults",
+        "nextToken",
+        "policyStoreId"
+      ],
+      "ListPoliciesOutput": [
+        "nextToken",
+        "policies"
+      ],
+      "ListPolicyStoresInput": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListPolicyStoresOutput": [
+        "nextToken",
+        "policyStores"
+      ],
+      "ListTagsForResourceInput": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "tags"
+      ],
+      "PolicyDefinition": [
+        "static",
+        "templateLinked"
+      ],
+      "PolicyDefinitionDetail": [
+        "static"
+      ],
+      "PolicyDefinitionItem": [
+        "static"
+      ],
+      "PolicyItem": [
+        "createdDate",
+        "definition",
+        "effect",
+        "lastUpdatedDate",
+        "policyId",
+        "policyStoreId",
+        "policyType"
+      ],
+      "PolicyStoreItem": [
+        "arn",
+        "createdDate",
+        "description",
+        "lastUpdatedDate",
+        "policyStoreId"
+      ],
+      "PutSchemaInput": [
+        "definition",
+        "policyStoreId"
+      ],
+      "PutSchemaOutput": [
+        "createdDate",
+        "lastUpdatedDate",
+        "namespaces",
+        "policyStoreId"
+      ],
+      "SchemaDefinition": [
+        "cedarJson"
+      ],
+      "StaticPolicyDefinition": [
+        "description",
+        "statement"
+      ],
+      "StaticPolicyDefinitionDetail": [
+        "description",
+        "statement"
+      ],
+      "StaticPolicyDefinitionItem": [
+        "description"
+      ],
+      "TagResourceInput": [
+        "resourceArn",
+        "tags"
+      ],
+      "TemplateLinkedPolicyDefinition": [
+        "policyTemplateId"
+      ],
+      "UntagResourceInput": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UpdatePolicyDefinition": [
+        "static"
+      ],
+      "UpdatePolicyInput": [
+        "definition",
+        "policyId",
+        "policyStoreId"
+      ],
+      "UpdatePolicyOutput": [
+        "createdDate",
+        "effect",
+        "lastUpdatedDate",
+        "policyId",
+        "policyStoreId",
+        "policyType"
+      ],
+      "UpdatePolicyStoreInput": [
+        "description",
+        "policyStoreId",
+        "validationSettings"
+      ],
+      "UpdatePolicyStoreOutput": [
+        "arn",
+        "createdDate",
+        "lastUpdatedDate",
+        "policyStoreId"
+      ],
+      "UpdateStaticPolicyDefinition": [
+        "description",
+        "statement"
+      ],
+      "ValidationSettings": [
+        "mode"
+      ]
+    }
   }
 }
