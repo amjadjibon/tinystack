@@ -153,14 +153,17 @@ func (g *generator) sensitive(id string, visited map[string]bool) bool {
 	return false
 }
 
-const traitTimestampFormat = "smithy.api#timestampFormat"
+const (
+	traitTimestampFormat = "smithy.api#timestampFormat"
+	timestampDateTime    = "date-time"
+)
 
 // isoTimestamp reports whether s is a timestamp shape that the JSON protocols
 // carry as ISO 8601 text, as time.Time encodes it, instead of epoch seconds.
 func isoTimestamp(s *shape) bool {
 	var layout string
 	return s.Type == shapeTimestamp && json.Unmarshal(s.Traits[traitTimestampFormat], &layout) == nil &&
-		layout == "date-time"
+		layout == timestampDateTime
 }
 
 // anonymous reports whether an operation's traits let clients call it
@@ -558,6 +561,13 @@ func (g *generator) emit(id string) error {
 			if guardErr != nil {
 				return fmt.Errorf("%s.%s: %w", id, n, guardErr)
 			}
+			if target := g.model.Shapes[m.Target]; target.Type == shapeTimestamp {
+				var layout string
+				if json.Unmarshal(traits[traitTimestampFormat], &layout) == nil && layout == timestampDateTime {
+					traits = maps.Clone(traits)
+					delete(traits, traitTimestampFormat)
+				}
+			}
 
 			if checkErr := checkTraits(traits, g.rest); checkErr != nil {
 				return checkErr
@@ -583,6 +593,13 @@ func (g *generator) emit(id string) error {
 			t, err := g.typeName(m.Target)
 			if err != nil {
 				return err
+			}
+			if target := g.model.Shapes[m.Target]; target.Type == shapeTimestamp {
+				var layout string
+				if json.Unmarshal(m.Traits[traitTimestampFormat], &layout) == nil && layout == timestampDateTime {
+					g.imports["time"] = true
+					t = "time.Time"
+				}
 			}
 
 			kind := g.model.Shapes[m.Target].Type

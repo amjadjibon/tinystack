@@ -254,6 +254,10 @@
     "location": {
       "path": "codegen/sdk-codegen/aws-models/location.json",
       "sha256": "b6afe8e89a91ebf6cedb12595cadaa8168aa08483160017904d8b44d3daa8d89"
+    },
+    "s3tables": {
+      "path": "codegen/sdk-codegen/aws-models/s3tables.json",
+      "sha256": "8b92d3d062c80f66dd9b2c600ff15230656e715cea567ddbfc750e446b20927d"
     }
   }
 }

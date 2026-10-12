@@ -19551,5 +19551,191 @@
         "TagKeys"
       ]
     }
+  },
+  "s3tables": {
+    "operations": [
+      "CreateTableBucket",
+      "GetTableBucket",
+      "ListTableBuckets",
+      "DeleteTableBucket",
+      "CreateNamespace",
+      "GetNamespace",
+      "ListNamespaces",
+      "DeleteNamespace",
+      "CreateTable",
+      "GetTable",
+      "ListTables",
+      "DeleteTable",
+      "RenameTable",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource"
+    ],
+    "shapes": {
+      "CreateTableBucketRequest": [
+        "name",
+        "tags"
+      ],
+      "CreateTableBucketResponse": [
+        "arn"
+      ],
+      "GetTableBucketRequest": [
+        "tableBucketARN"
+      ],
+      "GetTableBucketResponse": [
+        "arn",
+        "name",
+        "ownerAccountId",
+        "createdAt",
+        "tableBucketId",
+        "type"
+      ],
+      "ListTableBucketsRequest": [
+        "prefix",
+        "continuationToken",
+        "maxBuckets",
+        "type"
+      ],
+      "ListTableBucketsResponse": [
+        "tableBuckets",
+        "continuationToken"
+      ],
+      "DeleteTableBucketRequest": [
+        "tableBucketARN"
+      ],
+      "CreateNamespaceRequest": [
+        "tableBucketARN",
+        "namespace"
+      ],
+      "CreateNamespaceResponse": [
+        "tableBucketARN",
+        "namespace"
+      ],
+      "GetNamespaceRequest": [
+        "tableBucketARN",
+        "namespace"
+      ],
+      "GetNamespaceResponse": [
+        "namespace",
+        "createdAt",
+        "createdBy",
+        "ownerAccountId",
+        "namespaceId",
+        "tableBucketId"
+      ],
+      "ListNamespacesRequest": [
+        "tableBucketARN",
+        "prefix",
+        "continuationToken",
+        "maxNamespaces"
+      ],
+      "ListNamespacesResponse": [
+        "namespaces",
+        "continuationToken"
+      ],
+      "DeleteNamespaceRequest": [
+        "tableBucketARN",
+        "namespace"
+      ],
+      "CreateTableRequest": [
+        "tableBucketARN",
+        "namespace",
+        "name",
+        "format",
+        "tags"
+      ],
+      "CreateTableResponse": [
+        "tableARN",
+        "versionToken"
+      ],
+      "GetTableRequest": [
+        "tableBucketARN",
+        "namespace",
+        "name",
+        "tableArn"
+      ],
+      "GetTableResponse": [
+        "name",
+        "type",
+        "tableARN",
+        "namespace",
+        "namespaceId",
+        "versionToken",
+        "createdAt",
+        "createdBy",
+        "modifiedAt",
+        "modifiedBy",
+        "ownerAccountId",
+        "format",
+        "tableBucketId"
+      ],
+      "ListTablesRequest": [
+        "tableBucketARN",
+        "namespace",
+        "prefix",
+        "continuationToken",
+        "maxTables"
+      ],
+      "ListTablesResponse": [
+        "tables",
+        "continuationToken"
+      ],
+      "DeleteTableRequest": [
+        "tableBucketARN",
+        "namespace",
+        "name",
+        "versionToken"
+      ],
+      "RenameTableRequest": [
+        "tableBucketARN",
+        "namespace",
+        "name",
+        "newNamespaceName",
+        "newName",
+        "versionToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "TableBucketSummary": [
+        "arn",
+        "name",
+        "ownerAccountId",
+        "createdAt",
+        "tableBucketId",
+        "type"
+      ],
+      "NamespaceSummary": [
+        "namespace",
+        "createdAt",
+        "createdBy",
+        "ownerAccountId",
+        "namespaceId",
+        "tableBucketId"
+      ],
+      "TableSummary": [
+        "namespace",
+        "name",
+        "type",
+        "tableARN",
+        "createdAt",
+        "modifiedAt",
+        "namespaceId",
+        "tableBucketId"
+      ]
+    }
   }
 }
