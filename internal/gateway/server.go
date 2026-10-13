@@ -51,6 +51,7 @@ type Server struct {
 	// internal serves TinyStack's own endpoints under /_tinystack/.
 	internal    map[string]http.Handler
 	credentials CredentialLookup
+	policies    PolicyLookup
 	documents   Documents
 	tokens      Tokens
 	registry    Registry
@@ -88,7 +89,8 @@ type Tokens func(ctx context.Context, issuer, endpoint, authorization string, fo
 
 // call is a request classified to a protocol and, once known, a service.
 type call struct {
-	service *catalog.Service
+	service       *catalog.Service
+	authorization *AuthorizationRecord
 	// credentials are those of an access key TinyStack issued, if the request's is one.
 	credentials *request.Credentials
 	form        url.Values
@@ -113,10 +115,12 @@ func (c *call) close() {
 	for i := len(c.cleanups) - 1; i >= 0; i-- {
 		_ = c.cleanups[i]()
 	}
+
 	if c.payload != nil {
 		if c.payload.Body != nil {
 			_ = c.payload.Body.Close()
 		}
+
 		if c.payload.Stream != nil {
 			_ = c.payload.Stream.Close()
 		}
@@ -141,6 +145,7 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		services: map[string]*catalog.Service{},
 		routes:   map[string][]route{},
 	}
+
 	names := make([]string, 0, len(services))
 	for i := range services {
 		service := &services[i]
@@ -676,6 +681,7 @@ func (s *Server) decode(
 	if !supported || (contentType != binding.ContentType && !get) {
 		return op, nil, awserror.Validation("Unsupported content type for this operation")
 	}
+
 	// Query clients may post to a resource URL such as an SQS queue URL.
 	pathOK := formProtocol(c.meta.Protocol) || r.URL.Path == binding.URI
 	if !get && (r.Method != binding.Method || !pathOK || r.URL.RawQuery != "") {
@@ -739,16 +745,20 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	if c.service != nil && c.service.Name == "wafv2" && e.Code == validationException {
 		e.Code = "WAFInvalidParameterException"
 	}
+
 	if c.service != nil && c.service.Name == "efs" && e.Code == validationException {
 		e.Code = "BadRequest"
 		e.Fields = map[string]any{"ErrorCode": "BadRequest"}
 	}
+
 	if c.service != nil && c.service.Name == "batch" && e.Code == validationException {
 		e.Code = "ClientException"
 	}
+
 	if c.service != nil && c.service.Name == "transfer" && e.Code == validationException {
 		e.Code = "InvalidRequestException"
 	}
+
 	c.failure = e
 	for name, value := range e.Headers {
 		w.Header().Set(name, value)
@@ -757,7 +767,9 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 	namespace, messageMember := "", ""
 	if c.service != nil {
 		if binding, ok := c.service.Errors[e.Code]; ok {
-			if !c.faultError {
+			authorizationFailure := c.authorization != nil && !c.authorization.Allowed &&
+				c.authorization.Mode == config.AuthorizationEnforce
+			if !c.faultError && !authorizationFailure {
 				e.StatusCode = binding.StatusCode
 			}
 
@@ -869,21 +881,29 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := request.WithMetadata(r.Context(), c.meta)
+	if authorizationErr := s.authorize(ctx, r, c, &op, input); authorizationErr != nil {
+		s.fail(w, c, authorizationErr)
+		return
+	}
+
 	if faultErr := s.inject(r.Context(), c); faultErr != nil {
 		s.fail(w, c, faultErr)
 		return
 	}
 
-	ctx := request.WithMetadata(r.Context(), c.meta)
+	ctx = request.WithMetadata(r.Context(), c.meta)
 	if c.service.SigningName == "s3" {
 		switch c.meta.Operation {
 		case opGetObject, opPutObject, opUploadPart:
 			if c.payload == nil {
 				c.payload = &request.Payload{}
 			}
+
 			ctx = request.WithPayload(ctx, c.payload)
 		}
 	}
+
 	output, err := op.Invoke(ctx, input)
 	if err != nil {
 		s.fail(w, c, err)
@@ -903,6 +923,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			restxml.Write(w, &binding, output, c.head)
 		}
+
 		return
 	case catalog.RESTJSON:
 		restjson.Write(w, &binding, output)
@@ -933,22 +954,23 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturingBody, w *capturingWriter) {
 	m := &c.meta
 	rec := Record{
-		Injected:     c.injected,
-		Time:         start.UTC(),
-		RequestID:    m.RequestID,
-		Method:       r.Method,
-		Path:         r.URL.Path,
-		Service:      m.Service,
-		Operation:    m.Operation,
-		Protocol:     m.Protocol,
-		Account:      m.AccountID,
-		Region:       m.Region,
-		Status:       w.status,
-		RequestBody:  body.text(),
-		RequestSize:  body.size,
-		ResponseBody: w.text(),
-		ResponseSize: w.size,
-		DurationMS:   float64(time.Since(start).Microseconds()) / 1000,
+		Injected:      c.injected,
+		Authorization: c.authorization,
+		Time:          start.UTC(),
+		RequestID:     m.RequestID,
+		Method:        r.Method,
+		Path:          r.URL.Path,
+		Service:       m.Service,
+		Operation:     m.Operation,
+		Protocol:      m.Protocol,
+		Account:       m.AccountID,
+		Region:        m.Region,
+		Status:        w.status,
+		RequestBody:   body.text(),
+		RequestSize:   body.size,
+		ResponseBody:  w.text(),
+		ResponseSize:  w.size,
+		DurationMS:    float64(time.Since(start).Microseconds()) / 1000,
 	}
 
 	if rec.Status == 0 {
@@ -968,16 +990,20 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 		if host, _, err := net.SplitHostPort(source); err == nil {
 			source = host
 		}
+
 		event := &catalog.ManagementEvent{
 			Metadata: *m, Time: rec.Time, SourceIPAddress: source,
 			UserAgent: r.UserAgent(), ErrorCode: rec.ErrorCode, ErrorMessage: rec.ErrorMessage,
 		}
+
 		if c.service.Operations[m.Operation].Sensitive && event.ErrorMessage != "" {
 			event.ErrorMessage = redacted
 		}
+
 		if m.Service == "s3" && c.labels["Bucket"] != "" {
 			event.Resources = []catalog.EventResource{{Type: "AWS::S3::Bucket", Name: c.labels["Bucket"]}}
 		}
+
 		if err := s.managementEvents(context.WithoutCancel(r.Context()), event); err != nil {
 			s.logger.Error("record management event", "error", err)
 		}

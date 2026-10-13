@@ -50,6 +50,8 @@ type Operation struct {
 	NewInput func() any
 	Invoke   func(context.Context, any) (any, error)
 	Name     string
+	// IAMAction is generated from model IAM traits and cited API overrides.
+	IAMAction string
 	// UnitOutput marks operations whose modeled output is smithy.api#Unit.
 	// AWS Query omits their Result element but writes one, even empty, for
 	// every structure output.
@@ -117,6 +119,8 @@ func InventoryOf(api any) Inventory {
 
 type Service struct {
 	// Inventory lists the service's resources; it may be nil.
+	Authorizer      Authorizer
+	IAMPrefix       string
 	Inventory       Inventory
 	Operations      map[string]Operation
 	Errors          map[string]ErrorBinding

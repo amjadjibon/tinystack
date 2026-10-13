@@ -99,6 +99,20 @@ func (s *session) id() string {
 	return s.RoleID + ":" + s.Name
 }
 
+func (s *session) principal() request.Principal {
+	p := request.Principal{Account: s.AccountID, ARN: s.arn(), UserID: s.id()}
+	switch {
+	case s.role():
+		p.Kind, p.Name, p.ID, p.PolicyARN = request.PrincipalRole, s.RoleName, s.RoleID, s.RoleARN
+	case s.UserARN == rootARN(s.AccountID):
+		p.Kind, p.ID, p.PolicyARN = request.PrincipalRoot, s.UserID, s.UserARN
+	default:
+		p.Kind, p.ID, p.PolicyARN = request.PrincipalUser, s.UserID, s.UserARN
+	}
+
+	return p
+}
+
 func rootARN(account string) string { return "arn:aws:iam::" + account + ":root" }
 
 func validation(format string, args ...any) error {
@@ -151,6 +165,7 @@ func (s *Service) Credentials(ctx context.Context, accessKey string) (request.Cr
 			Secret:          stored.Secret,
 			Token:           stored.Token,
 			CognitoIdentity: stored.CognitoIdentity,
+			Principal:       stored.principal(),
 		}
 
 		return nil
@@ -160,7 +175,10 @@ func (s *Service) Credentials(ctx context.Context, accessKey string) (request.Cr
 	}
 
 	key, found, err := s.roles.AccessKey(ctx, accessKey)
-	return request.Credentials{AccountID: key.Account, Secret: key.Secret}, found, err
+	return request.Credentials{AccountID: key.Account, Secret: key.Secret, Principal: request.Principal{
+		Kind: request.PrincipalUser, Account: key.Account, Name: key.UserName, ID: key.UserID,
+		UserID: key.UserID, ARN: key.UserARN, PolicyARN: key.UserARN,
+	}}, found, err
 }
 
 // callerUser returns the IAM user whose access key m carries, if the key is
@@ -190,6 +208,7 @@ func (s *Service) GetCallerIdentity(
 		Account: new(m.AccountID),
 		Arn:     new(rootARN(m.AccountID)),
 	}
+
 	key, isUser, err := s.callerUser(ctx, &m)
 	if err != nil {
 		return nil, err
@@ -249,6 +268,7 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 			account: m.AccountID, arns: []string{rootARN(m.AccountID)}, action: "sts:AssumeRole",
 			context: map[string][]string{"sts:externalid": present(common.Value(in.ExternalId))},
 		}
+
 		switch {
 		case chained:
 			c.arns = append(c.arns, current.RoleARN, current.arn())
@@ -271,6 +291,7 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID,
 			Name: *in.RoleSessionName, Expires: now.Add(duration).Unix(),
 		}
+
 		credentials, issueErr := issue(tx, issued, now)
 		if issueErr != nil {
 			return issueErr
@@ -321,6 +342,7 @@ func (s *Service) AssumeRoleForService(
 			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID, Name: sessionName,
 			Expires: now.Add(duration).Unix(),
 		}
+
 		credentials, issueErr := issue(tx, issued, now)
 		if issueErr != nil {
 			return issueErr

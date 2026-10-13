@@ -567,6 +567,7 @@ func (g *generator) emit(id string) error {
 			if guardErr != nil {
 				return fmt.Errorf("%s.%s: %w", id, n, guardErr)
 			}
+
 			if target := g.model.Shapes[m.Target]; target.Type == shapeTimestamp {
 				var layout string
 				if json.Unmarshal(traits[traitTimestampFormat], &layout) == nil && layout == timestampDateTime {
@@ -600,6 +601,7 @@ func (g *generator) emit(id string) error {
 			if err != nil {
 				return err
 			}
+
 			if target := g.model.Shapes[m.Target]; target.Type == shapeTimestamp {
 				var layout string
 				if json.Unmarshal(m.Traits[traitTimestampFormat], &layout) == nil && layout == timestampDateTime {
@@ -880,6 +882,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		profile:  profile,
 		query:    profile.Query != nil,
 	}
+
 	if guardErr := json.Unmarshal(data, &g.model); guardErr != nil {
 		return nil, guardErr
 	}
@@ -979,11 +982,12 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		&g.out,
 		"func D"+
 			"escriptor(api API) catalog.Service {return catalog.Service{Name: %q, SigningName: %q,"+
-			"Inventory:catalog.InventoryOf(api),"+
+			"Inventory:catalog.InventoryOf(api),Authorizer:catalog.AuthorizerOf(api),IAMPrefix:%q,"+
 			"TargetPrefix:%q,QueryCompatible:%t,%sXMLNamespace:%q,Protocols:%#v,Errors:%#v,Operations:map[stri"+
 			"ng]catalog.Operation{\n",
 		name,
 		sigv4.Name,
+		iamPrefix(name, &svc, sigv4.Name),
 		targetPrefix,
 		queryCompatible,
 		wrappedField(g.wrapped),
@@ -1006,7 +1010,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 
 		fmt.Fprintf(
 			&g.out,
-			"%q:{Name:%q,UnitOutput:%t,Sensitive:%t,Anonymous:%t,Bindings:%#v,NewI"+
+			"%q:{Name:%q,UnitOutput:%t,Sensitive:%t,Anonymous:%t,IAMAction:%q,Bindings:%#v,NewI"+
 				"nput:func()any{return &%s{}},Invoke:func(ctx context.Context,input any)(any"+
 				",error){return api.%s(ctx,input.(*%s))}},\n",
 			op,
@@ -1014,6 +1018,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 			s.Output.Target == unitShape,
 			g.sensitive(s.Input.Target, map[string]bool{}) || g.sensitive(s.Output.Target, map[string]bool{}),
 			anonymous(s.Traits),
+			iamAction(name, op, iamPrefix(name, &svc, sigv4.Name), &s),
 			bindings,
 			inputNames[op],
 			op,

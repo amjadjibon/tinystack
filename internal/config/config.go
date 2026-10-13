@@ -19,8 +19,11 @@ import (
 // Identity authentication modes: parse reads the access key without verifying
 // signatures; verify checks SigV4 signatures against secret_keys.
 const (
-	IdentityParse  = "parse"
-	IdentityVerify = "verify"
+	IdentityParse        = "parse"
+	IdentityVerify       = "verify"
+	AuthorizationOff     = "off"
+	AuthorizationSoft    = "soft"
+	AuthorizationEnforce = "enforce"
 )
 
 // Storage modes: memory stores state in ephemeral memory; persistent saves it
@@ -121,38 +124,49 @@ func (c *AccountContactConfig) Validate() error {
 	if c == nil {
 		return nil
 	}
+
 	if l := utf8.RuneCountInString(c.FullName); l < 1 || l > 50 {
 		return fmt.Errorf("full_name is required and must be between 1 and 50 characters")
 	}
+
 	if l := utf8.RuneCountInString(c.AddressLine1); l < 1 || l > 60 {
 		return fmt.Errorf("address_line1 is required and must be between 1 and 60 characters")
 	}
+
 	if l := utf8.RuneCountInString(c.AddressLine2); l > 60 {
 		return fmt.Errorf("address_line2 must be at most 60 characters")
 	}
+
 	if l := utf8.RuneCountInString(c.AddressLine3); l > 60 {
 		return fmt.Errorf("address_line3 must be at most 60 characters")
 	}
+
 	if l := utf8.RuneCountInString(c.City); l < 1 || l > 50 {
 		return fmt.Errorf("city is required and must be between 1 and 50 characters")
 	}
+
 	if !countryCodePattern.MatchString(c.CountryCode) {
 		return fmt.Errorf("country_code is required and must be a 2-letter ISO-3166 country code")
 	}
+
 	countryUpper := strings.ToUpper(c.CountryCode)
 	lState := utf8.RuneCountInString(c.StateOrRegion)
 	if stateOrRegionRequiredCountries[countryUpper] && lState < 1 {
 		return fmt.Errorf("state_or_region is required for country %s", c.CountryCode)
 	}
+
 	if lState > 50 {
 		return fmt.Errorf("state_or_region must be at most 50 characters")
 	}
+
 	if l := utf8.RuneCountInString(c.DistrictOrCounty); l > 50 {
 		return fmt.Errorf("district_or_county must be at most 50 characters")
 	}
+
 	if l := utf8.RuneCountInString(c.PostalCode); l < 1 || l > 20 {
 		return fmt.Errorf("postal_code is required and must be between 1 and 20 characters")
 	}
+
 	if l := utf8.RuneCountInString(c.PhoneNumber); l < 1 || l > 20 ||
 		!phoneNumberPattern.MatchString(c.PhoneNumber) {
 		return fmt.Errorf(
@@ -160,12 +174,15 @@ func (c *AccountContactConfig) Validate() error {
 				"and must match format ^[+][\\s0-9()-]+$",
 		)
 	}
+
 	if l := utf8.RuneCountInString(c.CompanyName); l > 50 {
 		return fmt.Errorf("company_name must be at most 50 characters")
 	}
+
 	if l := utf8.RuneCountInString(c.WebsiteURL); l > 256 {
 		return fmt.Errorf("website_url must be at most 256 characters")
 	}
+
 	return nil
 }
 
@@ -182,9 +199,10 @@ type Config struct {
 	Accounts map[string]AccountConfig `yaml:"accounts"`
 	Faults   []faults.Rule            `yaml:"faults"`
 	Identity struct {
-		Accounts   map[string]string `yaml:"accounts"`
-		SecretKeys map[string]string `yaml:"secret_keys"`
-		Mode       string            `yaml:"mode"`
+		Accounts      map[string]string `yaml:"accounts"`
+		SecretKeys    map[string]string `yaml:"secret_keys"`
+		Mode          string            `yaml:"mode"`
+		Authorization string            `yaml:"authorization"`
 	} `yaml:"identity"`
 	Defaults struct {
 		Account string `yaml:"account"`
@@ -246,6 +264,7 @@ func Default() Config {
 	c.Storage.Mode = StorageMemory
 	c.Storage.MaxObjectBytes = 256 << 20
 	c.Identity.Mode = IdentityParse
+	c.Identity.Authorization = AuthorizationOff
 	c.Identity.Accounts = map[string]string{}
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
@@ -302,27 +321,38 @@ func (c *Config) Validate() error {
 		if !account.MatchString(id) {
 			return fmt.Errorf("accounts key must have 12 digits: %q", id)
 		}
+
 		if acct.CreatedDate != "" {
 			if _, err := time.Parse(time.RFC3339, acct.CreatedDate); err != nil {
 				return fmt.Errorf("invalid created_date for account %q: %w", id, err)
 			}
 		}
+
 		if acct.State != "" && !validAccountStates[acct.State] {
 			return fmt.Errorf("invalid account state %q for account %q", acct.State, id)
 		}
+
 		if acct.Contact != nil {
 			if err := acct.Contact.Validate(); err != nil {
 				return fmt.Errorf("invalid contact for account %q: %w", id, err)
 			}
 		}
+
 		for reg, status := range acct.Regions {
 			if reg == "" {
 				return fmt.Errorf("empty region name for account %q", id)
 			}
+
 			if !validRegionOptStatuses[status] {
 				return fmt.Errorf("invalid region opt status %q for region %q in account %q", status, reg, id)
 			}
 		}
+	}
+
+	switch c.Identity.Authorization {
+	case "", AuthorizationOff, AuthorizationSoft, AuthorizationEnforce:
+	default:
+		return fmt.Errorf("identity.authorization must be off, soft or enforce")
 	}
 
 	switch c.Identity.Mode {

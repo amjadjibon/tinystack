@@ -1,7 +1,7 @@
 // Package iam implements IAM roles, users, and groups with their managed and
 // inline policies, and users' access keys, without HTTP dependencies. IAM is global: records live under the account,
 // with no region, whatever region the request was signed for. Policies are
-// stored and returned but never evaluated.
+// stored and returned; Authorization reads identity policies for the gateway evaluator.
 package iam
 
 import (

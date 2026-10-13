@@ -10,7 +10,7 @@ import (
 )
 
 func newStartCommand() *cobra.Command {
-	var configPath, host, initDir string
+	var configPath, host, initDir, authorization string
 	var port, consolePort int
 	start := &cobra.Command{
 		Use:   "start",
@@ -37,6 +37,10 @@ func newStartCommand() *cobra.Command {
 				cfg.Init.Dir = initDir
 			}
 
+			if cmd.Flags().Changed("authorization") {
+				cfg.Identity.Authorization = authorization
+			}
+
 			if guardErr := cfg.Validate(); guardErr != nil {
 				return guardErr
 			}
@@ -46,6 +50,8 @@ func newStartCommand() *cobra.Command {
 		},
 	}
 
+	start.Flags().
+		StringVar(&authorization, "authorization", config.AuthorizationOff, "IAM authorization: off, soft or enforce")
 	start.Flags().StringVar(&configPath, "config", "", "YAML configuration path")
 	start.Flags().StringVar(&host, "host", "127.0.0.1", "listen host")
 	start.Flags().IntVar(&port, "port", 4566, "listen port")

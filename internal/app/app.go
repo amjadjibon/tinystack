@@ -282,19 +282,23 @@ func build(
 			if homeErr != nil {
 				return nil, homeErr
 			}
+
 			blobDir = filepath.Join(home, blobDir[1:])
 		}
 	}
+
 	blobs, blobErr := storage.OpenBlobs(blobDir)
 	if blobErr != nil {
 		return nil, blobErr
 	}
+
 	buckets := s3.New(store, queues, topics, functions, rules, deliveries, blobs)
 	a.onStop(buckets.Stop)
 	a.onReset(buckets.Reset)
 	if resumeErr := buckets.Resume(ctx); resumeErr != nil {
 		return nil, resumeErr
 	}
+
 	buckets.UseMaxObjectBytes(cfg.Storage.MaxObjectBytes)
 	secrets := secretsmanager.New(store, keys, functions, deliveries)
 	// Stop ends the rotation scheduler and running rotations.
@@ -351,6 +355,7 @@ func build(
 	if err = accounts.SeedFromConfig(ctx, cfg.Accounts); err != nil {
 		return nil, err
 	}
+
 	discovery := servicediscovery.New(store)
 	configurations := appconfig.New(store)
 	trails := cloudtrail.New(store, buckets)
@@ -498,6 +503,7 @@ func build(
 		resourcegroupstaggingapiapi.Descriptor(tags),
 		resourcegroupsapi.Descriptor(groups),
 	}
+
 	// Step Functions' Task states and Firehose's deliveries call the other
 	// services in-process.
 	caller := catalog.NewCaller(services...)
@@ -548,6 +554,7 @@ func build(
 
 	handler.UseManagementEvents(trails.Record)
 	handler.UseCredentials(tokens.Credentials)
+	handler.UseAuthorization(roles.Authorization)
 	handler.UseDocuments(identities.Documents)
 	handler.UseTokens(identities.Token)
 	handler.UseRegistry(registry)

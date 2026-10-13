@@ -50,6 +50,17 @@ func loadUser(tx storage.ReadTx, account string, name *string) (*user, string, e
 // callerUser returns the name of the IAM user whose access key signed the
 // request, or false when the caller is not an IAM user of its account.
 func callerUser(tx storage.ReadTx, m *request.Metadata) (name string, isUser bool, err error) {
+	if m.Principal != nil && m.Principal.Kind == request.PrincipalUser && m.Principal.Account == m.AccountID {
+		u, _, readErr := storage.Read[user](tx, key(m.AccountID, kindUser, m.Principal.Name))
+		if readErr != nil {
+			return "", false, readErr
+		}
+
+		if u != nil && u.ID == m.Principal.ID {
+			return u.Name, true, nil
+		}
+	}
+
 	k, ok, err := storage.Read[accessKey](tx, accessKeyPrefix+m.AccessKey)
 	if err != nil || !ok || m.AccessKey == "" || k.Account != m.AccountID {
 		return "", false, err
@@ -93,6 +104,7 @@ func userOutput(account string, u *user, tags bool) *api.User {
 		Arn:        new(userARN(account, u)),
 		CreateDate: millis(u.CreatedAt),
 	}
+
 	if tags && len(u.Tags) > 0 {
 		out.Tags = tagList(u.Tags)
 	}

@@ -18,24 +18,25 @@ const redacted = "(redacted: this operation carries sensitive values)"
 // Record describes one AWS request for the request inspector. Bodies keep
 // their first recent.MaxText bytes; the sizes count every byte read or written.
 type Record struct {
-	Time         time.Time `json:"time"`
-	RequestID    string    `json:"request_id"`
-	Method       string    `json:"method"`
-	Path         string    `json:"path"`
-	Service      string    `json:"service,omitempty"`
-	Operation    string    `json:"operation,omitempty"`
-	Protocol     string    `json:"protocol,omitempty"`
-	Account      string    `json:"account"`
-	Region       string    `json:"region"`
-	ErrorCode    string    `json:"error_code,omitempty"`
-	ErrorMessage string    `json:"error_message,omitempty"`
-	RequestBody  string    `json:"request_body"`
-	ResponseBody string    `json:"response_body"`
-	Status       int       `json:"status"`
-	RequestSize  int64     `json:"request_size"`
-	ResponseSize int64     `json:"response_size"`
-	DurationMS   float64   `json:"duration_ms"`
-	Injected     bool      `json:"injected,omitempty"`
+	Authorization *AuthorizationRecord `json:"authorization,omitempty"`
+	Time          time.Time            `json:"time"`
+	RequestID     string               `json:"request_id"`
+	Method        string               `json:"method"`
+	Path          string               `json:"path"`
+	Service       string               `json:"service,omitempty"`
+	Operation     string               `json:"operation,omitempty"`
+	Protocol      string               `json:"protocol,omitempty"`
+	Account       string               `json:"account"`
+	Region        string               `json:"region"`
+	ErrorCode     string               `json:"error_code,omitempty"`
+	ErrorMessage  string               `json:"error_message,omitempty"`
+	RequestBody   string               `json:"request_body"`
+	ResponseBody  string               `json:"response_body"`
+	Status        int                  `json:"status"`
+	RequestSize   int64                `json:"request_size"`
+	ResponseSize  int64                `json:"response_size"`
+	DurationMS    float64              `json:"duration_ms"`
+	Injected      bool                 `json:"injected,omitempty"`
 }
 
 // capture keeps the first recent.MaxText bytes written to it and counts them all.

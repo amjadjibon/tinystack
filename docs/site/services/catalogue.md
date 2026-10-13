@@ -594,7 +594,7 @@ Manage users and clients, authenticate locally, and issue pool-signed JWTs.
 
 #### IAM
 
-Store account-wide identity resources and issue user access keys.
+Store account-wide identities and optionally evaluate their permission policies.
 
 **Execution:** Local behavior. **Selected operations:** 81.
 
@@ -602,6 +602,8 @@ Store account-wide identity resources and issue user access keys.
 - Inline and managed policies and policy attachments.
 - OpenID Connect providers and access key lifecycle.
 - Active IAM keys participate in gateway credential resolution.
+- Optional off/soft/enforce gateway authorization for IAM users and assumed roles, including group policies and current managed policy versions.
+- Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations.
 - IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions.
 
 [Supported operations](iam.md#supported-operations) · [Limitations](iam.md#limitations-and-future-work)

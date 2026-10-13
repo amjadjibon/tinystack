@@ -18,17 +18,39 @@ func (s Scope) Prefix(service, kind string) string {
 func (s Scope) Key(service, kind, name string) string { return s.Prefix(service, kind) + name }
 
 type Metadata struct {
+	// Principal is set for permission-controlled external requests.
+	Principal *Principal
 	Scope
 	RequestID, Service, Operation, Protocol, AccessKey string
 	// Endpoint is the base URL the client used, for resource URLs such as SQS queue URLs.
 	Endpoint string
 }
 
+// Principal identifies an IAM identity independently of credential secrets.
+// ARN is the caller ARN; PolicyARN is the underlying user/role ARN. ID is
+// the stable IAM ID, without a role session suffix.
+type Principal struct {
+	Kind      string
+	Account   string
+	Name      string
+	ID        string
+	UserID    string
+	ARN       string
+	PolicyARN string
+}
+
+const (
+	PrincipalUser = "user"
+	PrincipalRole = "role"
+	PrincipalRoot = "root"
+)
+
 // Credentials are what an access key that TinyStack issued stands for:
 // requests signed with it act in AccountID and verify with Secret. An IAM
 // user's key has no Token and never expires; an STS session's key expires, and
 // verified requests must also carry its Token.
 type Credentials struct {
+	Principal Principal
 	Expires   time.Time
 	AccountID string
 	Secret    string

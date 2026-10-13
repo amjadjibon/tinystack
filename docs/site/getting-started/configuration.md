@@ -31,6 +31,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `defaults.account` | `"000000000000"` | Exactly 12 digits; quote it in YAML |
 | `defaults.region` | `us-east-1` | Nonempty region |
 | `identity.mode` | `parse` | `parse` or `verify` |
+| `identity.authorization` | `off` | `off`, `soft` or `enforce`; independent of signature verification; override with `--authorization` |
 | `identity.accounts` | `{}` | Nonempty access-key IDs mapped to 12-digit account IDs |
 | `identity.secret_keys` | Unset | Nonempty secrets keyed by access-key ID; required in `verify`, forbidden in `parse` |
 | `accounts` | `{}` | Optional fixtures keyed by 12-digit account ID for metadata, primary contact and region opt-in overrides |
@@ -83,8 +84,9 @@ identity:
 ```
 
 Clients sign with the matching access key and secret. Region comes from the signing scope, then a recognized
-regional hostname, then the configured default. General IAM permission evaluation is not implemented;
-[IoT policies and STS trust policies](../architecture/identity.md) have their own evaluated subsets.
+regional hostname, then the configured default. Set `identity.authorization: enforce` to check identity-based
+IAM policies, or `soft` to execute and log decisions. It defaults to `off`. See the
+[authorization subset and scope](../architecture/identity.md#iam-authorization) before enabling it.
 
 Defaults and validation are defined in
 [config.go](https://github.com/amjadjibon/tinystack/blob/main/internal/config/config.go).
