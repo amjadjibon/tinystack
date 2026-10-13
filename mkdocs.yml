@@ -142,6 +142,7 @@ nav:
           - "Secrets Manager": services/secretsmanager.md
       - "Developer Tools":
           - "AWS CodeCommit": services/codecommit.md
+          - "AWS CodeDeploy": services/codedeploy.md
           - "AWS X-Ray": services/xray.md
           - "CodeBuild": services/codebuild.md
           - "CodePipeline": services/codepipeline.md
@@ -235,6 +236,7 @@ nav:
           - "Bedrock Runtime": roadmap/services/bedrock-runtime.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
           - "CodeBuild build execution": roadmap/services/codebuild-runtime.md
+          - "CodeDeploy deployment execution and agents": roadmap/services/codedeploy-runtime.md
           - "CodePipeline execution and release automation": roadmap/services/codepipeline-execution.md
           - "Cost and Usage Reports": roadmap/services/cur.md
           - "EC2 Instance Metadata": roadmap/services/imds.md

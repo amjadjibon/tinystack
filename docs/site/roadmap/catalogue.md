@@ -29,6 +29,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Bedrock Runtime](services/bedrock-runtime.md) | Proposed | Implement `InvokeModel`, `InvokeModelWithResponseStream`, `StartAsyncInvoke`. |
 | [CloudFront KeyValueStore](services/cloudfront-keyvaluestore.md) | Proposed | Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`. |
 | [CodeBuild build execution](services/codebuild-runtime.md) | Proposed extension | Extend the implemented project metadata with an explicit build execution/runtime contract. |
+| [CodeDeploy deployment execution and agents](services/codedeploy-runtime.md) | Proposed | Extend application, deployment configuration and group records to real deployment execution. |
 | [CodePipeline execution and release automation](services/codepipeline-execution.md) | Proposed | Extend records-only pipeline declarations to executions, stage transitions, approvals and triggers. |
 | [Cost and Usage Reports](services/cur.md) | Proposed | Implement `DeleteReportDefinition`, `DescribeReportDefinitions`, `ListTagsForResource`. |
 | [EC2 Instance Metadata](services/imds.md) | Proposed | Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`. |

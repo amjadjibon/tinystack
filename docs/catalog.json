@@ -1809,6 +1809,33 @@
       ],
       "execution": "Records only",
       "package": "codecommit"
+    },
+    "codedeploy": {
+      "title": "AWS CodeDeploy",
+      "category": "Developer Tools",
+      "scope": "Account and Region",
+      "summary": "Store applications, deployment configurations and deployment groups without running deployments or agents.",
+      "execution": "Configuration records only",
+      "package": "codedeploy",
+      "features": [
+        "Nineteen pinned AWS JSON 1.1 application, deployment configuration, deployment group and tag operations with AWS SDK v2 lifecycle coverage",
+        "Application create/get/batch/list/rename/delete, default Server compute platform and Server/Lambda/ECS enum validation; rename moves child groups and delete cascades",
+        "Seventeen immutable documented CodeDeployDefault configurations for Server, Lambda and ECS, plus custom minimum healthy host and all-at-once/canary/linear routing records; in-use configurations cannot be deleted",
+        "Deployment groups store service role, instance tag filters, Auto Scaling names, deployment style, alarm and rollback metadata; ECS groups validate the service pair, two target groups, production/test listeners and blue/green options; the documented default OneAtATime is Server-only, so Lambda/ECS groups require an explicit matching configuration",
+        "Whole-candidate atomic group validation and shared cursor pagination with 100-name internal pages; batch application requests fail on missing names, group batches return partial records with ErrorMessage",
+        "Application and deployment group ARN TagResource/UntagResource/ListTagsForResource, RGTA and Resource Groups integration; shared tag rules, with at most 10 tags per deployment group",
+        "CloudFormation AWS::CodeDeploy::Application, DeploymentConfig and DeploymentGroup lifecycle with name Ref, documented replacement properties, mutable group settings, tags and explicit unsupported-property failures",
+        "RecordsOnly=true / ExecutionReady=false inventory, official AWS CodeDeploy icon and Terraform codedeploy endpoint key"
+      ],
+      "gaps": [
+        "No CreateDeployment/GetDeployment/ListDeployments/BatchGetDeployments or fake Succeeded executions; no agents, lifecycle hook execution, traffic shifts or IAM permission evaluation",
+        "No application revision registry, deployment targets/instances, GitHub token management, on-premises instance registration or stop/continue deployment APIs",
+        "Zonal configurations, trigger configurations, termination hooks, outdated-instance strategies and tag sets are excluded and fail explicitly",
+        "LoadBalancerInfo supports ECS targetGroupPairInfoList only; blue/green configuration supports deployment ready and original-instance termination metadata only; Server load balancers and green fleet provisioning are excluded",
+        "Referenced IAM roles, Auto Scaling groups, ECS services, alarms and load balancers are metadata and are not created or looked up; optional tag values default to empty",
+        "Native tag pagination is excluded; built-in config IDs and creation times are omitted rather than fabricated",
+        "CloudFormation Deployment and other excluded declared properties fail explicitly; removing a load balancer or blue/green configuration fails explicitly. CloudFormation group ApplicationName/DeploymentGroupName and application name/compute-platform changes replace; all config changes replace"
+      ]
     }
   },
   "future": {
@@ -2089,6 +2116,13 @@
       "state": "Proposed",
       "slice": "Extend the records-only CodeCommit control plane with git HTTP/SSH transport and repository storage.",
       "features": "- [ ] Git HTTP Smart Transfer protocol (/v1/repos/<name>/info/refs, git-upload-pack, git-receive-pack)\n- [ ] SSH transport and public key management\n- [ ] Branch management, default branch configuration, and commit APIs\n- [ ] Trigger execution and CloudWatch Events integration\n- [ ] Code package seeding for CloudFormation AWS::CodeCommit::Repository"
+    },
+    "codedeploy-runtime": {
+      "title": "CodeDeploy deployment execution and agents",
+      "state": "Proposed",
+      "slice": "Extend application, deployment configuration and group records to real deployment execution.",
+      "features": "- [ ] Deployment execution and agents\n- [ ] Application revisions\n- [ ] Lifecycle hooks and deployment targets\n- [ ] Blue/green traffic management",
+      "integration": "Current CodeDeploy support stores configuration records only. It never reports fake successful deployment executions."
     }
   }
 }
