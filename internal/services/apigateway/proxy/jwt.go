@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/amjadjibon/tinystack/internal/config"
 )
 
 // keysTTL is how long a JWKS is used before it is read again.
@@ -166,6 +168,10 @@ func (v *Verifier) key(ctx context.Context, issuer, kid string) (*rsa.PublicKey,
 const maxDocument = 1 << 20
 
 func getJSON(ctx context.Context, url string, v any) error {
+	if err := config.SecureURL("JWT discovery/key endpoint", url); err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -174,7 +180,9 @@ func getJSON(ctx context.Context, url string, v any) error {
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req) // #nosec G704 -- the authorizer's issuer names the URL.
+	client := *http.DefaultClient
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	resp, err := client.Do(req) // #nosec G704 -- the registered issuer advertises an HTTPS (or loopback) URL.
 	if err != nil {
 		return err
 	}

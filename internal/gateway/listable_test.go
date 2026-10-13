@@ -30,8 +30,4 @@ func TestListAction(t *testing.T) {
 			t.Errorf("listAction(%q) = %q, want %q", kind, got, want)
 		}
 	}
-
-	if got := readActions(service); len(got) != 7 {
-		t.Errorf("readActions = %v", got)
-	}
 }

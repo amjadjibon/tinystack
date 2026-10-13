@@ -41,6 +41,14 @@ type AuthorizationCheck struct {
 }
 
 func (s *Server) authorize(ctx context.Context, r *http.Request, c *call, op *catalog.Operation, input any) error {
+	return s.authorizeTargets(ctx, r, c, op, input, nil)
+}
+
+// authorizeTargets also accepts concrete targets for console-only operations
+// whose inputs are not part of the generated AWS service descriptor.
+func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call, op *catalog.Operation,
+	input any, resources []catalog.AuthorizationResource,
+) error {
 	mode := s.cfg.Identity.Authorization
 	if mode == "" || mode == config.AuthorizationOff {
 		return nil
@@ -80,8 +88,7 @@ func (s *Server) authorize(ctx context.Context, r *http.Request, c *call, op *ca
 	principal = snapshot.Principal
 	c.meta.Principal = &principal
 	ctx = request.WithMetadata(ctx, c.meta)
-	var resources []catalog.AuthorizationResource
-	if c.service.Authorizer != nil {
+	if resources == nil && c.service.Authorizer != nil {
 		resources, err = c.service.Authorizer.AuthorizationResources(ctx, op.Name, input)
 	}
 
@@ -98,25 +105,7 @@ func (s *Server) authorize(ctx context.Context, r *http.Request, c *call, op *ca
 
 	action := iamAction(c.service, op)
 
-	sourceIP := r.RemoteAddr
-	if host, _, splitErr := net.SplitHostPort(sourceIP); splitErr == nil {
-		sourceIP = host
-	}
-
-	values := map[string][]string{
-		"aws:userid": {principal.UserID}, "aws:principalarn": {principal.PolicyARN},
-		"aws:principalaccount": {principal.Account}, "aws:sourceip": {sourceIP},
-		"aws:currenttime":     {time.Now().UTC().Format(time.RFC3339Nano)},
-		"aws:securetransport": {strconv.FormatBool(r.TLS != nil)}, "aws:requestedregion": {c.meta.Region},
-	}
-
-	if principal.Kind == request.PrincipalUser {
-		values["aws:username"] = []string{principal.Name}
-	}
-
-	for key, value := range snapshot.Tags {
-		values["aws:principaltag/"+strings.ToLower(key)] = []string{value}
-	}
+	values := authorizationValues(r, &principal, snapshot.Tags, c.meta.Region)
 
 	record := &AuthorizationRecord{Mode: mode, Principal: principal.ARN, Allowed: true}
 	for _, target := range resources {
@@ -205,4 +194,35 @@ func denial(arn string, check *AuthorizationCheck) string {
 	}
 
 	return message
+}
+
+// authorizationValues keeps IAM request conditions identical on API calls and
+// filtered inventory. Forwarded headers are not trusted for source IP or TLS.
+func authorizationValues(
+	r *http.Request,
+	principal *request.Principal,
+	tags map[string]string,
+	region string,
+) map[string][]string {
+	sourceIP := r.RemoteAddr
+	if host, _, splitErr := net.SplitHostPort(sourceIP); splitErr == nil {
+		sourceIP = host
+	}
+
+	values := map[string][]string{
+		"aws:userid": {principal.UserID}, "aws:principalarn": {principal.PolicyARN},
+		"aws:principalaccount": {principal.Account}, "aws:sourceip": {sourceIP},
+		"aws:currenttime":     {time.Now().UTC().Format(time.RFC3339Nano)},
+		"aws:securetransport": {strconv.FormatBool(r.TLS != nil)}, "aws:requestedregion": {region},
+	}
+
+	if principal.Kind == request.PrincipalUser {
+		values["aws:username"] = []string{principal.Name}
+	}
+
+	for key, value := range tags {
+		values["aws:principaltag/"+strings.ToLower(key)] = []string{value}
+	}
+
+	return values
 }

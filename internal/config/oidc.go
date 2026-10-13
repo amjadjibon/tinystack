@@ -130,7 +130,7 @@ func (o *OIDC) AdminRoles() map[string]bool {
 }
 
 func (o *OIDC) validate() error {
-	if err := secureURL("console.auth.oidc.issuer", o.Issuer); err != nil {
+	if err := SecureURL("console.auth.oidc.issuer", o.Issuer); err != nil {
 		return err
 	}
 
@@ -138,7 +138,7 @@ func (o *OIDC) validate() error {
 		return fmt.Errorf("console.auth.oidc.issuer must not have a query")
 	}
 
-	if err := secureURL("console.auth.oidc.redirect_url", o.RedirectURL); err != nil {
+	if err := SecureURL("console.auth.oidc.redirect_url", o.RedirectURL); err != nil {
 		return err
 	}
 
@@ -192,8 +192,8 @@ func (o *OIDC) validate() error {
 	return nil
 }
 
-// secureURL requires an absolute https URL, or http for a loopback host.
-func secureURL(name, raw string) error {
+// SecureURL requires an absolute https URL, or http for a loopback host.
+func SecureURL(name, raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil || u.Host == "" || u.User != nil || u.Fragment != "" || u.Opaque != "" {
 		return fmt.Errorf("%s must be an absolute URL without credentials or fragment", name)

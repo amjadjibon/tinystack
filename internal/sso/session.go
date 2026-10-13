@@ -21,7 +21,7 @@ func (s *Service) session(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var in signedIn
 	found := false
-	if c, err := r.Cookie(sessionCookie); err == nil {
+	if c, err := r.Cookie(s.cookieName(sessionCookie)); err == nil {
 		in, found = s.sessions.get(c.Value)
 	}
 
@@ -45,7 +45,7 @@ func (s *Service) logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, name := range []string{txCookie, sessionCookie} {
-		if c, err := r.Cookie(name); err == nil {
+		if c, err := r.Cookie(s.cookieName(name)); err == nil {
 			s.txs.take(c.Value)
 			s.sessions.take(c.Value)
 		}
@@ -77,7 +77,8 @@ func (s *Service) sameOriginPost(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	if !gateway.SameOrigin(r) {
+	if !gateway.SameOriginURL(r, s.cfg.RedirectURL) ||
+		(r.Header.Get("Origin") == "" && r.Header.Get("Sec-Fetch-Site") != "same-origin") {
 		http.Error(w, "cross-origin requests are not allowed", http.StatusForbidden)
 		return false
 	}

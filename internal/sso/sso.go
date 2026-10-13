@@ -6,6 +6,7 @@ package sso
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -33,9 +34,10 @@ const (
 
 	txTTL = 10 * time.Minute
 	// pending bounds the unfinished sign-ins and the signed-in sessions kept in memory.
-	pending       = 1024
-	clientTimeout = 10 * time.Second
-	maxSecretSize = 4096
+	pending         = 1024
+	pendingPerOwner = 32
+	clientTimeout   = 10 * time.Second
+	maxSecretSize   = 4096
 )
 
 // Service is the console's single sign-on.
@@ -72,9 +74,14 @@ type discovery struct {
 // New returns the sign-in for cfg, which config.Validate has checked, reading
 // the client secret from its file. tokens issues the role credentials.
 func New(cfg *config.OIDC, tokens *sts.Service, logger *slog.Logger) (*Service, error) {
+	redirect, err := url.Parse(cfg.RedirectURL)
+	if err != nil {
+		return nil, fmt.Errorf("console.auth.oidc.redirect_url: %w", err)
+	}
+
 	s := &Service{
-		cfg: *cfg, tokens: tokens, logger: logger, secure: strings.HasPrefix(cfg.RedirectURL, "https://"),
-		client:   &http.Client{Timeout: clientTimeout},
+		cfg: *cfg, tokens: tokens, logger: logger, secure: strings.EqualFold(redirect.Scheme, "https"),
+		client:   oidcClient(),
 		txs:      newStore[transaction](txTTL, pending),
 		sessions: newStore[signedIn](0, pending),
 		redeemed: newStore[struct{}](maxIDTokenAge, pending),
@@ -154,19 +161,20 @@ func (s *Service) discover(ctx context.Context) (*discovery, error) {
 
 	var metadata struct {
 		EndSession string `json:"end_session_endpoint"`
+		JWKS       string `json:"jwks_uri"`
 	}
 	if err := provider.Claims(&metadata); err != nil {
 		return nil, err
 	}
 
 	endpoint := provider.Endpoint()
-	for _, address := range []string{endpoint.AuthURL, endpoint.TokenURL} {
-		if err := secureEndpoint(address); err != nil {
+	for _, address := range []string{endpoint.AuthURL, endpoint.TokenURL, metadata.JWKS} {
+		if err := config.SecureURL("OIDC endpoint", address); err != nil {
 			return nil, err
 		}
 	}
 
-	if metadata.EndSession != "" && secureEndpoint(metadata.EndSession) != nil {
+	if metadata.EndSession != "" && config.SecureURL("OIDC end-session endpoint", metadata.EndSession) != nil {
 		metadata.EndSession = ""
 	}
 
@@ -182,20 +190,6 @@ func (s *Service) discover(ctx context.Context) (*discovery, error) {
 	return s.discovered, nil
 }
 
-// secureEndpoint requires the provider's endpoints to be https, or http on loopback.
-func secureEndpoint(address string) error {
-	u, err := url.Parse(address)
-	if err != nil || u.Host == "" {
-		return fmt.Errorf("the provider advertises an invalid endpoint")
-	}
-
-	if u.Scheme != "https" && (u.Scheme != "http" || !config.LoopbackHost(u.Hostname())) {
-		return fmt.Errorf("the provider advertises an insecure endpoint")
-	}
-
-	return nil
-}
-
 // cookie sets one of the sign-in's short-lived cookies.
 func (s *Service) cookie(w http.ResponseWriter, name, value string, lifetime time.Duration, site http.SameSite) {
 	maxAge := int(lifetime / time.Second)
@@ -203,9 +197,59 @@ func (s *Service) cookie(w http.ResponseWriter, name, value string, lifetime tim
 		maxAge = -1
 	}
 
+	path := Path
+	if s.secure {
+		path = "/"
+	}
+
 	// #nosec G124 -- Secure is on whenever redirect_url is https; config allows http only for loopback hosts.
 	http.SetCookie(w, &http.Cookie{
-		Name: name, Value: value, Path: Path, MaxAge: maxAge, HttpOnly: true, Secure: s.secure,
+		Name: s.cookieName(name), Value: value, Path: path, MaxAge: maxAge, HttpOnly: true, Secure: s.secure,
 		SameSite: site,
 	})
+}
+
+// oidcClient refuses redirects: discovery and token responses must come from
+// the configured/advertised endpoint, without forwarding secrets or trusting a downgrade.
+func oidcClient() *http.Client {
+	return &http.Client{Timeout: clientTimeout, CheckRedirect: noRedirect}
+}
+
+func noRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
+// verifyIDToken adds the relying-party checks not supplied by go-oidc:
+// subject, authorized party and issued-at. go-oidc checks signature, issuer,
+// audience, expiry and nbf; the callback separately checks its nonce.
+func (s *Service) verifyIDToken(ctx context.Context, d *discovery, raw string) (*oidc.IDToken, error) {
+	id, err := d.verifier.Verify(ctx, raw)
+	if err != nil {
+		return nil, fmt.Errorf("ID token verification failed")
+	}
+
+	var claims struct {
+		AuthorizedParty json.RawMessage `json:"azp"`
+	}
+	if err := id.Claims(&claims); err != nil {
+		return nil, fmt.Errorf("invalid ID token claims")
+	}
+
+	var party string
+	hasParty := claims.AuthorizedParty != nil
+	validParty := !hasParty || (json.Unmarshal(claims.AuthorizedParty, &party) == nil && party == s.cfg.ClientID)
+	if id.Subject == "" || id.IssuedAt.IsZero() || id.IssuedAt.After(time.Now()) ||
+		(len(id.Audience) > 1 && !hasParty) || !validParty {
+		return nil, fmt.Errorf("invalid ID token subject, issued-at or authorized party")
+	}
+
+	return id, nil
+}
+
+// HTTPS cookies use the browser-enforced __Host prefix so a sibling domain
+// cannot inject an attacker's transaction or signed-in session.
+func (s *Service) cookieName(name string) string {
+	if s.secure {
+		return "__Host-" + name
+	}
+
+	return name
 }

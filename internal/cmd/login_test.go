@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -53,3 +54,37 @@ func TestLoginNeedsOIDCAndProfile(t *testing.T) {
 type discard struct{}
 
 func (*discard) Write(p []byte) (int, error) { return len(p), nil }
+
+func TestLoginCacheReplacesInsecureFilesAndSymlinks(t *testing.T) {
+	fresh := &sso.Process{
+		Version: 1, AccessKeyID: "ASIA", SecretAccessKey: "secret", SessionToken: "token",
+		Expiration: time.Now().Add(time.Hour).UTC().Format(time.RFC3339),
+	}
+	for _, symlink := range []bool{false, true} {
+		path := filepath.Join(t.TempDir(), "dev.json")
+		target := filepath.Join(t.TempDir(), "target.json")
+		if err := os.WriteFile(target, []byte("untouched"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if symlink {
+			if err := os.Symlink(target, path); err != nil {
+				t.Fatal(err)
+			}
+		} else if err := os.WriteFile(path, []byte("old"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := store(path, fresh); err != nil {
+			t.Fatal(err)
+		}
+		info, err := os.Lstat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+			t.Fatalf("unsafe credential cache: %v", info.Mode())
+		}
+		if data, err := os.ReadFile(target); err != nil || string(data) != "untouched" {
+			t.Fatal("cache followed a symlink")
+		}
+	}
+}

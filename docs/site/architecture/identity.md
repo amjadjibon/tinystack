@@ -108,7 +108,9 @@ actions and root credentials bypass IAM, and every other signed principal, inclu
 [console single sign-on](../guides/sso.md), is evaluated like an AWS API call. In verify mode, browser forms
 remain read-only until a root or SSO console session is connected. Sessions sign actions for their account and
 keep credentials in memory only. The access-key session handshake accepts root credentials only; IAM user and
-ordinary role credentials connect through single sign-on instead. Discovery, OAuth, registry,
+ordinary role credentials connect through single sign-on instead. Console API invocation checks a concrete
+`execute-api` route ARN; enforce-mode member inventory omits details and evaluates supported request/tag conditions.
+Deleting a mapped SSO role invalidates its old federated credentials, even if the same ARN is recreated. Discovery, OAuth, registry,
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
 Resource-based policies, permissions boundaries, session policies, organization SCPs/RCPs,

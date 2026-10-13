@@ -176,8 +176,21 @@ func (s *Service) Credentials(ctx context.Context, accessKey string) (request.Cr
 
 		return nil
 	})
-	if err != nil || found {
+	if err != nil {
 		return out, found, err
+	}
+
+	if found {
+		// A mapped admin ARN must not keep granting internal privileges after its
+		// role is deleted or replaced with another identity at the same ARN.
+		if out.Federated {
+			role, exists, roleErr := s.roles.RoleByARN(ctx, out.Principal.PolicyARN)
+			if roleErr != nil || !exists || role.ID != out.Principal.ID {
+				return request.Credentials{}, false, roleErr
+			}
+		}
+
+		return out, true, nil
 	}
 
 	key, found, err := s.roles.AccessKey(ctx, accessKey)

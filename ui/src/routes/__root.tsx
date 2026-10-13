@@ -14,6 +14,7 @@ import { SignIn } from "#/components/SignIn";
 import { HealthProvider } from "#/lib/health";
 import { ScopeProvider, useScope } from "#/lib/scope";
 import { ServiceHistoryProvider } from "#/lib/serviceHistory";
+import { useConsoleSession } from "#/lib/session";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -56,9 +57,10 @@ function NotFound() {
 }
 
 function Root() {
+	const session = useConsoleSession();
 	return (
 		<HealthProvider>
-			<ScopeProvider>
+			<ScopeProvider key={session?.arn ?? "signed-out"}>
 				<ServiceHistoryProvider>
 					<Signed />
 				</ServiceHistoryProvider>

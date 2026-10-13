@@ -28,6 +28,7 @@ type SignedSession = {
 // public snapshot, SSR state, browser storage or the console action body.
 let active: SignedSession | undefined;
 let snapshot: ConsoleSession | null = null;
+let generation = 0;
 const listeners = new Set<() => void>();
 
 // An SSO session starts the sign-in again shortly before its credentials expire.
@@ -36,6 +37,7 @@ let renewal: ReturnType<typeof setTimeout> | undefined;
 let loginURL = "/_tinystack/auth/login";
 
 function publish(session?: SignedSession) {
+	generation++;
 	clearTimeout(renewal);
 	renewal = undefined;
 	active = session;
@@ -265,6 +267,7 @@ type SSOHandoff = {
 // while its HttpOnly session cookie lasts, and they stay in memory like a root
 // session's. It reports false when nobody is signed in.
 export async function collectSSOSession(signal?: AbortSignal) {
+	const started = generation;
 	if (typeof window === "undefined")
 		throw new Error("Console sessions are browser-only.");
 	const response = await fetch("/_tinystack/auth/session", {
@@ -298,6 +301,7 @@ export async function collectSSOSession(signal?: AbortSignal) {
 		throw new Error("Update TinyStack to enable signed console sessions.");
 	if (signal?.aborted)
 		throw new DOMException("Connection cancelled", "AbortError");
+	if (generation !== started) return false;
 	loginURL = capabilities.sso?.login_url ?? loginURL;
 	publish({
 		credentials: {
@@ -333,6 +337,7 @@ export function lastSignOut() {
 // address is returned when it has one, for the person to follow.
 export async function signOutSSO() {
 	let endSession: string | undefined;
+	disconnectConsoleSession();
 	try {
 		const response = await fetch("/_tinystack/auth/logout", {
 			method: "POST",

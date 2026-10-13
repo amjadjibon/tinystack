@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -47,12 +46,12 @@ func newLoginCommand() *cobra.Command {
 			}
 
 			if endpoint == "" {
-				host := cfg.Server.Host
-				if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
-					host = "127.0.0.1"
+				public, parseErr := url.Parse(oidc.RedirectURL)
+				if parseErr != nil {
+					return parseErr
 				}
 
-				endpoint = "http://" + net.JoinHostPort(host, strconv.Itoa(cfg.Server.ConsolePort))
+				endpoint = public.Scheme + "://" + public.Host
 			}
 
 			cache, err := cachePath(profile)
@@ -80,7 +79,7 @@ func newLoginCommand() *cobra.Command {
 	login.Flags().StringVar(&profile, "profile", "", "name for the cached credentials (required)")
 	login.Flags().StringVar(&configPath, "config", "", "the YAML configuration that TinyStack runs with")
 	login.Flags().
-		StringVar(&endpoint, "endpoint", "", "the console URL (default: from server.host and server.console_port)")
+		StringVar(&endpoint, "endpoint", "", "the console URL (default: the redirect_url origin)")
 	_ = login.MarkFlagRequired("profile")
 	_ = login.MarkFlagRequired("config")
 	return login
@@ -127,9 +126,22 @@ func store(path string, process *sso.Process) error {
 		return err
 	}
 
-	if err = os.WriteFile(path, data, 0o600); err != nil {
+	// Create a private new inode and atomically replace the cache. WriteFile
+	// preserves an existing file's permissions and follows symlinks.
+	file, err := os.CreateTemp(filepath.Dir(path), ".credentials-*")
+	if err != nil {
 		return fmt.Errorf("cache the credentials: %w", err)
 	}
 
-	return nil
+	defer func() { _ = os.Remove(file.Name()) }()
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		return err
+	}
+
+	if err := file.Close(); err != nil {
+		return err
+	}
+
+	return os.Rename(file.Name(), path)
 }

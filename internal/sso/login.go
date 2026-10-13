@@ -1,7 +1,9 @@
 package sso
 
 import (
+	"net"
 	"net/http"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -24,14 +26,24 @@ func (s *Service) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Repeated sign-ins from one browser replace its pending transaction.
+	if c, err := r.Cookie(s.cookieName(txCookie)); err == nil {
+		s.txs.take(c.Value)
+	}
+
+	source := r.RemoteAddr
+	if host, _, err := net.SplitHostPort(source); err == nil {
+		source = host
+	}
+
 	t := transaction{state: token(), nonce: token(), verifier: oauth2.GenerateVerifier()}
-	id, ok := s.txs.put(t)
+	id, ok := s.txs.putOwned(t, time.Now().Add(txTTL), source, pendingPerOwner)
 	if !ok {
 		fail(
 			w,
-			http.StatusServiceUnavailable,
+			http.StatusTooManyRequests,
 			"Too many sign-ins",
-			"Too many sign-ins are waiting.",
+			"Too many sign-ins are waiting from this network source, or the server is full.",
 			"Try again shortly.",
 		)
 		return

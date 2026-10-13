@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"slices"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -43,7 +44,7 @@ func (s *Service) callback(w http.ResponseWriter, r *http.Request) {
 	s.cookie(w, txCookie, "", 0, http.SameSiteLaxMode)
 	var t transaction
 	found := false
-	if c, err := r.Cookie(txCookie); err == nil {
+	if c, err := r.Cookie(s.cookieName(txCookie)); err == nil {
 		t, found = s.txs.take(c.Value)
 	}
 
@@ -89,11 +90,11 @@ func (s *Service) callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Signing in again replaces this browser's earlier session.
-	if c, err := r.Cookie(sessionCookie); err == nil {
+	if c, err := r.Cookie(s.cookieName(sessionCookie)); err == nil {
 		s.sessions.take(c.Value)
 	}
 
-	id, ok := s.sessions.putUntil(*person, person.Expiration)
+	id, ok := s.sessions.putOwned(*person, person.Expiration, claims["sub"].(string), pendingPerOwner)
 	if !ok {
 		fail(
 			w,
@@ -117,7 +118,7 @@ func (s *Service) identify(ctx context.Context, d *discovery, code string, t *tr
 
 	exchanged, err := d.oauth.Exchange(ctx, code, oauth2.VerifierOption(t.verifier))
 	if err != nil {
-		return nil, errors.New("code exchange failed: " + err.Error())
+		return nil, errors.New("code exchange failed")
 	}
 
 	raw, _ := exchanged.Extra("id_token").(string)
@@ -125,7 +126,7 @@ func (s *Service) identify(ctx context.Context, d *discovery, code string, t *tr
 		return nil, errors.New("the provider returned no ID token")
 	}
 
-	idToken, err := d.verifier.Verify(ctx, raw)
+	idToken, err := s.verifyIDToken(ctx, d, raw)
 	if err != nil {
 		return nil, err
 	}
@@ -142,17 +143,6 @@ func (s *Service) identify(ctx context.Context, d *discovery, code string, t *tr
 	return claims, nil
 }
 
-// role finds the mapping of a group, in the configured order.
-func (s *Service) role(group string) *config.OIDCRole {
-	for _, r := range s.cfg.Roles {
-		if r.Group == group {
-			return &r
-		}
-	}
-
-	return nil
-}
-
 // problem is a sign-in that cannot go on, with what to tell the person.
 type problem struct {
 	title, message, detail string
@@ -163,8 +153,10 @@ type problem struct {
 // role's credentials for the person.
 func (s *Service) mint(ctx context.Context, claims map[string]any) (*signedIn, *problem) {
 	var role *config.OIDCRole
-	for _, group := range groups(claims, s.cfg.Claim) {
-		if role = s.role(group); role != nil {
+	memberships := groups(claims, s.cfg.Claim)
+	for _, mapping := range s.cfg.Roles {
+		if slices.Contains(memberships, mapping.Group) {
+			role = &mapping
 			break
 		}
 	}

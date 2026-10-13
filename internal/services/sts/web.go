@@ -111,6 +111,10 @@ func parseToken(token string) (*claims, []string, error) {
 		audiences = []string{one}
 	}
 
+	if len(audiences) == 0 || slices.Contains(audiences, "") {
+		return nil, nil, invalidToken("The ID Token provided has no valid audience")
+	}
+
 	return &c, audiences, nil
 }
 

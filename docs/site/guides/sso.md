@@ -83,8 +83,11 @@ curl --aws-sigv4 "aws:amz:us-east-1:tinystack" --user "$KEY:$SECRET" \
 
 `resources` and `metrics` need the same signed request from any signed-in person; a person whose role is not an
 administrator's sees only the resources of their own account that IAM lets them list: for each resource, the
-service's `List`, `Describe` or `Get` action for its type (for example `iam:ListRoles`), or, for a type without one,
-any of the service's read actions on it. With `authorization: soft` or `off` they see their whole account. Only `health` (and `/_localstack/health`) stays open, so
+service's matching plural `List`, `Describe` or `Get` action for its type (for example `iam:ListRoles`).
+Types without a matching listing action or resource ARN are hidden in enforce mode. Listing does not grant access to
+resource details: in enforce mode, non-admin inventory omits `details`, including parameter values and IAM policy
+documents. Use the authorized service APIs to read those details. Source IP, TLS, current time, region and principal/resource tag
+conditions are evaluated for the inventory too. With `authorization: soft` or `off` they see their whole account. Only `health` (and `/_localstack/health`) stays open, so
 container health checks keep working. The console itself shows only a TinyStack sign-in page until someone signs in, with
 **Sign in with SSO** and a link to sign in with root access keys; after an SSO sign-in the person returns to the page
 they first asked for.
@@ -109,13 +112,14 @@ endpoint_url = http://127.0.0.1:4566
 ```
 
 The first AWS CLI call prints a URL on standard error; open it, sign in, and the call continues. The credentials are cached
-under your user cache directory (`tinystack/sso/<profile>.json`, mode 0600) until five minutes before they expire, so
-later calls do not ask again. `--endpoint` names the console URL when it is not `server.host` and
-`server.console_port` of the configuration (a `0.0.0.0` host means `127.0.0.1`).
+under your user cache directory (`tinystack/sso/<profile>.json`, atomically replaced with mode 0600) until five minutes before they expire, so
+later calls do not ask again. `--endpoint` overrides the console URL; the default is the origin of `redirect_url`. Remote endpoints require
+HTTPS; HTTP is allowed only for localhost and loopback addresses. Discovery, key and token endpoints use the same
+transport rule and do not follow HTTP redirects.
 
 The provider's client must allow the device grant (the example client lists
 `urn:ietf:params:oauth:grant-type:device_code`), and the machine running the command must read `client_secret_file`.
-TinyStack refuses an ID token older than five minutes and redeems each ID token once, and the endpoint (`POST /_tinystack/auth/device`) rejects
+TinyStack refuses an ID token issued in the future or at least five minutes ago and redeems each ID token once, and the endpoint (`POST /_tinystack/auth/device`) rejects
 requests carrying an `Origin` header, so browsers cannot use it. Note that a confidential client's secret is then
 available to everyone who can run the command: use a public client (no `client_secret_file`) where the provider allows
 it.
@@ -178,7 +182,8 @@ make the ID token carry a groups claim.
 ## Security notes
 
 - The authorization code flow uses PKCE `S256`, a random `state` and `nonce` held server side, a single-use login
-  transaction bound to the browser by an HttpOnly cookie (Secure when `redirect_url` is HTTPS), and fixed redirect
+  transaction bound to the browser by an HttpOnly cookie (Secure, `__Host-` prefixed and `Path=/` when
+  `redirect_url` is HTTPS), and fixed redirect
   targets, so there is no open redirect.
 - Tokens from the provider are used once and dropped; TinyStack stores no users or refresh tokens. The client secret is
   read from a file and is never logged.
@@ -187,6 +192,27 @@ make the ID token carry a groups claim.
 - Serve the console over HTTPS outside a loopback development setup; `issuer` and `redirect_url` refuse plain HTTP
   for other hosts.
 - Mapped group names are matched exactly. Prefer groups that only administrators can edit at the provider.
+
+- ID tokens require a nonempty subject, an issued-at time no later than TinyStack's clock, and an authorized party
+  (`azp`) matching `client_id` when present; multiple audiences require `azp`. Keep provider and server clocks in sync.
+- Sign-in transactions are capped at 32 pending transactions per socket source address, and 1024 globally.
+  Signed-in sessions and five-minute device redemption records are also capped at 32 per verified subject and 1024
+  globally. Repeating sign-in in one browser replaces its previous transaction. Pending-transaction exhaustion at
+  `GET /_tinystack/auth/login` returns 429; session exhaustion at `GET /_tinystack/auth/callback` returns 503;
+  redemption-record exhaustion at `POST /_tinystack/auth/device` returns 401 `InvalidToken`. The server does not
+  trust `X-Forwarded-For`, so a reverse proxy or shared NAT shares that source limit.
+- When terminating HTTPS at a reverse proxy, preserve the public `Host` header and set `redirect_url` to the public
+  HTTPS origin. Cookie-bearing session/logout POSTs require that exact Origin or same-origin Fetch Metadata. Forwarded
+  protocol headers never determine the trusted origin or IAM's `aws:SecureTransport` value. Origin checks compare
+  schemes, case-insensitive DNS hosts and effective ports; explicit HTTPS `:443` and HTTP `:80` are equivalent
+  to their omitted default ports. Other ports and schemes remain distinct.
+- Browser console actions use the configured public console origin. Signed programmatic actions without Origin or
+  Fetch Metadata can use either the console or AWS listener; signature, account/region scope and IAM checks still apply.
+- Deleting a mapped role invalidates its federated credentials; recreating the same ARN does not revive old sessions.
+- Console API invocation evaluates `execute-api:Invoke` against
+  `arn:aws:execute-api:<region>:<account>:<api>/<stage>/<method>/<path>`, including route-specific explicit Deny.
+- Sign-out immediately drops in-memory credentials and cancels pending collection. Changing the signed-in principal
+  resets the console's inventory cache.
 
 ## STS web identity signatures
 

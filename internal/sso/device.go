@@ -81,12 +81,15 @@ func (s *Service) device(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(oidc.ClientContext(r.Context(), s.client), clientTimeout)
 	defer cancel()
-	idToken, err := d.verifier.Verify(ctx, in.IDToken)
-	if err == nil && time.Since(idToken.IssuedAt) > maxIDTokenAge {
+	idToken, err := s.verifyIDToken(ctx, d, in.IDToken)
+	if err == nil && time.Since(idToken.IssuedAt) >= maxIDTokenAge {
 		err = errors.New("the ID token is not fresh")
 	}
 
-	if sum := sha256.Sum256([]byte(in.IDToken)); err == nil && !s.redeemed.mark(hex.EncodeToString(sum[:])) {
+	if sum := sha256.Sum256(
+		[]byte(in.IDToken),
+	); err == nil &&
+		!s.redeemed.markOwned(hex.EncodeToString(sum[:]), idToken.Subject, pendingPerOwner) {
 		err = errors.New("the ID token was already redeemed")
 	}
 
@@ -119,7 +122,15 @@ func (s *Service) device(w http.ResponseWriter, r *http.Request) {
 // TinyStack at endpoint, which maps the person's groups to a role and returns
 // its credentials. cfg is the server's console.auth.oidc.
 func Login(ctx context.Context, cfg *config.OIDC, endpoint string, prompt io.Writer) (*Process, error) {
-	client := &http.Client{Timeout: clientTimeout}
+	if err := config.SecureURL("console endpoint", endpoint); err != nil {
+		return nil, fmt.Errorf("console endpoint: %w", err)
+	}
+
+	if err := config.SecureURL("OIDC issuer", cfg.Issuer); err != nil {
+		return nil, fmt.Errorf("issuer: %w", err)
+	}
+
+	client := oidcClient()
 	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, client), cfg.Issuer)
 	if err != nil {
 		return nil, fmt.Errorf("read the identity provider's configuration: %w", err)
@@ -127,6 +138,7 @@ func Login(ctx context.Context, cfg *config.OIDC, endpoint string, prompt io.Wri
 
 	var metadata struct {
 		DeviceAuthorizationEndpoint string `json:"device_authorization_endpoint"`
+		JWKS                        string `json:"jwks_uri"`
 	}
 	err = provider.Claims(&metadata)
 	if err != nil {
@@ -135,6 +147,12 @@ func Login(ctx context.Context, cfg *config.OIDC, endpoint string, prompt io.Wri
 
 	if metadata.DeviceAuthorizationEndpoint == "" {
 		return nil, errors.New("the identity provider does not support the device authorization flow")
+	}
+
+	for _, address := range []string{metadata.DeviceAuthorizationEndpoint, provider.Endpoint().TokenURL, metadata.JWKS} {
+		if endpointErr := config.SecureURL("OIDC endpoint", address); endpointErr != nil {
+			return nil, endpointErr
+		}
 	}
 
 	secret, err := ReadSecret(cfg.ClientSecretFile)
@@ -203,6 +221,14 @@ func (d deviceAuth) RoundTrip(r *http.Request) (*http.Response, error) {
 
 // redeem sends the ID token to TinyStack for credentials.
 func redeem(ctx context.Context, client *http.Client, endpoint, idToken string) (*Process, error) {
+	if err := config.SecureURL("console endpoint", endpoint); err != nil {
+		return nil, err
+	}
+
+	// Never follow a redirect carrying the bearer ID token to a different endpoint.
+	clientCopy := *client
+	clientCopy.CheckRedirect = noRedirect
+	client = &clientCopy
 	body, err := json.Marshal(map[string]string{"id_token": idToken})
 	if err != nil {
 		return nil, err

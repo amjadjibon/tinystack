@@ -83,6 +83,15 @@ func (s *Server) consoleInvokeAPI(r *http.Request, c *call, caller *catalog.Call
 	}
 
 	ctx := request.WithMetadata(r.Context(), c.meta)
+	target := "arn:aws:execute-api:" + c.meta.Region + ":" + c.meta.AccountID + ":" + input.ApiId +
+		"/" + input.Stage + "/" + input.Method + "/" + strings.TrimPrefix(parsed.Path, "/")
+	if authErr := s.authorizeTargets(ctx, r, c, &catalog.Operation{
+		Name: in.Operation, IAMAction: "execute-api:Invoke",
+	}, nil, []catalog.AuthorizationResource{{ARN: target}}); authErr != nil {
+		return nil, authErr
+	}
+
+	ctx = request.WithMetadata(r.Context(), c.meta)
 	operation, key := "GetApi", "ApiId"
 	if in.Service == consoleAPIGateway {
 		operation, key = "GetRestApi", "RestApiId"

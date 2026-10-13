@@ -30,7 +30,7 @@ func (s *Server) serveResources(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if who, limited := limitedTo(r.Context()); limited {
-		out = s.listable(r.Context(), &who.principal, out)
+		out = s.listable(r, &who.principal, out)
 	}
 
 	slices.SortFunc(out, func(a, b catalog.Owned) int {

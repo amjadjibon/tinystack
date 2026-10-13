@@ -289,7 +289,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	w = cw
 	defer func() { s.record(r, c, start, body, cw) }()
 
-	if r.URL.RawQuery != "" || !SameOrigin(r) {
+	if r.URL.RawQuery != "" || !s.sameOrigin(r) {
 		s.consoleFail(w, c, &awserror.Error{
 			Code: accessDenied, Message: "Console actions require a same-origin request without query parameters.",
 			StatusCode: http.StatusForbidden,
@@ -453,11 +453,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	var output any
 	var err error
 	if in.Operation == "InvokeApi" && (in.Service == consoleAPIGateway || in.Service == consoleHTTPAPI) {
-		ctx := request.WithMetadata(r.Context(), c.meta)
-		err = s.authorize(ctx, r, c, &catalog.Operation{Name: in.Operation, IAMAction: "execute-api:Invoke"}, nil)
-		if err == nil {
-			output, err = s.consoleInvokeAPI(r, c, caller, in)
-		}
+		output, err = s.consoleInvokeAPI(r, c, caller, in)
 	} else {
 		output, err = s.consoleCall(r, c, caller, &in)
 	}
@@ -488,25 +484,78 @@ func (s *Server) consoleCall(r *http.Request, c *call, caller *catalog.Caller, i
 }
 
 // SameOrigin reports whether a request did not come from another site's page.
+const httpScheme = "http"
+
+const httpsScheme = "https"
+
 // JSON requests plus an Origin/Fetch-Metadata check prevent browser cross-site writes.
 // Non-browser clients need not send Origin; verify mode still requires SigV4.
 func SameOrigin(r *http.Request) bool {
+	scheme := httpScheme
+	if r.TLS != nil {
+		scheme = httpsScheme
+	}
+
+	return SameOriginURL(r, scheme+"://"+r.Host)
+}
+
+// SameOriginURL checks against an operator-configured public origin, including
+// behind a TLS-terminating proxy. It never trusts client-supplied forwarded headers.
+func SameOriginURL(r *http.Request, origin string) bool {
 	if site := r.Header.Get("Sec-Fetch-Site"); site == "cross-site" || site == "same-site" {
 		return false
 	}
 
-	if origin := r.Header.Get("Origin"); origin != "" {
-		u, err := url.Parse(origin)
-		scheme := "http"
-		if r.TLS != nil {
-			scheme = "https"
-		}
+	expected, err := url.Parse(origin)
+	if err != nil || expected.Host == "" || expected.User != nil || expected.Opaque != "" ||
+		(expected.Scheme != httpScheme && expected.Scheme != httpsScheme) ||
+		originAuthority(expected) != originAuthority(&url.URL{Scheme: expected.Scheme, Host: r.Host}) {
+		return false
+	}
 
-		return err == nil && u.Scheme == scheme && u.Host == r.Host && u.User == nil &&
+	if header := r.Header.Get("Origin"); header != "" {
+		u, err := url.Parse(header)
+		return err == nil && u.Scheme == expected.Scheme && u.Host != "" &&
+			originAuthority(u) == originAuthority(expected) && u.User == nil && u.Opaque == "" &&
 			u.Path == "" && u.RawQuery == "" && u.Fragment == ""
 	}
 
 	return true
+}
+
+// originAuthority matches browser origin serialization, which drops default ports
+// and treats DNS hostnames case-insensitively. Non-default ports remain distinct.
+func originAuthority(u *url.URL) string {
+	port := u.Port()
+	if port == "" {
+		switch u.Scheme {
+		case httpsScheme:
+			port = "443"
+		case httpScheme:
+			port = "80"
+		}
+	}
+
+	return net.JoinHostPort(strings.ToLower(u.Hostname()), port)
+}
+
+func (s *Server) sameOrigin(r *http.Request) bool {
+	// Browser actions use the pinned public console origin, including behind a
+	// TLS proxy. Programs without Origin or Fetch Metadata may use either listener;
+	// verify mode still authenticates their signature and checks the action scope.
+	if oidc := s.cfg.Console.Auth.OIDC; oidc != nil {
+		if r.Header.Get("Origin") != "" {
+			return SameOriginURL(r, oidc.RedirectURL)
+		}
+
+		for header := range r.Header {
+			if strings.HasPrefix(strings.ToLower(header), "sec-fetch-") {
+				return SameOriginURL(r, oidc.RedirectURL)
+			}
+		}
+	}
+
+	return SameOrigin(r)
 }
 
 func (s *Server) consoleFail(w http.ResponseWriter, c *call, err error) {

@@ -29,6 +29,7 @@ type store[T any] struct {
 type entry[T any] struct {
 	value   T
 	expires time.Time
+	owner   string
 }
 
 func newStore[T any](ttl time.Duration, limit int) *store[T] {
@@ -43,14 +44,30 @@ func (s *store[T]) put(value T) (string, bool) {
 
 // putUntil is put with the value's own expiry.
 func (s *store[T]) putUntil(value T, expires time.Time) (string, bool) {
+	return s.putOwned(value, expires, "", s.max)
+}
+
+// putOwned bounds unexpired entries per owner as well as globally.
+func (s *store[T]) putOwned(value T, expires time.Time, owner string, limit int) (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.room() {
 		return "", false
 	}
 
+	count := 0
+	for _, e := range s.items {
+		if e.owner == owner {
+			count++
+		}
+	}
+
+	if count >= limit {
+		return "", false
+	}
+
 	id := token()
-	s.items[id] = entry[T]{value: value, expires: expires}
+	s.items[id] = entry[T]{value: value, expires: expires, owner: owner}
 	return id, true
 }
 
@@ -66,17 +83,32 @@ func (s *store[T]) get(id string) (value T, found bool) {
 	return e.value, true
 }
 
-// mark records key until it expires and reports whether it was not already
+// markOwned records key until it expires and reports whether it was not already
 // recorded, so a value such as an ID token is accepted only once. It also
-// reports false when too many keys are recorded.
-func (s *store[T]) mark(key string) bool {
+// reports false when too many keys are recorded globally or for this subject.
+func (s *store[T]) markOwned(key, owner string, limit int) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, seen := s.items[key]; seen || !s.room() {
+	if !s.room() {
 		return false
 	}
 
-	s.items[key] = entry[T]{expires: s.now().Add(s.ttl)}
+	if _, seen := s.items[key]; seen {
+		return false
+	}
+
+	count := 0
+	for _, e := range s.items {
+		if e.owner == owner {
+			count++
+		}
+	}
+
+	if count >= limit {
+		return false
+	}
+
+	s.items[key] = entry[T]{expires: s.now().Add(s.ttl), owner: owner}
 	return true
 }
 

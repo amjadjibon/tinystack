@@ -1,7 +1,8 @@
 package gateway
 
 import (
-	"context"
+	"cmp"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -15,7 +16,7 @@ import (
 // list, the way the AWS console shows only what a person's list calls return.
 // Without enforcement it keeps the whole account. A failed policy lookup keeps
 // nothing.
-func (s *Server) listable(ctx context.Context, principal *request.Principal, all []catalog.Owned) []catalog.Owned {
+func (s *Server) listable(r *http.Request, principal *request.Principal, all []catalog.Owned) []catalog.Owned {
 	out := slices.DeleteFunc(all, func(o catalog.Owned) bool { return o.Account != principal.Account })
 	if s.cfg.Identity.Authorization != config.AuthorizationEnforce {
 		return out
@@ -25,47 +26,48 @@ func (s *Server) listable(ctx context.Context, principal *request.Principal, all
 		return nil
 	}
 
-	snapshot, err := s.policies(ctx, principal)
+	snapshot, err := s.policies(r.Context(), principal)
 	if err != nil {
 		s.logger.Warn("resources: IAM policy lookup failed", "principal", principal.ARN, "error", err)
 		return nil
 	}
 
-	values := map[string][]string{
-		"aws:userid": {principal.UserID}, "aws:principalarn": {principal.PolicyARN},
-		"aws:principalaccount": {principal.Account},
-	}
-	for key, value := range snapshot.Tags {
-		values["aws:principaltag/"+strings.ToLower(key)] = []string{value}
+	requestRegion := s.cfg.Defaults.Region
+	if a, signed, parseErr := signature(r); parseErr == nil && signed {
+		requestRegion = a.Region
 	}
 
-	allowed := func(action, arn string) bool {
-		return policy.Evaluate(snapshot.Documents, action, arn, policy.Context{Values: values}).Allowed
-	}
-
-	return slices.DeleteFunc(out, func(o catalog.Owned) bool {
+	out = slices.DeleteFunc(out, func(o catalog.Owned) bool {
 		service := s.services[o.Service]
 		if service == nil {
 			return true
 		}
 
-		arn := o.ARN
-		if arn == "" {
-			arn = "*"
+		// Inventory is a list view, not permission to fetch values, policy
+		// documents, or other details that require distinct read actions.
+		if o.ARN == "" {
+			return true
 		}
 
-		if action := listAction(service, o.Type); action != "" {
-			return !allowed(action, arn)
+		action := listAction(service, o.Type)
+		if action == "" {
+			return true
 		}
 
-		for _, action := range readActions(service) {
-			if allowed(action, arn) {
-				return false
-			}
+		values := authorizationValues(r, &snapshot.Principal, snapshot.Tags, cmp.Or(o.Region, requestRegion))
+		for key, value := range o.Tags {
+			values["aws:resourcetag/"+strings.ToLower(key)] = []string{value}
 		}
 
-		return true
+		return !policy.Evaluate(snapshot.Documents, action, o.ARN, policy.Context{
+			Values: values, ResourceTags: true,
+		}).Allowed
 	})
+	for i := range out {
+		out[i].Details = nil
+	}
+
+	return out
 }
 
 // listAction is the IAM action of the operation that lists resources of kind:
@@ -95,20 +97,6 @@ func listAction(service *catalog.Service, kind string) string {
 	}
 
 	return ""
-}
-
-// readActions are the IAM actions of a service's List, Describe and Get
-// operations.
-func readActions(service *catalog.Service) []string {
-	var out []string
-	for name, op := range service.Operations {
-		if strings.HasPrefix(name, "List") || strings.HasPrefix(name, "Describe") || strings.HasPrefix(name, "Get") {
-			out = append(out, iamAction(service, &op))
-		}
-	}
-
-	slices.Sort(out)
-	return out
 }
 
 // iamAction is the IAM action an operation is authorized as.

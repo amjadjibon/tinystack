@@ -97,3 +97,64 @@ test("SSO session handoff, signing and sign-out keep credentials in memory", asy
 	}
 	assert.deepEqual(assigned, []);
 });
+
+test("late SSO collection cannot restore credentials after sign-out", async () => {
+	const originalFetch = globalThis.fetch;
+	const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+	Object.defineProperty(globalThis, "window", {
+		configurable: true,
+		value: {
+			location: { origin: "http://localhost:4567", assign: () => {} },
+			crypto: globalThis.crypto,
+		},
+	});
+	let finish: ((response: Response) => void) | undefined;
+	const pending = new Promise<Response>((resolve) => {
+		finish = resolve;
+	});
+	let lastHeaders: Headers | undefined;
+	globalThis.fetch = async (url, init) => {
+		if (String(url).endsWith("/auth/session")) return pending;
+		if (String(url).endsWith("/actions"))
+			return Response.json({
+				region: "us-east-1",
+				signing_names: { sts: "sts" },
+			});
+		lastHeaders = new Headers(init?.headers);
+		return Response.json({});
+	};
+	try {
+		const collection = collectSSOSession();
+		await signOutSSO();
+		finish?.(
+			Response.json({
+				accessKeyId: "ASIA",
+				secretAccessKey: "secret",
+				sessionToken: "token",
+				expiration: new Date(Date.now() + 3_600_000).toISOString(),
+				account: "111111111111",
+				arn: "arn:aws:sts::111111111111:assumed-role/Developer/dev",
+				role: "Developer",
+				name: "dev",
+				admin: false,
+			}),
+		);
+		assert.equal(
+			await collection,
+			false,
+			"sign-out cancels a pending collection",
+		);
+		await adminFetch("/_tinystack/requests");
+		assert.equal(
+			lastHeaders?.get("authorization"),
+			null,
+			"no credentials survived sign-out",
+		);
+	} finally {
+		await signOutSSO();
+		globalThis.fetch = originalFetch;
+		if (originalWindow)
+			Object.defineProperty(globalThis, "window", originalWindow);
+		else Reflect.deleteProperty(globalThis, "window");
+	}
+});

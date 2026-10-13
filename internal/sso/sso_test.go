@@ -1,9 +1,17 @@
 package sso
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/oauth2"
+
+	"github.com/amjadjibon/tinystack/internal/config"
 )
 
 func TestGroups(t *testing.T) {
@@ -79,5 +87,101 @@ func TestStoreIsSingleUseAndBounded(t *testing.T) {
 
 	if _, found := s.take("unknown"); found {
 		t.Fatal("unknown id")
+	}
+}
+
+func TestLoginTransactionsAreLimitedPerSource(t *testing.T) {
+	s := &Service{txs: newStore[transaction](txTTL, pending), discovered: &discovery{
+		oauth: &oauth2.Config{ClientID: "client", Endpoint: oauth2.Endpoint{AuthURL: "https://issuer.example/auth"}},
+	}}
+	for i := range 64 {
+		r := httptest.NewRequest(http.MethodGet, "http://localhost"+Path+"login", http.NoBody)
+		r.RemoteAddr = "192.0.2.1:1234"
+		w := httptest.NewRecorder()
+		s.login(w, r)
+		want := http.StatusFound
+		if i >= 32 {
+			want = http.StatusTooManyRequests
+		}
+		if w.Code != want {
+			t.Fatalf("attempt %d = %d, want %d", i, w.Code, want)
+		}
+	}
+	r := httptest.NewRequest(http.MethodGet, "http://localhost"+Path+"login", http.NoBody)
+	r.RemoteAddr = "192.0.2.2:1234"
+	w := httptest.NewRecorder()
+	s.login(w, r)
+	if w.Code != http.StatusFound {
+		t.Fatalf("another person could not sign in: %d", w.Code)
+	}
+}
+
+func TestSessionOriginUsesConfiguredHTTPSOriginBehindProxy(t *testing.T) {
+	s := &Service{
+		cfg:    config.OIDC{RedirectURL: "https://console.example/_tinystack/auth/callback"},
+		secure: true, sessions: newStore[signedIn](0, pending),
+	}
+	id, _ := s.sessions.putUntil(signedIn{AccessKeyID: "ASIA"}, time.Now().Add(time.Hour))
+	for _, origin := range []string{"https://console.example", "https://evil.example", ""} {
+		r := httptest.NewRequest(http.MethodPost, "http://console.example"+Path+"session", http.NoBody)
+		r.AddCookie(&http.Cookie{Name: "__Host-tinystack_sso_session", Value: id})
+		r.Header.Set("Origin", origin)
+		r.Header.Set("X-Forwarded-Proto", "https")
+		w := httptest.NewRecorder()
+		s.session(w, r)
+		want := http.StatusForbidden
+		if origin == "https://console.example" {
+			want = http.StatusOK
+		}
+		if w.Code != want {
+			t.Fatalf("origin=%q status=%d, want %d", origin, w.Code, want)
+		}
+	}
+}
+
+func TestHTTPSCookiesAreHostBound(t *testing.T) {
+	s := &Service{secure: true}
+	for _, name := range []string{txCookie, sessionCookie} {
+		w := httptest.NewRecorder()
+		s.cookie(w, name, "opaque", time.Minute, http.SameSiteStrictMode)
+		cookie := w.Result().Cookies()[0]
+		if cookie.Name != "__Host-"+name || cookie.Path != "/" || cookie.Domain != "" || !cookie.Secure ||
+			!cookie.HttpOnly {
+			t.Fatalf("cookie is not host bound: %+v", cookie)
+		}
+	}
+}
+
+func TestCodeExchangeErrorsDoNotExposeProviderBodies(t *testing.T) {
+	const secret = "access-token-from-provider"
+	issuer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"invalid_grant","error_description":"` + secret + `"}`))
+	}))
+	defer issuer.Close()
+
+	s := &Service{}
+	d := &discovery{oauth: &oauth2.Config{ClientID: "client", Endpoint: oauth2.Endpoint{TokenURL: issuer.URL}}}
+	_, err := s.identify(context.Background(), d, "code", &transaction{verifier: "verifier"})
+	if err == nil || strings.Contains(err.Error(), secret) {
+		t.Fatalf("provider response exposed in loggable error: %v", err)
+	}
+}
+
+func TestDeviceReplayStoreBoundsEachSubject(t *testing.T) {
+	s := newStore[struct{}](maxIDTokenAge, pending)
+	for i := range 33 {
+		accepted := s.markOwned(fmt.Sprint(i), "attacker", 32)
+		if accepted != (i < 32) {
+			t.Fatalf("redemption %d accepted=%v", i, accepted)
+		}
+	}
+	if !s.markOwned("other", "victim", 32) {
+		t.Fatal("another subject was locked out")
+	}
+
+	if s.markOwned("other", "victim", 32) {
+		t.Fatal("replay was accepted")
 	}
 }

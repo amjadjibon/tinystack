@@ -22,7 +22,7 @@ feature manages records or needs a Docker runtime.
 | Infrastructure workflows | Selected Terraform AWS provider workflows and local CloudFormation/SAM deployment through the registered resource-type subset. | [Details](../guides/infrastructure.md) |
 | Runtime adapters | Docker Lambda execution and opt-in ECS Docker tasks, EKS k3s clusters, and ElastiCache Docker nodes; default optional adapters manage records. | [Details](../guides/runtimes.md) |
 | Cross-service event delivery | Supported notification, rule, and event-source workflows connect local service implementations and record delivery outcomes. | [Details](../guides/events.md) |
-| Console single sign-on | Optional OpenID Connect sign-in to the console (authorization code with PKCE, any compliant provider such as Authelia, Zitadel, Keycloak, Authentik, Okta or Entra ID). Provider groups map to an IAM role; the person gets that role's temporary STS credentials, so IAM authorization and the request inspector apply per person, and the administrative endpoints require an administrator's session or root credentials. `tinystack login` signs the AWS CLI in the same way through the device authorization flow. | [Details](../guides/sso.md) |
+| Console single sign-on | Optional OpenID Connect sign-in to the console (authorization code with PKCE, any compliant provider such as Authelia, Zitadel, Keycloak, Authentik, Okta or Entra ID). Provider groups map to an IAM role; the person gets that role's temporary STS credentials, so IAM authorization and the request inspector apply per person, and the administrative endpoints require an administrator's session or root credentials. `tinystack login` signs the AWS CLI in the same way through the device authorization flow, with HTTPS outside loopback, single-use fresh tokens and private atomic credential caches. Enforced member inventory omits details and evaluates request conditions; mapped role deletion invalidates old federated credentials. | [Details](../guides/sso.md) |
 
 ## Service features
 
@@ -633,7 +633,7 @@ Issue local session credentials and inspect the resolved caller identity.
 - Subset of role trust policies with AWS, Federated and Service principals.
 - Session credentials feed signature verification and account resolution.
 - In-process service role assumption supports the IoT credentials provider.
-- In `identity.mode: verify`, web identity tokens must carry a valid RS256 signature of the issuer's published keys (discovery and JWKS, cached), or of the Cognito identity pool that issued them.
+- In `identity.mode: verify`, web identity tokens must carry a valid RS256 signature of the issuer's published keys (discovery and JWKS, cached, HTTPS outside loopback and no HTTP redirects), or of the Cognito identity pool that issued them.
 - In-process federated sessions for console single sign-on, flagged so the console accepts them and IAM limits them.
 
 [Supported operations](sts.md#supported-operations) · [Limitations](sts.md#limitations-and-future-work)
