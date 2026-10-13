@@ -64,6 +64,7 @@ import (
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	locationapi "github.com/amjadjibon/tinystack/internal/aws/generated/location"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	memorydbapi "github.com/amjadjibon/tinystack/internal/aws/generated/memorydb"
 	mqapi "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
 	mwaaapi "github.com/amjadjibon/tinystack/internal/aws/generated/mwaa"
 	opensearchapi "github.com/amjadjibon/tinystack/internal/aws/generated/opensearch"
@@ -147,6 +148,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/location"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/memorydb"
 	"github.com/amjadjibon/tinystack/internal/services/mq"
 	"github.com/amjadjibon/tinystack/internal/services/mwaa"
 	"github.com/amjadjibon/tinystack/internal/services/opensearch"
@@ -378,6 +380,7 @@ func build(
 	privateAuthorities := acmpca.New(store, buckets)
 	verifiedpermissionsRecords := verifiedpermissions.New(store)
 	redshiftRecords := redshift.New(store, network)
+	memoryDBRecords := memorydb.New(store, network)
 	classicBalancers := elb.New(store, network)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -465,6 +468,7 @@ func build(
 		acmpcaapi.Descriptor(privateAuthorities),
 		verifiedpermissionsapi.Descriptor(verifiedpermissionsRecords),
 		redshiftapi.Descriptor(redshiftRecords),
+		memorydbapi.Descriptor(memoryDBRecords),
 		elbapi.Descriptor(classicBalancers),
 		rdsapi.Descriptor(databases),
 		apigatewayv2api.Descriptor(httpAPIs),

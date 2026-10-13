@@ -203,6 +203,7 @@ var TerraformServices = []string{
 	"ssoadmin",
 	"sts",
 	"ram",
+	"memorydb",
 	"redshift",
 	"xray",
 	"glacier",

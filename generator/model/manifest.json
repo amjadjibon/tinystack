@@ -203,6 +203,10 @@
       "path": "codegen/sdk-codegen/aws-models/cloudwatch-logs.json",
       "sha256": "308aa3e4d27c48f1233a6c286e970948a64a9eb157ee446b8227364eb7d8c49b"
     },
+    "memorydb": {
+      "path": "codegen/sdk-codegen/aws-models/memorydb.json",
+      "sha256": "7d9cdba2389201c80c8112fbc39d2bf61ce2c33cae1d435fbcff1adbb39cb973"
+    },
     "mq": {
       "path": "codegen/sdk-codegen/aws-models/mq.json",
       "sha256": "794d596e11bf8ffaa7cab670105546464f23fa23662c6264317c73fd86a7e7bb"

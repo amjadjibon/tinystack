@@ -19447,6 +19447,304 @@
       ]
     }
   },
+  "memorydb": {
+    "operations": [
+      "CreateACL",
+      "CreateCluster",
+      "CreateSubnetGroup",
+      "CreateUser",
+      "DeleteACL",
+      "DeleteCluster",
+      "DeleteSubnetGroup",
+      "DeleteUser",
+      "DescribeACLs",
+      "DescribeClusters",
+      "DescribeSubnetGroups",
+      "DescribeUsers",
+      "ListTags",
+      "TagResource",
+      "UntagResource",
+      "UpdateACL",
+      "UpdateCluster",
+      "UpdateSubnetGroup",
+      "UpdateUser"
+    ],
+    "shapes": {
+      "ACL": [
+        "Name",
+        "Status",
+        "UserNames",
+        "MinimumEngineVersion",
+        "Clusters",
+        "ARN"
+      ],
+      "AuthenticationMode": [
+        "Type",
+        "Passwords"
+      ],
+      "Authentication": [
+        "Type",
+        "PasswordCount"
+      ],
+      "AvailabilityZone": [
+        "Name"
+      ],
+      "Cluster": [
+        "Name",
+        "Description",
+        "Status",
+        "NumberOfShards",
+        "Shards",
+        "AvailabilityMode",
+        "ClusterEndpoint",
+        "NodeType",
+        "Engine",
+        "EngineVersion",
+        "EnginePatchVersion",
+        "ParameterGroupName",
+        "ParameterGroupStatus",
+        "SecurityGroups",
+        "SubnetGroupName",
+        "TLSEnabled",
+        "KmsKeyId",
+        "ARN",
+        "SnapshotRetentionLimit",
+        "MaintenanceWindow",
+        "SnapshotWindow",
+        "ACLName",
+        "AutoMinorVersionUpgrade"
+      ],
+      "CreateACLRequest": [
+        "ACLName",
+        "UserNames",
+        "Tags"
+      ],
+      "CreateACLResponse": [
+        "ACL"
+      ],
+      "CreateClusterRequest": [
+        "ClusterName",
+        "NodeType",
+        "ParameterGroupName",
+        "Description",
+        "NumShards",
+        "NumReplicasPerShard",
+        "SubnetGroupName",
+        "SecurityGroupIds",
+        "MaintenanceWindow",
+        "Port",
+        "TLSEnabled",
+        "KmsKeyId",
+        "SnapshotRetentionLimit",
+        "Tags",
+        "SnapshotWindow",
+        "ACLName",
+        "Engine",
+        "EngineVersion",
+        "AutoMinorVersionUpgrade"
+      ],
+      "CreateClusterResponse": [
+        "Cluster"
+      ],
+      "CreateSubnetGroupRequest": [
+        "SubnetGroupName",
+        "Description",
+        "SubnetIds",
+        "Tags"
+      ],
+      "CreateSubnetGroupResponse": [
+        "SubnetGroup"
+      ],
+      "CreateUserRequest": [
+        "UserName",
+        "AuthenticationMode",
+        "AccessString",
+        "Tags"
+      ],
+      "CreateUserResponse": [
+        "User"
+      ],
+      "DeleteACLRequest": [
+        "ACLName"
+      ],
+      "DeleteACLResponse": [
+        "ACL"
+      ],
+      "DeleteClusterRequest": [
+        "ClusterName"
+      ],
+      "DeleteClusterResponse": [
+        "Cluster"
+      ],
+      "DeleteSubnetGroupRequest": [
+        "SubnetGroupName"
+      ],
+      "DeleteSubnetGroupResponse": [
+        "SubnetGroup"
+      ],
+      "DeleteUserRequest": [
+        "UserName"
+      ],
+      "DeleteUserResponse": [
+        "User"
+      ],
+      "DescribeACLsRequest": [
+        "ACLName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeACLsResponse": [
+        "ACLs",
+        "NextToken"
+      ],
+      "DescribeClustersRequest": [
+        "ClusterName",
+        "MaxResults",
+        "NextToken",
+        "ShowShardDetails"
+      ],
+      "DescribeClustersResponse": [
+        "Clusters",
+        "NextToken"
+      ],
+      "DescribeSubnetGroupsRequest": [
+        "SubnetGroupName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeSubnetGroupsResponse": [
+        "SubnetGroups",
+        "NextToken"
+      ],
+      "DescribeUsersRequest": [
+        "UserName",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeUsersResponse": [
+        "Users",
+        "NextToken"
+      ],
+      "Endpoint": [
+        "Address",
+        "Port"
+      ],
+      "Filter": [
+        "Name",
+        "Values"
+      ],
+      "ListTagsRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsResponse": [
+        "TagList"
+      ],
+      "Node": [
+        "Name",
+        "Status",
+        "AvailabilityZone",
+        "CreateTime"
+      ],
+      "ReplicaConfigurationRequest": [
+        "ReplicaCount"
+      ],
+      "SecurityGroupMembership": [
+        "SecurityGroupId",
+        "Status"
+      ],
+      "Shard": [
+        "Name",
+        "Status",
+        "Slots",
+        "Nodes",
+        "NumberOfNodes"
+      ],
+      "ShardConfigurationRequest": [
+        "ShardCount"
+      ],
+      "Subnet": [
+        "Identifier",
+        "AvailabilityZone"
+      ],
+      "SubnetGroup": [
+        "Name",
+        "Description",
+        "VpcId",
+        "Subnets",
+        "ARN"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [
+        "TagList"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [
+        "TagList"
+      ],
+      "UpdateACLRequest": [
+        "ACLName",
+        "UserNamesToAdd",
+        "UserNamesToRemove"
+      ],
+      "UpdateACLResponse": [
+        "ACL"
+      ],
+      "UpdateClusterRequest": [
+        "ClusterName",
+        "Description",
+        "SecurityGroupIds",
+        "MaintenanceWindow",
+        "ParameterGroupName",
+        "SnapshotWindow",
+        "SnapshotRetentionLimit",
+        "NodeType",
+        "Engine",
+        "EngineVersion",
+        "ReplicaConfiguration",
+        "ShardConfiguration",
+        "ACLName"
+      ],
+      "UpdateClusterResponse": [
+        "Cluster"
+      ],
+      "UpdateSubnetGroupRequest": [
+        "SubnetGroupName",
+        "Description",
+        "SubnetIds"
+      ],
+      "UpdateSubnetGroupResponse": [
+        "SubnetGroup"
+      ],
+      "UpdateUserRequest": [
+        "UserName",
+        "AuthenticationMode",
+        "AccessString"
+      ],
+      "UpdateUserResponse": [
+        "User"
+      ],
+      "User": [
+        "Name",
+        "Status",
+        "AccessString",
+        "ACLNames",
+        "MinimumEngineVersion",
+        "Authentication",
+        "ARN"
+      ]
+    }
+  },
   "mq": {
     "operations": [
       "CreateBroker",
