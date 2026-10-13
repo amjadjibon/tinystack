@@ -426,6 +426,9 @@ export function ConsoleLayout({
 	const follow = useFollow();
 	const { pathname } = useLocation();
 	const { data, error } = useHealth();
+	const scope = useScope();
+	const sso = scope.capabilities.data?.sso;
+	const signInRequired = !!sso && !scope.session;
 	const [navigationOpen, setNavigationOpen] = useState(true);
 	const [splitPanelPreferences, setSplitPanelPreferences] =
 		useState<AppLayoutProps.SplitPanelPreferences>({
@@ -481,8 +484,10 @@ export function ConsoleLayout({
 					/>
 				)
 			}
-			content={content}
-			splitPanel={splitPanel}
+			content={
+				signInRequired ? <SignInRequired loginURL={sso.login_url} /> : content
+			}
+			splitPanel={signInRequired ? undefined : splitPanel}
 			splitPanelOpen={splitPanelOpen}
 			onSplitPanelToggle={({ detail }) => onSplitPanelToggle?.(detail.open)}
 			splitPanelPreferences={splitPanelPreferences}
@@ -490,5 +495,23 @@ export function ConsoleLayout({
 				setSplitPanelPreferences(detail)
 			}
 		/>
+	);
+}
+
+// SignInRequired stands in for every page while SSO is configured and nobody
+// has signed in: TinyStack shows no resources to people it does not know.
+function SignInRequired({ loginURL }: { loginURL: string }) {
+	return (
+		<Box margin={{ top: "xxxl" }} textAlign="center">
+			<SpaceBetween size="m">
+				<Box variant="h1">Sign in to TinyStack</Box>
+				<Box variant="p" color="text-body-secondary">
+					This console signs people in through your identity provider.
+				</Box>
+				<Button variant="primary" href={loginURL}>
+					Sign in with SSO
+				</Button>
+			</SpaceBetween>
+		</Box>
 	);
 }

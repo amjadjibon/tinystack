@@ -232,9 +232,9 @@ export async function consoleActionFetch(
 	return response;
 }
 
-// adminFetch calls an administrative endpoint such as the request inspector.
-// With SSO configured these accept only signed requests from root credentials
-// or an administrator's session, so a connected session signs them.
+// adminFetch calls one of TinyStack's own endpoints, such as the request
+// inspector. With SSO configured these accept only signed requests from root
+// credentials or a signed-in person, so a connected session signs them.
 export async function adminFetch(path: string, method = "GET") {
 	const session = active;
 	if (!session) return fetch(path, { method });

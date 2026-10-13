@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -831,5 +832,72 @@ func TestSSODeviceIDTokenIsRedeemedOnce(t *testing.T) {
 
 	if got := redeem(); got != http.StatusUnauthorized {
 		t.Fatalf("replayed ID token = %d", got)
+	}
+}
+
+func TestSSOConsoleRequiresSignIn(t *testing.T) {
+	e := newSSOEnv(t)
+	admin := e.signIn(t, ssoUser("root", "ada@example.com", "platform-admins"))
+	dev := e.signIn(t, ssoUser("dev", "dev@example.com", "team-b-dev"))
+	for _, bucket := range []struct {
+		person *ssoPerson
+		name   string
+	}{{admin, "admin-files"}, {dev, "dev-files"}} {
+		if status, out := e.action(t, bucket.person.credentials(), "s3", "s3", "CreateBucket", bucket.person.Account,
+			map[string]any{"Bucket": bucket.name}); status != http.StatusOK {
+			t.Fatalf("create %s = %d %v", bucket.name, status, out)
+		}
+	}
+
+	// Nobody signed in sees nothing but health.
+	for _, path := range []string{"/_tinystack/resources", "/_tinystack/metrics", "/_tinystack/deliveries"} {
+		if resp := get(t, http.DefaultClient, e.console.URL+path); resp.StatusCode != http.StatusForbidden {
+			t.Fatalf("unsigned %s = %d", path, resp.StatusCode)
+		}
+	}
+
+	if resp := get(t, http.DefaultClient, e.console.URL+"/_tinystack/health"); resp.StatusCode != http.StatusOK {
+		t.Fatalf("health = %d", resp.StatusCode)
+	}
+
+	buckets := func(p *ssoPerson) []string {
+		status, out := e.signed(t, p.credentials(), "tinystack", http.MethodGet, "/_tinystack/resources", nil)
+		if status != http.StatusOK {
+			t.Fatalf("%s resources = %d %v", p.Name, status, out)
+		}
+
+		var names []string
+		for _, item := range out["resources"].([]any) {
+			if r := item.(map[string]any); r["service"] == "s3" {
+				names = append(names, r["name"].(string))
+			}
+		}
+
+		return names
+	}
+
+	// A person who is not an administrator sees only their own account.
+	if got := buckets(dev); !slices.Equal(got, []string{"dev-files"}) {
+		t.Fatalf("developer sees %v", got)
+	}
+
+	if got := buckets(admin); !slices.Contains(got, "dev-files") || !slices.Contains(got, "admin-files") {
+		t.Fatalf("administrator sees %v", got)
+	}
+
+	if status, _ := e.signed(t, dev.credentials(), "tinystack", http.MethodGet, "/_tinystack/metrics",
+		nil); status != http.StatusOK {
+		t.Fatalf("developer metrics = %d", status)
+	}
+
+	// Deliveries carry message bodies from every account.
+	for _, tc := range []struct {
+		person *ssoPerson
+		status int
+	}{{dev, http.StatusForbidden}, {admin, http.StatusOK}} {
+		if status, _ := e.signed(t, tc.person.credentials(), "tinystack", http.MethodGet, "/_tinystack/deliveries",
+			nil); status != tc.status {
+			t.Fatalf("%s deliveries = %d, want %d", tc.person.Name, status, tc.status)
+		}
 	}
 }

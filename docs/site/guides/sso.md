@@ -68,8 +68,8 @@ inspector shows each person's session (`assumed-role/<Role>/<email>`).
 
 ### Administrative endpoints
 
-When OIDC is configured, `/_tinystack/reset`, `faults`, `requests`, `init`, `/_localstack/chaos/*` and
-`/_localstack/init` (on both listeners) require a request signed with SigV4 for the service name `tinystack` by
+When OIDC is configured, `/_tinystack/reset`, `faults`, `requests`, `deliveries`, `init`, `/_localstack/chaos/*`
+and `/_localstack/init` (on both listeners) require a request signed with SigV4 for the service name `tinystack` by
 account root credentials (a key from `identity.secret_keys`, or a root session) or by a person whose role is marked
 `admin: true`. Everyone else gets 403. The console signs the request inspector this way for you. For scripts:
 
@@ -78,7 +78,10 @@ curl --aws-sigv4 "aws:amz:us-east-1:tinystack" --user "$KEY:$SECRET" \
   -X POST http://127.0.0.1:4567/_tinystack/reset
 ```
 
-`health`, `metrics`, `resources` and `deliveries` stay open.
+`resources` and `metrics` need the same signed request from any signed-in person; a person whose role is not an
+administrator's sees only their own account's resources. Only `health` (and `/_localstack/health`) stays open, so
+container health checks keep working. The console itself shows nothing but a **Sign in with SSO** page until someone
+signs in.
 
 Access-key sign-in is unchanged: root keys and root session credentials still connect with **Console session**, and
 IAM users and ordinary assumed roles still cannot. Console actions that such credentials sign directly are evaluated by

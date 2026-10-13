@@ -23,8 +23,9 @@ the page to end the session. Authentication failures on an active session discon
 validation/service failures leave it connected. Canceling a pending connection does not activate it.
 
 With [single sign-on](sso.md) configured, **Sign in with SSO** in the same dialog signs a person in through the identity
-provider. Their role's IAM policies then apply to every console action, and the request inspector, reset, fault and
-init endpoints need an administrator.
+provider. The console shows nothing until someone signs in. Their role's IAM policies then apply to every console
+action, the resource list shows only their account unless they are an administrator, and the request inspector,
+deliveries, reset, fault and init endpoints need an administrator.
 
 Open **IAM** for account selection and dedicated user, user group, role and policy pages. Create and edit
 identities, attach or detach policies, manage group membership, edit trust policies and tags, and create,

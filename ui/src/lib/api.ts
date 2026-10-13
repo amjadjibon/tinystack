@@ -85,12 +85,13 @@ export type MetricSeries = {
 
 const base = "/_tinystack";
 
-// The request inspector is administrative when SSO is configured.
+// With SSO configured, every endpoint but health needs a signed request from
+// a connected session; adminFetch signs when a session is connected.
 async function get(path: string): Promise<Response> {
 	const response =
-		path === "/requests"
-			? await adminFetch(base + path)
-			: await fetch(base + path);
+		path === "/health"
+			? await fetch(base + path)
+			: await adminFetch(base + path);
 	if (!response.ok) {
 		throw new Error(`${path}: ${response.status} ${await response.text()}`);
 	}
@@ -180,10 +181,7 @@ export const api = {
 	deliveries: () => list<Delivery>("/deliveries", "deliveries"),
 	metrics: async () => parseMetrics(await (await get("/metrics")).text()),
 	clear: async (log: "requests" | "deliveries") => {
-		const response =
-			log === "requests"
-				? await adminFetch(`${base}/${log}`, "DELETE")
-				: await fetch(`${base}/${log}`, { method: "DELETE" });
+		const response = await adminFetch(`${base}/${log}`, "DELETE");
 		if (!response.ok) throw new Error(`${log}: ${response.status}`);
 	},
 };
