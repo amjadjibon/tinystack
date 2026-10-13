@@ -31,7 +31,7 @@ import {
 	type Preferences,
 } from "#/lib/theme";
 import { useFollow } from "#/lib/useFollow";
-import { ConsoleSessionDialog, collectSSOReturn } from "./ConsoleSession";
+import { ConsoleSessionDialog } from "./ConsoleSession";
 import { ServiceIcon } from "./ServiceIcon";
 
 const headerID = "console-header";
@@ -124,15 +124,6 @@ export function ConsoleHeader() {
 		if (ssoAccount && ssoAccount !== scope.account && scope.region)
 			scope.switchScope({ account: ssoAccount });
 	}, [ssoAccount, scope.account, scope.region]);
-	// Coming back from the identity provider, pick up the finished sign-in.
-	// The server hands it over once, so this must not be cancelled and rerun.
-	useEffect(() => {
-		collectSSOReturn().then((notice) => {
-			if (notice === null) return;
-			setSessionNotice(notice);
-			if (notice) setSessionOpen(true);
-		});
-	}, []);
 
 	const matches = names.filter((name) =>
 		`${name} ${service(name).title}`
@@ -426,9 +417,6 @@ export function ConsoleLayout({
 	const follow = useFollow();
 	const { pathname } = useLocation();
 	const { data, error } = useHealth();
-	const scope = useScope();
-	const sso = scope.capabilities.data?.sso;
-	const signInRequired = !!sso && !scope.session;
 	const [navigationOpen, setNavigationOpen] = useState(true);
 	const [splitPanelPreferences, setSplitPanelPreferences] =
 		useState<AppLayoutProps.SplitPanelPreferences>({
@@ -484,10 +472,8 @@ export function ConsoleLayout({
 					/>
 				)
 			}
-			content={
-				signInRequired ? <SignInRequired loginURL={sso.login_url} /> : content
-			}
-			splitPanel={signInRequired ? undefined : splitPanel}
+			content={content}
+			splitPanel={splitPanel}
 			splitPanelOpen={splitPanelOpen}
 			onSplitPanelToggle={({ detail }) => onSplitPanelToggle?.(detail.open)}
 			splitPanelPreferences={splitPanelPreferences}
@@ -495,23 +481,5 @@ export function ConsoleLayout({
 				setSplitPanelPreferences(detail)
 			}
 		/>
-	);
-}
-
-// SignInRequired stands in for every page while SSO is configured and nobody
-// has signed in: TinyStack shows no resources to people it does not know.
-function SignInRequired({ loginURL }: { loginURL: string }) {
-	return (
-		<Box margin={{ top: "xxxl" }} textAlign="center">
-			<SpaceBetween size="m">
-				<Box variant="h1">Sign in to TinyStack</Box>
-				<Box variant="p" color="text-body-secondary">
-					This console signs people in through your identity provider.
-				</Box>
-				<Button variant="primary" href={loginURL}>
-					Sign in with SSO
-				</Button>
-			</SpaceBetween>
-		</Box>
 	);
 }

@@ -321,6 +321,14 @@ export async function collectSSOSession(signal?: AbortSignal) {
 	return true;
 }
 
+// signedOut is set when a person signs out, for the sign-in page to confirm it:
+// the identity provider's end-session address, or "" when it has none.
+let signedOut: string | undefined;
+
+export function lastSignOut() {
+	return signedOut;
+}
+
 // signOutSSO ends the console session. The identity provider's end-session
 // address is returned when it has one, for the person to follow.
 export async function signOutSSO() {
@@ -335,6 +343,7 @@ export async function signOutSSO() {
 			endSession = ((await response.json()) as { end_session_url?: string })
 				.end_session_url;
 	} finally {
+		signedOut = endSession ?? "";
 		disconnectConsoleSession();
 	}
 	return endSession;

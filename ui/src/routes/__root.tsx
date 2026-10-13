@@ -10,8 +10,9 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ConsoleHeader, ConsoleLayout } from "#/components/Console";
 import { EmptyState } from "#/components/EmptyState";
+import { SignIn } from "#/components/SignIn";
 import { HealthProvider } from "#/lib/health";
-import { ScopeProvider } from "#/lib/scope";
+import { ScopeProvider, useScope } from "#/lib/scope";
 import { ServiceHistoryProvider } from "#/lib/serviceHistory";
 import appCss from "../styles.css?url";
 
@@ -59,11 +60,26 @@ function Root() {
 		<HealthProvider>
 			<ScopeProvider>
 				<ServiceHistoryProvider>
-					<ConsoleHeader />
-					<Outlet />
+					<Signed />
 				</ServiceHistoryProvider>
 			</ScopeProvider>
 		</HealthProvider>
+	);
+}
+
+// Signed shows the console, or only the sign-in page while single sign-on is
+// configured and nobody has signed in. Until TinyStack says whether it signs
+// people in, it shows nothing, so the console never flashes past the sign-in.
+function Signed() {
+	const { capabilities, session } = useScope();
+	if (!capabilities.data && !capabilities.error) return null;
+	const sso = capabilities.data?.sso;
+	if (sso && !session) return <SignIn loginURL={sso.login_url} />;
+	return (
+		<>
+			<ConsoleHeader />
+			<Outlet />
+		</>
 	);
 }
 
