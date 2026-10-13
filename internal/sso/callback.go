@@ -88,19 +88,24 @@ func (s *Service) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := s.handoff.put(*person)
+	// Signing in again replaces this browser's earlier session.
+	if c, err := r.Cookie(sessionCookie); err == nil {
+		s.sessions.take(c.Value)
+	}
+
+	id, ok := s.sessions.putUntil(*person, person.Expiration)
 	if !ok {
 		fail(
 			w,
 			http.StatusServiceUnavailable,
 			"Too many sign-ins",
-			"Too many sign-ins are waiting.",
+			"Too many people are signed in.",
 			"Try again shortly.",
 		)
 		return
 	}
 
-	s.cookie(w, handoffCookie, id, handoffTTL, http.SameSiteStrictMode)
+	s.cookie(w, sessionCookie, id, time.Until(person.Expiration), http.SameSiteStrictMode)
 	http.Redirect(w, r, "/?signin=sso", http.StatusSeeOther)
 }
 

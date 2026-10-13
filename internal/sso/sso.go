@@ -26,12 +26,13 @@ const (
 	// Path is where the sign-in endpoints live, below /_tinystack/.
 	Path = "/_tinystack/auth/"
 
-	txCookie      = "tinystack_sso_tx"
-	handoffCookie = "tinystack_sso_handoff"
+	txCookie = "tinystack_sso_tx"
+	// sessionCookie names a signed-in person's session, which the console
+	// collects its credentials from after each page load.
+	sessionCookie = "tinystack_sso_session"
 
-	txTTL      = 10 * time.Minute
-	handoffTTL = time.Minute
-	// pending bounds the unfinished sign-ins and unclaimed handoffs kept in memory.
+	txTTL = 10 * time.Minute
+	// pending bounds the unfinished sign-ins and the signed-in sessions kept in memory.
 	pending       = 1024
 	clientTimeout = 10 * time.Second
 	maxSecretSize = 4096
@@ -39,11 +40,11 @@ const (
 
 // Service is the console's single sign-on.
 type Service struct {
-	tokens  *sts.Service
-	logger  *slog.Logger
-	client  *http.Client
-	txs     *store[transaction]
-	handoff *store[signedIn]
+	tokens   *sts.Service
+	logger   *slog.Logger
+	client   *http.Client
+	txs      *store[transaction]
+	sessions *store[signedIn]
 	// redeemed holds the hashes of the ID tokens the command line redeemed, so
 	// each is accepted once.
 	redeemed *store[struct{}]
@@ -75,7 +76,7 @@ func New(cfg *config.OIDC, tokens *sts.Service, logger *slog.Logger) (*Service, 
 		cfg: *cfg, tokens: tokens, logger: logger, secure: strings.HasPrefix(cfg.RedirectURL, "https://"),
 		client:   &http.Client{Timeout: clientTimeout},
 		txs:      newStore[transaction](txTTL, pending),
-		handoff:  newStore[signedIn](handoffTTL, pending),
+		sessions: newStore[signedIn](0, pending),
 		redeemed: newStore[struct{}](maxIDTokenAge, pending),
 	}
 

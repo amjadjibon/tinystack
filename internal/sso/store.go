@@ -15,8 +15,9 @@ func token() string {
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
-// store holds short-lived values by random identifier. A value is taken once:
-// a login transaction or a credentials handoff cannot be replayed.
+// store holds short-lived values by random identifier. A login transaction is
+// taken once, so it cannot be replayed; a signed-in session is read until it
+// expires or the person signs out.
 type store[T any] struct {
 	now   func() time.Time
 	items map[string]entry[T]
@@ -37,6 +38,11 @@ func newStore[T any](ttl time.Duration, limit int) *store[T] {
 // put keeps value and returns its identifier, or false when too many unexpired
 // values are waiting.
 func (s *store[T]) put(value T) (string, bool) {
+	return s.putUntil(value, s.now().Add(s.ttl))
+}
+
+// putUntil is put with the value's own expiry.
+func (s *store[T]) putUntil(value T, expires time.Time) (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.room() {
@@ -44,8 +50,20 @@ func (s *store[T]) put(value T) (string, bool) {
 	}
 
 	id := token()
-	s.items[id] = entry[T]{value: value, expires: s.now().Add(s.ttl)}
+	s.items[id] = entry[T]{value: value, expires: expires}
 	return id, true
+}
+
+// get returns the value for id, if it has not expired, and keeps it.
+func (s *store[T]) get(id string) (value T, found bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e, ok := s.items[id]
+	if !ok || !s.now().Before(e.expires) {
+		return value, false
+	}
+
+	return e.value, true
 }
 
 // mark records key until it expires and reports whether it was not already

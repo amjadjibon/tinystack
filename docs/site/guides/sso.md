@@ -55,11 +55,14 @@ nothing is issued.
    issuer, audience and expiry; asymmetric algorithms only) and the nonce.
 3. The groups in `claim` select the first matching role. No match: a 403 page, nothing issued. Otherwise STS issues a
    role session named after `email`, else `preferred_username`, else `sub`.
-4. The console collects the credentials once, with a same-origin `POST /_tinystack/auth/session` that needs a
-   one-minute `SameSite=Strict` cookie. It keeps them only in the page's memory (never in storage, cookies or URLs)
-   and signs every console action with them. About a minute before they expire it signs in again.
-5. **Sign out** forgets the credentials in the tab and offers the provider's end-session link when the provider
-   advertises one. The issued credentials cannot be revoked, as on AWS; they expire at `session_seconds`.
+4. TinyStack keeps the session in memory under an HttpOnly `SameSite=Strict` cookie that lasts until the credentials
+   expire. After every page load the console collects the credentials with a same-origin
+   `POST /_tinystack/auth/session`, so a reload or a new tab stays signed in. It keeps them only in the page's memory
+   (never in storage, readable cookies or URLs) and signs every console action with them. About a minute before they
+   expire it signs in again, which the provider usually completes without asking.
+5. **Sign out** ends the session, forgets the credentials in the tab and offers the provider's end-session link when
+   the provider advertises one. The issued credentials cannot be revoked, as on AWS; they expire at `session_seconds`.
+   Sessions live in TinyStack's memory, so restarting TinyStack signs everyone out.
 
 The console shows who is signed in, the role and account, whether they are an administrator, and when the session
 ends. Console actions of a signed-in person are evaluated by IAM like AWS API calls: with `enforce` a denied action
@@ -177,7 +180,7 @@ make the ID token carry a groups claim.
   targets, so there is no open redirect.
 - Tokens from the provider are used once and dropped; TinyStack stores no users or refresh tokens. The client secret is
   read from a file and is never logged.
-- Credentials travel only in the body of one same-origin `no-store` response and stay in the tab's memory.
+- Credentials travel only in the bodies of same-origin `no-store` responses and stay in the tab's memory.
 - The ID token is verified by the `go-oidc` library; TinyStack does not parse JWT signatures itself.
 - Serve the console over HTTPS outside a loopback development setup; `issuer` and `redirect_url` refuse plain HTTP
   for other hosts.

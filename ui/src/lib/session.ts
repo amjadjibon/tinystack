@@ -260,10 +260,10 @@ type SSOHandoff = {
 	admin: boolean;
 };
 
-// collectSSOSession takes the credentials of a sign-in that just finished.
-// The server hands them over once, in the body of a same-origin response, and
-// they stay in memory like a root session's. It reports false when no sign-in
-// was waiting.
+// collectSSOSession takes the credentials of the person signed in with this
+// browser. The server hands them over in the body of a same-origin response
+// while its HttpOnly session cookie lasts, and they stay in memory like a root
+// session's. It reports false when nobody is signed in.
 export async function collectSSOSession(signal?: AbortSignal) {
 	if (typeof window === "undefined")
 		throw new Error("Console sessions are browser-only.");

@@ -20,8 +20,8 @@ import {
 } from "#/lib/session";
 
 // collectSSOReturn finishes a sign-in the identity provider sent the browser
-// back from: the callback redirects to /?signin=sso, and the server hands the
-// credentials over once. The marker is removed from the address either way.
+// back from: the callback redirects to /?signin=sso. The marker is removed from
+// the address either way; null means there was none.
 export async function collectSSOReturn() {
 	const url = new URL(window.location.href);
 	if (url.searchParams.get("signin") !== "sso") return null;

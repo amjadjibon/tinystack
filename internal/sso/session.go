@@ -8,44 +8,46 @@ import (
 	"github.com/amjadjibon/tinystack/internal/gateway"
 )
 
-// session hands the credentials of a finished sign-in to the console, once.
+// session hands the credentials of the person signed in with this browser to
+// the console, after every page load until they expire or the person signs out.
 // The console keeps them in memory only. A POST from the console's own origin
-// carrying the SameSite=Strict cookie is the only way to collect them.
+// carrying the HttpOnly, SameSite=Strict session cookie is the only way to
+// collect them.
 func (s *Service) session(w http.ResponseWriter, r *http.Request) {
 	if !s.sameOriginPost(w, r) {
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	s.cookie(w, handoffCookie, "", 0, http.SameSiteStrictMode)
 	var in signedIn
 	found := false
-	if c, err := r.Cookie(handoffCookie); err == nil {
-		in, found = s.handoff.take(c.Value)
+	if c, err := r.Cookie(sessionCookie); err == nil {
+		in, found = s.sessions.get(c.Value)
 	}
 
 	if !found {
+		s.cookie(w, sessionCookie, "", 0, http.SameSiteStrictMode)
 		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(map[string]string{"code": "NoSignIn", "message": "No sign-in is waiting."})
+		_ = json.NewEncoder(w).Encode(map[string]string{"code": "NoSignIn", "message": "Nobody is signed in."})
 		return
 	}
 
-	// #nosec G117 -- the credentials are the point of this response, which only the session's own browser collects once.
+	// #nosec G117 -- the credentials are the point of this response, which only the session's own browser collects.
 	_ = json.NewEncoder(w).Encode(in)
 }
 
-// logout drops the sign-in state this browser still has waiting, and reports the
-// provider's end-session address when it advertises one. The role credentials
-// already issued last until they expire, as role sessions do on AWS.
+// logout ends this browser's session and any sign-in it has waiting, and
+// reports the provider's end-session address when it advertises one. The role
+// credentials already issued last until they expire, as role sessions do on AWS.
 func (s *Service) logout(w http.ResponseWriter, r *http.Request) {
 	if !s.sameOriginPost(w, r) {
 		return
 	}
 
-	for _, name := range []string{txCookie, handoffCookie} {
+	for _, name := range []string{txCookie, sessionCookie} {
 		if c, err := r.Cookie(name); err == nil {
 			s.txs.take(c.Value)
-			s.handoff.take(c.Value)
+			s.sessions.take(c.Value)
 		}
 
 		s.cookie(w, name, "", 0, http.SameSiteLaxMode)

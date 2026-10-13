@@ -535,7 +535,7 @@ func TestSSOChecksStateAndTransaction(t *testing.T) {
 	})
 }
 
-func TestSSOHandoffIsOneTimeAndSameOrigin(t *testing.T) {
+func TestSSOSessionLastsUntilSignOutAndIsSameOrigin(t *testing.T) {
 	e := newSSOEnv(t)
 	b := browser(t)
 	e.callback(t, b, ssoUser("dev", "dev@example.com", "team-b-dev"))
@@ -548,12 +548,39 @@ func TestSSOHandoffIsOneTimeAndSameOrigin(t *testing.T) {
 		t.Fatalf("cross-origin = %d", resp.StatusCode)
 	}
 
-	if resp := e.post(t, b, "/_tinystack/auth/session", e.console.URL); resp.StatusCode != http.StatusOK {
-		t.Fatalf("first = %d", resp.StatusCode)
+	// Every page load collects the same session again.
+	var first, second ssoPerson
+	for _, into := range []*ssoPerson{&first, &second} {
+		resp := e.post(t, b, "/_tinystack/auth/session", e.console.URL)
+		if resp.StatusCode != http.StatusOK || json.NewDecoder(resp.Body).Decode(into) != nil {
+			t.Fatalf("collect = %d", resp.StatusCode)
+		}
+	}
+
+	if first.AccessKeyID == "" || first.AccessKeyID != second.AccessKeyID {
+		t.Fatalf("reloads = %+v %+v", first, second)
+	}
+
+	// Another browser has no session.
+	if resp := e.post(t, browser(t), "/_tinystack/auth/session", e.console.URL); resp.StatusCode !=
+		http.StatusUnauthorized {
+		t.Fatalf("other browser = %d", resp.StatusCode)
+	}
+
+	// Signing in again replaces the session.
+	e.callback(t, b, ssoUser("dev", "dev@example.com", "team-b-dev"))
+	var third ssoPerson
+	if resp := e.post(t, b, "/_tinystack/auth/session", e.console.URL); resp.StatusCode != http.StatusOK ||
+		json.NewDecoder(resp.Body).Decode(&third) != nil || third.AccessKeyID == first.AccessKeyID {
+		t.Fatalf("second sign-in = %d %+v", resp.StatusCode, third)
+	}
+
+	if resp := e.post(t, b, "/_tinystack/auth/logout", e.console.URL); resp.StatusCode != http.StatusOK {
+		t.Fatalf("logout = %d", resp.StatusCode)
 	}
 
 	if resp := e.post(t, b, "/_tinystack/auth/session", e.console.URL); resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("second = %d", resp.StatusCode)
+		t.Fatalf("after logout = %d", resp.StatusCode)
 	}
 
 	if resp := get(t, b, e.console.URL+"/_tinystack/auth/session"); resp.StatusCode != http.StatusMethodNotAllowed {
@@ -586,8 +613,8 @@ func TestSSOUnmappedUserAndMissingRole(t *testing.T) {
 			}
 
 			for _, c := range resp.Cookies() {
-				if c.Name == "tinystack_sso_handoff" {
-					t.Fatalf("a handoff was prepared: %+v", c)
+				if c.Name == "tinystack_sso_session" {
+					t.Fatalf("a session was created: %+v", c)
 				}
 			}
 		})

@@ -9,7 +9,7 @@ import {
 } from "@cloudscape-design/components";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { lastSignOut } from "#/lib/session";
+import { collectSSOSession, lastSignOut } from "#/lib/session";
 import {
 	applyConsoleTheme,
 	applyPreferences,
@@ -39,18 +39,28 @@ export function SignIn({ loginURL }: { loginURL: string }) {
 	const [notice, setNotice] = useState("");
 	const [keysOpen, setKeysOpen] = useState(false);
 	const signedOut = lastSignOut();
+	// Until the server says whether this browser is signed in, show nothing.
+	const [checking, setChecking] = useState(signedOut === undefined);
 
 	useEffect(() => {
 		const theme = applyConsoleTheme();
 		applyPreferences(loadPreferences());
 		return theme.reset;
 	}, []);
-	// Coming back from the identity provider, pick up the finished sign-in.
-	// The server hands it over once, so this must not be cancelled and rerun.
+	// Pick up the session of a person already signed in with this browser:
+	// after a reload, or coming back from the identity provider, which then
+	// returns them to the page they first asked for.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs once per page load.
 	useEffect(() => {
-		collectSSOReturn().then((result) => {
-			if (result === null) return;
+		if (signedOut !== undefined) return;
+		collectSSOReturn().then(async (result) => {
+			if (result === null) {
+				await collectSSOSession().catch(() => false);
+				setChecking(false);
+				return;
+			}
+
+			setChecking(false);
 			if (result) {
 				setNotice(result);
 				return;
@@ -70,6 +80,8 @@ export function SignIn({ loginURL }: { loginURL: string }) {
 		}
 		window.location.assign(loginURL);
 	};
+
+	if (checking) return null;
 
 	return (
 		<Box padding={{ top: "xxxl", horizontal: "l" }}>
