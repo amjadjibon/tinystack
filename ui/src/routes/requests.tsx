@@ -1,5 +1,10 @@
 import { KeyValuePairs, SpaceBetween } from "@cloudscape-design/components";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+	AuthorizationStatus,
+	authorizationLabel,
+	RequestAuthorization,
+} from "#/components/Authorization";
 import { CodeBlock } from "#/components/CodeBlock";
 import { LogTable } from "#/components/LogTable";
 import { RequestStatus } from "#/components/RequestStatus";
@@ -14,6 +19,21 @@ function Requests() {
 			title="Request inspector"
 			description="The last 256 AWS requests TinyStack served. Bodies are truncated, and sensitive operations are redacted."
 			fetcher={api.requests}
+			filterText={(r) =>
+				[
+					authorizationLabel(r.authorization),
+					...Object.values(r).filter((value) => typeof value !== "object"),
+					r.authorization?.principal,
+					r.authorization?.mode,
+					r.authorization?.message,
+					...(r.authorization?.checks ?? []).flatMap((check) => [
+						check.action,
+						check.resource,
+						...(check.matched ?? []),
+						...(check.unsupported ?? []),
+					]),
+				].join(" ")
+			}
 			onClear={() => api.clear("requests")}
 			trackBy={(r) => r.request_id}
 			empty="Send a request with the AWS CLI or an SDK to see it here."
@@ -47,6 +67,12 @@ function Requests() {
 					sortingField: "status",
 				},
 				{ id: "error", header: "Error", cell: (r) => r.error_code || "-" },
+				{
+					id: "authorization",
+					header: "IAM decision",
+					cell: (r) => <AuthorizationStatus decision={r.authorization} />,
+					width: 160,
+				},
 				{ id: "account", header: "Account", cell: (r) => r.account },
 				{ id: "region", header: "Region", cell: (r) => r.region },
 				{
@@ -59,6 +85,7 @@ function Requests() {
 			detailTitle={(r) => r.operation || `${r.method} ${r.path}`}
 			detail={(r) => (
 				<SpaceBetween size="l">
+					<RequestAuthorization decision={r.authorization} />
 					<KeyValuePairs
 						columns={2}
 						items={[

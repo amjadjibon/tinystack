@@ -159,7 +159,15 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	}
 
 	sort.Strings(names)
-	health, err := json.Marshal(map[string]any{"status": "ok", "services": names, "storage": cfg.Storage.Mode})
+	authorization := cfg.Identity.Authorization
+	if authorization == "" {
+		authorization = config.AuthorizationOff
+	}
+
+	health, err := json.Marshal(map[string]any{
+		"status": "ok", "services": names, "storage": cfg.Storage.Mode,
+		"identity": map[string]string{"mode": cfg.Identity.Mode, "authorization": authorization},
+	})
 	if err != nil {
 		return nil, err
 	}

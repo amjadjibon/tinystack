@@ -21,7 +21,7 @@ See the [implemented feature catalogue](catalogue.md#sqs) for this service's cap
 
 ## Limitations and future work
 
-- No throughput enforcement or IAM/resource policy evaluation.
+- No throughput enforcement or queue resource-policy evaluation.
 - No message groups on standard queues or FIFO message move tasks.
 - DeleteQueue does not enforce the AWS name-reuse delay.
 - Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained.

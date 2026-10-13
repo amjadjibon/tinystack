@@ -5,6 +5,30 @@ export type Health = {
 	status: string;
 	services: string[];
 	storage: string;
+	identity?: {
+		mode: "parse" | "verify";
+		authorization: AuthorizationMode;
+	};
+};
+
+export type AuthorizationMode = "off" | "soft" | "enforce";
+
+export type AuthorizationCheck = {
+	action: string;
+	resource: string;
+	allowed: boolean;
+	explicit_deny?: boolean;
+	wildcard_only?: boolean;
+	matched?: string[];
+	unsupported?: string[];
+};
+
+export type AuthorizationRecord = {
+	mode: AuthorizationMode;
+	principal: string;
+	message: string;
+	allowed: boolean;
+	checks?: AuthorizationCheck[];
 };
 
 export type Resource = {
@@ -19,6 +43,7 @@ export type Resource = {
 };
 
 export type RequestRecord = {
+	authorization?: AuthorizationRecord;
 	time: string;
 	request_id: string;
 	method: string;

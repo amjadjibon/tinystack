@@ -22,6 +22,7 @@ export type LogTableProps<T> = {
 	fetcher: () => Promise<T[]>;
 	columns: TableProps.ColumnDefinition<T>[];
 	trackBy: (item: T) => string;
+	filterText?: (item: T) => string;
 	onClear?: () => Promise<void>;
 	detailTitle?: (item: T) => string;
 	detail?: (item: T) => ReactNode;
@@ -37,6 +38,7 @@ export function LogTable<T>({
 	fetcher,
 	columns,
 	trackBy,
+	filterText,
 	onClear,
 	detailTitle,
 	detail,
@@ -55,6 +57,10 @@ export function LogTable<T>({
 		filteredItemsCount,
 	} = useCollection(data ?? [], {
 		filtering: {
+			filteringFunction: filterText
+				? (item, text) =>
+						filterText(item).toLowerCase().includes(text.toLowerCase())
+				: undefined,
 			empty: <EmptyState title="Nothing here yet" subtitle={empty} />,
 			noMatch: (
 				<EmptyState

@@ -189,7 +189,7 @@ Local metric retention is 15 days; alarm history is retained for 30 days.
 
 | Method and path | Result |
 | --- | --- |
-| `GET /_tinystack/health` | Registered service list and health information |
+| `GET /_tinystack/health` | Registered services, storage mode and active identity authentication/authorization modes |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
 | `GET /_tinystack/actions` | Console action capabilities and default account/region |
 | `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda/DynamoDB/EventBridge/CloudWatch Logs/CloudWatch operations with an explicit account, regional scope except IAM and SDK-style input |

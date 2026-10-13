@@ -19,6 +19,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ConsoleLayout } from "#/components/Console";
 import { EmptyState } from "#/components/EmptyState";
+import { IAMAuthorization } from "#/components/iam/IAMAuthorization";
 import { IAMCreate } from "#/components/iam/IAMCreate";
 import { IAMDetail } from "#/components/iam/IAMDetail";
 import type { Resource } from "#/lib/api";
@@ -265,10 +266,7 @@ function IAMOverview({
 						]}
 					/>
 				</Container>
-				<Alert type="info">
-					TinyStack stores IAM permission policies and trust relationships.
-					Permission policies are not evaluated when accessing services.
-				</Alert>
+				<IAMAuthorization />
 			</SpaceBetween>
 		</ContentLayout>
 	);

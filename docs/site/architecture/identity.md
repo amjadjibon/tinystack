@@ -54,7 +54,9 @@ identity:
 
 Start with `--authorization soft` to inspect decisions before enforcement. `off` is the default
 and preserves existing behavior. `soft` executes requests and records `would deny` decisions;
-`enforce` returns HTTP 403 before invoking a denied operation. Both modes expose an `authorization`
+`enforce` returns HTTP 403 before invoking a denied operation. The IAM dashboard shows the active authorization and authentication modes. The request inspector
+shows Allowed, Denied, Would deny and Not evaluated separately from the HTTP response, with
+principals, checked actions/resources, matched statements and evaluation limits. Both modes expose an `authorization`
 object in `/_tinystack/requests`, with the caller, action/resource checks, matched statements,
 unsupported constructs, and explanation. Decisions also appear in the server log.
 

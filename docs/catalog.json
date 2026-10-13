@@ -12,7 +12,7 @@
     },
     {
       "title": "Identity and resource scope",
-      "summary": "Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, and optional SigV4 verification; general IAM permission evaluation is outside the subset.",
+      "summary": "Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, optional SigV4 verification, and identity-policy evaluation with off, soft and enforce modes.",
       "reference": "architecture/identity.md"
     },
     {
@@ -22,7 +22,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -194,7 +194,7 @@
         "PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard"
       ],
       "gaps": [
-        "No throughput enforcement or IAM/resource policy evaluation",
+        "No throughput enforcement or queue resource-policy evaluation",
         "No message groups on standard queues or FIFO message move tasks",
         "DeleteQueue does not enforce the AWS name-reuse delay",
         "Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained",
@@ -551,7 +551,8 @@
         "Active IAM keys participate in gateway credential resolution",
         "Optional off/soft/enforce gateway authorization for IAM users and assumed roles, including group policies and current managed policy versions",
         "Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations",
-        "IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions"
+        "IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions",
+        "Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits"
       ],
       "gaps": [
         "No resource-policy enforcement, permissions boundaries, session policies, SCPs/RCPs, cross-account authorization or policy simulation; non-core services use wildcard resource evaluation",

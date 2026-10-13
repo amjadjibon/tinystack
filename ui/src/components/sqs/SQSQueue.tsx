@@ -348,8 +348,9 @@ export function SQSQueue({
 							content: (
 								<SpaceBetween size="l">
 									<Alert type="info">
-										TinyStack stores the access policy. It does not evaluate IAM
-										or queue policies when allowing SQS operations.
+										Queue access policies are stored but not evaluated.
+										Identity-based IAM policies can be checked when
+										authorization is enabled.
 									</Alert>
 									<Container
 										header={
