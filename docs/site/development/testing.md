@@ -19,6 +19,7 @@ contact AWS; integration tests use the official AWS SDK v2 and in-process runtim
 | `task test:terraform` | Provider apply, no-change/read behavior, update and destroy | Python 3, Terraform, provider download access |
 | `task test:sam` | Deploy, new code/parameter redeploy and delete | Python 3, SAM CLI, AWS CLI; deployed API invocation with Docker |
 | `task ui:check` | Biome checks and TypeScript | Node.js, pnpm |
+| `task ui:test` | Session signing, account boundaries and credential lifetime | Node.js 22.6+, pnpm |
 | `task docs:check` | Profile/catalogue freshness and strict docs validation | Python docs environment |
 
 Docker tests are opt-in through `TINYSTACK_DOCKER_TESTS=1`, set by the task. They pull images and create

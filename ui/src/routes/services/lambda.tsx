@@ -39,7 +39,7 @@ function LambdaPage() {
 	const search = Route.useSearch();
 	const navigate = useNavigate();
 	const location = useLocation();
-	const { account, region, inventory, capabilities } = useScope();
+	const { canWrite, account, region, inventory, capabilities } = useScope();
 	const scope = { account, region, functionName: search.function };
 	const [notice, setNotice] = useState("");
 	const context = `${account}/${region}/${search.function}/${search.create}/${location.pathname}`;
@@ -55,9 +55,7 @@ function LambdaPage() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: notices belong to the selected account and Region.
 	useEffect(() => setNotice(""), [account, region]);
 	const actionable =
-		!capabilities.data?.requires_signature &&
-		/^\d{12}$/.test(account) &&
-		validRegion(region);
+		canWrite && /^\d{12}$/.test(account) && validRegion(region);
 	const enabled = !!capabilities.data?.lambda && actionable;
 	const functions = (inventory.data ?? []).filter(
 		(r) =>
@@ -123,11 +121,10 @@ function LambdaPage() {
 							{inventory.error || capabilities.error}
 						</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="Lambda management is read-only">
-							This server requires signed requests. Function and trigger
-							inventory is available here; use a signed AWS CLI or SDK request
-							for management, invocation and log reads.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.lambda && (

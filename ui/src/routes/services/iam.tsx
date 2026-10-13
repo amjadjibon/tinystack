@@ -54,7 +54,7 @@ export const Route = createFileRoute("/services/iam")({
 function IAMPage() {
 	const search = Route.useSearch();
 	const navigate = useNavigate();
-	const { account, inventory, capabilities } = useScope();
+	const { canWrite, account, inventory, capabilities } = useScope();
 	const [notice, setNotice] = useState("");
 	// biome-ignore lint/correctness/useExhaustiveDependencies: clear the previous scope’s success notice when switching.
 	useEffect(() => setNotice(""), [account]);
@@ -62,9 +62,7 @@ function IAMPage() {
 		(r) => r.service === "iam" && r.account === account,
 	);
 	const enabled =
-		!!capabilities.data?.iam &&
-		!capabilities.data.requires_signature &&
-		/^\d{12}$/.test(account);
+		!!capabilities.data?.iam && canWrite && /^\d{12}$/.test(account);
 	const go = (
 		section: IAMSection,
 		name = "",
@@ -141,10 +139,10 @@ function IAMPage() {
 							{inventory.error || capabilities.error}
 						</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="IAM management is read-only">
-							This server requires signed requests. Use the AWS CLI or SDK to
-							manage IAM resources. Console forms are available in parse mode.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{search.create && search.section !== "overview" ? (

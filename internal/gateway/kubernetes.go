@@ -46,7 +46,7 @@ func (s *Server) KubernetesAccount(r *http.Request, cluster string) (string, err
 	}
 
 	presigned, err := url.Parse(string(raw))
-	if err != nil || presigned.Query().Get("Action") != "GetCallerIdentity" {
+	if err != nil || presigned.Query().Get("Action") != opGetCallerIdentity {
 		return "", ErrKubernetesToken
 	}
 

@@ -27,6 +27,7 @@ architecture SVG assets in `ui/public/aws-icons/`.
 
 ```sh
 task ui:check
+task ui:test
 task ui:build
 task build
 ```
@@ -73,7 +74,8 @@ so a retry continues remaining changes after a partial failure. These workflows 
 leaves completed changes in place, and a lost response can require checking the resource before retrying.
 User permissions include policies inherited through groups; inherited policies are managed from the group page.
 
-`GET /_tinystack/actions` returns the default account/region and whether IAM, S3 and signature verification are enabled.
+`GET /_tinystack/actions` returns the default account/Region, configured accounts, service availability,
+signature verification mode and descriptor-derived `signing_names`.
 `POST /_tinystack/actions` accepts `service`, `operation`, `account` and an SDK-style `input` object. The gateway
 restricts operations to explicit service allowlists, validates the account and S3 Region, and invokes the strict `catalog.Caller`.
 It records requests and metrics through the same inspector path, including sensitive-operation redaction.
@@ -81,8 +83,15 @@ Responses contain `output` and `request_id`; errors contain `code`, `message` an
 
 Writes require JSON and reject cross-origin browser requests. The Vite proxy preserves the browser's Host
 so the origin check works in development. In verify mode the endpoint checks SigV4 credentials, requires the
-signed account to match the action account, and rejects unsigned writes. The UI currently supplies no credentials,
-so it shows read-only IAM pages and S3 bucket inventory in verify mode. It never falls back to unsigned mutations.
+signed account to match the action account, and rejects unsigned writes. Choose **Console session** to connect
+configured root credentials or temporary STS root credentials. The signed STS `GetCallerIdentity` handshake
+rejects user and role credentials because console actions use an administrative caller that bypasses IAM policies.
+
+The browser signs actions with the service descriptor's signing name and the selected Region. Credentials stay
+in private module memory; React receives only account/ARN metadata. Reload or **Disconnect** clears the session.
+A shared `canWrite` scope enables forms only for the connected account. Canceling validation cannot activate a
+session, and authentication failures disconnect it. Parse mode retains unsigned console forms. Session signing
+and account/credential boundaries are covered by `task ui:test` and Go integration tests.
 
 Access-key secrets are shown only in the creation-result dialog, kept in component memory, and discarded when
 the dialog closes or the resource page changes. They are never stored in browser storage or the request inspector.
@@ -119,7 +128,7 @@ batches, aborts unfinished multipart uploads, and checks for new data before rep
 steps are retained while a dialog stays open, so retries continue remaining work. Closing a failed dialog leaves
 completed changes in place; these workflows are not transactions. Lost responses or concurrent external writes
 can require checking the bucket before retrying. Verify mode retains bucket inventory but cannot browse objects
-or settings without signed requests, so use the CLI/SDK.
+or settings without signed requests; connect a root console session or use the CLI/SDK.
 
 ## RDS workflows
 
@@ -139,8 +148,8 @@ in use cannot be deleted. Parameter settings, class limits and storage limits ar
 
 SQL connections require `rds.instances: docker` and a working local Docker daemon; the default records
 mode has no SQL listener. The health endpoint does not expose RDS runtime availability, so the console
-shows this general note. In verify mode, management uses signed CLI/SDK requests; the console shows
-available database inventory metadata.
+shows this general note. In verify mode, connect a root console session for management; database inventory
+metadata remains available without one.
 
 The RDS service icon is bundled locally from the official AWS Architecture Icons package
 (`Architecture-Service-Icons_07312026/Arch_Databases/32/Arch_Amazon-RDS_32.svg`), like the other service icons.

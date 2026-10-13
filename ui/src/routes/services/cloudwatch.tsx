@@ -50,7 +50,7 @@ function CloudWatchPage() {
 	const scopeId = `${context.account}/${context.region}`;
 	const enabled =
 		!!context.capabilities.data?.cloudwatch &&
-		!context.capabilities.data.requires_signature &&
+		context.canWrite &&
 		/^\d{12}$/.test(context.account) &&
 		validRegion(context.region);
 	return (
@@ -84,7 +84,7 @@ function WatchWorkspace({
 }) {
 	const navigate = useNavigate(),
 		follow = useFollow(),
-		{ inventory, capabilities } = useScope(),
+		{ canWrite, inventory, capabilities } = useScope(),
 		mounted = useRef(true);
 	useEffect(() => {
 		mounted.current = true;
@@ -172,11 +172,10 @@ function WatchWorkspace({
 					{(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info">
-							Alarm and dashboard inventory is available here. Use signed
-							CLI/SDK requests to read metrics, inspect configurations, or
-							manage CloudWatch.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.cloudwatch && (

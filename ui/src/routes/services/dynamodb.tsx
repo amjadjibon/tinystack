@@ -43,7 +43,7 @@ function DynamoPage() {
 	const search = Route.useSearch(),
 		navigate = useNavigate(),
 		location = useLocation();
-	const { account, region, inventory, capabilities } = useScope();
+	const { canWrite, account, region, inventory, capabilities } = useScope();
 	const scope = { account, region, table: search.table };
 	const [notice, setNotice] = useState("");
 	const context = `${account}/${region}/${search.table}/${search.section}/${search.create}/${location.pathname}`;
@@ -59,9 +59,7 @@ function DynamoPage() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: notices belong to the selected account and Region.
 	useEffect(() => setNotice(""), [account, region]);
 	const actionable =
-		!capabilities.data?.requires_signature &&
-		/^\d{12}$/.test(account) &&
-		validRegion(region);
+		canWrite && /^\d{12}$/.test(account) && validRegion(region);
 	const enabled = !!capabilities.data?.dynamodb && actionable;
 	const tables = (inventory.data ?? []).filter(
 		(r) =>
@@ -136,11 +134,10 @@ function DynamoPage() {
 							{inventory.error || capabilities.error}
 						</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="DynamoDB management is read-only">
-							This server requires signed requests. Table and Lambda mapping
-							inventory is available here; use signed CLI/SDK requests for
-							items, settings and management.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.dynamodb && (

@@ -25,7 +25,7 @@ See the [implemented feature catalogue](catalogue.md#step-functions) for this se
 - JSONPath filters and recursive descent are outside the subset.
 - Running executions abort after restart; activity queues and task tokens are in memory.
 - Express execution results are not retained; console results last until leaving or reloading the page.
-- Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console shows read-only inventory.
+- Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console management requires an authenticated root console session.
 - Reset does not stop executions already running.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)

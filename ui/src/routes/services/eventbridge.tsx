@@ -60,7 +60,7 @@ function EventPage() {
 	const scopeId = `${context.account}/${context.region}`;
 	const enabled =
 		!!context.capabilities.data?.eventbridge &&
-		!context.capabilities.data.requires_signature &&
+		context.canWrite &&
 		/^\d{12}$/.test(context.account) &&
 		validRegion(context.region);
 	return (
@@ -93,7 +93,7 @@ function EventWorkspace({
 	setNotice: (message: string) => void;
 }) {
 	const navigate = useNavigate(),
-		{ inventory, capabilities } = useScope(),
+		{ canWrite, inventory, capabilities } = useScope(),
 		follow = useFollow();
 	const [dialog, setDialog] = useState<"create" | "publish" | null>(null),
 		[name, setName] = useState(""),
@@ -182,10 +182,10 @@ function EventWorkspace({
 					{(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info">
-							EventBridge inventory and deliveries are available here. Use
-							signed CLI/SDK requests for management and event publication.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.eventbridge && (

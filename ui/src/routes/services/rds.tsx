@@ -45,7 +45,7 @@ export const Route = createFileRoute("/services/rds")({
 });
 function RDSPage() {
 	const search = Route.useSearch(),
-		{ account, region, capabilities, inventory } = useScope();
+		{ canWrite, account, region, capabilities, inventory } = useScope();
 	const scope = {
 		account,
 		region,
@@ -54,7 +54,7 @@ function RDSPage() {
 	};
 	const enabled =
 		!!capabilities.data?.rds &&
-		!capabilities.data.requires_signature &&
+		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
 	const list = rdsHref({ account, region });
@@ -94,10 +94,10 @@ function RDSPage() {
 					{capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info">
-							RDS management requires signed AWS CLI or SDK requests in verify
-							mode. Database metadata inventory remains available.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.rds && (

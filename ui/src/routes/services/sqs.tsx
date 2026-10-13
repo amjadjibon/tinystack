@@ -39,7 +39,7 @@ export const Route = createFileRoute("/services/sqs")({
 function SQSPage() {
 	const search = Route.useSearch();
 	const navigate = useNavigate();
-	const { account, region, inventory, capabilities } = useScope();
+	const { canWrite, account, region, inventory, capabilities } = useScope();
 	const scope = { account, region, queue: search.queue };
 	const location = useLocation();
 	const context = `${account}/${region}/${search.queue}/${search.create}/${location.pathname}`;
@@ -57,7 +57,7 @@ function SQSPage() {
 	useEffect(() => setNotice(""), [account, region]);
 	const enabled =
 		!!capabilities.data?.sqs &&
-		!capabilities.data.requires_signature &&
+		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
 	const queues = (inventory.data ?? []).filter(
@@ -119,10 +119,10 @@ function SQSPage() {
 							{inventory.error || capabilities.error}
 						</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="SQS management is read-only">
-							This server requires signed requests. Queue inventory is available
-							here; use the AWS CLI or SDK to manage queues and messages.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.sqs && (

@@ -44,7 +44,7 @@ function SNSPage() {
 	const search = Route.useSearch();
 	const navigate = useNavigate();
 	const location = useLocation();
-	const { account, region, inventory, capabilities } = useScope();
+	const { canWrite, account, region, inventory, capabilities } = useScope();
 	const scope = { account, region, topic: search.topic };
 	const [notice, setNotice] = useState("");
 	const context = `${account}/${region}/${search.topic}/${search.subscription}/${search.create}/${search.section}/${location.pathname}`;
@@ -61,7 +61,7 @@ function SNSPage() {
 	useEffect(() => setNotice(""), [account, region]);
 	const enabled =
 		!!capabilities.data?.sns &&
-		!capabilities.data.requires_signature &&
+		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
 	const topics = (inventory.data ?? []).filter(
@@ -151,11 +151,10 @@ function SNSPage() {
 							{inventory.error || capabilities.error}
 						</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="SNS management is read-only">
-							This server requires signed requests. Topic and subscription
-							inventory and delivery history are available here; use the AWS CLI
-							or SDK for management.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.sns && (

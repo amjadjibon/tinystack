@@ -8,6 +8,7 @@ import {
 } from "react";
 import { api } from "./api";
 import { validRegion } from "./s3";
+import { useConsoleSession } from "./session";
 import { usePoll } from "./usePoll";
 
 type Scope = { account: string; region: string };
@@ -37,6 +38,7 @@ function useScopeState() {
 	const navigate = useNavigate();
 	const capabilities = usePoll(api.actionCapabilities, 15000);
 	const inventory = usePoll(api.resources);
+	const session = useConsoleSession();
 	const [remembered, setRemembered] = useState<Scope>({
 		account: "",
 		region: "",
@@ -55,6 +57,11 @@ function useScopeState() {
 	const name = location.pathname.split("/")[2];
 	const global =
 		location.pathname.startsWith("/services/") && globalServices.has(name);
+	const canWrite =
+		!!capabilities.data &&
+		(session
+			? session.account === account
+			: !capabilities.data.requires_signature);
 
 	// Deep links and browser history also update the scope used by the next service.
 	useEffect(() => {
@@ -120,6 +127,8 @@ function useScopeState() {
 		account,
 		region,
 		global,
+		canWrite,
+		session,
 		switchScope,
 		capabilities,
 		inventory,

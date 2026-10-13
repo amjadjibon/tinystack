@@ -17,7 +17,8 @@ task models:sync -- -ref <commit> [-add name[=file.json]]   # pin upstream Smith
 task docs:generate  # regenerate docs pages from docs/catalog.json and code
 task docs:check     # catalogue freshness + strict MkDocs build
 task ui:check       # Biome + tsc for the console
-task all            # generate, lint, test, build
+task ui:test        # console session signing and credential boundaries
+task all            # generate, lint, Go tests, console build/check/tests
 ```
 
 Single test: `go test -race ./tests/integration -run TestName`.

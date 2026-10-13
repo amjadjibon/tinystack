@@ -36,7 +36,7 @@ export const Route = createFileRoute("/services/sfn")({
 function StepFunctionsPage() {
 	const search = Route.useSearch(),
 		navigate = useNavigate();
-	const { account, region, inventory, capabilities } = useScope();
+	const { canWrite, account, region, inventory, capabilities } = useScope();
 	const scope = {
 		account,
 		region,
@@ -58,7 +58,7 @@ function StepFunctionsPage() {
 	useEffect(() => setNotice(""), [account, region]);
 	const enabled =
 		!!capabilities.data?.sfn &&
-		!capabilities.data.requires_signature &&
+		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
 	const machines = (inventory.data ?? []).filter(
@@ -126,11 +126,10 @@ function StepFunctionsPage() {
 							{inventory.error || capabilities.error}
 						</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="Step Functions management is read-only">
-							This server requires signed requests. State machine inventory is
-							available here; use signed AWS CLI or SDK requests for
-							definitions, executions, and management.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.sfn && (

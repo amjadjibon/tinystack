@@ -12,6 +12,7 @@ tasks:
       - task test
       - task build
       - task ui:check
+      - task ui:test
 
   build:
     desc: "Build bin/tinystack with the web console built in (needs Node.js and pnpm)"
@@ -130,6 +131,13 @@ tasks:
     cmds:
       - pnpm check
       - pnpm exec tsc --noEmit
+
+  ui:test:
+    desc: "Test console session signing and credential boundaries"
+    dir: ui
+    deps: [ui:install]
+    cmds:
+      - pnpm test
 
   up:
     desc: "Run TinyStack (:4566, console on :4567) with Docker Compose"

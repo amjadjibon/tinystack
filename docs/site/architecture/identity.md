@@ -105,7 +105,10 @@ Permission checks run on the external AWS-operation gateway. In-process service 
 workers and CloudFormation provisioning bypass them; the caller's CloudFormation stack operation
 itself is checked. Local console actions retain their administrative catalog caller path: unsigned
 parse-mode actions bypass IAM, and signed verify-mode console API actions retain existing SigV4
-and scope checks. The browser console remains read-only in verify mode. Discovery, OAuth, registry,
+and scope checks. In verify mode, browser forms remain read-only until a root console session is connected.
+Sessions validate configured or temporary root credentials, sign actions for that account and keep
+credentials in memory only. User/role credentials are rejected by the session handshake because
+console actions are administrative and bypass IAM policy evaluation. Discovery, OAuth, registry,
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
 Resource-based policies, permissions boundaries, session policies, organization SCPs/RCPs,

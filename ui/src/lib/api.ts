@@ -1,5 +1,6 @@
 // The console uses TinyStack's own /_tinystack/ endpoints.
 // In development Vite proxies them to the running server.
+import { consoleActionFetch } from "./session";
 
 export type Health = {
 	status: string;
@@ -128,6 +129,7 @@ export const api = {
 	actionCapabilities: async (): Promise<{
 		account: string;
 		accounts?: string[];
+		signing_names?: Record<string, string>;
 		region: string;
 		iam: boolean;
 		s3: boolean;
@@ -153,11 +155,12 @@ export const api = {
 		input: Record<string, unknown>,
 		region?: string,
 	): Promise<T> => {
-		const response = await fetch(`${base}/actions`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ service, operation, account, region, input }),
-		});
+		const response = await consoleActionFetch(
+			JSON.stringify({ service, operation, account, region, input }),
+			service,
+			account,
+			region,
+		);
 		const body = await response.json();
 		if (!response.ok) {
 			throw new Error(

@@ -9,15 +9,28 @@ curl -fsS http://127.0.0.1:4566/_tinystack/deliveries
 Build with `task build` and open `http://127.0.0.1:4567` for the Cloudscape console. It shows resources,
 resource details, recent requests, deliveries and metrics from these same diagnostic handlers.
 
+## Signed console sessions
+
+With `identity.mode: verify`, choose **Console session** in the top bar. Enter the account ID,
+a configured root access key from `identity.secret_keys`, its secret and an optional session token
+for temporary root credentials. TinyStack validates a signed GetCallerIdentity request before
+enabling the account's forms. Other accounts remain read-only until their credentials are connected.
+
+These are administrative root sessions: console actions bypass IAM permission policies. IAM user
+and role credentials cannot connect; use the AWS CLI or SDK to test their permissions. Credentials
+stay in the current tab's memory and are never saved in browser storage. **Disconnect** or reload
+the page to end the session. Authentication failures on an active session disconnect it; ordinary
+validation/service failures leave it connected. Canceling a pending connection does not activate it.
+
 Open **IAM** for account selection and dedicated user, user group, role and policy pages. Create and edit
 identities, attach or detach policies, manage group membership, edit trust policies and tags, and create,
 deactivate or delete access keys. A new access-key secret is shown once; copy it before closing the dialog.
 Policy edits create a new default version, and the policy versions tab lets you switch defaults or delete
 older versions. Deletion conflicts show the dependencies that must be removed first.
 
-IAM forms are available in the default `identity.mode: parse`. With `identity.mode: verify`, the console shows
-read-only IAM pages; use signed AWS CLI or SDK calls for management. TinyStack stores permission policies but
-does not evaluate them for general service access. Role pages manage EC2 instance profiles; OIDC providers use the AWS API.
+IAM forms are available in `identity.mode: parse`, or with a signed root console session in `verify` mode.
+Identity policies are evaluated for AWS API requests when `identity.authorization` enables them. Console actions
+are administrative and bypass those checks. Role pages manage EC2 instance profiles; OIDC providers use the AWS API.
 User creation can select groups, copy permissions from another user, or attach policies directly. Group creation selects
 users and policies together; role creation selects a trusted entity before permissions. Permission tables distinguish
 direct policies from inherited group policies.
@@ -28,7 +41,7 @@ notifications, website configuration, policy, ownership, public access blocking,
 Console uploads are limited to 1 MiB per file; use the CLI or SDK for larger files. Bucket Empty removes all
 versions, delete markers and unfinished multipart uploads after typed confirmation. Bucket Delete requires an
 empty bucket. Failed workflows retain completed changes and can retry remaining steps while the dialog stays open.
-In verify mode only S3 bucket inventory is available; use signed CLI/SDK requests for objects and settings.
+In verify mode, connect a root console session for objects and settings; bucket inventory remains available without one.
 
 Open **SQS** for standard and FIFO queue creation and configuration in the account and Region selected in the
 shared top bar. Queue details include message counts, encryption settings, dead-letter targets, permissions and tags.
@@ -40,7 +53,7 @@ The **Dead-letter queue redrive** tab lists source queues and standard-queue mov
 messages to their original source queues or choose another destination; cancel a running task to stop further moves.
 Queue purge and deletion require typing the queue name. Purge clears all messages immediately while retaining settings,
 and repeat purges within 60 seconds fail. FIFO deduplication history is retained. Tags and policies use JSON editors;
-queue access policies are stored but not evaluated. In verify mode only queue inventory is available in the console.
+queue access policies are stored but not evaluated. In verify mode, connect a root console session for queue and message management.
 
 Open **SNS** for standard and FIFO topics, topic configuration, access policies and tags. Topic and subscription
 lists use the shared account and Region selectors. Create SQS, Lambda, HTTP/HTTPS, email or SMS subscriptions;
@@ -53,7 +66,7 @@ recorded locally. The topic’s **Deliveries** tab includes confirmation request
 **Publish message** supports subjects, binary attributes (base64), protocol-specific JSON payloads and FIFO group and
 deduplication IDs. Successful publication reports acceptance; check delivery history for subscriber outcomes.
 Filtered messages produce no delivery records. History is bounded and resets on restart. In verify mode SNS inventory
-and delivery inspection are available, with management through signed CLI/SDK requests.
+and delivery inspection remain available without a session; connect a root session for management.
 
 Open **Lambda** for function management in the selected account and Region. Create a ZIP or container-image
 function with an IAM execution role, runtime, handler, architecture, memory, timeout, environment variables and tags.
@@ -100,8 +113,8 @@ position, batch size, retry count and partial batch failure reporting. Changing 
 existing mappings remain attached to their original stream. Enabled mappings consume changes and require Docker for
 function execution. Table deletion leaves mappings in place; disable or delete them when retiring a stream.
 
-In verify mode only DynamoDB table inventory is available in the console. Use signed CLI/SDK requests for item reads
-and management. Backups, restores, exports, PartiQL, batch and transaction operations use the AWS API. Multi-step
+In verify mode, connect a root console session for item reads and management. Backups, restores, exports,
+PartiQL, batch and transaction operations use the AWS API. Multi-step
 settings changes retain completed steps after a failure and allow retrying the remaining work while the dialog is open.
 
 Open **EventBridge** to create and edit custom event buses, browse the implicit default bus, and manage rules in the

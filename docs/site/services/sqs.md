@@ -25,7 +25,7 @@ See the [implemented feature catalogue](catalogue.md#sqs) for this service's cap
 - No message groups on standard queues or FIFO message move tasks.
 - DeleteQueue does not enforce the AWS name-reuse delay.
 - Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained.
-- Console management requires parse mode; verify mode exposes queue inventory and requires signed CLI or SDK requests for actions.
+- In verify mode, console management requires an authenticated root console session; without a session only queue inventory is available.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

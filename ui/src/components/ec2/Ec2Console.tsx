@@ -44,7 +44,7 @@ export function Ec2Console({
 	search: { section: Ec2Section; id: string; vpc: string };
 	area: "ec2" | "vpc";
 }) {
-	const { account, region, inventory, capabilities } = useScope(),
+	const { canWrite, account, region, inventory, capabilities } = useScope(),
 		navigate = useNavigate();
 	const scope: Ec2Scope = {
 			account,
@@ -79,7 +79,7 @@ export function Ec2Console({
 	}, [account, region]);
 	const enabled =
 		!!capabilities.data?.ec2 &&
-		!capabilities.data.requires_signature &&
+		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
 	const resources = (inventory.data ?? []).filter(
@@ -183,10 +183,10 @@ export function Ec2Console({
 					{(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="Management is read-only">
-							This server requires signed requests. Inventory is available here;
-							use signed AWS CLI or SDK requests for detailed reads and changes.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.ec2 && (

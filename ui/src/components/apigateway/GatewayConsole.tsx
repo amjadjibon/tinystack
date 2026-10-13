@@ -73,7 +73,7 @@ export function GatewayConsole({
 	const scopeId = `${context.account}/${context.region}/${kind}`;
 	const enabled =
 		!!context.capabilities.data?.[kind] &&
-		!context.capabilities.data.requires_signature &&
+		context.canWrite &&
 		/^\d{12}$/.test(context.account) &&
 		validRegion(context.region);
 	return (
@@ -107,7 +107,7 @@ function Workspace({
 	notice: string;
 	setNotice: (m: string) => void;
 }) {
-	const { inventory, capabilities } = useScope(),
+	const { canWrite, inventory, capabilities } = useScope(),
 		follow = useFollow(),
 		navigate = useNavigate(),
 		mounted = useRef(true),
@@ -213,10 +213,10 @@ function Workspace({
 					{(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info">
-							API inventory is available here. Use signed CLI/SDK requests for
-							API management and inspection on this server.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data[scope.kind] && (

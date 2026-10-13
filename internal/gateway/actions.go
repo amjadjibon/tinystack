@@ -23,6 +23,10 @@ import (
 
 const consoleIAM = "iam"
 
+const consoleSTS = "sts"
+
+const opGetCallerIdentity = "GetCallerIdentity"
+
 const consoleS3 = "s3"
 
 const consoleSQS = "sqs"
@@ -236,10 +240,16 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		}
 
 		slices.Sort(accounts)
+		signingNames := make(map[string]string, len(s.services))
+		for name, service := range s.services {
+			signingNames[name] = service.SigningName
+		}
+
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
-			"accounts": slices.Compact(accounts),
-			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
+			"accounts":      slices.Compact(accounts),
+			"signing_names": signingNames,
+			consoleIAM:      iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			consoleLambda: lambda, consoleLogs: logs,
 			consoleDynamoDB:       dynamodb,
 			consoleEventBridge:    eventbridge,
@@ -310,6 +320,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 
 	var operations []string
 	switch in.Service {
+	case consoleSTS:
+		operations = []string{opGetCallerIdentity}
 	case consoleIAM:
 		operations = consoleIAMOperations
 	case consoleS3:
@@ -356,6 +368,11 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if in.Service == consoleSTS && s.cfg.Identity.Mode != config.IdentityVerify {
+		s.consoleFail(w, c, awserror.Validation("Signed console sessions require identity.mode: verify."))
+		return
+	}
+
 	regional := in.Service != consoleIAM
 	if regional && !consoleRegion.MatchString(in.Region) {
 		s.consoleFail(
@@ -388,6 +405,15 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			(regional && c.meta.Region != in.Region) {
 			s.consoleFail(w, c, &awserror.Error{
 				Code: accessDenied, Message: "The action scope must match the signed service, account and region.",
+				StatusCode: http.StatusForbidden,
+			})
+			return
+		}
+
+		if in.Service == consoleSTS && c.credentials != nil &&
+			c.credentials.Principal.Kind != request.PrincipalRoot {
+			s.consoleFail(w, c, &awserror.Error{
+				Code: accessDenied, Message: "The administrative console requires account root credentials.",
 				StatusCode: http.StatusForbidden,
 			})
 			return

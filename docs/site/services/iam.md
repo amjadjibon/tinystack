@@ -24,7 +24,7 @@ See the [implemented feature catalogue](catalogue.md#iam) for this service's cap
 - No resource-policy enforcement, permissions boundaries, session policies, SCPs/RCPs, cross-account authorization or policy simulation; non-core services use wildcard resource evaluation.
 - No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries.
 - No access-key usage tracking.
-- IAM console forms require parse mode; verify mode keeps the UI read-only and requires signed API requests.
+- In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions.
 - OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/config"
 )
 
@@ -30,7 +31,8 @@ func TestConsoleCapabilitiesIncludeConfiguredAccounts(t *testing.T) {
 			cfg.Accounts = map[string]config.AccountConfig{
 				"222222222222": {}, "111111111111": {},
 			}
-			s, err := New(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			s, err := New(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)),
+				catalog.Service{Name: "cloudwatch", SigningName: "monitoring"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -38,8 +40,9 @@ func TestConsoleCapabilitiesIncludeConfiguredAccounts(t *testing.T) {
 			response := httptest.NewRecorder()
 			s.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/_tinystack/actions", http.NoBody))
 			var capabilities struct {
-				Account  string
-				Accounts []string
+				SigningNames map[string]string `json:"signing_names"`
+				Account      string
+				Accounts     []string
 			}
 
 			if err := json.Unmarshal(response.Body.Bytes(), &capabilities); err != nil {
@@ -54,6 +57,10 @@ func TestConsoleCapabilitiesIncludeConfiguredAccounts(t *testing.T) {
 
 			if strings.Contains(response.Body.String(), "private-") {
 				t.Fatal("capabilities exposed access-key mappings")
+			}
+
+			if capabilities.SigningNames["cloudwatch"] != "monitoring" {
+				t.Fatalf("incorrect signing names: %v", capabilities.SigningNames)
 			}
 		})
 	}

@@ -31,6 +31,7 @@ import {
 	type Preferences,
 } from "#/lib/theme";
 import { useFollow } from "#/lib/useFollow";
+import { ConsoleSessionDialog } from "./ConsoleSession";
 import { ServiceIcon } from "./ServiceIcon";
 
 const headerID = "console-header";
@@ -45,6 +46,7 @@ export function ConsoleHeader() {
 	const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
 	const [query, setQuery] = useState("");
 	const scope = useScope();
+	const [sessionOpen, setSessionOpen] = useState(false);
 	const names = consoleServiceNames(data?.services ?? []);
 	const favorites = useFavorites().filter((name) => names.includes(name));
 	const [scopeDialog, setScopeDialog] = useState<"account" | "region" | null>(
@@ -151,6 +153,16 @@ export function ConsoleHeader() {
 					</div>
 				}
 				utilities={[
+					...(scope.capabilities.data?.requires_signature || scope.session
+						? [
+								{
+									type: "button" as const,
+									text: scope.session ? "Session connected" : "Console session",
+									iconName: "lock-private" as const,
+									onClick: () => setSessionOpen(true),
+								},
+							]
+						: []),
 					{
 						type: "button",
 						iconName: "command-prompt",
@@ -237,6 +249,9 @@ export function ConsoleHeader() {
 					))}
 				</nav>
 			)}
+			{sessionOpen ? (
+				<ConsoleSessionDialog onDismiss={() => setSessionOpen(false)} />
+			) : null}
 			{scopeDialog && (
 				<Modal
 					visible

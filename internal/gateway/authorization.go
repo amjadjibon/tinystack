@@ -60,7 +60,7 @@ func (s *Server) authorize(ctx context.Context, r *http.Request, c *call, op *ca
 	// These are authentication operations, not permission-controlled APIs:
 	// https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html
 	// https://docs.aws.amazon.com/STS/latest/APIReference/API_GetSessionToken.html
-	if c.meta.Service == "sts" && (op.Name == "GetCallerIdentity" || op.Name == "GetSessionToken") {
+	if c.meta.Service == "sts" && (op.Name == opGetCallerIdentity || op.Name == "GetSessionToken") {
 		return nil
 	}
 

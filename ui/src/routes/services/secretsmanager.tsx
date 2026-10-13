@@ -38,10 +38,10 @@ export const Route = createFileRoute("/services/secretsmanager")({
 });
 function SecretsManagerPage() {
 	const search = Route.useSearch(),
-		{ account, region, inventory, capabilities } = useScope();
+		{ canWrite, account, region, inventory, capabilities } = useScope();
 	const enabled =
 		!!capabilities.data?.secretsmanager &&
-		!capabilities.data.requires_signature &&
+		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
 	const scope = { account, region, secret: search.secret };
@@ -75,11 +75,10 @@ function SecretsManagerPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="Secrets Manager management is read-only">
-							Secret metadata inventory is available here. Use signed AWS CLI or
-							SDK requests for values, versions, rotation, policies, and
-							management.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{capabilities.data && !capabilities.data.secretsmanager && (

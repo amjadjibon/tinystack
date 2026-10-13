@@ -22,7 +22,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -119,7 +119,7 @@
         "Generated in-process PutObject/UploadPart byte-slice shapes, in-process reads (e.g. Lambda runtime Object() helper), and console download and preview buffers still buffer bytes in memory",
         "Verify-mode SigV4 authentication spools upload payloads to temporary files only when verifying signed hexadecimal or empty payload hashes; UNSIGNED-PAYLOAD, supported unsigned-trailer forms (STREAMING-UNSIGNED-PAYLOAD-TRAILER), and usual presigned S3 uploads stream without that spool",
         "Signed aws-chunked payloads (STREAMING-AWS4-HMAC-SHA256-*) remain unsupported and return NotImplemented",
-        "Console uploads are limited to 1 MiB per file; object browsing and management require parse mode, while verify mode exposes bucket inventory only; storage.s3_max_object_bytes defaults to 256 MiB and can be set up to 5 GiB for object PUTs, parts and completed multipart objects"
+        "Console uploads are limited to 1 MiB per file; object browsing and management in verify mode require an authenticated root console session; storage.s3_max_object_bytes defaults to 256 MiB and can be set up to 5 GiB for object PUTs, parts and completed multipart objects"
       ],
       "execution": "Local behavior",
       "package": "s3"
@@ -198,7 +198,7 @@
         "No message groups on standard queues or FIFO message move tasks",
         "DeleteQueue does not enforce the AWS name-reuse delay",
         "Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained",
-        "Console management requires parse mode; verify mode exposes queue inventory and requires signed CLI or SDK requests for actions"
+        "In verify mode, console management requires an authenticated root console session; without a session only queue inventory is available"
       ],
       "execution": "Local behavior",
       "package": "sqs"
@@ -219,7 +219,7 @@
         "Email and SMS are recorded, not sent to providers",
         "No mobile application or Firehose subscriptions, delivery retries or message signatures",
         "Topic policies are stored but not evaluated; no cross-account subscriptions",
-        "Console management requires parse mode; verify mode exposes topic/subscription inventory and delivery history and requires signed CLI or SDK requests for actions"
+        "In verify mode, console management requires an authenticated root console session; without a session topic/subscription inventory and delivery history remain available"
       ],
       "execution": "Local behavior",
       "package": "sns"
@@ -441,7 +441,7 @@
         "Throttling, quotas, caching, canaries and authorizer caching are not enforced",
         "No mutual TLS, import/export or general policy evaluation",
         "Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms",
-        "Console management requires identity.mode: parse; verify mode retains resource inventory and requires signed CLI/SDK requests",
+        "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
         "Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64"
       ],
       "execution": "Local behavior",
@@ -462,7 +462,7 @@
         "No VPC links, parameter mappings, throttling, caching or authorizer caching",
         "Only the selected HTTP API management members are supported",
         "Custom domains and API mappings use the AWS API rather than console forms",
-        "Console management requires identity.mode: parse; verify mode retains resource inventory and requires signed CLI/SDK requests",
+        "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
         "Console test requests execute deployed snapshots; automatic stages publish draft changes immediately, manual stages require a new deployment. AWS_IAM tests require signed execute-api CLI/SDK requests. Console action JSON is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64"
       ],
       "execution": "Local behavior",
@@ -558,7 +558,7 @@
         "No resource-policy enforcement, permissions boundaries, session policies, SCPs/RCPs, cross-account authorization or policy simulation; non-core services use wildcard resource evaluation",
         "No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries",
         "No access-key usage tracking",
-        "IAM console forms require parse mode; verify mode keeps the UI read-only and requires signed API requests",
+        "In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions",
         "OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console"
       ],
       "execution": "Local behavior",
@@ -777,7 +777,7 @@
         "JSONPath filters and recursive descent are outside the subset",
         "Running executions abort after restart; activity queues and task tokens are in memory",
         "Express execution results are not retained; console results last until leaving or reloading the page",
-        "Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console shows read-only inventory",
+        "Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console management requires an authenticated root console session",
         "Reset does not stop executions already running"
       ],
       "execution": "Local behavior",

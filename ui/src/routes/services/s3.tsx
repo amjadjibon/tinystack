@@ -48,7 +48,7 @@ export const Route = createFileRoute("/services/s3")({
 function S3Page() {
 	const search = Route.useSearch();
 	const navigate = useNavigate();
-	const { account, region, inventory, capabilities } = useScope();
+	const { canWrite, account, region, inventory, capabilities } = useScope();
 	const scope = useMemo(
 		() => ({ account, region, bucket: search.bucket }),
 		[account, region, search.bucket],
@@ -58,11 +58,10 @@ function S3Page() {
 	useEffect(() => setNotice(""), [account, region]);
 	const enabled =
 		!!capabilities.data?.s3 &&
-		!capabilities.data.requires_signature &&
+		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
-	const readable =
-		!!capabilities.data?.s3 && !capabilities.data.requires_signature;
+	const readable = !!capabilities.data?.s3 && canWrite;
 	const go = (next: S3Scope, prefix = "", key = "", version = "") =>
 		navigate({ to: "/services/s3", search: { ...next, prefix, key, version } });
 	const refresh = (message: string) => {
@@ -120,10 +119,10 @@ function S3Page() {
 							{inventory.error || capabilities.error}
 						</Alert>
 					)}
-					{capabilities.data?.requires_signature && (
+					{capabilities.data?.requires_signature && !canWrite && (
 						<Alert type="info" header="S3 management is read-only">
-							This server requires signed requests. Bucket inventory is
-							available here; use the AWS CLI or SDK for objects and settings.
+							Connect a root session for the selected account using Console
+							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
 					{search.bucket ? (
