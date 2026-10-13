@@ -10,7 +10,13 @@ Extend records-only groups and sampling rules to trace ingestion, telemetry proc
 
 ## Proposed scope
 
-- [ ] PutTraceSegments\n- [ ] PutTelemetryRecords\n- [ ] GetTraceSummaries\n- [ ] BatchGetTraces\n- [ ] GetServiceGraph\n- [ ] GetSamplingTargets\n- [ ] PutEncryptionConfig and PutResourcePolicy
+- [ ] PutTraceSegments
+- [ ] PutTelemetryRecords
+- [ ] GetTraceSummaries
+- [ ] BatchGetTraces
+- [ ] GetServiceGraph
+- [ ] GetSamplingTargets
+- [ ] PutEncryptionConfig and PutResourcePolicy
 
 ## Integration decisions
 

@@ -2113,7 +2113,7 @@
       "title": "AWS X-Ray trace ingestion and telemetry runtime",
       "state": "Proposed",
       "slice": "Extend records-only groups and sampling rules to trace ingestion, telemetry processing, and service map analysis.",
-      "features": "- [ ] PutTraceSegments\\n- [ ] PutTelemetryRecords\\n- [ ] GetTraceSummaries\\n- [ ] BatchGetTraces\\n- [ ] GetServiceGraph\\n- [ ] GetSamplingTargets\\n- [ ] PutEncryptionConfig and PutResourcePolicy",
+      "features": "- [ ] PutTraceSegments\n- [ ] PutTelemetryRecords\n- [ ] GetTraceSummaries\n- [ ] BatchGetTraces\n- [ ] GetServiceGraph\n- [ ] GetSamplingTargets\n- [ ] PutEncryptionConfig and PutResourcePolicy",
       "integration": "The current X-Ray API persists group and sampling rule configuration records only; trace ingestion and graph generation are excluded."
     },
     "opensearch-runtime": {
