@@ -29,10 +29,11 @@ fake runtimes by default; they do not contact AWS.
 ./bin/tinystack-headless start --config examples/tinystack.yaml
 ```
 
-`task dev -- --config examples/tinystack.yaml` runs the server with the console through
+`task dev` runs the server with the console and `examples/tinystack.yaml` through
 [air](https://github.com/air-verse/air) (a Go tool in `go.mod`, configured by `.air.toml`), which rebuilds
-and restarts it when a Go or console source file changes. The console is rebuilt only when something under `ui/`
-changed.
+and restarts it when a Go or console source file, or the example config, changes. The console is rebuilt only
+when something under `ui/` changed. Pass overrides with `task dev -- --port 4566` or choose another config with
+`task dev -- --config path/to/config.yaml`.
 
 In another terminal, or after stopping the server:
 
@@ -48,7 +49,7 @@ Use [test selection](testing.md) for changes outside IoT.
 | Task | Result |
 | --- | --- |
 | `task build:headless` | `bin/tinystack-headless`, no UI dependency |
-| `task dev` | Server with the console, rebuilt and restarted on Go or console changes (air) |
+| `task dev` | Server with the console and example config, rebuilt on Go, console or config changes (air) |
 | `task build` | Console build embedded in `bin/tinystack` |
 | `task build:tools` | Local CLI wrappers and aliases |
 | `task generate` | Reproduce generated AWS APIs |

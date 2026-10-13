@@ -25,7 +25,7 @@ tasks:
       - go build -trimpath -ldflags="-s -w" -o bin/tinystack-headless ./cmd/tinystack
 
   dev:
-    desc: "Run TinyStack with the console and rebuild it on Go or console changes (task dev -- --port 4566)"
+    desc: "Run TinyStack with examples/tinystack.yaml and rebuild on Go, console or config changes (task dev -- --port 4566)"
     cmds:
       - go tool air -- {{.CLI_ARGS}}
 

@@ -5,11 +5,21 @@ tmp_dir = "tmp"
 
 [build]
 cmd = "task ui:build && go build -tags console -o tmp/tinystack ./cmd/tinystack"
-entrypoint = ["tmp/tinystack", "start"]
+entrypoint = ["tmp/tinystack", "start", "--config", "examples/tinystack.yaml"]
 include_ext = ["go", "ts", "tsx", "css", "svg"]
+include_file = ["examples/tinystack.yaml"]
 exclude_dir = [
-  ".git", ".task", ".venv-docs", "bin", "docs", "site", "tests", "tmp",
-  "ui/.tanstack", "ui/dist", "ui/node_modules",
+  ".git",
+  ".task",
+  ".venv-docs",
+  "bin",
+  "docs",
+  "site",
+  "tests",
+  "tmp",
+  "ui/.tanstack",
+  "ui/dist",
+  "ui/node_modules",
 ]
 exclude_file = ["ui/src/routeTree.gen.ts"]
 exclude_regex = ["_test\\.go$"]

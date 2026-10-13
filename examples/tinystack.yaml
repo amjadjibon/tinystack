@@ -1,23 +1,19 @@
 server:
   host: 127.0.0.1
   port: 4566
-  # The web console (task build); 0 turns it off.
   console_port: 4567
 defaults:
   account: "000000000000"
   region: us-east-1
 identity:
-  # parse maps access keys to accounts without checking signatures; verify also
-  # requires SigV4 signatures from the keys in secret_keys.
   mode: parse
+  authorization: enforce
   accounts:
-    test: "000000000000"
+    test-a: "000000000000"
     team-b: "111111111111"
 storage:
-  # memory loses state on exit; persistent keeps it in <path>/state.db.
-  mode: memory
-  # mode: persistent
-  # path: ~/.tinystack
+  mode: persistent
+  path: ~/.tinystack
 ecs:
   # records keeps ECS tasks as records; docker also runs their containers.
   containers: records
