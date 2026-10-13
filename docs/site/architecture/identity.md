@@ -38,7 +38,7 @@ without general enforcement. Separate features evaluate narrower policies:
 IoT callers without a device certificate and without attached IoT policies can be more permissive than AWS
 on the separate MQTT and execution endpoint paths. Gateway IAM authorization covers registered AWS API
 operations; it does not add IAM checks to these separate endpoint flows. See [IoT Core](../services/iot.md) for connection limits.
-STS web identity token signatures are not checked by the STS implementation.
+In `identity.mode: verify`, STS verifies web identity token signatures against the issuer's published keys (or the Cognito identity pool's own key); parse mode trusts the token's claims. [Console single sign-on](../guides/sso.md) signs people in through an OpenID Connect provider and gives them role sessions that this authorization applies to.
 
 ## IAM authorization
 
@@ -103,12 +103,12 @@ DynamoDB transactions and PartiQL select per-item actions; KMS re-encryption che
 
 Permission checks run on the external AWS-operation gateway. In-process service calls, background
 workers and CloudFormation provisioning bypass them; the caller's CloudFormation stack operation
-itself is checked. Local console actions retain their administrative catalog caller path: unsigned
-parse-mode actions bypass IAM, and signed verify-mode console API actions retain existing SigV4
-and scope checks. In verify mode, browser forms remain read-only until a root console session is connected.
-Sessions validate configured or temporary root credentials, sign actions for that account and keep
-credentials in memory only. User/role credentials are rejected by the session handshake because
-console actions are administrative and bypass IAM policy evaluation. Discovery, OAuth, registry,
+itself is checked. Console actions keep the SigV4 and scope checks of verify mode; unsigned parse-mode
+actions and root credentials bypass IAM, and every other signed principal, including a person signed in through
+[console single sign-on](../guides/sso.md), is evaluated like an AWS API call. In verify mode, browser forms
+remain read-only until a root or SSO console session is connected. Sessions sign actions for their account and
+keep credentials in memory only. The access-key session handshake accepts root credentials only; IAM user and
+ordinary role credentials connect through single sign-on instead. Discovery, OAuth, registry,
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
 Resource-based policies, permissions boundaries, session policies, organization SCPs/RCPs,

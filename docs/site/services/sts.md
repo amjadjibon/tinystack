@@ -21,7 +21,7 @@ See the [implemented feature catalogue](catalogue.md#sts) for this service's cap
 
 ## Limitations and future work
 
-- Web identity token signatures are not checked by STS.
+- Web identity token signatures are verified only in `identity.mode: verify`, and only RS256; parse mode trusts the claims.
 - No MFA, SAML, federation tokens, session tags or session policies.
 - Temporary credentials used to create Lambda functions do not provide a usable runtime secret.
 
@@ -61,5 +61,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/sts)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/sts/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/sts.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
-- SDK integration examples: [sts_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sts_test.go), [sts_web_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sts_web_test.go).
+- SDK integration examples: [sts_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sts_test.go), [sts_web_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sts_web_test.go), [sts_web_verify_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sts_web_verify_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

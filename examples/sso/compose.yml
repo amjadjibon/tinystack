@@ -1,0 +1,115 @@
+# TinyStack console single sign-on with Authelia. DEVELOPMENT ONLY: every secret here is public.
+#
+#   cd examples/sso && docker compose up --build
+#
+# Open http://127.0.0.1:4567 (not localhost) and choose "Sign in with SSO". Sign in as
+#   dev   / dev-dev-password     (S3 and SQS only)       or
+#   admin / admin-dev-password   (administrator)
+# Your browser must accept the certificate of https://auth.tinystack.localhost:9443 once; see
+# docs/site/guides/sso.md. docker compose down -v resets everything.
+name: tinystack-sso
+
+services:
+  # The repository's image, built once so that the AWS CLI can be added on top.
+  tinystack-base:
+    build:
+      context: ../..
+    image: tinystack-base:sso-example
+    entrypoint: ["true"]
+    restart: "no"
+
+  tinystack:
+    build:
+      context: .
+      additional_contexts:
+        base: service:tinystack-base
+    command: ["start", "--config", "/etc/tinystack.yaml"]
+    environment:
+      # Trust the CA that signs Authelia's certificate (Caddy's internal CA).
+      SSL_CERT_FILE: /ca/root.crt
+    configs:
+      - source: tinystack
+        target: /etc/tinystack.yaml
+    secrets:
+      - oidc-client-secret
+    volumes:
+      - tinystack-data:/data
+      - ./init:/etc/tinystack/init:ro
+      - ca:/ca:ro
+    ports:
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4567:4567"
+    depends_on:
+      ca:
+        condition: service_completed_successfully
+
+  # Generates Authelia's OpenID Connect signing key once, so no private key lives in the repository.
+  keygen:
+    image: authelia/authelia:4.39.28
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        [ -f /keys/private.pem ] || authelia crypto pair rsa generate --bits 2048 --directory /keys
+    volumes:
+      - authelia-keys:/keys
+    restart: "no"
+
+  authelia:
+    image: authelia/authelia:4.39.28
+    environment:
+      X_AUTHELIA_CONFIG_FILTERS: template
+    volumes:
+      - ./authelia:/config
+      - authelia-data:/data
+      - authelia-keys:/keys:ro
+    expose:
+      - "9091"
+    depends_on:
+      keygen:
+        condition: service_completed_successfully
+
+  # TLS in front of Authelia. Containers reach it as auth.tinystack.localhost, the same name and port
+  # the browser uses, so the issuer is the same everywhere.
+  caddy:
+    image: caddy:2.11.7-alpine
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    ports:
+      - "127.0.0.1:9443:9443"
+    networks:
+      default:
+        aliases:
+          - auth.tinystack.localhost
+    depends_on:
+      - authelia
+
+  # Caddy keeps its CA private to root; this copies the public root certificate where TinyStack
+  # (which does not run as root) can read it.
+  ca:
+    image: caddy:2.11.7-alpine
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        until [ -f /data/caddy/pki/authorities/local/root.crt ]; do sleep 1; done;
+        cp /data/caddy/pki/authorities/local/root.crt /ca/root.crt && chmod 644 /ca/root.crt
+    volumes:
+      - caddy-data:/data:ro
+      - ca:/ca
+    depends_on:
+      - caddy
+
+configs:
+  tinystack:
+    file: ./tinystack.yaml
+
+secrets:
+  oidc-client-secret:
+    file: ./secrets/oidc-client-secret
+
+volumes:
+  tinystack-data:
+  authelia-data:
+  authelia-keys:
+  caddy-data:
+  ca:

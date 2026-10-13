@@ -22,6 +22,10 @@ stay in the current tab's memory and are never saved in browser storage. **Disco
 the page to end the session. Authentication failures on an active session disconnect it; ordinary
 validation/service failures leave it connected. Canceling a pending connection does not activate it.
 
+With [single sign-on](sso.md) configured, **Sign in with SSO** in the same dialog signs a person in through the identity
+provider. Their role's IAM policies then apply to every console action, and the request inspector, reset, fault and
+init endpoints need an administrator.
+
 Open **IAM** for account selection and dedicated user, user group, role and policy pages. Create and edit
 identities, attach or detach policies, manage group membership, edit trust policies and tags, and create,
 deactivate or delete access keys. A new access-key secret is shown once; copy it before closing the dialog.

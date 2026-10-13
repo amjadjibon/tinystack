@@ -1,0 +1,12 @@
+# TLS for Authelia, which refuses to run its portal over plain HTTP. Caddy's internal CA signs the
+# certificate; TinyStack trusts that CA through SSL_CERT_FILE (see compose.yml), and your browser
+# needs to accept it once (see the guide).
+{
+	local_certs
+	skip_install_trust
+}
+
+auth.tinystack.localhost:9443 {
+	tls internal
+	reverse_proxy authelia:9091
+}

@@ -1,0 +1,84 @@
+# Authelia as the OpenID Connect provider for TinyStack's console single sign-on.
+#
+# DEVELOPMENT ONLY: every secret below is public. Never reuse them. Authelia requires TLS for its
+# portal (HTTPS authelia_url and a session cookie domain with a dot that is not "localhost"), which
+# is why the Caddy proxy in compose.yml fronts it at https://auth.tinystack.localhost:9443.
+theme: 'auto'
+
+server:
+  address: 'tcp://:9091/'
+
+log:
+  level: 'info'
+
+authentication_backend:
+  file:
+    path: '/config/users.yml'
+
+access_control:
+  default_policy: 'one_factor'
+
+session:
+  secret: 'dev-only-session-secret-0123456789abcdef0123456789abcdef'
+  cookies:
+    - domain: 'tinystack.localhost'
+      authelia_url: 'https://auth.tinystack.localhost:9443'
+
+storage:
+  encryption_key: 'dev-only-storage-encryption-key-0123456789abcdef'
+  local:
+    path: '/data/db.sqlite3'
+
+notifier:
+  filesystem:
+    filename: '/data/notification.txt'
+
+identity_validation:
+  reset_password:
+    jwt_secret: 'dev-only-reset-password-secret-0123456789abcdef'
+
+identity_providers:
+  oidc:
+    hmac_secret: 'dev-only-oidc-hmac-secret-0123456789abcdef0123456789abcdef'
+    # The signing key, which the keygen service in compose.yml generates on first start. Loaded by the
+    # template filter that compose.yml turns on (X_AUTHELIA_CONFIG_FILTERS=template).
+    jwks:
+      - key_id: 'tinystack-dev'
+        algorithm: 'RS256'
+        use: 'sig'
+        key: {{ secret "/keys/private.pem" | mindent 10 "|" | msquote }}
+    # Authelia 4.39 sends claims in the ID token only when a claims policy asks for them. TinyStack
+    # reads the groups (and names the session after the email) from the ID token.
+    claims_policies:
+      tinystack:
+        id_token:
+          - 'groups'
+          - 'email'
+          - 'email_verified'
+          - 'preferred_username'
+          - 'name'
+    clients:
+      - client_id: 'tinystack-console'
+        client_name: 'TinyStack console'
+        # The hash of the development secret in secrets/oidc-client-secret (plain text, mounted into
+        # TinyStack as client_secret_file). Make another with:
+        #   authelia crypto hash generate pbkdf2 --variant sha512 --password '<secret>'
+        client_secret: '$pbkdf2-sha512$310000$X7H7OdTJ7d4h3yLMJZH.oA$b1aSkAiDbysceiaWYkoZCgJWQ3xblHrixPv8UE63VpTFhEfmyhqHLSGVI1UuhwpmaAmxtNiQBPAsqtkAfQ.S5A'
+        public: false
+        authorization_policy: 'one_factor'
+        consent_mode: 'implicit'
+        require_pkce: true
+        pkce_challenge_method: 'S256'
+        claims_policy: 'tinystack'
+        redirect_uris:
+          - 'http://127.0.0.1:4567/_tinystack/auth/callback'
+        scopes:
+          - 'openid'
+          - 'profile'
+          - 'email'
+          - 'groups'
+        token_endpoint_auth_method: 'client_secret_basic'
+        # "tinystack login" (command line sign-in) uses the device authorization flow.
+        grant_types:
+          - 'authorization_code'
+          - 'urn:ietf:params:oauth:grant-type:device_code'

@@ -81,6 +81,7 @@ nav:
       - Lambda hot reload: guides/lambda-hot-reload.md
       - IoT devices: guides/iot.md
       - Console and diagnostics: guides/diagnostics.md
+      - Console single sign-on: guides/sso.md
       - Init hooks and reset: guides/init-hooks.md
       - Fault injection: guides/fault-injection.md
       - Testcontainers for Go: guides/testcontainers.md

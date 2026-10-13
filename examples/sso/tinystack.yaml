@@ -1,0 +1,41 @@
+# TinyStack with console single sign-on through Authelia. DEVELOPMENT ONLY.
+server:
+  host: 0.0.0.0
+  port: 4566
+  console_port: 4567
+defaults:
+  account: "000000000000"
+  region: us-east-1
+identity:
+  # SSO requires verified signatures. These are the root keys of the two accounts: use them for the
+  # AWS CLI and for administrative requests (see the guide). They are public development values.
+  mode: verify
+  authorization: enforce
+  accounts:
+    dev-root-a: "000000000000"
+    dev-root-b: "111111111111"
+  secret_keys:
+    dev-root-a: dev-root-secret
+    dev-root-b: dev-root-secret
+storage:
+  mode: persistent
+  path: /data
+init:
+  dir: /etc/tinystack/init
+  localstack_dir: ""
+console:
+  auth:
+    oidc:
+      # Must be exactly the issuer Authelia advertises, reachable from this container and the browser.
+      issuer: https://auth.tinystack.localhost:9443
+      client_id: tinystack-console
+      client_secret_file: /run/secrets/oidc-client-secret
+      # Authelia accepts http redirects to loopback addresses; open the console at 127.0.0.1, not localhost.
+      redirect_url: http://127.0.0.1:4567/_tinystack/auth/callback
+      claim: groups
+      scopes: [profile, email, groups]
+      session_seconds: 3600
+      # Groups map to roles in this order; the first group a person has wins.
+      roles:
+        platform-admins: { role: "arn:aws:iam::000000000000:role/Admin", admin: true }
+        team-b-dev: { role: "arn:aws:iam::111111111111:role/Developer" }

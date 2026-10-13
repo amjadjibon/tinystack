@@ -42,6 +42,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `eks.clusters` | `records` | `records` or `k3s` |
 | `elasticache.caches` | `records` | `records` or `docker` |
 | `rds.instances` | `records` | `records` or `docker`; records mode has no SQL listener |
+| `console.auth.oidc` | Unset | Optional [single sign-on](../guides/sso.md) to the console through an OpenID Connect provider; requires `identity.mode: verify` and a console port |
 | `init.dir` | `/etc/tinystack/init` | Directory of `<stage>.d` init scripts; empty turns it off; missing is fine |
 | `init.localstack_dir` | `/etc/localstack/init` | LocalStack's script directory, read after `init.dir`; empty turns it off |
 | `iot.mqtts_port` | `0` | `0` disables TLS MQTT; otherwise a distinct port up to `65535` |
