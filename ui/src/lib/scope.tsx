@@ -127,6 +127,7 @@ function useScopeState() {
 			...new Set([
 				account,
 				capabilities.data?.account,
+				...(capabilities.data?.accounts ?? []),
 				...(inventory.data ?? []).map((r) => r.account),
 			]),
 		]

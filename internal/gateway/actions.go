@@ -226,8 +226,19 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, ec2 := s.services[consoleEC2]
 		_, secretsmanager := s.services[consoleSecretsManager]
 		_, rds := s.services[consoleRDS]
+		accounts := []string{s.cfg.Defaults.Account}
+		for _, account := range s.cfg.Identity.Accounts {
+			accounts = append(accounts, account)
+		}
+
+		for account := range s.cfg.Accounts {
+			accounts = append(accounts, account)
+		}
+
+		slices.Sort(accounts)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
+			"accounts": slices.Compact(accounts),
 			consoleIAM: iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			consoleLambda: lambda, consoleLogs: logs,
 			consoleDynamoDB:       dynamodb,

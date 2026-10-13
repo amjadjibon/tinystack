@@ -127,6 +127,7 @@ export function parseMetrics(text: string): MetricSeries[] {
 export const api = {
 	actionCapabilities: async (): Promise<{
 		account: string;
+		accounts?: string[];
 		region: string;
 		iam: boolean;
 		s3: boolean;
