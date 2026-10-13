@@ -13,6 +13,7 @@ var namespaces = map[string]string{
 	"redshift":               "Redshift",
 	"identitystore":          "IdentityStore",
 	"ssoadmin":               "SSO",
+	"codedeploy":             "CodeDeploy",
 	"applicationautoscaling": "ApplicationAutoScaling",
 	"acm":                    "CertificateManager",
 	"apigateway":             "ApiGateway",
