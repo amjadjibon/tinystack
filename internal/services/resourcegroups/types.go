@@ -11,6 +11,7 @@ import (
 // resource types a group can select.
 var namespaces = map[string]string{
 	"redshift":               "Redshift",
+	"memorydb":               "MemoryDB",
 	"identitystore":          "IdentityStore",
 	"ssoadmin":               "SSO",
 	"codedeploy":             "CodeDeploy",
@@ -76,6 +77,8 @@ var typeNames = map[string]string{
 	"redshift/cluster":                    "Cluster",
 	"redshift/subnetgroup":                "ClusterSubnetGroup",
 	"redshift/parametergroup":             "ClusterParameterGroup",
+	"memorydb/acl":                        "ACL",
+	"memorydb/subnetgroup":                "SubnetGroup",
 	"apigatewayv2/http-api":               "Api",
 	"appsync/graphql-api":                 "GraphQLApi",
 	"athena/workgroup":                    "WorkGroup",
