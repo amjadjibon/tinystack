@@ -205,6 +205,7 @@ var TerraformServices = []string{
 	"ram",
 	"redshift",
 	"xray",
+	"glacier",
 	"acmpca",
 	"verifiedpermissions",
 }

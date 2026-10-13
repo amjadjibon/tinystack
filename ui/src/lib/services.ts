@@ -52,6 +52,7 @@ const catalog: Record<string, ServiceInfo> = {
 	},
 	redshift: { title: "Amazon Redshift", category: analytics, icon: "redshift" },
 	s3tables: { title: "Amazon S3 Tables", category: storage, icon: "s3" },
+	glacier: { title: "Amazon S3 Glacier", category: storage, icon: "glacier" },
 	location: {
 		title: "Amazon Location Service",
 		category: frontend,

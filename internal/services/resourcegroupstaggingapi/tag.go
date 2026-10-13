@@ -229,6 +229,16 @@ var taggers = map[string]tagger{
 		"TagKeys",
 		names,
 	),
+	"glacier": operations(
+		"glacier",
+		"AddTagsToVault",
+		"RemoveTagsFromVault",
+		byName("VaultName", map[string]any{"AccountId": "-"}),
+		"Tags",
+		plain,
+		"TagKeys",
+		names,
+	),
 
 	"kafka": operations("kafka", "TagResource", "UntagResource", byARN("ResourceArn"), "Tags", plain, "TagKeys", names),
 	"mwaa":  operations("mwaa", "TagResource", "UntagResource", byARN("ResourceArn"), "Tags", plain, "tagKeys", names),

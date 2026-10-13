@@ -22387,5 +22387,112 @@
         "Tags"
       ]
     }
+  },
+  "glacier": {
+    "operations": [
+      "CreateVault",
+      "DescribeVault",
+      "ListVaults",
+      "DeleteVault",
+      "AddTagsToVault",
+      "RemoveTagsFromVault",
+      "ListTagsForVault",
+      "SetVaultAccessPolicy",
+      "GetVaultAccessPolicy",
+      "DeleteVaultAccessPolicy",
+      "SetVaultNotifications",
+      "GetVaultNotifications",
+      "DeleteVaultNotifications"
+    ],
+    "shapes": {
+      "CreateVaultInput": [
+        "accountId",
+        "vaultName"
+      ],
+      "CreateVaultOutput": [
+        "location"
+      ],
+      "DescribeVaultInput": [
+        "accountId",
+        "vaultName"
+      ],
+      "DescribeVaultOutput": [
+        "CreationDate",
+        "LastInventoryDate",
+        "NumberOfArchives",
+        "SizeInBytes",
+        "VaultARN",
+        "VaultName"
+      ],
+      "ListVaultsInput": [
+        "accountId",
+        "limit",
+        "marker"
+      ],
+      "ListVaultsOutput": [
+        "Marker",
+        "VaultList"
+      ],
+      "DeleteVaultInput": [
+        "accountId",
+        "vaultName"
+      ],
+      "AddTagsToVaultInput": [
+        "Tags",
+        "accountId",
+        "vaultName"
+      ],
+      "RemoveTagsFromVaultInput": [
+        "TagKeys",
+        "accountId",
+        "vaultName"
+      ],
+      "ListTagsForVaultInput": [
+        "accountId",
+        "vaultName"
+      ],
+      "ListTagsForVaultOutput": [
+        "Tags"
+      ],
+      "SetVaultAccessPolicyInput": [
+        "accountId",
+        "policy",
+        "vaultName"
+      ],
+      "GetVaultAccessPolicyInput": [
+        "accountId",
+        "vaultName"
+      ],
+      "GetVaultAccessPolicyOutput": [
+        "policy"
+      ],
+      "DeleteVaultAccessPolicyInput": [
+        "accountId",
+        "vaultName"
+      ],
+      "SetVaultNotificationsInput": [
+        "accountId",
+        "vaultName",
+        "vaultNotificationConfig"
+      ],
+      "GetVaultNotificationsInput": [
+        "accountId",
+        "vaultName"
+      ],
+      "GetVaultNotificationsOutput": [
+        "vaultNotificationConfig"
+      ],
+      "DeleteVaultNotificationsInput": [
+        "accountId",
+        "vaultName"
+      ],
+      "VaultAccessPolicy": [
+        "Policy"
+      ],
+      "VaultNotificationConfig": [
+        "Events",
+        "SNSTopic"
+      ]
+    }
   }
 }

@@ -51,6 +51,7 @@ import (
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
+	glacierapi "github.com/amjadjibon/tinystack/internal/aws/generated/glacier"
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	identitystoreapi "github.com/amjadjibon/tinystack/internal/aws/generated/identitystore"
@@ -135,6 +136,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
+	"github.com/amjadjibon/tinystack/internal/services/glacier"
 	"github.com/amjadjibon/tinystack/internal/services/glue"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/identitystore"
@@ -369,6 +371,7 @@ func build(
 	opensearchRecords := opensearch.New(store)
 	resolverRecords := route53resolver.New(store, network)
 	xrayRecords := xray.New(store)
+	glacierRecords := glacier.New(store)
 	identityStoreRecords := identitystore.New(store)
 	ssoAdminRecords := ssoadmin.New(store)
 	ramRecords := ram.New(store)
@@ -455,6 +458,7 @@ func build(
 		opensearchapi.Descriptor(opensearchRecords),
 		route53resolverapi.Descriptor(resolverRecords),
 		xrayapi.Descriptor(xrayRecords),
+		glacierapi.Descriptor(glacierRecords),
 		identitystoreapi.Descriptor(identityStoreRecords),
 		ssoadminapi.Descriptor(ssoAdminRecords),
 		ramapi.Descriptor(ramRecords),

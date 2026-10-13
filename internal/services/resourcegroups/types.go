@@ -42,6 +42,7 @@ var namespaces = map[string]string{
 	"eventbridge":            "Events",
 	"firehose":               "KinesisFirehose",
 	"glue":                   "Glue",
+	"glacier":                "Glacier",
 	"iam":                    "IAM",
 	"iot":                    "IoT",
 	"kinesis":                "Kinesis",

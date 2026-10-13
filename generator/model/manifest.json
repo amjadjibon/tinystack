@@ -151,6 +151,10 @@
       "path": "codegen/sdk-codegen/aws-models/firehose.json",
       "sha256": "ae58605d392b6571983abec05ebd3aa2884d3ab43d1b7d1dda6f30f03815f35e"
     },
+    "glacier": {
+      "path": "codegen/sdk-codegen/aws-models/glacier.json",
+      "sha256": "ef7ce872bcf7741fa0b739e503c590dbc6db84653daa71179f6886b066c19ce0"
+    },
     "glue": {
       "path": "codegen/sdk-codegen/aws-models/glue.json",
       "sha256": "d80948f07fba89a215cd9450ff5b3f45c4c31728e440975fccbcc042b9d70eb5"
