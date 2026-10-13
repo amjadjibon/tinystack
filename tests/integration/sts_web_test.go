@@ -15,7 +15,8 @@ import (
 )
 
 // webToken is an unsigned JWT with the claims a web identity token carries;
-// TinyStack does not verify its signature.
+// TinyStack in parse mode does not verify its signature. Verify mode is covered
+// by TestSTSWebIdentitySignatures.
 func webToken(t *testing.T, subject string, expires time.Time) string {
 	t.Helper()
 	payload, err := json.Marshal(map[string]any{

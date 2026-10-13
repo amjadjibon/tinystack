@@ -1,6 +1,6 @@
 // The console uses TinyStack's own /_tinystack/ endpoints.
 // In development Vite proxies them to the running server.
-import { consoleActionFetch } from "./session";
+import { adminFetch, consoleActionFetch } from "./session";
 
 export type Health = {
 	status: string;
@@ -85,8 +85,12 @@ export type MetricSeries = {
 
 const base = "/_tinystack";
 
+// The request inspector is administrative when SSO is configured.
 async function get(path: string): Promise<Response> {
-	const response = await fetch(base + path);
+	const response =
+		path === "/requests"
+			? await adminFetch(base + path)
+			: await fetch(base + path);
 	if (!response.ok) {
 		throw new Error(`${path}: ${response.status} ${await response.text()}`);
 	}
@@ -147,6 +151,7 @@ export const api = {
 		secretsmanager: boolean;
 		rds: boolean;
 		requires_signature: boolean;
+		sso?: { login_url: string };
 	}> => (await get("/actions")).json(),
 	action: async <T>(
 		service: string,
@@ -175,7 +180,10 @@ export const api = {
 	deliveries: () => list<Delivery>("/deliveries", "deliveries"),
 	metrics: async () => parseMetrics(await (await get("/metrics")).text()),
 	clear: async (log: "requests" | "deliveries") => {
-		const response = await fetch(`${base}/${log}`, { method: "DELETE" });
+		const response =
+			log === "requests"
+				? await adminFetch(`${base}/${log}`, "DELETE")
+				: await fetch(`${base}/${log}`, { method: "DELETE" });
 		if (!response.ok) throw new Error(`${log}: ${response.status}`);
 	},
 };

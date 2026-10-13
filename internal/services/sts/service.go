@@ -55,6 +55,8 @@ type Service struct {
 	// accounts maps the configured access keys to their accounts, and
 	// fallback is the account of the others; see UseAccounts.
 	accounts map[string]string
+	// verifier checks web identity tokens' signatures; see UseWebIdentityVerification.
+	verifier *webVerifier
 	fallback string
 }
 
@@ -78,7 +80,10 @@ type session struct {
 	// CognitoIdentity is the Cognito identity ID whose token
 	// AssumeRoleWithWebIdentity exchanged for the session.
 	CognitoIdentity string `json:",omitempty"`
-	Expires         int64  // Unix seconds
+	// Federated marks the session of a person who signed in to the console
+	// through the identity provider; see AssumeRoleForFederatedUser.
+	Federated bool  `json:",omitempty"`
+	Expires   int64 // Unix seconds
 }
 
 func (s *session) role() bool { return s.RoleARN != "" }
@@ -165,6 +170,7 @@ func (s *Service) Credentials(ctx context.Context, accessKey string) (request.Cr
 			Secret:          stored.Secret,
 			Token:           stored.Token,
 			CognitoIdentity: stored.CognitoIdentity,
+			Federated:       stored.Federated,
 			Principal:       stored.principal(),
 		}
 
@@ -354,6 +360,66 @@ func (s *Service) AssumeRoleForService(
 	})
 
 	return accessKey, secret, token, expires, err
+}
+
+// FederatedSession is what AssumeRoleForFederatedUser issued.
+type FederatedSession struct {
+	Expires         time.Time
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
+	ARN             string
+}
+
+// AssumeRoleForFederatedUser issues credentials for a role to a person whom
+// the console's identity provider has signed in; the provider's group mapping
+// stands in for the role's trust policy. The session is marked federated, which
+// lets it use the console. Other packages call it in-process; no API operation
+// reaches it. A role that does not exist is a NoSuchEntity error.
+func (s *Service) AssumeRoleForFederatedUser(
+	ctx context.Context,
+	roleARN, sessionName string,
+	seconds int64,
+) (*FederatedSession, error) {
+	if err := checkAssumeRole(&api.AssumeRoleRequest{RoleArn: &roleARN, RoleSessionName: &sessionName}); err != nil {
+		return nil, err
+	}
+
+	role, exists, err := s.roles.RoleByARN(ctx, roleARN)
+	switch {
+	case err != nil:
+		return nil, err
+	case !exists:
+		return nil, awserror.New("NoSuchEntity", "The role "+roleARN+" does not exist.")
+	}
+
+	duration, err := sessionDuration(&seconds, role.MaxSessionDuration, false)
+	if err != nil {
+		return nil, err
+	}
+
+	now := s.now()
+	var out *FederatedSession
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		issued := &session{
+			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID, Name: sessionName,
+			Federated: true, Expires: now.Add(duration).Unix(),
+		}
+
+		credentials, issueErr := issue(tx, issued, now)
+		if issueErr != nil {
+			return issueErr
+		}
+
+		out = &FederatedSession{
+			AccessKeyID: *credentials.AccessKeyId, SecretAccessKey: *credentials.SecretAccessKey,
+			SessionToken: *credentials.SessionToken, ARN: issued.arn(), Expires: *credentials.Expiration,
+		}
+
+		return nil
+	})
+
+	return out, err
 }
 
 // GetSessionToken issues temporary credentials that act as the caller: an

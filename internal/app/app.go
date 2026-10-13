@@ -103,6 +103,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/acmpca"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/appconfig"
 	"github.com/amjadjibon/tinystack/internal/services/applicationautoscaling"
@@ -179,6 +180,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/verifiedpermissions"
 	"github.com/amjadjibon/tinystack/internal/services/wafv2"
 	"github.com/amjadjibon/tinystack/internal/services/xray"
+	"github.com/amjadjibon/tinystack/internal/sso"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -555,6 +557,28 @@ func build(
 	handler.UseManagementEvents(trails.Record)
 	handler.UseCredentials(tokens.Credentials)
 	handler.UseAuthorization(roles.Authorization)
+	if cfg.Identity.Mode == config.IdentityVerify {
+		// Web identity tokens must carry a valid signature of their issuer, or of
+		// the identity pool that issued them.
+		tokens.UseWebIdentityVerification(proxy.NewVerifier().Verify, identityPools.VerifyOpenIDToken)
+	}
+
+	if oidc := cfg.Console.Auth.OIDC; oidc != nil {
+		login, ssoErr := sso.New(oidc, tokens, logger)
+		if ssoErr != nil {
+			return nil, ssoErr
+		}
+
+		if cfg.Identity.Authorization == config.AuthorizationOff || cfg.Identity.Authorization == "" {
+			logger.Warn("console single sign-on identifies people but does not limit them: " +
+				"set identity.authorization to soft or enforce")
+		}
+
+		for name, h := range login.Handlers() {
+			handler.HandleConsole(name, h)
+		}
+	}
+
 	handler.UseDocuments(identities.Documents)
 	handler.UseTokens(identities.Token)
 	handler.UseRegistry(registry)

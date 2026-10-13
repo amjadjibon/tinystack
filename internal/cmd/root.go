@@ -25,6 +25,7 @@ func newRootCommand() *cobra.Command {
 	}
 
 	root.AddCommand(newStartCommand())
+	root.AddCommand(newLoginCommand())
 	root.AddCommand(newStateCommand())
 	return root
 }

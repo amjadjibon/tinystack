@@ -189,6 +189,17 @@ func TestCognitoIdentityPools(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// In verify mode the token's signature must be the pool's own.
+	signature := aws.ToString(open.Token)
+	forged := signature[:len(signature)-2] + "AA"
+	for _, token := range []string{forged, signature[:strings.LastIndex(signature, ".")+1]} {
+		if _, err = anonymous.AssumeRoleWithWebIdentity(ctx, &sts.AssumeRoleWithWebIdentityInput{
+			RoleArn: aws.String(authRole), RoleSessionName: aws.String("forged"), WebIdentityToken: aws.String(token),
+		}); errorCode(err) != "InvalidIdentityToken" {
+			t.Fatalf("forged pool token: %v", err)
+		}
+	}
+
 	guestToken, err := c.GetOpenIdToken(ctx, &ci.GetOpenIdTokenInput{IdentityId: guest.IdentityId})
 	if err != nil {
 		t.Fatal(err)

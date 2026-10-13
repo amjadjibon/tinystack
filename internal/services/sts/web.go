@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -37,8 +38,53 @@ func invalidToken(message string) error {
 	return awserror.New("InvalidIdentityToken", message)
 }
 
-// parseToken decodes a JWT's claims. TinyStack does not verify its signature:
-// it trusts any token whose issuer is a provider of the role's account.
+// webVerifier checks the signatures of web identity tokens.
+type webVerifier struct {
+	// oidc verifies a token against the keys its issuer publishes.
+	oidc func(ctx context.Context, token, issuer string, audiences []string) (map[string]any, error)
+	// pools verifies the OpenID tokens that TinyStack's identity pools issue.
+	pools func(ctx context.Context, token string) error
+}
+
+// UseWebIdentityVerification has AssumeRoleWithWebIdentity check tokens'
+// signatures: oidc against the keys the token's issuer publishes, and pools
+// for Cognito identity pools' own tokens. Without it, which is how parse mode
+// runs, TinyStack trusts any token whose issuer is a provider of the role's
+// account. Call it before serving requests.
+func (s *Service) UseWebIdentityVerification(
+	oidc func(ctx context.Context, token, issuer string, audiences []string) (map[string]any, error),
+	pools func(ctx context.Context, token string) error,
+) {
+	s.verifier = &webVerifier{oidc: oidc, pools: pools}
+}
+
+// verifySignature checks a token's signature when verification is on. The
+// issuer was already matched to a provider, so only registered issuers are
+// ever contacted.
+func (s *Service) verifySignature(ctx context.Context, raw string, token *claims, audience string) error {
+	if s.verifier == nil {
+		return nil
+	}
+
+	var err error
+	switch {
+	case token.Issuer == "https://"+cognitoProvider && s.verifier.pools != nil:
+		err = s.verifier.pools(ctx, raw)
+	case token.Issuer == "https://"+cognitoProvider || s.verifier.oidc == nil:
+		err = errors.New("no verifier")
+	default:
+		_, err = s.verifier.oidc(ctx, raw, token.Issuer, []string{audience})
+	}
+
+	if err != nil {
+		return invalidToken("Couldn't verify the token's signature with the keys of your identity provider")
+	}
+
+	return nil
+}
+
+// parseToken decodes a JWT's claims without checking its signature, which
+// AssumeRoleWithWebIdentity does separately when verification is on.
 func parseToken(token string) (*claims, []string, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
@@ -88,7 +134,8 @@ func checkWebIdentity(in *api.AssumeRoleWithWebIdentityRequest) error {
 // token's audience; the trust policy's conditions can name the provider's
 // "<URL>:aud" and "<URL>:sub" keys. Cognito identity pools' tokens come from
 // cognito-identity.amazonaws.com, which needs no IAM provider and whose
-// conditions can also name its "amr" key. The request needs no signature.
+// conditions can also name its "amr" key. The request needs no signature. In
+// identity.mode verify the token's own signature must verify.
 func (s *Service) AssumeRoleWithWebIdentity(
 	ctx context.Context,
 	in *api.AssumeRoleWithWebIdentityRequest,
@@ -119,6 +166,11 @@ func (s *Service) AssumeRoleWithWebIdentity(
 	}
 
 	c, audience, err := s.webCaller(ctx, role.Account, token, audiences)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.verifySignature(ctx, *in.WebIdentityToken, token, audience)
 	if err != nil {
 		return nil, err
 	}

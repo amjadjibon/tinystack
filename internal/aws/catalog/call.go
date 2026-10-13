@@ -60,23 +60,42 @@ func (c *Caller) Resources(ctx context.Context) ([]Owned, error) { return Resour
 // awserror values with the "UnknownOperationException" and
 // "ValidationException" codes.
 func (c *Caller) Call(ctx context.Context, service, operation string, params map[string]any) (map[string]any, error) {
+	op, input, err := c.Decode(service, operation, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Run(ctx, op, input)
+}
+
+// Decode finds an operation and builds its input from params, for callers
+// that need the typed input before they Run it, such as to authorize it.
+func (c *Caller) Decode(service, operation string, params map[string]any) (*Operation, any, error) {
 	s, ok := c.services[service]
 	if !ok {
-		return nil, awserror.New("UnknownOperationException", "TinyStack does not implement the "+service+" service")
+		return nil, nil, awserror.New(
+			"UnknownOperationException",
+			"TinyStack does not implement the "+service+" service",
+		)
 	}
 
 	op, ok := s.Operations[operation]
 	if !ok {
-		return nil, awserror.New("UnknownOperationException",
+		return nil, nil, awserror.New("UnknownOperationException",
 			fmt.Sprintf("TinyStack does not implement %s's %s operation", service, operation))
 	}
 
 	input := op.NewInput()
 	if err := (assigner{lenient: c.lenient, base64Blobs: c.base64Blobs}).
 		assign(reflect.ValueOf(input).Elem(), params, operation); err != nil {
-		return nil, awserror.Validation("%s", err.Error())
+		return nil, nil, awserror.Validation("%s", err.Error())
 	}
 
+	return &op, input, nil
+}
+
+// Run invokes an operation Decode found with the input it built.
+func (c *Caller) Run(ctx context.Context, op *Operation, input any) (map[string]any, error) {
 	output, err := op.Invoke(ctx, input)
 	if err != nil {
 		return nil, err

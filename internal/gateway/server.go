@@ -49,7 +49,9 @@ type Server struct {
 	requests         *recent.Log[Record]
 	metrics          *metrics
 	// internal serves TinyStack's own endpoints under /_tinystack/.
-	internal    map[string]http.Handler
+	internal map[string]http.Handler
+	// console serves endpoints on the console's listener only; see HandleConsole.
+	console     map[string]http.Handler
 	credentials CredentialLookup
 	policies    PolicyLookup
 	documents   Documents
@@ -70,7 +72,9 @@ type Server struct {
 	// localStackHealth answers LocalStack's /_localstack/health.
 	localStackHealth []byte
 	faults           faultState
-	cfg              config.Config
+	// adminRoles are the ARNs of the roles that administrators sign in with.
+	adminRoles map[string]bool
+	cfg        config.Config
 }
 
 // CredentialLookup returns the credentials of an access key TinyStack issued,
@@ -144,6 +148,7 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		metrics:  &metrics{},
 		services: map[string]*catalog.Service{},
 		routes:   map[string][]route{},
+		console:  map[string]http.Handler{},
 	}
 
 	names := make([]string, 0, len(services))
@@ -184,6 +189,10 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if oidc := cfg.Console.Auth.OIDC; oidc != nil {
+		s.adminRoles = oidc.AdminRoles()
 	}
 
 	s.faults.reset(cfg.Faults)
@@ -299,6 +308,12 @@ func (s *Server) HandlePath(path string, h http.Handler) {
 	s.internal[path] = h
 }
 
+// HandleConsole serves h at /_tinystack/<name> on the console's listener only,
+// for the sign-in endpoints. Call it before serving requests.
+func (s *Server) HandleConsole(name string, h http.Handler) {
+	s.console["/_tinystack/"+name] = h
+}
+
 // ClearRequests forgets the requests the inspector kept.
 func (s *Server) ClearRequests() {
 	s.requests.Clear()
@@ -308,7 +323,7 @@ func (s *Server) ClearRequests() {
 // for every other path, for the console's listener.
 func (s *Server) Internal() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h, ok := s.internal[r.URL.Path]
+		h, ok := s.endpoint(r.URL.Path, s.console)
 		if !ok {
 			http.NotFound(w, r)
 			return
@@ -837,7 +852,7 @@ func (s *Server) serveLocalStackHealth(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// "_" is not valid in an S3 bucket name, so these paths never name one.
-	if h, ok := s.internal[r.URL.Path]; ok {
+	if h, ok := s.endpoint(r.URL.Path, nil); ok {
 		h.ServeHTTP(w, r)
 		return
 	}

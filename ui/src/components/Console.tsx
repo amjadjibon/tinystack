@@ -31,7 +31,7 @@ import {
 	type Preferences,
 } from "#/lib/theme";
 import { useFollow } from "#/lib/useFollow";
-import { ConsoleSessionDialog } from "./ConsoleSession";
+import { ConsoleSessionDialog, collectSSOReturn } from "./ConsoleSession";
 import { ServiceIcon } from "./ServiceIcon";
 
 const headerID = "console-header";
@@ -47,6 +47,7 @@ export function ConsoleHeader() {
 	const [query, setQuery] = useState("");
 	const scope = useScope();
 	const [sessionOpen, setSessionOpen] = useState(false);
+	const [sessionNotice, setSessionNotice] = useState("");
 	const names = consoleServiceNames(data?.services ?? []);
 	const favorites = useFavorites().filter((name) => names.includes(name));
 	const [scopeDialog, setScopeDialog] = useState<"account" | "region" | null>(
@@ -116,6 +117,22 @@ export function ConsoleHeader() {
 		return theme.reset;
 	}, []);
 	useEffect(() => applyPreferences(preferences), [preferences]);
+	// A person who signed in works in their role's account.
+	const ssoAccount = scope.session?.sso ? scope.session.account : "";
+	// biome-ignore lint/correctness/useExhaustiveDependencies: switchScope changes every render.
+	useEffect(() => {
+		if (ssoAccount && ssoAccount !== scope.account && scope.region)
+			scope.switchScope({ account: ssoAccount });
+	}, [ssoAccount, scope.account, scope.region]);
+	// Coming back from the identity provider, pick up the finished sign-in.
+	// The server hands it over once, so this must not be cancelled and rerun.
+	useEffect(() => {
+		collectSSOReturn().then((notice) => {
+			if (notice === null) return;
+			setSessionNotice(notice);
+			if (notice) setSessionOpen(true);
+		});
+	}, []);
 
 	const matches = names.filter((name) =>
 		`${name} ${service(name).title}`
@@ -157,7 +174,9 @@ export function ConsoleHeader() {
 						? [
 								{
 									type: "button" as const,
-									text: scope.session ? "Session connected" : "Console session",
+									text: scope.session
+										? (scope.session.sso?.name ?? "Session connected")
+										: "Console session",
 									iconName: "lock-private" as const,
 									onClick: () => setSessionOpen(true),
 								},
@@ -250,7 +269,13 @@ export function ConsoleHeader() {
 				</nav>
 			)}
 			{sessionOpen ? (
-				<ConsoleSessionDialog onDismiss={() => setSessionOpen(false)} />
+				<ConsoleSessionDialog
+					notice={sessionNotice}
+					onDismiss={() => {
+						setSessionOpen(false);
+						setSessionNotice("");
+					}}
+				/>
 			) : null}
 			{scopeDialog && (
 				<Modal

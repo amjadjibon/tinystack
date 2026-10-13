@@ -14,6 +14,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 const (
@@ -166,4 +167,37 @@ func (s *Service) verifyLogin(ctx context.Context, scope request.Scope, p *pool,
 func claimString(claims map[string]any, name string) string {
 	v, _ := claims[name].(string)
 	return v
+}
+
+// VerifyOpenIDToken checks that token is an OpenID token that one of the
+// identity pools issued and has not expired, for STS to trust it.
+func (s *Service) VerifyOpenIDToken(ctx context.Context, token string) error {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return notAuthorized("Invalid login token.")
+	}
+
+	payload, err := b64.DecodeString(parts[1])
+	var claims struct {
+		Audience string `json:"aud"`
+	}
+	if err != nil || json.Unmarshal(payload, &claims) != nil {
+		return notAuthorized("Invalid login token.")
+	}
+
+	var p *pool
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		var locateErr error
+		_, p, locateErr = locatePool(tx, &claims.Audience)
+		return locateErr
+	})
+	if err != nil {
+		return err
+	}
+
+	if _, ok := p.developerSubject(token, s.now()); !ok {
+		return notAuthorized("Invalid login token.")
+	}
+
+	return nil
 }

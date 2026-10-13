@@ -204,6 +204,13 @@ type Config struct {
 		Mode          string            `yaml:"mode"`
 		Authorization string            `yaml:"authorization"`
 	} `yaml:"identity"`
+	// Console configures the web console's sign-in.
+	Console struct {
+		Auth struct {
+			// OIDC turns on single sign-on through an OpenID Connect provider.
+			OIDC *OIDC `yaml:"oidc"`
+		} `yaml:"auth"`
+	} `yaml:"console"`
 	Defaults struct {
 		Account string `yaml:"account"`
 		Region  string `yaml:"region"`
@@ -295,6 +302,10 @@ func Load(path string) (Config, error) {
 		if err = d.Decode(&extra); !errors.Is(err, io.EOF) {
 			return c, fmt.Errorf("configuration must contain exactly one YAML document")
 		}
+	}
+
+	if c.Console.Auth.OIDC != nil {
+		c.Console.Auth.OIDC.applyDefaults()
 	}
 
 	validationErr := c.Validate()
@@ -426,6 +437,18 @@ func (c *Config) Validate() error {
 
 	if c.IoT.MQTTPort != 0 && c.Identity.Mode == IdentityVerify {
 		return fmt.Errorf("iot.mqtt_port serves unauthenticated MQTT, so it requires identity.mode: parse")
+	}
+
+	if oidc := c.Console.Auth.OIDC; oidc != nil {
+		if c.Identity.Mode != IdentityVerify {
+			return fmt.Errorf("console.auth.oidc requires identity.mode: verify")
+		}
+
+		if c.Server.ConsolePort == 0 {
+			return fmt.Errorf("console.auth.oidc requires server.console_port")
+		}
+
+		return oidc.validate()
 	}
 
 	return nil

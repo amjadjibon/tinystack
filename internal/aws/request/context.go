@@ -58,6 +58,9 @@ type Credentials struct {
 	// CognitoIdentity is the Cognito identity ID the credentials were issued
 	// for, if they came from an identity pool.
 	CognitoIdentity string
+	// Federated marks a role session issued to a person who signed in to the
+	// console through the identity provider.
+	Federated bool
 }
 
 type contextKey struct{}

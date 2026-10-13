@@ -245,7 +245,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			signingNames[name] = service.SigningName
 		}
 
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		capabilities := map[string]any{
 			"account": s.cfg.Defaults.Account, "region": s.cfg.Defaults.Region,
 			"accounts":      slices.Compact(accounts),
 			"signing_names": signingNames,
@@ -261,7 +261,12 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleSecretsManager: secretsmanager,
 			consoleRDS:            rds,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
-		})
+		}
+		if s.cfg.Console.Auth.OIDC != nil {
+			capabilities["sso"] = map[string]string{"login_url": "/_tinystack/auth/login"}
+		}
+
+		_ = json.NewEncoder(w).Encode(capabilities)
 		return
 	}
 
@@ -284,7 +289,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	w = cw
 	defer func() { s.record(r, c, start, body, cw) }()
 
-	if r.URL.RawQuery != "" || !consoleOrigin(r) {
+	if r.URL.RawQuery != "" || !SameOrigin(r) {
 		s.consoleFail(w, c, &awserror.Error{
 			Code: accessDenied, Message: "Console actions require a same-origin request without query parameters.",
 			StatusCode: http.StatusForbidden,
@@ -410,8 +415,10 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// People who signed in through the identity provider hold role sessions
+		// that IAM, not this rule, limits; consoleCall applies it.
 		if in.Service == consoleSTS && c.credentials != nil &&
-			c.credentials.Principal.Kind != request.PrincipalRoot {
+			c.credentials.Principal.Kind != request.PrincipalRoot && !c.credentials.Federated {
 			s.consoleFail(w, c, &awserror.Error{
 				Code: accessDenied, Message: "The administrative console requires account root credentials.",
 				StatusCode: http.StatusForbidden,
@@ -446,9 +453,13 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	var output any
 	var err error
 	if in.Operation == "InvokeApi" && (in.Service == consoleAPIGateway || in.Service == consoleHTTPAPI) {
-		output, err = s.consoleInvokeAPI(r, c, caller, in)
+		ctx := request.WithMetadata(r.Context(), c.meta)
+		err = s.authorize(ctx, r, c, &catalog.Operation{Name: in.Operation, IAMAction: "execute-api:Invoke"}, nil)
+		if err == nil {
+			output, err = s.consoleInvokeAPI(r, c, caller, in)
+		}
 	} else {
-		output, err = caller.Call(request.WithMetadata(r.Context(), c.meta), in.Service, in.Operation, in.Input)
+		output, err = s.consoleCall(r, c, caller, &in)
 	}
 	if err != nil {
 		s.consoleFail(w, c, err)
@@ -458,9 +469,28 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"output": output, "request_id": c.meta.RequestID})
 }
 
+// consoleCall runs a console action after IAM decides it, as the AWS listener
+// does: root credentials and unsigned parse-mode actions bypass it; every other
+// principal, including a person signed in through the identity provider, is
+// evaluated.
+func (s *Server) consoleCall(r *http.Request, c *call, caller *catalog.Caller, in *consoleAction) (any, error) {
+	op, input, err := caller.Decode(in.Service, in.Operation, in.Input)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.authorize(request.WithMetadata(r.Context(), c.meta), r, c, op, input); err != nil {
+		return nil, err
+	}
+
+	// authorize records the evaluated principal in c.meta, which the operation sees.
+	return caller.Run(request.WithMetadata(r.Context(), c.meta), op, input)
+}
+
+// SameOrigin reports whether a request did not come from another site's page.
 // JSON requests plus an Origin/Fetch-Metadata check prevent browser cross-site writes.
 // Non-browser clients need not send Origin; verify mode still requires SigV4.
-func consoleOrigin(r *http.Request) bool {
+func SameOrigin(r *http.Request) bool {
 	if site := r.Header.Get("Sec-Fetch-Site"); site == "cross-site" || site == "same-site" {
 		return false
 	}
@@ -485,7 +515,12 @@ func (s *Server) consoleFail(w http.ResponseWriter, c *call, err error) {
 	status := e.StatusCode
 	if c.service != nil {
 		if binding, ok := c.service.Errors[e.Code]; ok {
-			status = binding.StatusCode
+			// An IAM denial stays 403 whatever status the service binds the code to.
+			if c.authorization == nil || c.authorization.Allowed ||
+				c.authorization.Mode != config.AuthorizationEnforce {
+				status = binding.StatusCode
+			}
+
 			if binding.QueryCode != "" {
 				e.Code = binding.QueryCode
 			}
