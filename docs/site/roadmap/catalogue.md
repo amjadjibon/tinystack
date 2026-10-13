@@ -20,6 +20,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Amazon MSK configuration, security and runtime](services/msk-runtime.md) | Future extensions | Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices. |
 | [Amazon MWAA tokens and execution](services/mwaa-runtime.md) | Future extensions | Environment configuration records and tags are implemented. Tokens, Airflow APIs and actual execution require a separate runtime contract. |
 | [Amazon Redshift runtime and snapshots](services/redshift-runtime.md) | Proposed | Extend the records-only control plane with explicit runtime and snapshot support. |
+| [Amazon S3 Glacier archives and jobs](services/glacier-runtime.md) | Proposed | Extend the vault control plane with archive storage and retrieval job workflows. |
 | [AppSync Events](services/appsync-events.md) | Proposed | Implement `CreateApi`, `GetApi`, `ListApis`. |
 | [Application Auto Scaling execution and advanced policies](services/applicationautoscaling-runtime.md) | Proposed | Extend records-only configuration to a truthful capacity and metric evaluation contract. |
 | [Aurora DSQL](services/dsql.md) | Proposed | Implement `CreateCluster`, `GetCluster`, `ListClusters`. |

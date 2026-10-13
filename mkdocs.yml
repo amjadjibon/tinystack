@@ -199,6 +199,7 @@ nav:
           - "AWS Resource Access Manager": services/ram.md
       - "Storage":
           - "Amazon EFS": services/efs.md
+          - "Amazon S3 Glacier": services/glacier.md
           - "Amazon S3 Tables": services/s3tables.md
       - "Storage and databases":
           - "DynamoDB": services/dynamodb.md
@@ -227,6 +228,7 @@ nav:
           - "Amazon MSK configuration, security and runtime": roadmap/services/msk-runtime.md
           - "Amazon MWAA tokens and execution": roadmap/services/mwaa-runtime.md
           - "Amazon Redshift runtime and snapshots": roadmap/services/redshift-runtime.md
+          - "Amazon S3 Glacier archives and jobs": roadmap/services/glacier-runtime.md
           - "AppSync Events": roadmap/services/appsync-events.md
           - "Application Auto Scaling execution and advanced policies": roadmap/services/applicationautoscaling-runtime.md
           - "Aurora DSQL": roadmap/services/dsql.md

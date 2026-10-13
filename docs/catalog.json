@@ -1836,6 +1836,30 @@
         "Native tag pagination is excluded; built-in config IDs and creation times are omitted rather than fabricated",
         "CloudFormation Deployment and other excluded declared properties fail explicitly; removing a load balancer or blue/green configuration fails explicitly. CloudFormation group ApplicationName/DeploymentGroupName and application name/compute-platform changes replace; all config changes replace"
       ]
+    },
+    "glacier": {
+      "title": "Amazon S3 Glacier",
+      "category": "Storage",
+      "scope": "Account and Region",
+      "summary": "Store S3 Glacier vault configurations, access policies, notifications, and tags as records without archives or retrieval jobs.",
+      "execution": "Configuration records only",
+      "package": "glacier",
+      "features": [
+        "Thirteen pinned REST JSON vault, tag, access policy, and notification operations with AWS SDK v2 integration",
+        "Deterministic vault identity scoped to account and Region, ISO 8601 creation timestamps, and zero archives and archive bytes metadata",
+        "Vault name validation (1-255 characters matching [a-zA-Z0-9_.-]+) and deterministic ASCII-ordered marker pagination (default limit 10, as documented)",
+        "Vault tagging operations (AddTagsToVault, ListTagsForVault, RemoveTagsFromVault) enforcing a 10 tag per vault limit and Resource Groups Tagging API integration",
+        "Vault access policies up to 20 KB and vault notification configurations validating SNS topic ARNs and ArchiveRetrievalCompleted/InventoryRetrievalCompleted event types",
+        "Official Amazon S3 Glacier UI console icon, catalog metadata, RecordsOnly=true/ExecutionReady=false inventory, and Terraform glacier endpoint"
+      ],
+      "gaps": [
+        "Records-only control plane: archive storage (UploadArchive, DeleteArchive), retrieval jobs (InitiateJob, DescribeJob, GetJobOutput), multipart uploads, and vault lock workflows are not implemented",
+        "DescribeVault and ListVaults always report zero archives and zero vault bytes",
+        "AccountId parameters must match the authenticated account ID or standard \"-\" alias; foreign account IDs reject with InvalidParameterValueException",
+        "Vault access policies and notification configurations return 404 ResourceNotFoundException when queried before being configured or after deletion",
+        "Extended archive operations and retrieval execution are deferred to future roadmap slices",
+        "No CloudFormation resource: the CloudFormation resource specification defines no Glacier vault type"
+      ]
     }
   },
   "future": {
@@ -2123,6 +2147,12 @@
       "slice": "Extend application, deployment configuration and group records to real deployment execution.",
       "features": "- [ ] Deployment execution and agents\n- [ ] Application revisions\n- [ ] Lifecycle hooks and deployment targets\n- [ ] Blue/green traffic management",
       "integration": "Current CodeDeploy support stores configuration records only. It never reports fake successful deployment executions."
+    },
+    "glacier-runtime": {
+      "title": "Amazon S3 Glacier archives and jobs",
+      "state": "Proposed",
+      "slice": "Extend the vault control plane with archive storage and retrieval job workflows.",
+      "features": "- [ ] `UploadArchive`\n- [ ] `DeleteArchive`\n- [ ] `InitiateJob`\n- [ ] `DescribeJob`\n- [ ] `GetJobOutput`\n- [ ] `ListJobs`\n- [ ] `InitiateMultipartUpload`\n- [ ] `UploadMultipartPart`\n- [ ] `CompleteMultipartUpload`\n- [ ] `AbortMultipartUpload`\n- [ ] `ListMultipartUploads`\n- [ ] `ListParts`\n- [ ] `InitiateVaultLock`\n- [ ] `CompleteVaultLock`\n- [ ] `AbortVaultLock`\n- [ ] `GetVaultLock`"
     }
   }
 }
