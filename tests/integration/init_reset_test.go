@@ -169,6 +169,25 @@ func TestInitHooksRunPerStage(t *testing.T) {
 	}
 }
 
+func TestInitHooksRelativeDirectories(t *testing.T) {
+	t.Chdir(t.TempDir())
+	script(t, "init", "ready", "10-plain.sh", "echo plain > ran\n", 0o600)
+	script(t, "init", "ready", "20-executable", "#!/bin/sh\necho executable >> ran\n", 0o700)
+	tinystack, _ := initServer(t, "init", "")
+	if got := tinystack.Init.Run(context.Background(), inithooks.Ready); got != inithooks.Successful {
+		t.Fatalf("relative init directory ended %s", got)
+	}
+
+	data, err := os.ReadFile(filepath.Join("init", "ready.d", "ran")) // #nosec G304 -- a temporary directory.
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(data) != "plain\nexecutable\n" {
+		t.Fatalf("scripts did not run in their own directory: %q", data)
+	}
+}
+
 func TestInitHooksKeepCallerEnvironment(t *testing.T) {
 	t.Setenv("AWS_REGION", "eu-west-1")
 	t.Setenv("AWS_ENDPOINT_URL", "http://elsewhere")

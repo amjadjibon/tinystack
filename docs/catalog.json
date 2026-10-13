@@ -32,7 +32,7 @@
     },
     {
       "title": "Init hooks and reset",
-      "summary": "LocalStack-style boot, start, ready and shutdown scripts (also read from /etc/localstack/init) with a status endpoint, and a POST reset endpoint that clears all stored state and can re-run the ready scripts.",
+      "summary": "LocalStack-style boot, start, ready and shutdown scripts (also read from /etc/localstack/init) with a status endpoint, idempotent IAM/S3/SQS sample data in the development example config, and a POST reset endpoint that clears all stored state and can re-run the ready scripts.",
       "reference": "guides/init-hooks.md"
     },
     {

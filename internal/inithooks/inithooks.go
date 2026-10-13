@@ -214,7 +214,13 @@ func (r *Runner) Run(ctx context.Context, stage Stage) State {
 func (r *Runner) discover(stage Stage) []task {
 	var tasks []task
 	for _, root := range r.dirs {
-		dir := filepath.Join(root, string(stage)+".d")
+		// Scripts run in their own directory, so their command paths must be absolute.
+		dir, err := filepath.Abs(filepath.Join(root, string(stage)+".d"))
+		if err != nil {
+			r.logger.Warn("resolve init directory", "dir", root, "error", err)
+			continue
+		}
+
 		entries, err := os.ReadDir(dir)
 		if errors.Is(err, os.ErrNotExist) {
 			continue

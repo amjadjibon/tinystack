@@ -14,6 +14,9 @@ identity:
 storage:
   mode: persistent
   path: ~/.tinystack
+init:
+  # Idempotent IAM/S3/SQS development data; requires the AWS CLI on PATH.
+  dir: ./examples/init
 ecs:
   # records keeps ECS tasks as records; docker also runs their containers.
   containers: records

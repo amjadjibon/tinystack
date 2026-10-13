@@ -31,9 +31,20 @@ fake runtimes by default; they do not contact AWS.
 
 `task dev` runs the server with the console and `examples/tinystack.yaml` through
 [air](https://github.com/air-verse/air) (a Go tool in `go.mod`, configured by `.air.toml`), which rebuilds
-and restarts it when a Go or console source file, or the example config, changes. The console is rebuilt only
-when something under `ui/` changed. Pass overrides with `task dev -- --port 4566` or choose another config with
+and restarts it when a Go or console source file, the example config, or the seed script changes. The console
+is rebuilt only when something under `ui/` changed. Pass overrides with `task dev -- --port 4566` or choose another config with
 `task dev -- --config path/to/config.yaml`.
+
+The example config runs `examples/init/ready.d/10-seed.sh` at startup and requires the AWS CLI on `PATH`.
+It creates IAM user `demo-user` in group `developers`, S3 bucket `tinystack-demo` and SQS queue `demo-jobs`.
+Existing resources are retained, so repeated starts do not duplicate them. With the default environment,
+find them in account `000000000000`, Region `us-east-1`, at `http://127.0.0.1:4567`.
+Hooks inherit AWS credentials/Region from your environment, or use TinyStack's configured defaults.
+The explicit endpoint always points the seed commands at TinyStack.
+
+Resource data persists under `~/.tinystack` across Air restarts. The ready hook runs in the background;
+check `curl -fsS http://127.0.0.1:4566/_tinystack/init/ready` for `SUCCESSFUL` before verifying the UI.
+Set `init.dir: ""` in the example config to disable the sample data. See [init hooks](../guides/init-hooks.md).
 
 In another terminal, or after stopping the server:
 

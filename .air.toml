@@ -7,7 +7,7 @@ tmp_dir = "tmp"
 cmd = "task ui:build && go build -tags console -o tmp/tinystack ./cmd/tinystack"
 entrypoint = ["tmp/tinystack", "start", "--config", "examples/tinystack.yaml"]
 include_ext = ["go", "ts", "tsx", "css", "svg"]
-include_file = ["examples/tinystack.yaml"]
+include_file = ["examples/tinystack.yaml", "examples/init/ready.d/10-seed.sh"]
 exclude_dir = [
   ".git",
   ".task",
