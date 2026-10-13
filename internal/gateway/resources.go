@@ -10,7 +10,8 @@ import (
 )
 
 // serveResources lists every service's resources in every account and region,
-// or in one account for a signed-in person who is not an administrator.
+// or, for a signed-in person who is not an administrator, those of their own
+// account that IAM lets them list.
 func (s *Server) serveResources(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -28,8 +29,8 @@ func (s *Server) serveResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if account, scoped := accountScope(r.Context()); scoped {
-		out = slices.DeleteFunc(out, func(o catalog.Owned) bool { return o.Account != account })
+	if who, limited := limitedTo(r.Context()); limited {
+		out = s.listable(r.Context(), &who.principal, out)
 	}
 
 	slices.SortFunc(out, func(a, b catalog.Owned) int {

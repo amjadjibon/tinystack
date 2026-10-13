@@ -96,10 +96,7 @@ func (s *Server) authorize(ctx context.Context, r *http.Request, c *call, op *ca
 		resources = []catalog.AuthorizationResource{{ARN: "*"}}
 	}
 
-	action := op.IAMAction
-	if action == "" {
-		action = c.service.IAMPrefix + ":" + op.Name
-	}
+	action := iamAction(c.service, op)
 
 	sourceIP := r.RemoteAddr
 	if host, _, splitErr := net.SplitHostPort(sourceIP); splitErr == nil {

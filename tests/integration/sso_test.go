@@ -887,7 +887,7 @@ func TestSSOConsoleRequiresSignIn(t *testing.T) {
 		t.Fatalf("health = %d", resp.StatusCode)
 	}
 
-	buckets := func(p *ssoPerson) []string {
+	listed := func(p *ssoPerson, service string) []string {
 		status, out := e.signed(t, p.credentials(), "tinystack", http.MethodGet, "/_tinystack/resources", nil)
 		if status != http.StatusOK {
 			t.Fatalf("%s resources = %d %v", p.Name, status, out)
@@ -895,7 +895,7 @@ func TestSSOConsoleRequiresSignIn(t *testing.T) {
 
 		var names []string
 		for _, item := range out["resources"].([]any) {
-			if r := item.(map[string]any); r["service"] == "s3" {
+			if r := item.(map[string]any); r["service"] == service {
 				names = append(names, r["name"].(string))
 			}
 		}
@@ -903,13 +903,22 @@ func TestSSOConsoleRequiresSignIn(t *testing.T) {
 		return names
 	}
 
-	// A person who is not an administrator sees only their own account.
-	if got := buckets(dev); !slices.Equal(got, []string{"dev-files"}) {
-		t.Fatalf("developer sees %v", got)
+	// A person who is not an administrator sees only their own account, and only
+	// what IAM lets them list: the developer may use S3 but not IAM.
+	if got := listed(dev, "s3"); !slices.Equal(got, []string{"dev-files"}) {
+		t.Fatalf("developer sees buckets %v", got)
 	}
 
-	if got := buckets(admin); !slices.Contains(got, "dev-files") || !slices.Contains(got, "admin-files") {
-		t.Fatalf("administrator sees %v", got)
+	if got := listed(dev, "iam"); len(got) != 0 {
+		t.Fatalf("developer sees IAM resources %v", got)
+	}
+
+	if got := listed(admin, "s3"); !slices.Contains(got, "dev-files") || !slices.Contains(got, "admin-files") {
+		t.Fatalf("administrator sees buckets %v", got)
+	}
+
+	if got := listed(admin, "iam"); !slices.Contains(got, "Developer") || !slices.Contains(got, "Admin") {
+		t.Fatalf("administrator sees IAM resources %v", got)
 	}
 
 	if status, _ := e.signed(t, dev.credentials(), "tinystack", http.MethodGet, "/_tinystack/metrics",

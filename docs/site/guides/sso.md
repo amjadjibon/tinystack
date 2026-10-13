@@ -82,7 +82,9 @@ curl --aws-sigv4 "aws:amz:us-east-1:tinystack" --user "$KEY:$SECRET" \
 ```
 
 `resources` and `metrics` need the same signed request from any signed-in person; a person whose role is not an
-administrator's sees only their own account's resources. Only `health` (and `/_localstack/health`) stays open, so
+administrator's sees only the resources of their own account that IAM lets them list: for each resource, the
+service's `List`, `Describe` or `Get` action for its type (for example `iam:ListRoles`), or, for a type without one,
+any of the service's read actions on it. With `authorization: soft` or `off` they see their whole account. Only `health` (and `/_localstack/health`) stays open, so
 container health checks keep working. The console itself shows only a TinyStack sign-in page until someone signs in, with
 **Sign in with SSO** and a link to sign in with root access keys; after an SSO sign-in the person returns to the page
 they first asked for.

@@ -59,22 +59,24 @@ func (s *Server) endpoint(path string, extra map[string]http.Handler) (http.Hand
 
 // signer is who signed a request to one of TinyStack's own endpoints.
 type signer struct {
-	account string
-	admin   bool
+	principal request.Principal
+	admin     bool
 }
 
-type accountScopeKey struct{}
+type limitedKey struct{}
 
-// accountScope returns the account a request's results are limited to, if any.
-func accountScope(ctx context.Context) (string, bool) {
-	account, ok := ctx.Value(accountScopeKey{}).(string)
-	return account, ok
+// limitedTo returns the person whose IAM permissions limit a request's results,
+// if any: someone signed in through the identity provider who is not an
+// administrator.
+func limitedTo(ctx context.Context) (signer, bool) {
+	who, ok := ctx.Value(limitedKey{}).(signer)
+	return who, ok
 }
 
 // requireSigner lets through requests signed (SigV4, service AdminSigningName)
 // by account root credentials or by a person who signed in through the
 // identity provider; with admin, the person's role must be an administrator's.
-// A person who is not an administrator sees only their own account.
+// A person who is not an administrator sees only what IAM lets them list.
 func (s *Server) requireSigner(h http.Handler, admin bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		who, ok := s.signer(r)
@@ -97,7 +99,7 @@ func (s *Server) requireSigner(h http.Handler, admin bool) http.Handler {
 		}
 
 		if !who.admin {
-			r = r.WithContext(context.WithValue(r.Context(), accountScopeKey{}, who.account))
+			r = r.WithContext(context.WithValue(r.Context(), limitedKey{}, who))
 		}
 
 		h.ServeHTTP(w, r)
@@ -131,7 +133,7 @@ func (s *Server) signer(r *http.Request) (signer, bool) {
 		switch {
 		case credentials.Principal.Kind == request.PrincipalRoot:
 		case credentials.Federated:
-			who = signer{account: credentials.AccountID, admin: s.adminRoles[credentials.Principal.PolicyARN]}
+			who = signer{principal: credentials.Principal, admin: s.adminRoles[credentials.Principal.PolicyARN]}
 		default:
 			return signer{}, false
 		}
