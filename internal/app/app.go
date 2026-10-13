@@ -34,6 +34,7 @@ import (
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	codebuildapi "github.com/amjadjibon/tinystack/internal/aws/generated/codebuild"
 	codecommitapi "github.com/amjadjibon/tinystack/internal/aws/generated/codecommit"
+	codedeployapi "github.com/amjadjibon/tinystack/internal/aws/generated/codedeploy"
 	codepipelineapi "github.com/amjadjibon/tinystack/internal/aws/generated/codepipeline"
 	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
@@ -115,6 +116,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/codebuild"
 	"github.com/amjadjibon/tinystack/internal/services/codecommit"
+	"github.com/amjadjibon/tinystack/internal/services/codedeploy"
 	"github.com/amjadjibon/tinystack/internal/services/codepipeline"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
@@ -359,6 +361,7 @@ func build(
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
 	transferRecords := transfer.New(store)
+	codeDeployRecords := codedeploy.New(store)
 	applicationScaling := applicationautoscaling.New(store)
 	locationTrackers := location.New(store)
 	tableRecords := s3tables.New(store)
@@ -443,6 +446,7 @@ func build(
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),
+		codedeployapi.Descriptor(codeDeployRecords),
 		applicationautoscalingapi.Descriptor(applicationScaling),
 		locationapi.Descriptor(locationTrackers),
 		s3tablesapi.Descriptor(tableRecords),

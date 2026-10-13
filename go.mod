@@ -26,6 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.89.0
 	github.com/aws/aws-sdk-go-v2/service/codebuild v1.68.1
 	github.com/aws/aws-sdk-go-v2/service/codecommit v1.43.4
+	github.com/aws/aws-sdk-go-v2/service/codedeploy v1.20.2
 	github.com/aws/aws-sdk-go-v2/service/codepipeline v1.55.4
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.42.1
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.75.0

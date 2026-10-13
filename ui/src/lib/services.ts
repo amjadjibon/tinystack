@@ -97,6 +97,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: developerTools,
 		icon: "codepipeline",
 	},
+	codedeploy: {
+		title: "AWS CodeDeploy",
+		category: developerTools,
+		icon: "codedeploy",
+	},
 	xray: {
 		title: "AWS X-Ray",
 		category: developerTools,

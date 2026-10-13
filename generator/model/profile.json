@@ -22106,5 +22106,286 @@
         "value"
       ]
     }
+  },
+  "codedeploy": {
+    "operations": [
+      "CreateApplication",
+      "GetApplication",
+      "BatchGetApplications",
+      "ListApplications",
+      "UpdateApplication",
+      "DeleteApplication",
+      "CreateDeploymentConfig",
+      "GetDeploymentConfig",
+      "ListDeploymentConfigs",
+      "DeleteDeploymentConfig",
+      "CreateDeploymentGroup",
+      "GetDeploymentGroup",
+      "BatchGetDeploymentGroups",
+      "ListDeploymentGroups",
+      "UpdateDeploymentGroup",
+      "DeleteDeploymentGroup",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateApplicationInput": [
+        "applicationName",
+        "computePlatform",
+        "tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "CreateApplicationOutput": [
+        "applicationId"
+      ],
+      "GetApplicationInput": [
+        "applicationName"
+      ],
+      "GetApplicationOutput": [
+        "application"
+      ],
+      "ApplicationInfo": [
+        "applicationId",
+        "applicationName",
+        "createTime",
+        "linkedToGitHub",
+        "computePlatform"
+      ],
+      "BatchGetApplicationsInput": [
+        "applicationNames"
+      ],
+      "BatchGetApplicationsOutput": [
+        "applicationsInfo"
+      ],
+      "ListApplicationsInput": [
+        "nextToken"
+      ],
+      "ListApplicationsOutput": [
+        "applications",
+        "nextToken"
+      ],
+      "UpdateApplicationInput": [
+        "applicationName",
+        "newApplicationName"
+      ],
+      "DeleteApplicationInput": [
+        "applicationName"
+      ],
+      "CreateDeploymentConfigInput": [
+        "deploymentConfigName",
+        "minimumHealthyHosts",
+        "trafficRoutingConfig",
+        "computePlatform"
+      ],
+      "MinimumHealthyHosts": [
+        "type",
+        "value"
+      ],
+      "TrafficRoutingConfig": [
+        "type",
+        "timeBasedCanary",
+        "timeBasedLinear"
+      ],
+      "TimeBasedCanary": [
+        "canaryPercentage",
+        "canaryInterval"
+      ],
+      "TimeBasedLinear": [
+        "linearPercentage",
+        "linearInterval"
+      ],
+      "CreateDeploymentConfigOutput": [
+        "deploymentConfigId"
+      ],
+      "GetDeploymentConfigInput": [
+        "deploymentConfigName"
+      ],
+      "GetDeploymentConfigOutput": [
+        "deploymentConfigInfo"
+      ],
+      "DeploymentConfigInfo": [
+        "deploymentConfigId",
+        "deploymentConfigName",
+        "minimumHealthyHosts",
+        "trafficRoutingConfig",
+        "computePlatform",
+        "createTime"
+      ],
+      "ListDeploymentConfigsInput": [
+        "nextToken"
+      ],
+      "ListDeploymentConfigsOutput": [
+        "deploymentConfigsList",
+        "nextToken"
+      ],
+      "DeleteDeploymentConfigInput": [
+        "deploymentConfigName"
+      ],
+      "CreateDeploymentGroupInput": [
+        "applicationName",
+        "deploymentGroupName",
+        "deploymentConfigName",
+        "ec2TagFilters",
+        "onPremisesInstanceTagFilters",
+        "autoScalingGroups",
+        "serviceRoleArn",
+        "alarmConfiguration",
+        "autoRollbackConfiguration",
+        "deploymentStyle",
+        "blueGreenDeploymentConfiguration",
+        "loadBalancerInfo",
+        "ecsServices",
+        "tags"
+      ],
+      "EC2TagFilter": [
+        "Key",
+        "Value",
+        "Type"
+      ],
+      "TagFilter": [
+        "Key",
+        "Value",
+        "Type"
+      ],
+      "AlarmConfiguration": [
+        "enabled",
+        "ignorePollAlarmFailure",
+        "alarms"
+      ],
+      "Alarm": [
+        "name"
+      ],
+      "AutoRollbackConfiguration": [
+        "enabled",
+        "events"
+      ],
+      "DeploymentStyle": [
+        "deploymentType",
+        "deploymentOption"
+      ],
+      "BlueGreenDeploymentConfiguration": [
+        "terminateBlueInstancesOnDeploymentSuccess",
+        "deploymentReadyOption"
+      ],
+      "BlueInstanceTerminationOption": [
+        "action",
+        "terminationWaitTimeInMinutes"
+      ],
+      "DeploymentReadyOption": [
+        "actionOnTimeout",
+        "waitTimeInMinutes"
+      ],
+      "LoadBalancerInfo": [
+        "targetGroupPairInfoList"
+      ],
+      "TargetGroupPairInfo": [
+        "targetGroups",
+        "prodTrafficRoute",
+        "testTrafficRoute"
+      ],
+      "TargetGroupInfo": [
+        "name"
+      ],
+      "TrafficRoute": [
+        "listenerArns"
+      ],
+      "ECSService": [
+        "serviceName",
+        "clusterName"
+      ],
+      "CreateDeploymentGroupOutput": [
+        "deploymentGroupId"
+      ],
+      "GetDeploymentGroupInput": [
+        "applicationName",
+        "deploymentGroupName"
+      ],
+      "GetDeploymentGroupOutput": [
+        "deploymentGroupInfo"
+      ],
+      "DeploymentGroupInfo": [
+        "applicationName",
+        "deploymentGroupName",
+        "deploymentConfigName",
+        "ec2TagFilters",
+        "onPremisesInstanceTagFilters",
+        "autoScalingGroups",
+        "serviceRoleArn",
+        "alarmConfiguration",
+        "autoRollbackConfiguration",
+        "deploymentStyle",
+        "blueGreenDeploymentConfiguration",
+        "loadBalancerInfo",
+        "ecsServices",
+        "deploymentGroupId",
+        "computePlatform"
+      ],
+      "AutoScalingGroup": [
+        "name"
+      ],
+      "BatchGetDeploymentGroupsInput": [
+        "applicationName",
+        "deploymentGroupNames"
+      ],
+      "BatchGetDeploymentGroupsOutput": [
+        "deploymentGroupsInfo",
+        "errorMessage"
+      ],
+      "ListDeploymentGroupsInput": [
+        "applicationName",
+        "nextToken"
+      ],
+      "ListDeploymentGroupsOutput": [
+        "applicationName",
+        "deploymentGroups",
+        "nextToken"
+      ],
+      "UpdateDeploymentGroupInput": [
+        "applicationName",
+        "deploymentConfigName",
+        "ec2TagFilters",
+        "onPremisesInstanceTagFilters",
+        "autoScalingGroups",
+        "serviceRoleArn",
+        "alarmConfiguration",
+        "autoRollbackConfiguration",
+        "deploymentStyle",
+        "blueGreenDeploymentConfiguration",
+        "loadBalancerInfo",
+        "ecsServices",
+        "currentDeploymentGroupName",
+        "newDeploymentGroupName"
+      ],
+      "UpdateDeploymentGroupOutput": [
+        "hooksNotCleanedUp"
+      ],
+      "DeleteDeploymentGroupInput": [
+        "applicationName",
+        "deploymentGroupName"
+      ],
+      "DeleteDeploymentGroupOutput": [
+        "hooksNotCleanedUp"
+      ],
+      "TagResourceInput": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceOutput": [],
+      "UntagResourceInput": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceOutput": [],
+      "ListTagsForResourceInput": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "Tags"
+      ]
+    }
   }
 }

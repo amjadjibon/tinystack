@@ -180,6 +180,7 @@ func errUntaggable(r *catalog.Owned) error {
 var taggers = map[string]tagger{
 	"redshift": operations("redshift", "CreateTags", "DeleteTags", byARN("ResourceName"),
 		"Tags", pairs, "TagKeys", names),
+	"codedeploy":             resourceOperations("codedeploy", "ResourceArn", pairs),
 	"applicationautoscaling": resourceOperations("applicationautoscaling", "ResourceARN", plain),
 	"opensearch": operations(
 		"opensearch",
