@@ -140,6 +140,8 @@ nav:
           - "Resource Groups Tagging API": services/resourcegroupstaggingapi.md
           - "SSM Parameter Store": services/ssm.md
           - "Secrets Manager": services/secretsmanager.md
+      - "Database":
+          - "Amazon MemoryDB": services/memorydb.md
       - "Developer Tools":
           - "AWS CodeCommit": services/codecommit.md
           - "AWS CodeDeploy": services/codedeploy.md
@@ -227,6 +229,7 @@ nav:
           - "Amazon MQ configuration, users and runtime": roadmap/services/mq-runtime.md
           - "Amazon MSK configuration, security and runtime": roadmap/services/msk-runtime.md
           - "Amazon MWAA tokens and execution": roadmap/services/mwaa-runtime.md
+          - "Amazon MemoryDB engine runtime and snapshots": roadmap/services/memorydb-runtime.md
           - "Amazon Redshift runtime and snapshots": roadmap/services/redshift-runtime.md
           - "Amazon S3 Glacier archives and jobs": roadmap/services/glacier-runtime.md
           - "AppSync Events": roadmap/services/appsync-events.md

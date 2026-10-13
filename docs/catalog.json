@@ -1860,6 +1860,36 @@
         "Extended archive operations and retrieval execution are deferred to future roadmap slices",
         "No CloudFormation resource: the CloudFormation resource specification defines no Glacier vault type"
       ]
+    },
+    "memorydb": {
+      "title": "Amazon MemoryDB",
+      "category": "Database",
+      "scope": "Account and Region",
+      "summary": "Store MemoryDB subnet groups, users, ACLs and clusters as metadata without running a Valkey or Redis OSS engine.",
+      "features": [
+        "Nineteen pinned AWS JSON 1.1 operations for subnet groups, users, ACLs, clusters and native tags, with AWS SDK v2 coverage",
+        "Clusters follow the documented naming, shard (1-500), replica (0-5), port, maintenance and snapshot window rules, with whole-candidate validation on update and no change when an update is rejected",
+        "Engine redis 6.2/7.0/7.1 or valkey 7.2 by major.minor version with the matching default parameter group; engines can be upgraded (Redis OSS to Valkey too) but never downgraded",
+        "Clusters report available with a clustercfg endpoint and synthesized shards, slots, nodes and Availability Zones for ShowShardDetails; DeleteCluster reports deleting",
+        "Built-in default user and open-access ACL that are identical on every read and cannot be changed, deleted or tagged; clusters without TLS must use open-access",
+        "Users hold up to two checked passwords that are never stored or returned (PasswordCount only) or IAM authentication; deleting a user removes it from its ACLs; ACLs in use by a cluster cannot be deleted",
+        "Subnet groups read existing EC2 subnets in the same transaction, derive the VPC, and protect in-use groups from deletion",
+        "TagResource, UntagResource and ListTags on cluster, user, acl and subnetgroup ARNs; Resource Groups Tagging API and Resource Groups integration",
+        "AWS::MemoryDB::Cluster, SubnetGroup, User and ACL CloudFormation lifecycle with in-place updates, replacement for immutable properties, Ref returning the name and GetAtt ARN/Arn, ClusterEndpoint.Address/Port and Status",
+        "RecordsOnly=true and ExecutionReady=false inventory, official AWS icon and Terraform memorydb endpoint key"
+      ],
+      "gaps": [
+        "No Valkey or Redis OSS engine, data plane or node endpoints; the cluster endpoint, shards and nodes are metadata only",
+        "No snapshots (including SnapshotName, SnapshotArns and final snapshots on delete), parameter group CRUD, reserved nodes, multi-Region clusters, service updates, failover, events or DescribeEngineVersions",
+        "Unsupported cluster settings (SNS topic, data tiering, network type, IP discovery) reject at the shared decoder; r6gd node types are rejected because data tiering is unsupported",
+        "Only the documented default parameter groups are accepted; no implicit default subnet group exists, so a cluster without SubnetGroupName reports none and one Availability Zone",
+        "Engine versions are major.minor only; patch versions are reported only where the AWS documentation states them (valkey 7.2.6)",
+        "DescribeUsers supports the UserName filter only; page size has no default or maximum because the model documents none",
+        "Access strings are only checked for being non-empty and free of the reset command, because the engine ACL grammar is not evaluated",
+        "CloudFormation rejects removing optional properties the API cannot clear and changing AutoMinorVersionUpgrade; ClusterEndpoint, DataTiering, FinalSnapshotName, IpDiscovery, MultiRegionClusterName, NetworkType, SnapshotArns, SnapshotName and SNS properties fail explicitly"
+      ],
+      "execution": "Records only",
+      "package": "memorydb"
     }
   },
   "future": {
@@ -2153,6 +2183,12 @@
       "state": "Proposed",
       "slice": "Extend the vault control plane with archive storage and retrieval job workflows.",
       "features": "- [ ] `UploadArchive`\n- [ ] `DeleteArchive`\n- [ ] `InitiateJob`\n- [ ] `DescribeJob`\n- [ ] `GetJobOutput`\n- [ ] `ListJobs`\n- [ ] `InitiateMultipartUpload`\n- [ ] `UploadMultipartPart`\n- [ ] `CompleteMultipartUpload`\n- [ ] `AbortMultipartUpload`\n- [ ] `ListMultipartUploads`\n- [ ] `ListParts`\n- [ ] `InitiateVaultLock`\n- [ ] `CompleteVaultLock`\n- [ ] `AbortVaultLock`\n- [ ] `GetVaultLock`"
+    },
+    "memorydb-runtime": {
+      "title": "Amazon MemoryDB engine runtime and snapshots",
+      "state": "Proposed",
+      "slice": "Extend the records-only control plane with a real Valkey or Redis OSS engine container per cluster.",
+      "features": "- [ ] Valkey and Redis OSS engine containers behind cluster and node endpoints\n- [ ] ACL and user enforcement from access strings\n- [ ] Snapshots, restore and final snapshots\n- [ ] Parameter group CRUD and values\n- [ ] Failover, scaling and engine upgrades with node lifecycle\n- [ ] Multi-Region clusters, reserved nodes and service updates"
     }
   }
 }
