@@ -90,7 +90,7 @@ func (s *Service) StartJobRun(ctx context.Context, in *api.StartJobRunRequest) (
 		}
 
 		if found {
-			out = &previous
+			out = new(previous)
 			return nil
 		}
 

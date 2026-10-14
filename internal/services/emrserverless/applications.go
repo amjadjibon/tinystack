@@ -82,7 +82,7 @@ func (s *Service) CreateApplication(
 		}
 
 		if found {
-			out = &previous
+			out = new(previous)
 			return nil
 		}
 
@@ -144,7 +144,7 @@ func (s *Service) UpdateApplication(
 		}
 
 		if found {
-			out = &previous
+			out = new(previous)
 			return nil
 		}
 
