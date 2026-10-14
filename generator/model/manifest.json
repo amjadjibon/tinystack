@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/aws/aws-sdk-go-v2",
-  "commit": "2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da",
+  "commit": "6b78958e867baa77281399bf984144de7936b86e",
   "license": "LICENSE.aws-sdk-go-v2",
   "models": {
     "account": {
@@ -61,7 +61,7 @@
     },
     "cloudformation": {
       "path": "codegen/sdk-codegen/aws-models/cloudformation.json",
-      "sha256": "79c020de8f73461d5f277d0a868894413cb8ceca4c60ca6887f848fc8b04456f"
+      "sha256": "3de1f8d8357291665ddbced1780998a84d15b0df2264c2aedd98fc09a9189f7d"
     },
     "cloudfront": {
       "path": "codegen/sdk-codegen/aws-models/cloudfront.json",
@@ -89,7 +89,7 @@
     },
     "codeconnections": {
       "path": "codegen/sdk-codegen/aws-models/codeconnections.json",
-      "sha256": "9b1bf88329d9499912c24ffc03d0b8f9bd6bfbb855789d4f731c0b0f8f42bb9a"
+      "sha256": "8dfdfcccf4156255b5e85cc50013c9ebca73a74a024cdaa550de3b32879da0a3"
     },
     "codedeploy": {
       "path": "codegen/sdk-codegen/aws-models/codedeploy.json",
@@ -137,7 +137,7 @@
     },
     "eks": {
       "path": "codegen/sdk-codegen/aws-models/eks.json",
-      "sha256": "8aaad1b255330361760760b20c58c186d2e6776088577d169b203d050a09de10"
+      "sha256": "6e2d0639b82525a20ba814e52b0d4ac5ffb36e4f7ec100e7164498cdf78b8a56"
     },
     "elasticache": {
       "path": "codegen/sdk-codegen/aws-models/elasticache.json",
@@ -153,7 +153,7 @@
     },
     "emrserverless": {
       "path": "codegen/sdk-codegen/aws-models/emr-serverless.json",
-      "sha256": "629a851a46e6d89c0ba2875d15d356a17f22432e0e2c31e1e7b893cc482a1e28"
+      "sha256": "458dfa585d2845e9635021801a51504364ae237412a8a9c183ce123542331d23"
     },
     "eventbridge": {
       "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
@@ -169,7 +169,7 @@
     },
     "glue": {
       "path": "codegen/sdk-codegen/aws-models/glue.json",
-      "sha256": "d80948f07fba89a215cd9450ff5b3f45c4c31728e440975fccbcc042b9d70eb5"
+      "sha256": "0872a9745bf405a84c119ff4d4cfacaec24bc1919740f1d5a264563e3bbc9c55"
     },
     "iam": {
       "path": "codegen/sdk-codegen/aws-models/iam.json",
@@ -205,11 +205,11 @@
     },
     "lakeformation": {
       "path": "codegen/sdk-codegen/aws-models/lakeformation.json",
-      "sha256": "982a5b6de1597741e7cc707bb0fe5554960c807a7d427c19de7804942dc9a4d3"
+      "sha256": "b3d189f24f5e871364d39d5af0b1391f685d449ff5041c8263cb988adca304a0"
     },
     "lambda": {
       "path": "codegen/sdk-codegen/aws-models/lambda.json",
-      "sha256": "5a19f9e4a3cf9f56d9efdadb0fa0f3b41e9cf174337dcd13a94668856eddb88c"
+      "sha256": "bc9d8903e0192d3e05d141e7b350c05d385fa301c367003077ad8e8f7a0bd99c"
     },
     "location": {
       "path": "codegen/sdk-codegen/aws-models/location.json",
@@ -233,7 +233,7 @@
     },
     "opensearch": {
       "path": "codegen/sdk-codegen/aws-models/opensearch.json",
-      "sha256": "4c6088d3719024e75a431ceb8e57a315191aaa492a008c901606c98619204fbb"
+      "sha256": "97c3c77e7531f163132aac79b8f0589e596d591a4f8564b8a1dc590bc28e7093"
     },
     "organizations": {
       "path": "codegen/sdk-codegen/aws-models/organizations.json",
@@ -301,7 +301,7 @@
     },
     "sesv2": {
       "path": "codegen/sdk-codegen/aws-models/sesv2.json",
-      "sha256": "d7bbdda897ee0d26c9a8f04cc7d0de71ea6de2215cf02f8a342cbfe2ecca9250"
+      "sha256": "a1c6416d94a352261635b50fc04552c617f29bd23a32c9a80100b9a08d027b0c"
     },
     "sfn": {
       "path": "codegen/sdk-codegen/aws-models/sfn.json",
