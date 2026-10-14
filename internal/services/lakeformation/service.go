@@ -5,7 +5,6 @@ package lakeformation
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -36,8 +35,11 @@ var _ api.API = (*Service)(nil)
 type Service struct{ store storage.Store }
 
 func New(store storage.Store) *Service { return &Service{store: store} }
-func invalid(message string) error     { return awserror.New("InvalidInputException", message) }
-func missing(message string) error     { return awserror.New("EntityNotFoundException", message) }
+
+func invalid(message string) error { return awserror.New("InvalidInputException", message) }
+
+func missing(message string) error { return awserror.New("EntityNotFoundException", message) }
+
 func scopeOf(ctx context.Context, catalog *string) (request.Scope, error) {
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
@@ -53,6 +55,7 @@ func scopeOf(ctx context.Context, catalog *string) (request.Scope, error) {
 
 func recordID(value any) string {
 	b, _ := json.Marshal(value)
+
 	return fmt.Sprintf("%x", sha256.Sum256(b))
 }
 
@@ -68,25 +71,6 @@ func page[T any](items []T, id func(T) string, token *string, limit *int64) (sel
 
 	if n < 1 || n > 1000 {
 		return nil, nil, invalid("MaxResults must be between 1 and 1000")
-	}
-
-	if token != nil {
-		cursor, e := base64.RawURLEncoding.DecodeString(*token)
-		if e != nil {
-			return nil, nil, invalid("Invalid NextToken")
-		}
-
-		found := false
-		for _, item := range items {
-			if id(item) == string(cursor) {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return nil, nil, invalid("Invalid NextToken")
-		}
 	}
 
 	return common.Page(items, id, token, n, invalid("Invalid NextToken"))

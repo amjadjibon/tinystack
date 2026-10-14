@@ -311,7 +311,7 @@ func TestLakeFormationValidationPaginationAndIsolation(t *testing.T) {
 		aws.ToString(second.LFTags[0].TagKey) == aws.ToString(first.LFTags[0].TagKey) {
 		t.Fatal(second, err)
 	}
-	_, err = c.ListLFTags(ctx, &sdk.ListLFTagsInput{NextToken: new("bad")})
+	_, err = c.ListLFTags(ctx, &sdk.ListLFTagsInput{NextToken: new("!")})
 	lakeError(t, err, "InvalidInputException")
 	for _, other := range []*sdk.Client{lakeClient(s, "team-b", "us-east-1"), lakeClient(s, "test", "us-west-2")} {
 		tags, e := other.ListLFTags(ctx, &sdk.ListLFTagsInput{})
