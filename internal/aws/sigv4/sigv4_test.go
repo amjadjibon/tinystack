@@ -74,7 +74,8 @@ func sign(t *testing.T, s3 bool, at time.Time, secret string, tamper func(*http.
 	defer server.Close()
 
 	path := "/2015-03-31/functions/arn%3Aaws%3Alambda%3Aus-east-1%3A000000000000%3Afunction%3Af/a%20b~c/"
-	query := "?b=2&a=x%20y&a=1&slash=%2F&empty&plus=%2B"
+	// "domain-owner" sorts after "domain" by name, though "-" sorts before "=".
+	query := "?b=2&a=x%20y&a=1&slash=%2F&empty&plus=%2B&domain-owner=1&domain=d"
 	r, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodPut,

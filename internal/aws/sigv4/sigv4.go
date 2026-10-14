@@ -3,6 +3,7 @@
 package sigv4
 
 import (
+	"cmp"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -10,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -265,15 +265,26 @@ func canonicalQuery(raw string) (string, error) {
 		return "", errors.Join(ErrMismatch, err)
 	}
 
-	pairs := make([]string, 0, len(values))
+	// Parameters sort by encoded name, then value, so "a" precedes "a-b"
+	// even though "-" sorts before "=".
+	type pair struct{ key, value string }
+	pairs := make([]pair, 0, len(values))
 	for k, vs := range values {
 		for _, v := range vs {
-			pairs = append(pairs, escape(k, true)+"="+escape(v, true))
+			pairs = append(pairs, pair{escape(k, true), escape(v, true)})
 		}
 	}
 
-	sort.Strings(pairs)
-	return strings.Join(pairs, "&"), nil
+	slices.SortFunc(pairs, func(a, b pair) int {
+		return cmp.Or(strings.Compare(a.key, b.key), strings.Compare(a.value, b.value))
+	})
+
+	joined := make([]string, len(pairs))
+	for i, p := range pairs {
+		joined[i] = p.key + "=" + p.value
+	}
+
+	return strings.Join(joined, "&"), nil
 }
 
 // headerValue joins a header's values with commas after trimming them and
