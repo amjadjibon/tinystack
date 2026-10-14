@@ -94,6 +94,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: database,
 		icon: "timestreamwrite",
 	},
+	codeartifact: {
+		title: "CodeArtifact",
+		category: developerTools,
+		icon: "codeartifact",
+	},
 	codecommit: {
 		title: "CodeCommit",
 		category: developerTools,

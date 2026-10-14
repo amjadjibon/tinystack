@@ -161,6 +161,7 @@ var TerraformServices = []string{
 	"codebuild",
 	"codepipeline",
 	"codecommit",
+	"codeartifact",
 	"timestreamwrite",
 	"codeconnections",
 	"mq",

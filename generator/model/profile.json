@@ -3111,6 +3111,286 @@
       ]
     }
   },
+  "codeartifact": {
+    "operations": [
+      "AssociateExternalConnection",
+      "CreateDomain",
+      "CreateRepository",
+      "DeleteDomain",
+      "DeleteDomainPermissionsPolicy",
+      "DeleteRepository",
+      "DeleteRepositoryPermissionsPolicy",
+      "DescribeDomain",
+      "DescribeRepository",
+      "DisassociateExternalConnection",
+      "GetAuthorizationToken",
+      "GetDomainPermissionsPolicy",
+      "GetRepositoryEndpoint",
+      "GetRepositoryPermissionsPolicy",
+      "ListDomains",
+      "ListRepositories",
+      "ListRepositoriesInDomain",
+      "ListTagsForResource",
+      "PutDomainPermissionsPolicy",
+      "PutRepositoryPermissionsPolicy",
+      "TagResource",
+      "UntagResource",
+      "UpdateRepository"
+    ],
+    "shapes": {
+      "AssociateExternalConnectionRequest": [
+        "domain",
+        "domainOwner",
+        "repository",
+        "externalConnection"
+      ],
+      "AssociateExternalConnectionResult": [
+        "repository"
+      ],
+      "CreateDomainRequest": [
+        "domain",
+        "encryptionKey",
+        "tags"
+      ],
+      "CreateDomainResult": [
+        "domain"
+      ],
+      "CreateRepositoryRequest": [
+        "domain",
+        "domainOwner",
+        "repository",
+        "description",
+        "upstreams",
+        "tags"
+      ],
+      "CreateRepositoryResult": [
+        "repository"
+      ],
+      "DeleteDomainPermissionsPolicyRequest": [
+        "domain",
+        "domainOwner",
+        "policyRevision"
+      ],
+      "DeleteDomainPermissionsPolicyResult": [
+        "policy"
+      ],
+      "DeleteDomainRequest": [
+        "domain",
+        "domainOwner"
+      ],
+      "DeleteDomainResult": [
+        "domain"
+      ],
+      "DeleteRepositoryPermissionsPolicyRequest": [
+        "domain",
+        "domainOwner",
+        "repository",
+        "policyRevision"
+      ],
+      "DeleteRepositoryPermissionsPolicyResult": [
+        "policy"
+      ],
+      "DeleteRepositoryRequest": [
+        "domain",
+        "domainOwner",
+        "repository"
+      ],
+      "DeleteRepositoryResult": [
+        "repository"
+      ],
+      "DescribeDomainRequest": [
+        "domain",
+        "domainOwner"
+      ],
+      "DescribeDomainResult": [
+        "domain"
+      ],
+      "DescribeRepositoryRequest": [
+        "domain",
+        "domainOwner",
+        "repository"
+      ],
+      "DescribeRepositoryResult": [
+        "repository"
+      ],
+      "DisassociateExternalConnectionRequest": [
+        "domain",
+        "domainOwner",
+        "repository",
+        "externalConnection"
+      ],
+      "DisassociateExternalConnectionResult": [
+        "repository"
+      ],
+      "DomainDescription": [
+        "name",
+        "owner",
+        "arn",
+        "status",
+        "createdTime",
+        "encryptionKey",
+        "repositoryCount",
+        "assetSizeBytes",
+        "s3BucketArn"
+      ],
+      "DomainSummary": [
+        "name",
+        "owner",
+        "arn",
+        "status",
+        "createdTime",
+        "encryptionKey"
+      ],
+      "GetAuthorizationTokenRequest": [
+        "domain",
+        "domainOwner",
+        "durationSeconds"
+      ],
+      "GetAuthorizationTokenResult": [
+        "authorizationToken",
+        "expiration"
+      ],
+      "GetDomainPermissionsPolicyRequest": [
+        "domain",
+        "domainOwner"
+      ],
+      "GetDomainPermissionsPolicyResult": [
+        "policy"
+      ],
+      "GetRepositoryEndpointRequest": [
+        "domain",
+        "domainOwner",
+        "repository",
+        "format",
+        "endpointType"
+      ],
+      "GetRepositoryEndpointResult": [
+        "repositoryEndpoint"
+      ],
+      "GetRepositoryPermissionsPolicyRequest": [
+        "domain",
+        "domainOwner",
+        "repository"
+      ],
+      "GetRepositoryPermissionsPolicyResult": [
+        "policy"
+      ],
+      "ListDomainsRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListDomainsResult": [
+        "domains",
+        "nextToken"
+      ],
+      "ListRepositoriesInDomainRequest": [
+        "domain",
+        "domainOwner",
+        "administratorAccount",
+        "repositoryPrefix",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListRepositoriesInDomainResult": [
+        "repositories",
+        "nextToken"
+      ],
+      "ListRepositoriesRequest": [
+        "repositoryPrefix",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListRepositoriesResult": [
+        "repositories",
+        "nextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResult": [
+        "tags"
+      ],
+      "PutDomainPermissionsPolicyRequest": [
+        "domain",
+        "domainOwner",
+        "policyRevision",
+        "policyDocument"
+      ],
+      "PutDomainPermissionsPolicyResult": [
+        "policy"
+      ],
+      "PutRepositoryPermissionsPolicyRequest": [
+        "domain",
+        "domainOwner",
+        "repository",
+        "policyRevision",
+        "policyDocument"
+      ],
+      "PutRepositoryPermissionsPolicyResult": [
+        "policy"
+      ],
+      "RepositoryDescription": [
+        "name",
+        "administratorAccount",
+        "domainName",
+        "domainOwner",
+        "arn",
+        "description",
+        "upstreams",
+        "externalConnections",
+        "createdTime"
+      ],
+      "RepositoryExternalConnectionInfo": [
+        "externalConnectionName",
+        "packageFormat",
+        "status"
+      ],
+      "RepositorySummary": [
+        "name",
+        "administratorAccount",
+        "domainName",
+        "domainOwner",
+        "arn",
+        "description",
+        "createdTime"
+      ],
+      "ResourcePolicy": [
+        "resourceArn",
+        "revision",
+        "document"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResult": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResult": [],
+      "UpdateRepositoryRequest": [
+        "domain",
+        "domainOwner",
+        "repository",
+        "description",
+        "upstreams"
+      ],
+      "UpdateRepositoryResult": [
+        "repository"
+      ],
+      "UpstreamRepository": [
+        "repositoryName"
+      ],
+      "UpstreamRepositoryInfo": [
+        "repositoryName"
+      ]
+    }
+  },
   "codeconnections": {
     "operations": [
       "CreateConnection",
