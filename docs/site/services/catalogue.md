@@ -13,13 +13,13 @@ feature manages records or needs a Docker runtime.
 | --- | --- | --- |
 | Fault injection | Ordered gateway rules inject protocol-correct AWS errors and cancellable latency by service, operation, Region and account, with probability, startup configuration, reset restoration, diagnostics and LocalStack Chaos API aliases. | [Details](../guides/fault-injection.md) |
 | AWS wire protocols | AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings. | [Details](../architecture/request-flow.md) |
-| Identity and resource scope | Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, optional SigV4 verification, and identity-policy evaluation with off, soft and enforce modes. | [Details](../architecture/identity.md) |
+| Identity and resource scope | Configured access-key accounts, 12-digit access keys that are their own account ID, IAM/STS credential lookup, regional and account-wide scopes, optional SigV4 verification, and identity-policy evaluation with off, soft and enforce modes. | [Details](../architecture/identity.md) |
 | Transactional storage and persistence | Atomic callback transactions, in-memory storage, and optional SQLite commit persistence with resource reload on restart; runtime and in-flight state have separate limits. | [Details](../guides/persistence.md) |
 | Cloudscape console | AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
 | Diagnostics | Health/resource endpoints, bounded request and delivery logs, outbound message inspection (email, SMS, Cognito codes) with LocalStack-compatible SES and SNS aliases, model-sensitive body redaction, and Prometheus request metrics. | [Details](../guides/diagnostics.md) |
 | Init hooks and reset | LocalStack-style boot, start, ready and shutdown scripts (also read from /etc/localstack/init) with a status endpoint, idempotent IAM/S3/SQS sample data in the development example config, and a POST reset endpoint that clears all stored state and can re-run the ready scripts. | [Details](../guides/init-hooks.md) |
-| CLI and SDK clients | Local endpoint overrides for AWS clients, CLI wrappers, and generated Go SDK-compatible APIs. | [Details](../getting-started/clients.md) |
-| Infrastructure workflows | Selected Terraform AWS provider workflows and local CloudFormation/SAM deployment through the registered resource-type subset. | [Details](../guides/infrastructure.md) |
+| CLI and SDK clients | Local endpoint overrides for AWS clients, CLI wrappers (aws, terraform, sam, cdk), and generated Go SDK-compatible APIs. | [Details](../getting-started/clients.md) |
+| Infrastructure workflows | Selected Terraform AWS provider workflows, AWS SAM and CDK (bootstrap and deploy) through the registered CloudFormation resource-type subset. | [Details](../guides/infrastructure.md) |
 | Runtime adapters | Docker Lambda execution and opt-in ECS Docker tasks, EKS k3s clusters, and ElastiCache Docker nodes; default optional adapters manage records. | [Details](../guides/runtimes.md) |
 | Cross-service event delivery | Supported notification, rule, and event-source workflows connect local service implementations and record delivery outcomes. | [Details](../guides/events.md) |
 | Console single sign-on | Optional OpenID Connect sign-in to the console (authorization code with PKCE, any compliant provider such as Authelia, Zitadel, Keycloak, Authentik, Okta or Entra ID). Provider groups map to an IAM role; the person gets that role's temporary STS credentials, so IAM authorization and the request inspector apply per person, and the administrative endpoints require an administrator's session or root credentials. `tinystack login` signs the AWS CLI in the same way through the device authorization flow, with HTTPS outside loopback, single-use fresh tokens and private atomic credential caches. Enforced member inventory omits details and evaluates request conditions; mapped role deletion invalidates old federated credentials. | [Details](../guides/sso.md) |
@@ -279,6 +279,7 @@ Create and update local stacks through the same service operations used by SDK c
 - Typed resource registry with validated properties and attributes.
 - Selected SAM resources and event transformations.
 - Resource operations run outside store transactions through the lenient caller.
+- AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options.
 
 [Supported operations](cloudformation.md#supported-operations) · [Limitations](cloudformation.md#limitations-and-future-work)
 
@@ -648,7 +649,7 @@ Issue local session credentials and inspect the resolved caller identity.
 **Execution:** Local behavior. **Selected operations:** 5.
 
 - GetCallerIdentity, AssumeRole, GetSessionToken and AssumeRoleWithWebIdentity.
-- Subset of role trust policies with AWS, Federated and Service principals.
+- Subset of role trust policies with AWS, Federated and Service principals, and StringEquals, StringLike and Null conditions.
 - Session credentials feed signature verification and account resolution.
 - In-process service role assumption supports the IoT credentials provider.
 - In `identity.mode: verify`, web identity tokens must carry a valid RS256 signature of the issuer's published keys (discovery and JWKS, cached, HTTPS outside loopback and no HTTP redirects), or of the Cognito identity pool that issued them.

@@ -10,9 +10,19 @@ identity:
     team-b: "111111111111"
 ```
 
-The account comes from the configured key mapping or a locally issued credential. An unmapped key or applicable
-unsigned request uses `defaults.account`. Region comes from SigV4 scope, then a recognized regional hostname,
-then `defaults.region`. Arbitrary key text is not converted into an account ID.
+The account comes from, in this order:
+
+1. the `identity.accounts` mapping;
+2. a credential TinyStack issued through STS or IAM;
+3. the access key itself, when it is exactly 12 ASCII digits (`123456789012` is account `123456789012`);
+4. `defaults.account`, for any other key and for unsigned requests.
+
+Region comes from SigV4 scope, then a recognized regional hostname, then `defaults.region`. Other key text is
+not converted into an account ID. The 12-digit rule only chooses the account: in `verify` mode the key still
+needs an `identity.secret_keys` entry, and a 12-digit key without one fails with `InvalidClientTokenId`.
+Because every service reads the account from the request, ARNs, queue URLs, `GetCallerIdentity` and cross-account
+lookups follow the key, and two 12-digit keys get separate resources with the same names. Use it to run the
+same [CDK app](../guides/cdk.md) in several accounts without configuration.
 
 ## Parse and verify modes
 

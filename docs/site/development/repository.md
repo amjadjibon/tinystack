@@ -6,6 +6,7 @@
 | [cmd/aws-local](https://github.com/amjadjibon/tinystack/tree/main/cmd/aws-local) | AWS CLI wrapper |
 | [cmd/terraform-local](https://github.com/amjadjibon/tinystack/tree/main/cmd/terraform-local) | Temporary provider override wrapper |
 | [cmd/sam-local](https://github.com/amjadjibon/tinystack/tree/main/cmd/sam-local) | SAM CLI environment wrapper |
+| [cmd/cdk-local](https://github.com/amjadjibon/tinystack/tree/main/cmd/cdk-local) | CDK CLI environment wrapper |
 | [internal/cmd](https://github.com/amjadjibon/tinystack/tree/main/internal/cmd) | Cobra commands, startup, dependency wiring and listeners |
 | [internal/config](https://github.com/amjadjibon/tinystack/tree/main/internal/config) | Strict YAML, defaults and validation |
 | [internal/gateway](https://github.com/amjadjibon/tinystack/tree/main/internal/gateway) | AWS routing, identity, HTTP data planes and diagnostic handlers |

@@ -75,6 +75,7 @@ nav:
       - CLI and SDK clients: getting-started/clients.md
   - Guides:
       - Infrastructure workflows: guides/infrastructure.md
+      - AWS CDK: guides/cdk.md
       - CloudFormation resource types: guides/cloudformation-resources.md
       - Event-driven workflows: guides/events.md
       - Docker runtimes: guides/runtimes.md

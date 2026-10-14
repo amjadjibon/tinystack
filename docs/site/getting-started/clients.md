@@ -23,8 +23,9 @@ task build:tools
 ./bin/aws-local sts get-caller-identity
 ```
 
-The build also creates `terraform-local`, `sam-local`, and aliases `awslocal`, `tflocal`, and `samlocal`.
-The underlying AWS CLI, Terraform, and SAM CLI must still be installed.
+The build also creates `terraform-local`, `sam-local`, `cdk-local`, and aliases `awslocal`, `tflocal`, `samlocal`,
+and `cdklocal`. The underlying AWS CLI, Terraform, SAM CLI, and CDK CLI must still be installed;
+see [AWS CDK](../guides/cdk.md).
 
 | Setting | Purpose |
 | --- | --- |

@@ -90,10 +90,13 @@ Use [tests/sam/template.yaml](https://github.com/amjadjibon/tinystack/blob/main/
 [its runner](https://github.com/amjadjibon/tinystack/blob/main/tests/sam/sam.py) for deploy/redeploy/delete examples.
 Docker is needed to execute deployed functions.
 
+`cdk-local` does the same for the AWS CDK CLI; see [AWS CDK](cdk.md) for bootstrap, deploy and its limits.
+
 ```sh
 task test:terraform
 task test:sam
+task test:cdk
 ```
 
 These opt-in runners build/start their own local servers. Terraform downloads its provider; SAM needs the SAM
-and AWS CLIs. They manage fixture resources separately from your foreground instance.
+and AWS CLIs; CDK needs node, the CDK CLI and the AWS CLI, and installs `aws-cdk-lib` with npm. They manage fixture resources separately from your foreground instance.

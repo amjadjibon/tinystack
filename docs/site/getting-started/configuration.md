@@ -32,7 +32,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `defaults.region` | `us-east-1` | Nonempty region |
 | `identity.mode` | `parse` | `parse` or `verify` |
 | `identity.authorization` | `off` | `off`, `soft` or `enforce`; independent of signature verification; override with `--authorization` |
-| `identity.accounts` | `{}` | Nonempty access-key IDs mapped to 12-digit account IDs |
+| `identity.accounts` | `{}` | Nonempty access-key IDs mapped to 12-digit account IDs; wins over the rule that a 12-digit access key is its own account |
 | `identity.secret_keys` | Unset | Nonempty secrets keyed by access-key ID; required in `verify`, forbidden in `parse` |
 | `accounts` | `{}` | Optional fixtures keyed by 12-digit account ID for metadata, primary contact and region opt-in overrides |
 | `storage.mode` | `memory` | `memory` or `persistent` |

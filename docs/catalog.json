@@ -12,7 +12,7 @@
     },
     {
       "title": "Identity and resource scope",
-      "summary": "Configured access-key accounts, IAM/STS credential lookup, regional and account-wide scopes, optional SigV4 verification, and identity-policy evaluation with off, soft and enforce modes.",
+      "summary": "Configured access-key accounts, 12-digit access keys that are their own account ID, IAM/STS credential lookup, regional and account-wide scopes, optional SigV4 verification, and identity-policy evaluation with off, soft and enforce modes.",
       "reference": "architecture/identity.md"
     },
     {
@@ -37,12 +37,12 @@
     },
     {
       "title": "CLI and SDK clients",
-      "summary": "Local endpoint overrides for AWS clients, CLI wrappers, and generated Go SDK-compatible APIs.",
+      "summary": "Local endpoint overrides for AWS clients, CLI wrappers (aws, terraform, sam, cdk), and generated Go SDK-compatible APIs.",
       "reference": "getting-started/clients.md"
     },
     {
       "title": "Infrastructure workflows",
-      "summary": "Selected Terraform AWS provider workflows and local CloudFormation/SAM deployment through the registered resource-type subset.",
+      "summary": "Selected Terraform AWS provider workflows, AWS SAM and CDK (bootstrap and deploy) through the registered CloudFormation resource-type subset.",
       "reference": "guides/infrastructure.md"
     },
     {
@@ -119,7 +119,7 @@
       ],
       "gaps": [
         "Lifecycle rules do not expire or transition objects",
-        "Encryption settings are metadata; objects are not encrypted as an AWS S3 data plane would encrypt them",
+        "Encryption settings are metadata; objects are not encrypted as an AWS S3 data plane would encrypt them, and writes asking for aws:kms are accepted and stored like AES256 objects (aws:kms:dsse is rejected)",
         "No website endpoint, POST uploads or general ACL/policy evaluation",
         "Generated in-process PutObject/UploadPart byte-slice shapes, in-process reads (e.g. Lambda runtime Object() helper), and console download and preview buffers still buffer bytes in memory",
         "Verify-mode SigV4 authentication spools upload payloads to temporary files only when verifying signed hexadecimal or empty payload hashes; UNSIGNED-PAYLOAD, supported unsigned-trailer forms (STREAMING-UNSIGNED-PAYLOAD-TRAILER), and usual presigned S3 uploads stream without that spool",
@@ -585,7 +585,7 @@
       "summary": "Issue local session credentials and inspect the resolved caller identity.",
       "features": [
         "GetCallerIdentity, AssumeRole, GetSessionToken and AssumeRoleWithWebIdentity",
-        "Subset of role trust policies with AWS, Federated and Service principals",
+        "Subset of role trust policies with AWS, Federated and Service principals, and StringEquals, StringLike and Null conditions",
         "Session credentials feed signature verification and account resolution",
         "In-process service role assumption supports the IoT credentials provider",
         "In `identity.mode: verify`, web identity tokens must carry a valid RS256 signature of the issuer's published keys (discovery and JWKS, cached, HTTPS outside loopback and no HTTP redirects), or of the Cognito identity pool that issued them",
@@ -785,13 +785,15 @@
         "Stack create/update/delete, rollback, change sets, events and exports",
         "Typed resource registry with validated properties and attributes",
         "Selected SAM resources and event transformations",
-        "Resource operations run outside store transactions through the lenient caller"
+        "Resource operations run outside store transactions through the lenient caller",
+        "AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options"
       ],
       "gaps": [
         "Only resource types and properties registered in resources*.go are supported",
-        "No stack sets, nested stacks, custom resources, imports or drift detection",
+        "No stack sets, nested stacks, custom resources, imports (ImportExistingResources is accepted but ignored) or drift detection",
         "No macros/AWS::Include, policies with unsupported semantics or snapshot deletion behavior",
-        "IAM capabilities are checked but permission policies and service roles are not evaluated"
+        "IAM capabilities are checked but permission policies and service roles are not evaluated",
+        "AWS::IAM::Role accepts PermissionsBoundary only as an absent value; AWS::S3::Bucket AccessControl is limited to Private; EXPRESS deployment mode is rejected"
       ],
       "execution": "Local behavior",
       "package": "cloudformation"
