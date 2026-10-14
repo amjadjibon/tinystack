@@ -13,7 +13,7 @@ Store data lake settings, S3 registrations, permission grants and LF-tags withou
 | API version | `2017-03-31` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 19 of 61 in the pinned model |
+| Selected operations | 19 of 69 in the pinned model |
 
 ## Implemented behavior
 
@@ -62,24 +62,28 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "42 modeled operations outside the implementation"
+??? info "50 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `AssumeDecoratedRoleWithSAML`
+    - `AttachRLSPolicy`
     - `CancelTransaction`
     - `CommitTransaction`
     - `CreateDataCellsFilter`
     - `CreateLFTagExpression`
     - `CreateLakeFormationIdentityCenterConfiguration`
     - `CreateLakeFormationOptIn`
+    - `CreateRLSPolicy`
     - `DeleteDataCellsFilter`
     - `DeleteLFTagExpression`
     - `DeleteLakeFormationIdentityCenterConfiguration`
     - `DeleteLakeFormationOptIn`
     - `DeleteObjectsOnCancel`
+    - `DeleteRLSPolicy`
     - `DescribeLakeFormationIdentityCenterConfiguration`
     - `DescribeTransaction`
+    - `DetachRLSPolicy`
     - `ExtendTransaction`
     - `GetDataCellsFilter`
     - `GetDataLakePrincipal`
@@ -87,6 +91,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetLFTagExpression`
     - `GetQueryState`
     - `GetQueryStatistics`
+    - `GetRLSPolicy`
     - `GetTableObjects`
     - `GetTemporaryDataLocationCredentials`
     - `GetTemporaryGluePartitionCredentials`
@@ -96,6 +101,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListDataCellsFilter`
     - `ListLFTagExpressions`
     - `ListLakeFormationOptIns`
+    - `ListRLSPolicies`
+    - `ListRLSPolicyAttachments`
     - `ListTableStorageOptimizers`
     - `ListTransactions`
     - `SearchDatabasesByLFTags`
@@ -105,6 +112,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateDataCellsFilter`
     - `UpdateLFTagExpression`
     - `UpdateLakeFormationIdentityCenterConfiguration`
+    - `UpdateRLSPolicy`
     - `UpdateResource`
     - `UpdateTableObjects`
     - `UpdateTableStorageOptimizer`
@@ -113,6 +121,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/lakeformation)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/lakeformation/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/lakeformation.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/lakeformation.json) at `6b78958e867baa77281399bf984144de7936b86e`.
 - SDK integration examples: [lakeformation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lakeformation_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

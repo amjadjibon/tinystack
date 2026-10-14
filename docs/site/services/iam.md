@@ -231,6 +231,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/iam)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/iam/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `6b78958e867baa77281399bf984144de7936b86e`.
 - SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

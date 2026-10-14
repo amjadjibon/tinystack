@@ -101,6 +101,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/codeartifact)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/codeartifact/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/codeartifact.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/codeartifact.json) at `6b78958e867baa77281399bf984144de7936b86e`.
 - SDK integration examples: [codeartifact_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/codeartifact_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

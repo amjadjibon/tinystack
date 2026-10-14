@@ -13,7 +13,7 @@ Create the databases, tables, and partitions that local Athena queries use.
 | API version | `2017-03-31` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 19 of 300 in the pinned model |
+| Selected operations | 19 of 306 in the pinned model |
 
 ## Implemented behavior
 
@@ -58,7 +58,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "281 modeled operations outside the implementation"
+??? info "287 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -70,6 +70,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `BatchGetCrawlers`
     - `BatchGetCustomEntityTypes`
     - `BatchGetDataQualityResult`
+    - `BatchGetDataQualityResultV2`
     - `BatchGetDataQualityRulesetEvaluationRun`
     - `BatchGetDevEndpoints`
     - `BatchGetIterableForms`
@@ -183,6 +184,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetDataQualityModel`
     - `GetDataQualityModelResult`
     - `GetDataQualityResult`
+    - `GetDataQualityResultV2`
     - `GetDataQualityRuleRecommendationRun`
     - `GetDataQualityRuleset`
     - `GetDataQualityRulesetEvaluationRun`
@@ -221,6 +223,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetSession`
     - `GetSessionEndpoint`
     - `GetStatement`
+    - `GetSystemLogsForJobRun`
+    - `GetSystemLogsForSession`
     - `GetTableOptimizer`
     - `GetTableVersion`
     - `GetTableVersions`
@@ -245,6 +249,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListCrawls`
     - `ListCustomEntityTypes`
     - `ListDataQualityResults`
+    - `ListDataQualityResultsV2`
     - `ListDataQualityRuleRecommendationRuns`
     - `ListDataQualityRulesetEvaluationRuns`
     - `ListDataQualityRulesets`
@@ -271,6 +276,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListUsageProfiles`
     - `ListWorkflows`
     - `ModifyIntegration`
+    - `PublishDataQualityResultV2`
     - `PutAsset`
     - `PutAssetType`
     - `PutAttachment`
@@ -348,6 +354,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/glue)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/glue/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/glue.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/glue.json) at `6b78958e867baa77281399bf984144de7936b86e`.
 - SDK integration examples: [integration suite](https://github.com/amjadjibon/tinystack/tree/main/tests/integration).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

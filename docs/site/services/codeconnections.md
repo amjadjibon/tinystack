@@ -9,7 +9,7 @@ Store CodeConnections connections and GitHub Enterprise Server hosts as metadata
 | --- | --- |
 | Service ID | `codeconnections` |
 | Signing name | `codeconnections` |
-| Wire protocol | AWS JSON 1.0 |
+| Wire protocol | AWS JSON 1.0, Smithy RPC v2 CBOR |
 | API version | `2023-12-01` |
 | Scope | Account and region |
 | Execution | Records only |
@@ -79,6 +79,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/codeconnections)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/codeconnections/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/codeconnections.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/codeconnections.json) at `6b78958e867baa77281399bf984144de7936b86e`.
 - SDK integration examples: [codeconnections_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/codeconnections_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

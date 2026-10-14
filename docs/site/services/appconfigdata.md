@@ -47,6 +47,6 @@ All operations in this pinned model are selected. Member and behavior limits sti
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/appconfig)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/appconfigdata/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/appconfigdata.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/appconfigdata.json) at `6b78958e867baa77281399bf984144de7936b86e`.
 - SDK integration examples: [appconfig_cloudtrail_persistence_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/appconfig_cloudtrail_persistence_test.go), [appconfig_cloudtrail_tagging_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/appconfig_cloudtrail_tagging_test.go), [appconfig_pagination_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/appconfig_pagination_test.go), [appconfig_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/appconfig_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).
