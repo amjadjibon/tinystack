@@ -597,11 +597,14 @@
         "User pools, app clients, users, groups, attributes and resource servers",
         "Password and SRP flows, refresh tokens and pool RS256 JWTs",
         "JWKS/OpenID configuration endpoints and client-credentials OAuth tokens",
-        "Selected Lambda triggers and inspectable verification/invitation messages"
+        "Selected Lambda triggers and inspectable verification/invitation messages",
+        "TOTP/SMS MFA setup, preferences and session-bound sign-in challenges; a session ends after five wrong codes",
+        "Custom authentication with Define/Create/Verify Lambda triggers, including SRP and MFA",
+        "Refresh-token rotation with retry grace periods and multiple client secrets"
       ],
       "gaps": [
         "No hosted UI, pool domains, social identity providers or broader OAuth grants",
-        "No required MFA sign-in, custom/passwordless authentication, device tracking or threat protection",
+        "No passwordless/WebAuthn or email MFA, device tracking or threat protection",
         "Messages are recorded in diagnostics rather than emailed/SMSed"
       ],
       "execution": "Local behavior",

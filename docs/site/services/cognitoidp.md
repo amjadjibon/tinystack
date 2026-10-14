@@ -13,7 +13,7 @@ Manage users and clients, authenticate locally, and issue pool-signed JWTs.
 | API version | `2016-04-18` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 60 of 132 in the pinned model |
+| Selected operations | 69 of 132 in the pinned model |
 
 ## Implemented behavior
 
@@ -22,7 +22,7 @@ See the [implemented feature catalogue](catalogue.md#cognito-user-pools) for thi
 ## Limitations and future work
 
 - No hosted UI, pool domains, social identity providers or broader OAuth grants.
-- No required MFA sign-in, custom/passwordless authentication, device tracking or threat protection.
+- No passwordless/WebAuthn or email MFA, device tracking or threat protection.
 - Messages are recorded in diagnostics rather than emailed/SMSed.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
@@ -38,6 +38,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | Operation | HTTP binding |
 | --- | --- |
 | `AddCustomAttributes` | `POST /` |
+| `AddUserPoolClientSecret` | `POST /` |
 | `AdminAddUserToGroup` | `POST /` |
 | `AdminConfirmSignUp` | `POST /` |
 | `AdminCreateUser` | `POST /` |
@@ -51,9 +52,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `AdminRemoveUserFromGroup` | `POST /` |
 | `AdminResetUserPassword` | `POST /` |
 | `AdminRespondToAuthChallenge` | `POST /` |
+| `AdminSetUserMFAPreference` | `POST /` |
 | `AdminSetUserPassword` | `POST /` |
+| `AdminSetUserSettings` | `POST /` |
 | `AdminUpdateUserAttributes` | `POST /` |
 | `AdminUserGlobalSignOut` | `POST /` |
+| `AssociateSoftwareToken` | `POST /` |
 | `ChangePassword` | `POST /` |
 | `ConfirmForgotPassword` | `POST /` |
 | `ConfirmSignUp` | `POST /` |
@@ -67,11 +71,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteUserAttributes` | `POST /` |
 | `DeleteUserPool` | `POST /` |
 | `DeleteUserPoolClient` | `POST /` |
+| `DeleteUserPoolClientSecret` | `POST /` |
 | `DescribeResourceServer` | `POST /` |
 | `DescribeUserPool` | `POST /` |
 | `DescribeUserPoolClient` | `POST /` |
 | `ForgotPassword` | `POST /` |
 | `GetGroup` | `POST /` |
+| `GetTokensFromRefreshToken` | `POST /` |
 | `GetUser` | `POST /` |
 | `GetUserAttributeVerificationCode` | `POST /` |
 | `GetUserPoolMfaConfig` | `POST /` |
@@ -80,6 +86,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListGroups` | `POST /` |
 | `ListResourceServers` | `POST /` |
 | `ListTagsForResource` | `POST /` |
+| `ListUserPoolClientSecrets` | `POST /` |
 | `ListUserPoolClients` | `POST /` |
 | `ListUserPools` | `POST /` |
 | `ListUsers` | `POST /` |
@@ -87,6 +94,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ResendConfirmationCode` | `POST /` |
 | `RespondToAuthChallenge` | `POST /` |
 | `RevokeToken` | `POST /` |
+| `SetUserMFAPreference` | `POST /` |
 | `SetUserPoolMfaConfig` | `POST /` |
 | `SignUp` | `POST /` |
 | `TagResource` | `POST /` |
@@ -96,15 +104,15 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `UpdateUserAttributes` | `POST /` |
 | `UpdateUserPool` | `POST /` |
 | `UpdateUserPoolClient` | `POST /` |
+| `VerifySoftwareToken` | `POST /` |
 | `VerifyUserAttribute` | `POST /` |
 
 ## Operations not implemented
 
-??? info "72 modeled operations outside the implementation"
+??? info "63 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
-    - `AddUserPoolClientSecret`
     - `AdminDeleteSoftwareToken`
     - `AdminDisableProviderForUser`
     - `AdminForgetDevice`
@@ -113,11 +121,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `AdminLinkProviderForUser`
     - `AdminListDevices`
     - `AdminListUserAuthEvents`
-    - `AdminSetUserMFAPreference`
-    - `AdminSetUserSettings`
     - `AdminUpdateAuthEventFeedback`
     - `AdminUpdateDeviceStatus`
-    - `AssociateSoftwareToken`
     - `CompleteWebAuthnRegistration`
     - `ConfirmDevice`
     - `CreateIdentityProvider`
@@ -129,7 +134,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteIdentityProvider`
     - `DeleteManagedLoginBranding`
     - `DeleteTerms`
-    - `DeleteUserPoolClientSecret`
     - `DeleteUserPoolDomain`
     - `DeleteUserPoolReplica`
     - `DeleteWebAuthnCredential`
@@ -149,20 +153,17 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetLogDeliveryConfiguration`
     - `GetProvisionedLimit`
     - `GetSigningCertificate`
-    - `GetTokensFromRefreshToken`
     - `GetUICustomization`
     - `GetUserAuthFactors`
     - `ListDevices`
     - `ListIdentityProviders`
     - `ListTerms`
     - `ListUserImportJobs`
-    - `ListUserPoolClientSecrets`
     - `ListUserPoolReplicas`
     - `ListWebAuthnCredentials`
     - `SetLogDeliveryConfiguration`
     - `SetRiskConfiguration`
     - `SetUICustomization`
-    - `SetUserMFAPreference`
     - `SetUserSettings`
     - `StartUserImportJob`
     - `StartWebAuthnRegistration`
@@ -175,12 +176,11 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateTerms`
     - `UpdateUserPoolDomain`
     - `UpdateUserPoolReplica`
-    - `VerifySoftwareToken`
 
 ## Source and examples
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cognitoidp)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cognitoidp/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cognitoidp.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
-- SDK integration examples: [cognito_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_auth_test.go), [cognito_oauth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_oauth_test.go), [cognito_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_test.go), [cognito_triggers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_triggers_test.go), [cognito_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_users_test.go).
+- SDK integration examples: [cognito_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_auth_test.go), [cognito_custom_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_custom_auth_test.go), [cognito_mfa_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_mfa_test.go), [cognito_oauth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_oauth_test.go), [cognito_rotation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_rotation_test.go), [cognito_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_test.go), [cognito_triggers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_triggers_test.go), [cognito_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).
