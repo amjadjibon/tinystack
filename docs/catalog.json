@@ -339,7 +339,10 @@
       "summary": "Model networking and instance lifecycle for SDK and infrastructure tests.",
       "features": [
         "VPCs, subnets, security groups, internet/NAT gateways and Elastic IPs",
-        "Route tables, network ACLs, VPC endpoints and derived network interfaces",
+        "Route tables, network ACLs, VPC endpoints, and persisted standalone/instance plus service-managed network interfaces",
+        "DHCP option sets, egress-only gateways, secondary IPv4 and IPv6 CIDR associations, and default VPC/subnet recreation",
+        "Records-only VPC/subnet/ENI flow logs, versioned managed prefix lists, same-region VPC peering, and endpoint-service discovery",
+        "Security-group rule modification, description updates, and peering reference/stale-rule inspection",
         "Key pairs, instance records, instance profile associations and launch templates",
         "Fixed regional image catalogue and tags",
         "Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags",
@@ -351,7 +354,10 @@
         "State transitions settle immediately",
         "The large upstream EC2 API remains mostly outside the selected profile",
         "Console AMIs and derived network interfaces are read-only; launch templates use the AWS CLI or SDK",
-        "Verify mode shows scoped inventory; detailed EC2/VPC reads and management require signed CLI/SDK requests"
+        "Verify mode shows scoped inventory; detailed EC2/VPC reads and management require signed CLI/SDK requests",
+        "IPAM, prefix delegation, ENA tuning, cross-region peering, and real flow-log delivery are outside the profile",
+        "CloudFormation rejects in-place ENI address changes and prefix-list address-family changes explicitly",
+        "Explicit IPv6 CIDRs retain external BYOIP pool references; pool provisioning and ownership checks are not modeled"
       ],
       "execution": "Records only",
       "package": "ec2"
