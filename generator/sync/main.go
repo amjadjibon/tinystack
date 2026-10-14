@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -202,7 +203,11 @@ func sync(ctx context.Context, client *http.Client, dir, ref string, adds []addi
 	var report []string
 	for _, name := range names {
 		pinned := m.Models[name]
-		data, fetchErr := src.file(ctx, commit, pinned.Path)
+		data, fetchErr := cached(dir, name+".json", commit == m.Commit, pinned.SHA256)
+		if data == nil && fetchErr == nil {
+			data, fetchErr = src.file(ctx, commit, pinned.Path)
+		}
+
 		if fetchErr != nil {
 			return nil, fmt.Errorf("%s: %w", name, fetchErr)
 		}
@@ -229,7 +234,11 @@ func sync(ctx context.Context, client *http.Client, dir, ref string, adds []addi
 		m.Models[name] = model{Path: pinned.Path, SHA256: sum}
 	}
 
-	files[m.License], err = src.file(ctx, commit, licenseFile)
+	files[m.License], err = cached(dir, m.License, commit == m.Commit, "")
+	if files[m.License] == nil && err == nil {
+		files[m.License], err = src.file(ctx, commit, licenseFile)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("license: %w", err)
 	}
@@ -253,6 +262,29 @@ func sync(ctx context.Context, client *http.Client, dir, ref string, adds []addi
 	}
 
 	return append(report, "commit: "+commit), nil
+}
+
+// cached returns the local copy of a pinned file when the sync stays on the
+// pinned commit and the copy still matches its checksum (any copy when sum is
+// empty), so a sync that only adds models downloads just those. It returns
+// nil when the file must be downloaded.
+func cached(dir, name string, samePin bool, sum string) ([]byte, error) {
+	if !samePin {
+		return nil, nil
+	}
+
+	// #nosec G304 -- name is a pinned model or license file in the local model directory.
+	data, err := os.ReadFile(filepath.Join(dir, name))
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		return nil, nil
+	case err != nil:
+		return nil, err
+	case sum != "" && fmt.Sprintf("%x", sha256.Sum256(data)) != sum:
+		return nil, nil
+	}
+
+	return data, nil
 }
 
 func main() {

@@ -115,6 +115,50 @@ func TestSync(t *testing.T) {
 	}
 }
 
+func TestSyncReusesPinnedFiles(t *testing.T) {
+	const sqs, sns, stale = `{"smithy":"2.0","n":"sqs"}`, `{"smithy":"2.0","n":"sns"}`, `{"smithy":"2.0","n":"old"}`
+	const kms = `{"smithy":"2.0","n":"kms"}`
+	// Upstream lacks sqs and the license: on the pinned commit they come from disk.
+	upstream(t, map[string]string{modelDir + "/sns.json": sns, modelDir + "/kms.json": kms})
+	dir := modelDirWith(t, map[string]model{
+		"sqs": {Path: modelDir + "/sqs.json", SHA256: sum(sqs)},
+		"sns": {Path: modelDir + "/sns.json", SHA256: sum(sns)},
+	})
+	b, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b = bytes.Replace(b, []byte(`"commit":"old"`), []byte(`"commit":"`+commit+`"`), 1)
+	for name, body := range map[string]string{
+		"manifest.json": string(b), "sqs.json": sqs, "sns.json": stale, "LICENSE.upstream": "license",
+	} {
+		if err = os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	report, err := sync(
+		context.Background(),
+		http.DefaultClient,
+		dir,
+		commit,
+		[]addition{{name: "kms", file: "kms.json"}},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := strings.Join(report, "\n"); got != "kms: added\nsns: unchanged\nsqs: unchanged\ncommit: "+commit {
+		t.Fatalf("report:\n%s", got)
+	}
+
+	// A local copy that no longer matches its checksum is downloaded again.
+	if got, readErr := os.ReadFile(filepath.Join(dir, "sns.json")); readErr != nil || string(got) != sns {
+		t.Fatalf("sns.json: %q, %v", got, readErr)
+	}
+}
+
 func TestSyncFailureWritesNothing(t *testing.T) {
 	upstream(t, map[string]string{
 		modelDir + "/sqs.json":  `{"smithy":"2.0"}`,
