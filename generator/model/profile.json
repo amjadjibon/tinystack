@@ -25749,5 +25749,75 @@
         "EffectiveStart"
       ]
     }
+  },
+  "costandusagereportservice": {
+    "operations": [
+      "DeleteReportDefinition",
+      "DescribeReportDefinitions",
+      "ListTagsForResource",
+      "ModifyReportDefinition",
+      "PutReportDefinition",
+      "TagResource",
+      "UntagResource"
+    ],
+    "shapes": {
+      "DeleteReportDefinitionRequest": [
+        "ReportName"
+      ],
+      "DeleteReportDefinitionResponse": [
+        "ResponseMessage"
+      ],
+      "DescribeReportDefinitionsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeReportDefinitionsResponse": [
+        "ReportDefinitions",
+        "NextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "ReportName"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "ModifyReportDefinitionRequest": [
+        "ReportName",
+        "ReportDefinition"
+      ],
+      "ModifyReportDefinitionResponse": [],
+      "PutReportDefinitionRequest": [
+        "ReportDefinition",
+        "Tags"
+      ],
+      "PutReportDefinitionResponse": [],
+      "ReportDefinition": [
+        "ReportName",
+        "TimeUnit",
+        "Format",
+        "Compression",
+        "AdditionalSchemaElements",
+        "S3Bucket",
+        "S3Prefix",
+        "S3Region",
+        "AdditionalArtifacts",
+        "RefreshClosedReports",
+        "ReportVersioning"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ReportName",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ReportName",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": []
+    }
   }
 }

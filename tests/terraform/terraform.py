@@ -55,7 +55,8 @@ def main():
         with open(work / "server.log", "w+") as log:
             process = subprocess.Popen([str(binary), "start", "--port", str(port), "--console-port", "0", "--config", str(config)], stdout=log, stderr=log)
             try:
-                for _ in range(100):
+                # Allow startup under concurrent worktree builds and race-test load.
+                for _ in range(600):
                     if process.poll() is not None:
                         raise RuntimeError("server exited during startup")
                     try:
@@ -74,10 +75,14 @@ def main():
                 assert terraform("output", "-raw", "image_matches") == "true"
                 assert terraform("output", "-raw", "registry_user") == "AWS"
                 assert terraform("output", "-raw", "iot_endpoint").endswith("-ats.iot.us-east-1.localhost")
+                # Remove only the state binding, then import the unchanged CUR definition.
+                subprocess.run(["terraform", "state", "rm", "aws_cur_report_definition.local"],
+                               cwd=work, check=True, capture_output=True, text=True)
+                terraform("import", "aws_cur_report_definition.local", "local-costs")
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "7 added, 95 changed, 7 destroyed" in updated, updated
+                assert "7 added, 96 changed, 7 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

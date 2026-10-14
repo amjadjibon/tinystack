@@ -94,6 +94,8 @@ github.com/aws/aws-sdk-go-v2/service/configservice v1.74.4 h1:JoXdHxwlokt5a2rccp
 github.com/aws/aws-sdk-go-v2/service/configservice v1.74.4/go.mod h1:oPTkN6WheY4VqRNTBWPHn6h7LzqFLB94/NZVjcCTPkY=
 github.com/aws/aws-sdk-go-v2/service/costexplorer v1.74.1 h1:TK+Hfn2ayR5g1ZrOHHFVg033F0brKyiKk16VDXn9ZIw=
 github.com/aws/aws-sdk-go-v2/service/costexplorer v1.74.1/go.mod h1:KwwGgz0pLqX+tuHBZzvQMh8rHgm2m/SYRIdYyufDmb8=
+github.com/aws/aws-sdk-go-v2/service/costandusagereportservice v1.43.4 h1:2wlMnKGjvS+9FVdftlQBRoTDqr/Xx/TE7jEU9xp06Sg=
+github.com/aws/aws-sdk-go-v2/service/costandusagereportservice v1.43.4/go.mod h1:d9x5APE7+l24zBP2KwRCCYmS0VH9tCb6oio5TBS6sxg=
 github.com/aws/aws-sdk-go-v2/service/docdb v1.57.4 h1:ien5G79e/esayW+/ACeDz1RdyAc4TJmV4TT33CV3no8=
 github.com/aws/aws-sdk-go-v2/service/docdb v1.57.4/go.mod h1:tduLwnkYVouareqcSI+DJ+6jd75bluqQxBOJM15KAeg=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.70.3 h1:840B8kzqfJDUHUCvSUhoc8MmnOtmGIwEg4WIFiJSy68=

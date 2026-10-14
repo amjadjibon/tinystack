@@ -198,6 +198,8 @@ var taggers = map[string]tagger{
 		"ResourceTagKeys",
 		names,
 	),
+	"costandusagereportservice": operations("costandusagereportservice", "TagResource", "UntagResource",
+		byName("ReportName", nil), "Tags", pairs, "TagKeys", names),
 	"codeartifact":    resourceOperations("codeartifact", "ResourceArn", pairs),
 	"timestreamwrite": resourceOperations("timestreamwrite", "ResourceARN", pairs),
 	"emrserverless":   resourceOperations("emrserverless", "ResourceArn", plain),

@@ -25,6 +25,7 @@ provider "aws" {
     cloudformation  = var.endpoint
     cloudwatch      = var.endpoint
     ce              = var.endpoint
+    cur             = var.endpoint
     codeartifact    = var.endpoint
     cognitoidp      = var.endpoint
     dynamodb        = var.endpoint
@@ -1888,6 +1889,9 @@ resource "aws_vpc" "peer" {
 }
 
 resource "aws_vpc_peering_connection" "app" {
+  # Associate the secondary CIDR before peering can enter pending-acceptance.
+  depends_on = [aws_vpc_ipv4_cidr_block_association.app]
+
   vpc_id      = aws_vpc.app.id
   peer_vpc_id = aws_vpc.peer.id
   auto_accept = true
@@ -2066,4 +2070,19 @@ resource "aws_ce_cost_category" "team" {
   }
   default_value = "Other"
   tags          = { team = var.team }
+}
+
+# CUR stores preferences only; no billing data or report objects are produced.
+resource "aws_cur_report_definition" "local" {
+  report_name                = "local-costs"
+  time_unit                  = "DAILY"
+  format                     = "textORcsv"
+  compression                = "GZIP"
+  additional_schema_elements = ["RESOURCES"]
+  s3_bucket                  = aws_s3_bucket.assets.bucket
+  s3_region                  = "us-east-1"
+  s3_prefix                  = var.team
+  refresh_closed_reports     = true
+  report_versioning          = "OVERWRITE_REPORT"
+  tags                       = local.tags
 }

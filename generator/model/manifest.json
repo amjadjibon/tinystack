@@ -115,6 +115,10 @@
       "path": "codegen/sdk-codegen/aws-models/cost-explorer.json",
       "sha256": "1aaa6395a8ecf1de9f1715711fb2d6b86ed47eaf0ecc822de753d68cd767f03c"
     },
+    "costandusagereportservice": {
+      "path": "codegen/sdk-codegen/aws-models/cost-and-usage-report-service.json",
+      "sha256": "0a1885967beb8d517ae219ed83915aca1bec0738d3835f842613ceb1332c363d"
+    },
     "dynamodb": {
       "path": "codegen/sdk-codegen/aws-models/dynamodb.json",
       "sha256": "889458e11643e5f4b240af1d2f1fd0271d06ebf44d88fb571853aa5c8e1ae438"
