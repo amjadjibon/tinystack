@@ -40,7 +40,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
-	emrserverless: { title: "Amazon EMR Serverless", category: analytics, icon: "glue" },
+	emrserverless: {
+		title: "Amazon EMR Serverless",
+		category: analytics,
+		icon: "glue",
+	},
 	identitystore: {
 		title: "Identity Center — Identity Store",
 		category: security,
