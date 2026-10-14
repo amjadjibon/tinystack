@@ -329,6 +329,11 @@ func TestBudgetsPersistenceAndSubscriberLimits(t *testing.T) {
 		&sdk.CreateSubscriberInput{AccountId: account, BudgetName: name, Notification: n, Subscriber: &sub},
 	)
 	wantBudgetsError(t, err, "CreationLimitExceededException")
+	oldEmail := types.Subscriber{SubscriptionType: types.SubscriptionTypeEmail, Address: new("person0@example.com")}
+	_, err = c.UpdateSubscriber(ctx, &sdk.UpdateSubscriberInput{
+		AccountId: account, BudgetName: name, Notification: n, OldSubscriber: &oldEmail, NewSubscriber: &extra,
+	})
+	wantBudgetsError(t, err, "InvalidParameterException")
 	stop()
 	s, stop = persistent(t, dir, &fakeRuntime{})
 	defer stop()

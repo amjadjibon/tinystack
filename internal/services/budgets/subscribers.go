@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/budgets"
 )
 
@@ -55,7 +56,13 @@ func (s *Service) UpdateSubscriber(
 		}
 
 		subs[j] = *in.NewSubscriber
-		return checkSubscribers(subs)
+		checkErr := checkSubscribers(subs)
+		// UpdateSubscriber does not model CreationLimitExceededException.
+		if checkErr != nil && awserror.From(checkErr).Code == "CreationLimitExceededException" {
+			return invalid(awserror.From(checkErr).Message)
+		}
+
+		return checkErr
 	})
 	return &api.UpdateSubscriberResponse{}, err
 }
