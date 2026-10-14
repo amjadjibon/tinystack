@@ -3111,6 +3111,136 @@
       ]
     }
   },
+  "codeconnections": {
+    "operations": [
+      "CreateConnection",
+      "CreateHost",
+      "DeleteConnection",
+      "DeleteHost",
+      "GetConnection",
+      "GetHost",
+      "ListConnections",
+      "ListHosts",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateHost"
+    ],
+    "shapes": {
+      "Connection": [
+        "ConnectionName",
+        "ConnectionArn",
+        "ProviderType",
+        "OwnerAccountId",
+        "ConnectionStatus",
+        "HostArn"
+      ],
+      "CreateConnectionInput": [
+        "ProviderType",
+        "ConnectionName",
+        "Tags",
+        "HostArn"
+      ],
+      "CreateConnectionOutput": [
+        "ConnectionArn",
+        "Tags"
+      ],
+      "CreateHostInput": [
+        "Name",
+        "ProviderType",
+        "ProviderEndpoint",
+        "VpcConfiguration",
+        "Tags"
+      ],
+      "CreateHostOutput": [
+        "HostArn",
+        "Tags"
+      ],
+      "DeleteConnectionInput": [
+        "ConnectionArn"
+      ],
+      "DeleteConnectionOutput": [],
+      "DeleteHostInput": [
+        "HostArn"
+      ],
+      "DeleteHostOutput": [],
+      "GetConnectionInput": [
+        "ConnectionArn"
+      ],
+      "GetConnectionOutput": [
+        "Connection"
+      ],
+      "GetHostInput": [
+        "HostArn"
+      ],
+      "GetHostOutput": [
+        "Name",
+        "Status",
+        "ProviderType",
+        "ProviderEndpoint",
+        "VpcConfiguration"
+      ],
+      "Host": [
+        "Name",
+        "HostArn",
+        "ProviderType",
+        "ProviderEndpoint",
+        "VpcConfiguration",
+        "Status",
+        "StatusMessage"
+      ],
+      "ListConnectionsInput": [
+        "ProviderTypeFilter",
+        "HostArnFilter",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListConnectionsOutput": [
+        "Connections",
+        "NextToken"
+      ],
+      "ListHostsInput": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListHostsOutput": [
+        "Hosts",
+        "NextToken"
+      ],
+      "ListTagsForResourceInput": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "Tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceInput": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceOutput": [],
+      "UntagResourceInput": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceOutput": [],
+      "UpdateHostInput": [
+        "HostArn",
+        "ProviderEndpoint",
+        "VpcConfiguration"
+      ],
+      "UpdateHostOutput": [],
+      "VpcConfiguration": [
+        "VpcId",
+        "SubnetIds",
+        "SecurityGroupIds",
+        "TlsCertificate"
+      ]
+    }
+  },
   "cognitoidentity": {
     "operations": [
       "CreateIdentityPool",

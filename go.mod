@@ -26,6 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.89.0
 	github.com/aws/aws-sdk-go-v2/service/codebuild v1.68.1
 	github.com/aws/aws-sdk-go-v2/service/codecommit v1.43.4
+	github.com/aws/aws-sdk-go-v2/service/codeconnections v1.19.2
 	github.com/aws/aws-sdk-go-v2/service/codedeploy v1.20.2
 	github.com/aws/aws-sdk-go-v2/service/codepipeline v1.55.4
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.42.1
@@ -116,7 +117,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.4 // indirect
 	github.com/bep/godartsass/v2 v2.5.0 // indirect

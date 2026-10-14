@@ -84,6 +84,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: developerTools,
 		icon: "codebuild",
 	},
+	codeconnections: {
+		title: "CodeConnections",
+		category: developerTools,
+		icon: "codeconnections",
+	},
 	codecommit: {
 		title: "CodeCommit",
 		category: developerTools,

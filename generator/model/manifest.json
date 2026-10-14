@@ -83,6 +83,10 @@
       "path": "codegen/sdk-codegen/aws-models/codecommit.json",
       "sha256": "08eda03cefa002e8b35b28fd4b6afb3be58b9e195d69de7fea229175b69d0eb0"
     },
+    "codeconnections": {
+      "path": "codegen/sdk-codegen/aws-models/codeconnections.json",
+      "sha256": "9b1bf88329d9499912c24ffc03d0b8f9bd6bfbb855789d4f731c0b0f8f42bb9a"
+    },
     "codedeploy": {
       "path": "codegen/sdk-codegen/aws-models/codedeploy.json",
       "sha256": "764874cf47021991642794b6744331e90390cb606d6e9fd435f5bce959aef5c0"
