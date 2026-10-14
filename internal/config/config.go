@@ -257,6 +257,8 @@ type Config struct {
 		// default account and Region; 0 turns it off.
 		MQTTPort int `yaml:"mqtt_port"`
 	} `yaml:"iot"`
+	// RegionSetInFile reports whether defaults.region was explicitly set by the configuration file.
+	RegionSetInFile bool `yaml:"-"`
 }
 
 // Default returns loopback-only defaults using ephemeral memory.
@@ -301,6 +303,15 @@ func Load(path string) (Config, error) {
 		var extra any
 		if err = d.Decode(&extra); !errors.Is(err, io.EOF) {
 			return c, fmt.Errorf("configuration must contain exactly one YAML document")
+		}
+
+		var probe struct {
+			Defaults struct {
+				Region *string `yaml:"region"`
+			} `yaml:"defaults"`
+		}
+		if probeErr := yaml.Unmarshal(data, &probe); probeErr == nil && probe.Defaults.Region != nil {
+			c.RegionSetInFile = true
 		}
 	}
 

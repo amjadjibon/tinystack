@@ -21,6 +21,11 @@ func newStartCommand() *cobra.Command {
 				return err
 			}
 
+			envReport, err := config.ApplyLocalStackEnv(&cfg, nil, nil)
+			if err != nil {
+				return err
+			}
+
 			if cmd.Flags().Changed("host") {
 				cfg.Server.Host = host
 			}
@@ -45,7 +50,16 @@ func newStartCommand() *cobra.Command {
 				return guardErr
 			}
 
-			logger := slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), nil))
+			var handlerOpts *slog.HandlerOptions
+			if envReport.LogLevelSet {
+				handlerOpts = &slog.HandlerOptions{Level: envReport.LogLevel}
+			}
+
+			logger := slog.New(slog.NewJSONHandler(cmd.ErrOrStderr(), handlerOpts))
+			for _, warn := range envReport.Warnings {
+				logger.Warn(warn)
+			}
+
 			return app.Run(cmd.Context(), cfg, logger)
 		},
 	}

@@ -89,3 +89,24 @@ func TestInvalidOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestStartEnvironmentVariables(t *testing.T) {
+	t.Run("invalid environment fails startup", func(t *testing.T) {
+		t.Setenv("PERSISTENCE", "maybe")
+		cmd := newRootCommand()
+		cmd.SetArgs([]string{"start"})
+		if err := cmd.Execute(); err == nil {
+			t.Fatal("expected error for invalid PERSISTENCE")
+		}
+	})
+
+	t.Run("flags override environment variables", func(t *testing.T) {
+		t.Setenv("GATEWAY_LISTEN", "127.0.0.1:4566")
+		cmd := newRootCommand()
+		// Flag with invalid port 0 overrides env's 4566 and fails validation
+		cmd.SetArgs([]string{"start", "--port", "0"})
+		if err := cmd.Execute(); err == nil {
+			t.Fatal("expected flag to override env and fail validation")
+		}
+	})
+}
