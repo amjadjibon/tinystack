@@ -1029,7 +1029,7 @@
       "features": [
         "Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors",
         "PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; DocumentDB and Neptune cluster members use records only; other engines and versions fail explicitly",
-        "Describe instances supports db-instance-id, engine and db-subnet-group exact-value filters; MaxRecords 20\u2013100 and Marker pagination also work for subnet and parameter group lists",
+        "Describe instances supports db-instance-id, engine and db-subnet-group exact-value filters; MaxRecords 20–100 and Marker pagination also work for subnet and parameter group lists",
         "Subnet groups validate existing EC2 subnets in one VPC; parameter groups are records with engine-family validation and in-use deletion checks",
         "Instance and group tags, diagnostic inventory and Resource Groups Tagging API integration",
         "CloudFormation AWS::RDS::DBInstance and AWS::RDS::DBSubnetGroup with selected properties",
@@ -1043,9 +1043,9 @@
         "CloudFormation DBInstance creation waits for availability before publishing endpoint attributes",
         "AWS-style scoped console for databases, engine selection, connection commands and URLs, status polling, immediate password/class changes, tags, stop/start/reboot, confirmed deletion without snapshots, and subnet and parameter group creation and deletion",
         "DocumentDB (Engine docdb) and Neptune (Engine neptune) SDKs use the existing RDS Query API: create, describe, modify and delete records-only clusters and cluster member instances, scoped by account and Region",
-        "Cluster identifiers, DocumentDB credentials, retention 1\u201335 days, ports 1150\u201365535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation",
+        "Cluster identifiers, DocumentDB credentials, retention 1–35 days, ports 1150–65535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation",
         "DocumentDB versions 3.6, 4.0 and 5.0 (default); Neptune versions 1.2.1.0 and 1.3.2.0 (default); default ports 27017 and 8182 respectively; stable resource IDs and AWS-style cluster/reader endpoints report metadata only",
-        "DescribeDBClusters shares both engines across RDS, DocumentDB and Neptune clients; engine, db-cluster-id and db-cluster-resource-id filters select exact values; MaxRecords 20\u2013100 (default 100) uses stable Marker cursors",
+        "DescribeDBClusters shares both engines across RDS, DocumentDB and Neptune clients; engine, db-cluster-id and db-cluster-resource-id filters select exact values; MaxRecords 20–100 (default 100) uses stable Marker cursors",
         "Cluster member endpoints and ports follow their parent cluster; DBClusterMembers tracks membership and writer metadata; cluster deletion requires no members, no deletion protection and SkipFinalSnapshot=true",
         "CloudFormation AWS::DocDB::DBCluster/DBInstance and AWS::Neptune::DBCluster/DBInstance share a provider: selected mutable properties and tags update, immutable properties replace, version changes fail and roll back; Ref and cluster/instance endpoint attributes are supported",
         "Cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS"
@@ -1067,7 +1067,7 @@
         "Cluster subnet groups and security groups must exist in the request scope and share a VPC when supplied; omitted networking does not provision default networking or enforce AWS Availability Zone coverage",
         "Cluster members accept identifier, class, matching engine, parent cluster and tags; inherited database settings and member start/stop/reboot requests fail explicitly; class changes and ApplyImmediately are metadata only",
         "Cluster snapshots are unsupported: deletion requires SkipFinalSnapshot=true and rejects FinalDBSnapshotIdentifier; CloudFormation deletion skips snapshots; cluster ApplyImmediately=false still applies metadata synchronously",
-        "Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8\u2013100 printable ASCII characters except slash, double quote and at sign; passwords are not stored or returned"
+        "Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8–100 printable ASCII characters except slash, double quote and at sign; passwords are not stored or returned"
       ],
       "execution": "Records / optional Docker",
       "package": "rds"
@@ -1078,7 +1078,7 @@
       "summary": "Manage global organization, account, hierarchy and SCP records.",
       "features": [
         "Create/describe/delete an organization with ALL (default) or CONSOLIDATED_BILLING; caller becomes the management account",
-        "Immediate successful account creation and status lookup; describe/list/move/remove member accounts; lists paginate with MaxResults 1\u201320",
+        "Immediate successful account creation and status lookup; describe/list/move/remove member accounts; lists paginate with MaxResults 1–20",
         "Root and OU hierarchy with five nested OU levels, duplicate-name checks, empty-OU and member-free organization deletion",
         "SCP JSON records, policy attachments and root enable/disable; AWS-managed FullAWSAccess is attached by default",
         "Global records under <management-account>/organizations/state and partition-wide aws/organizations/account/<account> membership index; SigV4-resolved members can DescribeOrganization, other supported calls require management",
@@ -1103,8 +1103,8 @@
         "HTTP, public DNS and private DNS namespace records with immediate SUCCESS operations; get/list/delete and HTTP description updates",
         "Service records with DNS routing/TTL configuration and custom health checks; empty-service/namespace deletion checks and duplicate-name errors",
         "Register/deregister/get/list instances, health status and immediate custom-health changes; service instance revisions update with registrations and health changes",
-        "DiscoverInstances supports required QueryParameters, preferred OptionalParameters with fallback, HEALTHY (default), UNHEALTHY, ALL and HEALTHY_OR_ELSE_ALL filtering, MaxResults 1\u20131000 and DiscoverInstancesRevision",
-        "Namespace filters TYPE/NAME/HTTP_NAME, service filter NAMESPACE_ID and operation STATUS/TYPE/NAMESPACE_ID/SERVICE_ID filters; EQ/IN (one value) and BEGINS_WITH; list pagination MaxResults 1\u2013100",
+        "DiscoverInstances supports required QueryParameters, preferred OptionalParameters with fallback, HEALTHY (default), UNHEALTHY, ALL and HEALTHY_OR_ELSE_ALL filtering, MaxResults 1–1000 and DiscoverInstancesRevision",
+        "Namespace filters TYPE/NAME/HTTP_NAME, service filter NAMESPACE_ID and operation STATUS/TYPE/NAMESPACE_ID/SERVICE_ID filters; EQ/IN (one value) and BEGINS_WITH; list pagination MaxResults 1–100",
         "Regional/account-scoped records, resource tags, diagnostic inventory, Resource Groups Tagging API and official-icon console catalogue",
         "CloudFormation HttpNamespace, PrivateDnsNamespace, Service and Instance with selected properties; operations complete synchronously",
         "CreatorRequestId/UpdaterRequestId replay committed namespace/service/registration/HTTP-update results within the account and Region; changed inputs reject reused tokens"
@@ -1174,7 +1174,7 @@
         "Trail tags, inventory, Resource Groups Tagging API, console catalogue and CloudFormation AWS::CloudTrail::Trail with selected properties",
         "Completed external gateway AWS operations generate per-account/Region events whether or not a trail exists or is logging; internal catalog.Caller and console actions are excluded",
         "Event ID/name/source/time, caller access key as Username, ReadOnly, user identity, Region, source IP, user agent, request ID and modeled failure code/message; S3 bucket resources are exposed where routes identify them",
-        "LookupEvents supports one EventId, EventName, EventSource, Username, ReadOnly, AccessKeyId, ResourceName or ResourceType attribute, inclusive time range, MaxResults 1\u201350 and filter-bound cursor pagination newest first",
+        "LookupEvents supports one EventId, EventName, EventSource, Username, ReadOnly, AccessKeyId, ResourceName or ResourceType attribute, inclusive time range, MaxResults 1–50 and filter-bound cursor pagination newest first",
         "History stores at most the newest 1000 events per account/Region and drops events older than 90 days; persistent storage survives restart and reset clears history"
       ],
       "gaps": [
@@ -1646,7 +1646,7 @@
       "gaps": [
         "No DNS forwarding, recursive resolution, network interfaces, IP allocation or runtime; OPERATIONAL/COMPLETE are metadata status values",
         "Only IPv4 INBOUND/OUTBOUND endpoints and FORWARD/SYSTEM rules; INBOUND_DELEGATION, DELEGATE, IPv6, protocols and advanced settings are excluded",
-        "Endpoint IP configuration count follows the pinned model (2\u201320); only endpoint Name can be updated, and ListResolverEndpointIpAddresses is excluded",
+        "Endpoint IP configuration count follows the pinned model (2–20); only endpoint Name can be updated, and ListResolverEndpointIpAddresses is excluded",
         "List filters, autodefined Internet Resolver rules and AWS-managed RECURSIVE rules are excluded",
         "No DNS Firewall, query logging, Outposts, Resolver/DNSSEC configuration or rule sharing policies",
         "CloudFormation rejects endpoint IpAddresses and Tags updates and removal of endpoint Name or rule Name/TargetIps/ResolverEndpointId; immutable changes use replacement",
@@ -1755,7 +1755,7 @@
       ]
     },
     "identitystore": {
-      "title": "AWS IAM Identity Center \u2014 Identity Store",
+      "title": "AWS IAM Identity Center — Identity Store",
       "category": "Identity and security",
       "scope": "Account-wide",
       "summary": "Store Identity Center users, groups and group memberships without directory synchronization or sign-in.",
@@ -1774,12 +1774,12 @@
         "No sign-in, SCIM, external identity providers, directory synchronization, identity store management, extensions or additional user attributes",
         "No tagging API exists for Identity Store; resources are untagged",
         "Only userName, displayName, name, name.givenName, name.familyName and emails update paths, plus group displayName/description; removing required names fails",
-        "Identity store IDs must match the account\u2019s built-in store; additional stores and legacy identity stores are excluded",
+        "Identity store IDs must match the account’s built-in store; additional stores and legacy identity stores are excluded",
         "No membership Describe operation, revision concurrency controls, service quotas or attribute indexes; unsupported modeled input members reject through the generated AWS JSON decoder"
       ]
     },
     "ssoadmin": {
-      "title": "AWS IAM Identity Center \u2014 SSO Admin",
+      "title": "AWS IAM Identity Center — SSO Admin",
       "category": "Identity and security",
       "scope": "Account-wide",
       "summary": "Store permission sets, policies, tags and account assignments without creating IAM roles or enabling sign-in.",
@@ -1931,6 +1931,30 @@
       ],
       "execution": "Records only",
       "package": "memorydb"
+    },
+    "codeconnections": {
+      "title": "AWS CodeConnections",
+      "category": "Developer Tools",
+      "scope": "Account and Region",
+      "summary": "Store CodeConnections connections and GitHub Enterprise Server hosts as metadata without contacting a source provider.",
+      "features": [
+        "Twelve pinned AWS JSON 1.0 operations for connections, hosts and native tags, with AWS SDK v2 coverage",
+        "Connections for Bitbucket, GitHub, GitHub Enterprise Server, GitLab, GitLab self-managed and Azure DevOps providers; they report PENDING, as AWS does until a person completes the provider handshake",
+        "Connections created with a HostArn take the host's provider and reject a conflicting ProviderType; ListConnections filters by provider and host",
+        "Hosts for GitHub Enterprise Server with endpoint and VPC configuration validation, UpdateHost, and a guard that blocks deleting a host that still has connections",
+        "TagResource, UntagResource and ListTagsForResource on connection and host ARNs with the 50 tag limit; Resource Groups Tagging API integration",
+        "Token pagination (default and maximum 100), account and Region isolation, RecordsOnly=true and ExecutionReady=false inventory and Terraform codeconnections endpoint key"
+      ],
+      "gaps": [
+        "No provider is contacted: connections never become AVAILABLE and hosts stay PENDING, so pipelines cannot clone source through a connection",
+        "Repository links, sync configurations, sync blockers and sync status operations are not implemented",
+        "The codestar-connections service name and its ARN prefix are not served; only the codeconnections endpoint and ARNs work",
+        "The SDK release that adds Smithy RPC v2 CBOR for this service needs a newer pinned model; the pinned model serves AWS JSON 1.0 only, which older SDK releases (v1.19.2 and earlier) use",
+        "Connection names are not required to be unique, and no connection quota is enforced",
+        "No CloudFormation resource: AWS::CodeConnections::Connection is not registered"
+      ],
+      "execution": "Records only",
+      "package": "codeconnections"
     }
   },
   "future": {
@@ -2008,7 +2032,7 @@
       "title": "ECS Task Metadata",
       "state": "Proposed",
       "slice": "Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`.",
-      "features": "- [ ] `GetTaskMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` \u2014 serve the matching ECS task metadata V4 HTTP route.",
+      "features": "- [ ] `GetTaskMetadata` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` — serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` — serve the matching ECS task metadata V4 HTTP route.",
       "acceptance": "Call the `/v4/<token>` metadata routes over HTTP. Check valid and unknown tokens, task and container metadata, stats, and token isolation."
     },
     "emr": {
@@ -2021,7 +2045,7 @@
       "title": "EC2 Instance Metadata",
       "state": "Proposed",
       "slice": "Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`.",
-      "features": "- [ ] `GetInstanceIdentityDocument` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` \u2014 serve the corresponding IMDS HTTP path.",
+      "features": "- [ ] `GetInstanceIdentityDocument` — serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` — serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` — serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` — serve the corresponding IMDS HTTP path.",
       "acceptance": "Call `/latest/` metadata routes over HTTP. Check IMDSv2 token issuance, credential and identity paths, expiry, and instance isolation."
     },
     "inspector2": {
@@ -2161,8 +2185,8 @@
       "title": "OpenSearch Service runtime engine",
       "state": "Runtime decision required",
       "slice": "create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls.",
-      "features": "- [ ] Management \u2014 Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime \u2014 Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence \u2014 Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features \u2014 Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
-      "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account\u2019s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
+      "features": "- [ ] Management — Create/describe/list/delete domains, plus supported configuration updates and tags. Return creation and processing states tied to real engine health.\n- [ ] Runtime — Start a pinned OpenSearch image with bounded memory, isolated data volume, and reachable endpoint. Route domain data-plane requests to that engine.\n- [ ] Persistence — Reconnect to the same volume on persistent restart; define cleanup on domain deletion and failed creation.\n- [ ] Later features — Multi-node clusters, VPC networking, fine-grained access control, custom endpoints, encryption settings, snapshots, and serverless collections require separate designs.",
+      "integration": "Domain metadata is regional and account-scoped. The provider handles AWS\nmanagement requests; the engine handles indexing and search. Do not claim AWS\nsecurity or cluster topology features from an unconfigured single container.\nProxy/routing must select a domain without leaking one account’s index to\nanother. Runtime launch and health checks happen outside storage transactions.",
       "acceptance": "Create a domain with an AWS SDK, wait until available, index and search through\nthe returned endpoint, restart, and delete. Verify index isolation, unsupported\nconfiguration errors, failed launch cleanup, memory/port limits, tags, and\nmanagement response parity against AWS captures."
     },
     "route53resolver-runtime": {
@@ -2230,6 +2254,12 @@
       "state": "Proposed",
       "slice": "Extend the records-only control plane with a real Valkey or Redis OSS engine container per cluster.",
       "features": "- [ ] Valkey and Redis OSS engine containers behind cluster and node endpoints\n- [ ] ACL and user enforcement from access strings\n- [ ] Snapshots, restore and final snapshots\n- [ ] Parameter group CRUD and values\n- [ ] Failover, scaling and engine upgrades with node lifecycle\n- [ ] Multi-Region clusters, reserved nodes and service updates"
+    },
+    "codeconnections-sync": {
+      "title": "AWS CodeConnections repository links and sync",
+      "state": "Proposed",
+      "slice": "Extend connection and host records with repository links and sync configurations.",
+      "features": "- [ ] `CreateRepositoryLink`, `GetRepositoryLink`, `ListRepositoryLinks`, `UpdateRepositoryLink`, `DeleteRepositoryLink`\n- [ ] `CreateSyncConfiguration`, `GetSyncConfiguration`, `ListSyncConfigurations`, `UpdateSyncConfiguration`, `DeleteSyncConfiguration`\n- [ ] Sync status and blocker operations\n- [ ] The codestar-connections service alias\n- [ ] RPC v2 CBOR with a newer pinned model\n- [ ] `AWS::CodeConnections::Connection`"
     }
   }
 }

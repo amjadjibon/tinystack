@@ -146,6 +146,7 @@ nav:
           - "Amazon MemoryDB": services/memorydb.md
       - "Developer Tools":
           - "AWS CodeCommit": services/codecommit.md
+          - "AWS CodeConnections": services/codeconnections.md
           - "AWS CodeDeploy": services/codedeploy.md
           - "AWS X-Ray": services/xray.md
           - "CodeBuild": services/codebuild.md
@@ -221,6 +222,7 @@ nav:
       - Service and extension proposals:
           - "AWS Batch job execution": roadmap/services/batch-runtime.md
           - "AWS CodeCommit git hosting": roadmap/services/codecommit-git-hosting.md
+          - "AWS CodeConnections repository links and sync": roadmap/services/codeconnections-sync.md
           - "AWS Private CA certificate issuance": roadmap/services/acmpca-issuance.md
           - "AWS Resource Access Manager cross-account access and invitations runtime": roadmap/services/ram-runtime.md
           - "AWS Signer": roadmap/services/signer.md
