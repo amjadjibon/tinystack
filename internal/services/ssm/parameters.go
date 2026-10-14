@@ -2,8 +2,6 @@ package ssm
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"regexp"
 	"slices"
@@ -52,14 +50,22 @@ func (s *Service) PutParameter(ctx context.Context, in *api.PutParameterRequest)
 		return nil, err
 	}
 
-	// A key on another type fails validation in settings.
-	if value(in.Type, typeSecureString) == typeSecureString {
-		if keyErr := s.checkNewKey(ctx, m.Scope, *in.Name, in.KeyId, overwrite); keyErr != nil {
-			return nil, keyErr
+	now := s.now().UnixMilli()
+	var policies *parsedPolicies
+	if in.Policies != nil {
+		parsed, expires, policyErr := parsePolicies(*in.Policies, s.now())
+		if policyErr != nil {
+			return nil, policyErr
 		}
+
+		policies = &parsedPolicies{list: parsed, expires: expires}
 	}
 
-	now := s.now().UnixMilli()
+	sealed, err := s.sealNew(ctx, m.Scope, in, overwrite)
+	if err != nil {
+		return nil, err
+	}
+
 	var out *api.PutParameterResult
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		pk := parameterKey(m.Scope, *in.Name)
@@ -82,7 +88,7 @@ func (s *Service) PutParameter(ctx context.Context, in *api.PutParameterRequest)
 			p = &parameter{Name: *in.Name, Tags: tags}
 		}
 
-		next, settingsErr := settings(in, previous)
+		next, settingsErr := settings(in, previous, sealed, policies)
 		if settingsErr != nil {
 			return settingsErr
 		}
@@ -97,6 +103,14 @@ func (s *Service) PutParameter(ctx context.Context, in *api.PutParameterRequest)
 			return writeErr
 		}
 
+		if next.ExpiresAt > 0 {
+			if writeErr := storage.Write(tx, expirationKey(m.Scope, p.Name), next.ExpiresAt); writeErr != nil {
+				return writeErr
+			}
+		} else {
+			tx.Delete(expirationKey(m.Scope, p.Name))
+		}
+
 		out = &api.PutParameterResult{Version: new(next.Version), Tier: new(next.Tier)}
 		return storage.Write(tx, pk, p)
 	})
@@ -104,9 +118,66 @@ func (s *Service) PutParameter(ctx context.Context, in *api.PutParameterRequest)
 	return out, err
 }
 
+// parsedPolicies are the policies a PutParameter request sets, and when the
+// Expiration policy deletes the parameter.
+type parsedPolicies struct {
+	list    []policy
+	expires int64
+}
+
+// sealed is the KMS encryption of a SecureString value, under keyID.
+type sealed struct {
+	keyID      string
+	ciphertext string
+}
+
+// sealNew encrypts the value of a PutParameter request that creates a
+// SecureString version, outside any transaction. It returns the zero value
+// for the other types.
+func (s *Service) sealNew(ctx context.Context, scope request.Scope, in *api.PutParameterRequest, overwrite bool) (
+	sealed,
+	error,
+) {
+	var previous *version
+	if overwrite {
+		err := s.store.View(ctx, func(tx storage.ReadTx) error {
+			p, found, readErr := storage.Read[parameter](tx, parameterKey(scope, *in.Name))
+			if readErr != nil || !found {
+				return readErr
+			}
+
+			previous, _, readErr = loadVersion(tx, scope, p.Name, p.Version)
+
+			return readErr
+		})
+		if err != nil {
+			return sealed{}, err
+		}
+	}
+
+	if previous == nil {
+		previous = &version{}
+	}
+
+	if value(in.Type, previous.Type) != typeSecureString || in.Value == nil || *in.Value == "" {
+		return sealed{}, nil
+	}
+
+	keyID := value(in.KeyId, value(&previous.KeyID, defaultKeyID))
+	ciphertext, err := s.seal(ctx, scope, *in.Name, keyID, *in.Value)
+	if err != nil {
+		return sealed{}, err
+	}
+
+	return sealed{keyID: keyID, ciphertext: ciphertext}, nil
+}
+
 // settings returns the version in describes, keeping previous's settings
 // for those it leaves out.
-func settings(in *api.PutParameterRequest, previous *version) (*version, error) {
+func settings(in *api.PutParameterRequest, previous *version, secret sealed, policies *parsedPolicies) (
+	*version,
+	error,
+) {
 	next := &version{
 		Value:          *in.Value,
 		Type:           previous.Type,
@@ -115,6 +186,8 @@ func settings(in *api.PutParameterRequest, previous *version) (*version, error) 
 		AllowedPattern: previous.AllowedPattern,
 		Tier:           previous.Tier,
 		DataType:       previous.DataType,
+		Policies:       previous.Policies,
+		ExpiresAt:      previous.ExpiresAt,
 	}
 	next.Type = value(in.Type, next.Type)
 	next.Description = value(in.Description, next.Description)
@@ -141,14 +214,21 @@ func settings(in *api.PutParameterRequest, previous *version) (*version, error) 
 		return nil, err
 	}
 
+	if policies != nil {
+		next.Policies, next.ExpiresAt = policies.list, policies.expires
+	}
+
 	if err := checkTier(in.Tier, previous.Tier, next); err != nil {
 		return nil, err
 	}
 
 	if next.Type == typeSecureString {
-		ciphertext := make([]byte, len(next.Value)+32)
-		_, _ = rand.Read(ciphertext)
-		next.Ciphertext = base64.StdEncoding.EncodeToString(ciphertext)
+		if secret.keyID != next.KeyID {
+			return nil, awserror.New("TooManyUpdates", "The parameter changed while it was being encrypted. "+
+				"Try again.")
+		}
+
+		next.Ciphertext, next.Value = secret.ciphertext, ""
 	}
 
 	return next, nil
@@ -160,40 +240,6 @@ func value(p *string, fallback string) string {
 	}
 
 	return *p
-}
-
-// checkNewKey checks the key a SecureString version will use: the requested
-// one, or on overwrite the current version's.
-func (s *Service) checkNewKey(ctx context.Context, scope request.Scope, name string, keyID *string,
-	overwrite bool,
-) error {
-	if keyID != nil {
-		return s.useKey(ctx, scope, *keyID)
-	}
-
-	if !overwrite {
-		return nil
-	}
-
-	var current string
-	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, found, readErr := storage.Read[parameter](tx, parameterKey(scope, name))
-		if readErr != nil || !found {
-			return readErr
-		}
-
-		v, _, readErr := loadVersion(tx, scope, name, p.Version)
-		if readErr == nil {
-			current = v.KeyID
-		}
-
-		return readErr
-	})
-	if err != nil || current == "" {
-		return err
-	}
-
-	return s.useKey(ctx, scope, current)
 }
 
 // checkKey sets v's KMS key. A SecureString value uses the requested key, the
@@ -239,12 +285,17 @@ func checkTier(requested *string, previous string, v *version) error {
 	switch tier {
 	case tierIntelligent:
 		tier = tierStandard
-		if len(v.Value) > maxStandardValue || previous == tierAdvanced {
+		if len(v.Value) > maxStandardValue || previous == tierAdvanced || len(v.Policies) > 0 {
 			tier = tierAdvanced
 		}
 	case tierStandard, tierAdvanced:
 	default:
 		return validation("Tier must be Standard, Advanced, or Intelligent-Tiering.")
+	}
+
+	if tier == tierStandard && len(v.Policies) > 0 {
+		return validation("Parameter policies can be assigned only to advanced-tier parameters. Set the Tier to " +
+			"Advanced or Intelligent-Tiering.")
 	}
 
 	if previous == tierAdvanced && tier == tierStandard {
@@ -333,7 +384,7 @@ func (s *Service) GetParameter(ctx context.Context, in *api.GetParameterRequest)
 			return resolveErr
 		}
 
-		param := v.parameter(m.Scope, p.Name, selector, decrypt)
+		param := v.parameter(m.Scope, p.Name, selector)
 		out, got = &api.GetParameterResult{Parameter: &param}, v
 		return nil
 	})
@@ -341,8 +392,13 @@ func (s *Service) GetParameter(ctx context.Context, in *api.GetParameterRequest)
 		return nil, err
 	}
 
-	if decrypt {
-		if keyErr := s.decrypting(ctx, m.Scope, []*version{got}); keyErr != nil {
+	if decrypt && got.Type == typeSecureString {
+		item := revealed{
+			version: got,
+			name:    *out.Parameter.Name,
+			set:     func(plain string) { out.Parameter.Value = &plain },
+		}
+		if keyErr := s.reveal(ctx, m.Scope, []revealed{item}); keyErr != nil {
 			return nil, keyErr
 		}
 	}
@@ -372,7 +428,7 @@ func (s *Service) GetParameters(ctx context.Context, in *api.GetParametersReques
 
 	out := &api.GetParametersResult{Parameters: []api.Parameter{}, InvalidParameters: []string{}}
 	decrypt := in.WithDecryption != nil && *in.WithDecryption
-	var versions []*version
+	var secrets []revealed
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		seen := map[string]bool{}
 		for _, name := range in.Names {
@@ -391,8 +447,13 @@ func (s *Service) GetParameters(ctx context.Context, in *api.GetParametersReques
 				return resolveErr
 			}
 
-			out.Parameters = append(out.Parameters, v.parameter(m.Scope, p.Name, selector, decrypt))
-			versions = append(versions, v)
+			out.Parameters = append(out.Parameters, v.parameter(m.Scope, p.Name, selector))
+			if decrypt && v.Type == typeSecureString {
+				i := len(out.Parameters) - 1
+				secrets = append(secrets, revealed{
+					version: v, name: p.Name, set: func(plain string) { out.Parameters[i].Value = &plain },
+				})
+			}
 		}
 
 		return nil
@@ -401,10 +462,8 @@ func (s *Service) GetParameters(ctx context.Context, in *api.GetParametersReques
 		return nil, err
 	}
 
-	if decrypt {
-		if keyErr := s.decrypting(ctx, m.Scope, versions); keyErr != nil {
-			return nil, keyErr
-		}
+	if keyErr := s.reveal(ctx, m.Scope, secrets); keyErr != nil {
+		return nil, keyErr
 	}
 
 	return out, nil
@@ -417,6 +476,7 @@ func deleteParameter(tx storage.WriteTx, scope request.Scope, name string) {
 	}
 
 	tx.Delete(parameterKey(scope, name))
+	tx.Delete(expirationKey(scope, name))
 }
 
 func (s *Service) DeleteParameter(

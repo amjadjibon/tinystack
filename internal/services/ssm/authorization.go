@@ -2,6 +2,7 @@ package ssm
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
@@ -18,6 +19,10 @@ func (s *Service) AuthorizationResources(
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	if resources, handled, docErr := s.documentResources(ctx, m.Scope, operation, input); handled {
+		return resources, docErr
 	}
 
 	names := catalog.InputStrings(input, "Name")
@@ -67,4 +72,77 @@ func (s *Service) AuthorizationResources(
 		return nil
 	})
 	return out, err
+}
+
+// documentOperations take a document's name in Name.
+var documentOperations = []string{
+	"CreateDocument", "GetDocument", "DescribeDocument", "UpdateDocument", "DeleteDocument",
+	"ListDocumentVersions", "UpdateDocumentDefaultVersion", "DescribeDocumentPermission", "ModifyDocumentPermission",
+}
+
+// documentResources names the resources of the document and Run Command
+// operations, and of tagging a document. It reports false for the others.
+func (s *Service) documentResources(ctx context.Context, scope request.Scope, operation string, input any) (
+	[]catalog.AuthorizationResource,
+	bool,
+	error,
+) {
+	var names []string
+	switch {
+	case slices.Contains(documentOperations, operation):
+		names = []string{catalog.InputString(input, "Name")}
+	case operation == "SendCommand":
+		names = []string{catalog.InputString(input, "DocumentName")}
+	case (operation == "AddTagsToResource" || operation == "RemoveTagsFromResource" ||
+		operation == "ListTagsForResource") && catalog.InputString(input, "ResourceType") == documentKind:
+		names = []string{catalog.InputString(input, "ResourceId")}
+	case slices.Contains([]string{
+		"ListDocuments", "ListCommands", "ListCommandInvocations", "GetCommandInvocation", "CancelCommand",
+	}, operation):
+		return nil, true, nil
+	default:
+		return nil, false, nil
+	}
+
+	var out []catalog.AuthorizationResource
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		for _, ref := range names {
+			name, refErr := documentRef(&ref)
+			if refErr != nil {
+				continue
+			}
+
+			rec := &docRecord{Name: name, Owner: scope.AccountID}
+			if builtinRec, _, ok := builtin(name); ok {
+				rec = builtinRec
+			}
+
+			target := catalog.AuthorizationResource{ARN: documentARN(scope, rec), TagsKnown: true}
+			stored, _, readErr := storage.Read[docRecord](tx, docKey(scope, name))
+			if readErr != nil {
+				return readErr
+			}
+
+			if stored != nil {
+				target.Tags = common.CloneTags(stored.Tags)
+			}
+
+			out = append(out, target)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, true, err
+	}
+
+	if operation == "SendCommand" {
+		for _, id := range catalog.InputStrings(input, "InstanceIds") {
+			out = append(out, catalog.AuthorizationResource{
+				ARN: "arn:aws:ec2:" + scope.Region + ":" + scope.AccountID + ":instance/" + id,
+			})
+		}
+	}
+
+	return out, true, nil
 }

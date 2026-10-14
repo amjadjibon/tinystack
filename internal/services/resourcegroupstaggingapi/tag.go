@@ -90,6 +90,16 @@ func byName(member string, fixed map[string]any) target {
 	}
 }
 
+// ssmResource names a Systems Manager parameter or document by its ResourceType and ResourceId.
+func ssmResource(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
+	kind := "Parameter"
+	if r.Type == "document" {
+		kind = "Document"
+	}
+
+	return map[string]any{"ResourceType": kind, "ResourceId": r.Name}, nil
+}
+
 // operations is the tagger of a service whose tag operation takes the tags in
 // tagsMember and whose untag operation takes the keys in keysMember.
 func operations(service, tagOp, untagOp string, name target, tagsMember string, encode func(map[string]string) any,
@@ -365,8 +375,8 @@ var taggers = map[string]tagger{
 	"sfn":            resourceOperations("sfn", "ResourceArn", pairs),
 	"sns":            resourceOperations("sns", "ResourceArn", pairs),
 	"sqs":            operations("sqs", "TagQueue", "UntagQueue", queue, "Tags", plain, "TagKeys", names),
-	"ssm": operations("ssm", "AddTagsToResource", "RemoveTagsFromResource",
-		byName("ResourceId", map[string]any{"ResourceType": "Parameter"}), "Tags", pairs, "TagKeys", names),
+	"ssm": operations("ssm", "AddTagsToResource", "RemoveTagsFromResource", ssmResource, "Tags", pairs, "TagKeys",
+		names),
 }
 
 // failure is how TagResources and UntagResources report one resource's error:

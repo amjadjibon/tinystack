@@ -22,6 +22,7 @@ type PutParameterRequest struct {
 	Tags           []Tag   `json:"Tags,omitempty"`
 	Tier           *string `json:"Tier,omitempty"`
 	DataType       *string `json:"DataType,omitempty"`
+	Policies       *string `json:"Policies,omitempty"`
 }
 
 type PutParameterResult struct {
@@ -101,17 +102,24 @@ type DescribeParametersRequest struct {
 	NextToken        *string                 `json:"NextToken,omitempty"`
 }
 
+type ParameterInlinePolicy struct {
+	PolicyText   *string `json:"PolicyText,omitempty"`
+	PolicyType   *string `json:"PolicyType,omitempty"`
+	PolicyStatus *string `json:"PolicyStatus,omitempty"`
+}
+
 type ParameterMetadata struct {
-	Name             *string  `json:"Name,omitempty"`
-	ARN              *string  `json:"ARN,omitempty"`
-	Type             *string  `json:"Type,omitempty"`
-	KeyId            *string  `json:"KeyId,omitempty"`
-	LastModifiedDate *float64 `json:"LastModifiedDate,omitempty"`
-	Description      *string  `json:"Description,omitempty"`
-	AllowedPattern   *string  `json:"AllowedPattern,omitempty"`
-	Version          *int64   `json:"Version,omitempty"`
-	Tier             *string  `json:"Tier,omitempty"`
-	DataType         *string  `json:"DataType,omitempty"`
+	Name             *string                 `json:"Name,omitempty"`
+	ARN              *string                 `json:"ARN,omitempty"`
+	Type             *string                 `json:"Type,omitempty"`
+	KeyId            *string                 `json:"KeyId,omitempty"`
+	LastModifiedDate *float64                `json:"LastModifiedDate,omitempty"`
+	Description      *string                 `json:"Description,omitempty"`
+	AllowedPattern   *string                 `json:"AllowedPattern,omitempty"`
+	Version          *int64                  `json:"Version,omitempty"`
+	Tier             *string                 `json:"Tier,omitempty"`
+	DataType         *string                 `json:"DataType,omitempty"`
+	Policies         []ParameterInlinePolicy `json:"Policies,omitempty"`
 }
 
 type DescribeParametersResult struct {
@@ -127,17 +135,18 @@ type GetParameterHistoryRequest struct {
 }
 
 type ParameterHistory struct {
-	Name             *string  `json:"Name,omitempty"`
-	Type             *string  `json:"Type,omitempty"`
-	KeyId            *string  `json:"KeyId,omitempty"`
-	LastModifiedDate *float64 `json:"LastModifiedDate,omitempty"`
-	Description      *string  `json:"Description,omitempty"`
-	Value            *string  `json:"Value,omitempty"`
-	AllowedPattern   *string  `json:"AllowedPattern,omitempty"`
-	Version          *int64   `json:"Version,omitempty"`
-	Labels           []string `json:"Labels,omitempty"`
-	Tier             *string  `json:"Tier,omitempty"`
-	DataType         *string  `json:"DataType,omitempty"`
+	Name             *string                 `json:"Name,omitempty"`
+	Type             *string                 `json:"Type,omitempty"`
+	KeyId            *string                 `json:"KeyId,omitempty"`
+	LastModifiedDate *float64                `json:"LastModifiedDate,omitempty"`
+	Description      *string                 `json:"Description,omitempty"`
+	Value            *string                 `json:"Value,omitempty"`
+	AllowedPattern   *string                 `json:"AllowedPattern,omitempty"`
+	Version          *int64                  `json:"Version,omitempty"`
+	Labels           []string                `json:"Labels,omitempty"`
+	Tier             *string                 `json:"Tier,omitempty"`
+	DataType         *string                 `json:"DataType,omitempty"`
+	Policies         []ParameterInlinePolicy `json:"Policies,omitempty"`
 }
 
 type GetParameterHistoryResult struct {
@@ -194,6 +203,355 @@ type ListTagsForResourceResult struct {
 	TagList []Tag `json:"TagList,omitempty"`
 }
 
+type CreateDocumentRequest struct {
+	Content        *string `json:"Content,omitempty"`
+	Name           *string `json:"Name,omitempty"`
+	DisplayName    *string `json:"DisplayName,omitempty"`
+	VersionName    *string `json:"VersionName,omitempty"`
+	DocumentType   *string `json:"DocumentType,omitempty"`
+	DocumentFormat *string `json:"DocumentFormat,omitempty"`
+	TargetType     *string `json:"TargetType,omitempty"`
+	Tags           []Tag   `json:"Tags,omitempty"`
+}
+
+type DocumentParameter struct {
+	Name         *string `json:"Name,omitempty"`
+	Type         *string `json:"Type,omitempty"`
+	Description  *string `json:"Description,omitempty"`
+	DefaultValue *string `json:"DefaultValue,omitempty"`
+}
+
+type DocumentDescription struct {
+	Sha1            *string             `json:"Sha1,omitempty"`
+	Hash            *string             `json:"Hash,omitempty"`
+	HashType        *string             `json:"HashType,omitempty"`
+	Name            *string             `json:"Name,omitempty"`
+	DisplayName     *string             `json:"DisplayName,omitempty"`
+	VersionName     *string             `json:"VersionName,omitempty"`
+	Owner           *string             `json:"Owner,omitempty"`
+	CreatedDate     *float64            `json:"CreatedDate,omitempty"`
+	Status          *string             `json:"Status,omitempty"`
+	DocumentVersion *string             `json:"DocumentVersion,omitempty"`
+	Description     *string             `json:"Description,omitempty"`
+	Parameters      []DocumentParameter `json:"Parameters,omitempty"`
+	PlatformTypes   []string            `json:"PlatformTypes,omitempty"`
+	DocumentType    *string             `json:"DocumentType,omitempty"`
+	SchemaVersion   *string             `json:"SchemaVersion,omitempty"`
+	LatestVersion   *string             `json:"LatestVersion,omitempty"`
+	DefaultVersion  *string             `json:"DefaultVersion,omitempty"`
+	DocumentFormat  *string             `json:"DocumentFormat,omitempty"`
+	TargetType      *string             `json:"TargetType,omitempty"`
+	Tags            []Tag               `json:"Tags,omitempty"`
+	Author          *string             `json:"Author,omitempty"`
+}
+
+type CreateDocumentResult struct {
+	DocumentDescription *DocumentDescription `json:"DocumentDescription,omitempty"`
+}
+
+type GetDocumentRequest struct {
+	Name            *string `json:"Name,omitempty"`
+	VersionName     *string `json:"VersionName,omitempty"`
+	DocumentVersion *string `json:"DocumentVersion,omitempty"`
+	DocumentFormat  *string `json:"DocumentFormat,omitempty"`
+}
+
+type GetDocumentResult struct {
+	Name            *string  `json:"Name,omitempty"`
+	CreatedDate     *float64 `json:"CreatedDate,omitempty"`
+	DisplayName     *string  `json:"DisplayName,omitempty"`
+	VersionName     *string  `json:"VersionName,omitempty"`
+	DocumentVersion *string  `json:"DocumentVersion,omitempty"`
+	Status          *string  `json:"Status,omitempty"`
+	Content         *string  `json:"Content,omitempty"`
+	DocumentType    *string  `json:"DocumentType,omitempty"`
+	DocumentFormat  *string  `json:"DocumentFormat,omitempty"`
+}
+
+type DescribeDocumentRequest struct {
+	Name            *string `json:"Name,omitempty"`
+	DocumentVersion *string `json:"DocumentVersion,omitempty"`
+	VersionName     *string `json:"VersionName,omitempty"`
+}
+
+type DescribeDocumentResult struct {
+	Document *DocumentDescription `json:"Document,omitempty"`
+}
+
+type DocumentFilter struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+type DocumentKeyValuesFilter struct {
+	Key    *string  `json:"Key,omitempty"`
+	Values []string `json:"Values,omitempty"`
+}
+
+type ListDocumentsRequest struct {
+	DocumentFilterList []DocumentFilter          `json:"DocumentFilterList,omitempty"`
+	Filters            []DocumentKeyValuesFilter `json:"Filters,omitempty"`
+	MaxResults         *int64                    `json:"MaxResults,omitempty"`
+	NextToken          *string                   `json:"NextToken,omitempty"`
+}
+
+type DocumentIdentifier struct {
+	Name            *string  `json:"Name,omitempty"`
+	CreatedDate     *float64 `json:"CreatedDate,omitempty"`
+	DisplayName     *string  `json:"DisplayName,omitempty"`
+	Owner           *string  `json:"Owner,omitempty"`
+	VersionName     *string  `json:"VersionName,omitempty"`
+	PlatformTypes   []string `json:"PlatformTypes,omitempty"`
+	DocumentVersion *string  `json:"DocumentVersion,omitempty"`
+	DocumentType    *string  `json:"DocumentType,omitempty"`
+	SchemaVersion   *string  `json:"SchemaVersion,omitempty"`
+	DocumentFormat  *string  `json:"DocumentFormat,omitempty"`
+	TargetType      *string  `json:"TargetType,omitempty"`
+	Tags            []Tag    `json:"Tags,omitempty"`
+	Author          *string  `json:"Author,omitempty"`
+}
+
+type ListDocumentsResult struct {
+	DocumentIdentifiers []DocumentIdentifier `json:"DocumentIdentifiers,omitempty"`
+	NextToken           *string              `json:"NextToken,omitempty"`
+}
+
+type UpdateDocumentRequest struct {
+	Content         *string `json:"Content,omitempty"`
+	Name            *string `json:"Name,omitempty"`
+	DisplayName     *string `json:"DisplayName,omitempty"`
+	VersionName     *string `json:"VersionName,omitempty"`
+	DocumentVersion *string `json:"DocumentVersion,omitempty"`
+	DocumentFormat  *string `json:"DocumentFormat,omitempty"`
+	TargetType      *string `json:"TargetType,omitempty"`
+}
+
+type UpdateDocumentResult struct {
+	DocumentDescription *DocumentDescription `json:"DocumentDescription,omitempty"`
+}
+
+type DeleteDocumentRequest struct {
+	Name            *string `json:"Name,omitempty"`
+	DocumentVersion *string `json:"DocumentVersion,omitempty"`
+	VersionName     *string `json:"VersionName,omitempty"`
+	Force           *bool   `json:"Force,omitempty"`
+}
+
+type DeleteDocumentResult struct {
+}
+
+type ListDocumentVersionsRequest struct {
+	Name       *string `json:"Name,omitempty"`
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type DocumentVersionInfo struct {
+	Name             *string  `json:"Name,omitempty"`
+	DisplayName      *string  `json:"DisplayName,omitempty"`
+	DocumentVersion  *string  `json:"DocumentVersion,omitempty"`
+	VersionName      *string  `json:"VersionName,omitempty"`
+	CreatedDate      *float64 `json:"CreatedDate,omitempty"`
+	IsDefaultVersion *bool    `json:"IsDefaultVersion,omitempty"`
+	DocumentFormat   *string  `json:"DocumentFormat,omitempty"`
+	Status           *string  `json:"Status,omitempty"`
+}
+
+type ListDocumentVersionsResult struct {
+	DocumentVersions []DocumentVersionInfo `json:"DocumentVersions,omitempty"`
+	NextToken        *string               `json:"NextToken,omitempty"`
+}
+
+type UpdateDocumentDefaultVersionRequest struct {
+	Name            *string `json:"Name,omitempty"`
+	DocumentVersion *string `json:"DocumentVersion,omitempty"`
+}
+
+type DocumentDefaultVersionDescription struct {
+	Name               *string `json:"Name,omitempty"`
+	DefaultVersion     *string `json:"DefaultVersion,omitempty"`
+	DefaultVersionName *string `json:"DefaultVersionName,omitempty"`
+}
+
+type UpdateDocumentDefaultVersionResult struct {
+	Description *DocumentDefaultVersionDescription `json:"Description,omitempty"`
+}
+
+type DescribeDocumentPermissionRequest struct {
+	Name           *string `json:"Name,omitempty"`
+	PermissionType *string `json:"PermissionType,omitempty"`
+	MaxResults     *int64  `json:"MaxResults,omitempty"`
+	NextToken      *string `json:"NextToken,omitempty"`
+}
+
+type AccountSharingInfo struct {
+	AccountId             *string `json:"AccountId,omitempty"`
+	SharedDocumentVersion *string `json:"SharedDocumentVersion,omitempty"`
+}
+
+type DescribeDocumentPermissionResponse struct {
+	AccountIds             []string             `json:"AccountIds,omitempty"`
+	AccountSharingInfoList []AccountSharingInfo `json:"AccountSharingInfoList,omitempty"`
+	NextToken              *string              `json:"NextToken,omitempty"`
+}
+
+type ModifyDocumentPermissionRequest struct {
+	Name                  *string  `json:"Name,omitempty"`
+	PermissionType        *string  `json:"PermissionType,omitempty"`
+	AccountIdsToAdd       []string `json:"AccountIdsToAdd,omitempty"`
+	AccountIdsToRemove    []string `json:"AccountIdsToRemove,omitempty"`
+	SharedDocumentVersion *string  `json:"SharedDocumentVersion,omitempty"`
+}
+
+type ModifyDocumentPermissionResponse struct {
+}
+
+type Target struct {
+	Key    *string  `json:"Key,omitempty"`
+	Values []string `json:"Values,omitempty"`
+}
+
+type CloudWatchOutputConfig struct {
+	CloudWatchLogGroupName  *string `json:"CloudWatchLogGroupName,omitempty"`
+	CloudWatchOutputEnabled *bool   `json:"CloudWatchOutputEnabled,omitempty"`
+}
+
+type SendCommandRequest struct {
+	InstanceIds            []string                `json:"InstanceIds,omitempty"`
+	Targets                []Target                `json:"Targets,omitempty"`
+	DocumentName           *string                 `json:"DocumentName,omitempty"`
+	DocumentVersion        *string                 `json:"DocumentVersion,omitempty"`
+	TimeoutSeconds         *int64                  `json:"TimeoutSeconds,omitempty"`
+	Comment                *string                 `json:"Comment,omitempty"`
+	Parameters             map[string][]string     `json:"Parameters,omitempty"`
+	OutputS3Region         *string                 `json:"OutputS3Region,omitempty"`
+	OutputS3BucketName     *string                 `json:"OutputS3BucketName,omitempty"`
+	OutputS3KeyPrefix      *string                 `json:"OutputS3KeyPrefix,omitempty"`
+	MaxConcurrency         *string                 `json:"MaxConcurrency,omitempty"`
+	MaxErrors              *string                 `json:"MaxErrors,omitempty"`
+	ServiceRoleArn         *string                 `json:"ServiceRoleArn,omitempty"`
+	CloudWatchOutputConfig *CloudWatchOutputConfig `json:"CloudWatchOutputConfig,omitempty"`
+}
+
+type Command struct {
+	CommandId              *string                 `json:"CommandId,omitempty"`
+	DocumentName           *string                 `json:"DocumentName,omitempty"`
+	DocumentVersion        *string                 `json:"DocumentVersion,omitempty"`
+	Comment                *string                 `json:"Comment,omitempty"`
+	ExpiresAfter           *float64                `json:"ExpiresAfter,omitempty"`
+	Parameters             map[string][]string     `json:"Parameters,omitempty"`
+	InstanceIds            []string                `json:"InstanceIds,omitempty"`
+	Targets                []Target                `json:"Targets,omitempty"`
+	RequestedDateTime      *float64                `json:"RequestedDateTime,omitempty"`
+	Status                 *string                 `json:"Status,omitempty"`
+	StatusDetails          *string                 `json:"StatusDetails,omitempty"`
+	OutputS3Region         *string                 `json:"OutputS3Region,omitempty"`
+	OutputS3BucketName     *string                 `json:"OutputS3BucketName,omitempty"`
+	OutputS3KeyPrefix      *string                 `json:"OutputS3KeyPrefix,omitempty"`
+	MaxConcurrency         *string                 `json:"MaxConcurrency,omitempty"`
+	MaxErrors              *string                 `json:"MaxErrors,omitempty"`
+	TargetCount            *int64                  `json:"TargetCount,omitempty"`
+	CompletedCount         *int64                  `json:"CompletedCount,omitempty"`
+	ErrorCount             *int64                  `json:"ErrorCount,omitempty"`
+	DeliveryTimedOutCount  *int64                  `json:"DeliveryTimedOutCount,omitempty"`
+	ServiceRole            *string                 `json:"ServiceRole,omitempty"`
+	CloudWatchOutputConfig *CloudWatchOutputConfig `json:"CloudWatchOutputConfig,omitempty"`
+	TimeoutSeconds         *int64                  `json:"TimeoutSeconds,omitempty"`
+}
+
+type SendCommandResult struct {
+	Command *Command `json:"Command,omitempty"`
+}
+
+type CommandFilter struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+type ListCommandsRequest struct {
+	CommandId  *string         `json:"CommandId,omitempty"`
+	InstanceId *string         `json:"InstanceId,omitempty"`
+	MaxResults *int64          `json:"MaxResults,omitempty"`
+	NextToken  *string         `json:"NextToken,omitempty"`
+	Filters    []CommandFilter `json:"Filters,omitempty"`
+}
+
+type ListCommandsResult struct {
+	Commands  []Command `json:"Commands,omitempty"`
+	NextToken *string   `json:"NextToken,omitempty"`
+}
+
+type ListCommandInvocationsRequest struct {
+	CommandId  *string         `json:"CommandId,omitempty"`
+	InstanceId *string         `json:"InstanceId,omitempty"`
+	MaxResults *int64          `json:"MaxResults,omitempty"`
+	NextToken  *string         `json:"NextToken,omitempty"`
+	Filters    []CommandFilter `json:"Filters,omitempty"`
+	Details    *bool           `json:"Details,omitempty"`
+}
+
+type CommandPlugin struct {
+	Name                   *string  `json:"Name,omitempty"`
+	Status                 *string  `json:"Status,omitempty"`
+	StatusDetails          *string  `json:"StatusDetails,omitempty"`
+	ResponseCode           *int64   `json:"ResponseCode,omitempty"`
+	ResponseStartDateTime  *float64 `json:"ResponseStartDateTime,omitempty"`
+	ResponseFinishDateTime *float64 `json:"ResponseFinishDateTime,omitempty"`
+	Output                 *string  `json:"Output,omitempty"`
+}
+
+type CommandInvocation struct {
+	CommandId              *string                 `json:"CommandId,omitempty"`
+	InstanceId             *string                 `json:"InstanceId,omitempty"`
+	InstanceName           *string                 `json:"InstanceName,omitempty"`
+	Comment                *string                 `json:"Comment,omitempty"`
+	DocumentName           *string                 `json:"DocumentName,omitempty"`
+	DocumentVersion        *string                 `json:"DocumentVersion,omitempty"`
+	RequestedDateTime      *float64                `json:"RequestedDateTime,omitempty"`
+	Status                 *string                 `json:"Status,omitempty"`
+	StatusDetails          *string                 `json:"StatusDetails,omitempty"`
+	CommandPlugins         []CommandPlugin         `json:"CommandPlugins,omitempty"`
+	ServiceRole            *string                 `json:"ServiceRole,omitempty"`
+	CloudWatchOutputConfig *CloudWatchOutputConfig `json:"CloudWatchOutputConfig,omitempty"`
+}
+
+type ListCommandInvocationsResult struct {
+	CommandInvocations []CommandInvocation `json:"CommandInvocations,omitempty"`
+	NextToken          *string             `json:"NextToken,omitempty"`
+}
+
+type GetCommandInvocationRequest struct {
+	CommandId  *string `json:"CommandId,omitempty"`
+	InstanceId *string `json:"InstanceId,omitempty"`
+	PluginName *string `json:"PluginName,omitempty"`
+}
+
+type GetCommandInvocationResult struct {
+	CommandId              *string                 `json:"CommandId,omitempty"`
+	InstanceId             *string                 `json:"InstanceId,omitempty"`
+	Comment                *string                 `json:"Comment,omitempty"`
+	DocumentName           *string                 `json:"DocumentName,omitempty"`
+	DocumentVersion        *string                 `json:"DocumentVersion,omitempty"`
+	PluginName             *string                 `json:"PluginName,omitempty"`
+	ResponseCode           *int64                  `json:"ResponseCode,omitempty"`
+	ExecutionStartDateTime *string                 `json:"ExecutionStartDateTime,omitempty"`
+	ExecutionElapsedTime   *string                 `json:"ExecutionElapsedTime,omitempty"`
+	ExecutionEndDateTime   *string                 `json:"ExecutionEndDateTime,omitempty"`
+	Status                 *string                 `json:"Status,omitempty"`
+	StatusDetails          *string                 `json:"StatusDetails,omitempty"`
+	StandardOutputContent  *string                 `json:"StandardOutputContent,omitempty"`
+	StandardErrorContent   *string                 `json:"StandardErrorContent,omitempty"`
+	CloudWatchOutputConfig *CloudWatchOutputConfig `json:"CloudWatchOutputConfig,omitempty"`
+}
+
+type CancelCommandRequest struct {
+	CommandId   *string  `json:"CommandId,omitempty"`
+	InstanceIds []string `json:"InstanceIds,omitempty"`
+}
+
+type CancelCommandResult struct {
+}
+
 type API interface {
 	PutParameter(context.Context, *PutParameterRequest) (*PutParameterResult, error)
 	GetParameter(context.Context, *GetParameterRequest) (*GetParameterResult, error)
@@ -208,10 +566,25 @@ type API interface {
 	AddTagsToResource(context.Context, *AddTagsToResourceRequest) (*AddTagsToResourceResult, error)
 	RemoveTagsFromResource(context.Context, *RemoveTagsFromResourceRequest) (*RemoveTagsFromResourceResult, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResult, error)
+	CreateDocument(context.Context, *CreateDocumentRequest) (*CreateDocumentResult, error)
+	GetDocument(context.Context, *GetDocumentRequest) (*GetDocumentResult, error)
+	DescribeDocument(context.Context, *DescribeDocumentRequest) (*DescribeDocumentResult, error)
+	ListDocuments(context.Context, *ListDocumentsRequest) (*ListDocumentsResult, error)
+	UpdateDocument(context.Context, *UpdateDocumentRequest) (*UpdateDocumentResult, error)
+	DeleteDocument(context.Context, *DeleteDocumentRequest) (*DeleteDocumentResult, error)
+	ListDocumentVersions(context.Context, *ListDocumentVersionsRequest) (*ListDocumentVersionsResult, error)
+	UpdateDocumentDefaultVersion(context.Context, *UpdateDocumentDefaultVersionRequest) (*UpdateDocumentDefaultVersionResult, error)
+	DescribeDocumentPermission(context.Context, *DescribeDocumentPermissionRequest) (*DescribeDocumentPermissionResponse, error)
+	ModifyDocumentPermission(context.Context, *ModifyDocumentPermissionRequest) (*ModifyDocumentPermissionResponse, error)
+	SendCommand(context.Context, *SendCommandRequest) (*SendCommandResult, error)
+	ListCommands(context.Context, *ListCommandsRequest) (*ListCommandsResult, error)
+	ListCommandInvocations(context.Context, *ListCommandInvocationsRequest) (*ListCommandInvocationsResult, error)
+	GetCommandInvocation(context.Context, *GetCommandInvocationRequest) (*GetCommandInvocationResult, error)
+	CancelCommand(context.Context, *CancelCommandRequest) (*CancelCommandResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "ssm", SigningName: "ssm", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "ssm", TargetPrefix: "AmazonSSM", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"HierarchyLevelLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "HierarchyTypeMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IncompatiblePolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidAllowedPatternException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidFilterKey": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidFilterOption": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidFilterValue": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidKeyId": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNextToken": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidPolicyAttributeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidPolicyTypeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResourceId": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidResourceType": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ParameterAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "ParameterMaxVersionLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterNotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ParameterPatternMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterVersionLabelLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterVersionNotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PoliciesLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyUpdates": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 429}, "UnsupportedParameterType": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "ssm", SigningName: "ssm", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "ssm", TargetPrefix: "AmazonSSM", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AssociatedInstances": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "DocumentAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "DocumentLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "DocumentPermissionLimit": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "DocumentVersionLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "DuplicateDocumentContent": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "DuplicateDocumentVersionName": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "DuplicateInstanceId": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "HierarchyLevelLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "HierarchyTypeMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IncompatiblePolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidAllowedPatternException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidCommandId": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "InvalidDocument": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "InvalidDocumentContent": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidDocumentOperation": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 403}, "InvalidDocumentSchemaVersion": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidDocumentVersion": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidFilterKey": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidFilterOption": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidFilterValue": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidInstanceId": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "InvalidKeyId": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNextToken": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidNotificationConfig": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidOutputFolder": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidParameters": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidPermissionType": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidPluginName": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "InvalidPolicyAttributeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidPolicyTypeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResourceId": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidResourceType": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidRole": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvocationDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "MaxDocumentSizeExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "NoLongerSupportedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ParameterAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "ParameterMaxVersionLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterNotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ParameterPatternMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterVersionLabelLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterVersionNotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PoliciesLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyUpdates": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 429}, "UnsupportedParameterType": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedPlatformType": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"PutParameter": {Name: "PutParameter", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "ssm:PutParameter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.PutParameter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutParameterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PutParameter(ctx, input.(*PutParameterRequest))
 		}},
@@ -250,6 +623,51 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"CreateDocument": {Name: "CreateDocument", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:CreateDocument", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.CreateDocument", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateDocumentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateDocument(ctx, input.(*CreateDocumentRequest))
+		}},
+		"GetDocument": {Name: "GetDocument", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:GetDocument", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.GetDocument", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetDocumentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetDocument(ctx, input.(*GetDocumentRequest))
+		}},
+		"DescribeDocument": {Name: "DescribeDocument", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:DescribeDocument", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.DescribeDocument", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeDocumentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeDocument(ctx, input.(*DescribeDocumentRequest))
+		}},
+		"ListDocuments": {Name: "ListDocuments", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:ListDocuments", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.ListDocuments", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListDocumentsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListDocuments(ctx, input.(*ListDocumentsRequest))
+		}},
+		"UpdateDocument": {Name: "UpdateDocument", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:UpdateDocument", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.UpdateDocument", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateDocumentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateDocument(ctx, input.(*UpdateDocumentRequest))
+		}},
+		"DeleteDocument": {Name: "DeleteDocument", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:DeleteDocument", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.DeleteDocument", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteDocumentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteDocument(ctx, input.(*DeleteDocumentRequest))
+		}},
+		"ListDocumentVersions": {Name: "ListDocumentVersions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:ListDocumentVersions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.ListDocumentVersions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListDocumentVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListDocumentVersions(ctx, input.(*ListDocumentVersionsRequest))
+		}},
+		"UpdateDocumentDefaultVersion": {Name: "UpdateDocumentDefaultVersion", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:UpdateDocumentDefaultVersion", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.UpdateDocumentDefaultVersion", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateDocumentDefaultVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateDocumentDefaultVersion(ctx, input.(*UpdateDocumentDefaultVersionRequest))
+		}},
+		"DescribeDocumentPermission": {Name: "DescribeDocumentPermission", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:DescribeDocumentPermission", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.DescribeDocumentPermission", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeDocumentPermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeDocumentPermission(ctx, input.(*DescribeDocumentPermissionRequest))
+		}},
+		"ModifyDocumentPermission": {Name: "ModifyDocumentPermission", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:ModifyDocumentPermission", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.ModifyDocumentPermission", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ModifyDocumentPermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyDocumentPermission(ctx, input.(*ModifyDocumentPermissionRequest))
+		}},
+		"SendCommand": {Name: "SendCommand", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "ssm:SendCommand", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.SendCommand", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &SendCommandRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SendCommand(ctx, input.(*SendCommandRequest))
+		}},
+		"ListCommands": {Name: "ListCommands", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "ssm:ListCommands", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.ListCommands", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListCommandsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListCommands(ctx, input.(*ListCommandsRequest))
+		}},
+		"ListCommandInvocations": {Name: "ListCommandInvocations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:ListCommandInvocations", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.ListCommandInvocations", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListCommandInvocationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListCommandInvocations(ctx, input.(*ListCommandInvocationsRequest))
+		}},
+		"GetCommandInvocation": {Name: "GetCommandInvocation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:GetCommandInvocation", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.GetCommandInvocation", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetCommandInvocationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetCommandInvocation(ctx, input.(*GetCommandInvocationRequest))
+		}},
+		"CancelCommand": {Name: "CancelCommand", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ssm:CancelCommand", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonSSM.CancelCommand", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CancelCommandRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CancelCommand(ctx, input.(*CancelCommandRequest))
 		}},
 	}}
 }

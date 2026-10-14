@@ -11,49 +11,84 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// taggedParameter checks a tagging request's resource: TinyStack tags only
-// parameters, named by ResourceId.
-func taggedParameter(ctx context.Context, tx storage.ReadTx, kind, id *string) (*parameter, string, error) {
-	m, err := request.Regional(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-
-	if value(kind, "") != resourceType {
-		return nil, "", awserror.New("InvalidResourceType", "The resource type is not valid. TinyStack tags only "+
-			"parameters.")
-	}
-
-	p, found, err := storage.Read[parameter](tx, parameterKey(m.Scope, value(id, "")))
-	if err != nil {
-		return nil, "", err
-	}
-
-	if !found || checkBareName(id) != nil {
-		return nil, "", awserror.New("InvalidResourceId", "The resource ID is not valid. Verify that the resource "+
-			"ID is correct and try again.")
-	}
-
-	return p, parameterKey(m.Scope, p.Name), nil
+// taggedResource is the record whose tags a tagging request changes: a
+// parameter or a document. TinyStack tags nothing else.
+type taggedResource struct {
+	tags *map[string]string
+	save func(tx storage.WriteTx) error
 }
 
-// retag applies fn to a parameter's tags and saves them.
+func invalidResourceID() error {
+	return awserror.New("InvalidResourceId", "The resource ID is not valid. Verify that the resource ID is "+
+		"correct and try again.")
+}
+
+// tagged finds the resource a tagging request names, ResourceType and ResourceId.
+func tagged(ctx context.Context, tx storage.ReadTx, kind, id *string) (*taggedResource, error) {
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	switch value(kind, "") {
+	case resourceType:
+		p, found, readErr := storage.Read[parameter](tx, parameterKey(m.Scope, value(id, "")))
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		if !found || checkBareName(id) != nil {
+			return nil, invalidResourceID()
+		}
+
+		return &taggedResource{tags: &p.Tags, save: func(w storage.WriteTx) error {
+			return storage.Write(w, parameterKey(m.Scope, p.Name), p)
+		}}, nil
+	case documentKind:
+		name, refErr := documentRef(id)
+		if refErr != nil {
+			return nil, invalidResourceID()
+		}
+
+		if _, _, isBuiltin := builtin(name); isBuiltin {
+			return nil, awserror.New("InvalidResourceId", "AWS-owned documents can't be tagged.")
+		}
+
+		rec, found, readErr := storage.Read[docRecord](tx, docKey(m.Scope, name))
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		if !found {
+			return nil, invalidResourceID()
+		}
+
+		return &taggedResource{tags: &rec.Tags, save: func(w storage.WriteTx) error {
+			return storage.Write(w, docKey(m.Scope, rec.Name), rec)
+		}}, nil
+	}
+
+	return nil, awserror.New("InvalidResourceType", "The resource type is not valid. TinyStack tags only "+
+		"parameters and documents.")
+}
+
+// retag applies fn to the tags of a resource and saves them.
 func (s *Service) retag(ctx context.Context, kind, id *string, fn func(tags map[string]string) error) error {
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		p, k, err := taggedParameter(ctx, tx, kind, id)
+		r, err := tagged(ctx, tx, kind, id)
 		if err != nil {
 			return err
 		}
 
-		if p.Tags == nil {
-			p.Tags = map[string]string{}
+		if *r.tags == nil {
+			*r.tags = map[string]string{}
 		}
 
-		if fnErr := fn(p.Tags); fnErr != nil {
+		if fnErr := fn(*r.tags); fnErr != nil {
 			return fnErr
 		}
 
-		return storage.Write(tx, k, p)
+		return r.save(tx)
 	})
 }
 
@@ -111,12 +146,12 @@ func (s *Service) ListTagsForResource(
 ) (*api.ListTagsForResourceResult, error) {
 	out := &api.ListTagsForResourceResult{}
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		p, _, err := taggedParameter(ctx, tx, in.ResourceType, in.ResourceId)
+		r, err := tagged(ctx, tx, in.ResourceType, in.ResourceId)
 		if err != nil {
 			return err
 		}
 
-		out.TagList = tagging.List(p.Tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
+		out.TagList = tagging.List(*r.tags, func(k, v string) api.Tag { return api.Tag{Key: &k, Value: &v} })
 
 		return nil
 	})

@@ -17320,7 +17320,22 @@
       "UnlabelParameterVersion",
       "AddTagsToResource",
       "RemoveTagsFromResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "CreateDocument",
+      "GetDocument",
+      "DescribeDocument",
+      "ListDocuments",
+      "UpdateDocument",
+      "DeleteDocument",
+      "ListDocumentVersions",
+      "UpdateDocumentDefaultVersion",
+      "DescribeDocumentPermission",
+      "ModifyDocumentPermission",
+      "SendCommand",
+      "ListCommands",
+      "ListCommandInvocations",
+      "GetCommandInvocation",
+      "CancelCommand"
     ],
     "shapes": {
       "PutParameterRequest": [
@@ -17333,7 +17348,8 @@
         "AllowedPattern",
         "Tags",
         "Tier",
-        "DataType"
+        "DataType",
+        "Policies"
       ],
       "PutParameterResult": [
         "Version",
@@ -17411,7 +17427,8 @@
         "AllowedPattern",
         "Version",
         "Tier",
-        "DataType"
+        "DataType",
+        "Policies"
       ],
       "GetParameterHistoryRequest": [
         "Name",
@@ -17434,7 +17451,8 @@
         "Version",
         "Labels",
         "Tier",
-        "DataType"
+        "DataType",
+        "Policies"
       ],
       "LabelParameterVersionRequest": [
         "Name",
@@ -17476,7 +17494,314 @@
       "Tag": [
         "Key",
         "Value"
-      ]
+      ],
+      "ParameterInlinePolicy": [
+        "PolicyText",
+        "PolicyType",
+        "PolicyStatus"
+      ],
+      "CreateDocumentRequest": [
+        "Content",
+        "Name",
+        "DisplayName",
+        "VersionName",
+        "DocumentType",
+        "DocumentFormat",
+        "TargetType",
+        "Tags"
+      ],
+      "CreateDocumentResult": [
+        "DocumentDescription"
+      ],
+      "DocumentDescription": [
+        "Sha1",
+        "Hash",
+        "HashType",
+        "Name",
+        "DisplayName",
+        "VersionName",
+        "Owner",
+        "CreatedDate",
+        "Status",
+        "DocumentVersion",
+        "Description",
+        "Parameters",
+        "PlatformTypes",
+        "DocumentType",
+        "SchemaVersion",
+        "LatestVersion",
+        "DefaultVersion",
+        "DocumentFormat",
+        "TargetType",
+        "Tags",
+        "Author"
+      ],
+      "DocumentParameter": [
+        "Name",
+        "Type",
+        "Description",
+        "DefaultValue"
+      ],
+      "GetDocumentRequest": [
+        "Name",
+        "VersionName",
+        "DocumentVersion",
+        "DocumentFormat"
+      ],
+      "GetDocumentResult": [
+        "Name",
+        "CreatedDate",
+        "DisplayName",
+        "VersionName",
+        "DocumentVersion",
+        "Status",
+        "Content",
+        "DocumentType",
+        "DocumentFormat"
+      ],
+      "DescribeDocumentRequest": [
+        "Name",
+        "DocumentVersion",
+        "VersionName"
+      ],
+      "DescribeDocumentResult": [
+        "Document"
+      ],
+      "ListDocumentsRequest": [
+        "DocumentFilterList",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DocumentFilter": [
+        "key",
+        "value"
+      ],
+      "DocumentKeyValuesFilter": [
+        "Key",
+        "Values"
+      ],
+      "ListDocumentsResult": [
+        "DocumentIdentifiers",
+        "NextToken"
+      ],
+      "DocumentIdentifier": [
+        "Name",
+        "CreatedDate",
+        "DisplayName",
+        "Owner",
+        "VersionName",
+        "PlatformTypes",
+        "DocumentVersion",
+        "DocumentType",
+        "SchemaVersion",
+        "DocumentFormat",
+        "TargetType",
+        "Tags",
+        "Author"
+      ],
+      "UpdateDocumentRequest": [
+        "Content",
+        "Name",
+        "DisplayName",
+        "VersionName",
+        "DocumentVersion",
+        "DocumentFormat",
+        "TargetType"
+      ],
+      "UpdateDocumentResult": [
+        "DocumentDescription"
+      ],
+      "DeleteDocumentRequest": [
+        "Name",
+        "DocumentVersion",
+        "VersionName",
+        "Force"
+      ],
+      "DeleteDocumentResult": [],
+      "ListDocumentVersionsRequest": [
+        "Name",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListDocumentVersionsResult": [
+        "DocumentVersions",
+        "NextToken"
+      ],
+      "DocumentVersionInfo": [
+        "Name",
+        "DisplayName",
+        "DocumentVersion",
+        "VersionName",
+        "CreatedDate",
+        "IsDefaultVersion",
+        "DocumentFormat",
+        "Status"
+      ],
+      "UpdateDocumentDefaultVersionRequest": [
+        "Name",
+        "DocumentVersion"
+      ],
+      "UpdateDocumentDefaultVersionResult": [
+        "Description"
+      ],
+      "DocumentDefaultVersionDescription": [
+        "Name",
+        "DefaultVersion",
+        "DefaultVersionName"
+      ],
+      "DescribeDocumentPermissionRequest": [
+        "Name",
+        "PermissionType",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeDocumentPermissionResponse": [
+        "AccountIds",
+        "AccountSharingInfoList",
+        "NextToken"
+      ],
+      "AccountSharingInfo": [
+        "AccountId",
+        "SharedDocumentVersion"
+      ],
+      "ModifyDocumentPermissionRequest": [
+        "Name",
+        "PermissionType",
+        "AccountIdsToAdd",
+        "AccountIdsToRemove",
+        "SharedDocumentVersion"
+      ],
+      "ModifyDocumentPermissionResponse": [],
+      "SendCommandRequest": [
+        "InstanceIds",
+        "Targets",
+        "DocumentName",
+        "DocumentVersion",
+        "TimeoutSeconds",
+        "Comment",
+        "Parameters",
+        "OutputS3Region",
+        "OutputS3BucketName",
+        "OutputS3KeyPrefix",
+        "MaxConcurrency",
+        "MaxErrors",
+        "ServiceRoleArn",
+        "CloudWatchOutputConfig"
+      ],
+      "Target": [
+        "Key",
+        "Values"
+      ],
+      "CloudWatchOutputConfig": [
+        "CloudWatchLogGroupName",
+        "CloudWatchOutputEnabled"
+      ],
+      "SendCommandResult": [
+        "Command"
+      ],
+      "Command": [
+        "CommandId",
+        "DocumentName",
+        "DocumentVersion",
+        "Comment",
+        "ExpiresAfter",
+        "Parameters",
+        "InstanceIds",
+        "Targets",
+        "RequestedDateTime",
+        "Status",
+        "StatusDetails",
+        "OutputS3Region",
+        "OutputS3BucketName",
+        "OutputS3KeyPrefix",
+        "MaxConcurrency",
+        "MaxErrors",
+        "TargetCount",
+        "CompletedCount",
+        "ErrorCount",
+        "DeliveryTimedOutCount",
+        "ServiceRole",
+        "CloudWatchOutputConfig",
+        "TimeoutSeconds"
+      ],
+      "ListCommandsRequest": [
+        "CommandId",
+        "InstanceId",
+        "MaxResults",
+        "NextToken",
+        "Filters"
+      ],
+      "CommandFilter": [
+        "key",
+        "value"
+      ],
+      "ListCommandsResult": [
+        "Commands",
+        "NextToken"
+      ],
+      "ListCommandInvocationsRequest": [
+        "CommandId",
+        "InstanceId",
+        "MaxResults",
+        "NextToken",
+        "Filters",
+        "Details"
+      ],
+      "ListCommandInvocationsResult": [
+        "CommandInvocations",
+        "NextToken"
+      ],
+      "CommandInvocation": [
+        "CommandId",
+        "InstanceId",
+        "InstanceName",
+        "Comment",
+        "DocumentName",
+        "DocumentVersion",
+        "RequestedDateTime",
+        "Status",
+        "StatusDetails",
+        "CommandPlugins",
+        "ServiceRole",
+        "CloudWatchOutputConfig"
+      ],
+      "CommandPlugin": [
+        "Name",
+        "Status",
+        "StatusDetails",
+        "ResponseCode",
+        "ResponseStartDateTime",
+        "ResponseFinishDateTime",
+        "Output"
+      ],
+      "GetCommandInvocationRequest": [
+        "CommandId",
+        "InstanceId",
+        "PluginName"
+      ],
+      "GetCommandInvocationResult": [
+        "CommandId",
+        "InstanceId",
+        "Comment",
+        "DocumentName",
+        "DocumentVersion",
+        "PluginName",
+        "ResponseCode",
+        "ExecutionStartDateTime",
+        "ExecutionElapsedTime",
+        "ExecutionEndDateTime",
+        "Status",
+        "StatusDetails",
+        "StandardOutputContent",
+        "StandardErrorContent",
+        "CloudWatchOutputConfig"
+      ],
+      "CancelCommandRequest": [
+        "CommandId",
+        "InstanceIds"
+      ],
+      "CancelCommandResult": []
     }
   },
   "sts": {

@@ -75,6 +75,8 @@ type key struct {
 	// RotationStart is when rotation was enabled.
 	RotationDays  int64 `json:",omitempty"`
 	RotationStart int64 `json:",omitempty"`
+	// Managed marks an AWS managed key, which EnsureManagedKey creates.
+	Managed bool `json:",omitempty"`
 }
 
 var keyID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
@@ -101,7 +103,15 @@ func seconds(ms int64) *float64 { return new(float64(ms) / 1000) }
 
 func newKeyID() string { return uuid.NewV4().String() }
 
-func (k *key) spec() string  { return cmp.Or(k.Spec, symmetricDefault) }
+func (k *key) spec() string { return cmp.Or(k.Spec, symmetricDefault) }
+func (k *key) manager() string {
+	if k.Managed {
+		return "AWS"
+	}
+
+	return "CUSTOMER"
+}
+
 func (k *key) usage() string { return cmp.Or(k.Usage, encryptDecrypt) }
 
 // requireUsage fails unless the key has the usage an operation needs.
@@ -152,7 +162,7 @@ func (k *key) metadata(scope request.Scope) *api.KeyMetadata {
 		KeyUsage:              new(k.usage()),
 		KeyState:              new(k.State),
 		Origin:                new(originKMS),
-		KeyManager:            new("CUSTOMER"),
+		KeyManager:            new(k.manager()),
 		CustomerMasterKeySpec: new(k.spec()),
 		KeySpec:               new(k.spec()),
 		MultiRegion:           new(false),

@@ -502,7 +502,7 @@ func TestSSMTags(t *testing.T) {
 	}
 
 	_, err = c.ListTagsForResource(ctx, &ssm.ListTagsForResourceInput{
-		ResourceType: ssmtypes.ResourceTypeForTaggingDocument, ResourceId: aws.String("/tagged"),
+		ResourceType: ssmtypes.ResourceTypeForTaggingManagedInstance, ResourceId: aws.String("/tagged"),
 	})
 	wantCode(t, err, "InvalidResourceType")
 

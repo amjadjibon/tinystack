@@ -419,6 +419,18 @@ func build(
 	parameters := ssm.New(store, keys)
 	// Systems Manager publishes the IDs of EC2's images.
 	parameters.UsePublicParameters(ec2.PublicParameters)
+	// Run Command targets the running instances EC2 knows.
+	parameters.UseInstances(func(ctx context.Context, scope request.Scope) ([]ssm.Instance, error) {
+		running, listErr := network.RunningInstances(ctx, scope)
+		out := make([]ssm.Instance, len(running))
+		for i, r := range running {
+			out[i] = ssm.Instance{ID: r.ID, Tags: r.Tags}
+		}
+
+		return out, listErr
+	})
+	// Stop ends the sweeper that expires parameters and finishes commands.
+	a.onStop(parameters.Stop)
 	certificates := acm.New(store)
 	a.onReset(certificates.Reset)
 	tags := resourcegroupstaggingapi.New()

@@ -42,7 +42,7 @@ func (s *Service) GetParameterHistory(
 
 	decrypt := in.WithDecryption != nil && *in.WithDecryption
 	out := &api.GetParameterHistoryResult{Parameters: []api.ParameterHistory{}}
-	var decrypted []*version
+	var secrets []revealed
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		p, loadErr := loadParameter(tx, m.Scope, *in.Name)
 		if loadErr != nil {
@@ -67,20 +67,27 @@ func (s *Service) GetParameterHistory(
 		}
 
 		labels := labelsOf(p)
-		decrypted = selected
 		for _, v := range selected {
+			if decrypt && v.Type == typeSecureString {
+				i := len(out.Parameters)
+				secrets = append(secrets, revealed{
+					version: v, name: p.Name, set: func(plain string) { out.Parameters[i].Value = &plain },
+				})
+			}
+
 			out.Parameters = append(out.Parameters, api.ParameterHistory{
 				Name:             new(p.Name),
 				Type:             new(v.Type),
 				KeyId:            optional(v.KeyID),
 				LastModifiedDate: seconds(v.ModifiedAt),
 				Description:      optional(v.Description),
-				Value:            new(v.value(decrypt)),
+				Value:            new(v.stored()),
 				AllowedPattern:   optional(v.AllowedPattern),
 				Version:          new(v.Version),
 				Labels:           labels[v.Version],
 				Tier:             new(v.Tier),
 				DataType:         new(v.DataType),
+				Policies:         v.policyOutput(),
 			})
 		}
 
@@ -91,10 +98,8 @@ func (s *Service) GetParameterHistory(
 		return nil, err
 	}
 
-	if decrypt {
-		if keyErr := s.decrypting(ctx, m.Scope, decrypted); keyErr != nil {
-			return nil, keyErr
-		}
+	if keyErr := s.reveal(ctx, m.Scope, secrets); keyErr != nil {
+		return nil, keyErr
 	}
 
 	return out, nil

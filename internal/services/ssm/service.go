@@ -16,8 +16,10 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -45,15 +47,21 @@ const (
 	maxBatch         = 10
 	// publicPrefix starts the names of the public parameters AWS publishes.
 	publicPrefix = "/aws/service/"
+	// keyType is the Type filter key and member name.
+	keyType = "Type"
 )
 
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store  storage.Store
-	keys   *kms.Service
-	public PublicParameters
-	now    func() time.Time
+	store     storage.Store
+	keys      *kms.Service
+	public    PublicParameters
+	instances Instances
+	now       func() time.Time
+	// bg runs the sweeper that applies parameter policies and finishes
+	// commands, until Stop.
+	bg *background.Group
 }
 
 // PublicParameters returns the public parameters AWS publishes in a Region
@@ -90,20 +98,21 @@ func (s *Service) publicParameters(region string) []current {
 	return out
 }
 
-// New returns the Parameter Store; keys checks the customer managed keys of
-// SecureString parameters.
+// New returns Systems Manager and starts its sweeper, which runs until Stop;
+// keys encrypts and decrypts SecureString parameters.
 func New(store storage.Store, keys *kms.Service) *Service {
-	return &Service{store: store, keys: keys, now: time.Now}
+	s := &Service{store: store, keys: keys, now: time.Now, bg: background.New()}
+	s.bg.Every(sweepInterval, s.sweep)
+
+	return s
 }
 
-// useKey reports why the customer managed key id cannot be used, as
-// InvalidKeyId. The AWS managed key needs no check.
-func (s *Service) useKey(ctx context.Context, scope request.Scope, id string) error {
-	if id == defaultKeyID {
-		return nil
-	}
+// Stop ends the sweeper and waits for it. Later calls return at once.
+func (s *Service) Stop() { s.bg.Stop() }
 
-	err := s.keys.Check(ctx, scope, id)
+// keyError reports a KMS failure as InvalidKeyId, as Parameter Store does for
+// a key that is missing, disabled, pending deletion, or of the wrong kind.
+func keyError(err error) error {
 	if e, ok := errors.AsType[*awserror.Error](err); ok {
 		return awserror.New("InvalidKeyId", e.Message)
 	}
@@ -111,18 +120,79 @@ func (s *Service) useKey(ctx context.Context, scope request.Scope, id string) er
 	return err
 }
 
-// decrypting checks the keys of the SecureString versions a read decrypts.
-func (s *Service) decrypting(ctx context.Context, scope request.Scope, versions []*version) error {
-	checked := map[string]bool{}
-	for _, v := range versions {
-		if v.Type != typeSecureString || checked[v.KeyID] {
-			continue
+// chunkSize is how much plaintext one KMS call encrypts.
+const chunkSize = 4096
+
+// seal encrypts a SecureString value under the KMS key keyID, with the
+// parameter's ARN as the encryption context. A value longer than KMS accepts
+// is encrypted in chunks, whose base64 forms are joined with dots.
+func (s *Service) seal(ctx context.Context, scope request.Scope, name, keyID, plaintext string) (string, error) {
+	if keyID == defaultKeyID {
+		if err := s.keys.EnsureManagedKey(ctx, scope, "ssm"); err != nil {
+			return "", err
+		}
+	}
+
+	var chunks []string
+	for rest := []byte(plaintext); len(rest) > 0; {
+		n := min(len(rest), chunkSize)
+		out, err := s.keys.Encrypt(ctx, &kmsapi.EncryptRequest{
+			KeyId: &keyID, Plaintext: rest[:n], EncryptionContext: encryptionContext(scope, name),
+		})
+		if err != nil {
+			return "", keyError(err)
 		}
 
-		checked[v.KeyID] = true
-		if err := s.useKey(ctx, scope, v.KeyID); err != nil {
+		chunks = append(chunks, base64.StdEncoding.EncodeToString(out.CiphertextBlob))
+		rest = rest[n:]
+	}
+
+	return strings.Join(chunks, "."), nil
+}
+
+func encryptionContext(scope request.Scope, name string) map[string]string {
+	return map[string]string{"PARAMETER_ARN": parameterARN(scope, name)}
+}
+
+// unseal decrypts a SecureString version. The key must still be usable.
+func (s *Service) unseal(ctx context.Context, scope request.Scope, name string, v *version) (string, error) {
+	var plain strings.Builder
+	for chunk := range strings.SplitSeq(v.Ciphertext, ".") {
+		blob, err := base64.StdEncoding.DecodeString(chunk)
+		if err != nil {
+			return "", awserror.New("InvalidKeyId", "The stored parameter value is not valid ciphertext.")
+		}
+
+		out, err := s.keys.Decrypt(ctx, &kmsapi.DecryptRequest{
+			CiphertextBlob: blob, EncryptionContext: encryptionContext(scope, name),
+		})
+		if err != nil {
+			return "", keyError(err)
+		}
+
+		plain.Write(out.Plaintext)
+	}
+
+	return plain.String(), nil
+}
+
+// revealed is a SecureString version a read decrypts, and where the plaintext
+// goes.
+type revealed struct {
+	version *version
+	set     func(plaintext string)
+	name    string
+}
+
+// reveal decrypts the SecureString versions of a read with decryption.
+func (s *Service) reveal(ctx context.Context, scope request.Scope, items []revealed) error {
+	for _, item := range items {
+		plain, err := s.unseal(ctx, scope, item.name, item.version)
+		if err != nil {
 			return err
 		}
+
+		item.set(plain)
 	}
 
 	return nil
@@ -138,8 +208,9 @@ type parameter struct {
 
 // version is one immutable parameter version.
 type version struct {
-	Value string
-	// Ciphertext stands in for a SecureString value read without decryption.
+	// Value is empty for a SecureString, which holds its Ciphertext.
+	Value string `json:",omitempty"`
+	// Ciphertext is the KMS encryption of a SecureString value, base64 encoded.
 	Ciphertext     string `json:",omitempty"`
 	Type           string
 	KeyID          string `json:",omitempty"`
@@ -147,8 +218,12 @@ type version struct {
 	AllowedPattern string `json:",omitempty"`
 	Tier           string
 	DataType       string
-	Version        int64
-	ModifiedAt     int64 // Unix milliseconds
+	// Policies are the parameter policies of an advanced parameter, and
+	// ExpiresAt, in Unix milliseconds, is when its Expiration policy deletes it.
+	Policies   []policy `json:",omitempty"`
+	Version    int64
+	ModifiedAt int64 // Unix milliseconds
+	ExpiresAt  int64 `json:",omitempty"`
 }
 
 var (
@@ -316,21 +391,21 @@ func (s *Service) resolve(tx storage.ReadTx, scope request.Scope, name string) (
 	return p, v, selector, nil
 }
 
-// value returns what a read returns for v: a SecureString value only with
-// decryption.
-func (v *version) value(decrypt bool) string {
-	if v.Type == typeSecureString && !decrypt {
+// stored returns what a read without decryption returns for v: a
+// SecureString's ciphertext.
+func (v *version) stored() string {
+	if v.Type == typeSecureString {
 		return v.Ciphertext
 	}
 
 	return v.Value
 }
 
-func (v *version) parameter(scope request.Scope, name, selector string, decrypt bool) api.Parameter {
+func (v *version) parameter(scope request.Scope, name, selector string) api.Parameter {
 	out := api.Parameter{
 		Name:             new(name),
 		Type:             new(v.Type),
-		Value:            new(v.value(decrypt)),
+		Value:            new(v.stored()),
 		Version:          new(v.Version),
 		LastModifiedDate: seconds(v.ModifiedAt),
 		ARN:              new(parameterARN(scope, name)),
@@ -363,6 +438,7 @@ func (v *version) metadata(scope request.Scope, name string) api.ParameterMetada
 		Version:          new(v.Version),
 		Tier:             new(v.Tier),
 		DataType:         new(v.DataType),
+		Policies:         v.policyOutput(),
 	}
 }
 

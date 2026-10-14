@@ -65,7 +65,7 @@ func parseFilters(filters []api.ParameterStringFilter, describe bool) ([]filter,
 		var field func(c current) string
 		options := []string{optionEquals}
 		switch {
-		case key == "Type":
+		case key == keyType:
 			field = func(c current) string { return c.Type }
 		case key == "KeyId":
 			field = func(c current) string { return c.KeyID }
@@ -183,7 +183,7 @@ func (s *Service) GetParametersByPath(
 	keep := func(name string) bool { return under(name, *in.Path, recursive) }
 	decrypt := in.WithDecryption != nil && *in.WithDecryption
 	out := &api.GetParametersByPathResult{Parameters: []api.Parameter{}}
-	var versions []*version
+	var secrets []revealed
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		found, listErr := matching(tx, m.Scope, keep, filters)
 		if listErr != nil {
@@ -204,8 +204,13 @@ func (s *Service) GetParametersByPath(
 		}
 
 		for _, c := range selected {
-			out.Parameters = append(out.Parameters, c.parameterOutput(m.Scope, decrypt))
-			versions = append(versions, c.version)
+			out.Parameters = append(out.Parameters, c.version.parameter(m.Scope, c.Name, ""))
+			if decrypt && c.Type == typeSecureString {
+				i := len(out.Parameters) - 1
+				secrets = append(secrets, revealed{
+					version: c.version, name: c.Name, set: func(plain string) { out.Parameters[i].Value = &plain },
+				})
+			}
 		}
 
 		out.NextToken = next
@@ -215,17 +220,11 @@ func (s *Service) GetParametersByPath(
 		return nil, err
 	}
 
-	if decrypt {
-		if keyErr := s.decrypting(ctx, m.Scope, versions); keyErr != nil {
-			return nil, keyErr
-		}
+	if keyErr := s.reveal(ctx, m.Scope, secrets); keyErr != nil {
+		return nil, keyErr
 	}
 
 	return out, nil
-}
-
-func (c current) parameterOutput(scope request.Scope, decrypt bool) api.Parameter {
-	return c.version.parameter(scope, c.Name, "", decrypt)
 }
 
 // DescribeParameters lists parameter metadata, never values.
