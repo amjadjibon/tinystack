@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -33,6 +34,12 @@ func TestSSMSecureStringUsesKMS(t *testing.T) {
 	managed, err := keys.DescribeKey(ctx, &kms.DescribeKeyInput{KeyId: aws.String("alias/aws/ssm")})
 	if err != nil || managed.KeyMetadata.KeyManager != kmstypes.KeyManagerTypeAws {
 		t.Fatalf("got %+v, %v", managed, err)
+	}
+
+	// Only AWS may change its managed keys.
+	_, err = keys.DisableKey(ctx, &kms.DisableKeyInput{KeyId: managed.KeyMetadata.KeyId})
+	if _, ok := errors.AsType[*kmstypes.UnsupportedOperationException](err); !ok {
+		t.Fatalf("disabling the managed key: got %v", err)
 	}
 
 	raw, err := c.GetParameter(ctx, &ssm.GetParameterInput{Name: aws.String("/secure/a")})

@@ -151,6 +151,15 @@ func (k *key) active(scope request.Scope) error {
 	return nil
 }
 
+// customer fails for an AWS managed key, which only AWS may change.
+func (k *key) customer(scope request.Scope) error {
+	if k.Managed {
+		return unsupported("%s is an AWS managed key and cannot be modified.", keyARN(scope, k.ID))
+	}
+
+	return nil
+}
+
 func (k *key) metadata(scope request.Scope) *api.KeyMetadata {
 	m := &api.KeyMetadata{
 		AWSAccountId:          new(scope.AccountID),
@@ -547,6 +556,10 @@ func (s *Service) EnableKey(ctx context.Context, in *api.EnableKeyRequest) (*api
 
 func (s *Service) DisableKey(ctx context.Context, in *api.DisableKeyRequest) (*api.DisableKeyOutput, error) {
 	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if managedErr := k.customer(scope); managedErr != nil {
+			return managedErr
+		}
+
 		if activeErr := k.active(scope); activeErr != nil {
 			return activeErr
 		}
@@ -576,6 +589,10 @@ func (s *Service) ScheduleKeyDeletion(
 
 	out := &api.ScheduleKeyDeletionResponse{}
 	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if managedErr := k.customer(scope); managedErr != nil {
+			return managedErr
+		}
+
 		if activeErr := k.active(scope); activeErr != nil {
 			return activeErr
 		}
@@ -632,6 +649,10 @@ func (s *Service) UpdateKeyDescription(
 	}
 
 	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if managedErr := k.customer(scope); managedErr != nil {
+			return managedErr
+		}
+
 		if activeErr := k.active(scope); activeErr != nil {
 			return activeErr
 		}
@@ -682,6 +703,10 @@ func (s *Service) PutKeyPolicy(ctx context.Context, in *api.PutKeyPolicyRequest)
 	}
 
 	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if managedErr := k.customer(scope); managedErr != nil {
+			return managedErr
+		}
+
 		if activeErr := k.active(scope); activeErr != nil {
 			return activeErr
 		}
@@ -752,6 +777,10 @@ func (s *Service) EnableKeyRotation(
 	}
 
 	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if managedErr := k.customer(scope); managedErr != nil {
+			return managedErr
+		}
+
 		if usableErr := k.usable(scope); usableErr != nil {
 			return usableErr
 		}
@@ -779,6 +808,10 @@ func (s *Service) DisableKeyRotation(
 	in *api.DisableKeyRotationRequest,
 ) (*api.DisableKeyRotationOutput, error) {
 	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+		if managedErr := k.customer(scope); managedErr != nil {
+			return managedErr
+		}
+
 		if usableErr := k.usable(scope); usableErr != nil {
 			return usableErr
 		}

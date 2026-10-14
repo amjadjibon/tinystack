@@ -637,7 +637,7 @@ Exercise local cryptographic key and alias workflows.
 - Encrypt/decrypt, re-encryption, data keys, signing and public-key retrieval.
 - Key lifecycle, aliases, policies, grants and tags.
 - SSM, Secrets Manager and SQS validate usable customer-managed keys.
-- SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use.
+- SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use; AWS managed keys cannot be disabled, scheduled for deletion, or have their policy, description or rotation changed.
 
 [Supported operations](kms.md#supported-operations) · [Limitations](kms.md#limitations-and-future-work)
 
