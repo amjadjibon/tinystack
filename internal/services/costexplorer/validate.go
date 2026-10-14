@@ -329,6 +329,7 @@ func validateCategory(c *api.CostCategory) error {
 			if d.DimensionKey != nil && utf8.RuneCountInString(*d.DimensionKey) > 1024 {
 				return awserror.Validation("Inherited DimensionKey must be at most 1024 characters.")
 			}
+
 			if !slices.Contains([]string{dimensionTag, "LINKED_ACCOUNT_NAME"}, common.Value(d.DimensionName)) {
 				return awserror.Validation("Invalid inherited dimension name.")
 			}

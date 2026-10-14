@@ -71,6 +71,7 @@ func (s *Service) UpdateAnomalyMonitor(
 		if in.MonitorName != nil {
 			r.Monitor.MonitorName, r.Monitor.LastUpdatedDate = in.MonitorName, new(today())
 		}
+
 		return nil
 	})
 	if err != nil {
