@@ -58,16 +58,23 @@ func (s *Server) KubernetesAccount(r *http.Request, cluster string) (string, err
 	account := s.cfg.Defaults.Account
 	secret, configured := s.cfg.Identity.SecretKeys[a.AccessKey]
 	var issued *request.Credentials
-	if mapped, found := s.cfg.Identity.Accounts[a.AccessKey]; found {
-		account = mapped
-	} else if s.credentials != nil && !configured {
-		credentials, found, lookupErr := s.credentials(r.Context(), a.AccessKey)
-		if lookupErr != nil {
-			return "", lookupErr
+	digits, mapped, named := s.keyAccount(a.AccessKey)
+	if named && mapped {
+		account = digits
+	} else {
+		if s.credentials != nil && !configured {
+			credentials, found, lookupErr := s.credentials(r.Context(), a.AccessKey)
+			if lookupErr != nil {
+				return "", lookupErr
+			}
+
+			if found {
+				account, issued, secret = credentials.AccountID, &credentials, credentials.Secret
+			}
 		}
 
-		if found {
-			account, issued, secret = credentials.AccountID, &credentials, credentials.Secret
+		if issued == nil && named {
+			account = digits
 		}
 	}
 

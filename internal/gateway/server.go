@@ -359,7 +359,8 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 	m.AccessKey = a.AccessKey
 	m.Region = a.Region
 	m.Service = a.Service
-	if account, ok := s.cfg.Identity.Accounts[m.AccessKey]; ok {
+	// A 12-digit key is provisional: resolveCredentials lets issued credentials win.
+	if account, _, ok := s.keyAccount(m.AccessKey); ok {
 		m.AccountID = account
 	}
 
