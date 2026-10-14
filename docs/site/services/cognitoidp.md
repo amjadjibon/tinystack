@@ -13,17 +13,90 @@ Manage users and clients, authenticate locally, and issue pool-signed JWTs.
 | API version | `2016-04-18` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 69 of 132 in the pinned model |
+| Selected operations | 86 of 132 in the pinned model |
 
 ## Implemented behavior
 
 See the [implemented feature catalogue](catalogue.md#cognito-user-pools) for this service's capabilities.
 
+## Hosted sign-in
+
+Use `http://localhost:18080/<pool-id>` as the local OIDC issuer. Discovery and JWKS are at
+`<issuer>/.well-known/openid-configuration` and `<issuer>/.well-known/jwks.json`.
+The path form exposes `<issuer>/oauth2/authorize`, `/login`, `/oauth2/token`, `/oauth2/userInfo`,
+`/oauth2/revoke`, `/oauth2/idpresponse`, and `/logout`.
+
+With a configured prefix domain, route `<prefix>.auth.<region>.amazoncognito.com` to TinyStack and send that Host
+header; custom domains work the same way. The hosted endpoints then live at the domain root, for example
+`https://signin.local.test:18080/oauth2/authorize`. This is Host routing; TinyStack does not provision DNS,
+CloudFront, or an ACM certificate. HTTPS clients need an actual TLS listener around the gateway.
+The standalone CLI gateway is HTTP; this wave does not add CLI TLS configuration or trust forwarded scheme headers.
+Discovery remains under `/<pool-id>/.well-known/`; on a configured domain it advertises root hosted endpoints
+while retaining the path-form issuer. For HTTP testing, use the path-form issuer on localhost.
+
+Configure an app client with `AllowedOAuthFlowsUserPoolClient=true`, `AllowedOAuthFlows=["code"]`,
+`AllowedOAuthScopes`, exact `CallbackURLs`/`LogoutURLs`, and the desired `SupportedIdentityProviders`.
+Local sign-in requires `COGNITO`; OIDC providers must exist first. Confidential clients need their secret at the
+token endpoint. Public clients can use S256 PKCE. Implicit requires explicit `implicit` enablement.
+Callbacks cannot contain fragments. `prompt=login` forces a form, `prompt=none` requires an existing session,
+and `login_hint` fills the username field. Browser sessions expire after one hour and are not extended by reuse.
+
+### Amplify
+
+Amplify's redirect implementation constructs HTTPS URLs. Configure a custom domain such as `signin.local.test`
+with local DNS and trusted TLS, and a public OAuth client whose callback matches this snippet:
+
+```ts
+import { Amplify } from 'aws-amplify';
+import { signInWithRedirect } from 'aws-amplify/auth';
+
+Amplify.configure({ Auth: { Cognito: {
+  userPoolId: 'us-east-1_POOL',
+  userPoolClientId: 'CLIENT_ID',
+  loginWith: { oauth: {
+    domain: 'signin.local.test:18080',
+    scopes: ['openid', 'email', 'profile'],
+    redirectSignIn: ['http://localhost:3000/'],
+    redirectSignOut: ['http://localhost:3000/'],
+    responseType: 'code',
+  } },
+} } });
+await signInWithRedirect();
+// For a configured OIDC IdP: signInWithRedirect({ provider: { custom: 'Company' } });
+```
+
+See the [Amplify redirect implementation](https://github.com/aws-amplify/amplify-js/blob/main/packages/auth/src/providers/cognito/apis/signInWithRedirect.ts).
+API-based password signup and confirmation use the AWS SDK endpoint override separately.
+
+### NextAuth / Auth.js
+
+Register `http://localhost:3000/api/auth/callback/cognito` as a callback for a confidential OAuth client:
+
+```ts
+import NextAuth from 'next-auth';
+import Cognito from 'next-auth/providers/cognito';
+
+export const { handlers, auth } = NextAuth({ providers: [Cognito({
+  clientId: process.env.COGNITO_CLIENT_ID!,
+  clientSecret: process.env.COGNITO_CLIENT_SECRET!,
+  issuer: 'http://localhost:18080/us-east-1_POOL',
+})] });
+```
+
+See the [Auth.js Cognito provider](https://authjs.dev/getting-started/providers/cognito).
+Other OIDC clients can use the same issuer and its discovery document. HTTP issuer acceptance depends on the
+client library's development settings. An external OIDC provider must allow the matching
+`<issuer>/oauth2/idpresponse` callback, or the domain-root equivalent. Sign-in creates or reuses
+`<ProviderName>_<sub>`; matching email addresses do not automatically link different identities.
+
+
 ## Limitations and future work
 
-- No hosted UI, pool domains, social identity providers or broader OAuth grants.
+- Hosted UI uses minimal server-rendered forms, not AWS managed-login styling; branding/CSS/assets are records only.
+- SAML and social providers are records only and fail explicitly at sign-in; no upstream IdP logout.
 - No passwordless/WebAuthn or email MFA, device tracking or threat protection.
 - Messages are recorded in diagnostics rather than emailed/SMSed.
+- No hosted signup/confirmation pages, localization, ACR/multi-region routing or merged AWS default branding assets.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -62,28 +135,41 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ConfirmForgotPassword` | `POST /` |
 | `ConfirmSignUp` | `POST /` |
 | `CreateGroup` | `POST /` |
+| `CreateIdentityProvider` | `POST /` |
+| `CreateManagedLoginBranding` | `POST /` |
 | `CreateResourceServer` | `POST /` |
 | `CreateUserPool` | `POST /` |
 | `CreateUserPoolClient` | `POST /` |
+| `CreateUserPoolDomain` | `POST /` |
 | `DeleteGroup` | `POST /` |
+| `DeleteIdentityProvider` | `POST /` |
+| `DeleteManagedLoginBranding` | `POST /` |
 | `DeleteResourceServer` | `POST /` |
 | `DeleteUser` | `POST /` |
 | `DeleteUserAttributes` | `POST /` |
 | `DeleteUserPool` | `POST /` |
 | `DeleteUserPoolClient` | `POST /` |
 | `DeleteUserPoolClientSecret` | `POST /` |
+| `DeleteUserPoolDomain` | `POST /` |
+| `DescribeIdentityProvider` | `POST /` |
+| `DescribeManagedLoginBranding` | `POST /` |
+| `DescribeManagedLoginBrandingByClient` | `POST /` |
 | `DescribeResourceServer` | `POST /` |
 | `DescribeUserPool` | `POST /` |
 | `DescribeUserPoolClient` | `POST /` |
+| `DescribeUserPoolDomain` | `POST /` |
 | `ForgotPassword` | `POST /` |
 | `GetGroup` | `POST /` |
+| `GetIdentityProviderByIdentifier` | `POST /` |
 | `GetTokensFromRefreshToken` | `POST /` |
+| `GetUICustomization` | `POST /` |
 | `GetUser` | `POST /` |
 | `GetUserAttributeVerificationCode` | `POST /` |
 | `GetUserPoolMfaConfig` | `POST /` |
 | `GlobalSignOut` | `POST /` |
 | `InitiateAuth` | `POST /` |
 | `ListGroups` | `POST /` |
+| `ListIdentityProviders` | `POST /` |
 | `ListResourceServers` | `POST /` |
 | `ListTagsForResource` | `POST /` |
 | `ListUserPoolClientSecrets` | `POST /` |
@@ -94,22 +180,26 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ResendConfirmationCode` | `POST /` |
 | `RespondToAuthChallenge` | `POST /` |
 | `RevokeToken` | `POST /` |
+| `SetUICustomization` | `POST /` |
 | `SetUserMFAPreference` | `POST /` |
 | `SetUserPoolMfaConfig` | `POST /` |
 | `SignUp` | `POST /` |
 | `TagResource` | `POST /` |
 | `UntagResource` | `POST /` |
 | `UpdateGroup` | `POST /` |
+| `UpdateIdentityProvider` | `POST /` |
+| `UpdateManagedLoginBranding` | `POST /` |
 | `UpdateResourceServer` | `POST /` |
 | `UpdateUserAttributes` | `POST /` |
 | `UpdateUserPool` | `POST /` |
 | `UpdateUserPoolClient` | `POST /` |
+| `UpdateUserPoolDomain` | `POST /` |
 | `VerifySoftwareToken` | `POST /` |
 | `VerifyUserAttribute` | `POST /` |
 
 ## Operations not implemented
 
-??? info "63 modeled operations outside the implementation"
+??? info "46 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -125,56 +215,39 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `AdminUpdateDeviceStatus`
     - `CompleteWebAuthnRegistration`
     - `ConfirmDevice`
-    - `CreateIdentityProvider`
-    - `CreateManagedLoginBranding`
     - `CreateTerms`
     - `CreateUserImportJob`
-    - `CreateUserPoolDomain`
     - `CreateUserPoolReplica`
-    - `DeleteIdentityProvider`
-    - `DeleteManagedLoginBranding`
     - `DeleteTerms`
-    - `DeleteUserPoolDomain`
     - `DeleteUserPoolReplica`
     - `DeleteWebAuthnCredential`
-    - `DescribeIdentityProvider`
-    - `DescribeManagedLoginBranding`
-    - `DescribeManagedLoginBrandingByClient`
     - `DescribeRiskConfiguration`
     - `DescribeTerms`
     - `DescribeTermsByClient`
     - `DescribeUserImportJob`
-    - `DescribeUserPoolDomain`
     - `ForgetDevice`
     - `GetCSVHeader`
     - `GetClientToken`
     - `GetDevice`
-    - `GetIdentityProviderByIdentifier`
     - `GetLogDeliveryConfiguration`
     - `GetProvisionedLimit`
     - `GetSigningCertificate`
-    - `GetUICustomization`
     - `GetUserAuthFactors`
     - `ListDevices`
-    - `ListIdentityProviders`
     - `ListTerms`
     - `ListUserImportJobs`
     - `ListUserPoolReplicas`
     - `ListWebAuthnCredentials`
     - `SetLogDeliveryConfiguration`
     - `SetRiskConfiguration`
-    - `SetUICustomization`
     - `SetUserSettings`
     - `StartUserImportJob`
     - `StartWebAuthnRegistration`
     - `StopUserImportJob`
     - `UpdateAuthEventFeedback`
     - `UpdateDeviceStatus`
-    - `UpdateIdentityProvider`
-    - `UpdateManagedLoginBranding`
     - `UpdateProvisionedLimit`
     - `UpdateTerms`
-    - `UpdateUserPoolDomain`
     - `UpdateUserPoolReplica`
 
 ## Source and examples
@@ -182,5 +255,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cognitoidp)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cognitoidp/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cognitoidp.json) at `2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da`.
-- SDK integration examples: [cognito_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_auth_test.go), [cognito_custom_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_custom_auth_test.go), [cognito_mfa_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_mfa_test.go), [cognito_oauth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_oauth_test.go), [cognito_rotation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_rotation_test.go), [cognito_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_test.go), [cognito_triggers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_triggers_test.go), [cognito_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_users_test.go).
+- SDK integration examples: [cognito_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_auth_test.go), [cognito_custom_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_custom_auth_test.go), [cognito_hosted_federation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_hosted_federation_test.go), [cognito_hosted_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_hosted_test.go), [cognito_mfa_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_mfa_test.go), [cognito_oauth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_oauth_test.go), [cognito_rotation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_rotation_test.go), [cognito_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_test.go), [cognito_triggers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_triggers_test.go), [cognito_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).
