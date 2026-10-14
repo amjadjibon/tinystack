@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    budgets         = var.endpoint
     acm             = var.endpoint
     autoscaling     = var.endpoint
     apigateway      = var.endpoint
@@ -2085,4 +2086,21 @@ resource "aws_cur_report_definition" "local" {
   refresh_closed_reports     = true
   report_versioning          = "OVERWRITE_REPORT"
   tags                       = local.tags
+}
+
+resource "aws_budgets_budget" "monthly" {
+  name         = "monthly"
+  budget_type  = "COST"
+  limit_amount = "100"
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+  tags         = local.tags
+
+  notification {
+    comparison_operator        = "GREATER_THAN"
+    threshold                  = var.team == "core" ? 80 : 90
+    threshold_type             = "PERCENTAGE"
+    notification_type          = "ACTUAL"
+    subscriber_email_addresses = var.team == "core" ? ["core@example.com", "remove@example.com"] : ["platform@example.com"]
+  }
 }

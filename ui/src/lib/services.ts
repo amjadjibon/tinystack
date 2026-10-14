@@ -45,6 +45,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "costexplorer",
 	},
+	budgets: { title: "AWS Budgets", category: management, icon: "budgets" },
 	emrserverless: {
 		title: "Amazon EMR Serverless",
 		category: analytics,

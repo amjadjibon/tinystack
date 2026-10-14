@@ -25819,5 +25819,189 @@
       ],
       "UntagResourceResponse": []
     }
+  },
+  "budgets": {
+    "operations": [
+      "CreateBudget",
+      "DescribeBudget",
+      "DescribeBudgets",
+      "UpdateBudget",
+      "DeleteBudget",
+      "CreateNotification",
+      "UpdateNotification",
+      "DeleteNotification",
+      "DescribeNotificationsForBudget",
+      "CreateSubscriber",
+      "UpdateSubscriber",
+      "DeleteSubscriber",
+      "DescribeSubscribersForNotification",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateBudgetRequest": [
+        "AccountId",
+        "Budget",
+        "NotificationsWithSubscribers",
+        "ResourceTags"
+      ],
+      "Budget": [
+        "BudgetName",
+        "BudgetLimit",
+        "PlannedBudgetLimits",
+        "CostFilters",
+        "CostTypes",
+        "TimeUnit",
+        "TimePeriod",
+        "BudgetType"
+      ],
+      "Spend": [
+        "Amount",
+        "Unit"
+      ],
+      "CostTypes": [
+        "IncludeTax",
+        "IncludeSubscription",
+        "UseBlended",
+        "IncludeRefund",
+        "IncludeCredit",
+        "IncludeUpfront",
+        "IncludeRecurring",
+        "IncludeOtherSubscription",
+        "IncludeSupport",
+        "IncludeDiscount",
+        "UseAmortized"
+      ],
+      "TimePeriod": [
+        "Start",
+        "End"
+      ],
+      "NotificationWithSubscribers": [
+        "Notification",
+        "Subscribers"
+      ],
+      "Notification": [
+        "NotificationType",
+        "ComparisonOperator",
+        "Threshold",
+        "ThresholdType",
+        "NotificationState"
+      ],
+      "Subscriber": [
+        "SubscriptionType",
+        "Address"
+      ],
+      "ResourceTag": [
+        "Key",
+        "Value"
+      ],
+      "CreateBudgetResponse": [],
+      "DescribeBudgetRequest": [
+        "AccountId",
+        "BudgetName"
+      ],
+      "DescribeBudgetResponse": [
+        "Budget"
+      ],
+      "DescribeBudgetsRequest": [
+        "AccountId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeBudgetsResponse": [
+        "Budgets",
+        "NextToken"
+      ],
+      "UpdateBudgetRequest": [
+        "AccountId",
+        "NewBudget"
+      ],
+      "UpdateBudgetResponse": [],
+      "DeleteBudgetRequest": [
+        "AccountId",
+        "BudgetName"
+      ],
+      "DeleteBudgetResponse": [],
+      "CreateNotificationRequest": [
+        "AccountId",
+        "BudgetName",
+        "Notification",
+        "Subscribers"
+      ],
+      "CreateNotificationResponse": [],
+      "UpdateNotificationRequest": [
+        "AccountId",
+        "BudgetName",
+        "OldNotification",
+        "NewNotification"
+      ],
+      "UpdateNotificationResponse": [],
+      "DeleteNotificationRequest": [
+        "AccountId",
+        "BudgetName",
+        "Notification"
+      ],
+      "DeleteNotificationResponse": [],
+      "DescribeNotificationsForBudgetRequest": [
+        "AccountId",
+        "BudgetName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeNotificationsForBudgetResponse": [
+        "Notifications",
+        "NextToken"
+      ],
+      "CreateSubscriberRequest": [
+        "AccountId",
+        "BudgetName",
+        "Notification",
+        "Subscriber"
+      ],
+      "CreateSubscriberResponse": [],
+      "UpdateSubscriberRequest": [
+        "AccountId",
+        "BudgetName",
+        "Notification",
+        "OldSubscriber",
+        "NewSubscriber"
+      ],
+      "UpdateSubscriberResponse": [],
+      "DeleteSubscriberRequest": [
+        "AccountId",
+        "BudgetName",
+        "Notification",
+        "Subscriber"
+      ],
+      "DeleteSubscriberResponse": [],
+      "DescribeSubscribersForNotificationRequest": [
+        "AccountId",
+        "BudgetName",
+        "Notification",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeSubscribersForNotificationResponse": [
+        "Subscribers",
+        "NextToken"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "ResourceTags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "ResourceTagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "ResourceTags"
+      ]
+    }
   }
 }

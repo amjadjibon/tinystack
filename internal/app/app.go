@@ -27,6 +27,7 @@ import (
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	backupapi "github.com/amjadjibon/tinystack/internal/aws/generated/backup"
 	batchapi "github.com/amjadjibon/tinystack/internal/aws/generated/batch"
+	budgetsapi "github.com/amjadjibon/tinystack/internal/aws/generated/budgets"
 	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
@@ -120,6 +121,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/backup"
 	"github.com/amjadjibon/tinystack/internal/services/batch"
+	"github.com/amjadjibon/tinystack/internal/services/budgets"
 	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
@@ -388,6 +390,7 @@ func build(
 	timestreamRecords := timestreamwrite.New(store)
 	costExplorerRecords := costexplorer.New(store)
 	curRecords := costandusagereportservice.New(store)
+	budgetRecords := budgets.New(store)
 	connectionRecords := codeconnections.New(store)
 	quotaRecords := servicequotas.New(store)
 	emrRecords := emrserverless.New(store)
@@ -494,6 +497,7 @@ func build(
 		codecommitapi.Descriptor(codecommitRecords),
 		codeartifactapi.Descriptor(artifactRecords),
 		timestreamwriteapi.Descriptor(timestreamRecords),
+		budgetsapi.Descriptor(budgetRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
 		costexplorerapi.Descriptor(costExplorerRecords),
 		costandusagereportserviceapi.Descriptor(curRecords),

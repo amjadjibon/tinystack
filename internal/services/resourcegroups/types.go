@@ -10,6 +10,7 @@ import (
 // resource types ("sqs" to "AWS::SQS::..."). A service missing here has no
 // resource types a group can select.
 var namespaces = map[string]string{
+	"budgets":                   "Budgets",
 	"costandusagereportservice": "CUR",
 	"costexplorer":              "CE",
 	"redshift":                  "Redshift",

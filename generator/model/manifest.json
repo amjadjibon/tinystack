@@ -55,6 +55,10 @@
       "path": "codegen/sdk-codegen/aws-models/batch.json",
       "sha256": "e1b89247b861859dc54cbff160bb38ac4c9479dadb1c9c7b06b607e08c102708"
     },
+    "budgets": {
+      "path": "codegen/sdk-codegen/aws-models/budgets.json",
+      "sha256": "74f1b1af6b17b251b432f53b7b4d4626e8dea9f4ef89006e1e538ad3f8175e26"
+    },
     "cloudcontrol": {
       "path": "codegen/sdk-codegen/aws-models/cloudcontrol.json",
       "sha256": "ec2ed017988bfa9acdd47f24d164558416a9b5becc57c8088eb92799016ce1d9"
