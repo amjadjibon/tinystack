@@ -178,6 +178,7 @@ nav:
       - "Management and governance":
           - "AWS Account": services/account.md
           - "AWS Backup": services/backup.md
+          - "AWS Budgets": services/budgets.md
           - "AWS Config": services/config.md
           - "AWS Cost Explorer": services/costexplorer.md
           - "AWS Cost and Usage Reports": services/costandusagereportservice.md

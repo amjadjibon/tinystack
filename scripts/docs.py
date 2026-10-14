@@ -59,7 +59,7 @@ def service_page(key, info, profile, manifest):
     if enabled != generated or not enabled <= modeled.keys():
         raise ValueError(f"{key}: profile, generated interface, and model operations differ; run task generate")
     unsupported = sorted(modeled.keys() - enabled)
-    scope = "Account-wide" if key in {"iam", "route53", "cloudfront", "account"} else "Account and region"
+    scope = "Account-wide" if key in {"iam", "route53", "cloudfront", "account", "budgets"} else "Account and region"
     rows = []
     for name in sorted(enabled):
         http = modeled[name].get("traits", {}).get("smithy.api#http", {})

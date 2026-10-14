@@ -2129,6 +2129,28 @@
       ],
       "execution": "Records only",
       "package": "costandusagereportservice"
+    },
+    "budgets": {
+      "title": "AWS Budgets",
+      "category": "Management and governance",
+      "scope": "Account-wide (global)",
+      "summary": "Store budget, notification and subscriber definitions with tags; no AWS costs are calculated or notifications delivered.",
+      "features": [
+        "Sixteen AWS JSON 1.1 operations: budget CRUD/list, notification CRUD/list, subscriber CRUD/list and native tags",
+        "Account-wide definitions shared across signing Regions, account identity checks, empty-Region budget ARNs and encoded storage names",
+        "Fixed and planned budget limits, legacy cost filters/types and time periods stored as configuration; calculated spend is omitted",
+        "CreateBudget accepts notifications with subscribers; notification identity excludes NotificationState and defaults ThresholdType to PERCENTAGE",
+        "AWS-documented limits of five notifications and ten EMAIL plus one SNS subscriber per notification; duplicate definitions fail explicitly",
+        "Ordered pagination, inventory with RecordsOnly=true and ExecutionReady=false, Resource Groups Tagging API integration and Terraform aws_budgets_budget lifecycle"
+      ],
+      "gaps": [
+        "No actual spend, forecasts, cost data, budget evaluation or notification delivery; caller-supplied notification state is stored without evaluation",
+        "Budget actions, performance history, account notification history, auto-adjustment, billing views and modern filter expressions/metrics are unsupported",
+        "No CloudFormation handlers: AWS::Budgets::Budget and AWS::Budgets::BudgetsAction, CDK and awscc deployment are unavailable",
+        "No automatic expiration, planned-limit rollover or AWS cost refresh timing; planned limits are retained as definitions"
+      ],
+      "execution": "Records only",
+      "package": "budgets"
     }
   },
   "future": {
