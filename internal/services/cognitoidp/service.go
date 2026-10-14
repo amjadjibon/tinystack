@@ -37,9 +37,11 @@ import (
 )
 
 const (
-	service  = "cognitoidp"
-	lower    = "abcdefghijklmnopqrstuvwxyz0123456789"
-	alphaNum = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + lower
+	errorUserNotFound = "UserNotFoundException"
+	featureEnabled    = "ENABLED"
+	service           = "cognitoidp"
+	lower             = "abcdefghijklmnopqrstuvwxyz0123456789"
+	alphaNum          = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + lower
 )
 
 var _ api.API = (*Service)(nil)
@@ -72,7 +74,7 @@ func notFound(format string, args ...any) error {
 }
 
 // poolKinds are the record kinds a pool owns, each under <kind>/<pool ID>/.
-var poolKinds = []string{"client", "user", "alias", "group", "refresh", "session", kindResourceServer}
+var poolKinds = []string{"client", "user", "alias", "group", "refresh", "session", "clientsecret", kindResourceServer}
 
 func poolKey(scope request.Scope, id string) string { return scope.Prefix(service, "pool") + id }
 

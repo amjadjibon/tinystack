@@ -3362,7 +3362,16 @@
       "DescribeResourceServer",
       "UpdateResourceServer",
       "DeleteResourceServer",
-      "ListResourceServers"
+      "ListResourceServers",
+      "AssociateSoftwareToken",
+      "VerifySoftwareToken",
+      "SetUserMFAPreference",
+      "AdminSetUserMFAPreference",
+      "AdminSetUserSettings",
+      "GetTokensFromRefreshToken",
+      "AddUserPoolClientSecret",
+      "ListUserPoolClientSecrets",
+      "DeleteUserPoolClientSecret"
     ],
     "shapes": {
       "CreateUserPoolRequest": [
@@ -3502,16 +3511,19 @@
       ],
       "GetUserPoolMfaConfigResponse": [
         "MfaConfiguration",
-        "SoftwareTokenMfaConfiguration"
+        "SoftwareTokenMfaConfiguration",
+        "SmsMfaConfiguration"
       ],
       "SetUserPoolMfaConfigRequest": [
         "UserPoolId",
         "MfaConfiguration",
-        "SoftwareTokenMfaConfiguration"
+        "SoftwareTokenMfaConfiguration",
+        "SmsMfaConfiguration"
       ],
       "SetUserPoolMfaConfigResponse": [
         "MfaConfiguration",
-        "SoftwareTokenMfaConfiguration"
+        "SoftwareTokenMfaConfiguration",
+        "SmsMfaConfiguration"
       ],
       "CreateUserPoolClientRequest": [
         "UserPoolId",
@@ -3534,7 +3546,8 @@
         "PreventUserExistenceErrors",
         "EnableTokenRevocation",
         "EnablePropagateAdditionalUserContextData",
-        "AuthSessionValidity"
+        "AuthSessionValidity",
+        "RefreshTokenRotation"
       ],
       "CreateUserPoolClientResponse": [
         "UserPoolClient"
@@ -3563,7 +3576,8 @@
         "PreventUserExistenceErrors",
         "EnableTokenRevocation",
         "EnablePropagateAdditionalUserContextData",
-        "AuthSessionValidity"
+        "AuthSessionValidity",
+        "RefreshTokenRotation"
       ],
       "DescribeUserPoolClientRequest": [
         "UserPoolId",
@@ -3602,7 +3616,8 @@
         "PreventUserExistenceErrors",
         "EnableTokenRevocation",
         "EnablePropagateAdditionalUserContextData",
-        "AuthSessionValidity"
+        "AuthSessionValidity",
+        "RefreshTokenRotation"
       ],
       "UpdateUserPoolClientResponse": [
         "UserPoolClient"
@@ -3728,7 +3743,10 @@
         "UserCreateDate",
         "UserLastModifiedDate",
         "Enabled",
-        "UserStatus"
+        "UserStatus",
+        "UserMFASettingList",
+        "PreferredMfaSetting",
+        "MFAOptions"
       ],
       "AdminDeleteUserRequest": [
         "UserPoolId",
@@ -3847,7 +3865,10 @@
       ],
       "GetUserResponse": [
         "Username",
-        "UserAttributes"
+        "UserAttributes",
+        "UserMFASettingList",
+        "PreferredMfaSetting",
+        "MFAOptions"
       ],
       "UpdateUserAttributesRequest": [
         "UserAttributes",
@@ -3961,7 +3982,10 @@
         "PostConfirmation",
         "PostAuthentication",
         "PreTokenGeneration",
-        "PreTokenGenerationConfig"
+        "PreTokenGenerationConfig",
+        "DefineAuthChallenge",
+        "CreateAuthChallenge",
+        "VerifyAuthChallengeResponse"
       ],
       "PreTokenGenerationVersionConfigType": [
         "LambdaVersion",
@@ -4014,6 +4038,100 @@
       "ResourceServerScopeType": [
         "ScopeName",
         "ScopeDescription"
+      ],
+      "AssociateSoftwareTokenRequest": [
+        "AccessToken",
+        "Session"
+      ],
+      "AssociateSoftwareTokenResponse": [
+        "SecretCode",
+        "Session"
+      ],
+      "VerifySoftwareTokenRequest": [
+        "AccessToken",
+        "Session",
+        "UserCode",
+        "FriendlyDeviceName"
+      ],
+      "VerifySoftwareTokenResponse": [
+        "Status",
+        "Session"
+      ],
+      "SetUserMFAPreferenceRequest": [
+        "SMSMfaSettings",
+        "SoftwareTokenMfaSettings",
+        "AccessToken"
+      ],
+      "SetUserMFAPreferenceResponse": [],
+      "AdminSetUserMFAPreferenceRequest": [
+        "SMSMfaSettings",
+        "SoftwareTokenMfaSettings",
+        "Username",
+        "UserPoolId"
+      ],
+      "AdminSetUserMFAPreferenceResponse": [],
+      "AdminSetUserSettingsRequest": [
+        "UserPoolId",
+        "Username",
+        "MFAOptions"
+      ],
+      "AdminSetUserSettingsResponse": [],
+      "GetTokensFromRefreshTokenRequest": [
+        "RefreshToken",
+        "ClientId",
+        "ClientSecret",
+        "ClientMetadata"
+      ],
+      "GetTokensFromRefreshTokenResponse": [
+        "AuthenticationResult"
+      ],
+      "AddUserPoolClientSecretRequest": [
+        "UserPoolId",
+        "ClientId",
+        "ClientSecret"
+      ],
+      "AddUserPoolClientSecretResponse": [
+        "ClientSecretDescriptor"
+      ],
+      "ListUserPoolClientSecretsRequest": [
+        "UserPoolId",
+        "ClientId",
+        "NextToken"
+      ],
+      "ListUserPoolClientSecretsResponse": [
+        "ClientSecrets",
+        "NextToken"
+      ],
+      "DeleteUserPoolClientSecretRequest": [
+        "UserPoolId",
+        "ClientId",
+        "ClientSecretId"
+      ],
+      "DeleteUserPoolClientSecretResponse": [],
+      "RefreshTokenRotationType": [
+        "Feature",
+        "RetryGracePeriodSeconds"
+      ],
+      "ClientSecretDescriptorType": [
+        "ClientSecretId",
+        "ClientSecretValue",
+        "ClientSecretCreateDate"
+      ],
+      "SMSMfaSettingsType": [
+        "Enabled",
+        "PreferredMfa"
+      ],
+      "SoftwareTokenMfaSettingsType": [
+        "Enabled",
+        "PreferredMfa"
+      ],
+      "MFAOptionType": [
+        "DeliveryMedium",
+        "AttributeName"
+      ],
+      "SmsMfaConfigType": [
+        "SmsAuthenticationMessage",
+        "SmsConfiguration"
       ]
     }
   },

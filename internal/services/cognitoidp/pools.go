@@ -320,13 +320,12 @@ func validSettings(st *settings, softwareToken bool) error {
 func checkMFA(mfa *string, methods bool) error {
 	switch common.Value(mfa) {
 	case "", mfaOff:
-	case mfaOptional:
+	case mfaOptional, "ON":
 		if !methods {
 			return invalidParameter("Invalid MFA configuration given, can't turn off all MFAs and set MFA to be " +
 				"optional or on.")
 		}
-	case "ON":
-		return invalidParameter("TinyStack does not support required MFA: MfaConfiguration must be OFF or OPTIONAL.")
+
 	default:
 		return invalidParameter("MfaConfiguration must be OFF, ON, or OPTIONAL.")
 	}
@@ -335,6 +334,10 @@ func checkMFA(mfa *string, methods bool) error {
 }
 
 func checkMessages(st *settings) error {
+	if sms := st.SmsAuthenticationMessage; sms != nil && (len(*sms) < 6 || len(*sms) > 140) {
+		return invalidParameter("SmsAuthenticationMessage must be between 6 and 140 characters.")
+	}
+
 	messages := []*string{st.EmailVerificationMessage, st.SmsVerificationMessage, st.SmsAuthenticationMessage}
 	for _, message := range messages {
 		if message != nil && !strings.Contains(*message, codeTemplate) {
@@ -544,6 +547,7 @@ func (s *Service) CreateUserPool(
 		Settings: st, Tags: in.UserPoolTags, Schema: standardSchema(), AliasAttributes: in.AliasAttributes,
 		UsernameAttributes: in.UsernameAttributes,
 	}
+
 	if in.UsernameConfiguration != nil {
 		p.CaseSensitive = in.UsernameConfiguration.CaseSensitive
 	}
@@ -713,6 +717,10 @@ func (s *Service) DeleteUserPool(
 
 		for _, kind := range poolKinds {
 			for _, k := range tx.Keys(scope.Prefix(service, kind) + p.ID + "/") {
+				if kind == "session" {
+					tx.Delete(sessionIndexKey(strings.TrimPrefix(k, scope.Prefix(service, kind)+p.ID+"/")))
+				}
+
 				tx.Delete(k)
 			}
 		}
@@ -771,6 +779,13 @@ func (s *Service) GetUserPoolMfaConfig(
 // token MFA unless it is on.
 func mfaOutput(p *pool) *api.GetUserPoolMfaConfigResponse {
 	out := &api.GetUserPoolMfaConfigResponse{MfaConfiguration: p.Settings.MfaConfiguration}
+	if p.Settings.SmsConfiguration != nil {
+		out.SmsMfaConfiguration = &api.SmsMfaConfigType{
+			SmsConfiguration:         p.Settings.SmsConfiguration,
+			SmsAuthenticationMessage: p.Settings.SmsAuthenticationMessage,
+		}
+	}
+
 	if p.SoftwareTokenMFA {
 		out.SoftwareTokenMfaConfiguration = &api.SoftwareTokenMfaConfigType{Enabled: new(true)}
 	}
@@ -778,14 +793,24 @@ func mfaOutput(p *pool) *api.GetUserPoolMfaConfigResponse {
 	return out
 }
 
-// SetUserPoolMfaConfig turns software token MFA on or off. Users never set up
-// a token, so an OPTIONAL pool never challenges them.
+// SetUserPoolMfaConfig validates the complete candidate before saving the pool.
 func (s *Service) SetUserPoolMfaConfig(
 	ctx context.Context,
 	in *api.SetUserPoolMfaConfigRequest,
 ) (*api.SetUserPoolMfaConfigResponse, error) {
 	var out *api.GetUserPoolMfaConfigResponse
 	err := s.update(ctx, in.UserPoolId, func(_ storage.WriteTx, _ request.Scope, p *pool) error {
+		candidate := *common.Clone(&p.Settings)
+		if sms := in.SmsMfaConfiguration; sms != nil {
+			if sms.SmsConfiguration != nil {
+				candidate.SmsConfiguration = sms.SmsConfiguration
+			}
+
+			if sms.SmsAuthenticationMessage != nil {
+				candidate.SmsAuthenticationMessage = sms.SmsAuthenticationMessage
+			}
+		}
+
 		token := p.SoftwareTokenMFA
 		if in.SoftwareTokenMfaConfiguration != nil {
 			token = common.Value(in.SoftwareTokenMfaConfiguration.Enabled)
@@ -796,11 +821,12 @@ func (s *Service) SetUserPoolMfaConfig(
 			mfa = p.Settings.MfaConfiguration
 		}
 
-		if err := checkMFA(mfa, token || p.Settings.SmsConfiguration != nil); err != nil {
+		candidate.MfaConfiguration = mfa
+		if err := validSettings(&candidate, token); err != nil {
 			return err
 		}
 
-		p.SoftwareTokenMFA, p.Settings.MfaConfiguration, p.Modified = token, mfa, s.now().UTC()
+		p.SoftwareTokenMFA, p.Settings, p.Modified = token, candidate, s.now().UTC()
 		out = mfaOutput(p)
 		return nil
 	})
@@ -810,5 +836,6 @@ func (s *Service) SetUserPoolMfaConfig(
 
 	return &api.SetUserPoolMfaConfigResponse{
 		MfaConfiguration: out.MfaConfiguration, SoftwareTokenMfaConfiguration: out.SoftwareTokenMfaConfiguration,
+		SmsMfaConfiguration: out.SmsMfaConfiguration,
 	}, nil
 }

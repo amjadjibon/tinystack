@@ -143,11 +143,11 @@ func srpSignature(key []byte, poolID, username string, secretBlock []byte, times
 // srpSession is a PASSWORD_VERIFIER challenge's record, under
 // session/<pool ID>/<secret block>.
 type srpSession struct {
-	authSession
 	A string
 	B string
 	// Private is the server's private value b.
 	Private string
+	authSession
 }
 
 // beginSRP starts a USER_SRP_AUTH sign-in and returns the challenge.
@@ -163,17 +163,17 @@ func (s *Service) beginSRP(
 	_, _ = rand.Read(block)
 	sess := srpSession{
 		authSession: authSession{
-			Username: u.Username, Client: c.ID, Challenge: challengePasswordVerifier,
+			Username: u.Username, Sub: u.Attributes[attrSub], Client: c.ID, Challenge: challengePasswordVerifier,
 			Expires: s.now().UTC().Add(time.Duration(common.Value(c.Settings.AuthSessionValidity)) * time.Minute),
 		},
 		A: challenge.A, B: challenge.B, Private: challenge.b,
 	}
-	if err := storage.Write(tx, sessionKey(scope, p.ID, b64.EncodeToString(block)), sess); err != nil {
+	if err := writeAuthSession(tx, scope, p, b64.EncodeToString(block), sess); err != nil {
 		return nil, err
 	}
 
 	return &outcome{
-		ChallengeName: new(challengePasswordVerifier),
+		ChallengeName: new(challengePasswordVerifier), Session: new(b64.EncodeToString(block)),
 		ChallengeParameters: map[string]string{
 			"SALT": u.Salt, "SECRET_BLOCK": base64.StdEncoding.EncodeToString(block), "SRP_B": challenge.B,
 			paramUsername: u.Username, "USER_ID_FOR_SRP": u.Username,
@@ -204,7 +204,7 @@ func (s *Service) checkSRP(
 	}
 
 	// A challenge that is answered is gone.
-	tx.Delete(k)
+	deleteAuthSession(tx, scope, p, b64.EncodeToString(block))
 	u, ok, err := storage.Read[user](tx, userKey(scope, p, sess.Username))
 	if err != nil || !ok {
 		return nil, common.ErrorsOr(err, userNotFound())

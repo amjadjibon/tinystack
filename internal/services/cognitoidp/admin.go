@@ -170,7 +170,13 @@ func (s *Service) AdminGetUser(ctx context.Context, in *api.AdminGetUserRequest)
 		out = &api.AdminGetUserResponse{
 			Username: o.Username, UserAttributes: o.Attributes, UserCreateDate: o.UserCreateDate,
 			UserLastModifiedDate: o.UserLastModifiedDate, Enabled: o.Enabled, UserStatus: o.UserStatus,
+			UserMFASettingList: u.mfaSettings(), MFAOptions: u.legacyMFA(),
 		}
+
+		if u.PreferredMFA != "" {
+			out.PreferredMfaSetting = new(u.PreferredMFA)
+		}
+
 		return nil
 	})
 

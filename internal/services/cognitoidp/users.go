@@ -32,27 +32,29 @@ const (
 // was created with, or its sub in a pool whose users sign in with an email
 // address or phone number.
 type user struct {
-	Created  time.Time
-	Modified time.Time
-	// PasswordExpires is when a temporary password stops working.
-	PasswordExpires time.Time         `json:",omitzero"`
-	Attributes      map[string]string `json:",omitempty"`
-	// Codes are the pending confirmation codes, by purpose.
-	Codes    map[string]code `json:",omitempty"`
-	Username string
-	Status   string
-	Password []byte `json:",omitempty"`
-	// Salt and Verifier let the user sign in with SRP: the verifier is
-	// g^x for the password, in hex.
-	Salt     string `json:",omitempty"`
-	Verifier string `json:",omitempty"`
-	// History holds the hashes of earlier passwords the pool's password
-	// history keeps, newest first.
-	History [][]byte `json:",omitempty"`
-	Groups  []string `json:",omitempty"`
-	// Sessions are the origin token IDs of the user's signed-in sessions.
-	Sessions []string `json:",omitempty"`
-	Disabled bool     `json:",omitempty"`
+	Attributes         map[string]string `json:",omitempty"`
+	Codes              map[string]code   `json:",omitempty"`
+	Created            time.Time
+	Modified           time.Time
+	PasswordExpires    time.Time `json:",omitzero"`
+	PendingTOTPExpires time.Time `json:",omitzero"`
+	Username           string
+	Status             string
+	Salt               string   `json:",omitempty"`
+	Verifier           string   `json:",omitempty"`
+	TOTPSecret         string   `json:",omitempty"`
+	PendingTOTP        string   `json:",omitempty"`
+	PendingTOTPClient  string   `json:",omitempty"`
+	PendingTOTPOrigin  string   `json:",omitempty"`
+	TOTPDeviceName     string   `json:",omitempty"`
+	PreferredMFA       string   `json:",omitempty"`
+	Password           []byte   `json:",omitempty"`
+	History            [][]byte `json:",omitempty"`
+	Groups             []string `json:",omitempty"`
+	Sessions           []string `json:",omitempty"`
+	TOTPMFA            bool     `json:",omitempty"`
+	SMSMFA             bool     `json:",omitempty"`
+	Disabled           bool     `json:",omitempty"`
 }
 
 var (
@@ -60,7 +62,7 @@ var (
 	phonePattern    = regexp.MustCompile(`^\+\d{1,15}$`)
 )
 
-func userNotFound() error { return awserror.New("UserNotFoundException", "User does not exist.") }
+func userNotFound() error { return awserror.New(errorUserNotFound, "User does not exist.") }
 
 func (p *pool) caseInsensitive() bool { return p.CaseSensitive != nil && !*p.CaseSensitive }
 

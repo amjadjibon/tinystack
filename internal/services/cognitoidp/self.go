@@ -78,7 +78,15 @@ func (s *Service) GetUser(ctx context.Context, in *api.GetUserRequest) (*api.Get
 			}
 		}
 
-		out = &api.GetUserResponse{Username: new(a.user.Username), UserAttributes: attrs}
+		out = &api.GetUserResponse{
+			Username: new(a.user.Username), UserAttributes: attrs,
+			UserMFASettingList: a.user.mfaSettings(), MFAOptions: a.user.legacyMFA(),
+		}
+
+		if a.user.PreferredMFA != "" {
+			out.PreferredMfaSetting = new(a.user.PreferredMFA)
+		}
+
 		return nil
 	})
 
@@ -263,7 +271,7 @@ func (s *Service) AdminUserGlobalSignOut(
 // RevokeToken ends the session a refresh token belongs to.
 func (s *Service) RevokeToken(ctx context.Context, in *api.RevokeTokenRequest) (*api.RevokeTokenResponse, error) {
 	err := s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-		if c.Secret != "" && common.Value(in.ClientSecret) != c.Secret {
+		if !c.acceptsSecret(common.Value(in.ClientSecret)) {
 			return notAuthorized("Client secret is invalid")
 		}
 

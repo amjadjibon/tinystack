@@ -39,36 +39,40 @@ const (
 
 // client is an app client record.
 type client struct {
-	Created  time.Time
-	Modified time.Time
-	Pool     string
-	ID       string
-	Name     string
-	Secret   string `json:",omitempty"`
-	Settings clientSettings
+	Created       time.Time
+	Modified      time.Time
+	Pool          string
+	ID            string
+	Name          string
+	Secret        string `json:",omitempty"`
+	SecretID      string
+	ExtraSecret   string `json:",omitempty"`
+	ExtraSecretID string `json:",omitempty"`
+	Settings      clientSettings
 }
 
 // clientSettings keep the wire names, like pool settings; UpdateUserPoolClient
 // replaces them all.
 type clientSettings struct {
-	TokenValidityUnits                       *api.TokenValidityUnitsType `json:",omitempty"`
-	RefreshTokenValidity                     *int64                      `json:",omitempty"`
-	AccessTokenValidity                      *int64                      `json:",omitempty"`
-	IdTokenValidity                          *int64                      `json:",omitempty"`
-	AuthSessionValidity                      *int64                      `json:",omitempty"`
-	DefaultRedirectURI                       *string                     `json:",omitempty"`
-	PreventUserExistenceErrors               *string                     `json:",omitempty"`
-	AllowedOAuthFlowsUserPoolClient          *bool                       `json:",omitempty"`
-	EnableTokenRevocation                    *bool                       `json:",omitempty"`
-	EnablePropagateAdditionalUserContextData *bool                       `json:",omitempty"`
-	ReadAttributes                           []string                    `json:",omitempty"`
-	WriteAttributes                          []string                    `json:",omitempty"`
-	ExplicitAuthFlows                        []string                    `json:",omitempty"`
-	SupportedIdentityProviders               []string                    `json:",omitempty"`
-	CallbackURLs                             []string                    `json:",omitempty"`
-	LogoutURLs                               []string                    `json:",omitempty"`
-	AllowedOAuthFlows                        []string                    `json:",omitempty"`
-	AllowedOAuthScopes                       []string                    `json:",omitempty"`
+	RefreshTokenRotation                     *api.RefreshTokenRotationType `json:",omitempty"`
+	TokenValidityUnits                       *api.TokenValidityUnitsType   `json:",omitempty"`
+	RefreshTokenValidity                     *int64                        `json:",omitempty"`
+	AccessTokenValidity                      *int64                        `json:",omitempty"`
+	IdTokenValidity                          *int64                        `json:",omitempty"`
+	AuthSessionValidity                      *int64                        `json:",omitempty"`
+	DefaultRedirectURI                       *string                       `json:",omitempty"`
+	PreventUserExistenceErrors               *string                       `json:",omitempty"`
+	AllowedOAuthFlowsUserPoolClient          *bool                         `json:",omitempty"`
+	EnableTokenRevocation                    *bool                         `json:",omitempty"`
+	EnablePropagateAdditionalUserContextData *bool                         `json:",omitempty"`
+	ReadAttributes                           []string                      `json:",omitempty"`
+	WriteAttributes                          []string                      `json:",omitempty"`
+	ExplicitAuthFlows                        []string                      `json:",omitempty"`
+	SupportedIdentityProviders               []string                      `json:",omitempty"`
+	CallbackURLs                             []string                      `json:",omitempty"`
+	LogoutURLs                               []string                      `json:",omitempty"`
+	AllowedOAuthFlows                        []string                      `json:",omitempty"`
+	AllowedOAuthScopes                       []string                      `json:",omitempty"`
 }
 
 // clientIndex locates a client from its ID alone.
@@ -82,6 +86,7 @@ var (
 	unitDuration = map[string]time.Duration{
 		"seconds": time.Second, unitMinutes: time.Minute, unitHours: time.Hour, unitDays: 24 * time.Hour,
 	}
+
 	legacyFlows  = []string{legacyAdminPassword, "CUSTOM_AUTH_FLOW_ONLY", legacyUserPassword}
 	allowFlows   = []string{flowAdminPassword, flowCustom, flowUserPassword, flowSRP, flowRefresh, "ALLOW_USER_AUTH"}
 	oauthScopes  = []string{"phone", attrEmail, "openid", "profile", adminScope}
@@ -180,8 +185,22 @@ func checkClient(c *clientSettings, p *pool, custom []string, secret bool) error
 		return err
 	}
 
-	if !oneOf(c.PreventUserExistenceErrors, "ENABLED", "LEGACY") {
+	if !oneOf(c.PreventUserExistenceErrors, featureEnabled, "LEGACY") {
 		return invalidParameter("PreventUserExistenceErrors must be ENABLED or LEGACY.")
+	}
+
+	if rotation := c.RefreshTokenRotation; rotation != nil {
+		if rotation.Feature == nil || !oneOf(rotation.Feature, featureEnabled, "DISABLED") {
+			return invalidParameter("RefreshTokenRotation.Feature must be ENABLED or DISABLED.")
+		}
+
+		if grace := common.Value(rotation.RetryGracePeriodSeconds); grace < 0 || grace > 60 {
+			return invalidParameter("RetryGracePeriodSeconds must be between 0 and 60.")
+		}
+
+		if c.rotates() && slices.Contains(c.flows(), flowRefresh) {
+			return invalidParameter("Refresh token rotation is incompatible with ALLOW_REFRESH_TOKEN_AUTH.")
+		}
 	}
 
 	if c.RefreshTokenValidity == nil {
@@ -360,8 +379,12 @@ func (s *Service) CreateUserPoolClient(
 			Pool: p.ID, ID: randomString(lower, 26), Name: *in.ClientName, Created: now, Modified: now,
 			Settings: st,
 		}
+
 		if common.Value(in.GenerateSecret) {
 			c.Secret = randomString(lower, 51)
+			if secretErr := ensureSecretRecord(tx, scope, p, c); secretErr != nil {
+				return secretErr
+			}
 		}
 
 		index := clientIndex{Account: scope.AccountID, Region: scope.Region, Pool: p.ID}
@@ -504,6 +527,10 @@ func (s *Service) DeleteUserPoolClient(
 		c, loadErr := loadClient(tx, scope, p, in.ClientId)
 		if loadErr != nil {
 			return loadErr
+		}
+
+		for _, key := range tx.Keys(secretPrefix(scope, p.ID, c.ID)) {
+			tx.Delete(key)
 		}
 
 		tx.Delete(clientKey(scope, p.ID, c.ID))

@@ -26,10 +26,23 @@ const (
 
 // authSession is a pending challenge's record, under session/<pool ID>/<ID>.
 type authSession struct {
-	Expires   time.Time
-	Username  string
-	Client    string
-	Challenge string
+	CustomPrivate  map[string]string
+	Expires        time.Time
+	Username       string
+	Client         string
+	Challenge      string
+	Sub            string
+	Setup          string
+	TOTPSecret     string
+	SMSCode        string
+	SMSDestination string
+	Metadata       string
+	Factors        []string
+	History        []challengeResult
+	// Failures counts wrong MFA codes; the session ends at maxCodeFailures.
+	Failures     int
+	Custom       bool
+	UserNotFound bool
 }
 
 func sessionKey(scope request.Scope, pool, id string) string {
@@ -43,8 +56,9 @@ type outcome struct {
 	Session              *string                       `json:",omitempty"`
 	ChallengeParameters  map[string]string             `json:",omitempty"`
 	AuthenticationResult *api.AuthenticationResultType `json:",omitempty"`
-	// grant is the tokens to issue once the transaction ends.
-	grant *grant
+	grant                *grant
+	failure              error
+	messages             outbox
 }
 
 // byClient runs fn in a transaction with the pool and app client clientID
@@ -114,9 +128,13 @@ func checkSecretHash(c *client, hash *string, usernames ...string) error {
 		return notAuthorized("Client " + c.ID + " is configured with secret but SECRET_HASH was not received")
 	}
 
-	for _, name := range usernames {
-		if hmac.Equal([]byte(secretHash(c, name)), []byte(*hash)) {
-			return nil
+	for _, secret := range c.secrets() {
+		candidate := *c
+		candidate.Secret = secret
+		for _, name := range usernames {
+			if hmac.Equal([]byte(secretHash(&candidate, name)), []byte(*hash)) {
+				return nil
+			}
 		}
 	}
 
@@ -138,6 +156,10 @@ func (s *Service) authenticate(
 ) (*outcome, error) {
 	switch {
 	case flow == "REFRESH_TOKEN_AUTH" || flow == "REFRESH_TOKEN":
+		if c.Settings.rotates() {
+			return nil, invalidParameter("REFRESH_TOKEN_AUTH is not supported with refresh token rotation.")
+		}
+
 		if err := requireFlow(c, flowRefresh, flow); err != nil {
 			return nil, err
 		}
@@ -157,7 +179,9 @@ func (s *Service) authenticate(
 		}
 
 		return s.srpAuth(tx, scope, p, c, params)
-	case flow == "CUSTOM_AUTH" || flow == "USER_AUTH":
+	case flow == "CUSTOM_AUTH":
+		return s.customAuth(ctx, tx, scope, p, c, params)
+	case flow == "USER_AUTH":
 		return nil, invalidParameter("TinyStack does not support the %s flow, which needs Lambda triggers or "+
 			"passwordless factors.", flow)
 	default:
@@ -171,8 +195,8 @@ func (s *Service) authenticate(
 // exists when the client asks to.
 func findSigningIn(tx storage.ReadTx, scope request.Scope, p *pool, c *client, name string) (*user, error) {
 	u, err := findUser(tx, scope, p, &name)
-	if awserror.From(err).Code == "UserNotFoundException" &&
-		common.Value(c.Settings.PreventUserExistenceErrors) == "ENABLED" {
+	if awserror.From(err).Code == errorUserNotFound &&
+		common.Value(c.Settings.PreventUserExistenceErrors) == featureEnabled {
 		return nil, notAuthorized("Incorrect username or password.")
 	}
 
@@ -252,6 +276,10 @@ func (s *Service) finishSignIn(
 		return challengeNew(tx, scope, p, c, u, now)
 	}
 
+	if mfa, err := s.requireMFA(tx, scope, p, c, u, &authSession{}); err != nil || mfa != nil {
+		return mfa, err
+	}
+
 	g, err := s.signIn(ctx, tx, scope, p, c, u, sourceAuth)
 	if err != nil {
 		return nil, err
@@ -271,10 +299,11 @@ func challengeNew(
 ) (*outcome, error) {
 	id := randomString(alphaNum, 512)
 	sess := authSession{
-		Username: u.Username, Client: c.ID, Challenge: challengeNewPassword,
+		Username: u.Username, Sub: u.Attributes[attrSub], Client: c.ID, Challenge: challengeNewPassword,
 		Expires: now.Add(time.Duration(common.Value(c.Settings.AuthSessionValidity)) * time.Minute),
 	}
-	if err := storage.Write(tx, sessionKey(scope, p.ID, id), sess); err != nil {
+
+	if err := writeAuthSession(tx, scope, p, id, sess); err != nil {
 		return nil, err
 	}
 
@@ -322,6 +351,8 @@ func (s *Service) refresh(
 		return nil, err
 	case token == "" || !ok || r.Client != c.ID:
 		return nil, notAuthorized("Invalid Refresh Token")
+	case !r.RotatedUntil.IsZero() && !s.now().Before(r.RotatedUntil):
+		return nil, notAuthorized("Invalid Refresh Token")
 	case !s.now().Before(r.Expires):
 		return nil, notAuthorized("Refresh Token has expired")
 	}
@@ -358,23 +389,13 @@ func (s *Service) answer(
 	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, name, id *string,
 	responses map[string]string,
 ) (*outcome, error) {
-	switch common.Value(name) {
-	case challengeNewPassword:
-	case challengePasswordVerifier:
-		hash := responses[paramSecretHash]
-		u, err := s.checkSRP(tx, scope, p, c, responses)
-		if err != nil {
-			return nil, err
+	if common.Value(name) == challengePasswordVerifier && common.Value(id) == "" {
+		block, decodeErr := base64.StdEncoding.DecodeString(responses["PASSWORD_CLAIM_SECRET_BLOCK"])
+		if decodeErr != nil {
+			return nil, expiredSession()
 		}
 
-		if hashErr := checkSecretHash(c, &hash, responses[paramUsername], u.Username); hashErr != nil {
-			return nil, hashErr
-		}
-
-		return s.finishSignIn(ctx, tx, scope, p, c, u)
-	default:
-		return nil, invalidParameter("TinyStack answers only the %s and %s challenges.", challengePasswordVerifier,
-			challengeNewPassword)
+		id = new(b64.EncodeToString(block))
 	}
 
 	expired := notAuthorized("Invalid session for the user, session is expired.")
@@ -383,22 +404,111 @@ func (s *Service) answer(
 	switch {
 	case err != nil:
 		return nil, err
-	case common.Value(id) == "" || !ok || sess.Client != c.ID || sess.Challenge != *name || !now.Before(sess.Expires):
+	case common.Value(id) == "" || !ok || sess.Client != c.ID || sess.Challenge != common.Value(name) ||
+		!now.Before(sess.Expires):
 		return nil, expired
 	}
 
 	u, err := findUser(tx, scope, p, new(responses[paramUsername]))
+	if sess.UserNotFound && awserror.From(err).Code == errorUserNotFound &&
+		responses[paramUsername] == sess.Username {
+		u, err = &user{Username: sess.Username, Status: statusConfirmed, Attributes: map[string]string{}}, nil
+	}
+
 	if err != nil {
+		if awserror.From(err).Code == errorUserNotFound {
+			return nil, expiredSession()
+		}
+
 		return nil, err
 	}
 
-	if u.Username != sess.Username {
+	if u.Username != sess.Username || u.Attributes[attrSub] != sess.Sub || u.Disabled ||
+		(sess.UserNotFound && u.Attributes[attrSub] != "") {
 		return nil, expired
 	}
 
 	hash := responses[paramSecretHash]
 	if hashErr := checkSecretHash(c, &hash, responses[paramUsername], u.Username); hashErr != nil {
 		return nil, hashErr
+	}
+
+	switch {
+	case u.Status == statusUnconfirmed:
+		return nil, awserror.New("UserNotConfirmedException", "User is not confirmed.")
+	case u.Status == statusReset:
+		return nil, awserror.New("PasswordResetRequiredException", "Password reset required for the user")
+	case u.Status == statusForceChange && !u.PasswordExpires.IsZero() && !now.Before(u.PasswordExpires):
+		return nil, notAuthorized("Temporary password has expired and must be reset by an administrator.")
+	}
+
+	metadata, _ := ctx.Value(authMetadataKey{}).(map[string]string)
+	switch *name {
+	case challengePasswordVerifier:
+		block, decodeErr := base64.StdEncoding.DecodeString(responses["PASSWORD_CLAIM_SECRET_BLOCK"])
+		if decodeErr != nil || b64.EncodeToString(block) != *id {
+			return nil, expiredSession()
+		}
+
+		verified, verifyErr := s.checkSRP(tx, scope, p, c, responses)
+		if verifyErr != nil {
+			return nil, verifyErr
+		}
+
+		if sess.Custom {
+			sess.History = append(sess.History, challengeResult{Name: challengePasswordVerifier, Result: true})
+		}
+
+		return s.afterPassword(ctx, tx, scope, p, c, verified, sess, metadata)
+	case challengeCustom:
+		out, verifyErr := s.verifyCustom(ctx, tx, scope, p, c, u, sess, responses["ANSWER"], metadata)
+		if verifyErr == nil {
+			deleteAuthSession(tx, scope, p, *id)
+		}
+
+		return out, verifyErr
+	case challengeSelect:
+		factor := responses["ANSWER"]
+		if !slices.Contains(sess.Factors, factor) {
+			return nil, invalidParameter("Invalid MFA selection.")
+		}
+
+		deleteAuthSession(tx, scope, p, *id)
+		return s.mfaChallenge(tx, scope, p, c, u, sess, factor)
+	case challengeSMS, challengeTOTP, challengeSetup:
+		if *name == challengeSetup && sess.Setup != setupComplete {
+			return nil, expiredSession()
+		}
+
+		if *name == challengeSMS && sess.SMSDestination != u.Attributes[attrPhone] {
+			return nil, expiredSession()
+		}
+
+		if (*name == challengeSMS && !hmac.Equal([]byte(sess.SMSCode), []byte(responses["SMS_MFA_CODE"]))) ||
+			(*name == challengeTOTP && !validTOTP(u.TOTPSecret, responses["SOFTWARE_TOKEN_MFA_CODE"], now)) {
+			return wrongCode(tx, scope, p, *id, sess)
+		}
+
+		deleteAuthSession(tx, scope, p, *id)
+		if *name == challengeSMS {
+			before := *u
+			before.Attributes = cloneMap(u.Attributes)
+			u.Attributes[attrPhone+verifiedSuffix], u.SMSMFA = valueTrue, true
+			if saveErr := saveUser(tx, scope, p, &before, u, false); saveErr != nil {
+				return nil, saveErr
+			}
+		}
+
+		if sess.Custom {
+			sess.History = append(sess.History, challengeResult{Name: *name, Result: true})
+			return s.defineCustom(ctx, tx, scope, p, c, u, sess, "", metadata)
+		}
+
+		g, signErr := s.signIn(ctx, tx, scope, p, c, u, sourceAuth)
+		return &outcome{grant: g, ChallengeParameters: map[string]string{}}, signErr
+	case challengeNewPassword:
+	default:
+		return nil, invalidParameter("Unsupported challenge %s.", *name)
 	}
 
 	password := new(responses["NEW_PASSWORD"])
@@ -427,9 +537,18 @@ func (s *Service) answer(
 		return nil, setErr
 	}
 
-	tx.Delete(sessionKey(scope, p.ID, *id))
+	deleteAuthSession(tx, scope, p, *id)
 	if saveErr := saveUser(tx, scope, p, &before, u, false); saveErr != nil {
 		return nil, saveErr
+	}
+
+	if sess.Custom {
+		sess.History = append(sess.History, challengeResult{Name: challengeNewPassword, Result: true})
+		return s.afterPassword(ctx, tx, scope, p, c, u, sess, metadata)
+	}
+
+	if mfa, mfaErr := s.requireMFA(tx, scope, p, c, u, sess); mfaErr != nil || mfa != nil {
+		return mfa, mfaErr
 	}
 
 	g, err := s.signIn(ctx, tx, scope, p, c, u, sourceNewPassword)
@@ -447,6 +566,11 @@ func respondWith[T any](ctx context.Context, s *Service, o *outcome, err error) 
 		return nil, err
 	}
 
+	if o.failure != nil {
+		return nil, o.failure
+	}
+
+	o.messages.flush(s.deliveries)
 	if o.grant != nil {
 		if o.AuthenticationResult, err = s.issue(ctx, o.grant); err != nil {
 			return nil, err
@@ -462,11 +586,14 @@ func respondWith[T any](ctx context.Context, s *Service, o *outcome, err error) 
 }
 
 func (s *Service) InitiateAuth(ctx context.Context, in *api.InitiateAuthRequest) (*api.InitiateAuthResponse, error) {
+	ctx = context.WithValue(ctx, authMetadataKey{}, in.ClientMetadata)
 	var out *outcome
-	err := s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-		var authErr error
-		out, authErr = s.authenticate(ctx, tx, scope, p, c, common.Value(in.AuthFlow), in.AuthParameters, false)
-		return authErr
+	err := s.runAuth(ctx, func(ctx context.Context) error {
+		return s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
+			var authErr error
+			out, authErr = s.authenticate(ctx, tx, scope, p, c, common.Value(in.AuthFlow), in.AuthParameters, false)
+			return authErr
+		})
 	})
 
 	return respondWith[api.InitiateAuthResponse](ctx, s, out, err)
@@ -476,13 +603,16 @@ func (s *Service) AdminInitiateAuth(
 	ctx context.Context,
 	in *api.AdminInitiateAuthRequest,
 ) (*api.AdminInitiateAuthResponse, error) {
+	ctx = context.WithValue(ctx, authMetadataKey{}, in.ClientMetadata)
 	var out *outcome
-	err := s.byAdminClient(ctx, in.UserPoolId, in.ClientId,
-		func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-			var authErr error
-			out, authErr = s.authenticate(ctx, tx, scope, p, c, common.Value(in.AuthFlow), in.AuthParameters, true)
-			return authErr
-		})
+	err := s.runAuth(ctx, func(ctx context.Context) error {
+		return s.byAdminClient(ctx, in.UserPoolId, in.ClientId,
+			func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
+				var authErr error
+				out, authErr = s.authenticate(ctx, tx, scope, p, c, common.Value(in.AuthFlow), in.AuthParameters, true)
+				return authErr
+			})
+	})
 
 	return respondWith[api.AdminInitiateAuthResponse](ctx, s, out, err)
 }
@@ -491,11 +621,14 @@ func (s *Service) RespondToAuthChallenge(
 	ctx context.Context,
 	in *api.RespondToAuthChallengeRequest,
 ) (*api.RespondToAuthChallengeResponse, error) {
+	ctx = context.WithValue(ctx, authMetadataKey{}, in.ClientMetadata)
 	var out *outcome
-	err := s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-		var answerErr error
-		out, answerErr = s.answer(ctx, tx, scope, p, c, in.ChallengeName, in.Session, in.ChallengeResponses)
-		return answerErr
+	err := s.runAuth(ctx, func(ctx context.Context) error {
+		return s.byClient(ctx, in.ClientId, func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
+			var answerErr error
+			out, answerErr = s.answer(ctx, tx, scope, p, c, in.ChallengeName, in.Session, in.ChallengeResponses)
+			return answerErr
+		})
 	})
 
 	return respondWith[api.RespondToAuthChallengeResponse](ctx, s, out, err)
@@ -505,13 +638,18 @@ func (s *Service) AdminRespondToAuthChallenge(
 	ctx context.Context,
 	in *api.AdminRespondToAuthChallengeRequest,
 ) (*api.AdminRespondToAuthChallengeResponse, error) {
+	ctx = context.WithValue(ctx, authMetadataKey{}, in.ClientMetadata)
 	var out *outcome
-	err := s.byAdminClient(ctx, in.UserPoolId, in.ClientId,
-		func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
-			var answerErr error
-			out, answerErr = s.answer(ctx, tx, scope, p, c, in.ChallengeName, in.Session, in.ChallengeResponses)
-			return answerErr
-		})
+	err := s.runAuth(ctx, func(ctx context.Context) error {
+		return s.byAdminClient(ctx, in.UserPoolId, in.ClientId,
+			func(tx storage.WriteTx, scope request.Scope, p *pool, c *client) error {
+				var answerErr error
+				out, answerErr = s.answer(ctx, tx, scope, p, c, in.ChallengeName, in.Session, in.ChallengeResponses)
+				return answerErr
+			})
+	})
 
 	return respondWith[api.AdminRespondToAuthChallengeResponse](ctx, s, out, err)
 }
+
+type authMetadataKey struct{}

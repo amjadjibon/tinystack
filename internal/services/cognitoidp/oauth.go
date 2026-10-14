@@ -62,7 +62,7 @@ func (s *Service) Token(
 		switch {
 		case readErr != nil:
 			return readErr
-		case c == nil || p == nil || c.Secret == "" || c.Secret != secret:
+		case c == nil || p == nil || c.Secret == "" || !c.acceptsSecret(secret):
 			failure = invalidClient
 			return nil
 		case !common.Value(c.Settings.AllowedOAuthFlowsUserPoolClient) ||

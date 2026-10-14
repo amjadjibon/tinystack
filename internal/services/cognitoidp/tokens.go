@@ -44,11 +44,12 @@ var b64 = base64.RawURLEncoding
 
 // refresh is a refresh token's record, under refresh/<pool ID>/<token>.
 type refresh struct {
-	Expires  time.Time
-	AuthTime time.Time
-	Username string
-	Client   string
-	Origin   string
+	RotatedUntil time.Time `json:",omitzero"`
+	Expires      time.Time
+	AuthTime     time.Time
+	Username     string
+	Client       string
+	Origin       string
 }
 
 func refreshKey(scope request.Scope, pool, token string) string {
@@ -254,9 +255,8 @@ func readable(c *client, name string) bool {
 	return len(c.Settings.ReadAttributes) == 0 || slices.Contains(c.Settings.ReadAttributes, name)
 }
 
-// signIn starts a session for u through c and prepares its tokens, with a
-// refresh token when the client allows refreshing. source is how the user
-// signed in.
+// signIn starts a session for u through c and prepares its access, ID and refresh tokens.
+// source is how the user signed in.
 func (s *Service) signIn(
 	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, u *user, source string,
 ) (*grant, error) {
@@ -267,15 +267,13 @@ func (s *Service) signIn(
 		u.Sessions = u.Sessions[n-maxSessions:]
 	}
 
-	if slices.Contains(c.Settings.flows(), flowRefresh) {
-		sess.refresh = randomString(alphaNum, 256)
-		r := refresh{
-			Expires: now.Add(c.Settings.validity(tokenRefresh)), AuthTime: now, Username: u.Username, Client: c.ID,
-			Origin: sess.origin,
-		}
-		if err := storage.Write(tx, refreshKey(scope, p.ID, sess.refresh), r); err != nil {
-			return nil, err
-		}
+	sess.refresh = randomString(alphaNum, 256)
+	r := refresh{
+		Expires: now.Add(c.Settings.validity(tokenRefresh)), AuthTime: now, Username: u.Username, Client: c.ID,
+		Origin: sess.origin,
+	}
+	if err := storage.Write(tx, refreshKey(scope, p.ID, sess.refresh), r); err != nil {
+		return nil, err
 	}
 
 	key, created, err := signingKey(p)
@@ -356,7 +354,8 @@ func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, e
 		return nil, err
 	}
 
-	if verify(&key.PublicKey, *token) != nil {
+	scopes, _ := claims["scope"].(string)
+	if verify(&key.PublicKey, *token) != nil || !slices.Contains(strings.Fields(scopes), adminScope) {
 		return nil, invalid
 	}
 

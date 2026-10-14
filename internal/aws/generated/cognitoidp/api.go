@@ -107,11 +107,14 @@ type PreTokenGenerationVersionConfigType struct {
 }
 
 type LambdaConfigType struct {
-	PreSignUp                *string                              `json:"PreSignUp,omitempty"`
-	PostConfirmation         *string                              `json:"PostConfirmation,omitempty"`
-	PostAuthentication       *string                              `json:"PostAuthentication,omitempty"`
-	PreTokenGeneration       *string                              `json:"PreTokenGeneration,omitempty"`
-	PreTokenGenerationConfig *PreTokenGenerationVersionConfigType `json:"PreTokenGenerationConfig,omitempty"`
+	PreSignUp                   *string                              `json:"PreSignUp,omitempty"`
+	PostConfirmation            *string                              `json:"PostConfirmation,omitempty"`
+	PostAuthentication          *string                              `json:"PostAuthentication,omitempty"`
+	PreTokenGeneration          *string                              `json:"PreTokenGeneration,omitempty"`
+	PreTokenGenerationConfig    *PreTokenGenerationVersionConfigType `json:"PreTokenGenerationConfig,omitempty"`
+	DefineAuthChallenge         *string                              `json:"DefineAuthChallenge,omitempty"`
+	CreateAuthChallenge         *string                              `json:"CreateAuthChallenge,omitempty"`
+	VerifyAuthChallengeResponse *string                              `json:"VerifyAuthChallengeResponse,omitempty"`
 }
 
 type CreateUserPoolRequest struct {
@@ -251,20 +254,28 @@ type SoftwareTokenMfaConfigType struct {
 	Enabled *bool `json:"Enabled,omitempty"`
 }
 
+type SmsMfaConfigType struct {
+	SmsAuthenticationMessage *string               `json:"SmsAuthenticationMessage,omitempty"`
+	SmsConfiguration         *SmsConfigurationType `json:"SmsConfiguration,omitempty"`
+}
+
 type GetUserPoolMfaConfigResponse struct {
 	MfaConfiguration              *string                     `json:"MfaConfiguration,omitempty"`
 	SoftwareTokenMfaConfiguration *SoftwareTokenMfaConfigType `json:"SoftwareTokenMfaConfiguration,omitempty"`
+	SmsMfaConfiguration           *SmsMfaConfigType           `json:"SmsMfaConfiguration,omitempty"`
 }
 
 type SetUserPoolMfaConfigRequest struct {
 	UserPoolId                    *string                     `json:"UserPoolId,omitempty"`
 	MfaConfiguration              *string                     `json:"MfaConfiguration,omitempty"`
 	SoftwareTokenMfaConfiguration *SoftwareTokenMfaConfigType `json:"SoftwareTokenMfaConfiguration,omitempty"`
+	SmsMfaConfiguration           *SmsMfaConfigType           `json:"SmsMfaConfiguration,omitempty"`
 }
 
 type SetUserPoolMfaConfigResponse struct {
 	MfaConfiguration              *string                     `json:"MfaConfiguration,omitempty"`
 	SoftwareTokenMfaConfiguration *SoftwareTokenMfaConfigType `json:"SoftwareTokenMfaConfiguration,omitempty"`
+	SmsMfaConfiguration           *SmsMfaConfigType           `json:"SmsMfaConfiguration,omitempty"`
 }
 
 type TokenValidityUnitsType struct {
@@ -273,55 +284,62 @@ type TokenValidityUnitsType struct {
 	RefreshToken *string `json:"RefreshToken,omitempty"`
 }
 
+type RefreshTokenRotationType struct {
+	Feature                 *string `json:"Feature,omitempty"`
+	RetryGracePeriodSeconds *int64  `json:"RetryGracePeriodSeconds,omitempty"`
+}
+
 type CreateUserPoolClientRequest struct {
-	UserPoolId                               *string                 `json:"UserPoolId,omitempty"`
-	ClientName                               *string                 `json:"ClientName,omitempty"`
-	GenerateSecret                           *bool                   `json:"GenerateSecret,omitempty"`
-	RefreshTokenValidity                     *int64                  `json:"RefreshTokenValidity,omitempty"`
-	AccessTokenValidity                      *int64                  `json:"AccessTokenValidity,omitempty"`
-	IdTokenValidity                          *int64                  `json:"IdTokenValidity,omitempty"`
-	TokenValidityUnits                       *TokenValidityUnitsType `json:"TokenValidityUnits,omitempty"`
-	ReadAttributes                           []string                `json:"ReadAttributes,omitempty"`
-	WriteAttributes                          []string                `json:"WriteAttributes,omitempty"`
-	ExplicitAuthFlows                        []string                `json:"ExplicitAuthFlows,omitempty"`
-	SupportedIdentityProviders               []string                `json:"SupportedIdentityProviders,omitempty"`
-	CallbackURLs                             []string                `json:"CallbackURLs,omitempty"`
-	LogoutURLs                               []string                `json:"LogoutURLs,omitempty"`
-	DefaultRedirectURI                       *string                 `json:"DefaultRedirectURI,omitempty"`
-	AllowedOAuthFlows                        []string                `json:"AllowedOAuthFlows,omitempty"`
-	AllowedOAuthScopes                       []string                `json:"AllowedOAuthScopes,omitempty"`
-	AllowedOAuthFlowsUserPoolClient          *bool                   `json:"AllowedOAuthFlowsUserPoolClient,omitempty"`
-	PreventUserExistenceErrors               *string                 `json:"PreventUserExistenceErrors,omitempty"`
-	EnableTokenRevocation                    *bool                   `json:"EnableTokenRevocation,omitempty"`
-	EnablePropagateAdditionalUserContextData *bool                   `json:"EnablePropagateAdditionalUserContextData,omitempty"`
-	AuthSessionValidity                      *int64                  `json:"AuthSessionValidity,omitempty"`
+	UserPoolId                               *string                   `json:"UserPoolId,omitempty"`
+	ClientName                               *string                   `json:"ClientName,omitempty"`
+	GenerateSecret                           *bool                     `json:"GenerateSecret,omitempty"`
+	RefreshTokenValidity                     *int64                    `json:"RefreshTokenValidity,omitempty"`
+	AccessTokenValidity                      *int64                    `json:"AccessTokenValidity,omitempty"`
+	IdTokenValidity                          *int64                    `json:"IdTokenValidity,omitempty"`
+	TokenValidityUnits                       *TokenValidityUnitsType   `json:"TokenValidityUnits,omitempty"`
+	ReadAttributes                           []string                  `json:"ReadAttributes,omitempty"`
+	WriteAttributes                          []string                  `json:"WriteAttributes,omitempty"`
+	ExplicitAuthFlows                        []string                  `json:"ExplicitAuthFlows,omitempty"`
+	SupportedIdentityProviders               []string                  `json:"SupportedIdentityProviders,omitempty"`
+	CallbackURLs                             []string                  `json:"CallbackURLs,omitempty"`
+	LogoutURLs                               []string                  `json:"LogoutURLs,omitempty"`
+	DefaultRedirectURI                       *string                   `json:"DefaultRedirectURI,omitempty"`
+	AllowedOAuthFlows                        []string                  `json:"AllowedOAuthFlows,omitempty"`
+	AllowedOAuthScopes                       []string                  `json:"AllowedOAuthScopes,omitempty"`
+	AllowedOAuthFlowsUserPoolClient          *bool                     `json:"AllowedOAuthFlowsUserPoolClient,omitempty"`
+	PreventUserExistenceErrors               *string                   `json:"PreventUserExistenceErrors,omitempty"`
+	EnableTokenRevocation                    *bool                     `json:"EnableTokenRevocation,omitempty"`
+	EnablePropagateAdditionalUserContextData *bool                     `json:"EnablePropagateAdditionalUserContextData,omitempty"`
+	AuthSessionValidity                      *int64                    `json:"AuthSessionValidity,omitempty"`
+	RefreshTokenRotation                     *RefreshTokenRotationType `json:"RefreshTokenRotation,omitempty"`
 }
 
 type UserPoolClientType struct {
-	UserPoolId                               *string                 `json:"UserPoolId,omitempty"`
-	ClientName                               *string                 `json:"ClientName,omitempty"`
-	ClientId                                 *string                 `json:"ClientId,omitempty"`
-	ClientSecret                             *string                 `json:"ClientSecret,omitempty"`
-	CreationDate                             *float64                `json:"CreationDate,omitempty"`
-	LastModifiedDate                         *float64                `json:"LastModifiedDate,omitempty"`
-	RefreshTokenValidity                     *int64                  `json:"RefreshTokenValidity,omitempty"`
-	AccessTokenValidity                      *int64                  `json:"AccessTokenValidity,omitempty"`
-	IdTokenValidity                          *int64                  `json:"IdTokenValidity,omitempty"`
-	TokenValidityUnits                       *TokenValidityUnitsType `json:"TokenValidityUnits,omitempty"`
-	ReadAttributes                           []string                `json:"ReadAttributes,omitempty"`
-	WriteAttributes                          []string                `json:"WriteAttributes,omitempty"`
-	ExplicitAuthFlows                        []string                `json:"ExplicitAuthFlows,omitempty"`
-	SupportedIdentityProviders               []string                `json:"SupportedIdentityProviders,omitempty"`
-	CallbackURLs                             []string                `json:"CallbackURLs,omitempty"`
-	LogoutURLs                               []string                `json:"LogoutURLs,omitempty"`
-	DefaultRedirectURI                       *string                 `json:"DefaultRedirectURI,omitempty"`
-	AllowedOAuthFlows                        []string                `json:"AllowedOAuthFlows,omitempty"`
-	AllowedOAuthScopes                       []string                `json:"AllowedOAuthScopes,omitempty"`
-	AllowedOAuthFlowsUserPoolClient          *bool                   `json:"AllowedOAuthFlowsUserPoolClient,omitempty"`
-	PreventUserExistenceErrors               *string                 `json:"PreventUserExistenceErrors,omitempty"`
-	EnableTokenRevocation                    *bool                   `json:"EnableTokenRevocation,omitempty"`
-	EnablePropagateAdditionalUserContextData *bool                   `json:"EnablePropagateAdditionalUserContextData,omitempty"`
-	AuthSessionValidity                      *int64                  `json:"AuthSessionValidity,omitempty"`
+	UserPoolId                               *string                   `json:"UserPoolId,omitempty"`
+	ClientName                               *string                   `json:"ClientName,omitempty"`
+	ClientId                                 *string                   `json:"ClientId,omitempty"`
+	ClientSecret                             *string                   `json:"ClientSecret,omitempty"`
+	CreationDate                             *float64                  `json:"CreationDate,omitempty"`
+	LastModifiedDate                         *float64                  `json:"LastModifiedDate,omitempty"`
+	RefreshTokenValidity                     *int64                    `json:"RefreshTokenValidity,omitempty"`
+	AccessTokenValidity                      *int64                    `json:"AccessTokenValidity,omitempty"`
+	IdTokenValidity                          *int64                    `json:"IdTokenValidity,omitempty"`
+	TokenValidityUnits                       *TokenValidityUnitsType   `json:"TokenValidityUnits,omitempty"`
+	ReadAttributes                           []string                  `json:"ReadAttributes,omitempty"`
+	WriteAttributes                          []string                  `json:"WriteAttributes,omitempty"`
+	ExplicitAuthFlows                        []string                  `json:"ExplicitAuthFlows,omitempty"`
+	SupportedIdentityProviders               []string                  `json:"SupportedIdentityProviders,omitempty"`
+	CallbackURLs                             []string                  `json:"CallbackURLs,omitempty"`
+	LogoutURLs                               []string                  `json:"LogoutURLs,omitempty"`
+	DefaultRedirectURI                       *string                   `json:"DefaultRedirectURI,omitempty"`
+	AllowedOAuthFlows                        []string                  `json:"AllowedOAuthFlows,omitempty"`
+	AllowedOAuthScopes                       []string                  `json:"AllowedOAuthScopes,omitempty"`
+	AllowedOAuthFlowsUserPoolClient          *bool                     `json:"AllowedOAuthFlowsUserPoolClient,omitempty"`
+	PreventUserExistenceErrors               *string                   `json:"PreventUserExistenceErrors,omitempty"`
+	EnableTokenRevocation                    *bool                     `json:"EnableTokenRevocation,omitempty"`
+	EnablePropagateAdditionalUserContextData *bool                     `json:"EnablePropagateAdditionalUserContextData,omitempty"`
+	AuthSessionValidity                      *int64                    `json:"AuthSessionValidity,omitempty"`
+	RefreshTokenRotation                     *RefreshTokenRotationType `json:"RefreshTokenRotation,omitempty"`
 }
 
 type CreateUserPoolClientResponse struct {
@@ -355,27 +373,28 @@ type ListUserPoolClientsResponse struct {
 }
 
 type UpdateUserPoolClientRequest struct {
-	UserPoolId                               *string                 `json:"UserPoolId,omitempty"`
-	ClientId                                 *string                 `json:"ClientId,omitempty"`
-	ClientName                               *string                 `json:"ClientName,omitempty"`
-	RefreshTokenValidity                     *int64                  `json:"RefreshTokenValidity,omitempty"`
-	AccessTokenValidity                      *int64                  `json:"AccessTokenValidity,omitempty"`
-	IdTokenValidity                          *int64                  `json:"IdTokenValidity,omitempty"`
-	TokenValidityUnits                       *TokenValidityUnitsType `json:"TokenValidityUnits,omitempty"`
-	ReadAttributes                           []string                `json:"ReadAttributes,omitempty"`
-	WriteAttributes                          []string                `json:"WriteAttributes,omitempty"`
-	ExplicitAuthFlows                        []string                `json:"ExplicitAuthFlows,omitempty"`
-	SupportedIdentityProviders               []string                `json:"SupportedIdentityProviders,omitempty"`
-	CallbackURLs                             []string                `json:"CallbackURLs,omitempty"`
-	LogoutURLs                               []string                `json:"LogoutURLs,omitempty"`
-	DefaultRedirectURI                       *string                 `json:"DefaultRedirectURI,omitempty"`
-	AllowedOAuthFlows                        []string                `json:"AllowedOAuthFlows,omitempty"`
-	AllowedOAuthScopes                       []string                `json:"AllowedOAuthScopes,omitempty"`
-	AllowedOAuthFlowsUserPoolClient          *bool                   `json:"AllowedOAuthFlowsUserPoolClient,omitempty"`
-	PreventUserExistenceErrors               *string                 `json:"PreventUserExistenceErrors,omitempty"`
-	EnableTokenRevocation                    *bool                   `json:"EnableTokenRevocation,omitempty"`
-	EnablePropagateAdditionalUserContextData *bool                   `json:"EnablePropagateAdditionalUserContextData,omitempty"`
-	AuthSessionValidity                      *int64                  `json:"AuthSessionValidity,omitempty"`
+	UserPoolId                               *string                   `json:"UserPoolId,omitempty"`
+	ClientId                                 *string                   `json:"ClientId,omitempty"`
+	ClientName                               *string                   `json:"ClientName,omitempty"`
+	RefreshTokenValidity                     *int64                    `json:"RefreshTokenValidity,omitempty"`
+	AccessTokenValidity                      *int64                    `json:"AccessTokenValidity,omitempty"`
+	IdTokenValidity                          *int64                    `json:"IdTokenValidity,omitempty"`
+	TokenValidityUnits                       *TokenValidityUnitsType   `json:"TokenValidityUnits,omitempty"`
+	ReadAttributes                           []string                  `json:"ReadAttributes,omitempty"`
+	WriteAttributes                          []string                  `json:"WriteAttributes,omitempty"`
+	ExplicitAuthFlows                        []string                  `json:"ExplicitAuthFlows,omitempty"`
+	SupportedIdentityProviders               []string                  `json:"SupportedIdentityProviders,omitempty"`
+	CallbackURLs                             []string                  `json:"CallbackURLs,omitempty"`
+	LogoutURLs                               []string                  `json:"LogoutURLs,omitempty"`
+	DefaultRedirectURI                       *string                   `json:"DefaultRedirectURI,omitempty"`
+	AllowedOAuthFlows                        []string                  `json:"AllowedOAuthFlows,omitempty"`
+	AllowedOAuthScopes                       []string                  `json:"AllowedOAuthScopes,omitempty"`
+	AllowedOAuthFlowsUserPoolClient          *bool                     `json:"AllowedOAuthFlowsUserPoolClient,omitempty"`
+	PreventUserExistenceErrors               *string                   `json:"PreventUserExistenceErrors,omitempty"`
+	EnableTokenRevocation                    *bool                     `json:"EnableTokenRevocation,omitempty"`
+	EnablePropagateAdditionalUserContextData *bool                     `json:"EnablePropagateAdditionalUserContextData,omitempty"`
+	AuthSessionValidity                      *int64                    `json:"AuthSessionValidity,omitempty"`
+	RefreshTokenRotation                     *RefreshTokenRotationType `json:"RefreshTokenRotation,omitempty"`
 }
 
 type UpdateUserPoolClientResponse struct {
@@ -548,6 +567,11 @@ type AdminGetUserRequest struct {
 	Username   *string `json:"Username,omitempty"`
 }
 
+type MFAOptionType struct {
+	DeliveryMedium *string `json:"DeliveryMedium,omitempty"`
+	AttributeName  *string `json:"AttributeName,omitempty"`
+}
+
 type AdminGetUserResponse struct {
 	Username             *string         `json:"Username,omitempty"`
 	UserAttributes       []AttributeType `json:"UserAttributes,omitempty"`
@@ -555,6 +579,9 @@ type AdminGetUserResponse struct {
 	UserLastModifiedDate *float64        `json:"UserLastModifiedDate,omitempty"`
 	Enabled              *bool           `json:"Enabled,omitempty"`
 	UserStatus           *string         `json:"UserStatus,omitempty"`
+	UserMFASettingList   []string        `json:"UserMFASettingList,omitempty"`
+	PreferredMfaSetting  *string         `json:"PreferredMfaSetting,omitempty"`
+	MFAOptions           []MFAOptionType `json:"MFAOptions,omitempty"`
 }
 
 type AdminDeleteUserOutput struct{}
@@ -721,8 +748,11 @@ type GetUserRequest struct {
 }
 
 type GetUserResponse struct {
-	Username       *string         `json:"Username,omitempty"`
-	UserAttributes []AttributeType `json:"UserAttributes,omitempty"`
+	Username            *string         `json:"Username,omitempty"`
+	UserAttributes      []AttributeType `json:"UserAttributes,omitempty"`
+	UserMFASettingList  []string        `json:"UserMFASettingList,omitempty"`
+	PreferredMfaSetting *string         `json:"PreferredMfaSetting,omitempty"`
+	MFAOptions          []MFAOptionType `json:"MFAOptions,omitempty"`
 }
 
 type UpdateUserAttributesRequest struct {
@@ -924,6 +954,113 @@ type ListResourceServersResponse struct {
 	NextToken       *string              `json:"NextToken,omitempty"`
 }
 
+type AssociateSoftwareTokenRequest struct {
+	AccessToken *string `json:"AccessToken,omitempty"`
+	Session     *string `json:"Session,omitempty"`
+}
+
+type AssociateSoftwareTokenResponse struct {
+	SecretCode *string `json:"SecretCode,omitempty"`
+	Session    *string `json:"Session,omitempty"`
+}
+
+type VerifySoftwareTokenRequest struct {
+	AccessToken        *string `json:"AccessToken,omitempty"`
+	Session            *string `json:"Session,omitempty"`
+	UserCode           *string `json:"UserCode,omitempty"`
+	FriendlyDeviceName *string `json:"FriendlyDeviceName,omitempty"`
+}
+
+type VerifySoftwareTokenResponse struct {
+	Status  *string `json:"Status,omitempty"`
+	Session *string `json:"Session,omitempty"`
+}
+
+type SMSMfaSettingsType struct {
+	Enabled      *bool `json:"Enabled,omitempty"`
+	PreferredMfa *bool `json:"PreferredMfa,omitempty"`
+}
+
+type SoftwareTokenMfaSettingsType struct {
+	Enabled      *bool `json:"Enabled,omitempty"`
+	PreferredMfa *bool `json:"PreferredMfa,omitempty"`
+}
+
+type SetUserMFAPreferenceRequest struct {
+	SMSMfaSettings           *SMSMfaSettingsType           `json:"SMSMfaSettings,omitempty"`
+	SoftwareTokenMfaSettings *SoftwareTokenMfaSettingsType `json:"SoftwareTokenMfaSettings,omitempty"`
+	AccessToken              *string                       `json:"AccessToken,omitempty"`
+}
+
+type SetUserMFAPreferenceResponse struct {
+}
+
+type AdminSetUserMFAPreferenceRequest struct {
+	SMSMfaSettings           *SMSMfaSettingsType           `json:"SMSMfaSettings,omitempty"`
+	SoftwareTokenMfaSettings *SoftwareTokenMfaSettingsType `json:"SoftwareTokenMfaSettings,omitempty"`
+	Username                 *string                       `json:"Username,omitempty"`
+	UserPoolId               *string                       `json:"UserPoolId,omitempty"`
+}
+
+type AdminSetUserMFAPreferenceResponse struct {
+}
+
+type AdminSetUserSettingsRequest struct {
+	UserPoolId *string         `json:"UserPoolId,omitempty"`
+	Username   *string         `json:"Username,omitempty"`
+	MFAOptions []MFAOptionType `json:"MFAOptions,omitempty"`
+}
+
+type AdminSetUserSettingsResponse struct {
+}
+
+type GetTokensFromRefreshTokenRequest struct {
+	RefreshToken   *string           `json:"RefreshToken,omitempty"`
+	ClientId       *string           `json:"ClientId,omitempty"`
+	ClientSecret   *string           `json:"ClientSecret,omitempty"`
+	ClientMetadata map[string]string `json:"ClientMetadata,omitempty"`
+}
+
+type GetTokensFromRefreshTokenResponse struct {
+	AuthenticationResult *AuthenticationResultType `json:"AuthenticationResult,omitempty"`
+}
+
+type AddUserPoolClientSecretRequest struct {
+	UserPoolId   *string `json:"UserPoolId,omitempty"`
+	ClientId     *string `json:"ClientId,omitempty"`
+	ClientSecret *string `json:"ClientSecret,omitempty"`
+}
+
+type ClientSecretDescriptorType struct {
+	ClientSecretId         *string  `json:"ClientSecretId,omitempty"`
+	ClientSecretValue      *string  `json:"ClientSecretValue,omitempty"`
+	ClientSecretCreateDate *float64 `json:"ClientSecretCreateDate,omitempty"`
+}
+
+type AddUserPoolClientSecretResponse struct {
+	ClientSecretDescriptor *ClientSecretDescriptorType `json:"ClientSecretDescriptor,omitempty"`
+}
+
+type ListUserPoolClientSecretsRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	ClientId   *string `json:"ClientId,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type ListUserPoolClientSecretsResponse struct {
+	ClientSecrets []ClientSecretDescriptorType `json:"ClientSecrets,omitempty"`
+	NextToken     *string                      `json:"NextToken,omitempty"`
+}
+
+type DeleteUserPoolClientSecretRequest struct {
+	UserPoolId     *string `json:"UserPoolId,omitempty"`
+	ClientId       *string `json:"ClientId,omitempty"`
+	ClientSecretId *string `json:"ClientSecretId,omitempty"`
+}
+
+type DeleteUserPoolClientSecretResponse struct {
+}
+
 type API interface {
 	CreateUserPool(context.Context, *CreateUserPoolRequest) (*CreateUserPoolResponse, error)
 	DescribeUserPool(context.Context, *DescribeUserPoolRequest) (*DescribeUserPoolResponse, error)
@@ -985,10 +1122,19 @@ type API interface {
 	UpdateResourceServer(context.Context, *UpdateResourceServerRequest) (*UpdateResourceServerResponse, error)
 	DeleteResourceServer(context.Context, *DeleteResourceServerRequest) (*DeleteResourceServerOutput, error)
 	ListResourceServers(context.Context, *ListResourceServersRequest) (*ListResourceServersResponse, error)
+	AssociateSoftwareToken(context.Context, *AssociateSoftwareTokenRequest) (*AssociateSoftwareTokenResponse, error)
+	VerifySoftwareToken(context.Context, *VerifySoftwareTokenRequest) (*VerifySoftwareTokenResponse, error)
+	SetUserMFAPreference(context.Context, *SetUserMFAPreferenceRequest) (*SetUserMFAPreferenceResponse, error)
+	AdminSetUserMFAPreference(context.Context, *AdminSetUserMFAPreferenceRequest) (*AdminSetUserMFAPreferenceResponse, error)
+	AdminSetUserSettings(context.Context, *AdminSetUserSettingsRequest) (*AdminSetUserSettingsResponse, error)
+	GetTokensFromRefreshToken(context.Context, *GetTokensFromRefreshTokenRequest) (*GetTokensFromRefreshTokenResponse, error)
+	AddUserPoolClientSecret(context.Context, *AddUserPoolClientSecretRequest) (*AddUserPoolClientSecretResponse, error)
+	ListUserPoolClientSecrets(context.Context, *ListUserPoolClientSecretsRequest) (*ListUserPoolClientSecretsResponse, error)
+	DeleteUserPoolClientSecret(context.Context, *DeleteUserPoolClientSecretRequest) (*DeleteUserPoolClientSecretResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "cognitoidp", SigningName: "cognito-idp", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "cognito-idp", TargetPrefix: "AWSCognitoIdentityProviderService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AliasExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeDeliveryFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExpiredCodeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FeatureUnavailableInTierException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "GroupExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEmailRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidLambdaResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOAuthFlowException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidPasswordException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleTrustRelationshipException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidUserPoolConfigurationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MFAMethodNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotAuthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "OperationNotEnabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordHistoryPolicyViolationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordResetRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PreconditionNotMetException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ScopeDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SoftwareTokenMFANotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TierChangeNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "TooManyFailedAttemptsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "UnexpectedLambdaException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedTokenTypeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedUserStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserImportInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserLambdaValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotConfirmedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UserPoolTaggingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UsernameExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "cognitoidp", SigningName: "cognito-idp", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "cognito-idp", TargetPrefix: "AWSCognitoIdentityProviderService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "AliasExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeDeliveryFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EnableSoftwareTokenMFAException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExpiredCodeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FeatureUnavailableInTierException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "GroupExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEmailRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidLambdaResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOAuthFlowException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidPasswordException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleTrustRelationshipException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidUserPoolConfigurationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MFAMethodNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotAuthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "OperationNotEnabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordHistoryPolicyViolationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordResetRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PreconditionNotMetException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RefreshTokenReuseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ScopeDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SoftwareTokenMFANotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TierChangeNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "TooManyFailedAttemptsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "UnexpectedLambdaException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedTokenTypeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedUserStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserImportInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserLambdaValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotConfirmedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UserPoolTaggingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UsernameExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateUserPool": {Name: "CreateUserPool", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:CreateUserPool", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.CreateUserPool", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateUserPoolRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateUserPool(ctx, input.(*CreateUserPoolRequest))
 		}},
@@ -1162,6 +1308,33 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListResourceServers": {Name: "ListResourceServers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:ListResourceServers", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.ListResourceServers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListResourceServersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListResourceServers(ctx, input.(*ListResourceServersRequest))
+		}},
+		"AssociateSoftwareToken": {Name: "AssociateSoftwareToken", UnitOutput: false, Sensitive: true, Anonymous: true, IAMAction: "cognito-idp:AssociateSoftwareToken", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AssociateSoftwareToken", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AssociateSoftwareTokenRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateSoftwareToken(ctx, input.(*AssociateSoftwareTokenRequest))
+		}},
+		"VerifySoftwareToken": {Name: "VerifySoftwareToken", UnitOutput: false, Sensitive: true, Anonymous: true, IAMAction: "cognito-idp:VerifySoftwareToken", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.VerifySoftwareToken", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &VerifySoftwareTokenRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.VerifySoftwareToken(ctx, input.(*VerifySoftwareTokenRequest))
+		}},
+		"SetUserMFAPreference": {Name: "SetUserMFAPreference", UnitOutput: false, Sensitive: true, Anonymous: true, IAMAction: "cognito-idp:SetUserMFAPreference", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.SetUserMFAPreference", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &SetUserMFAPreferenceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetUserMFAPreference(ctx, input.(*SetUserMFAPreferenceRequest))
+		}},
+		"AdminSetUserMFAPreference": {Name: "AdminSetUserMFAPreference", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:AdminSetUserMFAPreference", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminSetUserMFAPreference", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminSetUserMFAPreferenceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminSetUserMFAPreference(ctx, input.(*AdminSetUserMFAPreferenceRequest))
+		}},
+		"AdminSetUserSettings": {Name: "AdminSetUserSettings", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:AdminSetUserSettings", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AdminSetUserSettings", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AdminSetUserSettingsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AdminSetUserSettings(ctx, input.(*AdminSetUserSettingsRequest))
+		}},
+		"GetTokensFromRefreshToken": {Name: "GetTokensFromRefreshToken", UnitOutput: false, Sensitive: true, Anonymous: true, IAMAction: "cognito-idp:GetTokensFromRefreshToken", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.GetTokensFromRefreshToken", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetTokensFromRefreshTokenRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTokensFromRefreshToken(ctx, input.(*GetTokensFromRefreshTokenRequest))
+		}},
+		"AddUserPoolClientSecret": {Name: "AddUserPoolClientSecret", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:AddUserPoolClientSecret", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.AddUserPoolClientSecret", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AddUserPoolClientSecretRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AddUserPoolClientSecret(ctx, input.(*AddUserPoolClientSecretRequest))
+		}},
+		"ListUserPoolClientSecrets": {Name: "ListUserPoolClientSecrets", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:ListUserPoolClientSecrets", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.ListUserPoolClientSecrets", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListUserPoolClientSecretsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListUserPoolClientSecrets(ctx, input.(*ListUserPoolClientSecretsRequest))
+		}},
+		"DeleteUserPoolClientSecret": {Name: "DeleteUserPoolClientSecret", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:DeleteUserPoolClientSecret", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DeleteUserPoolClientSecret", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteUserPoolClientSecretRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteUserPoolClientSecret(ctx, input.(*DeleteUserPoolClientSecretRequest))
 		}},
 	}}
 }

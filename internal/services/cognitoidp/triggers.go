@@ -38,7 +38,10 @@ func checkTriggers(l *api.LambdaConfigType) error {
 		return nil
 	}
 
-	arns := []*string{l.PreSignUp, l.PostConfirmation, l.PostAuthentication, l.PreTokenGeneration}
+	arns := []*string{
+		l.PreSignUp, l.PostConfirmation, l.PostAuthentication, l.PreTokenGeneration,
+		l.DefineAuthChallenge, l.CreateAuthChallenge, l.VerifyAuthChallengeResponse,
+	}
 	if cfg := l.PreTokenGenerationConfig; cfg != nil {
 		arns = append(arns, cfg.LambdaArn)
 	}
