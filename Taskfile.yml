@@ -31,14 +31,16 @@ tasks:
       - go tool air -- {{.CLI_ARGS}}
 
   build:tools:
-    desc: "Build bin/aws-local, bin/terraform-local, and bin/sam-local wrappers (and symlinks awslocal, tflocal, samlocal)"
+    desc: "Build bin/aws-local, bin/terraform-local, bin/sam-local, and bin/cdk-local wrappers (and symlinks awslocal, tflocal, samlocal, cdklocal)"
     cmds:
       - go build -o bin/aws-local ./cmd/aws-local
       - go build -o bin/terraform-local ./cmd/terraform-local
       - go build -o bin/sam-local ./cmd/sam-local
+      - go build -o bin/cdk-local ./cmd/cdk-local
       - ln -sf aws-local bin/awslocal
       - ln -sf terraform-local bin/tflocal
       - ln -sf sam-local bin/samlocal
+      - ln -sf cdk-local bin/cdklocal
 
   test:
     cmds:
@@ -86,6 +88,11 @@ tasks:
   test:sam:
     cmds:
       - python3 tests/sam/sam.py
+
+  test:cdk:
+    desc: "Bootstrap, deploy, and destroy a CDK app (needs node, the cdk CLI, and the AWS CLI; installs aws-cdk-lib)"
+    cmds:
+      - python3 tests/cdk/cdk.py
 
   ui:install:
     desc: "Install the console's dependencies"

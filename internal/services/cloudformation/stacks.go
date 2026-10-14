@@ -253,6 +253,10 @@ func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*a
 		return nil, err
 	}
 
+	if checkErr := checkRules(t, m.Scope, name, params); checkErr != nil {
+		return nil, checkErr
+	}
+
 	var id string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		existing, found, readErr := storage.Read[stack](tx, m.Key(service, kindStack, name))
@@ -334,6 +338,10 @@ func (s *Service) revise(
 
 	params, err := resolveParameters(t, given, st.Parameters, s.ssm(ctx, m))
 	if err != nil {
+		return nil, "", nil, err
+	}
+
+	if err = checkRules(t, m.Scope, st.Name, params); err != nil {
 		return nil, "", nil, err
 	}
 
@@ -419,6 +427,10 @@ func (s *Service) DeleteStack(ctx context.Context, in *api.DeleteStackInput) (*a
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	if checkErr := checkDeploymentConfig(in.DeploymentConfig); checkErr != nil {
+		return nil, checkErr
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {

@@ -813,14 +813,16 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 	return out, nil
 }
 
-// encryption checks a write's server-side encryption: S3 encrypts every
-// object with AES256 keys it manages, the only kind TinyStack supports.
+// encryption checks a write's server-side encryption. S3 encrypts every
+// object with AES256 keys it manages; aws:kms is accepted because a bucket
+// whose default encryption is KMS, such as the CDK bootstrap bucket, makes
+// clients ask for it, but the object is stored as for AES256 and no KMS key is used.
 func encryption(sse *string) error {
-	if v := common.Value(sse); v != "" && v != "AES256" {
+	if v := common.Value(sse); v != "" && v != sseS3 && v != "aws:kms" {
 		return fail(
 			http.StatusNotImplemented,
 			"NotImplemented",
-			"TinyStack only supports AES256 server-side encryption",
+			"TinyStack only supports AES256 and aws:kms server-side encryption",
 		)
 	}
 

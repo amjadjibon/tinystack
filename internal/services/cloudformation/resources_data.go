@@ -7,8 +7,11 @@ import (
 
 func init() {
 	register("AWS::S3::Bucket", &resourceType{
-		name:       memberBucketName,
-		properties: []string{memberBucketName, memberTags, propertyVersioning},
+		name: memberBucketName,
+		properties: []string{
+			memberBucketName, memberTags, propertyVersioning, propertyAccessControl, propertyBucketEncryption,
+			propertyPublicAccessBlock, propertyLifecycle,
+		},
 		attributes: []string{memberArn, memberDomainName, "DualStackDomainName", "RegionalDomainName", "WebsiteURL"},
 		replace:    []string{memberBucketName},
 		create:     createBucket,
@@ -18,6 +21,39 @@ func init() {
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, "s3", "DeleteBucket", map[string]any{memberBucket: r.Physical})
 			if gone(err, "NoSuchBucket") {
+				return nil
+			}
+
+			return err
+		},
+	})
+	// The CDK CLI adds this record of the CDK version to every stack. It has no
+	// effect on any service, so it only needs a physical ID.
+	register("AWS::CDK::Metadata", &resourceType{
+		properties: []string{"Analytics", "Modules"},
+		create: func(_ context.Context, c *client, _ props) (string, map[string]any, error) {
+			return c.generate(32), nil, nil
+		},
+		update: func(_ context.Context, _ *client, r *resource, _ props) (map[string]any, error) {
+			return r.Attributes, nil
+		},
+		remove: func(context.Context, *client, *resource) error { return nil },
+	})
+	register("AWS::S3::BucketPolicy", &resourceType{
+		properties: []string{memberBucket, memberPolicyDocument},
+		replace:    []string{memberBucket},
+		iam:        true,
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			return c.generate(32), nil, putBucketPolicy(ctx, c, p)
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			return nil, putBucketPolicy(ctx, c, p)
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "s3", "DeleteBucketPolicy", map[string]any{
+				memberBucket: props(r.Properties).str(memberBucket),
+			})
+			if gone(err, "NoSuchBucket", "NoSuchBucketPolicy") {
 				return nil
 			}
 
@@ -150,8 +186,13 @@ func createBucket(ctx context.Context, c *client, p props) (physical string, att
 	return name, attributes, configureBucket(ctx, c, name, props{}, p)
 }
 
-// configureBucket applies a bucket's tags and versioning when they change.
+// configureBucket applies a bucket's tags, versioning, encryption, public
+// access block and lifecycle rules when they change.
 func configureBucket(ctx context.Context, c *client, name string, old, p props) error {
+	if err := configureBucketGuards(ctx, c, name, old, p); err != nil {
+		return err
+	}
+
 	if p.changed(old, memberTags) {
 		var err error
 		if tags := p.tags(); len(tags) > 0 {
@@ -328,5 +369,12 @@ func retain(ctx context.Context, c *client, name string, old, p props) error {
 		_, err = c.call(ctx, "logs", "DeleteRetentionPolicy", map[string]any{memberLogGroupName: name})
 	}
 
+	return err
+}
+
+func putBucketPolicy(ctx context.Context, c *client, p props) error {
+	_, err := c.call(ctx, "s3", "PutBucketPolicy", map[string]any{
+		memberBucket: p.str(memberBucket), "Policy": p.document(memberPolicyDocument),
+	})
 	return err
 }

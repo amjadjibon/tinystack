@@ -272,3 +272,32 @@ func SetupTerraformOverride(workDir, endpoint string) (func(), error) {
 	}
 	return cleanup, nil
 }
+
+// defaultAccount is TinyStack's default account, which CDK deploys into.
+const defaultAccount = "000000000000"
+
+// CDKEnv returns the variables the CDK CLI needs besides BaseEnv's: the
+// account and Region its stacks target, and no version check that would
+// leave the machine. A 12-digit AWS_ACCESS_KEY_ID names the account, as it
+// does for TinyStack itself.
+func CDKEnv() map[string]string {
+	account := defaultAccount
+	if key := os.Getenv("AWS_ACCESS_KEY_ID"); len(key) == 12 && strings.Trim(key, "0123456789") == "" {
+		account = key
+	}
+
+	region := defaultRegion
+	for _, name := range []string{"AWS_REGION", "AWS_DEFAULT_REGION"} {
+		if value := os.Getenv(name); value != "" {
+			region = value
+			break
+		}
+	}
+
+	return map[string]string{
+		"CDK_DEFAULT_ACCOUNT":       account,
+		"CDK_DEFAULT_REGION":        region,
+		"CDK_DISABLE_VERSION_CHECK": "1",
+		"AWS_PAGER":                 "",
+	}
+}

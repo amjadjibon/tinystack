@@ -40,7 +40,7 @@ type statement struct {
 
 // trusts reports whether a role's trust policy lets c take its action. It
 // evaluates a subset: Allow and Deny statements naming AWS, Federated, or
-// Service principals and actions, and StringEquals and StringLike conditions on the
+// Service principals and actions, and StringEquals, StringLike and Null conditions on the
 // keys in c's context, alone or with the ForAnyValue and ForAllValues set
 // operators. An Allow that uses anything else grants nothing, and a Deny that
 // does applies.
@@ -146,7 +146,7 @@ func present(value string) []string {
 }
 
 // conditionsHold reports whether a statement's conditions hold, and whether
-// TinyStack knows every one of them: StringEquals and StringLike on the keys
+// TinyStack knows every one of them: StringEquals, StringLike and Null on the keys
 // in context, which hold when any of the key's values matches, or with
 // ForAllValues when every one does.
 func conditionsHold(conditions map[string]map[string]json.RawMessage, context map[string][]string) (
@@ -159,8 +159,9 @@ func conditionsHold(conditions map[string]map[string]json.RawMessage, context ma
 			set, base = "", operator
 		}
 
-		if (base != "StringEquals" && base != "StringLike") ||
-			(set != "" && set != "ForAnyValue" && set != "ForAllValues") {
+		if (base != "StringEquals" && base != "StringLike" && base != operatorNull) ||
+			(set != "" && set != "ForAnyValue" && set != "ForAllValues") ||
+			(base == operatorNull && set != "") {
 			return false, false
 		}
 
@@ -168,6 +169,14 @@ func conditionsHold(conditions map[string]map[string]json.RawMessage, context ma
 			actual, ok := context[strings.ToLower(k)]
 			if !ok {
 				return false, false
+			}
+
+			if base == operatorNull {
+				// Null tests whether the key is missing: "true" holds without it, "false" with it.
+				holds = holds && slices.ContainsFunc(values(raw), func(want string) bool {
+					return (want == "true" && len(actual) == 0) || (want == "false" && len(actual) > 0)
+				})
+				continue
 			}
 
 			matches := func(v string) bool {
@@ -186,3 +195,6 @@ func conditionsHold(conditions map[string]map[string]json.RawMessage, context ma
 
 	return holds, true
 }
+
+// operatorNull is the condition operator that tests whether a key is missing.
+const operatorNull = "Null"

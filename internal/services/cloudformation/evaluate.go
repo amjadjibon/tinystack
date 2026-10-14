@@ -193,6 +193,13 @@ func (e *evaluator) function(fn string, arg any) (any, error) {
 		return selectOf(list)
 	case "Fn::Split":
 		return split(list)
+	case "Fn::Contains":
+		if len(list) != 2 {
+			return nil, templateError("Fn::Contains requires a list of two elements")
+		}
+
+		members, _ := list[0].([]any)
+		return slices.ContainsFunc(members, func(m any) bool { return scalarText(m) == scalarText(list[1]) }), nil
 	case "Fn::Equals":
 		if len(list) != 2 {
 			return nil, templateError("Fn::Equals requires a list of two elements")
@@ -667,6 +674,60 @@ func checkParameter(k string, decl *parameterDecl, v string) error {
 
 		if decl.MaxValue != nil && n > *decl.MaxValue {
 			return invalid(fmt.Sprintf("must be a number not greater than %v", *decl.MaxValue))
+		}
+	}
+
+	return nil
+}
+
+// checkRules evaluates a template's Rules against the resolved parameters.
+// A rule applies when its RuleCondition holds, or has none, and then each of
+// its Assertions must hold. Rules can use the functions that make conditions.
+func checkRules(t *template, scope request.Scope, name string, params []parameter) error {
+	if len(t.Rules) == 0 {
+		return nil
+	}
+
+	e := newEvaluator(t, scope, &stack{Name: name}, params, nil)
+	for _, rule := range slices.Sorted(maps.Keys(t.Rules)) {
+		body, ok := t.Rules[rule].(map[string]any)
+		if !ok {
+			return formatError("Rule %s must be an object", rule)
+		}
+
+		for k := range body {
+			if k != "RuleCondition" && k != "Assertions" {
+				return formatError("Rule %s has the unsupported property %s", rule, k)
+			}
+		}
+
+		if condition, has := body["RuleCondition"]; has {
+			applies, err := e.eval(condition)
+			if err != nil {
+				return err
+			}
+
+			if applies != true {
+				continue
+			}
+		}
+
+		assertions, _ := body["Assertions"].([]any)
+		if len(assertions) == 0 {
+			return formatError("Rule %s must have Assertions", rule)
+		}
+
+		for _, item := range assertions {
+			assertion, _ := item.(map[string]any)
+			held, err := e.eval(assertion["Assert"])
+			if err != nil {
+				return err
+			}
+
+			if held != true {
+				why, _ := assertion["AssertDescription"].(string)
+				return validation("Parameters: Rule %s was not satisfied: %s", rule, why)
+			}
 		}
 	}
 

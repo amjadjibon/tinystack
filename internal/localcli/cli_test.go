@@ -143,6 +143,26 @@ func TestSetupTerraformOverride(t *testing.T) {
 	}
 }
 
+func TestCDKEnv(t *testing.T) {
+	for _, tc := range []struct{ name, key, region, account, wantRegion string }{
+		{name: "defaults", account: "000000000000", wantRegion: "us-east-1"},
+		{name: "plain key", key: "test", account: "000000000000", wantRegion: "us-east-1"},
+		{name: "12-digit key", key: "123456789012", account: "123456789012", wantRegion: "us-east-1"},
+		{name: "13 digits", key: "1234567890123", account: "000000000000", wantRegion: "us-east-1"},
+		{name: "region", region: "eu-west-1", account: "000000000000", wantRegion: "eu-west-1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("AWS_ACCESS_KEY_ID", tc.key)
+			t.Setenv("AWS_REGION", tc.region)
+			t.Setenv("AWS_DEFAULT_REGION", "")
+			env := CDKEnv()
+			if env["CDK_DEFAULT_ACCOUNT"] != tc.account || env["CDK_DEFAULT_REGION"] != tc.wantRegion {
+				t.Fatalf("got %v, want account %s and region %s", env, tc.account, tc.wantRegion)
+			}
+		})
+	}
+}
+
 func TestBaseEnv(t *testing.T) {
 	t.Setenv("AWS_ACCESS_KEY_ID", "custom-key")
 	env := BaseEnv("http://127.0.0.1:4566", map[string]string{

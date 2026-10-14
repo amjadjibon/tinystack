@@ -107,6 +107,30 @@ func TestTrustsSetOperators(t *testing.T) {
 	}
 }
 
+func TestTrustsNullCondition(t *testing.T) {
+	allow := `{"Statement":{"Effect":"Allow","Principal":{"AWS":"111111111111"},"Action":"sts:AssumeRole","Condition":`
+	withoutID := caller{
+		account: "111111111111", action: "sts:AssumeRole", context: map[string][]string{"sts:externalid": nil},
+	}
+	withID := caller{
+		account: "111111111111", action: "sts:AssumeRole",
+		context: map[string][]string{"sts:externalid": {"abc"}},
+	}
+	for condition, want := range map[string][2]bool{
+		`{"Null":{"sts:ExternalId":"true"}}`:             {true, false},
+		`{"Null":{"sts:ExternalId":"false"}}`:            {false, true},
+		`{"Null":{"sts:ExternalId":["true"]}}`:           {true, false},
+		`{"Null":{"aws:UnknownKey":"true"}}`:             {false, false},
+		`{"ForAnyValue:Null":{"sts:ExternalId":"true"}}`: {false, false},
+	} {
+		for i, c := range []*caller{&withoutID, &withID} {
+			if got := trusts(allow+condition+`}}`, c); got != want[i] {
+				t.Errorf("%s with external ID %v: got %v, want %v", condition, i == 1, got, want[i])
+			}
+		}
+	}
+}
+
 func TestTrustsWebIdentity(t *testing.T) {
 	provider := "arn:aws:iam::111111111111:oidc-provider/token.actions.githubusercontent.com"
 	c := caller{

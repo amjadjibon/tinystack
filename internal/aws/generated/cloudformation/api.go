@@ -57,11 +57,16 @@ type UpdateStackOutput struct {
 
 type DeleteStackOutput struct{}
 
+type DeploymentConfig struct {
+	Mode *string `json:"Mode,omitempty" query:"Mode"`
+}
+
 type DeleteStackInput struct {
-	StackName          *string  `json:"StackName,omitempty" query:"StackName"`
-	RetainResources    []string `json:"RetainResources,omitempty" query:"RetainResources"`
-	RoleARN            *string  `json:"RoleARN,omitempty" query:"RoleARN"`
-	ClientRequestToken *string  `json:"ClientRequestToken,omitempty" query:"ClientRequestToken"`
+	StackName          *string           `json:"StackName,omitempty" query:"StackName"`
+	RetainResources    []string          `json:"RetainResources,omitempty" query:"RetainResources"`
+	RoleARN            *string           `json:"RoleARN,omitempty" query:"RoleARN"`
+	ClientRequestToken *string           `json:"ClientRequestToken,omitempty" query:"ClientRequestToken"`
+	DeploymentConfig   *DeploymentConfig `json:"DeploymentConfig,omitempty" query:"DeploymentConfig"`
 }
 
 type DescribeStacksInput struct {
@@ -326,19 +331,22 @@ type UpdateTerminationProtectionOutput struct {
 }
 
 type CreateChangeSetInput struct {
-	StackName           *string     `json:"StackName,omitempty" query:"StackName"`
-	TemplateBody        *string     `json:"TemplateBody,omitempty" query:"TemplateBody"`
-	TemplateURL         *string     `json:"TemplateURL,omitempty" query:"TemplateURL"`
-	UsePreviousTemplate *bool       `json:"UsePreviousTemplate,omitempty" query:"UsePreviousTemplate"`
-	Parameters          []Parameter `json:"Parameters,omitempty" query:"Parameters"`
-	Capabilities        []string    `json:"Capabilities,omitempty" query:"Capabilities"`
-	RoleARN             *string     `json:"RoleARN,omitempty" query:"RoleARN"`
-	Tags                []Tag       `json:"Tags,omitempty" query:"Tags"`
-	ChangeSetName       *string     `json:"ChangeSetName,omitempty" query:"ChangeSetName"`
-	ClientToken         *string     `json:"ClientToken,omitempty" query:"ClientToken"`
-	Description         *string     `json:"Description,omitempty" query:"Description"`
-	ChangeSetType       *string     `json:"ChangeSetType,omitempty" query:"ChangeSetType"`
-	OnStackFailure      *string     `json:"OnStackFailure,omitempty" query:"OnStackFailure"`
+	StackName               *string           `json:"StackName,omitempty" query:"StackName"`
+	TemplateBody            *string           `json:"TemplateBody,omitempty" query:"TemplateBody"`
+	TemplateURL             *string           `json:"TemplateURL,omitempty" query:"TemplateURL"`
+	UsePreviousTemplate     *bool             `json:"UsePreviousTemplate,omitempty" query:"UsePreviousTemplate"`
+	Parameters              []Parameter       `json:"Parameters,omitempty" query:"Parameters"`
+	Capabilities            []string          `json:"Capabilities,omitempty" query:"Capabilities"`
+	RoleARN                 *string           `json:"RoleARN,omitempty" query:"RoleARN"`
+	Tags                    []Tag             `json:"Tags,omitempty" query:"Tags"`
+	ChangeSetName           *string           `json:"ChangeSetName,omitempty" query:"ChangeSetName"`
+	ClientToken             *string           `json:"ClientToken,omitempty" query:"ClientToken"`
+	Description             *string           `json:"Description,omitempty" query:"Description"`
+	ChangeSetType           *string           `json:"ChangeSetType,omitempty" query:"ChangeSetType"`
+	OnStackFailure          *string           `json:"OnStackFailure,omitempty" query:"OnStackFailure"`
+	ImportExistingResources *bool             `json:"ImportExistingResources,omitempty" query:"ImportExistingResources"`
+	IncludeNestedStacks     *bool             `json:"IncludeNestedStacks,omitempty" query:"IncludeNestedStacks"`
+	DeploymentConfig        *DeploymentConfig `json:"DeploymentConfig,omitempty" query:"DeploymentConfig"`
 }
 
 type CreateChangeSetOutput struct {
@@ -347,9 +355,10 @@ type CreateChangeSetOutput struct {
 }
 
 type DescribeChangeSetInput struct {
-	ChangeSetName *string `json:"ChangeSetName,omitempty" query:"ChangeSetName"`
-	StackName     *string `json:"StackName,omitempty" query:"StackName"`
-	NextToken     *string `json:"NextToken,omitempty" query:"NextToken"`
+	ChangeSetName         *string `json:"ChangeSetName,omitempty" query:"ChangeSetName"`
+	StackName             *string `json:"StackName,omitempty" query:"StackName"`
+	NextToken             *string `json:"NextToken,omitempty" query:"NextToken"`
+	IncludePropertyValues *bool   `json:"IncludePropertyValues,omitempty" query:"IncludePropertyValues"`
 }
 
 type ResourceChange struct {

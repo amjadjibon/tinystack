@@ -23,10 +23,12 @@ const (
 // lists, strings, float64 numbers, and booleans, with intrinsic functions as
 // one-key maps ({fnRef: ...}, {"Fn::Sub": ...}).
 type template struct {
-	Metadata    any
-	Parameters  map[string]*parameterDecl
-	Mappings    map[string]any
-	Conditions  map[string]any
+	Metadata   any
+	Parameters map[string]*parameterDecl
+	Mappings   map[string]any
+	Conditions map[string]any
+	// Rules validate the parameters; see checkRules.
+	Rules       map[string]any
 	Resources   map[string]*resourceDecl
 	Outputs     map[string]*outputDecl
 	Version     string
@@ -72,7 +74,7 @@ type outputDecl struct {
 var (
 	sections = []string{
 		"AWSTemplateFormatVersion", memberDescription, "Metadata", "Parameters", "Mappings", "Conditions",
-		"Transform", keyResources, "Outputs",
+		"Rules", "Transform", keyResources, "Outputs",
 	}
 	resourceAttributes = []string{
 		memberType, keyProperties, "DependsOn", keyCondition, "DeletionPolicy", "UpdateReplacePolicy", "Metadata",
@@ -85,7 +87,7 @@ var (
 	// functions are the intrinsic functions TinyStack evaluates.
 	functions = []string{
 		fnRef, fnGetAtt, fnSub, fnJoin, "Fn::Select", "Fn::Split", fnIf, "Fn::Equals", fnNot,
-		fnAnd, "Fn::Or", "Fn::FindInMap", fnGetAZs, "Fn::ImportValue", fnBase64, keyCondition,
+		fnAnd, "Fn::Or", "Fn::Contains", "Fn::FindInMap", fnGetAZs, "Fn::ImportValue", fnBase64, keyCondition,
 	}
 )
 
@@ -283,6 +285,10 @@ func parse(body string) (*template, error) {
 	}
 
 	if t.Conditions, err = object(doc["Conditions"], "Conditions"); err != nil {
+		return nil, err
+	}
+
+	if t.Rules, err = object(doc["Rules"], "Rules"); err != nil {
 		return nil, err
 	}
 

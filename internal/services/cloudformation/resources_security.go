@@ -22,6 +22,7 @@ func init() {
 			"ManagedPolicyArns",
 			"Policies",
 			memberTags,
+			propertyPermissionsBoundary,
 		},
 		attributes: []string{memberArn, "RoleId"},
 		replace:    []string{memberRoleName, memberPath},
@@ -102,7 +103,17 @@ func init() {
 	})
 }
 
+// propertyPermissionsBoundary is accepted so a template can set it conditionally, as the CDK
+// bootstrap stack does, but a value is refused: IAM has no permissions boundaries yet.
+const propertyPermissionsBoundary = "PermissionsBoundary"
+
 func createRole(ctx context.Context, c *client, p props) (physical string, attributes map[string]any, err error) {
+	if p.str(propertyPermissionsBoundary) != "" {
+		return "", nil, validation(
+			"TinyStack does not support the %s property of AWS::IAM::Role", propertyPermissionsBoundary,
+		)
+	}
+
 	name := c.nameOf(p, memberRoleName, 64)
 	params := pick(map[string]any{memberRoleName: name}, p, memberPath, memberDescription, "MaxSessionDuration")
 	params[propertyAssumeRolePolicyDocument] = p.document(propertyAssumeRolePolicyDocument)
@@ -123,6 +134,13 @@ func createRole(ctx context.Context, c *client, p props) (physical string, attri
 }
 
 func updateRole(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+	if p.str(propertyPermissionsBoundary) != "" {
+		return nil, validation(
+			"TinyStack does not support the %s property of AWS::IAM::Role",
+			propertyPermissionsBoundary,
+		)
+	}
+
 	old := props(r.Properties)
 	if p.changed(old, propertyAssumeRolePolicyDocument) {
 		if _, err := c.call(ctx, "iam", "UpdateAssumeRolePolicy", map[string]any{

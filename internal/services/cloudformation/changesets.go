@@ -74,6 +74,22 @@ func findChangeSet(tx storage.ReadTx, scope request.Scope, stackName, name strin
 	return cs, nil
 }
 
+// checkDeploymentConfig accepts the STANDARD deployment mode, the only one TinyStack runs.
+func checkDeploymentConfig(cfg *api.DeploymentConfig) error {
+	if cfg == nil {
+		return nil
+	}
+
+	switch mode := common.Value(cfg.Mode); mode {
+	case "STANDARD":
+		return nil
+	case "EXPRESS":
+		return validation("TinyStack does not support the EXPRESS deployment mode")
+	default:
+		return validation("Invalid DeploymentConfig Mode %s", mode)
+	}
+}
+
 func (s *Service) CreateChangeSet(
 	ctx context.Context, in *api.CreateChangeSetInput,
 ) (*api.CreateChangeSetOutput, error) {
@@ -97,6 +113,15 @@ func (s *Service) CreateChangeSet(
 	default:
 		return nil, validation("Invalid ChangeSetType %s", typ)
 	}
+
+	if checkErr := checkDeploymentConfig(in.DeploymentConfig); checkErr != nil {
+		return nil, checkErr
+	}
+
+	// ImportExistingResources (and IncludeNestedStacks, IncludePropertyValues) are accepted and
+	// otherwise ignored: the first only lets a name clash adopt the live resource instead of
+	// failing, the others only widen what a change set reports. The CDK CLI sends them on every
+	// deploy; here a clash still fails and nested stacks show as one change.
 
 	failure, err := onFailure(in.OnStackFailure, nil)
 	if err != nil {
