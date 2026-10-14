@@ -87,21 +87,25 @@ func checkBudget(b *api.Budget) error {
 		!slices.Contains([]string{timeMonthly, timeQuarterly}, *b.TimeUnit)) {
 		return invalid("PlannedBudgetLimits requires a monthly or quarterly COST or USAGE budget.")
 	}
+
 	for period := range b.PlannedBudgetLimits {
 		epoch, err := strconv.ParseInt(period, 10, 64)
 		if err != nil || epoch < 0 {
 			return invalid("PlannedBudgetLimits keys must be UTC epoch seconds.")
 		}
 	}
+
 	if *b.BudgetType != budgetCost && *b.BudgetType != budgetUsage && b.BudgetLimit != nil {
 		amount, ok := new(big.Rat).SetString(*b.BudgetLimit.Amount)
 		if !ok || amount.Cmp(big.NewRat(100, 1)) != 0 {
 			return invalid("Utilization and coverage budgets require a limit of 100.")
 		}
 	}
+
 	if b.CostTypes != nil && *b.BudgetType != budgetCost {
 		return invalid("CostTypes is only valid for COST budgets.")
 	}
+
 	for _, spend := range b.PlannedBudgetLimits {
 		if err := checkSpend(spend); err != nil {
 			return err
