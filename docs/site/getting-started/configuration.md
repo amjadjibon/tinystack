@@ -195,6 +195,11 @@ The local executor runs Zip Python 3.x and Node.js handlers using host executabl
 from declared Lambda runtimes: TinyStack logs a warning once per function/runtime and runs the installed version.
 Java, Ruby, .NET, provided runtimes and Image packages fail explicitly with guidance to select Docker.
 
+The TinyStack container image has no Python or Node. Inside it, mount the Docker socket
+(`-v /var/run/docker.sock:/var/run/docker.sock`) so `auto` selects Docker, or build an image that adds the
+interpreters. When the local executor is selected and an interpreter is missing, startup logs a warning and those
+functions fail with the same guidance.
+
 Local execution **is not a sandbox**. Handlers have TinyStack's user permissions and can access host files and
 networks. Do not expose an untrusted function-upload gateway. Memory size is reported in context but is not
 enforced, and architecture follows the host. The Runtime API binds loopback on an ephemeral port and requires
