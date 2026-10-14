@@ -654,7 +654,8 @@
         "Symmetric AES, HMAC and selected RSA/ECC key types",
         "Encrypt/decrypt, re-encryption, data keys, signing and public-key retrieval",
         "Key lifecycle, aliases, policies, grants and tags",
-        "SSM, Secrets Manager and SQS validate usable customer-managed keys"
+        "SSM, Secrets Manager and SQS validate usable customer-managed keys",
+        "SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use"
       ],
       "gaps": [
         "Policies and grants are stored but not evaluated",
@@ -684,19 +685,27 @@
       "package": "acm"
     },
     "ssm": {
-      "title": "SSM Parameter Store",
+      "title": "Systems Manager",
       "category": "Configuration and operations",
-      "summary": "Store versioned parameters, labels, tags, and hierarchy queries.",
+      "summary": "Store versioned parameters, publish documents, and send Run Command requests.",
       "features": [
         "String, StringList and SecureString parameter records",
+        "SecureString values are encrypted with KMS (alias/aws/ssm, created on first use, or a customer-managed key); reads return ciphertext until WithDecryption",
         "Get by name/path, history, labels and version-aware updates",
         "Public EC2 image parameters supplied from the local catalogue",
-        "Customer-managed KMS key usability checks"
+        "Advanced-tier parameter policies are validated, stored and reported; Expiration deletes the parameter",
+        "Documents: create, update, versions, default version, JSON/YAML conversion, sharing records and tags",
+        "AWS-owned documents AWS-RunShellScript and AWS-RunPowerShellScript, found with the Owner and PlatformTypes filters",
+        "Run Command records: SendCommand by instance IDs or tag targets, list, get invocation and cancel"
       ],
       "gaps": [
-        "SecureString values are stored as plaintext; undecrypted reads return a placeholder",
-        "Only Parameter Store is implemented, not the broader Systems Manager API",
-        "No parameter policies, shared parameters, advanced data types or quotas"
+        "ExpirationNotification and NoChangeNotification policies are stored and reported but send no events",
+        "Shared parameters, advanced data types and quotas are not implemented",
+        "Document sharing is recorded and reported but does not make a document visible to other accounts",
+        "Documents are not run: only Command documents can be sent; Automation, State Manager, Inventory, Session Manager and patching are missing",
+        "No command runs on an instance: each invocation finishes as Success with empty output about a second after SendCommand, unless cancelled first",
+        "SendCommand targets running EC2 instances and tag:<key> or InstanceIds targets; notifications, alarms, document hashes and rate controls are not supported",
+        "Output is never written to S3 or CloudWatch Logs, though the settings are recorded"
       ],
       "execution": "Local behavior",
       "package": "ssm"
