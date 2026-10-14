@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
@@ -80,6 +81,15 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 
 	defer runtime.Close()
 	logger.Info("Lambda executor selected", "executor", executor)
+	if executor == config.ExecutorLocal {
+		for _, interpreter := range []string{cfg.Lambda.Local.Python, cfg.Lambda.Local.Node} {
+			if _, lookErr := exec.LookPath(interpreter); lookErr != nil {
+				logger.Warn("local Lambda interpreter not found; its functions fail until it is installed, or run "+
+					"with lambda.executor: docker and the Docker socket mounted", "interpreter", interpreter)
+			}
+		}
+	}
+
 	tinystack, err := build(ctx, cfg, store, runtime, logger, hooks)
 	if err != nil {
 		return err

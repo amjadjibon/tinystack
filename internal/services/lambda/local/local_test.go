@@ -262,6 +262,46 @@ func TestConcurrentAndRelease(t *testing.T) {
 	}
 }
 
+// A slow cold start of one function must not hold up other functions.
+func TestColdStartDoesNotBlock(t *testing.T) {
+	fn := pythonFunction(t, "def handler(e,c):\n return 1")
+	if _, err := exec.LookPath("node"); err != nil {
+		t.Skip("node is absent")
+	}
+
+	// The version probe is part of the first cold start; this interpreter answers it slowly.
+	slow := filepath.Join(t.TempDir(), "python3")
+	script := "#!/bin/sh\nif [ \"$1\" = --version ]; then sleep 2; fi\nexec python3 \"$@\"\n"
+	if err := os.WriteFile(slow, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	r := New(Options{Python: slow, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	t.Cleanup(r.Close)
+	fast := &lambda.Function{
+		ARN: "fast", Name: "fast", Version: "$LATEST", Region: "us-east-1", Runtime: "nodejs22.x",
+		Handler: "app.handler", PackageType: "Zip", Revision: "one", Timeout: 2 * time.Second, MemorySize: 128,
+		Code: packageOf(t, map[string]string{"app.js": "exports.handler=async()=>1;"}),
+	}
+
+	started := make(chan struct{})
+	go func() {
+		close(started)
+		_, _ = r.Invoke(context.Background(), fn, []byte(`{}`))
+	}()
+
+	<-started
+	time.Sleep(200 * time.Millisecond)
+	begin := time.Now()
+	if result := invoke(t, r, fast); result.Error {
+		t.Fatalf("fast function: %s", result.Payload)
+	}
+
+	if elapsed := time.Since(begin); elapsed > 1500*time.Millisecond {
+		t.Fatalf("fast function waited %v for another function's cold start", elapsed)
+	}
+}
+
 func TestRuntimeAPIToken(t *testing.T) {
 	r := testRuntime(t)
 	fn := pythonFunction(t, "def handler(e,c): return None")

@@ -105,10 +105,13 @@ func New(options Options) *Runtime {
 
 func (r *Runtime) SupportsDirectories() bool { return true }
 
+// acquire takes an idle environment of the function's revision or starts one.
+// Starting runs outside the lock, so a slow cold start (large packages and
+// layers) does not hold up other functions.
 func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*environmentProcess, error) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	if r.closed {
+		r.mu.Unlock()
 		return nil, errors.New("local Lambda runtime is closed")
 	}
 
@@ -141,16 +144,30 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*environmen
 			e.close()
 		default:
 			p.environments[e] = true
+			r.mu.Unlock()
 			return e, nil
 		}
 	}
 
+	r.mu.Unlock()
 	e, err := r.start(ctx, fn)
 	if err != nil {
 		return nil, err
 	}
 
-	p.environments[e] = true
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.closed {
+		e.close()
+		return nil, errors.New("local Lambda runtime is closed")
+	}
+
+	// An environment whose pool was released or replaced while it started
+	// runs this invocation only: release discards environments it does not pool.
+	if r.pools[fn.ARN] == p {
+		p.environments[e] = true
+	}
+
 	return e, nil
 }
 
@@ -216,7 +233,8 @@ func (r *Runtime) start(ctx context.Context, fn *lambda.Function) (_ *environmen
 
 	executable, err := exec.LookPath(interpreter)
 	if err != nil {
-		return nil, fmt.Errorf("local Lambda interpreter %q is unavailable: %w", interpreter, err)
+		return nil, fmt.Errorf("local Lambda interpreter %q is unavailable (install it, set lambda.local.python "+
+			"or lambda.local.node, or use lambda.executor: docker): %w", interpreter, err)
 	}
 
 	root, err := os.MkdirTemp("", "tinystack-lambda-")
@@ -301,8 +319,11 @@ func (r *Runtime) start(ctx context.Context, fn *lambda.Function) (_ *environmen
 
 	go func() { _ = e.cmd.Wait(); close(e.done) }()
 	go func() { _ = e.server.Serve(listener) }()
-	if !r.warned[fn.ARN+"/"+fn.Runtime] {
-		r.warned[fn.ARN+"/"+fn.Runtime] = true
+	r.mu.Lock()
+	first := !r.warned[fn.ARN+"/"+fn.Runtime]
+	r.warned[fn.ARN+"/"+fn.Runtime] = true
+	r.mu.Unlock()
+	if first {
 		r.checkVersion(ctx, fn, executable, env)
 	}
 
