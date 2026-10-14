@@ -2106,6 +2106,29 @@
       ],
       "execution": "Records only",
       "package": "costexplorer"
+    },
+    "costandusagereportservice": {
+      "title": "AWS Cost and Usage Reports",
+      "category": "Management and governance",
+      "scope": "Account-wide",
+      "summary": "Store legacy CUR report definitions and tags as account-wide records without generating billing data or report files.",
+      "features": [
+        "All seven pinned AWS JSON 1.1 operations: PutReportDefinition, DescribeReportDefinitions, ModifyReportDefinition, DeleteReportDefinition, TagResource, UntagResource and ListTagsForResource",
+        "Round-trip destination, time unit, format, compression, schema elements, additional artifacts, refresh preferences and report versioning with model validation",
+        "Unique case-sensitive report names, immutable names on modification, ordered pagination with the pinned model page size of five, and account isolation across signing Regions",
+        "Native tags with the 50-tag limit, Resource Groups Tagging API integration, console inventory with RecordsOnly=true and ExecutionReady=false, and CUR us-east-1 definition ARNs",
+        "AWS Go SDK v2 lifecycle, persistence and reset coverage; Terraform aws_cur_report_definition apply, refresh, update, import and destroy coverage using the cur endpoint override"
+      ],
+      "gaps": [
+        "Records only: no AWS bills, cost calculations, cost fixtures, report files, manifests, S3 writes, Athena/Redshift/QuickSight integrations or delivery status",
+        "S3 destination existence, ownership and delivery permissions are not validated; AWS documents destination validation separately and ownership checks at delivery",
+        "BillingViewArn and ReportStatus inputs explicitly return ValidationException; Billing Conductor views and report delivery are not implemented",
+        "No report-count quota is enforced; only modeled input constraints and the shared tag limit are enforced",
+        "No CloudFormation handler for AWS::CUR::ReportDefinition; CDK and awscc deployment are unsupported",
+        "CUR 2.0 and BCM Data Exports are not implemented"
+      ],
+      "execution": "Records only",
+      "package": "costandusagereportservice"
     }
   },
   "future": {
