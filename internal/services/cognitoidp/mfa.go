@@ -295,32 +295,73 @@ func (s *Service) tokenSetup(
 	})
 }
 
+func (s *Service) associateSoftwareToken(
+	tx storage.WriteTx, a *accessToken, sess *authSession, out *api.AssociateSoftwareTokenResponse,
+) error {
+	key := make([]byte, 20)
+	_, _ = rand.Read(key)
+	secret := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(key)
+	out.SecretCode = new(secret)
+	if sess == nil {
+		a.user.PendingTOTP = secret
+		a.user.PendingTOTPExpires = s.now().
+			Add(time.Duration(common.Value(a.client.Settings.AuthSessionValidity)) * time.Minute)
+		a.user.PendingTOTPClient, a.user.PendingTOTPOrigin = a.client.ID, a.origin
+		return nil
+	}
+
+	sess.Setup, sess.TOTPSecret = setupVerify, secret
+	next, nextErr := s.newChallenge(tx, a.scope, a.pool, a.client, a.user, sess, nil)
+	if nextErr != nil {
+		return nextErr
+	}
+
+	out.Session = next.Session
+	return nil
+}
+
+func (s *Service) verifySoftwareToken(
+	tx storage.WriteTx, a *accessToken, sess *authSession, in *api.VerifySoftwareTokenRequest,
+	out *api.VerifySoftwareTokenResponse,
+) error {
+	secret := a.user.PendingTOTP
+	if sess == nil {
+		if secret == "" || !s.now().Before(a.user.PendingTOTPExpires) ||
+			a.user.PendingTOTPClient != a.client.ID ||
+			a.user.PendingTOTPOrigin != a.origin {
+			return expiredSession()
+		}
+	} else {
+		secret = sess.TOTPSecret
+	}
+
+	if !validTOTP(secret, common.Value(in.UserCode), s.now()) {
+		return codeMismatch()
+	}
+
+	a.user.TOTPSecret, a.user.TOTPMFA, a.user.TOTPDeviceName = secret, true, common.Value(in.FriendlyDeviceName)
+	a.user.PendingTOTP, a.user.PendingTOTPClient, a.user.PendingTOTPOrigin = "", "", ""
+	a.user.Modified = s.now().UTC()
+	if sess != nil {
+		sess.Setup, sess.TOTPSecret = setupComplete, ""
+		next, nextErr := s.newChallenge(tx, a.scope, a.pool, a.client, a.user, sess, nil)
+		if nextErr != nil {
+			return nextErr
+		}
+
+		out.Session = next.Session
+	}
+
+	return nil
+}
+
 func (s *Service) AssociateSoftwareToken(
 	ctx context.Context, in *api.AssociateSoftwareTokenRequest,
 ) (*api.AssociateSoftwareTokenResponse, error) {
 	out := &api.AssociateSoftwareTokenResponse{}
 	err := s.tokenSetup(ctx, in.AccessToken, in.Session, setupAssociate,
 		func(tx storage.WriteTx, a *accessToken, sess *authSession) error {
-			key := make([]byte, 20)
-			_, _ = rand.Read(key)
-			secret := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(key)
-			out.SecretCode = new(secret)
-			if sess == nil {
-				a.user.PendingTOTP = secret
-				a.user.PendingTOTPExpires = s.now().
-					Add(time.Duration(common.Value(a.client.Settings.AuthSessionValidity)) * time.Minute)
-				a.user.PendingTOTPClient, a.user.PendingTOTPOrigin = a.client.ID, a.origin
-				return nil
-			}
-
-			sess.Setup, sess.TOTPSecret = setupVerify, secret
-			next, nextErr := s.newChallenge(tx, a.scope, a.pool, a.client, a.user, sess, nil)
-			if nextErr != nil {
-				return nextErr
-			}
-
-			out.Session = next.Session
-			return nil
+			return s.associateSoftwareToken(tx, a, sess, out)
 		})
 	return out, err
 }
@@ -335,35 +376,7 @@ func (s *Service) VerifySoftwareToken(
 	out := &api.VerifySoftwareTokenResponse{Status: new("SUCCESS")}
 	err := s.tokenSetup(ctx, in.AccessToken, in.Session, setupVerify,
 		func(tx storage.WriteTx, a *accessToken, sess *authSession) error {
-			secret := a.user.PendingTOTP
-			if sess == nil {
-				if secret == "" || !s.now().Before(a.user.PendingTOTPExpires) ||
-					a.user.PendingTOTPClient != a.client.ID ||
-					a.user.PendingTOTPOrigin != a.origin {
-					return expiredSession()
-				}
-			} else {
-				secret = sess.TOTPSecret
-			}
-
-			if !validTOTP(secret, common.Value(in.UserCode), s.now()) {
-				return codeMismatch()
-			}
-
-			a.user.TOTPSecret, a.user.TOTPMFA, a.user.TOTPDeviceName = secret, true, common.Value(in.FriendlyDeviceName)
-			a.user.PendingTOTP, a.user.PendingTOTPClient, a.user.PendingTOTPOrigin = "", "", ""
-			a.user.Modified = s.now().UTC()
-			if sess != nil {
-				sess.Setup, sess.TOTPSecret = setupComplete, ""
-				next, nextErr := s.newChallenge(tx, a.scope, a.pool, a.client, a.user, sess, nil)
-				if nextErr != nil {
-					return nextErr
-				}
-
-				out.Session = next.Session
-			}
-
-			return nil
+			return s.verifySoftwareToken(tx, a, sess, in, out)
 		})
 	return out, err
 }

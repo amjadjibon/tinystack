@@ -38,6 +38,7 @@ func (g *group) output(pool string) *api.GroupType {
 		GroupName: new(g.Name), UserPoolId: new(pool), Precedence: g.Precedence,
 		CreationDate: common.SecondsMilli(g.Created), LastModifiedDate: common.SecondsMilli(g.Modified),
 	}
+
 	if g.Description != "" {
 		out.Description = new(g.Description)
 	}
@@ -107,6 +108,7 @@ func (s *Service) CreateGroup(ctx context.Context, in *api.CreateGroupRequest) (
 			Name: *in.GroupName, Description: common.Value(in.Description), RoleArn: common.Value(in.RoleArn),
 			Precedence: in.Precedence, Created: now, Modified: now,
 		}
+
 		out = g.output(p.ID)
 		return storage.Write(tx, k, g)
 	})

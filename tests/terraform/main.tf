@@ -260,11 +260,40 @@ resource "aws_cognito_user_pool" "app" {
   }
 }
 
+resource "aws_cognito_user_pool_domain" "app" {
+  domain                = "local-tf-signin"
+  user_pool_id          = aws_cognito_user_pool.app.id
+  managed_login_version = 1
+}
+
+resource "aws_cognito_identity_provider" "company" {
+  user_pool_id  = aws_cognito_user_pool.app.id
+  provider_name = "CorporateOIDC"
+  provider_type = "OIDC"
+  provider_details = {
+    oidc_issuer      = "https://idp.example.com"
+    client_id        = "terraform-client"
+    client_secret    = "terraform-provider-secret"
+    authorize_scopes = "openid email profile"
+  }
+  attribute_mapping = {
+    email = "email"
+  }
+}
+
 resource "aws_cognito_user_pool_client" "web" {
-  name                = "web"
-  user_pool_id        = aws_cognito_user_pool.app.id
-  generate_secret     = true
-  explicit_auth_flows = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  name                                 = "web"
+  user_pool_id                         = aws_cognito_user_pool.app.id
+  generate_secret                      = true
+  explicit_auth_flows                  = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
+  callback_urls                        = ["http://localhost/callback"]
+  logout_urls                          = ["http://localhost/signed-out"]
+  default_redirect_uri                 = "http://localhost/callback"
+  supported_identity_providers         = ["COGNITO", aws_cognito_identity_provider.company.provider_name]
+
 }
 
 resource "aws_cognito_user_group" "admins" {

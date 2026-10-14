@@ -115,6 +115,7 @@ type LambdaConfigType struct {
 	DefineAuthChallenge         *string                              `json:"DefineAuthChallenge,omitempty"`
 	CreateAuthChallenge         *string                              `json:"CreateAuthChallenge,omitempty"`
 	VerifyAuthChallengeResponse *string                              `json:"VerifyAuthChallengeResponse,omitempty"`
+	PreAuthentication           *string                              `json:"PreAuthentication,omitempty"`
 }
 
 type CreateUserPoolRequest struct {
@@ -174,6 +175,8 @@ type UserPoolType struct {
 	AccountRecoverySetting      *AccountRecoverySettingType      `json:"AccountRecoverySetting,omitempty"`
 	UserPoolTier                *string                          `json:"UserPoolTier,omitempty"`
 	LambdaConfig                *LambdaConfigType                `json:"LambdaConfig,omitempty"`
+	Domain                      *string                          `json:"Domain,omitempty"`
+	CustomDomain                *string                          `json:"CustomDomain,omitempty"`
 }
 
 type CreateUserPoolResponse struct {
@@ -1061,6 +1064,241 @@ type DeleteUserPoolClientSecretRequest struct {
 type DeleteUserPoolClientSecretResponse struct {
 }
 
+type CreateIdentityProviderRequest struct {
+	UserPoolId       *string           `json:"UserPoolId,omitempty"`
+	ProviderName     *string           `json:"ProviderName,omitempty"`
+	ProviderType     *string           `json:"ProviderType,omitempty"`
+	ProviderDetails  map[string]string `json:"ProviderDetails,omitempty"`
+	AttributeMapping map[string]string `json:"AttributeMapping,omitempty"`
+	IdpIdentifiers   []string          `json:"IdpIdentifiers,omitempty"`
+}
+
+type IdentityProviderType struct {
+	UserPoolId       *string           `json:"UserPoolId,omitempty"`
+	ProviderName     *string           `json:"ProviderName,omitempty"`
+	ProviderType     *string           `json:"ProviderType,omitempty"`
+	ProviderDetails  map[string]string `json:"ProviderDetails,omitempty"`
+	AttributeMapping map[string]string `json:"AttributeMapping,omitempty"`
+	IdpIdentifiers   []string          `json:"IdpIdentifiers,omitempty"`
+	LastModifiedDate *float64          `json:"LastModifiedDate,omitempty"`
+	CreationDate     *float64          `json:"CreationDate,omitempty"`
+}
+
+type CreateIdentityProviderResponse struct {
+	IdentityProvider *IdentityProviderType `json:"IdentityProvider,omitempty"`
+}
+
+type AssetType struct {
+	Category   *string `json:"Category,omitempty"`
+	ColorMode  *string `json:"ColorMode,omitempty"`
+	Extension  *string `json:"Extension,omitempty"`
+	Bytes      []byte  `json:"Bytes,omitempty"`
+	ResourceId *string `json:"ResourceId,omitempty"`
+}
+
+type CreateManagedLoginBrandingRequest struct {
+	UserPoolId               *string     `json:"UserPoolId,omitempty"`
+	ClientId                 *string     `json:"ClientId,omitempty"`
+	UseCognitoProvidedValues *bool       `json:"UseCognitoProvidedValues,omitempty"`
+	Settings                 *any        `json:"Settings,omitempty"`
+	Assets                   []AssetType `json:"Assets,omitempty"`
+}
+
+type ManagedLoginBrandingType struct {
+	ManagedLoginBrandingId   *string     `json:"ManagedLoginBrandingId,omitempty"`
+	UserPoolId               *string     `json:"UserPoolId,omitempty"`
+	UseCognitoProvidedValues *bool       `json:"UseCognitoProvidedValues,omitempty"`
+	Settings                 *any        `json:"Settings,omitempty"`
+	Assets                   []AssetType `json:"Assets,omitempty"`
+	CreationDate             *float64    `json:"CreationDate,omitempty"`
+	LastModifiedDate         *float64    `json:"LastModifiedDate,omitempty"`
+}
+
+type CreateManagedLoginBrandingResponse struct {
+	ManagedLoginBranding *ManagedLoginBrandingType `json:"ManagedLoginBranding,omitempty"`
+}
+
+type CustomDomainConfigType struct {
+	CertificateArn *string `json:"CertificateArn,omitempty"`
+	SecurityPolicy *string `json:"SecurityPolicy,omitempty"`
+}
+
+type CreateUserPoolDomainRequest struct {
+	Domain              *string                 `json:"Domain,omitempty"`
+	UserPoolId          *string                 `json:"UserPoolId,omitempty"`
+	ManagedLoginVersion *int64                  `json:"ManagedLoginVersion,omitempty"`
+	CustomDomainConfig  *CustomDomainConfigType `json:"CustomDomainConfig,omitempty"`
+}
+
+type CreateUserPoolDomainResponse struct {
+	ManagedLoginVersion *int64  `json:"ManagedLoginVersion,omitempty"`
+	CloudFrontDomain    *string `json:"CloudFrontDomain,omitempty"`
+}
+
+type DeleteIdentityProviderOutput struct{}
+
+type DeleteIdentityProviderRequest struct {
+	UserPoolId   *string `json:"UserPoolId,omitempty"`
+	ProviderName *string `json:"ProviderName,omitempty"`
+}
+
+type DeleteManagedLoginBrandingOutput struct{}
+
+type DeleteManagedLoginBrandingRequest struct {
+	ManagedLoginBrandingId *string `json:"ManagedLoginBrandingId,omitempty"`
+	UserPoolId             *string `json:"UserPoolId,omitempty"`
+}
+
+type DeleteUserPoolDomainRequest struct {
+	Domain     *string `json:"Domain,omitempty"`
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+}
+
+type DeleteUserPoolDomainResponse struct {
+}
+
+type DescribeIdentityProviderRequest struct {
+	UserPoolId   *string `json:"UserPoolId,omitempty"`
+	ProviderName *string `json:"ProviderName,omitempty"`
+}
+
+type DescribeIdentityProviderResponse struct {
+	IdentityProvider *IdentityProviderType `json:"IdentityProvider,omitempty"`
+}
+
+type DescribeManagedLoginBrandingRequest struct {
+	UserPoolId             *string `json:"UserPoolId,omitempty"`
+	ManagedLoginBrandingId *string `json:"ManagedLoginBrandingId,omitempty"`
+	ReturnMergedResources  *bool   `json:"ReturnMergedResources,omitempty"`
+}
+
+type DescribeManagedLoginBrandingResponse struct {
+	ManagedLoginBranding *ManagedLoginBrandingType `json:"ManagedLoginBranding,omitempty"`
+}
+
+type DescribeManagedLoginBrandingByClientRequest struct {
+	UserPoolId            *string `json:"UserPoolId,omitempty"`
+	ClientId              *string `json:"ClientId,omitempty"`
+	ReturnMergedResources *bool   `json:"ReturnMergedResources,omitempty"`
+}
+
+type DescribeManagedLoginBrandingByClientResponse struct {
+	ManagedLoginBranding *ManagedLoginBrandingType `json:"ManagedLoginBranding,omitempty"`
+}
+
+type DescribeUserPoolDomainRequest struct {
+	Domain *string `json:"Domain,omitempty"`
+}
+
+type DomainDescriptionType struct {
+	UserPoolId             *string                 `json:"UserPoolId,omitempty"`
+	AWSAccountId           *string                 `json:"AWSAccountId,omitempty"`
+	Domain                 *string                 `json:"Domain,omitempty"`
+	S3Bucket               *string                 `json:"S3Bucket,omitempty"`
+	CloudFrontDistribution *string                 `json:"CloudFrontDistribution,omitempty"`
+	Version                *string                 `json:"Version,omitempty"`
+	Status                 *string                 `json:"Status,omitempty"`
+	CustomDomainConfig     *CustomDomainConfigType `json:"CustomDomainConfig,omitempty"`
+	ManagedLoginVersion    *int64                  `json:"ManagedLoginVersion,omitempty"`
+}
+
+type DescribeUserPoolDomainResponse struct {
+	DomainDescription *DomainDescriptionType `json:"DomainDescription,omitempty"`
+}
+
+type GetIdentityProviderByIdentifierRequest struct {
+	UserPoolId    *string `json:"UserPoolId,omitempty"`
+	IdpIdentifier *string `json:"IdpIdentifier,omitempty"`
+}
+
+type GetIdentityProviderByIdentifierResponse struct {
+	IdentityProvider *IdentityProviderType `json:"IdentityProvider,omitempty"`
+}
+
+type GetUICustomizationRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	ClientId   *string `json:"ClientId,omitempty"`
+}
+
+type UICustomizationType struct {
+	UserPoolId       *string  `json:"UserPoolId,omitempty"`
+	ClientId         *string  `json:"ClientId,omitempty"`
+	ImageUrl         *string  `json:"ImageUrl,omitempty"`
+	CSS              *string  `json:"CSS,omitempty"`
+	CSSVersion       *string  `json:"CSSVersion,omitempty"`
+	LastModifiedDate *float64 `json:"LastModifiedDate,omitempty"`
+	CreationDate     *float64 `json:"CreationDate,omitempty"`
+}
+
+type GetUICustomizationResponse struct {
+	UICustomization *UICustomizationType `json:"UICustomization,omitempty"`
+}
+
+type ListIdentityProvidersRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type ProviderDescription struct {
+	ProviderName     *string  `json:"ProviderName,omitempty"`
+	ProviderType     *string  `json:"ProviderType,omitempty"`
+	LastModifiedDate *float64 `json:"LastModifiedDate,omitempty"`
+	CreationDate     *float64 `json:"CreationDate,omitempty"`
+}
+
+type ListIdentityProvidersResponse struct {
+	Providers []ProviderDescription `json:"Providers,omitempty"`
+	NextToken *string               `json:"NextToken,omitempty"`
+}
+
+type SetUICustomizationRequest struct {
+	UserPoolId *string `json:"UserPoolId,omitempty"`
+	ClientId   *string `json:"ClientId,omitempty"`
+	CSS        *string `json:"CSS,omitempty"`
+	ImageFile  []byte  `json:"ImageFile,omitempty"`
+}
+
+type SetUICustomizationResponse struct {
+	UICustomization *UICustomizationType `json:"UICustomization,omitempty"`
+}
+
+type UpdateIdentityProviderRequest struct {
+	UserPoolId       *string           `json:"UserPoolId,omitempty"`
+	ProviderName     *string           `json:"ProviderName,omitempty"`
+	ProviderDetails  map[string]string `json:"ProviderDetails,omitempty"`
+	AttributeMapping map[string]string `json:"AttributeMapping,omitempty"`
+	IdpIdentifiers   []string          `json:"IdpIdentifiers,omitempty"`
+}
+
+type UpdateIdentityProviderResponse struct {
+	IdentityProvider *IdentityProviderType `json:"IdentityProvider,omitempty"`
+}
+
+type UpdateManagedLoginBrandingRequest struct {
+	UserPoolId               *string     `json:"UserPoolId,omitempty"`
+	ManagedLoginBrandingId   *string     `json:"ManagedLoginBrandingId,omitempty"`
+	UseCognitoProvidedValues *bool       `json:"UseCognitoProvidedValues,omitempty"`
+	Settings                 *any        `json:"Settings,omitempty"`
+	Assets                   []AssetType `json:"Assets,omitempty"`
+}
+
+type UpdateManagedLoginBrandingResponse struct {
+	ManagedLoginBranding *ManagedLoginBrandingType `json:"ManagedLoginBranding,omitempty"`
+}
+
+type UpdateUserPoolDomainRequest struct {
+	Domain              *string                 `json:"Domain,omitempty"`
+	UserPoolId          *string                 `json:"UserPoolId,omitempty"`
+	ManagedLoginVersion *int64                  `json:"ManagedLoginVersion,omitempty"`
+	CustomDomainConfig  *CustomDomainConfigType `json:"CustomDomainConfig,omitempty"`
+}
+
+type UpdateUserPoolDomainResponse struct {
+	ManagedLoginVersion *int64  `json:"ManagedLoginVersion,omitempty"`
+	CloudFrontDomain    *string `json:"CloudFrontDomain,omitempty"`
+}
+
 type API interface {
 	CreateUserPool(context.Context, *CreateUserPoolRequest) (*CreateUserPoolResponse, error)
 	DescribeUserPool(context.Context, *DescribeUserPoolRequest) (*DescribeUserPoolResponse, error)
@@ -1131,10 +1369,27 @@ type API interface {
 	AddUserPoolClientSecret(context.Context, *AddUserPoolClientSecretRequest) (*AddUserPoolClientSecretResponse, error)
 	ListUserPoolClientSecrets(context.Context, *ListUserPoolClientSecretsRequest) (*ListUserPoolClientSecretsResponse, error)
 	DeleteUserPoolClientSecret(context.Context, *DeleteUserPoolClientSecretRequest) (*DeleteUserPoolClientSecretResponse, error)
+	CreateIdentityProvider(context.Context, *CreateIdentityProviderRequest) (*CreateIdentityProviderResponse, error)
+	CreateManagedLoginBranding(context.Context, *CreateManagedLoginBrandingRequest) (*CreateManagedLoginBrandingResponse, error)
+	CreateUserPoolDomain(context.Context, *CreateUserPoolDomainRequest) (*CreateUserPoolDomainResponse, error)
+	DeleteIdentityProvider(context.Context, *DeleteIdentityProviderRequest) (*DeleteIdentityProviderOutput, error)
+	DeleteManagedLoginBranding(context.Context, *DeleteManagedLoginBrandingRequest) (*DeleteManagedLoginBrandingOutput, error)
+	DeleteUserPoolDomain(context.Context, *DeleteUserPoolDomainRequest) (*DeleteUserPoolDomainResponse, error)
+	DescribeIdentityProvider(context.Context, *DescribeIdentityProviderRequest) (*DescribeIdentityProviderResponse, error)
+	DescribeManagedLoginBranding(context.Context, *DescribeManagedLoginBrandingRequest) (*DescribeManagedLoginBrandingResponse, error)
+	DescribeManagedLoginBrandingByClient(context.Context, *DescribeManagedLoginBrandingByClientRequest) (*DescribeManagedLoginBrandingByClientResponse, error)
+	DescribeUserPoolDomain(context.Context, *DescribeUserPoolDomainRequest) (*DescribeUserPoolDomainResponse, error)
+	GetIdentityProviderByIdentifier(context.Context, *GetIdentityProviderByIdentifierRequest) (*GetIdentityProviderByIdentifierResponse, error)
+	GetUICustomization(context.Context, *GetUICustomizationRequest) (*GetUICustomizationResponse, error)
+	ListIdentityProviders(context.Context, *ListIdentityProvidersRequest) (*ListIdentityProvidersResponse, error)
+	SetUICustomization(context.Context, *SetUICustomizationRequest) (*SetUICustomizationResponse, error)
+	UpdateIdentityProvider(context.Context, *UpdateIdentityProviderRequest) (*UpdateIdentityProviderResponse, error)
+	UpdateManagedLoginBranding(context.Context, *UpdateManagedLoginBrandingRequest) (*UpdateManagedLoginBrandingResponse, error)
+	UpdateUserPoolDomain(context.Context, *UpdateUserPoolDomainRequest) (*UpdateUserPoolDomainResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "cognitoidp", SigningName: "cognito-idp", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "cognito-idp", TargetPrefix: "AWSCognitoIdentityProviderService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "AliasExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeDeliveryFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EnableSoftwareTokenMFAException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExpiredCodeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FeatureUnavailableInTierException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "GroupExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEmailRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidLambdaResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOAuthFlowException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidPasswordException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleTrustRelationshipException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidUserPoolConfigurationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MFAMethodNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotAuthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "OperationNotEnabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordHistoryPolicyViolationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordResetRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PreconditionNotMetException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RefreshTokenReuseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ScopeDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SoftwareTokenMFANotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TierChangeNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "TooManyFailedAttemptsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "UnexpectedLambdaException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedTokenTypeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedUserStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserImportInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserLambdaValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotConfirmedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UserPoolTaggingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UsernameExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "cognitoidp", SigningName: "cognito-idp", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "cognito-idp", TargetPrefix: "AWSCognitoIdentityProviderService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "AliasExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeDeliveryFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CodeMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DuplicateProviderException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EnableSoftwareTokenMFAException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExpiredCodeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FeatureUnavailableInTierException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "GroupExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEmailRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidLambdaResponseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOAuthFlowException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidPasswordException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleAccessPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSmsRoleTrustRelationshipException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidUserPoolConfigurationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MFAMethodNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ManagedLoginBrandingExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotAuthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "OperationNotEnabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordHistoryPolicyViolationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PasswordResetRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PreconditionNotMetException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RefreshTokenReuseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ScopeDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SoftwareTokenMFANotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TierChangeNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "TooManyFailedAttemptsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}, "UnexpectedLambdaException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedIdentityProviderException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedTokenTypeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnsupportedUserStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserImportInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserLambdaValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotConfirmedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UserPoolTaggingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UsernameExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateUserPool": {Name: "CreateUserPool", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:CreateUserPool", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.CreateUserPool", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateUserPoolRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateUserPool(ctx, input.(*CreateUserPoolRequest))
 		}},
@@ -1335,6 +1590,57 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteUserPoolClientSecret": {Name: "DeleteUserPoolClientSecret", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:DeleteUserPoolClientSecret", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DeleteUserPoolClientSecret", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteUserPoolClientSecretRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteUserPoolClientSecret(ctx, input.(*DeleteUserPoolClientSecretRequest))
+		}},
+		"CreateIdentityProvider": {Name: "CreateIdentityProvider", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:CreateIdentityProvider", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.CreateIdentityProvider", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateIdentityProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateIdentityProvider(ctx, input.(*CreateIdentityProviderRequest))
+		}},
+		"CreateManagedLoginBranding": {Name: "CreateManagedLoginBranding", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:CreateManagedLoginBranding", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.CreateManagedLoginBranding", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateManagedLoginBrandingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateManagedLoginBranding(ctx, input.(*CreateManagedLoginBrandingRequest))
+		}},
+		"CreateUserPoolDomain": {Name: "CreateUserPoolDomain", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:CreateUserPoolDomain", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.CreateUserPoolDomain", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateUserPoolDomainRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateUserPoolDomain(ctx, input.(*CreateUserPoolDomainRequest))
+		}},
+		"DeleteIdentityProvider": {Name: "DeleteIdentityProvider", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:DeleteIdentityProvider", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DeleteIdentityProvider", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteIdentityProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteIdentityProvider(ctx, input.(*DeleteIdentityProviderRequest))
+		}},
+		"DeleteManagedLoginBranding": {Name: "DeleteManagedLoginBranding", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:DeleteManagedLoginBranding", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DeleteManagedLoginBranding", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteManagedLoginBrandingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteManagedLoginBranding(ctx, input.(*DeleteManagedLoginBrandingRequest))
+		}},
+		"DeleteUserPoolDomain": {Name: "DeleteUserPoolDomain", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:DeleteUserPoolDomain", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DeleteUserPoolDomain", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteUserPoolDomainRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteUserPoolDomain(ctx, input.(*DeleteUserPoolDomainRequest))
+		}},
+		"DescribeIdentityProvider": {Name: "DescribeIdentityProvider", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:DescribeIdentityProvider", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DescribeIdentityProvider", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeIdentityProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeIdentityProvider(ctx, input.(*DescribeIdentityProviderRequest))
+		}},
+		"DescribeManagedLoginBranding": {Name: "DescribeManagedLoginBranding", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:DescribeManagedLoginBranding", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DescribeManagedLoginBranding", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeManagedLoginBrandingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeManagedLoginBranding(ctx, input.(*DescribeManagedLoginBrandingRequest))
+		}},
+		"DescribeManagedLoginBrandingByClient": {Name: "DescribeManagedLoginBrandingByClient", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:DescribeManagedLoginBrandingByClient", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DescribeManagedLoginBrandingByClient", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeManagedLoginBrandingByClientRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeManagedLoginBrandingByClient(ctx, input.(*DescribeManagedLoginBrandingByClientRequest))
+		}},
+		"DescribeUserPoolDomain": {Name: "DescribeUserPoolDomain", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:DescribeUserPoolDomain", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.DescribeUserPoolDomain", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeUserPoolDomainRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeUserPoolDomain(ctx, input.(*DescribeUserPoolDomainRequest))
+		}},
+		"GetIdentityProviderByIdentifier": {Name: "GetIdentityProviderByIdentifier", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:GetIdentityProviderByIdentifier", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.GetIdentityProviderByIdentifier", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetIdentityProviderByIdentifierRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetIdentityProviderByIdentifier(ctx, input.(*GetIdentityProviderByIdentifierRequest))
+		}},
+		"GetUICustomization": {Name: "GetUICustomization", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:GetUICustomization", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.GetUICustomization", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetUICustomizationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetUICustomization(ctx, input.(*GetUICustomizationRequest))
+		}},
+		"ListIdentityProviders": {Name: "ListIdentityProviders", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:ListIdentityProviders", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.ListIdentityProviders", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListIdentityProvidersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListIdentityProviders(ctx, input.(*ListIdentityProvidersRequest))
+		}},
+		"SetUICustomization": {Name: "SetUICustomization", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cognito-idp:SetUICustomization", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.SetUICustomization", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &SetUICustomizationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetUICustomization(ctx, input.(*SetUICustomizationRequest))
+		}},
+		"UpdateIdentityProvider": {Name: "UpdateIdentityProvider", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:UpdateIdentityProvider", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.UpdateIdentityProvider", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateIdentityProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateIdentityProvider(ctx, input.(*UpdateIdentityProviderRequest))
+		}},
+		"UpdateManagedLoginBranding": {Name: "UpdateManagedLoginBranding", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:UpdateManagedLoginBranding", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.UpdateManagedLoginBranding", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateManagedLoginBrandingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateManagedLoginBranding(ctx, input.(*UpdateManagedLoginBrandingRequest))
+		}},
+		"UpdateUserPoolDomain": {Name: "UpdateUserPoolDomain", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cognito-idp:UpdateUserPoolDomain", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSCognitoIdentityProviderService.UpdateUserPoolDomain", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateUserPoolDomainRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateUserPoolDomain(ctx, input.(*UpdateUserPoolDomainRequest))
 		}},
 	}}
 }

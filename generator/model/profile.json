@@ -3371,7 +3371,24 @@
       "GetTokensFromRefreshToken",
       "AddUserPoolClientSecret",
       "ListUserPoolClientSecrets",
-      "DeleteUserPoolClientSecret"
+      "DeleteUserPoolClientSecret",
+      "CreateIdentityProvider",
+      "CreateManagedLoginBranding",
+      "CreateUserPoolDomain",
+      "DeleteIdentityProvider",
+      "DeleteManagedLoginBranding",
+      "DeleteUserPoolDomain",
+      "DescribeIdentityProvider",
+      "DescribeManagedLoginBranding",
+      "DescribeManagedLoginBrandingByClient",
+      "DescribeUserPoolDomain",
+      "GetIdentityProviderByIdentifier",
+      "GetUICustomization",
+      "ListIdentityProviders",
+      "SetUICustomization",
+      "UpdateIdentityProvider",
+      "UpdateManagedLoginBranding",
+      "UpdateUserPoolDomain"
     ],
     "shapes": {
       "CreateUserPoolRequest": [
@@ -3432,7 +3449,9 @@
         "UserPoolAddOns",
         "AccountRecoverySetting",
         "UserPoolTier",
-        "LambdaConfig"
+        "LambdaConfig",
+        "Domain",
+        "CustomDomain"
       ],
       "UserPoolPolicyType": [
         "PasswordPolicy"
@@ -3985,7 +4004,8 @@
         "PreTokenGenerationConfig",
         "DefineAuthChallenge",
         "CreateAuthChallenge",
-        "VerifyAuthChallengeResponse"
+        "VerifyAuthChallengeResponse",
+        "PreAuthentication"
       ],
       "PreTokenGenerationVersionConfigType": [
         "LambdaVersion",
@@ -4132,6 +4152,197 @@
       "SmsMfaConfigType": [
         "SmsAuthenticationMessage",
         "SmsConfiguration"
+      ],
+      "CreateIdentityProviderRequest": [
+        "UserPoolId",
+        "ProviderName",
+        "ProviderType",
+        "ProviderDetails",
+        "AttributeMapping",
+        "IdpIdentifiers"
+      ],
+      "CreateIdentityProviderResponse": [
+        "IdentityProvider"
+      ],
+      "IdentityProviderType": [
+        "UserPoolId",
+        "ProviderName",
+        "ProviderType",
+        "ProviderDetails",
+        "AttributeMapping",
+        "IdpIdentifiers",
+        "LastModifiedDate",
+        "CreationDate"
+      ],
+      "CreateManagedLoginBrandingRequest": [
+        "UserPoolId",
+        "ClientId",
+        "UseCognitoProvidedValues",
+        "Settings",
+        "Assets"
+      ],
+      "AssetType": [
+        "Category",
+        "ColorMode",
+        "Extension",
+        "Bytes",
+        "ResourceId"
+      ],
+      "CreateManagedLoginBrandingResponse": [
+        "ManagedLoginBranding"
+      ],
+      "ManagedLoginBrandingType": [
+        "ManagedLoginBrandingId",
+        "UserPoolId",
+        "UseCognitoProvidedValues",
+        "Settings",
+        "Assets",
+        "CreationDate",
+        "LastModifiedDate"
+      ],
+      "CreateUserPoolDomainRequest": [
+        "Domain",
+        "UserPoolId",
+        "ManagedLoginVersion",
+        "CustomDomainConfig"
+      ],
+      "CustomDomainConfigType": [
+        "CertificateArn",
+        "SecurityPolicy"
+      ],
+      "CreateUserPoolDomainResponse": [
+        "ManagedLoginVersion",
+        "CloudFrontDomain"
+      ],
+      "DeleteIdentityProviderRequest": [
+        "UserPoolId",
+        "ProviderName"
+      ],
+      "DeleteManagedLoginBrandingRequest": [
+        "ManagedLoginBrandingId",
+        "UserPoolId"
+      ],
+      "DeleteUserPoolDomainRequest": [
+        "Domain",
+        "UserPoolId"
+      ],
+      "DeleteUserPoolDomainResponse": [],
+      "DescribeIdentityProviderRequest": [
+        "UserPoolId",
+        "ProviderName"
+      ],
+      "DescribeIdentityProviderResponse": [
+        "IdentityProvider"
+      ],
+      "DescribeManagedLoginBrandingRequest": [
+        "UserPoolId",
+        "ManagedLoginBrandingId",
+        "ReturnMergedResources"
+      ],
+      "DescribeManagedLoginBrandingResponse": [
+        "ManagedLoginBranding"
+      ],
+      "DescribeManagedLoginBrandingByClientRequest": [
+        "UserPoolId",
+        "ClientId",
+        "ReturnMergedResources"
+      ],
+      "DescribeManagedLoginBrandingByClientResponse": [
+        "ManagedLoginBranding"
+      ],
+      "DescribeUserPoolDomainRequest": [
+        "Domain"
+      ],
+      "DescribeUserPoolDomainResponse": [
+        "DomainDescription"
+      ],
+      "DomainDescriptionType": [
+        "UserPoolId",
+        "AWSAccountId",
+        "Domain",
+        "S3Bucket",
+        "CloudFrontDistribution",
+        "Version",
+        "Status",
+        "CustomDomainConfig",
+        "ManagedLoginVersion"
+      ],
+      "GetIdentityProviderByIdentifierRequest": [
+        "UserPoolId",
+        "IdpIdentifier"
+      ],
+      "GetIdentityProviderByIdentifierResponse": [
+        "IdentityProvider"
+      ],
+      "GetUICustomizationRequest": [
+        "UserPoolId",
+        "ClientId"
+      ],
+      "GetUICustomizationResponse": [
+        "UICustomization"
+      ],
+      "UICustomizationType": [
+        "UserPoolId",
+        "ClientId",
+        "ImageUrl",
+        "CSS",
+        "CSSVersion",
+        "LastModifiedDate",
+        "CreationDate"
+      ],
+      "ListIdentityProvidersRequest": [
+        "UserPoolId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListIdentityProvidersResponse": [
+        "Providers",
+        "NextToken"
+      ],
+      "ProviderDescription": [
+        "ProviderName",
+        "ProviderType",
+        "LastModifiedDate",
+        "CreationDate"
+      ],
+      "SetUICustomizationRequest": [
+        "UserPoolId",
+        "ClientId",
+        "CSS",
+        "ImageFile"
+      ],
+      "SetUICustomizationResponse": [
+        "UICustomization"
+      ],
+      "UpdateIdentityProviderRequest": [
+        "UserPoolId",
+        "ProviderName",
+        "ProviderDetails",
+        "AttributeMapping",
+        "IdpIdentifiers"
+      ],
+      "UpdateIdentityProviderResponse": [
+        "IdentityProvider"
+      ],
+      "UpdateManagedLoginBrandingRequest": [
+        "UserPoolId",
+        "ManagedLoginBrandingId",
+        "UseCognitoProvidedValues",
+        "Settings",
+        "Assets"
+      ],
+      "UpdateManagedLoginBrandingResponse": [
+        "ManagedLoginBranding"
+      ],
+      "UpdateUserPoolDomainRequest": [
+        "Domain",
+        "UserPoolId",
+        "ManagedLoginVersion",
+        "CustomDomainConfig"
+      ],
+      "UpdateUserPoolDomainResponse": [
+        "ManagedLoginVersion",
+        "CloudFrontDomain"
       ]
     }
   },

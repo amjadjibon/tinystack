@@ -74,7 +74,23 @@ func notFound(format string, args ...any) error {
 }
 
 // poolKinds are the record kinds a pool owns, each under <kind>/<pool ID>/.
-var poolKinds = []string{"client", "user", "alias", "group", "refresh", "session", "clientsecret", kindResourceServer}
+var poolKinds = []string{
+	"client",
+	"user",
+	"alias",
+	"group",
+	"refresh",
+	"session",
+	"clientsecret",
+	"provider",
+	"ui",
+	"branding",
+	"hosted",
+	"oauthcode",
+	"browsersession",
+	"idptx",
+	kindResourceServer,
+}
 
 func poolKey(scope request.Scope, id string) string { return scope.Prefix(service, "pool") + id }
 

@@ -220,6 +220,7 @@ func newUser(p *pool, name *string, attrs []api.AttributeType, now time.Time) (*
 		Username: *name, Created: now, Modified: now, Attributes: map[string]string{attrSub: sub},
 		Status: statusUnconfirmed,
 	}
+
 	if _, err := setAttributes(p, u, attrs, true); err != nil {
 		return nil, err
 	}

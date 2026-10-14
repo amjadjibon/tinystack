@@ -79,6 +79,7 @@ func checkPolicy(p *pool, password *string) error {
 			common.Value(pp.RequireSymbols),
 		},
 	}
+
 	for _, class := range classes {
 		if class.required && !strings.ContainsFunc(pw, class.test) {
 			return invalidPassword(class.reason)

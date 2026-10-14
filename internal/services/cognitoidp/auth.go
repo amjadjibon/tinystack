@@ -263,9 +263,19 @@ func (s *Service) finishSignIn(
 	ctx context.Context, tx storage.WriteTx, scope request.Scope, p *pool, c *client, u *user,
 ) (*outcome, error) {
 	now := s.now().UTC()
-	switch {
-	case u.Disabled:
+	if u.Disabled {
 		return nil, notAuthorized("User is disabled.")
+	}
+
+	if function := common.Value(p.triggers().PreAuthentication); function != "" {
+		call := newCall(scope, p, c.ID, function, "PreAuthentication", "PreAuthentication_Authentication", u, nil)
+		var response map[string]any
+		if err := customInvoke(ctx, call, &response); err != nil {
+			return nil, err
+		}
+	}
+
+	switch {
 	case u.Status == statusUnconfirmed:
 		return nil, awserror.New("UserNotConfirmedException", "User is not confirmed.")
 	case u.Status == statusReset:
@@ -379,8 +389,16 @@ func (s *Service) refresh(
 		return nil, err
 	}
 
-	sess := session{auth: r.AuthTime, origin: r.Origin, source: sourceRefresh}
-	g := tokens(ctx, scope, key, p, c, u, sess, s.now().UTC())
+	sess := session{
+		auth:   r.AuthTime,
+		origin: r.Origin,
+		source: sourceRefresh,
+		oauth:  r.OAuth,
+		scopes: r.Scopes,
+		nonce:  r.Nonce,
+	}
+
+	g := tokens(ctx, scope, key, p, c, u, &sess, s.now().UTC())
 	return &outcome{grant: g, ChallengeParameters: map[string]string{}}, nil
 }
 

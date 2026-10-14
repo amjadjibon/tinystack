@@ -438,7 +438,7 @@ func build(
 		logsapi.Descriptor(logGroups),
 		kmsapi.Descriptor(keys),
 		ec2api.Descriptor(network),
-		cognitoidpapi.Descriptor(identities),
+		cognitoidp.ProtectProviderCredentials(cognitoidpapi.Descriptor(identities)),
 		ecrapi.Descriptor(registry),
 		ecsapi.Descriptor(containers),
 		eksapi.Descriptor(kube),
@@ -581,6 +581,7 @@ func build(
 
 	handler.UseDocuments(identities.Documents)
 	handler.UseTokens(identities.Token)
+	handler.UseHosted(identities)
 	handler.UseRegistry(registry)
 	handler.UseCORS(buckets.CORS)
 	handler.UseAPIs(httpAPIs, restAPIs)

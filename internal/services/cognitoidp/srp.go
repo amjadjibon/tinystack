@@ -168,6 +168,7 @@ func (s *Service) beginSRP(
 		},
 		A: challenge.A, B: challenge.B, Private: challenge.b,
 	}
+
 	if err := writeAuthSession(tx, scope, p, b64.EncodeToString(block), sess); err != nil {
 		return nil, err
 	}

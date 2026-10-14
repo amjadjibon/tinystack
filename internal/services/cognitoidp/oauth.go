@@ -16,7 +16,37 @@ import (
 )
 
 // invalidClient is the OAuth error for credentials that do not match a client.
-const invalidClient = "invalid_client"
+const (
+	responseToken  = "token"
+	oauthTokenType = "token_type"
+	providerJWKS   = "jwks_uri"
+
+	invalidClient      = "invalid_client"
+	allClients         = "ALL"
+	scopeProfile       = "profile"
+	flowCode           = "code"
+	flowImplicit       = "implicit"
+	promptNone         = "none"
+	providerOIDC       = "OIDC"
+	providerCognito    = "COGNITO"
+	invalidRedirectURI = "invalid_redirect_uri"
+	unauthorizedClient = "unauthorized_client"
+	invalidScope       = "invalid_scope"
+	invalidRequest     = "invalid_request"
+	invalidGrant       = "invalid_grant"
+	pkcePlain          = "plain"
+	pkceS256           = "S256"
+	claimClientID      = "client_id"
+	oauthAccessToken   = "access_token"
+	bearerTokenType    = "Bearer"
+	grantRefreshToken  = "refresh_token"
+	oauthExpiresIn     = "expires_in"
+	claimScope         = "scope"
+	attrName           = "name"
+	attrGivenName      = "given_name"
+	attrFamilyName     = "family_name"
+	attrBirthdate      = "birthdate"
+)
 
 // Token serves a pool's OAuth 2.0 token endpoint, POST
 // <issuer>/oauth2/token, for the client credentials grant: an app client
@@ -28,14 +58,25 @@ const invalidClient = "invalid_client"
 func (s *Service) Token(
 	ctx context.Context, poolID, endpoint, authorization string, form url.Values,
 ) (status int, body []byte, err error) {
-	clientID, secret := form.Get("client_id"), form.Get("client_secret")
+	clientID, secret := form.Get(claimClientID), form.Get("client_secret")
 	if user, password, ok := basicAuth(authorization); ok {
 		clientID, secret = user, password
 	}
 
+	if authorization != "" {
+		if _, _, ok := basicAuth(authorization); !ok {
+			status, body = oauthError(http.StatusUnauthorized, invalidClient)
+			return status, body, nil
+		}
+	}
+
+	if form.Get("grant_type") == "authorization_code" || form.Get("grant_type") == grantRefreshToken {
+		return s.userToken(ctx, poolID, endpoint, clientID, secret, form)
+	}
+
 	switch {
 	case form.Get("grant_type") == "", clientID == "":
-		status, body = oauthError(http.StatusBadRequest, "invalid_request")
+		status, body = oauthError(http.StatusBadRequest, invalidRequest)
 		return status, body, nil
 	case form.Get("grant_type") != flowClientCredentials:
 		status, body = oauthError(http.StatusBadRequest, "unsupported_grant_type")
@@ -67,15 +108,15 @@ func (s *Service) Token(
 			return nil
 		case !common.Value(c.Settings.AllowedOAuthFlowsUserPoolClient) ||
 			!slices.Contains(c.Settings.AllowedOAuthFlows, flowClientCredentials):
-			failure = "unauthorized_client"
+			failure = unauthorizedClient
 			return nil
 		}
 
 		scopes := c.Settings.AllowedOAuthScopes
-		if requested := strings.Fields(form.Get("scope")); len(requested) > 0 {
+		if requested := strings.Fields(form.Get(claimScope)); len(requested) > 0 {
 			for _, sc := range requested {
 				if !slices.Contains(scopes, sc) {
-					failure = "invalid_scope"
+					failure = invalidScope
 					return nil
 				}
 			}
@@ -98,7 +139,7 @@ func (s *Service) Token(
 		validity := c.Settings.validity(tokenAccess)
 		expiresIn = int64(validity / time.Second)
 		token, keyErr = sign(key, map[string]any{
-			attrSub: clientID, "client_id": clientID, claimTokenUse: "access", "scope": strings.Join(scopes, " "),
+			attrSub: clientID, claimClientID: clientID, claimTokenUse: "access", claimScope: strings.Join(scopes, " "),
 			claimAuthTime: now.Unix(), claimIssuedAt: now.Unix(), claimExpires: now.Add(validity).Unix(), "version": 2,
 			claimJTI: newSub(), claimIssuer: strings.TrimSuffix(endpoint, "/") + "/" + poolID,
 		})
@@ -116,7 +157,9 @@ func (s *Service) Token(
 		return status, body, nil
 	}
 
-	body, err = json.Marshal(map[string]any{"access_token": token, "expires_in": expiresIn, "token_type": "Bearer"})
+	body, err = json.Marshal(
+		map[string]any{oauthAccessToken: token, oauthExpiresIn: expiresIn, oauthTokenType: bearerTokenType},
+	)
 	return http.StatusOK, body, err
 }
 

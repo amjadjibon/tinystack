@@ -52,7 +52,7 @@ def main():
             return result.stdout
 
         with open(work / "server.log", "w+") as log:
-            process = subprocess.Popen([str(binary), "start", "--port", str(port), "--config", str(config)], stdout=log, stderr=log)
+            process = subprocess.Popen([str(binary), "start", "--port", str(port), "--console-port", "0", "--config", str(config)], stdout=log, stderr=log)
             try:
                 for _ in range(100):
                     if process.poll() is not None:

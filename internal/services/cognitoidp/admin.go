@@ -406,7 +406,7 @@ var userFilter = regexp.MustCompile(`^\s*([\w:]+)\s*(=|\^=)\s*"(.*)"\s*$`)
 
 // filterable are the attributes ListUsers filters by.
 var filterable = []string{
-	"username", attrEmail, attrPhone, "name", "given_name", "family_name", attrPreferred, attrUserStatus,
+	"username", attrEmail, attrPhone, attrName, attrGivenName, attrFamilyName, attrPreferred, attrUserStatus,
 	"status", attrSub,
 }
 

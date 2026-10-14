@@ -20,9 +20,10 @@ import (
 // its transaction again with the trigger's response.
 
 const (
-	preTokenV1 = "V1_0"
-	preTokenV2 = "V2_0"
-	preTokenV3 = "V3_0"
+	triggerScopes = "scopes"
+	preTokenV1    = "V1_0"
+	preTokenV2    = "V2_0"
+	preTokenV3    = "V3_0"
 	// noClient is the client ID in the events of admin operations.
 	noClient = "CLIENT_ID_NOT_APPLICABLE"
 )
@@ -39,9 +40,10 @@ func checkTriggers(l *api.LambdaConfigType) error {
 	}
 
 	arns := []*string{
-		l.PreSignUp, l.PostConfirmation, l.PostAuthentication, l.PreTokenGeneration,
+		l.PreSignUp, l.PreAuthentication, l.PostConfirmation, l.PostAuthentication, l.PreTokenGeneration,
 		l.DefineAuthChallenge, l.CreateAuthChallenge, l.VerifyAuthChallengeResponse,
 	}
+
 	if cfg := l.PreTokenGenerationConfig; cfg != nil {
 		arns = append(arns, cfg.LambdaArn)
 	}
@@ -162,6 +164,7 @@ func (s *Service) invoke(ctx context.Context, c *call, response any) error {
 		var failure struct {
 			ErrorMessage string `json:"errorMessage"`
 		}
+
 		_ = json.Unmarshal(out.Payload, &failure)
 		return awserror.New("UserLambdaValidationException", c.name+" failed with error "+failure.ErrorMessage+".")
 	}
@@ -169,6 +172,7 @@ func (s *Service) invoke(ctx context.Context, c *call, response any) error {
 	var returned struct {
 		Response json.RawMessage `json:"response"`
 	}
+
 	if err = json.Unmarshal(out.Payload, &returned); err != nil {
 		return awserror.New("InvalidLambdaResponseException", "Unrecognizable lambda output")
 	}
@@ -228,7 +232,7 @@ var reserved = []string{
 	"at_hash",
 	claimAuthTime,
 	"azp",
-	"client_id",
+	claimClientID,
 	"cognito:groups",
 	"cognito:preferred_role",
 	"cognito:roles",
@@ -242,7 +246,7 @@ var reserved = []string{
 	"nbf",
 	"nonce",
 	"origin_jti",
-	"scope",
+	claimScope,
 	attrSub,
 	claimTokenUse,
 	claimUsername,
@@ -261,9 +265,10 @@ func preTokenCall(scope request.Scope, p *pool, c *client, u *user, g *grant, so
 	pc.event.Request["groupConfiguration"] = map[string]any{
 		"groupsToOverride": append([]string{}, u.Groups...), "iamRolesToOverride": []string{}, "preferredRole": nil,
 	}
+
 	if common.Value(cfg.LambdaVersion) != preTokenV1 {
 		pc.event.Version = "2"
-		pc.event.Request["scopes"] = strings.Fields(g.access["scope"].(string))
+		pc.event.Request[triggerScopes] = strings.Fields(g.access[claimScope].(string))
 	}
 
 	return pc
@@ -281,10 +286,10 @@ func (r *preToken) apply(g *grant) {
 		changeClaims(g.id, d.IDTokenGeneration)
 		changeClaims(g.access, d.AccessTokenGeneration)
 		if a := d.AccessTokenGeneration; a != nil {
-			scopes := slices.DeleteFunc(strings.Fields(g.access["scope"].(string)), func(s string) bool {
+			scopes := slices.DeleteFunc(strings.Fields(g.access[claimScope].(string)), func(s string) bool {
 				return slices.Contains(a.ScopesToSuppress, s) || slices.Contains(a.ScopesToAdd, s)
 			})
-			g.access["scope"] = strings.Join(append(scopes, a.ScopesToAdd...), " ")
+			g.access[claimScope] = strings.Join(append(scopes, a.ScopesToAdd...), " ")
 		}
 
 		groups = d.GroupOverrideDetails

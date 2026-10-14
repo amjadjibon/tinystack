@@ -104,7 +104,7 @@ def service_page(key, info, profile, manifest):
 
 See the [implemented feature catalogue](catalogue.md#{anchor(info['title'])}) for this service's capabilities.
 
-## Limitations and future work
+{(info["guide"] + chr(10) + chr(10)) if info.get("guide") else ""}## Limitations and future work
 
 {bullets(info['gaps'])}
 

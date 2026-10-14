@@ -39,10 +39,12 @@ const (
 // UpdateUserPool both set; the other fields are fixed at creation, or changed
 // by their own operations.
 type pool struct {
-	Created  time.Time
-	Modified time.Time
-	Tags     map[string]string `json:",omitempty"`
-	Settings settings
+	Domain       *string `json:",omitempty"`
+	CustomDomain *string `json:",omitempty"`
+	Created      time.Time
+	Modified     time.Time
+	Tags         map[string]string `json:",omitempty"`
+	Settings     settings
 	// CaseSensitive is the UsernameConfiguration, if one was given.
 	CaseSensitive      *bool `json:",omitempty"`
 	ID                 string
@@ -83,19 +85,19 @@ type settings struct {
 // standard are the attributes every pool has, with their types.
 var standard = []struct{ name, kind string }{
 	{attrSub, typeString},
-	{"name", typeString},
-	{"given_name", typeString},
-	{"family_name", typeString},
+	{attrName, typeString},
+	{attrGivenName, typeString},
+	{attrFamilyName, typeString},
 	{"middle_name", typeString},
 	{"nickname", typeString},
 	{attrPreferred, typeString},
-	{"profile", typeString},
+	{scopeProfile, typeString},
 	{"picture", typeString},
 	{"website", typeString},
 	{attrEmail, typeString},
 	{"email_verified", typeBoolean},
 	{"gender", typeString},
-	{"birthdate", typeString},
+	{attrBirthdate, typeString},
 	{"zoneinfo", typeString},
 	{"locale", typeString},
 	{attrPhone, typeString},
@@ -119,7 +121,7 @@ func standardSchema() []api.SchemaAttributeType {
 				MinLength: new("1"),
 				MaxLength: new("2048"),
 			}
-		case attr.name == "birthdate":
+		case attr.name == attrBirthdate:
 			a.StringAttributeConstraints = &api.StringAttributeConstraintsType{
 				MinLength: new("10"),
 				MaxLength: new("10"),
@@ -494,6 +496,8 @@ func (p *pool) output(scope request.Scope, users int) (*api.UserPoolType, error)
 		return nil, err
 	}
 
+	out.Domain, out.CustomDomain = p.Domain, p.CustomDomain
+
 	out.Id, out.Name, out.Arn = new(p.ID), new(p.Name), new(poolARN(scope, p.ID))
 	out.CreationDate, out.LastModifiedDate = common.SecondsMilli(p.Created), common.SecondsMilli(p.Modified)
 	out.SchemaAttributes, out.AliasAttributes, out.UsernameAttributes = p.Schema, p.AliasAttributes, p.UsernameAttributes
@@ -713,6 +717,13 @@ func (s *Service) DeleteUserPool(
 
 		for _, id := range ids(tx, scope.Prefix(service, "client")+p.ID+"/") {
 			tx.Delete(clientIndexKey(id))
+		}
+
+		if d, ok, domainErr := storage.Read[domain](tx, domainKey(scope, p.ID)); domainErr != nil {
+			return domainErr
+		} else if ok {
+			tx.Delete(domainIndexKey(d.host()))
+			tx.Delete(domainKey(scope, p.ID))
 		}
 
 		for _, kind := range poolKinds {

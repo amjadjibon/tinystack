@@ -32,6 +32,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/recent"
+	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 )
 
 const (
@@ -54,6 +55,7 @@ type Server struct {
 	console     map[string]http.Handler
 	credentials CredentialLookup
 	policies    PolicyLookup
+	hosted      *cognitoidp.Service
 	documents   Documents
 	tokens      Tokens
 	registry    Registry
@@ -259,7 +261,7 @@ func (s *Server) serveToken(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 
-	status, body, err := s.tokens(r.Context(), issuer, "http://"+r.Host, r.Header.Get("Authorization"), r.PostForm)
+	status, body, err := s.tokens(r.Context(), issuer, requestEndpoint(r), r.Header.Get("Authorization"), r.PostForm)
 	if err != nil {
 		s.logger.Error("serve token", "issuer", issuer, "error", err)
 	}
@@ -280,7 +282,7 @@ func (s *Server) serveDocument(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	doc, found, err := s.documents(r.Context(), issuer, name, "http://"+r.Host)
+	doc, found, err := s.documents(r.Context(), issuer, name, requestEndpoint(r))
 	switch {
 	case err != nil:
 		s.logger.Error("serve document", "issuer", issuer, "name", name, "error", err)
@@ -863,7 +865,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.serveDocument(w, r) || s.serveToken(w, r) || s.serveRegistry(w, r) || s.serveMQTT(w, r) || s.serveAPI(w, r) ||
+	if s.serveHosted(w, r) || s.serveDocument(w, r) || s.serveToken(w, r) || s.serveRegistry(w, r) ||
+		s.serveMQTT(w, r) ||
+		s.serveAPI(w, r) ||
 		s.servePreflight(w, r) {
 		return
 	}

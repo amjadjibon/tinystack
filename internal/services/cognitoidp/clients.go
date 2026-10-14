@@ -2,8 +2,8 @@ package cognitoidp
 
 import (
 	"context"
+	"net/url"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -89,7 +89,7 @@ var (
 
 	legacyFlows  = []string{legacyAdminPassword, "CUSTOM_AUTH_FLOW_ONLY", legacyUserPassword}
 	allowFlows   = []string{flowAdminPassword, flowCustom, flowUserPassword, flowSRP, flowRefresh, "ALLOW_USER_AUTH"}
-	oauthScopes  = []string{"phone", attrEmail, "openid", "profile", adminScope}
+	oauthScopes  = []string{"phone", attrEmail, "openid", scopeProfile, adminScope}
 	defaultFlows = []string{flowRefresh, flowSRP, flowCustom}
 )
 
@@ -161,12 +161,6 @@ func checkClient(c *clientSettings, p *pool, custom []string, secret bool) error
 
 	if legacy && allow {
 		return invalidParameter("ExplicitAuthFlows can't have both ALLOW_ and legacy values.")
-	}
-
-	for _, provider := range c.SupportedIdentityProviders {
-		if provider != "COGNITO" {
-			return invalidParameter("The provider %s does not exist for User Pool %s", provider, p.ID)
-		}
 	}
 
 	for _, attrs := range [][]string{c.ReadAttributes, c.WriteAttributes} {
@@ -261,7 +255,7 @@ func checkValidity(c *clientSettings) error {
 
 func checkOAuth(c *clientSettings, custom []string, secret bool) error {
 	for _, flow := range c.AllowedOAuthFlows {
-		if flow != "code" && flow != "implicit" && flow != flowClientCredentials {
+		if flow != flowCode && flow != flowImplicit && flow != flowClientCredentials {
 			return invalidParameter("Invalid OAuth flow %s.", flow)
 		}
 	}
@@ -301,7 +295,9 @@ func checkOAuth(c *clientSettings, custom []string, secret bool) error {
 	}
 
 	for _, u := range append(slices.Clone(c.CallbackURLs), c.LogoutURLs...) {
-		if !strings.Contains(u, ":") {
+		parsed, err := url.Parse(u)
+		if err != nil || len(u) > 1024 || !parsed.IsAbs() || parsed.Fragment != "" || parsed.User != nil ||
+			(parsed.Scheme == "http" && parsed.Hostname() != "localhost") {
 			return invalidParameter("Invalid URL %s.", u)
 		}
 	}
@@ -364,6 +360,10 @@ func (s *Service) CreateUserPoolClient(
 		custom, scopesErr := customScopes(tx, scope, p.ID)
 		if scopesErr != nil {
 			return scopesErr
+		}
+
+		if providerErr := checkClientProviders(tx, scope, p, &st); providerErr != nil {
+			return providerErr
 		}
 
 		if settingsErr := checkClient(&st, p, custom, common.Value(in.GenerateSecret)); settingsErr != nil {
@@ -494,6 +494,10 @@ func (s *Service) UpdateUserPoolClient(
 		custom, scopesErr := customScopes(tx, scope, p.ID)
 		if scopesErr != nil {
 			return scopesErr
+		}
+
+		if providerErr := checkClientProviders(tx, scope, p, &st); providerErr != nil {
+			return providerErr
 		}
 
 		if settingsErr := checkClient(&st, p, custom, c.Secret != ""); settingsErr != nil {

@@ -98,6 +98,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/vektah/gqlparser/v2 v2.5.60
 	golang.org/x/crypto v0.57.0
+	golang.org/x/net v0.58.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sys v0.48.0
 	gopkg.in/yaml.v3 v3.0.1

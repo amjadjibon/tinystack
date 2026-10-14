@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -35,6 +36,7 @@ const (
 	claimTokenUse = "token_use"
 	claimIssuedAt = "iat"
 	// The ways tokens are earned, as triggers name them.
+	sourceHostedAuth  = "HostedAuth"
 	sourceAuth        = "Authentication"
 	sourceNewPassword = "NewPasswordChallenge"
 	sourceRefresh     = "RefreshTokens"
@@ -47,9 +49,12 @@ type refresh struct {
 	RotatedUntil time.Time `json:",omitzero"`
 	Expires      time.Time
 	AuthTime     time.Time
+	Nonce        string
 	Username     string
 	Client       string
 	Origin       string
+	Scopes       []string
+	OAuth        bool
 }
 
 func refreshKey(scope request.Scope, pool, token string) string {
@@ -143,12 +148,15 @@ func issuer(ctx context.Context, pool string) string {
 // session is one sign-in: the tokens it issues share its origin.
 type session struct {
 	auth   time.Time
+	nonce  string
 	origin string
 	// refresh is the refresh token to issue, or "" to issue none.
 	refresh string
 	// source is how the tokens were earned, as the pre token generation
 	// trigger names it: Authentication, NewPasswordChallenge, or RefreshTokens.
 	source string
+	scopes []string
+	oauth  bool
 }
 
 // grant is a sign-in's tokens before they are signed, which waits until its
@@ -158,13 +166,15 @@ type grant struct {
 	access, id map[string]any
 	// preToken may change the claims, and postAuth runs after they are signed.
 	preToken, postAuth *call
+	authorization      *authorization
 	refresh            string
 	expiresIn          int64
+	oauth              bool
 }
 
 // tokens prepares access and ID tokens for u through c, signed with key.
 func tokens(
-	ctx context.Context, scope request.Scope, key *rsa.PrivateKey, p *pool, c *client, u *user, sess session,
+	ctx context.Context, scope request.Scope, key *rsa.PrivateKey, p *pool, c *client, u *user, sess *session,
 	now time.Time,
 ) *grant {
 	iss := issuer(ctx, p.ID)
@@ -180,6 +190,7 @@ func tokens(
 			claimExpires:  now.Add(validity).Unix(),
 			claimJTI:      newSub(),
 		}
+
 		if len(u.Groups) > 0 {
 			claims["cognito:groups"] = u.Groups
 		}
@@ -189,7 +200,7 @@ func tokens(
 
 	accessValidity := c.Settings.validity(tokenAccess)
 	access := claimsFor("access", accessValidity)
-	access["client_id"], access["scope"], access[claimUsername], access["version"] = c.ID, adminScope, u.Username, 2
+	access[claimClientID], access[claimScope], access[claimUsername], access["version"] = c.ID, adminScope, u.Username, 2
 	id := claimsFor("id", c.Settings.validity(tokenID))
 	id["aud"], id["cognito:username"] = c.ID, u.Username
 	for name, v := range u.Attributes {
@@ -205,8 +216,35 @@ func tokens(
 	}
 
 	g := &grant{
-		key: key, access: access, id: id, expiresIn: int64(accessValidity / time.Second), refresh: sess.refresh,
+		oauth:     sess.oauth,
+		key:       key,
+		access:    access,
+		id:        id,
+		expiresIn: int64(accessValidity / time.Second),
+		refresh:   sess.refresh,
 	}
+
+	if sess.oauth {
+		access[claimScope] = strings.Join(sess.scopes, " ")
+		for name := range id {
+			if _, attribute := u.Attributes[name]; attribute && name != attrSub &&
+				name != attrIdentities && !scopedAttribute(name, sess.scopes) {
+				delete(id, name)
+			}
+		}
+
+		if sess.nonce != "" {
+			id["nonce"] = sess.nonce
+		}
+	}
+
+	if raw := u.Attributes[attrIdentities]; raw != "" {
+		var identities any
+		if json.Unmarshal([]byte(raw), &identities) == nil {
+			id[attrIdentities] = identities
+		}
+	}
+
 	g.preToken = preTokenCall(scope, p, c, u, g, sess.source)
 	if function := common.Value(p.triggers().PostAuthentication); function != "" && sess.source != sourceRefresh {
 		g.postAuth = newCall(scope, p, c.ID, function, "PostAuthentication", "PostAuthentication_Authentication", u,
@@ -224,14 +262,23 @@ func (s *Service) issue(ctx context.Context, g *grant) (*api.AuthenticationResul
 	}
 
 	changes.apply(g)
-	out := &api.AuthenticationResultType{TokenType: new("Bearer"), ExpiresIn: new(g.expiresIn)}
+	out := &api.AuthenticationResultType{TokenType: new(bearerTokenType), ExpiresIn: new(g.expiresIn)}
 	var err error
 	if out.AccessToken, err = signed(g.key, g.access); err != nil {
 		return nil, err
 	}
 
+	if g.oauth {
+		digest := sha256.Sum256([]byte(common.Value(out.AccessToken)))
+		g.id["at_hash"] = b64.EncodeToString(digest[:len(digest)/2])
+	}
+
 	if out.IdToken, err = signed(g.key, g.id); err != nil {
 		return nil, err
+	}
+
+	if g.oauth && !slices.Contains(strings.Fields(g.access[claimScope].(string)), "openid") {
+		out.IdToken = nil
 	}
 
 	if g.refresh != "" {
@@ -272,6 +319,7 @@ func (s *Service) signIn(
 		Expires: now.Add(c.Settings.validity(tokenRefresh)), AuthTime: now, Username: u.Username, Client: c.ID,
 		Origin: sess.origin,
 	}
+
 	if err := storage.Write(tx, refreshKey(scope, p.ID, sess.refresh), r); err != nil {
 		return nil, err
 	}
@@ -287,7 +335,7 @@ func (s *Service) signIn(
 		}
 	}
 
-	g := tokens(ctx, scope, key, p, c, u, sess, now)
+	g := tokens(ctx, scope, key, p, c, u, &sess, now)
 	u.Modified = now
 	return g, storage.Write(tx, userKey(scope, p, u.Username), u)
 }
@@ -322,14 +370,14 @@ type accessToken struct {
 }
 
 // checkAccess verifies an access token and loads what it stands for.
-func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, error) {
+func (s *Service) checkAccess(tx storage.ReadTx, token *string, requiredScope ...string) (*accessToken, error) {
 	invalid := notAuthorized("Invalid Access Token")
 	claims, err := claimsOf(common.Value(token))
 	if err != nil || claims[claimTokenUse] != "access" {
 		return nil, invalid
 	}
 
-	clientID, _ := claims["client_id"].(string)
+	clientID, _ := claims[claimClientID].(string)
 	username, _ := claims[claimUsername].(string)
 	origin, _ := claims["origin_jti"].(string)
 	iss, _ := claims["iss"].(string)
@@ -354,8 +402,13 @@ func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, e
 		return nil, err
 	}
 
-	scopes, _ := claims["scope"].(string)
-	if verify(&key.PublicKey, *token) != nil || !slices.Contains(strings.Fields(scopes), adminScope) {
+	scopes, _ := claims[claimScope].(string)
+	required := adminScope
+	if len(requiredScope) > 0 {
+		required = requiredScope[0]
+	}
+
+	if verify(&key.PublicKey, *token) != nil || !slices.Contains(strings.Fields(scopes), required) {
 		return nil, invalid
 	}
 
@@ -374,6 +427,8 @@ func (s *Service) checkAccess(tx storage.ReadTx, token *string) (*accessToken, e
 		return nil, err
 	case !ok:
 		return nil, userNotFound()
+	case u.Attributes[attrSub] != claims[attrSub]:
+		return nil, invalid
 	case u.Disabled:
 		return nil, notAuthorized("User is disabled.")
 	case !slices.Contains(u.Sessions, origin):
@@ -451,11 +506,39 @@ func (s *Service) Documents(ctx context.Context, id, name, endpoint string) (doc
 	}
 
 	iss := strings.TrimSuffix(endpoint, "/") + "/" + id
+	authBase := iss
+	parsed, parseErr := url.Parse(endpoint)
+	if parseErr == nil {
+		domainPool, matched, resolveErr := s.HostedPool(ctx, parsed.Host)
+		if resolveErr != nil {
+			return nil, false, resolveErr
+		}
+
+		if matched && domainPool == id {
+			authBase = strings.TrimSuffix(endpoint, "/")
+		}
+	}
+
 	doc, err = json.Marshal(map[string]any{
-		"issuer": iss, "jwks_uri": iss + "/.well-known/jwks.json", "subject_types_supported": []string{"public"},
-		"token_endpoint": iss + "/oauth2/token", "grant_types_supported": []string{flowClientCredentials},
-		"token_endpoint_auth_methods_supported": []string{"client_secret_basic", "client_secret_post"},
-		"id_token_signing_alg_values_supported": []string{algorithm}, "response_types_supported": []string{"code"},
+		"issuer":                  iss,
+		providerJWKS:              iss + "/.well-known/jwks.json",
+		"subject_types_supported": []string{"public"},
+		"authorization_endpoint":  authBase + "/oauth2/authorize",
+		"userinfo_endpoint":       authBase + "/oauth2/userInfo",
+		"revocation_endpoint":     authBase + "/oauth2/revoke",
+		"token_endpoint":          authBase + "/oauth2/token",
+		"grant_types_supported": []string{
+			flowClientCredentials,
+			"authorization_code",
+			grantRefreshToken,
+		},
+		"scopes_supported":                      oauthScopes,
+		"code_challenge_methods_supported":      []string{pkceS256, pkcePlain},
+		"token_endpoint_auth_methods_supported": []string{"client_secret_basic", "client_secret_post", promptNone},
+		"id_token_signing_alg_values_supported": []string{
+			algorithm,
+		},
+		"response_types_supported": []string{flowCode, responseToken},
 	})
 	return doc, true, err
 }
