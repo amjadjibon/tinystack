@@ -17,38 +17,40 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
-    acm            = var.endpoint
-    autoscaling    = var.endpoint
-    apigateway     = var.endpoint
-    apigatewayv2   = var.endpoint
-    appsync        = var.endpoint
-    cloudformation = var.endpoint
-    cloudwatch     = var.endpoint
-    cognitoidp     = var.endpoint
-    dynamodb       = var.endpoint
-    ec2            = var.endpoint
-    ecr            = var.endpoint
-    ecs            = var.endpoint
-    eks            = var.endpoint
-    elasticache    = var.endpoint
-    elbv2          = var.endpoint
-    eventbridge    = var.endpoint
-    firehose       = var.endpoint
-    iam            = var.endpoint
-    iot            = var.endpoint
-    kinesis        = var.endpoint
-    kms            = var.endpoint
-    lambda         = var.endpoint
-    logs           = var.endpoint
-    route53        = var.endpoint
-    s3             = var.endpoint
-    scheduler      = var.endpoint
-    secretsmanager = var.endpoint
-    sfn            = var.endpoint
-    sns            = var.endpoint
-    sqs            = var.endpoint
-    ssm            = var.endpoint
-    sts            = var.endpoint
+    acm             = var.endpoint
+    autoscaling     = var.endpoint
+    apigateway      = var.endpoint
+    apigatewayv2    = var.endpoint
+    appsync         = var.endpoint
+    cloudformation  = var.endpoint
+    cloudwatch      = var.endpoint
+    codeartifact    = var.endpoint
+    cognitoidp      = var.endpoint
+    dynamodb        = var.endpoint
+    ec2             = var.endpoint
+    ecr             = var.endpoint
+    ecs             = var.endpoint
+    eks             = var.endpoint
+    elasticache     = var.endpoint
+    elbv2           = var.endpoint
+    eventbridge     = var.endpoint
+    firehose        = var.endpoint
+    iam             = var.endpoint
+    iot             = var.endpoint
+    kinesis         = var.endpoint
+    kms             = var.endpoint
+    lambda          = var.endpoint
+    logs            = var.endpoint
+    route53         = var.endpoint
+    s3              = var.endpoint
+    scheduler       = var.endpoint
+    secretsmanager  = var.endpoint
+    sfn             = var.endpoint
+    sns             = var.endpoint
+    sqs             = var.endpoint
+    ssm             = var.endpoint
+    sts             = var.endpoint
+    timestreamwrite = var.endpoint
   }
 }
 
@@ -1900,4 +1902,45 @@ data "aws_vpc_endpoint_service" "s3" {
 
 output "vpc_endpoint_service" {
   value = data.aws_vpc_endpoint_service.s3.service_name
+}
+
+resource "aws_timestreamwrite_database" "metrics" {
+  database_name = "tf-metrics"
+}
+
+resource "aws_timestreamwrite_table" "cpu" {
+  database_name = aws_timestreamwrite_database.metrics.database_name
+  table_name    = "cpu"
+
+  retention_properties {
+    memory_store_retention_period_in_hours  = 12
+    magnetic_store_retention_period_in_days = 30
+  }
+}
+
+resource "aws_codeartifact_domain" "main" {
+  domain = "tf-domain"
+}
+
+resource "aws_codeartifact_repository" "npm" {
+  repository = "tf-npm"
+  domain     = aws_codeartifact_domain.main.domain
+
+  external_connections {
+    external_connection_name = "public:npmjs"
+  }
+}
+
+resource "aws_codeartifact_repository_permissions_policy" "npm" {
+  repository = aws_codeartifact_repository.npm.repository
+  domain     = aws_codeartifact_domain.main.domain
+  policy_document = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = "*"
+      Action    = ["codeartifact:ReadFromRepository"]
+      Resource  = "*"
+    }]
+  })
 }
