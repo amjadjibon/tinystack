@@ -203,6 +203,10 @@
       "path": "codegen/sdk-codegen/aws-models/kms.json",
       "sha256": "82e414ec6095a69dabe0e7de071a5b9704c413d3277ed1b293d3cbcd8dd6ce5f"
     },
+    "lakeformation": {
+      "path": "codegen/sdk-codegen/aws-models/lakeformation.json",
+      "sha256": "982a5b6de1597741e7cc707bb0fe5554960c807a7d427c19de7804942dc9a4d3"
+    },
     "lambda": {
       "path": "codegen/sdk-codegen/aws-models/lambda.json",
       "sha256": "5a19f9e4a3cf9f56d9efdadb0fa0f3b41e9cf174337dcd13a94668856eddb88c"

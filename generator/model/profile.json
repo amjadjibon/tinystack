@@ -25208,5 +25208,301 @@
         "memory"
       ]
     }
+  },
+  "lakeformation": {
+    "operations": [
+      "GetDataLakeSettings",
+      "PutDataLakeSettings",
+      "RegisterResource",
+      "DeregisterResource",
+      "ListResources",
+      "DescribeResource",
+      "GrantPermissions",
+      "RevokePermissions",
+      "ListPermissions",
+      "BatchGrantPermissions",
+      "BatchRevokePermissions",
+      "CreateLFTag",
+      "GetLFTag",
+      "UpdateLFTag",
+      "DeleteLFTag",
+      "ListLFTags",
+      "AddLFTagsToResource",
+      "RemoveLFTagsFromResource",
+      "GetResourceLFTags"
+    ],
+    "shapes": {
+      "GetDataLakeSettingsRequest": [
+        "CatalogId"
+      ],
+      "GetDataLakeSettingsResponse": [
+        "DataLakeSettings"
+      ],
+      "DataLakeSettings": [
+        "DataLakeAdmins",
+        "ReadOnlyAdmins",
+        "CreateDatabaseDefaultPermissions",
+        "CreateTableDefaultPermissions",
+        "Parameters",
+        "TrustedResourceOwners",
+        "AllowExternalDataFiltering",
+        "AllowFullTableExternalDataAccess",
+        "ExternalDataFilteringAllowList",
+        "AuthorizedSessionTagValueList"
+      ],
+      "DataLakePrincipal": [
+        "DataLakePrincipalIdentifier"
+      ],
+      "PrincipalPermissions": [
+        "Principal",
+        "Permissions"
+      ],
+      "PutDataLakeSettingsRequest": [
+        "CatalogId",
+        "DataLakeSettings"
+      ],
+      "PutDataLakeSettingsResponse": [],
+      "RegisterResourceRequest": [
+        "ResourceArn",
+        "UseServiceLinkedRole",
+        "RoleArn",
+        "HybridAccessEnabled"
+      ],
+      "RegisterResourceResponse": [],
+      "DeregisterResourceRequest": [
+        "ResourceArn"
+      ],
+      "DeregisterResourceResponse": [],
+      "ListResourcesRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "FilterCondition": [
+        "Field",
+        "ComparisonOperator",
+        "StringValueList"
+      ],
+      "ListResourcesResponse": [
+        "ResourceInfoList",
+        "NextToken"
+      ],
+      "ResourceInfo": [
+        "ResourceArn",
+        "RoleArn",
+        "HybridAccessEnabled"
+      ],
+      "DescribeResourceRequest": [
+        "ResourceArn"
+      ],
+      "DescribeResourceResponse": [
+        "ResourceInfo"
+      ],
+      "GrantPermissionsRequest": [
+        "CatalogId",
+        "Principal",
+        "Resource",
+        "Permissions",
+        "PermissionsWithGrantOption"
+      ],
+      "Resource": [
+        "Catalog",
+        "Database",
+        "Table",
+        "TableWithColumns",
+        "DataLocation",
+        "LFTag"
+      ],
+      "CatalogResource": [
+        "Id"
+      ],
+      "DatabaseResource": [
+        "CatalogId",
+        "Name"
+      ],
+      "TableResource": [
+        "CatalogId",
+        "DatabaseName",
+        "Name",
+        "TableWildcard"
+      ],
+      "TableWildcard": [],
+      "TableWithColumnsResource": [
+        "CatalogId",
+        "DatabaseName",
+        "Name",
+        "ColumnNames",
+        "ColumnWildcard"
+      ],
+      "ColumnWildcard": [
+        "ExcludedColumnNames"
+      ],
+      "DataLocationResource": [
+        "CatalogId",
+        "ResourceArn"
+      ],
+      "DataCellsFilterResource": [
+        "TableCatalogId",
+        "DatabaseName",
+        "TableName",
+        "Name"
+      ],
+      "LFTagKeyResource": [
+        "CatalogId",
+        "TagKey",
+        "TagValues"
+      ],
+      "LFTagPolicyResource": [
+        "CatalogId",
+        "ResourceType",
+        "Expression",
+        "ExpressionName"
+      ],
+      "LFTag": [
+        "TagKey",
+        "TagValues"
+      ],
+      "LFTagExpressionResource": [
+        "CatalogId",
+        "Name"
+      ],
+      "Condition": [
+        "Expression"
+      ],
+      "GrantPermissionsResponse": [],
+      "RevokePermissionsRequest": [
+        "CatalogId",
+        "Principal",
+        "Resource",
+        "Permissions",
+        "PermissionsWithGrantOption"
+      ],
+      "RevokePermissionsResponse": [],
+      "ListPermissionsRequest": [
+        "CatalogId",
+        "Principal",
+        "ResourceType",
+        "Resource",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListPermissionsResponse": [
+        "PrincipalResourcePermissions",
+        "NextToken"
+      ],
+      "PrincipalResourcePermissions": [
+        "Principal",
+        "Resource",
+        "Permissions",
+        "PermissionsWithGrantOption"
+      ],
+      "DetailsMap": [
+        "ResourceShare"
+      ],
+      "BatchGrantPermissionsRequest": [
+        "CatalogId",
+        "Entries"
+      ],
+      "BatchPermissionsRequestEntry": [
+        "Id",
+        "Principal",
+        "Resource",
+        "Permissions",
+        "PermissionsWithGrantOption"
+      ],
+      "BatchGrantPermissionsResponse": [
+        "Failures"
+      ],
+      "BatchPermissionsFailureEntry": [
+        "RequestEntry",
+        "Error"
+      ],
+      "ErrorDetail": [
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "BatchRevokePermissionsRequest": [
+        "CatalogId",
+        "Entries"
+      ],
+      "BatchRevokePermissionsResponse": [
+        "Failures"
+      ],
+      "CreateLFTagRequest": [
+        "CatalogId",
+        "TagKey",
+        "TagValues"
+      ],
+      "CreateLFTagResponse": [],
+      "GetLFTagRequest": [
+        "CatalogId",
+        "TagKey"
+      ],
+      "GetLFTagResponse": [
+        "CatalogId",
+        "TagKey",
+        "TagValues"
+      ],
+      "UpdateLFTagRequest": [
+        "CatalogId",
+        "TagKey",
+        "TagValuesToDelete",
+        "TagValuesToAdd"
+      ],
+      "UpdateLFTagResponse": [],
+      "DeleteLFTagRequest": [
+        "CatalogId",
+        "TagKey"
+      ],
+      "DeleteLFTagResponse": [],
+      "ListLFTagsRequest": [
+        "CatalogId",
+        "ResourceShareType",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListLFTagsResponse": [
+        "LFTags",
+        "NextToken"
+      ],
+      "LFTagPair": [
+        "CatalogId",
+        "TagKey",
+        "TagValues"
+      ],
+      "AddLFTagsToResourceRequest": [
+        "CatalogId",
+        "Resource",
+        "LFTags"
+      ],
+      "AddLFTagsToResourceResponse": [
+        "Failures"
+      ],
+      "LFTagError": [
+        "LFTag",
+        "Error"
+      ],
+      "RemoveLFTagsFromResourceRequest": [
+        "CatalogId",
+        "Resource",
+        "LFTags"
+      ],
+      "RemoveLFTagsFromResourceResponse": [
+        "Failures"
+      ],
+      "GetResourceLFTagsRequest": [
+        "CatalogId",
+        "Resource",
+        "ShowAssignedLFTags"
+      ],
+      "GetResourceLFTagsResponse": [
+        "LFTagOnDatabase",
+        "LFTagsOnTable",
+        "LFTagsOnColumns"
+      ],
+      "ColumnLFTag": [
+        "Name",
+        "LFTags"
+      ]
+    }
   }
 }

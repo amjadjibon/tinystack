@@ -41,6 +41,8 @@ provider "aws" {
     kinesis         = var.endpoint
     kms             = var.endpoint
     lambda          = var.endpoint
+    lakeformation   = var.endpoint
+    glue            = var.endpoint
     logs            = var.endpoint
     route53         = var.endpoint
     s3              = var.endpoint
@@ -1984,5 +1986,42 @@ resource "aws_emrserverless_application" "analytics" {
   auto_stop_configuration {
     enabled              = true
     idle_timeout_minutes = 15
+  }
+}
+
+# Lake Formation stores records; grants do not change S3 or Glue access.
+resource "aws_lakeformation_data_lake_settings" "lake" {
+  admins = [aws_iam_role.lambda.arn]
+}
+
+resource "aws_lakeformation_resource" "lake" {
+  arn                     = aws_s3_bucket.assets.arn
+  use_service_linked_role = true
+}
+
+resource "aws_lakeformation_permissions" "lake" {
+  principal   = aws_iam_role.lambda.arn
+  permissions = ["DATA_LOCATION_ACCESS"]
+  data_location {
+    arn = aws_lakeformation_resource.lake.arn
+  }
+}
+
+resource "aws_lakeformation_lf_tag" "lake" {
+  key    = "tinystack-team"
+  values = ["core", "platform"]
+}
+
+resource "aws_glue_catalog_database" "lake" {
+  name = "tinystack_lake"
+}
+
+resource "aws_lakeformation_resource_lf_tags" "lake" {
+  database {
+    name = aws_glue_catalog_database.lake.name
+  }
+  lf_tag {
+    key   = aws_lakeformation_lf_tag.lake.key
+    value = var.team
   }
 }

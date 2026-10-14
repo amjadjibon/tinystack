@@ -57,6 +57,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.45.2
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.56.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.1
+	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.43.0
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.110.0
 	github.com/aws/aws-sdk-go-v2/service/location v1.59.2
 	github.com/aws/aws-sdk-go-v2/service/memorydb v1.42.4

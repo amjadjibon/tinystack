@@ -64,6 +64,7 @@ import (
 	kafkaapi "github.com/amjadjibon/tinystack/internal/aws/generated/kafka"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
+	lakeformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/lakeformation"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	locationapi "github.com/amjadjibon/tinystack/internal/aws/generated/location"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
@@ -154,6 +155,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/kafka"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
+	"github.com/amjadjibon/tinystack/internal/services/lakeformation"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/location"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
@@ -383,6 +385,7 @@ func build(
 	connectionRecords := codeconnections.New(store)
 	quotaRecords := servicequotas.New(store)
 	emrRecords := emrserverless.New(store)
+	lakeRecords := lakeformation.New(store)
 	brokers := mq.New(store, network)
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
@@ -488,6 +491,7 @@ func build(
 		codeconnectionsapi.Descriptor(connectionRecords),
 		servicequotasapi.Descriptor(quotaRecords),
 		emrserverlessapi.Descriptor(emrRecords),
+		lakeformationapi.Descriptor(lakeRecords),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),

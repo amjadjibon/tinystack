@@ -90,6 +90,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "servicequotas",
 	},
+	lakeformation: {
+		title: "Lake Formation",
+		category: analytics,
+		icon: "lakeformation",
+	},
 	codeconnections: {
 		title: "CodeConnections",
 		category: developerTools,
