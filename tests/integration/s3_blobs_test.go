@@ -15,7 +15,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 
@@ -63,8 +63,11 @@ func TestS3DiskLargeObjects(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uploader := manager.NewUploader(c, func(u *manager.Uploader) { u.PartSize = 5 << 20; u.Concurrency = 2 })
-	if _, err = uploader.Upload(ctx, &s3.PutObjectInput{
+	uploader := transfermanager.New(c, func(o *transfermanager.Options) {
+		o.PartSizeBytes = 5 << 20
+		o.Concurrency = 2
+	})
+	if _, err = uploader.UploadObject(ctx, &transfermanager.UploadObjectInput{
 		Bucket: bucket, Key: new("multipart"), Body: io.NewSectionReader(file, 0, size),
 	}); err != nil {
 		t.Fatal(err)
