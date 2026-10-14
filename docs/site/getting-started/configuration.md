@@ -143,3 +143,31 @@ faults:
 ```
 
 See [Fault injection](../guides/fault-injection.md) for matching, validation, runtime updates and reset behavior.
+
+## Migrating from LocalStack
+
+TinyStack supports drop-in migration from LocalStack setups by recognizing common LocalStack environment variables at startup.
+
+### Precedence order
+
+Settings are applied in the following order (later sources override earlier ones):
+
+1. **Defaults**: Built-in defaults (e.g. `127.0.0.1:4566`, memory storage mode, `us-east-1`).
+2. **Configuration file**: Values loaded from the YAML configuration file (`--config`).
+3. **Environment variables**: LocalStack and AWS environment variables override configuration file settings (with one exception: `DEFAULT_REGION`/`AWS_DEFAULT_REGION` only apply when the configuration file did not explicitly set `defaults.region`).
+4. **CLI flags**: Command-line flags (such as `--host`, `--port`) win over environment variables and configuration files.
+
+### Supported environment variables
+
+| Variable | Mapping / Behavior | Notes |
+| --- | --- | --- |
+| `GATEWAY_LISTEN` | Overrides `server.host` and `server.port`. E.g., `0.0.0.0:4566` or `:4566`. If comma-separated, the first entry is used. | Flags `--host` and `--port` override this. |
+| `PERSISTENCE` | `1` or `true` sets `storage.mode: persistent`; `0` or `false` sets `storage.mode: memory`. | Invalid values fail startup. |
+| `LOCALSTACK_VOLUME_DIR`, `DATA_DIR` | Sets `storage.path` when persistence is enabled. | `LOCALSTACK_VOLUME_DIR` takes precedence over `DATA_DIR`. Ignored when storage mode is `memory`. |
+| `DEFAULT_REGION`, `AWS_DEFAULT_REGION` | Sets `defaults.region`. | Only applied when the configuration file did not set `defaults.region`. `DEFAULT_REGION` takes precedence over `AWS_DEFAULT_REGION`. |
+| `SERVICES` | Ignored with a startup warning: TinyStack always serves every service it implements. | See the [service catalogue](../services/index.md). |
+| `DEBUG` | `1` or `true` sets log level to `debug`. | Invalid values fail startup. |
+| `LS_LOG` | Maps `trace`/`debug` to `debug`, `info` to `info`, `warn`/`warning` to `warn`, `error` to `error`. | Overrides `DEBUG` if both are set. Invalid values fail startup. |
+| `LOCALSTACK_HOST` | Not supported; ignored with a startup warning. | |
+
+Any other environment variable starting with `LOCALSTACK_` or in LocalStack's documented list that TinyStack does not support is logged once at startup as ignored.

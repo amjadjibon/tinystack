@@ -215,6 +215,10 @@ Local metric retention is 15 days; alarm history is retained for 30 days.
 | `DELETE /_tinystack/requests` | Clear request history |
 | `GET /_tinystack/deliveries` | Last 256 service hand-offs, newest first |
 | `DELETE /_tinystack/deliveries` | Clear delivery history |
+| `GET /_tinystack/messages` | Outbound messages (email, SMS, Cognito codes), newest first; filters: `channel`, `to`, `service`, `since` |
+| `DELETE /_tinystack/messages` | Clear outbound messages while preserving other delivery records |
+| `GET /_aws/ses` | LocalStack-compatible SES messages inspection; filters: `id`, `email` |
+| `GET /_aws/sns/sms-messages` | LocalStack-compatible SNS SMS messages inspection; filters: `phoneNumber`, `region` |
 | `GET /_tinystack/faults` | Active ordered [fault rules](fault-injection.md) |
 | `POST /_tinystack/faults` | Replace rules with a JSON array |
 | `PATCH /_tinystack/faults` | Append rules |
@@ -248,6 +252,31 @@ JSON summaries also go to stderr.
 Look for source/target ARNs and outcome in the delivery log. It exposes local SNS, S3, EventBridge, Lambda and
 IoT hand-offs, plus inspectable messages in Cognito/SES workflows. Payload previews are truncated.
 A publisher can succeed while a downstream delivery fails.
+
+## Inspect outbound messages
+
+Outbound communications (SES emails, SNS direct SMS, and Cognito verification codes) are captured in the delivery log.
+
+Query outbound messages:
+
+```sh
+curl -fsS "http://127.0.0.1:4566/_tinystack/messages"
+```
+
+Supported query filters:
+- `channel`: Filter by delivery channel (`email` or `sms`).
+- `to`: Filter by recipient (e.g. `user@example.com` or `+15555550123`).
+- `service`: Filter by originating service (`ses`, `sns`, or `cognito-idp`).
+- `since`: Filter messages sent at or after an RFC 3339 timestamp.
+
+Clearing messages:
+`DELETE /_tinystack/messages` removes only outbound message records, leaving all other service deliveries (SQS, Lambda async, EventBridge) intact.
+
+### LocalStack-compatible message aliases
+
+For compatibility with LocalStack test suites and tooling:
+- `GET /_aws/ses`: Returns SES emails formatted in LocalStack's schema (`{"messages": [...]}`). Supports `?id=` and `?email=` query filters.
+- `GET /_aws/sns/sms-messages`: Returns SMS messages formatted in LocalStack's schema (`{"sms_messages": {<phone>: [...]}, "region": "<region>"}`). Supports `?phoneNumber=` and `?region=` query filters.
 
 ## Gateway metrics
 

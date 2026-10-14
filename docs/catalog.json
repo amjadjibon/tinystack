@@ -27,7 +27,7 @@
     },
     {
       "title": "Diagnostics",
-      "summary": "Health/resource endpoints, bounded request and delivery logs, model-sensitive body redaction, and Prometheus request metrics.",
+      "summary": "Health/resource endpoints, bounded request and delivery logs, outbound message inspection (email, SMS, Cognito codes) with LocalStack-compatible SES and SNS aliases, model-sensitive body redaction, and Prometheus request metrics.",
       "reference": "guides/diagnostics.md"
     },
     {
