@@ -177,6 +177,7 @@ nav:
           - "AWS Account": services/account.md
           - "AWS Backup": services/backup.md
           - "AWS Config": services/config.md
+          - "AWS Service Quotas": services/servicequotas.md
           - "AppConfig": services/appconfig.md
           - "AppConfig Data": services/appconfigdata.md
           - "CloudTrail": services/cloudtrail.md

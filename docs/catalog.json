@@ -2009,6 +2009,28 @@
       ],
       "execution": "Records only",
       "package": "codeartifact"
+    },
+    "servicequotas": {
+      "title": "AWS Service Quotas",
+      "category": "Management and governance",
+      "scope": "Account and Region",
+      "summary": "Read informational built-in quotas and store quota increase requests without enforcing limits.",
+      "features": [
+        "Nine pinned AWS JSON 1.1 operations, covered through the AWS Go SDK v2",
+        "Eight real quota codes for Lambda, S3, SQS, DynamoDB, EC2, IAM and VPC with fixed default and applied values",
+        "Increase requests stay PENDING, record timestamps and requester identity, and reject duplicate open requests per quota",
+        "Paginated service, quota and request listings (default and maximum 100), service/quota/status filters, account and Region isolation",
+        "RecordsOnly=true and ExecutionReady=false request inventory, console icon, and Terraform aws_servicequotas_service_quota pending-request coverage"
+      ],
+      "gaps": [
+        "Quota values are informational and never enforced by TinyStack; defaults are a small static snapshot, not live AWS account limits",
+        "No approvals or support cases: requests remain PENDING and applied values never change",
+        "No resource-level quota contexts, applied/requested level filters, SupportCaseAllowed, templates, automatic management, tags, usage metrics or quota associations",
+        "IAM and S3 quotas are marked global but request records are isolated by account and Region; global quotas are readable in every Region",
+        "Request history is retained indefinitely rather than limited to the AWS 90-day window; requests have no delete operation"
+      ],
+      "execution": "Records only",
+      "package": "servicequotas"
     }
   },
   "future": {
