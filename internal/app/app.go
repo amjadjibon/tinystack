@@ -51,6 +51,7 @@ import (
 	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	elbapi "github.com/amjadjibon/tinystack/internal/aws/generated/elb"
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
+	emrserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/emrserverless"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	glacierapi "github.com/amjadjibon/tinystack/internal/aws/generated/glacier"
@@ -142,6 +143,7 @@ import (
 	cachedocker "github.com/amjadjibon/tinystack/internal/services/elasticache/docker"
 	"github.com/amjadjibon/tinystack/internal/services/elb"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
+	"github.com/amjadjibon/tinystack/internal/services/emrserverless"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
 	"github.com/amjadjibon/tinystack/internal/services/glacier"
@@ -380,6 +382,7 @@ func build(
 	timestreamRecords := timestreamwrite.New(store)
 	connectionRecords := codeconnections.New(store)
 	quotaRecords := servicequotas.New(store)
+	emrRecords := emrserverless.New(store)
 	brokers := mq.New(store, network)
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
@@ -484,6 +487,7 @@ func build(
 		timestreamwriteapi.Descriptor(timestreamRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
 		servicequotasapi.Descriptor(quotaRecords),
+		emrserverlessapi.Descriptor(emrRecords),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),

@@ -190,6 +190,7 @@ func errUntaggable(r *catalog.Owned) error {
 var taggers = map[string]tagger{
 	"codeartifact":    resourceOperations("codeartifact", "ResourceArn", pairs),
 	"timestreamwrite": resourceOperations("timestreamwrite", "ResourceARN", pairs),
+	"emrserverless":   resourceOperations("emrserverless", "ResourceArn", plain),
 	"codeconnections": resourceOperations("codeconnections", "ResourceArn", pairs),
 	"memorydb":        resourceOperations("memorydb", "ResourceArn", pairs),
 	"redshift": operations("redshift", "CreateTags", "DeleteTags", byARN("ResourceName"),

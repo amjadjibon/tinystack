@@ -32,6 +32,7 @@ provider "aws" {
     ecs             = var.endpoint
     eks             = var.endpoint
     elasticache     = var.endpoint
+    emrserverless   = var.endpoint
     elbv2           = var.endpoint
     eventbridge     = var.endpoint
     firehose        = var.endpoint
@@ -1951,4 +1952,37 @@ resource "aws_servicequotas_service_quota" "ec2_elastic_ips" {
   service_code = "ec2"
   quota_code   = "L-0263D0A3"
   value        = 10
+}
+
+# EMR Serverless is metadata only; this application never provisions workers or runs code.
+resource "aws_emrserverless_application" "analytics" {
+  name          = "analytics"
+  release_label = "emr-7.0.0"
+  type          = "Spark"
+  tags          = local.tags
+
+  initial_capacity {
+    initial_capacity_type = "Driver"
+    initial_capacity_config {
+      worker_count = 1
+      worker_configuration {
+        cpu    = "2 vCPU"
+        memory = "4 GB"
+      }
+    }
+  }
+
+  maximum_capacity {
+    cpu    = "8 vCPU"
+    memory = "16 GB"
+  }
+
+  auto_start_configuration {
+    enabled = false
+  }
+
+  auto_stop_configuration {
+    enabled              = true
+    idle_timeout_minutes = 15
+  }
 }

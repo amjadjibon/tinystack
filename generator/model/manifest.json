@@ -151,6 +151,10 @@
       "path": "codegen/sdk-codegen/aws-models/elastic-load-balancing-v2.json",
       "sha256": "34547fbf1a15abc429406c1ebfe20672022fa7a9b43bdb6df73d10c345a746dc"
     },
+    "emrserverless": {
+      "path": "codegen/sdk-codegen/aws-models/emr-serverless.json",
+      "sha256": "629a851a46e6d89c0ba2875d15d356a17f22432e0e2c31e1e7b893cc482a1e28"
+    },
     "eventbridge": {
       "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
       "sha256": "55dc4532838b71926afff18b6ce7a11892c6f4aadc81f4036b983eea24c4a449"

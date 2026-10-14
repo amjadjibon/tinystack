@@ -24964,5 +24964,249 @@
         "ServiceName"
       ]
     }
+  },
+  "emrserverless": {
+    "operations": [
+      "CancelJobRun",
+      "CreateApplication",
+      "DeleteApplication",
+      "GetApplication",
+      "GetJobRun",
+      "ListApplications",
+      "ListJobRuns",
+      "ListTagsForResource",
+      "StartApplication",
+      "StartJobRun",
+      "StopApplication",
+      "TagResource",
+      "UntagResource",
+      "UpdateApplication"
+    ],
+    "shapes": {
+      "Application": [
+        "applicationId",
+        "architecture",
+        "arn",
+        "autoStartConfiguration",
+        "autoStopConfiguration",
+        "createdAt",
+        "initialCapacity",
+        "maximumCapacity",
+        "name",
+        "networkConfiguration",
+        "releaseLabel",
+        "state",
+        "stateDetails",
+        "tags",
+        "type",
+        "updatedAt"
+      ],
+      "ApplicationSummary": [
+        "architecture",
+        "arn",
+        "createdAt",
+        "id",
+        "name",
+        "releaseLabel",
+        "state",
+        "stateDetails",
+        "type",
+        "updatedAt"
+      ],
+      "AutoStartConfig": [
+        "enabled"
+      ],
+      "AutoStopConfig": [
+        "enabled",
+        "idleTimeoutMinutes"
+      ],
+      "CancelJobRunRequest": [
+        "applicationId",
+        "jobRunId"
+      ],
+      "CancelJobRunResponse": [
+        "applicationId",
+        "jobRunId"
+      ],
+      "Configuration": [
+        "classification",
+        "configurations",
+        "properties"
+      ],
+      "ConfigurationOverrides": [
+        "applicationConfiguration"
+      ],
+      "CreateApplicationRequest": [
+        "architecture",
+        "autoStartConfiguration",
+        "autoStopConfiguration",
+        "clientToken",
+        "initialCapacity",
+        "maximumCapacity",
+        "name",
+        "networkConfiguration",
+        "releaseLabel",
+        "tags",
+        "type"
+      ],
+      "CreateApplicationResponse": [
+        "applicationId",
+        "arn",
+        "name"
+      ],
+      "DeleteApplicationRequest": [
+        "applicationId"
+      ],
+      "DeleteApplicationResponse": [],
+      "GetApplicationRequest": [
+        "applicationId"
+      ],
+      "GetApplicationResponse": [
+        "application"
+      ],
+      "GetJobRunRequest": [
+        "applicationId",
+        "jobRunId"
+      ],
+      "GetJobRunResponse": [
+        "jobRun"
+      ],
+      "Hive": [
+        "initQueryFile",
+        "parameters",
+        "query"
+      ],
+      "InitialCapacityConfig": [
+        "workerConfiguration",
+        "workerCount"
+      ],
+      "JobDriver": [
+        "hive",
+        "sparkSubmit"
+      ],
+      "JobRun": [
+        "applicationId",
+        "arn",
+        "configurationOverrides",
+        "createdAt",
+        "createdBy",
+        "executionRole",
+        "executionTimeoutMinutes",
+        "jobDriver",
+        "jobRunId",
+        "name",
+        "releaseLabel",
+        "state",
+        "stateDetails",
+        "tags",
+        "updatedAt"
+      ],
+      "JobRunSummary": [
+        "applicationId",
+        "arn",
+        "createdAt",
+        "createdBy",
+        "executionRole",
+        "id",
+        "name",
+        "releaseLabel",
+        "state",
+        "stateDetails",
+        "type",
+        "updatedAt"
+      ],
+      "ListApplicationsRequest": [
+        "maxResults",
+        "nextToken",
+        "states"
+      ],
+      "ListApplicationsResponse": [
+        "applications",
+        "nextToken"
+      ],
+      "ListJobRunsRequest": [
+        "applicationId",
+        "maxResults",
+        "nextToken",
+        "states"
+      ],
+      "ListJobRunsResponse": [
+        "jobRuns",
+        "nextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "MaximumAllowedResources": [
+        "cpu",
+        "disk",
+        "memory"
+      ],
+      "NetworkConfiguration": [
+        "securityGroupIds",
+        "subnetIds"
+      ],
+      "SparkSubmit": [
+        "entryPoint",
+        "entryPointArguments",
+        "sparkSubmitParameters"
+      ],
+      "StartApplicationRequest": [
+        "applicationId"
+      ],
+      "StartApplicationResponse": [],
+      "StartJobRunRequest": [
+        "applicationId",
+        "clientToken",
+        "configurationOverrides",
+        "executionRoleArn",
+        "executionTimeoutMinutes",
+        "jobDriver",
+        "name",
+        "tags"
+      ],
+      "StartJobRunResponse": [
+        "applicationId",
+        "arn",
+        "jobRunId"
+      ],
+      "StopApplicationRequest": [
+        "applicationId"
+      ],
+      "StopApplicationResponse": [],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateApplicationRequest": [
+        "applicationId",
+        "architecture",
+        "autoStartConfiguration",
+        "autoStopConfiguration",
+        "clientToken",
+        "initialCapacity",
+        "maximumCapacity",
+        "networkConfiguration",
+        "releaseLabel"
+      ],
+      "UpdateApplicationResponse": [
+        "application"
+      ],
+      "WorkerResourceConfig": [
+        "cpu",
+        "disk",
+        "diskType",
+        "memory"
+      ]
+    }
   }
 }
