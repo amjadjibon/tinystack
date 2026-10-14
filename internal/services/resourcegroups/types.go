@@ -10,6 +10,7 @@ import (
 // resource types ("sqs" to "AWS::SQS::..."). A service missing here has no
 // resource types a group can select.
 var namespaces = map[string]string{
+	"costexplorer":           "CE",
 	"redshift":               "Redshift",
 	"memorydb":               "MemoryDB",
 	"identitystore":          "IdentityStore",
@@ -74,6 +75,9 @@ var namespaces = map[string]string{
 // typeNames are the CloudFormation names of the inventory types whose name is
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
+	"costexplorer/anomalymonitor":         "AnomalyMonitor",
+	"costexplorer/anomalysubscription":    "AnomalySubscription",
+	"costexplorer/costcategory":           "CostCategory",
 	"ec2/dhcp-options":                    "DHCPOptions",
 	"ec2/egress-only-internet-gateway":    "EgressOnlyInternetGateway",
 	"ec2/network-interface":               "NetworkInterface",

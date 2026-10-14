@@ -24,6 +24,7 @@ provider "aws" {
     appsync         = var.endpoint
     cloudformation  = var.endpoint
     cloudwatch      = var.endpoint
+    ce              = var.endpoint
     codeartifact    = var.endpoint
     cognitoidp      = var.endpoint
     dynamodb        = var.endpoint
@@ -2024,4 +2025,45 @@ resource "aws_lakeformation_resource_lf_tags" "lake" {
     key   = aws_lakeformation_lf_tag.lake.key
     value = var.team
   }
+}
+
+resource "aws_ce_anomaly_monitor" "services" {
+  name              = "tinystack-${var.team}"
+  monitor_type      = "DIMENSIONAL"
+  monitor_dimension = "SERVICE"
+  tags              = { team = var.team }
+}
+
+resource "aws_ce_anomaly_subscription" "daily" {
+  name             = "tinystack-${var.team}"
+  frequency        = "DAILY"
+  monitor_arn_list = [aws_ce_anomaly_monitor.services.arn]
+  threshold_expression {
+    dimension {
+      key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"
+      match_options = ["GREATER_THAN_OR_EQUAL"]
+      values        = ["10"]
+    }
+  }
+  subscriber {
+    type    = "EMAIL"
+    address = "${var.team}@example.com"
+  }
+  tags = { team = var.team }
+}
+
+resource "aws_ce_cost_category" "team" {
+  name         = "TinyStackTeam"
+  rule_version = "CostCategoryExpression.v1"
+  rule {
+    value = var.team
+    rule {
+      tags {
+        key    = "team"
+        values = [var.team]
+      }
+    }
+  }
+  default_value = "Other"
+  tags          = { team = var.team }
 }

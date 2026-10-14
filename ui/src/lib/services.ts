@@ -40,6 +40,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	costexplorer: {
+		title: "AWS Cost Explorer",
+		category: management,
+		icon: "costexplorer",
+	},
 	emrserverless: {
 		title: "Amazon EMR Serverless",
 		category: analytics,

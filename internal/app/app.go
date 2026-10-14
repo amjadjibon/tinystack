@@ -41,6 +41,7 @@ import (
 	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	configapi "github.com/amjadjibon/tinystack/internal/aws/generated/config"
+	costexplorerapi "github.com/amjadjibon/tinystack/internal/aws/generated/costexplorer"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
@@ -132,6 +133,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	configservice "github.com/amjadjibon/tinystack/internal/services/config"
+	"github.com/amjadjibon/tinystack/internal/services/costexplorer"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
@@ -382,6 +384,7 @@ func build(
 	codecommitRecords := codecommit.New(store)
 	artifactRecords := codeartifact.New(store)
 	timestreamRecords := timestreamwrite.New(store)
+	costExplorerRecords := costexplorer.New(store)
 	connectionRecords := codeconnections.New(store)
 	quotaRecords := servicequotas.New(store)
 	emrRecords := emrserverless.New(store)
@@ -489,6 +492,7 @@ func build(
 		codeartifactapi.Descriptor(artifactRecords),
 		timestreamwriteapi.Descriptor(timestreamRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
+		costexplorerapi.Descriptor(costExplorerRecords),
 		servicequotasapi.Descriptor(quotaRecords),
 		emrserverlessapi.Descriptor(emrRecords),
 		lakeformationapi.Descriptor(lakeRecords),

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <title>AWS Cost Explorer</title>
+  <rect width="40" height="40" fill="#7aa116"/>
+  <g fill="none" stroke="#fff" stroke-width="1.5">
+    <path d="M8 8v24h24M12 28v-7h4v7m4 0V15h4v13m4 0V10h4v18"/>
+    <path d="m10 17 8-7 6 2 8-6"/>
+  </g>
+</svg>

@@ -37,11 +37,12 @@ def main():
         config.write_text("identity:\n  mode: verify\n  secret_keys:\n    test: test\n")
 
         def terraform(*args, team="core", code=0):
-            command = ["terraform", *args, "-no-color"]
+            command = ["terraform", args[0], "-no-color"]
             if args[0] != "output":
                 command.append("-input=false")
             if args[0] not in ("init", "output"):
                 command += ["-var", f"endpoint={endpoint}", "-var", f"function_zip={packages[team]}", "-var", f"team={team}"]
+            command += args[1:]
             result = subprocess.run(command, cwd=work, text=True, capture_output=True, timeout=600)
             if result.returncode != code:
                 raise RuntimeError(f"terraform {args[0]} exited {result.returncode}:\n{result.stdout}\n{result.stderr}")
@@ -76,8 +77,20 @@ def main():
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "6 added, 93 changed, 6 destroyed" in updated, updated
+                assert "7 added, 95 changed, 7 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
+                terraform("plan", "-detailed-exitcode", team="platform")
+                # The provider replaces the monitor when its name changes. The subscription
+                # and category update in place: +1 replacement and +2 changes vs the baseline.
+                state = json.loads(subprocess.run(
+                    ["terraform", "show", "-json"], cwd=work, text=True,
+                    capture_output=True, check=True,
+                ).stdout)
+                resources = {r["address"]: r for r in state["values"]["root_module"]["resources"]}
+                for address in ("aws_ce_anomaly_monitor.services", "aws_ce_anomaly_subscription.daily", "aws_ce_cost_category.team"):
+                    resource_id = resources[address]["values"]["id"]
+                    subprocess.run(["terraform", "state", "rm", address], cwd=work, check=True, capture_output=True)
+                    terraform("import", address, resource_id, team="platform")
                 terraform("plan", "-detailed-exitcode", team="platform")
                 terraform("destroy", "-auto-approve", team="platform")
             finally:

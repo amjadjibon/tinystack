@@ -25504,5 +25504,250 @@
         "LFTags"
       ]
     }
+  },
+  "costexplorer": {
+    "operations": [
+      "CreateAnomalyMonitor",
+      "CreateAnomalySubscription",
+      "CreateCostCategoryDefinition",
+      "DeleteAnomalyMonitor",
+      "DeleteAnomalySubscription",
+      "DeleteCostCategoryDefinition",
+      "DescribeCostCategoryDefinition",
+      "GetAnomalyMonitors",
+      "GetAnomalySubscriptions",
+      "ListCostCategoryDefinitions",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateAnomalyMonitor",
+      "UpdateAnomalySubscription",
+      "UpdateCostCategoryDefinition"
+    ],
+    "shapes": {
+      "AnomalyMonitor": [
+        "MonitorArn",
+        "MonitorName",
+        "CreationDate",
+        "LastUpdatedDate",
+        "LastEvaluatedDate",
+        "MonitorType",
+        "MonitorDimension",
+        "MonitorSpecification",
+        "DimensionalValueCount"
+      ],
+      "AnomalySubscription": [
+        "SubscriptionArn",
+        "AccountId",
+        "MonitorArnList",
+        "Subscribers",
+        "Threshold",
+        "Frequency",
+        "SubscriptionName",
+        "ThresholdExpression"
+      ],
+      "CostCategory": [
+        "CostCategoryArn",
+        "EffectiveStart",
+        "EffectiveEnd",
+        "Name",
+        "RuleVersion",
+        "Rules",
+        "SplitChargeRules",
+        "ProcessingStatus",
+        "DefaultValue"
+      ],
+      "CostCategoryInheritedValueDimension": [
+        "DimensionName",
+        "DimensionKey"
+      ],
+      "CostCategoryProcessingStatus": [
+        "Component",
+        "Status"
+      ],
+      "CostCategoryReference": [
+        "CostCategoryArn",
+        "Name",
+        "EffectiveStart",
+        "EffectiveEnd",
+        "NumberOfRules",
+        "ProcessingStatus",
+        "Values",
+        "DefaultValue",
+        "SupportedResourceTypes"
+      ],
+      "CostCategoryRule": [
+        "Value",
+        "Rule",
+        "InheritedValue",
+        "Type"
+      ],
+      "CostCategorySplitChargeRule": [
+        "Source",
+        "Targets",
+        "Method",
+        "Parameters"
+      ],
+      "CostCategorySplitChargeRuleParameter": [
+        "Type",
+        "Values"
+      ],
+      "CostCategoryValues": [
+        "Key",
+        "Values",
+        "MatchOptions"
+      ],
+      "CreateAnomalyMonitorRequest": [
+        "AnomalyMonitor",
+        "ResourceTags"
+      ],
+      "CreateAnomalyMonitorResponse": [
+        "MonitorArn"
+      ],
+      "CreateAnomalySubscriptionRequest": [
+        "AnomalySubscription",
+        "ResourceTags"
+      ],
+      "CreateAnomalySubscriptionResponse": [
+        "SubscriptionArn"
+      ],
+      "CreateCostCategoryDefinitionRequest": [
+        "Name",
+        "EffectiveStart",
+        "RuleVersion",
+        "Rules",
+        "DefaultValue",
+        "SplitChargeRules",
+        "ResourceTags"
+      ],
+      "CreateCostCategoryDefinitionResponse": [
+        "CostCategoryArn",
+        "EffectiveStart"
+      ],
+      "DeleteAnomalyMonitorRequest": [
+        "MonitorArn"
+      ],
+      "DeleteAnomalyMonitorResponse": [],
+      "DeleteAnomalySubscriptionRequest": [
+        "SubscriptionArn"
+      ],
+      "DeleteAnomalySubscriptionResponse": [],
+      "DeleteCostCategoryDefinitionRequest": [
+        "CostCategoryArn"
+      ],
+      "DeleteCostCategoryDefinitionResponse": [
+        "CostCategoryArn",
+        "EffectiveEnd"
+      ],
+      "DescribeCostCategoryDefinitionRequest": [
+        "CostCategoryArn",
+        "EffectiveOn"
+      ],
+      "DescribeCostCategoryDefinitionResponse": [
+        "CostCategory"
+      ],
+      "DimensionValues": [
+        "Key",
+        "Values",
+        "MatchOptions"
+      ],
+      "Expression": [
+        "Or",
+        "And",
+        "Not",
+        "Dimensions",
+        "Tags",
+        "CostCategories"
+      ],
+      "GetAnomalyMonitorsRequest": [
+        "MonitorArnList",
+        "NextPageToken",
+        "MaxResults"
+      ],
+      "GetAnomalyMonitorsResponse": [
+        "AnomalyMonitors",
+        "NextPageToken"
+      ],
+      "GetAnomalySubscriptionsRequest": [
+        "SubscriptionArnList",
+        "MonitorArn",
+        "NextPageToken",
+        "MaxResults"
+      ],
+      "GetAnomalySubscriptionsResponse": [
+        "AnomalySubscriptions",
+        "NextPageToken"
+      ],
+      "ListCostCategoryDefinitionsRequest": [
+        "EffectiveOn",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListCostCategoryDefinitionsResponse": [
+        "CostCategoryReferences",
+        "NextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "ResourceTags"
+      ],
+      "ResourceTag": [
+        "Key",
+        "Value"
+      ],
+      "Subscriber": [
+        "Address",
+        "Type",
+        "Status"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "ResourceTags"
+      ],
+      "TagResourceResponse": [],
+      "TagValues": [
+        "Key",
+        "Values",
+        "MatchOptions"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "ResourceTagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateAnomalyMonitorRequest": [
+        "MonitorArn",
+        "MonitorName"
+      ],
+      "UpdateAnomalyMonitorResponse": [
+        "MonitorArn"
+      ],
+      "UpdateAnomalySubscriptionRequest": [
+        "SubscriptionArn",
+        "Threshold",
+        "Frequency",
+        "MonitorArnList",
+        "Subscribers",
+        "SubscriptionName",
+        "ThresholdExpression"
+      ],
+      "UpdateAnomalySubscriptionResponse": [
+        "SubscriptionArn"
+      ],
+      "UpdateCostCategoryDefinitionRequest": [
+        "CostCategoryArn",
+        "EffectiveStart",
+        "RuleVersion",
+        "Rules",
+        "DefaultValue",
+        "SplitChargeRules"
+      ],
+      "UpdateCostCategoryDefinitionResponse": [
+        "CostCategoryArn",
+        "EffectiveStart"
+      ]
+    }
   }
 }
