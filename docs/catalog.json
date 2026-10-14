@@ -2083,6 +2083,29 @@
       ],
       "execution": "Records only",
       "package": "lakeformation"
+    },
+    "costexplorer": {
+      "title": "AWS Cost Explorer",
+      "category": "Management and governance",
+      "scope": "Account-wide",
+      "summary": "Store account-wide anomaly monitors, anomaly subscriptions and cost category definitions as records without cost queries or evaluation.",
+      "features": [
+        "Sixteen pinned AWS JSON 1.1 operations: anomaly monitor and subscription CRUD/list, cost category CRUD/list and resource tags",
+        "DIMENSIONAL SERVICE, LINKED_ACCOUNT, TAG and COST_CATEGORY monitors and CUSTOM linked-account, tag and cost-category specifications with model validation",
+        "Subscription frequencies, monitor associations and EMAIL/SNS subscriber definitions; mutually exclusive Threshold and ThresholdExpression with atomic updates",
+        "Cost category regular and inherited-value rules, nested expressions, split charge rules, default values and effective start dates are stored and round-tripped",
+        "Global account isolation with empty-Region ce ARNs, ordered token pagination, native tags and Resource Groups Tagging API integration",
+        "RecordsOnly=true and ExecutionReady=false inventory, console catalogue, AWS SDK v2 cross-Region lifecycle coverage and Terraform aws_ce_anomaly_monitor, aws_ce_anomaly_subscription and aws_ce_cost_category apply/update/destroy coverage"
+      ],
+      "gaps": [
+        "Records only: no cost data, billing calculations, cost or usage queries, forecasts, recommendations, learned anomaly detection, anomaly queries, rule evaluation or notification delivery",
+        "Monitor LastEvaluatedDate, DimensionalValueCount, subscriber confirmation status and category processing status are omitted because no evaluation or confirmation is performed",
+        "Only the current cost category definition is retained; historical EffectiveOn reads preceding its EffectiveStart fail explicitly. SupportedResourceTypes filtering is not implemented",
+        "Cost allocation tag activation, billing views and other Cost Explorer operations are not implemented; unregistered operations use the gateway UnknownOperationException response",
+        "No CloudFormation resource handlers for AWS::CE::AnomalyMonitor, AWS::CE::AnomalySubscription or AWS::CE::CostCategory; CDK/awscc lifecycle support is not provided"
+      ],
+      "execution": "Records only",
+      "package": "costexplorer"
     }
   },
   "future": {
