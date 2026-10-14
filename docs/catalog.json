@@ -1955,6 +1955,33 @@
       ],
       "execution": "Records only",
       "package": "codeconnections"
+    },
+    "timestreamwrite": {
+      "title": "Amazon Timestream Write",
+      "category": "Database",
+      "scope": "Account and Region",
+      "summary": "Store Timestream databases and tables as metadata; WriteRecords validates and counts records, then discards them.",
+      "features": [
+        "Fifteen pinned AWS JSON 1.0 operations for databases, tables, endpoint discovery, WriteRecords and native tags, with AWS SDK v2 coverage",
+        "DescribeEndpoints returns the address the client already uses (with its scheme), so the SDK's required endpoint discovery succeeds against a local endpoint",
+        "Databases and tables follow the documented 3-256 character name rule; tables default to 6 hours of memory store and 73000 days of magnetic store retention, validate retention ranges, partition keys (at most two) and magnetic store rejected-data S3 settings",
+        "DescribeDatabase and ListDatabases report TableCount; a database with tables cannot be deleted; UpdateDatabase changes the KMS key and UpdateTable changes retention, magnetic store and schema settings",
+        "WriteRecords checks 1-100 records, merges CommonAttributes, validates dimensions (128 at most), measure types (DOUBLE, BIGINT, VARCHAR, BOOLEAN, TIMESTAMP, MULTI) and time units, and counts memory store and magnetic store ingestion by the table's retention windows",
+        "Records outside the retention windows or more than 15 minutes ahead are rejected with RejectedRecordsException and their indexes; malformed records fail with ValidationException",
+        "TagResource, UntagResource and ListTagsForResource on database and table ARNs; Resource Groups Tagging API integration",
+        "Token pagination (default and maximum 20), account and Region isolation, RecordsOnly=true and ExecutionReady=false inventory with the discarded record count, and Terraform timestreamwrite endpoint key"
+      ],
+      "gaps": [
+        "WriteRecords discards every accepted record: nothing is stored, deduplicated or versioned, and Version is validated but has no effect",
+        "The query API (timestream-query: Query, scheduled queries, prepared queries) is not served, so written data can never be read back",
+        "Batch load tasks are not implemented",
+        "A WriteRecords request with any out-of-window record is rejected whole, where AWS ingests the valid records and rejects the rest",
+        "Real endpoint discovery returns host names; this endpoint returns the client address with its scheme",
+        "Tables without a Schema report none, and the shared tag limit of 50 applies where AWS allows more",
+        "No CloudFormation resource: AWS::Timestream::Database and AWS::Timestream::Table are not registered"
+      ],
+      "execution": "Records only",
+      "package": "timestreamwrite"
     }
   },
   "future": {
@@ -2260,6 +2287,12 @@
       "state": "Proposed",
       "slice": "Extend connection and host records with repository links and sync configurations.",
       "features": "- [ ] `CreateRepositoryLink`, `GetRepositoryLink`, `ListRepositoryLinks`, `UpdateRepositoryLink`, `DeleteRepositoryLink`\n- [ ] `CreateSyncConfiguration`, `GetSyncConfiguration`, `ListSyncConfigurations`, `UpdateSyncConfiguration`, `DeleteSyncConfiguration`\n- [ ] Sync status and blocker operations\n- [ ] The codestar-connections service alias\n- [ ] RPC v2 CBOR with a newer pinned model\n- [ ] `AWS::CodeConnections::Connection`"
+    },
+    "timestream-query": {
+      "title": "Amazon Timestream records and queries",
+      "state": "Proposed",
+      "slice": "Store written records and serve the Timestream query API over them.",
+      "features": "- [ ] Store accepted records with versioned upserts and retention expiry\n- [ ] `Query` over a documented SQL subset\n- [ ] Scheduled and prepared queries\n- [ ] Batch load tasks\n- [ ] Partial ingestion with `RejectedRecords`\n- [ ] `AWS::Timestream::Database` and `AWS::Timestream::Table`"
     }
   }
 }
