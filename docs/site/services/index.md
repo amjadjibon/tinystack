@@ -37,7 +37,7 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | [ECR](ecr.md) | 26 | Local behavior |
 | [ECS](ecs.md) | 25 | Records / optional Docker |
 | [EKS](eks.md) | 46 | Records / optional k3s |
-| [Lambda](lambda.md) | 50 | Docker runtime |
+| [Lambda](lambda.md) | 50 | Local processes or Docker runtime |
 
 ## Configuration and operations
 

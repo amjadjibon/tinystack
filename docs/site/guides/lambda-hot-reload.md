@@ -7,7 +7,7 @@ The bucket name is not configurable.
 
 ## AWS CLI
 
-Start TinyStack with its Docker Lambda runtime enabled (see [Docker runtimes](runtimes.md)).
+Start TinyStack with the local Python/Node executor or Docker (see [runtime configuration](runtimes.md)).
 Put `app.py` in your directory:
 
 ```python
@@ -92,4 +92,12 @@ ZIP download URL.
 
 Image packages and hot reload layer publishing are rejected explicitly. Symlinks and special
 files inside the directory are rejected at invocation. In-process runtimes can store and
-manage these functions but reject directory invocations explicitly; execution requires Docker.
+manage these functions but reject directory invocations explicitly; execution requires the local or Docker executor.
+
+## Local executor
+
+With `lambda.executor: local`, Python and Node handlers run directly from the host directory. Layers still extract
+into each environment's private `opt` directory. Every invoke hashes tree names, modes and file contents; changes
+replace warm processes, including busy processes, so modules reload on the next invocation. Symlinks and special
+files are rejected. There is no VM sharing delay or read-only mount: functions retain the normal host user's
+permissions. Local execution is not a sandbox. Published versions retain the same live-reference semantics.

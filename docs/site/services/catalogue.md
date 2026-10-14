@@ -230,11 +230,14 @@ Manage Kubernetes cluster metadata and optionally start local k3s API servers.
 
 #### Lambda
 
-Manage functions and execute them in Docker using AWS runtime base images.
+Manage functions and execute Python/Node locally or managed runtimes in Docker.
 
-**Execution:** Docker runtime. **Selected operations:** 50.
+**Execution:** Local processes or Docker runtime. **Selected operations:** 50.
 
 - Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags.
+- Automatic executor selection: Docker when its daemon is reachable, otherwise host Python/Node; lambda.executor can force docker or local.
+- Local Zip execution supports Python 3.x and Node.js CJS/ESM, async/callback handlers, ordered layers, warm reuse, timeouts, logs and directory hot reload.
+- Synchronous Invoke ClientContext accepts base64-encoded JSON and reaches the handler context.
 - LocalStack-compatible hot reload using S3Bucket=hot-reload and an absolute host directory; see [CLI and Terraform examples](../guides/lambda-hot-reload.md).
 - Synchronous and asynchronous invocation, retries and destinations.
 - SQS, DynamoDB Streams and Kinesis event source mappings.

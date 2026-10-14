@@ -41,6 +41,9 @@ Use `./bin/tinystack start --help` for the current command help.
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |
 | `elasticache.caches` | `records` | `records` or `docker` |
+| `lambda.executor` | `auto` | `docker`, `local` or `auto`; auto uses Docker when the CLI reaches a daemon, otherwise host Python/Node |
+| `lambda.local.python` | `python3` | Python executable from PATH or an explicit path |
+| `lambda.local.node` | `node` | Node executable from PATH or an explicit path |
 | `rds.instances` | `records` | `records` or `docker`; records mode has no SQL listener |
 | `console.auth.oidc` | Unset | Optional [single sign-on](../guides/sso.md) to the console through an OpenID Connect provider; requires `identity.mode: verify` and a console port |
 | `init.dir` | `/etc/tinystack/init` | Directory of `<stage>.d` init scripts; empty turns it off; missing is fine |
@@ -171,3 +174,37 @@ Settings are applied in the following order (later sources override earlier ones
 | `LOCALSTACK_HOST` | Not supported; ignored with a startup warning. | |
 
 Any other environment variable starting with `LOCALSTACK_` or in LocalStack's documented list that TinyStack does not support is logged once at startup as ignored.
+
+## Lambda without Docker
+
+```yaml
+lambda:
+  executor: local
+  local:
+    python: python3
+    node: node
+```
+
+Equivalent flags are `--lambda-executor`, `--lambda-local-python` and `--lambda-local-node`.
+Environment variables are `TINYSTACK_LAMBDA_EXECUTOR`, `TINYSTACK_LAMBDA_LOCAL_PYTHON` and
+`TINYSTACK_LAMBDA_LOCAL_NODE`. Flags override environment variables, which override YAML.
+Startup logs the selected executor. Auto checks Docker for up to three seconds; executor selection stays fixed
+until restart. It does not fall back after a function invocation fails.
+
+The local executor runs Zip Python 3.x and Node.js handlers using host executables. Host versions may differ
+from declared Lambda runtimes: TinyStack logs a warning once per function/runtime and runs the installed version.
+Java, Ruby, .NET, provided runtimes and Image packages fail explicitly with guidance to select Docker.
+
+Local execution **is not a sandbox**. Handlers have TinyStack's user permissions and can access host files and
+networks. Do not expose an untrusted function-upload gateway. Memory size is reported in context but is not
+enforced, and architecture follows the host. The Runtime API binds loopback on an ephemeral port and requires
+an environment-specific random path. Function processes receive only allowlisted host environment variables
+plus function configuration and Lambda variables; they do not inherit TinyStack's environment secrets.
+
+Warm processes expire after five idle minutes. Configuration/code revisions, release, reset and shutdown kill
+process groups and remove their private directories. Function timeouts also kill descendants. Layers overlay in
+order with a combined 250 MiB extracted-size cap; symlinks and unsafe paths are rejected. Returned logs retain the
+last MiB per invocation; process output files are removed with their environments.
+
+Function credentials reuse the same creator-account logic as Docker. `AWS_ENDPOINT_URL` points back to TinyStack;
+functions can override it explicitly through their configured environment. See [hot reload](../guides/lambda-hot-reload.md).

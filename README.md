@@ -342,23 +342,26 @@ encryption, other storage classes, and so on) answer `NotImplemented`
 
 ### Lambda (REST JSON)
 
-Functions run in Docker, in the AWS base image of their runtime (or their own
-image for `Image` functions), through the Lambda Runtime Interface Emulator the
-images contain. Code is copied into the container, so Docker Desktop, Colima,
-and remote daemons all work. Containers stay warm per function, run concurrent
-invocations in separate containers, and are removed when the function is
-deleted and when TinyStack shuts down. Creating functions does not need Docker;
-invoking them does.
+Lambda defaults to `lambda.executor: auto`: Docker when its CLI reaches a daemon, otherwise host Python/Node
+processes. Use `--lambda-executor local` to run Zip Python and Node CJS/ESM handlers without Docker. Local execution
+supports layers, warm reuse, timeouts, logs and hot reload. It is not a sandbox, reports memory without enforcing
+it, and warns when the installed interpreter differs from the declared runtime. See
+[configuration](docs/site/getting-started/configuration.md#lambda-without-docker).
+
+With `lambda.executor: docker`, functions run in AWS runtime base images (or their own image for Image packages)
+through the Runtime Interface Emulator. Code is copied into containers for Docker Desktop, Colima and remote daemons.
+Both executors pool warm environments per function revision and use separate environments for concurrent invocations;
+release and shutdown remove them. Java, Ruby, .NET, provided runtimes and Image packages require Docker.
 
 | Operation | Behavior |
 | --- | --- |
 | CreateFunction | `Zip` packages (`ZipFile`, or `S3Bucket` and `S3Key` with an optional `S3ObjectVersion`: an object in the caller's account and region, copied when the call is made, with S3's error reported as `InvalidParameterValueException`) for python3.9–3.14, nodejs18.x–24.x, java11–25, ruby3.2–3.4, dotnet8/10, and provided.al2/al2023; `Image` packages (`ImageUri`); `Timeout`, `MemorySize`, `Environment` (reserved keys rejected, 4 KB limit), `Description`, `Architectures` |
 | GetFunction / GetFunctionConfiguration / ListFunctions / DeleteFunction | Name, partial ARN, or ARN, with a `Qualifier` (or `:qualifier` suffix) of `$LATEST`, a version, or an alias; 50 per page with `Marker`; GetFunction returns the tags; deleting a function deletes its versions and aliases, and deleting a version fails while an alias points to it |
-| UpdateFunctionCode / UpdateFunctionConfiguration | Replace the `ZipFile`, S3 object, or `ImageUri` (and `Architectures`), or change `Role`, `Runtime`, `Handler`, `Description`, `Timeout`, `MemorySize`, and `Environment` (fields left out keep their values); `RevisionId` preconditions and `DryRun`; `Publish` on code updates; warm containers are released so the next invocation runs the new revision |
+| UpdateFunctionCode / UpdateFunctionConfiguration | Replace the `ZipFile`, S3 object, or `ImageUri` (and `Architectures`), or change `Role`, `Runtime`, `Handler`, `Description`, `Timeout`, `MemorySize`, and `Environment` (fields left out keep their values); `RevisionId` preconditions and `DryRun`; `Publish` on code updates; warm execution environments are released so the next invocation runs the new revision |
 | PublishVersion / ListVersionsByFunction | Immutable numbered versions of `$LATEST`'s code and configuration, also from `Publish` on CreateFunction; publishing unchanged code and configuration returns the last version; `CodeSha256` and `RevisionId` preconditions; `$LATEST` then versions in order, with `Marker` and `MaxItems` |
 | CreateAlias / GetAlias / UpdateAlias / DeleteAlias / ListAliases | Names for `$LATEST` or a version, with a `Description` and `RoutingConfig` that sends a weighted share (0 to 1) of invocations to one other version (not with `$LATEST`); `RevisionId` preconditions; aliases in name order, optionally of one version |
 | PublishLayerVersion / GetLayerVersion / GetLayerVersionByArn / ListLayers / ListLayerVersions / DeleteLayerVersion | Zip packages (`ZipFile` or an S3 object) as numbered, immutable versions (numbers are never reused) with compatible runtimes and architectures, a description, and license; listings newest first, filtered by runtime and architecture |
-| `Layers` on CreateFunction / UpdateFunctionConfiguration | Up to five layer versions in the function's Region (none for Image functions; an empty list removes them); the docker runtime extracts them into `/opt` in order. A function, or a version published with them, fails to run once a layer version it uses is deleted |
+| `Layers` on CreateFunction / UpdateFunctionConfiguration | Up to five layer versions in the function's Region (none for Image functions; an empty list removes them); both executors extract them into an environment-specific `opt` directory in order. A function, or a version published with them, fails to run once a layer version it uses is deleted |
 | Create/Get/Update/Delete/ListFunctionUrlConfig(s) | One URL per function (`$LATEST`) or alias (not a version), with `AuthType` `NONE` or `AWS_IAM`, `Cors`, and `InvokeMode` (`RESPONSE_STREAM` is buffered); deleted with its function or alias. TinyStack serves each at `http://<URL ID>.lambda-url.<region>.localhost:4566/` (the `FunctionUrl` it reports, on the host the client used) or `/_aws/lambda-url/<URL ID>/...` on any host: requests invoke the function with a payload format 2.0 event and map its response as HTTP APIs do (502 for a function error, 429 when its reserved concurrency is in use); CORS preflights are answered from `Cors`, whose headers responses also get; `AWS_IAM` URLs require a SigV4 signature (`Authorization` or a presigned query), which is not verified |
 | PutFunctionConcurrency / GetFunctionConcurrency / DeleteFunctionConcurrency | Reserved concurrency from 0 to 900 (leaving the account's 100 unreserved executions), which caps the function's invocations in flight: one beyond it fails with `TooManyRequestsException`, so 0 turns the function off; GetFunction reports it as `Concurrency` |
 | Put/Get/Delete/ListProvisionedConcurrencyConfig(s) | Provisioned concurrency for a version or alias (not `$LATEST`), `READY` at once with every execution allocated; no environment is started early; deleted with its version or alias |

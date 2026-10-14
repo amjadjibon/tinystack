@@ -6,7 +6,9 @@ docker ps
 ```
 
 Run TinyStack where the Docker CLI can reach the daemon and returned loopback endpoints are usable.
-Startup wires Lambda's Docker adapter by default. Function management works without Docker; execution needs it.
+Lambda defaults to `lambda.executor: auto`: Docker when the CLI reaches a daemon, otherwise local Python/Node.
+Use `lambda.executor: docker` to force containers, or `local` for host execution. See
+[local Lambda configuration](../getting-started/configuration.md#lambda-without-docker) for prerequisites and limits.
 
 ## Enable optional adapters
 
@@ -51,6 +53,6 @@ task test:docker
 ```
 
 This opts into real Lambda, ECS, EKS, cache and RDS tests, including image pulls and privileged k3s containers.
-The adapters own cleanup and run outside store transactions. Regular Go integration tests use fake runtimes.
+The adapters own cleanup and run outside store transactions. Regular Go integration tests use fake runtimes unless a test explicitly opts into host execution.
 Persistent resource metadata does not preserve every engine's data or in-flight work; read the
 [restart matrix](persistence.md).

@@ -36,7 +36,7 @@ WebSocket subscriptions, MQTT sessions and some task tokens remain ephemeral.
 
 | Service | Default | Executing adapter |
 | --- | --- | --- |
-| Lambda | Docker runtime wired by startup | AWS runtime base images and pooled warm containers |
+| Lambda | Auto selects Docker or local Python/Node at startup | Pooled host processes or AWS runtime base-image containers |
 | ECS | Task records | `ecs.containers: docker` |
 | EKS | Cluster records | `eks.clusters: k3s` |
 | ElastiCache | Cache records | `elasticache.caches: docker` |

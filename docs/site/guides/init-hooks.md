@@ -91,7 +91,7 @@ page cannot reset your state.
 
 What reset clears besides records:
 
-- Lambda event source mapping pollers stop and warm Docker environments are removed.
+- Lambda event source mapping pollers stop and warm Lambda execution environments are removed.
 - ECS, EKS (k3s) and ElastiCache Docker containers that TinyStack started are removed.
 - Long polls on SQS wake up, and the cached ACM and IoT certificate authorities are forgotten, so new ones are made.
 
