@@ -26,6 +26,7 @@ const AdminSigningName = "tinystack"
 var adminPaths = []string{
 	"/_tinystack/reset", "/_tinystack/faults", "/_tinystack/requests", "/_tinystack/deliveries",
 	"/_tinystack/init", "/_localstack/chaos/", "/_localstack/init",
+	"/_tinystack/messages", "/_aws/ses", "/_aws/sns/sms-messages",
 }
 
 // memberPaths are the endpoints any signed-in person may read once the console

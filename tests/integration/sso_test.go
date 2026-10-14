@@ -877,7 +877,10 @@ func TestSSOConsoleRequiresSignIn(t *testing.T) {
 	}
 
 	// Nobody signed in sees nothing but health.
-	for _, path := range []string{"/_tinystack/resources", "/_tinystack/metrics", "/_tinystack/deliveries"} {
+	for _, path := range []string{
+		"/_tinystack/resources", "/_tinystack/metrics", "/_tinystack/deliveries",
+		"/_tinystack/messages", "/_aws/ses", "/_aws/sns/sms-messages",
+	} {
 		if resp := get(t, http.DefaultClient, e.console.URL+path); resp.StatusCode != http.StatusForbidden {
 			t.Fatalf("unsigned %s = %d", path, resp.StatusCode)
 		}
@@ -926,14 +929,18 @@ func TestSSOConsoleRequiresSignIn(t *testing.T) {
 		t.Fatalf("developer metrics = %d", status)
 	}
 
-	// Deliveries carry message bodies from every account.
-	for _, tc := range []struct {
-		person *ssoPerson
-		status int
-	}{{dev, http.StatusForbidden}, {admin, http.StatusOK}} {
-		if status, _ := e.signed(t, tc.person.credentials(), "tinystack", http.MethodGet, "/_tinystack/deliveries",
-			nil); status != tc.status {
-			t.Fatalf("%s deliveries = %d, want %d", tc.person.Name, status, tc.status)
+	// Deliveries and messages carry message bodies from every account.
+	for _, path := range []string{
+		"/_tinystack/deliveries", "/_tinystack/messages", "/_aws/ses", "/_aws/sns/sms-messages",
+	} {
+		for _, tc := range []struct {
+			person *ssoPerson
+			status int
+		}{{dev, http.StatusForbidden}, {admin, http.StatusOK}} {
+			if status, _ := e.signed(t, tc.person.credentials(), "tinystack", http.MethodGet, path,
+				nil); status != tc.status {
+				t.Fatalf("%s %s = %d, want %d", tc.person.Name, path, status, tc.status)
+			}
 		}
 	}
 }

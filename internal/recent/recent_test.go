@@ -38,3 +38,24 @@ func TestText(t *testing.T) {
 		t.Fatalf("got %d bytes ending %q", len(got), got[len(got)-3:])
 	}
 }
+
+func TestRetain(t *testing.T) {
+	l := New[int](5, "n")
+	for i := 1; i <= 5; i++ {
+		l.Add(i)
+	}
+
+	l.Retain(func(n int) bool {
+		return n%2 != 0
+	})
+	if got := l.List(); !slices.Equal(got, []int{5, 3, 1}) {
+		t.Fatalf("after retain got %v, want [5 3 1]", got)
+	}
+
+	l.Add(7)
+	l.Add(9)
+	l.Add(11)
+	if got := l.List(); !slices.Equal(got, []int{11, 9, 7, 5, 3}) {
+		t.Fatalf("after wrapping got %v, want [11 9 7 5 3]", got)
+	}
+}

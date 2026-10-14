@@ -611,6 +611,9 @@ func build(
 	}
 
 	handler.Handle("deliveries", deliveries)
+	handler.Handle("messages", delivery.MessagesHandler(deliveries))
+	handler.HandlePath("/_aws/ses", delivery.SESMessagesHandler(deliveries))
+	handler.HandlePath("/_aws/sns/sms-messages", delivery.SMSMessagesHandler(deliveries))
 	handler.Handle("iot/root-ca.pem", things.RootCA())
 	handler.Handle("reset", http.HandlerFunc(a.serveReset))
 	// LocalStack's path answers the same, for tools that wait on it. Scripts

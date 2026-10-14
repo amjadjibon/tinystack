@@ -5,6 +5,7 @@ package recent
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -54,6 +55,23 @@ func (l *Log[T]) List() []T {
 	}
 
 	return out
+}
+
+// Retain keeps only the entries where keep returns true, preserving ring order.
+func (l *Log[T]) Retain(keep func(T) bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	out := make([]T, 0, len(l.entries))
+	for i := range l.entries {
+		entry := l.entries[(l.next+len(l.entries)-1-i)%len(l.entries)]
+		if keep(entry) {
+			out = append(out, entry)
+		}
+	}
+
+	slices.Reverse(out)
+	l.entries = out
+	l.next = 0
 }
 
 func (l *Log[T]) Clear() {
