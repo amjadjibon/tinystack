@@ -130,8 +130,8 @@ func listQuotas(
 		return nil, nil, err
 	}
 
-	if err := checkService(service); err != nil {
-		return nil, nil, err
+	if serviceErr := checkService(service); serviceErr != nil {
+		return nil, nil, serviceErr
 	}
 
 	if code != nil {
@@ -288,8 +288,8 @@ func (s *Service) history(
 	}
 
 	if service != nil {
-		if err := checkService(service); err != nil {
-			return nil, nil, err
+		if serviceErr := checkService(service); serviceErr != nil {
+			return nil, nil, serviceErr
 		}
 	}
 
