@@ -2031,6 +2031,32 @@
       ],
       "execution": "Records only",
       "package": "servicequotas"
+    },
+    "emrserverless": {
+      "title": "Amazon EMR Serverless",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "summary": "Store Spark and Hive application and job-run metadata without executing code or provisioning compute.",
+      "features": [
+        "Fourteen pinned REST JSON operations: application create/get/update/delete/list/start/stop, job start/get/list/cancel and three native tag operations",
+        "Application transitions complete synchronously: creation returns CREATED, start returns STARTED and stop returns STOPPED; deletion completes TERMINATED and removes the application and its job history",
+        "Application release label, type, architecture, worker and maximum capacity, auto-start/stop and network configuration validation and metadata; updates require CREATED or STOPPED",
+        "Jobs report SUBMITTED, PENDING, SCHEDULED, RUNNING and SUCCESS on successive GetJobRun calls; cancellation synchronously returns CANCELLED and terminal jobs cannot be cancelled",
+        "Spark submit and Hive driver metadata, application configuration overrides, execution role ARN validation, job timeout metadata and explicit simulated state details",
+        "Idempotent create/update/job-start client tokens, conflict detection for changed parameters, pagination (default and maximum 50), application/job state filters",
+        "Application and job ARN tags with the shared 50-tag limit, Resource Groups Tagging API integration, scoped inventory with RecordsOnly=true and ExecutionReady=false, console listing and Terraform aws_emrserverless_application"
+      ],
+      "gaps": [
+        "Nothing runs: SUCCESS is simulated and does not mean Spark or Hive code executed; no scripts or queries are fetched, no workers or networking are provisioned, and no metrics, logs, results or billing are produced",
+        "Application transitional states are not observable; GetJobRun advances stored job state after returning it, while list and inventory reads do not advance jobs",
+        "Auto-start starts application metadata when enabled; auto-stop idle timers and execution timeouts are stored but not enforced",
+        "GetDashboardForJobRun and other dashboard/session APIs are not whitelisted because no honest executable dashboard or session exists",
+        "Images, worker type specifications, runtime/monitoring/disk-encryption/interactive/scheduler/identity-center/cost-allocation configurations, execution IAM policy, job modes/retries, creation time filters and attempt selection are unsupported and rejected",
+        "Release labels are checked syntactically rather than against a regional release catalog; capacity is metadata and not allocated; subnet/security group and execution role existence or IAM permissions are not checked",
+        "No CloudFormation application provider; deletion removes retained job records, and idempotency records remain until state reset"
+      ],
+      "execution": "Records only",
+      "package": "emrserverless"
     }
   },
   "future": {
