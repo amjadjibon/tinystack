@@ -100,6 +100,13 @@ func Global(ctx context.Context) (Metadata, error) {
 	return m, nil
 }
 
+// GlobalScope is Global for account-wide services: the scope names the account and no Region, so a request
+// signed in any Region sees the same records.
+func GlobalScope(ctx context.Context) (Scope, error) {
+	m, err := Global(ctx)
+	return Scope{AccountID: m.AccountID}, err
+}
+
 // RegionalScope is Regional for callers that need only the account and Region.
 func RegionalScope(ctx context.Context) (Scope, error) {
 	m, err := Regional(ctx)

@@ -50,11 +50,6 @@ func (r *record) name() string {
 	}
 }
 
-func globalScope(ctx context.Context) (request.Scope, error) {
-	m, err := request.Global(ctx)
-	return request.Scope{AccountID: m.AccountID}, err
-}
-
 var arnPattern = regexp.MustCompile(`^arn:aws[-a-z0-9]*:[a-z0-9]+:[-a-z0-9]*:[0-9]{12}:[-a-zA-Z0-9/:_]+$`)
 
 func resourceKey(scope request.Scope, value *string, kind string) (string, error) {
@@ -95,7 +90,7 @@ func notFound(kind string) error {
 }
 
 func (s *Service) create(ctx context.Context, kind string, r *record, tags []api.ResourceTag) error {
-	scope, err := globalScope(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -148,7 +143,7 @@ func (s *Service) edit(
 	kind string,
 	change func(*record, storage.WriteTx) error,
 ) error {
-	scope, err := globalScope(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -177,7 +172,7 @@ func (s *Service) edit(
 }
 
 func (s *Service) remove(ctx context.Context, value *string, kind string) error {
-	scope, err := globalScope(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -205,7 +200,7 @@ func (s *Service) list(
 	filter func(*record) bool,
 	references []string,
 ) ([]*record, *string, error) {
-	scope, err := globalScope(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -264,7 +259,7 @@ func today() string { return time.Now().UTC().Format("2006-01-02") }
 
 // read resolves an ARN within the caller's account without writing state.
 func (s *Service) read(ctx context.Context, value *string, kind string) (*record, error) {
-	scope, err := globalScope(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

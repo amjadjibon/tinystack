@@ -113,7 +113,7 @@ func (s *Service) UpdateAnomalySubscription(
 		return nil, awserror.Validation("Threshold and ThresholdExpression are mutually exclusive.")
 	}
 
-	scope, err := globalScope(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

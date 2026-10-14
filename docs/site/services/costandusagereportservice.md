@@ -11,7 +11,7 @@ Store legacy CUR report definitions and tags as account-wide records without gen
 | Signing name | `cur` |
 | Wire protocol | AWS JSON 1.1 |
 | API version | `2017-01-06` |
-| Scope | Account and region |
+| Scope | Account-wide |
 | Execution | Records only |
 | Selected operations | 7 of 7 in the pinned model |
 

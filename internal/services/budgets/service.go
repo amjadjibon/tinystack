@@ -37,7 +37,7 @@ func missing() error {
 func duplicate() error { return awserror.New("DuplicateRecordException", "The record already exists.") }
 
 func scopeFor(ctx context.Context, account *string) (request.Scope, error) {
-	m, err := request.Global(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return request.Scope{}, err
 	}
@@ -46,11 +46,11 @@ func scopeFor(ctx context.Context, account *string) (request.Scope, error) {
 		return request.Scope{}, invalid("AccountId must contain 12 digits.")
 	}
 
-	if *account != m.AccountID {
+	if *account != scope.AccountID {
 		return request.Scope{}, awserror.New("AccessDeniedException", "AccountId must match the request account.")
 	}
 
-	return request.Scope{AccountID: m.AccountID}, nil
+	return scope, nil
 }
 
 func key(scope request.Scope, name string) string {

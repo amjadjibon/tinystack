@@ -11,7 +11,7 @@ Store account-wide anomaly monitors, anomaly subscriptions and cost category def
 | Signing name | `ce` |
 | Wire protocol | AWS JSON 1.1 |
 | API version | `2017-10-25` |
-| Scope | Account and region |
+| Scope | Account-wide |
 | Execution | Records only |
 | Selected operations | 16 of 47 in the pinned model |
 

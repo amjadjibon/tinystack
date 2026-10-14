@@ -6,6 +6,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/costandusagereportservice"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -30,7 +31,7 @@ func checkTags(tags []api.Tag) (map[string]string, error) {
 
 // changeTags reads the named report and applies a tag mutation in one transaction.
 func (s *Service) changeTags(ctx context.Context, name *string, change func(*reportRecord) error) error {
-	scope, err := scopeOf(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return err
 	}
@@ -105,7 +106,7 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceReques
 func (s *Service) ListTagsForResource(ctx context.Context, in *api.ListTagsForResourceRequest) (
 	*api.ListTagsForResourceResponse, error,
 ) {
-	scope, err := scopeOf(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return nil, err
 	}

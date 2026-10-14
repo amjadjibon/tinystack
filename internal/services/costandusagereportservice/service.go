@@ -29,11 +29,6 @@ type (
 
 func New(store storage.Store) *Service { return &Service{store: store} }
 
-func scopeOf(ctx context.Context) (request.Scope, error) {
-	m, err := request.Global(ctx)
-	return request.Scope{AccountID: m.AccountID}, err
-}
-
 var (
 	namePattern   = regexp.MustCompile(`^[0-9A-Za-z!\-_.*'()]+$`)
 	bucketPattern = regexp.MustCompile(`^[A-Za-z0-9_.\-]+$`)
@@ -109,7 +104,7 @@ func checkDefinition(d *api.ReportDefinition) error {
 func (s *Service) PutReportDefinition(ctx context.Context, in *api.PutReportDefinitionRequest) (
 	*api.PutReportDefinitionResponse, error,
 ) {
-	scope, err := scopeOf(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +132,7 @@ func (s *Service) PutReportDefinition(ctx context.Context, in *api.PutReportDefi
 func (s *Service) DescribeReportDefinitions(ctx context.Context, in *api.DescribeReportDefinitionsRequest) (
 	*api.DescribeReportDefinitionsResponse, error,
 ) {
-	scope, err := scopeOf(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +172,7 @@ func (s *Service) DescribeReportDefinitions(ctx context.Context, in *api.Describ
 func (s *Service) ModifyReportDefinition(ctx context.Context, in *api.ModifyReportDefinitionRequest) (
 	*api.ModifyReportDefinitionResponse, error,
 ) {
-	scope, err := scopeOf(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +209,7 @@ func (s *Service) ModifyReportDefinition(ctx context.Context, in *api.ModifyRepo
 func (s *Service) DeleteReportDefinition(ctx context.Context, in *api.DeleteReportDefinitionRequest) (
 	*api.DeleteReportDefinitionResponse, error,
 ) {
-	scope, err := scopeOf(ctx)
+	scope, err := request.GlobalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
