@@ -10,8 +10,14 @@ import (
 // Function is what a Runtime needs to run one function.
 type Function struct {
 	Environment map[string]string
-	ARN         string
-	Name        string
+	// Invocation metadata is not part of the environment revision.
+	Endpoint        string
+	RequestID       string
+	TraceID         string
+	ClientContext   string
+	CognitoIdentity string
+	ARN             string
+	Name            string
 	// Version is the version that runs: a number or $LATEST.
 	Version     string
 	Region      string

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log/slog"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -12,6 +13,7 @@ import (
 func newStartCommand() *cobra.Command {
 	var configPath, host, initDir, authorization string
 	var port, consolePort int
+	var executor, python, node string
 	start := &cobra.Command{
 		Use:   "start",
 		Short: "Run the local AWS endpoint in the foreground",
@@ -24,6 +26,28 @@ func newStartCommand() *cobra.Command {
 			envReport, err := config.ApplyLocalStackEnv(&cfg, nil, nil)
 			if err != nil {
 				return err
+			}
+
+			for key, target := range map[string]*string{
+				"TINYSTACK_LAMBDA_EXECUTOR":     &cfg.Lambda.Executor,
+				"TINYSTACK_LAMBDA_LOCAL_PYTHON": &cfg.Lambda.Local.Python,
+				"TINYSTACK_LAMBDA_LOCAL_NODE":   &cfg.Lambda.Local.Node,
+			} {
+				if value, present := os.LookupEnv(key); present {
+					*target = value
+				}
+			}
+
+			if cmd.Flags().Changed("lambda-executor") {
+				cfg.Lambda.Executor = executor
+			}
+
+			if cmd.Flags().Changed("lambda-local-python") {
+				cfg.Lambda.Local.Python = python
+			}
+
+			if cmd.Flags().Changed("lambda-local-node") {
+				cfg.Lambda.Local.Node = node
 			}
 
 			if cmd.Flags().Changed("host") {
@@ -73,5 +97,8 @@ func newStartCommand() *cobra.Command {
 	start.Flags().StringVar(
 		&initDir, "init-dir", config.DefaultInitDir, "directory of <stage>.d init scripts (empty turns them off)",
 	)
+	start.Flags().StringVar(&executor, "lambda-executor", config.ExecutorAuto, "Lambda executor: auto, docker or local")
+	start.Flags().StringVar(&python, "lambda-local-python", "python3", "local Lambda Python interpreter")
+	start.Flags().StringVar(&node, "lambda-local-node", "node", "local Lambda Node interpreter")
 	return start
 }

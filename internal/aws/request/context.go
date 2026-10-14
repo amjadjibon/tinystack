@@ -22,6 +22,8 @@ type Metadata struct {
 	Principal *Principal
 	Scope
 	RequestID, Service, Operation, Protocol, AccessKey string
+	// TraceID carries an incoming X-Ray trace header to function runtimes.
+	TraceID string
 	// Endpoint is the base URL the client used, for resource URLs such as SQS queue URLs.
 	Endpoint string
 }

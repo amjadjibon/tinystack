@@ -37,6 +37,8 @@ const (
 // retryDelay spaces asynchronous retries.
 var retryDelay = time.Second
 
+type clientContextKey struct{}
+
 // prepare loads what the runtime needs to run the function stored under name
 // at qualifier: $LATEST when it is empty, a version, or an alias.
 func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualifier string) (*Function, error) {
@@ -83,7 +85,13 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 		env[k] = v
 	}
 
+	metadata, _ := request.FromContext(ctx)
+	clientContext, _ := ctx.Value(clientContextKey{}).(string)
 	return &Function{
+		Endpoint:      metadata.Endpoint,
+		RequestID:     metadata.RequestID,
+		TraceID:       metadata.TraceID,
+		ClientContext: clientContext,
 		Environment:   env,
 		ARN:           fn.arn(scope),
 		Name:          fn.Name,
@@ -120,7 +128,7 @@ func (s *Service) run(
 	if fn.HotReloadPath != "" {
 		runtime, ok := s.runtime.(DirectoryRuntime)
 		if !ok || !runtime.SupportsDirectories() {
-			return Result{}, "", "", invalid("Hot reload invocation requires the Docker runtime; " +
+			return Result{}, "", "", invalid("Hot reload invocation requires a directory-capable runtime; " +
 				"the in-process runtime does not support host directories")
 		}
 	}
@@ -306,6 +314,24 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 			return nil, checkErr
 		}
 
+		if in.ClientContext != nil {
+			if len(*in.ClientContext) > 3583 {
+				return nil, invalid("ClientContext must be at most 3583 base64 bytes")
+			}
+
+			decoded, decodeErr := base64.StdEncoding.DecodeString(*in.ClientContext)
+			if decodeErr != nil || !json.Valid(decoded) {
+				return nil, invalid("ClientContext must be base64-encoded JSON")
+			}
+
+			var document map[string]json.RawMessage
+			if json.Unmarshal(decoded, &document) != nil || document == nil {
+				return nil, invalid("ClientContext must contain a JSON object")
+			}
+
+			ctx = context.WithValue(ctx, clientContextKey{}, string(decoded))
+		}
+
 		result, log, version, runErr := s.run(ctx, m.Scope, name, q, payload)
 		if runErr != nil {
 			return nil, runErr
@@ -316,6 +342,7 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 			Payload:         result.Payload,
 			ExecutedVersion: &version,
 		}
+
 		if tail {
 			out.LogResult = new(base64.StdEncoding.EncodeToString([]byte(log[max(0, len(log)-maxLogTail):])))
 		}

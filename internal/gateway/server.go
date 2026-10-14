@@ -394,6 +394,7 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	c := &call{meta: request.Metadata{
 		Scope:    request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
 		Protocol: catalog.AWSJSON10,
+		TraceID:  r.Header.Get("X-Amzn-Trace-Id"),
 	}}
 	target := r.Header.Get("X-Amz-Target")
 	cbor := r.Header.Get(rpcv2cbor.Header) == rpcv2cbor.Protocol

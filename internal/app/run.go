@@ -15,7 +15,10 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/inithooks"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
+	"github.com/amjadjibon/tinystack/internal/services/lambda/local"
 	"github.com/amjadjibon/tinystack/ui"
 )
 
@@ -23,7 +26,7 @@ import (
 // keep TinyStack from exiting.
 const shutdownScriptsTimeout = 30 * time.Second
 
-// Run opens the configured storage, assembles TinyStack with the Docker Lambda
+// Run opens the configured storage, assembles TinyStack with the configured Lambda
 // runtime, and serves it, plus the MQTT listeners and the web console, until
 // ctx is cancelled or SIGINT or SIGTERM arrives. It returns nil after a clean
 // shutdown. cfg must be valid.
@@ -49,7 +52,35 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 		}
 	}()
 
-	tinystack, err := build(ctx, cfg, store, docker.New(), logger, hooks)
+	executor := cfg.Lambda.Executor
+	if executor == config.ExecutorAuto {
+		probe, cancel := context.WithTimeout(ctx, 3*time.Second)
+		_, probeErr := dockercli.Run(probe, nil, "info", "--format", "{{.ServerVersion}}")
+		cancel()
+		executor = config.ExecutorLocal
+		if probeErr == nil {
+			executor = config.ExecutorDocker
+		}
+	}
+
+	var runtime lambda.Runtime
+	if executor == config.ExecutorDocker {
+		runtime = docker.New()
+	} else {
+		host := cfg.Server.Host
+		if host == "0.0.0.0" || host == "::" {
+			host = "127.0.0.1"
+		}
+
+		runtime = local.New(local.Options{
+			Python: cfg.Lambda.Local.Python, Node: cfg.Lambda.Local.Node,
+			Endpoint: "http://" + net.JoinHostPort(host, strconv.Itoa(cfg.Server.Port)), Logger: logger,
+		})
+	}
+
+	defer runtime.Close()
+	logger.Info("Lambda executor selected", "executor", executor)
+	tinystack, err := build(ctx, cfg, store, runtime, logger, hooks)
 	if err != nil {
 		return err
 	}

@@ -54,6 +54,13 @@ const (
 	CachesDocker  = "docker"
 )
 
+// Lambda executor modes select containers, host interpreters, or daemon detection.
+const (
+	ExecutorAuto   = "auto"
+	ExecutorDocker = "docker"
+	ExecutorLocal  = "local"
+)
+
 // Init script directories: TinyStack's own and LocalStack's, which are read
 // when they exist.
 const (
@@ -220,6 +227,13 @@ type Config struct {
 		Path           string `yaml:"path"`
 		MaxObjectBytes int64  `yaml:"s3_max_object_bytes"`
 	} `yaml:"storage"`
+	Lambda struct {
+		Executor string `yaml:"executor"`
+		Local    struct {
+			Python string `yaml:"python"`
+			Node   string `yaml:"node"`
+		} `yaml:"local"`
+	} `yaml:"lambda"`
 	ECS struct {
 		Containers string `yaml:"containers"`
 	} `yaml:"ecs"`
@@ -275,6 +289,9 @@ func Default() Config {
 	c.Identity.Mode = IdentityParse
 	c.Identity.Authorization = AuthorizationOff
 	c.Identity.Accounts = map[string]string{}
+	c.Lambda.Executor = ExecutorAuto
+	c.Lambda.Local.Python = "python3"
+	c.Lambda.Local.Node = "node"
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
 	c.ElastiCache.Caches = CachesRecords
@@ -310,6 +327,7 @@ func Load(path string) (Config, error) {
 				Region *string `yaml:"region"`
 			} `yaml:"defaults"`
 		}
+
 		if probeErr := yaml.Unmarshal(data, &probe); probeErr == nil && probe.Defaults.Region != nil {
 			c.RegionSetInFile = true
 		}
@@ -382,10 +400,12 @@ func (c *Config) Validate() error {
 		if len(c.Identity.SecretKeys) > 0 {
 			return fmt.Errorf("identity.secret_keys requires identity.mode: verify")
 		}
+
 	case IdentityVerify:
 		if len(c.Identity.SecretKeys) == 0 {
 			return fmt.Errorf("identity.mode: verify requires identity.secret_keys")
 		}
+
 	default:
 		return fmt.Errorf("identity.mode must be parse or verify")
 	}
@@ -413,12 +433,24 @@ func (c *Config) Validate() error {
 		if c.Storage.Path != "" {
 			return fmt.Errorf("storage.path requires storage.mode: persistent")
 		}
+
 	case StoragePersistent:
 		if c.Storage.Path == "" {
 			return fmt.Errorf("storage.mode: persistent requires storage.path")
 		}
+
 	default:
 		return fmt.Errorf("storage.mode must be memory or persistent")
+	}
+
+	switch c.Lambda.Executor {
+	case ExecutorAuto, ExecutorDocker, ExecutorLocal:
+	default:
+		return fmt.Errorf("lambda.executor must be docker, local or auto")
+	}
+
+	if c.Lambda.Local.Python == "" || c.Lambda.Local.Node == "" {
+		return fmt.Errorf("lambda.local.python and lambda.local.node must name interpreters")
 	}
 
 	if c.ECS.Containers != ContainersRecords && c.ECS.Containers != ContainersDocker {
