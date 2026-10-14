@@ -80,6 +80,7 @@ func defaultGroup(vpcID string) *securityGroup {
 	g := &securityGroup{
 		ID: newID("sg"), Name: defaultGroupName, Description: "default VPC security group", VPCID: vpcID,
 	}
+
 	g.Ingress = []rule{{ID: newID("sgr"), Protocol: allProtocols, Group: g.ID}}
 	g.Egress = []rule{{ID: newID("sgr"), Protocol: allProtocols, CIDR: anywhere}}
 	return g
@@ -246,6 +247,10 @@ func expand(tx storage.ReadTx, scope request.Scope, perms []api.IpPermission) ([
 		for _, pl := range p.PrefixListIds {
 			r := base
 			r.PrefixList = common.Value(pl.PrefixListId)
+			if err := prefixListExists(tx, scope, r.PrefixList); err != nil {
+				return nil, err
+			}
+
 			if addErr := add(r, pl.Description); addErr != nil {
 				return nil, addErr
 			}
@@ -329,6 +334,7 @@ func ruleOutput(scope request.Scope, g *securityGroup, r *rule, egress bool) api
 			scope.Region, scope.AccountID, r.ID)),
 		Tags: tagList(r.Tags),
 	}
+
 	if r.FromPort != nil {
 		out.FromPort, out.ToPort = r.FromPort, r.ToPort
 	}
@@ -356,6 +362,7 @@ func groupValues(scope request.Scope, g *securityGroup) values {
 		filterGroupID: {g.ID}, "group-name": {g.Name}, filterDescription: {g.Description}, filterVPCID: {g.VPCID},
 		filterOwnerID: {scope.AccountID},
 	}
+
 	for prefix, rules := range map[string][]rule{"ip-permission.": g.Ingress, "egress.ip-permission.": g.Egress} {
 		for _, name := range []string{
 			filterCIDR, "ipv6-cidr", filterPrefixList, filterGroupID, "protocol", "from-port",

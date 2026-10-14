@@ -46,6 +46,8 @@ type vpc struct {
 	Tenancy       string
 	AssociationID string
 	DHCPOptionsID string
+	CIDRs         []cidrAssociation
+	IPv6CIDRs     []cidrAssociation
 	IsDefault     bool
 	// NoDNSSupport turns off enableDnsSupport, which is on by default.
 	NoDNSSupport bool
@@ -62,9 +64,11 @@ type subnet struct {
 	// HostnameType is the private DNS host name type of instances launched
 	// into the subnet; empty means ip-name.
 	HostnameType string
+	IPv6CIDRs    []cidrAssociation
 	DefaultForAZ bool
 	MapPublicIP  bool
 	DNSARecord   bool
+	AssignIPv6   bool
 }
 
 // zoneID returns the ID of a zone, such as use1-az1 for us-east-1a: the
@@ -74,6 +78,7 @@ func zoneID(region, suffix string) string {
 		"north": "n", "south": "s", "east": "e", "west": "w", "central": "c",
 		"northeast": "ne", "northwest": "nw", "southeast": "se", "southwest": "sw",
 	}
+
 	parts := strings.Split(region, "-")
 	id := parts[0]
 	for _, part := range parts[1:] {
@@ -240,6 +245,7 @@ func createDefaultVPC(tx storage.WriteTx, scope request.Scope) error {
 			ID: newID("subnet"), VPCID: v.ID, CIDR: fmt.Sprintf("172.31.%d.0/20", i*16),
 			Zone: scope.Region + suffix, DefaultForAZ: true, MapPublicIP: true,
 		}
+
 		if err := createSubnetRecord(tx, scope, sn); err != nil {
 			return err
 		}
@@ -309,7 +315,13 @@ func upgradeVPCs(tx storage.WriteTx, scope request.Scope) error {
 // network ACL, and its main route table, which holds routes after the local
 // one.
 func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route) error {
-	v.AssociationID, v.DHCPOptionsID = newID("vpc-cidr-assoc"), newID("dopt")
+	v.AssociationID = newID("vpc-cidr-assoc")
+	var err error
+	v.DHCPOptionsID, err = defaultDHCPOptions(tx, scope)
+	if err != nil {
+		return err
+	}
+
 	g := defaultGroup(v.ID)
 	if err := storage.Write(tx, scope.Key("ec2", kindSecurityGroup, g.ID), g); err != nil {
 		return err
@@ -327,7 +339,7 @@ func createVPC(tx storage.WriteTx, scope request.Scope, v *vpc, routes ...route)
 }
 
 func vpcOutput(scope request.Scope, v *vpc) api.Vpc {
-	return api.Vpc{
+	out := api.Vpc{
 		VpcId: new(v.ID), CidrBlock: new(v.CIDR), State: new(stateAvailable), OwnerId: new(scope.AccountID),
 		InstanceTenancy: new(v.Tenancy), IsDefault: new(v.IsDefault), DhcpOptionsId: new(v.DHCPOptionsID),
 		CidrBlockAssociationSet: []api.VpcCidrBlockAssociation{{
@@ -336,10 +348,26 @@ func vpcOutput(scope request.Scope, v *vpc) api.Vpc {
 		}},
 		Tags: tagList(v.Tags),
 	}
+
+	for _, a := range v.CIDRs {
+		out.CidrBlockAssociationSet = append(out.CidrBlockAssociationSet, api.VpcCidrBlockAssociation{
+			AssociationId: new(
+				a.ID,
+			),
+			CidrBlock:      new(a.CIDR),
+			CidrBlockState: &api.VpcCidrBlockState{State: new(a.State)},
+		})
+	}
+
+	for _, a := range v.IPv6CIDRs {
+		out.Ipv6CidrBlockAssociationSet = append(out.Ipv6CidrBlockAssociationSet, vpcIPv6Output(&a))
+	}
+
+	return out
 }
 
 func vpcValues(scope request.Scope, v *vpc) values {
-	return values{
+	out := values{
 		filterVPCID:                             {v.ID},
 		filterCIDR:                              {v.CIDR},
 		"cidr-block-association.cidr-block":     {v.CIDR},
@@ -353,6 +381,29 @@ func vpcValues(scope request.Scope, v *vpc) values {
 		filterOwnerID: {scope.AccountID},
 		filterState:   {stateAvailable},
 	}.withTags(v.Tags)
+
+	for _, a := range v.CIDRs {
+		out["cidr-block-association.cidr-block"] = append(out["cidr-block-association.cidr-block"], a.CIDR)
+		out["cidr-block-association.association-id"] = append(out["cidr-block-association.association-id"], a.ID)
+		out["cidr-block-association.state"] = append(out["cidr-block-association.state"], a.State)
+	}
+
+	out["ipv6-cidr-block-association.ipv6-cidr-block"] = []string{}
+	out["ipv6-cidr-block-association.association-id"] = []string{}
+	out["ipv6-cidr-block-association.state"] = []string{}
+	for _, a := range v.IPv6CIDRs {
+		out["ipv6-cidr-block-association.ipv6-cidr-block"] = append(
+			out["ipv6-cidr-block-association.ipv6-cidr-block"],
+			a.CIDR,
+		)
+		out["ipv6-cidr-block-association.association-id"] = append(
+			out["ipv6-cidr-block-association.association-id"],
+			a.ID,
+		)
+		out["ipv6-cidr-block-association.state"] = append(out["ipv6-cidr-block-association.state"], a.State)
+	}
+
+	return out
 }
 
 func vpcNotFound(id string) error { return notFound("InvalidVpcID.NotFound", "vpc", id) }
@@ -375,10 +426,17 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 		return nil, err
 	}
 
-	if common.Value(in.AmazonProvidedIpv6CidrBlock) {
-		return nil, invalidParameter("TinyStack VPCs have no IPv6 CIDR blocks")
+	if common.Value(in.AmazonProvidedIpv6CidrBlock) && in.Ipv6CidrBlock != nil {
+		return nil, invalidParameter("Specify either AmazonProvidedIpv6CidrBlock or Ipv6CidrBlock")
 	}
 
+	if err := explicitIPv6Pool(
+		in.Ipv6CidrBlock,
+		in.Ipv6Pool,
+		common.Value(in.AmazonProvidedIpv6CidrBlock),
+	); err != nil {
+		return nil, err
+	}
 	tenancy := common.Value(in.InstanceTenancy)
 	switch tenancy {
 	case "":
@@ -400,8 +458,26 @@ func (s *Service) CreateVpc(ctx context.Context, in *api.CreateVpcRequest) (*api
 			return awserror.New("VpcLimitExceeded", "The maximum number of VPCs has been reached.")
 		}
 
+		if in.Ipv6CidrBlock != nil || common.Value(in.AmazonProvidedIpv6CidrBlock) {
+			text := common.Value(in.Ipv6CidrBlock)
+			if common.Value(in.AmazonProvidedIpv6CidrBlock) {
+				text = amazonIPv6(scope, v.ID)
+			}
+
+			if addVpcIPv6Err := addVpcIPv6(scope, v, text, ""); addVpcIPv6Err != nil {
+				return addVpcIPv6Err
+			}
+		}
+
+		if len(v.IPv6CIDRs) > 0 {
+			v.IPv6CIDRs[0].Pool = common.Value(in.Ipv6Pool)
+		}
+		if createVPCErr := createVPC(tx, scope, v); createVPCErr != nil {
+			return createVPCErr
+		}
+
 		out = vpcOutput(scope, v)
-		return createVPC(tx, scope, v)
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -447,6 +523,10 @@ func (s *Service) DeleteVpc(ctx context.Context, in *api.DeleteVpcRequest) (*api
 
 		endpoints, err := list[vpcEndpoint](tx, scope, kindVPCEndpoint)
 		if err != nil {
+			return err
+		}
+
+		if err := networkingDependencies(tx, scope, v.ID); err != nil {
 			return err
 		}
 
@@ -519,13 +599,13 @@ func (s *Service) DescribeVpcs(ctx context.Context, in *api.DescribeVpcsRequest)
 func subnetOutput(scope request.Scope, sn *subnet) api.Subnet {
 	p := netip.MustParsePrefix(sn.CIDR)
 	suffix := strings.TrimPrefix(sn.Zone, scope.Region)
-	return api.Subnet{
+	out := api.Subnet{
 		SubnetId: new(sn.ID), VpcId: new(sn.VPCID), CidrBlock: new(sn.CIDR), State: new(stateAvailable),
 		AvailabilityZone: new(sn.Zone), AvailabilityZoneId: new(zoneID(scope.Region, suffix)),
 		// AWS reserves five addresses in every subnet.
 		AvailableIpAddressCount: new(int64(1)<<(32-p.Bits()) - 5),
 		DefaultForAz:            new(sn.DefaultForAZ), MapPublicIpOnLaunch: new(sn.MapPublicIP),
-		OwnerId: new(scope.AccountID), AssignIpv6AddressOnCreation: new(false), Ipv6Native: new(false),
+		OwnerId: new(scope.AccountID), AssignIpv6AddressOnCreation: new(sn.AssignIPv6), Ipv6Native: new(false),
 		SubnetArn: new(subnetARN(scope, sn)), EnableDns64: new(false), MapCustomerOwnedIpOnLaunch: new(false),
 		PrivateDnsNameOptionsOnLaunch: &api.PrivateDnsNameOptionsOnLaunch{
 			HostnameType:                    new(cmp.Or(sn.HostnameType, hostnameIPName)),
@@ -534,6 +614,12 @@ func subnetOutput(scope request.Scope, sn *subnet) api.Subnet {
 		},
 		Tags: tagList(sn.Tags),
 	}
+
+	for _, a := range sn.IPv6CIDRs {
+		out.Ipv6CidrBlockAssociationSet = append(out.Ipv6CidrBlockAssociationSet, subnetIPv6Output(&a))
+	}
+
+	return out
 }
 
 func subnetARN(scope request.Scope, sn *subnet) string {
@@ -551,7 +637,7 @@ func subnetValues(scope request.Scope, sn *subnet) values {
 		zoneIDValue = zoneID(scope.Region, strings.TrimPrefix(sn.Zone, scope.Region))
 	}
 
-	return values{
+	out := values{
 		filterSubnetID: {sn.ID}, filterVPCID: {sn.VPCID}, "cidr-block": {sn.CIDR}, filterCIDR: {sn.CIDR},
 		"cidrBlock": {sn.CIDR}, filterZone: {zoneName}, "availabilityZone": {zoneName},
 		"availability-zone-id": {zoneIDValue}, "default-for-az": boolValue(sn.DefaultForAZ),
@@ -559,6 +645,23 @@ func subnetValues(scope request.Scope, sn *subnet) values {
 		"map-public-ip-on-launch": boolValue(sn.MapPublicIP), "available-ip-address-count": {count},
 		"subnet-arn": {subnetARN(scope, sn)}, "ipv6-native": boolValue(false),
 	}.withTags(sn.Tags)
+
+	out["ipv6-cidr-block-association.ipv6-cidr-block"] = []string{}
+	out["ipv6-cidr-block-association.association-id"] = []string{}
+	out["ipv6-cidr-block-association.state"] = []string{}
+	for _, a := range sn.IPv6CIDRs {
+		out["ipv6-cidr-block-association.ipv6-cidr-block"] = append(
+			out["ipv6-cidr-block-association.ipv6-cidr-block"],
+			a.CIDR,
+		)
+		out["ipv6-cidr-block-association.association-id"] = append(
+			out["ipv6-cidr-block-association.association-id"],
+			a.ID,
+		)
+		out["ipv6-cidr-block-association.state"] = append(out["ipv6-cidr-block-association.state"], a.State)
+	}
+
+	return out
 }
 
 func subnetNotFound(id string) error { return notFound("InvalidSubnetID.NotFound", "subnet", id) }
@@ -585,7 +688,7 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 			return loadErr
 		}
 
-		if parent := netip.MustParsePrefix(v.CIDR); !parent.Contains(block.Addr()) || block.Bits() < parent.Bits() {
+		if !containsBlock(vpcIPv4Blocks(v), block) {
 			return awserror.New("InvalidSubnet.Range", fmt.Sprintf("The CIDR '%s' is invalid.", *in.CidrBlock))
 		}
 
@@ -607,6 +710,12 @@ func (s *Service) CreateSubnet(ctx context.Context, in *api.CreateSubnetRequest)
 		}
 
 		sn := &subnet{ID: newID("subnet"), VPCID: v.ID, CIDR: block.String(), Zone: name, Tags: tags}
+		if in.Ipv6CidrBlock != nil {
+			if addSubnetIPv6Err := addSubnetIPv6(tx, scope, v, sn, *in.Ipv6CidrBlock); addSubnetIPv6Err != nil {
+				return addSubnetIPv6Err
+			}
+		}
+
 		out = subnetOutput(scope, sn)
 		return createSubnetRecord(tx, scope, sn)
 	})

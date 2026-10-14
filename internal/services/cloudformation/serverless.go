@@ -543,12 +543,12 @@ func (e *expander) function(id string, decl map[string]any, p props) error {
 			return samError(id, "TinyStack requires AutoPublishAlias to be an alias name")
 		}
 
-		version := id + "Version" + hash(code, 10)
+		version := id + memberVersion + hash(code, 10)
 		versioned := pick(map[string]any{memberFunctionName: ref(id)}, p, "AutoPublishCodeSha256")
 		if sha, ok := versioned["AutoPublishCodeSha256"]; ok {
 			delete(versioned, "AutoPublishCodeSha256")
 			versioned["CodeSha256"] = sha
-			version = id + "Version" + hash([]any{code, sha}, 10)
+			version = id + memberVersion + hash([]any{code, sha}, 10)
 		}
 
 		v := derived(decl, "AWS::Lambda::Version", versioned)
@@ -1207,7 +1207,7 @@ func (e *expander) rewrite(v any) any {
 	case map[string]any:
 		if name, ok := x[fnRef].(string); ok && len(x) == 1 {
 			fn, suffix, dotted := strings.Cut(name, ".")
-			if published, ok := e.published[fn]; ok && dotted && (suffix == "Alias" || suffix == "Version") {
+			if published, ok := e.published[fn]; ok && dotted && (suffix == "Alias" || suffix == memberVersion) {
 				if suffix == "Alias" {
 					return ref(published[0])
 				}

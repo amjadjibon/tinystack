@@ -88,7 +88,7 @@ func tagSpecifications(kind string, p props) []any {
 		return nil
 	}
 
-	return []any{map[string]any{"ResourceType": kind, memberTags: tagList(tags, memberKey, memberValue)}}
+	return []any{map[string]any{wireResourceType: kind, memberTags: tagList(tags, memberKey, memberValue)}}
 }
 
 // retagEC2 moves an EC2 resource's tags from old's Tags property to p's.
@@ -130,8 +130,8 @@ func createVpc(ctx context.Context, c *client, p props) (physical string, attrib
 
 	id := outText(out, "Vpc", memberVpcID)
 	groups, err := c.call(ctx, "ec2", "DescribeSecurityGroups", map[string]any{"Filters": []any{
-		map[string]any{memberName: "vpc-id", "Values": []any{id}},
-		map[string]any{memberName: "group-name", "Values": []any{nameDefault}},
+		map[string]any{memberName: "vpc-id", wireValues: []any{id}},
+		map[string]any{memberName: "group-name", wireValues: []any{nameDefault}},
 	}})
 	if err != nil {
 		return "", nil, err
@@ -325,7 +325,7 @@ func permission(rule any, keys []string) (map[string]any, error) {
 		out["UserIdGroupPairs"] = peer(pair)
 	case rp.has("SourcePrefixListId"), rp.has("DestinationPrefixListId"):
 		out["PrefixListIds"] = peer(map[string]any{
-			"PrefixListId": rp.str("SourcePrefixListId") + rp.str("DestinationPrefixListId"),
+			wirePrefixListId: rp.str("SourcePrefixListId") + rp.str("DestinationPrefixListId"),
 		})
 	default:
 		return nil, validation("A security group rule needs a CIDR range, a security group, or a prefix list")

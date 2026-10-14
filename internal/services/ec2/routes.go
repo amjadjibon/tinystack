@@ -49,12 +49,16 @@ type routeAssociation struct {
 // instance, or a gateway VPC endpoint, whose routes go to its service's
 // prefix list.
 type route struct {
-	CIDR         string `json:",omitempty"`
-	PrefixList   string `json:",omitempty"`
-	GatewayID    string `json:",omitempty"`
-	NATGatewayID string `json:",omitempty"`
-	InstanceID   string `json:",omitempty"`
-	Origin       string
+	CIDRv6          string `json:",omitempty"`
+	EgressGatewayID string `json:",omitempty"`
+	PeeringID       string `json:",omitempty"`
+	InterfaceID     string `json:",omitempty"`
+	CIDR            string `json:",omitempty"`
+	PrefixList      string `json:",omitempty"`
+	GatewayID       string `json:",omitempty"`
+	NATGatewayID    string `json:",omitempty"`
+	InstanceID      string `json:",omitempty"`
+	Origin          string
 }
 
 func routeTableNotFound(id string) error {
@@ -76,10 +80,16 @@ func loadRouteTable(tx storage.ReadTx, scope request.Scope, id string) (*routeTa
 
 // newRouteTable returns a VPC's route table with its local route.
 func newRouteTable(v *vpc, tags map[string]string) *routeTable {
-	return &routeTable{
-		ID: newID("rtb"), VPCID: v.ID, Tags: tags,
-		Routes: []route{{CIDR: v.CIDR, GatewayID: targetLocal, Origin: originTable}},
+	rt := &routeTable{ID: newID("rtb"), VPCID: v.ID, Tags: tags}
+	for _, block := range vpcIPv4Blocks(v) {
+		rt.Routes = append(rt.Routes, route{CIDR: block, GatewayID: targetLocal, Origin: originTable})
 	}
+
+	for _, block := range vpcIPv6Blocks(v) {
+		rt.Routes = append(rt.Routes, route{CIDRv6: block, GatewayID: targetLocal, Origin: originTable})
+	}
+
+	return rt
 }
 
 // createMainRouteTable stores a VPC's main route table, with routes after
@@ -148,6 +158,28 @@ func dissociateRouteTable(tx storage.WriteTx, scope request.Scope, subnetID stri
 func routeState(tx storage.ReadTx, scope request.Scope, rt *routeTable, r *route) (string, error) {
 	ok := true
 	switch {
+	case r.EgressGatewayID != "":
+		g, found, err := storage.Read[egressGateway](tx, scope.Key("ec2", kindEgressGateway, r.EgressGatewayID))
+		if err != nil {
+			return "", err
+		}
+
+		ok = found && g.VPCID == rt.VPCID
+	case r.PeeringID != "":
+		p, found, err := storage.Read[peeringConnection](tx, scope.Key("ec2", kindPeering, r.PeeringID))
+		if err != nil {
+			return "", err
+		}
+
+		ok = found && p.State == routeActive
+	case r.InterfaceID != "":
+		ni, found, err := storage.Read[networkInterface](tx, scope.Key("ec2", kindNetworkInterface, r.InterfaceID))
+		if err != nil {
+			return "", err
+		}
+
+		ok = found && ni.Attachment != nil
+
 	case strings.HasPrefix(r.GatewayID, "vpce-"):
 		_, found, err := storage.Read[vpcEndpoint](tx, scope.Key("ec2", kindVPCEndpoint, r.GatewayID))
 		if err != nil {
@@ -197,6 +229,7 @@ func routeTableOutput(tx storage.ReadTx, scope request.Scope, rt *routeTable) (a
 		RouteTableId: new(rt.ID), VpcId: new(rt.VPCID), OwnerId: new(scope.AccountID), Tags: tagList(rt.Tags),
 		Associations: []api.RouteTableAssociation{}, PropagatingVgws: []api.PropagatingVgw{}, Routes: []api.Route{},
 	}
+
 	for i := range rt.Associations {
 		out.Associations = append(out.Associations, associationOutput(rt, &rt.Associations[i]))
 	}
@@ -209,10 +242,13 @@ func routeTableOutput(tx storage.ReadTx, scope request.Scope, rt *routeTable) (a
 		}
 
 		item := api.Route{
-			DestinationCidrBlock: optional(r.CIDR), DestinationPrefixListId: optional(r.PrefixList),
+			DestinationCidrBlock: optional(r.CIDR), DestinationIpv6CidrBlock: optional(r.CIDRv6),
+			EgressOnlyInternetGatewayId: optional(r.EgressGatewayID), VpcPeeringConnectionId: optional(r.PeeringID),
+			NetworkInterfaceId: optional(r.InterfaceID), DestinationPrefixListId: optional(r.PrefixList),
 			GatewayId: optional(r.GatewayID), InstanceId: optional(r.InstanceID),
 			NatGatewayId: optional(r.NATGatewayID), Origin: new(r.Origin), State: new(state),
 		}
+
 		if r.InstanceID != "" {
 			item.InstanceOwnerId = new(scope.AccountID)
 		}
@@ -231,6 +267,7 @@ func routeTableValues(scope request.Scope, rt *routeTable) values {
 		"route.instance-id": {}, "route.nat-gateway-id": {}, "route.origin": {},
 		"route.destination-prefix-list-id": {},
 	}
+
 	for _, a := range rt.Associations {
 		v[filterMain] = append(v[filterMain], strconv.FormatBool(a.Main))
 		v["association.route-table-association-id"] = append(v["association.route-table-association-id"], a.ID)
@@ -240,7 +277,8 @@ func routeTableValues(scope request.Scope, rt *routeTable) values {
 		}
 	}
 
-	for _, r := range rt.Routes {
+	for i := range rt.Routes {
+		r := &rt.Routes[i]
 		v["route.origin"] = append(v["route.origin"], r.Origin)
 		if r.CIDR != "" {
 			v["route.destination-cidr-block"] = append(v["route.destination-cidr-block"], r.CIDR)
@@ -411,7 +449,14 @@ func routeDestination(text string) (string, error) {
 func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *route) error {
 	want.Origin = originRoute
 	set := 0
-	for _, id := range []string{want.GatewayID, want.NATGatewayID, want.InstanceID} {
+	for _, id := range []string{
+		want.GatewayID,
+		want.NATGatewayID,
+		want.InstanceID,
+		want.EgressGatewayID,
+		want.PeeringID,
+		want.InterfaceID,
+	} {
 		if id != "" {
 			set++
 		}
@@ -422,6 +467,39 @@ func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *r
 	case set != 1:
 		return awserror.New("InvalidParameterCombination", "The parameter combination is not valid: "+
 			"a route needs exactly one of gatewayId, natGatewayId, and instanceId")
+	case want.EgressGatewayID != "":
+		if want.CIDRv6 == "" {
+			return invalidParameter("Egress-only gateway routes require IPv6")
+		}
+
+		g, found, err := storage.Read[egressGateway](tx, scope.Key("ec2", kindEgressGateway, want.EgressGatewayID))
+		if err != nil || !found {
+			return common.ErrorsOr(err, egressNotFound(want.EgressGatewayID))
+		}
+
+		vpcID = g.VPCID
+	case want.PeeringID != "":
+		p, err := loadPeering(tx, scope, want.PeeringID)
+		if err != nil {
+			return err
+		}
+
+		if !peeringLive(p) {
+			return invalidParameter("Peering connection is unavailable")
+		}
+
+		if common.Value(p.Requester.VpcId) != rt.VPCID && common.Value(p.Accepter.VpcId) != rt.VPCID {
+			return invalidParameter("Peering connection belongs to another VPC")
+		}
+
+		vpcID = rt.VPCID
+	case want.InterfaceID != "":
+		ni, err := loadInterface(tx, scope, want.InterfaceID)
+		if err != nil {
+			return err
+		}
+
+		vpcID = ni.VPCID
 	case want.GatewayID != "":
 		if !strings.HasPrefix(want.GatewayID, "igw-") {
 			return notFound("InvalidGatewayID.NotFound", "gateway", want.GatewayID)
@@ -457,59 +535,98 @@ func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *r
 	return nil
 }
 
-// changeRoute loads a route table, runs fn on it with the request's
-// destination, and stores it.
-func (s *Service) changeRoute(
-	ctx context.Context,
-	dry *bool,
-	tableID, destination string,
-	fn func(tx storage.ReadTx, scope request.Scope, rt *routeTable, cidr string, at int) error,
-) error {
-	cidr, err := routeDestination(destination)
+// routeDestinationKey validates one IPv4, IPv6, or prefix-list destination and builds its record.
+func routeDestinationKey(ipv4, ipv6, prefix string) (route, error) {
+	r := route{CIDR: ipv4, CIDRv6: ipv6, PrefixList: prefix}
+	if err := onlyOne(ipv4 != "", ipv6 != "", prefix != ""); err != nil {
+		return r, err
+	}
+
+	if ipv4 != "" {
+		block, err := routeDestination(ipv4)
+		r.CIDR = block
+		return r, err
+	}
+
+	if ipv6 != "" {
+		p, err := netip.ParsePrefix(ipv6)
+		if err != nil || !p.Addr().Is6() || p.Masked() != p {
+			return r, invalidParameter("Invalid IPv6 route destination")
+		}
+
+		r.CIDRv6 = p.String()
+	}
+
+	return r, nil
+}
+
+func (s *Service) changeNetworkRoute(ctx context.Context, dry *bool, tableID string, want *route, mode string) error {
+	dest, err := routeDestinationKey(want.CIDR, want.CIDRv6, want.PrefixList)
 	if err != nil {
 		return err
 	}
 
+	want.CIDR, want.CIDRv6 = dest.CIDR, dest.CIDRv6
 	return s.update(ctx, dry, func(tx storage.WriteTx, scope request.Scope) error {
-		rt, loadErr := loadRouteTable(tx, scope, tableID)
-		if loadErr != nil {
-			return loadErr
+		rt, err := loadRouteTable(tx, scope, tableID)
+		if err != nil {
+			return err
 		}
 
-		at := slices.IndexFunc(rt.Routes, func(r route) bool { return r.CIDR == cidr })
-		if fnErr := fn(tx, scope, rt, cidr, at); fnErr != nil {
-			return fnErr
+		if want.PrefixList != "" {
+			if err := prefixListExists(tx, scope, want.PrefixList); err != nil {
+				return err
+			}
+		}
+
+		at := slices.IndexFunc(rt.Routes, func(r route) bool {
+			return r.CIDR == want.CIDR && r.CIDRv6 == want.CIDRv6 && r.PrefixList == want.PrefixList
+		})
+		key := want.CIDR + want.CIDRv6 + want.PrefixList
+		if mode == "create" && at >= 0 {
+			return awserror.New("RouteAlreadyExists", "Route already exists: "+key)
+		}
+
+		if mode != "create" && at < 0 {
+			return awserror.New("InvalidRoute.NotFound", "Route not found: "+key)
+		}
+
+		if at >= 0 && rt.Routes[at].GatewayID == targetLocal {
+			return invalidParameter("Cannot modify a local route")
+		}
+
+		if mode == "delete" {
+			rt.Routes = slices.Delete(rt.Routes, at, at+1)
+		} else {
+			if err := routeTarget(tx, scope, rt, want); err != nil {
+				return err
+			}
+
+			if at < 0 {
+				rt.Routes = append(rt.Routes, *want)
+			} else {
+				rt.Routes[at] = *want
+			}
 		}
 
 		return storage.Write(tx, scope.Key("ec2", kindRouteTable, rt.ID), rt)
 	})
 }
 
-func routeNotFound(cidr string) error {
-	return awserror.New("InvalidRoute.NotFound", fmt.Sprintf("There is no route defined for '%s' in the route "+
-		"table. Use CreateRoute instead.", cidr))
-}
-
-func localRoute(rt *routeTable, cidr string) error {
-	return invalidParameter(fmt.Sprintf("cannot change local route %s in route table %s", cidr, rt.ID))
-}
-
 func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (*api.CreateRouteResult, error) {
-	err := s.changeRoute(ctx, in.DryRun, common.Value(in.RouteTableId), common.Value(in.DestinationCidrBlock),
-		func(tx storage.ReadTx, scope request.Scope, rt *routeTable, cidr string, at int) error {
-			if at >= 0 {
-				return awserror.New("RouteAlreadyExists", fmt.Sprintf("The route identified by %s already exists.",
-					cidr))
-			}
-
-			r := route{
-				CIDR: cidr, GatewayID: common.Value(in.GatewayId), NATGatewayID: common.Value(in.NatGatewayId),
-				InstanceID: common.Value(in.InstanceId),
-			}
-			err := routeTarget(tx, scope, rt, &r)
-			rt.Routes = append(rt.Routes, r)
-			return err
-		})
+	err := s.changeNetworkRoute(ctx, in.DryRun, common.Value(in.RouteTableId), &route{
+		CIDR:         common.Value(in.DestinationCidrBlock),
+		CIDRv6:       common.Value(in.DestinationIpv6CidrBlock),
+		PrefixList:   common.Value(in.DestinationPrefixListId),
+		GatewayID:    common.Value(in.GatewayId),
+		NATGatewayID: common.Value(in.NatGatewayId),
+		InstanceID:   common.Value(in.InstanceId),
+		EgressGatewayID: common.Value(
+			in.EgressOnlyInternetGatewayId,
+		),
+		PeeringID:   common.Value(in.VpcPeeringConnectionId),
+		InterfaceID: common.Value(in.NetworkInterfaceId),
+	}, "create")
 	if err != nil {
 		return nil, err
 	}
@@ -518,23 +635,19 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 }
 
 func (s *Service) ReplaceRoute(ctx context.Context, in *api.ReplaceRouteRequest) (*api.ReplaceRouteOutput, error) {
-	err := s.changeRoute(ctx, in.DryRun, common.Value(in.RouteTableId), common.Value(in.DestinationCidrBlock),
-		func(tx storage.ReadTx, scope request.Scope, rt *routeTable, cidr string, at int) error {
-			switch {
-			case at < 0:
-				return routeNotFound(cidr)
-			case rt.Routes[at].GatewayID == targetLocal:
-				return localRoute(rt, cidr)
-			}
-
-			r := route{
-				CIDR: cidr, GatewayID: common.Value(in.GatewayId), NATGatewayID: common.Value(in.NatGatewayId),
-				InstanceID: common.Value(in.InstanceId),
-			}
-			err := routeTarget(tx, scope, rt, &r)
-			rt.Routes[at] = r
-			return err
-		})
+	err := s.changeNetworkRoute(ctx, in.DryRun, common.Value(in.RouteTableId), &route{
+		CIDR:         common.Value(in.DestinationCidrBlock),
+		CIDRv6:       common.Value(in.DestinationIpv6CidrBlock),
+		PrefixList:   common.Value(in.DestinationPrefixListId),
+		GatewayID:    common.Value(in.GatewayId),
+		NATGatewayID: common.Value(in.NatGatewayId),
+		InstanceID:   common.Value(in.InstanceId),
+		EgressGatewayID: common.Value(
+			in.EgressOnlyInternetGatewayId,
+		),
+		PeeringID:   common.Value(in.VpcPeeringConnectionId),
+		InterfaceID: common.Value(in.NetworkInterfaceId),
+	}, "replace")
 	if err != nil {
 		return nil, err
 	}
@@ -543,18 +656,10 @@ func (s *Service) ReplaceRoute(ctx context.Context, in *api.ReplaceRouteRequest)
 }
 
 func (s *Service) DeleteRoute(ctx context.Context, in *api.DeleteRouteRequest) (*api.DeleteRouteOutput, error) {
-	err := s.changeRoute(ctx, in.DryRun, common.Value(in.RouteTableId), common.Value(in.DestinationCidrBlock),
-		func(_ storage.ReadTx, _ request.Scope, rt *routeTable, cidr string, at int) error {
-			switch {
-			case at < 0:
-				return routeNotFound(cidr)
-			case rt.Routes[at].GatewayID == targetLocal:
-				return localRoute(rt, cidr)
-			}
-
-			rt.Routes = slices.Delete(rt.Routes, at, at+1)
-			return nil
-		})
+	err := s.changeNetworkRoute(ctx, in.DryRun, common.Value(in.RouteTableId), &route{
+		CIDR: common.Value(in.DestinationCidrBlock), CIDRv6: common.Value(in.DestinationIpv6CidrBlock),
+		PrefixList: common.Value(in.DestinationPrefixListId),
+	}, "delete")
 	if err != nil {
 		return nil, err
 	}

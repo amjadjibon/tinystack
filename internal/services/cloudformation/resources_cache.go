@@ -423,7 +423,7 @@ func init() {
 			memberTags,
 		},
 		attributes: []string{
-			"Arn",
+			memberArn,
 			"CreateTime",
 			memberStatus,
 			"Endpoint.Address",
@@ -573,7 +573,7 @@ func serverlessCacheAttributes(out map[string]any) map[string]any {
 		return attrs
 	}
 
-	attrs["Arn"] = sc["ARN"]
+	attrs[memberArn] = sc["ARN"]
 	attrs["CreateTime"] = sc["CreateTime"]
 	attrs["Status"] = sc["Status"]
 

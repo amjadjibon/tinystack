@@ -45,6 +45,10 @@ def main():
             result = subprocess.run(command, cwd=work, text=True, capture_output=True, timeout=600)
             if result.returncode != code:
                 raise RuntimeError(f"terraform {args[0]} exited {result.returncode}:\n{result.stdout}\n{result.stderr}")
+            if args[0] in ("apply", "plan", "destroy"):
+                for line in result.stdout.splitlines():
+                    if line.startswith(("Apply complete!", "Destroy complete!", "No changes.", "Plan:")):
+                        print(line, flush=True)
             return result.stdout
 
         with open(work / "server.log", "w+") as log:
@@ -63,6 +67,7 @@ def main():
                     raise RuntimeError("server never became healthy")
                 terraform("init")
                 terraform("apply", "-auto-approve")
+                assert terraform("output", "-raw", "vpc_endpoint_service") == "com.amazonaws.us-east-1.s3"
                 assert terraform("output", "-raw", "account_id") == "000000000000"
                 assert terraform("output", "-raw", "zones") == "3"
                 assert terraform("output", "-raw", "image_matches") == "true"
@@ -71,7 +76,7 @@ def main():
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "5 added, 84 changed, 5 destroyed" in updated, updated
+                assert "5 added, 92 changed, 5 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 terraform("destroy", "-auto-approve", team="platform")

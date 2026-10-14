@@ -74,6 +74,12 @@ var namespaces = map[string]string{
 // typeNames are the CloudFormation names of the inventory types whose name is
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
+	"ec2/dhcp-options":                    "DHCPOptions",
+	"ec2/egress-only-internet-gateway":    "EgressOnlyInternetGateway",
+	"ec2/network-interface":               "NetworkInterface",
+	"ec2/vpc-flow-log":                    "FlowLog",
+	"ec2/prefix-list":                     "PrefixList",
+	"ec2/vpc-peering-connection":          "VPCPeeringConnection",
 	"redshift/cluster":                    "Cluster",
 	"redshift/subnetgroup":                "ClusterSubnetGroup",
 	"redshift/parametergroup":             "ClusterParameterGroup",

@@ -5064,7 +5064,50 @@
       "DeleteVpcEndpoints",
       "DescribeVpcEndpoints",
       "ModifyVpcEndpoint",
-      "DescribePrefixLists"
+      "DescribePrefixLists",
+      "CreateDhcpOptions",
+      "DeleteDhcpOptions",
+      "DescribeDhcpOptions",
+      "AssociateDhcpOptions",
+      "CreateEgressOnlyInternetGateway",
+      "DeleteEgressOnlyInternetGateway",
+      "DescribeEgressOnlyInternetGateways",
+      "AssociateVpcCidrBlock",
+      "DisassociateVpcCidrBlock",
+      "AssociateSubnetCidrBlock",
+      "DisassociateSubnetCidrBlock",
+      "CreateNetworkInterface",
+      "DeleteNetworkInterface",
+      "AttachNetworkInterface",
+      "DetachNetworkInterface",
+      "DescribeNetworkInterfaceAttribute",
+      "ModifyNetworkInterfaceAttribute",
+      "ResetNetworkInterfaceAttribute",
+      "AssignPrivateIpAddresses",
+      "UnassignPrivateIpAddresses",
+      "CreateFlowLogs",
+      "DeleteFlowLogs",
+      "DescribeFlowLogs",
+      "CreateManagedPrefixList",
+      "DeleteManagedPrefixList",
+      "DescribeManagedPrefixLists",
+      "ModifyManagedPrefixList",
+      "GetManagedPrefixListEntries",
+      "GetManagedPrefixListAssociations",
+      "CreateVpcPeeringConnection",
+      "AcceptVpcPeeringConnection",
+      "RejectVpcPeeringConnection",
+      "DeleteVpcPeeringConnection",
+      "DescribeVpcPeeringConnections",
+      "ModifyVpcPeeringConnectionOptions",
+      "DescribeVpcEndpointServices",
+      "CreateDefaultVpc",
+      "CreateDefaultSubnet",
+      "ModifySecurityGroupRules",
+      "UpdateSecurityGroupRuleDescriptionsIngress",
+      "UpdateSecurityGroupRuleDescriptionsEgress",
+      "DescribeSecurityGroupReferences",
+      "DescribeStaleSecurityGroups"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -5106,7 +5149,9 @@
         "InstanceTenancy",
         "DryRun",
         "TagSpecifications",
-        "AmazonProvidedIpv6CidrBlock"
+        "AmazonProvidedIpv6CidrBlock",
+        "Ipv6CidrBlock",
+        "Ipv6Pool"
       ],
       "CreateVpcResult": [
         "Vpc"
@@ -5120,7 +5165,8 @@
         "State",
         "CidrBlock",
         "DhcpOptionsId",
-        "Tags"
+        "Tags",
+        "Ipv6CidrBlockAssociationSet"
       ],
       "VpcCidrBlockAssociation": [
         "AssociationId",
@@ -5151,7 +5197,8 @@
         "CidrBlock",
         "VpcId",
         "DryRun",
-        "TagSpecifications"
+        "TagSpecifications",
+        "Ipv6CidrBlock"
       ],
       "CreateSubnetResult": [
         "Subnet"
@@ -5173,7 +5220,8 @@
         "Tags",
         "EnableDns64",
         "MapCustomerOwnedIpOnLaunch",
-        "PrivateDnsNameOptionsOnLaunch"
+        "PrivateDnsNameOptionsOnLaunch",
+        "Ipv6CidrBlockAssociationSet"
       ],
       "DeleteSubnetRequest": [
         "SubnetId",
@@ -5455,7 +5503,10 @@
         "Status",
         "SubnetId",
         "TagSet",
-        "VpcId"
+        "VpcId",
+        "PrivateIpAddresses",
+        "Ipv6Addresses",
+        "PrivateDnsName"
       ],
       "NetworkInterfaceAttachment": [
         "AttachTime",
@@ -5536,7 +5587,8 @@
         "VpcId",
         "PrivateIpAddress",
         "PublicIpAddress",
-        "IamInstanceProfile"
+        "IamInstanceProfile",
+        "NetworkInterfaces"
       ],
       "InstanceState": [
         "Code",
@@ -6003,7 +6055,11 @@
         "Origin",
         "State",
         "NatGatewayId",
-        "DestinationPrefixListId"
+        "DestinationPrefixListId",
+        "DestinationIpv6CidrBlock",
+        "EgressOnlyInternetGatewayId",
+        "VpcPeeringConnectionId",
+        "NetworkInterfaceId"
       ],
       "DeleteRouteTableRequest": [
         "DryRun",
@@ -6026,7 +6082,12 @@
         "DestinationCidrBlock",
         "GatewayId",
         "InstanceId",
-        "NatGatewayId"
+        "NatGatewayId",
+        "DestinationIpv6CidrBlock",
+        "DestinationPrefixListId",
+        "EgressOnlyInternetGatewayId",
+        "VpcPeeringConnectionId",
+        "NetworkInterfaceId"
       ],
       "CreateRouteResult": [
         "Return"
@@ -6037,12 +6098,19 @@
         "DestinationCidrBlock",
         "GatewayId",
         "InstanceId",
-        "NatGatewayId"
+        "NatGatewayId",
+        "DestinationIpv6CidrBlock",
+        "DestinationPrefixListId",
+        "EgressOnlyInternetGatewayId",
+        "VpcPeeringConnectionId",
+        "NetworkInterfaceId"
       ],
       "DeleteRouteRequest": [
         "DryRun",
         "RouteTableId",
-        "DestinationCidrBlock"
+        "DestinationCidrBlock",
+        "DestinationIpv6CidrBlock",
+        "DestinationPrefixListId"
       ],
       "AssociateRouteTableRequest": [
         "DryRun",
@@ -6383,6 +6451,716 @@
         "Cidrs",
         "PrefixListId",
         "PrefixListName"
+      ],
+      "CreateDhcpOptionsRequest": [
+        "DhcpConfigurations",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "NewDhcpConfiguration": [
+        "Key",
+        "Values"
+      ],
+      "CreateDhcpOptionsResult": [
+        "DhcpOptions"
+      ],
+      "DhcpOptions": [
+        "OwnerId",
+        "Tags",
+        "DhcpOptionsId",
+        "DhcpConfigurations"
+      ],
+      "DhcpConfiguration": [
+        "Key",
+        "Values"
+      ],
+      "AttributeValue": [
+        "Value"
+      ],
+      "DeleteDhcpOptionsRequest": [
+        "DhcpOptionsId",
+        "DryRun"
+      ],
+      "DescribeDhcpOptionsRequest": [
+        "DhcpOptionsIds",
+        "NextToken",
+        "MaxResults",
+        "DryRun",
+        "Filters"
+      ],
+      "DescribeDhcpOptionsResult": [
+        "NextToken",
+        "DhcpOptions"
+      ],
+      "AssociateDhcpOptionsRequest": [
+        "DhcpOptionsId",
+        "VpcId",
+        "DryRun"
+      ],
+      "CreateEgressOnlyInternetGatewayRequest": [
+        "ClientToken",
+        "DryRun",
+        "VpcId",
+        "TagSpecifications"
+      ],
+      "CreateEgressOnlyInternetGatewayResult": [
+        "ClientToken",
+        "EgressOnlyInternetGateway"
+      ],
+      "EgressOnlyInternetGateway": [
+        "Attachments",
+        "EgressOnlyInternetGatewayId",
+        "Tags"
+      ],
+      "DeleteEgressOnlyInternetGatewayRequest": [
+        "DryRun",
+        "EgressOnlyInternetGatewayId"
+      ],
+      "DeleteEgressOnlyInternetGatewayResult": [
+        "ReturnCode"
+      ],
+      "DescribeEgressOnlyInternetGatewaysRequest": [
+        "DryRun",
+        "EgressOnlyInternetGatewayIds",
+        "MaxResults",
+        "NextToken",
+        "Filters"
+      ],
+      "DescribeEgressOnlyInternetGatewaysResult": [
+        "EgressOnlyInternetGateways",
+        "NextToken"
+      ],
+      "AssociateVpcCidrBlockRequest": [
+        "CidrBlock",
+        "Ipv6CidrBlockNetworkBorderGroup",
+        "Ipv6CidrBlock",
+        "VpcId",
+        "AmazonProvidedIpv6CidrBlock",
+        "Ipv6Pool"
+      ],
+      "AssociateVpcCidrBlockResult": [
+        "Ipv6CidrBlockAssociation",
+        "CidrBlockAssociation",
+        "VpcId"
+      ],
+      "VpcIpv6CidrBlockAssociation": [
+        "AssociationId",
+        "Ipv6CidrBlock",
+        "Ipv6CidrBlockState",
+        "NetworkBorderGroup",
+        "Ipv6Pool",
+        "Ipv6AddressAttribute",
+        "IpSource"
+      ],
+      "DisassociateVpcCidrBlockRequest": [
+        "AssociationId"
+      ],
+      "DisassociateVpcCidrBlockResult": [
+        "Ipv6CidrBlockAssociation",
+        "CidrBlockAssociation",
+        "VpcId"
+      ],
+      "AssociateSubnetCidrBlockRequest": [
+        "SubnetId",
+        "Ipv6CidrBlock"
+      ],
+      "AssociateSubnetCidrBlockResult": [
+        "Ipv6CidrBlockAssociation",
+        "SubnetId"
+      ],
+      "SubnetIpv6CidrBlockAssociation": [
+        "AssociationId",
+        "Ipv6CidrBlock",
+        "Ipv6CidrBlockState",
+        "Ipv6AddressAttribute",
+        "IpSource"
+      ],
+      "SubnetCidrBlockState": [
+        "State",
+        "StatusMessage"
+      ],
+      "DisassociateSubnetCidrBlockRequest": [
+        "AssociationId"
+      ],
+      "DisassociateSubnetCidrBlockResult": [
+        "Ipv6CidrBlockAssociation",
+        "SubnetId"
+      ],
+      "CreateNetworkInterfaceRequest": [
+        "InterfaceType",
+        "TagSpecifications",
+        "ClientToken",
+        "SubnetId",
+        "Description",
+        "PrivateIpAddress",
+        "Groups",
+        "PrivateIpAddresses",
+        "SecondaryPrivateIpAddressCount",
+        "Ipv6Addresses",
+        "Ipv6AddressCount",
+        "DryRun"
+      ],
+      "PrivateIpAddressSpecification": [
+        "Primary",
+        "PrivateIpAddress"
+      ],
+      "InstanceIpv6Address": [
+        "Ipv6Address"
+      ],
+      "CreateNetworkInterfaceResult": [
+        "NetworkInterface",
+        "ClientToken"
+      ],
+      "DeleteNetworkInterfaceRequest": [
+        "DryRun",
+        "NetworkInterfaceId"
+      ],
+      "AttachNetworkInterfaceRequest": [
+        "DryRun",
+        "NetworkInterfaceId",
+        "InstanceId",
+        "DeviceIndex"
+      ],
+      "AttachNetworkInterfaceResult": [
+        "AttachmentId",
+        "NetworkCardIndex"
+      ],
+      "DetachNetworkInterfaceRequest": [
+        "DryRun",
+        "AttachmentId",
+        "Force"
+      ],
+      "DescribeNetworkInterfaceAttributeRequest": [
+        "DryRun",
+        "NetworkInterfaceId",
+        "Attribute"
+      ],
+      "DescribeNetworkInterfaceAttributeResult": [
+        "Attachment",
+        "Description",
+        "Groups",
+        "NetworkInterfaceId",
+        "SourceDestCheck",
+        "AssociatePublicIpAddress"
+      ],
+      "ModifyNetworkInterfaceAttributeRequest": [
+        "DryRun",
+        "NetworkInterfaceId",
+        "Description",
+        "SourceDestCheck",
+        "Groups",
+        "Attachment"
+      ],
+      "NetworkInterfaceAttachmentChanges": [
+        "AttachmentId",
+        "DeleteOnTermination"
+      ],
+      "ResetNetworkInterfaceAttributeRequest": [
+        "DryRun",
+        "NetworkInterfaceId",
+        "SourceDestCheck"
+      ],
+      "AssignPrivateIpAddressesRequest": [
+        "NetworkInterfaceId",
+        "PrivateIpAddresses",
+        "SecondaryPrivateIpAddressCount",
+        "AllowReassignment"
+      ],
+      "AssignPrivateIpAddressesResult": [
+        "NetworkInterfaceId",
+        "AssignedPrivateIpAddresses",
+        "AssignedIpv4Prefixes"
+      ],
+      "AssignedPrivateIpAddress": [
+        "PrivateIpAddress"
+      ],
+      "Ipv4PrefixSpecification": [
+        "Ipv4Prefix"
+      ],
+      "UnassignPrivateIpAddressesRequest": [
+        "NetworkInterfaceId",
+        "PrivateIpAddresses"
+      ],
+      "CreateFlowLogsRequest": [
+        "DryRun",
+        "ClientToken",
+        "DeliverLogsPermissionArn",
+        "DeliverCrossAccountRole",
+        "LogGroupName",
+        "ResourceIds",
+        "ResourceType",
+        "TrafficType",
+        "LogDestinationType",
+        "LogDestination",
+        "LogFormat",
+        "TagSpecifications",
+        "MaxAggregationInterval",
+        "DestinationOptions"
+      ],
+      "DestinationOptionsRequest": [
+        "FileFormat",
+        "HiveCompatiblePartitions",
+        "PerHourPartition"
+      ],
+      "CreateFlowLogsResult": [
+        "ClientToken",
+        "FlowLogIds",
+        "Unsuccessful"
+      ],
+      "DeleteFlowLogsRequest": [
+        "DryRun",
+        "FlowLogIds"
+      ],
+      "DeleteFlowLogsResult": [
+        "Unsuccessful"
+      ],
+      "DescribeFlowLogsRequest": [
+        "DryRun",
+        "Filter",
+        "FlowLogIds",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeFlowLogsResult": [
+        "FlowLogs",
+        "NextToken"
+      ],
+      "FlowLog": [
+        "CreationTime",
+        "DeliverLogsErrorMessage",
+        "DeliverLogsPermissionArn",
+        "DeliverCrossAccountRole",
+        "DeliverLogsStatus",
+        "FlowLogId",
+        "FlowLogStatus",
+        "LogGroupName",
+        "ResourceId",
+        "TrafficType",
+        "LogDestinationType",
+        "LogDestination",
+        "LogFormat",
+        "Tags",
+        "MaxAggregationInterval",
+        "DestinationOptions",
+        "TagFieldSpecifications"
+      ],
+      "DestinationOptionsResponse": [
+        "FileFormat",
+        "HiveCompatiblePartitions",
+        "PerHourPartition"
+      ],
+      "TagFieldSpecificationResponse": [
+        "ResourceType",
+        "TagKeys"
+      ],
+      "CreateManagedPrefixListRequest": [
+        "DryRun",
+        "PrefixListName",
+        "Entries",
+        "MaxEntries",
+        "TagSpecifications",
+        "AddressFamily",
+        "ClientToken"
+      ],
+      "AddPrefixListEntry": [
+        "Cidr",
+        "Description"
+      ],
+      "CreateManagedPrefixListResult": [
+        "PrefixList"
+      ],
+      "ManagedPrefixList": [
+        "PrefixListId",
+        "AddressFamily",
+        "State",
+        "StateMessage",
+        "PrefixListArn",
+        "PrefixListName",
+        "MaxEntries",
+        "Version",
+        "Tags",
+        "OwnerId",
+        "IpamPrefixListResolverTargetId",
+        "IpamPrefixListResolverSyncEnabled"
+      ],
+      "DeleteManagedPrefixListRequest": [
+        "DryRun",
+        "PrefixListId"
+      ],
+      "DeleteManagedPrefixListResult": [
+        "PrefixList"
+      ],
+      "DescribeManagedPrefixListsRequest": [
+        "DryRun",
+        "Filters",
+        "MaxResults",
+        "NextToken",
+        "PrefixListIds"
+      ],
+      "DescribeManagedPrefixListsResult": [
+        "NextToken",
+        "PrefixLists"
+      ],
+      "ModifyManagedPrefixListRequest": [
+        "DryRun",
+        "PrefixListId",
+        "CurrentVersion",
+        "PrefixListName",
+        "AddEntries",
+        "RemoveEntries",
+        "MaxEntries"
+      ],
+      "RemovePrefixListEntry": [
+        "Cidr"
+      ],
+      "ModifyManagedPrefixListResult": [
+        "PrefixList"
+      ],
+      "GetManagedPrefixListEntriesRequest": [
+        "DryRun",
+        "PrefixListId",
+        "TargetVersion",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetManagedPrefixListEntriesResult": [
+        "Entries",
+        "NextToken"
+      ],
+      "PrefixListEntry": [
+        "Cidr",
+        "Description"
+      ],
+      "GetManagedPrefixListAssociationsRequest": [
+        "DryRun",
+        "PrefixListId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetManagedPrefixListAssociationsResult": [
+        "PrefixListAssociations",
+        "NextToken"
+      ],
+      "PrefixListAssociation": [
+        "ResourceId",
+        "ResourceOwner"
+      ],
+      "CreateVpcPeeringConnectionRequest": [
+        "PeerRegion",
+        "TagSpecifications",
+        "DryRun",
+        "VpcId",
+        "PeerVpcId",
+        "PeerOwnerId"
+      ],
+      "CreateVpcPeeringConnectionResult": [
+        "VpcPeeringConnection"
+      ],
+      "VpcPeeringConnection": [
+        "AccepterVpcInfo",
+        "ExpirationTime",
+        "RequesterVpcInfo",
+        "Status",
+        "Tags",
+        "VpcPeeringConnectionId"
+      ],
+      "VpcPeeringConnectionVpcInfo": [
+        "CidrBlock",
+        "Ipv6CidrBlockSet",
+        "CidrBlockSet",
+        "OwnerId",
+        "PeeringOptions",
+        "VpcId",
+        "Region"
+      ],
+      "Ipv6CidrBlock": [
+        "Ipv6CidrBlock"
+      ],
+      "CidrBlock": [
+        "CidrBlock"
+      ],
+      "VpcPeeringConnectionOptionsDescription": [
+        "AllowDnsResolutionFromRemoteVpc",
+        "AllowEgressFromLocalClassicLinkToRemoteVpc",
+        "AllowEgressFromLocalVpcToRemoteClassicLink"
+      ],
+      "VpcPeeringConnectionStateReason": [
+        "Code",
+        "Message"
+      ],
+      "AcceptVpcPeeringConnectionRequest": [
+        "DryRun",
+        "VpcPeeringConnectionId"
+      ],
+      "AcceptVpcPeeringConnectionResult": [
+        "VpcPeeringConnection"
+      ],
+      "RejectVpcPeeringConnectionRequest": [
+        "DryRun",
+        "VpcPeeringConnectionId"
+      ],
+      "RejectVpcPeeringConnectionResult": [
+        "Return"
+      ],
+      "DeleteVpcPeeringConnectionRequest": [
+        "DryRun",
+        "VpcPeeringConnectionId"
+      ],
+      "DeleteVpcPeeringConnectionResult": [
+        "Return"
+      ],
+      "DescribeVpcPeeringConnectionsRequest": [
+        "NextToken",
+        "MaxResults",
+        "DryRun",
+        "VpcPeeringConnectionIds",
+        "Filters"
+      ],
+      "DescribeVpcPeeringConnectionsResult": [
+        "VpcPeeringConnections",
+        "NextToken"
+      ],
+      "ModifyVpcPeeringConnectionOptionsRequest": [
+        "AccepterPeeringConnectionOptions",
+        "DryRun",
+        "RequesterPeeringConnectionOptions",
+        "VpcPeeringConnectionId"
+      ],
+      "PeeringConnectionOptionsRequest": [
+        "AllowDnsResolutionFromRemoteVpc"
+      ],
+      "ModifyVpcPeeringConnectionOptionsResult": [
+        "AccepterPeeringConnectionOptions",
+        "RequesterPeeringConnectionOptions"
+      ],
+      "PeeringConnectionOptions": [
+        "AllowDnsResolutionFromRemoteVpc",
+        "AllowEgressFromLocalClassicLinkToRemoteVpc",
+        "AllowEgressFromLocalVpcToRemoteClassicLink"
+      ],
+      "DescribeVpcEndpointServicesRequest": [
+        "DryRun",
+        "ServiceNames",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeVpcEndpointServicesResult": [
+        "ServiceNames",
+        "ServiceDetails",
+        "NextToken"
+      ],
+      "ServiceDetail": [
+        "ServiceName",
+        "ServiceId",
+        "ServiceType",
+        "ServiceRegion",
+        "AvailabilityZoneIds",
+        "AvailabilityZones",
+        "Owner",
+        "BaseEndpointDnsNames",
+        "PrivateDnsName",
+        "PrivateDnsNames",
+        "VpcEndpointPolicySupported",
+        "AcceptanceRequired",
+        "ManagesVpcEndpoints",
+        "PayerResponsibility",
+        "Tags",
+        "PrivateDnsNameVerificationState",
+        "SupportedIpAddressTypes"
+      ],
+      "ServiceTypeDetail": [
+        "ServiceType"
+      ],
+      "PrivateDnsDetails": [
+        "PrivateDnsName"
+      ],
+      "CreateDefaultVpcRequest": [
+        "DryRun"
+      ],
+      "CreateDefaultVpcResult": [
+        "Vpc"
+      ],
+      "CreateDefaultSubnetRequest": [
+        "AvailabilityZone",
+        "DryRun",
+        "AvailabilityZoneId"
+      ],
+      "CreateDefaultSubnetResult": [
+        "Subnet"
+      ],
+      "ModifySecurityGroupRulesRequest": [
+        "GroupId",
+        "SecurityGroupRules",
+        "DryRun"
+      ],
+      "SecurityGroupRuleUpdate": [
+        "SecurityGroupRuleId",
+        "SecurityGroupRule"
+      ],
+      "SecurityGroupRuleRequest": [
+        "IpProtocol",
+        "FromPort",
+        "ToPort",
+        "CidrIpv4",
+        "CidrIpv6",
+        "PrefixListId",
+        "ReferencedGroupId",
+        "Description"
+      ],
+      "ModifySecurityGroupRulesResult": [
+        "Return"
+      ],
+      "UpdateSecurityGroupRuleDescriptionsIngressRequest": [
+        "DryRun",
+        "GroupId",
+        "GroupName",
+        "IpPermissions",
+        "SecurityGroupRuleDescriptions"
+      ],
+      "SecurityGroupRuleDescription": [
+        "SecurityGroupRuleId",
+        "Description"
+      ],
+      "UpdateSecurityGroupRuleDescriptionsIngressResult": [
+        "Return"
+      ],
+      "UpdateSecurityGroupRuleDescriptionsEgressRequest": [
+        "DryRun",
+        "GroupId",
+        "GroupName",
+        "IpPermissions",
+        "SecurityGroupRuleDescriptions"
+      ],
+      "UpdateSecurityGroupRuleDescriptionsEgressResult": [
+        "Return"
+      ],
+      "DescribeSecurityGroupReferencesRequest": [
+        "DryRun",
+        "GroupId"
+      ],
+      "DescribeSecurityGroupReferencesResult": [
+        "SecurityGroupReferenceSet"
+      ],
+      "SecurityGroupReference": [
+        "GroupId",
+        "ReferencingVpcId",
+        "VpcPeeringConnectionId",
+        "TransitGatewayId"
+      ],
+      "DescribeStaleSecurityGroupsRequest": [
+        "DryRun",
+        "MaxResults",
+        "NextToken",
+        "VpcId"
+      ],
+      "DescribeStaleSecurityGroupsResult": [
+        "NextToken",
+        "StaleSecurityGroupSet"
+      ],
+      "StaleSecurityGroup": [
+        "Description",
+        "GroupId",
+        "GroupName",
+        "StaleIpPermissions",
+        "StaleIpPermissionsEgress",
+        "VpcId"
+      ],
+      "StaleIpPermission": [
+        "FromPort",
+        "IpProtocol",
+        "IpRanges",
+        "PrefixListIds",
+        "ToPort",
+        "UserIdGroupPairs"
+      ],
+      "NetworkInterfacePrivateIpAddress": [
+        "Association",
+        "Primary",
+        "PrivateDnsName",
+        "PrivateIpAddress"
+      ],
+      "NetworkInterfaceAssociation": [
+        "AllocationId",
+        "AssociationId",
+        "IpOwnerId",
+        "PublicDnsName",
+        "PublicIp",
+        "CustomerOwnedIp",
+        "CarrierIp"
+      ],
+      "NetworkInterfaceIpv6Address": [
+        "Ipv6Address",
+        "PublicIpv6DnsName",
+        "IsPrimaryIpv6"
+      ],
+      "InstanceNetworkInterface": [
+        "Association",
+        "Attachment",
+        "Description",
+        "Groups",
+        "Ipv6Addresses",
+        "MacAddress",
+        "NetworkInterfaceId",
+        "OwnerId",
+        "PrivateDnsName",
+        "PrivateIpAddress",
+        "PrivateIpAddresses",
+        "SourceDestCheck",
+        "Status",
+        "SubnetId",
+        "VpcId",
+        "InterfaceType",
+        "Ipv4Prefixes",
+        "Ipv6Prefixes",
+        "ConnectionTrackingConfiguration",
+        "Operator"
+      ],
+      "InstanceNetworkInterfaceAssociation": [
+        "CarrierIp",
+        "CustomerOwnedIp",
+        "IpOwnerId",
+        "PublicDnsName",
+        "PublicIp"
+      ],
+      "InstanceNetworkInterfaceAttachment": [
+        "AttachTime",
+        "AttachmentId",
+        "DeleteOnTermination",
+        "DeviceIndex",
+        "Status",
+        "NetworkCardIndex",
+        "EnaSrdSpecification",
+        "EnaQueueCount"
+      ],
+      "InstanceAttachmentEnaSrdSpecification": [
+        "EnaSrdEnabled",
+        "EnaSrdUdpSpecification"
+      ],
+      "InstanceAttachmentEnaSrdUdpSpecification": [
+        "EnaSrdUdpEnabled"
+      ],
+      "InstancePrivateIpAddress": [
+        "Association",
+        "Primary",
+        "PrivateDnsName",
+        "PrivateIpAddress"
+      ],
+      "InstanceIpv4Prefix": [
+        "Ipv4Prefix"
+      ],
+      "InstanceIpv6Prefix": [
+        "Ipv6Prefix"
+      ],
+      "ConnectionTrackingSpecificationResponse": [
+        "TcpEstablishedTimeout",
+        "UdpStreamTimeout",
+        "UdpTimeout"
+      ],
+      "OperatorResponse": [
+        "Managed",
+        "Principal",
+        "HiddenByDefault"
       ]
     }
   },

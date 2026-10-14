@@ -9,7 +9,7 @@ func init() {
 	register("AWS::S3::Bucket", &resourceType{
 		name:       memberBucketName,
 		properties: []string{memberBucketName, memberTags, propertyVersioning},
-		attributes: []string{memberArn, "DomainName", "DualStackDomainName", "RegionalDomainName", "WebsiteURL"},
+		attributes: []string{memberArn, memberDomainName, "DualStackDomainName", "RegionalDomainName", "WebsiteURL"},
 		replace:    []string{memberBucketName},
 		create:     createBucket,
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
@@ -79,7 +79,7 @@ func init() {
 			}
 
 			err := retag(ctx, c, r.Properties, p, &tagger{
-				target:  map[string]any{"ResourceType": "Parameter", memberResourceID: r.Physical},
+				target:  map[string]any{wireResourceType: "Parameter", memberResourceID: r.Physical},
 				service: "ssm",
 				tag:     "AddTagsToResource",
 				untag:   "RemoveTagsFromResource",
@@ -142,7 +142,7 @@ func createBucket(ctx context.Context, c *client, p props) (physical string, att
 
 	attributes = map[string]any{
 		memberArn:             "arn:aws:s3:::" + name,
-		"DomainName":          name + ".s3.amazonaws.com",
+		memberDomainName:      name + ".s3.amazonaws.com",
 		"DualStackDomainName": name + ".s3.dualstack." + c.scope.Region + ".amazonaws.com",
 		"RegionalDomainName":  name + ".s3." + c.scope.Region + ".amazonaws.com",
 		"WebsiteURL":          "http://" + name + ".s3-website-" + c.scope.Region + ".amazonaws.com",

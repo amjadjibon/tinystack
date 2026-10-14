@@ -76,10 +76,12 @@ func TestEC2VPCAttributes(t *testing.T) {
 		EnableDnsHostnames: &ec2types.AttributeBooleanValue{Value: aws.Bool(true)},
 	})
 	code(t, err, "InvalidParameterValue")
-	_, err = c.CreateVpc(ctx, &ec2.CreateVpcInput{
+	dual, err := c.CreateVpc(ctx, &ec2.CreateVpcInput{
 		CidrBlock: aws.String("10.1.0.0/16"), AmazonProvidedIpv6CidrBlock: aws.Bool(true),
 	})
-	code(t, err, "InvalidParameterValue")
+	if err != nil || len(dual.Vpc.Ipv6CidrBlockAssociationSet) != 1 {
+		t.Fatalf("IPv6 VPC: %+v, %v", dual, err)
+	}
 
 	subnetID := createSubnet(t, c, vpcID, "10.0.1.0/24")
 	for _, in := range []*ec2.ModifySubnetAttributeInput{

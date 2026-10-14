@@ -28,10 +28,16 @@ type taggableKind struct {
 // taggable maps each resource ID prefix to its resource type. Every record
 // of these kinds keeps its tags in a Tags field.
 var taggable = map[string]taggableKind{
+	"dopt":     {kind: kindDHCPOptions, resourceType: kindDHCPOptions, missing: dhcpNotFound},
+	"eigw":     {kind: kindEgressGateway, resourceType: kindEgressGateway, missing: egressNotFound},
+	"eni":      {kind: kindNetworkInterface, resourceType: kindNetworkInterface, missing: eniNotFound},
+	"fl":       {kind: kindFlowLog, resourceType: "vpc-flow-log", missing: flowNotFound},
+	"pl":       {kind: kindPrefixList, resourceType: kindPrefixList, missing: prefixNotFound},
+	"pcx":      {kind: kindPeering, resourceType: kindPeering, missing: peeringNotFound},
 	"vpc":      {kind: kindVPC, resourceType: "vpc", missing: vpcNotFound},
 	"subnet":   {kind: kindSubnet, resourceType: "subnet", missing: subnetNotFound},
 	"sg":       {kind: kindSecurityGroup, resourceType: "security-group", missing: groupNotFound},
-	"key":      {kind: kindKeyPair, resourceType: "key-pair", missing: keyPairIDNotFound},
+	ec2Key:     {kind: kindKeyPair, resourceType: "key-pair", missing: keyPairIDNotFound},
 	"i":        {kind: kindInstance, resourceType: kindInstance, missing: instanceNotFound},
 	"lt":       {kind: kindLaunchTemplate, resourceType: kindLaunchTemplate, missing: templateIDNotFound},
 	"igw":      {kind: kindInternetGateway, resourceType: kindInternetGateway, missing: gatewayNotFound},
@@ -212,7 +218,7 @@ func (s *Service) DeleteTags(ctx context.Context, in *api.DeleteTagsRequest) (*a
 // DescribeTags lists the tags of every taggable resource, by resource ID and
 // key.
 func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsRequest) (*api.DescribeTagsResult, error) {
-	match, err := compileFilters(in.Filters, "key", "value", "resource-id", "resource-type")
+	match, err := compileFilters(in.Filters, ec2Key, "value", "resource-id", "resource-type")
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +238,7 @@ func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsRequest)
 			for _, r := range records {
 				for _, k := range slices.Sorted(maps.Keys(r.Tags)) {
 					if match.match(values{
-						"key": {k}, "value": {r.Tags[k]}, "resource-id": {r.ID}, "resource-type": {t.resourceType},
+						ec2Key: {k}, "value": {r.Tags[k]}, "resource-id": {r.ID}, "resource-type": {t.resourceType},
 					}) {
 						found = append(found, &api.TagDescription{
 							ResourceId: new(

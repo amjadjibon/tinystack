@@ -109,9 +109,10 @@ resource "aws_key_pair" "deploy" {
 
 # A VPC with public and private subnets, the layout of the terraform-aws-modules/vpc module.
 resource "aws_vpc" "app" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  tags                 = local.tags
+  assign_generated_ipv6_cidr_block = true
+  cidr_block                       = "10.0.0.0/16"
+  enable_dns_hostnames             = true
+  tags                             = local.tags
 }
 
 resource "aws_subnet" "public" {
@@ -122,9 +123,11 @@ resource "aws_subnet" "public" {
 }
 
 resource "aws_subnet" "private" {
-  vpc_id            = aws_vpc.app.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = data.aws_availability_zones.available.names[1]
+  ipv6_cidr_block                 = cidrsubnet(aws_vpc.app.ipv6_cidr_block, 8, 1)
+  assign_ipv6_address_on_creation = true
+  vpc_id                          = aws_vpc.app.id
+  cidr_block                      = "10.0.2.0/24"
+  availability_zone               = data.aws_availability_zones.available.names[1]
 }
 
 resource "aws_internet_gateway" "app" {
@@ -1777,4 +1780,95 @@ data "aws_iot_endpoint" "data" {
 
 output "iot_endpoint" {
   value = data.aws_iot_endpoint.data.endpoint_address
+}
+
+# EC2 VPC Tier 1: real provider lifecycle across DHCP, IPv6, ENIs, logs, prefix lists, and peering.
+resource "aws_vpc_dhcp_options" "app" {
+  domain_name         = "tiny.internal"
+  domain_name_servers = ["AmazonProvidedDNS"]
+  tags                = local.tags
+}
+
+resource "aws_vpc_dhcp_options_association" "app" {
+  vpc_id          = aws_vpc.app.id
+  dhcp_options_id = aws_vpc_dhcp_options.app.id
+}
+
+resource "aws_egress_only_internet_gateway" "app" {
+  vpc_id = aws_vpc.app.id
+  tags   = local.tags
+}
+
+resource "aws_route" "ipv6_egress" {
+  route_table_id              = aws_route_table.private.id
+  destination_ipv6_cidr_block = "::/0"
+  egress_only_gateway_id      = aws_egress_only_internet_gateway.app.id
+}
+
+resource "aws_vpc_ipv4_cidr_block_association" "app" {
+  vpc_id     = aws_vpc.app.id
+  cidr_block = "10.2.0.0/16"
+}
+
+resource "aws_network_interface" "app" {
+  subnet_id         = aws_subnet.private.id
+  description       = "Interface for ${var.team}"
+  private_ips       = ["10.0.2.10", "10.0.2.11"]
+  source_dest_check = false
+  tags              = local.tags
+}
+
+resource "aws_flow_log" "app" {
+  vpc_id          = aws_vpc.app.id
+  traffic_type    = "ALL"
+  log_destination = aws_cloudwatch_log_group.echo.arn
+  iam_role_arn    = aws_iam_role.lambda.arn
+  tags            = local.tags
+}
+
+resource "aws_ec2_managed_prefix_list" "app" {
+  name           = "services"
+  address_family = "IPv4"
+  max_entries    = 3
+  entry {
+    cidr        = "10.3.0.0/24"
+    description = "Service range"
+  }
+  tags = local.tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "prefix" {
+  security_group_id = aws_security_group.web.id
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  prefix_list_id    = aws_ec2_managed_prefix_list.app.id
+  description       = "Services for ${var.team}"
+}
+
+resource "aws_vpc" "peer" {
+  cidr_block = "10.4.0.0/16"
+  tags       = local.tags
+}
+
+resource "aws_vpc_peering_connection" "app" {
+  vpc_id      = aws_vpc.app.id
+  peer_vpc_id = aws_vpc.peer.id
+  auto_accept = true
+  tags        = local.tags
+}
+
+resource "aws_route" "peer" {
+  route_table_id            = aws_route_table.private.id
+  destination_cidr_block    = aws_vpc.peer.cidr_block
+  vpc_peering_connection_id = aws_vpc_peering_connection.app.id
+}
+
+data "aws_vpc_endpoint_service" "s3" {
+  service      = "s3"
+  service_type = "Gateway"
+}
+
+output "vpc_endpoint_service" {
+  value = data.aws_vpc_endpoint_service.s3.service_name
 }

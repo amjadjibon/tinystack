@@ -247,6 +247,12 @@ func (t *resourceType) replaces(old, p props) bool {
 // before deleting the old resource, as CloudFormation does. A replacement
 // with the old resource's name cannot exist beside it, so it is deleted first.
 func (t *resourceType) createsFirst(old, p props) bool {
+	if t == types["AWS::EC2::VPCDHCPOptionsAssociation"] || t == types["AWS::EC2::EgressOnlyInternetGateway"] {
+		return p.str(memberVpcID) != old.str(memberVpcID)
+	}
+	if t == types["AWS::EC2::NetworkInterfaceAttachment"] || t == types["AWS::EC2::SubnetCidrBlock"] {
+		return false
+	}
 	// Associations for the same VPC and domain cannot coexist during replacement.
 	if t == types["AWS::Route53Resolver::ResolverRuleAssociation"] {
 		return p.str(resolverVPCID) != old.str(resolverVPCID)

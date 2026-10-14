@@ -49,6 +49,7 @@ var (
 		"c5": archX86, "c6i": archX86, "c7i": archX86, "r5": archX86, "r6i": archX86,
 		"t4g": archARM, "m6g": archARM, "m7g": archARM, "c6g": archARM, "c7g": archARM, "r6g": archARM, "r7g": archARM,
 	}
+
 	sizes = []string{
 		"nano", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "8xlarge", "12xlarge", "16xlarge",
 	}
@@ -136,6 +137,15 @@ func groupInUse(tx storage.ReadTx, scope request.Scope, id string) (bool, error)
 		return true, nil
 	}
 
+	enis, err := storage.Records[networkInterface](tx, scope.Key("ec2", kindNetworkInterface, ""))
+	if err != nil {
+		return false, err
+	}
+
+	if slices.ContainsFunc(enis, func(ni *networkInterface) bool { return slices.Contains(ni.GroupIDs, id) }) {
+		return true, nil
+	}
+
 	return endpointsUsing(tx, scope, "", id)
 }
 
@@ -157,6 +167,24 @@ func subnetInUse(tx storage.ReadTx, scope request.Scope, id string) (bool, error
 		return true, nil
 	}
 
+	enis, err := storage.Records[networkInterface](tx, scope.Key("ec2", kindNetworkInterface, ""))
+	if err != nil {
+		return false, err
+	}
+
+	if slices.ContainsFunc(enis, func(ni *networkInterface) bool { return ni.SubnetID == id }) {
+		return true, nil
+	}
+
+	logs, err := storage.Records[flowLog](tx, scope.Key("ec2", kindFlowLog, ""))
+	if err != nil {
+		return false, err
+	}
+
+	if slices.ContainsFunc(logs, func(f *flowLog) bool { return f.ResourceID == id }) {
+		return true, nil
+	}
+
 	return endpointsUsing(tx, scope, id, "")
 }
 
@@ -173,7 +201,7 @@ func dnsName(region, ip string, public bool) string {
 
 	dashed := strings.ReplaceAll(ip, ".", "-")
 	internal, external := region+".compute.internal", region+".compute.amazonaws.com"
-	if region == "us-east-1" {
+	if region == ec2UsEast1 {
 		internal, external = "ec2.internal", "compute-1.amazonaws.com"
 	}
 
@@ -207,6 +235,7 @@ func instanceOutput(scope request.Scope, i *instance, state string) api.Instance
 		PlatformDetails: new("Linux/UNIX"), UsageOperation: new("RunInstances"), Tags: tagList(i.Tags),
 		SecurityGroups: []api.GroupIdentifier{},
 	}
+
 	for _, g := range i.Groups {
 		out.SecurityGroups = append(out.SecurityGroups, api.GroupIdentifier{GroupId: new(g.ID), GroupName: new(g.Name)})
 	}
@@ -247,6 +276,7 @@ func instanceValues(scope request.Scope, i *instance) values {
 		"root-device-name": {i.RootDevice}, "hypervisor": {"xen"}, "virtualization-type": {"hvm"},
 		"platform-details": {"Linux/UNIX"}, "instance.group-id": {}, "instance.group-name": {},
 	}
+
 	for _, g := range i.Groups {
 		v["instance.group-id"] = append(v["instance.group-id"], g.ID)
 		v["instance.group-name"] = append(v["instance.group-name"], g.Name)
@@ -286,6 +316,7 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 		max:         common.Value(in.MaxCount),
 		instanceTyp: common.Value(in.InstanceType),
 	}
+
 	if l.min < 1 || l.max < l.min {
 		return nil, invalidParameter("MinCount must be at least 1 and at most MaxCount")
 	}
@@ -465,7 +496,26 @@ func subnetAddresses(
 		}
 	}
 
-	return a, err
+	if err != nil {
+		return nil, err
+	}
+
+	enis, err := storage.Records[networkInterface](tx, scope.Key("ec2", kindNetworkInterface, ""))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ni := range enis {
+		if ni.SubnetID != sn.ID {
+			continue
+		}
+
+		for _, text := range ni.PrivateIPs {
+			a.used[netip.MustParseAddr(text)] = true
+		}
+	}
+
+	return a, nil
 }
 
 // last is the subnet's broadcast address, which AWS reserves.
@@ -563,7 +613,16 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 					out = reservation(scope, i.Reservation, nil)
 				}
 
-				out.Instances = append(out.Instances, instanceOutput(scope, i, i.State))
+				item := instanceOutput(scope, i, i.State)
+				if fillInstanceInterfacesErr := fillInstanceInterfaces(
+					tx,
+					scope,
+					&item,
+				); fillInstanceInterfacesErr != nil {
+					return fillInstanceInterfacesErr
+				}
+
+				out.Instances = append(out.Instances, item)
 			case i.active():
 				active = append(active, i)
 			}
@@ -615,6 +674,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				Monitoring: in.Monitoring != nil && common.Value(in.Monitoring.Enabled), Groups: groups, Tags: l.tags,
 				LaunchTime: now, Changed: now,
 			}
+
 			if profile != nil {
 				i.Profile = &profileAssociation{
 					Since: now, ID: newID("iip-assoc"), ARN: profile.ARN, ProfileID: profile.ProfileID,
@@ -635,7 +695,26 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				return writeErr
 			}
 
-			out.Instances = append(out.Instances, instanceOutput(scope, i, statePending))
+			if createInstanceInterfaceErr := createInstanceInterface(
+				tx,
+				scope,
+				i,
+				sn,
+				now,
+			); createInstanceInterfaceErr != nil {
+				return createInstanceInterfaceErr
+			}
+
+			item := instanceOutput(scope, i, statePending)
+			if fillInstanceInterfacesErr2 := fillInstanceInterfaces(
+				tx,
+				scope,
+				&item,
+			); fillInstanceInterfacesErr2 != nil {
+				return fillInstanceInterfacesErr2
+			}
+
+			out.Instances = append(out.Instances, item)
 		}
 
 		return nil
@@ -694,7 +773,16 @@ func (s *Service) DescribeInstances(
 				at = len(out.Reservations) - 1
 			}
 
-			out.Reservations[at].Instances = append(out.Reservations[at].Instances, instanceOutput(scope, i, i.State))
+			item := instanceOutput(scope, i, i.State)
+			if fillInstanceInterfacesErr3 := fillInstanceInterfaces(
+				tx,
+				scope,
+				&item,
+			); fillInstanceInterfacesErr3 != nil {
+				return fillInstanceInterfacesErr3
+			}
+
+			out.Reservations[at].Instances = append(out.Reservations[at].Instances, item)
 		}
 
 		out.NextToken = next
@@ -751,6 +839,10 @@ func (s *Service) change(
 			}
 
 			if i.State == stateTerminated {
+				if err := releaseInstanceInterfaces(tx, scope, i.ID); err != nil {
+					return err
+				}
+
 				if releaseErr := releaseInstanceAddress(tx, scope, i); releaseErr != nil {
 					return releaseErr
 				}

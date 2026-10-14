@@ -248,7 +248,7 @@ func efsRetag(ctx context.Context, c *client, r *resource, p props, member strin
 		return err
 	}
 	set, removed := tagChanges(old, desired)
-	target := map[string]any{"ResourceId": r.Physical}
+	target := map[string]any{applicationResource: r.Physical}
 	restore := map[string]string{}
 	if len(removed) > 0 && len(set) > 0 {
 		out, e := c.call(ctx, serviceEFS, "ListTagsForResource", target)

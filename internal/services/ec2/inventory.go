@@ -49,7 +49,8 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			if (kind == kindInstance && r.State == stateTerminated) ||
-				(kind == kindNATGateway && r.State == stateDeleted) {
+				(kind == kindNATGateway && r.State == stateDeleted) ||
+				(kind == kindPeering && (r.State == stateDeleted || r.State == "rejected" || r.State == "failed")) {
 				continue
 			}
 

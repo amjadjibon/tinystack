@@ -3,6 +3,7 @@ package ec2
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
@@ -123,7 +124,7 @@ func (s *Service) ModifySubnetAttribute(
 	}
 
 	for name, a := range map[string]*api.AttributeBooleanValue{
-		"AssignIpv6AddressOnCreation": in.AssignIpv6AddressOnCreation, "EnableDns64": in.EnableDns64,
+		"EnableDns64":                in.EnableDns64,
 		"MapCustomerOwnedIpOnLaunch": in.MapCustomerOwnedIpOnLaunch,
 	} {
 		if a != nil && common.Value(a.Value) {
@@ -152,6 +153,13 @@ func (s *Service) ModifySubnetAttribute(
 		}
 
 		switch {
+		case in.AssignIpv6AddressOnCreation != nil:
+			sn.AssignIPv6 = common.Value(in.AssignIpv6AddressOnCreation.Value)
+			if sn.AssignIPv6 &&
+				!slices.ContainsFunc(sn.IPv6CIDRs, func(a cidrAssociation) bool { return a.State == stateAssociated }) {
+				return invalidParameter("Subnet has no IPv6 CIDR block")
+			}
+
 		case in.MapPublicIpOnLaunch != nil:
 			sn.MapPublicIP = common.Value(in.MapPublicIpOnLaunch.Value)
 		case in.PrivateDnsHostnameTypeOnLaunch != nil:

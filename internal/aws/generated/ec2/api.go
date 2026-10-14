@@ -68,6 +68,8 @@ type CreateVpcRequest struct {
 	DryRun                      *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
 	TagSpecifications           []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
 	AmazonProvidedIpv6CidrBlock *bool              `json:"AmazonProvidedIpv6CidrBlock,omitempty" ec2:"AmazonProvidedIpv6CidrBlock,amazonProvidedIpv6CidrBlock"`
+	Ipv6CidrBlock               *string            `json:"Ipv6CidrBlock,omitempty" ec2:"Ipv6CidrBlock,Ipv6CidrBlock"`
+	Ipv6Pool                    *string            `json:"Ipv6Pool,omitempty" ec2:"Ipv6Pool,Ipv6Pool"`
 }
 
 type VpcCidrBlockState struct {
@@ -80,16 +82,27 @@ type VpcCidrBlockAssociation struct {
 	CidrBlockState *VpcCidrBlockState `json:"CidrBlockState,omitempty" ec2:"CidrBlockState,cidrBlockState"`
 }
 
+type VpcIpv6CidrBlockAssociation struct {
+	AssociationId        *string            `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	Ipv6CidrBlock        *string            `json:"Ipv6CidrBlock,omitempty" ec2:"Ipv6CidrBlock,ipv6CidrBlock"`
+	Ipv6CidrBlockState   *VpcCidrBlockState `json:"Ipv6CidrBlockState,omitempty" ec2:"Ipv6CidrBlockState,ipv6CidrBlockState"`
+	NetworkBorderGroup   *string            `json:"NetworkBorderGroup,omitempty" ec2:"NetworkBorderGroup,networkBorderGroup"`
+	Ipv6Pool             *string            `json:"Ipv6Pool,omitempty" ec2:"Ipv6Pool,ipv6Pool"`
+	Ipv6AddressAttribute *string            `json:"Ipv6AddressAttribute,omitempty" ec2:"Ipv6AddressAttribute,ipv6AddressAttribute"`
+	IpSource             *string            `json:"IpSource,omitempty" ec2:"IpSource,ipSource"`
+}
+
 type Vpc struct {
-	OwnerId                 *string                   `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
-	InstanceTenancy         *string                   `json:"InstanceTenancy,omitempty" ec2:"InstanceTenancy,instanceTenancy"`
-	CidrBlockAssociationSet []VpcCidrBlockAssociation `json:"CidrBlockAssociationSet,omitempty" ec2:"CidrBlockAssociationSet,cidrBlockAssociationSet,member=item"`
-	IsDefault               *bool                     `json:"IsDefault,omitempty" ec2:"IsDefault,isDefault"`
-	VpcId                   *string                   `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
-	State                   *string                   `json:"State,omitempty" ec2:"State,state"`
-	CidrBlock               *string                   `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
-	DhcpOptionsId           *string                   `json:"DhcpOptionsId,omitempty" ec2:"DhcpOptionsId,dhcpOptionsId"`
-	Tags                    []Tag                     `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	OwnerId                     *string                       `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	InstanceTenancy             *string                       `json:"InstanceTenancy,omitempty" ec2:"InstanceTenancy,instanceTenancy"`
+	CidrBlockAssociationSet     []VpcCidrBlockAssociation     `json:"CidrBlockAssociationSet,omitempty" ec2:"CidrBlockAssociationSet,cidrBlockAssociationSet,member=item"`
+	IsDefault                   *bool                         `json:"IsDefault,omitempty" ec2:"IsDefault,isDefault"`
+	VpcId                       *string                       `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	State                       *string                       `json:"State,omitempty" ec2:"State,state"`
+	CidrBlock                   *string                       `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	DhcpOptionsId               *string                       `json:"DhcpOptionsId,omitempty" ec2:"DhcpOptionsId,dhcpOptionsId"`
+	Tags                        []Tag                         `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	Ipv6CidrBlockAssociationSet []VpcIpv6CidrBlockAssociation `json:"Ipv6CidrBlockAssociationSet,omitempty" ec2:"Ipv6CidrBlockAssociationSet,ipv6CidrBlockAssociationSet,member=item"`
 }
 
 type CreateVpcResult struct {
@@ -123,6 +136,7 @@ type CreateSubnetRequest struct {
 	VpcId              *string            `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
 	DryRun             *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
 	TagSpecifications  []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	Ipv6CidrBlock      *string            `json:"Ipv6CidrBlock,omitempty" ec2:"Ipv6CidrBlock,Ipv6CidrBlock"`
 }
 
 type PrivateDnsNameOptionsOnLaunch struct {
@@ -131,24 +145,38 @@ type PrivateDnsNameOptionsOnLaunch struct {
 	EnableResourceNameDnsAAAARecord *bool   `json:"EnableResourceNameDnsAAAARecord,omitempty" ec2:"EnableResourceNameDnsAAAARecord,enableResourceNameDnsAAAARecord"`
 }
 
+type SubnetCidrBlockState struct {
+	State         *string `json:"State,omitempty" ec2:"State,state"`
+	StatusMessage *string `json:"StatusMessage,omitempty" ec2:"StatusMessage,statusMessage"`
+}
+
+type SubnetIpv6CidrBlockAssociation struct {
+	AssociationId        *string               `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	Ipv6CidrBlock        *string               `json:"Ipv6CidrBlock,omitempty" ec2:"Ipv6CidrBlock,ipv6CidrBlock"`
+	Ipv6CidrBlockState   *SubnetCidrBlockState `json:"Ipv6CidrBlockState,omitempty" ec2:"Ipv6CidrBlockState,ipv6CidrBlockState"`
+	Ipv6AddressAttribute *string               `json:"Ipv6AddressAttribute,omitempty" ec2:"Ipv6AddressAttribute,ipv6AddressAttribute"`
+	IpSource             *string               `json:"IpSource,omitempty" ec2:"IpSource,ipSource"`
+}
+
 type Subnet struct {
-	AvailabilityZoneId            *string                        `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
-	OwnerId                       *string                        `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
-	AssignIpv6AddressOnCreation   *bool                          `json:"AssignIpv6AddressOnCreation,omitempty" ec2:"AssignIpv6AddressOnCreation,assignIpv6AddressOnCreation"`
-	SubnetArn                     *string                        `json:"SubnetArn,omitempty" ec2:"SubnetArn,subnetArn"`
-	Ipv6Native                    *bool                          `json:"Ipv6Native,omitempty" ec2:"Ipv6Native,ipv6Native"`
-	SubnetId                      *string                        `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
-	State                         *string                        `json:"State,omitempty" ec2:"State,state"`
-	VpcId                         *string                        `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
-	CidrBlock                     *string                        `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
-	AvailableIpAddressCount       *int64                         `json:"AvailableIpAddressCount,omitempty" ec2:"AvailableIpAddressCount,availableIpAddressCount"`
-	AvailabilityZone              *string                        `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
-	DefaultForAz                  *bool                          `json:"DefaultForAz,omitempty" ec2:"DefaultForAz,defaultForAz"`
-	MapPublicIpOnLaunch           *bool                          `json:"MapPublicIpOnLaunch,omitempty" ec2:"MapPublicIpOnLaunch,mapPublicIpOnLaunch"`
-	Tags                          []Tag                          `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
-	EnableDns64                   *bool                          `json:"EnableDns64,omitempty" ec2:"EnableDns64,enableDns64"`
-	MapCustomerOwnedIpOnLaunch    *bool                          `json:"MapCustomerOwnedIpOnLaunch,omitempty" ec2:"MapCustomerOwnedIpOnLaunch,mapCustomerOwnedIpOnLaunch"`
-	PrivateDnsNameOptionsOnLaunch *PrivateDnsNameOptionsOnLaunch `json:"PrivateDnsNameOptionsOnLaunch,omitempty" ec2:"PrivateDnsNameOptionsOnLaunch,privateDnsNameOptionsOnLaunch"`
+	AvailabilityZoneId            *string                          `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
+	OwnerId                       *string                          `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	AssignIpv6AddressOnCreation   *bool                            `json:"AssignIpv6AddressOnCreation,omitempty" ec2:"AssignIpv6AddressOnCreation,assignIpv6AddressOnCreation"`
+	SubnetArn                     *string                          `json:"SubnetArn,omitempty" ec2:"SubnetArn,subnetArn"`
+	Ipv6Native                    *bool                            `json:"Ipv6Native,omitempty" ec2:"Ipv6Native,ipv6Native"`
+	SubnetId                      *string                          `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	State                         *string                          `json:"State,omitempty" ec2:"State,state"`
+	VpcId                         *string                          `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	CidrBlock                     *string                          `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	AvailableIpAddressCount       *int64                           `json:"AvailableIpAddressCount,omitempty" ec2:"AvailableIpAddressCount,availableIpAddressCount"`
+	AvailabilityZone              *string                          `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	DefaultForAz                  *bool                            `json:"DefaultForAz,omitempty" ec2:"DefaultForAz,defaultForAz"`
+	MapPublicIpOnLaunch           *bool                            `json:"MapPublicIpOnLaunch,omitempty" ec2:"MapPublicIpOnLaunch,mapPublicIpOnLaunch"`
+	Tags                          []Tag                            `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	EnableDns64                   *bool                            `json:"EnableDns64,omitempty" ec2:"EnableDns64,enableDns64"`
+	MapCustomerOwnedIpOnLaunch    *bool                            `json:"MapCustomerOwnedIpOnLaunch,omitempty" ec2:"MapCustomerOwnedIpOnLaunch,mapCustomerOwnedIpOnLaunch"`
+	PrivateDnsNameOptionsOnLaunch *PrivateDnsNameOptionsOnLaunch   `json:"PrivateDnsNameOptionsOnLaunch,omitempty" ec2:"PrivateDnsNameOptionsOnLaunch,privateDnsNameOptionsOnLaunch"`
+	Ipv6CidrBlockAssociationSet   []SubnetIpv6CidrBlockAssociation `json:"Ipv6CidrBlockAssociationSet,omitempty" ec2:"Ipv6CidrBlockAssociationSet,ipv6CidrBlockAssociationSet,member=item"`
 }
 
 type CreateSubnetResult struct {
@@ -466,23 +494,49 @@ type GroupIdentifier struct {
 	GroupName *string `json:"GroupName,omitempty" ec2:"GroupName,groupName"`
 }
 
+type NetworkInterfaceAssociation struct {
+	AllocationId    *string `json:"AllocationId,omitempty" ec2:"AllocationId,allocationId"`
+	AssociationId   *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+	IpOwnerId       *string `json:"IpOwnerId,omitempty" ec2:"IpOwnerId,ipOwnerId"`
+	PublicDnsName   *string `json:"PublicDnsName,omitempty" ec2:"PublicDnsName,publicDnsName"`
+	PublicIp        *string `json:"PublicIp,omitempty" ec2:"PublicIp,publicIp"`
+	CustomerOwnedIp *string `json:"CustomerOwnedIp,omitempty" ec2:"CustomerOwnedIp,customerOwnedIp"`
+	CarrierIp       *string `json:"CarrierIp,omitempty" ec2:"CarrierIp,carrierIp"`
+}
+
+type NetworkInterfacePrivateIpAddress struct {
+	Association      *NetworkInterfaceAssociation `json:"Association,omitempty" ec2:"Association,association"`
+	Primary          *bool                        `json:"Primary,omitempty" ec2:"Primary,primary"`
+	PrivateDnsName   *string                      `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
+	PrivateIpAddress *string                      `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+}
+
+type NetworkInterfaceIpv6Address struct {
+	Ipv6Address       *string `json:"Ipv6Address,omitempty" ec2:"Ipv6Address,ipv6Address"`
+	PublicIpv6DnsName *string `json:"PublicIpv6DnsName,omitempty" ec2:"PublicIpv6DnsName,publicIpv6DnsName"`
+	IsPrimaryIpv6     *bool   `json:"IsPrimaryIpv6,omitempty" ec2:"IsPrimaryIpv6,isPrimaryIpv6"`
+}
+
 type NetworkInterface struct {
-	Attachment         *NetworkInterfaceAttachment `json:"Attachment,omitempty" ec2:"Attachment,attachment"`
-	AvailabilityZone   *string                     `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
-	AvailabilityZoneId *string                     `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
-	Description        *string                     `json:"Description,omitempty" ec2:"Description,description"`
-	Groups             []GroupIdentifier           `json:"Groups,omitempty" ec2:"GroupSet,groupSet,member=item"`
-	InterfaceType      *string                     `json:"InterfaceType,omitempty" ec2:"InterfaceType,interfaceType"`
-	MacAddress         *string                     `json:"MacAddress,omitempty" ec2:"MacAddress,macAddress"`
-	NetworkInterfaceId *string                     `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
-	OwnerId            *string                     `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
-	PrivateIpAddress   *string                     `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
-	RequesterManaged   *bool                       `json:"RequesterManaged,omitempty" ec2:"RequesterManaged,requesterManaged"`
-	SourceDestCheck    *bool                       `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
-	Status             *string                     `json:"Status,omitempty" ec2:"Status,status"`
-	SubnetId           *string                     `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
-	TagSet             []Tag                       `json:"TagSet,omitempty" ec2:"TagSet,tagSet,member=item"`
-	VpcId              *string                     `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	Attachment         *NetworkInterfaceAttachment        `json:"Attachment,omitempty" ec2:"Attachment,attachment"`
+	AvailabilityZone   *string                            `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	AvailabilityZoneId *string                            `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
+	Description        *string                            `json:"Description,omitempty" ec2:"Description,description"`
+	Groups             []GroupIdentifier                  `json:"Groups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	InterfaceType      *string                            `json:"InterfaceType,omitempty" ec2:"InterfaceType,interfaceType"`
+	MacAddress         *string                            `json:"MacAddress,omitempty" ec2:"MacAddress,macAddress"`
+	NetworkInterfaceId *string                            `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	OwnerId            *string                            `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	PrivateIpAddress   *string                            `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	RequesterManaged   *bool                              `json:"RequesterManaged,omitempty" ec2:"RequesterManaged,requesterManaged"`
+	SourceDestCheck    *bool                              `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	Status             *string                            `json:"Status,omitempty" ec2:"Status,status"`
+	SubnetId           *string                            `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	TagSet             []Tag                              `json:"TagSet,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VpcId              *string                            `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	PrivateIpAddresses []NetworkInterfacePrivateIpAddress `json:"PrivateIpAddresses,omitempty" ec2:"PrivateIpAddressesSet,privateIpAddressesSet,member=item"`
+	Ipv6Addresses      []NetworkInterfaceIpv6Address      `json:"Ipv6Addresses,omitempty" ec2:"Ipv6AddressesSet,ipv6AddressesSet,member=item"`
+	PrivateDnsName     *string                            `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
 }
 
 type DescribeNetworkInterfacesResult struct {
@@ -552,38 +606,121 @@ type IamInstanceProfile struct {
 	Id  *string `json:"Id,omitempty" ec2:"Id,id"`
 }
 
+type InstanceNetworkInterfaceAssociation struct {
+	CarrierIp       *string `json:"CarrierIp,omitempty" ec2:"CarrierIp,carrierIp"`
+	CustomerOwnedIp *string `json:"CustomerOwnedIp,omitempty" ec2:"CustomerOwnedIp,customerOwnedIp"`
+	IpOwnerId       *string `json:"IpOwnerId,omitempty" ec2:"IpOwnerId,ipOwnerId"`
+	PublicDnsName   *string `json:"PublicDnsName,omitempty" ec2:"PublicDnsName,publicDnsName"`
+	PublicIp        *string `json:"PublicIp,omitempty" ec2:"PublicIp,publicIp"`
+}
+
+type InstanceAttachmentEnaSrdUdpSpecification struct {
+	EnaSrdUdpEnabled *bool `json:"EnaSrdUdpEnabled,omitempty" ec2:"EnaSrdUdpEnabled,enaSrdUdpEnabled"`
+}
+
+type InstanceAttachmentEnaSrdSpecification struct {
+	EnaSrdEnabled          *bool                                     `json:"EnaSrdEnabled,omitempty" ec2:"EnaSrdEnabled,enaSrdEnabled"`
+	EnaSrdUdpSpecification *InstanceAttachmentEnaSrdUdpSpecification `json:"EnaSrdUdpSpecification,omitempty" ec2:"EnaSrdUdpSpecification,enaSrdUdpSpecification"`
+}
+
+type InstanceNetworkInterfaceAttachment struct {
+	AttachTime          *time.Time                             `json:"AttachTime,omitempty" ec2:"AttachTime,attachTime"`
+	AttachmentId        *string                                `json:"AttachmentId,omitempty" ec2:"AttachmentId,attachmentId"`
+	DeleteOnTermination *bool                                  `json:"DeleteOnTermination,omitempty" ec2:"DeleteOnTermination,deleteOnTermination"`
+	DeviceIndex         *int64                                 `json:"DeviceIndex,omitempty" ec2:"DeviceIndex,deviceIndex"`
+	Status              *string                                `json:"Status,omitempty" ec2:"Status,status"`
+	NetworkCardIndex    *int64                                 `json:"NetworkCardIndex,omitempty" ec2:"NetworkCardIndex,networkCardIndex"`
+	EnaSrdSpecification *InstanceAttachmentEnaSrdSpecification `json:"EnaSrdSpecification,omitempty" ec2:"EnaSrdSpecification,enaSrdSpecification"`
+	EnaQueueCount       *int64                                 `json:"EnaQueueCount,omitempty" ec2:"EnaQueueCount,enaQueueCount"`
+}
+
+type InstanceIpv6Address struct {
+	Ipv6Address *string `json:"Ipv6Address,omitempty" ec2:"Ipv6Address,ipv6Address"`
+}
+
+type InstancePrivateIpAddress struct {
+	Association      *InstanceNetworkInterfaceAssociation `json:"Association,omitempty" ec2:"Association,association"`
+	Primary          *bool                                `json:"Primary,omitempty" ec2:"Primary,primary"`
+	PrivateDnsName   *string                              `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
+	PrivateIpAddress *string                              `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+}
+
+type InstanceIpv4Prefix struct {
+	Ipv4Prefix *string `json:"Ipv4Prefix,omitempty" ec2:"Ipv4Prefix,ipv4Prefix"`
+}
+
+type InstanceIpv6Prefix struct {
+	Ipv6Prefix *string `json:"Ipv6Prefix,omitempty" ec2:"Ipv6Prefix,ipv6Prefix"`
+}
+
+type ConnectionTrackingSpecificationResponse struct {
+	TcpEstablishedTimeout *int64 `json:"TcpEstablishedTimeout,omitempty" ec2:"TcpEstablishedTimeout,tcpEstablishedTimeout"`
+	UdpStreamTimeout      *int64 `json:"UdpStreamTimeout,omitempty" ec2:"UdpStreamTimeout,udpStreamTimeout"`
+	UdpTimeout            *int64 `json:"UdpTimeout,omitempty" ec2:"UdpTimeout,udpTimeout"`
+}
+
+type OperatorResponse struct {
+	Managed         *bool   `json:"Managed,omitempty" ec2:"Managed,managed"`
+	Principal       *string `json:"Principal,omitempty" ec2:"Principal,principal"`
+	HiddenByDefault *bool   `json:"HiddenByDefault,omitempty" ec2:"HiddenByDefault,hiddenByDefault"`
+}
+
+type InstanceNetworkInterface struct {
+	Association                     *InstanceNetworkInterfaceAssociation     `json:"Association,omitempty" ec2:"Association,association"`
+	Attachment                      *InstanceNetworkInterfaceAttachment      `json:"Attachment,omitempty" ec2:"Attachment,attachment"`
+	Description                     *string                                  `json:"Description,omitempty" ec2:"Description,description"`
+	Groups                          []GroupIdentifier                        `json:"Groups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	Ipv6Addresses                   []InstanceIpv6Address                    `json:"Ipv6Addresses,omitempty" ec2:"Ipv6AddressesSet,ipv6AddressesSet,member=item"`
+	MacAddress                      *string                                  `json:"MacAddress,omitempty" ec2:"MacAddress,macAddress"`
+	NetworkInterfaceId              *string                                  `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	OwnerId                         *string                                  `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	PrivateDnsName                  *string                                  `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
+	PrivateIpAddress                *string                                  `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	PrivateIpAddresses              []InstancePrivateIpAddress               `json:"PrivateIpAddresses,omitempty" ec2:"PrivateIpAddressesSet,privateIpAddressesSet,member=item"`
+	SourceDestCheck                 *bool                                    `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	Status                          *string                                  `json:"Status,omitempty" ec2:"Status,status"`
+	SubnetId                        *string                                  `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	VpcId                           *string                                  `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	InterfaceType                   *string                                  `json:"InterfaceType,omitempty" ec2:"InterfaceType,interfaceType"`
+	Ipv4Prefixes                    []InstanceIpv4Prefix                     `json:"Ipv4Prefixes,omitempty" ec2:"Ipv4PrefixSet,ipv4PrefixSet,member=item"`
+	Ipv6Prefixes                    []InstanceIpv6Prefix                     `json:"Ipv6Prefixes,omitempty" ec2:"Ipv6PrefixSet,ipv6PrefixSet,member=item"`
+	ConnectionTrackingConfiguration *ConnectionTrackingSpecificationResponse `json:"ConnectionTrackingConfiguration,omitempty" ec2:"ConnectionTrackingConfiguration,connectionTrackingConfiguration"`
+	Operator                        *OperatorResponse                        `json:"Operator,omitempty" ec2:"Operator,operator"`
+}
+
 type Instance struct {
-	Architecture          *string             `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
-	ClientToken           *string             `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
-	EbsOptimized          *bool               `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,ebsOptimized"`
-	EnaSupport            *bool               `json:"EnaSupport,omitempty" ec2:"EnaSupport,enaSupport"`
-	Hypervisor            *string             `json:"Hypervisor,omitempty" ec2:"Hypervisor,hypervisor"`
-	RootDeviceName        *string             `json:"RootDeviceName,omitempty" ec2:"RootDeviceName,rootDeviceName"`
-	RootDeviceType        *string             `json:"RootDeviceType,omitempty" ec2:"RootDeviceType,rootDeviceType"`
-	SecurityGroups        []GroupIdentifier   `json:"SecurityGroups,omitempty" ec2:"GroupSet,groupSet,member=item"`
-	SourceDestCheck       *bool               `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
-	StateReason           *StateReason        `json:"StateReason,omitempty" ec2:"StateReason,stateReason"`
-	Tags                  []Tag               `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
-	VirtualizationType    *string             `json:"VirtualizationType,omitempty" ec2:"VirtualizationType,virtualizationType"`
-	PlatformDetails       *string             `json:"PlatformDetails,omitempty" ec2:"PlatformDetails,platformDetails"`
-	UsageOperation        *string             `json:"UsageOperation,omitempty" ec2:"UsageOperation,usageOperation"`
-	InstanceId            *string             `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
-	ImageId               *string             `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
-	State                 *InstanceState      `json:"State,omitempty" ec2:"InstanceState,instanceState"`
-	PrivateDnsName        *string             `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
-	PublicDnsName         *string             `json:"PublicDnsName,omitempty" ec2:"DnsName,dnsName"`
-	StateTransitionReason *string             `json:"StateTransitionReason,omitempty" ec2:"Reason,reason"`
-	KeyName               *string             `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
-	AmiLaunchIndex        *int64              `json:"AmiLaunchIndex,omitempty" ec2:"AmiLaunchIndex,amiLaunchIndex"`
-	InstanceType          *string             `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
-	LaunchTime            *time.Time          `json:"LaunchTime,omitempty" ec2:"LaunchTime,launchTime"`
-	Placement             *Placement          `json:"Placement,omitempty" ec2:"Placement,placement"`
-	Monitoring            *Monitoring         `json:"Monitoring,omitempty" ec2:"Monitoring,monitoring"`
-	SubnetId              *string             `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
-	VpcId                 *string             `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
-	PrivateIpAddress      *string             `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
-	PublicIpAddress       *string             `json:"PublicIpAddress,omitempty" ec2:"IpAddress,ipAddress"`
-	IamInstanceProfile    *IamInstanceProfile `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
+	Architecture          *string                    `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
+	ClientToken           *string                    `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+	EbsOptimized          *bool                      `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,ebsOptimized"`
+	EnaSupport            *bool                      `json:"EnaSupport,omitempty" ec2:"EnaSupport,enaSupport"`
+	Hypervisor            *string                    `json:"Hypervisor,omitempty" ec2:"Hypervisor,hypervisor"`
+	RootDeviceName        *string                    `json:"RootDeviceName,omitempty" ec2:"RootDeviceName,rootDeviceName"`
+	RootDeviceType        *string                    `json:"RootDeviceType,omitempty" ec2:"RootDeviceType,rootDeviceType"`
+	SecurityGroups        []GroupIdentifier          `json:"SecurityGroups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	SourceDestCheck       *bool                      `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	StateReason           *StateReason               `json:"StateReason,omitempty" ec2:"StateReason,stateReason"`
+	Tags                  []Tag                      `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VirtualizationType    *string                    `json:"VirtualizationType,omitempty" ec2:"VirtualizationType,virtualizationType"`
+	PlatformDetails       *string                    `json:"PlatformDetails,omitempty" ec2:"PlatformDetails,platformDetails"`
+	UsageOperation        *string                    `json:"UsageOperation,omitempty" ec2:"UsageOperation,usageOperation"`
+	InstanceId            *string                    `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	ImageId               *string                    `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
+	State                 *InstanceState             `json:"State,omitempty" ec2:"InstanceState,instanceState"`
+	PrivateDnsName        *string                    `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
+	PublicDnsName         *string                    `json:"PublicDnsName,omitempty" ec2:"DnsName,dnsName"`
+	StateTransitionReason *string                    `json:"StateTransitionReason,omitempty" ec2:"Reason,reason"`
+	KeyName               *string                    `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
+	AmiLaunchIndex        *int64                     `json:"AmiLaunchIndex,omitempty" ec2:"AmiLaunchIndex,amiLaunchIndex"`
+	InstanceType          *string                    `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
+	LaunchTime            *time.Time                 `json:"LaunchTime,omitempty" ec2:"LaunchTime,launchTime"`
+	Placement             *Placement                 `json:"Placement,omitempty" ec2:"Placement,placement"`
+	Monitoring            *Monitoring                `json:"Monitoring,omitempty" ec2:"Monitoring,monitoring"`
+	SubnetId              *string                    `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	VpcId                 *string                    `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	PrivateIpAddress      *string                    `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	PublicIpAddress       *string                    `json:"PublicIpAddress,omitempty" ec2:"IpAddress,ipAddress"`
+	IamInstanceProfile    *IamInstanceProfile        `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
+	NetworkInterfaces     []InstanceNetworkInterface `json:"NetworkInterfaces,omitempty" ec2:"NetworkInterfaceSet,networkInterfaceSet,member=item"`
 }
 
 type Reservation struct {
@@ -1097,14 +1234,18 @@ type PropagatingVgw struct {
 }
 
 type Route struct {
-	DestinationCidrBlock    *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
-	GatewayId               *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
-	InstanceId              *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
-	InstanceOwnerId         *string `json:"InstanceOwnerId,omitempty" ec2:"InstanceOwnerId,instanceOwnerId"`
-	Origin                  *string `json:"Origin,omitempty" ec2:"Origin,origin"`
-	State                   *string `json:"State,omitempty" ec2:"State,state"`
-	NatGatewayId            *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
-	DestinationPrefixListId *string `json:"DestinationPrefixListId,omitempty" ec2:"DestinationPrefixListId,destinationPrefixListId"`
+	DestinationCidrBlock        *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	GatewayId                   *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
+	InstanceId                  *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	InstanceOwnerId             *string `json:"InstanceOwnerId,omitempty" ec2:"InstanceOwnerId,instanceOwnerId"`
+	Origin                      *string `json:"Origin,omitempty" ec2:"Origin,origin"`
+	State                       *string `json:"State,omitempty" ec2:"State,state"`
+	NatGatewayId                *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+	DestinationPrefixListId     *string `json:"DestinationPrefixListId,omitempty" ec2:"DestinationPrefixListId,destinationPrefixListId"`
+	DestinationIpv6CidrBlock    *string `json:"DestinationIpv6CidrBlock,omitempty" ec2:"DestinationIpv6CidrBlock,destinationIpv6CidrBlock"`
+	EgressOnlyInternetGatewayId *string `json:"EgressOnlyInternetGatewayId,omitempty" ec2:"EgressOnlyInternetGatewayId,egressOnlyInternetGatewayId"`
+	VpcPeeringConnectionId      *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
+	NetworkInterfaceId          *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
 }
 
 type RouteTable struct {
@@ -1143,12 +1284,17 @@ type DescribeRouteTablesResult struct {
 }
 
 type CreateRouteRequest struct {
-	DryRun               *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
-	RouteTableId         *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
-	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
-	GatewayId            *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
-	InstanceId           *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
-	NatGatewayId         *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+	DryRun                      *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	RouteTableId                *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+	DestinationCidrBlock        *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	GatewayId                   *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
+	InstanceId                  *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	NatGatewayId                *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+	DestinationIpv6CidrBlock    *string `json:"DestinationIpv6CidrBlock,omitempty" ec2:"DestinationIpv6CidrBlock,destinationIpv6CidrBlock"`
+	DestinationPrefixListId     *string `json:"DestinationPrefixListId,omitempty" ec2:"DestinationPrefixListId,DestinationPrefixListId"`
+	EgressOnlyInternetGatewayId *string `json:"EgressOnlyInternetGatewayId,omitempty" ec2:"EgressOnlyInternetGatewayId,egressOnlyInternetGatewayId"`
+	VpcPeeringConnectionId      *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
+	NetworkInterfaceId          *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
 }
 
 type CreateRouteResult struct {
@@ -1158,20 +1304,27 @@ type CreateRouteResult struct {
 type ReplaceRouteOutput struct{}
 
 type ReplaceRouteRequest struct {
-	DryRun               *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
-	RouteTableId         *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
-	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
-	GatewayId            *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
-	InstanceId           *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
-	NatGatewayId         *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+	DryRun                      *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	RouteTableId                *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+	DestinationCidrBlock        *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	GatewayId                   *string `json:"GatewayId,omitempty" ec2:"GatewayId,gatewayId"`
+	InstanceId                  *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	NatGatewayId                *string `json:"NatGatewayId,omitempty" ec2:"NatGatewayId,natGatewayId"`
+	DestinationIpv6CidrBlock    *string `json:"DestinationIpv6CidrBlock,omitempty" ec2:"DestinationIpv6CidrBlock,destinationIpv6CidrBlock"`
+	DestinationPrefixListId     *string `json:"DestinationPrefixListId,omitempty" ec2:"DestinationPrefixListId,DestinationPrefixListId"`
+	EgressOnlyInternetGatewayId *string `json:"EgressOnlyInternetGatewayId,omitempty" ec2:"EgressOnlyInternetGatewayId,egressOnlyInternetGatewayId"`
+	VpcPeeringConnectionId      *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
+	NetworkInterfaceId          *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
 }
 
 type DeleteRouteOutput struct{}
 
 type DeleteRouteRequest struct {
-	DryRun               *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
-	RouteTableId         *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
-	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	DryRun                   *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	RouteTableId             *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,routeTableId"`
+	DestinationCidrBlock     *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	DestinationIpv6CidrBlock *string `json:"DestinationIpv6CidrBlock,omitempty" ec2:"DestinationIpv6CidrBlock,destinationIpv6CidrBlock"`
+	DestinationPrefixListId  *string `json:"DestinationPrefixListId,omitempty" ec2:"DestinationPrefixListId,DestinationPrefixListId"`
 }
 
 type AssociateRouteTableRequest struct {
@@ -1585,6 +1738,733 @@ type DescribePrefixListsResult struct {
 	PrefixLists []PrefixList `json:"PrefixLists,omitempty" ec2:"PrefixListSet,prefixListSet,member=item"`
 }
 
+type NewDhcpConfiguration struct {
+	Key    *string  `json:"Key,omitempty" ec2:"Key,key"`
+	Values []string `json:"Values,omitempty" ec2:"Value,Value,member=item"`
+}
+
+type CreateDhcpOptionsRequest struct {
+	DhcpConfigurations []NewDhcpConfiguration `json:"DhcpConfigurations,omitempty" ec2:"DhcpConfiguration,dhcpConfiguration,member=item"`
+	TagSpecifications  []TagSpecification     `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun             *bool                  `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type AttributeValue struct {
+	Value *string `json:"Value,omitempty" ec2:"Value,value"`
+}
+
+type DhcpConfiguration struct {
+	Key    *string          `json:"Key,omitempty" ec2:"Key,key"`
+	Values []AttributeValue `json:"Values,omitempty" ec2:"ValueSet,valueSet,member=item"`
+}
+
+type DhcpOptions struct {
+	OwnerId            *string             `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	Tags               []Tag               `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	DhcpOptionsId      *string             `json:"DhcpOptionsId,omitempty" ec2:"DhcpOptionsId,dhcpOptionsId"`
+	DhcpConfigurations []DhcpConfiguration `json:"DhcpConfigurations,omitempty" ec2:"DhcpConfigurationSet,dhcpConfigurationSet,member=item"`
+}
+
+type CreateDhcpOptionsResult struct {
+	DhcpOptions *DhcpOptions `json:"DhcpOptions,omitempty" ec2:"DhcpOptions,dhcpOptions"`
+}
+
+type DeleteDhcpOptionsOutput struct{}
+
+type DeleteDhcpOptionsRequest struct {
+	DhcpOptionsId *string `json:"DhcpOptionsId,omitempty" ec2:"DhcpOptionsId,DhcpOptionsId"`
+	DryRun        *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeDhcpOptionsRequest struct {
+	DhcpOptionsIds []string `json:"DhcpOptionsIds,omitempty" ec2:"DhcpOptionsId,DhcpOptionsId,member=DhcpOptionsId"`
+	NextToken      *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults     *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun         *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters        []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type DescribeDhcpOptionsResult struct {
+	NextToken   *string       `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	DhcpOptions []DhcpOptions `json:"DhcpOptions,omitempty" ec2:"DhcpOptionsSet,dhcpOptionsSet,member=item"`
+}
+
+type AssociateDhcpOptionsOutput struct{}
+
+type AssociateDhcpOptionsRequest struct {
+	DhcpOptionsId *string `json:"DhcpOptionsId,omitempty" ec2:"DhcpOptionsId,DhcpOptionsId"`
+	VpcId         *string `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	DryRun        *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type CreateEgressOnlyInternetGatewayRequest struct {
+	ClientToken       *string            `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	VpcId             *string            `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+}
+
+type EgressOnlyInternetGateway struct {
+	Attachments                 []InternetGatewayAttachment `json:"Attachments,omitempty" ec2:"AttachmentSet,attachmentSet,member=item"`
+	EgressOnlyInternetGatewayId *string                     `json:"EgressOnlyInternetGatewayId,omitempty" ec2:"EgressOnlyInternetGatewayId,egressOnlyInternetGatewayId"`
+	Tags                        []Tag                       `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type CreateEgressOnlyInternetGatewayResult struct {
+	ClientToken               *string                    `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+	EgressOnlyInternetGateway *EgressOnlyInternetGateway `json:"EgressOnlyInternetGateway,omitempty" ec2:"EgressOnlyInternetGateway,egressOnlyInternetGateway"`
+}
+
+type DeleteEgressOnlyInternetGatewayRequest struct {
+	DryRun                      *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	EgressOnlyInternetGatewayId *string `json:"EgressOnlyInternetGatewayId,omitempty" ec2:"EgressOnlyInternetGatewayId,EgressOnlyInternetGatewayId"`
+}
+
+type DeleteEgressOnlyInternetGatewayResult struct {
+	ReturnCode *bool `json:"ReturnCode,omitempty" ec2:"ReturnCode,returnCode"`
+}
+
+type DescribeEgressOnlyInternetGatewaysRequest struct {
+	DryRun                       *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	EgressOnlyInternetGatewayIds []string `json:"EgressOnlyInternetGatewayIds,omitempty" ec2:"EgressOnlyInternetGatewayId,EgressOnlyInternetGatewayId,member=item"`
+	MaxResults                   *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken                    *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	Filters                      []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type DescribeEgressOnlyInternetGatewaysResult struct {
+	EgressOnlyInternetGateways []EgressOnlyInternetGateway `json:"EgressOnlyInternetGateways,omitempty" ec2:"EgressOnlyInternetGatewaySet,egressOnlyInternetGatewaySet,member=item"`
+	NextToken                  *string                     `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type AssociateVpcCidrBlockRequest struct {
+	CidrBlock                       *string `json:"CidrBlock,omitempty" ec2:"CidrBlock,CidrBlock"`
+	Ipv6CidrBlockNetworkBorderGroup *string `json:"Ipv6CidrBlockNetworkBorderGroup,omitempty" ec2:"Ipv6CidrBlockNetworkBorderGroup,Ipv6CidrBlockNetworkBorderGroup"`
+	Ipv6CidrBlock                   *string `json:"Ipv6CidrBlock,omitempty" ec2:"Ipv6CidrBlock,Ipv6CidrBlock"`
+	VpcId                           *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	AmazonProvidedIpv6CidrBlock     *bool   `json:"AmazonProvidedIpv6CidrBlock,omitempty" ec2:"AmazonProvidedIpv6CidrBlock,amazonProvidedIpv6CidrBlock"`
+	Ipv6Pool                        *string `json:"Ipv6Pool,omitempty" ec2:"Ipv6Pool,Ipv6Pool"`
+}
+
+type AssociateVpcCidrBlockResult struct {
+	Ipv6CidrBlockAssociation *VpcIpv6CidrBlockAssociation `json:"Ipv6CidrBlockAssociation,omitempty" ec2:"Ipv6CidrBlockAssociation,ipv6CidrBlockAssociation"`
+	CidrBlockAssociation     *VpcCidrBlockAssociation     `json:"CidrBlockAssociation,omitempty" ec2:"CidrBlockAssociation,cidrBlockAssociation"`
+	VpcId                    *string                      `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type DisassociateVpcCidrBlockRequest struct {
+	AssociationId *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+}
+
+type DisassociateVpcCidrBlockResult struct {
+	Ipv6CidrBlockAssociation *VpcIpv6CidrBlockAssociation `json:"Ipv6CidrBlockAssociation,omitempty" ec2:"Ipv6CidrBlockAssociation,ipv6CidrBlockAssociation"`
+	CidrBlockAssociation     *VpcCidrBlockAssociation     `json:"CidrBlockAssociation,omitempty" ec2:"CidrBlockAssociation,cidrBlockAssociation"`
+	VpcId                    *string                      `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type AssociateSubnetCidrBlockRequest struct {
+	SubnetId      *string `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	Ipv6CidrBlock *string `json:"Ipv6CidrBlock,omitempty" ec2:"Ipv6CidrBlock,ipv6CidrBlock"`
+}
+
+type AssociateSubnetCidrBlockResult struct {
+	Ipv6CidrBlockAssociation *SubnetIpv6CidrBlockAssociation `json:"Ipv6CidrBlockAssociation,omitempty" ec2:"Ipv6CidrBlockAssociation,ipv6CidrBlockAssociation"`
+	SubnetId                 *string                         `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+}
+
+type DisassociateSubnetCidrBlockRequest struct {
+	AssociationId *string `json:"AssociationId,omitempty" ec2:"AssociationId,associationId"`
+}
+
+type DisassociateSubnetCidrBlockResult struct {
+	Ipv6CidrBlockAssociation *SubnetIpv6CidrBlockAssociation `json:"Ipv6CidrBlockAssociation,omitempty" ec2:"Ipv6CidrBlockAssociation,ipv6CidrBlockAssociation"`
+	SubnetId                 *string                         `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+}
+
+type PrivateIpAddressSpecification struct {
+	Primary          *bool   `json:"Primary,omitempty" ec2:"Primary,primary"`
+	PrivateIpAddress *string `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+}
+
+type CreateNetworkInterfaceRequest struct {
+	InterfaceType                  *string                         `json:"InterfaceType,omitempty" ec2:"InterfaceType,InterfaceType"`
+	TagSpecifications              []TagSpecification              `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	ClientToken                    *string                         `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	SubnetId                       *string                         `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	Description                    *string                         `json:"Description,omitempty" ec2:"Description,description"`
+	PrivateIpAddress               *string                         `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	Groups                         []string                        `json:"Groups,omitempty" ec2:"SecurityGroupId,SecurityGroupId,member=SecurityGroupId"`
+	PrivateIpAddresses             []PrivateIpAddressSpecification `json:"PrivateIpAddresses,omitempty" ec2:"PrivateIpAddresses,privateIpAddresses,member=item"`
+	SecondaryPrivateIpAddressCount *int64                          `json:"SecondaryPrivateIpAddressCount,omitempty" ec2:"SecondaryPrivateIpAddressCount,secondaryPrivateIpAddressCount"`
+	Ipv6Addresses                  []InstanceIpv6Address           `json:"Ipv6Addresses,omitempty" ec2:"Ipv6Addresses,ipv6Addresses,member=item"`
+	Ipv6AddressCount               *int64                          `json:"Ipv6AddressCount,omitempty" ec2:"Ipv6AddressCount,ipv6AddressCount"`
+	DryRun                         *bool                           `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type CreateNetworkInterfaceResult struct {
+	NetworkInterface *NetworkInterface `json:"NetworkInterface,omitempty" ec2:"NetworkInterface,networkInterface"`
+	ClientToken      *string           `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+}
+
+type DeleteNetworkInterfaceOutput struct{}
+
+type DeleteNetworkInterfaceRequest struct {
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkInterfaceId *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+}
+
+type AttachNetworkInterfaceRequest struct {
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkInterfaceId *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	InstanceId         *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	DeviceIndex        *int64  `json:"DeviceIndex,omitempty" ec2:"DeviceIndex,deviceIndex"`
+}
+
+type AttachNetworkInterfaceResult struct {
+	AttachmentId     *string `json:"AttachmentId,omitempty" ec2:"AttachmentId,attachmentId"`
+	NetworkCardIndex *int64  `json:"NetworkCardIndex,omitempty" ec2:"NetworkCardIndex,networkCardIndex"`
+}
+
+type DetachNetworkInterfaceOutput struct{}
+
+type DetachNetworkInterfaceRequest struct {
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	AttachmentId *string `json:"AttachmentId,omitempty" ec2:"AttachmentId,attachmentId"`
+	Force        *bool   `json:"Force,omitempty" ec2:"Force,force"`
+}
+
+type DescribeNetworkInterfaceAttributeRequest struct {
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkInterfaceId *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	Attribute          *string `json:"Attribute,omitempty" ec2:"Attribute,attribute"`
+}
+
+type DescribeNetworkInterfaceAttributeResult struct {
+	Attachment               *NetworkInterfaceAttachment `json:"Attachment,omitempty" ec2:"Attachment,attachment"`
+	Description              *AttributeValue             `json:"Description,omitempty" ec2:"Description,description"`
+	Groups                   []GroupIdentifier           `json:"Groups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	NetworkInterfaceId       *string                     `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	SourceDestCheck          *AttributeBooleanValue      `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	AssociatePublicIpAddress *bool                       `json:"AssociatePublicIpAddress,omitempty" ec2:"AssociatePublicIpAddress,associatePublicIpAddress"`
+}
+
+type ModifyNetworkInterfaceAttributeOutput struct{}
+
+type NetworkInterfaceAttachmentChanges struct {
+	AttachmentId        *string `json:"AttachmentId,omitempty" ec2:"AttachmentId,attachmentId"`
+	DeleteOnTermination *bool   `json:"DeleteOnTermination,omitempty" ec2:"DeleteOnTermination,deleteOnTermination"`
+}
+
+type ModifyNetworkInterfaceAttributeRequest struct {
+	DryRun             *bool                              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkInterfaceId *string                            `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	Description        *AttributeValue                    `json:"Description,omitempty" ec2:"Description,description"`
+	SourceDestCheck    *AttributeBooleanValue             `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	Groups             []string                           `json:"Groups,omitempty" ec2:"SecurityGroupId,SecurityGroupId,member=SecurityGroupId"`
+	Attachment         *NetworkInterfaceAttachmentChanges `json:"Attachment,omitempty" ec2:"Attachment,attachment"`
+}
+
+type ResetNetworkInterfaceAttributeOutput struct{}
+
+type ResetNetworkInterfaceAttributeRequest struct {
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	NetworkInterfaceId *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	SourceDestCheck    *string `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+}
+
+type AssignPrivateIpAddressesRequest struct {
+	NetworkInterfaceId             *string  `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	PrivateIpAddresses             []string `json:"PrivateIpAddresses,omitempty" ec2:"PrivateIpAddress,privateIpAddress,member=PrivateIpAddress"`
+	SecondaryPrivateIpAddressCount *int64   `json:"SecondaryPrivateIpAddressCount,omitempty" ec2:"SecondaryPrivateIpAddressCount,secondaryPrivateIpAddressCount"`
+	AllowReassignment              *bool    `json:"AllowReassignment,omitempty" ec2:"AllowReassignment,allowReassignment"`
+}
+
+type AssignedPrivateIpAddress struct {
+	PrivateIpAddress *string `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+}
+
+type Ipv4PrefixSpecification struct {
+	Ipv4Prefix *string `json:"Ipv4Prefix,omitempty" ec2:"Ipv4Prefix,ipv4Prefix"`
+}
+
+type AssignPrivateIpAddressesResult struct {
+	NetworkInterfaceId         *string                    `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	AssignedPrivateIpAddresses []AssignedPrivateIpAddress `json:"AssignedPrivateIpAddresses,omitempty" ec2:"AssignedPrivateIpAddressesSet,assignedPrivateIpAddressesSet,member=item"`
+	AssignedIpv4Prefixes       []Ipv4PrefixSpecification  `json:"AssignedIpv4Prefixes,omitempty" ec2:"AssignedIpv4PrefixSet,assignedIpv4PrefixSet,member=item"`
+}
+
+type UnassignPrivateIpAddressesOutput struct{}
+
+type UnassignPrivateIpAddressesRequest struct {
+	NetworkInterfaceId *string  `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	PrivateIpAddresses []string `json:"PrivateIpAddresses,omitempty" ec2:"PrivateIpAddress,privateIpAddress,member=PrivateIpAddress"`
+}
+
+type DestinationOptionsRequest struct {
+	FileFormat               *string `json:"FileFormat,omitempty" ec2:"FileFormat,FileFormat"`
+	HiveCompatiblePartitions *bool   `json:"HiveCompatiblePartitions,omitempty" ec2:"HiveCompatiblePartitions,HiveCompatiblePartitions"`
+	PerHourPartition         *bool   `json:"PerHourPartition,omitempty" ec2:"PerHourPartition,PerHourPartition"`
+}
+
+type CreateFlowLogsRequest struct {
+	DryRun                   *bool                      `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	ClientToken              *string                    `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	DeliverLogsPermissionArn *string                    `json:"DeliverLogsPermissionArn,omitempty" ec2:"DeliverLogsPermissionArn,DeliverLogsPermissionArn"`
+	DeliverCrossAccountRole  *string                    `json:"DeliverCrossAccountRole,omitempty" ec2:"DeliverCrossAccountRole,DeliverCrossAccountRole"`
+	LogGroupName             *string                    `json:"LogGroupName,omitempty" ec2:"LogGroupName,LogGroupName"`
+	ResourceIds              []string                   `json:"ResourceIds,omitempty" ec2:"ResourceId,ResourceId,member=item"`
+	ResourceType             *string                    `json:"ResourceType,omitempty" ec2:"ResourceType,ResourceType"`
+	TrafficType              *string                    `json:"TrafficType,omitempty" ec2:"TrafficType,TrafficType"`
+	LogDestinationType       *string                    `json:"LogDestinationType,omitempty" ec2:"LogDestinationType,LogDestinationType"`
+	LogDestination           *string                    `json:"LogDestination,omitempty" ec2:"LogDestination,LogDestination"`
+	LogFormat                *string                    `json:"LogFormat,omitempty" ec2:"LogFormat,LogFormat"`
+	TagSpecifications        []TagSpecification         `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	MaxAggregationInterval   *int64                     `json:"MaxAggregationInterval,omitempty" ec2:"MaxAggregationInterval,MaxAggregationInterval"`
+	DestinationOptions       *DestinationOptionsRequest `json:"DestinationOptions,omitempty" ec2:"DestinationOptions,DestinationOptions"`
+}
+
+type CreateFlowLogsResult struct {
+	ClientToken  *string            `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+	FlowLogIds   []string           `json:"FlowLogIds,omitempty" ec2:"FlowLogIdSet,flowLogIdSet,member=item"`
+	Unsuccessful []UnsuccessfulItem `json:"Unsuccessful,omitempty" ec2:"Unsuccessful,unsuccessful,member=item"`
+}
+
+type DeleteFlowLogsRequest struct {
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	FlowLogIds []string `json:"FlowLogIds,omitempty" ec2:"FlowLogId,FlowLogId,member=item"`
+}
+
+type DeleteFlowLogsResult struct {
+	Unsuccessful []UnsuccessfulItem `json:"Unsuccessful,omitempty" ec2:"Unsuccessful,unsuccessful,member=item"`
+}
+
+type DescribeFlowLogsRequest struct {
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	Filter     []Filter `json:"Filter,omitempty" ec2:"Filter,Filter,member=Filter"`
+	FlowLogIds []string `json:"FlowLogIds,omitempty" ec2:"FlowLogId,FlowLogId,member=item"`
+	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type DestinationOptionsResponse struct {
+	FileFormat               *string `json:"FileFormat,omitempty" ec2:"FileFormat,fileFormat"`
+	HiveCompatiblePartitions *bool   `json:"HiveCompatiblePartitions,omitempty" ec2:"HiveCompatiblePartitions,hiveCompatiblePartitions"`
+	PerHourPartition         *bool   `json:"PerHourPartition,omitempty" ec2:"PerHourPartition,perHourPartition"`
+}
+
+type TagFieldSpecificationResponse struct {
+	ResourceType *string  `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	TagKeys      []string `json:"TagKeys,omitempty" ec2:"TagKeySet,tagKeySet,member=item"`
+}
+
+type FlowLog struct {
+	CreationTime             *time.Time                      `json:"CreationTime,omitempty" ec2:"CreationTime,creationTime"`
+	DeliverLogsErrorMessage  *string                         `json:"DeliverLogsErrorMessage,omitempty" ec2:"DeliverLogsErrorMessage,deliverLogsErrorMessage"`
+	DeliverLogsPermissionArn *string                         `json:"DeliverLogsPermissionArn,omitempty" ec2:"DeliverLogsPermissionArn,deliverLogsPermissionArn"`
+	DeliverCrossAccountRole  *string                         `json:"DeliverCrossAccountRole,omitempty" ec2:"DeliverCrossAccountRole,deliverCrossAccountRole"`
+	DeliverLogsStatus        *string                         `json:"DeliverLogsStatus,omitempty" ec2:"DeliverLogsStatus,deliverLogsStatus"`
+	FlowLogId                *string                         `json:"FlowLogId,omitempty" ec2:"FlowLogId,flowLogId"`
+	FlowLogStatus            *string                         `json:"FlowLogStatus,omitempty" ec2:"FlowLogStatus,flowLogStatus"`
+	LogGroupName             *string                         `json:"LogGroupName,omitempty" ec2:"LogGroupName,logGroupName"`
+	ResourceId               *string                         `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	TrafficType              *string                         `json:"TrafficType,omitempty" ec2:"TrafficType,trafficType"`
+	LogDestinationType       *string                         `json:"LogDestinationType,omitempty" ec2:"LogDestinationType,logDestinationType"`
+	LogDestination           *string                         `json:"LogDestination,omitempty" ec2:"LogDestination,logDestination"`
+	LogFormat                *string                         `json:"LogFormat,omitempty" ec2:"LogFormat,logFormat"`
+	Tags                     []Tag                           `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	MaxAggregationInterval   *int64                          `json:"MaxAggregationInterval,omitempty" ec2:"MaxAggregationInterval,maxAggregationInterval"`
+	DestinationOptions       *DestinationOptionsResponse     `json:"DestinationOptions,omitempty" ec2:"DestinationOptions,destinationOptions"`
+	TagFieldSpecifications   []TagFieldSpecificationResponse `json:"TagFieldSpecifications,omitempty" ec2:"TagFieldSpecificationSet,tagFieldSpecificationSet,member=item"`
+}
+
+type DescribeFlowLogsResult struct {
+	FlowLogs  []FlowLog `json:"FlowLogs,omitempty" ec2:"FlowLogSet,flowLogSet,member=item"`
+	NextToken *string   `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type AddPrefixListEntry struct {
+	Cidr        *string `json:"Cidr,omitempty" ec2:"Cidr,Cidr"`
+	Description *string `json:"Description,omitempty" ec2:"Description,Description"`
+}
+
+type CreateManagedPrefixListRequest struct {
+	DryRun            *bool                `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	PrefixListName    *string              `json:"PrefixListName,omitempty" ec2:"PrefixListName,PrefixListName"`
+	Entries           []AddPrefixListEntry `json:"Entries,omitempty" ec2:"Entry,Entry"`
+	MaxEntries        *int64               `json:"MaxEntries,omitempty" ec2:"MaxEntries,MaxEntries"`
+	TagSpecifications []TagSpecification   `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	AddressFamily     *string              `json:"AddressFamily,omitempty" ec2:"AddressFamily,AddressFamily"`
+	ClientToken       *string              `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+}
+
+type ManagedPrefixList struct {
+	PrefixListId                      *string `json:"PrefixListId,omitempty" ec2:"PrefixListId,prefixListId"`
+	AddressFamily                     *string `json:"AddressFamily,omitempty" ec2:"AddressFamily,addressFamily"`
+	State                             *string `json:"State,omitempty" ec2:"State,state"`
+	StateMessage                      *string `json:"StateMessage,omitempty" ec2:"StateMessage,stateMessage"`
+	PrefixListArn                     *string `json:"PrefixListArn,omitempty" ec2:"PrefixListArn,prefixListArn"`
+	PrefixListName                    *string `json:"PrefixListName,omitempty" ec2:"PrefixListName,prefixListName"`
+	MaxEntries                        *int64  `json:"MaxEntries,omitempty" ec2:"MaxEntries,maxEntries"`
+	Version                           *int64  `json:"Version,omitempty" ec2:"Version,version"`
+	Tags                              []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	OwnerId                           *string `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	IpamPrefixListResolverTargetId    *string `json:"IpamPrefixListResolverTargetId,omitempty" ec2:"IpamPrefixListResolverTargetId,ipamPrefixListResolverTargetId"`
+	IpamPrefixListResolverSyncEnabled *bool   `json:"IpamPrefixListResolverSyncEnabled,omitempty" ec2:"IpamPrefixListResolverSyncEnabled,ipamPrefixListResolverSyncEnabled"`
+}
+
+type CreateManagedPrefixListResult struct {
+	PrefixList *ManagedPrefixList `json:"PrefixList,omitempty" ec2:"PrefixList,prefixList"`
+}
+
+type DeleteManagedPrefixListRequest struct {
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	PrefixListId *string `json:"PrefixListId,omitempty" ec2:"PrefixListId,PrefixListId"`
+}
+
+type DeleteManagedPrefixListResult struct {
+	PrefixList *ManagedPrefixList `json:"PrefixList,omitempty" ec2:"PrefixList,prefixList"`
+}
+
+type DescribeManagedPrefixListsRequest struct {
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	Filters       []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults    *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken     *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	PrefixListIds []string `json:"PrefixListIds,omitempty" ec2:"PrefixListId,PrefixListId,member=item"`
+}
+
+type DescribeManagedPrefixListsResult struct {
+	NextToken   *string             `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	PrefixLists []ManagedPrefixList `json:"PrefixLists,omitempty" ec2:"PrefixListSet,prefixListSet,member=item"`
+}
+
+type RemovePrefixListEntry struct {
+	Cidr *string `json:"Cidr,omitempty" ec2:"Cidr,Cidr"`
+}
+
+type ModifyManagedPrefixListRequest struct {
+	DryRun         *bool                   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	PrefixListId   *string                 `json:"PrefixListId,omitempty" ec2:"PrefixListId,PrefixListId"`
+	CurrentVersion *int64                  `json:"CurrentVersion,omitempty" ec2:"CurrentVersion,CurrentVersion"`
+	PrefixListName *string                 `json:"PrefixListName,omitempty" ec2:"PrefixListName,PrefixListName"`
+	AddEntries     []AddPrefixListEntry    `json:"AddEntries,omitempty" ec2:"AddEntry,AddEntry"`
+	RemoveEntries  []RemovePrefixListEntry `json:"RemoveEntries,omitempty" ec2:"RemoveEntry,RemoveEntry"`
+	MaxEntries     *int64                  `json:"MaxEntries,omitempty" ec2:"MaxEntries,MaxEntries"`
+}
+
+type ModifyManagedPrefixListResult struct {
+	PrefixList *ManagedPrefixList `json:"PrefixList,omitempty" ec2:"PrefixList,prefixList"`
+}
+
+type GetManagedPrefixListEntriesRequest struct {
+	DryRun        *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	PrefixListId  *string `json:"PrefixListId,omitempty" ec2:"PrefixListId,PrefixListId"`
+	TargetVersion *int64  `json:"TargetVersion,omitempty" ec2:"TargetVersion,TargetVersion"`
+	MaxResults    *int64  `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken     *string `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type PrefixListEntry struct {
+	Cidr        *string `json:"Cidr,omitempty" ec2:"Cidr,cidr"`
+	Description *string `json:"Description,omitempty" ec2:"Description,description"`
+}
+
+type GetManagedPrefixListEntriesResult struct {
+	Entries   []PrefixListEntry `json:"Entries,omitempty" ec2:"EntrySet,entrySet,member=item"`
+	NextToken *string           `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type GetManagedPrefixListAssociationsRequest struct {
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	PrefixListId *string `json:"PrefixListId,omitempty" ec2:"PrefixListId,PrefixListId"`
+	MaxResults   *int64  `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken    *string `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type PrefixListAssociation struct {
+	ResourceId    *string `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	ResourceOwner *string `json:"ResourceOwner,omitempty" ec2:"ResourceOwner,resourceOwner"`
+}
+
+type GetManagedPrefixListAssociationsResult struct {
+	PrefixListAssociations []PrefixListAssociation `json:"PrefixListAssociations,omitempty" ec2:"PrefixListAssociationSet,prefixListAssociationSet,member=item"`
+	NextToken              *string                 `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type CreateVpcPeeringConnectionRequest struct {
+	PeerRegion        *string            `json:"PeerRegion,omitempty" ec2:"PeerRegion,PeerRegion"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	VpcId             *string            `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	PeerVpcId         *string            `json:"PeerVpcId,omitempty" ec2:"PeerVpcId,peerVpcId"`
+	PeerOwnerId       *string            `json:"PeerOwnerId,omitempty" ec2:"PeerOwnerId,peerOwnerId"`
+}
+
+type Ipv6CidrBlock struct {
+	Ipv6CidrBlock *string `json:"Ipv6CidrBlock,omitempty" ec2:"Ipv6CidrBlock,ipv6CidrBlock"`
+}
+
+type CidrBlock struct {
+	CidrBlock *string `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+}
+
+type VpcPeeringConnectionOptionsDescription struct {
+	AllowDnsResolutionFromRemoteVpc            *bool `json:"AllowDnsResolutionFromRemoteVpc,omitempty" ec2:"AllowDnsResolutionFromRemoteVpc,allowDnsResolutionFromRemoteVpc"`
+	AllowEgressFromLocalClassicLinkToRemoteVpc *bool `json:"AllowEgressFromLocalClassicLinkToRemoteVpc,omitempty" ec2:"AllowEgressFromLocalClassicLinkToRemoteVpc,allowEgressFromLocalClassicLinkToRemoteVpc"`
+	AllowEgressFromLocalVpcToRemoteClassicLink *bool `json:"AllowEgressFromLocalVpcToRemoteClassicLink,omitempty" ec2:"AllowEgressFromLocalVpcToRemoteClassicLink,allowEgressFromLocalVpcToRemoteClassicLink"`
+}
+
+type VpcPeeringConnectionVpcInfo struct {
+	CidrBlock        *string                                 `json:"CidrBlock,omitempty" ec2:"CidrBlock,cidrBlock"`
+	Ipv6CidrBlockSet []Ipv6CidrBlock                         `json:"Ipv6CidrBlockSet,omitempty" ec2:"Ipv6CidrBlockSet,ipv6CidrBlockSet,member=item"`
+	CidrBlockSet     []CidrBlock                             `json:"CidrBlockSet,omitempty" ec2:"CidrBlockSet,cidrBlockSet,member=item"`
+	OwnerId          *string                                 `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	PeeringOptions   *VpcPeeringConnectionOptionsDescription `json:"PeeringOptions,omitempty" ec2:"PeeringOptions,peeringOptions"`
+	VpcId            *string                                 `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	Region           *string                                 `json:"Region,omitempty" ec2:"Region,region"`
+}
+
+type VpcPeeringConnectionStateReason struct {
+	Code    *string `json:"Code,omitempty" ec2:"Code,code"`
+	Message *string `json:"Message,omitempty" ec2:"Message,message"`
+}
+
+type VpcPeeringConnection struct {
+	AccepterVpcInfo        *VpcPeeringConnectionVpcInfo     `json:"AccepterVpcInfo,omitempty" ec2:"AccepterVpcInfo,accepterVpcInfo"`
+	ExpirationTime         *time.Time                       `json:"ExpirationTime,omitempty" ec2:"ExpirationTime,expirationTime"`
+	RequesterVpcInfo       *VpcPeeringConnectionVpcInfo     `json:"RequesterVpcInfo,omitempty" ec2:"RequesterVpcInfo,requesterVpcInfo"`
+	Status                 *VpcPeeringConnectionStateReason `json:"Status,omitempty" ec2:"Status,status"`
+	Tags                   []Tag                            `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VpcPeeringConnectionId *string                          `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
+}
+
+type CreateVpcPeeringConnectionResult struct {
+	VpcPeeringConnection *VpcPeeringConnection `json:"VpcPeeringConnection,omitempty" ec2:"VpcPeeringConnection,vpcPeeringConnection"`
+}
+
+type AcceptVpcPeeringConnectionRequest struct {
+	DryRun                 *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	VpcPeeringConnectionId *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
+}
+
+type AcceptVpcPeeringConnectionResult struct {
+	VpcPeeringConnection *VpcPeeringConnection `json:"VpcPeeringConnection,omitempty" ec2:"VpcPeeringConnection,vpcPeeringConnection"`
+}
+
+type RejectVpcPeeringConnectionRequest struct {
+	DryRun                 *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	VpcPeeringConnectionId *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
+}
+
+type RejectVpcPeeringConnectionResult struct {
+	Return *bool `json:"Return,omitempty" ec2:"Return,return"`
+}
+
+type DeleteVpcPeeringConnectionRequest struct {
+	DryRun                 *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	VpcPeeringConnectionId *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
+}
+
+type DeleteVpcPeeringConnectionResult struct {
+	Return *bool `json:"Return,omitempty" ec2:"Return,return"`
+}
+
+type DescribeVpcPeeringConnectionsRequest struct {
+	NextToken               *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults              *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun                  *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	VpcPeeringConnectionIds []string `json:"VpcPeeringConnectionIds,omitempty" ec2:"VpcPeeringConnectionId,VpcPeeringConnectionId,member=item"`
+	Filters                 []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type DescribeVpcPeeringConnectionsResult struct {
+	VpcPeeringConnections []VpcPeeringConnection `json:"VpcPeeringConnections,omitempty" ec2:"VpcPeeringConnectionSet,vpcPeeringConnectionSet,member=item"`
+	NextToken             *string                `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type PeeringConnectionOptionsRequest struct {
+	AllowDnsResolutionFromRemoteVpc *bool `json:"AllowDnsResolutionFromRemoteVpc,omitempty" ec2:"AllowDnsResolutionFromRemoteVpc,AllowDnsResolutionFromRemoteVpc"`
+}
+
+type ModifyVpcPeeringConnectionOptionsRequest struct {
+	AccepterPeeringConnectionOptions  *PeeringConnectionOptionsRequest `json:"AccepterPeeringConnectionOptions,omitempty" ec2:"AccepterPeeringConnectionOptions,AccepterPeeringConnectionOptions"`
+	DryRun                            *bool                            `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	RequesterPeeringConnectionOptions *PeeringConnectionOptionsRequest `json:"RequesterPeeringConnectionOptions,omitempty" ec2:"RequesterPeeringConnectionOptions,RequesterPeeringConnectionOptions"`
+	VpcPeeringConnectionId            *string                          `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,VpcPeeringConnectionId"`
+}
+
+type PeeringConnectionOptions struct {
+	AllowDnsResolutionFromRemoteVpc            *bool `json:"AllowDnsResolutionFromRemoteVpc,omitempty" ec2:"AllowDnsResolutionFromRemoteVpc,allowDnsResolutionFromRemoteVpc"`
+	AllowEgressFromLocalClassicLinkToRemoteVpc *bool `json:"AllowEgressFromLocalClassicLinkToRemoteVpc,omitempty" ec2:"AllowEgressFromLocalClassicLinkToRemoteVpc,allowEgressFromLocalClassicLinkToRemoteVpc"`
+	AllowEgressFromLocalVpcToRemoteClassicLink *bool `json:"AllowEgressFromLocalVpcToRemoteClassicLink,omitempty" ec2:"AllowEgressFromLocalVpcToRemoteClassicLink,allowEgressFromLocalVpcToRemoteClassicLink"`
+}
+
+type ModifyVpcPeeringConnectionOptionsResult struct {
+	AccepterPeeringConnectionOptions  *PeeringConnectionOptions `json:"AccepterPeeringConnectionOptions,omitempty" ec2:"AccepterPeeringConnectionOptions,accepterPeeringConnectionOptions"`
+	RequesterPeeringConnectionOptions *PeeringConnectionOptions `json:"RequesterPeeringConnectionOptions,omitempty" ec2:"RequesterPeeringConnectionOptions,requesterPeeringConnectionOptions"`
+}
+
+type DescribeVpcEndpointServicesRequest struct {
+	DryRun       *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	ServiceNames []string `json:"ServiceNames,omitempty" ec2:"ServiceName,ServiceName,member=item"`
+	Filters      []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults   *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken    *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type ServiceTypeDetail struct {
+	ServiceType *string `json:"ServiceType,omitempty" ec2:"ServiceType,serviceType"`
+}
+
+type PrivateDnsDetails struct {
+	PrivateDnsName *string `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
+}
+
+type ServiceDetail struct {
+	ServiceName                     *string             `json:"ServiceName,omitempty" ec2:"ServiceName,serviceName"`
+	ServiceId                       *string             `json:"ServiceId,omitempty" ec2:"ServiceId,serviceId"`
+	ServiceType                     []ServiceTypeDetail `json:"ServiceType,omitempty" ec2:"ServiceType,serviceType,member=item"`
+	ServiceRegion                   *string             `json:"ServiceRegion,omitempty" ec2:"ServiceRegion,serviceRegion"`
+	AvailabilityZoneIds             []string            `json:"AvailabilityZoneIds,omitempty" ec2:"AvailabilityZoneIdSet,availabilityZoneIdSet,member=item"`
+	AvailabilityZones               []string            `json:"AvailabilityZones,omitempty" ec2:"AvailabilityZoneSet,availabilityZoneSet,member=item"`
+	Owner                           *string             `json:"Owner,omitempty" ec2:"Owner,owner"`
+	BaseEndpointDnsNames            []string            `json:"BaseEndpointDnsNames,omitempty" ec2:"BaseEndpointDnsNameSet,baseEndpointDnsNameSet,member=item"`
+	PrivateDnsName                  *string             `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
+	PrivateDnsNames                 []PrivateDnsDetails `json:"PrivateDnsNames,omitempty" ec2:"PrivateDnsNameSet,privateDnsNameSet,member=item"`
+	VpcEndpointPolicySupported      *bool               `json:"VpcEndpointPolicySupported,omitempty" ec2:"VpcEndpointPolicySupported,vpcEndpointPolicySupported"`
+	AcceptanceRequired              *bool               `json:"AcceptanceRequired,omitempty" ec2:"AcceptanceRequired,acceptanceRequired"`
+	ManagesVpcEndpoints             *bool               `json:"ManagesVpcEndpoints,omitempty" ec2:"ManagesVpcEndpoints,managesVpcEndpoints"`
+	PayerResponsibility             *string             `json:"PayerResponsibility,omitempty" ec2:"PayerResponsibility,payerResponsibility"`
+	Tags                            []Tag               `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	PrivateDnsNameVerificationState *string             `json:"PrivateDnsNameVerificationState,omitempty" ec2:"PrivateDnsNameVerificationState,privateDnsNameVerificationState"`
+	SupportedIpAddressTypes         []string            `json:"SupportedIpAddressTypes,omitempty" ec2:"SupportedIpAddressTypeSet,supportedIpAddressTypeSet,member=item"`
+}
+
+type DescribeVpcEndpointServicesResult struct {
+	ServiceNames   []string        `json:"ServiceNames,omitempty" ec2:"ServiceNameSet,serviceNameSet,member=item"`
+	ServiceDetails []ServiceDetail `json:"ServiceDetails,omitempty" ec2:"ServiceDetailSet,serviceDetailSet,member=item"`
+	NextToken      *string         `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type CreateDefaultVpcRequest struct {
+	DryRun *bool `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type CreateDefaultVpcResult struct {
+	Vpc *Vpc `json:"Vpc,omitempty" ec2:"Vpc,vpc"`
+}
+
+type CreateDefaultSubnetRequest struct {
+	AvailabilityZone   *string `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,AvailabilityZone"`
+	DryRun             *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	AvailabilityZoneId *string `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,AvailabilityZoneId"`
+}
+
+type CreateDefaultSubnetResult struct {
+	Subnet *Subnet `json:"Subnet,omitempty" ec2:"Subnet,subnet"`
+}
+
+type SecurityGroupRuleRequest struct {
+	IpProtocol        *string `json:"IpProtocol,omitempty" ec2:"IpProtocol,IpProtocol"`
+	FromPort          *int64  `json:"FromPort,omitempty" ec2:"FromPort,FromPort"`
+	ToPort            *int64  `json:"ToPort,omitempty" ec2:"ToPort,ToPort"`
+	CidrIpv4          *string `json:"CidrIpv4,omitempty" ec2:"CidrIpv4,CidrIpv4"`
+	CidrIpv6          *string `json:"CidrIpv6,omitempty" ec2:"CidrIpv6,CidrIpv6"`
+	PrefixListId      *string `json:"PrefixListId,omitempty" ec2:"PrefixListId,PrefixListId"`
+	ReferencedGroupId *string `json:"ReferencedGroupId,omitempty" ec2:"ReferencedGroupId,ReferencedGroupId"`
+	Description       *string `json:"Description,omitempty" ec2:"Description,Description"`
+}
+
+type SecurityGroupRuleUpdate struct {
+	SecurityGroupRuleId *string                   `json:"SecurityGroupRuleId,omitempty" ec2:"SecurityGroupRuleId,SecurityGroupRuleId"`
+	SecurityGroupRule   *SecurityGroupRuleRequest `json:"SecurityGroupRule,omitempty" ec2:"SecurityGroupRule,SecurityGroupRule"`
+}
+
+type ModifySecurityGroupRulesRequest struct {
+	GroupId            *string                   `json:"GroupId,omitempty" ec2:"GroupId,GroupId"`
+	SecurityGroupRules []SecurityGroupRuleUpdate `json:"SecurityGroupRules,omitempty" ec2:"SecurityGroupRule,SecurityGroupRule,member=item"`
+	DryRun             *bool                     `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type ModifySecurityGroupRulesResult struct {
+	Return *bool `json:"Return,omitempty" ec2:"Return,return"`
+}
+
+type SecurityGroupRuleDescription struct {
+	SecurityGroupRuleId *string `json:"SecurityGroupRuleId,omitempty" ec2:"SecurityGroupRuleId,SecurityGroupRuleId"`
+	Description         *string `json:"Description,omitempty" ec2:"Description,Description"`
+}
+
+type UpdateSecurityGroupRuleDescriptionsIngressRequest struct {
+	DryRun                        *bool                          `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	GroupId                       *string                        `json:"GroupId,omitempty" ec2:"GroupId,GroupId"`
+	GroupName                     *string                        `json:"GroupName,omitempty" ec2:"GroupName,GroupName"`
+	IpPermissions                 []IpPermission                 `json:"IpPermissions,omitempty" ec2:"IpPermissions,IpPermissions,member=item"`
+	SecurityGroupRuleDescriptions []SecurityGroupRuleDescription `json:"SecurityGroupRuleDescriptions,omitempty" ec2:"SecurityGroupRuleDescription,SecurityGroupRuleDescription,member=item"`
+}
+
+type UpdateSecurityGroupRuleDescriptionsIngressResult struct {
+	Return *bool `json:"Return,omitempty" ec2:"Return,return"`
+}
+
+type UpdateSecurityGroupRuleDescriptionsEgressRequest struct {
+	DryRun                        *bool                          `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	GroupId                       *string                        `json:"GroupId,omitempty" ec2:"GroupId,GroupId"`
+	GroupName                     *string                        `json:"GroupName,omitempty" ec2:"GroupName,GroupName"`
+	IpPermissions                 []IpPermission                 `json:"IpPermissions,omitempty" ec2:"IpPermissions,IpPermissions,member=item"`
+	SecurityGroupRuleDescriptions []SecurityGroupRuleDescription `json:"SecurityGroupRuleDescriptions,omitempty" ec2:"SecurityGroupRuleDescription,SecurityGroupRuleDescription,member=item"`
+}
+
+type UpdateSecurityGroupRuleDescriptionsEgressResult struct {
+	Return *bool `json:"Return,omitempty" ec2:"Return,return"`
+}
+
+type DescribeSecurityGroupReferencesRequest struct {
+	DryRun  *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	GroupId []string `json:"GroupId,omitempty" ec2:"GroupId,GroupId,member=item"`
+}
+
+type SecurityGroupReference struct {
+	GroupId                *string `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	ReferencingVpcId       *string `json:"ReferencingVpcId,omitempty" ec2:"ReferencingVpcId,referencingVpcId"`
+	VpcPeeringConnectionId *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
+	TransitGatewayId       *string `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,transitGatewayId"`
+}
+
+type DescribeSecurityGroupReferencesResult struct {
+	SecurityGroupReferenceSet []SecurityGroupReference `json:"SecurityGroupReferenceSet,omitempty" ec2:"SecurityGroupReferenceSet,securityGroupReferenceSet,member=item"`
+}
+
+type DescribeStaleSecurityGroupsRequest struct {
+	DryRun     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	MaxResults *int64  `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken  *string `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	VpcId      *string `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+}
+
+type StaleIpPermission struct {
+	FromPort         *int64            `json:"FromPort,omitempty" ec2:"FromPort,fromPort"`
+	IpProtocol       *string           `json:"IpProtocol,omitempty" ec2:"IpProtocol,ipProtocol"`
+	IpRanges         []string          `json:"IpRanges,omitempty" ec2:"IpRanges,ipRanges,member=item"`
+	PrefixListIds    []string          `json:"PrefixListIds,omitempty" ec2:"PrefixListIds,prefixListIds,member=item"`
+	ToPort           *int64            `json:"ToPort,omitempty" ec2:"ToPort,toPort"`
+	UserIdGroupPairs []UserIdGroupPair `json:"UserIdGroupPairs,omitempty" ec2:"Groups,groups,member=item"`
+}
+
+type StaleSecurityGroup struct {
+	Description              *string             `json:"Description,omitempty" ec2:"Description,description"`
+	GroupId                  *string             `json:"GroupId,omitempty" ec2:"GroupId,groupId"`
+	GroupName                *string             `json:"GroupName,omitempty" ec2:"GroupName,groupName"`
+	StaleIpPermissions       []StaleIpPermission `json:"StaleIpPermissions,omitempty" ec2:"StaleIpPermissions,staleIpPermissions,member=item"`
+	StaleIpPermissionsEgress []StaleIpPermission `json:"StaleIpPermissionsEgress,omitempty" ec2:"StaleIpPermissionsEgress,staleIpPermissionsEgress,member=item"`
+	VpcId                    *string             `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+}
+
+type DescribeStaleSecurityGroupsResult struct {
+	NextToken             *string              `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	StaleSecurityGroupSet []StaleSecurityGroup `json:"StaleSecurityGroupSet,omitempty" ec2:"StaleSecurityGroupSet,staleSecurityGroupSet,member=item"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -1667,6 +2547,49 @@ type API interface {
 	DescribeVpcEndpoints(context.Context, *DescribeVpcEndpointsRequest) (*DescribeVpcEndpointsResult, error)
 	ModifyVpcEndpoint(context.Context, *ModifyVpcEndpointRequest) (*ModifyVpcEndpointResult, error)
 	DescribePrefixLists(context.Context, *DescribePrefixListsRequest) (*DescribePrefixListsResult, error)
+	CreateDhcpOptions(context.Context, *CreateDhcpOptionsRequest) (*CreateDhcpOptionsResult, error)
+	DeleteDhcpOptions(context.Context, *DeleteDhcpOptionsRequest) (*DeleteDhcpOptionsOutput, error)
+	DescribeDhcpOptions(context.Context, *DescribeDhcpOptionsRequest) (*DescribeDhcpOptionsResult, error)
+	AssociateDhcpOptions(context.Context, *AssociateDhcpOptionsRequest) (*AssociateDhcpOptionsOutput, error)
+	CreateEgressOnlyInternetGateway(context.Context, *CreateEgressOnlyInternetGatewayRequest) (*CreateEgressOnlyInternetGatewayResult, error)
+	DeleteEgressOnlyInternetGateway(context.Context, *DeleteEgressOnlyInternetGatewayRequest) (*DeleteEgressOnlyInternetGatewayResult, error)
+	DescribeEgressOnlyInternetGateways(context.Context, *DescribeEgressOnlyInternetGatewaysRequest) (*DescribeEgressOnlyInternetGatewaysResult, error)
+	AssociateVpcCidrBlock(context.Context, *AssociateVpcCidrBlockRequest) (*AssociateVpcCidrBlockResult, error)
+	DisassociateVpcCidrBlock(context.Context, *DisassociateVpcCidrBlockRequest) (*DisassociateVpcCidrBlockResult, error)
+	AssociateSubnetCidrBlock(context.Context, *AssociateSubnetCidrBlockRequest) (*AssociateSubnetCidrBlockResult, error)
+	DisassociateSubnetCidrBlock(context.Context, *DisassociateSubnetCidrBlockRequest) (*DisassociateSubnetCidrBlockResult, error)
+	CreateNetworkInterface(context.Context, *CreateNetworkInterfaceRequest) (*CreateNetworkInterfaceResult, error)
+	DeleteNetworkInterface(context.Context, *DeleteNetworkInterfaceRequest) (*DeleteNetworkInterfaceOutput, error)
+	AttachNetworkInterface(context.Context, *AttachNetworkInterfaceRequest) (*AttachNetworkInterfaceResult, error)
+	DetachNetworkInterface(context.Context, *DetachNetworkInterfaceRequest) (*DetachNetworkInterfaceOutput, error)
+	DescribeNetworkInterfaceAttribute(context.Context, *DescribeNetworkInterfaceAttributeRequest) (*DescribeNetworkInterfaceAttributeResult, error)
+	ModifyNetworkInterfaceAttribute(context.Context, *ModifyNetworkInterfaceAttributeRequest) (*ModifyNetworkInterfaceAttributeOutput, error)
+	ResetNetworkInterfaceAttribute(context.Context, *ResetNetworkInterfaceAttributeRequest) (*ResetNetworkInterfaceAttributeOutput, error)
+	AssignPrivateIpAddresses(context.Context, *AssignPrivateIpAddressesRequest) (*AssignPrivateIpAddressesResult, error)
+	UnassignPrivateIpAddresses(context.Context, *UnassignPrivateIpAddressesRequest) (*UnassignPrivateIpAddressesOutput, error)
+	CreateFlowLogs(context.Context, *CreateFlowLogsRequest) (*CreateFlowLogsResult, error)
+	DeleteFlowLogs(context.Context, *DeleteFlowLogsRequest) (*DeleteFlowLogsResult, error)
+	DescribeFlowLogs(context.Context, *DescribeFlowLogsRequest) (*DescribeFlowLogsResult, error)
+	CreateManagedPrefixList(context.Context, *CreateManagedPrefixListRequest) (*CreateManagedPrefixListResult, error)
+	DeleteManagedPrefixList(context.Context, *DeleteManagedPrefixListRequest) (*DeleteManagedPrefixListResult, error)
+	DescribeManagedPrefixLists(context.Context, *DescribeManagedPrefixListsRequest) (*DescribeManagedPrefixListsResult, error)
+	ModifyManagedPrefixList(context.Context, *ModifyManagedPrefixListRequest) (*ModifyManagedPrefixListResult, error)
+	GetManagedPrefixListEntries(context.Context, *GetManagedPrefixListEntriesRequest) (*GetManagedPrefixListEntriesResult, error)
+	GetManagedPrefixListAssociations(context.Context, *GetManagedPrefixListAssociationsRequest) (*GetManagedPrefixListAssociationsResult, error)
+	CreateVpcPeeringConnection(context.Context, *CreateVpcPeeringConnectionRequest) (*CreateVpcPeeringConnectionResult, error)
+	AcceptVpcPeeringConnection(context.Context, *AcceptVpcPeeringConnectionRequest) (*AcceptVpcPeeringConnectionResult, error)
+	RejectVpcPeeringConnection(context.Context, *RejectVpcPeeringConnectionRequest) (*RejectVpcPeeringConnectionResult, error)
+	DeleteVpcPeeringConnection(context.Context, *DeleteVpcPeeringConnectionRequest) (*DeleteVpcPeeringConnectionResult, error)
+	DescribeVpcPeeringConnections(context.Context, *DescribeVpcPeeringConnectionsRequest) (*DescribeVpcPeeringConnectionsResult, error)
+	ModifyVpcPeeringConnectionOptions(context.Context, *ModifyVpcPeeringConnectionOptionsRequest) (*ModifyVpcPeeringConnectionOptionsResult, error)
+	DescribeVpcEndpointServices(context.Context, *DescribeVpcEndpointServicesRequest) (*DescribeVpcEndpointServicesResult, error)
+	CreateDefaultVpc(context.Context, *CreateDefaultVpcRequest) (*CreateDefaultVpcResult, error)
+	CreateDefaultSubnet(context.Context, *CreateDefaultSubnetRequest) (*CreateDefaultSubnetResult, error)
+	ModifySecurityGroupRules(context.Context, *ModifySecurityGroupRulesRequest) (*ModifySecurityGroupRulesResult, error)
+	UpdateSecurityGroupRuleDescriptionsIngress(context.Context, *UpdateSecurityGroupRuleDescriptionsIngressRequest) (*UpdateSecurityGroupRuleDescriptionsIngressResult, error)
+	UpdateSecurityGroupRuleDescriptionsEgress(context.Context, *UpdateSecurityGroupRuleDescriptionsEgressRequest) (*UpdateSecurityGroupRuleDescriptionsEgressResult, error)
+	DescribeSecurityGroupReferences(context.Context, *DescribeSecurityGroupReferencesRequest) (*DescribeSecurityGroupReferencesResult, error)
+	DescribeStaleSecurityGroups(context.Context, *DescribeStaleSecurityGroupsRequest) (*DescribeStaleSecurityGroupsResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1913,6 +2836,135 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribePrefixLists": {Name: "DescribePrefixLists", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribePrefixLists", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribePrefixLists", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribePrefixListsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribePrefixLists(ctx, input.(*DescribePrefixListsRequest))
+		}},
+		"CreateDhcpOptions": {Name: "CreateDhcpOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateDhcpOptions", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateDhcpOptions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateDhcpOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateDhcpOptions(ctx, input.(*CreateDhcpOptionsRequest))
+		}},
+		"DeleteDhcpOptions": {Name: "DeleteDhcpOptions", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteDhcpOptions", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteDhcpOptions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteDhcpOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteDhcpOptions(ctx, input.(*DeleteDhcpOptionsRequest))
+		}},
+		"DescribeDhcpOptions": {Name: "DescribeDhcpOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeDhcpOptions", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeDhcpOptions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeDhcpOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeDhcpOptions(ctx, input.(*DescribeDhcpOptionsRequest))
+		}},
+		"AssociateDhcpOptions": {Name: "AssociateDhcpOptions", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:AssociateDhcpOptions", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssociateDhcpOptions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssociateDhcpOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateDhcpOptions(ctx, input.(*AssociateDhcpOptionsRequest))
+		}},
+		"CreateEgressOnlyInternetGateway": {Name: "CreateEgressOnlyInternetGateway", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateEgressOnlyInternetGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateEgressOnlyInternetGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateEgressOnlyInternetGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateEgressOnlyInternetGateway(ctx, input.(*CreateEgressOnlyInternetGatewayRequest))
+		}},
+		"DeleteEgressOnlyInternetGateway": {Name: "DeleteEgressOnlyInternetGateway", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteEgressOnlyInternetGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteEgressOnlyInternetGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteEgressOnlyInternetGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteEgressOnlyInternetGateway(ctx, input.(*DeleteEgressOnlyInternetGatewayRequest))
+		}},
+		"DescribeEgressOnlyInternetGateways": {Name: "DescribeEgressOnlyInternetGateways", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeEgressOnlyInternetGateways", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeEgressOnlyInternetGateways", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeEgressOnlyInternetGatewaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeEgressOnlyInternetGateways(ctx, input.(*DescribeEgressOnlyInternetGatewaysRequest))
+		}},
+		"AssociateVpcCidrBlock": {Name: "AssociateVpcCidrBlock", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:AssociateVpcCidrBlock", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssociateVpcCidrBlock", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssociateVpcCidrBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateVpcCidrBlock(ctx, input.(*AssociateVpcCidrBlockRequest))
+		}},
+		"DisassociateVpcCidrBlock": {Name: "DisassociateVpcCidrBlock", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DisassociateVpcCidrBlock", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DisassociateVpcCidrBlock", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DisassociateVpcCidrBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisassociateVpcCidrBlock(ctx, input.(*DisassociateVpcCidrBlockRequest))
+		}},
+		"AssociateSubnetCidrBlock": {Name: "AssociateSubnetCidrBlock", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:AssociateSubnetCidrBlock", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssociateSubnetCidrBlock", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssociateSubnetCidrBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateSubnetCidrBlock(ctx, input.(*AssociateSubnetCidrBlockRequest))
+		}},
+		"DisassociateSubnetCidrBlock": {Name: "DisassociateSubnetCidrBlock", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DisassociateSubnetCidrBlock", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DisassociateSubnetCidrBlock", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DisassociateSubnetCidrBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisassociateSubnetCidrBlock(ctx, input.(*DisassociateSubnetCidrBlockRequest))
+		}},
+		"CreateNetworkInterface": {Name: "CreateNetworkInterface", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateNetworkInterface", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateNetworkInterface", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateNetworkInterfaceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateNetworkInterface(ctx, input.(*CreateNetworkInterfaceRequest))
+		}},
+		"DeleteNetworkInterface": {Name: "DeleteNetworkInterface", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteNetworkInterface", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteNetworkInterface", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteNetworkInterfaceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteNetworkInterface(ctx, input.(*DeleteNetworkInterfaceRequest))
+		}},
+		"AttachNetworkInterface": {Name: "AttachNetworkInterface", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:AttachNetworkInterface", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AttachNetworkInterface", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AttachNetworkInterfaceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AttachNetworkInterface(ctx, input.(*AttachNetworkInterfaceRequest))
+		}},
+		"DetachNetworkInterface": {Name: "DetachNetworkInterface", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DetachNetworkInterface", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DetachNetworkInterface", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DetachNetworkInterfaceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DetachNetworkInterface(ctx, input.(*DetachNetworkInterfaceRequest))
+		}},
+		"DescribeNetworkInterfaceAttribute": {Name: "DescribeNetworkInterfaceAttribute", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeNetworkInterfaceAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeNetworkInterfaceAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeNetworkInterfaceAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeNetworkInterfaceAttribute(ctx, input.(*DescribeNetworkInterfaceAttributeRequest))
+		}},
+		"ModifyNetworkInterfaceAttribute": {Name: "ModifyNetworkInterfaceAttribute", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifyNetworkInterfaceAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyNetworkInterfaceAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyNetworkInterfaceAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyNetworkInterfaceAttribute(ctx, input.(*ModifyNetworkInterfaceAttributeRequest))
+		}},
+		"ResetNetworkInterfaceAttribute": {Name: "ResetNetworkInterfaceAttribute", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:ResetNetworkInterfaceAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ResetNetworkInterfaceAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ResetNetworkInterfaceAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ResetNetworkInterfaceAttribute(ctx, input.(*ResetNetworkInterfaceAttributeRequest))
+		}},
+		"AssignPrivateIpAddresses": {Name: "AssignPrivateIpAddresses", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:AssignPrivateIpAddresses", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssignPrivateIpAddresses", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssignPrivateIpAddressesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssignPrivateIpAddresses(ctx, input.(*AssignPrivateIpAddressesRequest))
+		}},
+		"UnassignPrivateIpAddresses": {Name: "UnassignPrivateIpAddresses", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:UnassignPrivateIpAddresses", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UnassignPrivateIpAddresses", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UnassignPrivateIpAddressesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UnassignPrivateIpAddresses(ctx, input.(*UnassignPrivateIpAddressesRequest))
+		}},
+		"CreateFlowLogs": {Name: "CreateFlowLogs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateFlowLogs", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateFlowLogs", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateFlowLogsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateFlowLogs(ctx, input.(*CreateFlowLogsRequest))
+		}},
+		"DeleteFlowLogs": {Name: "DeleteFlowLogs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteFlowLogs", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteFlowLogs", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteFlowLogsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteFlowLogs(ctx, input.(*DeleteFlowLogsRequest))
+		}},
+		"DescribeFlowLogs": {Name: "DescribeFlowLogs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeFlowLogs", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeFlowLogs", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeFlowLogsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeFlowLogs(ctx, input.(*DescribeFlowLogsRequest))
+		}},
+		"CreateManagedPrefixList": {Name: "CreateManagedPrefixList", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateManagedPrefixList", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateManagedPrefixList", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateManagedPrefixListRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateManagedPrefixList(ctx, input.(*CreateManagedPrefixListRequest))
+		}},
+		"DeleteManagedPrefixList": {Name: "DeleteManagedPrefixList", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteManagedPrefixList", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteManagedPrefixList", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteManagedPrefixListRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteManagedPrefixList(ctx, input.(*DeleteManagedPrefixListRequest))
+		}},
+		"DescribeManagedPrefixLists": {Name: "DescribeManagedPrefixLists", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeManagedPrefixLists", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeManagedPrefixLists", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeManagedPrefixListsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeManagedPrefixLists(ctx, input.(*DescribeManagedPrefixListsRequest))
+		}},
+		"ModifyManagedPrefixList": {Name: "ModifyManagedPrefixList", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifyManagedPrefixList", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyManagedPrefixList", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyManagedPrefixListRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyManagedPrefixList(ctx, input.(*ModifyManagedPrefixListRequest))
+		}},
+		"GetManagedPrefixListEntries": {Name: "GetManagedPrefixListEntries", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:GetManagedPrefixListEntries", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetManagedPrefixListEntries", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetManagedPrefixListEntriesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetManagedPrefixListEntries(ctx, input.(*GetManagedPrefixListEntriesRequest))
+		}},
+		"GetManagedPrefixListAssociations": {Name: "GetManagedPrefixListAssociations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:GetManagedPrefixListAssociations", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetManagedPrefixListAssociations", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetManagedPrefixListAssociationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetManagedPrefixListAssociations(ctx, input.(*GetManagedPrefixListAssociationsRequest))
+		}},
+		"CreateVpcPeeringConnection": {Name: "CreateVpcPeeringConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateVpcPeeringConnection", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateVpcPeeringConnection", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateVpcPeeringConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateVpcPeeringConnection(ctx, input.(*CreateVpcPeeringConnectionRequest))
+		}},
+		"AcceptVpcPeeringConnection": {Name: "AcceptVpcPeeringConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:AcceptVpcPeeringConnection", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AcceptVpcPeeringConnection", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AcceptVpcPeeringConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AcceptVpcPeeringConnection(ctx, input.(*AcceptVpcPeeringConnectionRequest))
+		}},
+		"RejectVpcPeeringConnection": {Name: "RejectVpcPeeringConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:RejectVpcPeeringConnection", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RejectVpcPeeringConnection", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RejectVpcPeeringConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RejectVpcPeeringConnection(ctx, input.(*RejectVpcPeeringConnectionRequest))
+		}},
+		"DeleteVpcPeeringConnection": {Name: "DeleteVpcPeeringConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteVpcPeeringConnection", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVpcPeeringConnection", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVpcPeeringConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteVpcPeeringConnection(ctx, input.(*DeleteVpcPeeringConnectionRequest))
+		}},
+		"DescribeVpcPeeringConnections": {Name: "DescribeVpcPeeringConnections", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeVpcPeeringConnections", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVpcPeeringConnections", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVpcPeeringConnectionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVpcPeeringConnections(ctx, input.(*DescribeVpcPeeringConnectionsRequest))
+		}},
+		"ModifyVpcPeeringConnectionOptions": {Name: "ModifyVpcPeeringConnectionOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifyVpcPeeringConnectionOptions", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyVpcPeeringConnectionOptions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyVpcPeeringConnectionOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyVpcPeeringConnectionOptions(ctx, input.(*ModifyVpcPeeringConnectionOptionsRequest))
+		}},
+		"DescribeVpcEndpointServices": {Name: "DescribeVpcEndpointServices", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeVpcEndpointServices", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVpcEndpointServices", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVpcEndpointServicesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVpcEndpointServices(ctx, input.(*DescribeVpcEndpointServicesRequest))
+		}},
+		"CreateDefaultVpc": {Name: "CreateDefaultVpc", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateDefaultVpc", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateDefaultVpc", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateDefaultVpcRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateDefaultVpc(ctx, input.(*CreateDefaultVpcRequest))
+		}},
+		"CreateDefaultSubnet": {Name: "CreateDefaultSubnet", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateDefaultSubnet", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateDefaultSubnet", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateDefaultSubnetRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateDefaultSubnet(ctx, input.(*CreateDefaultSubnetRequest))
+		}},
+		"ModifySecurityGroupRules": {Name: "ModifySecurityGroupRules", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifySecurityGroupRules", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifySecurityGroupRules", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifySecurityGroupRulesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifySecurityGroupRules(ctx, input.(*ModifySecurityGroupRulesRequest))
+		}},
+		"UpdateSecurityGroupRuleDescriptionsIngress": {Name: "UpdateSecurityGroupRuleDescriptionsIngress", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:UpdateSecurityGroupRuleDescriptionsIngress", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateSecurityGroupRuleDescriptionsIngress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateSecurityGroupRuleDescriptionsIngressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateSecurityGroupRuleDescriptionsIngress(ctx, input.(*UpdateSecurityGroupRuleDescriptionsIngressRequest))
+		}},
+		"UpdateSecurityGroupRuleDescriptionsEgress": {Name: "UpdateSecurityGroupRuleDescriptionsEgress", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:UpdateSecurityGroupRuleDescriptionsEgress", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateSecurityGroupRuleDescriptionsEgress", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateSecurityGroupRuleDescriptionsEgressRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateSecurityGroupRuleDescriptionsEgress(ctx, input.(*UpdateSecurityGroupRuleDescriptionsEgressRequest))
+		}},
+		"DescribeSecurityGroupReferences": {Name: "DescribeSecurityGroupReferences", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeSecurityGroupReferences", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeSecurityGroupReferences", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeSecurityGroupReferencesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeSecurityGroupReferences(ctx, input.(*DescribeSecurityGroupReferencesRequest))
+		}},
+		"DescribeStaleSecurityGroups": {Name: "DescribeStaleSecurityGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeStaleSecurityGroups", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeStaleSecurityGroups", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeStaleSecurityGroupsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeStaleSecurityGroups(ctx, input.(*DescribeStaleSecurityGroupsRequest))
 		}},
 	}}
 }

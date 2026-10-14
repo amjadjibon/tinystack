@@ -62,6 +62,7 @@ func addressOutput(scope request.Scope, a *address) api.Address {
 		InstanceId: optional(a.InstanceID), PrivateIpAddress: optional(a.PrivateIP),
 		NetworkInterfaceId: optional(a.InterfaceID),
 	}
+
 	if a.AssociationID != "" {
 		out.NetworkInterfaceOwnerId = new(scope.AccountID)
 	}
@@ -83,7 +84,7 @@ func addressValues(scope request.Scope, a *address) values {
 	return values{
 		"allocation-id": {a.ID}, "association-id": {a.AssociationID}, "domain": {domainVPC},
 		filterInstanceID: {a.InstanceID}, filterPrivateIP: {a.PrivateIP}, "public-ip": {a.PublicIP},
-		"network-interface-id": {a.InterfaceID},
+		ec2NetworkInterfaceId:  {a.InterfaceID},
 		"network-border-group": {scope.Region}, "network-interface-owner-id": {scope.AccountID},
 	}.withTags(a.Tags)
 }
@@ -145,6 +146,7 @@ func (s *Service) AllocateAddress(
 			AllocationId: new(a.ID), PublicIp: new(a.PublicIP), Domain: new(domainVPC),
 			PublicIpv4Pool: new("amazon"), NetworkBorderGroup: new(scope.Region),
 		}
+
 		return storage.Write(tx, scope.Key("ec2", kindAddress, a.ID), a)
 	})
 	if err != nil {

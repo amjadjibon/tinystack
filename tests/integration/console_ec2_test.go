@@ -207,8 +207,23 @@ func TestConsoleEC2AndVPCLifecycle(t *testing.T) {
 		"SubnetIds": []string{subnet}, "SecurityGroupIds": []string{group}, "PrivateDnsEnabled": true,
 	}), "VpcEndpoint", "VpcEndpointId")
 	call("ModifyVpcEndpoint", map[string]any{"VpcEndpointId": iface, "PrivateDnsEnabled": false})
-	if len(list(call("DescribeNetworkInterfaces", map[string]any{"MaxResults": 100}), "NetworkInterfaces")) != 2 {
-		t.Fatal("missing derived network interfaces")
+	interfaces := list(call("DescribeNetworkInterfaces", map[string]any{"MaxResults": 100}), "NetworkInterfaces")
+	if len(interfaces) != 3 {
+		t.Fatal("missing instance or service-managed network interfaces")
+	}
+	kinds := map[string]int{}
+	for _, value := range interfaces {
+		ni := value.(map[string]any)
+		kinds[ni["InterfaceType"].(string)]++
+		if ni["InterfaceType"] == "interface" {
+			attachment := ni["Attachment"].(map[string]any)
+			if attachment["InstanceId"] != instance || ni["RequesterManaged"] != false {
+				t.Fatal("primary ENI does not belong to launched instance", ni)
+			}
+		}
+	}
+	if kinds["nat_gateway"] != 1 || kinds["vpc_endpoint"] != 1 || kinds["interface"] != 1 {
+		t.Fatal("missing network interface types", kinds)
 	}
 	acl := id(call("CreateNetworkAcl", map[string]any{"VpcId": vpc}), "NetworkAcl", "NetworkAclId")
 	entry := map[string]any{
