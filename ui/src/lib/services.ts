@@ -89,6 +89,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: developerTools,
 		icon: "codeconnections",
 	},
+	timestreamwrite: {
+		title: "Amazon Timestream",
+		category: database,
+		icon: "timestreamwrite",
+	},
 	codecommit: {
 		title: "CodeCommit",
 		category: developerTools,

@@ -20124,6 +20124,206 @@
       ]
     }
   },
+  "timestreamwrite": {
+    "operations": [
+      "CreateDatabase",
+      "CreateTable",
+      "DeleteDatabase",
+      "DeleteTable",
+      "DescribeDatabase",
+      "DescribeEndpoints",
+      "DescribeTable",
+      "ListDatabases",
+      "ListTables",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateDatabase",
+      "UpdateTable",
+      "WriteRecords"
+    ],
+    "shapes": {
+      "CreateDatabaseRequest": [
+        "DatabaseName",
+        "KmsKeyId",
+        "Tags"
+      ],
+      "CreateDatabaseResponse": [
+        "Database"
+      ],
+      "CreateTableRequest": [
+        "DatabaseName",
+        "TableName",
+        "RetentionProperties",
+        "Tags",
+        "MagneticStoreWriteProperties",
+        "Schema"
+      ],
+      "CreateTableResponse": [
+        "Table"
+      ],
+      "Database": [
+        "Arn",
+        "DatabaseName",
+        "TableCount",
+        "KmsKeyId",
+        "CreationTime",
+        "LastUpdatedTime"
+      ],
+      "DeleteDatabaseRequest": [
+        "DatabaseName"
+      ],
+      "DeleteTableRequest": [
+        "DatabaseName",
+        "TableName"
+      ],
+      "DescribeDatabaseRequest": [
+        "DatabaseName"
+      ],
+      "DescribeDatabaseResponse": [
+        "Database"
+      ],
+      "DescribeEndpointsRequest": [],
+      "DescribeEndpointsResponse": [
+        "Endpoints"
+      ],
+      "DescribeTableRequest": [
+        "DatabaseName",
+        "TableName"
+      ],
+      "DescribeTableResponse": [
+        "Table"
+      ],
+      "Dimension": [
+        "Name",
+        "Value",
+        "DimensionValueType"
+      ],
+      "Endpoint": [
+        "Address",
+        "CachePeriodInMinutes"
+      ],
+      "ListDatabasesRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListDatabasesResponse": [
+        "Databases",
+        "NextToken"
+      ],
+      "ListTablesRequest": [
+        "DatabaseName",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListTablesResponse": [
+        "Tables",
+        "NextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "MagneticStoreRejectedDataLocation": [
+        "S3Configuration"
+      ],
+      "MagneticStoreWriteProperties": [
+        "EnableMagneticStoreWrites",
+        "MagneticStoreRejectedDataLocation"
+      ],
+      "MeasureValue": [
+        "Name",
+        "Value",
+        "Type"
+      ],
+      "PartitionKey": [
+        "Type",
+        "Name",
+        "EnforcementInRecord"
+      ],
+      "Record": [
+        "Dimensions",
+        "MeasureName",
+        "MeasureValue",
+        "MeasureValueType",
+        "Time",
+        "TimeUnit",
+        "Version",
+        "MeasureValues"
+      ],
+      "RecordsIngested": [
+        "Total",
+        "MemoryStore",
+        "MagneticStore"
+      ],
+      "RetentionProperties": [
+        "MemoryStoreRetentionPeriodInHours",
+        "MagneticStoreRetentionPeriodInDays"
+      ],
+      "S3Configuration": [
+        "BucketName",
+        "ObjectKeyPrefix",
+        "EncryptionOption",
+        "KmsKeyId"
+      ],
+      "Schema": [
+        "CompositePartitionKey"
+      ],
+      "Table": [
+        "Arn",
+        "TableName",
+        "DatabaseName",
+        "TableStatus",
+        "RetentionProperties",
+        "CreationTime",
+        "LastUpdatedTime",
+        "MagneticStoreWriteProperties",
+        "Schema"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateDatabaseRequest": [
+        "DatabaseName",
+        "KmsKeyId"
+      ],
+      "UpdateDatabaseResponse": [
+        "Database"
+      ],
+      "UpdateTableRequest": [
+        "DatabaseName",
+        "TableName",
+        "RetentionProperties",
+        "MagneticStoreWriteProperties",
+        "Schema"
+      ],
+      "UpdateTableResponse": [
+        "Table"
+      ],
+      "WriteRecordsRequest": [
+        "DatabaseName",
+        "TableName",
+        "CommonAttributes",
+        "Records"
+      ],
+      "WriteRecordsResponse": [
+        "RecordsIngested"
+      ]
+    }
+  },
   "wafv2": {
     "operations": [
       "CreateWebACL",

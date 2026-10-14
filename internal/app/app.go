@@ -34,6 +34,7 @@ import (
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	codebuildapi "github.com/amjadjibon/tinystack/internal/aws/generated/codebuild"
 	codecommitapi "github.com/amjadjibon/tinystack/internal/aws/generated/codecommit"
+	timestreamwriteapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamwrite"
 	codeconnectionsapi "github.com/amjadjibon/tinystack/internal/aws/generated/codeconnections"
 	codedeployapi "github.com/amjadjibon/tinystack/internal/aws/generated/codedeploy"
 	codepipelineapi "github.com/amjadjibon/tinystack/internal/aws/generated/codepipeline"
@@ -120,6 +121,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/codebuild"
 	"github.com/amjadjibon/tinystack/internal/services/codecommit"
+	"github.com/amjadjibon/tinystack/internal/services/timestreamwrite"
 	"github.com/amjadjibon/tinystack/internal/services/codeconnections"
 	"github.com/amjadjibon/tinystack/internal/services/codedeploy"
 	"github.com/amjadjibon/tinystack/internal/services/codepipeline"
@@ -370,6 +372,7 @@ func build(
 	buildProjects := codebuild.New(store)
 	codePipelines := codepipeline.New(store)
 	codecommitRecords := codecommit.New(store)
+	timestreamRecords := timestreamwrite.New(store)
 	connectionRecords := codeconnections.New(store)
 	brokers := mq.New(store, network)
 	kafkaClusters := kafka.New(store, network)
@@ -471,6 +474,7 @@ func build(
 		codebuildapi.Descriptor(buildProjects),
 		codepipelineapi.Descriptor(codePipelines),
 		codecommitapi.Descriptor(codecommitRecords),
+		timestreamwriteapi.Descriptor(timestreamRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),

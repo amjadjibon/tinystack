@@ -311,6 +311,10 @@
       "path": "codegen/sdk-codegen/aws-models/sts.json",
       "sha256": "3012bfe1c6d44b4348ed03888085fd0b7a506e4da3335250280537b85e834864"
     },
+    "timestreamwrite": {
+      "path": "codegen/sdk-codegen/aws-models/timestream-write.json",
+      "sha256": "9fe14dcbd21e9e03bca48920a8a8dc7769dab51ee9ecc2e4fc65edc02824a268"
+    },
     "transfer": {
       "path": "codegen/sdk-codegen/aws-models/transfer.json",
       "sha256": "dacf9d6638d8a4f4621ebc438aa8dab7589e757b16037ea8acf50cb292e1db83"

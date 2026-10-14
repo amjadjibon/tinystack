@@ -212,6 +212,8 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.10 h1:GtsxyiF3Nd3JahRBJbxLCCd
 github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.10/go.mod h1:/j67Z5XBVDx8nZVp9EuFM9/BS5dvBznbqILGuu73hug=
 github.com/aws/aws-sdk-go-v2/service/sts v1.51.1 h1:0HOqZXRvMytH6bFHVIc0oJX07sZjfhz0zXtjs6gdE8s=
 github.com/aws/aws-sdk-go-v2/service/sts v1.51.1/go.mod h1:26zA0GhDrLo+yiLI2yXWxqB1PdsShfLikoI7GOEgugM=
+github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.43.4 h1:H2Haj+0uwBfxesUAf+XbINDYUYb4+lJ1YJX5szJxedM=
+github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.43.4/go.mod h1:4bdZ5RJIx7C1VjZAy53kwW4EzL5TPzy7zUWL79+y8Vg=
 github.com/aws/aws-sdk-go-v2/service/transfer v1.85.0 h1:5P8IgenIgvpdT3uXTnwUrU8/IuicmqzaWUz/bngoHQI=
 github.com/aws/aws-sdk-go-v2/service/transfer v1.85.0/go.mod h1:dhpF8yX+iiCHra4R9k/wieYAHf7tckj0dzVKOP3HW5w=
 github.com/aws/aws-sdk-go-v2/service/verifiedpermissions v1.41.4 h1:EcGLoXhyvESrCurDkoXY7DfYV6V31Qa9bS7pDV+ScNI=
