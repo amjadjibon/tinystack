@@ -117,6 +117,7 @@ nav:
       - Support matrix: services/index.md
       - Implemented catalogue: services/catalogue.md
       - "Analytics":
+          - "AWS Lake Formation": services/lakeformation.md
           - "Amazon EMR Serverless": services/emrserverless.md
           - "Amazon MSK": services/kafka.md
           - "Amazon OpenSearch Service": services/opensearch.md
