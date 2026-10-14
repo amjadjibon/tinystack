@@ -45,6 +45,7 @@ provider "aws" {
     s3              = var.endpoint
     scheduler       = var.endpoint
     secretsmanager  = var.endpoint
+    servicequotas   = var.endpoint
     sfn             = var.endpoint
     sns             = var.endpoint
     sqs             = var.endpoint
@@ -1943,4 +1944,11 @@ resource "aws_codeartifact_repository_permissions_policy" "npm" {
       Resource  = "*"
     }]
   })
+}
+
+# An increase stays PENDING and does not change the informational applied value.
+resource "aws_servicequotas_service_quota" "ec2_elastic_ips" {
+  service_code = "ec2"
+  quota_code   = "L-0263D0A3"
+  value        = 10
 }

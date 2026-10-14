@@ -77,6 +77,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/scheduler v1.25.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.1
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.49.2
+	github.com/aws/aws-sdk-go-v2/service/servicequotas v1.30.0
 	github.com/aws/aws-sdk-go-v2/service/ses v1.42.2
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.77.0
 	github.com/aws/aws-sdk-go-v2/service/sfn v1.51.1

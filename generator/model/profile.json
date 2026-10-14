@@ -24843,5 +24843,126 @@
         "SNSTopic"
       ]
     }
+  },
+  "servicequotas": {
+    "operations": [
+      "GetServiceQuota",
+      "GetAWSDefaultServiceQuota",
+      "ListServiceQuotas",
+      "ListAWSDefaultServiceQuotas",
+      "ListServices",
+      "RequestServiceQuotaIncrease",
+      "GetRequestedServiceQuotaChange",
+      "ListRequestedServiceQuotaChangeHistory",
+      "ListRequestedServiceQuotaChangeHistoryByQuota"
+    ],
+    "shapes": {
+      "GetServiceQuotaRequest": [
+        "ServiceCode",
+        "QuotaCode"
+      ],
+      "GetServiceQuotaResponse": [
+        "Quota"
+      ],
+      "GetAWSDefaultServiceQuotaRequest": [
+        "ServiceCode",
+        "QuotaCode"
+      ],
+      "GetAWSDefaultServiceQuotaResponse": [
+        "Quota"
+      ],
+      "ListServiceQuotasRequest": [
+        "ServiceCode",
+        "NextToken",
+        "MaxResults",
+        "QuotaCode"
+      ],
+      "ListServiceQuotasResponse": [
+        "NextToken",
+        "Quotas"
+      ],
+      "ListAWSDefaultServiceQuotasRequest": [
+        "ServiceCode",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListAWSDefaultServiceQuotasResponse": [
+        "NextToken",
+        "Quotas"
+      ],
+      "ListServicesRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListServicesResponse": [
+        "NextToken",
+        "Services"
+      ],
+      "RequestServiceQuotaIncreaseRequest": [
+        "ServiceCode",
+        "QuotaCode",
+        "DesiredValue"
+      ],
+      "RequestServiceQuotaIncreaseResponse": [
+        "RequestedQuota"
+      ],
+      "GetRequestedServiceQuotaChangeRequest": [
+        "RequestId"
+      ],
+      "GetRequestedServiceQuotaChangeResponse": [
+        "RequestedQuota"
+      ],
+      "ListRequestedServiceQuotaChangeHistoryRequest": [
+        "ServiceCode",
+        "Status",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListRequestedServiceQuotaChangeHistoryResponse": [
+        "NextToken",
+        "RequestedQuotas"
+      ],
+      "ListRequestedServiceQuotaChangeHistoryByQuotaRequest": [
+        "ServiceCode",
+        "QuotaCode",
+        "Status",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListRequestedServiceQuotaChangeHistoryByQuotaResponse": [
+        "NextToken",
+        "RequestedQuotas"
+      ],
+      "ServiceQuota": [
+        "ServiceCode",
+        "ServiceName",
+        "QuotaArn",
+        "QuotaCode",
+        "QuotaName",
+        "Value",
+        "Unit",
+        "Adjustable",
+        "GlobalQuota"
+      ],
+      "RequestedServiceQuotaChange": [
+        "Id",
+        "ServiceCode",
+        "ServiceName",
+        "QuotaCode",
+        "QuotaName",
+        "DesiredValue",
+        "Status",
+        "Created",
+        "LastUpdated",
+        "Requester",
+        "QuotaArn",
+        "GlobalQuota",
+        "Unit"
+      ],
+      "ServiceInfo": [
+        "ServiceCode",
+        "ServiceName"
+      ]
+    }
   }
 }

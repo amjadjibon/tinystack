@@ -84,6 +84,7 @@ import (
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	servicediscoveryapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicediscovery"
+	servicequotasapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicequotas"
 	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
 	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
@@ -173,6 +174,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/servicediscovery"
+	"github.com/amjadjibon/tinystack/internal/services/servicequotas"
 	"github.com/amjadjibon/tinystack/internal/services/ses"
 	"github.com/amjadjibon/tinystack/internal/services/sesv2"
 	"github.com/amjadjibon/tinystack/internal/services/sfn"
@@ -377,6 +379,7 @@ func build(
 	artifactRecords := codeartifact.New(store)
 	timestreamRecords := timestreamwrite.New(store)
 	connectionRecords := codeconnections.New(store)
+	quotaRecords := servicequotas.New(store)
 	brokers := mq.New(store, network)
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
@@ -480,6 +483,7 @@ func build(
 		codeartifactapi.Descriptor(artifactRecords),
 		timestreamwriteapi.Descriptor(timestreamRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
+		servicequotasapi.Descriptor(quotaRecords),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),

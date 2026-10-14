@@ -283,6 +283,10 @@
       "path": "codegen/sdk-codegen/aws-models/servicediscovery.json",
       "sha256": "f32a3c9282287dfb15aefc056a9018064c867d2dd70a41a4932826e465bf8455"
     },
+    "servicequotas": {
+      "path": "codegen/sdk-codegen/aws-models/service-quotas.json",
+      "sha256": "a4d61f9b0223f5abf3637d57a2a8b7bdd81e48fcdff7ad9a02e36818ddb23617"
+    },
     "ses": {
       "path": "codegen/sdk-codegen/aws-models/ses.json",
       "sha256": "fe57af14c0cb78e4886218f5d39bb199bbe490a0dd3f35d2509523a3c1442239"
