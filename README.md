@@ -29,7 +29,8 @@ or SIGTERM. By default all state is in memory and disappears on exit. Use `--hos
 
 `docker compose up --build` (`task up`) runs the console build in a container on both
 ports and keeps its state in the `tinystack-data` volume (`task down -- -v` resets it).
-`docker build --target headless .` builds the image without the console.
+`docker build --target headless .` builds the image without the console, and
+`docker build --target console-cli .` adds the AWS CLI that CloudShell runs.
 
 To keep state across restarts, set a persistent storage directory (`~` expands to
 your home directory):

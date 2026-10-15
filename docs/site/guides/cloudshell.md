@@ -3,8 +3,9 @@
 CloudShell runs the **real AWS CLI on the TinyStack host** and streams its stdout and stderr to the browser terminal.
 It is included only in builds with the `console` tag (`task build`). Install
 [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) on that host and make
-`aws` available on TinyStack's PATH. The Docker image does **not** include the CLI; add it to your own image if
-CloudShell is needed there. A missing CLI produces an installation banner in the terminal.
+`aws` available on TinyStack's PATH. The default Docker image does **not** include the CLI;
+`docker build --target console-cli .` builds the console image with the AWS CLI and the man-page renderer that
+`aws help` needs (about 350 MB in total). A missing CLI produces an installation banner in the terminal.
 
 ## Commands
 

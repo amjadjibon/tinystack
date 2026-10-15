@@ -2,6 +2,7 @@
 
 # docker build .               TinyStack with the web console on :4567
 # docker build --target headless . TinyStack without the console (no Node.js stage)
+# docker build --target console-cli . the console image plus the AWS CLI for CloudShell (about 350 MB in total)
 
 FROM node:24-alpine AS console
 
@@ -49,9 +50,18 @@ FROM runtime AS headless
 COPY --from=build-headless /out/tinystack /usr/local/bin/tinystack
 EXPOSE 4566
 
-# The default target, last so a plain docker build picks it.
-FROM runtime AS console-image
+FROM runtime AS console-base
 
 COPY --from=build /out/tinystack /usr/local/bin/tinystack
 # 4566 is the AWS endpoint, 4567 the web console.
 EXPOSE 4566 4567
+
+# CloudShell runs the AWS CLI it finds on PATH; mandoc and the doc package make `aws help` work.
+FROM console-base AS console-cli
+
+USER root
+RUN apk add --no-cache aws-cli aws-cli-doc mandoc
+USER tinystack
+
+# The default target, last so a plain docker build picks it.
+FROM console-base AS console-image

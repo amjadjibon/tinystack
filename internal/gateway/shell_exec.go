@@ -149,7 +149,7 @@ func (s *Server) shellEnvironment(ctx context.Context, c *call, dir, binary stri
 	return []string{
 		"AWS_ACCESS_KEY_ID=" + key, "AWS_SECRET_ACCESS_KEY=" + secret, "AWS_SESSION_TOKEN=" + token,
 		"AWS_REGION=" + c.meta.Region, "AWS_DEFAULT_REGION=" + c.meta.Region, "AWS_ENDPOINT_URL=" + endpoint,
-		"AWS_PAGER=", "AWS_CLI_AUTO_PROMPT=off", "AWS_EC2_METADATA_DISABLED=true",
+		"AWS_PAGER=", "MANPAGER=cat", "PAGER=cat", "AWS_CLI_AUTO_PROMPT=off", "AWS_EC2_METADATA_DISABLED=true",
 		"AWS_CONFIG_FILE=" + empty, "AWS_SHARED_CREDENTIALS_FILE=" + empty, "HOME=" + dir,
 		"PATH=" + filepath.Dir(binary) + ":/usr/bin:/bin", "LC_ALL=C.UTF-8",
 	}, nil

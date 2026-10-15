@@ -10,19 +10,11 @@
 name: tinystack-sso
 
 services:
-  # The repository's image, built once so that the AWS CLI can be added on top.
-  tinystack-base:
+  tinystack:
+    # The console image with the AWS CLI, which the init hook in init/ready.d and CloudShell need.
     build:
       context: ../..
-    image: tinystack-base:sso-example
-    entrypoint: ["true"]
-    restart: "no"
-
-  tinystack:
-    build:
-      context: .
-      additional_contexts:
-        base: service:tinystack-base
+      target: console-cli
     command: ["start", "--config", "/etc/tinystack.yaml"]
     environment:
       # Trust the CA that signs Authelia's certificate (Caddy's internal CA).
