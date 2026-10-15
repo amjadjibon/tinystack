@@ -1366,6 +1366,24 @@ resource "aws_cloudwatch_metric_alarm" "error_rate" {
   }
 }
 
+resource "aws_cloudwatch_metric_alarm" "billing" {
+  alarm_name          = "billing"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "EstimatedCharges"
+  namespace           = "AWS/Billing"
+  period              = 21600
+  statistic           = "Maximum"
+  threshold           = 80
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    Currency = "USD"
+  }
+
+  tags = local.tags
+}
+
 resource "aws_cloudwatch_composite_alarm" "service" {
   alarm_name        = "service"
   alarm_description = "Service health for ${var.team}"
@@ -2102,5 +2120,6 @@ resource "aws_budgets_budget" "monthly" {
     threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = var.team == "core" ? ["core@example.com", "remove@example.com"] : ["platform@example.com"]
+    subscriber_sns_topic_arns  = [aws_sns_topic.alerts.arn]
   }
 }
