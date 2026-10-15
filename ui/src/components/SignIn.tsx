@@ -2,13 +2,17 @@ import {
 	Alert,
 	Box,
 	Button,
+	ColumnLayout,
 	Container,
+	Grid,
 	Header,
 	Link,
 	SpaceBetween,
 } from "@cloudscape-design/components";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useHealth } from "#/lib/health";
+import { categories, consoleServiceNames, service } from "#/lib/services";
 import { collectSSOSession, lastSignOut } from "#/lib/session";
 import {
 	applyConsoleTheme,
@@ -32,8 +36,10 @@ function returnPath() {
 	}
 }
 
-// SignIn is the page a person sees, instead of the console, while single
-// sign-on is configured and nobody has signed in.
+// SignIn is the landing page a person sees, instead of the console, while
+// single sign-on is configured and nobody has signed in: what this TinyStack
+// runs, from its public health endpoint, beside the ways to sign in. The
+// sign-in comes first so that it stays above the fold on a narrow screen.
 export function SignIn({ loginURL }: { loginURL: string }) {
 	const router = useRouter();
 	const [notice, setNotice] = useState("");
@@ -84,19 +90,21 @@ export function SignIn({ loginURL }: { loginURL: string }) {
 	if (checking) return null;
 
 	return (
-		<Box padding={{ top: "xxxl", horizontal: "l" }}>
-			<div style={{ maxWidth: 420, margin: "0 auto" }}>
-				<SpaceBetween size="l">
-					<Box textAlign="center">
-						<img src="/tinystack.svg" alt="" width={56} height={56} />
-					</Box>
+		<Box padding={{ vertical: "xxxl", horizontal: "l" }}>
+			<div style={{ maxWidth: 1080, margin: "0 auto" }}>
+				<Grid
+					gridDefinition={[
+						{ colspan: { default: 12, s: 5 }, push: { s: 7 } },
+						{ colspan: { default: 12, s: 7 }, pull: { s: 5 } },
+					]}
+				>
 					<Container
 						header={
 							<Header
-								variant="h1"
+								variant="h2"
 								description="Sign in to manage this TinyStack's resources."
 							>
-								Sign in to TinyStack
+								Sign in
 							</Header>
 						}
 					>
@@ -129,11 +137,79 @@ export function SignIn({ loginURL }: { loginURL: string }) {
 							</Box>
 						</SpaceBetween>
 					</Container>
-				</SpaceBetween>
+					<Overview />
+				</Grid>
 			</div>
 			{keysOpen && (
 				<ConsoleSessionDialog onDismiss={() => setKeysOpen(false)} />
 			)}
 		</Box>
+	);
+}
+
+// Overview introduces TinyStack and the services this one runs, grouped the
+// way the console's service menu groups them.
+function Overview() {
+	const health = useHealth();
+	const names = consoleServiceNames(health.data?.services ?? []);
+	const counts = new Map<string, number>();
+	for (const name of names) {
+		const { category } = service(name);
+		counts.set(category, (counts.get(category) ?? 0) + 1);
+	}
+	const groups = [...categories, "Other"].filter((c) => counts.has(c));
+
+	return (
+		<SpaceBetween size="xl">
+			<SpaceBetween size="s" direction="horizontal" alignItems="center">
+				<img src="/tinystack.svg" alt="" width={48} height={48} />
+				<Box variant="h1" fontSize="display-l" padding="n">
+					TinyStack
+				</Box>
+			</SpaceBetween>
+			<Box variant="p" fontSize="heading-m" color="text-body-secondary">
+				AWS services on one local endpoint, for development and tests. Point the
+				AWS SDKs, CLI, Terraform or CDK at it and work against real APIs without
+				an AWS account.
+			</Box>
+			{health.data ? (
+				<ColumnLayout columns={3} variant="text-grid" minColumnWidth={120}>
+					<Stat label="Services" value={String(names.length)} />
+					<Stat label="Storage" value={health.data.storage} />
+					<Stat
+						label="Signatures"
+						value={
+							health.data.identity?.mode === "verify" ? "Verified" : "Parsed"
+						}
+					/>
+				</ColumnLayout>
+			) : null}
+			{groups.length ? (
+				<ColumnLayout columns={2} minColumnWidth={220}>
+					{groups.map((category) => (
+						<Box key={category} color="text-body-secondary">
+							<Box variant="strong">{category}</Box>
+							{" — "}
+							{counts.get(category)}{" "}
+							{counts.get(category) === 1 ? "service" : "services"}
+						</Box>
+					))}
+				</ColumnLayout>
+			) : null}
+			<Link href="https://github.com/amjadjibon/tinystack" external>
+				Documentation and source
+			</Link>
+		</SpaceBetween>
+	);
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+	return (
+		<div>
+			<Box variant="awsui-key-label">{label}</Box>
+			<Box fontSize="heading-xl" fontWeight="bold">
+				{value}
+			</Box>
+		</div>
 	);
 }
