@@ -18,29 +18,18 @@ import { CodeBlock } from "#/components/CodeBlock";
 import { api, type Delivery, pretty } from "#/lib/api";
 import { usePoll } from "#/lib/usePoll";
 
-export type DeliveriesSectionProps = {
-	title: string;
-	info: ReactNode;
-	filter: (delivery: Delivery) => boolean;
-	loadingText: string;
-	refreshAriaLabel: string;
-	emptyText: string;
-	filteringPlaceholder?: string;
-	detailsHeader?: string;
-	closeAriaLabel?: string;
-};
-
+// DeliveriesSection lists recent delivery records matching filter; noun names them in labels.
 export function DeliveriesSection({
 	title,
 	info,
 	filter,
-	loadingText,
-	refreshAriaLabel,
-	emptyText,
-	filteringPlaceholder = "Find deliveries",
-	detailsHeader = "Delivery details",
-	closeAriaLabel = "Close delivery details",
-}: DeliveriesSectionProps) {
+	noun,
+}: {
+	title: string;
+	info: ReactNode;
+	filter: (delivery: Delivery) => boolean;
+	noun: string;
+}) {
 	const deliveries = usePoll(api.deliveries);
 	const [selected, setSelected] = useState<Delivery | null>(null);
 	const rows = (deliveries.data ?? []).filter(filter);
@@ -61,7 +50,7 @@ export function DeliveriesSection({
 				{...collection.collectionProps}
 				items={collection.items}
 				loading={deliveries.loading}
-				loadingText={loadingText}
+				loadingText={`Loading ${noun}`}
 				trackBy={(d) => `${d.time}/${d.target}`}
 				header={
 					<Header
@@ -70,7 +59,7 @@ export function DeliveriesSection({
 						actions={
 							<Button
 								iconName="refresh"
-								ariaLabel={refreshAriaLabel}
+								ariaLabel={`Refresh ${noun}`}
 								onClick={deliveries.reload}
 							/>
 						}
@@ -81,7 +70,7 @@ export function DeliveriesSection({
 				filter={
 					<TextFilter
 						{...collection.filterProps}
-						filteringPlaceholder={filteringPlaceholder}
+						filteringPlaceholder={`Find ${noun}`}
 					/>
 				}
 				pagination={<Pagination {...collection.paginationProps} />}
@@ -112,7 +101,7 @@ export function DeliveriesSection({
 				]}
 				empty={
 					<Box textAlign="center" padding="l">
-						{emptyText}
+						No matching {noun}
 					</Box>
 				}
 			/>
@@ -120,8 +109,8 @@ export function DeliveriesSection({
 				<Modal
 					visible
 					size="large"
-					header={detailsHeader}
-					closeAriaLabel={closeAriaLabel}
+					header="Details"
+					closeAriaLabel="Close details"
 					onDismiss={() => setSelected(null)}
 					footer={
 						<Box float="right">
