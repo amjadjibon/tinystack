@@ -89,12 +89,12 @@ resource details: in enforce mode, non-admin inventory omits `details`, includin
 documents. Use the authorized service APIs to read those details. Source IP, TLS, current time, region and principal/resource tag
 conditions are evaluated for the inventory too. With `authorization: soft` or `off` they see their whole account. Only `health` (and `/_localstack/health`) stays open, so
 container health checks keep working. The console itself shows only a TinyStack sign-in page until someone signs in, with
-**Sign in with SSO** and a link to sign in with root access keys; after an SSO sign-in the person returns to the page
+**Sign in with SSO** and **Sign in with root access keys**; after an SSO sign-in the person returns to the page
 they first asked for.
 
-Access-key sign-in is unchanged: root keys and root session credentials still connect with **Console session**, and
-IAM users and ordinary assumed roles still cannot. Console actions that such credentials sign directly are evaluated by
-IAM like any AWS API call.
+Access-key sign-in is unchanged: choose **Sign in with root access keys**, then **Connect** in
+**Console session**. Root keys and root session credentials still connect, and IAM users and ordinary assumed roles
+still cannot. Console actions that such credentials sign directly are evaluated by IAM like any AWS API call.
 
 ## Command line sign-in
 
@@ -152,7 +152,7 @@ warning, or trust the CA after exporting it with
 The redirect URI is `http://127.0.0.1:4567/_tinystack/auth/callback` (Authelia accepts plain HTTP redirects to
 loopback), so open the console at `http://127.0.0.1:4567`, not `localhost`. Try it:
 
-1. Choose **Console session**, **Sign in with SSO**, and sign in as `dev`. Create an S3 bucket: allowed. Open IAM:
+1. Choose **Sign in with SSO** and sign in as `dev`. Create an S3 bucket: allowed. Open IAM:
    denied with an explanation naming the missing permission. Sign out.
 2. Sign in as `admin` and open **Request inspector**: it lists the developer's denied `iam:GetUser`. Signed requests
    with the root key `dev-root-a` / `dev-root-secret` work for the AWS CLI and for the administrative endpoints.
