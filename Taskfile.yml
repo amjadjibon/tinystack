@@ -50,7 +50,7 @@ tasks:
     desc: "Test what only the console build has, the CloudShell (embeds the console, so it builds it first)"
     deps: [ui:build]
     cmds:
-      - go test -race -count=1 -tags console ./internal/gateway ./internal/shell
+      - go test -race -count=1 -tags console ./internal/gateway ./internal/services/sts
       - go test -race -count=1 -tags console ./tests/integration -run 'TestShell'
   lint:
     cmds:

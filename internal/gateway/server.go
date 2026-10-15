@@ -42,6 +42,7 @@ const (
 )
 
 type Server struct {
+	shellSupport
 	managementEvents func(context.Context, *catalog.ManagementEvent) error
 	services         map[string]*catalog.Service
 	consoleCaller    *catalog.Caller

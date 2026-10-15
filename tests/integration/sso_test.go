@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -76,7 +77,9 @@ func newSSOEnv(t *testing.T) *ssoEnv {
 
 	// The callback address must be known before the application starts.
 	console := httptest.NewUnstartedServer(nil)
+	api := httptest.NewUnstartedServer(nil)
 	cfg := testConfig()
+	cfg.Server.Port = api.Listener.Addr().(*net.TCPAddr).Port
 	cfg.Identity.Mode = config.IdentityVerify
 	cfg.Identity.Authorization = config.AuthorizationEnforce
 	cfg.Identity.SecretKeys = map[string]string{"test": "test", "team-b": "test"}
@@ -98,7 +101,8 @@ func newSSOEnv(t *testing.T) *ssoEnv {
 		t.Fatal(err)
 	}
 
-	api := httptest.NewServer(tinystack.Gateway)
+	api.Config.Handler = tinystack.Gateway
+	api.Start()
 	console.Config.Handler = tinystack.Gateway.Internal()
 	console.Start()
 	t.Cleanup(func() {

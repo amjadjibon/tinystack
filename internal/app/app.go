@@ -607,6 +607,7 @@ func build(
 
 	handler.UseManagementEvents(trails.Record)
 	handler.UseCredentials(tokens.Credentials)
+	configureShell(handler, tokens)
 	handler.UseAuthorization(roles.Authorization)
 	if cfg.Identity.Mode == config.IdentityVerify {
 		// Web identity tokens must carry a valid signature of their issuer, or of

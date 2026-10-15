@@ -93,3 +93,6 @@ func (w *capturingWriter) Write(p []byte) (int, error) {
 	w.keep(p[:n])
 	return n, err
 }
+
+// Unwrap lets response controllers flush streaming console output.
+func (w *capturingWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }

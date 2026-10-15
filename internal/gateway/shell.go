@@ -5,20 +5,19 @@ package gateway
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"mime"
 	"net/http"
-	"slices"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/config"
-	"github.com/amjadjibon/tinystack/internal/shell"
 )
 
 // shellPath is the console listener's CloudShell endpoint.
@@ -26,30 +25,6 @@ const shellPath = "/_tinystack/shell"
 
 // shellMaxOutput caps what one command prints.
 const shellMaxOutput = 4 << 20
-
-// The exit statuses of the AWS CLI.
-const (
-	shellExitUsage   = 252
-	shellExitService = 254
-)
-
-// shellAdminOnly lists, by catalog service, the operations that start
-// containers or issue credentials. When people sign in through the identity
-// provider only administrators run them in the CloudShell; IAM still decides
-// the rest for everyone.
-var shellAdminOnly = map[string][]string{
-	"lambda": {"Invoke"},
-	"ecs":    {"RunTask", "CreateService", "UpdateService"},
-	"eks":    {"CreateCluster", "CreateNodegroup"},
-	"elasticache": {
-		"CreateCacheCluster", "CreateReplicationGroup", "CreateServerlessCache", "ModifyCacheCluster",
-		"ModifyReplicationGroup", "ModifyServerlessCache",
-	},
-	"rds":             {"CreateDBInstance", "StartDBInstance", "RebootDBInstance", "CreateDBCluster"},
-	"sts":             {"AssumeRole", "AssumeRoleWithWebIdentity", "GetSessionToken"},
-	"iam":             {"CreateAccessKey"},
-	"cognitoidentity": {"GetCredentialsForIdentity", "GetOpenIdToken", "GetOpenIdTokenForDeveloperIdentity"},
-}
 
 // shellRequest is one line typed into the CloudShell.
 type shellRequest struct {
@@ -62,32 +37,24 @@ type shellRequest struct {
 
 // shellCandidates answers a request to complete a line.
 type shellCandidates struct {
-	RequestID  string   `json:"request_id"`
 	Candidates []string `json:"candidates"`
 }
 
-// shellResult is what a command printed.
-type shellResult struct {
-	Stdout    string `json:"stdout"`
-	Stderr    string `json:"stderr"`
-	RequestID string `json:"request_id"`
-	Exit      int    `json:"exit"`
+// shellSupport exists only in console builds.
+type shellSupport struct {
+	issueShell func(context.Context, *request.Credentials) (*stsapi.Credentials, error)
 }
 
-// registerShell serves the CloudShell on the console's listener. Every command
-// runs in-process through the path console actions use, as the person who
-// signed the request; nothing reaches a host shell.
+// UseShellIssuer connects the in-process STS session issuer before serving.
+func (s *Server) UseShellIssuer(issue func(context.Context, *request.Credentials) (*stsapi.Credentials, error)) {
+	s.issueShell = issue
+}
+
 func (s *Server) registerShell() {
-	services := make([]catalog.Service, 0, len(s.services))
-	for _, service := range s.services {
-		services = append(services, *service)
-	}
-
-	sh := shell.New(services)
-	s.console[shellPath] = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { s.serveShell(w, r, sh) })
+	s.console[shellPath] = http.HandlerFunc(s.serveShell)
 }
 
-func (s *Server) serveShell(w http.ResponseWriter, r *http.Request, sh *shell.Shell) {
+func (s *Server) serveShell(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -154,15 +121,21 @@ func (s *Server) serveShell(w http.ResponseWriter, r *http.Request, sh *shell.Sh
 		return
 	}
 
-	if in.Complete {
-		_ = json.NewEncoder(w).Encode(shellCandidates{
-			Candidates: append([]string{}, sh.Complete(in.Command)...), RequestID: c.meta.RequestID,
+	c.meta.Service = "cloudshell"
+	if c.credentials != nil {
+		c.meta.Principal = &c.credentials.Principal
+	}
+	if !s.shellAdmin(c) {
+		s.consoleFail(w, c, &awserror.Error{
+			Code:       accessDenied,
+			StatusCode: http.StatusForbidden,
+			Message: "CloudShell is available only to administrators when SSO is configured " +
+				"because the AWS CLI can access host files.",
 		})
-
 		return
 	}
 
-	s.runShell(w, r, c, sh, &in)
+	s.runShell(w, r, c, &in)
 }
 
 // shellAuthenticate checks who signed a request. Requests are signed for the
@@ -226,103 +199,19 @@ func (s *Server) shellAuthenticate(w http.ResponseWriter, r *http.Request, c *ca
 	return nil
 }
 
-// shellAdmin reports whether the signer may run the operations of
-// shellAdminOnly: always, unless people sign in through the identity provider
-// and this one is not an administrator.
+// shellAdmin restricts host file access to administrators when OIDC is enabled.
 func (s *Server) shellAdmin(c *call) bool {
-	if s.cfg.Console.Auth.OIDC == nil || c.credentials == nil {
+	if s.cfg.Console.Auth.OIDC == nil {
 		return true
 	}
 
-	switch {
-	case c.credentials.Principal.Kind == request.PrincipalRoot:
-		return true
-	case c.credentials.Federated:
-		return s.adminRoles[c.credentials.Principal.PolicyARN]
-	default:
+	if s.cfg.Identity.Mode != config.IdentityVerify {
 		return false
 	}
-}
 
-func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, sh *shell.Shell, in *shellRequest) {
-	cmd, err := sh.Parse(in.Command)
-	if err != nil {
-		s.shellFail(w, c, awserror.New("CloudShellUsage", err.Error()), shellExitUsage, err.Error())
-		return
+	if c.credentials == nil || c.credentials.Principal.Kind == request.PrincipalRoot {
+		return true
 	}
 
-	if cmd.Builtin != "" {
-		s.shellPrint(w, c, "", cmd.Builtin+" is run by the terminal in the browser.", shellExitUsage)
-		return
-	}
-
-	if cmd.Service == "" {
-		s.shellPrint(w, c, cmd.Text, "", 0)
-		return
-	}
-
-	if region := cmp.Or(cmd.Region, in.Region); region != "" {
-		if !consoleRegion.MatchString(region) {
-			s.shellFail(w, c, awserror.New("CloudShellUsage", "The region is not valid."), shellExitUsage,
-				"The region is not valid.")
-
-			return
-		}
-
-		c.meta.Region = region
-	}
-
-	c.service = s.services[cmd.Service]
-	c.meta.Service, c.meta.Operation = cmd.Service, cmd.Operation
-	if slices.Contains(shellAdminOnly[cmd.Service], cmd.Operation) && !s.shellAdmin(c) {
-		denied := &awserror.Error{
-			Code: accessDenied, StatusCode: http.StatusForbidden,
-			Message: fmt.Sprintf("%s:%s starts containers or issues credentials, which only administrators run in "+
-				"the CloudShell.", c.service.SigningName, cmd.Operation),
-		}
-		s.shellFail(w, c, denied, shellExitService, denied.Message)
-
-		return
-	}
-
-	c.meta.Endpoint = s.consoleEndpoint(r)
-	action := &consoleAction{Service: cmd.Service, Operation: cmd.Operation, Input: cmd.Input}
-	output, err := s.consoleCall(r, c, s.consoleCaller.Base64Blobs(), action)
-	if err != nil {
-		e := awserror.From(err)
-		s.shellFail(w, c, e, shellExitService,
-			fmt.Sprintf("An error occurred (%s) when calling the %s operation: %s", e.Code, cmd.Operation, e.Message))
-
-		return
-	}
-
-	out, _ := output.(map[string]any)
-	text, err := shell.Format(cmd, out)
-	if err != nil {
-		s.shellFail(w, c, awserror.New("InternalFailure", err.Error()), shellExitService, err.Error())
-		return
-	}
-
-	s.shellPrint(w, c, text, "", 0)
-}
-
-// shellFail reports a failed command: the request is recorded as failed, with
-// the status its error carries, and the terminal gets the message.
-func (s *Server) shellFail(w http.ResponseWriter, c *call, e *awserror.Error, exit int, message string) {
-	_, status := s.consoleStatus(c, e)
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(shellResult{Stderr: message + "\n", Exit: exit, RequestID: c.meta.RequestID})
-}
-
-func (s *Server) shellPrint(w http.ResponseWriter, c *call, stdout, stderr string, exit int) {
-	if len(stdout) > shellMaxOutput {
-		stdout = stdout[:shellMaxOutput]
-		stderr += fmt.Sprintf("\nOutput truncated at %d MiB.", shellMaxOutput>>20)
-	}
-
-	if stderr != "" {
-		stderr += "\n"
-	}
-
-	_ = json.NewEncoder(w).Encode(shellResult{Stdout: stdout, Stderr: stderr, Exit: exit, RequestID: c.meta.RequestID})
+	return c.credentials.Federated && s.adminRoles[c.credentials.Principal.PolicyARN]
 }
