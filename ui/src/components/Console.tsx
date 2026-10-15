@@ -177,7 +177,7 @@ export function ConsoleHeader() {
 						: []),
 					{
 						type: "button",
-						iconName: "script",
+						iconName: "command-prompt",
 						ariaLabel: "CloudShell",
 						title: "CloudShell",
 						href: "/cloudshell",
@@ -185,7 +185,7 @@ export function ConsoleHeader() {
 					},
 					{
 						type: "button",
-						iconName: "command-prompt",
+						iconName: "upload-download",
 						ariaLabel: "Request inspector",
 						title: "Request inspector",
 						href: "/requests",

@@ -84,7 +84,7 @@ function Home() {
 		},
 		{
 			href: "/requests",
-			icon: "command-prompt" as const,
+			icon: "upload-download" as const,
 			title: "Inspect API requests",
 			text: "See API calls, responses, and errors as you develop.",
 		},
