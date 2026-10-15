@@ -304,8 +304,8 @@ func (s *Server) Handle(name string, h http.Handler) {
 }
 
 // HandlePath serves h at path, which starts with "/_" so that it never names an
-// S3 bucket, such as LocalStack's /_localstack/ paths. Call it before serving
-// requests.
+// S3 bucket, such as LocalStack's /_localstack/ paths. A path ending in "/"
+// also serves every path below it. Call it before serving requests.
 func (s *Server) HandlePath(path string, h http.Handler) {
 	s.internal[path] = h
 }

@@ -45,8 +45,8 @@ var memberPaths = []string{"/_tinystack/resources", "/_tinystack/metrics"}
 // the sign-in checks where there are some.
 func (s *Server) endpoint(path string, extra map[string]http.Handler) (http.Handler, bool) {
 	h, ok := s.internal[path]
-	if !ok && strings.HasPrefix(path, "/_tinystack/costs/fixtures/") {
-		h, ok = s.internal["/_tinystack/costs/fixtures"]
+	if !ok {
+		h, ok = s.subtree(path)
 	}
 
 	if !ok {
@@ -84,6 +84,23 @@ type limitedKey struct{}
 func limitedTo(ctx context.Context) (signer, bool) {
 	who, ok := ctx.Value(limitedKey{}).(signer)
 	return who, ok
+}
+
+// subtree finds the handler of the longest registered path that ends in "/"
+// and prefixes path, as net/http.ServeMux does, for endpoints such as
+// /_tinystack/costs/fixtures/<id> that name records below them.
+func (s *Server) subtree(path string) (http.Handler, bool) {
+	var (
+		h    http.Handler
+		best string
+	)
+	for prefix, candidate := range s.internal {
+		if strings.HasSuffix(prefix, "/") && strings.HasPrefix(path, prefix) && len(prefix) > len(best) {
+			h, best = candidate, prefix
+		}
+	}
+
+	return h, h != nil
 }
 
 // requireSigner lets through requests signed (SigV4, service AdminSigningName)
