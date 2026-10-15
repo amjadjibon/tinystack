@@ -1,17 +1,22 @@
 // Package budgets stores account-wide budget, notification and subscriber definitions.
-// Supported budget reads calculate fixture-backed actual spend; notifications and actions are not executed.
+// Supported budgets calculate fixture-backed actual spend and deliver ACTUAL notifications.
 package budgets
 
 import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/budgets"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -19,9 +24,46 @@ const serviceName = "budgets"
 
 var _ api.API = (*Service)(nil)
 
-type Service struct{ store storage.Store }
+type Service struct {
+	store      storage.Store
+	caller     *catalog.Caller
+	deliveries *delivery.Log
+	logger     *slog.Logger
+	now        func() time.Time
+	bg         *background.Group
+}
 
-func New(store storage.Store) *Service { return &Service{store: store} }
+func New(store storage.Store, deliveries *delivery.Log, logger *slog.Logger) *Service {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	return &Service{store: store, deliveries: deliveries, logger: logger, now: time.Now, bg: background.New()}
+}
+
+// Start indexes definitions from earlier versions and starts evaluation after service wiring.
+func (s *Service) Start(caller *catalog.Caller) error {
+	s.caller = caller
+	err := s.store.Update(s.bg.Context(), func(tx storage.WriteTx) error {
+		for _, k := range tx.Keys("") {
+			parts := strings.Split(k, "/")
+			if len(parts) == 5 && parts[1] == "" && parts[2] == serviceName && parts[3] == "budget" {
+				tx.Put(budgetIndex+parts[0]+"/"+parts[4], []byte(k))
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	s.bg.Every(time.Second, s.visit)
+	return nil
+}
+
+// Stop cancels evaluation and waits for in-flight deliveries.
+func (s *Service) Stop() { s.bg.Stop() }
 
 type record struct {
 	Budget        api.Budget

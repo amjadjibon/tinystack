@@ -391,7 +391,8 @@ func build(
 	timestreamRecords := timestreamwrite.New(store)
 	costExplorerRecords := costexplorer.New(store)
 	curRecords := costandusagereportservice.New(store)
-	budgetRecords := budgets.New(store)
+	budgetRecords := budgets.New(store, deliveries, logger)
+	a.onStop(budgetRecords.Stop)
 	connectionRecords := codeconnections.New(store)
 	quotaRecords := servicequotas.New(store)
 	emrRecords := emrserverless.New(store)
@@ -558,6 +559,10 @@ func build(
 	// Step Functions' Task states and Firehose's deliveries call the other
 	// services in-process.
 	caller := catalog.NewCaller(services...)
+	if err = budgetRecords.Start(caller); err != nil {
+		return nil, err
+	}
+
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
 	// Pipes enrich and deliver to Lambda, SQS, SNS, EventBridge, Step Functions, and Kinesis.

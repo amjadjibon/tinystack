@@ -16,11 +16,15 @@ import (
 )
 
 const (
-	timeAnnually  = "ANNUALLY"
-	timeMonthly   = "MONTHLY"
-	timeQuarterly = "QUARTERLY"
-	budgetCost    = "COST"
-	budgetUsage   = "USAGE"
+	timeAnnually        = "ANNUALLY"
+	timeMonthly         = "MONTHLY"
+	timeQuarterly       = "QUARTERLY"
+	budgetCost          = "COST"
+	greaterThan         = "GREATER_THAN"
+	lessThan            = "LESS_THAN"
+	equalTo             = "EQUAL_TO"
+	budgetUsage         = "USAGE"
+	thresholdPercentage = "PERCENTAGE"
 )
 
 var (
@@ -170,7 +174,7 @@ func checkNotification(n *api.Notification) error {
 	}
 
 	if !slices.Contains([]string{"ACTUAL", "FORECASTED"}, common.Value(n.NotificationType)) ||
-		!slices.Contains([]string{"GREATER_THAN", "LESS_THAN", "EQUAL_TO"}, common.Value(n.ComparisonOperator)) {
+		!slices.Contains([]string{greaterThan, lessThan, equalTo}, common.Value(n.ComparisonOperator)) {
 		return invalid("NotificationType or ComparisonOperator is invalid.")
 	}
 
@@ -179,10 +183,10 @@ func checkNotification(n *api.Notification) error {
 	}
 
 	if n.ThresholdType == nil {
-		n.ThresholdType = new("PERCENTAGE")
+		n.ThresholdType = new(thresholdPercentage)
 	}
 
-	if !slices.Contains([]string{"PERCENTAGE", "ABSOLUTE_VALUE"}, *n.ThresholdType) {
+	if !slices.Contains([]string{thresholdPercentage, "ABSOLUTE_VALUE"}, *n.ThresholdType) {
 		return invalid("ThresholdType is invalid.")
 	}
 

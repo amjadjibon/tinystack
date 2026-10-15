@@ -26,6 +26,10 @@ func (s *Service) costLines(ctx context.Context) ([]costdata.Line, error) {
 // actualSpend sets b's CalculatedSpend.ActualSpend from lines, for the budgets
 // the fixture data can answer, and leaves it unset for the others.
 func actualSpend(b *api.Budget, lines []costdata.Line) error {
+	return actualSpendAt(b, lines, time.Now().UTC())
+}
+
+func actualSpendAt(b *api.Budget, lines []costdata.Line, now time.Time) error {
 	b.CalculatedSpend = nil
 
 	if common.Value(b.BudgetType) != budgetCost || b.CostTypes != nil {
@@ -48,44 +52,9 @@ func actualSpend(b *api.Budget, lines []costdata.Line) error {
 		}
 	}
 
-	months := 0
-	switch common.Value(b.TimeUnit) {
-	case timeMonthly:
-		months = 1
-	case timeQuarterly:
-		months = 3
-	case timeAnnually:
-		months = 12
-	default:
+	start, end, active := budgetPeriod(b, now)
+	if !active {
 		return nil
-	}
-
-	now := time.Now().UTC()
-	month := time.Month((int(now.Month())-1)/months*months + 1)
-	start := time.Date(now.Year(), month, 1, 0, 0, 0, 0, time.UTC)
-	end := start.AddDate(0, months, 0)
-	if b.TimePeriod != nil {
-		if b.TimePeriod.Start != nil {
-			t := time.Unix(int64(*b.TimePeriod.Start), 0).UTC()
-			if t.After(now) {
-				return nil
-			}
-
-			if t.After(start) {
-				start = t
-			}
-		}
-
-		if b.TimePeriod.End != nil {
-			t := time.Unix(int64(*b.TimePeriod.End), 0).UTC()
-			if !t.After(now) {
-				return nil
-			}
-
-			if t.Before(end) {
-				end = t
-			}
-		}
 	}
 
 	if end.After(now) {
@@ -119,4 +88,58 @@ func actualSpend(b *api.Budget, lines []costdata.Line) error {
 	amount := costdata.Sum(costdata.Select(lines, start, end, match))
 	b.CalculatedSpend = &api.CalculatedSpend{ActualSpend: &api.Spend{Amount: new(amount), Unit: new("USD")}}
 	return nil
+}
+
+// calendarPeriod identifies a recurring period independently of mutable TimePeriod clipping.
+func calendarPeriod(b *api.Budget, now time.Time) (start, end time.Time, active bool) {
+	months := 0
+	switch common.Value(b.TimeUnit) {
+	case timeMonthly:
+		months = 1
+	case timeQuarterly:
+		months = 3
+	case timeAnnually:
+		months = 12
+	default:
+		return time.Time{}, time.Time{}, false
+	}
+
+	month := time.Month((int(now.Month())-1)/months*months + 1)
+	start = time.Date(now.Year(), month, 1, 0, 0, 0, 0, time.UTC)
+	end = start.AddDate(0, months, 0)
+	return start, end, true
+}
+
+// budgetPeriod intersects the recurring period with the budget's active dates.
+func budgetPeriod(b *api.Budget, now time.Time) (start, end time.Time, active bool) {
+	start, end, active = calendarPeriod(b, now)
+	if !active {
+		return start, end, false
+	}
+
+	if b.TimePeriod != nil {
+		if b.TimePeriod.Start != nil {
+			t := time.Unix(int64(*b.TimePeriod.Start), 0).UTC()
+			if t.After(now) {
+				return time.Time{}, time.Time{}, false
+			}
+
+			if t.After(start) {
+				start = t
+			}
+		}
+
+		if b.TimePeriod.End != nil {
+			t := time.Unix(int64(*b.TimePeriod.End), 0).UTC()
+			if !t.After(now) {
+				return time.Time{}, time.Time{}, false
+			}
+
+			if t.Before(end) {
+				end = t
+			}
+		}
+	}
+
+	return start, end, true
 }

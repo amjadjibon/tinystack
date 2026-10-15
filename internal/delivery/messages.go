@@ -57,6 +57,15 @@ type cognitoPayload struct {
 
 func parseOutboundMessage(r *Record) (*Message, *sesPayload, bool) {
 	switch r.Via {
+	case ViaBudgets:
+		var msg Message
+		if r.Status != "delivered" || json.Unmarshal([]byte(r.Payload), &msg) != nil || msg.Channel != channelEmail {
+			return nil, nil, false
+		}
+
+		msg.Time = r.Time
+		return &msg, nil, true
+
 	case ViaSES:
 		var p sesPayload
 		if err := json.Unmarshal([]byte(r.Payload), &p); err != nil || (p.MessageID == "" && p.From == "") {
@@ -197,8 +206,9 @@ func MessagesHandler(log *Log) http.Handler {
 				return
 			}
 
-			if qService != "" && qService != ViaSES && qService != ViaSNS && qService != serviceCognitoIDP {
-				http.Error(w, "service must be ses, sns or cognito-idp", http.StatusBadRequest)
+			if qService != "" && qService != ViaSES && qService != ViaSNS && qService != serviceCognitoIDP &&
+				qService != ViaBudgets {
+				http.Error(w, "service must be ses, sns, cognito-idp or budgets", http.StatusBadRequest)
 				return
 			}
 

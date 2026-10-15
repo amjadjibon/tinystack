@@ -2,6 +2,7 @@ package budgets
 
 import (
 	"context"
+	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/budgets"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -47,6 +48,8 @@ func (s *Service) CreateBudget(ctx context.Context, in *api.CreateBudgetRequest)
 		if _, ok := tx.Get(k); ok {
 			return duplicate()
 		}
+
+		tx.Put(indexKey(scope, *in.Budget.BudgetName), []byte(k))
 
 		return storage.Write(
 			tx,
@@ -148,6 +151,16 @@ func (s *Service) DeleteBudget(ctx context.Context, in *api.DeleteBudgetRequest)
 		}
 
 		tx.Delete(k)
+		tx.Delete(indexKey(scope, *in.BudgetName))
+		for _, marker := range tx.Keys(alertPrefix(scope, *in.BudgetName)) {
+			tx.Delete(marker)
+		}
+
+		for _, jobKey := range tx.Keys(jobPrefix(scope, *in.BudgetName)) {
+			tx.Delete(jobIndex + scope.AccountID + "/" + strings.TrimPrefix(jobKey, jobPrefix(scope, *in.BudgetName)))
+			tx.Delete(jobKey)
+		}
+
 		return nil
 	})
 	return &api.DeleteBudgetResponse{}, err

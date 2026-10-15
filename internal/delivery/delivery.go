@@ -33,6 +33,8 @@ const (
 	// ViaSES records the email SES would send, which TinyStack never sends,
 	// and the events it publishes to configuration sets' destinations.
 	ViaSES = "ses"
+	// ViaBudgets records direct captured emails and SNS publish attempts from budgets.
+	ViaBudgets = "budgets"
 	// ViaIoT records what IoT topic rules' actions send.
 	ViaIoT = "iot"
 )

@@ -96,6 +96,10 @@ func (s *Service) DescribeNotificationsForBudget(
 		return nil, err
 	}
 
+	if stateErr := s.notificationStates(ctx, *in.AccountId, &r); stateErr != nil {
+		return nil, stateErr
+	}
+
 	// Aggregate children retain insertion order; ordinal IDs preserve that order for pagination.
 	ids := make([]int, len(r.Notifications))
 	for i := range ids {
