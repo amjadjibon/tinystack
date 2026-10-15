@@ -142,43 +142,74 @@ CalculatedSpend is read-only and rejected on budget writes.
 
 ## Budget alerts
 
-TinyStack checks every indexed budget once per second, reading its definitions and account's current fixtures in
-one transaction. Fixture PUT/DELETE and budget, notification and subscriber edits are picked up on the next tick.
-There is no separate evaluation endpoint. Only the COST/USD/unblended MONTHLY, QUARTERLY and ANNUALLY budgets
-supported by ActualSpend above are evaluated. Other definitions and their notifications remain stored without
-execution. FORECASTED notifications never fire: TinyStack has no forecasts.
+TinyStack checks every indexed budget once per second. It reads budget definitions and the account's current fixtures
+in one transaction. Fixture edits (PUT/DELETE) and updates to budgets, notifications, or subscribers are picked up on
+the next tick. There is no separate evaluation endpoint.
 
-PERCENTAGE compares actual spend against `limit × threshold × 0.01`; ABSOLUTE_VALUE uses the threshold amount.
-The comparisons are strictly `>` for GREATER_THAN, strictly `<` for LESS_THAN, and exactly `=` for EQUAL_TO,
-including the equality boundary for EQUAL_TO. Calculations use decimal rationals, never floating-point money or
-division by the budget limit. The API's modeled double threshold enters this calculation as its shortest decimal
-representation. A zero limit is valid. Planned limits select the latest timestamp not after evaluation time,
-carrying the last amount forward. Percentage alerts wait for an applicable limit. Absolute alerts can fire without
-one; their message reports the budgeted amount as unavailable.
-These comparisons follow the [AWS Notification contract](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html),
+Evaluation scope:
+
+- Only the COST/USD/unblended MONTHLY, QUARTERLY, and ANNUALLY budgets supported by ActualSpend above are evaluated.
+- Other definitions and their notifications remain stored without execution.
+- FORECASTED notifications never fire: TinyStack has no forecasts.
+
+Comparison calculations:
+
+- `PERCENTAGE` compares actual spend against `limit × threshold × 0.01`.
+- `ABSOLUTE_VALUE` uses the threshold amount.
+- Comparisons are strictly `>` for GREATER_THAN, strictly `<` for LESS_THAN, and exactly `=` for EQUAL_TO,
+  including the equality boundary for EQUAL_TO.
+- Calculations use decimal rationals, never floating-point money or division by the budget limit.
+- The API's modeled double threshold enters this calculation as its shortest decimal representation.
+
+Limit rules:
+
+- A zero limit is valid.
+- Planned limits select the latest timestamp not after evaluation time, carrying the last amount forward.
+- Percentage alerts wait for an applicable limit.
+- Absolute alerts can fire without one; their message reports the budgeted amount as unavailable.
+
+These comparisons follow the
+[AWS Notification contract](
+  https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html),
 whose example describes going over $160 on a $200 budget at 80 percent.
 
-Each notification identity (NotificationType, ComparisonOperator, Threshold, ThresholdType) fires once per budget
-period. NotificationState is ALARM after firing in the current period, OK otherwise; a later credit or fixture
-removal does not re-arm that identity. The next UTC calendar period re-arms it. State is derived from the durable
-marker, so caller-supplied NotificationState cannot suppress or repeat delivery. Changing a rule's identity creates
-a separately eligible alert; changing subscribers or limits alone does not re-send an already fired rule. Pending
-jobs keep the subscriber/message snapshot captured when the rule fired. Deleting a budget removes its markers and
-jobs. Inactive budgets report OK.
-AWS documents [once-per-period actual alerts](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-best-practices.html)
-and describes [ALARM as a passed threshold](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html).
+Alert lifecycle and states:
+
+- Each notification identity (NotificationType, ComparisonOperator, Threshold, ThresholdType) fires once per budget
+  period.
+- NotificationState is ALARM after firing in the current period, OK otherwise.
+- A later credit or fixture removal does not re-arm that identity. The next UTC calendar period re-arms it.
+- State is derived from the durable marker, so caller-supplied NotificationState cannot suppress or repeat delivery.
+- Changing a rule's identity creates a separately eligible alert.
+- Changing subscribers or limits alone does not re-send an already fired rule.
+- Pending jobs keep the subscriber/message snapshot captured when the rule fired.
+- Deleting a budget removes its markers and jobs.
+- Inactive budgets report OK.
+
+AWS documents
+[once-per-period actual alerts](
+  https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-best-practices.html)
+and describes
+[ALARM as a passed threshold](
+  https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html).
 The latched state after a credit is TinyStack's local rule; AWS's reference does not specify that recovery case.
 AWS refreshes billing data at least daily; the local one-second fixture cadence is deliberate.
 
 ### Destinations and message shape
 
-SNS subscribers publish through TinyStack SNS, using the topic ARN's account and Region, independently of the
-budget client's signing Region. Only standard topics in the budget's account are supported. Missing, malformed,
-FIFO and cross-account topics become recorded delivery failures. AWS also requires
-[same-account topics and a Budgets topic policy](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-sns-policy.html).
-TinyStack stores SNS policies but does not enforce service-principal authorization; keep portable policies in IaC.
-SNS acceptance is a successful publish attempt, not proof that every subscription received the message. SNS logs
-its own downstream outcomes separately.
+SNS subscribers publish through TinyStack SNS, using the topic ARN's account and Region, independently of the budget
+client's signing Region.
+
+SNS delivery rules:
+
+- Only standard topics in the budget's account are supported.
+- Missing, malformed, FIFO and cross-account topics become recorded delivery failures.
+- AWS also requires
+  [same-account topics and a Budgets topic policy](
+  https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-sns-policy.html).
+- TinyStack stores SNS policies but does not enforce service-principal authorization; keep portable policies in IaC.
+- SNS acceptance is a successful publish attempt, not proof that every subscription received the message. SNS logs
+  its own downstream outcomes separately.
 
 The subject is `AWS Budgets: <budget name> has exceeded your alert threshold`, truncated to SNS's 100-byte limit
 and stripped of CR/LF. The plain-text body contains the account, budget name/type, budgeted USD amount, ACTUAL
@@ -201,61 +232,91 @@ TinyStack fixture-backed budget alert.
 ```
 
 This approximates the subject and fields shown in an
-[AWS notification example](https://d1.awsstatic.com/events/Summits/cdmxsummit24/DEV207_10Errores_V2_CDMXSummit_20240708.pdf)
+[AWS notification example](
+https://d1.awsstatic.com/events/Summits/cdmxsummit24/DEV207_10Errores_V2_CDMXSummit_20240708.pdf)
 and the plain-text format in the
 [AWS sample cost-event integration](https://github.com/aws-samples/sample-aws-tailored-cost-events-teams).
 It is a local fixture alert, without AWS HTML styling, masked accounts, console/unsubscribe links or real mail.
 Threshold text is formatted to 14 decimal places; comparisons retain full precision.
 
-Direct EMAIL subscribers are captured without SES verification or sending mail. Inspect attempts at
-`/_tinystack/deliveries` (`via: "budgets"`, budget ARN source, recipient/topic target, delivered/failed status and
-error). Captured email payloads contain the ID, account, subject and body; SNS attempt payloads contain the plain
-text. Emails also appear at `/_tinystack/messages?service=budgets&channel=email`. These recent inspectors retain
-up to 256 delivery records in memory and clear on restart. Budget inventory exposes evaluation readiness,
-calculated spend and notification state; notification reads expose the same current-period state.
+Direct EMAIL subscribers are captured without SES verification or sending mail.
+
+Inspection and delivery endpoints:
+
+- Inspect attempts at `/_tinystack/deliveries` (`via: "budgets"`, budget ARN source, recipient/topic target,
+  delivered/failed status and error). Captured email payloads contain the ID, account, subject and body; SNS
+  attempt payloads contain the plain text.
+- Emails also appear at `/_tinystack/messages?service=budgets&channel=email`.
+- These recent inspectors retain up to 256 delivery records in memory and clear on restart.
+- Budget inventory exposes evaluation readiness, calculated spend and notification state; notification reads
+  expose the same current-period state.
 
 ### Persistence, retries and limits
 
 The sent marker and subscriber delivery jobs commit together before any SNS call or email capture. Pending jobs
 are claimed transactionally with a one-minute lease; an interrupted attempt becomes eligible after that lease.
-There are at most **four attempts**, with **1, 2 and 4 seconds** between ordinary failures, rounded up to the next
-one-second tick. All destination errors use this bounded local retry policy. Exhausted jobs retain their last
-error in storage and leave the pending index. A crash on the final attempt leaves an unknown-outcome failure
-after lease expiry. A process crash after publish/capture but before acknowledgment can cause duplicate delivery:
-transport is **at-least-once within the retry limit**, while logical evaluation is once per notification/period.
-Use the stable event ID to deduplicate consumers.
 
-Persistent storage retains markers, pending jobs and final job outcomes across restarts; the recent delivery log
-is separate and transient. Markers and completed/failed jobs remain until the budget is deleted or
-`POST /_tinystack/reset` clears storage. Reset clears pending work, so it cannot be restored by an old completion;
-a delivery already in flight may still reach its destination. Notification/subscriber deletion does not cancel
-an already committed job. Existing limits remain five notifications per budget and ten EMAIL plus one SNS
-subscriber per notification. No real billing data, forecasts, budget actions or cross-account delivery are added.
+Retry policy:
+
+- There are at most **four attempts**, with **1, 2 and 4 seconds** between ordinary failures, rounded up to the
+  next one-second tick.
+- All destination errors use this bounded local retry policy.
+- Exhausted jobs retain their last error in storage and leave the pending index.
+- A crash on the final attempt leaves an unknown-outcome failure after lease expiry.
+- A process crash after publish/capture but before acknowledgment can cause duplicate delivery: transport is
+  **at-least-once within the retry limit**, while logical evaluation is once per notification/period.
+- Use the stable event ID to deduplicate consumers.
+
+Storage and lifecycle rules:
+
+- Persistent storage retains markers, pending jobs and final job outcomes across restarts; the recent delivery log
+  is separate and transient.
+- Markers and completed/failed jobs remain until the budget is deleted or `POST /_tinystack/reset` clears storage.
+- Reset clears pending work, so it cannot be restored by an old completion; a delivery already in flight may still
+  reach its destination.
+- Notification/subscriber deletion does not cancel an already committed job.
+- Existing limits remain five notifications per budget and ten EMAIL plus one SNS subscriber per notification.
+- No real billing data, forecasts, budget actions or cross-account delivery are added.
 
 ## Billing alarms
 
 Loading fixtures enables local CloudWatch `AWS/Billing` / `EstimatedCharges` samples for that account in
-**us-east-1 only**. The total has exactly `Currency=USD` and `Unit=None`. Other Regions and accounts without
-fixtures receive no billing samples. The value is the exact decimal sum of fixture `UnblendedCost` whose start
-falls within the current UTC month and before publish time, including negative credits and both estimated and
-final lines. Future lines are excluded until their start time passes. Conversion to float64 happens only when
-writing the CloudWatch datapoint. These are fixture totals, not a calculated AWS bill.
+**us-east-1 only**. Other Regions and accounts without fixtures receive no billing samples.
 
-For per-service alarms, `Amazon Simple Storage Service` maps to `ServiceName=AmazonS3`, with `Currency=USD`.
-AWS's [Cost Explorer CLI example](https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html)
-establishes the S3 SERVICE label, and its
-[billing metric example](https://aws.amazon.com/blogs/developer/monitoring-your-estimated-costs-with-windows-powershell/)
-establishes the short billing name and dimension sets. Other service labels contribute to the total only: no
-unverified mapping or linked-account series is invented. Removing S3 from all fixtures emits one zero for its
-previous service series; a historical S3 fixture keeps publishing a zero S3 series in months without S3 charges.
+Metric rules:
 
-A managed background worker checks an account index every second. It publishes once per UTC minute and promptly
-on fixture changes, including multiple observed changes in the same minute. Claims and metrics commit together,
-so an unchanged sampling slot is deduplicated across workers and restarts. Samples use **publish time**, even when
-fixture dates are older than metric retention. This local cadence keeps samples in alarm periods of 60 seconds
-or longer without storing a new point every second; high-resolution billing alarms below 60 seconds are not
-supported by this cadence. AWS refreshes billing data only periodically; see the
-[AWS billing alarm guide](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html).
+- The total has exactly `Currency=USD` and `Unit=None`.
+- The value is the exact decimal sum of fixture `UnblendedCost` whose start falls within the current UTC month and
+  before publish time, including negative credits and both estimated and final lines.
+- Future lines are excluded until their start time passes.
+- Conversion to float64 happens only when writing the CloudWatch datapoint.
+- These are fixture totals, not a calculated AWS bill.
+
+Per-service alarms:
+
+- For per-service alarms, `Amazon Simple Storage Service` maps to `ServiceName=AmazonS3`, with `Currency=USD`.
+- AWS's [Cost Explorer CLI example](https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html)
+  establishes the S3 SERVICE label.
+- The
+  [billing metric example](
+  https://aws.amazon.com/blogs/developer/monitoring-your-estimated-costs-with-windows-powershell/)
+  establishes the short billing name and dimension sets.
+- Other service labels contribute to the total only: no unverified mapping or linked-account series is invented.
+- Removing S3 from all fixtures emits one zero for its previous service series.
+- A historical S3 fixture keeps publishing a zero S3 series in months without S3 charges.
+
+Publishing schedule:
+
+- A managed background worker checks an account index every second.
+- It publishes once per UTC minute and promptly on fixture changes, including multiple observed changes in the
+  same minute.
+- Claims and metrics commit together, so an unchanged sampling slot is deduplicated across workers and restarts.
+- Samples use **publish time**, even when fixture dates are older than metric retention.
+- This local cadence keeps samples in alarm periods of 60 seconds or longer without storing a new point every second.
+- High-resolution billing alarms below 60 seconds are not supported by this cadence.
+- AWS refreshes billing data only periodically; see the
+  [AWS billing alarm guide](
+  https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html).
 
 Use `Maximum` for this cumulative metric. With an existing SNS topic, this creates a one-datapoint local alarm:
 
@@ -268,15 +329,81 @@ aws --endpoint-url "$TINYSTACK_ENDPOINT_URL" --region us-east-1 cloudwatch put-m
   --alarm-actions "$SNS_TOPIC_ARN"
 ```
 
-For an S3-only alarm, add `Name=ServiceName,Value=AmazonS3` to `--dimensions`. The existing CloudWatch evaluator
-records state/history and delivers SNS actions, including SNS-to-SQS subscriptions. Creating a billing alarm
-neither creates costs nor bypasses public `PutMetricData`'s rejection of reserved `AWS/` namespaces.
+For an S3-only alarm, add `Name=ServiceName,Value=AmazonS3` to `--dimensions`.
 
-Totals reset at UTC month boundaries. A `Maximum` window spanning the previous month's samples can still show
-its high value until those samples leave the window. The same applies to downward fixture corrections. Empty
-fixtures publish zero each minute; deleting the last fixture publishes **one final zero** for the total and
-previous service series, then stops. The final zero preserves a correction without manufacturing ongoing usage
-for an account with no fixtures. It does not guarantee an immediate alarm recovery: a `Maximum` window can retain
-a higher sample, and subsequent periods without samples follow the alarm's missing-data setting. Never-seeded
-accounts publish nothing. `POST /_tinystack/reset` clears fixtures, samples, metric listings and sampling claims
-atomically; it emits no final zero. Normal CloudWatch datapoint retention remains 15 days.
+The existing CloudWatch evaluator records state/history and delivers SNS actions, including SNS-to-SQS
+subscriptions. Creating a billing alarm neither creates costs nor bypasses public `PutMetricData`'s rejection of
+reserved `AWS/` namespaces.
+
+Month boundaries and lifecycle:
+
+- Totals reset at UTC month boundaries.
+- A `Maximum` window spanning the previous month's samples can still show its high value until those samples leave
+  the window. The same applies to downward fixture corrections.
+- Empty fixtures publish zero each minute.
+- Deleting the last fixture publishes **one final zero** for the total and previous service series, then stops.
+- The final zero preserves a correction without manufacturing ongoing usage for an account with no fixtures.
+- It does not guarantee an immediate alarm recovery: a `Maximum` window can retain a higher sample, and subsequent
+  periods without samples follow the alarm's missing-data setting.
+- Never-seeded accounts publish nothing.
+- `POST /_tinystack/reset` clears fixtures, samples, metric listings and sampling claims atomically; it emits no
+  final zero.
+- Normal CloudWatch datapoint retention remains 15 days.
+
+## Terraform example
+
+Configure the AWS provider to point at TinyStack for the used services (budgets, cloudwatch, and sns). Note that
+billing alarms must be in us-east-1.
+
+```hcl
+provider "aws" {
+  access_key              = "test"
+  secret_key              = "test"
+  region                  = "us-east-1"
+  skip_metadata_api_check = true
+
+  endpoints {
+    budgets    = "http://127.0.0.1:4566"
+    cloudwatch = "http://127.0.0.1:4566"
+    sns        = "http://127.0.0.1:4566"
+  }
+}
+
+resource "aws_sns_topic" "alerts" {
+  name = "alerts"
+}
+
+resource "aws_budgets_budget" "monthly" {
+  name         = "monthly"
+  budget_type  = "COST"
+  limit_amount = "100"
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+
+  notification {
+    comparison_operator       = "GREATER_THAN"
+    threshold                 = 80
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
+    subscriber_sns_topic_arns = [aws_sns_topic.alerts.arn]
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "billing" {
+  alarm_name          = "monthly-cost"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "EstimatedCharges"
+  namespace           = "AWS/Billing"
+  period              = 21600
+  statistic           = "Maximum"
+  threshold           = 80
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    Currency = "USD"
+  }
+}
+```
+
+Load costs with the fixture endpoint described earlier in the guide.
