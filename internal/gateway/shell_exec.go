@@ -94,6 +94,22 @@ func shellArgv(line string) ([]string, error) {
 
 func (s *Server) shellEnvironment(ctx context.Context, c *call, dir, binary string) ([]string, error) {
 	key, secret, token := c.meta.AccountID, "test", ""
+	if s.cfg.Identity.Mode != config.IdentityVerify {
+		// Explicit account mappings take precedence over a key's twelve digits.
+		// Prefer a configured key for the selected account so that override cannot redirect the command.
+		mappedKey := ""
+		for candidate, account := range s.cfg.Identity.Accounts {
+			if account == c.meta.AccountID && (mappedKey == "" || candidate < mappedKey) {
+				mappedKey = candidate
+			}
+		}
+		if mappedKey != "" {
+			key = mappedKey
+		}
+		if account, _, ok := s.keyAccount(key); ok && account != c.meta.AccountID {
+			return nil, awserror.Validation("The selected account has no usable access key in identity.accounts.")
+		}
+	}
 	if s.cfg.Identity.Mode == config.IdentityVerify {
 		verified := c.credentials
 		if verified == nil {

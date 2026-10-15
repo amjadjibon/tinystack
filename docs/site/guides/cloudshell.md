@@ -28,8 +28,9 @@ There is no stdin or interactive prompt. Commands have a five-minute deadline an
 
 ## Credentials and access
 
-In local parse mode, the selected account's 12-digit account ID is the access key, using TinyStack's existing
-account-from-access-key rule, with `test` as the secret. In verify mode, the console request must be signed for
+In local parse mode, a key configured in `identity.accounts` for the selected account is used when available;
+otherwise its 12-digit account ID is the access key, using TinyStack's existing account-from-access-key rule,
+with `test` as the secret. Conflicting mappings that cannot address the selected account are rejected. In verify mode, the console request must be signed for
 `tinystack` in the selected account. TinyStack issues a fresh STS session lasting at most 15 minutes, capped by
 the signer's session expiry, for that same verified user, role or account root. Role sessions keep their role,
 session name and federated status. Host AWS credentials are never used.

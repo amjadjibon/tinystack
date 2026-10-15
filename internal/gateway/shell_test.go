@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -282,5 +283,22 @@ func TestShellStreamPreservesSplitUTF8(t *testing.T) {
 	_, out, _ := shellEvents(t, w.Body)
 	if out != "日本語\n" || ctx.Err() != nil {
 		t.Fatalf("output=%q context=%v", out, ctx.Err())
+	}
+}
+
+func TestShellLocalCredentialsRespectAccountMappings(t *testing.T) {
+	s := shellServer(t)
+	s.cfg.Identity.Accounts = map[string]string{"123456789012": "999999999999", "team": "123456789012"}
+	c := &call{meta: request.Metadata{Scope: request.Scope{AccountID: "123456789012", Region: "us-east-1"}}}
+	env, err := s.shellEnvironment(context.Background(), c, t.TempDir(), "/usr/bin/aws")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(env, "AWS_ACCESS_KEY_ID=team") {
+		t.Fatal("configured account mapping was ignored")
+	}
+	delete(s.cfg.Identity.Accounts, "team")
+	if _, err = s.shellEnvironment(context.Background(), c, t.TempDir(), "/usr/bin/aws"); err == nil {
+		t.Fatal("command would run in the wrong account")
 	}
 }
