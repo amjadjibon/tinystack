@@ -102,14 +102,19 @@ export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
 				return newPrompt();
 			}
 			running = new AbortController();
+			let hasOutput = false;
 			try {
 				const result = await runCommand(
 					action?.command ?? command,
 					current.current,
 					running.signal,
-					({ stream, data }) =>
-						term.write(stream === "stderr" ? red(lines(data)) : lines(data)),
+					({ stream, data }) => {
+						hasOutput ||= data.length > 0;
+						term.write(stream === "stderr" ? red(lines(data)) : lines(data));
+					},
 				);
+				if (result.exit === 0 && !hasOutput)
+					term.write(`${dim("(no output)")}\r\n`);
 				setBanner(result.banner);
 			} catch (error) {
 				if (!(error instanceof DOMException && error.name === "AbortError"))
