@@ -10,7 +10,7 @@ const Terminal = lazy(() => import("#/components/CloudShellTerminal"));
 export const Route = createFileRoute("/cloudshell")({ component: CloudShell });
 
 function CloudShell() {
-	const { account, region } = useScope();
+	const { account, region, session } = useScope();
 	// The terminal needs a browser; the prerendered page holds only the frame.
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
@@ -30,7 +30,10 @@ function CloudShell() {
 				>
 					{mounted && account && region ? (
 						<Suspense fallback={<Spinner size="large" />}>
-							<Terminal scope={{ account, region }} />
+							<Terminal
+								key={session?.arn ?? account}
+								scope={{ account, region, session }}
+							/>
 						</Suspense>
 					) : (
 						<Spinner size="large" />

@@ -17,7 +17,7 @@ export async function runCommand(
 	onChunk: (chunk: ShellChunk) => void,
 ): Promise<ShellResult> {
 	const response = await shellFetch(
-		JSON.stringify({ command, ...scope }),
+		JSON.stringify({ command, account: scope.account, region: scope.region }),
 		signal,
 	);
 	if (!response.ok) {
@@ -68,7 +68,12 @@ export async function runCommand(
 export async function completions(command: string, scope: ShellScope) {
 	try {
 		const response = await shellFetch(
-			JSON.stringify({ command, ...scope, complete: true }),
+			JSON.stringify({
+				command,
+				account: scope.account,
+				region: scope.region,
+				complete: true,
+			}),
 		);
 		const body = (await response.json()) as ShellBody;
 		return body.candidates ?? [];

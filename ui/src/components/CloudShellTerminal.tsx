@@ -17,6 +17,7 @@ import {
 	LineEditor,
 	parseKeys,
 } from "#/lib/lineEditor";
+import type { ConsoleSession } from "#/lib/session";
 
 const prompt = "\x1b[32m$\x1b[0m ";
 const red = (text: string) => `\x1b[31m${text}\x1b[0m`;
@@ -47,7 +48,11 @@ const lines = (text: string) => text.replace(/\r?\n/g, "\r\n");
 // CloudShellTerminal is an xterm.js terminal that sends each command line to
 // TinyStack. It is loaded on demand, so the console's first page does not
 // carry the terminal.
-export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
+export default function CloudShellTerminal({
+	scope,
+}: {
+	scope: ShellScope & { session?: ConsoleSession | null };
+}) {
 	const [banner, setBanner] = useState<string>();
 	const container = useRef<HTMLDivElement>(null);
 	const current = useRef(scope);
@@ -185,6 +190,7 @@ export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
 
 		term.write(
 			`${dim("TinyStack CloudShell. The host AWS CLI runs as your console identity.")}\r\n` +
+				`${dim(current.current.session ? `Signed in as ${current.current.session.arn} · account ${current.current.session.account}` : `Account ${current.current.account}`)}\r\n` +
 				`${dim("Type help for the built-ins (clear, history, whoami, echo), Tab to complete, Ctrl-C to cancel.")}\r\n\r\n`,
 		);
 		redraw();
