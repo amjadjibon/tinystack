@@ -559,10 +559,7 @@ func build(
 	// Step Functions' Task states and Firehose's deliveries call the other
 	// services in-process.
 	caller := catalog.NewCaller(services...)
-	if err = budgetRecords.Start(caller); err != nil {
-		return nil, err
-	}
-
+	budgetRecords.Start(caller)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
 	// Pipes enrich and deliver to Lambda, SQS, SNS, EventBridge, Step Functions, and Kinesis.

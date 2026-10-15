@@ -41,25 +41,10 @@ func New(store storage.Store, deliveries *delivery.Log, logger *slog.Logger) *Se
 	return &Service{store: store, deliveries: deliveries, logger: logger, now: time.Now, bg: background.New()}
 }
 
-// Start indexes definitions from earlier versions and starts evaluation after service wiring.
-func (s *Service) Start(caller *catalog.Caller) error {
+// Start begins evaluation once the other services are wired.
+func (s *Service) Start(caller *catalog.Caller) {
 	s.caller = caller
-	err := s.store.Update(s.bg.Context(), func(tx storage.WriteTx) error {
-		for _, k := range tx.Keys("") {
-			parts := strings.Split(k, "/")
-			if len(parts) == 5 && parts[1] == "" && parts[2] == serviceName && parts[3] == "budget" {
-				tx.Put(budgetIndex+parts[0]+"/"+parts[4], []byte(k))
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
 	s.bg.Every(time.Second, s.visit)
-	return nil
 }
 
 // Stop cancels evaluation and waits for in-flight deliveries.

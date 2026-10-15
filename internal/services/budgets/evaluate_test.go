@@ -152,33 +152,6 @@ func TestEvaluationClaimsRolloverAndRecreation(t *testing.T) {
 	}
 }
 
-func TestStartupIndexesEarlierBudgets(t *testing.T) {
-	store := &memory.Store{}
-	s := New(store, delivery.New(), nil)
-	scope := request.Scope{AccountID: "000000000000"}
-	ctx := context.Background()
-	if err := store.Update(ctx, func(tx storage.WriteTx) error {
-		return storage.Write(tx, key(scope, "legacy"), record{Budget: api.Budget{BudgetName: new("legacy")}})
-	}); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := s.Start(catalog.NewCaller()); err != nil {
-		t.Fatal(err)
-	}
-
-	defer s.Stop()
-	if err := store.View(ctx, func(tx storage.ReadTx) error {
-		if _, ok := tx.Get(indexKey(scope, "legacy")); !ok {
-			t.Error("legacy definition missing from evaluation index")
-		}
-
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestPlannedLimitSelection(t *testing.T) {
 	now := time.Date(2026, time.October, 15, 0, 0, 0, 0, time.UTC)
 	b := &api.Budget{PlannedBudgetLimits: map[string]api.Spend{
