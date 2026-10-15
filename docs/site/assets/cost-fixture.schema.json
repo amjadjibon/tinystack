@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TinyStack cost fixture PUT input",
+  "description": "Additional server constraints: 2 MiB body; 100 fixtures/account; line IDs unique per fixture; start < end <= next UTC midnight; linkedAccount defaults to defaults.account and must equal it. x-maxBytes values are UTF-8 byte limits enforced by the server.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lines"
+  ],
+  "properties": {
+    "provenance": {
+      "type": "string",
+      "maxLength": 4096,
+      "x-maxBytes": 4096,
+      "default": ""
+    },
+    "lines": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    }
+  },
+  "$defs": {
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "start",
+        "end",
+        "service",
+        "unblendedCost",
+        "currency"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "start": {
+          "type": "string",
+          "description": "UTC YYYY-MM-DD or RFC3339 with zero UTC offset. Server validates the timestamp."
+        },
+        "end": {
+          "type": "string",
+          "description": "UTC YYYY-MM-DD or RFC3339 with zero UTC offset. Server validates the timestamp."
+        },
+        "service": {
+          "type": "string",
+          "maxLength": 1024,
+          "x-maxBytes": 1024,
+          "minLength": 1
+        },
+        "region": {
+          "type": "string",
+          "maxLength": 256,
+          "x-maxBytes": 256,
+          "default": ""
+        },
+        "linkedAccount": {
+          "type": "string",
+          "description": "Absent or empty defaults to defaults.account; any different account is rejected."
+        },
+        "usageType": {
+          "type": "string",
+          "maxLength": 1024,
+          "x-maxBytes": 1024,
+          "default": ""
+        },
+        "tags": {
+          "type": "object",
+          "maxProperties": 50,
+          "propertyNames": {
+            "type": "string",
+            "maxLength": 128,
+            "x-maxBytes": 128,
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 256,
+            "x-maxBytes": 256
+          }
+        },
+        "unblendedCost": {
+          "type": "string",
+          "pattern": "^-?(0|[1-9][0-9]{0,29})(\\.[0-9]{1,12})?$"
+        },
+        "currency": {
+          "const": "USD"
+        },
+        "estimated": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  }
+}

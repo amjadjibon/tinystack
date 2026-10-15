@@ -86,6 +86,7 @@ nav:
       - Console single sign-on: guides/sso.md
       - Init hooks and reset: guides/init-hooks.md
       - Fault injection: guides/fault-injection.md
+      - Cost fixtures and queries: guides/costs.md
       - Testcontainers for Go: guides/testcontainers.md
       - Persistence and restart: guides/persistence.md
       - State fixtures: guides/state-fixtures.md
