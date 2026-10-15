@@ -303,59 +303,64 @@ func TestShellLocalCredentialsRespectAccountMappings(t *testing.T) {
 	}
 }
 
-// TestShellRejectsHostCapabilities covers the OIDC policy; without OIDC the
-// local user runs the whole CLI.
-func TestShellRejectsHostCapabilities(t *testing.T) {
-	for _, line := range []string{
-		"aws s3 cp /etc/passwd s3://bucket/key", "aws s3 sync s3://bucket /tmp",
-		"aws s3 mv s3://bucket/key /tmp/host", "aws configure set credential_process evil",
-		"aws configure import --csv file:///etc/passwd", "aws history show", "aws help",
-		"aws cloudformation package", "aws cloudformation deploy", "aws lambda invoke f /tmp/out",
-		"aws ecr get-login", "aws ecr-public get-login-password", "aws eks update-kubeconfig",
-		"aws codeartifact login", "aws sso login", "aws deploy push", "aws emr ssh",
-		"aws ssm start-session", "aws ec2-instance-connect ssh", "aws gamelift upload-build",
-		"aws ecs execute-command", "aws alias-command", "aws s3api get-object --bucket b --key k /tmp/out",
-		"aws s3api put-object --bucket b --key k --body /etc/passwd",
-		"aws sqs send-message --queue-url file:///etc/passwd --message-body hi",
-		"aws sqs send-message --message-body fileb:///etc/passwd",
-		"aws sqs send-message --message-attributes 'x@=file:///etc/passwd'",
-		"aws sqs send-message --message-body https://example.com/secret",
-		"aws sts get-caller-identity --ca-b=/etc/passwd", "aws sts get-caller-identity --deb",
-		"aws sts get-caller-identity --no-sign", "aws sts get-caller-identity --help", "aws sts get-caller-identity help",
-		"aws sts get-caller-identity --cli-input-j=file:///etc/passwd",
-		"aws sts get-caller-identity --out json --endp=http://evil",
-	} {
-		t.Run(line, func(t *testing.T) {
-			args, err := shellArgv(line)
-			if err == nil {
-				err = shellPolicy(args)
-			}
+func TestShellAllowlist(t *testing.T) {
+	s := shellServer(t)
+	for _, line := range []string{"aws s3 cp /etc/passwd s3://b/k", "aws --debug configure list", "aws help"} {
+		args, err := shellArgv(line)
+		if err == nil {
+			err = s.shellPolicy(args)
+		}
 
-			if err == nil {
-				t.Fatal("host capability accepted under OIDC")
-			}
-		})
+		if err != nil {
+			t.Fatal("without an allowlist every command runs:", line, err)
+		}
 	}
-}
 
-func TestShellStaticCompletionFollowsPolicy(t *testing.T) {
-	for line, want := range map[string]string{
-		"aws s":            `["s3api","secretsmanager","sqs","ssm","sts"]`,
-		"aws s3api list-":  `["list-buckets","list-objects-v2"]`,
-		"aws s3 cp /":      `[]`,
-		"aws $(id)":        `[]`,
-		"aws ssm get-par":  `["get-parameter","get-parameters"]`,
-		"aws codeartifact": `[]`,
+	s.cfg.Console.CloudShell.Allow = []string{"s3:*", "sts:get-caller-identity", "dynamodb:get-*"}
+	for line, allowed := range map[string]bool{
+		"aws s3 ls":              true,
+		"aws s3 cp ./a s3://b/a": true,
+		"aws sts get-caller-identity --query Arn": true,
+		"aws dynamodb get-item --table-name t":    true,
+		"aws dynamodb put-item --table-name t":    false,
+		"aws s3api list-buckets":                  false,
+		"aws sts assume-role":                     false,
+		"aws s3":                                  false,
+		"aws --region us-east-1 s3 ls":            false,
+		"aws configure list":                      false,
+		"aws help":                                false,
 	} {
-		w := httptest.NewRecorder()
-		completeShellStatic(w, line)
-		if strings.TrimSpace(w.Body.String()) != `{"candidates":`+want+`}` {
-			t.Error(line, w.Body)
+		args, err := shellArgv(line)
+		if err == nil {
+			err = s.shellPolicy(args)
+		}
+
+		if (err == nil) != allowed {
+			t.Error(line, err)
 		}
 	}
 }
 
-func TestShellWithoutOIDCRunsTheWholeCLI(t *testing.T) {
+func TestShellCompletionFollowsAllowlist(t *testing.T) {
+	s := shellServer(t)
+	s.cfg.Console.CloudShell.Allow = []string{"s3:*", "sts:get-caller-identity"}
+	for _, tc := range []struct {
+		line       string
+		candidates []string
+		want       []string
+	}{
+		{"aws s", []string{"s3", "s3api", "sts", "sqs"}, []string{"s3", "sts"}},
+		{"aws sts get", []string{"get-caller-identity", "get-session-token"}, []string{"get-caller-identity"}},
+		{"aws sts get-caller-identity ", []string{"--query"}, []string{"--query"}},
+		{"aws sts assume-role ", []string{"--role-arn"}, []string{}},
+	} {
+		if got := s.shellAllowedCandidates(tc.line, tc.candidates); !slices.Equal(got, tc.want) {
+			t.Error(tc.line, got)
+		}
+	}
+}
+
+func TestShellRunsCommandsWithoutAllowlist(t *testing.T) {
 	fakeShellCLI(t, "printf '%s ' \"$@\"\n")
 	s := shellServer(t)
 	w := httptest.NewRecorder()
@@ -365,26 +370,10 @@ func TestShellWithoutOIDCRunsTheWholeCLI(t *testing.T) {
 		t.Fatal(w.Code, stdout)
 	}
 
-	s.cfg.Console.Auth.OIDC = &config.OIDC{}
-	if s.shellStrict() != true {
-		t.Fatal("OIDC must restrict CloudShell")
-	}
-}
-
-func TestShellPolicyAllowsInlineAPIValues(t *testing.T) {
-	for _, line := range []string{
-		"aws sts get-caller-identity --query Arn --output text",
-		"aws s3api create-bucket --bucket example",
-		`aws dynamodb put-item --table-name t --item '{"pk":{"S":"value"}}'`,
-		`aws sqs send-message --queue-url /000000000000/q --message-body 'hello world'`,
-	} {
-		args, err := shellArgv(line)
-		if err == nil {
-			err = shellPolicy(args)
-		}
-
-		if err != nil {
-			t.Fatal(line, err)
-		}
+	s.cfg.Console.CloudShell.Allow = []string{"sts:*"}
+	w = httptest.NewRecorder()
+	s.serveShell(w, shellRequestFor("aws s3 cp s3://bucket/key ./key"))
+	if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "does not permit s3 cp") {
+		t.Fatal(w.Code, w.Body)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -211,12 +212,17 @@ type Config struct {
 		Mode          string            `yaml:"mode"`
 		Authorization string            `yaml:"authorization"`
 	} `yaml:"identity"`
-	// Console configures the web console's sign-in.
+	// Console configures the web console's sign-in and CloudShell.
 	Console struct {
 		Auth struct {
 			// OIDC turns on single sign-on through an OpenID Connect provider.
 			OIDC *OIDC `yaml:"oidc"`
 		} `yaml:"auth"`
+		CloudShell struct {
+			// Allow limits CloudShell to matching "service:command" patterns
+			// (path.Match syntax, e.g. "s3:*"); empty allows every command.
+			Allow []string `yaml:"allow"`
+		} `yaml:"cloudshell"`
 	} `yaml:"console"`
 	Defaults struct {
 		Account string `yaml:"account"`
@@ -301,12 +307,12 @@ func Default() Config {
 	return c
 }
 
-// Load decodes a strict YAML configuration, or uses defaults for an empty path.
-func Load(path string) (Config, error) {
+// Load decodes a strict YAML configuration, or uses defaults for an empty file name.
+func Load(file string) (Config, error) {
 	c := Default()
-	if path != "" {
+	if file != "" {
 		// #nosec G304 -- the user explicitly selects this local configuration file.
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(file)
 		if err != nil {
 			return c, err
 		}
@@ -480,6 +486,16 @@ func (c *Config) Validate() error {
 
 	if c.IoT.MQTTPort != 0 && c.Identity.Mode == IdentityVerify {
 		return fmt.Errorf("iot.mqtt_port serves unauthenticated MQTT, so it requires identity.mode: parse")
+	}
+
+	for _, pattern := range c.Console.CloudShell.Allow {
+		service, command, ok := strings.Cut(pattern, ":")
+		_, serviceErr := path.Match(service, "")
+		_, commandErr := path.Match(command, "")
+		if !ok || service == "" || command == "" || strings.Contains(command, ":") || serviceErr != nil ||
+			commandErr != nil {
+			return fmt.Errorf("console.cloudshell.allow: %q is not a service:command pattern such as s3:*", pattern)
+		}
 	}
 
 	if oidc := c.Console.Auth.OIDC; oidc != nil {

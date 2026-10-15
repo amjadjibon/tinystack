@@ -237,11 +237,6 @@ func shellProcess(ctx context.Context, binary string, args, env []string, dir st
 }
 
 func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *shellRequest) {
-	if in.Complete && s.shellStrict() {
-		completeShellStatic(w, in.Command)
-		return
-	}
-
 	if s.shellRunning.Add(1) > shellMaxConcurrent {
 		s.shellRunning.Add(-1)
 		s.consoleFail(w, c, &awserror.Error{
@@ -252,8 +247,8 @@ func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *s
 
 	defer s.shellRunning.Add(-1)
 	args, err := shellArgv(in.Command)
-	if err == nil && s.shellStrict() {
-		err = shellPolicy(args)
+	if err == nil {
+		err = s.shellPolicy(args)
 	}
 
 	if err != nil && !in.Complete {
@@ -286,7 +281,7 @@ func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *s
 	}
 
 	if in.Complete {
-		completeShell(w, r, in.Command, binary, env, dir)
+		s.completeShell(w, r, in.Command, binary, env, dir)
 		return
 	}
 
@@ -332,9 +327,9 @@ func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *s
 	_ = http.NewResponseController(w).Flush()
 }
 
-// completeShell asks the host's aws_completer how the line could continue. It
-// runs only without OIDC, where the console user is the local user.
-func completeShell(w http.ResponseWriter, r *http.Request, line, binary string, env []string, dir string) {
+// completeShell asks the host's aws_completer how the line could continue,
+// keeping only what console.cloudshell.allow permits.
+func (s *Server) completeShell(w http.ResponseWriter, r *http.Request, line, binary string, env []string, dir string) {
 	candidates := []string{}
 	completer := filepath.Join(filepath.Dir(binary), "aws_completer")
 	if _, err := os.Stat(completer); err != nil {
@@ -358,7 +353,7 @@ func completeShell(w http.ResponseWriter, r *http.Request, line, binary string, 
 		}
 	}
 
-	_ = json.NewEncoder(w).Encode(shellCandidates{Candidates: candidates})
+	_ = json.NewEncoder(w).Encode(shellCandidates{Candidates: s.shellAllowedCandidates(line, candidates)})
 }
 
 // shellCompletionWriter bounds what the completer prints.

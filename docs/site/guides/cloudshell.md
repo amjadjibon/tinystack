@@ -16,37 +16,32 @@ aws s3api list-buckets --query 'Buckets[].Name' --output table
 aws sts get-caller-identity
 ```
 
-What CloudShell allows depends on whether the console has single sign-on.
+By default CloudShell runs every AWS CLI command: high-level `s3` commands, `help`, waiters, queries, output formats
+and pagination all come from the installed CLI, and Tab uses the real `aws_completer`. The CLI runs with the host
+user's file access, so `aws s3 cp ./file s3://bucket/` reads and writes files on the TinyStack host (relative paths
+resolve in the command's temporary directory). Do not publish a console beyond your own machine without OIDC and an
+allowlist: anyone who reaches it can do the same.
 
-**Without OIDC/SSO** (the default), CloudShell is a convenience for the single local user, who could run the same CLI
-in a terminal. Every AWS CLI command runs: high-level `s3` commands, `help`, waiters, queries, output formats and
-pagination all come from the installed CLI, and Tab uses the real `aws_completer`. The CLI runs with the host user's
-file access, so `aws s3 cp ./file s3://bucket/` reads and writes files on the TinyStack host (relative paths resolve
-in the command's temporary directory). Do not publish a console without OIDC beyond your own machine: anyone who
-reaches it can do the same.
+To limit what runs, list `service:command` patterns in `console.cloudshell.allow`:
 
-**With OIDC/SSO**, CloudShell is administrator-only and accepts only a reviewed allowlist of API commands:
+```yaml
+console:
+  cloudshell:
+    allow:
+      - "s3:*"                    # every s3 command, including cp and sync
+      - "sts:get-caller-identity"
+      - "dynamodb:get-*"
+      - "*:list-*"                # any service's list commands
+```
 
-- `sts`: `get-caller-identity`.
-- `s3api`: `list-buckets`, `create-bucket`, `delete-bucket`, `head-bucket`, `list-objects-v2`, `head-object`, `delete-object`.
-- `sqs`: `list-queues`, `create-queue`, `delete-queue`, `get-queue-url`, `get-queue-attributes`, `set-queue-attributes`,
-  `send-message`, `receive-message`, `delete-message`, `purge-queue`.
-- `dynamodb`: `list-tables`, `describe-table`, `create-table`, `delete-table`, `get-item`, `put-item`, `update-item`,
-  `delete-item`, `query`, `scan`, `batch-get-item`, `batch-write-item`, `execute-statement`.
-- `iam`: `list-users`, `list-roles`, `list-policies`, `get-user`, `get-role`, `get-policy`.
-- `lambda`: `list-functions`, `get-function-configuration`.
-- `cloudformation`: `list-stacks`, `describe-stacks`, `list-stack-resources`, `describe-stack-events`.
-- `logs`: `describe-log-groups`, `describe-log-streams`, `get-log-events`, `filter-log-events`.
-- `secretsmanager`: `list-secrets`, `describe-secret`, `get-secret-value`, `create-secret`, `put-secret-value`.
-- `ssm`: `get-parameter`, `get-parameters`, `put-parameter`, `delete-parameter`, `describe-parameters`.
+Patterns use Go's `path.Match` syntax (`*`, `?`, `[a-z]`) on each side of the colon; startup fails on a malformed
+pattern. With an allowlist, a command must start `aws <service> <command>`, so global options such as `--region` go
+after the command, and anything else, including `aws help` and `aws configure`, is rejected unless a pattern matches
+it. Tab completion offers only permitted services and commands. The allowlist selects commands, not arguments: a
+permitted command keeps all of its options, so `s3:*` still reads and writes host files and `file://` parameters
+still load them. Allow only commands you are willing to run on the host.
 
-Under that policy, high-level S3 transfers, CLI help, aliases, configuration, login, packaging and execution helpers
-are rejected; so are debug, CA bundles, unsigned requests, input-file options and skeleton generation (including
-abbreviated flags), and arguments containing `file://`, `fileb://`, `http://` or `https://`, even inside shorthand
-or JSON. Tab completes from the allowlist without running a host completer. New entries require a review of the
-CLI's customizations and streaming input/output, even when they share an ordinary AWS API name.
-
-In both modes `--endpoint-url`, `--profile` and interactive auto-prompt are rejected, including abbreviations.
+Whatever the configuration, `--endpoint-url`, `--profile` and interactive auto-prompt are rejected, including abbreviations.
 
 The browser handles a few built-ins: `clear` (or `reset`, Ctrl-L), `history` (`history -c` forgets it), `echo`,
 `whoami` (runs `aws sts get-caller-identity --query Arn --output text`) and `help`. Any other first word is
@@ -72,15 +67,14 @@ apply to every resulting AWS request. The endpoint comes from server configurati
 header or the host's endpoint environment variables. The request inspector retains command metadata but redacts command bodies, output and error messages, which may
 contain secrets. Individual API calls retain their normal modeled sensitivity rules.
 
-When OIDC/SSO is configured, **all CloudShell commands and completion are administrator-only**, and the allowlist
-above applies to administrators too. Root credentials and SSO roles mapped with `admin: true` qualify. Without OIDC,
-CloudShell is open to the local console user and runs every command.
+When OIDC/SSO is configured, **all CloudShell commands and completion are administrator-only**, and
+`console.cloudshell.allow` applies to administrators too. Root credentials and SSO roles mapped with `admin: true`
+qualify. Without OIDC, CloudShell is open to the local console user.
 
 Each command gets a temporary HOME and working directory, removed on completion. The child receives
 only its selected credentials, Region, forced endpoint, empty config and credential files, disabled pager and
 metadata lookup, and a minimal PATH. It does not inherit the host HOME, profiles, `credential_process`, or other
-host environment variables. This is not an operating-system sandbox: without OIDC the CLI has the TinyStack process's file access, and with
-OIDC only the allowlist and argument policy restrict it. Static completion creates no child process, credentials
-or temporary directory.
+host environment variables. This is not an operating-system sandbox: the CLI has the TinyStack process's file access, and only the allowlist
+narrows which commands can use it.
 The installed AWS CLI and its dependencies must remain trusted. History and terminal output can contain secrets
 and remain visible to the person using the browser.
