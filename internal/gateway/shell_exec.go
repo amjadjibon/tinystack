@@ -236,6 +236,15 @@ func shellProcess(ctx context.Context, binary string, args, env []string, dir st
 }
 
 func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *shellRequest) {
+	if s.shellRunning.Add(1) > shellMaxConcurrent {
+		s.shellRunning.Add(-1)
+		s.consoleFail(w, c, &awserror.Error{
+			Code: "TooManyRequests", Message: "CloudShell is busy; try again later.", StatusCode: 429,
+		})
+		return
+	}
+
+	defer s.shellRunning.Add(-1)
 	args, err := shellArgv(in.Command)
 	if err != nil && !in.Complete {
 		s.consoleFail(w, c, awserror.Validation("%s", err))

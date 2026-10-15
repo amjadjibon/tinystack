@@ -10,6 +10,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -25,6 +26,11 @@ const shellPath = "/_tinystack/shell"
 
 // shellMaxOutput caps what one command prints.
 const shellMaxOutput = 4 << 20
+
+const (
+	shellMaxBody       = 64 << 10
+	shellMaxConcurrent = 4
+)
 
 // shellRequest is one line typed into the CloudShell.
 type shellRequest struct {
@@ -42,7 +48,8 @@ type shellCandidates struct {
 
 // shellSupport exists only in console builds.
 type shellSupport struct {
-	issueShell func(context.Context, *request.Credentials) (*stsapi.Credentials, error)
+	issueShell   func(context.Context, *request.Credentials) (*stsapi.Credentials, error)
+	shellRunning atomic.Int32
 }
 
 // UseShellIssuer connects the in-process STS session issuer before serving.
@@ -91,7 +98,7 @@ func (s *Server) serveShell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	raw, readErr := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBody))
+	raw, readErr := io.ReadAll(http.MaxBytesReader(w, r.Body, shellMaxBody))
 	if readErr != nil {
 		s.consoleFail(w, c, awserror.Validation("Cannot read the command: %s", readErr))
 		return
@@ -130,7 +137,7 @@ func (s *Server) serveShell(w http.ResponseWriter, r *http.Request) {
 			Code:       accessDenied,
 			StatusCode: http.StatusForbidden,
 			Message: "CloudShell is available only to administrators when SSO is configured " +
-				"because the AWS CLI can access host files.",
+				"to restrict access to host CLI execution.",
 		})
 		return
 	}
