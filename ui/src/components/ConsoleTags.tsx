@@ -1,4 +1,5 @@
 import {
+	Box,
 	Button,
 	Container,
 	FormField,
@@ -44,7 +45,11 @@ export function ConsoleTags({
 				</Header>
 			}
 		>
-			<CodeBlock text={JSON.stringify(tags, null, 2)} />
+			{Object.keys(tags).length ? (
+				<CodeBlock text={JSON.stringify(tags, null, 2)} />
+			) : (
+				<Box>No tags</Box>
+			)}
 			{editing && (
 				<ActionDialog
 					title="Edit tags"

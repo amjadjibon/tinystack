@@ -2,8 +2,10 @@ import {
 	ExpandableSection,
 	KeyValuePairs,
 	ProgressBar,
+	SpaceBetween,
 } from "@cloudscape-design/components";
 import { CodeBlock } from "#/components/CodeBlock";
+import type { Resource } from "#/lib/api";
 import { type Definition, period } from "#/lib/cost";
 
 import { costPercentage } from "#/lib/costUsage";
@@ -49,17 +51,29 @@ export function BudgetSpend({ config }: { config: Definition }) {
 		/>
 	);
 }
-export function BudgetDetails({ config }: { config: Definition }) {
+export function BudgetDetails({
+	resource,
+	account,
+	config,
+}: {
+	resource: Resource;
+	account: string;
+	config: Definition;
+}) {
 	const { actual, limit, percent } = spend(config);
 	const planned = config.PlannedBudgetLimits as
 		| Record<string, Money>
 		| undefined;
 	const filters = config.CostFilters as Record<string, string[]> | undefined;
 	return (
-		<>
+		<SpaceBetween size="l">
 			<KeyValuePairs
 				columns={2}
 				items={[
+					{ label: "Name", value: resource.name },
+					{ label: "ARN", value: resource.arn },
+					{ label: "Account", value: account },
+					{ label: "Scope", value: "Global" },
 					{ label: "Type", value: String(config.BudgetType ?? "—") },
 					{ label: "Time unit", value: String(config.TimeUnit ?? "—") },
 					{ label: "Limit (current)", value: money(limit) },
@@ -100,6 +114,6 @@ export function BudgetDetails({ config }: { config: Definition }) {
 			<ExpandableSection headerText="JSON">
 				<CodeBlock text={JSON.stringify(config, null, 2)} />
 			</ExpandableSection>
-		</>
+		</SpaceBetween>
 	);
 }

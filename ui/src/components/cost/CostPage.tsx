@@ -328,19 +328,25 @@ function CostRecords({
 					selected ? (
 						<SpaceBetween size="l">
 							<Container header={<Header variant="h2">Definition</Header>}>
-								<KeyValuePairs
-									columns={2}
-									items={[
-										{ label: "Name", value: selected.name },
-										{ label: "ARN", value: selected.arn },
-										{ label: "Account", value: account },
-										{ label: "Scope", value: "Global" },
-									]}
-								/>
 								{service === "budgets" ? (
-									<BudgetDetails config={config} />
+									<BudgetDetails
+										resource={selected}
+										account={account}
+										config={config}
+									/>
 								) : (
-									<CodeBlock text={JSON.stringify(config, null, 2)} />
+									<SpaceBetween size="l">
+										<KeyValuePairs
+											columns={2}
+											items={[
+												{ label: "Name", value: selected.name },
+												{ label: "ARN", value: selected.arn },
+												{ label: "Account", value: account },
+												{ label: "Scope", value: "Global" },
+											]}
+										/>
+										<CodeBlock text={JSON.stringify(config, null, 2)} />
+									</SpaceBetween>
 								)}
 							</Container>
 							{service === "budgets" && (
