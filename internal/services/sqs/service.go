@@ -62,6 +62,7 @@ func New(store storage.Store, keys *kms.Service) *Service {
 		ready:  map[string]chan struct{}{},
 		bg:     background.New(),
 	}
+
 	s.bg.Every(moveInterval, s.mover)
 	return s
 }
@@ -109,7 +110,7 @@ type settings struct {
 	DeadLetterTargetArn string `json:",omitempty"`
 	// RedriveAllowPolicy is the canonical JSON policy; empty allows all sources.
 	RedriveAllowPolicy string `json:",omitempty"`
-	// Policy is the queue's access policy, stored only.
+	// Policy is the queue's access policy.
 	Policy string `json:",omitempty"`
 	// KmsMasterKeyID turns on SSE-KMS; KmsDataKeyReusePeriodSeconds applies
 	// only then, and zero means the default. Without a KMS key, the queue uses
@@ -223,10 +224,11 @@ func resolve(ctx context.Context, raw *string) (string, error) {
 		return "", awserror.New("InvalidAddress", "The address "+*raw+" is not valid for this endpoint.")
 	}
 
-	if parts[0] != m.AccountID {
+	if parts[0] != m.AccountID && !m.ResourceAuthorization {
 		return "", notFound()
 	}
 
+	m.AccountID = parts[0]
 	return queueKey(m, parts[1]), nil
 }
 
@@ -235,9 +237,11 @@ func load(tx storage.ReadTx, key string) (*queue, error) {
 	if err != nil {
 		return nil, fmt.Errorf("decode queue: %w", err)
 	}
+
 	if !found {
 		return nil, notFound()
 	}
+
 	return q, nil
 }
 

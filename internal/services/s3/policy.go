@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	iampolicy "github.com/amjadjibon/tinystack/internal/services/iam/policy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -34,8 +35,7 @@ func (s *Service) bucket(ctx context.Context, bucket, owner *string) (bucketMeta
 	return meta, err
 }
 
-// statement is the part of a policy statement TinyStack reads: policies are
-// stored, never evaluated, so only GetBucketPolicyStatus looks inside them.
+// statement contains the fields GetBucketPolicyStatus uses to detect public access.
 type statement struct {
 	Effect    string
 	Principal json.RawMessage
@@ -53,6 +53,7 @@ func parsePolicy(policy string) ([]statement, error) {
 	var doc struct {
 		Statement json.RawMessage
 	}
+
 	if err := json.Unmarshal([]byte(policy), &doc); err != nil || policy == "" || policy[0] != '{' {
 		return nil, malformed
 	}
@@ -88,6 +89,7 @@ func (st *statement) public() bool {
 	var principals struct {
 		AWS json.RawMessage
 	}
+
 	if json.Unmarshal(st.Principal, &principals) != nil {
 		return false
 	}
@@ -120,6 +122,10 @@ func (s *Service) PutBucketPolicy(
 	statements, err := parsePolicy(policy)
 	if err != nil {
 		return nil, err
+	}
+
+	if err = iampolicy.ValidateResource(policy); err != nil {
+		return nil, fail(http.StatusBadRequest, "MalformedPolicy", err.Error())
 	}
 
 	err = s.editBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) error {

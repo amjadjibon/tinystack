@@ -14,6 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+
+	"github.com/amjadjibon/tinystack/internal/config"
 )
 
 // receiveOne returns the body of the one message waiting in the queue, or ""
@@ -71,9 +73,23 @@ func decodeRecord(t *testing.T, body string) s3Record {
 }
 
 func TestS3Notifications(t *testing.T) {
+	s3NotificationsScenario(t, false)
+}
+
+func TestS3NotificationsEnforced(t *testing.T) {
+	s3NotificationsScenario(t, true)
+}
+
+func s3NotificationsScenario(t *testing.T, enforce bool) {
 	ctx := context.Background()
 	runtime := &fakeRuntime{calls: make(chan invocation, 10)}
-	s := serverWith(t, runtime)
+	serverCfg := testConfig()
+	if enforce {
+		serverCfg.Identity.Authorization = config.AuthorizationEnforce
+		serverCfg.Identity.Accounts["test"] = serverCfg.Defaults.Account
+	}
+
+	s := serverConfig(t, serverCfg, runtime)
 	c := s3Client(s, "test", "us-east-1")
 	queues := sqsClient(s, "test")
 	uploadsURL, uploadsARN := queueARN(t, queues, "uploads")
@@ -111,6 +127,7 @@ func TestS3Notifications(t *testing.T) {
 		}},
 		EventBridgeConfiguration: &s3types.EventBridgeConfiguration{},
 	}
+
 	if err := put(cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -162,6 +179,7 @@ func TestS3Notifications(t *testing.T) {
 			Reason string
 		}
 	}
+
 	if err = json.Unmarshal([]byte(receiveOne(t, queues, eventsURL)), &event); err != nil ||
 		event.DetailType != "Object Created" || event.Source != "aws.s3" ||
 		event.Detail.Object.Key != "raw/cat photo.jpg" || event.Detail.Reason != "PutObject" {

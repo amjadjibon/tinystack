@@ -30,6 +30,7 @@ function Requests() {
 						check.action,
 						check.resource,
 						...(check.matched ?? []),
+						...(check.resource_policy?.matched ?? []),
 						...(check.unsupported ?? []),
 					]),
 				].join(" ")

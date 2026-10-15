@@ -16,6 +16,8 @@ import (
 	ebtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+
+	"github.com/amjadjibon/tinystack/internal/config"
 )
 
 func eventsClient(s *httptest.Server, key string) *eventbridge.Client {
@@ -281,8 +283,22 @@ func TestEventBridgeTestEventPattern(t *testing.T) {
 }
 
 func TestEventBridgeDelivers(t *testing.T) {
+	eventBridgeDeliversScenario(t, false)
+}
+
+func TestEventBridgeDeliversEnforced(t *testing.T) {
+	eventBridgeDeliversScenario(t, true)
+}
+
+func eventBridgeDeliversScenario(t *testing.T, enforce bool) {
 	runtime := &fakeRuntime{calls: make(chan invocation, 10)}
-	s := serverWith(t, runtime)
+	cfg := testConfig()
+	if enforce {
+		cfg.Identity.Authorization = config.AuthorizationEnforce
+		cfg.Identity.Accounts["test"] = cfg.Defaults.Account
+	}
+
+	s := serverConfig(t, cfg, runtime)
 	c := eventsClient(s, "test")
 	queues := sqsClient(s, "test")
 	ctx := context.Background()

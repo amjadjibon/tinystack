@@ -26,6 +26,8 @@ type Metadata struct {
 	TraceID string
 	// Endpoint is the base URL the client used, for resource URLs such as SQS queue URLs.
 	Endpoint string
+	// ResourceAuthorization enables owner-based resolution in the gateway policy path.
+	ResourceAuthorization bool
 }
 
 // Principal identifies an IAM identity independently of credential secrets.

@@ -37,8 +37,8 @@ Cognito sign-in operations, retain their anonymous contract.
 
 ## Evaluated policy subsets
 
-Identity-based IAM policies are evaluated only when authorization is enabled. Resource policies remain stored
-without general enforcement. Separate features evaluate narrower policies:
+Identity-based IAM policies and S3/SQS resource policies are evaluated when authorization is enabled.
+Other resource policies remain stored without general enforcement. Separate features evaluate narrower policies:
 
 - STS checks the supported role trust-policy subset for role assumption.
 - IoT checks attached device/Cognito policies in verify mode for connect, publish, subscribe and receive.
@@ -70,7 +70,7 @@ principals, checked actions/resources, matched statements and evaluation limits.
 object in `/_tinystack/requests`, with the caller, action/resource checks, matched statements,
 unsupported constructs, and explanation. Decisions also appear in the server log.
 
-Configured access keys represent account root and are always allowed. IAM-created access keys use
+Configured access keys represent account root. Root has implicit identity permission, subject to the S3/SQS resource-policy rules below. IAM-created access keys use
 the user's inline and attached managed policies, plus all groups' policies. STS role sessions use
 the role's policies; user session tokens use their issuing user's policies. Default managed policy
 versions and current tags are read for every request. Deleted and recreated identities do not
@@ -114,7 +114,7 @@ DynamoDB transactions and PartiQL select per-item actions; KMS re-encryption che
 Permission checks run on the external AWS-operation gateway. In-process service calls, background
 workers and CloudFormation provisioning bypass them; the caller's CloudFormation stack operation
 itself is checked. Console actions keep the SigV4 and scope checks of verify mode; unsigned parse-mode
-actions and root credentials bypass IAM, and every other signed principal, including a person signed in through
+actions bypass IAM. Root credentials have implicit identity permission; every other signed principal, including a person signed in through
 [console single sign-on](../guides/sso.md), is evaluated like an AWS API call. In verify mode, browser forms
 remain read-only until a root or SSO console session is connected. Sessions sign actions for their account and
 keep credentials in memory only. The access-key session handshake accepts root credentials only; IAM user and
@@ -123,10 +123,44 @@ ordinary role credentials connect through single sign-on instead. Console API in
 Deleting a mapped SSO role invalidates its old federated credentials, even if the same ARN is recreated. Discovery, OAuth, registry,
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
-Resource-based policies, permissions boundaries, session policies, organization SCPs/RCPs,
-cross-account authorization, extended ABAC, Access Analyzer and policy simulator APIs are not
-implemented. Existing STS trust-policy evaluation remains separate; dependent service permissions
+Resource-based policies outside S3/SQS, permissions boundaries, session policies, organization SCPs/RCPs,
+extended ABAC, Access Analyzer and policy simulator APIs are not implemented. Existing STS trust-policy evaluation remains separate; dependent service permissions
 such as `iam:PassRole` are not generally inferred.
+
+### S3 bucket and SQS queue policies
+
+With `identity.authorization: soft` or `enforce`, the gateway snapshots the resource owner and stored
+bucket policy or queue `Policy` attribute through the service's resource resolver before calling the
+operation. Every target in a copy or batch is checked. An explicit Deny in either policy wins.
+Within one account, an Allow in either the identity or resource policy suffices. Cross-account access
+requires both identity and resource Allow; foreign root has implicit identity permission but still
+requires a resource grant. The default `parse`/authorization `off` behavior is unchanged.
+
+Principals match `"*"`, `{"AWS":"*"}`, account IDs, account-root ARNs, exact user ARNs, role ARNs
+(including assumed-role sessions through their underlying role ARN), and exact session ARNs. As in AWS, an
+account ID or account-root ARN delegates to that account's identity policies: an Allow naming the owning account
+grants only its root user, while a Deny naming it applies to every principal in the account.
+Resource policies use the condition operators and keys above, plus `aws:SourceArn` and
+`aws:SourceAccount` (absent on ordinary API calls). Unsupported elements, including `NotPrincipal`,
+federated principals, partial principal wildcards and unknown condition keys/operators, are rejected
+when writing policies. The inspector's `checks[].resource_policy` records resource Allow/Deny and
+matched statements; `cross_account` identifies checks requiring both policy types.
+
+Owning-account root is subject to explicit resource Deny, except S3 `GetBucketPolicy`,
+`PutBucketPolicy` and `DeleteBucketPolicy`, which remain available to recover a locked bucket,
+[as in AWS](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketPolicy.html).
+S3 BlockPublicPolicy continues to reject public policy writes. Owning-account root can also use
+SQS `GetQueueAttributes` and `SetQueueAttributes` to recover a denied queue policy, consistent with
+[AWS root queue recovery](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html).
+TinyStack grants this exception for all attributes; it does not model AssumeRoot task policies.
+
+Deliberate limits: ACLs, object ownership, permissions boundaries and AWS's extra session/account
+delegation distinctions are not modeled; same-account account-root grants use the union rule above.
+Service principals such as `sns.amazonaws.com` can be stored, but in-process SNS→SQS,
+S3 notifications→SQS and EventBridge→SQS calls retain their existing direct delivery path and bypass
+policy enforcement. Source conditions do not restrict those deliveries. Cross-account policy management
+and SQS actions are evaluated by the same rule rather than modeling every AWS owner-only API exception.
+Unsigned/unresolved parse-mode callers retain their existing bypass; use verify mode for authentication.
 
 ## Namespaces and uniqueness
 

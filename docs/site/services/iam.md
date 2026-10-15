@@ -21,7 +21,7 @@ See the [implemented feature catalogue](catalogue.md#iam) for this service's cap
 
 ## Limitations and future work
 
-- No resource-policy enforcement, permissions boundaries, session policies, SCPs/RCPs, cross-account authorization or policy simulation; non-core services use wildcard resource evaluation.
+- No resource-policy enforcement outside S3/SQS, permissions boundaries, session policies, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation.
 - No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries.
 - No access-key usage tracking.
 - In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions.

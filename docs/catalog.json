@@ -120,12 +120,13 @@
         "Versioning, null versions and delete markers",
         "Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge",
         "Bucket lifecycle and encryption configuration are stored",
-        "AWS-style console for scoped bucket creation, empty/delete, folder and object browsing, uploads/downloads/copies, version deletion, object tags and bucket configuration"
+        "AWS-style console for scoped bucket creation, empty/delete, folder and object browsing, uploads/downloads/copies, version deletion, object tags and bucket configuration",
+        "Bucket policies participate in gateway soft/enforce authorization, including cross-account bucket/object access and owning-root policy recovery"
       ],
       "gaps": [
         "Lifecycle rules do not expire or transition objects",
         "Encryption settings are metadata; objects are not encrypted as an AWS S3 data plane would encrypt them, and writes asking for aws:kms are accepted and stored like AES256 objects (aws:kms:dsse is rejected)",
-        "No website endpoint, POST uploads or general ACL/policy evaluation",
+        "No website endpoint, POST uploads or general ACL evaluation; resource policies do not govern in-process reads or deliveries",
         "Generated in-process PutObject/UploadPart byte-slice shapes, in-process reads (e.g. Lambda runtime Object() helper), and console download and preview buffers still buffer bytes in memory",
         "Verify-mode SigV4 authentication spools upload payloads to temporary files only when verifying signed hexadecimal or empty payload hashes; UNSIGNED-PAYLOAD, supported unsigned-trailer forms (STREAMING-UNSIGNED-PAYLOAD-TRAILER), and usual presigned S3 uploads stream without that spool",
         "Signed aws-chunked payloads (STREAMING-AWS4-HMAC-SHA256-*) remain unsupported and return NotImplemented",
@@ -201,10 +202,11 @@
         "FIFO deduplication and group ordering",
         "Dead-letter queues and message move tasks",
         "AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management",
-        "PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard"
+        "PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard",
+        "Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery"
       ],
       "gaps": [
-        "No throughput enforcement or queue resource-policy evaluation",
+        "No throughput enforcement; in-process SNS, S3 notification and EventBridge deliveries bypass queue-policy authorization",
         "No message groups on standard queues or FIFO message move tasks",
         "DeleteQueue does not enforce the AWS name-reuse delay",
         "Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained",
@@ -572,10 +574,11 @@
         "Optional off/soft/enforce gateway authorization for IAM users and assumed roles, including group policies and current managed policy versions",
         "Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations",
         "IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions",
-        "Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits"
+        "Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits",
+        "S3 bucket and SQS queue resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records"
       ],
       "gaps": [
-        "No resource-policy enforcement, permissions boundaries, session policies, SCPs/RCPs, cross-account authorization or policy simulation; non-core services use wildcard resource evaluation",
+        "No resource-policy enforcement outside S3/SQS, permissions boundaries, session policies, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation",
         "No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries",
         "No access-key usage tracking",
         "In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions",

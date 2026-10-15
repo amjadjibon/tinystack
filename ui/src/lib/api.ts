@@ -14,14 +14,19 @@ export type Health = {
 
 export type AuthorizationMode = "off" | "soft" | "enforce";
 
-export type AuthorizationCheck = {
-	action: string;
-	resource: string;
+export type PolicyDecision = {
 	allowed: boolean;
 	explicit_deny?: boolean;
-	wildcard_only?: boolean;
 	matched?: string[];
 	unsupported?: string[];
+};
+
+export type AuthorizationCheck = PolicyDecision & {
+	action: string;
+	resource: string;
+	wildcard_only?: boolean;
+	resource_policy?: PolicyDecision;
+	cross_account?: boolean;
 };
 
 export type AuthorizationRecord = {

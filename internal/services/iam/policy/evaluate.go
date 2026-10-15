@@ -1,4 +1,4 @@
-// Package policy evaluates the supported identity-based IAM policy subset.
+// Package policy evaluates the supported IAM identity and resource policy subset.
 // Callers supply policy documents and context; it does not access storage or HTTP.
 package policy
 
@@ -9,7 +9,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/policydoc"
+)
+
+const (
+	effectDeny  = "Deny"
+	effectAllow = "Allow"
+	usernameKey = "aws:username"
 )
 
 // Document labels a policy source for decision explanations.
@@ -19,8 +26,10 @@ type Document struct{ Name, JSON string }
 // Keys are case insensitive. ResourceTags indicates whether resource tags can
 // be read for this target; PrincipalTag keys are always supported.
 type Context struct {
-	Values       map[string][]string
-	ResourceTags bool
+	Values map[string][]string
+	// ResourceAccount owns the resource whose policy is evaluated.
+	ResourceAccount string
+	ResourceTags    bool
 }
 
 // Decision records matching statements and constructs that could not be evaluated.
@@ -46,6 +55,10 @@ type statement struct {
 // Evaluate implements explicit deny, then allow, then implicit deny across all
 // supplied documents. Unknown conditions make that statement not match.
 func Evaluate(documents []Document, action, resource string, context Context) Decision {
+	return evaluate(documents, action, resource, context, nil)
+}
+
+func evaluate(documents []Document, action, resource string, context Context, principal *request.Principal) Decision {
 	context.Values = normalized(context.Values)
 	out := Decision{}
 	for _, doc := range documents {
@@ -78,9 +91,25 @@ func Evaluate(documents []Document, action, resource string, context Context) De
 				label = doc.Name + "/" + st.Sid
 			}
 
-			if st.Principal != nil || st.NotPrincipal != nil || (st.Effect != "Allow" && st.Effect != "Deny") {
+			if st.NotPrincipal != nil || (principal == nil && st.Principal != nil) ||
+				(st.Effect != effectAllow && st.Effect != effectDeny) {
 				out.Unsupported = append(out.Unsupported, label+": unsupported identity statement")
 				continue
+			}
+
+			if principal != nil {
+				matched, delegated, err := principalMatches(st.Principal, principal)
+				if err != nil {
+					out.Unsupported = append(out.Unsupported, label+": "+err.Error())
+					continue
+				}
+
+				// An account principal delegates an Allow to the account's identity
+				// policies, so it grants a caller in the owning account only as root.
+				if !matched || (delegated && st.Effect == effectAllow &&
+					principal.Kind != request.PrincipalRoot && principal.Account == context.ResourceAccount) {
+					continue
+				}
 			}
 
 			actions, validAction := elements(st.Action, st.NotAction)
@@ -117,7 +146,7 @@ func Evaluate(documents []Document, action, resource string, context Context) De
 			}
 
 			out.Matched = append(out.Matched, label+" ("+st.Effect+")")
-			if st.Effect == "Deny" {
+			if st.Effect == effectDeny {
 				out.ExplicitDeny = true
 			} else {
 				out.Allowed = true
@@ -193,7 +222,7 @@ func expand(patterns []string, version string, context *Context) (expanded, unsu
 
 			variable := pattern[start+2 : start+end]
 			value := context.Values[strings.ToLower(variable)]
-			if version != "2012-10-17" || variable != "aws:username" || len(value) != 1 {
+			if version != "2012-10-17" || variable != usernameKey || len(value) != 1 {
 				problems = append(problems, "unsupported or absent policy variable "+variable)
 				break
 			}
@@ -217,8 +246,8 @@ func (c *Context) known(key string) bool {
 	}
 
 	switch key {
-	case "aws:username", "aws:userid", "aws:principalarn", "aws:principalaccount", "aws:sourceip",
-		"aws:currenttime", "aws:securetransport", "aws:requestedregion":
+	case usernameKey, "aws:userid", "aws:principalarn", "aws:principalaccount", "aws:sourceip",
+		"aws:currenttime", "aws:securetransport", "aws:requestedregion", "aws:sourcearn", "aws:sourceaccount":
 		return true
 	}
 

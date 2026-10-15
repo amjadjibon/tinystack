@@ -76,6 +76,7 @@ func New(
 	} else {
 		blobs, blobErr = storage.OpenBlobs("")
 	}
+
 	s := &Service{
 		blobs: blobs, blobErr: blobErr, maxObjectBytes: 256 << 20,
 		store:      &bodyStore{Store: store, blobs: blobs},
@@ -86,9 +87,11 @@ func New(
 		deliveries: deliveries,
 		now:        time.Now,
 	}
+
 	if len(files) == 0 {
 		s.blobErr = s.Resume(context.Background())
 	}
+
 	return s
 }
 
@@ -111,7 +114,7 @@ type bucketMeta struct {
 	Website           *api.WebsiteConfiguration              `json:",omitempty"`
 	// Versioning is "", "Enabled", or "Suspended".
 	Versioning string `json:",omitempty"`
-	// Policy is the bucket policy, stored as sent and never evaluated.
+	// Policy is the bucket policy, evaluated by the gateway.
 	Policy string `json:",omitempty"`
 	// Ownership is the ObjectOwnership setting, if the bucket has one.
 	Ownership string         `json:",omitempty"`
@@ -187,8 +190,8 @@ func writeJSON(tx storage.WriteTx, key string, v any) error {
 }
 
 // resolve finds the caller's bucket through the name index and returns its
-// regional key. Buckets of other accounts are denied; buckets in another
-// region must be addressed through that region.
+// regional key. Cross-account requests require gateway resource authorization;
+// buckets in another region must be addressed through that region.
 //
 //nolint:gocritic // Metadata is an immutable request snapshot.
 func resolve(tx storage.ReadTx, m request.Metadata, name, expectedOwner *string) (string, error) {
@@ -202,7 +205,8 @@ func resolve(tx storage.ReadTx, m request.Metadata, name, expectedOwner *string)
 		return "", noSuchBucket()
 	}
 
-	if index.Account != m.AccountID || (expectedOwner != nil && *expectedOwner != m.AccountID) {
+	if (index.Account != m.AccountID && !m.ResourceAuthorization) ||
+		(expectedOwner != nil && *expectedOwner != index.Account) {
 		return "", accessDenied()
 	}
 
@@ -215,7 +219,7 @@ func resolve(tx storage.ReadTx, m request.Metadata, name, expectedOwner *string)
 		)
 	}
 
-	return m.AccountID + "/" + m.Region + "/s3/" + *name, nil
+	return index.Account + "/" + m.Region + "/s3/" + *name, nil
 }
 
 func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest) (*api.CreateBucketOutput, error) {

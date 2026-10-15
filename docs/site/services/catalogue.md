@@ -709,6 +709,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 - Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations.
 - IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions.
 - Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits.
+- S3 bucket and SQS queue resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records.
 
 [Supported operations](iam.md#supported-operations) · [Limitations](iam.md#limitations-and-future-work)
 
@@ -1108,6 +1109,7 @@ Use queues with visibility timeouts, long polling, FIFO ordering, and dead-lette
 - Dead-letter queues and message move tasks.
 - AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management.
 - PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard.
+- Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery.
 
 [Supported operations](sqs.md#supported-operations) · [Limitations](sqs.md#limitations-and-future-work)
 
@@ -1421,6 +1423,7 @@ Store object metadata in the shared store and object/version/multipart bytes in 
 - Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge.
 - Bucket lifecycle and encryption configuration are stored.
 - AWS-style console for scoped bucket creation, empty/delete, folder and object browsing, uploads/downloads/copies, version deletion, object tags and bucket configuration.
+- Bucket policies participate in gateway soft/enforce authorization, including cross-account bucket/object access and owning-root policy recovery.
 
 [Supported operations](s3.md#supported-operations) · [Limitations](s3.md#limitations-and-future-work)
 

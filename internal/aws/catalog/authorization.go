@@ -9,10 +9,13 @@ import (
 // uses the operation's generated IAMAction. TagsKnown distinguishes absent tags
 // from a resource family whose tags cannot be evaluated.
 type AuthorizationResource struct {
-	Tags      map[string]string
-	Action    string
-	ARN       string
-	TagsKnown bool
+	// OwnerAccount and Policy opt a resource into resource-policy evaluation.
+	OwnerAccount string
+	Policy       string
+	Tags         map[string]string
+	Action       string
+	ARN          string
+	TagsKnown    bool
 }
 
 // Authorizer is implemented next to each service's resource lookups.

@@ -69,7 +69,9 @@ func TestConsoleSQSLifecycle(t *testing.T) {
 		"VisibilityTimeout": "30", "RedrivePolicy": `{"deadLetterTargetArn":"` + arn + `","maxReceiveCount":1}`,
 	}, "Tags": map[string]any{"team": "console"}})["QueueUrl"].(string)
 	write("SetQueueAttributes", map[string]any{"QueueUrl": url, "Attributes": map[string]any{
-		"Policy": `{"Version":"2012-10-17","Statement":[]}`, "RedriveAllowPolicy": `{"redrivePermission":"allowAll"}`,
+		"Policy": `{"Version":"2012-10-17","Statement":[{"Effect":"Allow",` +
+			`"Principal":{"AWS":"arn:aws:iam::000000000000:root"},"Action":"sqs:*","Resource":"*"}]}`,
+		"RedriveAllowPolicy": `{"redrivePermission":"allowAll"}`,
 	}})
 	write("TagQueue", map[string]any{"QueueUrl": url, "Tags": map[string]any{"env": "test"}})
 	write("UntagQueue", map[string]any{"QueueUrl": url, "TagKeys": []any{"team"}})

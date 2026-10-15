@@ -13,6 +13,8 @@ import (
 	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
+
+	"github.com/amjadjibon/tinystack/internal/config"
 )
 
 func snsClient(s *httptest.Server, key string) *sns.Client {
@@ -169,7 +171,21 @@ func TestSNSTopicsAndSubscriptions(t *testing.T) {
 }
 
 func TestSNSDeliversToSQS(t *testing.T) {
-	s := server(t)
+	sNSDeliversToSQSScenario(t, false)
+}
+
+func TestSNSDeliversToSQSEnforced(t *testing.T) {
+	sNSDeliversToSQSScenario(t, true)
+}
+
+func sNSDeliversToSQSScenario(t *testing.T, enforce bool) {
+	cfg := testConfig()
+	if enforce {
+		cfg.Identity.Authorization = config.AuthorizationEnforce
+		cfg.Identity.Accounts["test"] = cfg.Defaults.Account
+	}
+
+	s := serverConfig(t, cfg, &fakeRuntime{})
 	c := snsClient(s, "test")
 	q := sqsClient(s, "test")
 	ctx := context.Background()

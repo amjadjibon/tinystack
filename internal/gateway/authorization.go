@@ -34,10 +34,12 @@ type AuthorizationRecord struct {
 }
 
 type AuthorizationCheck struct {
-	Action   string `json:"action"`
-	Resource string `json:"resource"`
+	ResourcePolicy *policy.Decision `json:"resource_policy,omitempty"`
+	Action         string           `json:"action"`
+	Resource       string           `json:"resource"`
 	policy.Decision
 	WildcardOnly bool `json:"wildcard_only,omitempty"`
+	CrossAccount bool `json:"cross_account,omitempty"`
 }
 
 func (s *Server) authorize(ctx context.Context, r *http.Request, c *call, op *catalog.Operation, input any) error {
@@ -54,14 +56,33 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		return nil
 	}
 
-	// Compatibility: configured and unresolved parse-mode credentials act as
-	// account root. Anonymous operations retain their modeled auth contract.
-	if c.credentials == nil || op.Anonymous {
+	// Configured credentials act as root; unresolved parse-mode callers retain
+	// their existing bypass. Anonymous operations keep their modeled contract.
+	if op.Anonymous {
 		return nil
 	}
 
-	principal := c.credentials.Principal
-	if principal.Kind == request.PrincipalRoot {
+	var principal request.Principal
+	if c.credentials != nil {
+		principal = c.credentials.Principal
+	} else {
+		_, mapped := s.cfg.Identity.Accounts[c.meta.AccessKey]
+		_, secret := s.cfg.Identity.SecretKeys[c.meta.AccessKey]
+		if (!mapped && !secret) || (c.meta.Service != consoleS3 && c.meta.Service != consoleSQS) {
+			return nil
+		}
+
+		arn := "arn:aws:iam::" + c.meta.AccountID + ":root"
+		principal = request.Principal{
+			Kind:      request.PrincipalRoot,
+			Account:   c.meta.AccountID,
+			UserID:    c.meta.AccountID,
+			ARN:       arn,
+			PolicyARN: arn,
+		}
+	}
+
+	if principal.Kind == request.PrincipalRoot && c.meta.Service != consoleS3 && c.meta.Service != consoleSQS {
 		return nil
 	}
 
@@ -74,7 +95,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 	snapshot := iam.Authorization{Principal: principal}
 	var err error
-	if s.policies != nil {
+	if s.policies != nil && principal.Kind != request.PrincipalRoot {
 		snapshot, err = s.policies(ctx, &principal)
 	}
 
@@ -87,6 +108,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 	principal = snapshot.Principal
 	c.meta.Principal = &principal
+	c.meta.ResourceAuthorization = c.meta.Service == consoleS3 || c.meta.Service == consoleSQS
 	ctx = request.WithMetadata(ctx, c.meta)
 	if resources == nil && c.service.Authorizer != nil {
 		resources, err = c.service.Authorizer.AuthorizationResources(ctx, op.Name, input)
@@ -126,16 +148,55 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		decision := policy.Evaluate(snapshot.Documents, targetAction, target.ARN, policy.Context{
 			Values: contextValues, ResourceTags: target.TagsKnown,
 		})
+		var resourceDecision *policy.Decision
+		crossAccount := target.OwnerAccount != "" && target.OwnerAccount != principal.Account
+		if principal.Kind == request.PrincipalRoot {
+			decision.Allowed = true
+		}
+
+		if target.OwnerAccount != "" {
+			evaluated := policy.EvaluateResource(
+				policy.Document{Name: "resource-policy:" + target.ARN, JSON: target.Policy},
+				targetAction,
+				target.ARN,
+				policy.Context{
+					Values: contextValues, ResourceAccount: target.OwnerAccount, ResourceTags: target.TagsKnown,
+				},
+				&principal,
+			)
+			resourceDecision = &evaluated
+			ownerRoot := principal.Kind == request.PrincipalRoot && !crossAccount
+			bucketRecovery := c.meta.Service == consoleS3 &&
+				(op.Name == "GetBucketPolicy" || op.Name == "PutBucketPolicy" || op.Name == "DeleteBucketPolicy")
+			queueRecovery := c.meta.Service == consoleSQS &&
+				(op.Name == "GetQueueAttributes" || op.Name == "SetQueueAttributes")
+			recovery := ownerRoot && (bucketRecovery || queueRecovery)
+			if !recovery {
+				if crossAccount {
+					decision.Allowed = decision.Allowed && evaluated.Allowed
+				} else {
+					decision.Allowed = decision.Allowed || evaluated.Allowed
+				}
+
+				decision.ExplicitDeny = decision.ExplicitDeny || evaluated.ExplicitDeny
+				decision.Allowed = decision.Allowed && !decision.ExplicitDeny
+			}
+
+			decision.Unsupported = append(decision.Unsupported, evaluated.Unsupported...)
+		}
+
 		decision.Unsupported = append(decision.Unsupported, snapshot.Unsupported...)
 		if resolutionFailed {
 			decision.Allowed = false
 		}
 
 		check := AuthorizationCheck{
-			Decision:     decision,
-			Action:       targetAction,
-			Resource:     target.ARN,
-			WildcardOnly: wildcardOnly,
+			Decision:       decision,
+			Action:         targetAction,
+			Resource:       target.ARN,
+			WildcardOnly:   wildcardOnly,
+			ResourcePolicy: resourceDecision,
+			CrossAccount:   crossAccount,
 		}
 
 		record.Checks = append(record.Checks, check)
@@ -150,7 +211,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 	}
 
 	if record.Allowed {
-		record.Message = "allowed by identity-based policy"
+		record.Message = "allowed by identity-based or resource-based policy"
 	}
 
 	if !record.Allowed && mode == config.AuthorizationSoft {
@@ -179,9 +240,14 @@ func denial(arn string, check *AuthorizationCheck) string {
 		check.Action,
 		check.Resource,
 	)
-	if check.ExplicitDeny {
+	switch {
+	case check.ResourcePolicy != nil && check.ResourcePolicy.ExplicitDeny:
+		message += "with an explicit deny in a resource-based policy"
+	case check.ExplicitDeny:
 		message += "with an explicit deny in an identity-based policy"
-	} else {
+	case check.CrossAccount && check.ResourcePolicy != nil && !check.ResourcePolicy.Allowed:
+		message += "because no resource-based policy allows the " + check.Action + " action for cross-account access"
+	default:
 		message += "because no identity-based policy allows the " + check.Action + " action"
 	}
 

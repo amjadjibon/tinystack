@@ -445,6 +445,21 @@ func TestIAMAuthorizationSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// A bucket grant to the IAM role ARN also grants its assumed-role session,
+	// even though the role has no identity permission for this bucket action.
+	rootS3 := s3Client(s, "test", "us-east-1")
+	_, err = rootS3.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: new("role-policy")})
+	mustAuthorize(t, err)
+	_, err = rootS3.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+		Bucket: new("role-policy"),
+		Policy: new(`{"Statement":{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::000000000000:role/apps/reader"},
+ "Action":"s3:ListBucket","Resource":"arn:aws:s3:::role-policy",
+ "Condition":{"StringEquals":{"aws:PrincipalTag/team":"blue"}}}}`),
+	})
+	mustAuthorize(t, err)
+	_, err = roleS3.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: new("role-policy")})
+	mustAuthorize(t, err)
+
 	// GetCallerIdentity and GetSessionToken require authentication but no permissions.
 	_, err = userSTS.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	mustAuthorize(t, err)

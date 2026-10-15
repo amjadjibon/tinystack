@@ -2,6 +2,7 @@ package sqs
 
 import (
 	"context"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -62,11 +63,17 @@ func (s *Service) AuthorizationResources(
 		return nil, nil
 	}
 
-	target := catalog.AuthorizationResource{ARN: keyARN(key), TagsKnown: true}
+	target := catalog.AuthorizationResource{
+		ARN:          keyARN(key),
+		TagsKnown:    true,
+		OwnerAccount: strings.SplitN(key, "/", 2)[0],
+	}
+
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		q, _, readErr := storage.Read[queue](tx, key)
 		if q != nil {
 			target.Tags = common.CloneTags(q.Tags)
+			target.Policy = q.Settings.Policy
 		}
 
 		return readErr

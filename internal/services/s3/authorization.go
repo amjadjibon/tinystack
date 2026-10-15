@@ -13,7 +13,7 @@ import (
 )
 
 // AuthorizationResources separates bucket, object, copy, and multi-delete targets.
-func (s *Service) AuthorizationResources(
+func (s *Service) authorizationTargets(
 	ctx context.Context,
 	operation string,
 	input any,
@@ -33,7 +33,12 @@ func (s *Service) AuthorizationResources(
 	if key == "" && operation != "DeleteObjects" {
 		target := catalog.AuthorizationResource{ARN: base, TagsKnown: true}
 		err := s.store.View(ctx, func(tx storage.ReadTx) error {
-			meta, _, readErr := storage.Read[bucketMeta](tx, m.AccountID+"/"+m.Region+"/s3/"+bucket)
+			bucketKey, err := authorizationBucketKey(tx, m.AccountID, m.Region, bucket)
+			if err != nil {
+				return err
+			}
+
+			meta, _, readErr := storage.Read[bucketMeta](tx, bucketKey)
 			if meta != nil {
 				target.Tags = common.CloneTags(meta.Tags)
 			}
@@ -116,7 +121,11 @@ func (s *Service) authorizationObjectTags(
 		for i := range targets {
 			path := strings.TrimPrefix(targets[i].ARN, "arn:aws:s3:::")
 			bucket, objectName, _ := strings.Cut(path, "/")
-			bucketKey := scope.AccountID + "/" + scope.Region + "/s3/" + bucket
+			bucketKey, err := authorizationBucketKey(tx, scope.AccountID, scope.Region, bucket)
+			if err != nil {
+				return err
+			}
+
 			targets[i].TagsKnown = true
 			stored, _, err := storage.Read[object](tx, bucketKey+"/o/"+objectName)
 			if err != nil {
@@ -147,4 +156,58 @@ func (s *Service) authorizationObjectTags(
 
 		return nil
 	})
+}
+
+// AuthorizationResources snapshots owner and policy alongside each resolved target.
+func (s *Service) AuthorizationResources(
+	ctx context.Context,
+	operation string,
+	input any,
+) ([]catalog.AuthorizationResource, error) {
+	targets, err := s.authorizationTargets(ctx, operation, input)
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		for i := range targets {
+			bucket, _, _ := strings.Cut(strings.TrimPrefix(targets[i].ARN, "arn:aws:s3:::"), "/")
+			key, resolveErr := authorizationBucketKey(tx, m.AccountID, m.Region, bucket)
+			if resolveErr != nil {
+				return resolveErr
+			}
+
+			targets[i].OwnerAccount = strings.SplitN(key, "/", 2)[0]
+			meta, _, readErr := storage.Read[bucketMeta](tx, key)
+			if readErr != nil {
+				return readErr
+			}
+
+			if meta != nil {
+				targets[i].Policy = meta.Policy
+			}
+		}
+
+		return nil
+	})
+	return targets, err
+}
+
+func authorizationBucketKey(tx storage.ReadTx, account, region, bucket string) (string, error) {
+	var index bucketIndex
+	found, err := readJSON(tx, indexPrefix+bucket, &index)
+	if err != nil {
+		return "", err
+	}
+
+	if found {
+		account, region = index.Account, index.Region
+	}
+
+	return account + "/" + region + "/s3/" + bucket, nil
 }

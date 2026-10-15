@@ -10,12 +10,12 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/common"
+	iampolicy "github.com/amjadjibon/tinystack/internal/services/iam/policy"
 	"github.com/amjadjibon/tinystack/internal/services/policydoc"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// attrPolicy is the queue's access policy, stored as sent and never
-// evaluated: TinyStack scopes queues to their account instead.
+// attrPolicy is the queue access policy evaluated by the gateway.
 const (
 	attrPolicy = "Policy"
 	maxPolicy  = 20 * 1024
@@ -32,6 +32,10 @@ func (st *settings) policy(v string) error {
 	var parsed map[string]json.RawMessage
 	if len(v) > maxPolicy || json.Unmarshal([]byte(v), &parsed) != nil || parsed["Statement"] == nil {
 		return awserror.New("InvalidAttributeValue", "Invalid value for the parameter Policy.")
+	}
+
+	if err := iampolicy.ValidateResource(v); err != nil {
+		return awserror.New("InvalidAttributeValue", err.Error())
 	}
 
 	st.Policy = v

@@ -1,6 +1,6 @@
 // Package policydoc adds and removes the labeled statements of resource-based
 // policies that SQS's and SNS's AddPermission and RemovePermission manage
-// (policies are stored, never evaluated), and matches the wildcard patterns
+// (SQS policies are evaluated by the gateway), and matches the wildcard patterns
 // of the policies TinyStack does evaluate: STS trust policies and IoT
 // policies.
 package policydoc
