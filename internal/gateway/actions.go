@@ -283,9 +283,9 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, sfn := s.services[consoleSFN]
 		_, ec2 := s.services[consoleEC2]
 		_, secretsmanager := s.services[consoleSecretsManager]
-		_, consoleBudgetsEnabled := s.services[consoleBudgets]
-		_, consoleCostExplorerEnabled := s.services[consoleCostExplorer]
-		_, consoleCUREnabled := s.services[consoleCUR]
+		_, budgets := s.services[consoleBudgets]
+		_, costexplorer := s.services[consoleCostExplorer]
+		_, cur := s.services[consoleCUR]
 		_, rds := s.services[consoleRDS]
 		accounts := []string{s.cfg.Defaults.Account}
 		for _, account := range s.cfg.Identity.Accounts {
@@ -316,9 +316,9 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleSFN:            sfn,
 			consoleEC2:            ec2,
 			consoleSecretsManager: secretsmanager,
-			consoleBudgets:        consoleBudgetsEnabled,
-			consoleCostExplorer:   consoleCostExplorerEnabled,
-			consoleCUR:            consoleCUREnabled,
+			consoleBudgets:        budgets,
+			consoleCostExplorer:   costexplorer,
+			consoleCUR:            cur,
 			consoleRDS:            rds,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 		}
