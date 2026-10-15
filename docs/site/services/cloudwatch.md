@@ -23,7 +23,9 @@ See the [implemented feature catalogue](catalogue.md#cloudwatch-metrics-and-alar
 
 - No anomaly detection, Metrics Insights, metric streams or insight rules.
 - No EC2/Systems Manager actions or alarm mute rules.
-- Services do not automatically publish AWS namespace metrics.
+- Automatic AWS namespace publication is limited to fixture-backed billing metrics; public PutMetricData still rejects AWS/ namespaces.
+- Billing uses Unit None and Currency=USD, with ServiceName=AmazonS3 only for the verified S3 fixture label; other services contribute only to the total, with no linked-account series or real AWS bill calculation.
+- Billing samples use publish time, refresh on a one-second worker within minute slots, and emit one final zero after last-fixture deletion; periods below 60 seconds and AWS billing refresh delays are not reproduced.
 - Local retention is 15 days for datapoints and 30 days for alarm history.
 - Verify mode exposes alarm and dashboard inventory; metric reads, configurations and management require signed CLI/SDK requests.
 - Console graphs support up to ten selected metrics and 10,000 data points; partial results require a narrower range or larger period.
@@ -110,5 +112,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cloudwatch)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cloudwatch/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cloudwatch.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
+- SDK integration examples: [cloudwatch_billing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_billing_test.go), [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

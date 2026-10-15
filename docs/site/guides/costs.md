@@ -231,3 +231,52 @@ is separate and transient. Markers and completed/failed jobs remain until the bu
 a delivery already in flight may still reach its destination. Notification/subscriber deletion does not cancel
 an already committed job. Existing limits remain five notifications per budget and ten EMAIL plus one SNS
 subscriber per notification. No real billing data, forecasts, budget actions or cross-account delivery are added.
+
+## Billing alarms
+
+Loading fixtures enables local CloudWatch `AWS/Billing` / `EstimatedCharges` samples for that account in
+**us-east-1 only**. The total has exactly `Currency=USD` and `Unit=None`. Other Regions and accounts without
+fixtures receive no billing samples. The value is the exact decimal sum of fixture `UnblendedCost` whose start
+falls within the current UTC month and before publish time, including negative credits and both estimated and
+final lines. Future lines are excluded until their start time passes. Conversion to float64 happens only when
+writing the CloudWatch datapoint. These are fixture totals, not a calculated AWS bill.
+
+For per-service alarms, `Amazon Simple Storage Service` maps to `ServiceName=AmazonS3`, with `Currency=USD`.
+AWS's [Cost Explorer CLI example](https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html)
+establishes the S3 SERVICE label, and its
+[billing metric example](https://aws.amazon.com/blogs/developer/monitoring-your-estimated-costs-with-windows-powershell/)
+establishes the short billing name and dimension sets. Other service labels contribute to the total only: no
+unverified mapping or linked-account series is invented. Removing S3 from all fixtures emits one zero for its
+previous service series; a historical S3 fixture keeps publishing a zero S3 series in months without S3 charges.
+
+A managed background worker checks an account index every second. It publishes once per UTC minute and promptly
+on fixture changes, including multiple observed changes in the same minute. Claims and metrics commit together,
+so an unchanged sampling slot is deduplicated across workers and restarts. Samples use **publish time**, even when
+fixture dates are older than metric retention. This local cadence keeps samples in alarm periods of 60 seconds
+or longer without storing a new point every second; high-resolution billing alarms below 60 seconds are not
+supported by this cadence. AWS refreshes billing data only periodically; see the
+[AWS billing alarm guide](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html).
+
+Use `Maximum` for this cumulative metric. With an existing SNS topic, this creates a one-datapoint local alarm:
+
+```sh
+aws --endpoint-url "$TINYSTACK_ENDPOINT_URL" --region us-east-1 cloudwatch put-metric-alarm \
+  --alarm-name monthly-cost --namespace AWS/Billing --metric-name EstimatedCharges \
+  --dimensions Name=Currency,Value=USD --unit None \
+  --statistic Maximum --period 60 --evaluation-periods 1 --datapoints-to-alarm 1 \
+  --threshold 80 --comparison-operator GreaterThanThreshold \
+  --alarm-actions "$SNS_TOPIC_ARN"
+```
+
+For an S3-only alarm, add `Name=ServiceName,Value=AmazonS3` to `--dimensions`. The existing CloudWatch evaluator
+records state/history and delivers SNS actions, including SNS-to-SQS subscriptions. Creating a billing alarm
+neither creates costs nor bypasses public `PutMetricData`'s rejection of reserved `AWS/` namespaces.
+
+Totals reset at UTC month boundaries. A `Maximum` window spanning the previous month's samples can still show
+its high value until those samples leave the window. The same applies to downward fixture corrections. Empty
+fixtures publish zero each minute; deleting the last fixture publishes **one final zero** for the total and
+previous service series, then stops. The final zero preserves a correction without manufacturing ongoing usage
+for an account with no fixtures. It does not guarantee an immediate alarm recovery: a `Maximum` window can retain
+a higher sample, and subsequent periods without samples follow the alarm's missing-data setting. Never-seeded
+accounts publish nothing. `POST /_tinystack/reset` clears fixtures, samples, metric listings and sampling claims
+atomically; it emits no final zero. Normal CloudWatch datapoint retention remains 15 days.

@@ -341,6 +341,7 @@ Record metrics, evaluate alarms, and exercise local monitoring integrations.
 - Metric/composite alarms, alarm history and dashboards.
 - Background evaluation and state-change EventBridge events.
 - SNS, Lambda and Auto Scaling actions through the caller.
+- Fixture-backed AWS/Billing EstimatedCharges in us-east-1: current UTC month USD total and verified AmazonS3 service dimension, sampled each minute and after fixture changes.
 - AWS-style console for scoped metric selection and graphs, explicit custom metric publication, metric/composite alarm creation and editing, actions and state tests, paginated history, tags, and dashboard JSON editing with metric/text previews.
 
 [Supported operations](cloudwatch.md#supported-operations) · [Limitations](cloudwatch.md#limitations-and-future-work)
