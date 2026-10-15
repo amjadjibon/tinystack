@@ -3,6 +3,7 @@ import {
 	Container,
 	Header,
 	SpaceBetween,
+	StatusIndicator,
 	Table,
 } from "@cloudscape-design/components";
 import { useState } from "react";
@@ -71,12 +72,20 @@ export function BudgetNotifications({
 			<SpaceBetween size="l">
 				{notifications(resource).map((row: BudgetNotification) => {
 					const n = row.Notification;
+					const state = n.NotificationState as string | undefined;
 					return (
 						<Container
 							key={JSON.stringify(n)}
 							header={
 								<Header
 									variant="h3"
+									info={
+										state === "ALARM" ? (
+											<StatusIndicator type="error">In alarm</StatusIndicator>
+										) : state === "OK" ? (
+											<StatusIndicator type="success">OK</StatusIndicator>
+										) : undefined
+									}
 									actions={
 										<SpaceBetween direction="horizontal" size="xs">
 											<Button

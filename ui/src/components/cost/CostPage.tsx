@@ -31,6 +31,7 @@ import {
 } from "#/lib/cost";
 import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
+import { BudgetAlerts } from "./BudgetAlerts";
 import { BudgetForm } from "./BudgetForm";
 import { BudgetNotifications } from "./BudgetNotifications";
 import { BudgetDetails, BudgetSpend } from "./BudgetSpend";
@@ -357,6 +358,7 @@ function CostRecords({
 									onChanged={changed}
 								/>
 							)}
+							{service === "budgets" && <BudgetAlerts arn={selected.arn} />}
 							<ConsoleTags
 								tags={selected.tags ?? {}}
 								enabled={enabled}
