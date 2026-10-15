@@ -144,7 +144,7 @@ warning, or trust the CA after exporting it with
 | Piece | File |
 | --- | --- |
 | Authelia: one client `tinystack-console`, `one_factor`, PKCE `S256` required, scopes `openid profile email groups`, a claims policy that puts `groups`, `email` and names in the ID token (Authelia 4.39 omits them otherwise), an RSA signing key that the `keygen` service generates on first start | `authelia/configuration.yml`, `compose.yml` |
-| Users `admin` (`platform-admins`, password `admin-dev-password`) and `dev` (`team-b-dev`, password `dev-dev-password`) | `authelia/users.yml` |
+| Users `admin` (`platform-admins`, password `admin`) and `dev` (`team-b-dev`, password `dev`) | `authelia/users.yml` |
 | Client secret: hashed (PBKDF2) in Authelia's config, plain text for TinyStack's `client_secret_file` | `authelia/configuration.yml`, `secrets/oidc-client-secret` |
 | TinyStack: `verify`, `enforce`, `claim: groups`, both mappings | `tinystack.yaml` |
 | Roles `Admin` (everything, account `000000000000`) and `Developer` (S3 and SQS only, account `111111111111`), created by a ready hook | `init/ready.d/10-sso-roles.sh` |

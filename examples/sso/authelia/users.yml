@@ -1,7 +1,7 @@
 # DEVELOPMENT ONLY. Do not reuse these accounts or passwords anywhere else.
 #
-#   admin / admin-dev-password   group platform-admins -> role Admin (administrator)
-#   dev   / dev-dev-password     group team-b-dev      -> role Developer (S3 and SQS only)
+#   admin / admin   group platform-admins -> role Admin (administrator)
+#   dev   / dev     group team-b-dev      -> role Developer (S3 and SQS only)
 #
 # The passwords are argon2id digests, as Authelia's file backend stores them. Make new ones with
 #   docker run --rm authelia/authelia:4.39.28 authelia crypto hash generate argon2 --password '<password>'
@@ -9,14 +9,14 @@ users:
   admin:
     disabled: false
     displayname: 'Ada Admin'
-    password: '$argon2id$v=19$m=65536,t=3,p=4$lhRtxBPQWEwSs91lCv1ixg$GI47YX/N9GZXT7sMcyoEWY2J9p7h+SoBxxTFn0np8CQ'
+    password: '$argon2id$v=19$m=65536,t=3,p=4$ZcOqV1WSV9bWNZShjTluDQ$1jnqbsZZzTS+K29NibqhCSglbzHYzcM5QKqMT0tYsso'
     email: 'admin@example.test'
     groups:
       - 'platform-admins'
   dev:
     disabled: false
     displayname: 'Dev Developer'
-    password: '$argon2id$v=19$m=65536,t=3,p=4$vEETdwxa32hHpDZRUkxJtA$JrfyyJuoWJTzphIOumXMN0K91HUqdyiqPkiV69nzbsg'
+    password: '$argon2id$v=19$m=65536,t=3,p=4$UmkGG8YEC29mzI/bnySFuA$wQHm/AmiFoZhy8tpsyNBRRE8snVhnjIzPqQrCw6QKAk'
     email: 'dev@example.test'
     groups:
       - 'team-b-dev'

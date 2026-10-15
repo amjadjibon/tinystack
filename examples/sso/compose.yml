@@ -3,8 +3,8 @@
 #   cd examples/sso && docker compose up --build
 #
 # Open http://127.0.0.1:4567 (not localhost) and choose "Sign in with SSO". Sign in as
-#   dev   / dev-dev-password     (S3 and SQS only)       or
-#   admin / admin-dev-password   (administrator)
+#   dev   / dev     (S3 and SQS only)       or
+#   admin / admin   (administrator)
 # Your browser must accept the certificate of https://auth.tinystack.localhost:9443 once; see
 # docs/site/guides/sso.md. docker compose down -v resets everything.
 name: tinystack-sso
