@@ -190,7 +190,5 @@ func Sum(lines []Line) string {
 	return s
 }
 
-// BillingIndexKey is global: fixture Regions do not constrain billing totals.
-func BillingIndexKey(scope request.Scope) string {
-	return BillingIndexPrefix + scope.AccountID + "//billing"
-}
+// BillingIndexKey marks scope's account for billing samples; fixture Regions do not constrain billing totals.
+func BillingIndexKey(scope request.Scope) string { return BillingIndexPrefix + scope.AccountID }

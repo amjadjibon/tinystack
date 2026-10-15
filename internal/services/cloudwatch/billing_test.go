@@ -42,13 +42,10 @@ func TestBillingSampling(t *testing.T) {
 				{Start: "2026-09-30", Service: "unmapped", UnblendedCost: "999"},
 				{Start: "2026-11-01", Service: "unmapped", UnblendedCost: "888"},
 			}}}
-			write := func(dirty bool) {
+			write := func() {
 				t.Helper()
 				if err := store.Update(ctx, func(tx storage.WriteTx) error {
-					if dirty {
-						tx.Put(costdata.BillingIndexKey(scope), []byte("dirty"))
-					}
-
+					tx.Put(costdata.BillingIndexKey(scope), []byte("dirty"))
 					return storage.Write(tx, fixtureKey, fixture)
 				}); err != nil {
 					t.Fatal(err)
@@ -78,9 +75,7 @@ func TestBillingSampling(t *testing.T) {
 				}
 			}
 
-			// Upgrade from phase B: existing fixtures have no billing index yet.
-			write(false)
-			s.resumeBilling(ctx)
+			write()
 			s.visitBilling(ctx)
 			got := points()
 			if len(got) != 1 || got[0].Max != 10 || got[0].T != float64(now.Unix()) || got[0].Unit != unitNone {
@@ -112,7 +107,7 @@ func TestBillingSampling(t *testing.T) {
 
 			// Dirty revisions publish promptly, even within an already sampled minute.
 			fixture.Lines[0].UnblendedCost = "20.1"
-			write(true)
+			write()
 			sample()
 			sample()
 			got = points()
@@ -130,7 +125,7 @@ func TestBillingSampling(t *testing.T) {
 
 			// Remove the future row: the new month's total becomes zero, keeping the fixture.
 			fixture.Lines = fixture.Lines[:4]
-			write(true)
+			write()
 			sample()
 			metricScope := request.Scope{AccountID: scope.AccountID, Region: "us-east-1"}
 			queryCtx := request.WithMetadata(ctx, request.Metadata{Scope: metricScope})
@@ -152,7 +147,7 @@ func TestBillingSampling(t *testing.T) {
 
 			// Empty fixtures keep publishing zero totals, but removed service series stop after one zero.
 			fixture.Lines = nil
-			write(true)
+			write()
 			sample()
 			now = now.Add(time.Minute)
 			sample()

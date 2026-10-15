@@ -21,36 +21,11 @@ type billingSample struct {
 	Slot     int64
 }
 
-// resumeBilling indexes phase B fixtures which predate the billing publisher.
-func (s *Service) resumeBilling(ctx context.Context) {
-	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		for _, key := range tx.Keys("") {
-			account, region, rest, ok := storage.Scoped(key, "costdata")
-			if !ok || region != "" || !strings.HasPrefix(rest, "fixture/") {
-				continue
-			}
-
-			index := costdata.BillingIndexKey(request.Scope{AccountID: account})
-			if _, exists := tx.Get(index); !exists {
-				tx.Put(index, []byte("dirty"))
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		s.logger.Warn("indexing billing fixtures failed", "error", err)
-	}
-}
-
 func (s *Service) visitBilling(ctx context.Context) {
 	var accounts []string
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, key := range tx.Keys(costdata.BillingIndexPrefix) {
-			account, ok := strings.CutSuffix(strings.TrimPrefix(key, costdata.BillingIndexPrefix), "//billing")
-			if ok && account != "" && !strings.Contains(account, "/") {
-				accounts = append(accounts, account)
-			}
+			accounts = append(accounts, strings.TrimPrefix(key, costdata.BillingIndexPrefix))
 		}
 
 		return nil
