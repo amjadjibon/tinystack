@@ -169,8 +169,7 @@ Limit rules:
 - Absolute alerts can fire without one; their message reports the budgeted amount as unavailable.
 
 These comparisons follow the
-[AWS Notification contract](
-  https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html),
+[AWS Notification contract](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html),
 whose example describes going over $160 on a $200 budget at 80 percent.
 
 Alert lifecycle and states:
@@ -187,11 +186,9 @@ Alert lifecycle and states:
 - Inactive budgets report OK.
 
 AWS documents
-[once-per-period actual alerts](
-  https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-best-practices.html)
+[once-per-period actual alerts](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-best-practices.html)
 and describes
-[ALARM as a passed threshold](
-  https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html).
+[ALARM as a passed threshold](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_budgets_Notification.html).
 The latched state after a credit is TinyStack's local rule; AWS's reference does not specify that recovery case.
 AWS refreshes billing data at least daily; the local one-second fixture cadence is deliberate.
 
@@ -205,8 +202,7 @@ SNS delivery rules:
 - Only standard topics in the budget's account are supported.
 - Missing, malformed, FIFO and cross-account topics become recorded delivery failures.
 - AWS also requires
-  [same-account topics and a Budgets topic policy](
-  https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-sns-policy.html).
+  [same-account topics and a Budgets topic policy](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-sns-policy.html).
 - TinyStack stores SNS policies but does not enforce service-principal authorization; keep portable policies in IaC.
 - SNS acceptance is a successful publish attempt, not proof that every subscription received the message. SNS logs
   its own downstream outcomes separately.
@@ -232,8 +228,7 @@ TinyStack fixture-backed budget alert.
 ```
 
 This approximates the subject and fields shown in an
-[AWS notification example](
-https://d1.awsstatic.com/events/Summits/cdmxsummit24/DEV207_10Errores_V2_CDMXSummit_20240708.pdf)
+[AWS notification example](https://d1.awsstatic.com/events/Summits/cdmxsummit24/DEV207_10Errores_V2_CDMXSummit_20240708.pdf)
 and the plain-text format in the
 [AWS sample cost-event integration](https://github.com/aws-samples/sample-aws-tailored-cost-events-teams).
 It is a local fixture alert, without AWS HTML styling, masked accounts, console/unsubscribe links or real mail.
@@ -298,8 +293,7 @@ Per-service alarms:
 - AWS's [Cost Explorer CLI example](https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html)
   establishes the S3 SERVICE label.
 - The
-  [billing metric example](
-  https://aws.amazon.com/blogs/developer/monitoring-your-estimated-costs-with-windows-powershell/)
+  [billing metric example](https://aws.amazon.com/blogs/developer/monitoring-your-estimated-costs-with-windows-powershell/)
   establishes the short billing name and dimension sets.
 - Other service labels contribute to the total only: no unverified mapping or linked-account series is invented.
 - Removing S3 from all fixtures emits one zero for its previous service series.
@@ -315,8 +309,7 @@ Publishing schedule:
 - This local cadence keeps samples in alarm periods of 60 seconds or longer without storing a new point every second.
 - High-resolution billing alarms below 60 seconds are not supported by this cadence.
 - AWS refreshes billing data only periodically; see the
-  [AWS billing alarm guide](
-  https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html).
+  [AWS billing alarm guide](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html).
 
 Use `Maximum` for this cumulative metric. With an existing SNS topic, this creates a one-datapoint local alarm:
 
@@ -352,8 +345,8 @@ Month boundaries and lifecycle:
 
 ## Terraform example
 
-Configure the AWS provider to point at TinyStack for the used services (budgets, cloudwatch, and sns). Note that
-billing alarms must be in us-east-1.
+Point the AWS provider at TinyStack for the services used: budgets, cloudwatch, sns, and sts, which the provider
+calls to check credentials. Billing alarms must be in us-east-1.
 
 ```hcl
 provider "aws" {
@@ -366,6 +359,7 @@ provider "aws" {
     budgets    = "http://127.0.0.1:4566"
     cloudwatch = "http://127.0.0.1:4566"
     sns        = "http://127.0.0.1:4566"
+    sts        = "http://127.0.0.1:4566"
   }
 }
 
