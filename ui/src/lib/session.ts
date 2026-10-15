@@ -237,11 +237,18 @@ export async function consoleActionFetch(
 // adminFetch calls one of TinyStack's own endpoints, such as the request
 // inspector. With SSO configured these accept only signed requests from root
 // credentials or a signed-in person, so a connected session signs them.
-export async function adminFetch(path: string, method = "GET") {
+export async function adminFetch(path: string, method = "GET", body?: unknown) {
 	const session = active;
-	if (!session) return fetch(path, { method });
+	const payload = body === undefined ? "" : JSON.stringify(body);
+	if (!session)
+		return fetch(path, {
+			method,
+			...(payload
+				? { headers: { "Content-Type": "application/json" }, body: payload }
+				: {}),
+		});
 	return signedFetch(
-		"",
+		payload,
 		"tinystack",
 		session.region,
 		session.credentials,

@@ -82,7 +82,20 @@ test("SSO session handoff, signing and sign-out keep credentials in memory", asy
 		);
 		await adminFetch("/_tinystack/requests");
 		assert.match(authorization(requests.at(-1)), /\/tinystack\/aws4_request/);
+		const fixture = { provenance: "console test", lines: [] };
+		await adminFetch("/_tinystack/costs/fixtures/test", "PUT", fixture);
+		const put = requests.at(-1);
+		assert.match(authorization(put), /\/tinystack\/aws4_request/);
+		assert.equal(put?.init?.method, "PUT");
+		assert.equal(put?.init?.body, JSON.stringify(fixture));
+		assert.equal(
+			new Headers(put?.init?.headers).get("content-type"),
+			"application/json",
+		);
 		assert.equal(await signOutSSO(), "https://idp.example/logout");
+		await adminFetch("/_tinystack/costs/fixtures/test", "PUT", fixture);
+		assert.equal(requests.at(-1)?.init?.body, JSON.stringify(fixture));
+		assert.equal(authorization(requests.at(-1)), "");
 		await consoleActionFetch(action, "s3", account);
 		assert.equal(authorization(requests.at(-1)), "", "signed out");
 		waiting = true;

@@ -85,11 +85,25 @@ func TestConsoleCostSignaturesAndScope(t *testing.T) {
 	for _, tc := range []struct{ service, signing, operation string }{
 		{"budgets", "budgets", "DescribeBudgets"},
 		{"costexplorer", "ce", "GetAnomalyMonitors"},
+		{"costexplorer", "ce", "GetCostAndUsage"},
+		{"costexplorer", "ce", "GetDimensionValues"},
+		{"costexplorer", "ce", "GetTags"},
 		{"costandusagereportservice", "cur", "DescribeReportDefinitions"},
 	} {
 		t.Run(tc.service, func(t *testing.T) {
 			for _, account := range []string{"000000000000", "111111111111"} {
 				input := map[string]any{}
+				switch tc.operation {
+				case "GetCostAndUsage", "GetDimensionValues", "GetTags":
+					input["TimePeriod"] = map[string]any{"Start": "2026-10-01", "End": "2026-10-16"}
+					if tc.operation == "GetCostAndUsage" {
+						input["Granularity"] = "DAILY"
+						input["Metrics"] = []string{"UnblendedCost"}
+					}
+					if tc.operation == "GetDimensionValues" {
+						input["Dimension"] = "SERVICE"
+					}
+				}
 				if tc.service == "budgets" {
 					input["AccountId"] = account
 				}
@@ -124,6 +138,39 @@ func TestConsoleCostSignaturesAndScope(t *testing.T) {
 				"000000000000", "", map[string]any{}), http.StatusForbidden)
 			consoleResponse(t, srv, consoleLambdaRequest(t, srv, tc.service, "UnsupportedOperation",
 				"000000000000", "", map[string]any{}), http.StatusBadRequest)
+		})
+	}
+}
+
+func TestConsoleCostQueries(t *testing.T) {
+	srv := server(t)
+	period := map[string]any{"Start": "2026-09-01", "End": "2026-11-01"}
+	for _, tc := range []struct {
+		operation string
+		input     map[string]any
+		field     string
+	}{
+		{"GetCostAndUsage", map[string]any{
+			"TimePeriod": period, "Granularity": "DAILY", "Metrics": []string{"UnblendedCost"},
+		}, "ResultsByTime"},
+		{"GetDimensionValues", map[string]any{"TimePeriod": period, "Dimension": "SERVICE"}, "ReturnSize"},
+		{"GetTags", map[string]any{"TimePeriod": period}, "Tags"},
+	} {
+		t.Run(tc.operation, func(t *testing.T) {
+			out := consoleResponse(t, srv, consoleLambdaRequest(t, srv, "costexplorer", tc.operation,
+				"000000000000", "", tc.input), http.StatusOK)["output"].(map[string]any)
+			if _, ok := out[tc.field]; !ok {
+				t.Fatalf("missing %s: %+v", tc.field, out)
+			}
+			if tc.operation == "GetCostAndUsage" {
+				token, ok := out["NextPageToken"].(string)
+				if !ok || token == "" {
+					t.Fatal("expected paginated daily periods")
+				}
+				tc.input["NextPageToken"] = token
+				consoleResponse(t, srv, consoleLambdaRequest(t, srv, "costexplorer", tc.operation,
+					"000000000000", "", tc.input), http.StatusOK)
+			}
 		})
 	}
 }

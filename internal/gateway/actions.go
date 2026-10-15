@@ -81,6 +81,9 @@ var consoleBudgetsOperations = strings.Fields(`
 `)
 
 var consoleCostExplorerOperations = strings.Fields(`
+	GetCostAndUsage
+	GetDimensionValues
+	GetTags
 	CreateAnomalyMonitor
 	CreateAnomalySubscription
 	CreateCostCategoryDefinition

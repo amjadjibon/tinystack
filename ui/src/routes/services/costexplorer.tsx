@@ -4,11 +4,15 @@ export const Route = createFileRoute("/services/costexplorer")({
 	validateSearch: (search: Record<string, unknown>) => ({
 		account: String(search.account ?? ""),
 		name: String(search.name ?? ""),
-		section: ["anomalymonitor", "anomalysubscription", "costcategory"].includes(
-			String(search.section),
-		)
+		section: [
+			"usage",
+			"data",
+			"anomalymonitor",
+			"anomalysubscription",
+			"costcategory",
+		].includes(String(search.section))
 			? String(search.section)
-			: "anomalymonitor",
+			: "usage",
 	}),
 	component: Page,
 });

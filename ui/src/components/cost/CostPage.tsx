@@ -33,10 +33,15 @@ import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
 import { BudgetForm } from "./BudgetForm";
 import { BudgetNotifications } from "./BudgetNotifications";
+import { BudgetDetails, BudgetSpend } from "./BudgetSpend";
+import { CostData } from "./CostData";
+import { CostUsage } from "./CostUsage";
 import { ExplorerForm } from "./ExplorerForm";
 import { ReportForm } from "./ReportForm";
 
 export const costSections = [
+	{ id: "usage", label: "Cost and usage" },
+	{ id: "data", label: "Cost data" },
 	{ id: "anomalymonitor", label: "Anomaly monitors" },
 	{ id: "anomalysubscription", label: "Anomaly subscriptions" },
 	{ id: "costcategory", label: "Cost categories" },
@@ -51,6 +56,7 @@ export function CostPage({
 	name: string;
 }) {
 	const { account, inventory, capabilities, canWrite } = useScope();
+	const navigate = useNavigate();
 	const title =
 		service === "budgets"
 			? "AWS Budgets"
@@ -105,9 +111,9 @@ export function CostPage({
 				<SpaceBetween size="l">
 					<Alert type="info">
 						{service === "budgets"
-							? "TinyStack stores budget, notification and subscriber definitions. It does not calculate spend or deliver alerts."
+							? "Actual spend comes from loaded cost data for supported budgets. Forecasts and notification delivery are not implemented."
 							: service === "costexplorer"
-								? "TinyStack stores anomaly monitor, subscription and cost category definitions. It does not evaluate these definitions or deliver alerts."
+								? "Costs come from loaded cost data. Forecasts, anomaly evaluation and notification delivery are not implemented."
 								: "TinyStack stores report definitions. It does not calculate costs or deliver report files to S3."}
 					</Alert>
 					{(inventory.error || capabilities.error) && (
@@ -126,22 +132,42 @@ export function CostPage({
 							account using Console session in the top bar.
 						</Alert>
 					)}
-					<CostRecords
-						key={`${service}/${account}/${section}/${name}/${enabled}`}
-						service={service}
-						account={account}
-						section={section}
-						name={name}
-						enabled={enabled}
-						resources={(inventory.data ?? []).filter(
-							(r) =>
-								r.service === service &&
-								r.account === account &&
-								r.type === section,
-						)}
-						loading={inventory.loading}
-						reload={inventory.reload}
-					/>
+					{service === "costexplorer" &&
+					(section === "usage" || section === "data") ? (
+						<>
+							<Tabs
+								activeTabId={section}
+								onChange={({ detail }) => {
+									void navigate({
+										href: costHref(service, account, detail.activeTabId),
+									});
+								}}
+								tabs={costSections}
+							/>
+							{section === "usage" ? (
+								<CostUsage key={account} account={account} enabled={enabled} />
+							) : (
+								<CostData key={account} />
+							)}
+						</>
+					) : (
+						<CostRecords
+							key={`${service}/${account}/${section}/${name}/${enabled}`}
+							service={service}
+							account={account}
+							section={section}
+							name={name}
+							enabled={enabled}
+							resources={(inventory.data ?? []).filter(
+								(r) =>
+									r.service === service &&
+									r.account === account &&
+									r.type === section,
+							)}
+							loading={inventory.loading}
+							reload={inventory.reload}
+						/>
+					)}
 				</SpaceBetween>
 			}
 		/>
@@ -170,6 +196,34 @@ function CostRecords({
 		follow = useFollow();
 	const [dialog, setDialog] = useState<"create" | "edit" | "delete">();
 	const [notice, setNotice] = useState("");
+	const [budgetConfigs, setBudgetConfigs] = useState<
+		Record<string, Record<string, unknown>>
+	>({});
+	const [spendError, setSpendError] = useState("");
+	useEffect(() => {
+		if (service !== "budgets" || !enabled || !resources.length) return;
+		let current = true;
+		setBudgetConfigs({});
+		setSpendError("");
+		(async () => {
+			const configs: Record<string, Record<string, unknown>> = {};
+			let token: string | undefined;
+			do {
+				const page = (await costCall("budgets", account, "DescribeBudgets", {
+					AccountId: account,
+					...(token ? { NextToken: token } : {}),
+				})) as { Budgets?: Record<string, unknown>[]; NextToken?: string };
+				for (const b of page.Budgets ?? []) configs[String(b.BudgetName)] = b;
+				token = page.NextToken;
+			} while (token);
+			if (current) setBudgetConfigs(configs);
+		})().catch((e) => {
+			if (current) setSpendError(String(e));
+		});
+		return () => {
+			current = false;
+		};
+	}, [service, account, enabled, resources]);
 	const mounted = useRef(true);
 	useEffect(() => {
 		mounted.current = true;
@@ -189,7 +243,9 @@ function CostRecords({
 	const selected = resources.find((r) =>
 		service === "costexplorer" ? r.arn === name : r.name === name,
 	);
-	const config = selected ? configuration(selected) : {};
+	const config = selected
+		? (budgetConfigs[selected.name] ?? configuration(selected))
+		: {};
 	const label =
 		service === "budgets"
 			? "Budgets"
@@ -216,6 +272,11 @@ function CostRecords({
 		costCall(service, account, operation, input);
 	return (
 		<SpaceBetween size="l">
+			{spendError && (
+				<Alert type="error" header="Cannot load actual spend">
+					{spendError}
+				</Alert>
+			)}
 			{notice && (
 				<Flashbar
 					items={[
@@ -276,7 +337,11 @@ function CostRecords({
 										{ label: "Scope", value: "Global" },
 									]}
 								/>
-								<CodeBlock text={JSON.stringify(config, null, 2)} />
+								{service === "budgets" ? (
+									<BudgetDetails config={config} />
+								) : (
+									<CodeBlock text={JSON.stringify(config, null, 2)} />
+								)}
 							</Container>
 							{service === "budgets" && (
 								<BudgetNotifications
@@ -411,6 +476,15 @@ function CostRecords({
 											header: "Time unit",
 											cell: (r: Resource) =>
 												String(configuration(r).TimeUnit ?? "—"),
+										},
+										{
+											id: "spend",
+											header: "Actual spend / limit",
+											cell: (r: Resource) => (
+												<BudgetSpend
+													config={budgetConfigs[r.name] ?? configuration(r)}
+												/>
+											),
 										},
 										{
 											id: "limit",
