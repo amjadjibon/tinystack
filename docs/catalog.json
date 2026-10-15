@@ -22,7 +22,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, EC2/VPC management workflows, and account-wide Budgets, Cost Explorer definition and CUR report management, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, EC2/VPC management workflows, and account-wide Budgets with actual spend, Cost Explorer charts and fixture management, and CUR report management, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -2096,7 +2096,7 @@
         "Cost category regular and inherited-value rules, nested expressions, split charge rules, default values and effective start dates are stored and round-tripped",
         "Global account isolation with empty-Region ce ARNs, ordered token pagination, native tags and Resource Groups Tagging API integration",
         "RecordsOnly=true and ExecutionReady=false inventory, console catalogue, AWS SDK v2 cross-Region lifecycle coverage and Terraform aws_ce_anomaly_monitor, aws_ce_anomaly_subscription and aws_ce_cost_category apply/update/destroy coverage",
-        "Account-wide console tabs for anomaly monitors, subscriptions with threshold expressions, cost category JSON rules, tags and definition management",
+        "Account-wide console cost/usage charts with exact table totals, dimension/tag grouping and filters, signed cost fixture management, anomaly monitors, subscriptions, cost categories and tags",
         "Fixture-backed GetCostAndUsage (DAILY/MONTHLY UnblendedCost), GetDimensionValues and GetTags; dimension/tag expressions, up to two groups and revision-bound pagination; see guides/costs.md"
       ],
       "gaps": [

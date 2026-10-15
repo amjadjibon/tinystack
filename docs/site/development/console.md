@@ -154,9 +154,11 @@ metadata remains available without one.
 The RDS service icon is bundled locally from the official AWS Architecture Icons package
 (`Architecture-Service-Icons_07312026/Arch_Databases/32/Arch_Amazon-RDS_32.svg`), like the other service icons.
 
-## Cost definition management
+## Cost management
 
-`/services/budgets` lists account-wide budget definitions with their type, time unit, fixed limit and period.
+`/services/budgets` lists account-wide budget definitions with their type, time unit, fixed limit, period and
+actual spend versus limit. Spend is read through DescribeBudgets from loaded cost data; unsupported configurations
+show an explanation instead of a percentage.
 Create COST or USAGE budgets with monthly, quarterly or annual periods, optionally including a notification
 and email/SNS subscribers. Details show budget fields, notifications, subscribers and tags; edit the fixed limit,
 add/remove notifications or subscribers, and delete with a typed confirmation.
@@ -165,13 +167,26 @@ add/remove notifications or subscribers, and delete with a typed confirmation.
 Create dimensional or custom monitors, configure subscription threshold expressions and email/SNS addresses,
 and create/edit category rules as JSON. Details and tags are available for each definition. Monitor editing
 changes its name; subscriptions expose name, frequency, monitor ARNs, threshold expression and subscribers.
-A future cost and usage view can be added as another tab.
+The default **Cost and usage** tab queries UnblendedCost with UTC date boundaries (inclusive start, exclusive end),
+this month so far, last 7 days, last month and last 3 months presets, daily/monthly granularity, dimension or tag
+key grouping and service/Region filters. It follows every query page. A stacked bar chart and matching decimal-safe
+table show the nine largest groups by absolute net cost, combining the remainder as Other. The total row includes
+credits and preserves up to twelve fractional digits. Budget percentages use decimal-safe ratios rounded to two
+places; chart heights use floating point.
+Estimated periods are marked in the table.
+
+The **Cost data** tab lists and views fixtures, loads JSON from a file or editor, replaces an entire fixture by ID,
+and deletes after confirmation. These signed administrative requests always target the server's default account,
+even when another account is selected. Nonadministrator SSO users receive a clear access message; invalid uploads
+show the server's validation message without changing stored data. See [cost fixtures and queries](../guides/costs.md).
+Budget details show readable UTC periods, current/planned limits, filters, actual spend and percentage used,
+with the full definition in a collapsed JSON section.
 
 `/services/costandusagereportservice` lists report definitions and manages their S3 destination, time unit,
 format, compression, versioning, schema elements, artifacts and refresh settings. Reports can be modified
 or deleted, and their tags managed from details. The destination Region is part of the definition; the report
 itself belongs to the account.
 
-These pages describe stored records: TinyStack does not calculate spend, evaluate these definitions,
+Actual spend comes only from loaded fixtures. TinyStack does not forecast costs, evaluate anomaly definitions,
 deliver budget/anomaly alerts or write CUR files. Actions use the shared console bridge, signed sessions
 and IAM authorization. Account changes close open forms and return to the selected account's list.
