@@ -15,7 +15,7 @@ feature manages records or needs a Docker runtime.
 | AWS wire protocols | AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings. | [Details](../architecture/request-flow.md) |
 | Identity and resource scope | Configured access-key accounts, 12-digit access keys that are their own account ID, IAM/STS credential lookup, regional and account-wide scopes, optional SigV4 verification, and identity-policy evaluation with off, soft and enforce modes. | [Details](../architecture/identity.md) |
 | Transactional storage and persistence | Atomic callback transactions, in-memory storage, and optional SQLite commit persistence with resource reload on restart; runtime and in-flight state have separate limits. | [Details](../guides/persistence.md) |
-| Cloudscape console | AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
+| Cloudscape console | AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, EC2/VPC management workflows, and account-wide Budgets, Cost Explorer definition and CUR report management, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console. | [Details](../guides/diagnostics.md) |
 | Diagnostics | Health/resource endpoints, bounded request and delivery logs, outbound message inspection (email, SMS, Cognito codes) with LocalStack-compatible SES and SNS aliases, model-sensitive body redaction, and Prometheus request metrics. | [Details](../guides/diagnostics.md) |
 | Init hooks and reset | LocalStack-style boot, start, ready and shutdown scripts (also read from /etc/localstack/init) with a status endpoint, idempotent IAM/S3/SQS sample data in the development example config, and a POST reset endpoint that clears all stored state and can re-run the ready scripts. | [Details](../guides/init-hooks.md) |
 | CLI and SDK clients | Local endpoint overrides for AWS clients, CLI wrappers (aws, terraform, sam, cdk), and generated Go SDK-compatible APIs. | [Details](../getting-started/clients.md) |
@@ -872,6 +872,7 @@ Store budget, notification and subscriber definitions with tags; no AWS costs ar
 - CreateBudget accepts notifications with subscribers; notification identity excludes NotificationState and defaults ThresholdType to PERCENTAGE.
 - AWS-documented limits of five notifications and ten EMAIL plus one SNS subscriber per notification; duplicate definitions fail explicitly.
 - Ordered pagination, inventory with RecordsOnly=true and ExecutionReady=false, Resource Groups Tagging API integration and Terraform aws_budgets_budget lifecycle.
+- Account-wide console for fixed COST/USAGE budget creation, limit edits, notification and email/SNS subscriber management, tags and deletion.
 
 [Supported operations](budgets.md#supported-operations) · [Limitations](budgets.md#limitations-and-future-work)
 
@@ -906,6 +907,7 @@ Store account-wide anomaly monitors, anomaly subscriptions and cost category def
 - Cost category regular and inherited-value rules, nested expressions, split charge rules, default values and effective start dates are stored and round-tripped.
 - Global account isolation with empty-Region ce ARNs, ordered token pagination, native tags and Resource Groups Tagging API integration.
 - RecordsOnly=true and ExecutionReady=false inventory, console catalogue, AWS SDK v2 cross-Region lifecycle coverage and Terraform aws_ce_anomaly_monitor, aws_ce_anomaly_subscription and aws_ce_cost_category apply/update/destroy coverage.
+- Account-wide console tabs for anomaly monitors, subscriptions with threshold expressions, cost category JSON rules, tags and definition management.
 
 [Supported operations](costexplorer.md#supported-operations) · [Limitations](costexplorer.md#limitations-and-future-work)
 
@@ -920,6 +922,7 @@ Store legacy CUR report definitions and tags as account-wide records without gen
 - Unique case-sensitive report names, immutable names on modification, ordered pagination with the pinned model page size of five, and account isolation across signing Regions.
 - Native tags with the 50-tag limit, Resource Groups Tagging API integration, console inventory with RecordsOnly=true and ExecutionReady=false, and CUR us-east-1 definition ARNs.
 - AWS Go SDK v2 lifecycle, persistence and reset coverage; Terraform aws_cur_report_definition apply, refresh, update, import and destroy coverage using the cur endpoint override.
+- Account-wide console for report definition creation, modification, deletion and tags; S3 destination, format, compression, time unit, schema and artifact settings.
 
 [Supported operations](costandusagereportservice.md#supported-operations) · [Limitations](costandusagereportservice.md#limitations-and-future-work)
 

@@ -59,7 +59,7 @@ server data; error totals refer to the retained request log.
 The shared top bar provides account and Region menus. Choose a known scope from the menu or use
 **Switch account** / **Switch Region** to enter another valid account ID or Region. Selections are remembered
 in browser storage across services and reloads; explicit account/Region values in a resource link take precedence.
-Switching scope returns to the service's resource list. IAM, Route 53 and CloudFront display **Global** and retain
+Switching scope returns to the service's resource list. IAM, Route 53, CloudFront, Budgets, Cost Explorer and Cost and Usage Reports display **Global** and retain
 the selected Region for the next regional service. Service inventory tables use the selected account and Region,
 including global resources in the selected account. The all-resource and diagnostic pages remain server-wide.
 
@@ -153,3 +153,25 @@ metadata remains available without one.
 
 The RDS service icon is bundled locally from the official AWS Architecture Icons package
 (`Architecture-Service-Icons_07312026/Arch_Databases/32/Arch_Amazon-RDS_32.svg`), like the other service icons.
+
+## Cost definition management
+
+`/services/budgets` lists account-wide budget definitions with their type, time unit, fixed limit and period.
+Create COST or USAGE budgets with monthly, quarterly or annual periods, optionally including a notification
+and email/SNS subscribers. Details show budget fields, notifications, subscribers and tags; edit the fixed limit,
+add/remove notifications or subscribers, and delete with a typed confirmation.
+
+`/services/costexplorer` has separate tabs for anomaly monitors, anomaly subscriptions and cost categories.
+Create dimensional or custom monitors, configure subscription threshold expressions and email/SNS addresses,
+and create/edit category rules as JSON. Details and tags are available for each definition. Monitor editing
+changes its name; subscriptions expose name, frequency, monitor ARNs, threshold expression and subscribers.
+A future cost and usage view can be added as another tab.
+
+`/services/costandusagereportservice` lists report definitions and manages their S3 destination, time unit,
+format, compression, versioning, schema elements, artifacts and refresh settings. Reports can be modified
+or deleted, and their tags managed from details. The destination Region is part of the definition; the report
+itself belongs to the account.
+
+These pages describe stored records: TinyStack does not calculate spend, evaluate these definitions,
+deliver budget/anomaly alerts or write CUR files. Actions use the shared console bridge, signed sessions
+and IAM authorization. Account changes close open forms and return to the selected account's list.

@@ -22,7 +22,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, and EC2/VPC management workflows, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console.",
+      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, EC2/VPC management workflows, and account-wide Budgets, Cost Explorer definition and CUR report management, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, and metrics through a separately served web console.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -2095,7 +2095,8 @@
         "Subscription frequencies, monitor associations and EMAIL/SNS subscriber definitions; mutually exclusive Threshold and ThresholdExpression with atomic updates",
         "Cost category regular and inherited-value rules, nested expressions, split charge rules, default values and effective start dates are stored and round-tripped",
         "Global account isolation with empty-Region ce ARNs, ordered token pagination, native tags and Resource Groups Tagging API integration",
-        "RecordsOnly=true and ExecutionReady=false inventory, console catalogue, AWS SDK v2 cross-Region lifecycle coverage and Terraform aws_ce_anomaly_monitor, aws_ce_anomaly_subscription and aws_ce_cost_category apply/update/destroy coverage"
+        "RecordsOnly=true and ExecutionReady=false inventory, console catalogue, AWS SDK v2 cross-Region lifecycle coverage and Terraform aws_ce_anomaly_monitor, aws_ce_anomaly_subscription and aws_ce_cost_category apply/update/destroy coverage",
+        "Account-wide console tabs for anomaly monitors, subscriptions with threshold expressions, cost category JSON rules, tags and definition management"
       ],
       "gaps": [
         "Records only: no cost data, billing calculations, cost or usage queries, forecasts, recommendations, learned anomaly detection, anomaly queries, rule evaluation or notification delivery",
@@ -2117,7 +2118,8 @@
         "Round-trip destination, time unit, format, compression, schema elements, additional artifacts, refresh preferences and report versioning with model validation",
         "Unique case-sensitive report names, immutable names on modification, ordered pagination with the pinned model page size of five, and account isolation across signing Regions",
         "Native tags with the 50-tag limit, Resource Groups Tagging API integration, console inventory with RecordsOnly=true and ExecutionReady=false, and CUR us-east-1 definition ARNs",
-        "AWS Go SDK v2 lifecycle, persistence and reset coverage; Terraform aws_cur_report_definition apply, refresh, update, import and destroy coverage using the cur endpoint override"
+        "AWS Go SDK v2 lifecycle, persistence and reset coverage; Terraform aws_cur_report_definition apply, refresh, update, import and destroy coverage using the cur endpoint override",
+        "Account-wide console for report definition creation, modification, deletion and tags; S3 destination, format, compression, time unit, schema and artifact settings"
       ],
       "gaps": [
         "Records only: no AWS bills, cost calculations, cost fixtures, report files, manifests, S3 writes, Athena/Redshift/QuickSight integrations or delivery status",
@@ -2141,7 +2143,8 @@
         "Fixed and planned budget limits, legacy cost filters/types and time periods stored as configuration; calculated spend is omitted",
         "CreateBudget accepts notifications with subscribers; notification identity excludes NotificationState and defaults ThresholdType to PERCENTAGE",
         "AWS-documented limits of five notifications and ten EMAIL plus one SNS subscriber per notification; duplicate definitions fail explicitly",
-        "Ordered pagination, inventory with RecordsOnly=true and ExecutionReady=false, Resource Groups Tagging API integration and Terraform aws_budgets_budget lifecycle"
+        "Ordered pagination, inventory with RecordsOnly=true and ExecutionReady=false, Resource Groups Tagging API integration and Terraform aws_budgets_budget lifecycle",
+        "Account-wide console for fixed COST/USAGE budget creation, limit edits, notification and email/SNS subscriber management, tags and deletion"
       ],
       "gaps": [
         "No actual spend, forecasts, cost data, budget evaluation or notification delivery; caller-supplied notification state is stored without evaluation",
