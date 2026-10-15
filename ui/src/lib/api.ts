@@ -151,6 +151,9 @@ export const api = {
 		ec2: boolean;
 		secretsmanager: boolean;
 		rds: boolean;
+		budgets: boolean;
+		costexplorer: boolean;
+		costandusagereportservice: boolean;
 		requires_signature: boolean;
 		sso?: { login_url: string };
 	}> => (await get("/actions")).json(),

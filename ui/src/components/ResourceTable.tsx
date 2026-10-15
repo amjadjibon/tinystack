@@ -16,6 +16,7 @@ import { useState } from "react";
 import type { Resource } from "#/lib/api";
 import { gatewayHref } from "#/lib/apigateway";
 import { cloudwatchHref } from "#/lib/cloudwatch";
+import { costHref } from "#/lib/cost";
 import { dynamoHref } from "#/lib/dynamodb";
 import { ec2Href, ec2Kinds, ec2Sections } from "#/lib/ec2";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
@@ -33,6 +34,17 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (
+		r.service === "budgets" ||
+		r.service === "costexplorer" ||
+		r.service === "costandusagereportservice"
+	)
+		return costHref(
+			r.service,
+			r.account,
+			r.type,
+			r.service === "costexplorer" ? r.arn : r.name,
+		);
 	if (r.service === "rds")
 		return rdsHref({
 			account: r.account,

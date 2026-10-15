@@ -13,7 +13,14 @@ import { usePoll } from "./usePoll";
 
 type Scope = { account: string; region: string };
 const storageKey = "tinystack-console-scope";
-const globalServices = new Set(["iam", "route53", "cloudfront"]);
+const globalServices = new Set([
+	"iam",
+	"route53",
+	"cloudfront",
+	"budgets",
+	"costexplorer",
+	"costandusagereportservice",
+]);
 
 function rememberedScope(): Scope {
 	try {

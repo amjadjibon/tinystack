@@ -55,8 +55,62 @@ const consoleSecretsManager = "secretsmanager"
 
 const consoleRDS = "rds"
 
+const consoleBudgets = "budgets"
+
+const consoleCostExplorer = "costexplorer"
+
+const consoleCUR = "costandusagereportservice"
+
+var consoleBudgetsOperations = strings.Fields(`
+	CreateBudget
+	DescribeBudget
+	DescribeBudgets
+	UpdateBudget
+	DeleteBudget
+	CreateNotification
+	UpdateNotification
+	DeleteNotification
+	DescribeNotificationsForBudget
+	CreateSubscriber
+	UpdateSubscriber
+	DeleteSubscriber
+	DescribeSubscribersForNotification
+	TagResource
+	UntagResource
+	ListTagsForResource
+`)
+
+var consoleCostExplorerOperations = strings.Fields(`
+	CreateAnomalyMonitor
+	CreateAnomalySubscription
+	CreateCostCategoryDefinition
+	DeleteAnomalyMonitor
+	DeleteAnomalySubscription
+	DeleteCostCategoryDefinition
+	DescribeCostCategoryDefinition
+	GetAnomalyMonitors
+	GetAnomalySubscriptions
+	ListCostCategoryDefinitions
+	ListTagsForResource
+	TagResource
+	UntagResource
+	UpdateAnomalyMonitor
+	UpdateAnomalySubscription
+	UpdateCostCategoryDefinition
+`)
+
+var consoleCUROperations = strings.Fields(`
+	DeleteReportDefinition
+	DescribeReportDefinitions
+	ListTagsForResource
+	ModifyReportDefinition
+	PutReportDefinition
+	TagResource
+	UntagResource
+`)
+
 // Console actions are an explicit subset of the registered SDK operations.
-// IAM is account-wide; the region is only used when verifying signatures.
+// IAM and cost definitions are account-wide; the region is only used when verifying signatures.
 var consoleIAMOperations = strings.Fields(`
 	CreateUser GetUser UpdateUser DeleteUser TagUser UntagUser
 	CreateGroup GetGroup UpdateGroup DeleteGroup AddUserToGroup RemoveUserFromGroup ListGroupsForUser
@@ -229,6 +283,9 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, sfn := s.services[consoleSFN]
 		_, ec2 := s.services[consoleEC2]
 		_, secretsmanager := s.services[consoleSecretsManager]
+		_, consoleBudgetsEnabled := s.services[consoleBudgets]
+		_, consoleCostExplorerEnabled := s.services[consoleCostExplorer]
+		_, consoleCUREnabled := s.services[consoleCUR]
 		_, rds := s.services[consoleRDS]
 		accounts := []string{s.cfg.Defaults.Account}
 		for _, account := range s.cfg.Identity.Accounts {
@@ -259,6 +316,9 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleSFN:            sfn,
 			consoleEC2:            ec2,
 			consoleSecretsManager: secretsmanager,
+			consoleBudgets:        consoleBudgetsEnabled,
+			consoleCostExplorer:   consoleCostExplorerEnabled,
+			consoleCUR:            consoleCUREnabled,
 			consoleRDS:            rds,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 		}
@@ -355,6 +415,12 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleEC2Operations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
+	case consoleBudgets:
+		operations = consoleBudgetsOperations
+	case consoleCostExplorer:
+		operations = consoleCostExplorerOperations
+	case consoleCUR:
+		operations = consoleCUROperations
 	case consoleRDS:
 		operations = consoleRDSOperations
 	}
@@ -378,7 +444,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	regional := in.Service != consoleIAM
+	regional := in.Service != consoleIAM && in.Service != consoleBudgets &&
+		in.Service != consoleCostExplorer && in.Service != consoleCUR
 	if regional && !consoleRegion.MatchString(in.Region) {
 		s.consoleFail(
 			w,

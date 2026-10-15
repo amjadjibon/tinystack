@@ -17,7 +17,10 @@ import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServicesApigatewayRouteImport } from './routes/services/apigateway'
 import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apigatewayv2'
+import { Route as ServicesBudgetsRouteImport } from './routes/services/budgets'
 import { Route as ServicesCloudwatchRouteImport } from './routes/services/cloudwatch'
+import { Route as ServicesCostandusagereportserviceRouteImport } from './routes/services/costandusagereportservice'
+import { Route as ServicesCostexplorerRouteImport } from './routes/services/costexplorer'
 import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
 import { Route as ServicesEc2RouteImport } from './routes/services/ec2'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
@@ -74,9 +77,25 @@ const ServicesApigatewayv2Route = ServicesApigatewayv2RouteImport.update({
   path: '/services/apigatewayv2',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesBudgetsRoute = ServicesBudgetsRouteImport.update({
+  id: '/services/budgets',
+  path: '/services/budgets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesCloudwatchRoute = ServicesCloudwatchRouteImport.update({
   id: '/services/cloudwatch',
   path: '/services/cloudwatch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesCostandusagereportserviceRoute =
+  ServicesCostandusagereportserviceRouteImport.update({
+    id: '/services/costandusagereportservice',
+    path: '/services/costandusagereportservice',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ServicesCostexplorerRoute = ServicesCostexplorerRouteImport.update({
+  id: '/services/costexplorer',
+  path: '/services/costexplorer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesDynamodbRoute = ServicesDynamodbRouteImport.update({
@@ -163,7 +182,10 @@ export interface FileRoutesByFullPath {
   '/resources': typeof ResourcesRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
+  '/services/costexplorer': typeof ServicesCostexplorerRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -189,7 +211,10 @@ export interface FileRoutesByTo {
   '/resources': typeof ResourcesRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
+  '/services/costexplorer': typeof ServicesCostexplorerRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -216,7 +241,10 @@ export interface FileRoutesById {
   '/resources': typeof ResourcesRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
+  '/services/costexplorer': typeof ServicesCostexplorerRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -244,7 +272,10 @@ export interface FileRouteTypes {
     | '/resources'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/budgets'
     | '/services/cloudwatch'
+    | '/services/costandusagereportservice'
+    | '/services/costexplorer'
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/eventbridge'
@@ -270,7 +301,10 @@ export interface FileRouteTypes {
     | '/resources'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/budgets'
     | '/services/cloudwatch'
+    | '/services/costandusagereportservice'
+    | '/services/costexplorer'
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/eventbridge'
@@ -296,7 +330,10 @@ export interface FileRouteTypes {
     | '/resources'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/budgets'
     | '/services/cloudwatch'
+    | '/services/costandusagereportservice'
+    | '/services/costexplorer'
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/eventbridge'
@@ -323,7 +360,10 @@ export interface RootRouteChildren {
   ResourcesRoute: typeof ResourcesRoute
   ServicesApigatewayRoute: typeof ServicesApigatewayRoute
   ServicesApigatewayv2Route: typeof ServicesApigatewayv2Route
+  ServicesBudgetsRoute: typeof ServicesBudgetsRoute
   ServicesCloudwatchRoute: typeof ServicesCloudwatchRoute
+  ServicesCostandusagereportserviceRoute: typeof ServicesCostandusagereportserviceRoute
+  ServicesCostexplorerRoute: typeof ServicesCostexplorerRoute
   ServicesDynamodbRoute: typeof ServicesDynamodbRoute
   ServicesEc2Route: typeof ServicesEc2Route
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
@@ -400,11 +440,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesApigatewayv2RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/budgets': {
+      id: '/services/budgets'
+      path: '/services/budgets'
+      fullPath: '/services/budgets'
+      preLoaderRoute: typeof ServicesBudgetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/cloudwatch': {
       id: '/services/cloudwatch'
       path: '/services/cloudwatch'
       fullPath: '/services/cloudwatch'
       preLoaderRoute: typeof ServicesCloudwatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/costandusagereportservice': {
+      id: '/services/costandusagereportservice'
+      path: '/services/costandusagereportservice'
+      fullPath: '/services/costandusagereportservice'
+      preLoaderRoute: typeof ServicesCostandusagereportserviceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/costexplorer': {
+      id: '/services/costexplorer'
+      path: '/services/costexplorer'
+      fullPath: '/services/costexplorer'
+      preLoaderRoute: typeof ServicesCostexplorerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/dynamodb': {
@@ -523,7 +584,11 @@ const rootRouteChildren: RootRouteChildren = {
   ResourcesRoute: ResourcesRoute,
   ServicesApigatewayRoute: ServicesApigatewayRoute,
   ServicesApigatewayv2Route: ServicesApigatewayv2Route,
+  ServicesBudgetsRoute: ServicesBudgetsRoute,
   ServicesCloudwatchRoute: ServicesCloudwatchRoute,
+  ServicesCostandusagereportserviceRoute:
+    ServicesCostandusagereportserviceRoute,
+  ServicesCostexplorerRoute: ServicesCostexplorerRoute,
   ServicesDynamodbRoute: ServicesDynamodbRoute,
   ServicesEc2Route: ServicesEc2Route,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
