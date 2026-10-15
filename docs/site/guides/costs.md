@@ -136,9 +136,9 @@ CostTypes, other budget types/units and inactive budgets omit CalculatedSpend.
 
 The current UTC calendar month, quarter or year is intersected with the budget's optional TimePeriod and clipped
 to now. Only lines whose start is within that period contribute. No fixture data means actual spend `"0"` for a
-supported budget. There is no ForecastedSpend or automatic price calculation. Supported ACTUAL notifications are evaluated as described below.
+supported budget. There is no ForecastedSpend or automatic price calculation. Supported ACTUAL notifications are
+evaluated as described below.
 CalculatedSpend is read-only and rejected on budget writes.
-
 
 ## Budget alerts
 
