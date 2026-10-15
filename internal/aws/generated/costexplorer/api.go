@@ -280,6 +280,87 @@ type UpdateCostCategoryDefinitionResponse struct {
 	EffectiveStart  *string `json:"EffectiveStart,omitempty"`
 }
 
+type DateInterval struct {
+	Start *string `json:"Start,omitempty"`
+	End   *string `json:"End,omitempty"`
+}
+
+type GroupDefinition struct {
+	Type *string `json:"Type,omitempty"`
+	Key  *string `json:"Key,omitempty"`
+}
+
+type GetCostAndUsageRequest struct {
+	TimePeriod    *DateInterval     `json:"TimePeriod,omitempty"`
+	Granularity   *string           `json:"Granularity,omitempty"`
+	Filter        *Expression       `json:"Filter,omitempty"`
+	Metrics       []string          `json:"Metrics,omitempty"`
+	GroupBy       []GroupDefinition `json:"GroupBy,omitempty"`
+	NextPageToken *string           `json:"NextPageToken,omitempty"`
+}
+
+type MetricValue struct {
+	Amount *string `json:"Amount,omitempty"`
+	Unit   *string `json:"Unit,omitempty"`
+}
+
+type Group struct {
+	Keys    []string               `json:"Keys,omitempty"`
+	Metrics map[string]MetricValue `json:"Metrics,omitempty"`
+}
+
+type ResultByTime struct {
+	TimePeriod *DateInterval          `json:"TimePeriod,omitempty"`
+	Total      map[string]MetricValue `json:"Total,omitempty"`
+	Groups     []Group                `json:"Groups,omitempty"`
+	Estimated  *bool                  `json:"Estimated,omitempty"`
+}
+
+type DimensionValuesWithAttributes struct {
+	Value      *string           `json:"Value,omitempty"`
+	Attributes map[string]string `json:"Attributes,omitempty"`
+}
+
+type GetCostAndUsageResponse struct {
+	NextPageToken            *string                         `json:"NextPageToken,omitempty"`
+	GroupDefinitions         []GroupDefinition               `json:"GroupDefinitions,omitempty"`
+	ResultsByTime            []ResultByTime                  `json:"ResultsByTime,omitempty"`
+	DimensionValueAttributes []DimensionValuesWithAttributes `json:"DimensionValueAttributes,omitempty"`
+}
+
+type GetDimensionValuesRequest struct {
+	SearchString  *string       `json:"SearchString,omitempty"`
+	TimePeriod    *DateInterval `json:"TimePeriod,omitempty"`
+	Dimension     *string       `json:"Dimension,omitempty"`
+	Context       *string       `json:"Context,omitempty"`
+	Filter        *Expression   `json:"Filter,omitempty"`
+	MaxResults    *int64        `json:"MaxResults,omitempty"`
+	NextPageToken *string       `json:"NextPageToken,omitempty"`
+}
+
+type GetDimensionValuesResponse struct {
+	DimensionValues []DimensionValuesWithAttributes `json:"DimensionValues,omitempty"`
+	ReturnSize      *int64                          `json:"ReturnSize,omitempty"`
+	TotalSize       *int64                          `json:"TotalSize,omitempty"`
+	NextPageToken   *string                         `json:"NextPageToken,omitempty"`
+}
+
+type GetTagsRequest struct {
+	SearchString  *string       `json:"SearchString,omitempty"`
+	TimePeriod    *DateInterval `json:"TimePeriod,omitempty"`
+	TagKey        *string       `json:"TagKey,omitempty"`
+	Filter        *Expression   `json:"Filter,omitempty"`
+	MaxResults    *int64        `json:"MaxResults,omitempty"`
+	NextPageToken *string       `json:"NextPageToken,omitempty"`
+}
+
+type GetTagsResponse struct {
+	NextPageToken *string  `json:"NextPageToken,omitempty"`
+	Tags          []string `json:"Tags,omitempty"`
+	ReturnSize    *int64   `json:"ReturnSize,omitempty"`
+	TotalSize     *int64   `json:"TotalSize,omitempty"`
+}
+
 type API interface {
 	CreateAnomalyMonitor(context.Context, *CreateAnomalyMonitorRequest) (*CreateAnomalyMonitorResponse, error)
 	CreateAnomalySubscription(context.Context, *CreateAnomalySubscriptionRequest) (*CreateAnomalySubscriptionResponse, error)
@@ -297,10 +378,13 @@ type API interface {
 	UpdateAnomalyMonitor(context.Context, *UpdateAnomalyMonitorRequest) (*UpdateAnomalyMonitorResponse, error)
 	UpdateAnomalySubscription(context.Context, *UpdateAnomalySubscriptionRequest) (*UpdateAnomalySubscriptionResponse, error)
 	UpdateCostCategoryDefinition(context.Context, *UpdateCostCategoryDefinitionRequest) (*UpdateCostCategoryDefinitionResponse, error)
+	GetCostAndUsage(context.Context, *GetCostAndUsageRequest) (*GetCostAndUsageResponse, error)
+	GetDimensionValues(context.Context, *GetDimensionValuesRequest) (*GetDimensionValuesResponse, error)
+	GetTags(context.Context, *GetTagsRequest) (*GetTagsResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "costexplorer", SigningName: "ce", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "ce", TargetPrefix: "AWSInsightsIndexService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 402}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "UnknownMonitorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "UnknownSubscriptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "costexplorer", SigningName: "ce", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "ce", TargetPrefix: "AWSInsightsIndexService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"BillExpirationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "BillingViewHealthStatusException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "DataUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "RequestChangedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 402}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "UnknownMonitorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "UnknownSubscriptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}}, Operations: map[string]catalog.Operation{
 		"CreateAnomalyMonitor": {Name: "CreateAnomalyMonitor", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ce:CreateAnomalyMonitor", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSInsightsIndexService.CreateAnomalyMonitor", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateAnomalyMonitorRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateAnomalyMonitor(ctx, input.(*CreateAnomalyMonitorRequest))
 		}},
@@ -349,5 +433,12 @@ func Descriptor(api API) catalog.Service {
 		"UpdateCostCategoryDefinition": {Name: "UpdateCostCategoryDefinition", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ce:UpdateCostCategoryDefinition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSInsightsIndexService.UpdateCostCategoryDefinition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateCostCategoryDefinitionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateCostCategoryDefinition(ctx, input.(*UpdateCostCategoryDefinitionRequest))
 		}},
+		"GetCostAndUsage": {Name: "GetCostAndUsage", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ce:GetCostAndUsage", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSInsightsIndexService.GetCostAndUsage", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetCostAndUsageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetCostAndUsage(ctx, input.(*GetCostAndUsageRequest))
+		}},
+		"GetDimensionValues": {Name: "GetDimensionValues", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ce:GetDimensionValues", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSInsightsIndexService.GetDimensionValues", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetDimensionValuesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetDimensionValues(ctx, input.(*GetDimensionValuesRequest))
+		}},
+		"GetTags": {Name: "GetTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ce:GetTags", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSInsightsIndexService.GetTags", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetTags(ctx, input.(*GetTagsRequest)) }},
 	}}
 }

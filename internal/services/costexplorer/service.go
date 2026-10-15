@@ -1,5 +1,5 @@
 // Package costexplorer stores account-wide anomaly and cost category definitions.
-// Definitions are records only: no cost data, evaluation or notification delivery.
+// Queries read user-supplied cost fixtures; definitions do not trigger evaluation or notification delivery.
 package costexplorer
 
 import (

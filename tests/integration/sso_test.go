@@ -332,7 +332,7 @@ func TestSSOAdministrativeEndpoints(t *testing.T) {
 		{&aws.Credentials{AccessKeyID: "test", SecretAccessKey: "other"}, "wrong secret", http.StatusForbidden},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, path := range []string{"/_tinystack/requests", "/_tinystack/faults"} {
+			for _, path := range []string{"/_tinystack/requests", "/_tinystack/faults", "/_tinystack/costs/fixtures"} {
 				if status, _ := e.signed(
 					t,
 					tc.credentials,
@@ -345,6 +345,23 @@ func TestSSOAdministrativeEndpoints(t *testing.T) {
 				}
 			}
 		})
+	}
+
+	// Fixture item paths share the same administrator boundary on both listeners.
+	for _, tc := range []struct {
+		credentials *aws.Credentials
+		status      int
+	}{{admin.credentials(), http.StatusOK}, {dev.credentials(), http.StatusForbidden}} {
+		status, _ := e.signed(t, tc.credentials, "tinystack", http.MethodPut,
+			"/_tinystack/costs/fixtures/admin-test", []byte(`{"provenance":"SSO test","lines":[]}`))
+		if status != tc.status {
+			t.Fatalf("fixture PUT = %d, want %d", status, tc.status)
+		}
+		status, _ = e.signed(t, tc.credentials, "tinystack", http.MethodGet,
+			"/_tinystack/costs/fixtures/admin-test", nil)
+		if status != tc.status {
+			t.Fatalf("fixture GET = %d, want %d", status, tc.status)
+		}
 	}
 
 	// A request that is unsigned, signed for another service, or tampered with is refused.

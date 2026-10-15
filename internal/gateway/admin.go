@@ -24,9 +24,17 @@ const AdminSigningName = "tinystack"
 // adminPaths are the endpoints that change or expose every account, which need
 // an administrator once the console signs people in.
 var adminPaths = []string{
-	"/_tinystack/reset", "/_tinystack/faults", "/_tinystack/requests", "/_tinystack/deliveries",
-	"/_tinystack/init", "/_localstack/chaos/", "/_localstack/init",
-	"/_tinystack/messages", "/_aws/ses", "/_aws/sns/sms-messages",
+	"/_tinystack/costs/fixtures",
+	"/_tinystack/reset",
+	"/_tinystack/faults",
+	"/_tinystack/requests",
+	"/_tinystack/deliveries",
+	"/_tinystack/init",
+	"/_localstack/chaos/",
+	"/_localstack/init",
+	"/_tinystack/messages",
+	"/_aws/ses",
+	"/_aws/sns/sms-messages",
 }
 
 // memberPaths are the endpoints any signed-in person may read once the console
@@ -37,6 +45,10 @@ var memberPaths = []string{"/_tinystack/resources", "/_tinystack/metrics"}
 // the sign-in checks where there are some.
 func (s *Server) endpoint(path string, extra map[string]http.Handler) (http.Handler, bool) {
 	h, ok := s.internal[path]
+	if !ok && strings.HasPrefix(path, "/_tinystack/costs/fixtures/") {
+		h, ok = s.internal["/_tinystack/costs/fixtures"]
+	}
+
 	if !ok {
 		h, ok = extra[path]
 	}

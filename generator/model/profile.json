@@ -25522,7 +25522,10 @@
       "UntagResource",
       "UpdateAnomalyMonitor",
       "UpdateAnomalySubscription",
-      "UpdateCostCategoryDefinition"
+      "UpdateCostCategoryDefinition",
+      "GetCostAndUsage",
+      "GetDimensionValues",
+      "GetTags"
     ],
     "shapes": {
       "AnomalyMonitor": [
@@ -25747,6 +25750,75 @@
       "UpdateCostCategoryDefinitionResponse": [
         "CostCategoryArn",
         "EffectiveStart"
+      ],
+      "GetCostAndUsageRequest": [
+        "TimePeriod",
+        "Granularity",
+        "Filter",
+        "Metrics",
+        "GroupBy",
+        "NextPageToken"
+      ],
+      "GetCostAndUsageResponse": [
+        "NextPageToken",
+        "GroupDefinitions",
+        "ResultsByTime",
+        "DimensionValueAttributes"
+      ],
+      "GetDimensionValuesRequest": [
+        "SearchString",
+        "TimePeriod",
+        "Dimension",
+        "Context",
+        "Filter",
+        "MaxResults",
+        "NextPageToken"
+      ],
+      "GetDimensionValuesResponse": [
+        "DimensionValues",
+        "ReturnSize",
+        "TotalSize",
+        "NextPageToken"
+      ],
+      "GetTagsRequest": [
+        "SearchString",
+        "TimePeriod",
+        "TagKey",
+        "Filter",
+        "MaxResults",
+        "NextPageToken"
+      ],
+      "GetTagsResponse": [
+        "NextPageToken",
+        "Tags",
+        "ReturnSize",
+        "TotalSize"
+      ],
+      "GroupDefinition": [
+        "Type",
+        "Key"
+      ],
+      "ResultByTime": [
+        "TimePeriod",
+        "Total",
+        "Groups",
+        "Estimated"
+      ],
+      "Group": [
+        "Keys",
+        "Metrics"
+      ],
+      "MetricValue": [
+        "Amount",
+        "Unit"
+      ],
+      "DimensionValuesWithAttributes": [
+        "Value",
+        "Attributes"
+      ],
+      "DateInterval": [
+        "Start",
+        "End"
       ]
     }
   },
@@ -25854,7 +25926,8 @@
         "CostTypes",
         "TimeUnit",
         "TimePeriod",
-        "BudgetType"
+        "BudgetType",
+        "CalculatedSpend"
       ],
       "Spend": [
         "Amount",
@@ -26001,6 +26074,9 @@
       ],
       "ListTagsForResourceResponse": [
         "ResourceTags"
+      ],
+      "CalculatedSpend": [
+        "ActualSpend"
       ]
     }
   }

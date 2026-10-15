@@ -62,6 +62,10 @@ func (s *Service) DescribeBudget(
 	in *api.DescribeBudgetRequest,
 ) (*api.DescribeBudgetResponse, error) {
 	r, err := s.get(ctx, in.AccountId, in.BudgetName)
+	if err == nil {
+		err = s.actualSpend(ctx, &r.Budget)
+	}
+
 	return &api.DescribeBudgetResponse{Budget: &r.Budget}, err
 }
 
@@ -93,6 +97,10 @@ func (s *Service) DescribeBudgets(
 	)
 	out := &api.DescribeBudgetsResponse{NextToken: next}
 	for _, r := range rows {
+		if e := s.actualSpend(ctx, &r.Budget); e != nil {
+			return nil, e
+		}
+
 		out.Budgets = append(out.Budgets, r.Budget)
 	}
 

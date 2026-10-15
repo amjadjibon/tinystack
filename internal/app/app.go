@@ -137,6 +137,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	configservice "github.com/amjadjibon/tinystack/internal/services/config"
 	"github.com/amjadjibon/tinystack/internal/services/costandusagereportservice"
+	"github.com/amjadjibon/tinystack/internal/services/costdata"
 	"github.com/amjadjibon/tinystack/internal/services/costexplorer"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
@@ -659,6 +660,7 @@ func build(
 		caches.UseRuntime(cachedocker.New(), logger)
 	}
 
+	handler.Handle("costs/fixtures", costdata.Handler(store, cfg.Defaults.Account))
 	handler.Handle("deliveries", deliveries)
 	handler.Handle("messages", delivery.MessagesHandler(deliveries))
 	handler.HandlePath("/_aws/ses", delivery.SESMessagesHandler(deliveries))

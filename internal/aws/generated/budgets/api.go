@@ -30,6 +30,10 @@ type TimePeriod struct {
 	End   *float64 `json:"End,omitempty"`
 }
 
+type CalculatedSpend struct {
+	ActualSpend *Spend `json:"ActualSpend,omitempty"`
+}
+
 type Budget struct {
 	BudgetName          *string             `json:"BudgetName,omitempty"`
 	BudgetLimit         *Spend              `json:"BudgetLimit,omitempty"`
@@ -39,6 +43,7 @@ type Budget struct {
 	TimeUnit            *string             `json:"TimeUnit,omitempty"`
 	TimePeriod          *TimePeriod         `json:"TimePeriod,omitempty"`
 	BudgetType          *string             `json:"BudgetType,omitempty"`
+	CalculatedSpend     *CalculatedSpend    `json:"CalculatedSpend,omitempty"`
 }
 
 type Notification struct {

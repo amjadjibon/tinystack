@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	timeAnnually  = "ANNUALLY"
 	timeMonthly   = "MONTHLY"
 	timeQuarterly = "QUARTERLY"
 	budgetCost    = "COST"
@@ -47,6 +48,10 @@ func checkSpend(s api.Spend) error {
 }
 
 func checkBudget(b *api.Budget) error {
+	if b != nil && b.CalculatedSpend != nil {
+		return invalid("CalculatedSpend is read-only.")
+	}
+
 	if b == nil {
 		return invalid("Budget is required.")
 	}
@@ -55,7 +60,10 @@ func checkBudget(b *api.Budget) error {
 		return err
 	}
 
-	if !slices.Contains([]string{"DAILY", timeMonthly, timeQuarterly, "ANNUALLY", "CUSTOM"}, common.Value(b.TimeUnit)) {
+	if !slices.Contains(
+		[]string{"DAILY", timeMonthly, timeQuarterly, timeAnnually, "CUSTOM"},
+		common.Value(b.TimeUnit),
+	) {
 		return invalid("TimeUnit is invalid.")
 	}
 
@@ -133,7 +141,7 @@ func checkBudget(b *api.Budget) error {
 		case timeQuarterly:
 			day = 1
 			month = ((month-1)/3)*3 + 1
-		case "ANNUALLY":
+		case timeAnnually:
 			day = 1
 			month = time.January
 		case "CUSTOM":

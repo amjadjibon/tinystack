@@ -307,12 +307,12 @@ func TestCostExplorerValidationAndUnsupported(t *testing.T) {
 	wantCostExplorerError(t, err, "ValidationException")
 	_, err = c.GetAnomalyMonitors(ctx, &sdk.GetAnomalyMonitorsInput{NextPageToken: new("%invalid")})
 	wantCostExplorerError(t, err, "InvalidNextTokenException")
-	_, err = c.GetCostAndUsage(
+	_, err = c.GetCostForecast(
 		ctx,
-		&sdk.GetCostAndUsageInput{
+		&sdk.GetCostForecastInput{
 			TimePeriod:  &types.DateInterval{Start: new("2026-10-01"), End: new("2026-10-02")},
 			Granularity: types.GranularityDaily,
-			Metrics:     []string{"UnblendedCost"},
+			Metric:      "UNBLENDED_COST",
 		},
 	)
 	wantCostExplorerError(t, err, "UnknownOperationException")

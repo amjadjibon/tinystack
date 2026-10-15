@@ -1,5 +1,5 @@
 // Package budgets stores account-wide budget, notification and subscriber definitions.
-// No spend is calculated, notifications delivered, or actions executed.
+// Supported budget reads calculate fixture-backed actual spend; notifications and actions are not executed.
 package budgets
 
 import (

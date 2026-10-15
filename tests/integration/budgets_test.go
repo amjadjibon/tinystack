@@ -65,7 +65,9 @@ func TestBudgetsSDKLifecycle(t *testing.T) {
 	wantBudgetsError(t, err, "DuplicateRecordException")
 	otherRegion := budgetsClient(s, "test", "eu-west-1")
 	got, err := otherRegion.DescribeBudget(ctx, &sdk.DescribeBudgetInput{AccountId: account, BudgetName: name})
-	if err != nil || got.Budget.CalculatedSpend != nil || aws.ToString(got.Budget.BudgetLimit.Amount) != "100.25" {
+	if err != nil ||
+		(got.Budget.CalculatedSpend == nil || aws.ToString(got.Budget.CalculatedSpend.ActualSpend.Amount) != "0") ||
+		aws.ToString(got.Budget.BudgetLimit.Amount) != "100.25" {
 		t.Fatal(got, err)
 	}
 	_, err = budgetsClient(
