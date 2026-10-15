@@ -109,6 +109,7 @@ type call struct {
 	payload    *request.Payload
 	cleanups   []func() error
 	body       []byte
+	sensitive  bool
 	head       bool
 	injected   bool
 	faultError bool
@@ -1013,8 +1014,11 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 		rec.ErrorCode, rec.ErrorMessage = c.failure.Code, c.failure.Message
 	}
 
-	if c.service != nil && c.service.Operations[m.Operation].Sensitive {
+	if c.sensitive || (c.service != nil && c.service.Operations[m.Operation].Sensitive) {
 		rec.RequestBody, rec.ResponseBody = redacted, redacted
+		if rec.ErrorMessage != "" {
+			rec.ErrorMessage = redacted
+		}
 	}
 
 	if s.managementEvents != nil && c.service != nil && m.Operation != "" {

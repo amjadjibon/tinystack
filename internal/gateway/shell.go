@@ -65,7 +65,7 @@ func (s *Server) serveShell(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := &call{meta: request.Metadata{
+	c := &call{sensitive: true, meta: request.Metadata{
 		Scope:     request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
 		RequestID: common.RandomID(32), Service: "cloudshell", Operation: "Command", Protocol: "console",
 	}}
