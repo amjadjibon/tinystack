@@ -4,21 +4,28 @@ CloudShell runs the **real AWS CLI on the TinyStack host** and streams its stdou
 It is included only in builds with the `console` tag (`task build`). Install
 [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) on that host and make
 `aws` available on TinyStack's PATH. The default Docker image does **not** include the CLI;
-`docker build --target console-cli .` builds the console image with the AWS CLI (about 350 MB in total). A missing CLI produces an installation banner in the terminal.
+`docker build --target console-cli .` builds the console image with the AWS CLI (about 350 MB in total).
+A missing CLI produces an installation banner in the terminal.
 
 ## Commands
 
 ```text
-aws s3api create-bucket --bucket example
-aws s3api list-buckets
+aws s3 mb s3://example
+aws s3 ls
 aws s3api list-buckets --query 'Buckets[].Name' --output table
+aws sts get-caller-identity
 ```
 
-CloudShell uses an explicit allowlist of reviewed API commands. Queries, output formats and pagination are
-provided by the installed CLI. TinyStack still supports only the APIs and parameters listed in its service
-documentation. Tab lists the allowed services and commands; it does not run a host completer or list files.
+What CloudShell allows depends on whether the console has single sign-on.
 
-Allowed commands:
+**Without OIDC/SSO** (the default), CloudShell is a convenience for the single local user, who could run the same CLI
+in a terminal. Every AWS CLI command runs: high-level `s3` commands, `help`, waiters, queries, output formats and
+pagination all come from the installed CLI, and Tab uses the real `aws_completer`. The CLI runs with the host user's
+file access, so `aws s3 cp ./file s3://bucket/` reads and writes files on the TinyStack host (relative paths resolve
+in the command's temporary directory). Do not publish a console without OIDC beyond your own machine: anyone who
+reaches it can do the same.
+
+**With OIDC/SSO**, CloudShell is administrator-only and accepts only a reviewed allowlist of API commands:
 
 - `sts`: `get-caller-identity`.
 - `s3api`: `list-buckets`, `create-bucket`, `delete-bucket`, `head-bucket`, `list-objects-v2`, `head-object`, `delete-object`.
@@ -33,13 +40,13 @@ Allowed commands:
 - `secretsmanager`: `list-secrets`, `describe-secret`, `get-secret-value`, `create-secret`, `put-secret-value`.
 - `ssm`: `get-parameter`, `get-parameters`, `put-parameter`, `delete-parameter`, `describe-parameters`.
 
-Other commands, high-level S3 transfers, waiters, CLI help, aliases, configuration, login, packaging and execution
-helpers are rejected. Global flags must follow the service and operation. Endpoint/profile overrides, debug,
-CA bundles, unsigned requests, input-file options, skeleton generation and interactive auto-prompt are rejected,
-including abbreviated flags. Arguments containing `file://`, `fileb://`, `http://` or `https://` are rejected,
-including inside shorthand or JSON: supply inline values and use relative queue URLs. This intentionally trades
-CLI compatibility for preventing host file access and parameter URL fetching. New allowlist entries require a
-review of CLI customizations and streaming input/output, even when they share an ordinary AWS API name.
+Under that policy, high-level S3 transfers, CLI help, aliases, configuration, login, packaging and execution helpers
+are rejected; so are debug, CA bundles, unsigned requests, input-file options and skeleton generation (including
+abbreviated flags), and arguments containing `file://`, `fileb://`, `http://` or `https://`, even inside shorthand
+or JSON. Tab completes from the allowlist without running a host completer. New entries require a review of the
+CLI's customizations and streaming input/output, even when they share an ordinary AWS API name.
+
+In both modes `--endpoint-url`, `--profile` and interactive auto-prompt are rejected, including abbreviations.
 
 The browser handles a few built-ins: `clear` (or `reset`, Ctrl-L), `history` (`history -c` forgets it), `echo`,
 `whoami` (runs `aws sts get-caller-identity --query Arn --output text`) and `help`. Any other first word is
@@ -65,14 +72,15 @@ apply to every resulting AWS request. The endpoint comes from server configurati
 header or the host's endpoint environment variables. The request inspector retains command metadata but redacts command bodies, output and error messages, which may
 contain secrets. Individual API calls retain their normal modeled sensitivity rules.
 
-When OIDC/SSO is configured, **all CloudShell commands and completion are administrator-only**. Root credentials
-and SSO roles mapped with `admin: true` qualify. This restriction limits access to host CLI execution. Without OIDC, CloudShell is open
-to the local console user. The command policy applies in both modes, including for administrators.
+When OIDC/SSO is configured, **all CloudShell commands and completion are administrator-only**, and the allowlist
+above applies to administrators too. Root credentials and SSO roles mapped with `admin: true` qualify. Without OIDC,
+CloudShell is open to the local console user and runs every command.
 
 Each command gets a temporary HOME and working directory, removed on completion. The child receives
 only its selected credentials, Region, forced endpoint, empty config and credential files, disabled pager and
 metadata lookup, and a minimal PATH. It does not inherit the host HOME, profiles, `credential_process`, or other
-host environment variables. The allowlist and argument policy restrict host capabilities; this is not an operating-system sandbox.
-Static completion creates no child process, credentials or temporary directory.
+host environment variables. This is not an operating-system sandbox: without OIDC the CLI has the TinyStack process's file access, and with
+OIDC only the allowlist and argument policy restrict it. Static completion creates no child process, credentials
+or temporary directory.
 The installed AWS CLI and its dependencies must remain trusted. History and terminal output can contain secrets
 and remain visible to the person using the browser.

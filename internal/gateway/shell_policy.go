@@ -10,6 +10,12 @@ import (
 	"strings"
 )
 
+// shellStrict reports whether CloudShell limits commands to shellCommands. With
+// OIDC, people other than the host's owner sign in, and the AWS CLI can read and
+// write host files and start host programs. Without OIDC the console user is
+// the local user, who could run the same CLI in a terminal, so every command runs.
+func (s *Server) shellStrict() bool { return s.cfg.Console.Auth.OIDC != nil }
+
 // Only reviewed, ordinary API commands belong here. Do not derive this from the
 // installed CLI or the generated catalog: customizations can replace modeled
 // commands (e.g. lambda invoke and s3api get-object write positional files).
@@ -76,9 +82,9 @@ func shellPolicy(args []string) error {
 	return nil
 }
 
-// Completion is static and uses the execution policy. Never pass partial input
-// to aws_completer: completion must not load CLI customizations on the host.
-func completeShell(w http.ResponseWriter, line string) {
+// completeShellStatic completes from shellCommands under OIDC. It never passes
+// partial input to aws_completer, which would load CLI customizations on the host.
+func completeShellStatic(w http.ResponseWriter, line string) {
 	candidates := []string{}
 	parts := strings.Split(line, " ")
 	if len(parts) == 2 && parts[0] == shellBinary {
