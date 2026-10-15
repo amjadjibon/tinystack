@@ -15,7 +15,7 @@ import {
 	TopNavigation,
 	type TopNavigationProps,
 } from "@cloudscape-design/components";
-import { Density, Mode } from "@cloudscape-design/global-styles";
+import { Density } from "@cloudscape-design/global-styles";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { useFavorites } from "#/lib/favorites";
@@ -29,6 +29,8 @@ import {
 	applyPreferences,
 	loadPreferences,
 	type Preferences,
+	type Theme,
+	themes,
 } from "#/lib/theme";
 import { useFollow } from "#/lib/useFollow";
 import { ConsoleSessionDialog } from "./ConsoleSession";
@@ -188,22 +190,14 @@ export function ConsoleHeader() {
 						title: "Display settings",
 						items: [
 							{
-								id: "mode",
+								id: "theme",
 								text: "Theme",
-								items: [
-									{
-										id: Mode.Light,
-										text: "Light",
-										checked: preferences.mode === Mode.Light,
-										itemType: "checkbox",
-									},
-									{
-										id: Mode.Dark,
-										text: "Dark",
-										checked: preferences.mode === Mode.Dark,
-										itemType: "checkbox",
-									},
-								],
+								items: themes.map(({ id, text }) => ({
+									id,
+									text,
+									checked: preferences.theme === id,
+									itemType: "checkbox" as const,
+								})),
 							},
 							{
 								id: "density",
@@ -225,8 +219,8 @@ export function ConsoleHeader() {
 							},
 						],
 						onItemClick: ({ detail }) => {
-							if (detail.id === Mode.Light || detail.id === Mode.Dark) {
-								setPreferences((p) => ({ ...p, mode: detail.id as Mode }));
+							if (themes.some(({ id }) => id === detail.id)) {
+								setPreferences((p) => ({ ...p, theme: detail.id as Theme }));
 							}
 
 							if (

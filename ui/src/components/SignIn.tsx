@@ -7,6 +7,7 @@ import {
 	Grid,
 	Header,
 	Link,
+	SegmentedControl,
 	SpaceBetween,
 } from "@cloudscape-design/components";
 import { useRouter } from "@tanstack/react-router";
@@ -18,6 +19,8 @@ import {
 	applyConsoleTheme,
 	applyPreferences,
 	loadPreferences,
+	type Theme,
+	themes,
 } from "#/lib/theme";
 import { ConsoleSessionDialog, collectSSOReturn } from "./ConsoleSession";
 
@@ -47,12 +50,13 @@ export function SignIn({ loginURL }: { loginURL: string }) {
 	const signedOut = lastSignOut();
 	// Until the server says whether this browser is signed in, show nothing.
 	const [checking, setChecking] = useState(signedOut === undefined);
+	const [preferences, setPreferences] = useState(loadPreferences);
 
 	useEffect(() => {
 		const theme = applyConsoleTheme();
-		applyPreferences(loadPreferences());
 		return theme.reset;
 	}, []);
+	useEffect(() => applyPreferences(preferences), [preferences]);
 	// Pick up the session of a person already signed in with this browser:
 	// after a reload, or coming back from the identity provider, which then
 	// returns them to the page they first asked for.
@@ -92,6 +96,25 @@ export function SignIn({ loginURL }: { loginURL: string }) {
 	return (
 		<Box padding={{ vertical: "xxxl", horizontal: "l" }}>
 			<div style={{ maxWidth: 1080, margin: "0 auto" }}>
+				<div
+					style={{
+						display: "flex",
+						justifyContent: "flex-end",
+						marginBottom: 20,
+					}}
+				>
+					<SegmentedControl
+						label="Theme"
+						selectedId={preferences.theme}
+						options={themes}
+						onChange={({ detail }) =>
+							setPreferences((p) => ({
+								...p,
+								theme: detail.selectedId as Theme,
+							}))
+						}
+					/>
+				</div>
 				<Grid
 					gridDefinition={[
 						{ colspan: { default: 12, s: 5 }, push: { s: 7 } },
