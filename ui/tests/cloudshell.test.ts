@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { builtin } from "../src/lib/cloudshell.ts";
 import {
 	columns,
 	commonPrefix,
@@ -171,4 +172,37 @@ test("commands stream output and return clear request failures", async () => {
 	} finally {
 		globalThis.fetch = originalFetch;
 	}
+});
+
+test("built-ins run in the terminal and other words are not found", () => {
+	assert.equal(builtin("aws s3 ls", []), undefined);
+	assert.deepEqual(builtin(" clear ", []), { type: "clear" });
+	assert.deepEqual(builtin("reset", []), { type: "clear" });
+	assert.deepEqual(builtin("history -c", ["a"]), { type: "clearHistory" });
+	assert.deepEqual(builtin("history", ["aws s3 ls", "whoami"]), {
+		type: "print",
+		text: "  1  aws s3 ls\n  2  whoami",
+	});
+	assert.deepEqual(builtin("echo  hello   world", []), {
+		type: "print",
+		text: "hello world",
+	});
+	assert.deepEqual(builtin("whoami", []), {
+		type: "run",
+		command: "aws sts get-caller-identity --query Arn --output text",
+	});
+	const missing = builtin("pwd", []);
+	assert.equal(missing?.type, "print");
+	assert.match(
+		missing?.type === "print" ? missing.text : "",
+		/^pwd: command not found/,
+	);
+});
+
+test("history -c forgets the typed commands", () => {
+	const editor = new LineEditor(["one", "two"]);
+	editor.forget();
+	assert.deepEqual(editor.history, []);
+	editor.apply({ type: "up" });
+	assert.equal(editor.buffer, "");
 });

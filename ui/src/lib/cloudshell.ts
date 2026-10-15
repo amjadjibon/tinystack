@@ -84,3 +84,68 @@ export function loadHistory(): string[] {
 export function saveHistory(lines: string[]) {
 	history = [...lines];
 }
+
+// What a built-in asks the terminal to do. Lines that start with aws go to
+// the server instead.
+export type Builtin =
+	| { type: "clear" }
+	| { type: "clearHistory" }
+	| { type: "print"; text: string }
+	| { type: "run"; command: string };
+
+const help = [
+	"Run aws commands with the host AWS CLI, as your console identity.",
+	"Tab completes; Ctrl-C cancels; Up/Down walk the history; Ctrl-L clears.",
+	"",
+	"Built-ins:",
+	"  clear, reset     clear the screen",
+	"  history [-c]     list (or forget) the commands typed in this tab",
+	"  echo [text]      print text",
+	"  whoami           print the ARN the AWS CLI runs as",
+	"  help             print this help",
+	"",
+	"There is no shell: pipes, redirection, variables, && and files are unavailable.",
+].join("\n");
+
+// builtin interprets a line the terminal handles itself, or returns undefined
+// for an aws command.
+export function builtin(line: string, history: string[]): Builtin | undefined {
+	const [name = "", ...args] = line.trim().split(/\s+/);
+	switch (name) {
+		case "aws":
+			return undefined;
+		case "clear":
+		case "reset":
+			return { type: "clear" };
+		case "help":
+			return { type: "print", text: help };
+		case "history": {
+			if (args[0] === "-c") return { type: "clearHistory" };
+			const width = String(history.length).length + 2;
+			return {
+				type: "print",
+				text: history
+					.map((h, i) => `${String(i + 1).padStart(width)}  ${h}`)
+					.join("\n"),
+			};
+		}
+		case "echo":
+			return { type: "print", text: args.join(" ") };
+		case "whoami":
+			return {
+				type: "run",
+				command: "aws sts get-caller-identity --query Arn --output text",
+			};
+		case "exit":
+		case "logout":
+			return {
+				type: "print",
+				text: "CloudShell has no session to exit; close the tab or leave the page.",
+			};
+		default:
+			return {
+				type: "print",
+				text: `${name}: command not found. CloudShell runs aws commands; type help for the built-ins.`,
+			};
+	}
+}

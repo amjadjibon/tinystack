@@ -3,6 +3,7 @@ import { type ITheme, Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useEffect, useRef, useState } from "react";
 import {
+	builtin,
 	completions,
 	loadHistory,
 	runCommand,
@@ -86,30 +87,24 @@ export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
 			const command = line.trim();
 			saveHistory(editor.history);
 			if (!command) return newPrompt();
-			if (command === "clear") {
+			const action = builtin(command, editor.history);
+			if (action?.type === "clear") {
 				term.write("\x1b[2J\x1b[3J\x1b[H");
 				return newPrompt();
 			}
-			if (command === "history") {
-				const width = String(editor.history.length).length;
-				term.write(
-					`${editor.history
-						.map((h, i) => `${String(i + 1).padStart(width + 2)}  ${h}`)
-						.join("\r\n")}\r\n`,
-				);
+			if (action?.type === "clearHistory") {
+				editor.forget();
+				saveHistory(editor.history);
 				return newPrompt();
 			}
-			if (command === "help") {
-				term.write(
-					"Run aws commands with the host AWS CLI. Tab completes; Ctrl-C cancels.\r\n" +
-						"Built-ins: clear, help, history. Shell features and interactive prompts are unavailable.\r\n",
-				);
+			if (action?.type === "print") {
+				if (action.text) term.write(`${lines(action.text)}\r\n`);
 				return newPrompt();
 			}
 			running = new AbortController();
 			try {
 				const result = await runCommand(
-					command,
+					action?.command ?? command,
 					current.current,
 					running.signal,
 					({ stream, data }) =>
@@ -185,7 +180,7 @@ export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
 
 		term.write(
 			`${dim("TinyStack CloudShell. The host AWS CLI runs as your console identity.")}\r\n` +
-				`${dim("Type help for commands, Tab to complete, Ctrl-C to cancel. No pipes, variables or &&.")}\r\n\r\n`,
+				`${dim("Type help for the built-ins (clear, history, whoami, echo), Tab to complete, Ctrl-C to cancel.")}\r\n\r\n`,
 		);
 		redraw();
 

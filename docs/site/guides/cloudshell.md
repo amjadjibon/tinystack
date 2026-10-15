@@ -18,7 +18,9 @@ aws s3api list-buckets --query 'Buckets[].Name' --output table
 High-level commands, queries, output formats, waiters and pagination are provided by the installed CLI.
 TinyStack still supports only the APIs and parameters listed in its service documentation.
 
-The browser handles `clear`, `help` and `history`. History stays in memory and is never saved to browser storage.
+The browser handles a few built-ins: `clear` (or `reset`, Ctrl-L), `history` (`history -c` forgets it), `echo`,
+`whoami` (runs `aws sts get-caller-identity --query Arn --output text`) and `help`. Any other first word is
+reported as not found. History stays in memory and is never saved to browser storage.
 Tab uses the real `aws_completer`, if installed beside `aws` or on PATH; otherwise completion is unavailable.
 Ctrl-C cancels the HTTP request and terminates the command's process group.
 

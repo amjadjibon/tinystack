@@ -204,6 +204,12 @@ export class LineEditor {
 		this.position = this.history.length;
 	}
 
+	// forget drops the history, as history -c does.
+	forget() {
+		this.history = [];
+		this.position = 0;
+	}
+
 	// submit returns the line, remembers it unless it is blank or repeats the
 	// last, and starts a new one.
 	submit(limit = 200) {
