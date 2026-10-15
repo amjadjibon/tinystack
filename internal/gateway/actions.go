@@ -504,17 +504,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 
 	c.meta.Service = in.Service
 	c.meta.Protocol = "console"
-	// Confirmation URLs must use the AWS listener when the action arrived on
-	// the separately served console. Direct API callers keep their request host.
-	host := r.Host
-	if hostname, port, splitErr := net.SplitHostPort(host); splitErr == nil &&
-		port == strconv.Itoa(s.cfg.Server.ConsolePort) {
-		host = net.JoinHostPort(hostname, strconv.Itoa(s.cfg.Server.Port))
-	}
-	c.meta.Endpoint = "http://" + host
-	if r.TLS != nil {
-		c.meta.Endpoint = "https://" + host
-	}
+	c.meta.Endpoint = s.consoleEndpoint(r)
 	caller := s.consoleCaller
 	if regional {
 		caller = caller.Base64Blobs()
@@ -628,10 +618,37 @@ func (s *Server) sameOrigin(r *http.Request) bool {
 	return SameOrigin(r)
 }
 
+// consoleEndpoint is the AWS listener's address for confirmation URLs. They
+// must use it when the action arrived on the separately served console; direct
+// API callers keep their request host.
+func (s *Server) consoleEndpoint(r *http.Request) string {
+	host := r.Host
+	if hostname, port, splitErr := net.SplitHostPort(host); splitErr == nil &&
+		port == strconv.Itoa(s.cfg.Server.ConsolePort) {
+		host = net.JoinHostPort(hostname, strconv.Itoa(s.cfg.Server.Port))
+	}
+
+	if r.TLS != nil {
+		return "https://" + host
+	}
+
+	return "http://" + host
+}
+
 func (s *Server) consoleFail(w http.ResponseWriter, c *call, err error) {
-	e := awserror.From(err)
+	e, status := s.consoleStatus(c, err)
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"code": e.Code, "message": e.Message, "request_id": c.meta.RequestID,
+	})
+}
+
+// consoleStatus records err as the failure of a console request and chooses the
+// status code that reports it.
+func (s *Server) consoleStatus(c *call, err error) (e *awserror.Error, status int) {
+	e = awserror.From(err)
 	c.failure = e
-	status := e.StatusCode
+	status = e.StatusCode
 	if c.service != nil {
 		if binding, ok := c.service.Errors[e.Code]; ok {
 			// An IAM denial stays 403 whatever status the service binds the code to.
@@ -650,8 +667,5 @@ func (s *Server) consoleFail(w http.ResponseWriter, c *call, err error) {
 		status = http.StatusBadRequest
 	}
 
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"code": e.Code, "message": e.Message, "request_id": c.meta.RequestID,
-	})
+	return e, status
 }

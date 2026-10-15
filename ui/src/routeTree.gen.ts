@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CloudshellRouteImport } from './routes/cloudshell'
 import { Route as DeliveriesRouteImport } from './routes/deliveries'
 import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as RequestsRouteImport } from './routes/requests'
@@ -40,6 +41,11 @@ import { Route as ServicesServiceResourceRouteImport } from './routes/services/$
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CloudshellRoute = CloudshellRouteImport.update({
+  id: '/cloudshell',
+  path: '/cloudshell',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeliveriesRoute = DeliveriesRouteImport.update({
@@ -176,6 +182,7 @@ const ServicesServiceResourceRoute = ServicesServiceResourceRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cloudshell': typeof CloudshellRoute
   '/deliveries': typeof DeliveriesRoute
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cloudshell': typeof CloudshellRoute
   '/deliveries': typeof DeliveriesRoute
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
@@ -235,6 +243,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cloudshell': typeof CloudshellRoute
   '/deliveries': typeof DeliveriesRoute
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
@@ -266,6 +275,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/cloudshell'
     | '/deliveries'
     | '/metrics'
     | '/requests'
@@ -295,6 +305,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cloudshell'
     | '/deliveries'
     | '/metrics'
     | '/requests'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/cloudshell'
     | '/deliveries'
     | '/metrics'
     | '/requests'
@@ -354,6 +366,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CloudshellRoute: typeof CloudshellRoute
   DeliveriesRoute: typeof DeliveriesRoute
   MetricsRoute: typeof MetricsRoute
   RequestsRoute: typeof RequestsRoute
@@ -389,6 +402,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cloudshell': {
+      id: '/cloudshell'
+      path: '/cloudshell'
+      fullPath: '/cloudshell'
+      preLoaderRoute: typeof CloudshellRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deliveries': {
@@ -578,6 +598,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CloudshellRoute: CloudshellRoute,
   DeliveriesRoute: DeliveriesRoute,
   MetricsRoute: MetricsRoute,
   RequestsRoute: RequestsRoute,

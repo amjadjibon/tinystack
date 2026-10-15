@@ -1,0 +1,167 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import {
+	columns,
+	commonPrefix,
+	LineEditor,
+	parseKeys,
+} from "../src/lib/lineEditor.ts";
+
+test("keys are split from typed and pasted data", () => {
+	assert.deepEqual(parseKeys("abc"), [{ type: "text", text: "abc" }]);
+	assert.deepEqual(parseKeys("a\x1b[Db\x7f\r"), [
+		{ type: "text", text: "a" },
+		{ type: "left" },
+		{ type: "text", text: "b" },
+		{ type: "backspace" },
+		{ type: "enter" },
+	]);
+	assert.deepEqual(parseKeys("\x1b[A\x1b[B\x1b[3~\x1b[H\x1b[F"), [
+		{ type: "up" },
+		{ type: "down" },
+		{ type: "delete" },
+		{ type: "home" },
+		{ type: "end" },
+	]);
+	assert.deepEqual(parseKeys("\x03\x0c\t\x01\x05\x15\x0b\x17"), [
+		{ type: "interrupt" },
+		{ type: "clear" },
+		{ type: "tab" },
+		{ type: "home" },
+		{ type: "end" },
+		{ type: "killToStart" },
+		{ type: "killToEnd" },
+		{ type: "killWord" },
+	]);
+	// A paste of two lines is two commands; unknown sequences vanish.
+	assert.deepEqual(parseKeys("one\ntwo\x1b[99;5~x"), [
+		{ type: "text", text: "one" },
+		{ type: "enter" },
+		{ type: "text", text: "two" },
+		{ type: "text", text: "x" },
+	]);
+});
+
+function type(editor: LineEditor, data: string) {
+	for (const key of parseKeys(data)) editor.apply(key);
+}
+
+test("the editor inserts, deletes and moves the cursor", () => {
+	const editor = new LineEditor();
+	type(editor, "aws sqs lst");
+	type(editor, "\x1b[D\x1b[D"); // two left
+	type(editor, "i");
+	assert.equal(editor.buffer, "aws sqs list");
+	assert.equal(editor.cursor, 10);
+	type(editor, "\x01");
+	assert.equal(editor.cursor, 0);
+	type(editor, "\x1b[3~");
+	assert.equal(editor.buffer, "ws sqs list");
+	type(editor, "\x05\x17");
+	assert.equal(editor.buffer, "ws sqs ");
+	type(editor, "\x15");
+	assert.equal(editor.buffer, "");
+	type(editor, "abc\x1b[D\x0b");
+	assert.equal(editor.buffer, "ab");
+	type(editor, "\x7f\x7f\x7f");
+	assert.equal(editor.buffer, "");
+	assert.equal(editor.cursor, 0);
+});
+
+test("history walks back and forth and keeps the unfinished line", () => {
+	const editor = new LineEditor(["first", "second"]);
+	type(editor, "draft");
+	type(editor, "\x1b[A");
+	assert.equal(editor.buffer, "second");
+	type(editor, "\x1b[A\x1b[A");
+	assert.equal(editor.buffer, "first");
+	type(editor, "\x1b[B\x1b[B");
+	assert.equal(editor.buffer, "draft");
+	assert.equal(editor.submit(), "draft");
+	assert.deepEqual(editor.history, ["first", "second", "draft"]);
+	assert.equal(editor.buffer, "");
+
+	type(editor, "draft");
+	editor.submit();
+	type(editor, "  ");
+	editor.submit();
+	assert.deepEqual(editor.history, ["first", "second", "draft"]);
+
+	const small = new LineEditor();
+	for (const line of ["a", "b", "c"]) {
+		type(small, line);
+		small.submit(2);
+	}
+	assert.deepEqual(small.history, ["b", "c"]);
+});
+
+test("the word before the cursor is replaced by a completion", () => {
+	const editor = new LineEditor();
+	type(editor, "aws sq");
+	assert.equal(editor.word(), "sq");
+	editor.replaceWord("sqs ");
+	assert.equal(editor.buffer, "aws sqs ");
+	assert.equal(editor.cursor, 8);
+	assert.equal(editor.word(), "");
+});
+
+test("completions share a prefix and fit the terminal", () => {
+	assert.equal(commonPrefix(["create-queue", "create-topic"]), "create-");
+	assert.equal(commonPrefix(["only"]), "only");
+	assert.equal(commonPrefix(["a", "b"]), "");
+	assert.equal(commonPrefix([]), "");
+	assert.deepEqual(columns(["aa", "bb", "cc", "dd"], 8), ["aa  bb", "cc  dd"]);
+});
+
+test("commands post to the shell endpoint and failures become results", async () => {
+	const { runCommand, completions } = await import("../src/lib/cloudshell.ts");
+	const originalFetch = globalThis.fetch;
+	const scope = { account: "000000000000", region: "us-east-1" };
+	const sent: { url: string; body: Record<string, unknown> }[] = [];
+	let reply: () => Response = () => new Response("{}");
+	globalThis.fetch = (async (url: URL | string, init?: RequestInit) => {
+		sent.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+		return reply();
+	}) as typeof fetch;
+	try {
+		reply = () =>
+			Response.json({ stdout: "{}\n", stderr: "", exit: 0, request_id: "r" });
+		assert.deepEqual(await runCommand("aws sqs list-queues", scope), {
+			stdout: "{}\n",
+			stderr: "",
+			exit: 0,
+		});
+		assert.equal(sent[0].url, "/_tinystack/shell");
+		assert.deepEqual(sent[0].body, {
+			command: "aws sqs list-queues",
+			account: scope.account,
+			region: scope.region,
+		});
+
+		reply = () =>
+			Response.json(
+				{ stdout: "", stderr: "denied\n", exit: 254 },
+				{ status: 403 },
+			);
+		assert.deepEqual(await runCommand("aws iam get-user", scope), {
+			stdout: "",
+			stderr: "denied\n",
+			exit: 254,
+		});
+
+		reply = () =>
+			Response.json({ code: "AccessDenied", message: "no" }, { status: 403 });
+		const refused = await runCommand("whoami", scope);
+		assert.equal(refused.exit, 255);
+		assert.equal(refused.stderr, "AccessDenied: no\n");
+
+		reply = () => new Response("not found", { status: 404 });
+		assert.match((await runCommand("whoami", scope)).stderr, /not available/);
+
+		reply = () => Response.json({ candidates: ["sqs"] });
+		assert.deepEqual(await completions("aws sq", scope), ["sqs"]);
+		assert.equal(sent.at(-1)?.body.complete, true);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});

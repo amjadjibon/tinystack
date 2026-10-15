@@ -177,6 +177,14 @@ export function ConsoleHeader() {
 						: []),
 					{
 						type: "button",
+						iconName: "script",
+						ariaLabel: "CloudShell",
+						title: "CloudShell",
+						href: "/cloudshell",
+						onFollow: follow,
+					},
+					{
+						type: "button",
 						iconName: "command-prompt",
 						ariaLabel: "Request inspector",
 						title: "Request inspector",
@@ -358,6 +366,7 @@ function navigation(services: string[]): SideNavigationProps.Item[] {
 		{ type: "link", text: "Console home", href: "/" },
 		{ type: "link", text: "All services", href: "/services" },
 		{ type: "link", text: "All resources", href: "/resources" },
+		{ type: "link", text: "CloudShell", href: "/cloudshell" },
 		{ type: "divider" },
 		{
 			type: "section",

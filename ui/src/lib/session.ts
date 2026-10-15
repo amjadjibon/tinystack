@@ -181,6 +181,32 @@ export async function connectConsoleSession(
 	});
 }
 
+// disconnectIfExpired ends the session when TinyStack refused its credentials.
+async function disconnectIfExpired(response: Response, session: SignedSession) {
+	if (
+		(response.status !== 400 && response.status !== 403) ||
+		active !== session
+	)
+		return;
+	const failure = await response
+		.clone()
+		.json()
+		.catch(() => null);
+	if (
+		[
+			"ExpiredToken",
+			"InvalidAccessKeyId",
+			"InvalidClientTokenId",
+			"SignatureDoesNotMatch",
+			"UnrecognizedClientException",
+			"InvalidSignatureException",
+			"ExpiredTokenException",
+		].includes(failure?.code)
+	) {
+		disconnectConsoleSession();
+	}
+}
+
 export async function consoleActionFetch(
 	body: string,
 	service: string,
@@ -209,28 +235,7 @@ export async function consoleActionFetch(
 		region || session.region,
 		session.credentials,
 	);
-	if (
-		(response.status === 400 || response.status === 403) &&
-		active === session
-	) {
-		const failure = await response
-			.clone()
-			.json()
-			.catch(() => null);
-		if (
-			[
-				"ExpiredToken",
-				"InvalidAccessKeyId",
-				"InvalidClientTokenId",
-				"SignatureDoesNotMatch",
-				"UnrecognizedClientException",
-				"InvalidSignatureException",
-				"ExpiredTokenException",
-			].includes(failure?.code)
-		) {
-			disconnectConsoleSession();
-		}
-	}
+	await disconnectIfExpired(response, session);
 	return response;
 }
 
@@ -255,6 +260,32 @@ export async function adminFetch(path: string, method = "GET", body?: unknown) {
 		undefined,
 		{ path, method },
 	);
+}
+
+// shellFetch sends one CloudShell request. With a connected session it is
+// signed for TinyStack's own endpoints, since the service a command calls is
+// only known to the server; the server then runs the command as that person.
+export async function shellFetch(body: string, signal?: AbortSignal) {
+	const session = active;
+	const path = "/_tinystack/shell";
+	if (!session) {
+		return fetch(path, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body,
+			signal,
+		});
+	}
+	const response = await signedFetch(
+		body,
+		"tinystack",
+		session.region,
+		session.credentials,
+		signal,
+		{ path, method: "POST" },
+	);
+	await disconnectIfExpired(response, session);
+	return response;
 }
 
 type SSOHandoff = {

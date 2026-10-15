@@ -10,6 +10,7 @@ tasks:
       - task generate
       - task lint
       - task test
+      - task test:console
       - task build
       - task ui:check
       - task ui:test
@@ -45,6 +46,12 @@ tasks:
   test:
     cmds:
       - go test -race -count=1 -v ./...
+  test:console:
+    desc: "Test what only the console build has, the CloudShell (embeds the console, so it builds it first)"
+    deps: [ui:build]
+    cmds:
+      - go test -race -count=1 -tags console ./internal/gateway ./internal/shell
+      - go test -race -count=1 -tags console ./tests/integration -run 'TestShell'
   lint:
     cmds:
       - go vet ./...

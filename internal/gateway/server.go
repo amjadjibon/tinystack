@@ -211,6 +211,8 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		"/_localstack/health":        http.HandlerFunc(s.serveLocalStackHealth),
 	}
 
+	s.registerShell()
+
 	return s, nil
 }
 
