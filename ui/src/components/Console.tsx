@@ -48,6 +48,7 @@ export function ConsoleHeader() {
 	const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
 	const [query, setQuery] = useState("");
 	const scope = useScope();
+	const ssoAccount = scope.session?.sso ? scope.session.account : "";
 	const [sessionOpen, setSessionOpen] = useState(false);
 	const [sessionNotice, setSessionNotice] = useState("");
 	const names = consoleServiceNames(data?.services ?? []);
@@ -90,23 +91,35 @@ export function ConsoleHeader() {
 				},
 		{
 			type: "menu-dropdown",
-			text: scope.account ? `Account (${scope.account})` : "Account",
+			text:
+				ssoAccount || scope.account
+					? `Account (${ssoAccount || scope.account})`
+					: "Account",
 			title: "AWS account",
-			ariaLabel: `AWS account: ${scope.account || "Choose account"}`,
+			ariaLabel: `AWS account: ${ssoAccount || scope.account || "Choose account"}`,
 			disableTextCollapse: true,
-			items: [
-				...scope.accounts.map((account) => ({
-					id: account,
-					text: account,
-					itemType: "checkbox" as const,
-					checked: account === scope.account,
-				})),
-				{ id: "switch", text: "Switch account…" },
-			],
-			onItemClick: ({ detail }) =>
-				detail.id === "switch"
-					? openScopeDialog("account")
-					: scope.switchScope({ account: detail.id }),
+			items: ssoAccount
+				? [
+						{
+							id: ssoAccount,
+							text: `${ssoAccount} — Set by your SSO role`,
+							disabled: true,
+						},
+					]
+				: [
+						...scope.accounts.map((account) => ({
+							id: account,
+							text: account,
+							itemType: "checkbox" as const,
+							checked: account === scope.account,
+						})),
+						{ id: "switch", text: "Switch account…" },
+					],
+			onItemClick: ({ detail }) => {
+				if (ssoAccount) return;
+				if (detail.id === "switch") openScopeDialog("account");
+				else scope.switchScope({ account: detail.id });
+			},
 		},
 	];
 	const validDraft =
@@ -119,8 +132,7 @@ export function ConsoleHeader() {
 		return theme.reset;
 	}, []);
 	useEffect(() => applyPreferences(preferences), [preferences]);
-	// A person who signed in works in their role's account.
-	const ssoAccount = scope.session?.sso ? scope.session.account : "";
+	// Restore the role's account when a URL or remembered scope selects another account.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: switchScope changes every render.
 	useEffect(() => {
 		if (ssoAccount && ssoAccount !== scope.account && scope.region)
@@ -270,7 +282,7 @@ export function ConsoleHeader() {
 					}}
 				/>
 			) : null}
-			{scopeDialog && (
+			{scopeDialog && !(scopeDialog === "account" && ssoAccount) && (
 				<Modal
 					visible
 					header={
