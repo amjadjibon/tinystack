@@ -8,6 +8,11 @@ import (
 	"github.com/amjadjibon/tinystack/internal/gateway"
 )
 
+type authError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
 // session hands the credentials of the person signed in with this browser to
 // the console, after every page load until they expire or the person signs out.
 // The console keeps them in memory only. A POST from the console's own origin
@@ -28,7 +33,13 @@ func (s *Service) session(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		s.cookie(w, sessionCookie, "", 0, http.SameSiteStrictMode)
 		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(map[string]string{"code": "NoSignIn", "message": "Nobody is signed in."})
+		_ = json.NewEncoder(w).Encode(authError{Code: "NoSignIn", Message: "Nobody is signed in."})
+		return
+	}
+
+	if in.Role == "" {
+		w.WriteHeader(http.StatusConflict)
+		_ = json.NewEncoder(w).Encode(authError{Code: "ChooseRole", Message: "Choose a role first."})
 		return
 	}
 

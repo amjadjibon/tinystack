@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,7 +23,7 @@ const reuseFor = 5 * time.Minute
 var profileName = regexp.MustCompile(`^[\w.-]{1,64}$`)
 
 func newLoginCommand() *cobra.Command {
-	var configPath, endpoint, profile string
+	var configPath, endpoint, profile, role string
 	login := &cobra.Command{
 		Use:   "login",
 		Short: "Sign in through the console's OpenID Connect provider and print AWS credentials",
@@ -54,14 +55,19 @@ func newLoginCommand() *cobra.Command {
 				endpoint = public.Scheme + "://" + public.Host
 			}
 
-			cache, err := cachePath(profile)
+			cacheProfile := profile
+			if role != "" {
+				cacheProfile += fmt.Sprintf("-%x", sha256.Sum256([]byte(role)))
+			}
+
+			cache, err := cachePath(cacheProfile)
 			if err != nil {
 				return err
 			}
 
 			process := cached(cache)
 			if process == nil {
-				if process, err = sso.Login(cmd.Context(), oidc, endpoint, cmd.ErrOrStderr()); err != nil {
+				if process, err = sso.Login(cmd.Context(), oidc, endpoint, role, cmd.ErrOrStderr()); err != nil {
 					return err
 				}
 
@@ -76,6 +82,7 @@ func newLoginCommand() *cobra.Command {
 		},
 	}
 
+	login.Flags().StringVar(&role, "role", "", "allowed role ARN (required when several roles match)")
 	login.Flags().StringVar(&profile, "profile", "", "name for the cached credentials (required)")
 	login.Flags().StringVar(&configPath, "config", "", "the YAML configuration that TinyStack runs with")
 	login.Flags().

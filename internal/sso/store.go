@@ -136,3 +136,17 @@ func (s *store[T]) take(id string) (value T, found bool) {
 
 	return e.value, true
 }
+
+// replace updates a live session without extending its original lifetime.
+func (s *store[T]) replace(id string, value T) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e, ok := s.items[id]
+	if !ok || !s.now().Before(e.expires) {
+		return false
+	}
+
+	e.value = value
+	s.items[id] = e
+	return true
+}

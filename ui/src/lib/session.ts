@@ -11,7 +11,9 @@ export type ConsoleSession = {
 	// Set for a person who signed in through the identity provider.
 	sso?: SSOPerson;
 };
+export type SSORole = { role: string; account: string; name: string };
 export type SSOPerson = {
+	roles: SSORole[];
 	name: string;
 	role: string;
 	admin: boolean;
@@ -289,6 +291,7 @@ export async function shellFetch(body: string, signal?: AbortSignal) {
 }
 
 type SSOHandoff = {
+	roles: SSORole[];
 	accessKeyId: string;
 	secretAccessKey: string;
 	sessionToken: string;
@@ -315,6 +318,10 @@ export async function collectSSOSession(signal?: AbortSignal) {
 		signal,
 	});
 	if (response.status === 401) return false;
+	if (response.status === 409) {
+		window.location.assign("/_tinystack/auth/roles");
+		return false;
+	}
 	if (!response.ok) throw new Error("Cannot collect the SSO session.");
 	const handoff = (await response.json()) as SSOHandoff;
 	const expiresAt = Date.parse(handoff.expiration);
@@ -353,6 +360,7 @@ export async function collectSSOSession(signal?: AbortSignal) {
 			sso: {
 				name: handoff.name,
 				role: handoff.role,
+				roles: handoff.roles,
 				admin: handoff.admin,
 				expiresAt,
 			},
@@ -390,4 +398,19 @@ export async function signOutSSO() {
 		disconnectConsoleSession();
 	}
 	return endSession;
+}
+
+// A native same-origin POST changes the role and reloads the console so every
+// in-memory credential, query and open terminal belongs to the selected role.
+export function switchSSORole(role: string) {
+	const form = document.createElement("form");
+	form.method = "POST";
+	form.action = "/_tinystack/auth/roles";
+	const input = document.createElement("input");
+	input.type = "hidden";
+	input.name = "role";
+	input.value = role;
+	form.append(input);
+	document.body.append(form);
+	form.submit();
 }

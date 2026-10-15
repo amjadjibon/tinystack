@@ -7,28 +7,29 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
-	"github.com/amjadjibon/tinystack/internal/config"
 )
 
 var providerError = regexp.MustCompile(`^[a-z_]{1,64}$`)
 
 // signedIn is a finished sign-in, waiting for the console to collect it.
 type signedIn struct {
-	Expiration  time.Time `json:"expiration"`
-	AccessKeyID string    `json:"accessKeyId"`
-	Secret      string    `json:"secretAccessKey"`
-	Token       string    `json:"sessionToken"`
-	Account     string    `json:"account"`
-	ARN         string    `json:"arn"`
-	Role        string    `json:"role"`
-	Name        string    `json:"name"`
-	Admin       bool      `json:"admin"`
+	Expiration  time.Time    `json:"expiration"`
+	AccessKeyID string       `json:"accessKeyId"`
+	Secret      string       `json:"secretAccessKey"`
+	Token       string       `json:"sessionToken"`
+	Account     string       `json:"account"`
+	ARN         string       `json:"arn"`
+	Role        string       `json:"role"`
+	Name        string       `json:"name"`
+	Roles       []roleChoice `json:"roles"`
+	Admin       bool         `json:"admin"`
 }
 
 // callback finishes a sign-in: it checks the state, exchanges the code with
@@ -83,7 +84,7 @@ func (s *Service) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	person, problem := s.mint(ctx, claims)
+	person, problem := s.mint(ctx, claims, "")
 	if problem != nil {
 		fail(w, problem.status, problem.title, problem.message, problem.detail)
 		return
@@ -107,7 +108,12 @@ func (s *Service) callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.cookie(w, sessionCookie, id, time.Until(person.Expiration), http.SameSiteStrictMode)
-	http.Redirect(w, r, "/?signin=sso", http.StatusSeeOther)
+	destination := "/?signin=sso"
+	if person.Role == "" {
+		destination = Path + "roles"
+	}
+
+	http.Redirect(w, r, destination, http.StatusSeeOther)
 }
 
 // identify exchanges the code and returns the verified ID token's claims.
@@ -151,17 +157,10 @@ type problem struct {
 
 // mint maps the groups of a verified ID token's claims to a role and issues the
 // role's credentials for the person.
-func (s *Service) mint(ctx context.Context, claims map[string]any) (*signedIn, *problem) {
-	var role *config.OIDCRole
-	memberships := groups(claims, s.cfg.Claim)
-	for _, mapping := range s.cfg.Roles {
-		if slices.Contains(memberships, mapping.Group) {
-			role = &mapping
-			break
-		}
-	}
+func (s *Service) mint(ctx context.Context, claims map[string]any, selected string) (*signedIn, *problem) {
+	roles := s.allowedRoles(claims)
 
-	if role == nil {
+	if len(roles) == 0 {
 		s.logger.Info("sso: no group maps to a role", "subject", claims["sub"])
 		return nil, &problem{
 			title: "No access", message: "You signed in, but none of your groups gives you a role in TinyStack.",
@@ -169,7 +168,33 @@ func (s *Service) mint(ctx context.Context, claims map[string]any) (*signedIn, *
 		}
 	}
 
-	name := sessionName(claims)
+	person := &signedIn{
+		Name:       sessionName(claims),
+		Roles:      roles,
+		Expiration: time.Now().Add(time.Duration(s.cfg.SessionSeconds) * time.Second),
+	}
+	if selected != "" {
+		for _, role := range roles {
+			if role.Role == selected {
+				return s.mintRole(ctx, person, role)
+			}
+		}
+
+		return nil, &problem{
+			"No access", "The selected role is not allowed for this person.", "", http.StatusForbidden,
+		}
+	}
+
+	if len(roles) > 1 {
+		return person, nil
+	}
+
+	return s.mintRole(ctx, person, roles[0])
+}
+
+// mintRole only accepts a role from the verified, server-owned session.
+func (s *Service) mintRole(ctx context.Context, person *signedIn, role roleChoice) (*signedIn, *problem) {
+	name := person.Name
 	issued, err := s.tokens.AssumeRoleForFederatedUser(ctx, role.Role, name, int64(s.cfg.SessionSeconds))
 	if err != nil {
 		e := awserror.From(err)
@@ -193,10 +218,47 @@ func (s *Service) mint(ctx context.Context, claims map[string]any) (*signedIn, *
 		}
 	}
 
-	s.logger.Info("sso: signed in", "subject", claims["sub"], "session", name, "role", role.Role)
+	if person.Expiration.Before(issued.Expires) {
+		issued.Expires = person.Expiration
+	}
+
+	s.logger.Info("sso: signed in", "session", name, "role", role.Role)
 	return &signedIn{
-		AccessKeyID: issued.AccessKeyID, Secret: issued.SecretAccessKey, Token: issued.SessionToken,
-		Expiration: issued.Expires, Account: role.Account(), ARN: issued.ARN, Role: role.Role, Name: name,
-		Admin: role.Admin,
+		AccessKeyID: issued.AccessKeyID,
+		Secret:      issued.SecretAccessKey,
+		Token:       issued.SessionToken,
+		Expiration:  issued.Expires,
+		Account:     role.AccountID,
+		ARN:         issued.ARN,
+		Role:        role.Role,
+		Name:        name,
+		Admin:       role.Admin,
+		Roles:       person.Roles,
 	}, nil
+}
+
+// roleChoice is an allowed role retained in the server-side session. Admin is
+// never accepted from the browser or included in the public choices.
+type roleChoice struct {
+	Role      string `json:"role"`
+	AccountID string `json:"account"`
+	Name      string `json:"name"`
+	Admin     bool   `json:"-"`
+}
+
+func (s *Service) allowedRoles(claims map[string]any) []roleChoice {
+	memberships := groups(claims, s.cfg.Claim)
+	seen := map[string]bool{}
+	var roles []roleChoice
+	for _, mapping := range s.cfg.Roles {
+		if slices.Contains(memberships, mapping.Group) && !seen[mapping.Role] {
+			seen[mapping.Role] = true
+			roles = append(roles, roleChoice{
+				Role: mapping.Role, AccountID: mapping.Account(), Admin: mapping.Admin,
+				Name: strings.SplitN(mapping.Role, ":role/", 2)[1],
+			})
+		}
+	}
+
+	return roles
 }

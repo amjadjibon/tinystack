@@ -39,8 +39,7 @@ type OIDC struct {
 	Claim string `yaml:"claim"`
 	// Scopes are requested besides openid.
 	Scopes []string `yaml:"scopes"`
-	// Roles maps groups to roles, in the order the file lists them; the first
-	// group a person belongs to wins.
+	// Roles maps groups to roles. All matching roles are offered in file order.
 	Roles OIDCRoles `yaml:"roles"`
 	// SessionSeconds is how long the issued credentials last.
 	SessionSeconds int `yaml:"session_seconds"`

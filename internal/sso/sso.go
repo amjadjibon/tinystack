@@ -126,6 +126,7 @@ func (s *Service) Handlers() map[string]http.Handler {
 	return map[string]http.Handler{
 		"auth/login":    guarded(http.HandlerFunc(s.login)),
 		"auth/callback": guarded(http.HandlerFunc(s.callback)),
+		"auth/roles":    guarded(http.HandlerFunc(s.roles)),
 		"auth/session":  guarded(http.HandlerFunc(s.session)),
 		"auth/logout":   guarded(http.HandlerFunc(s.logout)),
 		"auth/device":   guarded(http.HandlerFunc(s.device)),

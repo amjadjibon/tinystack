@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -18,18 +20,103 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	ssmtypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
+
+	"github.com/amjadjibon/tinystack/internal/sso"
 )
 
-func TestSSORoleSelectionUsesConfigurationOrder(t *testing.T) {
+func TestSSORolePickerAndSwitch(t *testing.T) {
 	e := newSSOEnv(t)
-	e.oidc.Roles[0], e.oidc.Roles[1] = e.oidc.Roles[1], e.oidc.Roles[0]
-	person := e.signIn(t, ssoUser("both", "both@example.com", "platform-admins", "team-b-dev"))
-	if person.Role != ssoDevRole || person.Admin {
-		t.Fatalf(
-			"provider group order overrode the first configured mapping: role=%s admin=%v",
-			person.Role,
-			person.Admin,
-		)
+	b := browser(t)
+	back := e.callback(t, b, ssoUser("both", "both@example.com", "team-b-dev", "platform-admins"))
+	if back.StatusCode != http.StatusSeeOther || back.Header.Get("Location") != "/_tinystack/auth/roles" {
+		t.Fatalf("multiple groups did not open picker: %d %s", back.StatusCode, back.Header.Get("Location"))
+	}
+
+	page := get(t, b, e.console.URL+"/_tinystack/auth/roles")
+	body, _ := io.ReadAll(page.Body)
+	if page.StatusCode != http.StatusOK || !bytes.Contains(body, []byte("Account 111111111111")) ||
+		bytes.Index(body, []byte("Use Admin")) > bytes.Index(body, []byte("Use Developer")) {
+		t.Fatalf("picker did not preserve config order: %s", body)
+	}
+
+	if resp := e.post(t, b, "/_tinystack/auth/session", e.console.URL); resp.StatusCode != http.StatusConflict {
+		t.Fatalf("credentials issued before selection: %d", resp.StatusCode)
+	}
+
+	pick := func(role, origin string) int {
+		t.Helper()
+		r, err := http.NewRequestWithContext(context.Background(), http.MethodPost,
+			e.console.URL+"/_tinystack/auth/roles", strings.NewReader(url.Values{"role": {role}}.Encode()))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.Header.Set("Origin", origin)
+		resp, err := b.Do(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer func() { _ = resp.Body.Close() }()
+		return resp.StatusCode
+	}
+	collect := func() ssoPerson {
+		t.Helper()
+		resp := e.post(t, b, "/_tinystack/auth/session", e.console.URL)
+		var person ssoPerson
+		if resp.StatusCode != http.StatusOK || json.NewDecoder(resp.Body).Decode(&person) != nil {
+			t.Fatalf("handoff failed: %d", resp.StatusCode)
+		}
+
+		return person
+	}
+	if status := pick(ssoGhostRole, e.console.URL); status != http.StatusForbidden {
+		t.Fatalf("role outside allowed set accepted: %d", status)
+	}
+
+	if status := pick(ssoAdminRole, "https://evil.example"); status != http.StatusForbidden {
+		t.Fatalf("cross-origin switch accepted: %d", status)
+	}
+
+	if status := pick(ssoAdminRole, e.console.URL); status != http.StatusSeeOther {
+		t.Fatalf("admin selection failed: %d", status)
+	}
+
+	admin := collect()
+	if !admin.Admin || admin.Role != ssoAdminRole || admin.Account != "000000000000" {
+		t.Fatalf("wrong active administrator: %+v", admin)
+	}
+
+	if status, _ := e.signed(
+		t,
+		admin.credentials(),
+		"tinystack",
+		"GET",
+		"/_tinystack/requests",
+		nil,
+	); status != http.StatusOK {
+		t.Fatalf("active admin denied: %d", status)
+	}
+
+	if status := pick(ssoDevRole, e.console.URL); status != http.StatusSeeOther {
+		t.Fatalf("developer switch failed: %d", status)
+	}
+
+	dev := collect()
+	if dev.Admin || dev.Role != ssoDevRole || dev.Account != "111111111111" || dev.AccessKeyID == admin.AccessKeyID {
+		t.Fatalf("switch did not change credentials/account: %+v", dev)
+	}
+
+	if status, _ := e.signed(
+		t,
+		dev.credentials(),
+		"tinystack",
+		"GET",
+		"/_tinystack/requests",
+		nil,
+	); status != http.StatusForbidden {
+		t.Fatalf("inactive admin role granted access: %d", status)
 	}
 }
 
@@ -406,5 +493,41 @@ func TestSSOSessionAndLogoutRequireOriginEvidence(t *testing.T) {
 
 	if resp := e.post(t, b, "/_tinystack/auth/session", e.console.URL); resp.StatusCode != http.StatusOK {
 		t.Fatalf("rejected logout changed the session: %d", resp.StatusCode)
+	}
+}
+
+func TestSSODeviceRoleSelection(t *testing.T) {
+	e := newSSOEnv(t)
+	for _, tc := range []struct {
+		name, role, failure string
+	}{
+		{"choose", "", "ChooseRole"},
+		{"outside", ssoGhostRole, "403"},
+		{"developer", ssoDevRole, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e.idp.deviceUser = ssoUser(tc.name, tc.name+"@example.com", "platform-admins", "team-b-dev")
+			process, err := sso.Login(context.Background(), e.oidc, e.console.URL, tc.role, io.Discard)
+			if tc.failure != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.failure) {
+					t.Fatalf("expected %s, got %v", tc.failure, err)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			credentials := &aws.Credentials{
+				AccessKeyID: process.AccessKeyID, SecretAccessKey: process.SecretAccessKey,
+				SessionToken: process.SessionToken,
+			}
+			status, out := e.action(t, credentials, "sts", "sts", "GetCallerIdentity", "111111111111", map[string]any{})
+			if status != http.StatusOK || out["output"].(map[string]any)["Account"] != "111111111111" {
+				t.Fatalf("wrong selected credentials: %d %v", status, out)
+			}
+		})
 	}
 }

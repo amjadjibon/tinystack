@@ -121,7 +121,10 @@ func TestSessionOriginUsesConfiguredHTTPSOriginBehindProxy(t *testing.T) {
 		cfg:    config.OIDC{RedirectURL: "https://console.example/_tinystack/auth/callback"},
 		secure: true, sessions: newStore[signedIn](0, pending),
 	}
-	id, _ := s.sessions.putUntil(signedIn{AccessKeyID: "ASIA"}, time.Now().Add(time.Hour))
+	id, _ := s.sessions.putUntil(
+		signedIn{AccessKeyID: "ASIA", Role: "arn:aws:iam::000000000000:role/Admin"},
+		time.Now().Add(time.Hour),
+	)
 	for _, origin := range []string{"https://console.example", "https://evil.example", ""} {
 		r := httptest.NewRequest(http.MethodPost, "http://console.example"+Path+"session", http.NoBody)
 		r.AddCookie(&http.Cookie{Name: "__Host-tinystack_sso_session", Value: id})
@@ -183,5 +186,17 @@ func TestDeviceReplayStoreBoundsEachSubject(t *testing.T) {
 
 	if s.markOwned("other", "victim", 32) {
 		t.Fatal("replay was accepted")
+	}
+}
+
+func TestAllowedRolesAreDeduplicatedInConfigOrder(t *testing.T) {
+	s := &Service{cfg: config.OIDC{Claim: "groups", Roles: config.OIDCRoles{
+		{Group: "a", Role: "arn:aws:iam::000000000000:role/Admin", Admin: true},
+		{Group: "b", Role: "arn:aws:iam::111111111111:role/Developer"},
+		{Group: "b", Role: "arn:aws:iam::000000000000:role/Admin", Admin: true},
+	}}}
+	roles := s.allowedRoles(map[string]any{"groups": []any{"b", "a"}})
+	if len(roles) != 2 || roles[0].Name != "Admin" || roles[1].AccountID != "111111111111" {
+		t.Fatalf("unexpected allowed roles: %+v", roles)
 	}
 }

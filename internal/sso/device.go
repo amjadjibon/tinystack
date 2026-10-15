@@ -45,7 +45,7 @@ func (s *Service) device(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	reply := func(status int, code, message string) {
 		w.WriteHeader(status)
-		_ = json.NewEncoder(w).Encode(map[string]string{"code": code, "message": message})
+		_ = json.NewEncoder(w).Encode(authError{Code: code, Message: message})
 	}
 
 	switch {
@@ -60,6 +60,7 @@ func (s *Service) device(w http.ResponseWriter, r *http.Request) {
 
 	var in struct {
 		IDToken string `json:"id_token"`
+		Role    string `json:"role,omitempty"`
 	}
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxDeviceBody))
 	decoder.DisallowUnknownFields()
@@ -104,9 +105,14 @@ func (s *Service) device(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	person, problem := s.mint(ctx, claims)
+	person, problem := s.mint(ctx, claims, in.Role)
 	if problem != nil {
 		reply(problem.status, "SignInFailed", problem.message+" "+problem.detail)
+		return
+	}
+
+	if person.Role == "" {
+		reply(http.StatusForbidden, "ChooseRole", "Specify an allowed role ARN with tinystack login --role.")
 		return
 	}
 
@@ -121,7 +127,7 @@ func (s *Service) device(w http.ResponseWriter, r *http.Request) {
 // flow with the provider (instructions go to prompt), then the ID token goes to
 // TinyStack at endpoint, which maps the person's groups to a role and returns
 // its credentials. cfg is the server's console.auth.oidc.
-func Login(ctx context.Context, cfg *config.OIDC, endpoint string, prompt io.Writer) (*Process, error) {
+func Login(ctx context.Context, cfg *config.OIDC, endpoint, role string, prompt io.Writer) (*Process, error) {
 	if err := config.SecureURL("console endpoint", endpoint); err != nil {
 		return nil, fmt.Errorf("console endpoint: %w", err)
 	}
@@ -201,7 +207,7 @@ func Login(ctx context.Context, cfg *config.OIDC, endpoint string, prompt io.Wri
 		return nil, errors.New("the identity provider returned no ID token")
 	}
 
-	return redeem(ctx, client, endpoint, raw)
+	return redeem(ctx, client, endpoint, raw, role)
 }
 
 // deviceAuth adds the client's credentials to the device authorization request.
@@ -220,7 +226,7 @@ func (d deviceAuth) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 // redeem sends the ID token to TinyStack for credentials.
-func redeem(ctx context.Context, client *http.Client, endpoint, idToken string) (*Process, error) {
+func redeem(ctx context.Context, client *http.Client, endpoint, idToken, role string) (*Process, error) {
 	if err := config.SecureURL("console endpoint", endpoint); err != nil {
 		return nil, err
 	}
@@ -229,7 +235,7 @@ func redeem(ctx context.Context, client *http.Client, endpoint, idToken string) 
 	clientCopy := *client
 	clientCopy.CheckRedirect = noRedirect
 	client = &clientCopy
-	body, err := json.Marshal(map[string]string{"id_token": idToken})
+	body, err := json.Marshal(map[string]string{"id_token": idToken, "role": role})
 	if err != nil {
 		return nil, err
 	}

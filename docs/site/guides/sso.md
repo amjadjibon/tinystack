@@ -25,7 +25,7 @@ console:
       claim: groups                             # claim with the group names: a string or a list
       scopes: [profile, email, groups]          # besides openid; default is profile and email
       session_seconds: 3600                     # 900-43200, default 3600
-      roles:                                    # first group a person has, in this order, wins
+      roles:                                    # all matching roles, in this order
         platform-admins: { role: "arn:aws:iam::000000000000:role/Admin", admin: true }
         team-b-dev:      { role: "arn:aws:iam::111111111111:role/Developer" }
 ```
@@ -53,8 +53,10 @@ nothing is issued.
 2. The provider authenticates the person and redirects to `/_tinystack/auth/callback`. TinyStack checks the state,
    exchanges the code with the PKCE verifier, and verifies the ID token with the provider's published keys (signature,
    issuer, audience and expiry; asymmetric algorithms only) and the nonce.
-3. The groups in `claim` select the first matching role. No match: a 403 page, nothing issued. Otherwise STS issues a
-   role session named after `email`, else `preferred_username`, else `sub`.
+3. The groups in `claim` grant all matching roles, deduplicated by ARN in configuration order. No match: a 403
+   page, nothing issued. One match starts the session directly; several open an access portal listing account IDs
+   and role names. STS issues credentials only after selection, with a session name from `email`, else
+   `preferred_username`, else `sub`.
 4. TinyStack keeps the session in memory under an HttpOnly `SameSite=Strict` cookie that lasts until the credentials
    expire. After every page load the console collects the credentials with a same-origin
    `POST /_tinystack/auth/session`, so a reload or a new tab stays signed in. It keeps them only in the page's memory
@@ -65,7 +67,13 @@ nothing is issued.
    Sessions live in TinyStack's memory, so restarting TinyStack signs everyone out.
 
 The console shows who is signed in, the role and account, whether they are an administrator, and when the session
-ends. Console actions of a signed-in person are evaluated by IAM like AWS API calls: with `enforce` a denied action
+ends. The **Account** menu lists only the person's allowed accounts and roles. Choose one there, or open
+**Switch role**, to change credentials and reload the console without signing out. The allowed set stays in the
+server-side session store; a browser-supplied role is checked against it before credentials are issued. Switching
+does not extend the original browser session lifetime. Administrative access, including CloudShell, follows only
+the currently active role. Previously issued credentials remain valid until their STS expiration.
+
+Console actions of a signed-in person are evaluated by IAM like AWS API calls: with `enforce` a denied action
 returns an explained `AccessDeniedException`, and with `soft` it runs and the decision is recorded. The request
 inspector shows each person's session (`assumed-role/<Role>/<email>`).
 
@@ -101,7 +109,7 @@ still cannot. Console actions that such credentials sign directly are evaluated 
 `tinystack login` gives the AWS CLI and SDKs the same per-person role credentials. It uses the OAuth device
 authorization flow ([RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628)) with the `console.auth.oidc` settings of
 the configuration TinyStack runs with, then sends the resulting ID token to the running TinyStack, which verifies it,
-maps the groups exactly as for the console, and returns the role's credentials as `credential_process` JSON:
+checks the same allowed-role set as the console, and returns the role's credentials as `credential_process` JSON:
 
 ```ini
 # ~/.aws/config
@@ -110,6 +118,10 @@ credential_process = tinystack login --profile tinystack-dev --config /path/to/t
 region = us-east-1
 endpoint_url = http://127.0.0.1:4566
 ```
+
+For a person with several matching roles, add `--role arn:aws:iam::<account>:role/<name>` to
+`tinystack login` in the credential process command. The server validates that selection against the verified
+groups; omitting it returns `ChooseRole`. Each role has a separate cache within the profile.
 
 The first AWS CLI call prints a URL on standard error; open it, sign in, and the call continues. The credentials are cached
 under your user cache directory (`tinystack/sso/<profile>.json`, atomically replaced with mode 0600) until five minutes before they expire, so
@@ -146,6 +158,7 @@ warning, or trust the CA after exporting it with
 | Authelia: one client `tinystack-console`, `one_factor`, PKCE `S256` required, scopes `openid profile email groups`, a claims policy that puts `groups`, `email` and names in the ID token (Authelia 4.39 omits them otherwise), an RSA signing key that the `keygen` service generates on first start | `authelia/configuration.yml`, `compose.yml` |
 | Users `admin` (`platform-admins`, password `admin`) and `dev` (`team-b-dev`, password `dev`) | `authelia/users.yml` |
 | Client secret: hashed (PBKDF2) in Authelia's config, plain text for TinyStack's `client_secret_file` | `authelia/configuration.yml`, `secrets/oidc-client-secret` |
+| Demo user `admin` belongs to both groups and chooses Admin or Developer; `dev` has Developer only | `authelia/users.yml` |
 | TinyStack: `verify`, `enforce`, `claim: groups`, both mappings | `tinystack.yaml` |
 | Roles `Admin` (everything, account `000000000000`) and `Developer` (S3 and SQS only, account `111111111111`), created by a ready hook | `init/ready.d/10-sso-roles.sh` |
 

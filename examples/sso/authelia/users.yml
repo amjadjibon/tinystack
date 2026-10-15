@@ -1,6 +1,6 @@
 # DEVELOPMENT ONLY. Do not reuse these accounts or passwords anywhere else.
 #
-#   admin / admin   group platform-admins -> role Admin (administrator)
+#   admin / admin   groups platform-admins + team-b-dev -> choose Admin or Developer
 #   dev   / dev     group team-b-dev      -> role Developer (S3 and SQS only)
 #
 # The passwords are argon2id digests, as Authelia's file backend stores them. Make new ones with
@@ -13,6 +13,7 @@ users:
     email: 'admin@example.test'
     groups:
       - 'platform-admins'
+      - 'team-b-dev'
   dev:
     disabled: false
     displayname: 'Dev Developer'

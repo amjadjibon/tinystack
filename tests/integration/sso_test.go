@@ -83,7 +83,7 @@ func newSSOEnv(t *testing.T) *ssoEnv {
 	cfg.Identity.Mode = config.IdentityVerify
 	cfg.Identity.Authorization = config.AuthorizationEnforce
 	cfg.Identity.SecretKeys = map[string]string{"test": "test", "team-b": "test"}
-	cfg.Server.ConsolePort = 4567
+	cfg.Server.ConsolePort = console.Listener.Addr().(*net.TCPAddr).Port
 	cfg.Console.Auth.OIDC = &config.OIDC{
 		Issuer: idp.server.URL, ClientID: idpClientID, ClientSecretFile: secret,
 		RedirectURL: "http://" + console.Listener.Addr().String() + config.CallbackPath,
@@ -318,10 +318,10 @@ func TestSSOSignInAndIAMEnforcement(t *testing.T) {
 
 func TestSSOAdministrativeEndpoints(t *testing.T) {
 	e := newSSOEnv(t)
-	admin := e.signIn(t, ssoUser("root", "ada@example.com", "platform-admins", "team-b-dev"))
+	admin := e.signIn(t, ssoUser("root", "ada@example.com", "platform-admins"))
 	dev := e.signIn(t, ssoUser("dev", "dev@example.com", "team-b-dev"))
 	if !admin.Admin || admin.Role != ssoAdminRole || admin.Account != "000000000000" {
-		t.Fatalf("the first configured group wins: %+v", admin)
+		t.Fatalf("the single matching role is selected: %+v", admin)
 	}
 
 	for _, tc := range []struct {
@@ -758,7 +758,7 @@ func TestSSODeviceLogin(t *testing.T) {
 	ctx := context.Background()
 	e.idp.deviceUser = ssoUser("dev", "dev@example.com", "team-b-dev")
 	var prompt bytes.Buffer
-	process, err := sso.Login(ctx, e.oidc, e.console.URL, &prompt)
+	process, err := sso.Login(ctx, e.oidc, e.console.URL, "", &prompt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -789,19 +789,40 @@ func TestSSODeviceLogin(t *testing.T) {
 	}
 
 	e.idp.deviceUser = ssoUser("eve", "eve@example.com", "interns")
-	if _, err = sso.Login(ctx, e.oidc, e.console.URL, &prompt); err == nil || !strings.Contains(err.Error(), "403") {
+	if _, err = sso.Login(
+		ctx,
+		e.oidc,
+		e.console.URL,
+		"",
+		&prompt,
+	); err == nil ||
+		!strings.Contains(err.Error(), "403") {
 		t.Fatalf("unmapped person: %v", err)
 	}
 
 	e.idp.deviceUser = ssoUser("dev", "dev@example.com", "team-b-dev")
 	e.idp.iat = -time.Hour
-	if _, err = sso.Login(ctx, e.oidc, e.console.URL, &prompt); err == nil || !strings.Contains(err.Error(), "401") {
+	if _, err = sso.Login(
+		ctx,
+		e.oidc,
+		e.console.URL,
+		"",
+		&prompt,
+	); err == nil ||
+		!strings.Contains(err.Error(), "401") {
 		t.Fatalf("stale ID token: %v", err)
 	}
 
 	e.idp.iat = 0
 	e.idp.signWith = e.idp.other
-	if _, err = sso.Login(ctx, e.oidc, e.console.URL, &prompt); err == nil || !strings.Contains(err.Error(), "401") {
+	if _, err = sso.Login(
+		ctx,
+		e.oidc,
+		e.console.URL,
+		"",
+		&prompt,
+	); err == nil ||
+		!strings.Contains(err.Error(), "401") {
 		t.Fatalf("forged ID token: %v", err)
 	}
 }

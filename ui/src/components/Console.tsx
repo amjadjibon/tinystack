@@ -24,6 +24,7 @@ import { regionLabel } from "#/lib/regions";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { consoleServiceNames, service } from "#/lib/services";
+import { switchSSORole } from "#/lib/session";
 import {
 	applyConsoleTheme,
 	applyPreferences,
@@ -100,10 +101,16 @@ export function ConsoleHeader() {
 			disableTextCollapse: true,
 			items: ssoAccount
 				? [
+						...(scope.session?.sso?.roles ?? []).map((role) => ({
+							id: role.role,
+							text: `${role.account} — ${role.name}`,
+							itemType: "checkbox" as const,
+							checked: role.role === scope.session?.sso?.role,
+						})),
 						{
-							id: ssoAccount,
-							text: `${ssoAccount} — Set by your SSO role`,
-							disabled: true,
+							id: "roles",
+							text: "Switch role…",
+							href: "/_tinystack/auth/roles",
 						},
 					]
 				: [
@@ -116,7 +123,10 @@ export function ConsoleHeader() {
 						{ id: "switch", text: "Switch account…" },
 					],
 			onItemClick: ({ detail }) => {
-				if (ssoAccount) return;
+				if (ssoAccount) {
+					if (detail.id !== "roles") switchSSORole(detail.id);
+					return;
+				}
 				if (detail.id === "switch") openScopeDialog("account");
 				else scope.switchScope({ account: detail.id });
 			},

@@ -35,7 +35,7 @@ console:
       claim: groups
       scopes: [profile, email, groups]
       session_seconds: 3600
-      # Groups map to roles in this order; the first group a person has wins.
+      # All matching roles are offered in this order; people with several roles choose one.
       roles:
         platform-admins: { role: "arn:aws:iam::000000000000:role/Admin", admin: true }
         team-b-dev: { role: "arn:aws:iam::111111111111:role/Developer" }
