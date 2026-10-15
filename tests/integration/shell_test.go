@@ -224,22 +224,27 @@ func (e *ssoEnv) signedRaw(t *testing.T, credentials *aws.Credentials, service, 
 func TestShellAppliesTheSSOBoundary(t *testing.T) {
 	e := newSSOEnv(t)
 	dev := e.signIn(t, ssoUser("dev", "dev@example.com", "team-b-dev"))
-	status, out := e.shell(t, dev.credentials(), dev.Account, "aws s3 ls")
+	status, out := e.shell(t, dev.credentials(), dev.Account, "aws s3api list-buckets")
 	if status != http.StatusForbidden || !strings.Contains(out.Message, "only to administrators") {
 		t.Fatalf("member = %d %+v", status, out)
 	}
 
-	if status, _ = e.shell(t, dev.credentials(), "000000000000", "aws s3 ls"); status != http.StatusForbidden {
+	if status, _ = e.shell(
+		t,
+		dev.credentials(),
+		"000000000000",
+		"aws s3api list-buckets",
+	); status != http.StatusForbidden {
 		t.Fatalf("another account = %d", status)
 	}
 
-	body := shellBody(t, "aws s3 ls", dev.Account)
+	body := shellBody(t, "aws s3api list-buckets", dev.Account)
 	if status, _ = e.signedRaw(t, dev.credentials(), "s3", shellPath, body); status != http.StatusForbidden {
 		t.Fatalf("wrong signing service = %d", status)
 	}
 
 	bad := &aws.Credentials{AccessKeyID: dev.AccessKeyID, SecretAccessKey: "wrong", SessionToken: dev.Token}
-	if status, _ = e.shell(t, bad, dev.Account, "aws s3 ls"); status != http.StatusForbidden {
+	if status, _ = e.shell(t, bad, dev.Account, "aws s3api list-buckets"); status != http.StatusForbidden {
 		t.Fatalf("bad signature = %d", status)
 	}
 }
@@ -286,8 +291,8 @@ func testShellRealCLI(t *testing.T, mode string) {
 	console := httptest.NewServer(tinystack.Gateway.Internal())
 	defer console.Close()
 	for _, command := range []string{
-		"aws s3 mb s3://cloudshell-real-cli",
-		"aws s3 ls",
+		"aws s3api create-bucket --bucket cloudshell-real-cli",
+		"aws s3api list-buckets",
 		"aws s3api list-buckets --query 'Buckets[].Name' --output text",
 	} {
 		r := shellRequest(t, console, command)
@@ -302,7 +307,8 @@ func testShellRealCLI(t *testing.T, mode string) {
 		}
 
 		status, out := shellDo(t, console, r)
-		if status != 200 || out.Exit != 0 || !strings.Contains(out.Stdout, "cloudshell-real-cli") {
+		if status != 200 || out.Exit != 0 ||
+			(strings.Contains(command, "list-buckets") && !strings.Contains(out.Stdout, "cloudshell-real-cli")) {
 			t.Fatalf("%s: %d %+v", command, status, out)
 		}
 	}
@@ -330,5 +336,26 @@ func TestShellRealCLIFederatedIdentity(t *testing.T) {
 	status, out := shellDo(t, e.console, r)
 	if status != 200 || out.Exit != 0 || strings.TrimSpace(out.Stdout) != admin.ARN {
 		t.Fatalf("federated identity = %d %+v, want %s", status, out, admin.ARN)
+	}
+}
+
+func TestShellCompletionAuthentication(t *testing.T) {
+	e := newSSOEnv(t)
+	dev := e.signIn(t, ssoUser("dev", "dev@example.com", "team-b-dev"))
+	body := []byte(`{"command":"aws s","account":"` + dev.Account + `","complete":true}`)
+	if status, _ := e.signedRaw(t, dev.credentials(), "tinystack", shellPath, body); status != http.StatusForbidden {
+		t.Fatalf("member completion = %d", status)
+	}
+
+	r := shellRequest(t, e.console, "aws sts get-caller-identity")
+	if status, _ := shellDo(t, e.console, r); status != http.StatusForbidden {
+		t.Fatalf("unsigned verify-mode command = %d", status)
+	}
+
+	r = shellRequest(t, e.console, "aws s")
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	r.ContentLength = int64(len(body))
+	if status, _ := shellDo(t, e.console, r); status != http.StatusForbidden {
+		t.Fatalf("unsigned completion = %d", status)
 	}
 }

@@ -89,10 +89,10 @@ printf 'stderr\n' >&2
 	t.Setenv("HOME", "sentinel-home")
 	s := shellServer(t)
 	w := httptest.NewRecorder()
-	s.serveShell(w, shellRequestFor(`aws s3 ls 'two words' "" ; && '$(touch /tmp/no)' '*.txt' '$HOME'`))
+	s.serveShell(w, shellRequestFor(`aws s3api list-buckets 'two words' "" ; && '$(touch /tmp/no)' '*.txt' '$HOME'`))
 	events, out, stderr := shellEvents(t, w.Body)
 	for _, want := range []string{
-		"s3\nls\ntwo words\n\n;\n&&\n$(touch /tmp/no)\n*.txt\n$HOME\n",
+		"s3api\nlist-buckets\ntwo words\n\n;\n&&\n$(touch /tmp/no)\n*.txt\n$HOME\n",
 		"KEY=123456789012 SECRET=test REGION=eu-west-1 PROFILE=",
 		"ENDPOINT=http://127.0.0.1:4566",
 	} {
@@ -122,7 +122,7 @@ func TestShellRejectsOverridesAndNonAWS(t *testing.T) {
 func TestShellMissingCLI(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 	w := httptest.NewRecorder()
-	shellServer(t).serveShell(w, shellRequestFor("aws s3 ls"))
+	shellServer(t).serveShell(w, shellRequestFor("aws s3api list-buckets"))
 	if w.Code != 503 || !strings.Contains(w.Body.String(), "AWS CLI is not installed") {
 		t.Fatal(w.Code, w.Body)
 	}
@@ -131,7 +131,7 @@ func TestShellMissingCLI(t *testing.T) {
 func TestShellOutputCap(t *testing.T) {
 	fakeShellCLI(t, "/usr/bin/head -c 5000000 /dev/zero\n")
 	w := httptest.NewRecorder()
-	shellServer(t).serveShell(w, shellRequestFor("aws flood"))
+	shellServer(t).serveShell(w, shellRequestFor("aws sts get-caller-identity"))
 	events, out, stderr := shellEvents(t, w.Body)
 	if len(out) != shellMaxOutput || !strings.Contains(stderr, "truncated") || events[len(events)-1].Exit == nil {
 		t.Fatal(len(out), stderr)
@@ -160,7 +160,7 @@ func TestShellStreamsBeforeExit(t *testing.T) {
 	server.Config.WriteTimeout = 100 * time.Millisecond
 	server.Start()
 	defer server.Close()
-	r := shellRequestFor("aws stream")
+	r := shellRequestFor("aws sts get-caller-identity")
 	r.URL, _ = r.URL.Parse(server.URL + shellPath)
 	r.RequestURI = ""
 	response, err := server.Client().Do(r)
@@ -231,7 +231,7 @@ func TestShellCompletion(t *testing.T) {
 	)
 	r.Header.Set("Content-Type", "application/json")
 	s.serveShell(w, r)
-	if !strings.Contains(w.Body.String(), `["s3","s3api"]`) {
+	if !strings.Contains(w.Body.String(), `["s3api","secretsmanager","sqs","ssm","sts"]`) {
 		t.Fatal(w.Body)
 	}
 }
@@ -247,7 +247,7 @@ func TestShellClientDisconnectCancelsProcess(t *testing.T) {
 	defer server.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	r := shellRequestFor("aws slow")
+	r := shellRequestFor("aws sts get-caller-identity")
 	r = r.WithContext(ctx)
 	r.URL, _ = r.URL.Parse(server.URL + shellPath)
 	r.RequestURI = ""
@@ -300,5 +300,72 @@ func TestShellLocalCredentialsRespectAccountMappings(t *testing.T) {
 	delete(s.cfg.Identity.Accounts, "team")
 	if _, err = s.shellEnvironment(context.Background(), c, t.TempDir(), "/usr/bin/aws"); err == nil {
 		t.Fatal("command would run in the wrong account")
+	}
+}
+
+func TestShellRejectsHostCapabilities(t *testing.T) {
+	for _, line := range []string{
+		"aws s3 cp /etc/passwd s3://bucket/key", "aws s3 sync s3://bucket /tmp",
+		"aws s3 mv s3://bucket/key /tmp/host", "aws configure set credential_process evil",
+		"aws configure import --csv file:///etc/passwd", "aws history show", "aws help",
+		"aws cloudformation package", "aws cloudformation deploy", "aws lambda invoke f /tmp/out",
+		"aws ecr get-login", "aws ecr-public get-login-password", "aws eks update-kubeconfig",
+		"aws codeartifact login", "aws sso login", "aws deploy push", "aws emr ssh",
+		"aws ssm start-session", "aws ec2-instance-connect ssh", "aws gamelift upload-build",
+		"aws ecs execute-command", "aws alias-command", "aws s3api get-object --bucket b --key k /tmp/out",
+		"aws s3api put-object --bucket b --key k --body /etc/passwd",
+		"aws sqs send-message --queue-url file:///etc/passwd --message-body hi",
+		"aws sqs send-message --message-body fileb:///etc/passwd",
+		"aws sqs send-message --message-attributes 'x@=file:///etc/passwd'",
+		"aws sqs send-message --message-body https://example.com/secret",
+		"aws sts get-caller-identity --ca-b=/etc/passwd", "aws sts get-caller-identity --deb",
+		"aws sts get-caller-identity --no-sign", "aws sts get-caller-identity --help", "aws sts get-caller-identity help",
+		"aws sts get-caller-identity --cli-input-j=file:///etc/passwd",
+		"aws sts get-caller-identity --out json --endp=http://evil",
+	} {
+		t.Run(line, func(t *testing.T) {
+			if _, err := shellArgv(line); err == nil {
+				t.Fatal("host capability accepted")
+			}
+		})
+	}
+}
+
+func TestShellCompletionNeverExecutesOrListsFiles(t *testing.T) {
+	dir := fakeShellCLI(t, "exit 77\n")
+	marker := filepath.Join(dir, "executed")
+	if err := os.WriteFile(filepath.Join(dir, "aws_completer"),
+		[]byte("#!/bin/sh\ntouch '"+marker+"'\nprintf host-secret\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, line := range []string{
+		"aws s", "aws s3api list-", "aws s3 cp /", "aws $(id)", "aws help", "aws ssm get-parameter /",
+	} {
+		r := shellRequestFor(line)
+		data, _ := json.Marshal(shellRequest{Command: line, Account: "123456789012", Complete: true})
+		r.Body = io.NopCloser(strings.NewReader(string(data)))
+		w := httptest.NewRecorder()
+		shellServer(t).serveShell(w, r)
+		if w.Code != http.StatusOK || strings.Contains(w.Body.String(), "host-secret") {
+			t.Fatal(line, w.Code, w.Body)
+		}
+	}
+
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatal("completion executed a host helper", err)
+	}
+}
+
+func TestShellPolicyAllowsInlineAPIValues(t *testing.T) {
+	for _, line := range []string{
+		"aws sts get-caller-identity --query Arn --output text",
+		"aws s3api create-bucket --bucket example",
+		`aws dynamodb put-item --table-name t --item '{"pk":{"S":"value"}}'`,
+		`aws sqs send-message --queue-url /000000000000/q --message-body 'hello world'`,
+	} {
+		if _, err := shellArgv(line); err != nil {
+			t.Fatal(line, err)
+		}
 	}
 }

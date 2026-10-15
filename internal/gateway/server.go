@@ -1016,7 +1016,7 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 
 	if c.sensitive || (c.service != nil && c.service.Operations[m.Operation].Sensitive) {
 		rec.RequestBody, rec.ResponseBody = redacted, redacted
-		if rec.ErrorMessage != "" {
+		if c.sensitive && rec.ErrorMessage != "" {
 			rec.ErrorMessage = redacted
 		}
 	}

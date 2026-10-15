@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -26,6 +25,7 @@ import (
 )
 
 const (
+	shellBinary     = "aws"
 	shellStderr     = "stderr"
 	shellTimeout    = 5 * time.Minute
 	shellMissingCLI = "The AWS CLI is not installed on the TinyStack host; install AWS CLI v2. " +
@@ -73,20 +73,12 @@ func shellArgv(line string) ([]string, error) {
 		args = append(args, word.String())
 	}
 
-	if len(args) == 0 || args[0] != "aws" {
+	if len(args) == 0 || args[0] != shellBinary {
 		return nil, errors.New("CloudShell commands must start with aws; use help, history or clear in the terminal")
 	}
 
-	for _, arg := range args[1:] {
-		// Reject abbreviations too: argparse accepts unique prefixes of global options.
-		name, _, _ := strings.Cut(arg, "=")
-		for _, option := range []string{"--endpoint-url", "--profile", "--cli-auto-prompt"} {
-			if strings.HasPrefix(name, "--") && strings.HasPrefix(option, name) {
-				return nil, errors.New(
-					"CloudShell controls --endpoint-url and --profile; interactive auto-prompt is unavailable",
-				)
-			}
-		}
+	if err := shellPolicy(args[1:]); err != nil {
+		return nil, err
 	}
 
 	return args[1:], nil
@@ -236,6 +228,11 @@ func shellProcess(ctx context.Context, binary string, args, env []string, dir st
 }
 
 func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *shellRequest) {
+	if in.Complete {
+		completeShell(w, in.Command)
+		return
+	}
+
 	if s.shellRunning.Add(1) > shellMaxConcurrent {
 		s.shellRunning.Add(-1)
 		s.consoleFail(w, c, &awserror.Error{
@@ -246,18 +243,13 @@ func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *s
 
 	defer s.shellRunning.Add(-1)
 	args, err := shellArgv(in.Command)
-	if err != nil && !in.Complete {
+	if err != nil {
 		s.consoleFail(w, c, awserror.Validation("%s", err))
 		return
 	}
 
-	binary, err := exec.LookPath("aws")
+	binary, err := exec.LookPath(shellBinary)
 	if err != nil {
-		if in.Complete {
-			_ = json.NewEncoder(w).Encode(shellCandidates{Candidates: []string{}})
-			return
-		}
-
 		s.consoleFail(w, c, &awserror.Error{Code: "AWSCLINotInstalled", Message: shellMissingCLI, StatusCode: 503})
 		return
 	}
@@ -272,11 +264,6 @@ func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *s
 	env, err := s.shellEnvironment(r.Context(), c, dir, binary)
 	if err != nil {
 		s.consoleFail(w, c, err)
-		return
-	}
-
-	if in.Complete {
-		s.completeShell(w, r, in.Command, binary, env, dir)
 		return
 	}
 
@@ -320,49 +307,4 @@ func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *s
 
 	_ = json.NewEncoder(w).Encode(shellChunk{Exit: &exit})
 	_ = http.NewResponseController(w).Flush()
-}
-
-func (s *Server) completeShell(w http.ResponseWriter, r *http.Request, line, binary string, env []string, dir string) {
-	candidates := []string{}
-	completer := filepath.Join(filepath.Dir(binary), "aws_completer")
-	if _, err := os.Stat(completer); err != nil {
-		completer, _ = exec.LookPath("aws_completer")
-	}
-
-	if completer != "" && strings.HasPrefix(line, "aws ") {
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer cancel()
-		env = append(env, "COMP_LINE="+line, "COMP_POINT="+strconv.Itoa(len(line)))
-		cmd := shellProcess(ctx, completer, nil, env, dir)
-		// Bound completer output with the same streaming cap, without sending it to the client.
-		output := &strings.Builder{}
-		cmd.Stdout = &shellCompletionWriter{w: output, remaining: shellMaxOutput, cancel: cancel}
-		cmd.Stderr = io.Discard
-		if err := cmd.Run(); err == nil {
-			candidates = strings.Fields(output.String())
-		}
-
-		if cmd.Process != nil {
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		}
-	}
-
-	_ = json.NewEncoder(w).Encode(shellCandidates{Candidates: candidates})
-}
-
-type shellCompletionWriter struct {
-	w         io.Writer
-	cancel    context.CancelFunc
-	remaining int
-}
-
-func (w *shellCompletionWriter) Write(p []byte) (int, error) {
-	n := len(p)
-	if n > w.remaining {
-		w.cancel()
-		return 0, errors.New("completion output limit exceeded")
-	}
-
-	w.remaining -= n
-	return w.w.Write(p)
 }
