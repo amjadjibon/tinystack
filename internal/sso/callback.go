@@ -107,13 +107,10 @@ func (s *Service) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The Strict cookie is not sent on this cross-site redirect chain, so the console
+	// opens the role picker itself when the session is still waiting for a choice.
 	s.cookie(w, sessionCookie, id, time.Until(person.Expiration), http.SameSiteStrictMode)
-	destination := "/?signin=sso"
-	if person.Role == "" {
-		destination = Path + "roles"
-	}
-
-	http.Redirect(w, r, destination, http.StatusSeeOther)
+	http.Redirect(w, r, "/?signin=sso", http.StatusSeeOther)
 }
 
 // identify exchanges the code and returns the verified ID token's claims.

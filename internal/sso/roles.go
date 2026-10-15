@@ -23,6 +23,8 @@ func (s *Service) roles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet {
+		// With no-referrer, Chromium sends Origin: null on the page's own form posts.
+		w.Header().Set("Referrer-Policy", "same-origin")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_ = rolesPage.Execute(w, person)
 		return

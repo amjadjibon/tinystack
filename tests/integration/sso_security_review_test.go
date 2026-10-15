@@ -28,12 +28,16 @@ func TestSSORolePickerAndSwitch(t *testing.T) {
 	e := newSSOEnv(t)
 	b := browser(t)
 	back := e.callback(t, b, ssoUser("both", "both@example.com", "team-b-dev", "platform-admins"))
-	if back.StatusCode != http.StatusSeeOther || back.Header.Get("Location") != "/_tinystack/auth/roles" {
-		t.Fatalf("multiple groups did not open picker: %d %s", back.StatusCode, back.Header.Get("Location"))
+	if back.StatusCode != http.StatusSeeOther || back.Header.Get("Location") != "/?signin=sso" {
+		t.Fatalf("callback did not return to the console: %d %s", back.StatusCode, back.Header.Get("Location"))
 	}
 
 	page := get(t, b, e.console.URL+"/_tinystack/auth/roles")
 	body, _ := io.ReadAll(page.Body)
+	if page.Header.Get("Referrer-Policy") != "same-origin" {
+		t.Fatalf("picker forms would post Origin: null: %q", page.Header.Get("Referrer-Policy"))
+	}
+
 	if page.StatusCode != http.StatusOK || !bytes.Contains(body, []byte("Account 111111111111")) ||
 		bytes.Index(body, []byte("Use Admin")) > bytes.Index(body, []byte("Use Developer")) {
 		t.Fatalf("picker did not preserve config order: %s", body)
