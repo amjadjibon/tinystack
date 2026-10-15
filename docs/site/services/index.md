@@ -115,7 +115,7 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | --- | --- | --- |
 | [AWS Account](account.md) | 4 | Records |
 | [AWS Backup](backup.md) | 17 | Records only |
-| [AWS Budgets](budgets.md) | 16 | Fixture-backed actual spend; notifications remain records only |
+| [AWS Budgets](budgets.md) | 16 | Fixture-backed actual spend and ACTUAL notifications |
 | [AWS Config](config.md) | 16 | Records only |
 | [AWS Cost Explorer](costexplorer.md) | 19 | Fixture-backed queries; definitions remain records only |
 | [AWS Cost and Usage Reports](costandusagereportservice.md) | 7 | Records only |

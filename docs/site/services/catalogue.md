@@ -862,18 +862,21 @@ Persist regional vaults, immutable backup-plan versions and resource-selection m
 
 #### AWS Budgets
 
-Store account-wide budgets and notifications; supported budget reads calculate actual USD spend from user fixtures.
+Manage account-wide budgets and deliver supported ACTUAL alerts from user-supplied USD cost fixtures.
 
-**Execution:** Fixture-backed actual spend; notifications remain records only. **Selected operations:** 16.
+**Execution:** Fixture-backed actual spend and ACTUAL notifications. **Selected operations:** 16.
 
 - Sixteen AWS JSON 1.1 operations: budget CRUD/list, notification CRUD/list, subscriber CRUD/list and native tags.
 - Account-wide definitions shared across signing Regions, account identity checks, empty-Region budget ARNs and encoded storage names.
 - Fixed and planned limits, filters/types and time periods stored as configuration; supported COST/USD calendar budgets expose fixture-backed ActualSpend.
 - CreateBudget accepts notifications with subscribers; notification identity excludes NotificationState and defaults ThresholdType to PERCENTAGE.
 - AWS-documented limits of five notifications and ten EMAIL plus one SNS subscriber per notification; duplicate definitions fail explicitly.
-- Ordered pagination, inventory with RecordsOnly=true and ExecutionReady=false, Resource Groups Tagging API integration and Terraform aws_budgets_budget lifecycle.
+- Ordered pagination, inventory with evaluation readiness and notification state, Resource Groups Tagging API integration and Terraform aws_budgets_budget lifecycle.
 - Account-wide console for fixed COST/USAGE budget creation, limit edits, notification and email/SNS subscriber management, tags and deletion.
 - MONTHLY/QUARTERLY/ANNUALLY actual spend with supported dimension filters; no fixture data returns zero; see guides/costs.md.
+- One-second ACTUAL evaluation reuses ActualSpend; exact decimal percentage/absolute thresholds and GREATER_THAN/LESS_THAN/EQUAL_TO comparisons.
+- Durable once-per-rule-per-period markers, ALARM/OK state and bounded at-least-once delivery retries survive persistent-storage restarts.
+- Same-account standard SNS topics use their own Region; direct EMAIL is captured in deliveries and messages as service budgets; reset clears markers and delivery jobs.
 
 [Supported operations](budgets.md#supported-operations) · [Limitations](budgets.md#limitations-and-future-work)
 

@@ -2137,24 +2137,30 @@
       "title": "AWS Budgets",
       "category": "Management and governance",
       "scope": "Account-wide (global)",
-      "summary": "Store account-wide budgets and notifications; supported budget reads calculate actual USD spend from user fixtures.",
+      "summary": "Manage account-wide budgets and deliver supported ACTUAL alerts from user-supplied USD cost fixtures.",
       "features": [
         "Sixteen AWS JSON 1.1 operations: budget CRUD/list, notification CRUD/list, subscriber CRUD/list and native tags",
         "Account-wide definitions shared across signing Regions, account identity checks, empty-Region budget ARNs and encoded storage names",
         "Fixed and planned limits, filters/types and time periods stored as configuration; supported COST/USD calendar budgets expose fixture-backed ActualSpend",
         "CreateBudget accepts notifications with subscribers; notification identity excludes NotificationState and defaults ThresholdType to PERCENTAGE",
         "AWS-documented limits of five notifications and ten EMAIL plus one SNS subscriber per notification; duplicate definitions fail explicitly",
-        "Ordered pagination, inventory with RecordsOnly=true and ExecutionReady=false, Resource Groups Tagging API integration and Terraform aws_budgets_budget lifecycle",
+        "Ordered pagination, inventory with evaluation readiness and notification state, Resource Groups Tagging API integration and Terraform aws_budgets_budget lifecycle",
         "Account-wide console for fixed COST/USAGE budget creation, limit edits, notification and email/SNS subscriber management, tags and deletion",
-        "MONTHLY/QUARTERLY/ANNUALLY actual spend with supported dimension filters; no fixture data returns zero; see guides/costs.md"
+        "MONTHLY/QUARTERLY/ANNUALLY actual spend with supported dimension filters; no fixture data returns zero; see guides/costs.md",
+        "One-second ACTUAL evaluation reuses ActualSpend; exact decimal percentage/absolute thresholds and GREATER_THAN/LESS_THAN/EQUAL_TO comparisons",
+        "Durable once-per-rule-per-period markers, ALARM/OK state and bounded at-least-once delivery retries survive persistent-storage restarts",
+        "Same-account standard SNS topics use their own Region; direct EMAIL is captured in deliveries and messages as service budgets; reset clears markers and delivery jobs"
       ],
       "gaps": [
-        "No forecasts, price estimation, notification evaluation or delivery; explicit CostTypes, unsupported filters, other budget types and non-USD budgets omit CalculatedSpend",
+        "No forecasts or price estimation; FORECASTED notifications are retained but never fire. Explicit CostTypes, unsupported filters, other budget types and non-USD budgets are stored without evaluation",
         "Budget actions, performance history, account notification history, auto-adjustment, billing views and modern filter expressions/metrics are unsupported",
         "No CloudFormation handlers: AWS::Budgets::Budget and AWS::Budgets::BudgetsAction, CDK and awscc deployment are unavailable",
-        "No automatic expiration, planned-limit rollover or AWS cost refresh timing; planned limits are retained as definitions"
+        "Local one-second cadence differs from AWS billing refresh; planned limits use the latest timestamp not after evaluation time and carry forward; percentage alerts wait for an applicable limit",
+        "EMAIL is capture only; standard same-account SNS only; SNS topic policies are not enforced; SNS acceptance does not guarantee downstream delivery",
+        "Four delivery attempts with local 1/2/4-second backoff and a one-minute crash lease; final failures retained in storage; recent delivery/message diagnostics are in memory",
+        "Alert text approximates AWS plain-text notifications; no AWS HTML template, account masking, unsubscribe link or budget actions; completed jobs and markers are retained until budget deletion or reset"
       ],
-      "execution": "Fixture-backed actual spend; notifications remain records only",
+      "execution": "Fixture-backed actual spend and ACTUAL notifications",
       "package": "budgets"
     }
   },
