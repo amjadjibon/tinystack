@@ -84,6 +84,7 @@ nav:
       - IoT devices: guides/iot.md
       - Console and diagnostics: guides/diagnostics.md
       - Console single sign-on: guides/sso.md
+      - Console CloudShell: guides/cloudshell.md
       - Init hooks and reset: guides/init-hooks.md
       - Fault injection: guides/fault-injection.md
       - Cost fixtures and queries: guides/costs.md

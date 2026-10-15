@@ -59,6 +59,11 @@
       "title": "Console single sign-on",
       "summary": "Optional OpenID Connect sign-in to the console (authorization code with PKCE, any compliant provider such as Authelia, Zitadel, Keycloak, Authentik, Okta or Entra ID). Provider groups map to an IAM role; the person gets that role's temporary STS credentials, so IAM authorization and the request inspector apply per person, and the administrative endpoints require an administrator's session or root credentials. `tinystack login` signs the AWS CLI in the same way through the device authorization flow, with HTTPS outside loopback, single-use fresh tokens and private atomic credential caches. Enforced member inventory omits details and evaluates request conditions; mapped role deletion invalidates old federated credentials.",
       "reference": "guides/sso.md"
+    },
+    {
+      "title": "Console CloudShell",
+      "summary": "A browser terminal in the console (built with the console tag only) that runs `aws <service> <operation> --flags` commands in-process through the console action path, so the signed-in identity, IAM decisions, the SSO administrator/member boundary and the request inspector apply exactly as for console actions. Any generated operation works with kebab-case names, JSON, list and boolean flags, `--cli-input-json`, `--region` and `--output json|text`; there is no host shell, pipes, redirects or variables. Operations that start containers or issue credentials are administrator-only under SSO.",
+      "reference": "guides/cloudshell.md"
     }
   ],
   "services": {
