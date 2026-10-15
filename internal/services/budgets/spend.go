@@ -11,12 +11,27 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/costdata"
 )
 
-func (s *Service) actualSpend(ctx context.Context, b *api.Budget) error {
+// costLines loads the account's cost fixture lines once per request, for
+// actualSpend to read for every budget the request returns.
+func (s *Service) costLines(ctx context.Context) ([]costdata.Line, error) {
+	scope, err := request.GlobalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	fixtures, err := costdata.Load(ctx, s.store, scope)
+	return costdata.Lines(fixtures), err
+}
+
+// actualSpend sets b's CalculatedSpend.ActualSpend from lines, for the budgets
+// the fixture data can answer, and leaves it unset for the others.
+func actualSpend(b *api.Budget, lines []costdata.Line) error {
 	b.CalculatedSpend = nil
 
 	if common.Value(b.BudgetType) != budgetCost || b.CostTypes != nil {
 		return nil
 	}
+
 	if b.BudgetLimit != nil {
 		if common.Value(b.BudgetLimit.Unit) != "USD" {
 			return nil
@@ -25,6 +40,7 @@ func (s *Service) actualSpend(ctx context.Context, b *api.Budget) error {
 		if len(b.PlannedBudgetLimits) == 0 {
 			return nil
 		}
+
 		for _, limit := range b.PlannedBudgetLimits {
 			if common.Value(limit.Unit) != "USD" {
 				return nil
@@ -83,6 +99,7 @@ func (s *Service) actualSpend(ctx context.Context, b *api.Budget) error {
 			if len(values) == 0 {
 				return nil
 			}
+
 			if _, ok := costdata.Dimension(&costdata.Line{}, key); !ok {
 				return nil
 			}
@@ -99,17 +116,7 @@ func (s *Service) actualSpend(ctx context.Context, b *api.Budget) error {
 		return err
 	}
 
-	scope, err := request.GlobalScope(ctx)
-	if err != nil {
-		return err
-	}
-
-	fixtures, err := costdata.Load(ctx, s.store, scope)
-	if err != nil {
-		return err
-	}
-
-	amount := costdata.Sum(costdata.Select(costdata.Lines(fixtures), start, end, match))
+	amount := costdata.Sum(costdata.Select(lines, start, end, match))
 	b.CalculatedSpend = &api.CalculatedSpend{ActualSpend: &api.Spend{Amount: new(amount), Unit: new("USD")}}
 	return nil
 }

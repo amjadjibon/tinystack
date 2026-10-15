@@ -62,8 +62,13 @@ func (s *Service) DescribeBudget(
 	in *api.DescribeBudgetRequest,
 ) (*api.DescribeBudgetResponse, error) {
 	r, err := s.get(ctx, in.AccountId, in.BudgetName)
+	if err != nil {
+		return nil, err
+	}
+
+	lines, err := s.costLines(ctx)
 	if err == nil {
-		err = s.actualSpend(ctx, &r.Budget)
+		err = actualSpend(&r.Budget, lines)
 	}
 
 	return &api.DescribeBudgetResponse{Budget: &r.Budget}, err
@@ -88,6 +93,11 @@ func (s *Service) DescribeBudgets(
 		return nil, err
 	}
 
+	lines, err := s.costLines(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, next, err := page(
 		rows,
 		func(r *record) string { return key(scope, *r.Budget.BudgetName) },
@@ -97,7 +107,7 @@ func (s *Service) DescribeBudgets(
 	)
 	out := &api.DescribeBudgetsResponse{NextToken: next}
 	for _, r := range rows {
-		if e := s.actualSpend(ctx, &r.Budget); e != nil {
+		if e := actualSpend(&r.Budget, lines); e != nil {
 			return nil, e
 		}
 
