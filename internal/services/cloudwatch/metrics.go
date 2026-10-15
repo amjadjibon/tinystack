@@ -90,31 +90,34 @@ func (s *Service) PutMetricData(ctx context.Context, in *api.PutMetricDataInput)
 	return &api.PutMetricDataOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for i := range in.MetricData {
 			d := &in.MetricData[i]
-			dims := canonical(d.Dimensions)
-			id := metricID(namespace, common.Value(d.MetricName), dims)
-			rec := metric{
-				Namespace:  namespace,
-				Name:       common.Value(d.MetricName),
-				Dimensions: dims,
-				Last:       common.Unix(now),
-			}
-			if err := storage.Write(tx, metricKey(m.Scope, id), rec); err != nil {
+			if err := s.storeMetric(tx, m.Scope, namespace, d, &points[i], now); err != nil {
 				return err
 			}
-
-			if err := storage.Write(
-				tx,
-				dataPrefix(m.Scope, id)+s.sequenced(fromUnix(points[i].T)),
-				points[i],
-			); err != nil {
-				return err
-			}
-
-			prune(tx, dataPrefix(m.Scope, id), now.Add(-retention))
 		}
 
 		return nil
 	})
+}
+
+// storeMetric stores a validated datum, shared by public and internal ingestion.
+func (s *Service) storeMetric(tx storage.WriteTx, scope request.Scope, namespace string,
+	d *api.MetricDatum, p *point, now time.Time,
+) error {
+	dims := canonical(d.Dimensions)
+	id := metricID(namespace, common.Value(d.MetricName), dims)
+	rec := metric{
+		Namespace: namespace, Name: common.Value(d.MetricName), Dimensions: dims, Last: common.Unix(now),
+	}
+	if err := storage.Write(tx, metricKey(scope, id), rec); err != nil {
+		return err
+	}
+
+	if err := storage.Write(tx, dataPrefix(scope, id)+s.sequenced(fromUnix(p.T)), p); err != nil {
+		return err
+	}
+
+	prune(tx, dataPrefix(scope, id), now.Add(-retention))
+	return nil
 }
 
 // datum checks one MetricDatum and returns its data point.

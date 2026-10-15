@@ -98,7 +98,15 @@ func Handler(store storage.Store, account string) http.Handler {
 			found := false
 			err := store.Update(
 				r.Context(),
-				func(tx storage.WriteTx) error { _, found = tx.Get(key); tx.Delete(key); return nil },
+				func(tx storage.WriteTx) error {
+					_, found = tx.Get(key)
+					tx.Delete(key)
+					if found {
+						tx.Put(BillingIndexKey(scope), []byte("dirty"))
+					}
+
+					return nil
+				},
 			)
 			if err != nil {
 				fail(500, err)
@@ -168,6 +176,7 @@ func Handler(store storage.Store, account string) http.Handler {
 				return fmt.Errorf("at most %d fixtures per account", MaxFixtures)
 			}
 
+			tx.Put(BillingIndexKey(scope), []byte("dirty"))
 			return storage.Write(tx, key, row)
 		})
 		if err != nil {

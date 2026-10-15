@@ -13,8 +13,10 @@ import (
 )
 
 const (
-	MaxLines    = 10000
-	MaxFixtures = 100
+	// BillingIndexPrefix tracks accounts with pending or recurring billing samples.
+	BillingIndexPrefix = "aws/costdata/index/"
+	MaxLines           = 10000
+	MaxFixtures        = 100
 )
 
 type Line struct {
@@ -186,4 +188,9 @@ func Sum(lines []Line) string {
 	}
 
 	return s
+}
+
+// BillingIndexKey is global: fixture Regions do not constrain billing totals.
+func BillingIndexKey(scope request.Scope) string {
+	return BillingIndexPrefix + scope.AccountID + "//billing"
 }
