@@ -1,4 +1,5 @@
 site_name: TinyStack
+site_url: https://amjadjibon.github.io/tinystack/
 site_description: Local AWS APIs, service coverage, architecture, and contributor guides.
 repo_url: https://github.com/amjadjibon/tinystack
 repo_name: amjadjibon/tinystack
