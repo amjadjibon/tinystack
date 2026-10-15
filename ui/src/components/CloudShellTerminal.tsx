@@ -1,7 +1,7 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { type ITheme, Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	completions,
 	loadHistory,
@@ -47,6 +47,7 @@ const lines = (text: string) => text.replace(/\r?\n/g, "\r\n");
 // TinyStack. It is loaded on demand, so the console's first page does not
 // carry the terminal.
 export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
+	const [banner, setBanner] = useState<string>();
 	const container = useRef<HTMLDivElement>(null);
 	const current = useRef(scope);
 	current.current = scope;
@@ -98,15 +99,23 @@ export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
 				);
 				return newPrompt();
 			}
+			if (command === "help") {
+				term.write(
+					"Run aws commands with the host AWS CLI. Tab completes; Ctrl-C cancels.\r\n" +
+						"Built-ins: clear, help, history. Shell features and interactive prompts are unavailable.\r\n",
+				);
+				return newPrompt();
+			}
 			running = new AbortController();
 			try {
 				const result = await runCommand(
 					command,
 					current.current,
 					running.signal,
+					({ stream, data }) =>
+						term.write(stream === "stderr" ? red(lines(data)) : lines(data)),
 				);
-				if (result.stdout) term.write(lines(result.stdout));
-				if (result.stderr) term.write(red(lines(result.stderr)));
+				setBanner(result.banner);
 			} catch (error) {
 				if (!(error instanceof DOMException && error.name === "AbortError"))
 					term.write(
@@ -175,7 +184,7 @@ export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
 		});
 
 		term.write(
-			`${dim("TinyStack CloudShell. Commands run in-process as your console identity.")}\r\n` +
+			`${dim("TinyStack CloudShell. The host AWS CLI runs as your console identity.")}\r\n` +
 				`${dim("Type help for commands, Tab to complete, Ctrl-C to cancel. No pipes, variables or &&.")}\r\n\r\n`,
 		);
 		redraw();
@@ -201,11 +210,28 @@ export default function CloudShellTerminal({ scope }: { scope: ShellScope }) {
 	}, []);
 
 	return (
-		<div
-			ref={container}
-			role="application"
-			aria-label="CloudShell terminal"
-			style={{ height: "max(360px, calc(100vh - 340px))", width: "100%" }}
-		/>
+		<>
+			{banner && (
+				<div
+					role="alert"
+					style={{ padding: 12, background: "#fff3cd", color: "#664d03" }}
+				>
+					{banner}{" "}
+					<a
+						href="https://amjadjibon.github.io/tinystack/guides/cloudshell/"
+						target="_blank"
+						rel="noreferrer"
+					>
+						CloudShell setup
+					</a>
+				</div>
+			)}
+			<div
+				ref={container}
+				role="application"
+				aria-label="CloudShell terminal"
+				style={{ height: "max(360px, calc(100vh - 340px))", width: "100%" }}
+			/>
+		</>
 	);
 }

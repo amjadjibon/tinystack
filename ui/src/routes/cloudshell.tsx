@@ -22,7 +22,7 @@ function CloudShell() {
 					header={
 						<Header
 							variant="h1"
-							description={`AWS CLI-style commands run inside TinyStack as your console identity, in account ${account || "..."} and ${region || "..."}. Pipes, variables and && are not supported; use aws-local in a real shell for those.`}
+							description={`The host AWS CLI runs as your console identity, in account ${account || "..."} and ${region || "..."}. Shell features and interactive prompts are unavailable.`}
 						>
 							CloudShell
 						</Header>

@@ -1,72 +1,50 @@
 # Console CloudShell
 
-The console has a **CloudShell** page (side navigation and top bar): a terminal in the browser for AWS CLI-style
-commands. Each command line goes to the console listener (`POST /_tinystack/shell`), where TinyStack parses it and
-runs the operation in-process, through the same path as console actions. There is no host shell, no PTY and no
-external program.
+CloudShell runs the **real AWS CLI on the TinyStack host** and streams its stdout and stderr to the browser terminal.
+It is included only in builds with the `console` tag (`task build`). Install
+[AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) on that host and make
+`aws` available on TinyStack's PATH. The Docker image does **not** include the CLI; add it to your own image if
+CloudShell is needed there. A missing CLI produces an installation banner in the terminal.
 
-The shell is part of the web console, so only binaries built with the console tag (`task build`) have it; the
-headless build (`task build:headless`) neither contains nor links it. The terminal (xterm.js) is loaded when the page
-opens, not with the rest of the console.
-
-## Syntax
+## Commands
 
 ```text
-aws <service> <operation> [--member value ...] [--region r] [--output json|text] [--cli-input-json '{...}']
-aws <service> help              # the service's operations
-aws <service> <operation> help  # the operation's options
+aws s3 mb s3://example
+aws s3 ls
+aws s3api list-buckets --query 'Buckets[].Name' --output table
 ```
 
-```text
-aws s3api list-buckets
-aws sqs create-queue --queue-name q --attributes '{"DelaySeconds":"5"}'
-aws sqs receive-message --queue-url http://localhost:4566/000000000000/q --attribute-names All
-aws dynamodb put-item --table-name t --item '{"id":{"S":"1"}}'
-aws dynamodb scan --table-name t --consistent-read --region eu-west-1
-whoami
-```
+High-level commands, queries, output formats, waiters and pagination are provided by the installed CLI.
+TinyStack still supports only the APIs and parameters listed in its service documentation.
 
-- Services use the AWS CLI's names (`s3api`, `sqs`, `dynamodb`, `events`, `stepfunctions`, `cognito-idp`, ...); the
-  catalog's names (`s3`, `eventbridge`, `sfn`) work too. Operations and options are the model's names in kebab case,
-  so any operation TinyStack implements is available and new ones appear after `task generate`.
-- Scalars, numbers and timestamps (RFC 3339 or Unix seconds) are plain words. Booleans are `--flag`,
-  `--flag true|false` or `--no-flag`. Lists are space-separated values (or a JSON array). Structures, maps and lists
-  of them are JSON in single quotes; maps of strings also accept `Key=Value,Key2=Value2`. A blob given as text is
-  sent as those bytes.
-- `--cli-input-json` sets members from a JSON object; options on the line win.
-- Quoting follows the shell: single quotes are literal, double quotes allow `\"`, `\\`, `\$` and `` \` ``, a
-  backslash escapes one character.
-- Unknown services, operations and options, and anything unsupported, fail with a message; nothing is ignored.
-- Builtins: `help`, `whoami` (the caller's identity), `history`, `clear`. Up/Down browse the history (kept in the
-  browser tab's session storage), Tab completes services, operations and options, Ctrl-C cancels a running command
-  or clears the line, Ctrl-L clears the screen.
+The browser handles `clear`, `help` and `history`. History stays in memory and is never saved to browser storage.
+Tab uses the real `aws_completer`, if installed beside `aws` or on PATH; otherwise completion is unavailable.
+Ctrl-C cancels the HTTP request and terminates the command's process group.
 
-## Identity and IAM
+Arguments support quotes and backslash escapes. No host shell is launched: pipes, redirects, command lists,
+variables, globbing and command substitutions have no shell meaning and are passed as literal arguments.
+There is no stdin or interactive prompt. Commands have a five-minute deadline and a combined 4 MiB output limit.
+`--profile`, endpoint overrides and interactive auto-prompt are rejected, including abbreviated flags.
 
-Commands run as the person who is signed in to the console, in the account and Region the console shows
-(`--region` overrides the Region).
+## Credentials and access
 
-- Without a console session (parse mode) requests are unsigned, as console actions are.
-- With a session (root keys or SSO), the browser signs each command request for the `tinystack` service, like the
-  request inspector, and TinyStack verifies it. The operation then goes through the same IAM check as a console
-  action: root bypasses it, every other principal, including an SSO role session, is evaluated under
-  `identity.authorization` `soft` or `enforce`, and a denial prints the usual explained `AccessDenied` message.
-- Every command is recorded in the request inspector as the operation it called (protocol `console`).
-- When SSO is configured, operations that start containers or issue credentials are administrator-only, even if
-  the member's role allows them: `lambda:Invoke`, `ecs` RunTask, CreateService and UpdateService, `eks`
-  CreateCluster and CreateNodegroup, `elasticache` cluster, replication-group and serverless-cache create and modify,
-  `rds` CreateDBInstance, StartDBInstance, RebootDBInstance and CreateDBCluster, `sts` AssumeRole,
-  AssumeRoleWithWebIdentity and GetSessionToken, `iam` CreateAccessKey and `cognito-identity`
-  GetCredentialsForIdentity and the OpenID token operations. Administrators are root credentials and roles
-  mapped with `admin: true`. Without SSO, only IAM decides.
+In local parse mode, the selected account's 12-digit account ID is the access key, using TinyStack's existing
+account-from-access-key rule, with `test` as the secret. In verify mode, the console request must be signed for
+`tinystack` in the selected account. TinyStack issues a fresh STS session lasting at most 15 minutes, capped by
+the signer's session expiry, for that same verified user, role or account root. Role sessions keep their role,
+session name and federated status. Host AWS credentials are never used.
 
-## Gaps
+The CLI calls TinyStack's configured API listener over HTTP. Normal gateway authentication and IAM authorization
+apply to every resulting AWS request. The endpoint comes from server configuration, never the browser's Host
+header or the host's endpoint environment variables. The request inspector records the command request and its
+individual API calls.
 
-- No pipes, redirects, `&&`, `;`, `$VAR` or `$(...)`; they are rejected with a pointer to `aws-local`. For a real shell,
-  scripting, `jq` or the full AWS CLI, run `aws-local` (`cmd/aws-local`) on your own terminal.
-- No high-level `s3` commands (`ls`, `cp`, `sync`, `mb`), file upload or download, `file://` and `fileb://` values.
-- No `--query` (JMESPath), `--output table|yaml`, waiters, pagination helpers or customised CLI commands; one request is
-  sent and its first page printed. `aws configure`, profiles and `--endpoint-url` do not apply.
-- Output is returned when the command finishes (capped at 4 MiB); there is no streaming, `logs tail` or PTY mode.
-- Editing a line that wraps past the terminal width redraws imperfectly.
-- Blobs in output are base64, and members print in alphabetical order rather than the model's.
+When OIDC/SSO is configured, **all CloudShell commands and completion are administrator-only**. Root credentials
+and SSO roles mapped with `admin: true` qualify. This restriction exists because the real CLI can read and write
+host files, such as `file://...` arguments or `aws s3 cp /etc/hosts s3://example/`. Without OIDC, CloudShell is open
+to the local console user, like running `aws-local` on that host.
+
+Each command or completion gets a temporary HOME and working directory, removed on completion. The child receives
+only its selected credentials, Region, forced endpoint, empty config and credential files, disabled pager and
+metadata lookup, and a minimal PATH. It does not inherit the host HOME, profiles, `credential_process`, or other
+host environment variables. This environment isolation does not restrict the CLI's access to host files.

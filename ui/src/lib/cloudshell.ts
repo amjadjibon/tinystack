@@ -1,90 +1,86 @@
 import { shellFetch } from "./session.ts";
 
 export type ShellScope = { account: string; region: string };
-export type ShellResult = { stdout: string; stderr: string; exit: number };
+export type ShellChunk = { stream: "stdout" | "stderr"; data: string };
+export type ShellResult = { exit: number; banner?: string };
 
-type ShellBody = Partial<ShellResult> & {
+type ShellBody = {
 	candidates?: string[];
 	code?: string;
 	message?: string;
 };
 
-async function send(
-	command: string,
-	scope: ShellScope,
-	signal?: AbortSignal,
-	complete = false,
-) {
-	const response = await shellFetch(
-		JSON.stringify({
-			command,
-			account: scope.account,
-			region: scope.region,
-			...(complete ? { complete: true } : {}),
-		}),
-		signal,
-	);
-	const body = (await response.json().catch(() => null)) as ShellBody | null;
-	return { response, body };
-}
-
-// runCommand sends one command line. A command that fails still returns its
-// result, with the message on stderr; only a request TinyStack refuses before
-// running anything, or cannot answer, becomes an error result of exit 255.
 export async function runCommand(
 	command: string,
 	scope: ShellScope,
-	signal?: AbortSignal,
+	signal: AbortSignal | undefined,
+	onChunk: (chunk: ShellChunk) => void,
 ): Promise<ShellResult> {
-	const { response, body } = await send(command, scope, signal);
-	if (body && typeof body.exit === "number") {
+	const response = await shellFetch(
+		JSON.stringify({ command, ...scope }),
+		signal,
+	);
+	if (!response.ok) {
+		const body = (await response.json().catch(() => null)) as ShellBody | null;
+		const message =
+			body?.message ??
+			`The CloudShell request failed (HTTP ${response.status}).`;
+		onChunk({ stream: "stderr", data: `${message}\n` });
 		return {
-			stdout: body.stdout ?? "",
-			stderr: body.stderr ?? "",
-			exit: body.exit,
+			exit: 255,
+			...(body?.code === "AWSCLINotInstalled" ? { banner: message } : {}),
 		};
 	}
-	if (body?.code) {
-		return { stdout: "", stderr: `${body.code}: ${body.message}\n`, exit: 255 };
+	if (!response.body) throw new Error("The CloudShell response has no stream.");
+	const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+	let pending = "";
+	let exit: number | undefined;
+	try {
+		for (;;) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			pending += value;
+			let end = pending.indexOf("\n");
+			while (end >= 0) {
+				const chunk = JSON.parse(
+					pending.slice(0, end),
+				) as Partial<ShellChunk> & { exit?: number };
+				pending = pending.slice(end + 1);
+				if (typeof chunk.exit === "number") exit = chunk.exit;
+				else if (
+					(chunk.stream === "stdout" || chunk.stream === "stderr") &&
+					typeof chunk.data === "string"
+				)
+					onChunk({ stream: chunk.stream, data: chunk.data });
+				end = pending.indexOf("\n");
+			}
+		}
+	} finally {
+		reader.releaseLock();
 	}
-	return {
-		stdout: "",
-		stderr:
-			response.status === 404
-				? "CloudShell is not available here. Open the console served by a TinyStack built with the console.\n"
-				: `The CloudShell request failed (HTTP ${response.status}).\n`,
-		exit: 255,
-	};
+	if (exit === undefined)
+		throw new Error(
+			"The CloudShell stream ended before the command completed.",
+		);
+	return { exit };
 }
 
-// completions lists what could finish the last word of a command line.
-export async function completions(line: string, scope: ShellScope) {
+export async function completions(command: string, scope: ShellScope) {
 	try {
-		const { body } = await send(line, scope, undefined, true);
-		return body?.candidates ?? [];
+		const response = await shellFetch(
+			JSON.stringify({ command, ...scope, complete: true }),
+		);
+		const body = (await response.json()) as ShellBody;
+		return body.candidates ?? [];
 	} catch {
 		return [];
 	}
 }
 
-const historyKey = "tinystack.cloudshell.history";
-
-// loadHistory reads the commands typed in this browser tab.
+let history: string[] = [];
 export function loadHistory(): string[] {
-	try {
-		const saved = JSON.parse(sessionStorage.getItem(historyKey) ?? "[]");
-		return Array.isArray(saved)
-			? saved.filter((line) => typeof line === "string")
-			: [];
-	} catch {
-		return [];
-	}
+	return [...history];
 }
-
-export function saveHistory(history: string[]) {
-	try {
-		sessionStorage.setItem(historyKey, JSON.stringify(history));
-	} catch {
-		// The shell works without remembering commands.
-	}
+export function saveHistory(lines: string[]) {
+	history = [...lines];
 }

@@ -113,8 +113,10 @@ test("completions share a prefix and fit the terminal", () => {
 	assert.deepEqual(columns(["aa", "bb", "cc", "dd"], 8), ["aa  bb", "cc  dd"]);
 });
 
-test("commands post to the shell endpoint and failures become results", async () => {
-	const { runCommand, completions } = await import("../src/lib/cloudshell.ts");
+test("commands stream output and return clear request failures", async () => {
+	const { runCommand, completions, saveHistory, loadHistory } = await import(
+		"../src/lib/cloudshell.ts"
+	);
 	const originalFetch = globalThis.fetch;
 	const scope = { account: "000000000000", region: "us-east-1" };
 	const sent: { url: string; body: Record<string, unknown> }[] = [];
@@ -124,43 +126,48 @@ test("commands post to the shell endpoint and failures become results", async ()
 		return reply();
 	}) as typeof fetch;
 	try {
+		const chunks: unknown[] = [];
 		reply = () =>
-			Response.json({ stdout: "{}\n", stderr: "", exit: 0, request_id: "r" });
-		assert.deepEqual(await runCommand("aws sqs list-queues", scope), {
-			stdout: "{}\n",
-			stderr: "",
-			exit: 0,
-		});
+			new Response(
+				new ReadableStream({
+					start(controller) {
+						const encoder = new TextEncoder();
+						controller.enqueue(
+							encoder.encode('{"stream":"stdout","data":"first"}\n{"str'),
+						);
+						controller.enqueue(
+							encoder.encode('eam":"stderr","data":"second"}\n{"exit":7}\n'),
+						);
+						controller.close();
+					},
+				}),
+			);
+		assert.deepEqual(
+			await runCommand("aws s3 ls", scope, undefined, (c) => chunks.push(c)),
+			{ exit: 7 },
+		);
+		assert.deepEqual(chunks, [
+			{ stream: "stdout", data: "first" },
+			{ stream: "stderr", data: "second" },
+		]);
 		assert.equal(sent[0].url, "/_tinystack/shell");
-		assert.deepEqual(sent[0].body, {
-			command: "aws sqs list-queues",
-			account: scope.account,
-			region: scope.region,
-		});
-
+		assert.deepEqual(sent[0].body, { command: "aws s3 ls", ...scope });
 		reply = () =>
 			Response.json(
-				{ stdout: "", stderr: "denied\n", exit: 254 },
-				{ status: 403 },
+				{ code: "AWSCLINotInstalled", message: "install CLI" },
+				{ status: 503 },
 			);
-		assert.deepEqual(await runCommand("aws iam get-user", scope), {
-			stdout: "",
-			stderr: "denied\n",
-			exit: 254,
-		});
-
-		reply = () =>
-			Response.json({ code: "AccessDenied", message: "no" }, { status: 403 });
-		const refused = await runCommand("whoami", scope);
-		assert.equal(refused.exit, 255);
-		assert.equal(refused.stderr, "AccessDenied: no\n");
-
-		reply = () => new Response("not found", { status: 404 });
-		assert.match((await runCommand("whoami", scope)).stderr, /not available/);
-
-		reply = () => Response.json({ candidates: ["sqs"] });
-		assert.deepEqual(await completions("aws sq", scope), ["sqs"]);
+		assert.deepEqual(
+			await runCommand("aws s3 ls", scope, undefined, (c) => chunks.push(c)),
+			{ exit: 255, banner: "install CLI" },
+		);
+		reply = () => Response.json({ candidates: ["s3"] });
+		assert.deepEqual(await completions("aws s", scope), ["s3"]);
 		assert.equal(sent.at(-1)?.body.complete, true);
+		saveHistory(["secret"]);
+		const history = loadHistory();
+		history.push("changed");
+		assert.deepEqual(loadHistory(), ["secret"]);
 	} finally {
 		globalThis.fetch = originalFetch;
 	}
