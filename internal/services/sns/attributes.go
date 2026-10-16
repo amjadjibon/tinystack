@@ -10,12 +10,13 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	"github.com/amjadjibon/tinystack/internal/common"
+	iampolicy "github.com/amjadjibon/tinystack/internal/services/iam/policy"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// checkTopicAttribute validates a writable topic attribute. A Policy is stored
-// and never evaluated, and delivery status sample rates are stored too; like
+// checkTopicAttribute validates a writable topic attribute. Delivery status
+// sample rates are stored; like
 // SNS without a feedback role, TinyStack logs nothing for them. Attributes
 // that would change delivery fail.
 func checkTopicAttribute(name, v string) error {
@@ -32,6 +33,9 @@ func checkTopicAttribute(name, v string) error {
 		var parsed map[string]json.RawMessage
 		if len(v) > maxPolicy || json.Unmarshal([]byte(v), &parsed) != nil || parsed["Statement"] == nil {
 			return invalid("Policy Error: the policy must be a JSON object with a Statement")
+		}
+		if err := iampolicy.ValidateResource(v); err != nil {
+			return invalid("Policy Error: %s", err)
 		}
 	case strings.HasSuffix(name, "FeedbackSampleRate"):
 		n, err := strconv.Atoi(v)

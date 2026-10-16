@@ -20,6 +20,8 @@ func (s Scope) Key(service, kind, name string) string { return s.Prefix(service,
 type Metadata struct {
 	// Principal is set for permission-controlled external requests.
 	Principal *Principal
+	// AuthorizationValues holds trusted gateway condition values for policy lockout checks.
+	AuthorizationValues map[string][]string
 	Scope
 	RequestID, Service, Operation, Protocol, AccessKey string
 	// TraceID carries an incoming X-Ray trace header to function runtimes.

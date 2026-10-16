@@ -515,7 +515,13 @@ func TestIAMAuthorizationCoreResources(t *testing.T) {
 	key := authorizationUser(t, s)
 	id := aws.ToString(key.AccessKeyId)
 	rootIAM := iamClient(s, "test", "us-east-1")
-	topic, err := snsClient(s, "test").CreateTopic(ctx, &sns.CreateTopicInput{Name: new("iam-topic")})
+	topic, err := snsClient(s, "test").CreateTopic(ctx, &sns.CreateTopicInput{
+		Name: new("iam-topic"), Attributes: map[string]string{
+			// Exercise identity grants without the default topic policy's direct SourceOwner grant.
+			"Policy": `{"Statement":{"Effect":"Allow","Principal":{"AWS":"000000000000"},` +
+				`"Action":"sns:*","Resource":"*"}}`,
+		},
+	})
 	mustAuthorize(t, err)
 	secret, err := secretsClient(
 		s,

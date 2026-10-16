@@ -709,7 +709,8 @@ Store account-wide identities and optionally evaluate their permission policies.
 - Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations.
 - IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions.
 - Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits.
-- S3 bucket and SQS queue resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records.
+- S3 bucket, SQS queue and SNS topic resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records.
+- KMS requires a key policy Allow: same-account direct principal grants or account delegation plus IAM; cross-account requires both key and identity policies.
 - User and role permissions boundaries on creation and Put/Delete APIs, returned by Get/List; managed policy existence and boundary usage counts.
 - Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions.
 - Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions.
@@ -728,6 +729,8 @@ Exercise local cryptographic key and alias workflows.
 - Key lifecycle, aliases, policies, grants and tags.
 - SSM, Secrets Manager and SQS validate usable customer-managed keys.
 - SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use; AWS managed keys cannot be disabled, scheduled for deletion, or have their policy, description or rotation changed.
+- Default key policies enable IAM delegation; key ID, alias and ARN authorization resolves the owning key policy, with explicit Deny precedence and no root recovery.
+- CreateKey and PutKeyPolicy validate the supported resource policy subset and reject caller lockout unless BypassPolicyLockoutSafetyCheck is true.
 
 [Supported operations](kms.md#supported-operations) · [Limitations](kms.md#limitations-and-future-work)
 
@@ -1098,6 +1101,7 @@ Publish messages to local queues and functions, or confirmed HTTP subscriptions.
 - Email and SMS deliveries are recorded for inspection.
 - AWS-style console with account/Region-scoped standard and FIFO topic creation, display names, deduplication, policies and tags; subscription lists and details, endpoint selection, confirmation and deletion, raw delivery and attribute/body filters; message publishing and topic-specific delivery inspection.
 - Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens.
+- Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery.
 
 [Supported operations](sns.md#supported-operations) · [Limitations](sns.md#limitations-and-future-work)
 

@@ -141,8 +141,8 @@ func parseARN(arn *string, sub bool) ([]string, error) {
 }
 
 // resolve maps a topic ARN, or a subscription ARN when sub is true, to the
-// topic's storage key and the subscription ID. Topics outside the caller's
-// account and region do not exist for the caller.
+// topic's storage key and the subscription ID. Cross-account resolution is
+// available on the gateway resource authorization path; regions stay isolated.
 func resolve(ctx context.Context, arn *string, sub bool) (key, id string, err error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
@@ -154,7 +154,7 @@ func resolve(ctx context.Context, arn *string, sub bool) (key, id string, err er
 		return "", "", err
 	}
 
-	if parts[3] != m.Region || parts[4] != m.AccountID {
+	if parts[3] != m.Region || (parts[4] != m.AccountID && !m.ResourceAuthorization) {
 		return "", "", notFound("Topic")
 	}
 
@@ -162,6 +162,7 @@ func resolve(ctx context.Context, arn *string, sub bool) (key, id string, err er
 		id = parts[6]
 	}
 
+	m.AccountID = parts[4]
 	return topicKey(m, parts[5]), id, nil
 }
 
@@ -392,10 +393,9 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 	return &api.SubscribeResponse{SubscriptionArn: new(keyARN(key) + ":" + sub.ID)}, nil
 }
 
-// checkSubscriber checks a subscription's protocol and endpoint: SQS queues and
-// Lambda functions in the subscriber's account (cross-account delivery needs a
-// resource policy, which TinyStack does not model), HTTP and HTTPS URLs, and
-// email addresses.
+// checkSubscriber accepts SQS queues and Lambda functions in the subscriber's
+// account, HTTP/HTTPS URLs and email addresses. In-process deliveries bypass
+// destination resource policy enforcement.
 func checkSubscriber(protocol, endpoint, account string) error {
 	parts := strings.Split(endpoint, ":")
 	switch protocol {

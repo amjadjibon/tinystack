@@ -52,6 +52,8 @@ func (s *Service) AuthorizationResources(
 		topic, _, readErr := storage.Read[topic](tx, key)
 		if topic != nil {
 			target.Tags = common.CloneTags(topic.Tags)
+			target.OwnerAccount = strings.Split(ref, ":")[4]
+			target.Policy = topic.policy(key)
 		}
 
 		return readErr

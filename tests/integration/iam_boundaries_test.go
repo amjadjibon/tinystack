@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
@@ -430,4 +431,44 @@ func TestIAMBoundaryCrossAccountResourceGrant(t *testing.T) {
 	})
 	mustAuthorize(t, err)
 	boundaryDenied(t, boundaryGet(ctx, client), "permissions boundary")
+}
+
+func TestIAMBoundaryCapsKeyPolicyRoleGrant(t *testing.T) {
+	s := authorizationServer(t, config.AuthorizationEnforce, true)
+	ctx := context.Background()
+	root := iamClient(s, "test", "us-east-1")
+	role := boundaryRole(t, root, boundaryManaged(t, root, "key-cap", boundaryOther))
+	keys := kmsClient(s, "test", "us-east-1")
+	key := createKey(t, keys, "bounded")
+	assumed, err := stsClient(s, "test", "test").AssumeRole(ctx, &sts.AssumeRoleInput{
+		RoleArn: role, RoleSessionName: new("session"),
+	})
+	mustAuthorize(t, err)
+	client := kms.New(kms.Options{
+		Region: "us-east-1", BaseEndpoint: aws.String(s.URL), Credentials: temporary(assumed.Credentials),
+		Retryer: aws.NopRetryer{},
+	})
+	grant := func(principal string) {
+		t.Helper()
+		doc := fmt.Sprintf(`{"Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::000000000000:root"},`+
+			`"Action":"kms:*","Resource":"*"},{"Effect":"Allow","Principal":{"AWS":%q},`+
+			`"Action":"kms:Encrypt","Resource":"*"}]}`, principal)
+		_, putErr := keys.PutKeyPolicy(ctx, &kms.PutKeyPolicyInput{KeyId: key.KeyId, Policy: &doc})
+		mustAuthorize(t, putErr)
+	}
+	encrypt := func() error {
+		_, encryptErr := client.Encrypt(ctx, &kms.EncryptInput{KeyId: key.Arn, Plaintext: []byte("secret")})
+		return encryptErr
+	}
+
+	// A key policy naming the role is capped by the boundary; naming the session is not.
+	grant(*role)
+	err = encrypt()
+	wantCode(t, err, "AccessDeniedException")
+	if !strings.Contains(err.Error(), "permissions boundary") {
+		t.Fatalf("missing boundary layer: %v", err)
+	}
+
+	grant(aws.ToString(assumed.AssumedRoleUser.Arn))
+	mustAuthorize(t, encrypt())
 }

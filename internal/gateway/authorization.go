@@ -17,6 +17,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/iam/policy"
 )
 
+const authorizationKMS = "kms"
+
 // PolicyLookup reads the current identity policy snapshot through IAM.
 type PolicyLookup func(context.Context, *request.Principal) (iam.Authorization, error)
 
@@ -53,6 +55,20 @@ func (s *Server) authorize(ctx context.Context, r *http.Request, c *call, op *ca
 func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call, op *catalog.Operation,
 	input any, resources []catalog.AuthorizationResource,
 ) error {
+	if c.meta.Service == authorizationKMS {
+		arn := "arn:aws:iam::" + c.meta.AccountID + ":root"
+		principal := request.Principal{
+			Kind: request.PrincipalRoot, Account: c.meta.AccountID, UserID: c.meta.AccountID,
+			ARN: arn, PolicyARN: arn,
+		}
+		if c.credentials != nil {
+			principal = c.credentials.Principal
+		}
+
+		c.meta.Principal = &principal
+		c.meta.AuthorizationValues = authorizationValues(r, &principal, nil, c.meta.Region)
+	}
+
 	mode := s.cfg.Identity.Authorization
 	if mode == "" || mode == config.AuthorizationOff {
 		return nil
@@ -70,7 +86,8 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 	} else {
 		_, mapped := s.cfg.Identity.Accounts[c.meta.AccessKey]
 		_, secret := s.cfg.Identity.SecretKeys[c.meta.AccessKey]
-		if (!mapped && !secret) || (c.meta.Service != consoleS3 && c.meta.Service != consoleSQS) {
+		if (!mapped && !secret) || (c.meta.Service != consoleS3 && c.meta.Service != consoleSQS &&
+			c.meta.Service != authorizationKMS && c.meta.Service != consoleSNS) {
 			return nil
 		}
 
@@ -84,7 +101,8 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		}
 	}
 
-	if principal.Kind == request.PrincipalRoot && c.meta.Service != consoleS3 && c.meta.Service != consoleSQS {
+	if principal.Kind == request.PrincipalRoot && c.meta.Service != consoleS3 && c.meta.Service != consoleSQS &&
+		c.meta.Service != authorizationKMS && c.meta.Service != consoleSNS {
 		return nil
 	}
 
@@ -111,7 +129,9 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 	principal = snapshot.Principal
 	c.meta.Principal = &principal
-	c.meta.ResourceAuthorization = c.meta.Service == consoleS3 || c.meta.Service == consoleSQS
+	c.meta.ResourceAuthorization = c.meta.Service == consoleS3 || c.meta.Service == consoleSQS ||
+		c.meta.Service == authorizationKMS || c.meta.Service == consoleSNS
+	c.meta.AuthorizationValues = authorizationValues(r, &principal, snapshot.Tags, c.meta.Region)
 	ctx = request.WithMetadata(ctx, c.meta)
 	if resources == nil && c.service.Authorizer != nil {
 		resources, err = c.service.Authorizer.AuthorizationResources(ctx, op.Name, input)
@@ -130,7 +150,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 	action := iamAction(c.service, op)
 
-	values := authorizationValues(r, &principal, snapshot.Tags, c.meta.Region)
+	values := c.meta.AuthorizationValues
 
 	record := &AuthorizationRecord{Mode: mode, Principal: principal.ARN, Allowed: true}
 	for _, target := range resources {
@@ -173,6 +193,11 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		}
 
 		decision.Allowed = decision.Allowed && limitsAllow
+
+		if c.meta.Service == consoleSNS {
+			contextValues["aws:sourceowner"] = []string{principal.Account}
+		}
+
 		var resourceDecision *policy.Decision
 		crossAccount := target.OwnerAccount != "" && target.OwnerAccount != principal.Account
 		if principal.Kind == request.PrincipalRoot {
@@ -186,6 +211,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 				target.ARN,
 				policy.Context{
 					Values: contextValues, ResourceAccount: target.OwnerAccount, ResourceTags: target.TagsKnown,
+					AccountDelegation: target.PolicyRequired,
 				},
 				&principal,
 			)
@@ -195,11 +221,19 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 				(op.Name == "GetBucketPolicy" || op.Name == "PutBucketPolicy" || op.Name == "DeleteBucketPolicy")
 			queueRecovery := c.meta.Service == consoleSQS &&
 				(op.Name == "GetQueueAttributes" || op.Name == "SetQueueAttributes")
-			recovery := ownerRoot && (bucketRecovery || queueRecovery)
+			topicRecovery := c.meta.Service == consoleSNS &&
+				(op.Name == "GetTopicAttributes" || op.Name == "SetTopicAttributes")
+			recovery := ownerRoot && (bucketRecovery || queueRecovery || topicRecovery)
 			if !recovery {
-				if crossAccount {
+				switch {
+				case target.PolicyRequired:
+					// A key policy naming the role is still capped by its boundary and session policy.
+					keyPolicy := evaluated
+					keyPolicy.Allowed = evaluated.Allowed && (evaluated.BypassesLimits || limitsAllow)
+					decision.Allowed = policy.KeyPolicyAllowed(decision, keyPolicy, crossAccount)
+				case crossAccount:
 					decision.Allowed = decision.Allowed && evaluated.Allowed
-				} else {
+				default:
 					decision.Allowed = decision.Allowed ||
 						(evaluated.Allowed && (evaluated.BypassesLimits || limitsAllow))
 				}

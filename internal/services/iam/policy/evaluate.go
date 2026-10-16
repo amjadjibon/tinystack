@@ -29,7 +29,9 @@ type Context struct {
 	Values map[string][]string
 	// ResourceAccount owns the resource whose policy is evaluated.
 	ResourceAccount string
-	ResourceTags    bool
+	// AccountDelegation reports account Allow statements separately for KMS.
+	AccountDelegation bool
+	ResourceTags      bool
 }
 
 // Decision records matching statements and constructs that could not be evaluated.
@@ -37,6 +39,7 @@ type Decision struct {
 	Matched      []string `json:"matched,omitempty"`
 	Unsupported  []string `json:"unsupported,omitempty"`
 	Allowed      bool     `json:"allowed"`
+	Delegated    bool     `json:"delegated,omitempty"`
 	ExplicitDeny bool     `json:"explicit_deny,omitempty"`
 	// BypassesLimits marks a resource Allow granted directly to a user/session or wildcard.
 	BypassesLimits bool `json:"bypasses_limits,omitempty"`
@@ -99,6 +102,7 @@ func evaluate(documents []Document, action, resource string, context Context, pr
 				continue
 			}
 
+			delegatedAllow := false
 			if principal != nil {
 				matched, delegated, err := principalMatches(st.Principal, principal)
 				if err != nil {
@@ -109,9 +113,12 @@ func evaluate(documents []Document, action, resource string, context Context, pr
 				// An account principal delegates an Allow to the account's identity
 				// policies, so it grants a caller in the owning account only as root.
 				if !matched || (delegated && st.Effect == effectAllow &&
-					principal.Kind != request.PrincipalRoot && principal.Account == context.ResourceAccount) {
+					principal.Kind != request.PrincipalRoot && principal.Account == context.ResourceAccount &&
+					!context.AccountDelegation) {
 					continue
 				}
+
+				delegatedAllow = delegated && context.AccountDelegation && principal.Kind != request.PrincipalRoot
 			}
 
 			actions, validAction := elements(st.Action, st.NotAction)
@@ -148,9 +155,12 @@ func evaluate(documents []Document, action, resource string, context Context, pr
 			}
 
 			out.Matched = append(out.Matched, label+" ("+st.Effect+")")
-			if st.Effect == effectDeny {
+			switch {
+			case st.Effect == effectDeny:
 				out.ExplicitDeny = true
-			} else {
+			case delegatedAllow:
+				out.Delegated = true
+			default:
 				out.Allowed = true
 				if principal != nil {
 					// Exclude the underlying role ARN: it grants to the role,
@@ -257,7 +267,8 @@ func (c *Context) known(key string) bool {
 
 	switch key {
 	case usernameKey, "aws:userid", "aws:principalarn", "aws:principalaccount", "aws:sourceip",
-		"aws:currenttime", "aws:securetransport", "aws:requestedregion", "aws:sourcearn", "aws:sourceaccount":
+		"aws:currenttime", "aws:securetransport", "aws:requestedregion", "aws:sourcearn", "aws:sourceaccount",
+		"aws:sourceowner":
 		return true
 	}
 

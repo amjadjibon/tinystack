@@ -138,7 +138,7 @@ func TestKMSKeys(t *testing.T) {
 		t.Fatalf("policy = %+v %v", policy, err)
 	}
 
-	custom := `{"Version":"2012-10-17","Statement":[]}`
+	custom := `{"Version":"2012-10-17","Statement":{"Effect":"Allow","Principal":"*","Action":"kms:*","Resource":"*"}}`
 	if _, err = c.PutKeyPolicy(
 		ctx,
 		&kms.PutKeyPolicyInput{KeyId: aws.String(id), Policy: aws.String(custom)},

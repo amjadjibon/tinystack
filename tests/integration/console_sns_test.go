@@ -71,7 +71,7 @@ func TestConsoleSNSLifecycle(t *testing.T) {
 	)
 	write("SetTopicAttributes", map[string]any{
 		"TopicArn": arn, "AttributeName": "Policy",
-		"AttributeValue": `{"Version":"2012-10-17","Statement":[]}`,
+		"AttributeValue": `{"Statement":{"Effect":"Allow","Principal":"*","Action":"sns:*","Resource":"*"}}`,
 	})
 	write(
 		"TagResource",

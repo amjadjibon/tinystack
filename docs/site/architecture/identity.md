@@ -37,7 +37,7 @@ Cognito sign-in operations, retain their anonymous contract.
 
 ## Evaluated policy subsets
 
-Identity-based IAM policies and S3/SQS resource policies are evaluated when authorization is enabled.
+Identity-based IAM policies and S3/SQS/SNS/KMS resource policies are evaluated when authorization is enabled.
 Other resource policies remain stored without general enforcement. Separate features evaluate narrower policies:
 
 - STS checks the supported role trust-policy subset for role assumption.
@@ -70,7 +70,7 @@ principals, checked actions/resources, matched statements and evaluation limits.
 object in `/_tinystack/requests`, with the caller, action/resource checks, matched statements,
 unsupported constructs, and explanation. Decisions also appear in the server log.
 
-Configured access keys represent account root. Root has implicit identity permission, subject to the S3/SQS resource-policy rules below. IAM-created access keys use
+Configured access keys represent account root. Root has implicit identity permission, subject to the resource-policy rules below. IAM-created access keys use
 the user's inline and attached managed policies, plus all groups' policies. STS role sessions use
 the role's policies; user session tokens use their issuing user's policies. Default managed policy
 versions and current tags are read for every request. Deleted and recreated identities do not
@@ -125,7 +125,7 @@ ordinary role credentials connect through single sign-on instead. Console API in
 Deleting a mapped SSO role invalidates its old federated credentials, even if the same ARN is recreated. Discovery, OAuth, registry,
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
-Resource-based policies outside S3/SQS, organization SCPs/RCPs,
+Resource-based policies outside S3/SQS/SNS/KMS, organization SCPs/RCPs,
 extended ABAC, Access Analyzer and policy simulator APIs are not implemented. Existing STS trust-policy evaluation remains separate; dependent service permissions
 such as `iam:PassRole` are not generally inferred.
 
@@ -158,10 +158,10 @@ requires boundary and session Allow. A wildcard Principal (including one constra
 grants delegate through the identity intersection. Cross-account requests require the identity
 intersection and a resource Allow. Explicit denies remain effective in every case.
 
-### S3 bucket and SQS queue policies
+### S3 bucket, SQS queue and SNS topic policies
 
 With `identity.authorization: soft` or `enforce`, the gateway snapshots the resource owner and stored
-bucket policy or queue `Policy` attribute through the service's resource resolver before calling the
+bucket policy or queue/topic `Policy` attribute through the service's resource resolver before calling the
 operation. Every target in a copy or batch is checked. An explicit Deny in either policy wins.
 Within one account, identity and resource grants compose with the boundary/session rules above. Cross-account access
 requires both identity and resource Allow; foreign root has implicit identity permission but still
@@ -172,7 +172,8 @@ Principals match `"*"`, `{"AWS":"*"}`, account IDs, account-root ARNs, exact use
 account ID or account-root ARN delegates to that account's identity policies: an Allow naming the owning account
 grants only its root user, while a Deny naming it applies to every principal in the account.
 Resource policies use the condition operators and keys above, plus `aws:SourceArn` and
-`aws:SourceAccount` (absent on ordinary API calls). Unsupported elements, including `NotPrincipal`,
+`aws:SourceAccount` (absent on ordinary API calls). SNS also supplies `aws:SourceOwner`
+from the authenticated caller account for its default topic policy. Unsupported elements, including `NotPrincipal`,
 federated principals, partial principal wildcards and unknown condition keys/operators, are rejected
 when writing policies. The inspector's `checks[].resource_policy` records resource Allow/Deny and
 matched statements; `cross_account` identifies checks requiring both policy types.
@@ -183,14 +184,43 @@ Owning-account root is subject to explicit resource Deny, except S3 `GetBucketPo
 S3 BlockPublicPolicy continues to reject public policy writes. Owning-account root can also use
 SQS `GetQueueAttributes` and `SetQueueAttributes` to recover a denied queue policy, consistent with
 [AWS root queue recovery](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html).
-TinyStack grants this exception for all attributes; it does not model AssumeRoot task policies.
+SNS owning-root `GetTopicAttributes` and `SetTopicAttributes` have the same recovery exception.
+TinyStack grants these exceptions for all attributes; it does not model AssumeRoot task policies.
 
 Deliberate limits: ACLs, object ownership and STS federated-user principals are not modeled.
 Service principals such as `sns.amazonaws.com` can be stored, but in-process SNS→SQS,
-S3 notifications→SQS and EventBridge→SQS calls retain their existing direct delivery path and bypass
+S3 notifications→SQS/SNS, EventBridge→SQS/SNS and SNS→Lambda calls retain their existing direct delivery path and bypass
 policy enforcement. Source conditions do not restrict those deliveries. Cross-account policy management
 and SQS actions are evaluated by the same rule rather than modeling every AWS owner-only API exception.
 Unsigned/unresolved parse-mode callers retain their existing bypass; use verify mode for authentication.
+
+### KMS key policies
+
+KMS uses the same resource policy evaluator and inspector records, with a mandatory key policy gate.
+Within the owning account, a direct principal Allow in the key policy grants access without an IAM Allow.
+An account ID or account-root Allow delegates to IAM: the caller also needs an identity-policy Allow.
+The default key policy enables this delegation with the owning account-root principal and `kms:*`.
+An IAM Allow alone cannot grant access when the key policy omits that delegation. Cross-account access
+requires both an IAM Allow and a key policy Allow, whether direct or delegated. An explicit Deny in
+either policy wins. The resource inspector's `delegated` flag identifies account delegation separately
+from a direct key policy Allow.
+
+Key IDs, key ARNs, alias names and alias ARNs resolve to the actual key ARN, tags, owner and policy
+in a storage snapshot. Cross-account requests must name the owner through a key or alias ARN;
+bare IDs and alias names remain scoped to the caller. Both keys are checked for re-encryption.
+
+There is no KMS root recovery exception: a key policy can lock out even its owning root.
+CreateKey and PutKeyPolicy reject a proposed policy that would prevent the caller from calling
+PutKeyPolicy, unless `BypassPolicyLockoutSafetyCheck` is true. This safety validation also runs with
+authorization off or soft; bypass does not waive authorization against the existing key policy.
+See [AWS key policies](https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html) and
+[PutKeyPolicy](https://docs.aws.amazon.com/kms/latest/APIReference/API_PutKeyPolicy.html).
+
+Deliberate limits: KMS grants and tokens remain stored metadata and do not authorize access; grant
+constraints and KMS-specific condition keys are not evaluated. The supported resource policy subset
+is validated on CreateKey and PutKeyPolicy. AWS's owner-only restrictions on individual cross-account
+management APIs are not modeled. In-process service integrations retain their direct path and bypass
+gateway authorization. Unresolved parse-mode callers retain the same bypass as S3/SQS/SNS.
 
 ## Namespaces and uniqueness
 

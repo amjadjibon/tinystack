@@ -23,7 +23,7 @@ See the [implemented feature catalogue](catalogue.md#sns) for this service's cap
 
 - Email and SMS are recorded, not sent to providers.
 - No mobile application or Firehose subscriptions, delivery retries or message signatures.
-- Topic policies are stored but not evaluated; no cross-account subscriptions.
+- SQS/Lambda subscription endpoints must belong to the subscriber's account; in-process S3/EventBridge to SNS and SNS to SQS/Lambda deliveries bypass gateway policies.
 - In verify mode, console management requires an authenticated root console session; without a session topic/subscription inventory and delivery history remain available.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)

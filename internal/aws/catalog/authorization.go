@@ -16,6 +16,8 @@ type AuthorizationResource struct {
 	Action       string
 	ARN          string
 	TagsKnown    bool
+	// PolicyRequired selects KMS semantics: direct Allow or account delegation plus IAM.
+	PolicyRequired bool
 }
 
 // Authorizer is implemented next to each service's resource lookups.

@@ -225,12 +225,13 @@
         "HTTP/HTTPS confirmation and outbound delivery",
         "Email and SMS deliveries are recorded for inspection",
         "AWS-style console with account/Region-scoped standard and FIFO topic creation, display names, deduplication, policies and tags; subscription lists and details, endpoint selection, confirmation and deletion, raw delivery and attribute/body filters; message publishing and topic-specific delivery inspection",
-        "Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens"
+        "Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens",
+        "Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery"
       ],
       "gaps": [
         "Email and SMS are recorded, not sent to providers",
         "No mobile application or Firehose subscriptions, delivery retries or message signatures",
-        "Topic policies are stored but not evaluated; no cross-account subscriptions",
+        "SQS/Lambda subscription endpoints must belong to the subscriber's account; in-process S3/EventBridge to SNS and SNS to SQS/Lambda deliveries bypass gateway policies",
         "In verify mode, console management requires an authenticated root console session; without a session topic/subscription inventory and delivery history remain available"
       ],
       "execution": "Local behavior",
@@ -575,14 +576,15 @@
         "Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations",
         "IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions",
         "Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits",
-        "S3 bucket and SQS queue resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records",
+        "S3 bucket, SQS queue and SNS topic resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records",
+        "KMS requires a key policy Allow: same-account direct principal grants or account delegation plus IAM; cross-account requires both key and identity policies",
         "User and role permissions boundaries on creation and Put/Delete APIs, returned by Get/List; managed policy existence and boundary usage counts",
         "Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions",
         "Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions",
         "Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess"
       ],
       "gaps": [
-        "No resource-policy enforcement outside S3/SQS, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation",
+        "No resource-policy enforcement outside S3/SQS/SNS/KMS, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation",
         "AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles",
         "No access-key usage tracking",
         "In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions",
@@ -668,13 +670,16 @@
         "Encrypt/decrypt, re-encryption, data keys, signing and public-key retrieval",
         "Key lifecycle, aliases, policies, grants and tags",
         "SSM, Secrets Manager and SQS validate usable customer-managed keys",
-        "SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use; AWS managed keys cannot be disabled, scheduled for deletion, or have their policy, description or rotation changed"
+        "SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use; AWS managed keys cannot be disabled, scheduled for deletion, or have their policy, description or rotation changed",
+        "Default key policies enable IAM delegation; key ID, alias and ARN authorization resolves the owning key policy, with explicit Deny precedence and no root recovery",
+        "CreateKey and PutKeyPolicy validate the supported resource policy subset and reject caller lockout unless BypassPolicyLockoutSafetyCheck is true"
       ],
       "gaps": [
-        "Policies and grants are stored but not evaluated",
+        "Grants and grant tokens are stored but do not authorize access; grant constraints are not evaluated",
         "No key-material rotation, imports, custom key stores or multi-region keys",
         "No KEY_AGREEMENT, secp256k1, SM2, ML-DSA or attestation recipient behavior",
-        "Local ciphertext formats are emulator-specific"
+        "Local ciphertext formats are emulator-specific",
+        "Service-specific KMS condition keys and AWS owner-only cross-account API restrictions are not modeled; in-process service calls bypass gateway policy enforcement"
       ],
       "execution": "Local behavior",
       "package": "kms"

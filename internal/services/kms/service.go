@@ -7,7 +7,7 @@
 //
 // Each key record holds its key material (256 bits for encryption keys, the
 // HMAC length for HMAC keys), which is never rotated.
-// Policies are stored, never evaluated. A key past its scheduled deletion date
+// Key policies are enforced by the gateway. A key past its scheduled deletion date
 // is treated as gone.
 package kms
 
@@ -27,6 +27,8 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/iam"
+	iampolicy "github.com/amjadjibon/tinystack/internal/services/iam/policy"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -48,8 +50,9 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
-	now   func() time.Time
+	store    storage.Store
+	policies func(context.Context, *request.Principal) (iam.Authorization, error)
+	now      func() time.Time
 }
 
 func New(store storage.Store) *Service {
@@ -260,6 +263,7 @@ func (s *Service) view(ctx context.Context, ref *string, aliases bool, fn func(r
 		return err
 	}
 
+	scope = referenceScope(ctx, scope, common.Value(ref))
 	return s.store.View(ctx, func(tx storage.ReadTx) error {
 		k, loadErr := s.load(tx, scope, ref, aliases)
 		if loadErr != nil {
@@ -277,6 +281,7 @@ func (s *Service) change(ctx context.Context, ref *string, fn func(request.Scope
 		return err
 	}
 
+	scope = referenceScope(ctx, scope, common.Value(ref))
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		k, loadErr := s.load(tx, scope, ref, false)
 		if loadErr != nil {
@@ -356,11 +361,15 @@ func checkDescription(description *string) error {
 	return nil
 }
 
-// checkPolicy validates a key policy document; policies are never evaluated.
+// checkPolicy validates the resource policy subset before storing a key policy.
 func checkPolicy(policy string) error {
 	var document map[string]any
 	if len(policy) > maxPolicy || json.Unmarshal([]byte(policy), &document) != nil || document == nil {
 		return awserror.New("MalformedPolicyDocumentException", "The policy is not a valid JSON policy document.")
+	}
+
+	if err := iampolicy.ValidateResource(policy); err != nil {
+		return awserror.New("MalformedPolicyDocumentException", err.Error())
 	}
 
 	return nil
@@ -476,6 +485,16 @@ func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api
 		Tags: tags, ID: newKeyID(), Description: common.Value(in.Description), Policy: policy, State: stateEnabled,
 		Material: material, Created: s.now().UnixMilli(), Spec: spec, Usage: usage,
 	}
+	if guardErr := s.checkLockout(
+		ctx,
+		scope,
+		k,
+		policy,
+		common.Value(in.BypassPolicyLockoutSafetyCheck),
+	); guardErr != nil {
+		return nil, guardErr
+	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		return storage.Write(tx, keyKey(scope, k.ID), k)
 	})
@@ -702,7 +721,22 @@ func (s *Service) PutKeyPolicy(ctx context.Context, in *api.PutKeyPolicyRequest)
 		return nil, guardErr
 	}
 
-	err := s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
+	var current key
+	var owner request.Scope
+	err := s.view(ctx, in.KeyId, false, func(scope request.Scope, k *key) error {
+		current, owner = *k, scope
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if guardErr := s.checkLockout(ctx, owner, &current, *in.Policy,
+		common.Value(in.BypassPolicyLockoutSafetyCheck)); guardErr != nil {
+		return nil, guardErr
+	}
+
+	err = s.change(ctx, in.KeyId, func(scope request.Scope, k *key) error {
 		if managedErr := k.customer(scope); managedErr != nil {
 			return managedErr
 		}

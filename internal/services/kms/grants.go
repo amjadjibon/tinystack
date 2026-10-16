@@ -16,9 +16,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// Grants are "<account>/<region>/kms/grant/<key ID>/<grant ID>". Like key
-// policies, they are stored, never evaluated, and a grant token is the key ID
-// and grant ID it stands for.
+// Grants are "<account>/<region>/kms/grant/<key ID>/<grant ID>". They are stored
+// but do not authorize access. A grant token encodes its key ID and grant ID.
 
 const (
 	opCreateGrant = "CreateGrant"

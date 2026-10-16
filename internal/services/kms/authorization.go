@@ -61,19 +61,23 @@ func (s *Service) AuthorizationResources(
 
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for i := range refs {
-			id, readErr := resolve(tx, m.Scope, refs[i].ARN, true)
+			scope := referenceScope(ctx, m.Scope, refs[i].ARN)
+			id, readErr := resolve(tx, scope, refs[i].ARN, true)
 			if readErr != nil {
 				return readErr
 			}
 
-			refs[i].ARN, refs[i].TagsKnown = keyARN(m.Scope, id), true
-			stored, _, readErr := storage.Read[key](tx, keyKey(m.Scope, id))
+			refs[i].ARN, refs[i].TagsKnown = keyARN(scope, id), true
+			stored, _, readErr := storage.Read[key](tx, keyKey(scope, id))
 			if readErr != nil {
 				return readErr
 			}
 
 			if stored != nil {
 				refs[i].Tags = common.CloneTags(stored.Tags)
+				refs[i].OwnerAccount = scope.AccountID
+				refs[i].Policy = stored.Policy
+				refs[i].PolicyRequired = true
 			}
 		}
 

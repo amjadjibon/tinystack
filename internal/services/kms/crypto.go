@@ -182,6 +182,7 @@ func (s *Service) Decrypt(ctx context.Context, in *api.DecryptRequest) (*api.Dec
 		return nil, err
 	}
 
+	scope = referenceScope(ctx, scope, common.Value(in.KeyId))
 	out := &api.DecryptResponse{EncryptionAlgorithm: new(symmetricDefault)}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		if in.KeyId != nil {

@@ -126,3 +126,14 @@ func ValidateResource(document string) error {
 
 	return nil
 }
+
+// KeyPolicyAllowed applies KMS's mandatory key policy rule. Same-account direct
+// grants need no IAM Allow; account delegation and all cross-account grants do.
+func KeyPolicyAllowed(identity, resource Decision, crossAccount bool) bool {
+	allowed := resource.Allowed || (resource.Delegated && identity.Allowed)
+	if crossAccount {
+		allowed = allowed && identity.Allowed
+	}
+
+	return allowed && !identity.ExplicitDeny && !resource.ExplicitDeny
+}

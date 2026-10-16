@@ -326,6 +326,7 @@ func build(
 	a.onStop(secrets.Stop)
 	functions.UseObjects(buckets.Object)
 	roles := iam.New(store)
+	keys.UseAuthorization(roles.Authorization)
 	tokens := sts.New(store, roles)
 	tokens.UseAccounts(cfg.Identity.Accounts, cfg.Defaults.Account)
 	identities := cognitoidp.New(store, functions, deliveries)
