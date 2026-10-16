@@ -49,6 +49,7 @@ func New(store storage.Store) *Service {
 }
 
 type role struct {
+	Boundary         string            `json:",omitempty"`
 	Tags             map[string]string `json:",omitempty"`
 	Name             string
 	ID               string
@@ -69,6 +70,7 @@ type policy struct {
 	DefaultVersion string
 	Versions       []policyVersion
 	NextVersion    int64
+	BoundaryUses   int64
 	Attachments    int64
 	CreatedAt      int64
 	UpdatedAt      int64

@@ -575,11 +575,15 @@
         "Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations",
         "IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions",
         "Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits",
-        "S3 bucket and SQS queue resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records"
+        "S3 bucket and SQS queue resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records",
+        "User and role permissions boundaries on creation and Put/Delete APIs, returned by Get/List; managed policy existence and boundary usage counts",
+        "Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions",
+        "Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions",
+        "Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess"
       ],
       "gaps": [
-        "No resource-policy enforcement outside S3/SQS, permissions boundaries, session policies, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation",
-        "No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries",
+        "No resource-policy enforcement outside S3/SQS, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation",
+        "AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles",
         "No access-key usage tracking",
         "In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions",
         "OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console"
@@ -597,11 +601,12 @@
         "Session credentials feed signature verification and account resolution",
         "In-process service role assumption supports the IoT credentials provider",
         "In `identity.mode: verify`, web identity tokens must carry a valid RS256 signature of the issuer's published keys (discovery and JWKS, cached, HTTPS outside loopback and no HTTP redirects), or of the Cognito identity pool that issued them",
-        "In-process federated sessions for console single sign-on, flagged so the console accepts them and IAM limits them"
+        "In-process federated sessions for console single sign-on, flagged so the console accepts them and IAM limits them",
+        "AssumeRole and AssumeRoleWithWebIdentity inline Policy and up to 10 managed PolicyArns persist with credentials; combined 2048-character plaintext limit and identity-document validation"
       ],
       "gaps": [
         "Web identity token signatures are verified only in `identity.mode: verify`, and only RS256; parse mode trusts the claims",
-        "No MFA, SAML, federation tokens, session tags or session policies",
+        "No MFA, SAML, federation tokens or session tags; AWS proprietary packed-policy compression and PackedPolicySize are not emulated",
         "Temporary credentials used to create Lambda functions do not provide a usable runtime secret"
       ],
       "execution": "Local behavior",

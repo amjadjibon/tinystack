@@ -11209,7 +11209,11 @@
       "DeleteOpenIDConnectProvider",
       "AddClientIDToOpenIDConnectProvider",
       "RemoveClientIDFromOpenIDConnectProvider",
-      "UpdateOpenIDConnectProviderThumbprint"
+      "UpdateOpenIDConnectProviderThumbprint",
+      "PutUserPermissionsBoundary",
+      "DeleteUserPermissionsBoundary",
+      "PutRolePermissionsBoundary",
+      "DeleteRolePermissionsBoundary"
     ],
     "shapes": {
       "CreateRoleRequest": [
@@ -11218,7 +11222,8 @@
         "AssumeRolePolicyDocument",
         "Description",
         "MaxSessionDuration",
-        "Tags"
+        "Tags",
+        "PermissionsBoundary"
       ],
       "CreateRoleResponse": [
         "Role"
@@ -11418,7 +11423,8 @@
         "AssumeRolePolicyDocument",
         "Description",
         "MaxSessionDuration",
-        "Tags"
+        "Tags",
+        "PermissionsBoundary"
       ],
       "Policy": [
         "PolicyName",
@@ -11467,7 +11473,8 @@
       "CreateUserRequest": [
         "Path",
         "UserName",
-        "Tags"
+        "Tags",
+        "PermissionsBoundary"
       ],
       "CreateUserResponse": [
         "User"
@@ -11562,7 +11569,8 @@
         "UserId",
         "Arn",
         "CreateDate",
-        "Tags"
+        "Tags",
+        "PermissionsBoundary"
       ],
       "AccessKey": [
         "UserName",
@@ -11821,6 +11829,24 @@
       "UpdateOpenIDConnectProviderThumbprintRequest": [
         "OpenIDConnectProviderArn",
         "ThumbprintList"
+      ],
+      "PutUserPermissionsBoundaryRequest": [
+        "UserName",
+        "PermissionsBoundary"
+      ],
+      "DeleteUserPermissionsBoundaryRequest": [
+        "UserName"
+      ],
+      "PutRolePermissionsBoundaryRequest": [
+        "RoleName",
+        "PermissionsBoundary"
+      ],
+      "DeleteRolePermissionsBoundaryRequest": [
+        "RoleName"
+      ],
+      "AttachedPermissionsBoundary": [
+        "PermissionsBoundaryType",
+        "PermissionsBoundaryArn"
       ]
     }
   },
@@ -18235,7 +18261,9 @@
         "RoleArn",
         "RoleSessionName",
         "DurationSeconds",
-        "ExternalId"
+        "ExternalId",
+        "Policy",
+        "PolicyArns"
       ],
       "AssumeRoleResponse": [
         "Credentials",
@@ -18267,7 +18295,9 @@
         "RoleArn",
         "RoleSessionName",
         "WebIdentityToken",
-        "DurationSeconds"
+        "DurationSeconds",
+        "Policy",
+        "PolicyArns"
       ],
       "AssumeRoleWithWebIdentityResponse": [
         "Credentials",
@@ -18281,6 +18311,9 @@
       ],
       "GetAccessKeyInfoResponse": [
         "Account"
+      ],
+      "PolicyDescriptorType": [
+        "arn"
       ]
     }
   },

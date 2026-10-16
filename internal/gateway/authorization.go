@@ -34,6 +34,8 @@ type AuthorizationRecord struct {
 }
 
 type AuthorizationCheck struct {
+	Boundary       *policy.Decision `json:"boundary,omitempty"`
+	SessionPolicy  *policy.Decision `json:"session_policy,omitempty"`
 	ResourcePolicy *policy.Decision `json:"resource_policy,omitempty"`
 	Action         string           `json:"action"`
 	Resource       string           `json:"resource"`
@@ -99,6 +101,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		snapshot, err = s.policies(ctx, &principal)
 	}
 
+	lookupFailed := err != nil
 	if err != nil {
 		snapshot = iam.Authorization{
 			Principal:   principal,
@@ -148,6 +151,28 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		decision := policy.Evaluate(snapshot.Documents, targetAction, target.ARN, policy.Context{
 			Values: contextValues, ResourceTags: target.TagsKnown,
 		})
+		var boundaryDecision, sessionDecision *policy.Decision
+		limitsAllow, limitsDeny := true, false
+		for _, layer := range []struct {
+			output    **policy.Decision
+			documents []policy.Document
+		}{
+			{&boundaryDecision, snapshot.Boundary}, {&sessionDecision, snapshot.Session},
+		} {
+			if layer.documents == nil {
+				continue
+			}
+
+			evaluated := policy.Evaluate(layer.documents, targetAction, target.ARN, policy.Context{
+				Values: contextValues, ResourceTags: target.TagsKnown,
+			})
+			*layer.output = &evaluated
+			limitsAllow = limitsAllow && evaluated.Allowed
+			limitsDeny = limitsDeny || evaluated.ExplicitDeny
+			decision.Unsupported = append(decision.Unsupported, evaluated.Unsupported...)
+		}
+
+		decision.Allowed = decision.Allowed && limitsAllow
 		var resourceDecision *policy.Decision
 		crossAccount := target.OwnerAccount != "" && target.OwnerAccount != principal.Account
 		if principal.Kind == request.PrincipalRoot {
@@ -175,7 +200,8 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 				if crossAccount {
 					decision.Allowed = decision.Allowed && evaluated.Allowed
 				} else {
-					decision.Allowed = decision.Allowed || evaluated.Allowed
+					decision.Allowed = decision.Allowed ||
+						(evaluated.Allowed && (evaluated.BypassesLimits || limitsAllow))
 				}
 
 				decision.ExplicitDeny = decision.ExplicitDeny || evaluated.ExplicitDeny
@@ -185,13 +211,17 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 			decision.Unsupported = append(decision.Unsupported, evaluated.Unsupported...)
 		}
 
+		decision.ExplicitDeny = decision.ExplicitDeny || limitsDeny
+		decision.Allowed = decision.Allowed && !decision.ExplicitDeny
 		decision.Unsupported = append(decision.Unsupported, snapshot.Unsupported...)
-		if resolutionFailed {
+		if resolutionFailed || lookupFailed {
 			decision.Allowed = false
 		}
 
 		check := AuthorizationCheck{
 			Decision:       decision,
+			Boundary:       boundaryDecision,
+			SessionPolicy:  sessionDecision,
 			Action:         targetAction,
 			Resource:       target.ARN,
 			WildcardOnly:   wildcardOnly,
@@ -243,10 +273,18 @@ func denial(arn string, check *AuthorizationCheck) string {
 	switch {
 	case check.ResourcePolicy != nil && check.ResourcePolicy.ExplicitDeny:
 		message += "with an explicit deny in a resource-based policy"
+	case check.Boundary != nil && check.Boundary.ExplicitDeny:
+		message += "with an explicit deny in a permissions boundary"
+	case check.SessionPolicy != nil && check.SessionPolicy.ExplicitDeny:
+		message += "with an explicit deny in a session policy"
 	case check.ExplicitDeny:
 		message += "with an explicit deny in an identity-based policy"
 	case check.CrossAccount && check.ResourcePolicy != nil && !check.ResourcePolicy.Allowed:
 		message += "because no resource-based policy allows the " + check.Action + " action for cross-account access"
+	case check.Boundary != nil && !check.Boundary.Allowed:
+		message += "because no permissions boundary allows the " + check.Action + " action"
+	case check.SessionPolicy != nil && !check.SessionPolicy.Allowed:
+		message += "because no session policy allows the " + check.Action + " action"
 	default:
 		message += "because no identity-based policy allows the " + check.Action + " action"
 	}

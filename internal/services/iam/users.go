@@ -14,7 +14,8 @@ import (
 const kindUser = "user"
 
 type user struct {
-	Tags map[string]string `json:",omitempty"`
+	Boundary string            `json:",omitempty"`
+	Tags     map[string]string `json:",omitempty"`
 	permissions
 	Name      string
 	ID        string
@@ -98,11 +99,12 @@ func (s *Service) updateUser(
 // userOutput describes a user. Tags are only in single-user responses, as in AWS.
 func userOutput(account string, u *user, tags bool) *api.User {
 	out := &api.User{
-		Path:       new(u.Path),
-		UserName:   new(u.Name),
-		UserId:     new(u.ID),
-		Arn:        new(userARN(account, u)),
-		CreateDate: millis(u.CreatedAt),
+		PermissionsBoundary: boundaryOutput(u.Boundary),
+		Path:                new(u.Path),
+		UserName:            new(u.Name),
+		UserId:              new(u.ID),
+		Arn:                 new(userARN(account, u)),
+		CreateDate:          millis(u.CreatedAt),
 	}
 
 	if tags && len(u.Tags) > 0 {
@@ -141,6 +143,10 @@ func (s *Service) CreateUser(ctx context.Context, in *api.CreateUserRequest) (*a
 		uk := key(m.AccountID, kindUser, u.Name)
 		if _, exists := tx.Get(uk); exists {
 			return alreadyExists("User with name %s already exists.", u.Name)
+		}
+
+		if boundaryErr := setBoundary(tx, m.AccountID, &u.Boundary, in.PermissionsBoundary); boundaryErr != nil {
+			return boundaryErr
 		}
 
 		return storage.Write(tx, uk, u)
@@ -317,6 +323,10 @@ func (s *Service) DeleteUser(ctx context.Context, in *api.DeleteUserRequest) (*a
 
 		if len(memberOf) > 0 {
 			return deleteConflict("Cannot delete entity, must remove user from all groups first.")
+		}
+
+		if boundaryErr := setBoundary(tx, m.AccountID, &u.Boundary, nil); boundaryErr != nil {
+			return boundaryErr
 		}
 
 		tx.Delete(uk)

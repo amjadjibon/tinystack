@@ -681,7 +681,7 @@ func TestIAMAuthorizationFallbackAndUnavailablePolicies(t *testing.T) {
 		Retryer:      aws.NopRetryer{},
 	})
 	_, err := iamClient(s, "test", "us-east-1").AttachUserPolicy(ctx, &iam.AttachUserPolicyInput{
-		UserName: new("alice"), PolicyArn: new("arn:aws:iam::aws:policy/AdministratorAccess"),
+		UserName: new("alice"), PolicyArn: new("arn:aws:iam::aws:policy/AWSLambdaExecute"),
 	})
 	mustAuthorize(t, err)
 	_, err = authorizationS3(s, key).ListBuckets(ctx, &s3.ListBucketsInput{})

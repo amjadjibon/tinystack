@@ -13,7 +13,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 | API version | `2010-05-08` |
 | Scope | Account-wide |
 | Execution | Local behavior |
-| Selected operations | 81 of 180 in the pinned model |
+| Selected operations | 85 of 180 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,8 +21,8 @@ See the [implemented feature catalogue](catalogue.md#iam) for this service's cap
 
 ## Limitations and future work
 
-- No resource-policy enforcement outside S3/SQS, permissions boundaries, session policies, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation.
-- No AWS-managed policy catalogue, root access keys, login profiles or permissions boundaries.
+- No resource-policy enforcement outside S3/SQS, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation.
+- AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles.
 - No access-key usage tracking.
 - In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions.
 - OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console.
@@ -61,8 +61,10 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeletePolicy` | `POST /` |
 | `DeletePolicyVersion` | `POST /` |
 | `DeleteRole` | `POST /` |
+| `DeleteRolePermissionsBoundary` | `POST /` |
 | `DeleteRolePolicy` | `POST /` |
 | `DeleteUser` | `POST /` |
+| `DeleteUserPermissionsBoundary` | `POST /` |
 | `DeleteUserPolicy` | `POST /` |
 | `DetachGroupPolicy` | `POST /` |
 | `DetachRolePolicy` | `POST /` |
@@ -99,7 +101,9 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListUserTags` | `POST /` |
 | `ListUsers` | `POST /` |
 | `PutGroupPolicy` | `POST /` |
+| `PutRolePermissionsBoundary` | `POST /` |
 | `PutRolePolicy` | `POST /` |
+| `PutUserPermissionsBoundary` | `POST /` |
 | `PutUserPolicy` | `POST /` |
 | `RemoveClientIDFromOpenIDConnectProvider` | `POST /` |
 | `RemoveRoleFromInstanceProfile` | `POST /` |
@@ -123,7 +127,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "99 modeled operations outside the implementation"
+??? info "95 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -142,14 +146,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteAccountAlias`
     - `DeleteAccountPasswordPolicy`
     - `DeleteLoginProfile`
-    - `DeleteRolePermissionsBoundary`
     - `DeleteSAMLProvider`
     - `DeleteSSHPublicKey`
     - `DeleteServerCertificate`
     - `DeleteServiceLinkedRole`
     - `DeleteServiceSpecificCredential`
     - `DeleteSigningCertificate`
-    - `DeleteUserPermissionsBoundary`
     - `DeleteVirtualMFADevice`
     - `DisableOrganizationsRootCredentialsManagement`
     - `DisableOrganizationsRootSessions`
@@ -198,8 +200,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListSigningCertificates`
     - `ListVirtualMFADevices`
     - `PutAccountProperties`
-    - `PutRolePermissionsBoundary`
-    - `PutUserPermissionsBoundary`
     - `RejectDelegationRequest`
     - `ResetServiceSpecificCredential`
     - `ResyncMFADevice`
@@ -232,5 +232,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/iam)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/iam/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
+- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

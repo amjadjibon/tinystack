@@ -38,6 +38,8 @@ type Decision struct {
 	Unsupported  []string `json:"unsupported,omitempty"`
 	Allowed      bool     `json:"allowed"`
 	ExplicitDeny bool     `json:"explicit_deny,omitempty"`
+	// BypassesLimits marks a resource Allow granted directly to a user/session or wildcard.
+	BypassesLimits bool `json:"bypasses_limits,omitempty"`
 }
 
 type statement struct {
@@ -150,6 +152,14 @@ func evaluate(documents []Document, action, resource string, context Context, pr
 				out.ExplicitDeny = true
 			} else {
 				out.Allowed = true
+				if principal != nil {
+					// Exclude the underlying role ARN: it grants to the role,
+					// while a caller/session ARN or wildcard grants directly.
+					direct := *principal
+					direct.PolicyARN = ""
+					matched, delegated, _ := principalMatches(st.Principal, &direct)
+					out.BypassesLimits = out.BypassesLimits || (matched && !delegated)
+				}
 			}
 		}
 	}

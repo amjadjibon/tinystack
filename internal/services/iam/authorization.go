@@ -2,7 +2,6 @@ package iam
 
 import (
 	"context"
-	"fmt"
 	"maps"
 	"slices"
 
@@ -16,6 +15,8 @@ import (
 type Authorization struct {
 	Principal   request.Principal
 	Documents   []iampolicy.Document
+	Boundary    []iampolicy.Document
+	Session     []iampolicy.Document
 	Tags        map[string]string
 	Unsupported []string
 }
@@ -40,6 +41,10 @@ func (s *Service) Authorization(ctx context.Context, principal *request.Principa
 				out.Principal.Name, out.Principal.ARN = u.Name, userARN(principal.Account, u)
 				out.Principal.PolicyARN = out.Principal.ARN
 				out.Tags = common.CloneTags(u.Tags)
+				if err := collectLimits(tx, principal.Account, u.Boundary, &out); err != nil {
+					return err
+				}
+
 				if err := collectPolicies(
 					tx,
 					principal.Account,
@@ -82,6 +87,10 @@ func (s *Service) Authorization(ctx context.Context, principal *request.Principa
 
 				out.Principal.Name, out.Principal.PolicyARN = r.Name, roleARN(principal.Account, r)
 				out.Tags = common.CloneTags(r.Tags)
+				if err := collectLimits(tx, principal.Account, r.Boundary, &out); err != nil {
+					return err
+				}
+
 				return collectPolicies(tx, principal.Account, out.Principal.PolicyARN, &r.permissions, &out)
 			}
 		}
@@ -106,27 +115,17 @@ func collectPolicies(tx storage.ReadTx, account, owner string, p *permissions, o
 			return err
 		}
 
-		if ref.awsManaged() {
+		document, err := managedDocument(tx, account, attached)
+		if err != nil {
+			if !ref.awsManaged() {
+				return err
+			}
+
 			out.Unsupported = append(out.Unsupported, "AWS-managed policy document unavailable: "+attached)
 			continue
 		}
 
-		managed, _, err := loadPolicy(tx, account, ref)
-		if err != nil {
-			return err
-		}
-
-		found := false
-		for _, v := range managed.Versions {
-			if v.ID == managed.DefaultVersion {
-				out.Documents = append(out.Documents, iampolicy.Document{Name: attached + "/" + v.ID, JSON: v.Document})
-				found = true
-			}
-		}
-
-		if !found {
-			return fmt.Errorf("managed policy %s has no default document", attached)
-		}
+		out.Documents = append(out.Documents, document)
 	}
 
 	return nil

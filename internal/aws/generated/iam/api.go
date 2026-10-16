@@ -19,18 +19,25 @@ type CreateRoleRequest struct {
 	Description              *string `json:"Description,omitempty" query:"Description"`
 	MaxSessionDuration       *int64  `json:"MaxSessionDuration,omitempty" query:"MaxSessionDuration"`
 	Tags                     []Tag   `json:"Tags,omitempty" query:"Tags"`
+	PermissionsBoundary      *string `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
+}
+
+type AttachedPermissionsBoundary struct {
+	PermissionsBoundaryType *string `json:"PermissionsBoundaryType,omitempty" query:"PermissionsBoundaryType"`
+	PermissionsBoundaryArn  *string `json:"PermissionsBoundaryArn,omitempty" query:"PermissionsBoundaryArn"`
 }
 
 type Role struct {
-	Path                     *string    `json:"Path,omitempty" query:"Path"`
-	RoleName                 *string    `json:"RoleName,omitempty" query:"RoleName"`
-	RoleId                   *string    `json:"RoleId,omitempty" query:"RoleId"`
-	Arn                      *string    `json:"Arn,omitempty" query:"Arn"`
-	CreateDate               *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
-	AssumeRolePolicyDocument *string    `json:"AssumeRolePolicyDocument,omitempty" query:"AssumeRolePolicyDocument"`
-	Description              *string    `json:"Description,omitempty" query:"Description"`
-	MaxSessionDuration       *int64     `json:"MaxSessionDuration,omitempty" query:"MaxSessionDuration"`
-	Tags                     []Tag      `json:"Tags,omitempty" query:"Tags"`
+	Path                     *string                      `json:"Path,omitempty" query:"Path"`
+	RoleName                 *string                      `json:"RoleName,omitempty" query:"RoleName"`
+	RoleId                   *string                      `json:"RoleId,omitempty" query:"RoleId"`
+	Arn                      *string                      `json:"Arn,omitempty" query:"Arn"`
+	CreateDate               *time.Time                   `json:"CreateDate,omitempty" query:"CreateDate"`
+	AssumeRolePolicyDocument *string                      `json:"AssumeRolePolicyDocument,omitempty" query:"AssumeRolePolicyDocument"`
+	Description              *string                      `json:"Description,omitempty" query:"Description"`
+	MaxSessionDuration       *int64                       `json:"MaxSessionDuration,omitempty" query:"MaxSessionDuration"`
+	Tags                     []Tag                        `json:"Tags,omitempty" query:"Tags"`
+	PermissionsBoundary      *AttachedPermissionsBoundary `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
 }
 
 type CreateRoleResponse struct {
@@ -416,18 +423,20 @@ type ListPolicyTagsResponse struct {
 }
 
 type CreateUserRequest struct {
-	Path     *string `json:"Path,omitempty" query:"Path"`
-	UserName *string `json:"UserName,omitempty" query:"UserName"`
-	Tags     []Tag   `json:"Tags,omitempty" query:"Tags"`
+	Path                *string `json:"Path,omitempty" query:"Path"`
+	UserName            *string `json:"UserName,omitempty" query:"UserName"`
+	Tags                []Tag   `json:"Tags,omitempty" query:"Tags"`
+	PermissionsBoundary *string `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
 }
 
 type User struct {
-	Path       *string    `json:"Path,omitempty" query:"Path"`
-	UserName   *string    `json:"UserName,omitempty" query:"UserName"`
-	UserId     *string    `json:"UserId,omitempty" query:"UserId"`
-	Arn        *string    `json:"Arn,omitempty" query:"Arn"`
-	CreateDate *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
-	Tags       []Tag      `json:"Tags,omitempty" query:"Tags"`
+	Path                *string                      `json:"Path,omitempty" query:"Path"`
+	UserName            *string                      `json:"UserName,omitempty" query:"UserName"`
+	UserId              *string                      `json:"UserId,omitempty" query:"UserId"`
+	Arn                 *string                      `json:"Arn,omitempty" query:"Arn"`
+	CreateDate          *time.Time                   `json:"CreateDate,omitempty" query:"CreateDate"`
+	Tags                []Tag                        `json:"Tags,omitempty" query:"Tags"`
+	PermissionsBoundary *AttachedPermissionsBoundary `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
 }
 
 type CreateUserResponse struct {
@@ -833,6 +842,32 @@ type UpdateOpenIDConnectProviderThumbprintRequest struct {
 	ThumbprintList           []string `json:"ThumbprintList,omitempty" query:"ThumbprintList"`
 }
 
+type PutUserPermissionsBoundaryOutput struct{}
+
+type PutUserPermissionsBoundaryRequest struct {
+	UserName            *string `json:"UserName,omitempty" query:"UserName"`
+	PermissionsBoundary *string `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
+}
+
+type DeleteUserPermissionsBoundaryOutput struct{}
+
+type DeleteUserPermissionsBoundaryRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type PutRolePermissionsBoundaryOutput struct{}
+
+type PutRolePermissionsBoundaryRequest struct {
+	RoleName            *string `json:"RoleName,omitempty" query:"RoleName"`
+	PermissionsBoundary *string `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
+}
+
+type DeleteRolePermissionsBoundaryOutput struct{}
+
+type DeleteRolePermissionsBoundaryRequest struct {
+	RoleName *string `json:"RoleName,omitempty" query:"RoleName"`
+}
+
 type API interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
@@ -915,6 +950,10 @@ type API interface {
 	AddClientIDToOpenIDConnectProvider(context.Context, *AddClientIDToOpenIDConnectProviderRequest) (*AddClientIDToOpenIDConnectProviderOutput, error)
 	RemoveClientIDFromOpenIDConnectProvider(context.Context, *RemoveClientIDFromOpenIDConnectProviderRequest) (*RemoveClientIDFromOpenIDConnectProviderOutput, error)
 	UpdateOpenIDConnectProviderThumbprint(context.Context, *UpdateOpenIDConnectProviderThumbprintRequest) (*UpdateOpenIDConnectProviderThumbprintOutput, error)
+	PutUserPermissionsBoundary(context.Context, *PutUserPermissionsBoundaryRequest) (*PutUserPermissionsBoundaryOutput, error)
+	DeleteUserPermissionsBoundary(context.Context, *DeleteUserPermissionsBoundaryRequest) (*DeleteUserPermissionsBoundaryOutput, error)
+	PutRolePermissionsBoundary(context.Context, *PutRolePermissionsBoundaryRequest) (*PutRolePermissionsBoundaryOutput, error)
+	DeleteRolePermissionsBoundary(context.Context, *DeleteRolePermissionsBoundaryRequest) (*DeleteRolePermissionsBoundaryOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1151,6 +1190,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"UpdateOpenIDConnectProviderThumbprint": {Name: "UpdateOpenIDConnectProviderThumbprint", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UpdateOpenIDConnectProviderThumbprint", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateOpenIDConnectProviderThumbprint", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateOpenIDConnectProviderThumbprintRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateOpenIDConnectProviderThumbprint(ctx, input.(*UpdateOpenIDConnectProviderThumbprintRequest))
+		}},
+		"PutUserPermissionsBoundary": {Name: "PutUserPermissionsBoundary", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:PutUserPermissionsBoundary", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutUserPermissionsBoundary", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PutUserPermissionsBoundaryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutUserPermissionsBoundary(ctx, input.(*PutUserPermissionsBoundaryRequest))
+		}},
+		"DeleteUserPermissionsBoundary": {Name: "DeleteUserPermissionsBoundary", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteUserPermissionsBoundary", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteUserPermissionsBoundary", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteUserPermissionsBoundaryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteUserPermissionsBoundary(ctx, input.(*DeleteUserPermissionsBoundaryRequest))
+		}},
+		"PutRolePermissionsBoundary": {Name: "PutRolePermissionsBoundary", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:PutRolePermissionsBoundary", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutRolePermissionsBoundary", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PutRolePermissionsBoundaryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutRolePermissionsBoundary(ctx, input.(*PutRolePermissionsBoundaryRequest))
+		}},
+		"DeleteRolePermissionsBoundary": {Name: "DeleteRolePermissionsBoundary", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteRolePermissionsBoundary", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteRolePermissionsBoundary", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteRolePermissionsBoundaryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteRolePermissionsBoundary(ctx, input.(*DeleteRolePermissionsBoundaryRequest))
 		}},
 	}}
 }

@@ -188,9 +188,15 @@ func (s *Service) AssumeRoleWithWebIdentity(
 		return nil, err
 	}
 
+	arns, err := s.sessionPolicies(ctx, role.Account, in.Policy, in.PolicyArns)
+	if err != nil {
+		return nil, err
+	}
+
 	var out *api.AssumeRoleWithWebIdentityResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		issued := &session{
+			Policy: common.Value(in.Policy), PolicyARNs: arns,
 			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID,
 			Name: *in.RoleSessionName, Expires: now.Add(duration).Unix(),
 		}

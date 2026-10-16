@@ -74,8 +74,10 @@ Configured access keys represent account root. Root has implicit identity permis
 the user's inline and attached managed policies, plus all groups' policies. STS role sessions use
 the role's policies; user session tokens use their issuing user's policies. Default managed policy
 versions and current tags are read for every request. Deleted and recreated identities do not
-inherit old sessions. AWS-managed policy attachments grant nothing because TinyStack has no
-AWS-managed policy documents; decisions disclose this limitation.
+inherit old sessions. The local AWS-managed catalogue contains exact documents for
+`AdministratorAccess`, `AmazonS3FullAccess` and `AmazonSQSFullAccess`. Other AWS-managed attachments
+grant nothing and decisions disclose unavailable documents. Boundary/session references to unavailable
+AWS-managed policies fail explicitly, as do nonexistent customer policies.
 
 Authorization also works in `parse` mode, without verifying signatures, expiry or session tokens.
 Unknown keys and unsigned requests retain their existing default-account behavior and bypass
@@ -123,16 +125,45 @@ ordinary role credentials connect through single sign-on instead. Console API in
 Deleting a mapped SSO role invalidates its old federated credentials, even if the same ARN is recreated. Discovery, OAuth, registry,
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
-Resource-based policies outside S3/SQS, permissions boundaries, session policies, organization SCPs/RCPs,
+Resource-based policies outside S3/SQS, organization SCPs/RCPs,
 extended ABAC, Access Analyzer and policy simulator APIs are not implemented. Existing STS trust-policy evaluation remains separate; dependent service permissions
 such as `iam:PassRole` are not generally inferred.
+
+### Permissions boundaries and session policies
+
+`CreateUser` and `CreateRole` accept `PermissionsBoundary`. `PutUserPermissionsBoundary`,
+`PutRolePermissionsBoundary` and their Delete counterparts update it; Get/List responses include it.
+Boundaries reference existing managed policies in the identity's account or the local AWS catalogue.
+IAM reports boundary usage counts and prevents deletion of a policy while it is used as a boundary.
+A boundary never grants permissions by itself.
+
+`AssumeRole` and `AssumeRoleWithWebIdentity` accept inline JSON `Policy` and up to ten `PolicyArns`.
+They use IAM's identity-document validator and require referenced policies in the role's account or
+local AWS catalogue. Inline JSON and managed ARNs persist with the session, and managed default
+versions are resolved on each subsequent request. Inline and managed session policies form a union;
+that union intersects the role's identity grants and its current boundary. AWS's combined 2,048-character
+plaintext limit is enforced. Proprietary packed compression, its separate size rejection and
+`PackedPolicySize` are not emulated. SAML and GetFederationToken are not implemented.
+
+An explicit Deny in identity, boundary, session or resource policy always wins. Otherwise identity
+permissions intersect the boundary (when set) and session policies (when supplied). The inspector
+records each limiting layer in `checks[].boundary` and `checks[].session_policy`; denial messages name
+the layer that failed to allow. The same evaluation applies in soft mode and authenticated parse mode.
+
+Following [AWS policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic_policy-eval-denyallow.html),
+same-account resource grants to a user ARN or assumed-role session ARN bypass implicit denies in
+identity, boundary and session policies. A role ARN grant bypasses missing identity Allow but still
+requires boundary and session Allow. A wildcard Principal (including one constrained by
+`aws:PrincipalArn`) grants directly and bypasses implicit boundary/session denies. Account-principal
+grants delegate through the identity intersection. Cross-account requests require the identity
+intersection and a resource Allow. Explicit denies remain effective in every case.
 
 ### S3 bucket and SQS queue policies
 
 With `identity.authorization: soft` or `enforce`, the gateway snapshots the resource owner and stored
 bucket policy or queue `Policy` attribute through the service's resource resolver before calling the
 operation. Every target in a copy or batch is checked. An explicit Deny in either policy wins.
-Within one account, an Allow in either the identity or resource policy suffices. Cross-account access
+Within one account, identity and resource grants compose with the boundary/session rules above. Cross-account access
 requires both identity and resource Allow; foreign root has implicit identity permission but still
 requires a resource grant. The default `parse`/authorization `off` behavior is unchanged.
 
@@ -154,8 +185,7 @@ SQS `GetQueueAttributes` and `SetQueueAttributes` to recover a denied queue poli
 [AWS root queue recovery](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html).
 TinyStack grants this exception for all attributes; it does not model AssumeRoot task policies.
 
-Deliberate limits: ACLs, object ownership, permissions boundaries and AWS's extra session/account
-delegation distinctions are not modeled; same-account account-root grants use the union rule above.
+Deliberate limits: ACLs, object ownership and STS federated-user principals are not modeled.
 Service principals such as `sns.amazonaws.com` can be stored, but in-process SNS→SQS,
 S3 notifications→SQS and EventBridge→SQS calls retain their existing direct delivery path and bypass
 policy enforcement. Source conditions do not restrict those deliveries. Cross-account policy management

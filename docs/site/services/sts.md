@@ -22,7 +22,7 @@ See the [implemented feature catalogue](catalogue.md#sts) for this service's cap
 ## Limitations and future work
 
 - Web identity token signatures are verified only in `identity.mode: verify`, and only RS256; parse mode trusts the claims.
-- No MFA, SAML, federation tokens, session tags or session policies.
+- No MFA, SAML, federation tokens or session tags; AWS proprietary packed-policy compression and PackedPolicySize are not emulated.
 - Temporary credentials used to create Lambda functions do not provide a usable runtime secret.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)

@@ -68,6 +68,7 @@ func New(store storage.Store, roles *iam.Service) *Service {
 // session is a stored AssumeRole or GetSessionToken result: a role session,
 // or else the user's.
 type session struct {
+	Policy    string `json:",omitempty"`
 	AccountID string
 	Secret    string
 	Token     string
@@ -79,7 +80,8 @@ type session struct {
 	UserID    string `json:",omitempty"`
 	// CognitoIdentity is the Cognito identity ID whose token
 	// AssumeRoleWithWebIdentity exchanged for the session.
-	CognitoIdentity string `json:",omitempty"`
+	CognitoIdentity string   `json:",omitempty"`
+	PolicyARNs      []string `json:",omitempty"`
 	// Federated marks the session of a person who signed in to the console
 	// through the identity provider; see AssumeRoleForFederatedUser.
 	Federated bool  `json:",omitempty"`
@@ -105,7 +107,13 @@ func (s *session) id() string {
 }
 
 func (s *session) principal() request.Principal {
-	p := request.Principal{Account: s.AccountID, ARN: s.arn(), UserID: s.id()}
+	p := request.Principal{
+		SessionPolicy:     s.Policy,
+		SessionPolicyARNs: s.PolicyARNs,
+		Account:           s.AccountID,
+		ARN:               s.arn(),
+		UserID:            s.id(),
+	}
 	switch {
 	case s.role():
 		p.Kind, p.Name, p.ID, p.PolicyARN = request.PrincipalRole, s.RoleName, s.RoleID, s.RoleARN
@@ -275,6 +283,11 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 	}
 
 	now := s.now()
+	arns, err := s.sessionPolicies(ctx, role.Account, in.Policy, in.PolicyArns)
+	if err != nil {
+		return nil, err
+	}
+
 	var out *api.AssumeRoleResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		current, inSession, lookupErr := callerSession(tx, &m)
@@ -307,6 +320,7 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 		}
 
 		issued := &session{
+			Policy: common.Value(in.Policy), PolicyARNs: arns,
 			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID,
 			Name: *in.RoleSessionName, Expires: now.Add(duration).Unix(),
 		}

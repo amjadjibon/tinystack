@@ -59,9 +59,19 @@ func (s *Server) listable(r *http.Request, principal *request.Principal, all []c
 			values["aws:resourcetag/"+strings.ToLower(key)] = []string{value}
 		}
 
-		return !policy.Evaluate(snapshot.Documents, action, o.ARN, policy.Context{
-			Values: values, ResourceTags: true,
-		}).Allowed
+		for _, documents := range [][]policy.Document{snapshot.Documents, snapshot.Boundary, snapshot.Session} {
+			if documents == nil {
+				continue
+			}
+
+			if !policy.Evaluate(documents, action, o.ARN, policy.Context{
+				Values: values, ResourceTags: true,
+			}).Allowed {
+				return true
+			}
+		}
+
+		return len(snapshot.Documents) == 0
 	})
 	for i := range out {
 		out[i].Details = nil

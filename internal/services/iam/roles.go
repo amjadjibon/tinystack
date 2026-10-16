@@ -78,6 +78,7 @@ func (s *Service) updateRole(
 // roleOutput describes a role. Tags are only in single-role responses, as in AWS.
 func roleOutput(account string, r *role, tags bool) *api.Role {
 	out := &api.Role{
+		PermissionsBoundary:      boundaryOutput(r.Boundary),
 		Path:                     new(r.Path),
 		RoleName:                 new(r.Name),
 		RoleId:                   new(r.ID),
@@ -162,6 +163,10 @@ func (s *Service) CreateRole(ctx context.Context, in *api.CreateRoleRequest) (*a
 			return alreadyExists("Role with name %s already exists.", r.Name)
 		}
 
+		if boundaryErr := setBoundary(tx, m.AccountID, &r.Boundary, in.PermissionsBoundary); boundaryErr != nil {
+			return boundaryErr
+		}
+
 		return storage.Write(tx, rk, r)
 	})
 	if err != nil {
@@ -206,6 +211,10 @@ func (s *Service) DeleteRole(ctx context.Context, in *api.DeleteRoleRequest) (*a
 			return listErr
 		case len(profiles) > 0:
 			return deleteConflict("Cannot delete entity, must remove roles from instance profile first.")
+		}
+
+		if boundaryErr := setBoundary(tx, m.AccountID, &r.Boundary, nil); boundaryErr != nil {
+			return boundaryErr
 		}
 
 		tx.Delete(rk)

@@ -7,11 +7,17 @@ import (
 	"time"
 )
 
+type PolicyDescriptorType struct {
+	Arn *string `json:"arn,omitempty" query:"arn"`
+}
+
 type AssumeRoleRequest struct {
-	RoleArn         *string `json:"RoleArn,omitempty" query:"RoleArn"`
-	RoleSessionName *string `json:"RoleSessionName,omitempty" query:"RoleSessionName"`
-	DurationSeconds *int64  `json:"DurationSeconds,omitempty" query:"DurationSeconds"`
-	ExternalId      *string `json:"ExternalId,omitempty" query:"ExternalId"`
+	RoleArn         *string                `json:"RoleArn,omitempty" query:"RoleArn"`
+	RoleSessionName *string                `json:"RoleSessionName,omitempty" query:"RoleSessionName"`
+	DurationSeconds *int64                 `json:"DurationSeconds,omitempty" query:"DurationSeconds"`
+	ExternalId      *string                `json:"ExternalId,omitempty" query:"ExternalId"`
+	Policy          *string                `json:"Policy,omitempty" query:"Policy"`
+	PolicyArns      []PolicyDescriptorType `json:"PolicyArns,omitempty" query:"PolicyArns"`
 }
 
 type Credentials struct {
@@ -49,10 +55,12 @@ type GetSessionTokenResponse struct {
 }
 
 type AssumeRoleWithWebIdentityRequest struct {
-	RoleArn          *string `json:"RoleArn,omitempty" query:"RoleArn"`
-	RoleSessionName  *string `json:"RoleSessionName,omitempty" query:"RoleSessionName"`
-	WebIdentityToken *string `json:"WebIdentityToken,omitempty" query:"WebIdentityToken"`
-	DurationSeconds  *int64  `json:"DurationSeconds,omitempty" query:"DurationSeconds"`
+	RoleArn          *string                `json:"RoleArn,omitempty" query:"RoleArn"`
+	RoleSessionName  *string                `json:"RoleSessionName,omitempty" query:"RoleSessionName"`
+	WebIdentityToken *string                `json:"WebIdentityToken,omitempty" query:"WebIdentityToken"`
+	DurationSeconds  *int64                 `json:"DurationSeconds,omitempty" query:"DurationSeconds"`
+	Policy           *string                `json:"Policy,omitempty" query:"Policy"`
+	PolicyArns       []PolicyDescriptorType `json:"PolicyArns,omitempty" query:"PolicyArns"`
 }
 
 type AssumeRoleWithWebIdentityResponse struct {

@@ -152,7 +152,7 @@ func policyOutput(account string, p *policy, full bool) *api.Policy {
 		Path:                          new(p.Path),
 		DefaultVersionId:              new(p.DefaultVersion),
 		AttachmentCount:               new(p.Attachments),
-		PermissionsBoundaryUsageCount: new(int64(0)),
+		PermissionsBoundaryUsageCount: new(p.BoundaryUses),
 		IsAttachable:                  new(true),
 		CreateDate:                    millis(p.CreatedAt),
 		UpdateDate:                    millis(p.UpdatedAt),
@@ -288,7 +288,7 @@ func (s *Service) DeletePolicy(ctx context.Context, in *api.DeletePolicyRequest)
 		}
 
 		switch {
-		case p.Attachments > 0:
+		case p.Attachments > 0 || p.BoundaryUses > 0:
 			return deleteConflict("Cannot delete a policy attached to entities.")
 		case len(p.Versions) > 1:
 			return deleteConflict("This policy has more than one version. Before you delete a policy, you must " +

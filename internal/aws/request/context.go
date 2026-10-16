@@ -34,13 +34,16 @@ type Metadata struct {
 // ARN is the caller ARN; PolicyARN is the underlying user/role ARN. ID is
 // the stable IAM ID, without a role session suffix.
 type Principal struct {
-	Kind      string
-	Account   string
-	Name      string
-	ID        string
-	UserID    string
-	ARN       string
-	PolicyARN string
+	// SessionPolicy and SessionPolicyARNs restrict temporary role credentials.
+	SessionPolicy     string `json:",omitempty"`
+	Kind              string
+	Account           string
+	Name              string
+	ID                string
+	UserID            string
+	ARN               string
+	PolicyARN         string
+	SessionPolicyARNs []string `json:",omitempty"`
 }
 
 const (
@@ -54,7 +57,6 @@ const (
 // user's key has no Token and never expires; an STS session's key expires, and
 // verified requests must also carry its Token.
 type Credentials struct {
-	Principal Principal
 	Expires   time.Time
 	AccountID string
 	Secret    string
@@ -62,6 +64,7 @@ type Credentials struct {
 	// CognitoIdentity is the Cognito identity ID the credentials were issued
 	// for, if they came from an identity pool.
 	CognitoIdentity string
+	Principal       Principal
 	// Federated marks a role session issued to a person who signed in to the
 	// console through the identity provider.
 	Federated bool
