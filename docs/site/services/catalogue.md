@@ -717,6 +717,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 - Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions.
 - Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions.
 - Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess.
+- Gateway iam:PassRole checks for explicitly supplied service roles, including Lambda, ECS, Step Functions, EventBridge targets and schedules, EC2 instance-profile roles, CloudFormation, EKS, CodeBuild, Firehose, Pipes, Lake Formation, SES event destinations, EMR Serverless job runs and other registered role inputs; identity, boundary and session layers intersect with iam:PassedToService conditions and per-role inspector checks.
 
 [Supported operations](iam.md#supported-operations) · [Limitations](iam.md#limitations-and-future-work)
 

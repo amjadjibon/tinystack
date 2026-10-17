@@ -610,6 +610,7 @@ func build(
 	handler.UseCredentials(tokens.Credentials)
 	configureShell(handler, tokens)
 	handler.UseAuthorization(roles.Authorization)
+	handler.UseInstanceProfiles(roles.InstanceProfileOf)
 	if cfg.Identity.Mode == config.IdentityVerify {
 		// Web identity tokens must carry a valid signature of their issuer, or of
 		// the identity pool that issued them.

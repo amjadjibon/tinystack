@@ -154,14 +154,27 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		resources = []catalog.AuthorizationResource{{ARN: "*"}}
 	}
 
+	// Roles the request hands to a service are checked as iam:PassRole beside the operation's own action.
+	passed, passErr := s.passedRoles(ctx, c.meta.Service, op.Name, input)
+	if passErr != nil {
+		snapshot.Unsupported = append(snapshot.Unsupported, "iam:PassRole resolution failed: "+passErr.Error())
+		resolutionFailed = true
+	}
+
+	resources = append(resources, passed...)
+
 	action := iamAction(c.service, op)
 
 	values := c.meta.AuthorizationValues
 
 	record := &AuthorizationRecord{Mode: mode, Principal: principal.ARN, Allowed: true}
 	for _, target := range resources {
-		contextValues := make(map[string][]string, len(values)+len(target.Tags))
+		contextValues := make(map[string][]string, len(values)+len(target.Tags)+len(target.Values))
 		for key, value := range values {
+			contextValues[key] = value
+		}
+
+		for key, value := range target.Values {
 			contextValues[key] = value
 		}
 
@@ -266,7 +279,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 			SessionPolicy:  sessionDecision,
 			Action:         targetAction,
 			Resource:       target.ARN,
-			WildcardOnly:   wildcardOnly,
+			WildcardOnly:   wildcardOnly && target.Action == "",
 			ResourcePolicy: resourceDecision,
 			CrossAccount:   crossAccount,
 		}

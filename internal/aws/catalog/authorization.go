@@ -3,12 +3,16 @@ package catalog
 import (
 	"context"
 	"reflect"
+	"slices"
+	"strings"
 )
 
 // AuthorizationResource is one required action/resource pair. An empty Action
 // uses the operation's generated IAMAction. TagsKnown distinguishes absent tags
 // from a resource family whose tags cannot be evaluated.
 type AuthorizationResource struct {
+	// Values adds context for dependent actions such as iam:PassRole.
+	Values map[string][]string
 	// OwnerAccount and Policy opt a resource into resource-policy evaluation.
 	OwnerAccount string
 	Policy       string
@@ -133,4 +137,46 @@ func indirect(v reflect.Value) reflect.Value {
 	}
 
 	return v
+}
+
+// InputPathStrings reads an exact member path, traversing intermediate lists and maps.
+func InputPathStrings(input any, path string) []string {
+	parts := strings.Split(path, ".")
+	var out []string
+	var walk func(reflect.Value, []string)
+	walk = func(v reflect.Value, remaining []string) {
+		v = indirect(v)
+		if v.Kind() == reflect.Map && v.Type().Key().Kind() == reflect.String {
+			keys := v.MapKeys()
+			slices.SortFunc(keys, func(a, b reflect.Value) int { return strings.Compare(a.String(), b.String()) })
+			for _, key := range keys {
+				walk(v.MapIndex(key), remaining)
+			}
+
+			return
+		}
+
+		if v.Kind() == reflect.Slice {
+			for i := range v.Len() {
+				walk(v.Index(i), remaining)
+			}
+
+			return
+		}
+
+		if len(remaining) == 0 {
+			if v.Kind() == reflect.String && v.String() != "" {
+				out = append(out, v.String())
+			}
+
+			return
+		}
+
+		if v.Kind() == reflect.Struct {
+			walk(v.FieldByName(remaining[0]), remaining[1:])
+		}
+	}
+
+	walk(reflect.ValueOf(input), parts)
+	return out
 }

@@ -127,8 +127,63 @@ Deleting a mapped SSO role invalidates its old federated credentials, even if th
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
 Resource-based policies outside S3/SQS/SNS/KMS, organization SCPs/RCPs,
-extended ABAC, Access Analyzer and policy simulator APIs are not implemented. Existing STS trust-policy evaluation remains separate; dependent service permissions
-such as `iam:PassRole` are not generally inferred.
+extended ABAC, Access Analyzer and policy simulator APIs are not implemented. Existing STS trust-policy evaluation remains separate. Dependent service permissions other than the
+registered `iam:PassRole` checks below are not generally inferred.
+
+### Passing roles to services
+
+With authorization enabled, the gateway first allows the primary action, then evaluates `iam:PassRole`
+on every distinct supplied role ARN and consuming service. PassRole uses the same identity-policy,
+permissions-boundary and session-policy intersection as the primary action; an explicit deny in any
+layer wins. Resource policies cannot grant PassRole. `iam:PassedToService` is set only for these checks,
+using the consuming service principal, such as `lambda.amazonaws.com`, `ecs-tasks.amazonaws.com`,
+`states.amazonaws.com`, `events.amazonaws.com`, `ec2.amazonaws.com` or `cloudformation.amazonaws.com`.
+
+The shared registry in `internal/gateway/passrole.go` lists the exact input paths. The covered operations are:
+
+| Service | Operations | Passed role inputs |
+| --- | --- | --- |
+| Lambda | CreateFunction, UpdateFunctionConfiguration | Role |
+| ECS | RegisterTaskDefinition; RunTask; CreateService, UpdateService | TaskRoleArn / ExecutionRoleArn; Overrides roles; VpcLatticeConfigurations roles |
+| Step Functions | CreateStateMachine, UpdateStateMachine, TestState | RoleArn |
+| EventBridge | PutRule; PutTargets | RoleArn; Targets[].RoleArn |
+| Scheduler | CreateSchedule, UpdateSchedule | Target.RoleArn |
+| EC2 | RunInstances, AssociateIamInstanceProfile, ReplaceIamInstanceProfileAssociation; CreateFlowLogs | IamInstanceProfile ARN/name resolved through IAM; DeliverLogsPermissionArn / DeliverCrossAccountRole |
+| CloudFormation | CreateStack, UpdateStack, DeleteStack, CreateChangeSet | RoleARN |
+| EKS | CreateCluster, CreateNodegroup, CreateFargateProfile; CreateAddon, UpdateAddon; CreatePodIdentityAssociation, UpdatePodIdentityAssociation | RoleArn, NodeRole, PodExecutionRoleArn; ServiceAccountRoleArn; association RoleArn |
+| CodeBuild | CreateProject, UpdateProject | ServiceRole |
+| CodePipeline | CreatePipeline, UpdatePipeline | Pipeline role and stage action roles |
+| CodeDeploy | CreateDeploymentGroup, UpdateDeploymentGroup | ServiceRoleArn |
+| Firehose | CreateDeliveryStream, UpdateDestination | Kinesis source and supported S3 destination roles |
+| Pipes | CreatePipe, UpdatePipe | RoleArn |
+| Backup | CreateBackupSelection | BackupSelection.IamRoleArn |
+| MWAA | CreateEnvironment, UpdateEnvironment | ExecutionRoleArn |
+| AppSync | CreateGraphqlApi, UpdateGraphqlApi; CreateDataSource, UpdateDataSource | LogConfig.CloudWatchLogsRoleArn; ServiceRoleArn |
+| Batch | CreateComputeEnvironment, UpdateComputeEnvironment; RegisterJobDefinition | ServiceRole and supplied compute instance profile; container job/execution roles |
+| Application Auto Scaling | RegisterScalableTarget | RoleARN |
+| EC2 Auto Scaling | CreateAutoScalingGroup, UpdateAutoScalingGroup; CreateLaunchConfiguration | ServiceLinkedRoleARN; IamInstanceProfile |
+| Config | PutConfigurationRecorder | ConfigurationRecorder.RoleARN |
+| CloudWatch Logs | PutSubscriptionFilter | RoleArn |
+| Systems Manager | SendCommand | ServiceRoleArn |
+| Transfer | CreateUser, UpdateUser | Role |
+| IoT | CreateTopicRule, ReplaceTopicRule; CreateRoleAlias, UpdateRoleAlias; CreateProvisioningTemplate, UpdateProvisioningTemplate | Supported action/error-action roles; RoleArn; ProvisioningRoleArn |
+| Cognito Identity | SetIdentityPoolRoles | Roles map and role-mapping rule roles |
+| Cognito User Pools | CreateGroup, UpdateGroup | RoleArn (consumed by Cognito Identity) |
+| Lake Formation | RegisterResource | RoleArn |
+| EMR Serverless | StartJobRun | ExecutionRoleArn |
+| SES v2 | CreateConfigurationSetEventDestination, UpdateConfigurationSetEventDestination | EventDestination.KinesisFirehoseDestination.IamRoleArn |
+
+A denial uses the operation's existing AccessDenied/AccessDeniedException response and names
+`iam:PassRole`, the role ARN and the denying layer. The request inspector appends PassRole entries to
+`checks[]` after the primary checks. Soft mode records the denial and continues; off mode performs no
+PassRole checks. Account root retains its existing bypass. `AddRoleToInstanceProfile` changes membership
+and does not require PassRole; using that profile in a covered operation does.
+
+Only supplied inputs are checked. Roles inherited from stored task definitions, launch templates or
+other saved configuration are not inferred. Glue job and crawler APIs are not implemented. `iam:AssociatedResourceArn` and
+role resource tags are not supplied; policies depending on those conditions remain unsupported.
+Trust policies and role existence validation remain the responsibility of each service; a PassRole
+Allow does not itself assume a role or grant its permissions.
 
 ### Permissions boundaries and session policies
 

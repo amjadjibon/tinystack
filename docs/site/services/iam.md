@@ -19,7 +19,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 
 See the [implemented feature catalogue](catalogue.md#iam) for this service's capabilities.
 
-Lambda function and Secrets Manager secret policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps.
+Lambda function and Secrets Manager secret policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps. With authorization enabled, role-bearing operations require both the primary service action and `iam:PassRole` on each supplied role ARN. Identity policies, permissions boundaries and session policies all apply; `iam:PassedToService` identifies the consuming service. Denials identify the role and limiting policy layer in the request inspector. See [role-passing authorization](../architecture/identity.md#passing-roles-to-services) for coverage and limits.
 
 ## Limitations and future work
 
@@ -28,6 +28,7 @@ Lambda function and Secrets Manager secret policies follow the same same-account
 - No access-key usage tracking.
 - In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions.
 - OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console.
+- PassRole does not infer roles inherited from stored task definitions, launch templates or other stored service configuration; iam:AssociatedResourceArn and role resource tags are not supplied.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -234,5 +235,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/iam)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/iam/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
+- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_passrole_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_passrole_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -289,7 +289,7 @@ func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op 
 		if decodeErr := restjson.Decode(r, &binding, c.labels, body, input); decodeErr != nil {
 			return input, decodeErr
 		}
-		if c.service.Name == "batch" {
+		if c.service.Name == authorizationBatch {
 			return input, batchUniqueJSON(body)
 		}
 		return input, nil

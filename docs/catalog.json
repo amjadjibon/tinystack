@@ -583,18 +583,20 @@
         "User and role permissions boundaries on creation and Put/Delete APIs, returned by Get/List; managed policy existence and boundary usage counts",
         "Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions",
         "Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions",
-        "Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess"
+        "Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess",
+        "Gateway iam:PassRole checks for explicitly supplied service roles, including Lambda, ECS, Step Functions, EventBridge targets and schedules, EC2 instance-profile roles, CloudFormation, EKS, CodeBuild, Firehose, Pipes, Lake Formation, SES event destinations, EMR Serverless job runs and other registered role inputs; identity, boundary and session layers intersect with iam:PassedToService conditions and per-role inspector checks"
       ],
       "gaps": [
         "No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation",
         "AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles",
         "No access-key usage tracking",
         "In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions",
-        "OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console"
+        "OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console",
+        "PassRole does not infer roles inherited from stored task definitions, launch templates or other stored service configuration; iam:AssociatedResourceArn and role resource tags are not supplied"
       ],
       "execution": "Local behavior",
       "package": "iam",
-      "guide": "Lambda function and Secrets Manager secret policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps."
+      "guide": "Lambda function and Secrets Manager secret policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps. With authorization enabled, role-bearing operations require both the primary service action and `iam:PassRole` on each supplied role ARN. Identity policies, permissions boundaries and session policies all apply; `iam:PassedToService` identifies the consuming service. Denials identify the role and limiting policy layer in the request inspector. See [role-passing authorization](../architecture/identity.md#passing-roles-to-services) for coverage and limits."
     },
     "sts": {
       "title": "STS",

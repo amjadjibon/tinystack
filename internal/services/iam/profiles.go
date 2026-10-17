@@ -427,8 +427,9 @@ func (s *Service) ListInstanceProfileTags(
 
 // InstanceProfile is what EC2 needs to know about an instance profile.
 type InstanceProfile struct {
-	ARN string
-	ID  string
+	RoleARN string
+	ARN     string
+	ID      string
 }
 
 // InstanceProfileOf returns the instance profile in account that ref names: its
@@ -451,6 +452,15 @@ func (s *Service) InstanceProfileOf(ctx context.Context, account, ref string) (I
 		}
 
 		out = InstanceProfile{ARN: profileARN(account, p), ID: p.ID}
+		if p.Role != "" {
+			r, _, roleErr := loadRole(tx, account, new(p.Role))
+			if roleErr != nil {
+				return roleErr
+			}
+
+			out.RoleARN = roleARN(account, r)
+		}
+
 		found = !strings.HasPrefix(ref, "arn:") || out.ARN == ref
 		return nil
 	})

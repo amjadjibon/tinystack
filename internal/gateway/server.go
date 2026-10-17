@@ -33,6 +33,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/recent"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
+	"github.com/amjadjibon/tinystack/internal/services/iam"
 )
 
 const (
@@ -53,16 +54,17 @@ type Server struct {
 	// internal serves TinyStack's own endpoints under /_tinystack/.
 	internal map[string]http.Handler
 	// console serves endpoints on the console's listener only; see HandleConsole.
-	console     map[string]http.Handler
-	credentials CredentialLookup
-	policies    PolicyLookup
-	hosted      *cognitoidp.Service
-	documents   Documents
-	tokens      Tokens
-	registry    Registry
-	cors        CORS
-	apis        []execute.Handler
-	balancers   execute.Handler
+	console          map[string]http.Handler
+	credentials      CredentialLookup
+	policies         PolicyLookup
+	instanceProfiles func(context.Context, string, string) (iam.InstanceProfile, bool, error)
+	hosted           *cognitoidp.Service
+	documents        Documents
+	tokens           Tokens
+	registry         Registry
+	cors             CORS
+	apis             []execute.Handler
+	balancers        execute.Handler
 	// functionURLs serves Lambda function URLs; see UseFunctionURLs.
 	functionURLs execute.Handler
 	// graphQL serves AppSync GraphQL APIs; see UseGraphQL.
@@ -165,6 +167,10 @@ func New(cfg config.Config, logger *slog.Logger, services ...catalog.Service) (*
 		s.services[service.Name] = service
 		s.routes[service.Name] = routes(service)
 		names = append(names, service.Name)
+	}
+
+	if passErr := checkPassedRoles(s.services); passErr != nil {
+		return nil, passErr
 	}
 
 	sort.Strings(names)
@@ -782,11 +788,11 @@ func (s *Server) fail(w http.ResponseWriter, c *call, err error) {
 		e.Fields = map[string]any{"ErrorCode": "BadRequest"}
 	}
 
-	if c.service != nil && c.service.Name == "batch" && e.Code == validationException {
+	if c.service != nil && c.service.Name == authorizationBatch && e.Code == validationException {
 		e.Code = "ClientException"
 	}
 
-	if c.service != nil && c.service.Name == "transfer" && e.Code == validationException {
+	if c.service != nil && c.service.Name == authorizationTransfer && e.Code == validationException {
 		e.Code = "InvalidRequestException"
 	}
 
