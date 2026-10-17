@@ -21,12 +21,13 @@ import {
 
 // collectSSOReturn finishes a sign-in the identity provider sent the browser
 // back from: the callback redirects to /?signin=sso. The marker is removed from
-// the address either way; null means there was none.
-export async function collectSSOReturn() {
+// the address either way, through the router's history so that it does not
+// write the marker back; null means there was none.
+export async function collectSSOReturn(replace: (path: string) => void) {
 	const url = new URL(window.location.href);
 	if (url.searchParams.get("signin") !== "sso") return null;
 	url.searchParams.delete("signin");
-	window.history.replaceState(null, "", url);
+	replace(url.pathname + url.search + url.hash);
 	try {
 		return (await collectSSOSession()) ? "" : "No sign-in was waiting.";
 	} catch (e) {

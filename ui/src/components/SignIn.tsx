@@ -63,7 +63,8 @@ export function SignIn({ loginURL }: { loginURL: string }) {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs once per page load.
 	useEffect(() => {
 		if (signedOut !== undefined) return;
-		collectSSOReturn().then(async (result) => {
+		const replace = (path: string) => router.history.replace(path);
+		collectSSOReturn(replace).then(async (result) => {
 			if (result === null) {
 				await collectSSOSession().catch(() => false);
 				setChecking(false);
