@@ -183,6 +183,15 @@ func TestEvaluation(t *testing.T) {
 			problem:   "",
 		},
 		{
+			name:      "variable name case-insensitive",
+			statement: `{"Effect":"Allow","Action":"s3:*","Resource":"arn:aws:s3:::b/home/${aws:UserName}/*"}`,
+			action:    "s3:GetObject",
+			resource:  "arn:aws:s3:::b/home/alice/k",
+			allow:     true,
+			deny:      false,
+			problem:   "",
+		},
+		{
 			name:      "variable not another user",
 			statement: `{"Effect":"Allow","Action":"s3:*","Resource":"arn:aws:s3:::b/home/${aws:username}/*"}`,
 			action:    "s3:GetObject",

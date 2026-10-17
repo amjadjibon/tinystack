@@ -240,9 +240,10 @@ func expand(patterns []string, version string, context *Context) (expanded, unsu
 				break
 			}
 
+			// Variable names, like condition keys, are case-insensitive.
 			variable := pattern[start+2 : start+end]
 			value := context.Values[strings.ToLower(variable)]
-			if version != "2012-10-17" || variable != usernameKey || len(value) != 1 {
+			if version != "2012-10-17" || !strings.EqualFold(variable, usernameKey) || len(value) != 1 {
 				problems = append(problems, "unsupported or absent policy variable "+variable)
 				break
 			}
