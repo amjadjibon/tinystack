@@ -28,7 +28,7 @@ func (s *Service) AuthorizationResources(
 		return nil, nil
 	}
 
-	name, qualifier, err := resolveName(m, ref)
+	name, qualifier, err := resolveName(&m, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +46,9 @@ func (s *Service) AuthorizationResources(
 		fn, _, readErr := loadFunction(tx, m.Key("lambda", "function", name))
 		if fn != nil {
 			target.Tags = common.CloneTags(fn.Tags)
+			target.OwnerAccount = m.AccountID
+			data, _ := tx.Get(policyKey(m.Scope, name, qualifier))
+			target.Policy = string(data)
 		}
 
 		return readErr

@@ -294,10 +294,10 @@ var reserved = []string{
 
 // resolveName maps a function name, partial ARN ("<account>:function:<name>"),
 // or ARN, any of them optionally qualified with a version or alias, to a
-// function in the caller's scope and the qualifier.
-//
-//nolint:gocritic // Metadata is an immutable request snapshot.
-func resolveName(m request.Metadata, raw string) (name, qualifier string, err error) {
+// function and qualifier. During gateway resource authorization, full ARNs
+// also update the metadata scope to the function owner.
+func resolveName(m *request.Metadata, raw string) (name, qualifier string, err error) {
+	request.ReferenceScope(m, "lambda", raw)
 	parts := strings.Split(raw, ":")
 	switch {
 	case len(parts) <= 2:
@@ -758,7 +758,7 @@ func (s *Service) loadAt(ctx context.Context, raw, qualifier *string) (request.M
 		return m, nil, err
 	}
 
-	name, q, err := resolveName(m, common.Value(raw))
+	name, q, err := resolveName(&m, common.Value(raw))
 	if err != nil {
 		return m, nil, err
 	}

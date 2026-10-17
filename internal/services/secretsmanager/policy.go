@@ -8,11 +8,13 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
+	iampolicy "github.com/amjadjibon/tinystack/internal/services/iam/policy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// A secret's resource-based policy is kept in its record. Policies are
-// stored, never evaluated; PutResourcePolicy's BlockPublicPolicy only checks
+// A secret's resource-based policy is kept in its record and evaluated by the gateway.
+// PutResourcePolicy's BlockPublicPolicy checks
 // for statements that allow everyone.
 
 const maxPolicy = 20480
@@ -26,13 +28,17 @@ type policyStatement struct {
 
 // checkPolicy compacts a policy document, which must be a JSON object with a
 // Statement.
-func checkPolicy(policy *string) ([]byte, []policyStatement, error) {
+func checkPolicy(document *string) ([]byte, []policyStatement, error) {
+	if err := iampolicy.ValidateResource(common.Value(document)); err != nil {
+		return nil, nil, awserror.New("MalformedPolicyDocumentException", err.Error())
+	}
+
 	var doc struct {
 		Statement json.RawMessage `json:"Statement"`
 	}
 	var compact bytes.Buffer
-	if json.Unmarshal([]byte(*policy), &doc) != nil || len(doc.Statement) == 0 ||
-		json.Compact(&compact, []byte(*policy)) != nil {
+	if json.Unmarshal([]byte(*document), &doc) != nil || len(doc.Statement) == 0 ||
+		json.Compact(&compact, []byte(*document)) != nil {
 		return nil, nil, awserror.New("MalformedPolicyDocumentException",
 			"This resource policy contains a syntax error.")
 	}
@@ -137,6 +143,7 @@ func (s *Service) repolicy(ctx context.Context, id *string, policy string, done 
 		return err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(id))
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		sec, findErr := findLive(tx, m.Scope, id, s.now())
 		if findErr != nil {
@@ -168,6 +175,8 @@ func (s *Service) ValidateResourcePolicy(
 		if err != nil {
 			return nil, err
 		}
+
+		request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 
 		err = s.store.View(ctx, func(tx storage.ReadTx) error {
 			_, findErr := find(tx, m.Scope, in.SecretId, s.now())

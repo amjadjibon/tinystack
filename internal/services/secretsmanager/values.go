@@ -7,6 +7,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -22,6 +23,7 @@ func (s *Service) PutSecretValue(
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	value, hasValue, err := checkValue(in.SecretString, in.SecretBinary)
 	if err != nil {
 		return nil, err
@@ -94,6 +96,7 @@ func (s *Service) GetSecretValue(
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	var out *api.GetSecretValueResponse
 	var key string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -172,6 +175,7 @@ func (s *Service) ListSecretVersionIds(
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	var out *api.ListSecretVersionIdsResponse
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		sec, findErr := find(tx, m.Scope, in.SecretId, s.now())
@@ -221,6 +225,7 @@ func (s *Service) UpdateSecretVersionStage(
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	stage := value0(in.VersionStage)
 	if guardErr := checkStage(stage); guardErr != nil {
 		return nil, guardErr
@@ -321,6 +326,7 @@ func (s *Service) retag(ctx context.Context, id *string, fn func(tags map[string
 		return err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(id))
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		sec, findErr := findLive(tx, m.Scope, id, s.now())
 		if findErr != nil {

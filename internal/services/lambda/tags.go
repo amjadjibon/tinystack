@@ -27,9 +27,7 @@ func (s *Service) GetFunctionCodeSigningConfig(
 
 // taggedFunction returns the name of the function a tagging ARN names. Only
 // unqualified function ARNs carry tags.
-//
-//nolint:gocritic // Metadata is an immutable request snapshot.
-func taggedFunction(m request.Metadata, arn *string) (string, error) {
+func taggedFunction(m *request.Metadata, arn *string) (string, error) {
 	raw := common.Value(arn)
 	if !strings.HasPrefix(raw, "arn:") || strings.Count(raw, ":") != 6 {
 		return "", invalid("Tags can only be managed on an unqualified function ARN: %s", raw)
@@ -50,7 +48,7 @@ func (s *Service) retag(
 		return err
 	}
 
-	name, err := taggedFunction(m, arn)
+	name, err := taggedFunction(&m, arn)
 	if err != nil {
 		return err
 	}
@@ -109,7 +107,7 @@ func (s *Service) ListTags(ctx context.Context, in *api.ListTagsRequest) (*api.L
 		return nil, err
 	}
 
-	if _, err = taggedFunction(m, in.Resource); err != nil {
+	if _, err = taggedFunction(&m, in.Resource); err != nil {
 		return nil, err
 	}
 

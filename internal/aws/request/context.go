@@ -3,6 +3,7 @@ package request
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -118,4 +119,14 @@ func GlobalScope(ctx context.Context) (Scope, error) {
 func RegionalScope(ctx context.Context) (Scope, error) {
 	m, err := Regional(ctx)
 	return m.Scope, err
+}
+
+// ReferenceScope resolves a full resource ARN's owner only during gateway resource authorization.
+// Names remain caller scoped and ARNs in another Region retain the service's validation behavior.
+func ReferenceScope(m *Metadata, service, ref string) {
+	parts := strings.SplitN(ref, ":", 6)
+	if m.ResourceAuthorization && len(parts) == 6 && parts[0] == "arn" && parts[2] == service &&
+		parts[3] == m.Region && parts[4] != "" {
+		m.AccountID = parts[4]
+	}
 }

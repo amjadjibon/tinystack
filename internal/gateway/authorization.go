@@ -17,7 +17,16 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/iam/policy"
 )
 
-const authorizationKMS = "kms"
+const (
+	authorizationKMS     = "kms"
+	authorizationLambda  = "lambda"
+	authorizationSecrets = "secretsmanager"
+)
+
+func resourceAuthorization(service string) bool {
+	return service == consoleS3 || service == consoleSQS || service == consoleSNS ||
+		service == authorizationKMS || service == authorizationLambda || service == authorizationSecrets
+}
 
 // PolicyLookup reads the current identity policy snapshot through IAM.
 type PolicyLookup func(context.Context, *request.Principal) (iam.Authorization, error)
@@ -86,8 +95,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 	} else {
 		_, mapped := s.cfg.Identity.Accounts[c.meta.AccessKey]
 		_, secret := s.cfg.Identity.SecretKeys[c.meta.AccessKey]
-		if (!mapped && !secret) || (c.meta.Service != consoleS3 && c.meta.Service != consoleSQS &&
-			c.meta.Service != authorizationKMS && c.meta.Service != consoleSNS) {
+		if (!mapped && !secret) || !resourceAuthorization(c.meta.Service) {
 			return nil
 		}
 
@@ -101,8 +109,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		}
 	}
 
-	if principal.Kind == request.PrincipalRoot && c.meta.Service != consoleS3 && c.meta.Service != consoleSQS &&
-		c.meta.Service != authorizationKMS && c.meta.Service != consoleSNS {
+	if principal.Kind == request.PrincipalRoot && !resourceAuthorization(c.meta.Service) {
 		return nil
 	}
 
@@ -129,8 +136,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 	principal = snapshot.Principal
 	c.meta.Principal = &principal
-	c.meta.ResourceAuthorization = c.meta.Service == consoleS3 || c.meta.Service == consoleSQS ||
-		c.meta.Service == authorizationKMS || c.meta.Service == consoleSNS
+	c.meta.ResourceAuthorization = resourceAuthorization(c.meta.Service)
 	c.meta.AuthorizationValues = authorizationValues(r, &principal, snapshot.Tags, c.meta.Region)
 	ctx = request.WithMetadata(ctx, c.meta)
 	if resources == nil && c.service.Authorizer != nil {
@@ -223,7 +229,9 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 				(op.Name == "GetQueueAttributes" || op.Name == "SetQueueAttributes")
 			topicRecovery := c.meta.Service == consoleSNS &&
 				(op.Name == "GetTopicAttributes" || op.Name == "SetTopicAttributes")
-			recovery := ownerRoot && (bucketRecovery || queueRecovery || topicRecovery)
+			secretRecovery := c.meta.Service == authorizationSecrets &&
+				(op.Name == "GetResourcePolicy" || op.Name == "PutResourcePolicy" || op.Name == "DeleteResourcePolicy")
+			recovery := ownerRoot && (bucketRecovery || queueRecovery || topicRecovery || secretRecovery)
 			if !recovery {
 				switch {
 				case target.PolicyRequired:

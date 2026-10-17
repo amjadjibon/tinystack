@@ -19,9 +19,11 @@ Store account-wide identities and optionally evaluate their permission policies.
 
 See the [implemented feature catalogue](catalogue.md#iam) for this service's capabilities.
 
+Lambda function and Secrets Manager secret policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps.
+
 ## Limitations and future work
 
-- No resource-policy enforcement outside S3/SQS/SNS/KMS, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation.
+- No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation.
 - AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles.
 - No access-key usage tracking.
 - In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions.

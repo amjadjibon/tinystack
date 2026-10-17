@@ -145,7 +145,7 @@ func (c *invokeConfig) configure(
 					"function, or EventBridge event bus", arn)
 			}
 
-			if name, _, err := resolveName(request.Metadata{Scope: scope}, arn); err == nil &&
+			if name, _, err := resolveName(&request.Metadata{Scope: scope}, arn); err == nil &&
 				functionARN(scope, name) == self {
 				return invalid("You can't specify the function as a destination for itself.")
 			}
@@ -197,7 +197,7 @@ func destinationService(arn string) (string, bool) {
 // invokeConfigTarget resolves the function and qualifier a request names,
 // which must exist.
 func invokeConfigTarget(tx storage.ReadTx, m *request.Metadata, raw, qualifier *string) (name, q string, err error) {
-	if name, q, err = resolveName(*m, common.Value(raw)); err != nil {
+	if name, q, err = resolveName(m, common.Value(raw)); err != nil {
 		return "", "", err
 	}
 

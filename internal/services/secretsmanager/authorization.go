@@ -53,7 +53,9 @@ func (s *Service) AuthorizationResources(
 				continue
 			}
 
-			stored, readErr := find(tx, m.Scope, &id, s.now())
+			targetMetadata := m
+			request.ReferenceScope(&targetMetadata, "secretsmanager", id)
+			stored, readErr := find(tx, targetMetadata.Scope, &id, s.now())
 			if readErr != nil {
 				return readErr
 			}
@@ -64,7 +66,8 @@ func (s *Service) AuthorizationResources(
 			}
 
 			out = append(out, catalog.AuthorizationResource{
-				ARN: stored.arn(m.Scope), Action: action,
+				ARN: stored.arn(targetMetadata.Scope), Action: action,
+				OwnerAccount: targetMetadata.AccountID, Policy: stored.Policy,
 				Tags: common.CloneTags(stored.Tags), TagsKnown: true,
 			})
 		}

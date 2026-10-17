@@ -10,12 +10,13 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	iampolicy "github.com/amjadjibon/tinystack/internal/services/iam/policy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 // kindPolicy records hold a function's resource-based policy, one per
 // qualifier: "<name>/$LATEST", "<name>/<version>", or "<name>/<alias>". The
-// policies are stored, never evaluated.
+// gateway evaluates the policy belonging to the requested qualifier.
 const (
 	kindPolicy   = "policy"
 	stringEquals = "StringEquals"
@@ -73,7 +74,7 @@ func permissionFunction(
 	m *request.Metadata,
 	functionName, qualifier, revision *string,
 ) (name, q string, fn *function, err error) {
-	if name, q, err = resolveName(*m, common.Value(functionName)); err != nil {
+	if name, q, err = resolveName(m, common.Value(functionName)); err != nil {
 		return "", "", nil, err
 	}
 
@@ -178,8 +179,18 @@ func (s *Service) AddPermission(
 			return encodeErr
 		}
 
+		document, encodeErr := json.Marshal(p)
+		if encodeErr != nil {
+			return encodeErr
+		}
+
+		if validateErr := iampolicy.ValidateResource(string(document)); validateErr != nil {
+			return invalid("%s", validateErr)
+		}
+
 		out = string(encoded)
-		return writeJSON(tx, key, p)
+		tx.Put(key, document)
+		return nil
 	})
 	if err != nil {
 		return nil, err

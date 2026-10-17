@@ -89,7 +89,7 @@ func (s *Service) update(
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, common.Value(raw))
+	name, q, err := resolveName(&m, common.Value(raw))
 	if err != nil {
 		return nil, err
 	}

@@ -232,6 +232,24 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	req.Caller = s.caller(w, r)
+	req.Authorize = func(ctx context.Context, service, action string, input any) error {
+		c := &call{service: s.services[service], meta: request.Metadata{
+			Scope:   request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
+			Service: service, Protocol: catalog.RESTJSON,
+		}}
+		if _, identifyErr := s.identify(r, &c.meta); identifyErr != nil {
+			return identifyErr
+		}
+
+		c.meta.Service = service
+
+		if credentialErr := s.resolveCredentials(ctx, c); credentialErr != nil {
+			return credentialErr
+		}
+
+		return s.authorize(ctx, r, c, &catalog.Operation{Name: action}, input)
+	}
+
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxExecuteBody))
 	if err != nil {
 		writeExecute(w, execute.Message(http.StatusRequestEntityTooLarge, "Request Entity Too Large"))

@@ -37,7 +37,8 @@ Cognito sign-in operations, retain their anonymous contract.
 
 ## Evaluated policy subsets
 
-Identity-based IAM policies and S3/SQS/SNS/KMS resource policies are evaluated when authorization is enabled.
+Identity-based IAM policies and S3/SQS/SNS/KMS/Lambda/Secrets Manager resource policies are evaluated
+when authorization is enabled.
 Other resource policies remain stored without general enforcement. Separate features evaluate narrower policies:
 
 - STS checks the supported role trust-policy subset for role assumption.
@@ -193,6 +194,25 @@ S3 notifications→SQS/SNS, EventBridge→SQS/SNS and SNS→Lambda calls retain 
 policy enforcement. Source conditions do not restrict those deliveries. Cross-account policy management
 and SQS actions are evaluated by the same rule rather than modeling every AWS owner-only API exception.
 Unsigned/unresolved parse-mode callers retain their existing bypass; use verify mode for authentication.
+
+### Lambda function and Secrets Manager secret policies
+
+Function and secret policies use the same union, cross-account intersection, explicit Deny and
+boundary/session rules above. Function-scoped actions (including InvokeFunction and GetFunction)
+read the policy written by AddPermission/RemovePermission for exactly the requested qualifier.
+Alias, published version and unqualified policies are independent; GetPolicy returns that same document.
+Full function ARNs and secret ARNs resolve the owning account during gateway authorization.
+
+AWS_IAM function URLs authorize lambda:InvokeFunctionUrl through this path; NONE URLs stay public.
+SourceArn and SourceAccount permission parameters produce aws:SourceArn and aws:SourceAccount
+conditions. Ordinary API calls do not supply these keys. In-process S3/SNS/EventBridge/SQS event source
+mapping and stream deliveries continue to bypass function policies, so their source conditions are not enforced.
+
+Secrets Manager evaluates policies for secret-scoped operations, including value reads/writes, describe,
+tags and policy management. Owning-account root retains GetResourcePolicy, PutResourcePolicy and
+DeleteResourcePolicy even after an explicit resource Deny. BlockPublicPolicy rejects unconditional
+wildcard-principal grants; any nonempty Condition is treated as restricting, without AWS automated reasoning.
+Unsupported policy elements are rejected by PutResourcePolicy and ValidateResourcePolicy.
 
 ### KMS key policies
 

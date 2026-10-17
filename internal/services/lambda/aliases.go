@@ -148,7 +148,7 @@ func aliasRequest(ctx context.Context, function, name *string) (m request.Metada
 		return m, "", err
 	}
 
-	fn, q, err := resolveName(m, common.Value(function))
+	fn, q, err := resolveName(&m, common.Value(function))
 	if err != nil {
 		return m, "", err
 	}
@@ -341,7 +341,7 @@ func (s *Service) ListAliases(ctx context.Context, in *api.ListAliasesRequest) (
 		return nil, err
 	}
 
-	fn, q, err := resolveName(m, common.Value(in.FunctionName))
+	fn, q, err := resolveName(&m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}

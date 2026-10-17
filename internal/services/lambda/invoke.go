@@ -280,7 +280,7 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, common.Value(in.FunctionName))
+	name, q, err := resolveName(&m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +380,7 @@ func (s *Service) InvokeAsync(ctx context.Context, arn string, payload []byte) e
 	}
 
 	m := request.Metadata{Scope: request.Scope{AccountID: parts[4], Region: parts[3]}}
-	name, q, err := resolveName(m, arn)
+	name, q, err := resolveName(&m, arn)
 	if err != nil {
 		return err
 	}

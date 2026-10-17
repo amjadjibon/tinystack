@@ -19,10 +19,12 @@ Manage secret versions, staging labels, deletion windows, and Lambda rotation.
 
 See the [implemented feature catalogue](catalogue.md#secrets-manager) for this service's capabilities.
 
+When IAM authorization is enabled, secret-scoped actions evaluate the stored resource policy, including GetSecretValue, DescribeSecret, PutSecretValue and policy management. Cross-account requests use a secret ARN and require both identity and resource Allow. Owning-account root can always Get/Put/DeleteResourcePolicy to recover access after a resource Deny. PutResourcePolicy and ValidateResourcePolicy reject unsupported policy elements using the shared IAM evaluator subset.
+
 ## Limitations and future work
 
 - No replication, managed/external rotation or enforced rotation windows.
-- Resource policies are stored but not evaluated.
+- BlockPublicPolicy rejects unconditional wildcard-principal grants; any nonempty Condition is treated as restricting, without AWS automated policy reasoning.
 - Values remain local store data; KMS validation does not imply AWS at-rest encryption.
 - Verify mode exposes secret metadata inventory; values, versions, policies, rotation and management require signed AWS CLI or SDK requests.
 

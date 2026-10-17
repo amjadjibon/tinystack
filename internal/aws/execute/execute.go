@@ -15,9 +15,11 @@ import (
 type Request struct {
 	// Caller is who signed the request with SigV4, if anyone did.
 	Caller *Caller
-	Time   time.Time
-	Header http.Header
-	Query  url.Values
+	// Authorize applies gateway IAM checks to an execution endpoint's modeled resource.
+	Authorize func(context.Context, string, string, any) error
+	Time      time.Time
+	Header    http.Header
+	Query     url.Values
 	// Method is the HTTP method.
 	Method string
 	// Path is the decoded path after the API: "/<stage>/..." or, for an

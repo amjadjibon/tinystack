@@ -74,7 +74,7 @@ func (s *Service) acquire(ctx context.Context, scope request.Scope, name string)
 // latestFunction resolves a request's unqualified function and checks that it
 // exists.
 func latestFunction(tx storage.ReadTx, m *request.Metadata, raw *string) (string, error) {
-	name, q, err := resolveName(*m, common.Value(raw))
+	name, q, err := resolveName(m, common.Value(raw))
 	if err != nil {
 		return "", err
 	}
@@ -193,7 +193,7 @@ func (s *Service) DeleteFunctionConcurrency(
 // provisionedTarget resolves the function and the version or alias a
 // provisioned concurrency request names, which must exist.
 func provisionedTarget(tx storage.ReadTx, m *request.Metadata, raw, qualifier *string) (name, q string, err error) {
-	if name, q, err = resolveName(*m, common.Value(raw)); err != nil {
+	if name, q, err = resolveName(m, common.Value(raw)); err != nil {
 		return "", "", err
 	}
 

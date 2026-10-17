@@ -11,6 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -125,6 +126,7 @@ func (s *Service) DescribeSecret(
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	var out *api.DescribeSecretResponse
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		found, findErr := find(tx, m.Scope, in.SecretId, s.now())
@@ -267,6 +269,7 @@ func (s *Service) UpdateSecret(ctx context.Context, in *api.UpdateSecretRequest)
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	value, hasValue, err := checkValue(in.SecretString, in.SecretBinary)
 	if err != nil {
 		return nil, err
@@ -332,6 +335,7 @@ func (s *Service) DeleteSecret(ctx context.Context, in *api.DeleteSecretRequest)
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	force := in.ForceDeleteWithoutRecovery != nil && *in.ForceDeleteWithoutRecovery
 	window := int64(maxRecoveryWindow)
 	if in.RecoveryWindowInDays != nil {
@@ -381,6 +385,7 @@ func (s *Service) RestoreSecret(ctx context.Context, in *api.RestoreSecretReques
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	var out *api.RestoreSecretResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		sec, findErr := find(tx, m.Scope, in.SecretId, s.now())
@@ -407,6 +412,7 @@ func (s *Service) GetResourcePolicy(
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	var out *api.GetResourcePolicyResponse
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		sec, findErr := find(tx, m.Scope, in.SecretId, s.now())

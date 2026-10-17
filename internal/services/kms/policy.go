@@ -21,13 +21,9 @@ func (s *Service) UseAuthorization(lookup func(context.Context, *request.Princip
 // resource authorization path. Bare key IDs and alias names remain caller scoped.
 func referenceScope(ctx context.Context, scope request.Scope, ref string) request.Scope {
 	m, _ := request.FromContext(ctx)
-	parts := strings.SplitN(ref, ":", 6)
-	if m.ResourceAuthorization && len(parts) == 6 && parts[0] == "arn" && parts[2] == "kms" &&
-		parts[3] == scope.Region && parts[4] != "" {
-		scope.AccountID = parts[4]
-	}
-
-	return scope
+	m.Scope = scope
+	request.ReferenceScope(&m, "kms", ref)
+	return m.Scope
 }
 
 func (s *Service) checkLockout(ctx context.Context, scope request.Scope, k *key, document string, bypass bool) error {

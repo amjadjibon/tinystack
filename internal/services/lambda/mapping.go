@@ -167,7 +167,7 @@ func (s *Service) CreateEventSourceMapping(
 		return nil, err
 	}
 
-	_, q, _ := resolveName(m, common.Value(in.FunctionName))
+	_, q, _ := resolveName(&m, common.Value(in.FunctionName))
 	source := common.Value(in.EventSourceArn)
 	mp := &mapping{
 		UUID:           uuid.NewV4().String(),
@@ -352,7 +352,7 @@ func (s *Service) UpdateEventSourceMapping(
 			return nil, loadErr
 		}
 
-		_, qualifier, _ = resolveName(m, *in.FunctionName)
+		_, qualifier, _ = resolveName(&m, *in.FunctionName)
 		name = fn.Name
 	}
 
@@ -483,7 +483,7 @@ func (s *Service) ListEventSourceMappings(
 
 	name, qualifier := "", ""
 	if in.FunctionName != nil {
-		if name, qualifier, err = resolveName(m, *in.FunctionName); err != nil {
+		if name, qualifier, err = resolveName(&m, *in.FunctionName); err != nil {
 			return nil, err
 		}
 	}

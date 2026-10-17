@@ -12,6 +12,7 @@ import (
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/schedule"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -155,6 +156,7 @@ func (s *Service) RotateSecret(ctx context.Context, in *api.RotateSecretRequest)
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	if guardErr := checkToken(in.ClientRequestToken); guardErr != nil {
 		return nil, guardErr
 	}
@@ -243,6 +245,7 @@ func (s *Service) CancelRotateSecret(
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "secretsmanager", common.Value(in.SecretId))
 	var out *api.CancelRotateSecretResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		sec, findErr := findLive(tx, m.Scope, in.SecretId, s.now())

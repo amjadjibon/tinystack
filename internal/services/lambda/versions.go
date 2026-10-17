@@ -143,7 +143,7 @@ func (s *Service) PublishVersion(
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, common.Value(in.FunctionName))
+	name, q, err := resolveName(&m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (s *Service) ListVersionsByFunction(
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, common.Value(in.FunctionName))
+	name, q, err := resolveName(&m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}
@@ -370,7 +370,7 @@ func (s *Service) DeleteFunction(
 		return nil, err
 	}
 
-	name, q, err := resolveName(m, common.Value(in.FunctionName))
+	name, q, err := resolveName(&m, common.Value(in.FunctionName))
 	if err != nil {
 		return nil, err
 	}

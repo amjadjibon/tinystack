@@ -123,7 +123,7 @@ var corsMethods = map[string]bool{
 // urlFunction resolves the function and qualifier a URL request names. The
 // qualifier must be an alias, or none for the unqualified function.
 func urlFunction(tx storage.ReadTx, m *request.Metadata, raw, qualifier *string) (name, q string, err error) {
-	if name, q, err = resolveName(*m, common.Value(raw)); err != nil {
+	if name, q, err = resolveName(m, common.Value(raw)); err != nil {
 		return "", "", err
 	}
 
@@ -496,11 +496,20 @@ func (h urls) Execute(ctx context.Context, id string, r *execute.Request) (*exec
 		return &execute.Response{Status: http.StatusOK, Header: corsHeaders(u.Cors, origin, true)}, true, nil
 	}
 
-	if u.AuthType == authIAM && !signed(r) {
+	if u.AuthType == authIAM && (!signed(r) || r.Caller == nil) {
 		return &execute.Response{
 			Status: http.StatusForbidden, Header: http.Header{"Content-Type": {"application/json"}},
 			Body: []byte(`{"Message":"Forbidden"}`),
 		}, true, nil
+	}
+
+	if u.AuthType == authIAM && r.Authorize != nil {
+		arn := urlARN(request.Scope{AccountID: target.Account, Region: target.Region}, target.Name, target.Qualifier)
+		if authErr := r.Authorize(ctx, "lambda", "InvokeFunctionUrl", &api.GetFunctionRequest{
+			FunctionName: new(arn),
+		}); authErr != nil {
+			return execute.Message(http.StatusForbidden, authErr.Error()), true, nil
+		}
 	}
 
 	host, _, splitErr := net.SplitHostPort(r.Host)
