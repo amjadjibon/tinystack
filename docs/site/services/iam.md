@@ -19,11 +19,11 @@ Store account-wide identities and optionally evaluate their permission policies.
 
 See the [implemented feature catalogue](catalogue.md#iam) for this service's capabilities.
 
-Lambda function and Secrets Manager secret policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps. With authorization enabled, role-bearing operations require both the primary service action and `iam:PassRole` on each supplied role ARN. Identity policies, permissions boundaries and session policies all apply; `iam:PassedToService` identifies the consuming service. Denials identify the role and limiting policy layer in the request inspector. See [role-passing authorization](../architecture/identity.md#passing-roles-to-services) for coverage and limits.
+Lambda function, Secrets Manager secret and EventBridge bus policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps. With authorization enabled, role-bearing operations require both the primary service action and `iam:PassRole` on each supplied role ARN. Identity policies, permissions boundaries and session policies all apply; `iam:PassedToService` identifies the consuming service. Denials identify the role and limiting policy layer in the request inspector. See [role-passing authorization](../architecture/identity.md#passing-roles-to-services) for coverage and limits.
 
 ## Limitations and future work
 
-- No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation.
+- No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation.
 - AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles.
 - No access-key usage tracking.
 - In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions.

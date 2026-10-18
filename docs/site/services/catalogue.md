@@ -711,7 +711,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 - Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations.
 - IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions.
 - Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits.
-- S3 bucket, SQS queue, SNS topic, Lambda function and Secrets Manager secret resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records.
+- S3 bucket, SQS queue, SNS topic, Lambda function, Secrets Manager secret and EventBridge bus resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records.
 - KMS requires a key policy Allow: same-account direct principal grants or account delegation plus IAM; cross-account requires both key and identity policies.
 - User and role permissions boundaries on creation and Put/Delete APIs, returned by Get/List; managed policy existence and boundary usage counts.
 - Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions.
@@ -1047,6 +1047,7 @@ Route events through local buses, patterns, rules, schedules, archives, and repl
 - Scheduled rules, durable retry records and SQS dead-letter queues.
 - Archives and synchronous replay.
 - AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection.
+- Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management.
 
 [Supported operations](eventbridge.md#supported-operations) · [Limitations](eventbridge.md#limitations-and-future-work)
 

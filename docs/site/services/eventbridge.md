@@ -19,14 +19,17 @@ Route events through local buses, patterns, rules, schedules, archives, and repl
 
 See the [implemented feature catalogue](catalogue.md#eventbridge) for this service's capabilities.
 
+With identity.authorization set to soft or enforce, bus and rule actions evaluate the owning bus policy. Cross-account calls use full bus or tagging ARNs and require identity plus resource Allow. PutEvents checks every entry before delivery; one denied entry rejects the whole request. Source, detail-type, eventBusInvocation, creatorAccount and TargetArn condition context is supported. PutPermission validates policies even with authorization off; organization conditions are unsupported. See [EventBridge bus policies](../architecture/identity.md#eventbridge-bus-policies) for action coverage, rule ARN grants and limitations.
+
 ## Limitations and future work
 
-- No partner buses, cross-account routing or additional target service families.
-- Bus policies are stored but not evaluated.
+- No partner buses, cross-region bus references, event-bus targets or additional target service families.
+- Organization conditions and unsupported IAM policy elements are rejected; in-process deliveries and archive/replay management do not evaluate bus policies.
 - Replays run synchronously and cannot be cancelled.
 - Cron does not support L, W or #.
 - Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests.
 - Bus permissions, archives and replay management use the AWS API rather than console forms.
+- With IAM authorization, PutRule source and detail-type fields require literal string arrays; top-level $or patterns fail closed.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -110,5 +113,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/eventbridge)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/eventbridge/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/eventbridge.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [eventbridge_archive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_archive_test.go), [eventbridge_bus_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_bus_test.go), [eventbridge_retry_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_retry_test.go), [eventbridge_schedule_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_schedule_test.go), [eventbridge_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_test.go).
+- SDK integration examples: [eventbridge_archive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_archive_test.go), [eventbridge_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_authorization_test.go), [eventbridge_bus_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_bus_test.go), [eventbridge_retry_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_retry_test.go), [eventbridge_schedule_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_schedule_test.go), [eventbridge_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

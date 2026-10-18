@@ -573,20 +573,27 @@ stored, never evaluated, and enabling rotation never rotates the material.
 
 Rules on each account's `default` event bus and on custom buses route events to
 SQS queues, SNS topics, and Lambda functions in the rule's account and region,
-in-process. Rule operations, `PutEvents` entries, and tags take an `EventBusName`
-(a name or ARN; `default` when left out).
+in-process. Rule operations and `PutEvents` entries take an `EventBusName`
+(a name or ARN; `default` when left out); tagging uses a resource ARN. With IAM authorization enabled, same-region
+cross-account requests use the owning bus's ARN and require both identity and bus-policy Allow.
+Explicit Deny wins, including for owning root. See [bus policy enforcement](docs/site/architecture/identity.md#eventbridge-bus-policies).
 
 | Operation | Behavior |
 | --- | --- |
 | CreateEventBus / DescribeEventBus / UpdateEventBus / DeleteEventBus / ListEventBuses | Custom buses (up to 100) with a `Description` and `Tags`; names starting with `aws.` (partner buses) are rejected; a bus with rules cannot be deleted, nor can `default`; ListEventBuses includes `default`, with `NamePrefix`, `Limit`, and `NextToken` |
 | PutRule / DescribeRule / DeleteRule / ListRules / EnableRule / DisableRule | Event-pattern and scheduled rules (`EventPattern`, `ScheduleExpression`, or both; `State`, `Description`, `RoleArn`); PutRule updates an existing rule; a rule with targets cannot be deleted; deleting a missing rule succeeds; `NamePrefix`, `Limit`, and `NextToken`; 300 rules per bus |
 | PutTargets / RemoveTargets / ListTargetsByRule | Up to 5 targets per rule; `Input` (constant JSON), `InputPath` (`$` followed by dotted fields and `[index]` steps, such as `$.detail.items[0].id`), `InputTransformer`, `SqsParameters.MessageGroupId` for FIFO queues (the event ID is the deduplication ID), `RetryPolicy`, and `DeadLetterConfig` (an SQS queue in the rule's account and region). A delivery that fails with an error a later attempt can get past (a disabled KMS key, throttling, a service shutting down) is stored and retried, surviving a restart, with a backoff that starts at one second and doubles up to one minute (shorter than EventBridge's 24-hour spread), until `MaximumRetryAttempts` (185 by default) or `MaximumEventAgeInSeconds` (24 hours by default) runs out; other failures, such as a deleted target, are not retried. Such events go to the dead-letter queue with the `RULE_ARN`, `TARGET_ARN`, `ERROR_CODE` (TinyStack's error code), `ERROR_MESSAGE`, `EXHAUSTED_RETRY_CONDITION`, and `RETRY_ATTEMPTS` message attributes |
-| PutEvents | Up to 10 entries (256 KB) for any of the caller's buses (a missing bus fails its entry); entries need `Source`, `DetailType`, and a JSON object `Detail`, and failed entries are reported per entry; each matching enabled rule delivers the event envelope (or its target input) to every target; a failed delivery does not fail PutEvents |
+| PutEvents | Up to 10 entries (256 KB) for the caller's buses or a permitted same-region bus ARN (a missing bus fails its entry); entries need `Source`, `DetailType`, and a JSON object `Detail`, and failed entries are reported per entry; each matching enabled rule delivers the event envelope (or its target input) to every target; a failed delivery does not fail PutEvents |
 | TestEventPattern | Matches an event against a pattern |
 | TagResource / UntagResource / ListTagsForResource | Rule and custom bus ARNs; also `Tags` on PutRule and CreateEventBus |
 | CreateArchive / DescribeArchive / UpdateArchive / DeleteArchive / ListArchives | Archives of a bus (`EventSourceArn`) that keep every event PutEvents accepts for it, or those matching `EventPattern`, for `RetentionDays` (0 keeps them forever; older events are dropped as new ones arrive), with `EventCount` and `SizeBytes`; always `ENABLED`; ListArchives takes `NamePrefix`, `EventSourceArn`, `State`, `Limit`, and `NextToken`; deleting an archive deletes its events |
 | StartReplay / DescribeReplay / ListReplays / CancelReplay | Replays an archive's events with times from `EventStartTime` up to `EventEndTime`, in time order, to the enabled rules of the archive's bus (the `Destination` must be that bus), or to the rules `FilterArns` names, with a `replay-name` field added; replayed events are not archived again. StartReplay delivers the events before it returns (reporting `STARTING`), so a described replay is `COMPLETED` with its end and last replayed event times, and CancelReplay always fails with `IllegalStatusException` |
-| PutPermission / RemovePermission | A bus's resource-based policy (the default bus has one too), shown as `Policy` by DescribeEventBus and ListEventBuses: a whole `Policy` document, or statements that let an account or `*` (optionally with a `StringEquals` `aws:PrincipalOrgID` `Condition`) call `events:PutEvents`, replacing a statement with the same `StatementId`; RemovePermission removes one statement or, with `RemoveAllPermissions`, the policy. Policies are stored, never evaluated, and deleting a bus deletes its policy |
+| PutPermission / RemovePermission | A bus's resource-based policy (the default bus has one too), shown as `Policy` by DescribeEventBus and ListEventBuses: a whole `Policy` document, or statements that let an account or `*` call `events:PutEvents`, replacing a statement with the same `StatementId`; RemovePermission removes one statement or, with `RemoveAllPermissions`, the policy. Whole policies can grant bus and rule actions and are validated against the shared IAM subset; unsupported elements and organization conditions are rejected. Deleting a bus deletes its policy |
+
+With authorization enabled, every PutEvents entry must be allowed before any delivery or archive write;
+one denied entry rejects the whole request with HTTP 403. PutRule authorization supports literal
+`source` and `detail-type` arrays, and rejects operators in those fields or a top-level `$or` pattern.
+In-process deliveries and archive/replay management bypass bus policies; event-bus targets remain unsupported.
 
 Scheduled rules, on the default bus only, take `rate(<n> <unit>)` (minutes, hours, or
 days; singular for 1) or `cron(<minutes> <hours> <day-of-month> <month> <day-of-week> <year>)`
@@ -1225,8 +1232,8 @@ lifecycle expiration or transitions (rules are stored), a website endpoint, or s
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no `ImageConfig`, pre-started provisioned
 environments, resource policy evaluation, or event sources other than SQS, DynamoDB
 streams, and Kinesis streams (no `AT_TIMESTAMP`, parallelization factor, or tumbling windows); asynchronous failures without an
-`OnFailure` destination are logged and dropped after the retries. EventBridge limits: no partner event buses, cross-account
-buses or targets, policy evaluation, archive encryption (`KmsKeyIdentifier`), or asynchronous or cancellable replays, no `L`, `W`, or `#` in cron expressions, or targets other than
+`OnFailure` destination are logged and dropped after the retries. EventBridge limits: no partner event buses, cross-region bus references,
+event-bus targets, organization conditions, archive encryption (`KmsKeyIdentifier`), or asynchronous or cancellable replays, no `L`, `W`, or `#` in cron expressions, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; the first delivery happens
 synchronously during PutEvents, and retries run in the background. IAM limits: no root access keys, login profiles, permissions boundaries, access key usage tracking, or policy evaluation, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),

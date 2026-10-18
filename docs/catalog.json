@@ -247,18 +247,21 @@
         "SQS, SNS and Lambda targets in the same account and region",
         "Scheduled rules, durable retry records and SQS dead-letter queues",
         "Archives and synchronous replay",
-        "AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection"
+        "AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection",
+        "Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management"
       ],
       "gaps": [
-        "No partner buses, cross-account routing or additional target service families",
-        "Bus policies are stored but not evaluated",
+        "No partner buses, cross-region bus references, event-bus targets or additional target service families",
+        "Organization conditions and unsupported IAM policy elements are rejected; in-process deliveries and archive/replay management do not evaluate bus policies",
         "Replays run synchronously and cannot be cancelled",
         "Cron does not support L, W or #",
         "Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests",
-        "Bus permissions, archives and replay management use the AWS API rather than console forms"
+        "Bus permissions, archives and replay management use the AWS API rather than console forms",
+        "With IAM authorization, PutRule source and detail-type fields require literal string arrays; top-level $or patterns fail closed"
       ],
       "execution": "Local behavior",
-      "package": "eventbridge"
+      "package": "eventbridge",
+      "guide": "With identity.authorization set to soft or enforce, bus and rule actions evaluate the owning bus policy. Cross-account calls use full bus or tagging ARNs and require identity plus resource Allow. PutEvents checks every entry before delivery; one denied entry rejects the whole request. Source, detail-type, eventBusInvocation, creatorAccount and TargetArn condition context is supported. PutPermission validates policies even with authorization off; organization conditions are unsupported. See [EventBridge bus policies](../architecture/identity.md#eventbridge-bus-policies) for action coverage, rule ARN grants and limitations."
     },
     "scheduler": {
       "title": "EventBridge Scheduler",
@@ -578,7 +581,7 @@
         "Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations",
         "IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions",
         "Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits",
-        "S3 bucket, SQS queue, SNS topic, Lambda function and Secrets Manager secret resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records",
+        "S3 bucket, SQS queue, SNS topic, Lambda function, Secrets Manager secret and EventBridge bus resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records",
         "KMS requires a key policy Allow: same-account direct principal grants or account delegation plus IAM; cross-account requires both key and identity policies",
         "User and role permissions boundaries on creation and Put/Delete APIs, returned by Get/List; managed policy existence and boundary usage counts",
         "Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions",
@@ -587,7 +590,7 @@
         "Gateway iam:PassRole checks for explicitly supplied service roles, including Lambda, ECS, Step Functions, EventBridge targets and schedules, EC2 instance-profile roles, CloudFormation, EKS, CodeBuild, Firehose, Pipes, Lake Formation, SES event destinations, EMR Serverless job runs and other registered role inputs; identity, boundary and session layers intersect with iam:PassedToService conditions and per-role inspector checks"
       ],
       "gaps": [
-        "No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation",
+        "No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation",
         "AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles",
         "No access-key usage tracking",
         "In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions",
@@ -596,7 +599,7 @@
       ],
       "execution": "Local behavior",
       "package": "iam",
-      "guide": "Lambda function and Secrets Manager secret policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps. With authorization enabled, role-bearing operations require both the primary service action and `iam:PassRole` on each supplied role ARN. Identity policies, permissions boundaries and session policies all apply; `iam:PassedToService` identifies the consuming service. Denials identify the role and limiting policy layer in the request inspector. See [role-passing authorization](../architecture/identity.md#passing-roles-to-services) for coverage and limits."
+      "guide": "Lambda function, Secrets Manager secret and EventBridge bus policies follow the same same-account union, cross-account intersection and boundary/session rules as S3/SQS/SNS. See [identity and authorization](../architecture/identity.md) for the supported policy subset and delivery gaps. With authorization enabled, role-bearing operations require both the primary service action and `iam:PassRole` on each supplied role ARN. Identity policies, permissions boundaries and session policies all apply; `iam:PassedToService` identifies the consuming service. Denials identify the role and limiting policy layer in the request inspector. See [role-passing authorization](../architecture/identity.md#passing-roles-to-services) for coverage and limits."
     },
     "sts": {
       "title": "STS",

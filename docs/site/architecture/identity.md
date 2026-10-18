@@ -37,7 +37,7 @@ Cognito sign-in operations, retain their anonymous contract.
 
 ## Evaluated policy subsets
 
-Identity-based IAM policies and S3/SQS/SNS/KMS/Lambda/Secrets Manager resource policies are evaluated
+Identity-based IAM policies and S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge resource policies are evaluated
 when authorization is enabled.
 Other resource policies remain stored without general enforcement. Separate features evaluate narrower policies:
 
@@ -98,11 +98,12 @@ ForAnyValue/ForAllValues and IfExists. Supported keys are `aws:username`, `aws:u
 `aws:CurrentTime`, `aws:SecureTransport`, `aws:RequestedRegion`, and `aws:PrincipalTag/*`.
 `aws:ResourceTag/*` works where the service can read tags for the resolved target; absent supported
 tags differ from unsupported tagging. SourceIp uses the connection address; SecureTransport uses
-actual TLS, not forwarded headers. Service-specific condition keys are outside this subset.
+actual TLS, not forwarded headers. Service-specific keys are limited to `iam:PassedToService`, SNS's
+`aws:SourceOwner` and the [EventBridge context](#eventbridge-bus-policies) below.
 
 Core resource extraction covers S3 bucket/object ARNs, SQS queues, SNS topics, DynamoDB tables
 and indexes, Lambda functions, KMS keys (including alias resolution), existing Secrets Manager
-secrets, SSM parameters, IAM users/roles/groups/policies and STS AssumeRole targets. Copy and batch
+secrets, SSM parameters, IAM users/roles/groups/policies, EventBridge buses/rules and STS AssumeRole targets. Copy and batch
 requests require every target check to allow. Other resource families, non-core services and
 operations without a resolved target evaluate Resource `*` only; denials say so. Secrets Manager
 CreateSecret also uses `*` because its random ARN suffix has not been assigned yet.
@@ -126,7 +127,7 @@ ordinary role credentials connect through single sign-on instead. Console API in
 Deleting a mapped SSO role invalidates its old federated credentials, even if the same ARN is recreated. Discovery, OAuth, registry,
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
-Resource-based policies outside S3/SQS/SNS/KMS, organization SCPs/RCPs,
+Resource-based policies outside S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge, organization SCPs/RCPs,
 extended ABAC, Access Analyzer and policy simulator APIs are not implemented. Existing STS trust-policy evaluation remains separate. Dependent service permissions other than the
 registered `iam:PassRole` checks below are not generally inferred.
 
@@ -268,6 +269,60 @@ tags and policy management. Owning-account root retains GetResourcePolicy, PutRe
 DeleteResourcePolicy even after an explicit resource Deny. BlockPublicPolicy rejects unconditional
 wildcard-principal grants; any nonempty Condition is treated as restricting, without AWS automated reasoning.
 Unsupported policy elements are rejected by PutResourcePolicy and ValidateResourcePolicy.
+
+### EventBridge bus policies
+
+With authorization enabled, external bus and rule operations evaluate the owning bus's policy
+using the same union, cross-account intersection and boundary/session rules above. Explicit Deny
+also applies to the owning root; EventBridge has no root recovery exception. `soft` records the
+would-be denial while allowing the operation, and `off` retains the existing account isolation.
+
+Bus ARNs are checked for PutEvents, DescribeEventBus, UpdateEventBus, DeleteEventBus,
+PutPermission, RemovePermission and ListRules. Rule ARNs are checked for PutRule, DescribeRule,
+DeleteRule, EnableRule, DisableRule, PutTargets, RemoveTargets and ListTargetsByRule. TagResource,
+UntagResource and ListTagsForResource use the tagged custom bus or rule ARN. CreateEventBus checks the
+new bus ARN against identity policies without borrowing an existing bus policy. Other operations,
+including archive/replay management and ListEventBuses, retain wildcard identity evaluation.
+
+Cross-account operations must name a full bus ARN, or the resource ARN for tagging. Bare names
+remain scoped to the caller, and only the request's region is supported. A bus policy grants rule
+management on `arn:aws:events:REGION:OWNER:rule/BUS/NAME`, or `rule/NAME` on the default bus;
+a grant on only the event-bus ARN does not grant rule operations. See the
+[AWS bus permission examples](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-bus-permissions-manage.html).
+
+Every PutEvents entry is checked separately, including repeated references to the same bus.
+One denied entry returns HTTP 403 for the entire request before delivery or archiving; this
+implementation does not return AWS's per-entry authorization failures. Accepted cross-account
+events retain the sending account in their envelope, and use the owning bus's rules, targets,
+retries and archives. Targets remain SQS/SNS/Lambda resources in the bus owner's account and region;
+event-bus targets and cross-region forwarding are not supported.
+
+The [EventBridge condition keys](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-use-conditions.html)
+supplied by the resolver are:
+
+| Key | Request context |
+| --- | --- |
+| `events:source`, `events:detail-type` | Each PutEvents entry, or literal arrays in PutRule's event pattern |
+| `events:eventBusInvocation` | `false` for direct PutEvents calls; forwarding to bus targets is unsupported |
+| `events:creatorAccount` | Original account that created an existing rule; absent before creation |
+| `events:TargetArn` | All target ARNs supplied to PutTargets |
+
+Creator accounts persist across updates; legacy rules without that field use the bus owner.
+A `StringEqualsIfExists` creator condition allows first creation and then restricts management
+of existing rules. Use `ForAllValues` plus a `Null` check when every requested source or target
+must belong to an allowed set; an absent set alone satisfies `ForAllValues`.
+With authorization enabled, PutRule fails closed for top-level `$or` and nonliteral source or
+detail-type matchers, because those patterns cannot be represented as literal condition values.
+Other pattern fields retain their existing matcher support. These restrictions do not apply with
+authorization off.
+
+PutPermission validates the shared resource policy subset in every authorization mode. Whole
+policies may contain a Statement object or array; adding/removing statements preserves `Id`.
+Unknown elements, condition keys/operators, NotPrincipal and organization conditions
+(`aws:PrincipalOrgID`) are rejected. The short form grants only `events:PutEvents`; use a whole
+policy for rule management or other actions. In-process service calls and target deliveries bypass
+these policies, and no organization membership, partner buses or AWS owner-only API exceptions
+are modeled.
 
 ### KMS key policies
 
