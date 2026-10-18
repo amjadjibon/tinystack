@@ -311,8 +311,9 @@ Creator accounts persist across updates; legacy rules without that field use the
 A `StringEqualsIfExists` creator condition allows first creation and then restricts management
 of existing rules. Use `ForAllValues` plus a `Null` check when every requested source or target
 must belong to an allowed set; an absent set alone satisfies `ForAllValues`.
-With authorization enabled, PutRule fails closed for top-level `$or` and nonliteral source or
-detail-type matchers, because those patterns cannot be represented as literal condition values.
+With authorization enabled, top-level `$or` and nonliteral source or detail-type matchers have no
+literal condition value: a policy condition on `events:source` or `events:detail-type` then fails
+closed, while policies that do not reference those keys apply as usual.
 Other pattern fields retain their existing matcher support. These restrictions do not apply with
 authorization off.
 

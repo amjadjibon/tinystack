@@ -591,8 +591,9 @@ Explicit Deny wins, including for owning root. See [bus policy enforcement](docs
 | PutPermission / RemovePermission | A bus's resource-based policy (the default bus has one too), shown as `Policy` by DescribeEventBus and ListEventBuses: a whole `Policy` document, or statements that let an account or `*` call `events:PutEvents`, replacing a statement with the same `StatementId`; RemovePermission removes one statement or, with `RemoveAllPermissions`, the policy. Whole policies can grant bus and rule actions and are validated against the shared IAM subset; unsupported elements and organization conditions are rejected. Deleting a bus deletes its policy |
 
 With authorization enabled, every PutEvents entry must be allowed before any delivery or archive write;
-one denied entry rejects the whole request with HTTP 403. PutRule authorization supports literal
-`source` and `detail-type` arrays, and rejects operators in those fields or a top-level `$or` pattern.
+one denied entry rejects the whole request with HTTP 403. PutRule supplies literal
+`source` and `detail-type` arrays as `events:source` and `events:detail-type`; with operators in those
+fields or a top-level `$or` pattern, a policy condition on those keys fails closed and other policies apply.
 In-process deliveries and archive/replay management bypass bus policies; event-bus targets remain unsupported.
 
 Scheduled rules, on the default bus only, take `rate(<n> <unit>)` (minutes, hours, or

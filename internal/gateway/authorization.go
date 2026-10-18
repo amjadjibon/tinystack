@@ -189,7 +189,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		}
 
 		decision := policy.Evaluate(snapshot.Documents, targetAction, target.ARN, policy.Context{
-			Values: contextValues, ResourceTags: target.TagsKnown,
+			Values: contextValues, ResourceTags: target.TagsKnown, Unknown: target.UnknownKeys,
 		})
 		var boundaryDecision, sessionDecision *policy.Decision
 		limitsAllow, limitsDeny := true, false
@@ -204,7 +204,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 			}
 
 			evaluated := policy.Evaluate(layer.documents, targetAction, target.ARN, policy.Context{
-				Values: contextValues, ResourceTags: target.TagsKnown,
+				Values: contextValues, ResourceTags: target.TagsKnown, Unknown: target.UnknownKeys,
 			})
 			*layer.output = &evaluated
 			limitsAllow = limitsAllow && evaluated.Allowed
@@ -231,7 +231,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 				target.ARN,
 				policy.Context{
 					Values: contextValues, ResourceAccount: target.OwnerAccount, ResourceTags: target.TagsKnown,
-					AccountDelegation: target.PolicyRequired,
+					AccountDelegation: target.PolicyRequired, Unknown: target.UnknownKeys,
 				},
 				&principal,
 			)

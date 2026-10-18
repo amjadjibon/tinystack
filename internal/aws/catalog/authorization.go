@@ -13,13 +13,15 @@ import (
 type AuthorizationResource struct {
 	// Values adds context for dependent actions such as iam:PassRole.
 	Values map[string][]string
+	Tags   map[string]string
 	// OwnerAccount and Policy opt a resource into resource-policy evaluation.
 	OwnerAccount string
 	Policy       string
-	Tags         map[string]string
 	Action       string
 	ARN          string
-	TagsKnown    bool
+	// UnknownKeys are context keys this request cannot supply as literal values.
+	UnknownKeys []string
+	TagsKnown   bool
 	// PolicyRequired selects KMS semantics: direct Allow or account delegation plus IAM.
 	PolicyRequired bool
 }

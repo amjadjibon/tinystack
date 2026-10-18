@@ -29,6 +29,8 @@ type Context struct {
 	Values map[string][]string
 	// ResourceAccount owns the resource whose policy is evaluated.
 	ResourceAccount string
+	// Unknown lists context keys the request cannot supply; a condition on one is unsupported.
+	Unknown []string
 	// AccountDelegation reports account Allow statements separately for KMS.
 	AccountDelegation bool
 	ResourceTags      bool
@@ -258,6 +260,10 @@ func expand(patterns []string, version string, context *Context) (expanded, unsu
 }
 
 func (c *Context) known(key string) bool {
+	if slices.Contains(c.Unknown, key) {
+		return false
+	}
+
 	if strings.HasPrefix(key, "aws:principaltag/") {
 		return true
 	}

@@ -10,7 +10,6 @@
 package eventbridge
 
 import (
-	"cmp"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -100,8 +99,8 @@ type target struct {
 }
 
 type rule struct {
-	// CreatorAccount is stable across updates; legacy rules belong to the bus owner.
-	CreatorAccount string `json:",omitempty"`
+	// CreatorAccount is the account that created the rule, kept across updates.
+	CreatorAccount string
 	// Bus is the custom bus of the rule; it is empty on the default bus.
 	Bus     string `json:",omitempty"`
 	Name    string
@@ -370,7 +369,7 @@ func (s *Service) DescribeRule(ctx context.Context, in *api.DescribeRuleRequest)
 		Description:        out.Description,
 		RoleArn:            out.RoleArn,
 		EventBusName:       out.EventBusName,
-		CreatedBy:          new(cmp.Or(r.CreatorAccount, ref.scope.AccountID)),
+		CreatedBy:          new(r.CreatorAccount),
 	}, nil
 }
 

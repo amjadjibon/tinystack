@@ -482,3 +482,23 @@ func TestEventBridgeBatchBusOwners(t *testing.T) {
 		}
 	}
 }
+
+func TestEventBridgeOperatorPatternsWithoutConditions(t *testing.T) {
+	s := authorizationServer(t, config.AuthorizationEnforce, true)
+	ctx := context.Background()
+	key := authorizationUser(t, s)
+	user := eventbridge.New(eventbridge.Options{
+		Region:       "us-east-1",
+		BaseEndpoint: new(s.URL),
+		Credentials:  authorizationProvider(key),
+		Retryer:      aws.NopRetryer{},
+	})
+	authorizationPolicy(t, s, `{"Statement":{"Effect":"Allow","Action":"events:*","Resource":"*"}}`)
+	for _, pattern := range []string{
+		`{"source":[{"prefix":"aws."}]}`,
+		`{"$or":[{"source":["shop"]},{"detail-type":["order"]}]}`,
+	} {
+		_, err := user.PutRule(ctx, &eventbridge.PutRuleInput{Name: new("operators"), EventPattern: &pattern})
+		mustAuthorize(t, err)
+	}
+}

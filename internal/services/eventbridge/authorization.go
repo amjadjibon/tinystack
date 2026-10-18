@@ -1,7 +1,6 @@
 package eventbridge
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"strings"
@@ -90,7 +89,7 @@ func (s *Service) AuthorizationResources(
 
 	switch operation {
 	case "PutRule":
-		values, patternErr := rulePatternValues(catalog.InputString(input, "EventPattern"))
+		values, unknown, patternErr := rulePatternValues(catalog.InputString(input, "EventPattern"))
 		if patternErr != nil {
 			return nil, patternErr
 		}
@@ -98,6 +97,8 @@ func (s *Service) AuthorizationResources(
 		for key, value := range values {
 			target.Values[key] = value
 		}
+
+		target.UnknownKeys = unknown
 
 	case "PutTargets":
 		target.Values["events:targetarn"] = catalog.InputPathStrings(input, "Targets.Arn")
@@ -134,10 +135,13 @@ func (s *Service) busAuthorization(
 		target.Policy = policy(tx, m.Scope, name)
 		if ruleName != "" {
 			r, _, readErr := storage.Read[rule](tx, rulePrefix(m.Scope, name)+ruleName)
+			creator := metadata.AccountID
 			if r != nil {
 				target.Tags = common.CloneTags(r.Tags)
-				target.Values = map[string][]string{"events:creatoraccount": {cmp.Or(r.CreatorAccount, m.AccountID)}}
+				creator = r.CreatorAccount
 			}
+
+			target.Values = map[string][]string{"events:creatoraccount": {creator}}
 
 			return readErr
 		}
@@ -153,43 +157,49 @@ func (s *Service) busAuthorization(
 }
 
 // rulePatternValues supplies literal pattern fields to IAM conditions. Matching
-// operators and top-level $or cannot be represented as literal IAM values, so
-// authorization fails closed rather than treating them as absent context keys.
-func rulePatternValues(text string) (map[string][]string, error) {
-	values := map[string][]string{}
+// operators and top-level $or have no literal IAM value, so those fields are
+// unknown: a policy condition on them fails closed, and other policies apply.
+func rulePatternValues(text string) (values map[string][]string, unknown []string, err error) {
+	values = map[string][]string{}
 	if text == "" {
-		return values, nil
+		return values, nil, nil
 	}
 
 	var fields map[string]json.RawMessage
 	if json.Unmarshal([]byte(text), &fields) != nil {
-		return nil, invalid("Invalid EventPattern.")
+		return nil, nil, invalid("Invalid EventPattern.")
 	}
 
-	if _, hasOr := fields["$or"]; hasOr {
-		return nil, invalid("IAM authorization does not support top-level $or in EventPattern.")
-	}
-
+	_, hasOr := fields["$or"]
 	for _, name := range []string{"source", "detail-type"} {
+		key := "events:" + name
 		raw, present := fields[name]
+		if hasOr {
+			unknown = append(unknown, key)
+			continue
+		}
+
 		if !present {
 			continue
 		}
 
 		var entries []any
 		if json.Unmarshal(raw, &entries) != nil {
-			return nil, invalid("IAM authorization requires literal string arrays for %s.", name)
+			unknown = append(unknown, key)
+			continue
 		}
 
 		for _, entry := range entries {
 			value, literal := entry.(string)
 			if !literal {
-				return nil, invalid("IAM authorization requires literal string arrays for %s.", name)
+				delete(values, key)
+				unknown = append(unknown, key)
+				break
 			}
 
-			values["events:"+name] = append(values["events:"+name], value)
+			values[key] = append(values[key], value)
 		}
 	}
 
-	return values, nil
+	return values, unknown, nil
 }
