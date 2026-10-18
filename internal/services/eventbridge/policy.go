@@ -11,12 +11,13 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	iampolicy "github.com/amjadjibon/tinystack/internal/services/iam/policy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 // A bus's resource-based policy, which PutPermission and RemovePermission
 // change, is "<account>/<region>/eventbridge/policy/<bus>" (the default bus
-// has one too). Policies are stored, never evaluated.
+// has one too). The gateway evaluates policies before external AWS operations.
 
 const maxPolicy = 10240
 
@@ -29,8 +30,37 @@ func policyKey(scope request.Scope, bus string) string {
 // policyDocument is a stored policy, kept as it was written except for the
 // statements PutPermission and RemovePermission add and remove.
 type policyDocument struct {
-	Version   string           `json:"Version"`
+	Version   string           `json:"Version,omitempty"`
+	ID        string           `json:"Id,omitempty"`
 	Statement []map[string]any `json:"Statement"`
+}
+
+// decodePolicy normalizes a single Statement object for statement-level edits.
+func decodePolicy(data []byte) (policyDocument, error) {
+	if err := iampolicy.ValidateResource(string(data)); err != nil {
+		return policyDocument{}, invalid("Unsupported stored event bus policy: %v.", err)
+	}
+
+	var raw struct {
+		Version   string
+		ID        string `json:"Id"`
+		Statement json.RawMessage
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return policyDocument{}, invalid("Policy is not a valid policy document.")
+	}
+
+	doc := policyDocument{Version: raw.Version, ID: raw.ID}
+	if err := json.Unmarshal(raw.Statement, &doc.Statement); err != nil {
+		var st map[string]any
+		if json.Unmarshal(raw.Statement, &st) != nil || st == nil {
+			return policyDocument{}, invalid("Policy must contain valid statements.")
+		}
+
+		doc.Statement = []map[string]any{st}
+	}
+
+	return doc, nil
 }
 
 // policy returns a bus's policy, "" when it has none.
@@ -72,14 +102,14 @@ func statement(scope request.Scope, bus string, in *api.PutPermissionRequest) (m
 }
 
 // PutPermission sets a bus's whole policy, or adds a statement that lets an
-// account or organization send it events, replacing one with the same ID.
+// account send it events, replacing one with the same ID.
 func (s *Service) PutPermission(ctx context.Context, in *api.PutPermissionRequest) (*api.PutPermissionOutput, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	bus, err := busName(m.Scope, in.EventBusName)
+	bus, err := resolveBus(&m, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +121,8 @@ func (s *Service) PutPermission(ctx context.Context, in *api.PutPermissionReques
 			return nil, invalid("Policy cannot be combined with Action, Principal, StatementId, or Condition.")
 		}
 
-		var doc policyDocument
 		var compact bytes.Buffer
-		if json.Unmarshal([]byte(*in.Policy), &doc) != nil || json.Compact(&compact, []byte(*in.Policy)) != nil {
+		if json.Compact(&compact, []byte(*in.Policy)) != nil {
 			return nil, invalid("Policy is not a valid policy document.")
 		}
 
@@ -110,7 +139,11 @@ func (s *Service) PutPermission(ctx context.Context, in *api.PutPermissionReques
 		if whole == nil {
 			doc := policyDocument{Version: "2012-10-17"}
 			if current := policy(tx, m.Scope, bus); current != "" {
-				_ = json.Unmarshal([]byte(current), &doc)
+				var decodeErr error
+				doc, decodeErr = decodePolicy([]byte(current))
+				if decodeErr != nil {
+					return decodeErr
+				}
 			}
 
 			doc.Statement = slices.DeleteFunc(
@@ -126,6 +159,10 @@ func (s *Service) PutPermission(ctx context.Context, in *api.PutPermissionReques
 
 		if len(whole) > maxPolicy {
 			return awserror.New("PolicyLengthExceededException", "The policy is longer than 10240 characters.")
+		}
+
+		if policyErr := iampolicy.ValidateResource(string(whole)); policyErr != nil {
+			return invalid("Unsupported event bus policy: %v.", policyErr)
 		}
 
 		tx.Put(policyKey(m.Scope, bus), whole)
@@ -149,7 +186,7 @@ func (s *Service) RemovePermission(
 		return nil, err
 	}
 
-	bus, err := busName(m.Scope, in.EventBusName)
+	bus, err := resolveBus(&m, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}
@@ -173,8 +210,11 @@ func (s *Service) RemovePermission(
 			return awserror.New("ResourceNotFoundException", "EventBus does not have a policy.")
 		}
 
-		var doc policyDocument
-		_ = json.Unmarshal([]byte(current), &doc)
+		doc, decodeErr := decodePolicy([]byte(current))
+		if decodeErr != nil {
+			return decodeErr
+		}
+
 		kept := slices.DeleteFunc(slices.Clone(doc.Statement), func(e map[string]any) bool {
 			return e["Sid"] == *in.StatementId
 		})

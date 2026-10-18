@@ -10,6 +10,7 @@
 package eventbridge
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -99,6 +100,8 @@ type target struct {
 }
 
 type rule struct {
+	// CreatorAccount is stable across updates; legacy rules belong to the bus owner.
+	CreatorAccount string `json:",omitempty"`
 	// Bus is the custom bus of the rule; it is empty on the default bus.
 	Bus     string `json:",omitempty"`
 	Name    string
@@ -170,7 +173,7 @@ func resolveRule(ctx context.Context, name, bus *string) (ruleRef, error) {
 		return ruleRef{}, invalid("Rule name must be 1 to 64 characters from [.-_A-Za-z0-9].")
 	}
 
-	b, err := busName(m.Scope, bus)
+	b, err := resolveBus(&m, bus)
 	if err != nil {
 		return ruleRef{}, err
 	}
@@ -250,6 +253,11 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 		return nil, err
 	}
 
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	text, expression := common.Value(in.EventPattern), common.Value(in.ScheduleExpression)
 	if text == "" && expression == "" {
 		return nil, invalid("Parameter(s) EventPattern or ScheduleExpression must be specified.")
@@ -311,7 +319,7 @@ func (s *Service) PutRule(ctx context.Context, in *api.PutRuleRequest) (*api.Put
 				)
 			}
 
-			r = &rule{Name: *in.Name}
+			r = &rule{Name: *in.Name, CreatorAccount: m.AccountID}
 			if ref.bus != defaultBus {
 				r.Bus = ref.bus
 			}
@@ -362,7 +370,7 @@ func (s *Service) DescribeRule(ctx context.Context, in *api.DescribeRuleRequest)
 		Description:        out.Description,
 		RoleArn:            out.RoleArn,
 		EventBusName:       out.EventBusName,
-		CreatedBy:          new(ref.scope.AccountID),
+		CreatedBy:          new(cmp.Or(r.CreatorAccount, ref.scope.AccountID)),
 	}, nil
 }
 
@@ -439,7 +447,7 @@ func (s *Service) ListRules(ctx context.Context, in *api.ListRulesRequest) (*api
 		return nil, err
 	}
 
-	bus, err := busName(m.Scope, in.EventBusName)
+	bus, err := resolveBus(&m, in.EventBusName)
 	if err != nil {
 		return nil, err
 	}

@@ -25,7 +25,8 @@ const (
 
 func resourceAuthorization(service string) bool {
 	return service == consoleS3 || service == consoleSQS || service == consoleSNS ||
-		service == authorizationKMS || service == authorizationLambda || service == authorizationSecrets
+		service == authorizationKMS || service == authorizationLambda || service == authorizationSecrets ||
+		service == consoleEventBridge
 }
 
 // PolicyLookup reads the current identity policy snapshot through IAM.

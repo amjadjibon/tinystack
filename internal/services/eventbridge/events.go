@@ -123,20 +123,25 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 		return nil, invalid("Total size of the entries in the request is over the limit.")
 	}
 
-	archives, err := s.archivers(ctx, m.Scope)
-	if err != nil {
-		return nil, err
-	}
-
+	archives := map[request.Scope]map[string][]archiver{}
 	// Each entry names its bus; the rules of each bus are loaded once.
 	busRules := map[string][]compiledRule{}
-	var kept []archived
+	kept := map[request.Scope][]archived{}
 	out := &api.PutEventsResponse{FailedEntryCount: new(int64(0))}
 	for i := range in.Entries {
-		rules, known := busRules[common.Value(in.Entries[i].EventBusName)]
+		owner := m
+		bus, busErr := resolveBus(&owner, in.Entries[i].EventBusName)
+		if busErr != nil {
+			*out.FailedEntryCount++
+			out.Entries = append(out.Entries, failed("NotFoundException", busErr.Error()))
+			continue
+		}
+
+		arn := busARN(owner.Scope, bus)
+		rules, known := busRules[arn]
 		if !known {
 			var rulesErr error
-			if rules, rulesErr = s.enabledRules(ctx, m.Scope, in.Entries[i].EventBusName); rulesErr != nil {
+			if rules, rulesErr = s.enabledRules(ctx, owner.Scope, &bus); rulesErr != nil {
 				if _, missing := errors.AsType[*awserror.Error](rulesErr); !missing {
 					return nil, rulesErr
 				}
@@ -147,7 +152,15 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 				continue
 			}
 
-			busRules[common.Value(in.Entries[i].EventBusName)] = rules
+			busRules[arn] = rules
+		}
+
+		if _, known = archives[owner.Scope]; !known {
+			var archiveErr error
+			archives[owner.Scope], archiveErr = s.archivers(ctx, owner.Scope)
+			if archiveErr != nil {
+				return nil, archiveErr
+			}
 		}
 
 		e, result := s.newEvent(m.Scope, &in.Entries[i])
@@ -163,10 +176,12 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 		}
 
 		leafValues, _ := pattern.Flatten(encoded)
-		bus, _ := busName(m.Scope, in.Entries[i].EventBusName)
-		for _, a := range archives[bus] {
+		for _, a := range archives[owner.Scope][bus] {
 			if a.pattern == nil || a.pattern.Matches(leafValues) {
-				kept = append(kept, archived{at: e.at, archive: a.name, id: e.ID, encoded: encoded})
+				kept[owner.Scope] = append(
+					kept[owner.Scope],
+					archived{at: e.at, archive: a.name, id: e.ID, encoded: encoded},
+				)
 			}
 		}
 
@@ -176,15 +191,17 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 			}
 
 			for j := range r.targets {
-				s.deliver(ctx, m.Scope, &r, &r.targets[j], e, encoded)
+				s.deliver(ctx, owner.Scope, &r, &r.targets[j], e, encoded)
 			}
 		}
 
 		out.Entries = append(out.Entries, api.PutEventsResultEntry{EventId: new(e.ID)})
 	}
 
-	if keepErr := s.keep(ctx, m.Scope, kept); keepErr != nil {
-		return nil, keepErr
+	for scope, events := range kept {
+		if keepErr := s.keep(ctx, scope, events); keepErr != nil {
+			return nil, keepErr
+		}
 	}
 
 	return out, nil

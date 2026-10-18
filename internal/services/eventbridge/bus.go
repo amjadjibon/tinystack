@@ -65,6 +65,12 @@ func busName(scope request.Scope, ref *string) (string, error) {
 	return name, nil
 }
 
+// resolveBus selects the ARN's owner only when the gateway evaluates resource policies.
+func resolveBus(m *request.Metadata, ref *string) (string, error) {
+	request.ReferenceScope(m, "events", common.Value(ref))
+	return busName(m.Scope, ref)
+}
+
 func loadBus(tx storage.ReadTx, scope request.Scope, name string) (*bus, bool, error) {
 	return storage.Read[bus](tx, busPrefix(scope)+name)
 }
@@ -185,7 +191,7 @@ func (s *Service) viewBus(ctx context.Context, ref *string) (api.EventBus, error
 		return api.EventBus{}, err
 	}
 
-	name, err := busName(m.Scope, ref)
+	name, err := resolveBus(&m, ref)
 	if err != nil {
 		return api.EventBus{}, err
 	}
@@ -244,7 +250,7 @@ func (s *Service) UpdateEventBus(
 		return nil, err
 	}
 
-	name, err := busName(m.Scope, in.Name)
+	name, err := resolveBus(&m, in.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +297,7 @@ func (s *Service) DeleteEventBus(
 		return nil, err
 	}
 
-	name, err := busName(m.Scope, in.Name)
+	name, err := resolveBus(&m, in.Name)
 	if err != nil {
 		return nil, err
 	}

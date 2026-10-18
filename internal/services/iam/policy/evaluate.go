@@ -269,7 +269,8 @@ func (c *Context) known(key string) bool {
 	switch key {
 	case usernameKey, "aws:userid", "aws:principalarn", "aws:principalaccount", "aws:sourceip",
 		"aws:currenttime", "aws:securetransport", "aws:requestedregion", "aws:sourcearn", "aws:sourceaccount",
-		"aws:sourceowner", "iam:passedtoservice":
+		"aws:sourceowner", "iam:passedtoservice", "events:source", "events:detail-type",
+		"events:eventbusinvocation", "events:creatoraccount", "events:targetarn":
 		return true
 	}
 

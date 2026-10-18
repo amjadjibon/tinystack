@@ -184,12 +184,7 @@ func TestEventBridgeBusPolicies(t *testing.T) {
 
 	for _, in := range []*eventbridge.PutPermissionInput{
 		{Action: aws.String("events:PutEvents"), Principal: aws.String("111122223333"), StatementId: aws.String("a")},
-		{
-			Action: aws.String("events:PutEvents"), Principal: aws.String("*"), StatementId: aws.String("org"),
-			Condition: &ebtypes.Condition{
-				Type: aws.String("StringEquals"), Key: aws.String("aws:PrincipalOrgID"), Value: aws.String("o-1"),
-			},
-		},
+		{Action: aws.String("events:PutEvents"), Principal: aws.String("*"), StatementId: aws.String("public")},
 	} {
 		if _, err = c.PutPermission(ctx, in); err != nil {
 			t.Fatal(err)

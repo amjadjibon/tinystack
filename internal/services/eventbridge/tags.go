@@ -46,6 +46,7 @@ func resolveTagged(ctx context.Context, tx storage.ReadTx, arn *string) (*tagged
 		return nil, err
 	}
 
+	request.ReferenceScope(&m, "events", common.Value(arn))
 	missing := awserror.New("ResourceNotFoundException", "Resource "+common.Value(arn)+" does not exist.")
 	if name, ok := strings.CutPrefix(common.Value(arn), busARN(m.Scope, "")); ok {
 		if !busPattern.MatchString(name) || name == defaultBus {
@@ -74,7 +75,7 @@ func resolveTagged(ctx context.Context, tx storage.ReadTx, arn *string) (*tagged
 		busRef, name = "", rest
 	}
 
-	ref, err := resolveRule(ctx, &name, &busRef)
+	ref, err := resolveRule(request.WithMetadata(ctx, m), &name, &busRef)
 	if err != nil {
 		return nil, missing
 	}
