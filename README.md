@@ -434,6 +434,7 @@ client in any region sees the same records. Identity policies are evaluated when
 | AttachGroupPolicy / DetachGroupPolicy / ListAttachedGroupPolicies | Up to 10 managed policies per group |
 | CreateAccessKey / ListAccessKeys / UpdateAccessKey / DeleteAccessKey | Up to 2 `AKIA` keys per user, `Active` or `Inactive`; only CreateAccessKey returns the secret; without a `UserName`, the calling IAM user (root access keys are not issued) |
 | GetAccessKeyLastUsed | The key's user; use is not recorded, so every key reports `N/A` |
+| SimulatePrincipalPolicy / SimulateCustomPolicy | Shared policy evaluator; user/group/role sources, extra policies, boundary overrides, resource policies for user callers, typed context and missing keys, matched policy sources, one result per action and resource, pagination; independent of authorization mode. Unsupported constructs return `InvalidInput`; source positions and Organizations policies are excluded |
 
 An active access key signs requests like a configured one: it acts in its user's
 account, and in `identity.mode: verify` it must be signed with its secret. An

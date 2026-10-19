@@ -24,7 +24,7 @@ func (r policyRef) arn() string { return arn(r.account, "policy"+r.path+r.name) 
 
 // awsManaged reports whether the ARN names an AWS managed policy. Those exist in
 // every account, so they can be attached, but TinyStack does not model them.
-func (r policyRef) awsManaged() bool { return r.account == "aws" }
+func (r policyRef) awsManaged() bool { return r.account == awsPartition }
 
 func parsePolicyARN(s string) (policyRef, error) {
 	invalid := invalidInput("ARN %s is not valid.", s)
@@ -36,7 +36,7 @@ func parsePolicyARN(s string) (policyRef, error) {
 	account, resource, _ := strings.Cut(rest, ":")
 	resource, ok = strings.CutPrefix(resource, "policy")
 	i := strings.LastIndex(resource, "/")
-	if !ok || i < 0 || (account != "aws" && !accountID.MatchString(account)) {
+	if !ok || i < 0 || (account != awsPartition && !accountID.MatchString(account)) {
 		return policyRef{}, invalid
 	}
 

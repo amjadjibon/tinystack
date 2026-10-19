@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	kindRole   = "role"
-	kindPolicy = "policy"
+	awsPartition = "aws"
+	kindRole     = "role"
+	kindPolicy   = "policy"
 
 	defaultPageSize    = 100
 	maxPageSize        = 1000

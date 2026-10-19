@@ -35,7 +35,7 @@ func managedDocument(tx storage.ReadTx, account, policyARN string) (iampolicy.Do
 			)
 		}
 
-		return iampolicy.Document{Name: policyARN, JSON: document}, nil
+		return iampolicy.Document{Name: policyARN, JSON: document, SourceType: "aws-managed"}, nil
 	}
 
 	managed, _, err := loadPolicy(tx, account, ref)
@@ -45,7 +45,11 @@ func managedDocument(tx storage.ReadTx, account, policyARN string) (iampolicy.Do
 
 	for _, version := range managed.Versions {
 		if version.ID == managed.DefaultVersion {
-			return iampolicy.Document{Name: policyARN + "/" + version.ID, JSON: version.Document}, nil
+			return iampolicy.Document{
+				Name:       policyARN + "/" + version.ID,
+				JSON:       version.Document,
+				SourceType: "user-managed",
+			}, nil
 		}
 	}
 

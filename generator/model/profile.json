@@ -11213,7 +11213,9 @@
       "PutUserPermissionsBoundary",
       "DeleteUserPermissionsBoundary",
       "PutRolePermissionsBoundary",
-      "DeleteRolePermissionsBoundary"
+      "DeleteRolePermissionsBoundary",
+      "SimulatePrincipalPolicy",
+      "SimulateCustomPolicy"
     ],
     "shapes": {
       "CreateRoleRequest": [
@@ -11847,6 +11849,64 @@
       "AttachedPermissionsBoundary": [
         "PermissionsBoundaryType",
         "PermissionsBoundaryArn"
+      ],
+      "SimulateCustomPolicyRequest": [
+        "PolicyInputList",
+        "PermissionsBoundaryPolicyInputList",
+        "ActionNames",
+        "ResourceArns",
+        "ResourcePolicy",
+        "ResourceOwner",
+        "CallerArn",
+        "ContextEntries",
+        "MaxItems",
+        "Marker"
+      ],
+      "SimulatePrincipalPolicyRequest": [
+        "PolicySourceArn",
+        "PolicyInputList",
+        "PermissionsBoundaryPolicyInputList",
+        "ActionNames",
+        "ResourceArns",
+        "ResourcePolicy",
+        "ResourceOwner",
+        "CallerArn",
+        "ContextEntries",
+        "MaxItems",
+        "Marker"
+      ],
+      "SimulatePolicyResponse": [
+        "EvaluationResults",
+        "IsTruncated",
+        "Marker"
+      ],
+      "ContextEntry": [
+        "ContextKeyName",
+        "ContextKeyValues",
+        "ContextKeyType"
+      ],
+      "EvaluationResult": [
+        "EvalActionName",
+        "EvalResourceName",
+        "EvalDecision",
+        "MatchedStatements",
+        "MissingContextValues",
+        "PermissionsBoundaryDecisionDetail",
+        "ResourceSpecificResults"
+      ],
+      "ResourceSpecificResult": [
+        "EvalResourceName",
+        "EvalResourceDecision",
+        "MatchedStatements",
+        "MissingContextValues",
+        "PermissionsBoundaryDecisionDetail"
+      ],
+      "Statement": [
+        "SourcePolicyId",
+        "SourcePolicyType"
+      ],
+      "PermissionsBoundaryDecisionDetail": [
+        "AllowedByPermissionsBoundary"
       ]
     }
   },

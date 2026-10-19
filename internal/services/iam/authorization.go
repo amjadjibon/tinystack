@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -102,10 +103,13 @@ func (s *Service) Authorization(ctx context.Context, principal *request.Principa
 }
 
 func collectPolicies(tx storage.ReadTx, account, owner string, p *permissions, out *Authorization) error {
+	parts := strings.SplitN(owner, ":", 6)
+	sourceType, _, _ := strings.Cut(parts[5], "/")
+
 	for _, name := range slices.Sorted(maps.Keys(p.Policies)) {
 		out.Documents = append(
 			out.Documents,
-			iampolicy.Document{Name: owner + "/inline/" + name, JSON: p.Policies[name]},
+			iampolicy.Document{Name: owner + "/inline/" + name, JSON: p.Policies[name], SourceType: sourceType},
 		)
 	}
 

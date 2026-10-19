@@ -363,6 +363,36 @@ is validated on CreateKey and PutKeyPolicy. AWS's owner-only restrictions on ind
 management APIs are not modeled. In-process service integrations retain their direct path and bypass
 gateway authorization. Unresolved parse-mode callers retain the same bypass as S3/SQS/SNS.
 
+## IAM policy simulation
+
+`SimulatePrincipalPolicy` loads current inline and attached policies for an account's user,
+group or role through IAM's shared authorization loader, including group inheritance and
+permissions boundaries. `SimulateCustomPolicy` evaluates supplied documents without creating
+an identity. Both use the gateway's policy evaluator, even when `identity.authorization` is off.
+An explicit input boundary replaces the stored boundary; extra identity policies are combined.
+Neither operation executes actions or fetches policies for simulated resources.
+
+Each action and resource pair produces its own result, as in AWS; explicit resource inputs
+also fill `ResourceSpecificResults`. Pagination counts these results and preserves input order.
+Without resource inputs the simulator evaluates `*`. Matched statements identify their source
+policy and type; line/column positions are excluded from the generated API profile.
+
+Context entries accept scalar and list string, numeric, boolean, date, IP and binary values.
+Context key names are case insensitive; omitted keys are reported in `MissingContextValues`.
+Simulation can evaluate caller-supplied service condition keys without gateway request metadata.
+It supports the same condition operators and username policy variable as the shared evaluator.
+Unsupported constructs anywhere in a policy return `InvalidInput`, including nonmatching
+statements, so an unsupported deny cannot silently become an allow.
+
+Resource policies require an IAM user caller. Same-account grants combine with identity grants;
+cross-account grants require identity and resource allows. Direct user grants bypass implicit
+boundary denies, while explicit denies always win. Role-source and group/role caller resource
+policy simulation, Organizations policies, policy exclusions and resource handling scenarios
+are unsupported. Resource owners default to the caller account for ARNs without an account;
+`ResourceOwner` can override this. See the AWS
+[principal simulator](https://docs.aws.amazon.com/IAM/latest/APIReference/API_SimulatePrincipalPolicy.html)
+and [custom simulator](https://docs.aws.amazon.com/IAM/latest/APIReference/API_SimulateCustomPolicy.html).
+
 ## Namespaces and uniqueness
 
 | Resource family | Namespace |

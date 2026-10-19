@@ -71,6 +71,16 @@ func principalMatches(raw json.RawMessage, principal *request.Principal) (matche
 // ValidateResource rejects unsupported elements at write time, even in statements
 // whose action/resource would not match a particular request.
 func ValidateResource(document string) error {
+	return validateDocument(document, true, false)
+}
+
+// ValidateSimulation rejects malformed and unsupported constructs in every statement,
+// including statements that do not match a requested action or resource.
+func ValidateSimulation(document string, resource bool) error {
+	return validateDocument(document, resource, true)
+}
+
+func validateDocument(document string, resource, simulation bool) error {
 	var doc struct {
 		Version   string
 		ID        string `json:"Id"`
@@ -105,8 +115,12 @@ func ValidateResource(document string) error {
 			return fmt.Errorf("malformed or unsupported resource statement (NotPrincipal is unsupported)")
 		}
 
-		if _, _, err := principalMatches(st.Principal, &request.Principal{}); err != nil {
-			return err
+		if resource {
+			if _, _, err := principalMatches(st.Principal, &request.Principal{}); err != nil {
+				return err
+			}
+		} else if st.Principal != nil {
+			return fmt.Errorf("principal is unsupported in identity policies")
 		}
 
 		actions, validAction := elements(st.Action, st.NotAction)
@@ -115,7 +129,12 @@ func ValidateResource(document string) error {
 			return fmt.Errorf("invalid Action/Resource elements")
 		}
 
-		context := Context{ResourceTags: true, Values: map[string][]string{usernameKey: {"validation"}}}
+		context := Context{
+			Simulation:   simulation,
+			ResourceTags: true,
+			Values:       map[string][]string{usernameKey: {"validation"}},
+		}
+
 		_, problems := expand(append(actions, resources...), doc.Version, &context)
 		_, conditionProblems := conditions(st.Condition, doc.Version, &context)
 		problems = append(problems, conditionProblems...)

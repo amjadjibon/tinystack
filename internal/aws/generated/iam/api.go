@@ -868,6 +868,72 @@ type DeleteRolePermissionsBoundaryRequest struct {
 	RoleName *string `json:"RoleName,omitempty" query:"RoleName"`
 }
 
+type ContextEntry struct {
+	ContextKeyName   *string  `json:"ContextKeyName,omitempty" query:"ContextKeyName"`
+	ContextKeyValues []string `json:"ContextKeyValues,omitempty" query:"ContextKeyValues"`
+	ContextKeyType   *string  `json:"ContextKeyType,omitempty" query:"ContextKeyType"`
+}
+
+type SimulatePrincipalPolicyRequest struct {
+	PolicySourceArn                    *string        `json:"PolicySourceArn,omitempty" query:"PolicySourceArn"`
+	PolicyInputList                    []string       `json:"PolicyInputList,omitempty" query:"PolicyInputList"`
+	PermissionsBoundaryPolicyInputList []string       `json:"PermissionsBoundaryPolicyInputList,omitempty" query:"PermissionsBoundaryPolicyInputList"`
+	ActionNames                        []string       `json:"ActionNames,omitempty" query:"ActionNames"`
+	ResourceArns                       []string       `json:"ResourceArns,omitempty" query:"ResourceArns"`
+	ResourcePolicy                     *string        `json:"ResourcePolicy,omitempty" query:"ResourcePolicy"`
+	ResourceOwner                      *string        `json:"ResourceOwner,omitempty" query:"ResourceOwner"`
+	CallerArn                          *string        `json:"CallerArn,omitempty" query:"CallerArn"`
+	ContextEntries                     []ContextEntry `json:"ContextEntries,omitempty" query:"ContextEntries"`
+	MaxItems                           *int64         `json:"MaxItems,omitempty" query:"MaxItems"`
+	Marker                             *string        `json:"Marker,omitempty" query:"Marker"`
+}
+
+type Statement struct {
+	SourcePolicyId   *string `json:"SourcePolicyId,omitempty" query:"SourcePolicyId"`
+	SourcePolicyType *string `json:"SourcePolicyType,omitempty" query:"SourcePolicyType"`
+}
+
+type PermissionsBoundaryDecisionDetail struct {
+	AllowedByPermissionsBoundary *bool `json:"AllowedByPermissionsBoundary,omitempty" query:"AllowedByPermissionsBoundary"`
+}
+
+type ResourceSpecificResult struct {
+	EvalResourceName                  *string                            `json:"EvalResourceName,omitempty" query:"EvalResourceName"`
+	EvalResourceDecision              *string                            `json:"EvalResourceDecision,omitempty" query:"EvalResourceDecision"`
+	MatchedStatements                 []Statement                        `json:"MatchedStatements,omitempty" query:"MatchedStatements"`
+	MissingContextValues              []string                           `json:"MissingContextValues,omitempty" query:"MissingContextValues"`
+	PermissionsBoundaryDecisionDetail *PermissionsBoundaryDecisionDetail `json:"PermissionsBoundaryDecisionDetail,omitempty" query:"PermissionsBoundaryDecisionDetail"`
+}
+
+type EvaluationResult struct {
+	EvalActionName                    *string                            `json:"EvalActionName,omitempty" query:"EvalActionName"`
+	EvalResourceName                  *string                            `json:"EvalResourceName,omitempty" query:"EvalResourceName"`
+	EvalDecision                      *string                            `json:"EvalDecision,omitempty" query:"EvalDecision"`
+	MatchedStatements                 []Statement                        `json:"MatchedStatements,omitempty" query:"MatchedStatements"`
+	MissingContextValues              []string                           `json:"MissingContextValues,omitempty" query:"MissingContextValues"`
+	PermissionsBoundaryDecisionDetail *PermissionsBoundaryDecisionDetail `json:"PermissionsBoundaryDecisionDetail,omitempty" query:"PermissionsBoundaryDecisionDetail"`
+	ResourceSpecificResults           []ResourceSpecificResult           `json:"ResourceSpecificResults,omitempty" query:"ResourceSpecificResults"`
+}
+
+type SimulatePolicyResponse struct {
+	EvaluationResults []EvaluationResult `json:"EvaluationResults,omitempty" query:"EvaluationResults"`
+	IsTruncated       *bool              `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker            *string            `json:"Marker,omitempty" query:"Marker"`
+}
+
+type SimulateCustomPolicyRequest struct {
+	PolicyInputList                    []string       `json:"PolicyInputList,omitempty" query:"PolicyInputList"`
+	PermissionsBoundaryPolicyInputList []string       `json:"PermissionsBoundaryPolicyInputList,omitempty" query:"PermissionsBoundaryPolicyInputList"`
+	ActionNames                        []string       `json:"ActionNames,omitempty" query:"ActionNames"`
+	ResourceArns                       []string       `json:"ResourceArns,omitempty" query:"ResourceArns"`
+	ResourcePolicy                     *string        `json:"ResourcePolicy,omitempty" query:"ResourcePolicy"`
+	ResourceOwner                      *string        `json:"ResourceOwner,omitempty" query:"ResourceOwner"`
+	CallerArn                          *string        `json:"CallerArn,omitempty" query:"CallerArn"`
+	ContextEntries                     []ContextEntry `json:"ContextEntries,omitempty" query:"ContextEntries"`
+	MaxItems                           *int64         `json:"MaxItems,omitempty" query:"MaxItems"`
+	Marker                             *string        `json:"Marker,omitempty" query:"Marker"`
+}
+
 type API interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
@@ -954,10 +1020,12 @@ type API interface {
 	DeleteUserPermissionsBoundary(context.Context, *DeleteUserPermissionsBoundaryRequest) (*DeleteUserPermissionsBoundaryOutput, error)
 	PutRolePermissionsBoundary(context.Context, *PutRolePermissionsBoundaryRequest) (*PutRolePermissionsBoundaryOutput, error)
 	DeleteRolePermissionsBoundary(context.Context, *DeleteRolePermissionsBoundaryRequest) (*DeleteRolePermissionsBoundaryOutput, error)
+	SimulatePrincipalPolicy(context.Context, *SimulatePrincipalPolicyRequest) (*SimulatePolicyResponse, error)
+	SimulateCustomPolicy(context.Context, *SimulateCustomPolicyRequest) (*SimulatePolicyResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iam", SigningName: "iam", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "iam", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://iam.amazonaws.com/doc/2010-05-08/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModification", MessageMember: "", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "DeleteConflict", MessageMember: "", StatusCode: 409}, "EntityAlreadyExistsException": catalog.ErrorBinding{QueryCode: "EntityAlreadyExists", MessageMember: "", StatusCode: 409}, "EntityTemporarilyUnmodifiableException": catalog.ErrorBinding{QueryCode: "EntityTemporarilyUnmodifiable", MessageMember: "", StatusCode: 409}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "InvalidInput", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "", StatusCode: 409}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "NoSuchEntityException": catalog.ErrorBinding{QueryCode: "NoSuchEntity", MessageMember: "", StatusCode: 404}, "OpenIdIdpCommunicationErrorException": catalog.ErrorBinding{QueryCode: "OpenIdIdpCommunicationError", MessageMember: "", StatusCode: 400}, "PolicyNotAttachableException": catalog.ErrorBinding{QueryCode: "PolicyNotAttachable", MessageMember: "", StatusCode: 400}, "ServiceFailureException": catalog.ErrorBinding{QueryCode: "ServiceFailure", MessageMember: "", StatusCode: 500}, "UnmodifiableEntityException": catalog.ErrorBinding{QueryCode: "UnmodifiableEntity", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iam", SigningName: "iam", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "iam", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://iam.amazonaws.com/doc/2010-05-08/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModification", MessageMember: "", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "DeleteConflict", MessageMember: "", StatusCode: 409}, "EntityAlreadyExistsException": catalog.ErrorBinding{QueryCode: "EntityAlreadyExists", MessageMember: "", StatusCode: 409}, "EntityTemporarilyUnmodifiableException": catalog.ErrorBinding{QueryCode: "EntityTemporarilyUnmodifiable", MessageMember: "", StatusCode: 409}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "InvalidInput", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "", StatusCode: 409}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "NoSuchEntityException": catalog.ErrorBinding{QueryCode: "NoSuchEntity", MessageMember: "", StatusCode: 404}, "OpenIdIdpCommunicationErrorException": catalog.ErrorBinding{QueryCode: "OpenIdIdpCommunicationError", MessageMember: "", StatusCode: 400}, "PolicyEvaluationException": catalog.ErrorBinding{QueryCode: "PolicyEvaluation", MessageMember: "", StatusCode: 500}, "PolicyNotAttachableException": catalog.ErrorBinding{QueryCode: "PolicyNotAttachable", MessageMember: "", StatusCode: 400}, "ServiceFailureException": catalog.ErrorBinding{QueryCode: "ServiceFailure", MessageMember: "", StatusCode: 500}, "UnmodifiableEntityException": catalog.ErrorBinding{QueryCode: "UnmodifiableEntity", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateRole": {Name: "CreateRole", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:CreateRole", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateRole", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateRoleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateRole(ctx, input.(*CreateRoleRequest))
 		}},
@@ -1202,6 +1270,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteRolePermissionsBoundary": {Name: "DeleteRolePermissionsBoundary", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteRolePermissionsBoundary", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteRolePermissionsBoundary", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteRolePermissionsBoundaryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteRolePermissionsBoundary(ctx, input.(*DeleteRolePermissionsBoundaryRequest))
+		}},
+		"SimulatePrincipalPolicy": {Name: "SimulatePrincipalPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:SimulatePrincipalPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SimulatePrincipalPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SimulatePrincipalPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SimulatePrincipalPolicy(ctx, input.(*SimulatePrincipalPolicyRequest))
+		}},
+		"SimulateCustomPolicy": {Name: "SimulateCustomPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:SimulateCustomPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SimulateCustomPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SimulateCustomPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SimulateCustomPolicy(ctx, input.(*SimulateCustomPolicyRequest))
 		}},
 	}}
 }

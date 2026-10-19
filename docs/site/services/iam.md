@@ -13,7 +13,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 | API version | `2010-05-08` |
 | Scope | Account-wide |
 | Execution | Local behavior |
-| Selected operations | 85 of 180 in the pinned model |
+| Selected operations | 87 of 180 in the pinned model |
 
 ## Implemented behavior
 
@@ -23,12 +23,13 @@ Lambda function, Secrets Manager secret and EventBridge bus policies follow the 
 
 ## Limitations and future work
 
-- No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge, SCPs/RCPs or policy simulation; non-core services use wildcard resource evaluation.
+- No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge; no SCPs/RCPs; non-core services use wildcard resource evaluation.
 - AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles.
 - No access-key usage tracking.
 - In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions.
 - OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console.
 - PassRole does not infer roles inherited from stored task definitions, launch templates or other stored service configuration; iam:AssociatedResourceArn and role resource tags are not supplied.
+- Policy simulation rejects unsupported policy constructs with InvalidInput; no statement source positions, Organizations policies, role/group resource-policy callers, resource handling scenarios or policy exclusions.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -112,6 +113,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `RemoveRoleFromInstanceProfile` | `POST /` |
 | `RemoveUserFromGroup` | `POST /` |
 | `SetDefaultPolicyVersion` | `POST /` |
+| `SimulateCustomPolicy` | `POST /` |
+| `SimulatePrincipalPolicy` | `POST /` |
 | `TagInstanceProfile` | `POST /` |
 | `TagPolicy` | `POST /` |
 | `TagRole` | `POST /` |
@@ -130,7 +133,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "95 modeled operations outside the implementation"
+??? info "93 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -208,8 +211,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ResyncMFADevice`
     - `SendDelegationToken`
     - `SetSecurityTokenServicePreferences`
-    - `SimulateCustomPolicy`
-    - `SimulatePrincipalPolicy`
     - `TagMFADevice`
     - `TagOpenIDConnectProvider`
     - `TagSAMLProvider`
@@ -235,5 +236,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/iam)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/iam/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_passrole_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_passrole_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
+- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_passrole_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_passrole_test.go), [iam_simulate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_simulate_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -20,29 +20,44 @@ const (
 )
 
 // Document labels a policy source for decision explanations.
-type Document struct{ Name, JSON string }
+type Document struct{ Name, JSON, SourceType string }
+
+// Match identifies a contributing statement without interpreting explanation labels.
+type Match struct {
+	PolicyID, PolicyType, Effect string
+}
 
 // Context distinguishes supported absent keys from unknown condition keys.
 // Keys are case insensitive. ResourceTags indicates whether resource tags can
 // be read for this target; PrincipalTag keys are always supported.
 type Context struct {
-	Values map[string][]string
+	Values  map[string][]string
+	missing map[string]bool
 	// ResourceAccount owns the resource whose policy is evaluated.
 	ResourceAccount string
 	// Unknown lists context keys the request cannot supply; a condition on one is unsupported.
 	Unknown []string
+	// Simulation accepts caller-supplied service context keys and records absent values.
+	Simulation bool
 	// AccountDelegation reports account Allow statements separately for KMS.
 	AccountDelegation bool
 	ResourceTags      bool
 }
 
+// SimulationResult contains explanations used only by the simulator API.
+type SimulationResult struct {
+	Matches []Match
+	Missing []string
+}
+
 // Decision records matching statements and constructs that could not be evaluated.
 type Decision struct {
-	Matched      []string `json:"matched,omitempty"`
-	Unsupported  []string `json:"unsupported,omitempty"`
-	Allowed      bool     `json:"allowed"`
-	Delegated    bool     `json:"delegated,omitempty"`
-	ExplicitDeny bool     `json:"explicit_deny,omitempty"`
+	Simulation   *SimulationResult `json:"-"`
+	Matched      []string          `json:"matched,omitempty"`
+	Unsupported  []string          `json:"unsupported,omitempty"`
+	Allowed      bool              `json:"allowed"`
+	Delegated    bool              `json:"delegated,omitempty"`
+	ExplicitDeny bool              `json:"explicit_deny,omitempty"`
 	// BypassesLimits marks a resource Allow granted directly to a user/session or wildcard.
 	BypassesLimits bool `json:"bypasses_limits,omitempty"`
 }
@@ -68,6 +83,11 @@ func Evaluate(documents []Document, action, resource string, context Context) De
 func evaluate(documents []Document, action, resource string, context Context, principal *request.Principal) Decision {
 	context.Values = normalized(context.Values)
 	out := Decision{}
+	if context.Simulation {
+		context.missing = map[string]bool{}
+		out.Simulation = &SimulationResult{}
+	}
+
 	for _, doc := range documents {
 		var parsed struct {
 			Version   string
@@ -157,6 +177,12 @@ func evaluate(documents []Document, action, resource string, context Context, pr
 			}
 
 			out.Matched = append(out.Matched, label+" ("+st.Effect+")")
+			if out.Simulation != nil {
+				out.Simulation.Matches = append(out.Simulation.Matches, Match{
+					PolicyID: doc.Name, PolicyType: doc.SourceType, Effect: st.Effect,
+				})
+			}
+
 			switch {
 			case st.Effect == effectDeny:
 				out.ExplicitDeny = true
@@ -174,6 +200,10 @@ func evaluate(documents []Document, action, resource string, context Context, pr
 				}
 			}
 		}
+	}
+
+	if out.Simulation != nil {
+		out.Simulation.Missing = slices.Sorted(maps.Keys(context.missing))
 	}
 
 	out.Allowed = out.Allowed && !out.ExplicitDeny
@@ -231,9 +261,10 @@ func matches(patterns []string, actual string, fold, negate bool) bool {
 }
 
 func expand(patterns []string, version string, context *Context) (expanded, unsupported []string) {
-	out := slices.Clone(patterns)
+	out := make([]string, 0, len(patterns))
 	var problems []string
-	for i, pattern := range out {
+patterns:
+	for _, pattern := range patterns {
 		for strings.Contains(pattern, "${") {
 			start := strings.Index(pattern, "${")
 			end := strings.Index(pattern[start:], "}")
@@ -245,6 +276,12 @@ func expand(patterns []string, version string, context *Context) (expanded, unsu
 			// Variable names, like condition keys, are case-insensitive.
 			variable := pattern[start+2 : start+end]
 			value := context.Values[strings.ToLower(variable)]
+			if context.Simulation && len(value) == 0 && strings.EqualFold(variable, usernameKey) {
+				context.missing[variable] = true
+				// A pattern with an absent variable matches nothing; the others still apply.
+				continue patterns
+			}
+
 			if version != "2012-10-17" || !strings.EqualFold(variable, usernameKey) || len(value) != 1 {
 				problems = append(problems, "unsupported or absent policy variable "+variable)
 				break
@@ -253,13 +290,17 @@ func expand(patterns []string, version string, context *Context) (expanded, unsu
 			pattern = pattern[:start] + value[0] + pattern[start+end+1:]
 		}
 
-		out[i] = pattern
+		out = append(out, pattern)
 	}
 
 	return out, problems
 }
 
 func (c *Context) known(key string) bool {
+	if c.Simulation {
+		return true
+	}
+
 	if slices.Contains(c.Unknown, key) {
 		return false
 	}
@@ -313,10 +354,15 @@ func conditions(
 			want, variableProblems := expand(want, version, context)
 			problems = append(problems, variableProblems...)
 			if len(variableProblems) > 0 {
+				holds = false
 				continue
 			}
 
 			actual := context.Values[lower]
+			if context.Simulation && len(actual) == 0 && context.missing != nil {
+				context.missing[key] = true
+			}
+
 			if !op.holds(actual, want) {
 				holds = false
 			}
