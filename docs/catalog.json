@@ -459,6 +459,7 @@
       "summary": "Manage and invoke REST APIs with deployments, stages, proxy integrations, and authorizers.",
       "features": [
         "AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector",
+        "REST API resource policies are validated on write, expand execute-api:/ shorthand resources, and are evaluated for execute-api:Invoke in authorization soft/enforce following AWS's authorization flow for NONE, AWS_IAM, Lambda and Cognito authorizers",
         "Resource trees, methods, responses, integrations, deployments and stages",
         "Lambda and HTTP proxy execution through gateway data routes",
         "Lambda and Cognito authorizers, API keys and usage plan metadata",
@@ -469,7 +470,7 @@
         "API Gateway invokes Lambda in-process and bypasses Lambda resource policies",
         "No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation",
         "Throttling, quotas, caching, canaries and authorizer caching are not enforced",
-        "No mutual TLS or import/export; stored REST API resource policies are not evaluated",
+        "No mutual TLS or import/export; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them",
         "Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms",
         "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
         "Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64"

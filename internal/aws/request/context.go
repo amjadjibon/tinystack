@@ -53,6 +53,8 @@ const (
 	PrincipalUser = "user"
 	PrincipalRole = "role"
 	PrincipalRoot = "root"
+	// PrincipalAnonymous is a caller that is not authenticated: only resource policies can allow it.
+	PrincipalAnonymous = "anonymous"
 )
 
 // Credentials are what an access key that TinyStack issued stands for:

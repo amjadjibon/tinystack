@@ -823,7 +823,7 @@ REST APIs are served like HTTP APIs, at
 
 | Operation | Behavior |
 | --- | --- |
-| CreateRestApi / GetRestApi / GetRestApis / UpdateRestApi / DeleteRestApi | A root resource, binary media types, `EDGE`, `REGIONAL`, or `PRIVATE` endpoint types (stored), API key source, minimum compression size, and policies (stored); tags |
+| CreateRestApi / GetRestApi / GetRestApis / UpdateRestApi / DeleteRestApi | A root resource, binary media types, `EDGE`, `REGIONAL`, or `PRIVATE` endpoint types (stored), API key source, minimum compression size, and resource policies (validated on write, `execute-api:/...` shorthand resources expanded, evaluated when authorization is enabled); tags |
 | CreateResource / GetResource / GetResources / UpdateResource / DeleteResource | Path parts with `{param}` and greedy `{param+}` variables (one variable per level); moving a resource moves its subtree; deleting deletes it; `embed=methods` |
 | PutMethod / GetMethod / UpdateMethod / DeleteMethod | `NONE`, `AWS_IAM`, `CUSTOM`, and `COGNITO_USER_POOLS` (with scopes) authorization (`AWS_IAM` evaluates `execute-api:Invoke` when enabled), request parameters and models, and operation names |
 | PutMethodResponse / GetMethodResponse / UpdateMethodResponse / DeleteMethodResponse | Status codes with response parameters and models |
@@ -1268,7 +1268,13 @@ mapping template (VTL) evaluation, parameter mappings, authorizer caching (autho
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;
 `AWS_IAM` methods/routes require signed requests, verified in `identity.mode: verify`, and evaluate
 `execute-api:Invoke` identity policies in `identity.authorization: soft/enforce` (soft denials appear in the
-request inspector). REST API resource policies are not evaluated. API Gateway invokes Lambda in-process
+request inspector). REST API resource policies are evaluated for `execute-api:Invoke` in those modes: `NONE`
+methods are decided by the policy alone (anonymous callers match `Principal: "*"`, and `aws:PrincipalAccount`-style
+keys are absent), `AWS_IAM` same-account callers need an identity or resource Allow and cross-account callers need
+both, Cognito callers need a resource Allow, and a Lambda authorizer runs after the policy's explicit denials and
+defers to a resource Allow only when it neither allows nor denies. Policies may not use `aws:SourceVpc`,
+`aws:SourceVpce`, `aws:VpcSourceIp`, `aws:Referer` or `aws:UserAgent` conditions (rejected on write), console test
+requests do not evaluate them, and HTTP APIs have none. API Gateway invokes Lambda in-process
 and bypasses Lambda resource policies. Step Functions limits: no distributed Map (`ItemReader`, `ResultWriter`), map runs, execution retention, or IAM role checks, and
 `JsonPath` filters and recursive descent are not supported; executions running when TinyStack stops are aborted when
 it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard`), throughput limits, resource policies,

@@ -115,6 +115,8 @@ type call struct {
 	head       bool
 	injected   bool
 	faultError bool
+	// identity is whose permissions an execution request is authorized with; only Signed has credentials.
+	identity execute.Identity
 }
 
 func (c *call) addCleanup(fn func() error) {

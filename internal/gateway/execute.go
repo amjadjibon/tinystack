@@ -272,8 +272,13 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		return s.authorize(ctx, r, c, &catalog.Operation{Name: action}, input)
 	}
 
-	req.AuthorizeTarget = func(ctx context.Context, target *catalog.AuthorizationResource) error {
+	req.AuthorizeTarget = func(
+		ctx context.Context,
+		target *catalog.AuthorizationResource,
+		identity execute.Identity,
+	) error {
 		c := &call{
+			identity: identity,
 			service: &catalog.Service{
 				Name: executeService, SigningName: executeService,
 				Operations: map[string]catalog.Operation{executeInvoke: {Name: executeInvoke}},
@@ -284,13 +289,15 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 			},
 		}
 		executionCall = c
-		if _, err := s.identify(r, &c.meta); err != nil {
-			return err
-		}
+		if identity == execute.Signed {
+			if _, err := s.identify(r, &c.meta); err != nil {
+				return err
+			}
 
-		c.meta.Service = executeService
-		if err := s.resolveCredentials(ctx, c); err != nil {
-			return err
+			c.meta.Service = executeService
+			if err := s.resolveCredentials(ctx, c); err != nil {
+				return err
+			}
 		}
 
 		return s.authorizeTargets(ctx, r, c, &catalog.Operation{

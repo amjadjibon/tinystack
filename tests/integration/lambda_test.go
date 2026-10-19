@@ -160,6 +160,15 @@ func (r *fakeRuntime) Invoke(_ context.Context, fn *lambda.Function, payload []b
 			}}},
 		})
 		return lambda.Result{Payload: body}, err
+	case "app.policyNeutral":
+		// A TOKEN authorizer whose policy neither allows nor denies the requested method.
+		body, err := json.Marshal(map[string]any{
+			"principalId": "fay",
+			"policyDocument": map[string]any{"Version": "2012-10-17", "Statement": []map[string]any{{
+				"Action": "execute-api:Invoke", "Effect": "Allow", "Resource": "arn:aws:execute-api:*:*:elsewhere/*",
+			}}},
+		})
+		return lambda.Result{Payload: body}, err
 	case "app.cognito":
 		return cognitoTrigger(payload)
 	case "app.graphql":

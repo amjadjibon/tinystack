@@ -162,7 +162,7 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 	unauthorized := execute.Message(http.StatusUnauthorized, "Unauthorized")
 	switch common.Value(c.method.AuthorizationType) {
 	case authIAM:
-		target := execute.APIResource(c.scope, *c.api.API.Id, *c.stage.StageName, c.req.Method, c.path)
+		target := c.invokeTarget()
 		denied := c.req.AuthorizeIAM(ctx, &target, "Missing Authentication Token")
 		if denied != nil {
 			c.authorizerError = string(denied.Body)
@@ -170,8 +170,19 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 
 		return nil, denied
 	case authCognito:
-		return s.cognitoAuthorize(ctx, c)
+		authorizer, denied := s.cognitoAuthorize(ctx, c)
+		if denied != nil {
+			return nil, denied
+		}
+
+		// A valid token does not stand in for an Allow: the resource policy must grant access itself.
+		return authorizer, c.authorizePolicy(ctx, execute.Anonymous)
 	case authCustom:
+		// The resource policy's explicit denials apply before the authorizer runs.
+		if denied := c.authorizePolicy(ctx, execute.Granted); denied != nil {
+			return nil, denied
+		}
+
 		a := c.snapshot.Authorizers[common.Value(c.method.AuthorizerId)]
 		var values []string
 		for _, source := range sources(a) {
@@ -197,7 +208,8 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 		return s.lambdaAuthorize(ctx, c, a, values)
 	}
 
-	return nil, nil
+	// NONE: no authorizer vouches for the caller, so the resource policy alone must allow it.
+	return nil, c.authorizePolicy(ctx, execute.Anonymous)
 }
 
 // cognitoAuthorize checks the request's token against the authorizer's user
@@ -302,7 +314,8 @@ func (s *Service) lambdaAuthorize(
 		c.authorizerError = "denied"
 		return nil, execute.Message(http.StatusForbidden,
 			"User is not authorized to access this resource with an explicit deny")
-	case !p.Allowed:
+	case !p.Allowed && (!c.hasPolicy() || c.authorizePolicy(ctx, execute.Anonymous) != nil):
+		// A policy that neither allows nor denies leaves the decision to a resource policy Allow.
 		c.authorizerError = "not allowed"
 		return nil, execute.Message(http.StatusForbidden, "User is not authorized to access this resource")
 	}

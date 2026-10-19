@@ -37,7 +37,7 @@ Cognito sign-in operations, retain their anonymous contract.
 
 ## Evaluated policy subsets
 
-Identity-based IAM policies and S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge resource policies are evaluated
+Identity-based IAM policies and S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge/API Gateway REST API resource policies are evaluated
 when authorization is enabled.
 Other resource policies remain stored without general enforcement. Separate features evaluate narrower policies:
 
@@ -293,8 +293,35 @@ and [ARN reference](https://docs.aws.amazon.com/apigateway/latest/developerguide
 
 Proxy payload 1.0 reports resolved IAM caller IDs, ARN, account and access key under
 `requestContext.identity`; payload 2.0 reports them under `requestContext.authorizer.iam`.
-REST API resource policies are stored but not evaluated. API Gateway-to-Lambda integrations remain
-in-process calls and bypass Lambda resource policies, including SourceArn/SourceAccount conditions.
+API Gateway-to-Lambda integrations remain in-process calls and bypass Lambda resource policies,
+including SourceArn/SourceAccount conditions.
+
+#### REST API resource policies
+
+A REST API's resource policy is checked for `execute-api:Invoke` on the target above, with the API owner's
+account as the policy owner. `CreateRestApi` and `UpdateRestApi` validate it with the shared resource policy
+validator, rejecting unsupported constructs with `BadRequestException`, and store it with each
+`execute-api:/<stage>/<VERB>/<path>` resource (including `execute-api:/*`) expanded to the API's full ARN, as AWS
+does on save. Conditions on `aws:SourceVpc`, `aws:SourceVpce`, `aws:VpcSourceIp`, `aws:Referer` and
+`aws:UserAgent` are rejected, because a local request has no VPC endpoint or caller-supplied literal for them
+to match. `aws:SourceIp` is the connection's address (forwarding headers are ignored).
+Only `NONE`, `AWS_IAM`, `CUSTOM` and `COGNITO_USER_POOLS` REST methods are checked; HTTP APIs have no resource
+policies, and console test requests, which are not signed, skip the check.
+
+The [authorization flow](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-authorization-flow.html)
+decides each method type:
+
+| Method | Rule |
+| --- | --- |
+| `NONE` | The caller is anonymous, even when the request is signed. The policy must Allow (for example `Principal: "*"`); an explicit Deny or no matching Allow denies. Principal keys such as `aws:PrincipalAccount` are absent. |
+| `AWS_IAM` | Same account: an identity-policy Allow or a resource-policy Allow grants, and an explicit Deny in either wins (table A). Cross-account: both must Allow (table B). Boundary and session policies cap identity grants as for other resource policies. |
+| `COGNITO_USER_POOLS` | The token is validated first (401 when it is not); the policy then decides alone as for `NONE`, so a valid token with a silent policy is denied (table B). |
+| `CUSTOM` (Lambda) | Explicit denials in the policy apply before the authorizer runs. An authorizer Allow then passes, an authorizer Deny denies, and an authorizer policy that neither allows nor denies the method passes only if the resource policy Allows (table A). |
+
+A method with no resource policy behaves as before. A denial is a 403 with
+`{"Message":"User: anonymous is not authorized to perform: execute-api:Invoke on resource: <arn>"}`, naming the
+caller's ARN for signed `AWS_IAM` requests. Soft mode runs the request and records the would-deny decision, with
+its resource-policy details, in `/_tinystack/requests`.
 
 Secrets Manager evaluates policies for secret-scoped operations, including value reads/writes, describe,
 tags and policy management. Owning-account root retains GetResourcePolicy, PutResourcePolicy and

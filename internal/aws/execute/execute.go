@@ -21,8 +21,8 @@ type Request struct {
 	Caller *Caller
 	// Authorize applies gateway IAM checks to an execution endpoint's modeled resource.
 	Authorize func(context.Context, string, string, any) error
-	// AuthorizeTarget applies IAM checks to an explicit execution resource.
-	AuthorizeTarget func(context.Context, *catalog.AuthorizationResource) error
+	// AuthorizeTarget applies IAM and resource policy checks to an explicit execution resource.
+	AuthorizeTarget func(context.Context, *catalog.AuthorizationResource, Identity) error
 	Time            time.Time
 	Header          http.Header
 	Query           url.Values
@@ -110,6 +110,19 @@ type MQTT interface {
 	ServeMQTT(ctx context.Context, r *Request, conn net.Conn) error
 }
 
+// Identity is whose permissions a resource policy is evaluated beside.
+type Identity int
+
+const (
+	// Signed is the request's SigV4 caller: its identity policies and the resource policy
+	// allow it together, as AWS_IAM authorization does.
+	Signed Identity = iota
+	// Anonymous is a caller without IAM permissions: the resource policy alone must allow.
+	Anonymous
+	// Granted is a caller another authorizer allowed: the resource policy can only deny.
+	Granted
+)
+
 // APIResource builds an execute-api invocation target from the API owner's scope.
 // Paths are concrete request paths, without the stage. HTTP API default routes
 // are <stage>/$default, with no method or path, which policies match as */$default.
@@ -132,18 +145,30 @@ func (r *Request) AuthorizeIAM(ctx context.Context, target *catalog.Authorizatio
 		return Message(http.StatusForbidden, missing)
 	}
 
-	if r.AuthorizeTarget != nil {
-		if err := r.AuthorizeTarget(ctx, target); err != nil {
-			message := "User: " + r.Caller.Principal.ARN +
-				" is not authorized to perform: execute-api:Invoke on resource: " + target.ARN
-			body, _ := json.Marshal(map[string]string{"Message": message})
-			return &Response{
-				Status: http.StatusForbidden,
-				Header: http.Header{"Content-Type": {"application/json"}},
-				Body:   body,
-			}
-		}
+	return r.AuthorizePolicy(ctx, target, Signed)
+}
+
+// AuthorizePolicy evaluates target's resource policy, and the caller's identity policies when
+// identity is Signed, once gateway authorization is enabled. A nil result allows the request.
+func (r *Request) AuthorizePolicy(
+	ctx context.Context,
+	target *catalog.AuthorizationResource,
+	identity Identity,
+) *Response {
+	if r.AuthorizeTarget == nil || r.AuthorizeTarget(ctx, target, identity) == nil {
+		return nil
 	}
 
-	return nil
+	user := "anonymous"
+	if identity == Signed {
+		user = r.Caller.Principal.ARN
+	}
+
+	message := "User: " + user + " is not authorized to perform: execute-api:Invoke on resource: " + target.ARN
+	body, _ := json.Marshal(map[string]string{"Message": message})
+	return &Response{
+		Status: http.StatusForbidden,
+		Header: http.Header{"Content-Type": {"application/json"}},
+		Body:   body,
+	}
 }

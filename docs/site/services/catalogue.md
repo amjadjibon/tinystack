@@ -1169,6 +1169,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 **Execution:** Local behavior. **Selected operations:** 66.
 
 - AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector.
+- REST API resource policies are validated on write, expand execute-api:/ shorthand resources, and are evaluated for execute-api:Invoke in authorization soft/enforce following AWS's authorization flow for NONE, AWS_IAM, Lambda and Cognito authorizers.
 - Resource trees, methods, responses, integrations, deployments and stages.
 - Lambda and HTTP proxy execution through gateway data routes.
 - Lambda and Cognito authorizers, API keys and usage plan metadata.

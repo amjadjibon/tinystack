@@ -88,6 +88,10 @@ func (s *Service) CreateRestApi(ctx context.Context, in *api.CreateRestApiReques
 		return nil, checkErr
 	}
 
+	if checkErr := checkPolicy(m.Scope, &a.API); checkErr != nil {
+		return nil, checkErr
+	}
+
 	if checkErr := checkTags(in.Tags); checkErr != nil {
 		return nil, checkErr
 	}
@@ -196,7 +200,7 @@ func (s *Service) GetRestApis(ctx context.Context, in *api.GetRestApisRequest) (
 
 func (s *Service) UpdateRestApi(ctx context.Context, in *api.UpdateRestApiRequest) (*api.RestApi, error) {
 	var out *api.RestApi
-	err := s.changeAPI(ctx, in.RestApiId, func(_ storage.WriteTx, _ request.Scope, a *restAPI) error {
+	err := s.changeAPI(ctx, in.RestApiId, func(_ storage.WriteTx, scope request.Scope, a *restAPI) error {
 		if patchErr := patch(&a.API, in.PatchOperations, "name", "description", "version", "binaryMediaTypes",
 			"minimumCompressionSize", "apiKeySource", "policy", "disableExecuteApiEndpoint",
 			"endpointConfiguration"); patchErr != nil {
@@ -204,7 +208,11 @@ func (s *Service) UpdateRestApi(ctx context.Context, in *api.UpdateRestApiReques
 		}
 
 		out = &a.API
-		return checkAPI(&a.API)
+		if checkErr := checkAPI(&a.API); checkErr != nil {
+			return checkErr
+		}
+
+		return checkPolicy(scope, &a.API)
 	})
 	if err != nil {
 		return nil, err

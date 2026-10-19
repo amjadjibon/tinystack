@@ -11,6 +11,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
@@ -26,7 +27,7 @@ const (
 func resourceAuthorization(service string) bool {
 	return service == consoleS3 || service == consoleSQS || service == consoleSNS ||
 		service == authorizationKMS || service == authorizationLambda || service == authorizationSecrets ||
-		service == consoleEventBridge
+		service == consoleEventBridge || service == executeService
 }
 
 // PolicyLookup reads the current identity policy snapshot through IAM.
@@ -92,9 +93,12 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 	}
 
 	var principal request.Principal
-	if c.credentials != nil {
+	switch {
+	case c.identity != execute.Signed:
+		principal = request.Principal{Kind: request.PrincipalAnonymous, ARN: "anonymous"}
+	case c.credentials != nil:
 		principal = c.credentials.Principal
-	} else {
+	default:
 		_, mapped := s.cfg.Identity.Accounts[c.meta.AccessKey]
 		_, secret := s.cfg.Identity.SecretKeys[c.meta.AccessKey]
 		if (!mapped && !secret) || !resourceAuthorization(c.meta.Service) {
@@ -124,7 +128,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 	snapshot := iam.Authorization{Principal: principal}
 	var err error
-	if s.policies != nil && principal.Kind != request.PrincipalRoot {
+	if s.policies != nil && principal.Kind != request.PrincipalRoot && principal.Kind != request.PrincipalAnonymous {
 		snapshot, err = s.policies(ctx, &principal)
 	}
 
@@ -221,8 +225,9 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 		identityAllowed := decision.Allowed
 		var resourceDecision *policy.Decision
-		crossAccount := target.OwnerAccount != "" && target.OwnerAccount != principal.Account
-		if principal.Kind == request.PrincipalRoot {
+		anonymous := principal.Kind == request.PrincipalAnonymous
+		crossAccount := target.OwnerAccount != "" && target.OwnerAccount != principal.Account && !anonymous
+		if principal.Kind == request.PrincipalRoot || c.identity == execute.Granted {
 			decision.Allowed = true
 		}
 
@@ -391,10 +396,16 @@ func authorizationValues(
 	}
 
 	values := map[string][]string{
-		"aws:userid": {principal.UserID}, "aws:principalarn": {principal.PolicyARN},
-		"aws:principalaccount": {principal.Account}, "aws:sourceip": {sourceIP},
+		"aws:sourceip":        {sourceIP},
 		"aws:currenttime":     {time.Now().UTC().Format(time.RFC3339Nano)},
 		"aws:securetransport": {strconv.FormatBool(r.TLS != nil)}, "aws:requestedregion": {region},
+	}
+
+	// An unauthenticated caller has no principal keys, so conditions on them see them absent.
+	if principal.Kind != request.PrincipalAnonymous {
+		values["aws:userid"] = []string{principal.UserID}
+		values["aws:principalarn"] = []string{principal.PolicyARN}
+		values["aws:principalaccount"] = []string{principal.Account}
 	}
 
 	if principal.Kind == request.PrincipalUser {

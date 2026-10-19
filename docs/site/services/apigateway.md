@@ -24,7 +24,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for 
 - API Gateway invokes Lambda in-process and bypasses Lambda resource policies.
 - No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation.
 - Throttling, quotas, caching, canaries and authorizer caching are not enforced.
-- No mutual TLS or import/export; stored REST API resource policies are not evaluated.
+- No mutual TLS or import/export; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them.
 - Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms.
 - In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available.
 - Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
@@ -178,5 +178,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/apigateway)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/apigateway/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/apigateway.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [apigateway_domains_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_domains_test.go), [apigateway_iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_iam_test.go), [apigateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_test.go), [apigateway_usageplans_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_usageplans_test.go).
+- SDK integration examples: [apigateway_domains_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_domains_test.go), [apigateway_iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_iam_test.go), [apigateway_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_policy_test.go), [apigateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_test.go), [apigateway_usageplans_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_usageplans_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).
