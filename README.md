@@ -244,7 +244,7 @@ protocol of its request. Query requests may post to `/` or to the queue URL.
 
 | Operation | Behavior |
 | --- | --- |
-| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy`, `Policy` (a JSON object with a `Statement`, up to 20 KiB, stored as sent and never evaluated; an empty value removes it), `RedriveAllowPolicy` (`allowAll`, `denyAll`, or `byQueue` with up to 10 source queue ARNs, checked when a queue names its dead-letter queue), `FifoQueue` (`.fifo` names), `ContentBasedDeduplication`, `DeduplicationScope` (`queue` or `messageGroup`) and `FifoThroughputLimit` (`perQueue`, or `perMessageGroupId` with the `messageGroup` scope) for FIFO queues, and encryption: `SqsManagedSseEnabled` (on by default) or `KmsMasterKeyId` with `KmsDataKeyReusePeriodSeconds` (60 to 86,400, 300 by default) |
+| CreateQueue | Idempotent for identical attributes; `DelaySeconds`, `VisibilityTimeout`, `MaximumMessageSize`, `MessageRetentionPeriod`, `ReceiveMessageWaitTimeSeconds`, `RedrivePolicy`, `Policy` (a JSON object with a `Statement`, up to 20 KiB, stored as sent and evaluated when IAM authorization is on; an empty value removes it), `RedriveAllowPolicy` (`allowAll`, `denyAll`, or `byQueue` with up to 10 source queue ARNs, checked when a queue names its dead-letter queue), `FifoQueue` (`.fifo` names), `ContentBasedDeduplication`, `DeduplicationScope` (`queue` or `messageGroup`) and `FifoThroughputLimit` (`perQueue`, or `perMessageGroupId` with the `messageGroup` scope) for FIFO queues, and encryption: `SqsManagedSseEnabled` (on by default) or `KmsMasterKeyId` with `KmsDataKeyReusePeriodSeconds` (60 to 86,400, 300 by default) |
 | GetQueueAttributes / SetQueueAttributes | The writable attributes above plus `QueueArn`, message counts, and created/modified timestamps; unsupported names fail |
 | GetQueueUrl / DeleteQueue | Queue URLs are `<endpoint>/<account>/<name>`; the host part is ignored on input |
 | ListQueues | Name prefix, `MaxResults`, and `NextToken` |
@@ -264,7 +264,7 @@ record email and SMS in `/_tinystack/deliveries` (no mail or text message is sen
 
 | Operation | Behavior |
 | --- | --- |
-| CreateTopic | Idempotent for identical attributes; `DisplayName`, `Policy` (a JSON object with a `Statement`, up to 30 KiB, stored as sent and never evaluated), the `*FeedbackSampleRate` attributes, and `Tags`; FIFO topics (a `.fifo` name and `FifoTopic`) with `ContentBasedDeduplication` |
+| CreateTopic | Idempotent for identical attributes; `DisplayName`, `Policy` (a JSON object with a `Statement`, up to 30 KiB, stored as sent and evaluated when IAM authorization is on), the `*FeedbackSampleRate` attributes, and `Tags`; FIFO topics (a `.fifo` name and `FifoTopic`) with `ContentBasedDeduplication` |
 | GetTopicAttributes / SetTopicAttributes | The writable attributes above plus `TopicArn`, `Owner`, subscription counts, and the topic's `Policy` (by default, owner-only); delivery status sample rates are stored, but nothing is logged |
 | GetSubscriptionAttributes / SetSubscriptionAttributes | Endpoint, protocol, owner, `PendingConfirmation`, `RawMessageDelivery`, `FilterPolicy`, and `FilterPolicyScope` |
 | TagResource / UntagResource / ListTagsForResource | Topic ARNs |
@@ -297,7 +297,7 @@ Path-style (`/<bucket>/<key>`) and virtual-hosted (`<bucket>.localhost` or
 | PutBucketTagging / GetBucketTagging / DeleteBucketTagging | The whole tag set is replaced; `NoSuchTagSet` when there is none |
 | HeadBucket / DeleteBucket | `x-amz-bucket-region`; deleting requires an empty bucket, with no versions or delete markers left |
 | GetBucketLocation | The bucket's Region (empty for us-east-1), answered from any Region |
-| PutBucketPolicy / GetBucketPolicy / DeleteBucketPolicy | A JSON policy up to 20 KiB with at least one statement (`MalformedPolicy` otherwise), stored as sent and never evaluated; `NoSuchBucketPolicy` when there is none |
+| PutBucketPolicy / GetBucketPolicy / DeleteBucketPolicy | A JSON policy up to 20 KiB with at least one statement (`MalformedPolicy` otherwise), stored as sent and evaluated when IAM authorization is on; `NoSuchBucketPolicy` when there is none |
 | PutBucketCors / GetBucketCors / DeleteBucketCors | Up to 100 rules, each with origins and `GET`, `PUT`, `HEAD`, `POST`, or `DELETE` methods (one `*` per origin or header); `NoSuchCORSConfiguration` when there is none. TinyStack serves them: an `OPTIONS` preflight to a bucket gets the first matching rule's `Access-Control-*` headers (403 when no rule allows it), and S3 requests with an `Origin` get them too |
 | PutBucketEncryption / GetBucketEncryption / DeleteBucketEncryption | One rule with `AES256`, `aws:kms`, or `aws:kms:dsse` (a KMS key only for KMS) and `BucketKeyEnabled`, stored only, since objects are kept as sent; a bucket without one, or after deleting it, reports SSE-S3 |
 | PutBucketOwnershipControls / GetBucketOwnershipControls / DeleteBucketOwnershipControls | One `ObjectOwnership` rule, stored only; new buckets have `BucketOwnerEnforced`; `OwnershipControlsNotFoundError` when there is none |
@@ -363,12 +363,12 @@ release and shutdown remove them. Java, Ruby, .NET, provided runtimes and Image 
 | CreateAlias / GetAlias / UpdateAlias / DeleteAlias / ListAliases | Names for `$LATEST` or a version, with a `Description` and `RoutingConfig` that sends a weighted share (0 to 1) of invocations to one other version (not with `$LATEST`); `RevisionId` preconditions; aliases in name order, optionally of one version |
 | PublishLayerVersion / GetLayerVersion / GetLayerVersionByArn / ListLayers / ListLayerVersions / DeleteLayerVersion | Zip packages (`ZipFile` or an S3 object) as numbered, immutable versions (numbers are never reused) with compatible runtimes and architectures, a description, and license; listings newest first, filtered by runtime and architecture |
 | `Layers` on CreateFunction / UpdateFunctionConfiguration | Up to five layer versions in the function's Region (none for Image functions; an empty list removes them); both executors extract them into an environment-specific `opt` directory in order. A function, or a version published with them, fails to run once a layer version it uses is deleted |
-| Create/Get/Update/Delete/ListFunctionUrlConfig(s) | One URL per function (`$LATEST`) or alias (not a version), with `AuthType` `NONE` or `AWS_IAM`, `Cors`, and `InvokeMode` (`RESPONSE_STREAM` is buffered); deleted with its function or alias. TinyStack serves each at `http://<URL ID>.lambda-url.<region>.localhost:4566/` (the `FunctionUrl` it reports, on the host the client used) or `/_aws/lambda-url/<URL ID>/...` on any host: requests invoke the function with a payload format 2.0 event and map its response as HTTP APIs do (502 for a function error, 429 when its reserved concurrency is in use); CORS preflights are answered from `Cors`, whose headers responses also get; `AWS_IAM` URLs require a SigV4 signature (`Authorization` or a presigned query), which is not verified |
+| Create/Get/Update/Delete/ListFunctionUrlConfig(s) | One URL per function (`$LATEST`) or alias (not a version), with `AuthType` `NONE` or `AWS_IAM`, `Cors`, and `InvokeMode` (`RESPONSE_STREAM` is buffered); deleted with its function or alias. TinyStack serves each at `http://<URL ID>.lambda-url.<region>.localhost:4566/` (the `FunctionUrl` it reports, on the host the client used) or `/_aws/lambda-url/<URL ID>/...` on any host: requests invoke the function with a payload format 2.0 event and map its response as HTTP APIs do (502 for a function error, 429 when its reserved concurrency is in use); CORS preflights are answered from `Cors`, whose headers responses also get; `AWS_IAM` URLs require a SigV4 signature (`Authorization` or a presigned query), verified in `identity.mode: verify`, and with IAM authorization on the caller needs `lambda:InvokeFunctionUrl` |
 | PutFunctionConcurrency / GetFunctionConcurrency / DeleteFunctionConcurrency | Reserved concurrency from 0 to 900 (leaving the account's 100 unreserved executions), which caps the function's invocations in flight: one beyond it fails with `TooManyRequestsException`, so 0 turns the function off; GetFunction reports it as `Concurrency` |
 | Put/Get/Delete/ListProvisionedConcurrencyConfig(s) | Provisioned concurrency for a version or alias (not `$LATEST`), `READY` at once with every execution allocated; no environment is started early; deleted with its version or alias |
 | GetFunctionCodeSigningConfig | No code signing configuration |
 | TagResource / UntagResource / ListTags | Unqualified function ARNs; also `Tags` on CreateFunction |
-| AddPermission / GetPolicy / RemovePermission | A resource-based policy per function, version, and alias, with service, account, or `*` principals and `SourceArn`, `SourceAccount`, `PrincipalOrgID`, and `EventSourceToken` conditions; stored, never evaluated, and deleted with what it belongs to |
+| AddPermission / GetPolicy / RemovePermission | A resource-based policy per function, version, and alias, with service, account, or `*` principals and `SourceArn`, `SourceAccount`, `PrincipalOrgID`, and `EventSourceToken` conditions; evaluated when IAM authorization is on (in-process deliveries bypass it), and deleted with what it belongs to |
 | Put/Update/Get/Delete/ListFunctionEventInvokeConfig(s) | Asynchronous invocation settings for `$LATEST` (the unqualified function), a version, or an alias: `MaximumRetryAttempts` (0–2), `MaximumEventAgeInSeconds` (60–21,600; an event older than this is not retried), and `OnSuccess` and `OnFailure` destinations (an SQS queue, SNS topic, other Lambda function, or EventBridge event bus, in any account and region; the function itself is rejected). After the last attempt, Lambda's invocation record (`requestContext` with the condition `Success`, `RetriesExhausted`, or `EventAgeExceeded`, the request and response payloads, and `responseContext`) goes to the destination: as an SQS message, an SNS message, an asynchronous invocation, or a `lambda` event with the detail type `Lambda Function Invocation Result - Success` or `- Failure`; deliveries are recorded in the delivery log. Update keeps what it does not name, and an empty destination removes it; deleted with its function, version, or alias. Execution role permissions are not checked |
 | Invoke | `Qualifier` (a version or alias; routed aliases pick a version per invocation, reported in `X-Amz-Executed-Version`); `RequestResponse` (6 MB payloads; function errors and timeouts return `X-Amz-Function-Error: Unhandled`; `LogType: Tail` returns the last 4 KB of the log), `Event` (1 MB, runs in the background with two retries, or as its event invoke configuration says), and `DryRun`; payloads must be JSON |
 | Create/Get/Delete/ListEventSourceMappings | SQS queues, DynamoDB streams, and Kinesis streams (every shard, parents before children, with each shard's position kept) in the function's account and region, for a function, version, or alias. For queues, `BatchSize` up to 10 (up to 10,000 with a batching window); a poller long-polls the queue, invokes the function with an `aws:sqs` event, and deletes the batch on success; failed batches return after the visibility timeout, so the queue's redrive policy applies. For streams, `StartingPosition` `TRIM_HORIZON` or `LATEST`, `BatchSize` up to 10,000 (100 by default), and `MaximumRetryAttempts` (-1, the default, retries forever); batches of `aws:dynamodb` records are delivered in order, a failed batch is retried and then skipped, and the mapping resumes after its last record on restart. Both take `MaximumBatchingWindowInSeconds` (0–300; the poller gathers records until the batch is full or the window after the first record ends), `FilterCriteria` (up to 5 patterns in the EventBridge syntax without wildcards, matched against each record, with a JSON SQS body matched as JSON; filtered messages are deleted and filtered stream records skipped), and `FunctionResponseTypes` `ReportBatchItemFailures` (a `batchItemFailures` response keeps only the named messages on the queue, or retries a stream from the first named record; an invalid response fails the whole batch). |
@@ -406,8 +406,8 @@ Log groups belong to an account and region.
 ### IAM (AWS Query)
 
 Roles, users, groups, managed policies, and access keys, global within each account: a
-client in any region sees the same records. Policies are stored and returned,
-never evaluated.
+client in any region sees the same records. Identity policies are evaluated when
+[IAM authorization](docs/site/architecture/identity.md#iam-authorization) is on.
 
 | Operation | Behavior |
 | --- | --- |
@@ -509,7 +509,7 @@ without the random six-character suffix.
 | UpdateSecretVersionStage | Moves or removes a label; a label another version has moves only when `RemoveFromVersionId` names it, and `AWSCURRENT` can only move |
 | DeleteSecret / RestoreSecret | A recovery window of 7 to 30 days (30 by default) blocks reading and changing the secret and its name until restored; `ForceDeleteWithoutRecovery` deletes at once |
 | TagResource / UntagResource | Up to 50 tags |
-| PutResourcePolicy / GetResourcePolicy / DeleteResourcePolicy / ValidateResourcePolicy | A secret's resource-based policy: a JSON object with a `Statement` (one or a list), up to 20480 characters, else `MalformedPolicyDocumentException`; with `BlockPublicPolicy`, a statement that allows `*` without a `Condition` fails with `PublicPolicyException`. Policies are stored, never evaluated, and ValidateResourcePolicy checks only that the policy is well formed and the secret exists |
+| PutResourcePolicy / GetResourcePolicy / DeleteResourcePolicy / ValidateResourcePolicy | A secret's resource-based policy: a JSON object with a `Statement` (one or a list), up to 20480 characters, else `MalformedPolicyDocumentException`; with `BlockPublicPolicy`, a statement that allows `*` without a `Condition` fails with `PublicPolicyException`. Policies are evaluated when IAM authorization is on, and ValidateResourcePolicy checks only that the policy is well formed and the secret exists |
 | RotateSecret / CancelRotateSecret | Rotation with a Lambda function (`RotationLambdaARN`) and `RotationRules`: `AutomaticallyAfterDays` (1 to 1,000) or a `rate`/`cron` `ScheduleExpression` (at least 4 hours apart; no `L`, `W`, or `#`), and an optional `Duration`; both are kept from an earlier call when left out. Unless `RotateImmediately` is false, the function runs its steps at once; DescribeSecret and ListSecrets report `RotationEnabled`, the rules, `LastRotatedDate`, and `NextRotationDate`; cancelling turns rotation off and returns the version of an unfinished rotation |
 
 A rotation invokes the function in-process, in the background, with
@@ -566,8 +566,8 @@ keys, but only check that the key exists and is enabled (each with its own error
 codes); their values are stored as plain text. SQS checks a queue's
 `KmsMasterKeyId` on every send (`KmsNotFound`, `KmsDisabled`, or `KmsInvalidState`),
 never on receives, and the AWS managed keys `alias/aws/ssm`,
-`alias/aws/secretsmanager`, and `alias/aws/sqs` need no key. Policies are
-stored, never evaluated, and enabling rotation never rotates the material.
+`alias/aws/secretsmanager`, and `alias/aws/sqs` need no key. Key policies are
+evaluated when IAM authorization is on, and enabling rotation never rotates the material.
 
 ### EventBridge (AWS JSON 1.1)
 
@@ -1215,28 +1215,28 @@ Presigned URLs (query-string SigV4 with `X-Amz-Expires` up to 7 days) are verifi
 like headers, with an unsigned payload for S3; an expired one answers `AccessDenied`
 ("Request has expired"). IAM users' access keys and temporary credentials from STS
 AssumeRole need no configuration; temporary credentials must send their session
-token (`X-Amz-Security-Token`) and fail with `ExpiredToken` once expired. IAM
-policies are stored but not evaluated: any configured key, IAM access key, or role
-session may call any operation in its account.
+token (`X-Amz-Security-Token`) and fail with `ExpiredToken` once expired. With
+`identity.authorization: soft` or `enforce`, IAM identity policies and S3, SQS, SNS, KMS, Lambda, Secrets Manager
+and EventBridge resource policies are evaluated; see
+[identity and resource scope](docs/site/architecture/identity.md#iam-authorization).
 
 DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...),
 Kinesis streaming, stream shard splits, restores to an earlier time, or capacity accounting/throttling (batch writes never return
 `UnprocessedItems`), and index queries scan the whole table. Expressions
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),
-message groups on standard queues, message move tasks for FIFO queues,
-or policy evaluation (a `Policy` is stored only); the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `application` or `firehose` subscriptions, SMS sandbox, opt-outs, or spending limits, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no message signatures (the envelope omits the `Signature` fields), topic policy evaluation, delivery policies,
+message groups on standard queues, or message move tasks for FIFO queues; the 60-second name-reuse delay after DeleteQueue is not enforced. SNS limits: no `application` or `firehose` subscriptions, SMS sandbox, opt-outs, or spending limits, delivery retries, expiry of unconfirmed subscriptions, or `AuthenticateOnUnsubscribe`; no message signatures (the envelope omits the `Signature` fields), delivery policies,
 delivery status logging, encryption, data protection, or cross-account subscriptions.
 S3 limits: no multiple ranges per request, MFA delete, ACLs other than the owner's full control,
-policy evaluation, object encryption (bucket encryption settings are stored; every object reports `AES256`), POST uploads,
+object encryption (bucket encryption settings are stored; every object reports `AES256`), POST uploads,
 lifecycle expiration or transitions (rules are stored), a website endpoint, or stored checksums on
 reads; objects are held in memory (and in `state.db` in persistent mode). Lambda limits: no `ImageConfig`, pre-started provisioned
-environments, resource policy evaluation, or event sources other than SQS, DynamoDB
+environments, or event sources other than SQS, DynamoDB
 streams, and Kinesis streams (no `AT_TIMESTAMP`, parallelization factor, or tumbling windows); asynchronous failures without an
 `OnFailure` destination are logged and dropped after the retries. EventBridge limits: no partner event buses, cross-region bus references,
 event-bus targets, organization conditions, archive encryption (`KmsKeyIdentifier`), or asynchronous or cancellable replays, no `L`, `W`, or `#` in cron expressions, or targets other than
 SQS, SNS, and Lambda in the rule's account and region; the first delivery happens
-synchronously during PutEvents, and retries run in the background. IAM limits: no root access keys, login profiles, permissions boundaries, access key usage tracking, or policy evaluation, and AWS managed policies
+synchronously during PutEvents, and retries run in the background. IAM limits: no root access keys, login profiles, access key usage tracking, and AWS managed policies
 are not modeled. SSM limits: only Parameter Store (no other Systems Manager APIs),
 no parameter policies, `aws:ec2:image` or other data
 types, shared parameters, or parameter quotas.
