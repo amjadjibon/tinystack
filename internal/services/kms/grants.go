@@ -17,21 +17,22 @@ import (
 )
 
 // Grants are "<account>/<region>/kms/grant/<key ID>/<grant ID>". They are stored
-// but do not authorize access. A grant token encodes its key ID and grant ID.
+// and authorize access through the gateway. Tokens encode the key ARN and grant ID.
 
 const (
-	opCreateGrant = "CreateGrant"
-	opRetireGrant = "RetireGrant"
-	opDescribeKey = "DescribeKey"
+	opCreateGrant   = "CreateGrant"
+	opRetireGrant   = "RetireGrant"
+	opDescribeKey   = "DescribeKey"
+	opReEncryptFrom = "ReEncryptFrom"
 )
 
 // grantOperations are the operations a grant can allow on each kind of key.
 var grantOperations = map[string][]string{
 	symmetricDefault: {
-		"Decrypt", "Encrypt", "GenerateDataKey", "GenerateDataKeyWithoutPlaintext", "ReEncryptFrom", "ReEncryptTo",
+		"Decrypt", "Encrypt", "GenerateDataKey", "GenerateDataKeyWithoutPlaintext", opReEncryptFrom, "ReEncryptTo",
 		"GenerateDataKeyPair", "GenerateDataKeyPairWithoutPlaintext",
 	},
-	encryptDecrypt:    {"Decrypt", "Encrypt", "ReEncryptFrom", "ReEncryptTo", "GetPublicKey"},
+	encryptDecrypt:    {"Decrypt", "Encrypt", opReEncryptFrom, "ReEncryptTo", "GetPublicKey"},
 	signVerify:        {"Sign", "Verify", "GetPublicKey"},
 	generateVerifyMAC: {"GenerateMac", "VerifyMac"},
 }
@@ -85,6 +86,12 @@ func checkGrant(k *key, in *api.CreateGrantRequest) error {
 			"EncryptionContextSubset.")
 	}
 
+	if in.Constraints != nil &&
+		(len(in.Constraints.EncryptionContextEquals) > 0 || len(in.Constraints.EncryptionContextSubset) > 0) &&
+		k.spec() != symmetricDefault {
+		return awserror.Validation("Encryption context grant constraints require a symmetric encryption key.")
+	}
+
 	allowed := k.allowedOperations()
 	for _, op := range in.Operations {
 		if !slices.Contains(allowed, op) {
@@ -117,11 +124,16 @@ func (g *grant) same(in *api.CreateGrantRequest) bool {
 // CreateGrant records a grant on a key. A named grant with the same
 // parameters as an existing one returns that one.
 func (s *Service) CreateGrant(ctx context.Context, in *api.CreateGrantRequest) (*api.CreateGrantResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	scope = referenceScope(ctx, scope, common.Value(in.KeyId))
 	out := &api.CreateGrantResponse{}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		k, loadErr := s.load(tx, scope, in.KeyId, false)
@@ -149,7 +161,7 @@ func (s *Service) CreateGrant(ctx context.Context, in *api.CreateGrantRequest) (
 				}
 
 				if g.same(in) {
-					out.GrantId, out.GrantToken = new(g.ID), new(grantToken(k.ID, g.ID))
+					out.GrantId, out.GrantToken = new(g.ID), new(grantToken(keyARN(scope, k.ID), g.ID))
 					return nil
 				}
 			}
@@ -168,7 +180,7 @@ func (s *Service) CreateGrant(ctx context.Context, in *api.CreateGrantRequest) (
 			Operations: in.Operations,
 			Created:    s.now().UnixMilli(),
 		}
-		out.GrantId, out.GrantToken = new(g.ID), new(grantToken(k.ID, g.ID))
+		out.GrantId, out.GrantToken = new(g.ID), new(grantToken(keyARN(scope, k.ID), g.ID))
 		return storage.Write(tx, grantPrefix(scope, k.ID)+g.ID, g)
 	})
 	if err != nil {
@@ -204,6 +216,7 @@ func (s *Service) ListGrants(ctx context.Context, in *api.ListGrantsRequest) (*a
 		return nil, err
 	}
 
+	scope = referenceScope(ctx, scope, common.Value(in.KeyId))
 	var entries []api.GrantListEntry
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		k, loadErr := s.load(tx, scope, in.KeyId, false)
@@ -284,18 +297,16 @@ func grantPage(entries []api.GrantListEntry, marker *string, limit *int64) (*api
 
 // RetireGrant deletes a grant given by its token, or by its key and ID.
 func (s *Service) RetireGrant(ctx context.Context, in *api.RetireGrantRequest) (*api.RetireGrantOutput, error) {
-	keyRef, grantID := in.KeyId, common.Value(in.GrantId)
-	if in.GrantToken != nil {
-		decoded, err := base64.RawURLEncoding.DecodeString(*in.GrantToken)
-		id, gid, ok := strings.Cut(string(decoded), "/")
-		if err != nil || !ok || !keyID.MatchString(id) {
-			return nil, awserror.New("InvalidGrantTokenException", "The grant token is not valid.")
-		}
+	ref, grantID, err := retirementTarget(in)
+	if err != nil {
+		return nil, err
+	}
 
-		keyRef, grantID = &id, gid
-	} else if keyRef == nil || grantID == "" {
+	if ref == "" || grantID == "" {
 		return nil, awserror.Validation("Give either a GrantToken, or a KeyId and a GrantId.")
 	}
+
+	keyRef := new(ref)
 
 	if err := s.deleteGrant(ctx, keyRef, grantID, in.DryRun); err != nil {
 		return nil, err
@@ -319,6 +330,7 @@ func (s *Service) deleteGrant(ctx context.Context, keyRef *string, grantID strin
 		return err
 	}
 
+	scope = referenceScope(ctx, scope, common.Value(keyRef))
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		k, loadErr := s.load(tx, scope, keyRef, false)
 		if loadErr != nil {
@@ -342,6 +354,10 @@ func (s *Service) deleteGrant(ctx context.Context, keyRef *string, grantID strin
 // ReEncrypt decrypts a ciphertext with its key and encrypts the plaintext
 // with another, as Decrypt and Encrypt do, without returning the plaintext.
 func (s *Service) ReEncrypt(ctx context.Context, in *api.ReEncryptRequest) (*api.ReEncryptResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	opened, err := s.Decrypt(ctx, &api.DecryptRequest{
 		CiphertextBlob: in.CiphertextBlob, EncryptionContext: in.SourceEncryptionContext, KeyId: in.SourceKeyId,
 		EncryptionAlgorithm: in.SourceEncryptionAlgorithm,

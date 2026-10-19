@@ -11,6 +11,9 @@ import (
 // uses the operation's generated IAMAction. TagsKnown distinguishes absent tags
 // from a resource family whose tags cannot be evaluated.
 type AuthorizationResource struct {
+	// Grant is the KMS grant evaluation from the same resource snapshot.
+	Grant *GrantAuthorization
+
 	// Values adds context for dependent actions such as iam:PassRole.
 	Values map[string][]string
 	Tags   map[string]string
@@ -24,6 +27,15 @@ type AuthorizationResource struct {
 	TagsKnown   bool
 	// PolicyRequired selects KMS semantics: direct Allow or account delegation plus IAM.
 	PolicyRequired bool
+}
+
+// GrantAuthorization describes an alternative KMS Allow, or why no grant applies.
+// RequiresIAM is used for account delegation when retiring a particular grant.
+type GrantAuthorization struct {
+	ID          string `json:"id,omitempty"`
+	Reason      string `json:"reason,omitempty"`
+	RequiresIAM bool   `json:"requires_iam,omitempty"`
+	Retirement  bool   `json:"retirement,omitempty"`
 }
 
 // Authorizer is implemented next to each service's resource lookups.

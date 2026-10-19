@@ -211,6 +211,10 @@ func prepare(scope request.Scope, k *key, message []byte, messageType, algorithm
 }
 
 func (s *Service) Sign(ctx context.Context, in *api.SignRequest) (*api.SignResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	out := &api.SignResponse{SigningAlgorithm: in.SigningAlgorithm}
 	err := s.asymmetric(ctx, in.KeyId, signVerify, func(scope request.Scope, k *key, signer crypto.Signer) error {
 		sg, err := prepare(scope, k, in.Message, in.MessageType, in.SigningAlgorithm)
@@ -234,6 +238,10 @@ func (s *Service) Sign(ctx context.Context, in *api.SignRequest) (*api.SignRespo
 }
 
 func (s *Service) Verify(ctx context.Context, in *api.VerifyRequest) (*api.VerifyResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	out := &api.VerifyResponse{SigningAlgorithm: in.SigningAlgorithm}
 	err := s.asymmetric(ctx, in.KeyId, signVerify, func(scope request.Scope, k *key, signer crypto.Signer) error {
 		sg, err := prepare(scope, k, in.Message, in.MessageType, in.SigningAlgorithm)
@@ -279,6 +287,10 @@ func verify(public crypto.PublicKey, sg *signing, signature []byte) bool {
 }
 
 func (s *Service) GetPublicKey(ctx context.Context, in *api.GetPublicKeyRequest) (*api.GetPublicKeyResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	out := &api.GetPublicKeyResponse{}
 	err := s.view(ctx, in.KeyId, true, func(scope request.Scope, k *key) error {
 		if usableErr := k.usable(scope); usableErr != nil {

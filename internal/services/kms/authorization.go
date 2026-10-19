@@ -2,6 +2,7 @@ package kms
 
 import (
 	"context"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -15,6 +16,10 @@ func (s *Service) AuthorizationResources(
 	operation string,
 	input any,
 ) ([]catalog.AuthorizationResource, error) {
+	if err := validateGrantTokens(input); err != nil {
+		return nil, err
+	}
+
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
@@ -50,6 +55,13 @@ func (s *Service) AuthorizationResources(
 			}
 		}
 
+		if in, ok := input.(*api.RetireGrantRequest); ok {
+			ref, _, err = retirementTarget(in)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		if ref != "" {
 			refs = append(refs, catalog.AuthorizationResource{ARN: ref})
 		}
@@ -78,6 +90,15 @@ func (s *Service) AuthorizationResources(
 				refs[i].OwnerAccount = scope.AccountID
 				refs[i].Policy = stored.Policy
 				refs[i].PolicyRequired = true
+				action := operation
+				if refs[i].Action != "" {
+					action = strings.TrimPrefix(refs[i].Action, "kms:")
+				}
+
+				refs[i].Grant, readErr = evaluateGrants(ctx, tx, scope, id, action, input)
+				if readErr != nil {
+					return readErr
+				}
 			}
 		}
 

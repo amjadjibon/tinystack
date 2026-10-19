@@ -49,7 +49,8 @@ type CreateKeyResponse struct {
 }
 
 type DescribeKeyRequest struct {
-	KeyId *string `json:"KeyId,omitempty"`
+	KeyId       *string  `json:"KeyId,omitempty"`
+	GrantTokens []string `json:"GrantTokens,omitempty"`
 }
 
 type DescribeKeyResponse struct {
@@ -238,6 +239,7 @@ type EncryptRequest struct {
 	EncryptionContext   map[string]string `json:"EncryptionContext,omitempty"`
 	EncryptionAlgorithm *string           `json:"EncryptionAlgorithm,omitempty"`
 	DryRun              *bool             `json:"DryRun,omitempty"`
+	GrantTokens         []string          `json:"GrantTokens,omitempty"`
 }
 
 type EncryptResponse struct {
@@ -252,6 +254,7 @@ type DecryptRequest struct {
 	KeyId               *string           `json:"KeyId,omitempty"`
 	EncryptionAlgorithm *string           `json:"EncryptionAlgorithm,omitempty"`
 	DryRun              *bool             `json:"DryRun,omitempty"`
+	GrantTokens         []string          `json:"GrantTokens,omitempty"`
 }
 
 type DecryptResponse struct {
@@ -266,6 +269,7 @@ type GenerateDataKeyRequest struct {
 	NumberOfBytes     *int64            `json:"NumberOfBytes,omitempty"`
 	KeySpec           *string           `json:"KeySpec,omitempty"`
 	DryRun            *bool             `json:"DryRun,omitempty"`
+	GrantTokens       []string          `json:"GrantTokens,omitempty"`
 }
 
 type GenerateDataKeyResponse struct {
@@ -280,6 +284,7 @@ type GenerateDataKeyWithoutPlaintextRequest struct {
 	KeySpec           *string           `json:"KeySpec,omitempty"`
 	NumberOfBytes     *int64            `json:"NumberOfBytes,omitempty"`
 	DryRun            *bool             `json:"DryRun,omitempty"`
+	GrantTokens       []string          `json:"GrantTokens,omitempty"`
 }
 
 type GenerateDataKeyWithoutPlaintextResponse struct {
@@ -300,6 +305,7 @@ type GenerateDataKeyPairRequest struct {
 	KeyId             *string           `json:"KeyId,omitempty"`
 	KeyPairSpec       *string           `json:"KeyPairSpec,omitempty"`
 	DryRun            *bool             `json:"DryRun,omitempty"`
+	GrantTokens       []string          `json:"GrantTokens,omitempty"`
 }
 
 type GenerateDataKeyPairResponse struct {
@@ -315,6 +321,7 @@ type GenerateDataKeyPairWithoutPlaintextRequest struct {
 	KeyId             *string           `json:"KeyId,omitempty"`
 	KeyPairSpec       *string           `json:"KeyPairSpec,omitempty"`
 	DryRun            *bool             `json:"DryRun,omitempty"`
+	GrantTokens       []string          `json:"GrantTokens,omitempty"`
 }
 
 type GenerateDataKeyPairWithoutPlaintextResponse struct {
@@ -325,10 +332,11 @@ type GenerateDataKeyPairWithoutPlaintextResponse struct {
 }
 
 type GenerateMacRequest struct {
-	Message      []byte  `json:"Message,omitempty"`
-	KeyId        *string `json:"KeyId,omitempty"`
-	MacAlgorithm *string `json:"MacAlgorithm,omitempty"`
-	DryRun       *bool   `json:"DryRun,omitempty"`
+	Message      []byte   `json:"Message,omitempty"`
+	KeyId        *string  `json:"KeyId,omitempty"`
+	MacAlgorithm *string  `json:"MacAlgorithm,omitempty"`
+	DryRun       *bool    `json:"DryRun,omitempty"`
+	GrantTokens  []string `json:"GrantTokens,omitempty"`
 }
 
 type GenerateMacResponse struct {
@@ -338,11 +346,12 @@ type GenerateMacResponse struct {
 }
 
 type VerifyMacRequest struct {
-	Message      []byte  `json:"Message,omitempty"`
-	KeyId        *string `json:"KeyId,omitempty"`
-	MacAlgorithm *string `json:"MacAlgorithm,omitempty"`
-	Mac          []byte  `json:"Mac,omitempty"`
-	DryRun       *bool   `json:"DryRun,omitempty"`
+	Message      []byte   `json:"Message,omitempty"`
+	KeyId        *string  `json:"KeyId,omitempty"`
+	MacAlgorithm *string  `json:"MacAlgorithm,omitempty"`
+	Mac          []byte   `json:"Mac,omitempty"`
+	DryRun       *bool    `json:"DryRun,omitempty"`
+	GrantTokens  []string `json:"GrantTokens,omitempty"`
 }
 
 type VerifyMacResponse struct {
@@ -352,11 +361,12 @@ type VerifyMacResponse struct {
 }
 
 type SignRequest struct {
-	KeyId            *string `json:"KeyId,omitempty"`
-	Message          []byte  `json:"Message,omitempty"`
-	MessageType      *string `json:"MessageType,omitempty"`
-	SigningAlgorithm *string `json:"SigningAlgorithm,omitempty"`
-	DryRun           *bool   `json:"DryRun,omitempty"`
+	KeyId            *string  `json:"KeyId,omitempty"`
+	Message          []byte   `json:"Message,omitempty"`
+	MessageType      *string  `json:"MessageType,omitempty"`
+	SigningAlgorithm *string  `json:"SigningAlgorithm,omitempty"`
+	DryRun           *bool    `json:"DryRun,omitempty"`
+	GrantTokens      []string `json:"GrantTokens,omitempty"`
 }
 
 type SignResponse struct {
@@ -366,12 +376,13 @@ type SignResponse struct {
 }
 
 type VerifyRequest struct {
-	KeyId            *string `json:"KeyId,omitempty"`
-	Message          []byte  `json:"Message,omitempty"`
-	MessageType      *string `json:"MessageType,omitempty"`
-	Signature        []byte  `json:"Signature,omitempty"`
-	SigningAlgorithm *string `json:"SigningAlgorithm,omitempty"`
-	DryRun           *bool   `json:"DryRun,omitempty"`
+	KeyId            *string  `json:"KeyId,omitempty"`
+	Message          []byte   `json:"Message,omitempty"`
+	MessageType      *string  `json:"MessageType,omitempty"`
+	Signature        []byte   `json:"Signature,omitempty"`
+	SigningAlgorithm *string  `json:"SigningAlgorithm,omitempty"`
+	DryRun           *bool    `json:"DryRun,omitempty"`
+	GrantTokens      []string `json:"GrantTokens,omitempty"`
 }
 
 type VerifyResponse struct {
@@ -381,7 +392,8 @@ type VerifyResponse struct {
 }
 
 type GetPublicKeyRequest struct {
-	KeyId *string `json:"KeyId,omitempty"`
+	KeyId       *string  `json:"KeyId,omitempty"`
+	GrantTokens []string `json:"GrantTokens,omitempty"`
 }
 
 type GetPublicKeyResponse struct {
@@ -407,6 +419,7 @@ type CreateGrantRequest struct {
 	Constraints       *GrantConstraints `json:"Constraints,omitempty"`
 	Name              *string           `json:"Name,omitempty"`
 	DryRun            *bool             `json:"DryRun,omitempty"`
+	GrantTokens       []string          `json:"GrantTokens,omitempty"`
 }
 
 type CreateGrantResponse struct {
@@ -472,6 +485,7 @@ type ReEncryptRequest struct {
 	SourceEncryptionAlgorithm      *string           `json:"SourceEncryptionAlgorithm,omitempty"`
 	DestinationEncryptionAlgorithm *string           `json:"DestinationEncryptionAlgorithm,omitempty"`
 	DryRun                         *bool             `json:"DryRun,omitempty"`
+	GrantTokens                    []string          `json:"GrantTokens,omitempty"`
 }
 
 type ReEncryptResponse struct {

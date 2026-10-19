@@ -46,11 +46,12 @@ type AuthorizationRecord struct {
 }
 
 type AuthorizationCheck struct {
-	Boundary       *policy.Decision `json:"boundary,omitempty"`
-	SessionPolicy  *policy.Decision `json:"session_policy,omitempty"`
-	ResourcePolicy *policy.Decision `json:"resource_policy,omitempty"`
-	Action         string           `json:"action"`
-	Resource       string           `json:"resource"`
+	Grant          *catalog.GrantAuthorization `json:"grant,omitempty"`
+	Boundary       *policy.Decision            `json:"boundary,omitempty"`
+	SessionPolicy  *policy.Decision            `json:"session_policy,omitempty"`
+	ResourcePolicy *policy.Decision            `json:"resource_policy,omitempty"`
+	Action         string                      `json:"action"`
+	Resource       string                      `json:"resource"`
 	policy.Decision
 	WildcardOnly bool `json:"wildcard_only,omitempty"`
 	CrossAccount bool `json:"cross_account,omitempty"`
@@ -218,6 +219,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 			contextValues["aws:sourceowner"] = []string{principal.Account}
 		}
 
+		identityAllowed := decision.Allowed
 		var resourceDecision *policy.Decision
 		crossAccount := target.OwnerAccount != "" && target.OwnerAccount != principal.Account
 		if principal.Kind == request.PrincipalRoot {
@@ -267,15 +269,27 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 			decision.Unsupported = append(decision.Unsupported, evaluated.Unsupported...)
 		}
 
+		if target.Grant != nil {
+			grant := target.Grant
+			grantAllows := grant.ID != "" && (!grant.RequiresIAM || identityAllowed)
+			if grant.Retirement {
+				// Key policy Allow alone cannot retire another principal's grant.
+				decision.Allowed = grantAllows
+			} else {
+				decision.Allowed = decision.Allowed || grantAllows
+			}
+		}
+
 		decision.ExplicitDeny = decision.ExplicitDeny || limitsDeny
 		decision.Allowed = decision.Allowed && !decision.ExplicitDeny
 		decision.Unsupported = append(decision.Unsupported, snapshot.Unsupported...)
-		if resolutionFailed || lookupFailed {
+		if resolutionFailed || lookupFailed || (target.Grant != nil && len(decision.Unsupported) > 0) {
 			decision.Allowed = false
 		}
 
 		check := AuthorizationCheck{
 			Decision:       decision,
+			Grant:          target.Grant,
 			Boundary:       boundaryDecision,
 			SessionPolicy:  sessionDecision,
 			Action:         targetAction,
@@ -298,6 +312,9 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 	if record.Allowed {
 		record.Message = "allowed by identity-based or resource-based policy"
+		if c.meta.Service == authorizationKMS {
+			record.Message = "allowed by identity-based policy, key policy or KMS grant"
+		}
 	}
 
 	if !record.Allowed && mode == config.AuthorizationSoft {
@@ -347,6 +364,10 @@ func denial(arn string, check *AuthorizationCheck) string {
 
 	if check.WildcardOnly {
 		message += "; Resource '*' only: resource-level evaluation is unavailable for this operation"
+	}
+
+	if check.Grant != nil && check.Grant.Reason != "" {
+		message += "; " + check.Grant.Reason
 	}
 
 	if len(check.Unsupported) > 0 {

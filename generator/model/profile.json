@@ -13680,7 +13680,8 @@
         "KeyMetadata"
       ],
       "DescribeKeyRequest": [
-        "KeyId"
+        "KeyId",
+        "GrantTokens"
       ],
       "DescribeKeyResponse": [
         "KeyMetadata"
@@ -13839,7 +13840,8 @@
         "Plaintext",
         "EncryptionContext",
         "EncryptionAlgorithm",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "EncryptResponse": [
         "CiphertextBlob",
@@ -13851,7 +13853,8 @@
         "EncryptionContext",
         "KeyId",
         "EncryptionAlgorithm",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "DecryptResponse": [
         "KeyId",
@@ -13863,7 +13866,8 @@
         "EncryptionContext",
         "NumberOfBytes",
         "KeySpec",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "GenerateDataKeyResponse": [
         "CiphertextBlob",
@@ -13875,7 +13879,8 @@
         "EncryptionContext",
         "KeySpec",
         "NumberOfBytes",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "GenerateDataKeyWithoutPlaintextResponse": [
         "CiphertextBlob",
@@ -13891,7 +13896,8 @@
         "EncryptionContext",
         "KeyId",
         "KeyPairSpec",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "GenerateDataKeyPairResponse": [
         "PrivateKeyCiphertextBlob",
@@ -13904,7 +13910,8 @@
         "EncryptionContext",
         "KeyId",
         "KeyPairSpec",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "GenerateDataKeyPairWithoutPlaintextResponse": [
         "PrivateKeyCiphertextBlob",
@@ -13916,7 +13923,8 @@
         "Message",
         "KeyId",
         "MacAlgorithm",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "GenerateMacResponse": [
         "Mac",
@@ -13928,7 +13936,8 @@
         "KeyId",
         "MacAlgorithm",
         "Mac",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "VerifyMacResponse": [
         "KeyId",
@@ -13940,7 +13949,8 @@
         "Message",
         "MessageType",
         "SigningAlgorithm",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "SignResponse": [
         "KeyId",
@@ -13953,7 +13963,8 @@
         "MessageType",
         "Signature",
         "SigningAlgorithm",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "VerifyResponse": [
         "KeyId",
@@ -13961,7 +13972,8 @@
         "SigningAlgorithm"
       ],
       "GetPublicKeyRequest": [
-        "KeyId"
+        "KeyId",
+        "GrantTokens"
       ],
       "GetPublicKeyResponse": [
         "KeyId",
@@ -13979,7 +13991,8 @@
         "Operations",
         "Constraints",
         "Name",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "CreateGrantResponse": [
         "GrantToken",
@@ -14036,7 +14049,8 @@
         "DestinationEncryptionContext",
         "SourceEncryptionAlgorithm",
         "DestinationEncryptionAlgorithm",
-        "DryRun"
+        "DryRun",
+        "GrantTokens"
       ],
       "ReEncryptResponse": [
         "CiphertextBlob",

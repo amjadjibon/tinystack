@@ -68,6 +68,27 @@ func principalMatches(raw json.RawMessage, principal *request.Principal) (matche
 	return direct || account, account && !direct, nil
 }
 
+// MatchAWSPrincipal shares resource-policy matching with KMS grants. Grants
+// accept concrete AWS identities only, never wildcard or service principals.
+func MatchAWSPrincipal(name string, principal *request.Principal) (bool, error) {
+	parts := strings.SplitN(name, ":", 6)
+	if len(parts) != 6 || parts[0] != "arn" || parts[1] != "aws" ||
+		(parts[2] != "iam" && parts[2] != "sts") || len(parts[4]) != 12 ||
+		strings.ContainsAny(name, "*?") ||
+		(parts[5] != "root" && !strings.HasPrefix(parts[5], "user/") &&
+			!strings.HasPrefix(parts[5], "role/") && !strings.HasPrefix(parts[5], "assumed-role/")) {
+		return false, fmt.Errorf("unsupported grant principal %q", name)
+	}
+
+	raw, err := json.Marshal(map[string]string{"AWS": name})
+	if err != nil {
+		return false, err
+	}
+
+	matched, _, err := principalMatches(raw, principal)
+	return matched, err
+}
+
 // ValidateResource rejects unsupported elements at write time, even in statements
 // whose action/resource would not match a particular request.
 func ValidateResource(document string) error {

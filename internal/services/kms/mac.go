@@ -73,6 +73,10 @@ func (s *Service) mac(ctx context.Context, ref *string, message []byte, algorith
 }
 
 func (s *Service) GenerateMac(ctx context.Context, in *api.GenerateMacRequest) (*api.GenerateMacResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	sum, arn, err := s.mac(ctx, in.KeyId, in.Message, in.MacAlgorithm, in.DryRun)
 	if err != nil {
 		return nil, err
@@ -82,6 +86,10 @@ func (s *Service) GenerateMac(ctx context.Context, in *api.GenerateMacRequest) (
 }
 
 func (s *Service) VerifyMac(ctx context.Context, in *api.VerifyMacRequest) (*api.VerifyMacResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	sum, arn, err := s.mac(ctx, in.KeyId, in.Message, in.MacAlgorithm, in.DryRun)
 	if err != nil {
 		return nil, err
@@ -152,6 +160,10 @@ func (s *Service) GenerateDataKeyPair(
 	ctx context.Context,
 	in *api.GenerateDataKeyPairRequest,
 ) (*api.GenerateDataKeyPairResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	private, sealed, public, arn, err := s.dataKeyPair(ctx, in.KeyId, in.EncryptionContext, in.KeyPairSpec, in.DryRun)
 	if err != nil {
 		return nil, err
@@ -167,6 +179,10 @@ func (s *Service) GenerateDataKeyPairWithoutPlaintext(
 	ctx context.Context,
 	in *api.GenerateDataKeyPairWithoutPlaintextRequest,
 ) (*api.GenerateDataKeyPairWithoutPlaintextResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	_, sealed, public, arn, err := s.dataKeyPair(ctx, in.KeyId, in.EncryptionContext, in.KeyPairSpec, in.DryRun)
 	if err != nil {
 		return nil, err

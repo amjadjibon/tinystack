@@ -506,6 +506,10 @@ func (s *Service) CreateKey(ctx context.Context, in *api.CreateKeyRequest) (*api
 }
 
 func (s *Service) DescribeKey(ctx context.Context, in *api.DescribeKeyRequest) (*api.DescribeKeyResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	out := &api.DescribeKeyResponse{}
 	err := s.view(ctx, in.KeyId, true, func(scope request.Scope, k *key) error {
 		out.KeyMetadata = k.metadata(scope)

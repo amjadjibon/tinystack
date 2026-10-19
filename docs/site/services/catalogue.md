@@ -731,6 +731,8 @@ Exercise local cryptographic key and alias workflows.
 - Symmetric AES, HMAC and selected RSA/ECC key types.
 - Encrypt/decrypt, re-encryption, data keys, signing and public-key retrieval.
 - Key lifecycle, aliases, policies, grants and tags.
+- Grants authorize account, user and role/session principals across accounts, with encryption-context equals/subset constraints, explicit Deny precedence and grant IDs in authorization checks.
+- Grant-based CreateGrant restricts child operations and constraints; retiring and revoking grants immediately remove access.
 - SSM, Secrets Manager and SQS validate usable customer-managed keys.
 - SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use; AWS managed keys cannot be disabled, scheduled for deletion, or have their policy, description or rotation changed.
 - Default key policies enable IAM delegation; key ID, alias and ARN authorization resolves the owning key policy, with explicit Deny precedence and no root recovery.

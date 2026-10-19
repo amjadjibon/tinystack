@@ -132,6 +132,10 @@ func (s *Service) encrypting(
 }
 
 func (s *Service) Encrypt(ctx context.Context, in *api.EncryptRequest) (*api.EncryptResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	if len(in.Plaintext) == 0 || len(in.Plaintext) > maxPlaintext {
 		return nil, awserror.Validation("Plaintext must be 1 to %d bytes.", maxPlaintext)
 	}
@@ -164,6 +168,10 @@ func (s *Service) Encrypt(ctx context.Context, in *api.EncryptRequest) (*api.Enc
 // Decrypt finds the key from the ciphertext; KeyId, when given, must name it.
 // An RSA ciphertext needs its KeyId and EncryptionAlgorithm.
 func (s *Service) Decrypt(ctx context.Context, in *api.DecryptRequest) (*api.DecryptResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	if isAsymmetricAlgorithm(in.EncryptionAlgorithm) {
 		return s.decryptAsymmetric(ctx, in)
 	}
@@ -282,6 +290,10 @@ func (s *Service) GenerateDataKey(
 	ctx context.Context,
 	in *api.GenerateDataKeyRequest,
 ) (*api.GenerateDataKeyResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	plaintext, blob, arn, err := s.dataKey(
 		ctx, in.KeyId, in.EncryptionContext, in.KeySpec, in.NumberOfBytes, in.DryRun,
 	)
@@ -296,6 +308,10 @@ func (s *Service) GenerateDataKeyWithoutPlaintext(
 	ctx context.Context,
 	in *api.GenerateDataKeyWithoutPlaintextRequest,
 ) (*api.GenerateDataKeyWithoutPlaintextResponse, error) {
+	if err := validateGrantTokens(in); err != nil {
+		return nil, err
+	}
+
 	_, blob, arn, err := s.dataKey(ctx, in.KeyId, in.EncryptionContext, in.KeySpec, in.NumberOfBytes, in.DryRun)
 	if err != nil {
 		return nil, err

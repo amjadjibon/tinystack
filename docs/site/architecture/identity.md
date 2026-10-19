@@ -372,6 +372,32 @@ Key IDs, key ARNs, alias names and alias ARNs resolve to the actual key ARN, tag
 in a storage snapshot. Cross-account requests must name the owner through a key or alias ARN;
 bare IDs and alias names remain scoped to the caller. Both keys are checked for re-encryption.
 
+Grants provide an additional Allow independently of key-policy or IAM Allow, including cross-account
+grantees. Account-root ARNs, IAM users, roles and assumed-role sessions use the shared resource-policy
+principal matcher. Explicit Deny in a key policy, identity policy, permissions boundary or session policy
+still wins; unsupported policy constructs fail closed. Each inspector check includes a `grant` result
+with the matching grant `id`, or a `reason` explaining why no grant applies.
+
+`EncryptionContextEquals` requires an exact, case-sensitive map match; `EncryptionContextSubset`
+requires all specified pairs and permits additional pairs. ReEncrypt checks source and destination
+contexts independently. Constraints are ignored for DescribeKey and RetireGrant, as in AWS.
+CreateGrant authorized through a grant must use a subset of the parent's operations and preserve or
+tighten its constraints: subset can gain pairs or become equals, while equals must remain identical.
+Policy-authorized CreateGrant retains the policy's own permissions.
+
+RetireGrant evaluates the particular grant: its retiring principal, its grantee with RetireGrant,
+or its owning account can retire it. Account delegation to another IAM principal requires an IAM
+RetireGrant Allow; key policy Allow alone cannot retire an unrelated grant. RevokeGrant uses policy
+authorization. Both remove permissions immediately. Tokens identify the key and grant for retirement;
+other modeled grant operations accept `GrantTokens` with AWS model length/count validation only.
+TinyStack grants are immediately consistent, so these tokens add no authority and never restore a
+retired or revoked grant.
+
+See [AWS grant authorization](https://docs.aws.amazon.com/kms/latest/developerguide/grant-authorization.html),
+[grant constraints and delegation](https://docs.aws.amazon.com/kms/latest/developerguide/create-grant-overview.html),
+[retiring grants](https://docs.aws.amazon.com/kms/latest/developerguide/grant-delete.html), and
+[grant tokens](https://docs.aws.amazon.com/kms/latest/developerguide/using-grant-token.html).
+
 There is no KMS root recovery exception: a key policy can lock out even its owning root.
 CreateKey and PutKeyPolicy reject a proposed policy that would prevent the caller from calling
 PutKeyPolicy, unless `BypassPolicyLockoutSafetyCheck` is true. This safety validation also runs with
@@ -379,8 +405,8 @@ authorization off or soft; bypass does not waive authorization against the exist
 See [AWS key policies](https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html) and
 [PutKeyPolicy](https://docs.aws.amazon.com/kms/latest/APIReference/API_PutKeyPolicy.html).
 
-Deliberate limits: KMS grants and tokens remain stored metadata and do not authorize access; grant
-constraints and KMS-specific condition keys are not evaluated. The supported resource policy subset
+Deliberate limits: service-principal grants, SourceArn grant constraints, eventual consistency and
+KMS-specific policy condition keys are not modeled. The supported resource policy subset
 is validated on CreateKey and PutKeyPolicy. AWS's owner-only restrictions on individual cross-account
 management APIs are not modeled. In-process service integrations retain their direct path and bypass
 gateway authorization. Unresolved parse-mode callers retain the same bypass as S3/SQS/SNS.
