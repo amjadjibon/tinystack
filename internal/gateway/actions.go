@@ -126,6 +126,7 @@ var consoleIAMOperations = strings.Fields(`
 	CreateAccessKey ListAccessKeys UpdateAccessKey DeleteAccessKey
 	CreateInstanceProfile GetInstanceProfile DeleteInstanceProfile AddRoleToInstanceProfile
 	RemoveRoleFromInstanceProfile ListInstanceProfilesForRole
+	SimulatePrincipalPolicy SimulateCustomPolicy
 `)
 
 var consoleS3Operations = strings.Fields(`

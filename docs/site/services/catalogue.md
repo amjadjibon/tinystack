@@ -709,7 +709,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 - Active IAM keys participate in gateway credential resolution.
 - Optional off/soft/enforce gateway authorization for IAM users and assumed roles, including group policies and current managed policy versions.
 - Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations.
-- IAM console with account selection, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions.
+- IAM console with account selection, policy simulator, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions.
 - Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits.
 - S3 bucket, SQS queue, SNS topic, Lambda function, Secrets Manager secret and EventBridge bus resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records.
 - KMS requires a key policy Allow: same-account direct principal grants or account delegation plus IAM; cross-account requires both key and identity policies.

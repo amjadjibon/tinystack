@@ -4,10 +4,14 @@ import {
 	Container,
 	Header,
 	KeyValuePairs,
+	Link,
 	SpaceBetween,
 	StatusIndicator,
 } from "@cloudscape-design/components";
 import type { AuthorizationMode, AuthorizationRecord } from "#/lib/api";
+import { iamHref } from "#/lib/iam";
+import { isIamUserOrRoleArn } from "#/lib/simulator";
+import { useFollow } from "#/lib/useFollow";
 
 export function AuthorizationModeStatus({
 	mode,
@@ -60,6 +64,7 @@ export function RequestAuthorization({
 }: {
 	decision?: AuthorizationRecord;
 }) {
+	const follow = useFollow();
 	return (
 		<Container header={<Header variant="h2">IAM authorization</Header>}>
 			{decision ? (
@@ -93,7 +98,34 @@ export function RequestAuthorization({
 							<Container
 								// biome-ignore lint/suspicious/noArrayIndexKey: Checks are an immutable request snapshot; duplicate action/resource pairs have no IDs.
 								key={`${check.action}/${check.resource}/${index}`}
-								header={<Header variant="h3">{check.action}</Header>}
+								header={
+									<Header
+										variant="h3"
+										actions={
+											!check.allowed &&
+											decision?.principal &&
+											isIamUserOrRoleArn(decision.principal) ? (
+												<Link
+													href={iamHref(
+														"simulator",
+														decision.principal.split(":")[4],
+														"",
+														{
+															principal: decision.principal,
+															action: check.action,
+															resource: check.resource,
+														},
+													)}
+													onFollow={follow}
+												>
+													Simulate
+												</Link>
+											) : undefined
+										}
+									>
+										{check.action}
+									</Header>
+								}
 							>
 								<SpaceBetween size="s">
 									<KeyValuePairs

@@ -74,6 +74,8 @@ so a retry continues remaining changes after a partial failure. These workflows 
 leaves completed changes in place, and a lost response can require checking the resource before retrying.
 User permissions include policies inherited through groups; inherited policies are managed from the group page.
 
+The **Policy simulator** (`/services/iam?section=simulator`) tests and debugs policy evaluations in either Principal mode (evaluating the stored policies of a user, role, or group) or Custom mode (evaluating one or more JSON policy documents). Inputs include tested actions, resource ARNs, optional permissions boundary JSON, optional resource policy JSON with caller ARN and resource owner, and condition context entries with typed scalar/list values. Results display the evaluation decision (Allowed, Explicit deny, Implicit deny), matched statements with policy ID and type, missing condition keys, and permissions boundary status. From the Request Inspector, denied authorization checks for IAM users and roles offer a direct "Simulate" link prefilled with the failing principal, action, and resource.
+
 `GET /_tinystack/actions` returns the default account/Region, configured accounts, service availability,
 signature verification mode and descriptor-derived `signing_names`.
 `POST /_tinystack/actions` accepts `service`, `operation`, `account` and an SDK-style `input` object. The gateway

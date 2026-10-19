@@ -1,7 +1,7 @@
 import { api, type Resource } from "./api";
 
 export type IAMKind = "user" | "group" | "role" | "policy";
-export type IAMSection = IAMKind | "overview";
+export type IAMSection = IAMKind | "overview" | "simulator";
 export const iamKinds: IAMKind[] = ["user", "group", "role", "policy"];
 export const iamLabels: Record<IAMKind, { singular: string; plural: string }> =
 	{
@@ -20,8 +20,10 @@ export function iamHref(
 	section: IAMSection = "overview",
 	account = "",
 	name = "",
+	extra?: Record<string, string>,
 ) {
-	return `/services/iam?${new URLSearchParams({ section, account, name })}`;
+	const params = new URLSearchParams({ section, account, name, ...extra });
+	return `/services/iam?${params}`;
 }
 export function iamInput(resource: Resource): Record<string, unknown> {
 	return resource.type === "policy"

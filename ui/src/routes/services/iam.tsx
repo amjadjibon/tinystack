@@ -22,6 +22,7 @@ import { EmptyState } from "#/components/EmptyState";
 import { IAMAuthorization } from "#/components/iam/IAMAuthorization";
 import { IAMCreate } from "#/components/iam/IAMCreate";
 import { IAMDetail } from "#/components/iam/IAMDetail";
+import { IAMSimulator } from "#/components/iam/IAMSimulator";
 import type { Resource } from "#/lib/api";
 import {
 	type IAMKind,
@@ -38,15 +39,24 @@ type IAMSearch = {
 	account: string;
 	name: string;
 	create: boolean;
+	principal?: string;
+	action?: string;
+	resource?: string;
 };
 export const Route = createFileRoute("/services/iam")({
 	validateSearch: (search: Record<string, unknown>): IAMSearch => ({
-		section: iamKinds.includes(search.section as IAMKind)
-			? (search.section as IAMKind)
-			: "overview",
+		section:
+			search.section === "simulator"
+				? "simulator"
+				: iamKinds.includes(search.section as IAMKind)
+					? (search.section as IAMKind)
+					: "overview",
 		account: String(search.account ?? ""),
 		name: String(search.name ?? ""),
 		create: search.create === true || search.create === "true",
+		principal: search.principal ? String(search.principal) : undefined,
+		action: search.action ? String(search.action) : undefined,
+		resource: search.resource ? String(search.resource) : undefined,
 	}),
 	component: IAMPage,
 });
@@ -79,12 +89,17 @@ function IAMPage() {
 	const title =
 		search.section === "overview"
 			? "IAM dashboard"
-			: iamLabels[search.section].plural;
+			: search.section === "simulator"
+				? "Policy simulator"
+				: iamLabels[search.section].plural;
 	const refresh = () => inventory.reload();
 	return (
 		<ConsoleLayout
 			contentType={
-				search.name || search.create || search.section === "overview"
+				search.name ||
+				search.create ||
+				search.section === "overview" ||
+				search.section === "simulator"
 					? "default"
 					: "table"
 			}
@@ -103,6 +118,17 @@ function IAMPage() {
 						text: iamLabels[kind].plural,
 						href: iamHref(kind, account),
 					})),
+				},
+				{
+					type: "section",
+					text: "Access analysis",
+					items: [
+						{
+							type: "link",
+							text: "Policy simulator",
+							href: iamHref("simulator", account),
+						},
+					],
 				},
 				{ type: "divider" },
 				{ type: "link", text: "All services", href: "/services" },
@@ -145,11 +171,11 @@ function IAMPage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{search.create && search.section !== "overview" ? (
+					{search.create && iamKinds.includes(search.section as IAMKind) ? (
 						enabled ? (
 							<IAMCreate
 								key={`${account}/${search.section}`}
-								kind={search.section}
+								kind={search.section as IAMKind}
 								resources={resources}
 								account={account}
 								onCancel={() => go(search.section)}
@@ -202,10 +228,18 @@ function IAMPage() {
 						)
 					) : search.section === "overview" ? (
 						<IAMOverview resources={resources} account={account} />
+					) : search.section === "simulator" ? (
+						<IAMSimulator
+							resources={resources}
+							account={account}
+							initialPrincipal={search.principal}
+							initialAction={search.action}
+							initialResource={search.resource}
+						/>
 					) : (
 						<IAMList
 							key={`${account}/${search.section}`}
-							kind={search.section}
+							kind={search.section as IAMKind}
 							resources={resources.filter((r) => r.type === search.section)}
 							loading={inventory.loading}
 							enabled={enabled}
