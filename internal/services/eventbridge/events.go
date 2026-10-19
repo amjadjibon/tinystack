@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
@@ -307,8 +308,25 @@ func (s *Service) deliver(
 	}
 }
 
-// send makes one delivery of payload to a target.
-func (s *Service) send(ctx context.Context, t *target, eventID string, payload []byte) error {
+// authorize checks that the queue's, topic's, or function's resource policy lets the rule deliver to it.
+func (s *Service) authorize(ctx context.Context, rule, targetARN string) error {
+	return s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
+		Principal:     "events.amazonaws.com",
+		SourceARN:     rule,
+		SourceAccount: strings.Split(rule, ":")[4],
+		Target:        targetARN,
+	})
+}
+
+// send makes one delivery of payload to a target of rule. A target with a role is invoked with that role's
+// permissions, so its resource policy is not consulted.
+func (s *Service) send(ctx context.Context, rule string, t *target, eventID string, payload []byte) error {
+	if t.RoleARN == "" {
+		if err := s.authorize(ctx, rule, t.ARN); err != nil {
+			return err
+		}
+	}
+
 	var err error
 	switch strings.SplitN(t.ARN, ":", 4)[2] {
 	case serviceSQS:

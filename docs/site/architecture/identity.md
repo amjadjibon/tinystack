@@ -256,10 +256,9 @@ SNS owning-root `GetTopicAttributes` and `SetTopicAttributes` have the same reco
 TinyStack grants these exceptions for all attributes; it does not model AssumeRoot task policies.
 
 Deliberate limits: ACLs, object ownership and STS federated-user principals are not modeled.
-Service principals such as `sns.amazonaws.com` can be stored, but in-process SNS→SQS,
-S3 notifications→SQS/SNS, EventBridge→SQS/SNS and SNS→Lambda calls retain their existing direct delivery path and bypass
-policy enforcement. Source conditions do not restrict those deliveries. Cross-account policy management
-and SQS actions are evaluated by the same rule rather than modeling every AWS owner-only API exception.
+Service principals such as `sns.amazonaws.com` are matched on [service deliveries](#service-principal-deliveries).
+Cross-account policy management and SQS actions are evaluated by the same rule rather than modeling every
+AWS owner-only API exception.
 Unsigned/unresolved parse-mode callers retain their existing bypass; use verify mode for authentication.
 
 ### Lambda function and Secrets Manager secret policies
@@ -277,8 +276,9 @@ AWS_IAM URLs combine identity and function policies like other function actions;
 so the function policy must grant both actions to `*`, as AWS's console does when it creates the URL
 ([function URL access control](https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html)).
 SourceArn and SourceAccount permission parameters produce aws:SourceArn and aws:SourceAccount
-conditions. Ordinary API calls do not supply these keys. In-process S3/SNS/EventBridge/SQS event source
-mapping and stream deliveries continue to bypass function policies, so their source conditions are not enforced.
+conditions. Ordinary API calls do not supply these keys; SNS, S3, EventBridge and API Gateway invocations supply
+them as [service deliveries](#service-principal-deliveries). Lambda destinations and event source
+mappings continue to bypass function policies, so their source conditions are not enforced.
 
 ### API Gateway execution
 
@@ -299,8 +299,9 @@ and [ARN reference](https://docs.aws.amazon.com/apigateway/latest/developerguide
 
 Proxy payload 1.0 reports resolved IAM caller IDs, ARN, account and access key under
 `requestContext.identity`; payload 2.0 reports them under `requestContext.authorizer.iam`.
-API Gateway-to-Lambda integrations remain in-process calls and bypass Lambda resource policies,
-including SourceArn/SourceAccount conditions.
+API Gateway-to-Lambda proxy integrations without a credentials role are
+[service deliveries](#service-principal-deliveries); Lambda authorizer invocations still bypass Lambda
+resource policies.
 
 #### REST API resource policies
 
@@ -386,9 +387,9 @@ PutPermission validates the shared resource policy subset in every authorization
 policies may contain a Statement object or array; adding/removing statements preserves `Id`.
 Unknown elements, condition keys/operators, NotPrincipal and organization conditions
 (`aws:PrincipalOrgID`) are rejected. The short form grants only `events:PutEvents`; use a whole
-policy for rule management or other actions. In-process service calls and target deliveries bypass
-these policies, and no organization membership, partner buses or AWS owner-only API exceptions
-are modeled.
+policy for rule management or other actions. Bus policies do not apply to target deliveries, which
+the targets' own policies decide as [service deliveries](#service-principal-deliveries), and no
+organization membership, partner buses or AWS owner-only API exceptions are modeled.
 
 ### KMS key policies
 
@@ -443,6 +444,47 @@ KMS-specific policy condition keys are not modeled. The supported resource polic
 is validated on CreateKey and PutKeyPolicy. AWS's owner-only restrictions on individual cross-account
 management APIs are not modeled. In-process service integrations retain their direct path and bypass
 gateway authorization. Unresolved parse-mode callers retain the same bypass as S3/SQS/SNS.
+
+### Service-principal deliveries
+
+With authorization on, a delivery that one TinyStack service makes to another is checked against the
+target's resource policy, as AWS does for a service principal. This catches the usual mistake of
+forgetting a queue policy for SNS or a function permission for API Gateway, S3 or EventBridge.
+
+| Source | Principal | Target actions | `aws:SourceArn` |
+| --- | --- | --- | --- |
+| SNS topic | `sns.amazonaws.com` | `sqs:SendMessage`, `lambda:InvokeFunction` | topic ARN |
+| S3 notifications | `s3.amazonaws.com` | `sqs:SendMessage`, `sns:Publish`, `lambda:InvokeFunction` | `arn:aws:s3:::<bucket>` |
+| EventBridge rule target | `events.amazonaws.com` | `sqs:SendMessage` (also dead-letter queues), `sns:Publish`, `lambda:InvokeFunction` | rule ARN |
+| API Gateway REST and HTTP API | `apigateway.amazonaws.com` | `lambda:InvokeFunction` | `arn:aws:execute-api:<region>:<account>:<api-id>/<stage>/<METHOD>/<path>` |
+
+`aws:SourceAccount` is the source resource's account. `aws:PrincipalServiceName` is the principal.
+The API Gateway path is the resource path as configured (`/pets/{id}`), or `$default` for the HTTP API
+default route. `aws:SecureTransport` is `true`.
+
+Only the target's resource policy decides: no identity policy, permissions boundary or session policy applies,
+and the owner's account gets no default, so a target without a statement that allows the service denies it.
+`Principal` may be `{"Service": "sns.amazonaws.com"}` (as `lambda add-permission --principal
+sns.amazonaws.com --source-arn ...` writes), `"*"` or `{"AWS": "*"}`; account and IAM principals never match a
+service. An explicit Deny wins, and a Deny with a condition TinyStack cannot evaluate applies. Cross-account
+deliveries are decided by the target's policy alone.
+
+Soft mode delivers anyway and records the check, with a `would deny:` message, in `/_tinystack/requests` and the
+console inspector under method `DELIVER`. Enforce mode fails the delivery as follows:
+
+- SNS to SQS or Lambda: the delivery fails and the delivery log shows it; `Publish` still succeeds.
+- S3 notifications: `PutBucketNotificationConfiguration` fails with `InvalidArgument` ("Unable to validate the
+  following destination configurations") unless `SkipDestinationValidation` is set, and later deliveries are denied.
+- EventBridge: the target invocation fails with `AccessDenied` and takes the existing dead-letter queue path;
+  the dead-letter queue's own policy must allow the rule. Targets with a `RoleArn` are invoked as that role
+  and are not checked.
+- API Gateway: `500 {"message": "Internal server error"}` for REST APIs and
+  `500 {"message":"Internal Server Error"}` for HTTP APIs. REST integrations with a `Credentials` role are
+  not checked.
+
+Deliveries by Scheduler, Pipes, Step Functions, IoT rules and Firehose are role-based in AWS, and CloudWatch alarm
+actions, Logs subscriptions, load balancer Lambda targets, Lambda destinations, event source mappings
+and Lambda authorizers are not checked.
 
 ## IAM policy simulation
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -327,7 +328,11 @@ func (s *Service) deliver(
 			return err
 		}
 
-		err = s.functions.InvokeAsync(ctx, sub.Endpoint, event)
+		err = s.authorize(ctx, envelope.TopicArn, sub.Endpoint)
+		if err == nil {
+			err = s.functions.InvokeAsync(ctx, sub.Endpoint, event)
+		}
+
 		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, event, err)
 		return nil
 	}
@@ -351,9 +356,23 @@ func (s *Service) deliver(
 		entry.MessageGroupId, entry.MessageDeduplicationId = &placed.Group, &placed.Dedup
 	}
 
-	err := s.queues.Deliver(ctx, sub.Endpoint, entry)
+	err := s.authorize(ctx, envelope.TopicArn, sub.Endpoint)
+	if err == nil {
+		err = s.queues.Deliver(ctx, sub.Endpoint, entry)
+	}
+
 	s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(body), err)
 	return nil
+}
+
+// authorize checks that the subscribed queue's or function's resource policy lets the topic deliver to it.
+func (s *Service) authorize(ctx context.Context, topicARN, target string) error {
+	return s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
+		Principal:     "sns.amazonaws.com",
+		SourceARN:     topicARN,
+		SourceAccount: strings.Split(topicARN, ":")[4],
+		Target:        target,
+	})
 }
 
 // forLambda renders the notification as a Lambda event carries it.

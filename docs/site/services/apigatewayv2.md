@@ -21,7 +21,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-http-apis) for 
 
 ## Limitations and future work
 
-- API Gateway invokes Lambda in-process and bypasses Lambda resource policies.
+- Lambda authorizer invocations bypass the function's resource policy.
 - WebSocket APIs are not implemented.
 - No VPC links, parameter mappings, throttling, caching or authorizer caching.
 - Only the selected HTTP API management members are supported.

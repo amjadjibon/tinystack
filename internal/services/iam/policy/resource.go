@@ -23,6 +23,9 @@ func EvaluateResource(
 	return evaluate([]Document{document}, action, resource, context, principal)
 }
 
+// principalService is the Principal key that names AWS services.
+const principalService = "Service"
+
 // principalMatches reports whether the Principal element names the caller, and
 // whether it does so only through the caller's account (delegated).
 func principalMatches(raw json.RawMessage, principal *request.Principal) (matched, delegated bool, err error) {
@@ -36,8 +39,9 @@ func principalMatches(raw json.RawMessage, principal *request.Principal) (matche
 	}
 
 	direct, account := false, false
+	service := principal.Kind == request.PrincipalService
 	for kind, raw := range entries {
-		if kind != "AWS" && kind != "Service" {
+		if kind != "AWS" && kind != principalService {
 			return false, false, fmt.Errorf("unsupported Principal %s", kind)
 		}
 
@@ -51,8 +55,10 @@ func principalMatches(raw json.RawMessage, principal *request.Principal) (matche
 				return false, false, fmt.Errorf("unsupported Principal %s", name)
 			}
 
-			// In-process service deliveries bypass the gateway.
-			if kind == "Service" {
+			// A service principal is named only by Service, or by anyone ("*"); never by an IAM identity.
+			if kind == principalService || service {
+				named := kind == principalService && name == principal.Name
+				direct = direct || (service && (named || name == "*"))
 				continue
 			}
 

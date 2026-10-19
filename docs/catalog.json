@@ -121,12 +121,13 @@
         "Presigned requests, bucket CORS and notifications to SQS, SNS, Lambda and EventBridge",
         "Bucket lifecycle and encryption configuration are stored",
         "AWS-style console for scoped bucket creation, empty/delete, folder and object browsing, uploads/downloads/copies, version deletion, object tags and bucket configuration",
-        "Bucket policies participate in gateway soft/enforce authorization, including cross-account bucket/object access and owning-root policy recovery"
+        "Bucket policies participate in gateway soft/enforce authorization, including cross-account bucket/object access and owning-root policy recovery",
+        "With authorization on, notification destinations (SQS, SNS, Lambda) need their resource policy to allow s3.amazonaws.com for the bucket (aws:SourceArn, aws:SourceAccount); enforce mode fails PutBucketNotificationConfiguration with InvalidArgument, unless SkipDestinationValidation is set, and denies later deliveries, while soft mode records the denied check"
       ],
       "gaps": [
         "Lifecycle rules do not expire or transition objects",
         "Encryption settings are metadata; objects are not encrypted as an AWS S3 data plane would encrypt them, and writes asking for aws:kms are accepted and stored like AES256 objects (aws:kms:dsse is rejected)",
-        "No website endpoint, POST uploads or general ACL evaluation; resource policies do not govern in-process reads or deliveries",
+        "No website endpoint, POST uploads or general ACL evaluation; resource policies do not govern in-process reads",
         "Generated in-process PutObject/UploadPart byte-slice shapes, in-process reads (e.g. Lambda runtime Object() helper), and console download and preview buffers still buffer bytes in memory",
         "Verify-mode SigV4 authentication spools upload payloads to temporary files only when verifying signed hexadecimal or empty payload hashes; UNSIGNED-PAYLOAD, supported unsigned-trailer forms (STREAMING-UNSIGNED-PAYLOAD-TRAILER), and usual presigned S3 uploads stream without that spool",
         "Signed aws-chunked payloads (STREAMING-AWS4-HMAC-SHA256-*) remain unsupported and return NotImplemented",
@@ -203,10 +204,11 @@
         "Dead-letter queues and message move tasks",
         "AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management",
         "PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard",
-        "Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery"
+        "Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery",
+        "With authorization on, SNS, S3 notification and EventBridge deliveries (including target dead-letter queues) need the queue policy to allow the service principal, matching aws:SourceArn and aws:SourceAccount; enforce mode drops a denied delivery and soft mode records it in the request inspector"
       ],
       "gaps": [
-        "No throughput enforcement; in-process SNS, S3 notification and EventBridge deliveries bypass queue-policy authorization",
+        "No throughput enforcement",
         "No message groups on standard queues or FIFO message move tasks",
         "DeleteQueue does not enforce the AWS name-reuse delay",
         "Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained",
@@ -226,12 +228,13 @@
         "Email and SMS deliveries are recorded for inspection",
         "AWS-style console with account/Region-scoped standard and FIFO topic creation, display names, deduplication, policies and tags; subscription lists and details, endpoint selection, confirmation and deletion, raw delivery and attribute/body filters; message publishing and topic-specific delivery inspection",
         "Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens",
-        "Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery"
+        "Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery",
+        "With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue and Publish still succeeds"
       ],
       "gaps": [
         "Email and SMS are recorded, not sent to providers",
         "No mobile application or Firehose subscriptions, delivery retries or message signatures",
-        "SQS/Lambda subscription endpoints must belong to the subscriber's account; in-process S3/EventBridge to SNS and SNS to SQS/Lambda deliveries bypass gateway policies",
+        "SQS/Lambda subscription endpoints must belong to the subscriber's account",
         "In verify mode, console management requires an authenticated root console session; without a session topic/subscription inventory and delivery history remain available"
       ],
       "execution": "Local behavior",
@@ -248,11 +251,12 @@
         "Scheduled rules, durable retry records and SQS dead-letter queues",
         "Archives and synchronous replay",
         "AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection",
-        "Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management"
+        "Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management",
+        "With authorization on, SQS, SNS and Lambda targets without a role, and dead-letter queues, need their resource policy to allow events.amazonaws.com with the rule as aws:SourceArn; enforce mode fails the invocation into the existing retry and dead-letter path with AccessDenied, soft mode records the denied check"
       ],
       "gaps": [
         "No partner buses, cross-region bus references, event-bus targets or additional target service families",
-        "Organization conditions and unsupported IAM policy elements are rejected; in-process deliveries and archive/replay management do not evaluate bus policies",
+        "Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies, and targets with a RoleArn are invoked as that role without checking the target's resource policy",
         "Replays run synchronously and cannot be cancelled",
         "Cron does not support L, W or #",
         "Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests",
@@ -276,7 +280,8 @@
         "No delivery retries; a failed run goes directly to its dead-letter queue",
         "Flexible windows do not delay execution",
         "ECS, SageMaker and CodeBuild templated targets are unsupported",
-        "KMS key ARNs are stored without customer-managed encryption"
+        "KMS key ARNs are stored without customer-managed encryption",
+        "Deliveries to queues, topics and functions use the service's role in AWS and are not checked against the target's resource policy"
       ],
       "execution": "Local behavior",
       "package": "scheduler"
@@ -310,7 +315,8 @@
       "gaps": [
         "Only S3 destinations are implemented",
         "No HTTP, Redshift, OpenSearch, Splunk, Snowflake or Iceberg destinations",
-        "No MSK/database sources, dynamic partitioning, format conversion, encryption or S3 backup behavior"
+        "No MSK/database sources, dynamic partitioning, format conversion, encryption or S3 backup behavior",
+        "Deliveries use the stream's role in AWS and are not checked against the destination's resource policy"
       ],
       "execution": "Local behavior",
       "package": "firehose"
@@ -330,7 +336,8 @@
         "Resource policies, function URLs and concurrency settings",
         "Logs flow into CloudWatch Logs; tests use an in-process fake runtime",
         "AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, DynamoDB stream connections from table pages, SNS subscriptions, paginated CloudWatch logs, and function URL management for $LATEST and aliases with automatic public permissions for NONE URLs",
-        "Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution"
+        "Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution",
+        "With authorization on, SNS, S3 notification, EventBridge and API Gateway Lambda proxy invocations need the function policy (such as AddPermission with a service Principal, SourceArn and SourceAccount) to allow the service principal"
       ],
       "gaps": [
         "Local execution is not a sandbox and does not enforce memory or emulate CPU architectures; host interpreter version mismatches warn once and run locally",
@@ -338,7 +345,7 @@
         "Docker hot reload mounts /var/task read-only and fingerprints metadata; local hot reload hashes contents and runs the host directory with normal user permissions",
         "Hot reload does not support image packages, live layers, symlinks or special files; published versions retain a live directory reference rather than a code snapshot",
         "Provisioned concurrency does not pre-start environments",
-        "In-process S3/SNS/EventBridge/SQS and stream deliveries bypass function policies; SourceArn/SourceAccount conditions are absent on ordinary API requests; PrincipalOrgID and EventSourceToken conditions are unsupported",
+        "Destinations, event source mappings and other role-based invocations bypass function policies; SourceArn/SourceAccount conditions are absent on ordinary API requests; PrincipalOrgID and EventSourceToken conditions are unsupported",
         "No ImageConfig or event sources beyond the three implemented families",
         "Asynchronous work in flight is lost on restart",
         "Console ZIP uploads and test events are limited to 1 MiB; larger deployment packages can be copied from S3",
@@ -348,7 +355,7 @@
       ],
       "execution": "Local processes or Docker runtime",
       "package": "lambda",
-      "guide": "When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM function URLs evaluate the stored resource policy through the gateway. Each alias/version uses its own policy; an unqualified grant does not grant access to a qualified ARN. Cross-account requests name the full function ARN and require both identity and resource Allow. URL calls need lambda:InvokeFunctionUrl and lambda:InvokeFunction (with lambda:FunctionUrlAuthType and lambda:InvokedViaFunctionUrl), and NONE URLs need a public function policy grant. In-process deliveries bypass policies, including SourceArn/SourceAccount conditions."
+      "guide": "When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM function URLs evaluate the stored resource policy through the gateway. Each alias/version uses its own policy; an unqualified grant does not grant access to a qualified ARN. Cross-account requests name the full function ARN and require both identity and resource Allow. URL calls need lambda:InvokeFunctionUrl and lambda:InvokeFunction (with lambda:FunctionUrlAuthType and lambda:InvokedViaFunctionUrl), and NONE URLs need a public function policy grant. SNS, S3, EventBridge and API Gateway invocations are decided by the function policy alone for their service principal, using aws:SourceArn and aws:SourceAccount; destinations and event source mappings still bypass it."
     },
     "ec2": {
       "title": "EC2",
@@ -464,10 +471,11 @@
         "Lambda and HTTP proxy execution through gateway data routes",
         "Lambda and Cognito authorizers, API keys and usage plan metadata",
         "Custom domains, base path mappings and access logs",
-        "AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing"
+        "AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing",
+        "With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode"
       ],
       "gaps": [
-        "API Gateway invokes Lambda in-process and bypasses Lambda resource policies",
+        "Lambda authorizer invocations bypass the function's resource policy",
         "No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation",
         "Throttling, quotas, caching, canaries and authorizer caching are not enforced",
         "No mutual TLS or import/export; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them",
@@ -487,10 +495,11 @@
         "API, route, integration, deployment, stage and authorizer CRUD",
         "Auto-deploy stages and Lambda proxy payload formats 1.0 and 2.0",
         "HTTP forwarding, JWT and Lambda authorizers, access logs",
-        "AWS-style console for scoped HTTP API creation and CORS settings, routes, Lambda/HTTP integrations, JWT/Lambda authorizers, auto/manual stages, deployment snapshots, API/stage tags, and explicit deployed-stage request testing"
+        "AWS-style console for scoped HTTP API creation and CORS settings, routes, Lambda/HTTP integrations, JWT/Lambda authorizers, auto/manual stages, deployment snapshots, API/stage tags, and explicit deployed-stage request testing",
+        "With authorization on, Lambda proxy integrations need the function policy to allow apigateway.amazonaws.com with the route's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal Server Error in enforce mode and is recorded in soft mode"
       ],
       "gaps": [
-        "API Gateway invokes Lambda in-process and bypasses Lambda resource policies",
+        "Lambda authorizer invocations bypass the function's resource policy",
         "WebSocket APIs are not implemented",
         "No VPC links, parameter mappings, throttling, caching or authorizer caching",
         "Only the selected HTTP API management members are supported",
@@ -535,7 +544,8 @@
         "No Gateway load balancers or real raw TCP/UDP forwarding",
         "HTTPS listener metadata is served over plain HTTP; no TLS termination",
         "No health probes, stickiness, authenticate actions, access-log delivery or capacity reservations",
-        "EC2 record targets cannot run applications"
+        "EC2 record targets cannot run applications",
+        "Lambda targets are invoked without checking the function policy"
       ],
       "execution": "HTTP data plane",
       "package": "elbv2"
@@ -785,7 +795,8 @@
         "Production ingestion, retention scheduling and scale limits are not reproduced",
         "Unselected log-management APIs are unsupported",
         "Verify mode exposes group/stream inventory; event reads, queries and management require signed CLI/SDK requests",
-        "Subscription and metric filters use the AWS API rather than console forms"
+        "Subscription and metric filters use the AWS API rather than console forms",
+        "Subscription filters invoking Lambda are not checked against the function policy"
       ],
       "execution": "Local behavior",
       "package": "logs"
@@ -812,7 +823,8 @@
         "Verify mode exposes alarm and dashboard inventory; metric reads, configurations and management require signed CLI/SDK requests",
         "Console graphs support up to ten selected metrics and 10,000 data points; partial results require a narrower range or larger period",
         "Dashboard previews support metric queries and plain text, with up to ten queries and one Region per metric widget; other widget types and layout remain in source",
-        "Dashboards are scoped by account and Region locally; CloudWatch requests use the AWS signing name monitoring"
+        "Dashboards are scoped by account and Region locally; CloudWatch requests use the AWS signing name monitoring",
+        "Alarm actions publishing to SNS are not checked against the topic policy"
       ],
       "execution": "Local behavior",
       "package": "cloudwatch"
@@ -857,7 +869,8 @@
         "Running executions abort after restart; activity queues and task tokens are in memory",
         "Express execution results are not retained; console results last until leaving or reloading the page",
         "Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console management requires an authenticated root console session",
-        "Reset does not stop executions already running"
+        "Reset does not stop executions already running",
+        "Deliveries to queues, topics and functions use the service's role in AWS and are not checked against the target's resource policy"
       ],
       "execution": "Local behavior",
       "package": "sfn"
@@ -923,7 +936,8 @@
         "No billing/dynamic groups, certificate transfers, CA auto-registration, continuous jobs or job rollout/retry/scheduling settings",
         "Fleet SearchIndex scans local records; no aggregations, Device Defender or geolocation",
         "MQTT session/in-flight state stays in memory; retained messages persist",
-        "Reset keeps connected MQTT clients and the broker's in-memory session state"
+        "Reset keeps connected MQTT clients and the broker's in-memory session state",
+        "Topic rule actions use the rule's role in AWS and are not checked against the target's resource policy"
       ],
       "execution": "MQTT broker / local APIs",
       "package": "iot"
@@ -1031,7 +1045,8 @@
         "AT_TIMESTAMP starting positions, log configuration and KMS keys are not supported",
         "Only Lambda enrichments; API destination and HTTP enrichment parameters are not supported",
         "JSON paths in EventBridge target parameters and [*] wildcards in templates are not supported",
-        "Role ARNs are checked for shape only; IAM policies are not evaluated"
+        "Role ARNs are checked for shape only; IAM policies are not evaluated",
+        "Deliveries to queues, topics and functions use the service's role in AWS and are not checked against the target's resource policy"
       ],
       "execution": "Local behavior",
       "package": "pipes"

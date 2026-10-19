@@ -194,3 +194,28 @@ func InputPathStrings(input any, path string) []string {
 	walk(reflect.ValueOf(input), parts)
 	return out
 }
+
+// ServiceDelivery is one in-process delivery by an AWS service to a resource in another service, such as SNS
+// writing to a queue. AWS lets the delivery through only if the resource's policy allows the service principal.
+type ServiceDelivery struct {
+	// Principal is the delivering service, such as "sns.amazonaws.com".
+	Principal string
+	// SourceARN and SourceAccount name the resource that delivers and its account, which policies match with
+	// aws:SourceArn and aws:SourceAccount. SourceAccount is empty where AWS sends none.
+	SourceARN, SourceAccount string
+	// Target is the ARN of the queue, topic, or function delivered to.
+	Target string
+}
+
+// ServiceAuthorizer checks a delivery against its target's resource policy once identity.authorization is on.
+// It fails the delivery in enforce mode and only records the decision in soft mode.
+type ServiceAuthorizer func(context.Context, ServiceDelivery) error
+
+// Authorize allows every delivery until the app hands the service an authorizer.
+func (a ServiceAuthorizer) Authorize(ctx context.Context, d ServiceDelivery) error {
+	if a == nil {
+		return nil
+	}
+
+	return a(ctx, d)
+}

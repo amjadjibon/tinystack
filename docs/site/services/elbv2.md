@@ -25,6 +25,7 @@ See the [implemented feature catalogue](catalogue.md#elastic-load-balancing-v2) 
 - HTTPS listener metadata is served over plain HTTP; no TLS termination.
 - No health probes, stickiness, authenticate actions, access-log delivery or capacity reservations.
 - EC2 record targets cannot run applications.
+- Lambda targets are invoked without checking the function policy.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

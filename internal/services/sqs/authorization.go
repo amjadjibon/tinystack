@@ -63,7 +63,31 @@ func (s *Service) AuthorizationResources(
 		return nil, nil
 	}
 
-	target := catalog.AuthorizationResource{
+	target, _, err := s.queueResource(ctx, key)
+	return []catalog.AuthorizationResource{target}, err
+}
+
+// DeliveryResource describes the queue another service delivers to, with its access policy. A queue that does not
+// exist has no owner, which leaves the delivery to fail on its own.
+func (s *Service) DeliveryResource(ctx context.Context, queueARN string) (catalog.AuthorizationResource, error) {
+	key, ok := arnKey(queueARN)
+	if !ok {
+		return catalog.AuthorizationResource{}, invalid("%s is not an SQS queue ARN.", queueARN)
+	}
+
+	target, exists, err := s.queueResource(ctx, key)
+	if !exists {
+		target.OwnerAccount = ""
+	}
+
+	return target, err
+}
+
+func (s *Service) queueResource(
+	ctx context.Context,
+	key string,
+) (target catalog.AuthorizationResource, exists bool, err error) {
+	target = catalog.AuthorizationResource{
 		ARN:          keyARN(key),
 		TagsKnown:    true,
 		OwnerAccount: strings.SplitN(key, "/", 2)[0],
@@ -72,11 +96,12 @@ func (s *Service) AuthorizationResources(
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		q, _, readErr := storage.Read[queue](tx, key)
 		if q != nil {
+			exists = true
 			target.Tags = common.CloneTags(q.Tags)
 			target.Policy = q.Settings.Policy
 		}
 
 		return readErr
 	})
-	return []catalog.AuthorizationResource{target}, err
+	return target, exists, err
 }

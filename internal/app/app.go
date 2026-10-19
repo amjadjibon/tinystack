@@ -610,6 +610,15 @@ func build(
 	handler.UseCredentials(tokens.Credentials)
 	configureShell(handler, tokens)
 	handler.UseAuthorization(roles.Authorization)
+	// Deliveries from one service to another need the target's resource policy to allow the service.
+	handler.UseDeliveryTargets(map[string]gateway.DeliveryTarget{
+		"sqs": queues.DeliveryResource, "sns": topics.DeliveryResource, "lambda": functions.DeliveryResource,
+	})
+	topics.UseServiceAuthorizer(handler.AuthorizeService)
+	buckets.UseServiceAuthorizer(handler.AuthorizeService)
+	rules.UseServiceAuthorizer(handler.AuthorizeService)
+	restAPIs.UseServiceAuthorizer(handler.AuthorizeService)
+	httpAPIs.UseServiceAuthorizer(handler.AuthorizeService)
 	handler.UseInstanceProfiles(roles.InstanceProfileOf)
 	if cfg.Identity.Mode == config.IdentityVerify {
 		// Web identity tokens must carry a valid signature of their issuer, or of

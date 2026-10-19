@@ -57,6 +57,7 @@ type Server struct {
 	console          map[string]http.Handler
 	credentials      CredentialLookup
 	policies         PolicyLookup
+	deliveryTargets  map[string]DeliveryTarget
 	instanceProfiles func(context.Context, string, string) (iam.InstanceProfile, bool, error)
 	hosted           *cognitoidp.Service
 	documents        Documents

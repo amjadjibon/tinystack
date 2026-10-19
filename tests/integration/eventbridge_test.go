@@ -344,6 +344,21 @@ func eventBridgeDeliversScenario(t *testing.T, enforce bool) {
 		t.Fatal(err)
 	}
 
+	if enforce {
+		for _, target := range []string{whole, detail, fifo, *topic.TopicArn, *fn.FunctionArn} {
+			allowDelivery(
+				t,
+				s,
+				"test",
+				target,
+				"events.amazonaws.com",
+				"arn:aws:events:us-east-1:000000000000:rule/orders",
+			)
+		}
+
+		allowDelivery(t, s, "test", topicInbox, "sns.amazonaws.com", *topic.TopicArn)
+	}
+
 	// A disabled rule does not deliver.
 	putRule(t, c, "muted", `{"source":["shop"]}`)
 	_, err = c.PutTargets(ctx, &eventbridge.PutTargetsInput{

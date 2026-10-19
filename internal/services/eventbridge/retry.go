@@ -151,7 +151,7 @@ func deliveryContext(ctx context.Context, scope request.Scope, d *pending) conte
 // attempt delivers d once, acting in scope, and records it in the delivery
 // log.
 func (s *Service) attempt(ctx context.Context, scope request.Scope, d *pending) error {
-	err := s.send(deliveryContext(ctx, scope, d), &d.Target, d.EventID, []byte(d.Payload))
+	err := s.send(deliveryContext(ctx, scope, d), d.Rule, &d.Target, d.EventID, []byte(d.Payload))
 	s.deliveries.Add(delivery.ViaEventBridge, d.Rule, d.Target.ARN, []byte(d.Payload), err)
 	return err
 }
@@ -210,14 +210,15 @@ func (s *Service) discard(ctx context.Context, key string, d *pending, condition
 		attributes["EXHAUSTED_RETRY_CONDITION"] = stringAttribute(condition)
 	}
 
-	err := s.queues.Deliver(
-		deliveryContext(ctx, retryScope(key), d),
-		d.Target.DeadLetterARN,
-		&sqsapi.SendMessageBatchRequestEntry{
+	ctx = deliveryContext(ctx, retryScope(key), d)
+	err := s.authorize(ctx, d.Rule, d.Target.DeadLetterARN)
+	if err == nil {
+		err = s.queues.Deliver(ctx, d.Target.DeadLetterARN, &sqsapi.SendMessageBatchRequestEntry{
 			MessageBody:       new(d.Payload),
 			MessageAttributes: attributes,
-		},
-	)
+		})
+	}
+
 	s.deliveries.Add(delivery.ViaEventBridge, d.Rule, d.Target.DeadLetterARN, []byte(d.Payload), err)
 }
 

@@ -13,6 +13,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -139,6 +140,13 @@ func matchMethod(
 // methodARN is the ARN authorizer policies name the request by.
 func (c *call) methodARN() string {
 	return execute.APIResource(c.scope, *c.api.API.Id, *c.stage.StageName, c.req.Method, c.path).ARN
+}
+
+// integrationARN is the ARN of the method that invokes a function, as function policies name it in aws:SourceArn:
+// the resource's path as configured, not as requested.
+func (c *call) integrationARN() string {
+	path := common.Value(c.resource.Path)
+	return execute.APIResource(c.scope, *c.api.API.Id, *c.stage.StageName, c.req.Method, path).ARN
 }
 
 // identityValue reads an identity source such as method.request.header.Authorization.
@@ -368,7 +376,22 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 	}
 
 	arn, _ := proxy.LambdaARN(uri)
-	out, functionError, err := s.invoke(ctx, c, arn, event, timeout)
+	var out []byte
+	var functionError bool
+	// A role invokes the function as that role; otherwise the function's policy must allow API Gateway.
+	if common.Value(i.Credentials) == "" {
+		err = s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
+			Principal:     "apigateway.amazonaws.com",
+			SourceARN:     c.integrationARN(),
+			SourceAccount: c.scope.AccountID,
+			Target:        arn,
+		})
+	}
+
+	if err == nil {
+		out, functionError, err = s.invoke(ctx, c, arn, event, timeout)
+	}
+
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
 		c.integrationError = "timed out"

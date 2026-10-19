@@ -27,6 +27,7 @@ See the [implemented feature catalogue](catalogue.md#step-functions) for this se
 - Express execution results are not retained; console results last until leaving or reloading the page.
 - Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console management requires an authenticated root console session.
 - Reset does not stop executions already running.
+- Deliveries to queues, topics and functions use the service's role in AWS and are not checked against the target's resource policy.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

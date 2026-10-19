@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -401,6 +402,18 @@ func authorizerResult(payload []byte, simple bool, routeARN string) (allowed boo
 	return common.Value(out.IsAuthorized), out.Context, out.IsAuthorized != nil
 }
 
+// integrationARN is the ARN of the route that invokes a function, as function policies name it in aws:SourceArn:
+// the route's path as configured, not as requested.
+func (c *call) integrationARN() string {
+	method, route := c.req.Method, common.Value(c.route.RouteKey)
+	if route == defaultRoute {
+		method = defaultRoute
+	}
+
+	_, path, _ := strings.Cut(route, " ")
+	return execute.APIResource(c.scope, *c.api.ApiId, *c.stage.StageName, method, path).ARN
+}
+
 func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
 	domain := c.req.Host
 	if i := strings.IndexByte(domain, ':'); i >= 0 {
@@ -480,7 +493,19 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 	}
 
 	arn, _ := proxy.LambdaARN(uri)
-	out, functionError, err := s.invoke(ctx, c, arn, event, timeout)
+	// The function's resource policy must allow API Gateway: HTTP API integrations cannot name a role.
+	err = s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
+		Principal:     "apigateway.amazonaws.com",
+		SourceARN:     c.integrationARN(),
+		SourceAccount: c.scope.AccountID,
+		Target:        arn,
+	})
+	var out []byte
+	var functionError bool
+	if err == nil {
+		out, functionError, err = s.invoke(ctx, c, arn, event, timeout)
+	}
+
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
 		c.integrationError = "timed out"

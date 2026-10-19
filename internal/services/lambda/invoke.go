@@ -370,17 +370,23 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 	}
 }
 
+// functionOfARN resolves the function, version, or alias a full ARN names in its own account and Region.
+func functionOfARN(arn string) (m request.Metadata, name, qualifier string, err error) {
+	parts := strings.Split(arn, ":")
+	if len(parts) < 7 || parts[0] != "arn" || parts[2] != "lambda" || !accountID.MatchString(parts[4]) {
+		return m, "", "", invalid("%s is not a Lambda function ARN", arn)
+	}
+
+	m = request.Metadata{Scope: request.Scope{AccountID: parts[4], Region: parts[3]}}
+	name, qualifier, err = resolveName(&m, arn)
+	return m, name, qualifier, err
+}
+
 // InvokeAsync queues an asynchronous invocation of the function, version, or
 // alias named by arn, as an Event invocation does. Other services, such as
 // SNS, call it in-process instead of going through HTTP.
 func (s *Service) InvokeAsync(ctx context.Context, arn string, payload []byte) error {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 7 || parts[0] != "arn" || parts[2] != "lambda" || !accountID.MatchString(parts[4]) {
-		return invalid("%s is not a Lambda function ARN", arn)
-	}
-
-	m := request.Metadata{Scope: request.Scope{AccountID: parts[4], Region: parts[3]}}
-	name, q, err := resolveName(&m, arn)
+	m, name, q, err := functionOfARN(arn)
 	if err != nil {
 		return err
 	}

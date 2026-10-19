@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
@@ -270,16 +271,22 @@ func (s *Service) validateDestinations(
 
 	var failed []string
 	for _, d := range destinations(cfg) {
-		var sendErr error
-		switch strings.SplitN(d.arn, ":", 4)[2] {
-		case serviceSQS:
-			sendErr = s.queues.Deliver(ctx, d.arn, &sqsapi.SendMessageBatchRequestEntry{MessageBody: new(string(test))})
-		case serviceSNS:
-			_, sendErr = s.topics.Publish(ctx, &snsapi.PublishInput{
-				TopicArn: new(d.arn), Message: new(string(test)), Subject: new(notificationSubject),
-			})
-		default:
-			_, sendErr = s.functions.GetFunction(ctx, &lambdaapi.GetFunctionRequest{FunctionName: new(d.arn)})
+		sendErr := s.authorize(ctx, bucket, m.AccountID, d.arn)
+		if sendErr == nil {
+			switch strings.SplitN(d.arn, ":", 4)[2] {
+			case serviceSQS:
+				sendErr = s.queues.Deliver(
+					ctx,
+					d.arn,
+					&sqsapi.SendMessageBatchRequestEntry{MessageBody: new(string(test))},
+				)
+			case serviceSNS:
+				_, sendErr = s.topics.Publish(ctx, &snsapi.PublishInput{
+					TopicArn: new(d.arn), Message: new(string(test)), Subject: new(notificationSubject),
+				})
+			default:
+				_, sendErr = s.functions.GetFunction(ctx, &lambdaapi.GetFunctionRequest{FunctionName: new(d.arn)})
+			}
 		}
 
 		if sendErr != nil {
@@ -374,6 +381,10 @@ func (s *Service) notify(ctx context.Context, m request.Metadata, cfg *api.Notif
 
 		payload, err := s.record(m, e, common.Value(d.id), sequencer, now)
 		if err == nil {
+			err = s.authorize(ctx, e.bucket, m.AccountID, d.arn)
+		}
+
+		if err == nil {
 			switch strings.SplitN(d.arn, ":", 4)[2] {
 			case serviceSQS:
 				err = s.queues.Deliver(
@@ -407,6 +418,13 @@ func (s *Service) notify(ctx context.Context, m request.Metadata, cfg *api.Notif
 		s.deliveries.Add(delivery.ViaS3, source, "arn:aws:events:"+m.Region+":"+m.AccountID+":event-bus/default",
 			detail, err)
 	}
+}
+
+// authorize checks that the destination's resource policy lets the bucket's notifications through.
+func (s *Service) authorize(ctx context.Context, bucket, account, target string) error {
+	return s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
+		Principal: "s3.amazonaws.com", SourceARN: "arn:aws:s3:::" + bucket, SourceAccount: account, Target: target,
+	})
 }
 
 // record is the S3 event message a queue, topic, or function receives.

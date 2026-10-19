@@ -279,6 +279,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 - Logs flow into CloudWatch Logs; tests use an in-process fake runtime.
 - AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, DynamoDB stream connections from table pages, SNS subscriptions, paginated CloudWatch logs, and function URL management for $LATEST and aliases with automatic public permissions for NONE URLs.
 - Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution.
+- With authorization on, SNS, S3 notification, EventBridge and API Gateway Lambda proxy invocations need the function policy (such as AddPermission with a service Principal, SourceArn and SourceAccount) to allow the service principal.
 
 [Supported operations](lambda.md#supported-operations) · [Limitations](lambda.md#limitations-and-future-work)
 
@@ -1051,6 +1052,7 @@ Route events through local buses, patterns, rules, schedules, archives, and repl
 - Archives and synchronous replay.
 - AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection.
 - Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management.
+- With authorization on, SQS, SNS and Lambda targets without a role, and dead-letter queues, need their resource policy to allow events.amazonaws.com with the rule as aws:SourceArn; enforce mode fails the invocation into the existing retry and dead-letter path with AccessDenied, soft mode records the denied check.
 
 [Supported operations](eventbridge.md#supported-operations) · [Limitations](eventbridge.md#limitations-and-future-work)
 
@@ -1109,6 +1111,7 @@ Publish messages to local queues and functions, or confirmed HTTP subscriptions.
 - AWS-style console with account/Region-scoped standard and FIFO topic creation, display names, deduplication, policies and tags; subscription lists and details, endpoint selection, confirmation and deletion, raw delivery and attribute/body filters; message publishing and topic-specific delivery inspection.
 - Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens.
 - Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery.
+- With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue and Publish still succeeds.
 
 [Supported operations](sns.md#supported-operations) · [Limitations](sns.md#limitations-and-future-work)
 
@@ -1126,6 +1129,7 @@ Use queues with visibility timeouts, long polling, FIFO ordering, and dead-lette
 - AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management.
 - PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard.
 - Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery.
+- With authorization on, SNS, S3 notification and EventBridge deliveries (including target dead-letter queues) need the queue policy to allow the service principal, matching aws:SourceArn and aws:SourceAccount; enforce mode drops a denied delivery and soft mode records it in the request inspector.
 
 [Supported operations](sqs.md#supported-operations) · [Limitations](sqs.md#limitations-and-future-work)
 
@@ -1159,6 +1163,7 @@ Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT aut
 - Auto-deploy stages and Lambda proxy payload formats 1.0 and 2.0.
 - HTTP forwarding, JWT and Lambda authorizers, access logs.
 - AWS-style console for scoped HTTP API creation and CORS settings, routes, Lambda/HTTP integrations, JWT/Lambda authorizers, auto/manual stages, deployment snapshots, API/stage tags, and explicit deployed-stage request testing.
+- With authorization on, Lambda proxy integrations need the function policy to allow apigateway.amazonaws.com with the route's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal Server Error in enforce mode and is recorded in soft mode.
 
 [Supported operations](apigatewayv2.md#supported-operations) · [Limitations](apigatewayv2.md#limitations-and-future-work)
 
@@ -1175,6 +1180,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 - Lambda and Cognito authorizers, API keys and usage plan metadata.
 - Custom domains, base path mappings and access logs.
 - AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing.
+- With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode.
 
 [Supported operations](apigateway.md#supported-operations) · [Limitations](apigateway.md#limitations-and-future-work)
 
@@ -1443,6 +1449,7 @@ Store object metadata in the shared store and object/version/multipart bytes in 
 - Bucket lifecycle and encryption configuration are stored.
 - AWS-style console for scoped bucket creation, empty/delete, folder and object browsing, uploads/downloads/copies, version deletion, object tags and bucket configuration.
 - Bucket policies participate in gateway soft/enforce authorization, including cross-account bucket/object access and owning-root policy recovery.
+- With authorization on, notification destinations (SQS, SNS, Lambda) need their resource policy to allow s3.amazonaws.com for the bucket (aws:SourceArn, aws:SourceAccount); enforce mode fails PutBucketNotificationConfiguration with InvalidArgument, unless SkipDestinationValidation is set, and denies later deliveries, while soft mode records the denied check.
 
 [Supported operations](s3.md#supported-operations) · [Limitations](s3.md#limitations-and-future-work)
 

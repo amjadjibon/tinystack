@@ -389,14 +389,23 @@ func TestSNSResourcePolicyDeliveryEnforced(t *testing.T) {
 		TopicArn: topic.TopicArn, Protocol: new("lambda"), Endpoint: function.FunctionArn,
 	})
 	mustAuthorize(t, err)
+	allowService(t, s, "delivery-policy", "sns.amazonaws.com", *topic.TopicArn)
+	// Services deliver by their own principals: the policies deny every caller but them.
 	_, err = topics.SetTopicAttributes(ctx, &sns.SetTopicAttributesInput{
 		TopicArn: topic.TopicArn, AttributeName: new("Policy"),
-		AttributeValue: new(`{"Statement":{"Effect":"Deny","Principal":"*","Action":"sns:Publish","Resource":"*"}}`),
+		AttributeValue: new(`{"Statement":[
+			{"Effect":"Allow","Principal":{"Service":["s3.amazonaws.com","events.amazonaws.com"]},
+			"Action":"sns:Publish","Resource":"*"},
+			{"Effect":"Deny","Principal":"*","Action":"sns:Publish","Resource":"*",
+			"Condition":{"Null":{"aws:PrincipalServiceName":"true"}}}]}`),
 	})
 	mustAuthorize(t, err)
 	_, err = queues.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
 		QueueUrl: &queueURL, Attributes: map[string]string{
-			"Policy": `{"Statement":{"Effect":"Deny","Principal":"*","Action":"sqs:SendMessage","Resource":"*"}}`,
+			"Policy": `{"Statement":[
+				{"Effect":"Allow","Principal":{"Service":"sns.amazonaws.com"},"Action":"sqs:SendMessage","Resource":"*"},
+				{"Effect":"Deny","Principal":"*","Action":"sqs:SendMessage","Resource":"*",
+				"Condition":{"Null":{"aws:PrincipalServiceName":"true"}}}]}`,
 		},
 	})
 	mustAuthorize(t, err)

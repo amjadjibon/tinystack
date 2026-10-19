@@ -47,8 +47,24 @@ func (s *Service) AuthorizationResources(
 		return nil, err
 	}
 
+	target, err := s.topicResource(ctx, key, ref)
+	return []catalog.AuthorizationResource{target}, err
+}
+
+// DeliveryResource describes the topic another service publishes to, with its access policy. A topic that does not
+// exist has no owner, which leaves the delivery to fail on its own.
+func (s *Service) DeliveryResource(ctx context.Context, topicARN string) (catalog.AuthorizationResource, error) {
+	key, err := topicKeyOf(&topicARN)
+	if err != nil {
+		return catalog.AuthorizationResource{}, err
+	}
+
+	return s.topicResource(ctx, key, topicARN)
+}
+
+func (s *Service) topicResource(ctx context.Context, key, ref string) (catalog.AuthorizationResource, error) {
 	target := catalog.AuthorizationResource{ARN: ref, TagsKnown: true}
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		topic, _, readErr := storage.Read[topic](tx, key)
 		if topic != nil {
 			target.Tags = common.CloneTags(topic.Tags)
@@ -58,5 +74,5 @@ func (s *Service) AuthorizationResources(
 
 		return readErr
 	})
-	return []catalog.AuthorizationResource{target}, err
+	return target, err
 }

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -49,11 +50,14 @@ type Service struct {
 	blobErr error
 	// queues, topics, functions, and events receive bucket notifications,
 	// which deliveries records.
-	queues         *sqs.Service
-	topics         *sns.Service
-	functions      *lambda.Service
-	events         *eventbridge.Service
-	deliveries     *delivery.Log
+	queues     *sqs.Service
+	topics     *sns.Service
+	functions  *lambda.Service
+	events     *eventbridge.Service
+	deliveries *delivery.Log
+	// authorizer checks notifications to queues, topics, and functions against their resource policies;
+	// see UseServiceAuthorizer.
+	authorizer     catalog.ServiceAuthorizer
 	now            func() time.Time
 	maxObjectBytes int64
 }
@@ -399,6 +403,12 @@ func (s *Service) ListBuckets(ctx context.Context, in *api.ListBucketsRequest) (
 
 // UseMaxObjectBytes sets the upload and completed-object bound configured by the app.
 func (s *Service) UseMaxObjectBytes(limit int64) { s.maxObjectBytes = limit }
+
+// UseServiceAuthorizer makes notifications require the destination's resource policy to allow s3.amazonaws.com.
+// Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // Stop collects orphan files, closes the facility and removes its temporary directory in memory mode.
 func (s *Service) Stop() {

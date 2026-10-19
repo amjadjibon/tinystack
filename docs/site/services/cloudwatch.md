@@ -31,6 +31,7 @@ See the [implemented feature catalogue](catalogue.md#cloudwatch-metrics-and-alar
 - Console graphs support up to ten selected metrics and 10,000 data points; partial results require a narrower range or larger period.
 - Dashboard previews support metric queries and plain text, with up to ten queries and one Region per metric widget; other widget types and layout remain in source.
 - Dashboards are scoped by account and Region locally; CloudWatch requests use the AWS signing name monitoring.
+- Alarm actions publishing to SNS are not checked against the topic policy.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

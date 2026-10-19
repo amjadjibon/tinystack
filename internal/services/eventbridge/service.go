@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -54,6 +55,9 @@ type Service struct {
 	deliveries *delivery.Log
 	logger     *slog.Logger
 	now        func() time.Time
+	// authorizer checks deliveries to queues, topics, and functions against their resource policies;
+	// see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
 	// bg runs the scheduler until Stop.
 	bg *background.Group
 }
@@ -83,6 +87,12 @@ func New(
 
 // Stop ends the scheduler and waits for it. Later calls return at once.
 func (s *Service) Stop() { s.bg.Stop() }
+
+// UseServiceAuthorizer makes deliveries to targets without a role require the target's resource policy to allow
+// events.amazonaws.com. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 type target struct {
 	Transformer *transformer `json:",omitempty"`

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -52,12 +53,21 @@ type Service struct {
 	logs      *logs.Service
 	verifier  *proxy.Verifier
 	now       func() time.Time
+	// authorizer checks Lambda proxy integrations against the function's resource policy;
+	// see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
 }
 
 func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service) *Service {
 	return &Service{
 		store: store, functions: functions, logs: logGroups, verifier: proxy.NewVerifier(), now: time.Now,
 	}
+}
+
+// UseServiceAuthorizer makes Lambda proxy integrations require the function's resource policy to allow
+// apigateway.amazonaws.com. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
 }
 
 func badRequest(format string, args ...any) error {

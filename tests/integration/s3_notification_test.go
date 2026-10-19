@@ -113,6 +113,21 @@ func s3NotificationsScenario(t *testing.T, enforce bool) {
 		return err
 	}
 
+	if enforce {
+		for _, target := range []string{uploadsARN, *function.FunctionArn} {
+			allowDelivery(t, s, "test", target, "s3.amazonaws.com", "arn:aws:s3:::photos")
+		}
+
+		allowDelivery(
+			t,
+			s,
+			"test",
+			eventsARN,
+			"events.amazonaws.com",
+			"arn:aws:events:us-east-1:000000000000:rule/photos",
+		)
+	}
+
 	cfg := &s3types.NotificationConfiguration{
 		QueueConfigurations: []s3types.QueueConfiguration{{
 			Id:       aws.String("raw-uploads"),

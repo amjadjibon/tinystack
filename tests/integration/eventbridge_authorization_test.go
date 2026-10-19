@@ -125,6 +125,14 @@ func TestEventBridgeCrossAccountPublication(t *testing.T) {
 		Rule: new("orders"), EventBusName: &arn, Targets: []ebtypes.Target{{Id: new("queue"), Arn: &queue}},
 	})
 	mustAuthorize(t, err)
+	allowDelivery(
+		t,
+		s,
+		"other",
+		queue,
+		"events.amazonaws.com",
+		"arn:aws:events:us-east-1:222222222222:rule/shared/orders",
+	)
 	_, err = root.CreateArchive(
 		ctx,
 		&eventbridge.CreateArchiveInput{ArchiveName: new("received"), EventSourceArn: &arn},
@@ -449,6 +457,7 @@ func TestEventBridgeBatchBusOwners(t *testing.T) {
 			Rule: new("shared"), EventBusName: new("shared"), Targets: []ebtypes.Target{{Id: new("q"), Arn: &queue}},
 		})
 		mustAuthorize(t, err)
+		allowDelivery(t, s, owner, queue, "events.amazonaws.com", "arn:aws:events:us-east-1:*:rule/shared/shared")
 		_, err = c.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
 			ArchiveName: new("shared"), EventSourceArn: created.EventBusArn,
 		})

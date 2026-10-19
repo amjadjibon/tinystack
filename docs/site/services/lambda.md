@@ -19,7 +19,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 
 See the [implemented feature catalogue](catalogue.md#lambda) for this service's capabilities.
 
-When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM function URLs evaluate the stored resource policy through the gateway. Each alias/version uses its own policy; an unqualified grant does not grant access to a qualified ARN. Cross-account requests name the full function ARN and require both identity and resource Allow. URL calls need lambda:InvokeFunctionUrl and lambda:InvokeFunction (with lambda:FunctionUrlAuthType and lambda:InvokedViaFunctionUrl), and NONE URLs need a public function policy grant. In-process deliveries bypass policies, including SourceArn/SourceAccount conditions.
+When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM function URLs evaluate the stored resource policy through the gateway. Each alias/version uses its own policy; an unqualified grant does not grant access to a qualified ARN. Cross-account requests name the full function ARN and require both identity and resource Allow. URL calls need lambda:InvokeFunctionUrl and lambda:InvokeFunction (with lambda:FunctionUrlAuthType and lambda:InvokedViaFunctionUrl), and NONE URLs need a public function policy grant. SNS, S3, EventBridge and API Gateway invocations are decided by the function policy alone for their service principal, using aws:SourceArn and aws:SourceAccount; destinations and event source mappings still bypass it.
 
 ## Limitations and future work
 
@@ -28,7 +28,7 @@ When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM funct
 - Docker hot reload mounts /var/task read-only and fingerprints metadata; local hot reload hashes contents and runs the host directory with normal user permissions.
 - Hot reload does not support image packages, live layers, symlinks or special files; published versions retain a live directory reference rather than a code snapshot.
 - Provisioned concurrency does not pre-start environments.
-- In-process S3/SNS/EventBridge/SQS and stream deliveries bypass function policies; SourceArn/SourceAccount conditions are absent on ordinary API requests; PrincipalOrgID and EventSourceToken conditions are unsupported.
+- Destinations, event source mappings and other role-based invocations bypass function policies; SourceArn/SourceAccount conditions are absent on ordinary API requests; PrincipalOrgID and EventSourceToken conditions are unsupported.
 - No ImageConfig or event sources beyond the three implemented families.
 - Asynchronous work in flight is lost on restart.
 - Console ZIP uploads and test events are limited to 1 MiB; larger deployment packages can be copied from S3.

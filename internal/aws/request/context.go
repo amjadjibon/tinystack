@@ -55,6 +55,9 @@ const (
 	PrincipalRoot = "root"
 	// PrincipalAnonymous is a caller that is not authenticated: only resource policies can allow it.
 	PrincipalAnonymous = "anonymous"
+	// PrincipalService is an AWS service acting on a resource through a delivery, such as SNS writing to a queue.
+	// Name is its service principal, such as "sns.amazonaws.com"; only resource policies can allow it.
+	PrincipalService = "service"
 )
 
 // Credentials are what an access key that TinyStack issued stands for:

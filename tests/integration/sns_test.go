@@ -213,6 +213,11 @@ func sNSDeliversToSQSScenario(t *testing.T, enforce bool) {
 		t.Fatal(err)
 	}
 
+	if enforce {
+		allowDelivery(t, s, "test", envelopeARN, "sns.amazonaws.com", *topic.TopicArn)
+		allowDelivery(t, s, "test", rawARN, "sns.amazonaws.com", *topic.TopicArn)
+	}
+
 	// A subscription to a deleted queue does not fail Publish.
 	goneURL, goneARN := queueARN(t, q, "gone")
 	if _, err = c.Subscribe(ctx, &sns.SubscribeInput{

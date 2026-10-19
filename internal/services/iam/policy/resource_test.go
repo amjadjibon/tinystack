@@ -114,3 +114,73 @@ func TestResourceValidationAndConditions(t *testing.T) {
 		t.Fatal("source conditions did not match")
 	}
 }
+
+func TestResourceServicePrincipals(t *testing.T) {
+	service := &request.Principal{Kind: request.PrincipalService, Name: "sns.amazonaws.com"}
+	context := Context{Values: map[string][]string{
+		"aws:SourceArn":            {"arn:aws:sns:us-east-1:123456789012:orders"},
+		"aws:SourceAccount":        {"123456789012"},
+		"aws:PrincipalServiceName": {"sns.amazonaws.com"},
+	}}
+
+	for _, test := range []struct {
+		name      string
+		statement string
+		allow     bool
+		deny      bool
+	}{
+		{"named", `"Effect":"Allow","Principal":{"Service":"sns.amazonaws.com"}`, true, false},
+		{"listed", `"Effect":"Allow","Principal":{"Service":["events.amazonaws.com","sns.amazonaws.com"]}`, true, false},
+		{"other service", `"Effect":"Allow","Principal":{"Service":"events.amazonaws.com"}`, false, false},
+		{"anyone", `"Effect":"Allow","Principal":"*"`, true, false},
+		{"any AWS", `"Effect":"Allow","Principal":{"AWS":"*"}`, true, false},
+		{"account", `"Effect":"Allow","Principal":{"AWS":"123456789012"}`, false, false},
+		{"account root", `"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::123456789012:root"}`, false, false},
+		{"user", `"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::123456789012:user/alice"}`, false, false},
+		{
+			"source arn holds", `"Effect":"Allow","Principal":{"Service":"sns.amazonaws.com"},` +
+				`"Condition":{"ArnEquals":{"aws:SourceArn":"arn:aws:sns:us-east-1:123456789012:orders"}}`,
+			true, false,
+		},
+		{
+			"source arn differs", `"Effect":"Allow","Principal":{"Service":"sns.amazonaws.com"},` +
+				`"Condition":{"ArnEquals":{"aws:SourceArn":"arn:aws:sns:us-east-1:123456789012:other"}}`,
+			false, false,
+		},
+		{
+			"source account holds", `"Effect":"Allow","Principal":"*",` +
+				`"Condition":{"StringEquals":{"aws:SourceAccount":"123456789012"}}`,
+			true, false,
+		},
+		{
+			"service name holds", `"Effect":"Allow","Principal":"*",` +
+				`"Condition":{"StringEquals":{"aws:PrincipalServiceName":"sns.amazonaws.com"}}`,
+			true, false,
+		},
+		{"explicit deny", `"Effect":"Deny","Principal":{"Service":"sns.amazonaws.com"}`, false, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			doc := `{"Statement":{` + test.statement + `,"Action":"sqs:SendMessage","Resource":"*"}}`
+			if err := ValidateResource(doc); err != nil {
+				t.Fatal(err)
+			}
+
+			got := EvaluateResource(Document{JSON: doc}, "sqs:SendMessage", "*", context, service)
+			if got.Allowed != test.allow || got.ExplicitDeny != test.deny || len(got.Unsupported) > 0 {
+				t.Fatalf("got %+v", got)
+			}
+		})
+	}
+}
+
+func TestResourceServiceDenyFailsClosed(t *testing.T) {
+	service := &request.Principal{Kind: request.PrincipalService, Name: "sns.amazonaws.com"}
+	doc := `{"Statement":[` +
+		`{"Effect":"Allow","Principal":"*","Action":"sqs:SendMessage","Resource":"*"},` +
+		`{"Effect":"Deny","Principal":"*","Action":"sqs:SendMessage","Resource":"*",` +
+		`"Condition":{"StringEquals":{"aws:Unsupported":"x"}}}]}`
+	got := EvaluateResource(Document{JSON: doc}, "sqs:SendMessage", "*", Context{}, service)
+	if got.Allowed || !got.ExplicitDeny || len(got.Unsupported) == 0 {
+		t.Fatalf("got %+v", got)
+	}
+}

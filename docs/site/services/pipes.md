@@ -27,6 +27,7 @@ See the [implemented feature catalogue](catalogue.md#eventbridge-pipes) for this
 - Only Lambda enrichments; API destination and HTTP enrichment parameters are not supported.
 - JSON paths in EventBridge target parameters and [*] wildcards in templates are not supported.
 - Role ARNs are checked for shape only; IAM policies are not evaluated.
+- Deliveries to queues, topics and functions use the service's role in AWS and are not checked against the target's resource policy.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

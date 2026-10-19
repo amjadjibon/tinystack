@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -48,6 +49,8 @@ type Service struct {
 	functions  *lambda.Service
 	deliveries *delivery.Log
 	now        func() time.Time
+	// authorizer checks deliveries to queues and functions against their resource policies; see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
 	// bg runs HTTP deliveries until Stop.
 	bg *background.Group
 }
@@ -62,6 +65,12 @@ func New(store storage.Store, queues *sqs.Service, functions *lambda.Service, de
 
 // Stop cancels HTTP deliveries in flight and waits for them to end.
 func (s *Service) Stop() { s.bg.Stop() }
+
+// UseServiceAuthorizer makes deliveries to SQS queues and Lambda functions require the target's resource policy to
+// allow sns.amazonaws.com. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // subscription is a topic's subscription. SQS and Lambda subscriptions are
 // confirmed immediately, as AWS does for resources in the subscriber's

@@ -62,6 +62,7 @@ func iamExecutionAPI(t *testing.T, s *httptest.Server, kind string) string {
 
 		_, err = c.CreateDeployment(ctx, &restapi.CreateDeploymentInput{RestApiId: api.Id, StageName: new("v1")})
 		mustAuthorize(t, err)
+		allowService(t, s, "iam-events", "apigateway.amazonaws.com", executeSource(aws.ToString(api.Id)))
 		return aws.ToString(api.Id)
 	}
 
@@ -89,6 +90,7 @@ func iamExecutionAPI(t *testing.T, s *httptest.Server, kind string) string {
 		mustAuthorize(t, err)
 	}
 
+	allowService(t, s, "iam-events", "apigateway.amazonaws.com", executeSource(aws.ToString(api.ApiId)))
 	return aws.ToString(api.ApiId)
 }
 
