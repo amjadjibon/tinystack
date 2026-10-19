@@ -33,7 +33,7 @@ When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM funct
 - Asynchronous work in flight is lost on restart.
 - Console ZIP uploads and test events are limited to 1 MiB; larger deployment packages can be copied from S3.
 - In identity.mode: verify the console shows function and trigger inventory; management, invocation and log reads require signed CLI/SDK requests.
-- Console manages $LATEST; versions, aliases, layers, concurrency and function URLs use the AWS API.
+- Console manages $LATEST; versions, aliases, layers and concurrency use the AWS API.
 - Reset ends event source mapping pollers and removes warm execution environments; asynchronous invocations already running can still write records back.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)

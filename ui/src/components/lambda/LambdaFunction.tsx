@@ -39,6 +39,7 @@ import { LambdaLogs } from "./LambdaLogs";
 import { LambdaSettings } from "./LambdaSettings";
 import { LambdaTest } from "./LambdaTest";
 import { LambdaTriggers } from "./LambdaTriggers";
+import { LambdaUrls } from "./LambdaUrls";
 
 export function LambdaFunction({
 	scope,
@@ -431,6 +432,19 @@ export function LambdaFunction({
 									resources={resources}
 									enabled={enabled && !!config.FunctionName}
 									snsEnabled={snsEnabled && !!config.FunctionName}
+									loading={loading}
+									onRefresh={onRefresh}
+									onChanged={(message) => refresh(message)}
+								/>
+							),
+						},
+						{
+							id: "urls",
+							label: "Function URL",
+							content: (
+								<LambdaUrls
+									scope={scope}
+									enabled={enabled && !!config.FunctionName}
 									loading={loading}
 									onRefresh={onRefresh}
 									onChanged={(message) => refresh(message)}

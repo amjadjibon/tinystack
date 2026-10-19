@@ -165,6 +165,9 @@ var consoleLambdaOperations = strings.Fields(`
 	CreateEventSourceMapping GetEventSourceMapping ListEventSourceMappings
 	UpdateEventSourceMapping DeleteEventSourceMapping
 	ListTags TagResource UntagResource
+	CreateFunctionUrlConfig GetFunctionUrlConfig UpdateFunctionUrlConfig
+	DeleteFunctionUrlConfig ListFunctionUrlConfigs
+	AddPermission GetPolicy RemovePermission
 `)
 
 var consoleLogsOperations = strings.Fields(`

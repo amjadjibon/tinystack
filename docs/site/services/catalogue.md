@@ -277,7 +277,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 - SQS, DynamoDB Streams and Kinesis event source mappings.
 - Resource policies, function URLs and concurrency settings.
 - Logs flow into CloudWatch Logs; tests use an in-process fake runtime.
-- AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, DynamoDB stream connections from table pages, SNS subscriptions and paginated CloudWatch logs.
+- AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, DynamoDB stream connections from table pages, SNS subscriptions, paginated CloudWatch logs, and function URL management for $LATEST and aliases with automatic public permissions for NONE URLs.
 - Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution.
 
 [Supported operations](lambda.md#supported-operations) · [Limitations](lambda.md#limitations-and-future-work)
