@@ -15,6 +15,7 @@ import (
 	emrapi "github.com/amjadjibon/tinystack/internal/aws/generated/emrserverless"
 	eventsapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
+	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	lakeapi "github.com/amjadjibon/tinystack/internal/aws/generated/lakeformation"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
@@ -86,6 +87,16 @@ func TestPassedRoleInputs(t *testing.T) {
 		{
 			"eks", "CreateFargateProfile", "eks.amazonaws.com",
 			&eksapi.CreateFargateProfileRequest{PodExecutionRoleArn: new(role)},
+			[]string{role},
+		},
+		{
+			"iot", "CreateRoleAlias", "iot.amazonaws.com",
+			&iotapi.CreateRoleAliasRequest{RoleArn: new(role)},
+			[]string{role},
+		},
+		{
+			"iot", "UpdateRoleAlias", "iot.amazonaws.com",
+			&iotapi.UpdateRoleAliasRequest{RoleArn: new(role)},
 			[]string{role},
 		},
 		{"iam", "AddRoleToInstanceProfile", "", nil, nil},

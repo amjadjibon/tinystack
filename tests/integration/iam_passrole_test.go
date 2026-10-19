@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	ebtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/iot"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
@@ -435,5 +436,54 @@ func TestIAMPassRolePrimaryDenied(t *testing.T) {
 	wantCode(t, err, "AccessDeniedException")
 	if strings.Contains(err.Error(), "iam:PassRole") || !strings.Contains(err.Error(), "ecs:RegisterTaskDefinition") {
 		t.Fatal(err)
+	}
+}
+
+// The IoT API's PassRole condition differs from the credentials provider's trust principal.
+func TestIAMPassRoleIoTRoleAlias(t *testing.T) {
+	for _, operation := range []string{"CreateRoleAlias", "UpdateRoleAlias"} {
+		t.Run(operation, func(t *testing.T) {
+			for _, principal := range []string{"iot.amazonaws.com", "credentials.iot.amazonaws.com"} {
+				t.Run(principal, func(t *testing.T) {
+					s := authorizationServer(t, config.AuthorizationEnforce, true)
+					key := authorizationUser(t, s)
+					authorizationPolicy(t, s, passRoleDocument(
+						`{"Effect":"Allow","Action":"iot:*","Resource":"*"}`, passRoleAllow(principal),
+					))
+					ctx := context.Background()
+					if operation == "UpdateRoleAlias" {
+						_, err := iotClient(s, "test").CreateRoleAlias(ctx, &iot.CreateRoleAliasInput{
+							RoleAlias: new("passed"), RoleArn: new(passedRoleARN),
+						})
+						mustAuthorize(t, err)
+					}
+
+					client := iot.New(iot.Options{
+						Region: "us-east-1", BaseEndpoint: new(s.URL),
+						Credentials: authorizationProvider(key), Retryer: aws.NopRetryer{},
+					})
+					var err error
+					if operation == "CreateRoleAlias" {
+						_, err = client.CreateRoleAlias(ctx, &iot.CreateRoleAliasInput{
+							RoleAlias: new("passed"), RoleArn: new(passedRoleARN),
+						})
+					} else {
+						_, err = client.UpdateRoleAlias(ctx, &iot.UpdateRoleAliasInput{
+							RoleAlias: new("passed"), RoleArn: new(passedRoleARN),
+						})
+					}
+
+					if principal == "iot.amazonaws.com" {
+						mustAuthorize(t, err)
+					} else {
+						wantCode(t, err, "AccessDeniedException")
+						if !strings.Contains(err.Error(), "iam:PassRole") ||
+							!strings.Contains(err.Error(), passedRoleARN) {
+							t.Fatal(err)
+						}
+					}
+				})
+			}
+		})
 	}
 }

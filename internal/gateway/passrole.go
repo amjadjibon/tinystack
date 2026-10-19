@@ -28,6 +28,7 @@ const (
 	ec2ServicePrincipal      = "ec2.amazonaws.com"
 	ecsTasksServicePrincipal = "ecs-tasks.amazonaws.com"
 	eksServicePrincipal      = "eks.amazonaws.com"
+	iotServicePrincipal      = "iot.amazonaws.com"
 )
 
 type passedRoleInput struct {
@@ -273,17 +274,19 @@ var passedRoleInputs = map[string][]passedRoleInput{
 	"iot": {
 		{
 			operations: []string{"CreateRoleAlias", "UpdateRoleAlias"},
-			principal:  "credentials.iot.amazonaws.com",
-			paths:      []string{inputRoleARN},
+			// PassRole uses IoT, while the role trust policy uses credentials.iot.amazonaws.com.
+			// https://docs.aws.amazon.com/service-authorization/latest/reference/list_iot.html
+			principal: iotServicePrincipal,
+			paths:     []string{inputRoleARN},
 		},
 		{
 			operations: []string{"CreateProvisioningTemplate", "UpdateProvisioningTemplate"},
-			principal:  "iot.amazonaws.com",
+			principal:  iotServicePrincipal,
 			paths:      []string{"ProvisioningRoleArn"},
 		},
 		{
 			operations: []string{"CreateTopicRule", "ReplaceTopicRule"},
-			principal:  "iot.amazonaws.com",
+			principal:  iotServicePrincipal,
 			paths: []string{
 				"TopicRulePayload.Actions.DynamoDB.RoleArn",
 				"TopicRulePayload.Actions.DynamoDBv2.RoleArn",

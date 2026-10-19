@@ -139,6 +139,16 @@ permissions-boundary and session-policy intersection as the primary action; an e
 layer wins. Resource policies cannot grant PassRole. `iam:PassedToService` is set only for these checks,
 using the consuming service principal, such as `lambda.amazonaws.com`, `ecs-tasks.amazonaws.com`,
 `states.amazonaws.com`, `events.amazonaws.com`, `ec2.amazonaws.com` or `cloudformation.amazonaws.com`.
+For IoT role aliases, this condition is `iot.amazonaws.com`, even though the credentials provider's
+role trust principal is `credentials.iot.amazonaws.com` (see the
+[AWS IoT authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_iot.html)).
+EKS `CreateNodegroup` uses `eks.amazonaws.com` (see the
+[EKS authorization reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_eks.html)).
+Cognito user pool group roles are consumed through identity pools, so the registry uses
+`cognito-identity.amazonaws.com`; AWS documents the
+[group role flow](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html)
+and the [identity pool condition](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonESCognitoAccess.html),
+but does not explicitly list the condition value for `CreateGroup` or `UpdateGroup`.
 
 The shared registry in `internal/gateway/passrole.go` lists the exact input paths. The covered operations are:
 
