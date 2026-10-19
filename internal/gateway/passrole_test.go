@@ -104,7 +104,8 @@ func TestPassedRoleInputs(t *testing.T) {
 	} {
 		t.Run(test.service+"/"+test.operation, func(t *testing.T) {
 			server := &Server{}
-			targets, err := server.passedRoles(t.Context(), test.service, test.operation, test.input)
+			ctx := request.WithMetadata(t.Context(), request.Metadata{AccountID: "000000000000"})
+			targets, err := server.passedRoles(ctx, test.service, test.operation, test.input)
 			if err != nil {
 				t.Fatal(err)
 			}

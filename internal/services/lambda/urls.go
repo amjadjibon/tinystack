@@ -12,6 +12,7 @@ import (
 	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -144,6 +145,15 @@ func urlFunction(tx storage.ReadTx, m *request.Metadata, raw, qualifier *string)
 }
 
 // urlARN is the function ARN a URL configuration reports.
+// urlQualifier is the policy qualifier of a URL's function: unqualified for $LATEST.
+func urlQualifier(qualifier string) string {
+	if qualifier == latest {
+		return ""
+	}
+
+	return qualifier
+}
+
 func urlARN(scope request.Scope, name, qualifier string) string {
 	if qualifier == latest {
 		return functionARN(scope, name)
@@ -477,6 +487,8 @@ func (h urls) Execute(ctx context.Context, id string, r *execute.Request) (*exec
 	s := h.s
 	var target urlTarget
 	var u functionURL
+	var fn *function
+	var policyDocument []byte
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		found, readErr := readJSON(tx, urlIndex+id, &target)
 		if readErr != nil || !found {
@@ -484,7 +496,12 @@ func (h urls) Execute(ctx context.Context, id string, r *execute.Request) (*exec
 		}
 
 		scope := request.Scope{AccountID: target.Account, Region: target.Region}
-		_, readErr = readJSON(tx, urlKey(scope, target.Name, target.Qualifier), &u)
+		if _, readErr = readJSON(tx, urlKey(scope, target.Name, target.Qualifier), &u); readErr != nil {
+			return readErr
+		}
+
+		policyDocument, _ = tx.Get(policyKey(scope, target.Name, urlQualifier(target.Qualifier)))
+		fn, _, readErr = loadFunction(tx, scope.Key("lambda", "function", target.Name))
 		return readErr
 	})
 	if err != nil || target.Name == "" {
@@ -503,11 +520,32 @@ func (h urls) Execute(ctx context.Context, id string, r *execute.Request) (*exec
 		}, true, nil
 	}
 
-	if u.AuthType == authIAM && r.Authorize != nil {
-		arn := urlARN(request.Scope{AccountID: target.Account, Region: target.Region}, target.Name, target.Qualifier)
-		if authErr := r.Authorize(ctx, "lambda", "InvokeFunctionUrl", &api.GetFunctionRequest{
-			FunctionName: new(arn),
-		}); authErr != nil {
+	// As in AWS, a URL call needs lambda:InvokeFunctionUrl and lambda:InvokeFunction. NONE URLs are
+	// anonymous, so the function's policy must grant them; AWS_IAM callers also use identity policies.
+	if r.AuthorizeTarget != nil {
+		identity := execute.Anonymous
+		if u.AuthType == authIAM {
+			identity = execute.Signed
+		}
+
+		scope := request.Scope{AccountID: target.Account, Region: target.Region}
+		var targets []catalog.AuthorizationResource
+		for _, action := range []string{"lambda:InvokeFunctionUrl", "lambda:InvokeFunction"} {
+			resource := catalog.AuthorizationResource{
+				Action: action, ARN: urlARN(scope, target.Name, target.Qualifier), OwnerAccount: target.Account,
+				Policy: string(policyDocument), TagsKnown: true,
+				Values: map[string][]string{
+					"lambda:functionurlauthtype": {u.AuthType}, "lambda:invokedviafunctionurl": {"true"},
+				},
+			}
+			if fn != nil {
+				resource.Tags = common.CloneTags(fn.Tags)
+			}
+
+			targets = append(targets, resource)
+		}
+
+		if authErr := r.AuthorizeTarget(ctx, identity, targets...); authErr != nil {
 			return execute.Message(http.StatusForbidden, authErr.Error()), true, nil
 		}
 	}

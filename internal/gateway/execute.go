@@ -23,10 +23,7 @@ const maxExecuteBody = 10 << 20
 // bucket name, so the path never names one).
 const executePath = "/_aws/execute-api/"
 
-const (
-	executeService = "execute-api"
-	executeInvoke  = "Invoke"
-)
+const executeService = "execute-api"
 
 // UseAPIs serves the APIs that API Gateway services run: requests to
 // <API ID>.execute-api.<host> (such as abc123.execute-api.localhost:4566 or
@@ -254,38 +251,21 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 	}()
 
 	req.Caller = s.caller(w, r)
-	req.Authorize = func(ctx context.Context, service, action string, input any) error {
-		c := &call{service: s.services[service], meta: request.Metadata{
-			Scope:   request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
-			Service: service, Protocol: catalog.RESTJSON,
-		}}
-		if _, identifyErr := s.identify(r, &c.meta); identifyErr != nil {
-			return identifyErr
-		}
-
-		c.meta.Service = service
-
-		if credentialErr := s.resolveCredentials(ctx, c); credentialErr != nil {
-			return credentialErr
-		}
-
-		return s.authorize(ctx, r, c, &catalog.Operation{Name: action}, input)
-	}
-
 	req.AuthorizeTarget = func(
 		ctx context.Context,
-		target *catalog.AuthorizationResource,
 		identity execute.Identity,
+		targets ...catalog.AuthorizationResource,
 	) error {
+		service, operation, _ := strings.Cut(targets[0].Action, ":")
 		c := &call{
 			identity: identity,
 			service: &catalog.Service{
-				Name: executeService, SigningName: executeService,
-				Operations: map[string]catalog.Operation{executeInvoke: {Name: executeInvoke}},
+				Name: service, SigningName: service,
+				Operations: map[string]catalog.Operation{operation: {Name: operation}},
 			},
 			meta: request.Metadata{
 				Scope:   request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
-				Service: executeService, Operation: executeInvoke, Protocol: catalog.RESTJSON,
+				Service: service, Operation: operation, Protocol: catalog.RESTJSON,
 			},
 		}
 		executionCall = c
@@ -294,15 +274,15 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 				return err
 			}
 
-			c.meta.Service = executeService
+			c.meta.Service = service
 			if err := s.resolveCredentials(ctx, c); err != nil {
 				return err
 			}
 		}
 
 		return s.authorizeTargets(ctx, r, c, &catalog.Operation{
-			Name: executeInvoke, IAMAction: "execute-api:Invoke",
-		}, nil, []catalog.AuthorizationResource{*target})
+			Name: operation, IAMAction: targets[0].Action,
+		}, nil, targets)
 	}
 
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxExecuteBody))

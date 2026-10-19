@@ -98,11 +98,11 @@ func expandResource(resource, prefix string) string {
 }
 
 // invokeTarget is the execute-api:Invoke resource a request names, with the API's resource policy
-// when it has one. The API owner's account owns the policy.
+// when it has one.
 func (c *call) invokeTarget() catalog.AuthorizationResource {
 	target := execute.APIResource(c.scope, *c.api.API.Id, *c.stage.StageName, c.req.Method, c.path)
 	if c.hasPolicy() {
-		target.OwnerAccount, target.Policy, target.UnknownKeys = c.scope.AccountID, *c.api.API.Policy, vpcKeys
+		target.Policy, target.UnknownKeys = *c.api.API.Policy, vpcKeys
 	}
 
 	return target

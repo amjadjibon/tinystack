@@ -154,12 +154,15 @@ func evaluate(documents []Document, action, resource string, context Context, pr
 				continue
 			}
 
+			// What cannot be evaluated never grants, but a Deny it might belong to still applies:
+			// an Allow with an unsupported element is skipped, and a Deny is taken as matching.
 			expanded, problems := expand(resources, parsed.Version, &context)
 			if len(problems) > 0 {
 				for _, problem := range problems {
 					out.Unsupported = append(out.Unsupported, label+": "+problem)
 				}
 
+				out.ExplicitDeny = out.ExplicitDeny || st.Effect == effectDeny
 				continue
 			}
 
@@ -172,7 +175,12 @@ func evaluate(documents []Document, action, resource string, context Context, pr
 				out.Unsupported = append(out.Unsupported, label+": "+problem)
 			}
 
-			if !holds || len(problems) > 0 {
+			if len(problems) > 0 {
+				out.ExplicitDeny = out.ExplicitDeny || st.Effect == effectDeny
+				continue
+			}
+
+			if !holds {
 				continue
 			}
 
@@ -265,16 +273,24 @@ func expand(patterns []string, version string, context *Context) (expanded, unsu
 	var problems []string
 patterns:
 	for _, pattern := range patterns {
-		for strings.Contains(pattern, "${") {
-			start := strings.Index(pattern, "${")
-			end := strings.Index(pattern[start:], "}")
-			if end < 0 {
-				problems = append(problems, "malformed policy variable")
+		// One pass over the pattern: substituted values are literal, never expanded again.
+		var b strings.Builder
+		rest := pattern
+		for {
+			start := strings.Index(rest, "${")
+			if start < 0 {
+				b.WriteString(rest)
 				break
 			}
 
+			end := strings.Index(rest[start:], "}")
+			if end < 0 {
+				problems = append(problems, "malformed policy variable")
+				continue patterns
+			}
+
 			// Variable names, like condition keys, are case-insensitive.
-			variable := pattern[start+2 : start+end]
+			variable := rest[start+2 : start+end]
 			value := context.Values[strings.ToLower(variable)]
 			if context.Simulation && len(value) == 0 && strings.EqualFold(variable, usernameKey) {
 				context.missing[variable] = true
@@ -284,13 +300,15 @@ patterns:
 
 			if version != "2012-10-17" || !strings.EqualFold(variable, usernameKey) || len(value) != 1 {
 				problems = append(problems, "unsupported or absent policy variable "+variable)
-				break
+				continue patterns
 			}
 
-			pattern = pattern[:start] + value[0] + pattern[start+end+1:]
+			b.WriteString(rest[:start])
+			b.WriteString(value[0])
+			rest = rest[start+end+1:]
 		}
 
-		out = append(out, pattern)
+		out = append(out, b.String())
 	}
 
 	return out, problems
@@ -317,7 +335,8 @@ func (c *Context) known(key string) bool {
 	case usernameKey, "aws:userid", "aws:principalarn", "aws:principalaccount", "aws:sourceip",
 		"aws:currenttime", "aws:securetransport", "aws:requestedregion", "aws:sourcearn", "aws:sourceaccount",
 		"aws:sourceowner", "iam:passedtoservice", "events:source", "events:detail-type",
-		"events:eventbusinvocation", "events:creatoraccount", "events:targetarn":
+		"events:eventbusinvocation", "events:creatoraccount", "events:targetarn",
+		"lambda:functionurlauthtype", "lambda:invokedviafunctionurl":
 		return true
 	}
 

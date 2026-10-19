@@ -121,6 +121,13 @@ func (s *Service) AddPermission(
 		return nil, invalid("Action must be lambda:<operation>, lambda:*, or *")
 	case common.Value(in.Principal) == "":
 		return nil, invalid("Principal is required")
+	case in.FunctionUrlAuthType != nil && *in.FunctionUrlAuthType != authNone && *in.FunctionUrlAuthType != authIAM:
+		return nil, invalid("FunctionUrlAuthType must be NONE or AWS_IAM")
+	}
+
+	invokedViaURL := ""
+	if common.Value(in.InvokedViaFunctionUrl) {
+		invokedViaURL = "true"
 	}
 
 	var out string
@@ -160,6 +167,8 @@ func (s *Service) AddPermission(
 			{in.SourceAccount, stringEquals, "AWS:SourceAccount"},
 			{in.PrincipalOrgID, stringEquals, "aws:PrincipalOrgID"},
 			{in.EventSourceToken, stringEquals, "lambda:EventSourceToken"},
+			{in.FunctionUrlAuthType, stringEquals, "lambda:FunctionUrlAuthType"},
+			{&invokedViaURL, "Bool", "lambda:InvokedViaFunctionUrl"},
 		}
 		for _, c := range conditions {
 			if common.Value(c.value) == "" {

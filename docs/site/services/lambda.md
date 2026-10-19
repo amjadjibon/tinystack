@@ -19,7 +19,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 
 See the [implemented feature catalogue](catalogue.md#lambda) for this service's capabilities.
 
-When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM function URLs evaluate the stored resource policy through the gateway. Each alias/version uses its own policy; an unqualified grant does not grant access to a qualified ARN. Cross-account requests name the full function ARN and require both identity and resource Allow. NONE function URLs remain public. In-process deliveries bypass policies, including SourceArn/SourceAccount conditions.
+When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM function URLs evaluate the stored resource policy through the gateway. Each alias/version uses its own policy; an unqualified grant does not grant access to a qualified ARN. Cross-account requests name the full function ARN and require both identity and resource Allow. URL calls need lambda:InvokeFunctionUrl and lambda:InvokeFunction (with lambda:FunctionUrlAuthType and lambda:InvokedViaFunctionUrl), and NONE URLs need a public function policy grant. In-process deliveries bypass policies, including SourceArn/SourceAccount conditions.
 
 ## Limitations and future work
 

@@ -43,9 +43,10 @@ func TestLambdaSecretsResourcePolicies(t *testing.T) {
 					root := lambdaClient(s, owner)
 					fn, err := root.CreateFunction(ctx, &lambda.CreateFunctionInput{
 						FunctionName: new("policy"),
-						Role:         new("arn:aws:iam::000000000000:role/exec"),
-						Runtime:      lambdatypes.RuntimeNodejs20x,
-						Handler:      new("index.handler"),
+						// Roles are passed within their own account.
+						Role:    new("arn:aws:iam::" + cfg.Identity.Accounts[owner] + ":role/exec"),
+						Runtime: lambdatypes.RuntimeNodejs20x,
+						Handler: new("index.handler"),
 						Code: &lambdatypes.FunctionCode{
 							ZipFile: zipOf(t, "index.js", "exports.handler = async () => ({})"),
 						},
@@ -356,6 +357,17 @@ func TestLambdaURLResourcePolicy(t *testing.T) {
 		Action:      new("lambda:InvokeFunctionUrl"),
 	})
 	mustAuthorize(t, err)
+	if status := call(); status != http.StatusForbidden {
+		t.Fatalf("without lambda:InvokeFunction: %d", status)
+	}
+
+	_, err = root.AddPermission(ctx, &lambda.AddPermissionInput{
+		FunctionName: new("url-policy"), StatementId: new("invoke"),
+		Principal:             new("arn:aws:iam::000000000000:user/apps/alice"),
+		Action:                new("lambda:InvokeFunction"),
+		InvokedViaFunctionUrl: new(true),
+	})
+	mustAuthorize(t, err)
 	if status := call(); status != http.StatusCreated {
 		t.Fatalf("resource grant: %d", status)
 	}
@@ -371,6 +383,24 @@ func TestLambdaURLResourcePolicy(t *testing.T) {
 	})
 	mustAuthorize(t, err)
 	resp, _ := callURL(t, s.URL, *urlConfig.FunctionUrl, http.MethodGet, "/", nil)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("NONE URL without a public grant: %d", resp.StatusCode)
+	}
+
+	// The two statements AWS's console adds for a NONE URL.
+	for _, permission := range []*lambda.AddPermissionInput{
+		{
+			StatementId: new("public-url"), Action: new("lambda:InvokeFunctionUrl"),
+			FunctionUrlAuthType: lambdatypes.FunctionUrlAuthTypeNone,
+		},
+		{StatementId: new("public-invoke"), Action: new("lambda:InvokeFunction"), InvokedViaFunctionUrl: new(true)},
+	} {
+		permission.FunctionName, permission.Principal = new("url-policy"), new("*")
+		_, err = root.AddPermission(ctx, permission)
+		mustAuthorize(t, err)
+	}
+
+	resp, _ = callURL(t, s.URL, *urlConfig.FunctionUrl, http.MethodGet, "/", nil)
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("public URL: %d", resp.StatusCode)
 	}

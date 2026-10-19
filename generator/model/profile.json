@@ -14377,6 +14377,8 @@
         "Action",
         "Principal",
         "SourceArn",
+        "FunctionUrlAuthType",
+        "InvokedViaFunctionUrl",
         "SourceAccount",
         "EventSourceToken",
         "Qualifier",

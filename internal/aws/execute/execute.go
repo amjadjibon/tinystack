@@ -19,10 +19,9 @@ import (
 type Request struct {
 	// Caller is who signed the request with SigV4, if anyone did.
 	Caller *Caller
-	// Authorize applies gateway IAM checks to an execution endpoint's modeled resource.
-	Authorize func(context.Context, string, string, any) error
-	// AuthorizeTarget applies IAM and resource policy checks to an explicit execution resource.
-	AuthorizeTarget func(context.Context, *catalog.AuthorizationResource, Identity) error
+	// AuthorizeTarget applies IAM and resource policy checks to explicit execution resources,
+	// each naming its IAM action. The first target's action names the request in the inspector.
+	AuthorizeTarget func(context.Context, Identity, ...catalog.AuthorizationResource) error
 	Time            time.Time
 	Header          http.Header
 	Query           url.Values
@@ -132,8 +131,11 @@ func APIResource(scope request.Scope, apiID, stage, method, path string) catalog
 		resource = stage + "/$default"
 	}
 
+	// The owner is set even without a resource policy, so other accounts need both sides to allow.
 	return catalog.AuthorizationResource{
-		ARN: "arn:aws:execute-api:" + scope.Region + ":" + scope.AccountID + ":" + apiID + "/" + resource,
+		Action:       "execute-api:Invoke",
+		ARN:          "arn:aws:execute-api:" + scope.Region + ":" + scope.AccountID + ":" + apiID + "/" + resource,
+		OwnerAccount: scope.AccountID,
 	}
 }
 
@@ -155,7 +157,7 @@ func (r *Request) AuthorizePolicy(
 	target *catalog.AuthorizationResource,
 	identity Identity,
 ) *Response {
-	if r.AuthorizeTarget == nil || r.AuthorizeTarget(ctx, target, identity) == nil {
+	if r.AuthorizeTarget == nil || r.AuthorizeTarget(ctx, identity, *target) == nil {
 		return nil
 	}
 

@@ -88,8 +88,9 @@ and GetSessionToken retain AWS's permission-free authentication contract.
 Evaluation supports Allow/Deny, Action/NotAction, Resource/NotResource, `*` and `?`, and
 `${aws:username}` resource/string-condition variables in version `2012-10-17` policies. Explicit
 Deny wins; otherwise an Allow is required. Action matching is case insensitive; ARN/resource
-matching is case sensitive. Unsupported conditions never match, including in Deny statements,
-and are named in decision explanations.
+matching is case sensitive. A statement with an unsupported condition, key or variable never
+grants: an Allow is skipped, while a Deny whose action matches applies, so an unsupported construct
+can only narrow access. Both are named in decision explanations.
 
 Supported condition operators include StringEquals/NotEquals/Like/NotLike (and IgnoreCase),
 ArnEquals/Like and their negations, Bool, Null, Numeric and Date comparisons, IpAddress/NotIpAddress,
@@ -128,7 +129,7 @@ Deleting a mapped SSO role invalidates its old federated credentials, even if th
 MQTT and API Gateway/AppSync/function-URL execution endpoints retain their separate policy flows.
 
 Resource-based policies outside S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge, organization SCPs/RCPs,
-extended ABAC, Access Analyzer and policy simulator APIs are not implemented. Existing STS trust-policy evaluation remains separate. Dependent service permissions other than the
+extended ABAC and Access Analyzer are not implemented; the policy simulator APIs are described below. Existing STS trust-policy evaluation remains separate. Dependent service permissions other than the
 registered `iam:PassRole` checks below are not generally inferred.
 
 ### Passing roles to services
@@ -269,7 +270,12 @@ read the policy written by AddPermission/RemovePermission for exactly the reques
 Alias, published version and unqualified policies are independent; GetPolicy returns that same document.
 Full function ARNs and secret ARNs resolve the owning account during gateway authorization.
 
-AWS_IAM function URLs authorize lambda:InvokeFunctionUrl through this path; NONE URLs stay public.
+Function URL requests need both lambda:InvokeFunctionUrl and lambda:InvokeFunction, as AWS has required
+since October 2025, with `lambda:FunctionUrlAuthType` and `lambda:InvokedViaFunctionUrl` (`true`) in the
+request context. AddPermission's `FunctionUrlAuthType` and `InvokedViaFunctionUrl` write those conditions.
+AWS_IAM URLs combine identity and function policies like other function actions; NONE URLs are anonymous,
+so the function policy must grant both actions to `*`, as AWS's console does when it creates the URL
+([function URL access control](https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html)).
 SourceArn and SourceAccount permission parameters produce aws:SourceArn and aws:SourceAccount
 conditions. Ordinary API calls do not supply these keys. In-process S3/SNS/EventBridge/SQS event source
 mapping and stream deliveries continue to bypass function policies, so their source conditions are not enforced.

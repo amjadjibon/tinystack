@@ -224,14 +224,24 @@ func TestEvaluation(t *testing.T) {
 			action: "s3:GetObject", resource: "*", allow: false, deny: false, problem: "aws:Unknown",
 		},
 		{
-			name: "unsupported deny doesn't match", statement: `[{"Effect":"Allow",
+			name: "unsupported deny applies", statement: `[{"Effect":"Allow",
 "Action":"*",
 "Resource":"*"},
 {"Effect":"Deny",
 "Action":"*",
 "Resource":"*",
 "Condition":{"Unknown":{"aws:username":"alice"}}}]`,
-			action: "s3:GetObject", resource: "*", allow: true, deny: false, problem: "Unknown",
+			action: "s3:GetObject", resource: "*", allow: false, deny: true, problem: "Unknown",
+		},
+		{
+			name: "unsupported deny for another action", statement: `[{"Effect":"Allow",
+"Action":"*",
+"Resource":"*"},
+{"Effect":"Deny",
+"Action":"s3:DeleteObject",
+"Resource":"*",
+"Condition":{"Unknown":{"aws:username":"alice"}}}]`,
+			action: "s3:GetObject", resource: "*", allow: true, deny: false,
 		},
 	}
 

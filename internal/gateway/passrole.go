@@ -423,6 +423,11 @@ func (s *Server) passedRoles(ctx context.Context, service, operation string, inp
 					role = profile.RoleARN
 				}
 
+				// A role can only be passed within its own account.
+				if parts := strings.SplitN(role, ":", 6); len(parts) == 6 && parts[4] != meta.AccountID {
+					return nil, fmt.Errorf("role %s belongs to another account", role)
+				}
+
 				key := entry.principal + ":" + role
 				if seen[key] {
 					continue
