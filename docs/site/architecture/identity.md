@@ -274,6 +274,28 @@ SourceArn and SourceAccount permission parameters produce aws:SourceArn and aws:
 conditions. Ordinary API calls do not supply these keys. In-process S3/SNS/EventBridge/SQS event source
 mapping and stream deliveries continue to bypass function policies, so their source conditions are not enforced.
 
+### API Gateway execution
+
+REST methods and HTTP routes with `AWS_IAM` require a signed request with a resolved caller,
+using the same gateway identification and verify-mode authentication as function URLs. Authorization off
+skips policy evaluation; soft records would-deny decisions in `/_tinystack/requests` while executing;
+enforce returns 403 on denied `execute-api:Invoke` checks. The console test action shares the ARN builder.
+
+The target is `arn:aws:execute-api:<region>:<owner-account>:<api-id>/<stage>/<HTTP-VERB>/<resource-path>`.
+The verb is the concrete request method (including routes configured with ANY); the path is the actual
+request path without the stage or leading slash, including substituted path parameters. Root paths end
+with `/<HTTP-VERB>/`. HTTP API `$default` stages retain that stage name for ordinary routes;
+the `$default` route instead uses `arn:aws:execute-api:<region>:<owner-account>:<api-id>/<stage>/$default`,
+which policies usually name as `<api-id>/*/$default`.
+See the [IAM invocation policy examples](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html),
+[HTTP API IAM guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-access-control-iam.html),
+and [ARN reference](https://docs.aws.amazon.com/apigateway/latest/developerguide/arn-format-reference.html).
+
+Proxy payload 1.0 reports resolved IAM caller IDs, ARN, account and access key under
+`requestContext.identity`; payload 2.0 reports them under `requestContext.authorizer.iam`.
+REST API resource policies are stored but not evaluated. API Gateway-to-Lambda integrations remain
+in-process calls and bypass Lambda resource policies, including SourceArn/SourceAccount conditions.
+
 Secrets Manager evaluates policies for secret-scoped operations, including value reads/writes, describe,
 tags and policy management. Owning-account root retains GetResourcePolicy, PutResourcePolicy and
 DeleteResourcePolicy even after an explicit resource Deny. BlockPublicPolicy rejects unconditional

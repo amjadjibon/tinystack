@@ -799,7 +799,7 @@ curl http://localhost:4566/_aws/execute-api/abc123defg/prod/pets/42
 | Operation | Behavior |
 | --- | --- |
 | CreateApi / GetApi / GetApis / UpdateApi / DeleteApi / DeleteCorsConfiguration | `HTTP` APIs with a description, version, CORS configuration, a disabled default endpoint, and tags; quick create with `Target` (a Lambda function or URL) and `RouteKey` adds an integration, a route, and an automatically deployed `$default` stage |
-| CreateRoute / GetRoute / GetRoutes / UpdateRoute / DeleteRoute | `$default` or `<method> <path>` keys with `{param}` and final greedy `{param+}` segments; `integrations/<ID>` targets; `NONE`, `JWT` (with scopes), `CUSTOM`, and `AWS_IAM` authorization |
+| CreateRoute / GetRoute / GetRoutes / UpdateRoute / DeleteRoute | `$default` or `<method> <path>` keys with `{param}` and final greedy `{param+}` segments; `integrations/<ID>` targets; `NONE`, `JWT` (with scopes), `CUSTOM`, and `AWS_IAM` authorization (`execute-api:Invoke` identity checks when enabled) |
 | CreateIntegration / GetIntegration / GetIntegrations / UpdateIntegration / DeleteIntegration | `AWS_PROXY` Lambda integrations (payload format 1.0 or 2.0, by function ARN or invocation URI) and `HTTP_PROXY` integrations (payload 1.0) with `${stageVariables.<name>}` and path parameters in the URI; timeouts from 50 ms to 30 s; an integration a route targets cannot be deleted |
 | CreateAuthorizer / GetAuthorizer / GetAuthorizers / UpdateAuthorizer / DeleteAuthorizer | `JWT` authorizers (issuer and audiences; RS256 tokens are verified against the issuer's JWKS, read through its OpenID discovery document, such as a TinyStack Cognito pool's) and Lambda `REQUEST` authorizers (payload 1.0 or 2.0, simple or IAM policy responses) |
 | CreateStage / GetStage / GetStages / UpdateStage / DeleteStage | Stage variables, route settings (stored), access logs, and `AutoDeploy`, which deploys every change to the API |
@@ -825,7 +825,7 @@ REST APIs are served like HTTP APIs, at
 | --- | --- |
 | CreateRestApi / GetRestApi / GetRestApis / UpdateRestApi / DeleteRestApi | A root resource, binary media types, `EDGE`, `REGIONAL`, or `PRIVATE` endpoint types (stored), API key source, minimum compression size, and policies (stored); tags |
 | CreateResource / GetResource / GetResources / UpdateResource / DeleteResource | Path parts with `{param}` and greedy `{param+}` variables (one variable per level); moving a resource moves its subtree; deleting deletes it; `embed=methods` |
-| PutMethod / GetMethod / UpdateMethod / DeleteMethod | `NONE`, `AWS_IAM`, `CUSTOM`, and `COGNITO_USER_POOLS` (with scopes) authorization, request parameters and models, and operation names |
+| PutMethod / GetMethod / UpdateMethod / DeleteMethod | `NONE`, `AWS_IAM`, `CUSTOM`, and `COGNITO_USER_POOLS` (with scopes) authorization (`AWS_IAM` evaluates `execute-api:Invoke` when enabled), request parameters and models, and operation names |
 | PutMethodResponse / GetMethodResponse / UpdateMethodResponse / DeleteMethodResponse | Status codes with response parameters and models |
 | PutIntegration / GetIntegration / UpdateIntegration / DeleteIntegration | `AWS_PROXY` (Lambda invocation URIs), `HTTP_PROXY`, and `MOCK` integrations with request templates, timeouts up to 29 s, and cache namespaces |
 | PutIntegrationResponse / GetIntegrationResponse / UpdateIntegrationResponse / DeleteIntegrationResponse | Selection patterns, header mappings to declared method response headers, and templates |
@@ -1266,8 +1266,10 @@ roles (`RoleARN` is stored), and IAM capabilities are checked but not evaluated.
 models and request validation, `AWS` and `HTTP` (non-proxy) integrations or other AWS service integrations,
 mapping template (VTL) evaluation, parameter mappings, authorizer caching (authorizers run for every
 request), throttling, caching, canary settings, client certificates, mutual TLS, or exports and imports;
-`AWS_IAM` authorization accepts any SigV4-signed request without verifying it, and Lambda resource
-policies are not checked. Step Functions limits: no distributed Map (`ItemReader`, `ResultWriter`), map runs, execution retention, or IAM role checks, and
+`AWS_IAM` methods/routes require signed requests, verified in `identity.mode: verify`, and evaluate
+`execute-api:Invoke` identity policies in `identity.authorization: soft/enforce` (soft denials appear in the
+request inspector). REST API resource policies are not evaluated. API Gateway invokes Lambda in-process
+and bypasses Lambda resource policies. Step Functions limits: no distributed Map (`ItemReader`, `ResultWriter`), map runs, execution retention, or IAM role checks, and
 `JsonPath` filters and recursive descent are not supported; executions running when TinyStack stops are aborted when
 it starts again. Kinesis limits: no enhanced fan-out delivery (`SubscribeToShard`), throughput limits, resource policies,
 record size or warm throughput settings, or encryption (the KMS settings are stored). Firehose limits: only

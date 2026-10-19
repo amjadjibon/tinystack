@@ -267,13 +267,18 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 	forbidden := execute.Message(http.StatusForbidden, "Forbidden")
 	switch common.Value(c.route.AuthorizationType) {
 	case authIAM:
-		// Signatures are not verified; a SigV4-signed request is authorized.
-		if !strings.HasPrefix(c.req.Header.Get("Authorization"), "AWS4-") && c.req.Query.Get("X-Amz-Signature") == "" {
-			c.authorizerError = "Missing Authentication Token"
-			return nil, forbidden
+		method := c.req.Method
+		if common.Value(c.route.RouteKey) == "$default" {
+			method = "$default"
 		}
 
-		return nil, nil
+		target := execute.APIResource(c.scope, *c.api.ApiId, *c.stage.StageName, method, c.path)
+		denied := c.req.AuthorizeIAM(ctx, &target, "Forbidden")
+		if denied != nil {
+			c.authorizerError = string(denied.Body)
+		}
+
+		return nil, denied
 	case authJWT:
 		a := c.snapshot.Authorizers[common.Value(c.route.AuthorizerId)]
 		token := identityValue(c, a.IdentitySource[0])
@@ -326,8 +331,7 @@ func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any,
 		sources = append(sources, v)
 	}
 
-	routeARN := "arn:aws:execute-api:" + c.scope.Region + ":" + c.scope.AccountID + ":" + *c.api.ApiId + "/" +
-		*c.stage.StageName + "/" + c.req.Method + c.path
+	routeARN := execute.APIResource(c.scope, *c.api.ApiId, *c.stage.StageName, c.req.Method, c.path).ARN
 	pc := c.proxyContext(nil)
 	var event map[string]any
 	var err error
@@ -410,6 +414,7 @@ func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
 
 	path := c.req.Path
 	return &proxy.Context{
+		IAM:        common.Value(c.route.AuthorizationType) == authIAM,
 		Authorizer: authorizer,
 		AccountID:  c.scope.AccountID,
 		APIID:      *c.api.ApiId,

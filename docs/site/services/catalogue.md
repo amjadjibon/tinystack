@@ -1152,6 +1152,7 @@ Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT aut
 
 **Execution:** Local behavior. **Selected operations:** 34.
 
+- AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector.
 - API, route, integration, deployment, stage and authorizer CRUD.
 - Auto-deploy stages and Lambda proxy payload formats 1.0 and 2.0.
 - HTTP forwarding, JWT and Lambda authorizers, access logs.
@@ -1165,6 +1166,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 
 **Execution:** Local behavior. **Selected operations:** 66.
 
+- AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector.
 - Resource trees, methods, responses, integrations, deployments and stages.
 - Lambda and HTTP proxy execution through gateway data routes.
 - Lambda and Cognito authorizers, API keys and usage plan metadata.

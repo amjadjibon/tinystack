@@ -572,7 +572,7 @@ func TestRESTAPIAuthorizers(t *testing.T) {
 		{"/v1/gold", "X-Token", "who", "Unauthorized", http.StatusUnauthorized},
 		{"/v1/gold", "X-Token", "NOT-VALID-1", "Unauthorized", http.StatusUnauthorized},
 		{"/v1/iam", "", "", "Missing Authentication Token", http.StatusForbidden},
-		{"/v1/iam", "Authorization", "AWS4-HMAC-SHA256 Credential=x", "", http.StatusCreated},
+		{"/v1/iam", "Authorization", "AWS4-HMAC-SHA256 Credential=x", "", http.StatusForbidden},
 	} {
 		header := map[string]string{}
 		if tc.header != "" {

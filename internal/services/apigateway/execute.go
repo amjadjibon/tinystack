@@ -138,8 +138,7 @@ func matchMethod(
 
 // methodARN is the ARN authorizer policies name the request by.
 func (c *call) methodARN() string {
-	return "arn:aws:execute-api:" + c.scope.Region + ":" + c.scope.AccountID + ":" + *c.api.API.Id + "/" +
-		*c.stage.StageName + "/" + c.req.Method + c.path
+	return execute.APIResource(c.scope, *c.api.API.Id, *c.stage.StageName, c.req.Method, c.path).ARN
 }
 
 // identityValue reads an identity source such as method.request.header.Authorization.
@@ -163,11 +162,13 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 	unauthorized := execute.Message(http.StatusUnauthorized, "Unauthorized")
 	switch common.Value(c.method.AuthorizationType) {
 	case authIAM:
-		// Signatures are not verified; a SigV4-signed request is authorized.
-		if !strings.HasPrefix(c.req.Header.Get("Authorization"), "AWS4-") && c.req.Query.Get("X-Amz-Signature") == "" {
-			c.authorizerError = "Missing Authentication Token"
-			return nil, execute.Message(http.StatusForbidden, "Missing Authentication Token")
+		target := execute.APIResource(c.scope, *c.api.API.Id, *c.stage.StageName, c.req.Method, c.path)
+		denied := c.req.AuthorizeIAM(ctx, &target, "Missing Authentication Token")
+		if denied != nil {
+			c.authorizerError = string(denied.Body)
 		}
+
+		return nil, denied
 	case authCognito:
 		return s.cognitoAuthorize(ctx, c)
 	case authCustom:
@@ -314,6 +315,7 @@ func (s *Service) lambdaAuthorize(
 func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {
 	domain, _, _ := strings.Cut(c.req.Host, ":")
 	return &proxy.Context{
+		IAM:        common.Value(c.method.AuthorizationType) == authIAM,
 		Authorizer: authorizer, AccountID: c.scope.AccountID, APIID: *c.api.API.Id, Stage: *c.stage.StageName,
 		RequestID: c.requestID, RouteKey: common.Value(c.resource.Id), Resource: common.Value(c.resource.Path),
 		Path: "/" + *c.stage.StageName + c.path, ResourcePath: c.path, DomainName: domain,

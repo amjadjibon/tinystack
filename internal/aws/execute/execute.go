@@ -8,7 +8,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
+
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 )
 
 // Request is one request to an API.
@@ -17,9 +21,11 @@ type Request struct {
 	Caller *Caller
 	// Authorize applies gateway IAM checks to an execution endpoint's modeled resource.
 	Authorize func(context.Context, string, string, any) error
-	Time      time.Time
-	Header    http.Header
-	Query     url.Values
+	// AuthorizeTarget applies IAM checks to an explicit execution resource.
+	AuthorizeTarget func(context.Context, *catalog.AuthorizationResource) error
+	Time            time.Time
+	Header          http.Header
+	Query           url.Values
 	// Method is the HTTP method.
 	Method string
 	// Path is the decoded path after the API: "/<stage>/..." or, for an
@@ -41,6 +47,7 @@ type Request struct {
 // identity.mode verify the gateway passes a caller only once its signature
 // verifies.
 type Caller struct {
+	Principal *request.Principal
 	AccountID string
 	// Region is the Region the request was signed for.
 	Region    string
@@ -101,4 +108,42 @@ type MQTT interface {
 	// ServeMQTT serves conn until it closes. r.Caller is who signed the
 	// connection request, or nil when it is unsigned.
 	ServeMQTT(ctx context.Context, r *Request, conn net.Conn) error
+}
+
+// APIResource builds an execute-api invocation target from the API owner's scope.
+// Paths are concrete request paths, without the stage. HTTP API default routes
+// are <stage>/$default, with no method or path, which policies match as */$default.
+func APIResource(scope request.Scope, apiID, stage, method, path string) catalog.AuthorizationResource {
+	resource := stage + "/" + method + "/" + strings.TrimPrefix(path, "/")
+	if method == "$default" {
+		resource = stage + "/$default"
+	}
+
+	return catalog.AuthorizationResource{
+		ARN: "arn:aws:execute-api:" + scope.Region + ":" + scope.AccountID + ":" + apiID + "/" + resource,
+	}
+}
+
+// AuthorizeIAM requires the same authenticated caller as Lambda function URLs,
+// then evaluates execute-api:Invoke when gateway authorization is enabled.
+func (r *Request) AuthorizeIAM(ctx context.Context, target *catalog.AuthorizationResource, missing string) *Response {
+	signed := strings.HasPrefix(r.Header.Get("Authorization"), "AWS4-") || r.Query.Get("X-Amz-Signature") != ""
+	if !signed || r.Caller == nil {
+		return Message(http.StatusForbidden, missing)
+	}
+
+	if r.AuthorizeTarget != nil {
+		if err := r.AuthorizeTarget(ctx, target); err != nil {
+			message := "User: " + r.Caller.Principal.ARN +
+				" is not authorized to perform: execute-api:Invoke on resource: " + target.ARN
+			body, _ := json.Marshal(map[string]string{"Message": message})
+			return &Response{
+				Status: http.StatusForbidden,
+				Header: http.Header{"Content-Type": {"application/json"}},
+				Body:   body,
+			}
+		}
+	}
+
+	return nil
 }

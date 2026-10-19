@@ -43,6 +43,8 @@ type Context struct {
 	// when it differs from Path: a REST API's path without the stage.
 	ResourcePath string
 	DomainName   string
+	// IAM enables resolved caller identity fields for an AWS_IAM method or route.
+	IAM bool
 }
 
 // textTypes are the content types whose bodies events carry as text.
@@ -112,6 +114,8 @@ func orNil(m map[string]string) map[string]string {
 // keyPath is the member events report a request's path in.
 const keyPath = "path"
 
+const keyAccountID = "accountId"
+
 // timeText is the time format requestContext reports.
 const timeText = "02/Jan/2006:15:04:05 -0700"
 
@@ -130,7 +134,7 @@ func EventV2(r *execute.Request, c *Context, pathParameters, stageVariables map[
 	}
 
 	requestContext := map[string]any{
-		"accountId": c.AccountID, "apiId": c.APIID, "domainName": c.DomainName,
+		keyAccountID: c.AccountID, "apiId": c.APIID, "domainName": c.DomainName,
 		"domainPrefix": strings.Split(c.DomainName, ".")[0], "requestId": c.RequestID, "routeKey": c.RouteKey,
 		"stage": c.Stage, "time": r.Time.Format(timeText), "timeEpoch": r.Time.UnixMilli(),
 		"http": map[string]any{
@@ -140,6 +144,16 @@ func EventV2(r *execute.Request, c *Context, pathParameters, stageVariables map[
 	}
 	if c.Authorizer != nil {
 		requestContext["authorizer"] = c.Authorizer
+	}
+
+	if c.IAM && r.Caller != nil && r.Caller.Principal != nil && r.Caller.Principal.ARN != "" {
+		authorizer := maps.Clone(c.Authorizer)
+		if authorizer == nil {
+			authorizer = map[string]any{}
+		}
+
+		authorizer["iam"] = iamIdentity(r.Caller)
+		requestContext["authorizer"] = authorizer
 	}
 
 	event := map[string]any{
@@ -177,7 +191,7 @@ func isNil(v any) bool {
 func EventV1(r *execute.Request, c *Context, pathParameters, stageVariables map[string]string) ([]byte, error) {
 	text, encoded := body(r)
 	requestContext := map[string]any{
-		"accountId": c.AccountID, "apiId": c.APIID, "domainName": c.DomainName,
+		keyAccountID: c.AccountID, "apiId": c.APIID, "domainName": c.DomainName,
 		"domainPrefix": strings.Split(c.DomainName, ".")[0], "extendedRequestId": c.RequestID,
 		"httpMethod": r.Method, keyPath: c.Path, "protocol": r.Protocol, "requestId": c.RequestID,
 		"requestTime": r.Time.Format(timeText), "requestTimeEpoch": r.Time.UnixMilli(),
@@ -186,6 +200,12 @@ func EventV1(r *execute.Request, c *Context, pathParameters, stageVariables map[
 	}
 	if c.Authorizer != nil {
 		requestContext["authorizer"] = c.Authorizer
+	}
+
+	if c.IAM && r.Caller != nil && r.Caller.Principal != nil && r.Caller.Principal.ARN != "" {
+		identity := iamIdentity(r.Caller)
+		identity["sourceIp"], identity["userAgent"] = r.SourceIP, r.Header.Get("User-Agent")
+		requestContext["identity"] = identity
 	}
 
 	resource := c.Resource
@@ -419,4 +439,12 @@ func Substitute(s string, stageVariables map[string]string) string {
 	}
 
 	return s
+}
+
+// iamIdentity carries resolved IAM IDs, rather than treating the access key as a user.
+func iamIdentity(caller *execute.Caller) map[string]any {
+	return map[string]any{
+		keyAccountID: caller.AccountID, "accessKey": caller.AccessKey,
+		"caller": caller.Principal.UserID, "user": caller.Principal.UserID, "userArn": caller.Principal.ARN,
+	}
 }

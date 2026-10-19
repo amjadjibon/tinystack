@@ -83,11 +83,10 @@ func (s *Server) consoleInvokeAPI(r *http.Request, c *call, caller *catalog.Call
 	}
 
 	ctx := request.WithMetadata(r.Context(), c.meta)
-	target := "arn:aws:execute-api:" + c.meta.Region + ":" + c.meta.AccountID + ":" + input.ApiId +
-		"/" + input.Stage + "/" + input.Method + "/" + strings.TrimPrefix(parsed.Path, "/")
+	target := execute.APIResource(c.meta.Scope, input.ApiId, input.Stage, input.Method, parsed.Path)
 	if authErr := s.authorizeTargets(ctx, r, c, &catalog.Operation{
 		Name: in.Operation, IAMAction: "execute-api:Invoke",
-	}, nil, []catalog.AuthorizationResource{{ARN: target}}); authErr != nil {
+	}, nil, []catalog.AuthorizationResource{target}); authErr != nil {
 		return nil, authErr
 	}
 

@@ -23,6 +23,11 @@ const maxExecuteBody = 10 << 20
 // bucket name, so the path never names one).
 const executePath = "/_aws/execute-api/"
 
+const (
+	executeService = "execute-api"
+	executeInvoke  = "Invoke"
+)
+
 // UseAPIs serves the APIs that API Gateway services run: requests to
 // <API ID>.execute-api.<host> (such as abc123.execute-api.localhost:4566 or
 // abc123.execute-api.us-east-1.amazonaws.com), or to
@@ -231,6 +236,23 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 
+	start := time.Now()
+	cw := &capturingWriter{ResponseWriter: w}
+	w = cw
+	var executionCall *call
+	defer func() {
+		if executionCall != nil {
+			executionCall.meta.RequestID = cw.Header().Get("X-Amzn-Requestid")
+			if executionCall.meta.RequestID == "" {
+				executionCall.meta.RequestID = cw.Header().Get("Apigw-Requestid")
+			}
+
+			body := &capturingBody{}
+			body.keep(req.Body)
+			s.record(r, executionCall, start, body, cw)
+		}
+	}()
+
 	req.Caller = s.caller(w, r)
 	req.Authorize = func(ctx context.Context, service, action string, input any) error {
 		c := &call{service: s.services[service], meta: request.Metadata{
@@ -248,6 +270,32 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		}
 
 		return s.authorize(ctx, r, c, &catalog.Operation{Name: action}, input)
+	}
+
+	req.AuthorizeTarget = func(ctx context.Context, target *catalog.AuthorizationResource) error {
+		c := &call{
+			service: &catalog.Service{
+				Name: executeService, SigningName: executeService,
+				Operations: map[string]catalog.Operation{executeInvoke: {Name: executeInvoke}},
+			},
+			meta: request.Metadata{
+				Scope:   request.Scope{AccountID: s.cfg.Defaults.Account, Region: s.cfg.Defaults.Region},
+				Service: executeService, Operation: executeInvoke, Protocol: catalog.RESTJSON,
+			},
+		}
+		executionCall = c
+		if _, err := s.identify(r, &c.meta); err != nil {
+			return err
+		}
+
+		c.meta.Service = executeService
+		if err := s.resolveCredentials(ctx, c); err != nil {
+			return err
+		}
+
+		return s.authorizeTargets(ctx, r, c, &catalog.Operation{
+			Name: executeInvoke, IAMAction: "execute-api:Invoke",
+		}, nil, []catalog.AuthorizationResource{*target})
 	}
 
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxExecuteBody))
@@ -297,6 +345,14 @@ func (s *Server) caller(w http.ResponseWriter, r *http.Request) *execute.Caller 
 	caller := &execute.Caller{AccountID: c.meta.AccountID, Region: c.meta.Region, AccessKey: c.meta.AccessKey}
 	if c.credentials != nil {
 		caller.CognitoIdentity = c.credentials.CognitoIdentity
+		caller.Principal = &c.credentials.Principal
+	}
+
+	if caller.Principal == nil || caller.Principal.ARN == "" {
+		arn := "arn:aws:iam::" + caller.AccountID + ":root"
+		caller.Principal = &request.Principal{
+			Kind: request.PrincipalRoot, Account: caller.AccountID, UserID: caller.AccountID, ARN: arn, PolicyARN: arn,
+		}
 	}
 
 	return caller

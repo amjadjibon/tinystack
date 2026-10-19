@@ -458,6 +458,7 @@
       "category": "Networking and APIs",
       "summary": "Manage and invoke REST APIs with deployments, stages, proxy integrations, and authorizers.",
       "features": [
+        "AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector",
         "Resource trees, methods, responses, integrations, deployments and stages",
         "Lambda and HTTP proxy execution through gateway data routes",
         "Lambda and Cognito authorizers, API keys and usage plan metadata",
@@ -465,9 +466,10 @@
         "AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing"
       ],
       "gaps": [
+        "API Gateway invokes Lambda in-process and bypasses Lambda resource policies",
         "No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation",
         "Throttling, quotas, caching, canaries and authorizer caching are not enforced",
-        "No mutual TLS, import/export or general policy evaluation",
+        "No mutual TLS or import/export; stored REST API resource policies are not evaluated",
         "Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms",
         "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
         "Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64"
@@ -480,12 +482,14 @@
       "category": "Networking and APIs",
       "summary": "Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT authorizers.",
       "features": [
+        "AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector",
         "API, route, integration, deployment, stage and authorizer CRUD",
         "Auto-deploy stages and Lambda proxy payload formats 1.0 and 2.0",
         "HTTP forwarding, JWT and Lambda authorizers, access logs",
         "AWS-style console for scoped HTTP API creation and CORS settings, routes, Lambda/HTTP integrations, JWT/Lambda authorizers, auto/manual stages, deployment snapshots, API/stage tags, and explicit deployed-stage request testing"
       ],
       "gaps": [
+        "API Gateway invokes Lambda in-process and bypasses Lambda resource policies",
         "WebSocket APIs are not implemented",
         "No VPC links, parameter mappings, throttling, caching or authorizer caching",
         "Only the selected HTTP API management members are supported",
