@@ -139,6 +139,33 @@ func APIResource(scope request.Scope, apiID, stage, method, path string) catalog
 	}
 }
 
+// AuthorizerInvocation is API Gateway's invocation of a Lambda authorizer. Without a role it needs the function's
+// resource policy to allow API Gateway for the authorizer, which AWS names arn:aws:execute-api:<region>:<account>:
+// <api-id>/authorizers/<authorizer-id>; with the authorizer's credentials, a role, it is the role that must be
+// permitted:
+// https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-lambda-authorizer-flow.html
+func AuthorizerInvocation(
+	scope request.Scope,
+	apiID, authorizerID, credentials, function string,
+) catalog.ServiceDelivery {
+	d := catalog.ServiceDelivery{
+		Principal: "apigateway.amazonaws.com",
+		SourceARN: "arn:aws:execute-api:" + scope.Region + ":" + scope.AccountID + ":" + apiID + "/authorizers/" +
+			authorizerID,
+		SourceAccount: scope.AccountID,
+		Target:        function,
+	}
+	if strings.Contains(credentials, ":role/") {
+		d.Target = ""
+		d.Role = &catalog.DeliveryRole{
+			ARN: credentials, Session: "APIGateway-" + apiID, Service: "lambda", Operation: "Invoke",
+			Params: map[string]any{"FunctionName": function, "InvocationType": "RequestResponse"},
+		}
+	}
+
+	return d
+}
+
 // AuthorizeIAM requires the same authenticated caller as Lambda function URLs,
 // then evaluates execute-api:Invoke when gateway authorization is enabled.
 func (r *Request) AuthorizeIAM(ctx context.Context, target *catalog.AuthorizationResource, missing string) *Response {

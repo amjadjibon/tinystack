@@ -2,9 +2,12 @@ package integration_test
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -13,8 +16,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	ebtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
 	"github.com/aws/aws-sdk-go-v2/service/iotdataplane"
+	sdklambda "github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	schedules "github.com/aws/aws-sdk-go-v2/service/scheduler"
 	schedtypes "github.com/aws/aws-sdk-go-v2/service/scheduler/types"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
@@ -46,6 +52,12 @@ var roleChoices = []roleChoice{roleAllowed, roleNoPermission, roleNotTrusted, ro
 // documents are the role's trust and identity policy documents for the choice, for a delivery from source
 // by principal that sends to queue.
 func (c roleChoice) documents(principal, source, queue string) (trust, permissions string) {
+	return c.documentsFor(principal, source, queue, "sqs:SendMessage")
+}
+
+// documentsFor are the role's documents for the choice, for a delivery from source by principal that makes the calls
+// named by actions on resource.
+func (c roleChoice) documentsFor(principal, source, resource string, actions ...string) (trust, permissions string) {
 	trusted, from := principal, source
 	switch c {
 	case roleNotTrusted:
@@ -58,13 +70,13 @@ func (c roleChoice) documents(principal, source, queue string) (trust, permissio
 	trust = fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":%q},`+
 		`"Action":"sts:AssumeRole","Condition":{"ArnLike":{"aws:SourceArn":%q},`+
 		`"StringEquals":{"aws:SourceAccount":%q}}}]}`, trusted, from, deliveryAccount)
-	action := "sqs:SendMessage"
 	if c == roleNoPermission {
-		action = "s3:GetObject"
+		actions = []string{"s3:GetObject"}
 	}
 
-	permissions = fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":%q,"Resource":%q}]}`,
-		action, queue)
+	allowed, _ := json.Marshal(actions)
+	permissions = fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":%s,"Resource":%q}]}`,
+		allowed, resource)
 
 	return trust, permissions
 }
@@ -133,6 +145,17 @@ var roleDeliveries = []roleDelivery{
 				QueueUrl: &sourceURL, MessageBody: new("piped"),
 			})
 			mustAuthorize(t, err)
+			// The pipe's role also reads the source.
+			name := role[strings.LastIndex(role, "/")+1:]
+			reads := `{"Statement":[{"Effect":"Allow","Action":["sqs:ReceiveMessage","sqs:DeleteMessage",` +
+				`"sqs:GetQueueAttributes"],"Resource":"` + source + `"}]}`
+			_, err = iamClient(s, "test", "us-east-1").PutRolePolicy(context.Background(), &iam.PutRolePolicyInput{
+				RoleName: &name, PolicyName: new("read"), PolicyDocument: &reads,
+			})
+			// With authorization off the role need not exist.
+			if _, missing := errors.AsType[*iamtypes.NoSuchEntityException](err); !missing {
+				mustAuthorize(t, err)
+			}
 			in := sqsPipe("orders", source, queue)
 			in.RoleArn = &role
 			_, err = pipesClient(s).CreatePipe(context.Background(), in)
@@ -180,6 +203,29 @@ var roleDeliveries = []roleDelivery{
 			}}, nil)
 			_, err := dataClient(s, "test").Publish(context.Background(), &iotdataplane.PublishInput{
 				Topic: new("shop/orders"), Payload: []byte(`{"id":1}`),
+			})
+			mustAuthorize(t, err)
+		},
+	},
+	{
+		// The result of an asynchronous invocation goes to the destination as the function's execution role.
+		name:      "lambda destination",
+		principal: "lambda.amazonaws.com",
+		source:    "arn:aws:lambda:us-east-1:" + deliveryAccount + ":function:worker",
+		deliver: func(t *testing.T, s *httptest.Server, role, _, queue string) {
+			t.Helper()
+			ctx := context.Background()
+			c := lambdaClient(s, "test")
+			createWorker(t, c, role)
+			_, err := c.PutFunctionEventInvokeConfig(ctx, &sdklambda.PutFunctionEventInvokeConfigInput{
+				FunctionName: new("worker"),
+				DestinationConfig: &lambdatypes.DestinationConfig{
+					OnSuccess: &lambdatypes.OnSuccess{Destination: &queue},
+				},
+			})
+			mustAuthorize(t, err)
+			_, err = c.Invoke(ctx, &sdklambda.InvokeInput{
+				FunctionName: new("worker"), InvocationType: lambdatypes.InvocationTypeEvent, Payload: []byte(`{}`),
 			})
 			mustAuthorize(t, err)
 		},
@@ -285,7 +331,13 @@ func TestRoleDeliveries(t *testing.T) {
 
 					var records []gateway.Record
 					waitFor(t, "a check of the delivery", func() bool {
-						records = roleChecks(t, s, role)
+						// A pipe's reads of its source are checked beside the delivery.
+						records = slices.DeleteFunc(roleChecks(t, s, role), func(r gateway.Record) bool {
+							return slices.Contains(
+								[]string{"ReceiveMessage", "DeleteMessage", "GetQueueAttributes"},
+								r.Operation,
+							)
+						})
 						return len(records) > 0
 					})
 					wantRoleCheck(t, &records[0], mode, choice, role, queue)

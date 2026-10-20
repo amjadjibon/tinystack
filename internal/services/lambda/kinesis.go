@@ -142,6 +142,7 @@ func (s *Service) pollKinesis(ctx context.Context, scope request.Scope, mp mappi
 		mp.Cursors = map[string]string{}
 	}
 
+	authorized := false
 	for ctx.Err() == nil {
 		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
 			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Function not found.")
@@ -149,8 +150,21 @@ func (s *Service) pollKinesis(ctx context.Context, scope request.Scope, mp mappi
 			continue
 		}
 
+		// The execution role is checked as the poller starts and again after a failed read.
+		if !authorized {
+			readCtx := request.WithMetadata(ctx, request.Metadata{Scope: scope})
+			if denied, err := s.authorizeReads(readCtx, scope, mp.FunctionName, mp.EventSourceArn); err != nil {
+				s.recordResult(ctx, scope, mp.UUID, readProblem(denied))
+				sleep(ctx, pollBackoff)
+				continue
+			}
+
+			authorized = true
+		}
+
 		shards, err := s.kinesis.Shards(ctx, mp.EventSourceArn)
 		if err != nil {
+			authorized = false
 			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Lambda could not read from the Kinesis stream.")
 			sleep(ctx, pollBackoff)
 			continue

@@ -185,10 +185,11 @@ func (s *Service) act(
 
 	// The action's role makes the call; a Lambda action has none, and the function's policy must allow IoT.
 	role, _ := fields[fieldRole].(string)
+	source := catalog.ServiceDelivery{
+		Principal: "iot.amazonaws.com", SourceARN: arn(scope, kindRule, rule), SourceAccount: scope.AccountID,
+	}
 	call := func(svc, op string, params map[string]any) error {
-		d := catalog.ServiceDelivery{
-			Principal: "iot.amazonaws.com", SourceARN: arn(scope, kindRule, rule), SourceAccount: scope.AccountID,
-		}
+		d := source
 		if role == "" {
 			d.Target, _ = params["FunctionName"].(string)
 			if err := s.authorizer.Authorize(callContext(ctx, scope, svc), d); err != nil {
@@ -207,7 +208,18 @@ func (s *Service) act(
 	payload := string(e.raw)
 	switch {
 	case act.Republish != nil:
-		return kind, *act.Republish.Topic, s.republish(scope, rule, act.Republish, e.raw)
+		// The rule publishes with its own client, which the action's role must be permitted to do.
+		topic := *act.Republish.Topic
+		d := source
+		d.Role = &catalog.DeliveryRole{
+			ARN: role, Session: rule, Service: "iotdataplane", Operation: "Publish",
+			Params: map[string]any{"Topic": topic},
+		}
+		if err := s.authorizer.Authorize(callContext(ctx, scope, "iotdataplane"), d); err != nil {
+			return kind, topic, err
+		}
+
+		return kind, topic, s.republish(scope, rule, act.Republish, e.raw)
 	case act.Sqs != nil:
 		body := payload
 		if common.Value(act.Sqs.UseBase64) {

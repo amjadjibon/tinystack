@@ -97,6 +97,11 @@ func (s *Service) step(ctx context.Context, scope request.Scope, name string) bo
 
 	kind, _ := sourceKind(p.Source)
 	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: kind, RequestID: common.RandomID(32)})
+	if err = s.authorizeReads(ctx, scope, p); err != nil {
+		s.logger.Warn("a pipe's role may not read its source", "pipe", pipeARN(scope, p.Name), "error", err)
+		return false
+	}
+
 	switch kind {
 	case sourceSQS:
 		return s.stepQueue(ctx, scope, p)

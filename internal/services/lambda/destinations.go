@@ -493,10 +493,26 @@ func (s *Service) sendResult(
 }
 
 // deliver sends a record to an SQS queue, SNS topic, Lambda function, or
-// EventBridge event bus, in the destination's account and region.
+// EventBridge event bus, in the destination's account and region, under the
+// execution role of the function arn names.
 func (s *Service) deliver(ctx context.Context, destination, arn, condition string, body []byte) error {
 	service, _ := destinationService(destination)
+	source := strings.Split(arn, ":")
+	fnScope, name := request.Scope{AccountID: source[4], Region: source[3]}, source[6]
+	// A destination is invoked asynchronously; the execution role needs lambda:InvokeFunction on it.
 	if service == serviceLambda {
+		invoke := &catalog.DeliveryRole{Service: serviceLambda, Operation: "Invoke", Params: map[string]any{
+			"FunctionName": destination, "InvocationType": "Event",
+		}}
+		d, err := s.executionDelivery(ctx, fnScope, name, invoke)
+		if err == nil {
+			err = s.authorizer.Authorize(ctx, d)
+		}
+
+		if err != nil {
+			return err
+		}
+
 		return s.InvokeAsync(ctx, destination, body)
 	}
 
@@ -506,21 +522,30 @@ func (s *Service) deliver(ctx context.Context, destination, arn, condition strin
 
 	parts := strings.Split(destination, ":")
 	scope := request.Scope{AccountID: parts[4], Region: parts[3]}
-	call := func(service, op string, params map[string]any) (any, error) {
+	call := func(c *catalog.DeliveryRole) (map[string]any, error) {
 		callCtx := request.WithMetadata(
 			ctx,
-			request.Metadata{Scope: scope, Service: service, RequestID: uuid.NewV4().String()},
+			request.Metadata{Scope: scope, Service: c.Service, RequestID: uuid.NewV4().String()},
 		)
-		return s.caller.Call(callCtx, service, op, params)
+		d, err := s.executionDelivery(callCtx, fnScope, name, c)
+		if err != nil {
+			return nil, err
+		}
+
+		return s.authorizer.Call(callCtx, s.caller, d)
 	}
 
 	var err error
 	switch service {
 	case serviceSQS:
 		url, _ := sqs.QueueURL(destination)
-		_, err = call(service, "SendMessage", map[string]any{"QueueUrl": url, "MessageBody": string(body)})
+		_, err = call(&catalog.DeliveryRole{Service: service, Operation: "SendMessage", Params: map[string]any{
+			"QueueUrl": url, "MessageBody": string(body),
+		}})
 	case serviceSNS:
-		_, err = call(service, "Publish", map[string]any{"TopicArn": destination, "Message": string(body)})
+		_, err = call(&catalog.DeliveryRole{Service: service, Operation: "Publish", Params: map[string]any{
+			"TopicArn": destination, "Message": string(body),
+		}})
 	default:
 		outcome := "Success"
 		if condition != conditionSuccess {
@@ -528,13 +553,15 @@ func (s *Service) deliver(ctx context.Context, destination, arn, condition strin
 		}
 
 		var out any
-		out, err = call("eventbridge", "PutEvents", map[string]any{"Entries": []any{map[string]any{
-			"Source":       serviceLambda,
-			"DetailType":   "Lambda Function Invocation Result - " + outcome,
-			"Detail":       string(body),
-			"EventBusName": destination,
-			"Resources":    []any{destination, arn},
-		}}})
+		out, err = call(&catalog.DeliveryRole{Service: "eventbridge", Operation: "PutEvents", Params: map[string]any{
+			"Entries": []any{map[string]any{
+				"Source":       serviceLambda,
+				"DetailType":   "Lambda Function Invocation Result - " + outcome,
+				"Detail":       string(body),
+				"EventBusName": destination,
+				"Resources":    []any{destination, arn},
+			}},
+		}})
 		if err == nil {
 			err = putEventsFailure(out)
 		}

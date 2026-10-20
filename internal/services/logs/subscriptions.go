@@ -19,6 +19,9 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
+// checkMessage is the data of the test message sent to a destination as a subscription filter is saved.
+const checkMessage = "CWL CONTROL MESSAGE: Checking health of destination."
+
 const (
 	// maxSubscriptions is how many subscription filters a group may have.
 	maxSubscriptions     = 2
@@ -49,6 +52,13 @@ type subscription struct {
 // UseCaller lets subscription filters deliver to Lambda, Kinesis, and Firehose.
 // Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes subscription filters require a Lambda destination's resource policy to allow
+// logs.amazonaws.com, and a Kinesis or Firehose destination's role to trust it and to allow the write. Call it before
+// serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // delivered is what a write appended to a stream, for its group's filters.
 type delivered struct {
@@ -89,11 +99,25 @@ func (s *Service) PutSubscriptionFilter(
 		return nil, invalid("distribution must be ByLogStream or Random")
 	}
 
+	var scope request.Scope
+	err := s.view(ctx, in.LogGroupName, nil, func(_ storage.ReadTx, groupScope request.Scope, _ *group) error {
+		scope = groupScope
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	role := common.Value(in.RoleArn)
+	if checkErr := s.checkDestination(ctx, scope, common.Value(in.LogGroupName), arn, role); checkErr != nil {
+		return nil, checkErr
+	}
+
 	sub := subscription{
-		Name: name, Pattern: common.Value(in.FilterPattern), Destination: arn, Role: common.Value(in.RoleArn),
+		Name: name, Pattern: common.Value(in.FilterPattern), Destination: arn, Role: role,
 		Distribution: distribution, Created: s.now().UnixMilli(),
 	}
-	err := s.change(ctx, in.LogGroupName, func(g *group) error {
+	err = s.change(ctx, in.LogGroupName, func(g *group) error {
 		if i := slices.IndexFunc(g.Subscriptions, func(o subscription) bool { return o.Name == name }); i >= 0 {
 			g.Subscriptions[i] = sub
 			return nil
@@ -111,6 +135,49 @@ func (s *Service) PutSubscriptionFilter(
 	}
 
 	return &api.PutSubscriptionFilterOutput{}, nil
+}
+
+// checkDestination checks, as AWS does with the test message it sends as a filter is saved, that CloudWatch Logs may
+// deliver to the destination.
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
+func (s *Service) checkDestination(ctx context.Context, scope request.Scope, group, arn, role string) error {
+	test := subscriptionDelivery(scope, group, arn, role, "test", checkMessage)
+	ctx = request.WithMetadata(context.WithoutCancel(ctx), request.Metadata{Scope: scope, Service: "logs"})
+	err := s.authorizer.Authorize(ctx, test)
+	switch {
+	case err == nil:
+		return nil
+	case test.Role == nil:
+		return invalid("Could not execute the lambda function. Make sure you have given CloudWatch Logs permission " +
+			"to execute your function.")
+	}
+
+	return invalid("Could not deliver test message to specified destination: %s", awserror.From(err).Message)
+}
+
+// subscriptionDelivery is a delivery of data to a subscription filter's destination: a Lambda function, whose
+// resource policy must allow CloudWatch Logs, or a Kinesis or Firehose stream written under the filter's role.
+func subscriptionDelivery(scope request.Scope, group, arn, role, partition, data string) catalog.ServiceDelivery {
+	d := catalog.ServiceDelivery{
+		Principal: "logs.amazonaws.com", SourceARN: groupARN(scope, group) + ":*", SourceAccount: scope.AccountID,
+	}
+	switch {
+	case strings.Contains(arn, ":lambda:"):
+		d.Target = arn
+	case strings.Contains(arn, ":kinesis:"):
+		d.Role = &catalog.DeliveryRole{
+			ARN: role, Session: "CloudWatchLogs", Service: "kinesis", Operation: "PutRecord",
+			Params: map[string]any{"StreamARN": arn, "Data": data, "PartitionKey": partition},
+		}
+	default:
+		_, name, _ := strings.Cut(arn, ":deliverystream/")
+		d.Role = &catalog.DeliveryRole{
+			ARN: role, Session: "CloudWatchLogs", Service: "firehose", Operation: "PutRecord",
+			Params: map[string]any{"DeliveryStreamName": name, "Record": map[string]any{"Data": data}},
+		}
+	}
+
+	return d
 }
 
 func (s *Service) DescribeSubscriptionFilters(
@@ -203,7 +270,7 @@ func (s *Service) forward(ctx context.Context, d *delivered) {
 			"logStream": d.stream, "subscriptionFilters": []string{sub.Name}, "logEvents": events,
 		})
 		if err == nil {
-			err = s.deliver(ctx, d, sub.Destination, data)
+			err = s.deliver(ctx, d, sub.Destination, sub.Role, data)
 		}
 
 		if err != nil {
@@ -214,7 +281,7 @@ func (s *Service) forward(ctx context.Context, d *delivered) {
 }
 
 // deliver sends one gzipped DATA_MESSAGE to a subscription's destination.
-func (s *Service) deliver(ctx context.Context, d *delivered, arn string, data []byte) error {
+func (s *Service) deliver(ctx context.Context, d *delivered, arn, role string, data []byte) error {
 	var zipped bytes.Buffer
 	w := gzip.NewWriter(&zipped)
 	if _, err := w.Write(data); err != nil {
@@ -226,26 +293,24 @@ func (s *Service) deliver(ctx context.Context, d *delivered, arn string, data []
 	}
 
 	ctx = request.WithMetadata(context.WithoutCancel(ctx), request.Metadata{Scope: d.scope})
-	switch {
-	case strings.Contains(arn, ":lambda:"):
-		payload, err := json.Marshal(map[string]any{
-			"awslogs": map[string]string{"data": base64.StdEncoding.EncodeToString(zipped.Bytes())},
-		})
-		if err != nil {
-			return err
-		}
-
-		_, err = s.caller.Call(ctx, "lambda", "Invoke",
-			map[string]any{"FunctionName": arn, "InvocationType": "Event", "Payload": string(payload)})
-		return err
-	case strings.Contains(arn, ":kinesis:"):
-		_, err := s.caller.Call(ctx, "kinesis", "PutRecord",
-			map[string]any{"StreamARN": arn, "Data": zipped.String(), "PartitionKey": d.stream})
+	del := subscriptionDelivery(d.scope, d.group.Name, arn, role, d.stream, zipped.String())
+	if del.Role != nil {
+		_, err := s.authorizer.Call(ctx, s.caller, del)
 		return err
 	}
 
-	_, name, _ := strings.Cut(arn, ":deliverystream/")
-	_, err := s.caller.Call(ctx, "firehose", "PutRecord",
-		map[string]any{"DeliveryStreamName": name, "Record": map[string]any{"Data": zipped.String()}})
+	if err := s.authorizer.Authorize(ctx, del); err != nil {
+		return err
+	}
+
+	payload, err := json.Marshal(map[string]any{
+		"awslogs": map[string]string{"data": base64.StdEncoding.EncodeToString(zipped.Bytes())},
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = s.caller.Call(ctx, "lambda", "Invoke",
+		map[string]any{"FunctionName": arn, "InvocationType": "Event", "Payload": string(payload)})
 	return err
 }

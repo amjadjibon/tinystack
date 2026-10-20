@@ -158,6 +158,12 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 		}
 
 		if iterator == nil {
+			if denied, err := s.authorizeReads(streamCtx, scope, mp.FunctionName, mp.EventSourceArn); err != nil {
+				s.recordResult(ctx, scope, mp.UUID, readProblem(denied))
+				sleep(ctx, pollBackoff)
+				continue
+			}
+
 			var err error
 			if iterator, err = s.shardIterator(streamCtx, mp.EventSourceArn, mp.Cursor); err != nil {
 				s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Lambda could not read from the DynamoDB stream.")

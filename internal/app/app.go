@@ -285,10 +285,6 @@ func build(
 	a.onReset(queues.Reset)
 	streams := kinesis.New(store)
 	functions.UseKinesis(streams)
-	if err = functions.Resume(ctx); err != nil {
-		return nil, err
-	}
-
 	topics := sns.New(store, queues, functions, deliveries)
 	// Stop ends HTTP deliveries in flight.
 	a.onStop(topics.Stop)
@@ -617,7 +613,16 @@ func build(
 	// Deliveries a service makes under a role need the role's trust policy to allow the service, and the role to
 	// be permitted the call.
 	handler.UseServiceRoles(tokens.ServiceSession)
+	functions.UseServiceAuthorizer(handler.AuthorizeService)
+	// Pollers read event sources as the function's execution role, so they start once the authorizer is set.
+	if err = functions.Resume(ctx); err != nil {
+		return nil, err
+	}
+
 	topics.UseServiceAuthorizer(handler.AuthorizeService)
+	balancers.UseServiceAuthorizer(handler.AuthorizeService)
+	logGroups.UseServiceAuthorizer(handler.AuthorizeService)
+	monitoring.UseServiceAuthorizer(handler.AuthorizeService)
 	buckets.UseServiceAuthorizer(handler.AuthorizeService)
 	rules.UseServiceAuthorizer(handler.AuthorizeService)
 	restAPIs.UseServiceAuthorizer(handler.AuthorizeService)

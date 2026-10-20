@@ -354,7 +354,15 @@ func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any,
 
 	payload, _ := json.Marshal(event)
 	arn, _ := proxy.LambdaARN(common.Value(a.AuthorizerUri))
-	out, functionError, err := s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
+	// HTTP API authorizers cannot name credentials, so the function's resource policy must allow API Gateway.
+	err = s.authorizer.Authorize(ctx, execute.AuthorizerInvocation(
+		c.scope, *c.api.ApiId, common.Value(a.AuthorizerId), "", arn))
+	var out []byte
+	var functionError bool
+	if err == nil {
+		out, functionError, err = s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
+	}
+
 	if err != nil || functionError {
 		c.authorizerError = "authorizer function failed"
 		return nil, failed

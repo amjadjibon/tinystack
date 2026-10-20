@@ -21,7 +21,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for 
 
 ## Limitations and future work
 
-- Lambda authorizer invocations bypass the function's resource policy; integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated.
+- Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated.
 - No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation.
 - Throttling, quotas, caching, canaries and authorizer caching are not enforced.
 - No mutual TLS or import/export; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them.

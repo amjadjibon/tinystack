@@ -80,6 +80,8 @@ type Service struct {
 	// caller sends asynchronous invocation results to destinations; see
 	// UseCaller.
 	caller *catalog.Caller
+	// authorizer checks the calls made under functions' execution roles; see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
 	// objects reads deployment packages from S3; see UseObjects.
 	objects ObjectReader
 	now     func() time.Time

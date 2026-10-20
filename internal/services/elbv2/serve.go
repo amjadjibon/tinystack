@@ -377,8 +377,13 @@ func (s *Service) invoke(ctx context.Context, rt *route, r *execute.Request, hea
 		return failure(http.StatusInternalServerError)
 	}
 
+	function := common.Value(rt.group.Targets[0].Id)
+	if err = s.authorizeLambda(ctx, rt.scope, rt.group.arnValue(), function); err != nil {
+		return failure(http.StatusBadGateway)
+	}
+
 	out, err := s.call(ctx, rt.scope, "lambda", "Invoke",
-		map[string]any{"FunctionName": common.Value(rt.group.Targets[0].Id), "Payload": string(payload)})
+		map[string]any{"FunctionName": function, "Payload": string(payload)})
 	if err != nil || out["FunctionError"] != nil {
 		return failure(http.StatusBadGateway)
 	}

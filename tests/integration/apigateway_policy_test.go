@@ -425,6 +425,12 @@ func TestAPIGatewayResourcePolicyLambdaAuthorizer(t *testing.T) {
 		return out.Id
 	}
 	deciding, silent := authorizer("deciding", decider.FunctionArn), authorizer("silent", neutral.FunctionArn)
+	// API Gateway invokes the authorizers as the service, which their functions' policies must allow.
+	for _, name := range []string{"decider", "neutral"} {
+		allowService(t, s, name, "apigateway.amazonaws.com",
+			"arn:aws:execute-api:us-east-1:000000000000:"+aws.ToString(api.Id)+"/authorizers/*")
+	}
+
 	policyMethod(t, c, api, "CUSTOM", deciding)
 	id := aws.ToString(api.Id)
 	// A second method on the same API whose authorizer neither allows nor denies it.

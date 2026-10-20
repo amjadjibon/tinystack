@@ -15,6 +15,7 @@ import (
 	"github.com/mochi-mqtt/server/v2/packets"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -32,6 +33,20 @@ var _ api.API = (*DataPlane)(nil)
 
 // DataPlane returns the service's data plane API.
 func (s *Service) DataPlane() *DataPlane { return &DataPlane{s: s} }
+
+// AuthorizationResources names the topic a Publish call publishes to, which IoT policies grant by topic ARN.
+func (d *DataPlane) AuthorizationResources(
+	ctx context.Context,
+	op string,
+	input any,
+) ([]catalog.AuthorizationResource, error) {
+	m, ok := request.FromContext(ctx)
+	if op != "Publish" || !ok {
+		return nil, nil
+	}
+
+	return []catalog.AuthorizationResource{{ARN: arn(m.Scope, "topic", catalog.InputString(input, "Topic"))}}, nil
+}
 
 // Publish publishes a message as the data plane does, with its MQTT 5
 // properties.

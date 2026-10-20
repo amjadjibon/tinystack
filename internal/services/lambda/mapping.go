@@ -204,6 +204,10 @@ func (s *Service) CreateEventSourceMapping(
 		return nil, err
 	}
 
+	if readErr := s.checkMappingReads(ctx, m.Scope, mp); readErr != nil {
+		return nil, readErr
+	}
+
 	prefix := m.Key("lambda", kindMapping, "")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, k := range tx.Keys(prefix) {
@@ -716,6 +720,12 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 		// Receiving for a missing function would only hide the messages.
 		if _, err := s.prepare(ctx, scope, mp.FunctionName, mp.Qualifier); err != nil {
 			s.recordResult(ctx, scope, mp.UUID, "PROBLEM: Function not found.")
+			sleep(ctx, pollBackoff)
+			continue
+		}
+
+		if denied, err := s.authorizeReads(queueCtx, scope, mp.FunctionName, mp.EventSourceArn); err != nil {
+			s.recordResult(ctx, scope, mp.UUID, readProblem(denied))
 			sleep(ctx, pollBackoff)
 			continue
 		}

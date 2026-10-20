@@ -457,6 +457,10 @@ forgetting a queue policy for SNS or a function permission for API Gateway, S3 o
 | S3 notifications | `s3.amazonaws.com` | `sqs:SendMessage`, `sns:Publish`, `lambda:InvokeFunction` | `arn:aws:s3:::<bucket>` |
 | EventBridge rule target | `events.amazonaws.com` | `sqs:SendMessage` (also dead-letter queues), `sns:Publish`, `lambda:InvokeFunction` | rule ARN |
 | API Gateway REST and HTTP API | `apigateway.amazonaws.com` | `lambda:InvokeFunction` | `arn:aws:execute-api:<region>:<account>:<api-id>/<stage>/<METHOD>/<path>` |
+| API Gateway Lambda authorizer (REST and HTTP API) | `apigateway.amazonaws.com` | `lambda:InvokeFunction` | `arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id>` |
+| CloudWatch alarm action | `cloudwatch.amazonaws.com` (`lambda.alarms.cloudwatch.amazonaws.com` for Lambda) | `sns:Publish`, `lambda:InvokeFunction` | alarm ARN |
+| CloudWatch Logs subscription filter | `logs.amazonaws.com` | `lambda:InvokeFunction` | `arn:aws:logs:<region>:<account>:log-group:<name>:*` |
+| Load balancer Lambda target | `elasticloadbalancing.amazonaws.com` | `lambda:InvokeFunction` | target group ARN |
 
 `aws:SourceAccount` is the source resource's account. `aws:PrincipalServiceName` is the principal.
 The API Gateway path is the resource path as configured (`/pets/{id}`), or `$default` for the HTTP API
@@ -480,15 +484,26 @@ console inspector under method `DELIVER`. Enforce mode fails the delivery as fol
   [dead-letter queues](https://docs.aws.amazon.com/eventbridge/latest/userguide/rule-dlq.html)); the
   dead-letter queue's own policy must allow the rule.
 - API Gateway: `500 {"message": "Internal server error"}` for REST APIs and
-  `500 {"message":"Internal Server Error"}` for HTTP APIs.
+  `500 {"message":"Internal Server Error"}` for HTTP APIs, for integrations and for Lambda authorizers alike.
+- CloudWatch alarm actions: the action fails, and the alarm's history records "Failed to execute action" (soft mode
+  records the action as executed).
+- CloudWatch Logs: `PutSubscriptionFilter` tests the destination as AWS does when a filter is saved, and fails with
+  `InvalidParameterException` ("Could not execute the lambda function. Make sure you have given CloudWatch Logs
+  permission to execute your function.") when the function's policy does not allow `logs.amazonaws.com` for the log
+  group. Events a later denial stops are dropped.
+- Load balancers: registering a Lambda target fails with `ValidationError` when the function's policy does not allow
+  `elasticloadbalancing.amazonaws.com` for the target group, and a request to a target that has since lost the
+  permission answers `502`.
 
-CloudWatch alarm actions, Logs subscriptions, load balancer Lambda targets, Lambda destinations, event source
-mappings and Lambda authorizers are not checked.
+The principal API Gateway uses for an authorizer is the same as for an integration, and an authorizer with
+`AuthorizerCredentials` is invoked [under that role](#deliveries-under-a-role) instead. HTTP API authorizers cannot
+name credentials. CloudWatch alarm actions that execute an Auto Scaling policy are not checked.
 
 ### Deliveries under a role
 
-Scheduler, Pipes, Step Functions, EventBridge targets with a `RoleArn`, API Gateway REST integrations with a
-`Credentials` role, IoT rule actions and Firehose destinations act as an assumed role in AWS. With authorization
+Scheduler, Pipes, Step Functions, EventBridge targets with a `RoleArn`, API Gateway REST integrations and
+authorizers with a `Credentials` role, IoT rule actions, Firehose destinations, Lambda (as a function's execution
+role) and CloudWatch Logs subscriptions to Kinesis or Firehose act as an assumed role in AWS. With authorization
 on, TinyStack does the same in two steps for each call, with no credentials issued:
 
 1. **Trust.** The role's trust policy must allow the service principal to `sts:AssumeRole`. The same evaluation as
@@ -503,12 +518,15 @@ on, TinyStack does the same in two steps for each call, with no credentials issu
 | Source | Principal | `aws:SourceArn` | Session name | Call |
 | --- | --- | --- | --- | --- |
 | Scheduler | `scheduler.amazonaws.com` | the schedule's group ARN, as [AWS scopes it](https://docs.aws.amazon.com/scheduler/latest/UserGuide/cross-service-confused-deputy-prevention.html) | schedule name | the target's operation (also the send to the dead-letter queue) |
-| Pipes | `pipes.amazonaws.com` | pipe ARN | pipe name | enrichment `lambda:InvokeFunction`, then the target's operation |
+| Pipes | `pipes.amazonaws.com` | pipe ARN | pipe name | the source reads (see below), enrichment `lambda:InvokeFunction`, then the target's operation |
 | Step Functions | `states.amazonaws.com` | state machine ARN | execution name | each Task state's operation |
 | EventBridge target with `RoleArn` | `events.amazonaws.com` | rule ARN | rule name | `sqs:SendMessage`, `sns:Publish`, `lambda:InvokeFunction` |
 | API Gateway REST `Credentials` | `apigateway.amazonaws.com` | the method's execute-api ARN | `APIGateway-<api-id>` | `lambda:InvokeFunction` |
-| IoT rule action | `iot.amazonaws.com` | rule ARN | rule name | the action's operation (a Lambda action has no role: the function's policy decides) |
+| API Gateway REST authorizer `AuthorizerCredentials` | `apigateway.amazonaws.com` | `arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id>` | `APIGateway-<api-id>` | `lambda:InvokeFunction` |
+| IoT rule action | `iot.amazonaws.com` | rule ARN | rule name | the action's operation, `iot:Publish` on `arn:aws:iot:<region>:<account>:topic/<topic>` for `republish` (a Lambda action has no role: the function's policy decides) |
 | Firehose | `firehose.amazonaws.com` | delivery stream ARN | stream name | `s3:PutObject`, the processor's `lambda:InvokeFunction` |
+| Lambda execution role | `lambda.amazonaws.com` | function ARN (no qualifier) | function name | event source reads (see below), and the delivery of asynchronous results and failed stream batches to a destination: `sqs:SendMessage`, `sns:Publish`, `events:PutEvents`, `lambda:InvokeFunction` |
+| CloudWatch Logs subscription filter to Kinesis or Firehose | `logs.amazonaws.com` | `arn:aws:logs:<region>:<account>:log-group:<name>:*` | `CloudWatchLogs` | `kinesis:PutRecord`, `firehose:PutRecord` with the filter's `RoleArn` |
 
 Each check is recorded under method `DELIVER` in `/_tinystack/requests`, with the session as the principal and
 `caused_by` naming the request that started it when there is one. A denied trust check shows service `sts`,
@@ -524,9 +542,37 @@ enforce mode fails it through the service's own failure path:
 - API Gateway: the 500 above.
 - IoT: the action fails, which the error action receives. Firehose: the processor's records fail with
   `Lambda.InvokeAccessDenied`, and a denied S3 write is a failed delivery.
+- Lambda destinations: the record is not delivered and the delivery log shows the denial.
+- CloudWatch Logs: `PutSubscriptionFilter` tests the destination as the role when the filter is saved and fails with
+  `InvalidParameterException` ("Could not deliver test message to specified destination"); a denied delivery of events
+  is dropped.
 
-Not checked: Pipes' source reads, IoT `republish` and the `aws_lambda()` function, and API Gateway integrations whose
-`Credentials` are `arn:aws:iam::*:user/*`.
+#### Event source reads
+
+Lambda event source mappings and Pipes read their source as a role: the function's execution role, or the pipe's role.
+Each read is a call checked like the deliveries above, with the source's real action:
+
+| Source | Calls |
+| --- | --- |
+| SQS queue | `sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sqs:GetQueueAttributes` on the queue |
+| Kinesis stream | `kinesis:DescribeStream`, `kinesis:ListShards`, `kinesis:GetShardIterator`, `kinesis:GetRecords` |
+| DynamoDB stream | `dynamodb:DescribeStream`, `dynamodb:GetShardIterator`, `dynamodb:GetRecords` |
+
+Kinesis and DynamoDB streams are evaluated against Resource `*`, so a role scoped to a stream ARN is denied; grant the
+stream actions on `*` until stream ARNs resolve. Reading is checked at these points:
+
+- `CreateEventSourceMapping` fails in enforce mode with `InvalidParameterValueException` when the role cannot read the
+  source: "The provided execution role does not have permissions to call ReceiveMessage on SQS", or "Cannot access
+  stream <arn>. Please ensure the role can perform the ... Actions on your stream in IAM."
+- An SQS mapping checks before each receive, a stream mapping when its poller starts and after a failed read. A
+  mapping that is denied stays `Enabled`, reads nothing and reports `PROBLEM: The provided execution role does not
+  have permissions to call <Action> on <Service>.` as its `LastProcessingResult`; it resumes when the permission is
+  back. AWS does not document the exact text of this result for a permission problem.
+- A pipe checks once every 30 seconds, because the runner visits each pipe every second and every check is recorded.
+  A denied pipe moves nothing and is tried again after the interval.
+
+Not checked: the `aws_lambda()` SQL function, API Gateway integrations whose `Credentials` are
+`arn:aws:iam::*:user/*`, and Lambda dead-letter queues, which TinyStack does not support.
 
 ## IAM policy simulation
 

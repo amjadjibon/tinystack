@@ -44,7 +44,9 @@ type Service struct {
 	store storage.Store
 	// caller delivers to subscription filters' destinations; see UseCaller.
 	caller *catalog.Caller
-	now    func() time.Time
+	// authorizer checks deliveries to subscription filters' destinations; see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
+	now        func() time.Time
 }
 
 func New(store storage.Store) *Service {

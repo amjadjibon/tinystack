@@ -26,7 +26,7 @@ See the [implemented feature catalogue](catalogue.md#cloudwatch-logs) for this s
 - Unselected log-management APIs are unsupported.
 - Verify mode exposes group/stream inventory; event reads, queries and management require signed CLI/SDK requests.
 - Subscription and metric filters use the AWS API rather than console forms.
-- Subscription filters invoking Lambda are not checked against the function policy.
+- The test message AWS sends to a destination as a filter is saved is checked, not sent; Kinesis and Firehose destinations are not checked for existence or state.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

@@ -69,6 +69,8 @@ type Service struct {
 	logger     *slog.Logger
 	now        func() time.Time
 	bg         *background.Group
+	// checked remembers whether each pipe's role may read its source; see authorizeReads.
+	checked checks
 }
 
 // New returns a Pipes service whose runner moves records of running pipes

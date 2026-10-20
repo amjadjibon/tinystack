@@ -280,6 +280,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 - AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, DynamoDB stream connections from table pages, SNS subscriptions, paginated CloudWatch logs, and function URL management for $LATEST and aliases with automatic public permissions for NONE URLs.
 - Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution.
 - With authorization on, SNS, S3 notification, EventBridge and API Gateway Lambda proxy invocations need the function policy (such as AddPermission with a service Principal, SourceArn and SourceAccount) to allow the service principal.
+- With authorization on, Lambda acts as the function's execution role, whose trust policy must allow lambda.amazonaws.com for the function (aws:SourceArn) and account, when it reads an event source (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; Kinesis and DynamoDB stream describe, shard iterator and record reads) and when it sends asynchronous results and failed stream batches to SQS, SNS, EventBridge or Lambda destinations; CreateEventSourceMapping fails with InvalidParameterValueException in enforce mode when the role cannot read the source, and a mapping whose role loses the permission reports it in LastProcessingResult and reads nothing more.
 
 [Supported operations](lambda.md#supported-operations) · [Limitations](lambda.md#limitations-and-future-work)
 
@@ -328,6 +329,7 @@ Inspect log events and route local subscription and metric filters.
 - Log groups, streams, retention metadata, tags and paged event reads.
 - PutLogEvents and filter patterns.
 - Subscription delivery to Lambda, Kinesis and Firehose.
+- With authorization on, a Lambda destination needs its function policy to allow logs.amazonaws.com with the log group as aws:SourceArn, and a Kinesis or Firehose destination writes as the filter's role, whose trust policy must allow logs.amazonaws.com for the log group; PutSubscriptionFilter tests the destination as AWS does and fails with InvalidParameterException when it is denied in enforce mode, and a denied delivery of events is dropped.
 - Metric filters publish local CloudWatch metrics.
 - Logs Insights subset runs synchronously and retains query results.
 - AWS-style console for scoped log groups and streams, retention and tags, explicit event searches with time/stream/term filters, older/newer event paging and details, individual event ingestion and Logs Insights results; Lambda monitor links open their log groups.
@@ -344,6 +346,7 @@ Record metrics, evaluate alarms, and exercise local monitoring integrations.
 - Metric/composite alarms, alarm history and dashboards.
 - Background evaluation and state-change EventBridge events.
 - SNS, Lambda and Auto Scaling actions through the caller.
+- With authorization on, an SNS action needs the topic policy to allow cloudwatch.amazonaws.com, and a Lambda action the function policy to allow lambda.alarms.cloudwatch.amazonaws.com, with the alarm as aws:SourceArn and its account as aws:SourceAccount; a denied action is recorded in the alarm history as failed in enforce mode and as a would-deny check in soft mode.
 - Fixture-backed AWS/Billing EstimatedCharges in us-east-1: current UTC month USD total and verified AmazonS3 service dimension, sampled each minute and after fixture changes.
 - AWS-style console for scoped metric selection and graphs, explicit custom metric publication, metric/composite alarm creation and editing, actions and state tests, paginated history, tags, and dashboard JSON editing with metric/text previews.
 
@@ -719,7 +722,8 @@ Store account-wide identities and optionally evaluate their permission policies.
 - Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions.
 - Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess.
 - Gateway iam:PassRole checks for explicitly supplied service roles, including Lambda, ECS, Step Functions, EventBridge targets and schedules, EC2 instance-profile roles, CloudFormation, EKS, CodeBuild, Firehose, Pipes, Lake Formation, SES event destinations, EMR Serverless job runs and other registered role inputs; identity, boundary and session layers intersect with iam:PassedToService conditions and per-role inspector checks.
-- Deliveries services make under a role (Scheduler, Pipes, Step Functions, EventBridge targets, API Gateway credentials, IoT rule actions, Firehose) check the role's trust policy for the service principal with aws:SourceArn and aws:SourceAccount, then evaluate the call as the assumed-role session through the same identity, boundary and resource-policy evaluation as signed requests, recorded under method DELIVER in the request inspector.
+- Deliveries one service makes to a queue, topic or function (SNS, S3 notifications, EventBridge targets, API Gateway integrations and Lambda authorizers, CloudWatch alarm actions, CloudWatch Logs subscriptions to Lambda, load balancer Lambda targets, IoT Lambda actions) are decided by the target's resource policy for the service principal, with aws:SourceArn and aws:SourceAccount, recorded under method DELIVER in the request inspector.
+- Deliveries services make under a role (Scheduler, Pipes including their source reads, Step Functions, EventBridge targets, API Gateway integration and authorizer credentials, IoT rule actions including republish, Firehose, Lambda execution roles for event source reads and destinations, CloudWatch Logs subscription filters to Kinesis and Firehose) check the role's trust policy for the service principal with aws:SourceArn and aws:SourceAccount, then evaluate the call as the assumed-role session through the same identity, boundary and resource-policy evaluation as signed requests, recorded under method DELIVER in the request inspector.
 - SimulatePrincipalPolicy and SimulateCustomPolicy reuse the gateway evaluator independently of authorization mode; user/group/role policies, boundary overrides, resource policies, typed context, missing keys, matched policy sources and one paginated result per action and resource.
 
 [Supported operations](iam.md#supported-operations) · [Limitations](iam.md#limitations-and-future-work)
@@ -790,7 +794,7 @@ Connect devices and manage registry, policies, rules, jobs, provisioning, and fl
 - Things, types, static group trees, certificates, registered CAs, policy versions and attachments.
 - Per-account/region MQTT broker over WebSocket, optional TLS and plain TCP.
 - Topic SQL, Basic Ingest, error actions and local service destinations.
-- With authorization on, each action assumes its role, whose trust policy must allow iot.amazonaws.com for the rule, and is decided by the role's policies; a Lambda action needs the function's policy to allow iot.amazonaws.com.
+- With authorization on, each action assumes its role, whose trust policy must allow iot.amazonaws.com for the rule, and is decided by the role's policies; a Lambda action needs the function's policy to allow iot.amazonaws.com; a republish action needs its role to be allowed iot:Publish on the topic's ARN.
 - Custom Lambda authorizers and default authorizer selection.
 - Deactivating or revoking a certificate, or deactivating its CA, disconnects its live MQTT clients with AUTH_ERROR.
 - Snapshot jobs, MQTT job notifications and credentials-provider role aliases.
@@ -1077,6 +1081,7 @@ Connect SQS queues and Kinesis or DynamoDB streams to targets with filtering and
 - Lambda, SQS, SNS, EventBridge, Step Functions and Kinesis targets, called in-process; Lambda and Step Functions receive the batch as a JSON array.
 - Resources appear in the resource inventory.
 - With authorization on, enrichment and target calls assume the pipe's role, whose trust policy must allow pipes.amazonaws.com for the pipe (aws:SourceArn) and account, and are decided by the role's policies; a denied delivery is a failed delivery that the next visit retries, and soft mode records the check.
+- With authorization on, source reads (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; stream describe, iterator and record reads) are made as the pipe's role too, checked once every 30 seconds for each running pipe; a denied pipe moves nothing.
 
 [Supported operations](pipes.md#supported-operations) · [Limitations](pipes.md#limitations-and-future-work)
 
@@ -1171,6 +1176,7 @@ Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT aut
 - HTTP forwarding, JWT and Lambda authorizers, access logs.
 - AWS-style console for scoped HTTP API creation and CORS settings, routes, Lambda/HTTP integrations, JWT/Lambda authorizers, auto/manual stages, deployment snapshots, API/stage tags, and explicit deployed-stage request testing.
 - With authorization on, Lambda proxy integrations need the function policy to allow apigateway.amazonaws.com with the route's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal Server Error in enforce mode and is recorded in soft mode.
+- Lambda authorizers need the function policy to allow apigateway.amazonaws.com with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn; a denied invocation answers 500.
 
 [Supported operations](apigatewayv2.md#supported-operations) · [Limitations](apigatewayv2.md#limitations-and-future-work)
 
@@ -1189,6 +1195,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 - AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing.
 - With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode.
 - A credentials role must trust apigateway.amazonaws.com for the method's execute-api ARN and its policies must allow lambda:InvokeFunction; the same 500 reports a denial.
+- Lambda authorizers are invoked as apigateway.amazonaws.com, which the function policy must allow with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn, or as the authorizer's credentials role, whose trust policy must allow it for that source; a denied invocation answers 500.
 
 [Supported operations](apigateway.md#supported-operations) · [Limitations](apigateway.md#limitations-and-future-work)
 
@@ -1246,6 +1253,7 @@ Manage application and network load balancer metadata and invoke HTTP listener b
 - Load balancers, target groups, targets, listeners, listener rules, attributes and tags.
 - Fixed responses, redirects, Lambda targets and HTTP IP targets.
 - Related subnet, security group and certificate checks through local services.
+- With authorization on, a Lambda target needs the function policy to allow elasticloadbalancing.amazonaws.com with the target group as aws:SourceArn; RegisterTargets fails with ValidationError without it in enforce mode, and a request to a target that lost its permission answers 502.
 
 [Supported operations](elbv2.md#supported-operations) · [Limitations](elbv2.md#limitations-and-future-work)
 

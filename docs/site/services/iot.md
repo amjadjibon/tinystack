@@ -27,7 +27,7 @@ See the [implemented feature catalogue](catalogue.md#iot-core) for this service'
 - Fleet SearchIndex scans local records; no aggregations, Device Defender or geolocation.
 - MQTT session/in-flight state stays in memory; retained messages persist.
 - Reset keeps connected MQTT clients and the broker's in-memory session state.
-- Republish actions and the aws_lambda() SQL function are not checked against the rule's role or the function's policy.
+- The aws_lambda() SQL function is not checked against the function's policy.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

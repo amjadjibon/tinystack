@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -398,6 +399,10 @@ func (s *Service) act(ctx context.Context, ch *change, arn string) error {
 		}
 
 		subject := fmt.Sprintf("%s: %q in %s", state, a.name(), ch.scope.Region)
+		if authErr := s.authorize(ctx, ch, "cloudwatch.amazonaws.com", arn); authErr != nil {
+			return authErr
+		}
+
 		_, err = s.caller.Call(callContext(ctx, ch.scope, "sns"), "sns", "Publish",
 			map[string]any{"TopicArn": arn, "Subject": subject, "Message": string(msg)})
 		return err
@@ -412,6 +417,10 @@ func (s *Service) act(ctx context.Context, ch *change, arn string) error {
 				"configuration": configuration(a),
 			},
 		}
+		if err := s.authorize(ctx, ch, "lambda.alarms.cloudwatch.amazonaws.com", arn); err != nil {
+			return err
+		}
+
 		_, err := s.caller.Call(callContext(ctx, ch.scope, "lambda"), "lambda", "Invoke",
 			map[string]any{"FunctionName": arn, "InvocationType": "Event", "Payload": event})
 		return err
@@ -433,6 +442,15 @@ func (s *Service) act(ctx context.Context, ch *change, arn string) error {
 
 	_, err := s.caller.Call(callContext(ctx, ch.scope, "autoscaling"), "autoscaling", "ExecutePolicy", params)
 	return err
+}
+
+// authorize checks that the resource policy of the topic or function an alarm acts on allows principal, with the
+// alarm as aws:SourceArn:
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Notify_Users_Alarm_Changes.html
+func (s *Service) authorize(ctx context.Context, ch *change, principal, target string) error {
+	return s.authorizer.Authorize(callContext(ctx, ch.scope, "cloudwatch"), catalog.ServiceDelivery{
+		Principal: principal, SourceARN: ch.alarm.arn(), SourceAccount: ch.scope.AccountID, Target: target,
+	})
 }
 
 func description(a *alarm) string {

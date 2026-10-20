@@ -600,6 +600,12 @@ func (s *Service) checkTargets(ctx context.Context, scope request.Scope, t *targ
 			map[string]any{"FunctionName": ids[0]}); err != nil {
 			return awserror.New("InvalidTargetException", "The Lambda function '"+ids[0]+"' does not exist")
 		}
+
+		if err := s.authorizeLambda(ctx, scope, t.arnValue(), ids[0]); err != nil {
+			return awserror.New("ValidationError",
+				"elasticloadbalancing.amazonaws.com does not have permission to call lambda:InvokeFunction on the "+
+					"specified Lambda function")
+		}
 	case targetIP:
 		for _, id := range ids {
 			if _, err := netip.ParseAddr(id); err != nil {

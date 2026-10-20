@@ -55,8 +55,10 @@ var _ api.API = (*Service)(nil)
 type Service struct {
 	store  storage.Store
 	caller *catalog.Caller
-	logger *slog.Logger
-	now    func() time.Time
+	// authorizer checks Lambda targets against the function's resource policy; see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
+	logger     *slog.Logger
+	now        func() time.Time
 	// turn picks IP targets in turn.
 	turn atomic.Uint64
 }
@@ -73,6 +75,22 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 // UseCaller lets the service check what requests name in other services and
 // invoke Lambda targets. Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes Lambda targets require the function's resource policy to allow
+// elasticloadbalancing.amazonaws.com, when they are registered and when they receive a request. Call it before
+// serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
+
+// authorizeLambda checks that the function's resource policy lets the target group invoke it:
+// https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
+func (s *Service) authorizeLambda(ctx context.Context, scope request.Scope, group, function string) error {
+	return s.authorizer.Authorize(callContext(ctx, scope, "lambda"), catalog.ServiceDelivery{
+		Principal: "elasticloadbalancing.amazonaws.com", SourceARN: group, SourceAccount: scope.AccountID,
+		Target: function,
+	})
+}
 
 func arn(scope request.Scope, resource string) string {
 	return "arn:aws:elasticloadbalancing:" + scope.Region + ":" + scope.AccountID + ":" + resource

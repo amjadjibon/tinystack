@@ -26,7 +26,7 @@ See the [implemented feature catalogue](catalogue.md#eventbridge-pipes) for this
 - AT_TIMESTAMP starting positions, log configuration and KMS keys are not supported.
 - Only Lambda enrichments; API destination and HTTP enrichment parameters are not supported.
 - JSON paths in EventBridge target parameters and [*] wildcards in templates are not supported.
-- Reads from SQS, Kinesis and DynamoDB sources are not checked against the pipe's role; its enrichment and target calls are.
+- Stream source checks use wildcard resources, so a role scoped to a stream ARN is denied.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

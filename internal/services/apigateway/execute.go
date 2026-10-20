@@ -293,7 +293,14 @@ func (s *Service) lambdaAuthorize(
 
 	payload, _ := json.Marshal(event)
 	arn, _ := proxy.LambdaARN(common.Value(a.AuthorizerUri))
-	out, functionError, err := s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
+	err := s.authorizer.Authorize(ctx, execute.AuthorizerInvocation(
+		c.scope, *c.api.API.Id, common.Value(a.Id), common.Value(a.AuthorizerCredentials), arn))
+	var out []byte
+	var functionError bool
+	if err == nil {
+		out, functionError, err = s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
+	}
+
 	if err != nil {
 		c.authorizerError = err.Error()
 		return nil, failed

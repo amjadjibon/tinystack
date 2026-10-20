@@ -52,9 +52,11 @@ var _ api.API = (*Service)(nil)
 type Service struct {
 	store  storage.Store
 	caller *catalog.Caller
-	logger *slog.Logger
-	now    func() time.Time
-	bg     *background.Group
+	// authorizer checks alarm actions against the resource policy of the topic or function; see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
+	logger     *slog.Logger
+	now        func() time.Time
+	bg         *background.Group
 	// seq orders records written in the same millisecond.
 	seq uint64
 	mu  sync.Mutex
@@ -74,6 +76,12 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 
 // UseCaller lets alarms run their actions. Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes alarm actions that publish to SNS topics or invoke Lambda functions require the target's
+// resource policy to allow the CloudWatch service principal. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // Stop ends the evaluator and waits for it.
 func (s *Service) Stop() { s.bg.Stop() }
