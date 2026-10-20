@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/config"
 )
 
@@ -32,7 +32,7 @@ func TestConsoleCapabilitiesIncludeConfiguredAccounts(t *testing.T) {
 				"222222222222": {}, "111111111111": {},
 			}
 			s, err := New(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)),
-				catalog.Service{Name: "cloudwatch", SigningName: "monitoring"})
+				api.Descriptor(nil))
 			if err != nil {
 				t.Fatal(err)
 			}

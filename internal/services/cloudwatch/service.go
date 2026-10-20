@@ -71,6 +71,7 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 	s := &Service{store: store, logger: logger, now: time.Now, bg: background.New()}
 	s.bg.Every(evaluateInterval, s.visit)
 	s.bg.Every(time.Second, s.visitBilling)
+	s.bg.Every(streamInterval, s.visitStreams)
 	return s
 }
 

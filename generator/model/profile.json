@@ -2959,7 +2959,13 @@
       "DeleteDashboards",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "PutMetricStream",
+      "GetMetricStream",
+      "ListMetricStreams",
+      "DeleteMetricStream",
+      "StartMetricStreams",
+      "StopMetricStreams"
     ],
     "shapes": {
       "PutMetricDataInput": [
@@ -3108,6 +3114,78 @@
         "HistoryItemType",
         "HistorySummary",
         "HistoryData"
+      ],
+      "PutMetricStreamInput": [
+        "Name",
+        "IncludeFilters",
+        "ExcludeFilters",
+        "FirehoseArn",
+        "RoleArn",
+        "OutputFormat",
+        "Tags",
+        "StatisticsConfigurations",
+        "IncludeLinkedAccountsMetrics"
+      ],
+      "PutMetricStreamOutput": [
+        "Arn"
+      ],
+      "GetMetricStreamInput": [
+        "Name"
+      ],
+      "GetMetricStreamOutput": [
+        "Arn",
+        "Name",
+        "IncludeFilters",
+        "ExcludeFilters",
+        "FirehoseArn",
+        "RoleArn",
+        "State",
+        "CreationDate",
+        "LastUpdateDate",
+        "OutputFormat",
+        "StatisticsConfigurations",
+        "IncludeLinkedAccountsMetrics"
+      ],
+      "ListMetricStreamsInput": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListMetricStreamsOutput": [
+        "NextToken",
+        "Entries"
+      ],
+      "DeleteMetricStreamInput": [
+        "Name"
+      ],
+      "DeleteMetricStreamOutput": [],
+      "StartMetricStreamsInput": [
+        "Names"
+      ],
+      "StartMetricStreamsOutput": [],
+      "StopMetricStreamsInput": [
+        "Names"
+      ],
+      "StopMetricStreamsOutput": [],
+      "MetricStreamFilter": [
+        "Namespace",
+        "MetricNames"
+      ],
+      "MetricStreamEntry": [
+        "Arn",
+        "CreationDate",
+        "LastUpdateDate",
+        "Name",
+        "FirehoseArn",
+        "State",
+        "OutputFormat"
+      ],
+      "MetricStreamStatisticsConfiguration": [
+        "IncludeMetrics",
+        "AdditionalStatistics"
+      ],
+      "MetricStreamStatisticsMetric": [
+        "Namespace",
+        "MetricName"
       ]
     }
   },

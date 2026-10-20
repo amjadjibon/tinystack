@@ -22,6 +22,10 @@ func tagged(scope request.Scope, arn string) (string, error) {
 		return dashboardKey(scope, name), nil
 	}
 
+	if name, ok := strings.CutPrefix(arn, streamARN(scope, "")); ok {
+		return streamKey(scope, name), nil
+	}
+
 	if !strings.HasPrefix(arn, "arn:") {
 		return "", invalidValue("The value %s for parameter ResourceARN is not a valid ARN.", arn)
 	}
@@ -43,6 +47,19 @@ func (s *Service) retag(ctx context.Context, arn string, change func(map[string]
 	}
 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if strings.HasPrefix(key, m.Prefix(service, kindStream)) {
+			st, found, readErr := storage.Read[metricStream](tx, key)
+			if readErr != nil || !found {
+				return notFound(arn, readErr)
+			}
+
+			if st.Tags, readErr = change(st.Tags); readErr != nil {
+				return readErr
+			}
+
+			return storage.Write(tx, key, st)
+		}
+
 		if strings.HasPrefix(key, m.Prefix(service, kindAlarm)) {
 			a, found, readErr := storage.Read[alarm](tx, key)
 			if readErr != nil || !found {
@@ -115,6 +132,16 @@ func (s *Service) ListTagsForResource(
 
 	var tags map[string]string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		if strings.HasPrefix(key, m.Prefix(service, kindStream)) {
+			st, found, readErr := storage.Read[metricStream](tx, key)
+			if readErr != nil || !found {
+				return notFound(*in.ResourceARN, readErr)
+			}
+
+			tags = st.Tags
+			return nil
+		}
+
 		if strings.HasPrefix(key, m.Prefix(service, kindAlarm)) {
 			a, found, readErr := storage.Read[alarm](tx, key)
 			if readErr != nil || !found {

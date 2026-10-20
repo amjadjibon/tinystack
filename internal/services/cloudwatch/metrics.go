@@ -117,7 +117,7 @@ func (s *Service) storeMetric(tx storage.WriteTx, scope request.Scope, namespace
 	}
 
 	prune(tx, dataPrefix(scope, id), now.Add(-retention))
-	return nil
+	return s.queueStreamPoint(tx, scope, rec, p, now)
 }
 
 // datum checks one MetricDatum and returns its data point.

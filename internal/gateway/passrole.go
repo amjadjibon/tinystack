@@ -41,6 +41,10 @@ type passedRoleInput struct {
 // Paths use generated Go member names; intermediate lists are traversed automatically.
 // IAM role/profile membership and STS role assumption are deliberately absent.
 var passedRoleInputs = map[string][]passedRoleInput{
+	"cloudwatch": {{
+		operations: []string{"PutMetricStream"},
+		principal:  "streams.metrics.cloudwatch.amazonaws.com", paths: []string{inputRoleARN},
+	}},
 	"lambda": {
 		{
 			operations: []string{"CreateFunction", "UpdateFunctionConfiguration"},

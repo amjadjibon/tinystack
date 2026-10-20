@@ -13,7 +13,7 @@ Record metrics, evaluate alarms, and exercise local monitoring integrations.
 | API version | `2010-08-01` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 20 of 55 in the pinned model |
+| Selected operations | 26 of 55 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,7 +21,9 @@ See the [implemented feature catalogue](catalogue.md#cloudwatch-metrics-and-alar
 
 ## Limitations and future work
 
-- No anomaly detection, Metrics Insights, metric streams or insight rules.
+- No anomaly detection, Metrics Insights or insight rules.
+- Metric streams reject OpenTelemetry formats and linked-account metrics; additional statistics support basic statistics and percentiles, not trimmed/winsorized statistics; no managed metric-stream monitoring metrics.
+- Metric streams claim completed minutes once, exclude datapoints older than two days, and record failed Firehose calls without replay; Firehose handles destination buffering and retry after accepting records.
 - No EC2/Systems Manager actions or alarm mute rules.
 - Automatic AWS namespace publication is limited to fixture-backed billing metrics; public PutMetricData still rejects AWS/ namespaces.
 - Billing uses Unit None and Currency=USD, with ServiceName=AmazonS3 only for the verified S3 fixture label; other services contribute only to the total, with no linked-account series or real AWS bill calculation.
@@ -47,6 +49,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | --- | --- |
 | `DeleteAlarms` | `POST /` |
 | `DeleteDashboards` | `POST /` |
+| `DeleteMetricStream` | `POST /` |
 | `DescribeAlarmHistory` | `POST /` |
 | `DescribeAlarms` | `POST /` |
 | `DescribeAlarmsForMetric` | `POST /` |
@@ -55,20 +58,25 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetDashboard` | `POST /` |
 | `GetMetricData` | `POST /` |
 | `GetMetricStatistics` | `POST /` |
+| `GetMetricStream` | `POST /` |
 | `ListDashboards` | `POST /` |
+| `ListMetricStreams` | `POST /` |
 | `ListMetrics` | `POST /` |
 | `ListTagsForResource` | `POST /` |
 | `PutCompositeAlarm` | `POST /` |
 | `PutDashboard` | `POST /` |
 | `PutMetricAlarm` | `POST /` |
 | `PutMetricData` | `POST /` |
+| `PutMetricStream` | `POST /` |
 | `SetAlarmState` | `POST /` |
+| `StartMetricStreams` | `POST /` |
+| `StopMetricStreams` | `POST /` |
 | `TagResource` | `POST /` |
 | `UntagResource` | `POST /` |
 
 ## Operations not implemented
 
-??? info "35 modeled operations outside the implementation"
+??? info "29 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -77,7 +85,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteAlarmMuteRule`
     - `DeleteAnomalyDetector`
     - `DeleteInsightRules`
-    - `DeleteMetricStream`
     - `DeleteResourceMetricsConfiguration`
     - `DescribeAlarmContributors`
     - `DescribeAnomalyDetectors`
@@ -88,22 +95,17 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetAlarmMuteRule`
     - `GetDataset`
     - `GetInsightRuleReport`
-    - `GetMetricStream`
     - `GetMetricWidgetImage`
     - `GetOTelEnrichment`
     - `GetResourceMetricsConfiguration`
     - `ListAlarmMuteRules`
     - `ListManagedInsightRules`
-    - `ListMetricStreams`
     - `PutAlarmMuteRule`
     - `PutAnomalyDetector`
     - `PutInsightRule`
     - `PutLogAlarm`
     - `PutManagedInsightRules`
-    - `PutMetricStream`
-    - `StartMetricStreams`
     - `StartOTelEnrichment`
-    - `StopMetricStreams`
     - `StopOTelEnrichment`
     - `UpdateOTelEnrichment`
     - `UpdateResourceMetricsConfiguration`
@@ -113,5 +115,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cloudwatch)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cloudwatch/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cloudwatch.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [cloudwatch_billing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_billing_test.go), [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
+- SDK integration examples: [cloudwatch_billing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_billing_test.go), [cloudwatch_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_streams_test.go), [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

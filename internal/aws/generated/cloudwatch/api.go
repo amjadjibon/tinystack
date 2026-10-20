@@ -433,6 +433,97 @@ type ListTagsForResourceOutput struct {
 	Tags []Tag `json:"Tags,omitempty" query:"Tags"`
 }
 
+type MetricStreamFilter struct {
+	Namespace   *string  `json:"Namespace,omitempty" query:"Namespace"`
+	MetricNames []string `json:"MetricNames,omitempty" query:"MetricNames"`
+}
+
+type MetricStreamStatisticsMetric struct {
+	Namespace  *string `json:"Namespace,omitempty" query:"Namespace"`
+	MetricName *string `json:"MetricName,omitempty" query:"MetricName"`
+}
+
+type MetricStreamStatisticsConfiguration struct {
+	IncludeMetrics       []MetricStreamStatisticsMetric `json:"IncludeMetrics,omitempty" query:"IncludeMetrics"`
+	AdditionalStatistics []string                       `json:"AdditionalStatistics,omitempty" query:"AdditionalStatistics"`
+}
+
+type PutMetricStreamInput struct {
+	Name                         *string                               `json:"Name,omitempty" query:"Name"`
+	IncludeFilters               []MetricStreamFilter                  `json:"IncludeFilters,omitempty" query:"IncludeFilters"`
+	ExcludeFilters               []MetricStreamFilter                  `json:"ExcludeFilters,omitempty" query:"ExcludeFilters"`
+	FirehoseArn                  *string                               `json:"FirehoseArn,omitempty" query:"FirehoseArn"`
+	RoleArn                      *string                               `json:"RoleArn,omitempty" query:"RoleArn"`
+	OutputFormat                 *string                               `json:"OutputFormat,omitempty" query:"OutputFormat"`
+	Tags                         []Tag                                 `json:"Tags,omitempty" query:"Tags"`
+	StatisticsConfigurations     []MetricStreamStatisticsConfiguration `json:"StatisticsConfigurations,omitempty" query:"StatisticsConfigurations"`
+	IncludeLinkedAccountsMetrics *bool                                 `json:"IncludeLinkedAccountsMetrics,omitempty" query:"IncludeLinkedAccountsMetrics"`
+}
+
+type PutMetricStreamOutput struct {
+	Arn *string `json:"Arn,omitempty" query:"Arn"`
+}
+
+type GetMetricStreamInput struct {
+	Name *string `json:"Name,omitempty" query:"Name"`
+}
+
+type GetMetricStreamOutput struct {
+	Arn                          *string                               `json:"Arn,omitempty" query:"Arn"`
+	Name                         *string                               `json:"Name,omitempty" query:"Name"`
+	IncludeFilters               []MetricStreamFilter                  `json:"IncludeFilters,omitempty" query:"IncludeFilters"`
+	ExcludeFilters               []MetricStreamFilter                  `json:"ExcludeFilters,omitempty" query:"ExcludeFilters"`
+	FirehoseArn                  *string                               `json:"FirehoseArn,omitempty" query:"FirehoseArn"`
+	RoleArn                      *string                               `json:"RoleArn,omitempty" query:"RoleArn"`
+	State                        *string                               `json:"State,omitempty" query:"State"`
+	CreationDate                 *float64                              `json:"CreationDate,omitempty" query:"CreationDate,timestamp" cbor:"timestamp"`
+	LastUpdateDate               *float64                              `json:"LastUpdateDate,omitempty" query:"LastUpdateDate,timestamp" cbor:"timestamp"`
+	OutputFormat                 *string                               `json:"OutputFormat,omitempty" query:"OutputFormat"`
+	StatisticsConfigurations     []MetricStreamStatisticsConfiguration `json:"StatisticsConfigurations,omitempty" query:"StatisticsConfigurations"`
+	IncludeLinkedAccountsMetrics *bool                                 `json:"IncludeLinkedAccountsMetrics,omitempty" query:"IncludeLinkedAccountsMetrics"`
+}
+
+type ListMetricStreamsInput struct {
+	NextToken  *string `json:"NextToken,omitempty" query:"NextToken"`
+	MaxResults *int64  `json:"MaxResults,omitempty" query:"MaxResults"`
+}
+
+type MetricStreamEntry struct {
+	Arn            *string  `json:"Arn,omitempty" query:"Arn"`
+	CreationDate   *float64 `json:"CreationDate,omitempty" query:"CreationDate,timestamp" cbor:"timestamp"`
+	LastUpdateDate *float64 `json:"LastUpdateDate,omitempty" query:"LastUpdateDate,timestamp" cbor:"timestamp"`
+	Name           *string  `json:"Name,omitempty" query:"Name"`
+	FirehoseArn    *string  `json:"FirehoseArn,omitempty" query:"FirehoseArn"`
+	State          *string  `json:"State,omitempty" query:"State"`
+	OutputFormat   *string  `json:"OutputFormat,omitempty" query:"OutputFormat"`
+}
+
+type ListMetricStreamsOutput struct {
+	NextToken *string             `json:"NextToken,omitempty" query:"NextToken"`
+	Entries   []MetricStreamEntry `json:"Entries,omitempty" query:"Entries"`
+}
+
+type DeleteMetricStreamInput struct {
+	Name *string `json:"Name,omitempty" query:"Name"`
+}
+
+type DeleteMetricStreamOutput struct {
+}
+
+type StartMetricStreamsInput struct {
+	Names []string `json:"Names,omitempty" query:"Names"`
+}
+
+type StartMetricStreamsOutput struct {
+}
+
+type StopMetricStreamsInput struct {
+	Names []string `json:"Names,omitempty" query:"Names"`
+}
+
+type StopMetricStreamsOutput struct {
+}
+
 type API interface {
 	PutMetricData(context.Context, *PutMetricDataInput) (*PutMetricDataOutput, error)
 	GetMetricData(context.Context, *GetMetricDataInput) (*GetMetricDataOutput, error)
@@ -454,6 +545,12 @@ type API interface {
 	TagResource(context.Context, *TagResourceInput) (*TagResourceOutput, error)
 	UntagResource(context.Context, *UntagResourceInput) (*UntagResourceOutput, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceInput) (*ListTagsForResourceOutput, error)
+	PutMetricStream(context.Context, *PutMetricStreamInput) (*PutMetricStreamOutput, error)
+	GetMetricStream(context.Context, *GetMetricStreamInput) (*GetMetricStreamOutput, error)
+	ListMetricStreams(context.Context, *ListMetricStreamsInput) (*ListMetricStreamsOutput, error)
+	DeleteMetricStream(context.Context, *DeleteMetricStreamInput) (*DeleteMetricStreamOutput, error)
+	StartMetricStreams(context.Context, *StartMetricStreamsInput) (*StartMetricStreamsOutput, error)
+	StopMetricStreams(context.Context, *StopMetricStreamsInput) (*StopMetricStreamsOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -517,6 +614,24 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListTagsForResource", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/ListTagsForResource", Target: "GraniteServiceVersion20100801.ListTagsForResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceInput))
+		}},
+		"PutMetricStream": {Name: "PutMetricStream", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:PutMetricStream", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.PutMetricStream", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutMetricStream", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/PutMetricStream", Target: "GraniteServiceVersion20100801.PutMetricStream", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &PutMetricStreamInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutMetricStream(ctx, input.(*PutMetricStreamInput))
+		}},
+		"GetMetricStream": {Name: "GetMetricStream", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:GetMetricStream", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.GetMetricStream", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetMetricStream", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/GetMetricStream", Target: "GraniteServiceVersion20100801.GetMetricStream", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &GetMetricStreamInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetMetricStream(ctx, input.(*GetMetricStreamInput))
+		}},
+		"ListMetricStreams": {Name: "ListMetricStreams", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:ListMetricStreams", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.ListMetricStreams", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListMetricStreams", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/ListMetricStreams", Target: "GraniteServiceVersion20100801.ListMetricStreams", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListMetricStreamsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListMetricStreams(ctx, input.(*ListMetricStreamsInput))
+		}},
+		"DeleteMetricStream": {Name: "DeleteMetricStream", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:DeleteMetricStream", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.DeleteMetricStream", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteMetricStream", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/DeleteMetricStream", Target: "GraniteServiceVersion20100801.DeleteMetricStream", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteMetricStreamInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteMetricStream(ctx, input.(*DeleteMetricStreamInput))
+		}},
+		"StartMetricStreams": {Name: "StartMetricStreams", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:StartMetricStreams", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.StartMetricStreams", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "StartMetricStreams", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/StartMetricStreams", Target: "GraniteServiceVersion20100801.StartMetricStreams", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &StartMetricStreamsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartMetricStreams(ctx, input.(*StartMetricStreamsInput))
+		}},
+		"StopMetricStreams": {Name: "StopMetricStreams", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:StopMetricStreams", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.StopMetricStreams", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "StopMetricStreams", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/StopMetricStreams", Target: "GraniteServiceVersion20100801.StopMetricStreams", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &StopMetricStreamsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StopMetricStreams(ctx, input.(*StopMetricStreamsInput))
 		}},
 	}}
 }

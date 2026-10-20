@@ -313,7 +313,8 @@
         "Delivery streams, tags, direct puts and batch puts",
         "Background buffering and S3 output after size/time thresholds",
         "Kinesis source polling and Lambda processing through the shared caller",
-        "With authorization on, S3 writes and Lambda processor calls assume the destination's role, whose trust policy must allow firehose.amazonaws.com for the delivery stream, and are decided by the role's policies; a denied processor call fails its records with Lambda.InvokeAccessDenied and a denied write is recorded as a failed delivery"
+        "With authorization on, S3 writes and Lambda processor calls assume the destination's role, whose trust policy must allow firehose.amazonaws.com for the delivery stream, and are decided by the role's policies; a denied processor call fails its records with Lambda.InvokeAccessDenied and a denied write is recorded as a failed delivery",
+        "PutRecord and PutRecordBatch resolve delivery stream ARNs and tags for resource-scoped identity and delivery-role policies"
       ],
       "gaps": [
         "Only S3 destinations are implemented",
@@ -822,12 +823,15 @@
         "Metric/composite alarms, alarm history and dashboards",
         "Background evaluation and state-change EventBridge events",
         "SNS, Lambda and Auto Scaling actions through the caller",
+        "JSON metric streams: CRUD, start/stop, tags, namespace/metric filters, per-minute aggregation and additional basic/percentile statistics; background delivery to Firehose under RoleArn with streams.metrics.cloudwatch.amazonaws.com trust and role permission checks; failures and delivered counts in inventory; AWS::CloudWatch::MetricStream lifecycle",
         "With authorization on, an SNS action needs the topic policy to allow cloudwatch.amazonaws.com, and a Lambda action the function policy to allow lambda.alarms.cloudwatch.amazonaws.com, with the alarm as aws:SourceArn and its account as aws:SourceAccount; a denied action is recorded in the alarm history as failed in enforce mode and as a would-deny check in soft mode",
         "Fixture-backed AWS/Billing EstimatedCharges in us-east-1: current UTC month USD total and verified AmazonS3 service dimension, sampled each minute and after fixture changes",
         "AWS-style console for scoped metric selection and graphs, explicit custom metric publication, metric/composite alarm creation and editing, actions and state tests, paginated history, tags, and dashboard JSON editing with metric/text previews"
       ],
       "gaps": [
-        "No anomaly detection, Metrics Insights, metric streams or insight rules",
+        "No anomaly detection, Metrics Insights or insight rules",
+        "Metric streams reject OpenTelemetry formats and linked-account metrics; additional statistics support basic statistics and percentiles, not trimmed/winsorized statistics; no managed metric-stream monitoring metrics",
+        "Metric streams claim completed minutes once, exclude datapoints older than two days, and record failed Firehose calls without replay; Firehose handles destination buffering and retry after accepting records",
         "No EC2/Systems Manager actions or alarm mute rules",
         "Automatic AWS namespace publication is limited to fixture-backed billing metrics; public PutMetricData still rejects AWS/ namespaces",
         "Billing uses Unit None and Currency=USD, with ServiceName=AmazonS3 only for the verified S3 fixture label; other services contribute only to the total, with no linked-account series or real AWS bill calculation",

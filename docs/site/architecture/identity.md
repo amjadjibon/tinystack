@@ -159,6 +159,7 @@ The shared registry in `internal/gateway/passrole.go` lists the exact input path
 | ECS | RegisterTaskDefinition; RunTask; CreateService, UpdateService | TaskRoleArn / ExecutionRoleArn; Overrides roles; VpcLatticeConfigurations roles |
 | Step Functions | CreateStateMachine, UpdateStateMachine, TestState | RoleArn |
 | EventBridge | PutRule; PutTargets | RoleArn; Targets[].RoleArn |
+| CloudWatch metric streams | PutMetricStream | RoleArn |
 | Scheduler | CreateSchedule, UpdateSchedule | Target.RoleArn |
 | EC2 | RunInstances, AssociateIamInstanceProfile, ReplaceIamInstanceProfileAssociation; CreateFlowLogs | IamInstanceProfile ARN/name resolved through IAM; DeliverLogsPermissionArn / DeliverCrossAccountRole |
 | CloudFormation | CreateStack, UpdateStack, DeleteStack, CreateChangeSet | RoleARN |
@@ -501,8 +502,12 @@ name credentials. CloudWatch alarm actions that execute an Auto Scaling policy a
 
 ### Deliveries under a role
 
-Scheduler, Pipes, Step Functions, EventBridge targets with a `RoleArn`, API Gateway REST integrations and
-authorizers with a `Credentials` role, IoT rule actions, Firehose destinations, Lambda (as a function's execution
+Metric stream management and tag operations resolve their metric stream ARN and tags for identity policies.
+Firehose `PutRecord` and `PutRecordBatch` resolve the named delivery stream ARN and tags, so a metric
+stream role can grant writes to one delivery stream.
+
+CloudWatch metric streams, Scheduler, Pipes, Step Functions, EventBridge targets with a `RoleArn`,
+API Gateway REST integrations and authorizers with a `Credentials` role, IoT rule actions, Firehose destinations, Lambda (as a function's execution
 role) and CloudWatch Logs subscriptions to Kinesis or Firehose act as an assumed role in AWS. With authorization
 on, TinyStack does the same in two steps for each call, with no credentials issued:
 
@@ -524,6 +529,7 @@ on, TinyStack does the same in two steps for each call, with no credentials issu
 | API Gateway REST `Credentials` | `apigateway.amazonaws.com` | the method's execute-api ARN | `APIGateway-<api-id>` | `lambda:InvokeFunction` |
 | API Gateway REST authorizer `AuthorizerCredentials` | `apigateway.amazonaws.com` | `arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id>` | `APIGateway-<api-id>` | `lambda:InvokeFunction` |
 | IoT rule action | `iot.amazonaws.com` | rule ARN | rule name | the action's operation, `iot:Publish` on `arn:aws:iot:<region>:<account>:topic/<topic>` for `republish` (a Lambda action has no role: the function's policy decides) |
+| CloudWatch metric streams | `streams.metrics.cloudwatch.amazonaws.com` | metric stream ARN | metric stream name (up to 64 characters) | `firehose:PutRecordBatch` with the stream's `RoleArn` |
 | Firehose | `firehose.amazonaws.com` | delivery stream ARN | stream name | `s3:PutObject`, the processor's `lambda:InvokeFunction` |
 | Lambda execution role | `lambda.amazonaws.com` | function ARN (no qualifier) | function name | event source reads (see below), and dead-letter events and the delivery of asynchronous results and failed stream batches to a destination: `sqs:SendMessage`, `sns:Publish`, `events:PutEvents`, `lambda:InvokeFunction` |
 | CloudWatch Logs subscription filter to Kinesis or Firehose | `logs.amazonaws.com` | `arn:aws:logs:<region>:<account>:log-group:<name>:*` | `CloudWatchLogs` | `kinesis:PutRecord`, `firehose:PutRecord` with the filter's `RoleArn` |
@@ -540,6 +546,8 @@ enforce mode fails it through the service's own failure path:
   denial as its cause, so `Retry` and `Catch` apply.
 - EventBridge: the retry and dead-letter path above, with `NO_PERMISSIONS` or `FAILED_TO_ASSUME_ROLE`.
 - API Gateway: the 500 above.
+- CloudWatch metric streams: the Firehose call is skipped on denial, and the failure count and last error
+  appear in metric stream inventory. Accepted records use Firehose's destination delivery behavior.
 - IoT: the action fails, which the error action receives. Firehose: the processor's records fail with
   `Lambda.InvokeAccessDenied`, and a denied S3 write is a failed delivery.
 - Lambda destinations: the record is not delivered and the delivery log shows the denial.

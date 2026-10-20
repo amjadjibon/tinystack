@@ -9,8 +9,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// Resources lists every alarm with its state and every dashboard, for the
-// resource browser.
+// Resources lists alarms, dashboards and metric streams, including delivery failures.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -22,6 +21,21 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			scope := request.Scope{AccountID: account, Region: region}
 			switch {
+			case strings.HasPrefix(rest, kindStream+"/"):
+				st, _, err := storage.Read[metricStream](tx, key)
+				if err != nil {
+					return err
+				}
+				out = append(out, catalog.Resource{
+					Type: "metric-stream", Account: account, Region: region,
+					Name: *st.Config.Name, ARN: *st.Config.Arn, Tags: st.Tags,
+					Details: map[string]any{
+						"State": *st.Config.State, "FirehoseArn": *st.Config.FirehoseArn,
+						"Delivered": st.Delivered, "Failed": st.Failed, "LastError": st.LastError,
+						"CreationDate": st.Config.CreationDate, "LastUpdateDate": st.Config.LastUpdateDate,
+						"OutputFormat": st.Config.OutputFormat,
+					},
+				})
 			case strings.HasPrefix(rest, kindAlarm+"/"):
 				a, _, err := storage.Read[alarm](tx, key)
 				if err != nil {
