@@ -26647,5 +26647,699 @@
         "lastModifiedDate"
       ]
     }
+  },
+  "databasemigrationservice": {
+    "operations": [
+      "CreateReplicationSubnetGroup",
+      "DescribeReplicationSubnetGroups",
+      "ModifyReplicationSubnetGroup",
+      "DeleteReplicationSubnetGroup",
+      "CreateReplicationInstance",
+      "DescribeReplicationInstances",
+      "ModifyReplicationInstance",
+      "DeleteReplicationInstance",
+      "RebootReplicationInstance",
+      "CreateEndpoint",
+      "DescribeEndpoints",
+      "ModifyEndpoint",
+      "DeleteEndpoint",
+      "CreateReplicationTask",
+      "DescribeReplicationTasks",
+      "ModifyReplicationTask",
+      "DeleteReplicationTask",
+      "StartReplicationTask",
+      "StopReplicationTask",
+      "AddTagsToResource",
+      "RemoveTagsFromResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateReplicationSubnetGroupMessage": [
+        "ReplicationSubnetGroupIdentifier",
+        "ReplicationSubnetGroupDescription",
+        "SubnetIds",
+        "Tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value",
+        "ResourceArn"
+      ],
+      "CreateReplicationSubnetGroupResponse": [
+        "ReplicationSubnetGroup"
+      ],
+      "ReplicationSubnetGroup": [
+        "ReplicationSubnetGroupIdentifier",
+        "ReplicationSubnetGroupDescription",
+        "VpcId",
+        "SubnetGroupStatus",
+        "Subnets",
+        "SupportedNetworkTypes",
+        "IsReadOnly"
+      ],
+      "Subnet": [
+        "SubnetIdentifier",
+        "SubnetAvailabilityZone",
+        "SubnetStatus"
+      ],
+      "AvailabilityZone": [
+        "Name"
+      ],
+      "DescribeReplicationSubnetGroupsMessage": [
+        "Filters",
+        "MaxRecords",
+        "Marker"
+      ],
+      "Filter": [
+        "Name",
+        "Values"
+      ],
+      "DescribeReplicationSubnetGroupsResponse": [
+        "Marker",
+        "ReplicationSubnetGroups"
+      ],
+      "ModifyReplicationSubnetGroupMessage": [
+        "ReplicationSubnetGroupIdentifier",
+        "ReplicationSubnetGroupDescription",
+        "SubnetIds"
+      ],
+      "ModifyReplicationSubnetGroupResponse": [
+        "ReplicationSubnetGroup"
+      ],
+      "DeleteReplicationSubnetGroupMessage": [
+        "ReplicationSubnetGroupIdentifier"
+      ],
+      "DeleteReplicationSubnetGroupResponse": [],
+      "CreateReplicationInstanceMessage": [
+        "ReplicationInstanceIdentifier",
+        "AllocatedStorage",
+        "ReplicationInstanceClass",
+        "VpcSecurityGroupIds",
+        "AvailabilityZone",
+        "ReplicationSubnetGroupIdentifier",
+        "PreferredMaintenanceWindow",
+        "MultiAZ",
+        "EngineVersion",
+        "AutoMinorVersionUpgrade",
+        "Tags",
+        "KmsKeyId",
+        "PubliclyAccessible"
+      ],
+      "CreateReplicationInstanceResponse": [
+        "ReplicationInstance"
+      ],
+      "ReplicationInstance": [
+        "ReplicationInstanceIdentifier",
+        "ReplicationInstanceClass",
+        "ReplicationInstanceStatus",
+        "AllocatedStorage",
+        "InstanceCreateTime",
+        "VpcSecurityGroups",
+        "AvailabilityZone",
+        "ReplicationSubnetGroup",
+        "PreferredMaintenanceWindow",
+        "PendingModifiedValues",
+        "MultiAZ",
+        "EngineVersion",
+        "AutoMinorVersionUpgrade",
+        "KmsKeyId",
+        "ReplicationInstanceArn",
+        "PubliclyAccessible"
+      ],
+      "VpcSecurityGroupMembership": [
+        "VpcSecurityGroupId",
+        "Status"
+      ],
+      "ReplicationPendingModifiedValues": [
+        "ReplicationInstanceClass",
+        "AllocatedStorage",
+        "MultiAZ",
+        "EngineVersion"
+      ],
+      "DescribeReplicationInstancesMessage": [
+        "Filters",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DescribeReplicationInstancesResponse": [
+        "Marker",
+        "ReplicationInstances"
+      ],
+      "ModifyReplicationInstanceMessage": [
+        "ReplicationInstanceArn",
+        "AllocatedStorage",
+        "ApplyImmediately",
+        "ReplicationInstanceClass",
+        "VpcSecurityGroupIds",
+        "PreferredMaintenanceWindow",
+        "MultiAZ",
+        "EngineVersion",
+        "AllowMajorVersionUpgrade",
+        "AutoMinorVersionUpgrade",
+        "ReplicationInstanceIdentifier"
+      ],
+      "ModifyReplicationInstanceResponse": [
+        "ReplicationInstance"
+      ],
+      "DeleteReplicationInstanceMessage": [
+        "ReplicationInstanceArn"
+      ],
+      "DeleteReplicationInstanceResponse": [
+        "ReplicationInstance"
+      ],
+      "RebootReplicationInstanceMessage": [
+        "ReplicationInstanceArn",
+        "ForcePlannedFailover"
+      ],
+      "RebootReplicationInstanceResponse": [
+        "ReplicationInstance"
+      ],
+      "CreateEndpointMessage": [
+        "EndpointIdentifier",
+        "EndpointType",
+        "EngineName",
+        "Username",
+        "Password",
+        "ServerName",
+        "Port",
+        "DatabaseName",
+        "ExtraConnectionAttributes",
+        "KmsKeyId",
+        "Tags",
+        "SslMode",
+        "ServiceAccessRoleArn",
+        "ExternalTableDefinition",
+        "DynamoDbSettings",
+        "S3Settings",
+        "MongoDbSettings",
+        "KinesisSettings",
+        "KafkaSettings",
+        "ElasticsearchSettings",
+        "NeptuneSettings",
+        "RedshiftSettings",
+        "PostgreSQLSettings",
+        "MySQLSettings",
+        "OracleSettings",
+        "SybaseSettings",
+        "MicrosoftSQLServerSettings",
+        "IBMDb2Settings",
+        "DocDbSettings",
+        "RedisSettings",
+        "GcpMySQLSettings",
+        "TimestreamSettings"
+      ],
+      "DynamoDbSettings": [
+        "ServiceAccessRoleArn"
+      ],
+      "S3Settings": [
+        "ServiceAccessRoleArn",
+        "ExternalTableDefinition",
+        "CsvRowDelimiter",
+        "CsvDelimiter",
+        "BucketFolder",
+        "BucketName",
+        "CompressionType",
+        "EncryptionMode",
+        "ServerSideEncryptionKmsKeyId",
+        "DataFormat",
+        "EncodingType",
+        "DictPageSizeLimit",
+        "RowGroupLength",
+        "DataPageSize",
+        "ParquetVersion",
+        "EnableStatistics",
+        "IncludeOpForFullLoad",
+        "CdcInsertsOnly",
+        "TimestampColumnName",
+        "ParquetTimestampInMillisecond",
+        "CdcInsertsAndUpdates",
+        "DatePartitionEnabled",
+        "DatePartitionSequence",
+        "DatePartitionDelimiter",
+        "UseCsvNoSupValue",
+        "CsvNoSupValue",
+        "PreserveTransactions",
+        "CdcPath",
+        "UseTaskStartTimeForFullLoadTimestamp",
+        "CannedAclForObjects",
+        "AddColumnName",
+        "CdcMaxBatchInterval",
+        "CdcMinFileSize",
+        "CsvNullValue",
+        "IgnoreHeaderRows",
+        "MaxFileSize",
+        "Rfc4180",
+        "DatePartitionTimezone",
+        "AddTrailingPaddingCharacter",
+        "ExpectedBucketOwner",
+        "GlueCatalogGeneration"
+      ],
+      "MongoDbSettings": [
+        "Username",
+        "ServerName",
+        "Port",
+        "DatabaseName",
+        "NestingLevel",
+        "ExtractDocId",
+        "DocsToInvestigate",
+        "KmsKeyId",
+        "UseUpdateLookUp",
+        "ReplicateShardCollections",
+        "Password"
+      ],
+      "KinesisSettings": [
+        "StreamArn",
+        "MessageFormat",
+        "ServiceAccessRoleArn",
+        "IncludeTransactionDetails",
+        "IncludePartitionValue",
+        "PartitionIncludeSchemaTable",
+        "IncludeTableAlterOperations",
+        "IncludeControlDetails",
+        "IncludeNullAndEmpty",
+        "NoHexPrefix",
+        "UseLargeIntegerValue"
+      ],
+      "KafkaSettings": [
+        "Broker",
+        "Topic",
+        "MessageFormat",
+        "IncludeTransactionDetails",
+        "IncludePartitionValue",
+        "PartitionIncludeSchemaTable",
+        "IncludeTableAlterOperations",
+        "IncludeControlDetails",
+        "MessageMaxBytes",
+        "IncludeNullAndEmpty",
+        "SecurityProtocol",
+        "SslClientCertificateArn",
+        "SslClientKeyArn",
+        "SslCaCertificateArn",
+        "SaslUsername",
+        "NoHexPrefix",
+        "SaslMechanism",
+        "SslEndpointIdentificationAlgorithm",
+        "UseLargeIntegerValue",
+        "SslClientKeyPassword",
+        "SaslPassword"
+      ],
+      "ElasticsearchSettings": [
+        "ServiceAccessRoleArn",
+        "EndpointUri",
+        "FullLoadErrorPercentage",
+        "ErrorRetryDuration",
+        "UseNewMappingType"
+      ],
+      "NeptuneSettings": [
+        "ServiceAccessRoleArn",
+        "S3BucketName",
+        "S3BucketFolder",
+        "ErrorRetryDuration",
+        "MaxFileSize",
+        "MaxRetryCount"
+      ],
+      "RedshiftSettings": [
+        "AcceptAnyDate",
+        "AfterConnectScript",
+        "BucketFolder",
+        "BucketName",
+        "CaseSensitiveNames",
+        "CompUpdate",
+        "ConnectionTimeout",
+        "DatabaseName",
+        "DateFormat",
+        "EmptyAsNull",
+        "EncryptionMode",
+        "ExplicitIds",
+        "FileTransferUploadStreams",
+        "LoadTimeout",
+        "MaxFileSize",
+        "Port",
+        "RemoveQuotes",
+        "ReplaceInvalidChars",
+        "ReplaceChars",
+        "ServerName",
+        "ServiceAccessRoleArn",
+        "ServerSideEncryptionKmsKeyId",
+        "TimeFormat",
+        "TrimBlanks",
+        "TruncateColumns",
+        "Username",
+        "WriteBufferSize",
+        "MapBooleanAsBoolean",
+        "Password"
+      ],
+      "PostgreSQLSettings": [
+        "AfterConnectScript",
+        "CaptureDdls",
+        "MaxFileSize",
+        "DatabaseName",
+        "DdlArtifactsSchema",
+        "ExecuteTimeout",
+        "FailTasksOnLobTruncation",
+        "HeartbeatEnable",
+        "HeartbeatSchema",
+        "HeartbeatFrequency",
+        "Port",
+        "ServerName",
+        "Username",
+        "SlotName",
+        "PluginName",
+        "TrimSpaceInChar",
+        "MapBooleanAsBoolean",
+        "MapJsonbAsClob",
+        "MapLongVarcharAs",
+        "DatabaseMode",
+        "BabelfishDatabaseName",
+        "DisableUnicodeSourceFilter",
+        "ServiceAccessRoleArn",
+        "Password"
+      ],
+      "MySQLSettings": [
+        "AfterConnectScript",
+        "CleanSourceMetadataOnMismatch",
+        "DatabaseName",
+        "EventsPollInterval",
+        "TargetDbType",
+        "MaxFileSize",
+        "ParallelLoadThreads",
+        "Port",
+        "ServerName",
+        "ServerTimezone",
+        "Username",
+        "ExecuteTimeout",
+        "ServiceAccessRoleArn",
+        "Password"
+      ],
+      "OracleSettings": [
+        "AddSupplementalLogging",
+        "ArchivedLogDestId",
+        "AdditionalArchivedLogDestId",
+        "ExtraArchivedLogDestIds",
+        "AllowSelectNestedTables",
+        "ParallelAsmReadThreads",
+        "ReadAheadBlocks",
+        "AccessAlternateDirectly",
+        "UseAlternateFolderForOnline",
+        "OraclePathPrefix",
+        "UsePathPrefix",
+        "ReplacePathPrefix",
+        "EnableHomogenousTablespace",
+        "DirectPathNoLog",
+        "ArchivedLogsOnly",
+        "AsmServer",
+        "AsmUser",
+        "CharLengthSemantics",
+        "DatabaseName",
+        "DirectPathParallelLoad",
+        "FailTasksOnLobTruncation",
+        "NumberDatatypeScale",
+        "Port",
+        "ReadTableSpaceName",
+        "RetryInterval",
+        "SecurityDbEncryption",
+        "SecurityDbEncryptionName",
+        "ServerName",
+        "SpatialDataOptionToGeoJsonFunctionName",
+        "StandbyDelayTime",
+        "Username",
+        "UseBFile",
+        "UseDirectPathFullLoad",
+        "UseLogminerReader",
+        "TrimSpaceInChar",
+        "ConvertTimestampWithZoneToUTC",
+        "OpenTransactionWindow",
+        "AsmPassword",
+        "Password"
+      ],
+      "SybaseSettings": [
+        "DatabaseName",
+        "Port",
+        "ServerName",
+        "Username",
+        "Password"
+      ],
+      "MicrosoftSQLServerSettings": [
+        "Port",
+        "BcpPacketSize",
+        "DatabaseName",
+        "ControlTablesFileGroup",
+        "QuerySingleAlwaysOnNode",
+        "ReadBackupOnly",
+        "SafeguardPolicy",
+        "ServerName",
+        "Username",
+        "UseBcpFullLoad",
+        "UseThirdPartyBackupDevice",
+        "TrimSpaceInChar",
+        "TlogAccessMode",
+        "ForceLobLookup",
+        "Password"
+      ],
+      "IBMDb2Settings": [
+        "DatabaseName",
+        "Port",
+        "ServerName",
+        "SetDataCaptureChanges",
+        "CurrentLsn",
+        "MaxKBytesPerRead",
+        "Username",
+        "LoadTimeout",
+        "WriteBufferSize",
+        "MaxFileSize",
+        "KeepCsvFiles",
+        "Password"
+      ],
+      "DocDbSettings": [
+        "Username",
+        "ServerName",
+        "Port",
+        "DatabaseName",
+        "NestingLevel",
+        "ExtractDocId",
+        "DocsToInvestigate",
+        "KmsKeyId",
+        "UseUpdateLookUp",
+        "ReplicateShardCollections",
+        "Password"
+      ],
+      "RedisSettings": [
+        "ServerName",
+        "Port",
+        "SslSecurityProtocol",
+        "SslCaCertificateArn",
+        "AuthPassword"
+      ],
+      "GcpMySQLSettings": [
+        "AfterConnectScript",
+        "CleanSourceMetadataOnMismatch",
+        "DatabaseName",
+        "EventsPollInterval",
+        "TargetDbType",
+        "MaxFileSize",
+        "ParallelLoadThreads",
+        "Port",
+        "ServerName",
+        "ServerTimezone",
+        "Username",
+        "Password"
+      ],
+      "TimestreamSettings": [
+        "DatabaseName",
+        "MemoryDuration",
+        "MagneticDuration",
+        "CdcInsertsAndUpdates",
+        "EnableMagneticStoreWrites"
+      ],
+      "CreateEndpointResponse": [
+        "Endpoint"
+      ],
+      "Endpoint": [
+        "EndpointIdentifier",
+        "EndpointType",
+        "EngineName",
+        "EngineDisplayName",
+        "Username",
+        "ServerName",
+        "Port",
+        "DatabaseName",
+        "ExtraConnectionAttributes",
+        "Status",
+        "KmsKeyId",
+        "EndpointArn",
+        "SslMode",
+        "ServiceAccessRoleArn",
+        "ExternalTableDefinition",
+        "IsReadOnly",
+        "DynamoDbSettings",
+        "S3Settings",
+        "MongoDbSettings",
+        "KinesisSettings",
+        "KafkaSettings",
+        "ElasticsearchSettings",
+        "NeptuneSettings",
+        "RedshiftSettings",
+        "PostgreSQLSettings",
+        "MySQLSettings",
+        "OracleSettings",
+        "SybaseSettings",
+        "MicrosoftSQLServerSettings",
+        "IBMDb2Settings",
+        "DocDbSettings",
+        "RedisSettings",
+        "GcpMySQLSettings",
+        "TimestreamSettings"
+      ],
+      "LakehouseSettings": [
+        "Arn"
+      ],
+      "DescribeEndpointsMessage": [
+        "Filters",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DescribeEndpointsResponse": [
+        "Marker",
+        "Endpoints"
+      ],
+      "ModifyEndpointMessage": [
+        "EndpointArn",
+        "EndpointIdentifier",
+        "EndpointType",
+        "EngineName",
+        "Username",
+        "Password",
+        "ServerName",
+        "Port",
+        "DatabaseName",
+        "ExtraConnectionAttributes",
+        "SslMode",
+        "ServiceAccessRoleArn",
+        "ExternalTableDefinition",
+        "DynamoDbSettings",
+        "S3Settings",
+        "MongoDbSettings",
+        "KinesisSettings",
+        "KafkaSettings",
+        "ElasticsearchSettings",
+        "NeptuneSettings",
+        "RedshiftSettings",
+        "PostgreSQLSettings",
+        "MySQLSettings",
+        "OracleSettings",
+        "SybaseSettings",
+        "MicrosoftSQLServerSettings",
+        "IBMDb2Settings",
+        "DocDbSettings",
+        "RedisSettings",
+        "GcpMySQLSettings",
+        "TimestreamSettings"
+      ],
+      "ModifyEndpointResponse": [
+        "Endpoint"
+      ],
+      "DeleteEndpointMessage": [
+        "EndpointArn"
+      ],
+      "DeleteEndpointResponse": [
+        "Endpoint"
+      ],
+      "CreateReplicationTaskMessage": [
+        "ReplicationTaskIdentifier",
+        "SourceEndpointArn",
+        "TargetEndpointArn",
+        "ReplicationInstanceArn",
+        "MigrationType",
+        "TableMappings",
+        "ReplicationTaskSettings",
+        "Tags"
+      ],
+      "CreateReplicationTaskResponse": [
+        "ReplicationTask"
+      ],
+      "ReplicationTask": [
+        "ReplicationTaskIdentifier",
+        "SourceEndpointArn",
+        "TargetEndpointArn",
+        "ReplicationInstanceArn",
+        "MigrationType",
+        "TableMappings",
+        "ReplicationTaskSettings",
+        "Status",
+        "StopReason",
+        "ReplicationTaskCreationDate",
+        "ReplicationTaskStartDate",
+        "ReplicationTaskArn"
+      ],
+      "ReplicationTaskStats": [
+        "FullLoadProgressPercent",
+        "ElapsedTimeMillis",
+        "TablesLoaded",
+        "TablesLoading",
+        "TablesQueued",
+        "TablesErrored",
+        "FreshStartDate",
+        "StartDate",
+        "StopDate",
+        "FullLoadStartDate",
+        "FullLoadFinishDate"
+      ],
+      "DescribeReplicationTasksMessage": [
+        "Filters",
+        "MaxRecords",
+        "Marker",
+        "WithoutSettings"
+      ],
+      "DescribeReplicationTasksResponse": [
+        "Marker",
+        "ReplicationTasks"
+      ],
+      "ModifyReplicationTaskMessage": [
+        "ReplicationTaskArn",
+        "ReplicationTaskIdentifier",
+        "MigrationType",
+        "TableMappings",
+        "ReplicationTaskSettings"
+      ],
+      "ModifyReplicationTaskResponse": [
+        "ReplicationTask"
+      ],
+      "DeleteReplicationTaskMessage": [
+        "ReplicationTaskArn"
+      ],
+      "DeleteReplicationTaskResponse": [
+        "ReplicationTask"
+      ],
+      "StartReplicationTaskMessage": [
+        "ReplicationTaskArn",
+        "StartReplicationTaskType"
+      ],
+      "StartReplicationTaskResponse": [
+        "ReplicationTask"
+      ],
+      "StopReplicationTaskMessage": [
+        "ReplicationTaskArn"
+      ],
+      "StopReplicationTaskResponse": [
+        "ReplicationTask"
+      ],
+      "AddTagsToResourceMessage": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "AddTagsToResourceResponse": [],
+      "RemoveTagsFromResourceMessage": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "RemoveTagsFromResourceResponse": [],
+      "ListTagsForResourceMessage": [
+        "ResourceArn",
+        "ResourceArnList"
+      ],
+      "ListTagsForResourceResponse": [
+        "TagList"
+      ]
+    }
   }
 }

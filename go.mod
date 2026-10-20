@@ -36,6 +36,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.4
 	github.com/aws/aws-sdk-go-v2/service/costandusagereportservice v1.43.4
 	github.com/aws/aws-sdk-go-v2/service/costexplorer v1.74.1
+	github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.75.1
 	github.com/aws/aws-sdk-go-v2/service/docdb v1.57.4
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.70.3
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.45.1

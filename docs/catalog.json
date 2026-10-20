@@ -2271,6 +2271,32 @@
       ],
       "execution": "Records only",
       "package": "opensearchserverless"
+    },
+    "databasemigrationservice": {
+      "title": "AWS Database Migration Service",
+      "category": "Migration & Modernization",
+      "scope": "Account and Region",
+      "summary": "Store replication subnet groups, instances, endpoints and tasks as records only, with no data migration.",
+      "features": [
+        "Twenty-two pinned AWS JSON 1.1 operations with dms signing, SDK v2 CRUD, lifecycle and Terraform coverage for all four resource types",
+        "Subnet groups validate existing TinyStack EC2 subnets in the same VPC across at least two Availability Zones; instances validate VPC security groups and retain class, engine, storage, MultiAZ and public accessibility metadata",
+        "Instances return creating then available on Describe observations; reboot returns rebooting then available. Task observations advance creating to ready, starting to running, and full-load running to stopped with a simulated completion reason",
+        "Endpoint engine settings are retained for common relational, S3, DynamoDB, Kinesis, Kafka, document and other supported engines; passwords are never persisted or returned and endpoint inspector bodies are redacted",
+        "Task migration type and table mapping JSON shape validation, source/target endpoint type checks, lifecycle guards and dependency-aware deletes",
+        "Describe filters and Marker/MaxRecords pagination (20\u2013100, default 100), native ARN tags with shared limits, Resource Groups Tagging API integration, scoped inventory and console listing"
+      ],
+      "gaps": [
+        "Records only, no data migration: no replication compute, connectivity tests, table statistics, logs, CDC checkpoints, network allocation or real completion is claimed",
+        "Certificates, event subscriptions, account attributes, serverless replication configurations and other DMS APIs are not implemented",
+        "Instance modifications apply to metadata synchronously, including deferred requests; maintenance windows are metadata, not scheduled. Engine versions and classes are checked syntactically rather than against a regional catalog",
+        "A replication subnet group must be explicitly supplied when creating an instance. No IP addresses or KMS keys are provisioned",
+        "Endpoint settings are metadata only; nested authentication fields, certificate references, exact settings replacement and DMS Transfer settings are rejected. Top-level and nested passwords and other Smithy-sensitive settings are accepted and discarded",
+        "Task CDC start/stop positions and timestamps, task data, custom resource identifiers and Kerberos settings are unsupported. Table mappings are checked for structural validity, not evaluated",
+        "Transitions advance only for the returned Describe page; inventory and tag reads do not advance them. Full-load completion is simulated and moves no data",
+        "No CloudFormation resource provider"
+      ],
+      "execution": "Records only",
+      "package": "databasemigrationservice"
     }
   },
   "future": {

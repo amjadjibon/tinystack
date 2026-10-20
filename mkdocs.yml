@@ -200,6 +200,7 @@ nav:
           - "SNS": services/sns.md
           - "SQS": services/sqs.md
       - "Migration & Modernization":
+          - "AWS Database Migration Service": services/databasemigrationservice.md
           - "AWS Transfer Family": services/transfer.md
       - "Networking and APIs":
           - "API Gateway HTTP APIs": services/apigatewayv2.md

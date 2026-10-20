@@ -115,13 +115,17 @@
       "path": "codegen/sdk-codegen/aws-models/config-service.json",
       "sha256": "66e1706ad7d4481ba51aa54f17d3df9f249e290293a6cd141e3903a2eb5e1782"
     },
+    "costandusagereportservice": {
+      "path": "codegen/sdk-codegen/aws-models/cost-and-usage-report-service.json",
+      "sha256": "0a1885967beb8d517ae219ed83915aca1bec0738d3835f842613ceb1332c363d"
+    },
     "costexplorer": {
       "path": "codegen/sdk-codegen/aws-models/cost-explorer.json",
       "sha256": "1aaa6395a8ecf1de9f1715711fb2d6b86ed47eaf0ecc822de753d68cd767f03c"
     },
-    "costandusagereportservice": {
-      "path": "codegen/sdk-codegen/aws-models/cost-and-usage-report-service.json",
-      "sha256": "0a1885967beb8d517ae219ed83915aca1bec0738d3835f842613ceb1332c363d"
+    "databasemigrationservice": {
+      "path": "codegen/sdk-codegen/aws-models/database-migration-service.json",
+      "sha256": "0e656a1065b35119e67b412532672867ee5911dfe959dc93c418cf7eb7998291"
     },
     "dynamodb": {
       "path": "codegen/sdk-codegen/aws-models/dynamodb.json",

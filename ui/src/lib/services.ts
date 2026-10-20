@@ -40,6 +40,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	databasemigrationservice: {
+		title: "AWS Database Migration Service",
+		category: migration,
+		icon: "rds",
+	},
 	costexplorer: {
 		title: "AWS Cost Explorer",
 		category: management,

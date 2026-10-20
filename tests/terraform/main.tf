@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    dms                  = var.endpoint
     opensearchserverless = var.endpoint
     budgets              = var.endpoint
     acm                  = var.endpoint
@@ -2160,4 +2161,61 @@ resource "aws_opensearchserverless_collection" "search" {
   standby_replicas = "DISABLED"
   tags             = { team = var.team }
   depends_on       = [aws_opensearchserverless_security_policy.encryption]
+}
+
+# DMS records only: these resources never migrate data or provision replication compute.
+resource "aws_dms_replication_subnet_group" "local" {
+  replication_subnet_group_id          = "local-migrations"
+  replication_subnet_group_description = "${var.team} migration metadata"
+  subnet_ids                           = slice(data.aws_subnets.default.ids, 0, 2)
+  tags                                 = local.tags
+}
+
+resource "aws_dms_replication_instance" "local" {
+  replication_instance_id     = "local-worker"
+  replication_instance_class  = "dms.t3.micro"
+  replication_subnet_group_id = aws_dms_replication_subnet_group.local.id
+  allocated_storage           = var.team == "core" ? 50 : 100
+  engine_version              = "3.5.3"
+  publicly_accessible         = false
+  apply_immediately           = true
+  tags                        = local.tags
+}
+
+resource "aws_dms_endpoint" "source" {
+  endpoint_id   = "local-source"
+  endpoint_type = "source"
+  engine_name   = "postgres"
+  server_name   = "metadata-only.local"
+  port          = 5432
+  username      = "local"
+  password      = "local-records-only"
+  database_name = var.team
+  tags          = local.tags
+}
+
+resource "aws_dms_endpoint" "target" {
+  endpoint_id   = "local-target"
+  endpoint_type = "target"
+  engine_name   = "mysql"
+  server_name   = "metadata-only.local"
+  port          = 3306
+  username      = "local"
+  password      = "local-records-only"
+  database_name = var.team
+  tags          = local.tags
+}
+
+resource "aws_dms_replication_task" "local" {
+  replication_task_id      = "local-copy"
+  replication_instance_arn = aws_dms_replication_instance.local.replication_instance_arn
+  source_endpoint_arn      = aws_dms_endpoint.source.endpoint_arn
+  target_endpoint_arn      = aws_dms_endpoint.target.endpoint_arn
+  migration_type           = "full-load-and-cdc"
+  table_mappings = jsonencode({ rules = [{
+    rule-type      = "selection", rule-id = "1", rule-name = "all",
+    object-locator = { schema-name = "%", table-name = "%" }, rule-action = "include"
+  }] })
+  start_replication_task = false
+  tags                   = local.tags
 }

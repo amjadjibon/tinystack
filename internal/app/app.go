@@ -44,6 +44,7 @@ import (
 	configapi "github.com/amjadjibon/tinystack/internal/aws/generated/config"
 	costandusagereportserviceapi "github.com/amjadjibon/tinystack/internal/aws/generated/costandusagereportservice"
 	costexplorerapi "github.com/amjadjibon/tinystack/internal/aws/generated/costexplorer"
+	databasemigrationserviceapi "github.com/amjadjibon/tinystack/internal/aws/generated/databasemigrationservice"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
@@ -140,6 +141,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/costandusagereportservice"
 	"github.com/amjadjibon/tinystack/internal/services/costdata"
 	"github.com/amjadjibon/tinystack/internal/services/costexplorer"
+	"github.com/amjadjibon/tinystack/internal/services/databasemigrationservice"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
@@ -395,6 +397,7 @@ func build(
 	a.onStop(budgetRecords.Stop)
 	connectionRecords := codeconnections.New(store)
 	quotaRecords := servicequotas.New(store)
+	dmsRecords := databasemigrationservice.New(store, network)
 	emrRecords := emrserverless.New(store)
 	aossRecords := opensearchserverless.New(store)
 	lakeRecords := lakeformation.New(store)
@@ -505,6 +508,7 @@ func build(
 		costexplorerapi.Descriptor(costExplorerRecords),
 		costandusagereportserviceapi.Descriptor(curRecords),
 		servicequotasapi.Descriptor(quotaRecords),
+		databasemigrationserviceapi.Descriptor(dmsRecords),
 		emrserverlessapi.Descriptor(emrRecords),
 		opensearchserverlessapi.Descriptor(aossRecords),
 		lakeformationapi.Descriptor(lakeRecords),
