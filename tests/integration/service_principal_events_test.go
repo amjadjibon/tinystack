@@ -248,7 +248,12 @@ func TestServicePrincipalELBRegisterTargets(t *testing.T) {
 				})
 				if delivered(mode, choice) {
 					mustAuthorize(t, err)
-				} else if err == nil || !strings.Contains(err.Error(), "does not have permission to call") {
+				} else if err == nil || !strings.Contains(err.Error(), "AccessDenied") ||
+					!strings.Contains(
+						err.Error(),
+						"elasticloadbalancing principal does not have permission to invoke arn "+
+							*fn.FunctionArn+" from target group "+group,
+					) {
 					t.Fatalf("RegisterTargets: %v", err)
 				}
 

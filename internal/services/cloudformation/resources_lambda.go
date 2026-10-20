@@ -16,6 +16,7 @@ var functionSettings = []string{
 	"Timeout",
 	"MemorySize",
 	propertyEnvironment,
+	"DeadLetterConfig",
 	"Runtime",
 }
 
@@ -304,6 +305,8 @@ func updateFunction(ctx context.Context, c *client, r *resource, p props) (map[s
 			settings[k] = p[k]
 		case k == propertyEnvironment:
 			settings[k] = map[string]any{memberVariables: map[string]any{}}
+		case k == "DeadLetterConfig":
+			settings[k] = map[string]any{"TargetArn": ""}
 		case k == memberDescription:
 			settings[k] = ""
 		}

@@ -63,13 +63,14 @@ func (s *Service) UpdateFunctionConfiguration(
 		}
 
 		return nil, fn.configure(&settings{
-			Role:        in.Role,
-			Handler:     in.Handler,
-			Description: in.Description,
-			Runtime:     in.Runtime,
-			Timeout:     in.Timeout,
-			MemorySize:  in.MemorySize,
-			Environment: in.Environment,
+			DeadLetterConfig: in.DeadLetterConfig,
+			Role:             in.Role,
+			Handler:          in.Handler,
+			Description:      in.Description,
+			Runtime:          in.Runtime,
+			Timeout:          in.Timeout,
+			MemorySize:       in.MemorySize,
+			Environment:      in.Environment,
 		})
 	})
 }

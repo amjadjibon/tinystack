@@ -2,11 +2,9 @@ package lambda
 
 import (
 	"context"
-	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/services/eventsource"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -48,25 +46,19 @@ func (s *Service) executionDelivery(ctx context.Context, scope request.Scope, na
 
 // authorizeReads checks that the function's execution role may read the event source, and returns the first call it
 // may not make.
-func (s *Service) authorizeReads(ctx context.Context, scope request.Scope, name, source string) (
+func (s *Service) authorizeReads(ctx context.Context, scope request.Scope, name, reader, source string) (
 	denied catalog.DeliveryRole, err error,
 ) {
-	reads := eventsource.Reads(source)
-	for i := range reads {
-		d, loadErr := s.executionDelivery(ctx, scope, name, &reads[i])
-		if loadErr != nil {
-			return reads[i], loadErr
-		}
-
-		if err := s.authorizer.Authorize(ctx, d); err != nil {
-			return reads[i], err
-		}
+	d, err := s.executionDelivery(ctx, scope, name, &catalog.DeliveryRole{})
+	if err != nil {
+		return catalog.DeliveryRole{}, err
 	}
 
-	return catalog.DeliveryRole{}, nil
+	return s.checked.Authorize(ctx, s.authorizer, reader, source, d, s.now())
 }
 
 // readProblem is what a mapping reports as its last result when its execution role may not read the source.
+// AWS does not document the exact wording for a denied read; keep this local diagnostic explicit.
 func readProblem(denied catalog.DeliveryRole) string {
 	label := map[string]string{
 		serviceSQS: "SQS", "kinesis": "Kinesis", "dynamodbstreams": "DynamoDB Streams",
@@ -79,25 +71,27 @@ func readProblem(denied catalog.DeliveryRole) string {
 // checkMappingReads fails a mapping whose function's execution role may not read the event source, as AWS does when
 // the mapping is created.
 func (s *Service) checkMappingReads(ctx context.Context, scope request.Scope, mp *mapping) error {
+	defer s.checked.Delete(mp.UUID)
 	ctx = request.WithMetadata(context.WithoutCancel(ctx), request.Metadata{Scope: scope})
-	denied, err := s.authorizeReads(ctx, scope, mp.FunctionName, mp.EventSourceArn)
+	denied, err := s.authorizeReads(ctx, scope, mp.FunctionName, mp.UUID, mp.EventSourceArn)
 	switch {
 	case err == nil:
 		return nil
 	case denied.Service == serviceSQS:
+		// https://repost.aws/questions/QUq_CtOWZGTH-ifO-mM1vXkQ
 		return invalid("The provided execution role does not have permissions to call %s on SQS", denied.Operation)
 	}
 
-	return invalid("Cannot access stream %s. Please ensure the role can perform the %s Actions on your stream in IAM.",
-		mp.EventSourceArn, actionList(eventsource.Reads(mp.EventSourceArn)))
-}
-
-// actionList names the operations of calls, as AWS lists the actions a role needs.
-func actionList(calls []catalog.DeliveryRole) string {
-	names := make([]string, len(calls))
-	for i := range calls {
-		names[i] = calls[i].Operation
+	// AWS reports the full diagnostic action list, including operations not used by TinyStack's poller.
+	// https://repost.aws/questions/QUbrIKcZuoTF60lAlfrUGeng
+	actions := "GetRecords, GetShardIterator, DescribeStream, and ListStreams"
+	separator, suffix := ". ", " in IAM."
+	if denied.Service == "kinesis" {
+		// https://repost.aws/questions/QUR9HyviLyQDeuFR-whIKeMQ
+		actions = "GetRecords, GetShardIterator, DescribeStream, DescribeStreamSummary, ListShards, and ListStreams"
+		separator, suffix = ", ", "."
 	}
 
-	return strings.Join(names[:len(names)-1], ", ") + ", and " + names[len(names)-1]
+	return invalid("Cannot access stream %s%sPlease ensure the role can perform the %s Actions on your stream%s",
+		mp.EventSourceArn, separator, actions, suffix)
 }

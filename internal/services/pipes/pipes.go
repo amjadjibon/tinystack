@@ -245,6 +245,7 @@ func (s *Service) DeletePipe(ctx context.Context, in *api.DeletePipeRequest) (*a
 		return nil, err
 	}
 
+	s.checked.Delete(pipeARN(m.Scope, p.Name))
 	out := summary(m.Scope, p, stateDeleting)
 	out.DesiredState = new(stateDeleted)
 

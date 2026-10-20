@@ -129,7 +129,7 @@ func (s *Service) discard(
 
 	body, err := json.Marshal(record)
 	if err == nil {
-		err = s.deliver(ctx, mp.OnFailure, arn, condition, body)
+		err = s.deliver(ctx, mp.OnFailure, arn, condition, body, nil)
 	}
 
 	s.deliveries.Add(delivery.ViaLambdaDestination, arn, mp.OnFailure, body, err)

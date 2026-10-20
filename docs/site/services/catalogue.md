@@ -280,7 +280,8 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 - AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, DynamoDB stream connections from table pages, SNS subscriptions, paginated CloudWatch logs, and function URL management for $LATEST and aliases with automatic public permissions for NONE URLs.
 - Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution.
 - With authorization on, SNS, S3 notification, EventBridge and API Gateway Lambda proxy invocations need the function policy (such as AddPermission with a service Principal, SourceArn and SourceAccount) to allow the service principal.
-- With authorization on, Lambda acts as the function's execution role, whose trust policy must allow lambda.amazonaws.com for the function (aws:SourceArn) and account, when it reads an event source (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; Kinesis and DynamoDB stream describe, shard iterator and record reads) and when it sends asynchronous results and failed stream batches to SQS, SNS, EventBridge or Lambda destinations; CreateEventSourceMapping fails with InvalidParameterValueException in enforce mode when the role cannot read the source, and a mapping whose role loses the permission reports it in LastProcessingResult and reads nothing more.
+- With authorization on, Lambda acts as the function's execution role, whose trust policy must allow lambda.amazonaws.com for the function (aws:SourceArn) and account, when it reads an event source (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; Kinesis and DynamoDB stream describe, shard iterator and record reads) and when it sends dead-letter events, asynchronous results and failed stream batches to SQS, SNS, EventBridge or Lambda destinations; CreateEventSourceMapping fails with InvalidParameterValueException in enforce mode when the role cannot read the source, and a mapping whose role loses the permission reports it in LastProcessingResult and stops reading after the cached check expires.
+- DeadLetterConfig on function creation and configuration updates sends discarded asynchronous events to a standard SQS queue or SNS topic as the execution role, with the original event body and RequestID, ErrorCode and ErrorMessage attributes; OnFailure destinations also receive their invocation record.
 
 [Supported operations](lambda.md#supported-operations) · [Limitations](lambda.md#limitations-and-future-work)
 
@@ -1081,7 +1082,7 @@ Connect SQS queues and Kinesis or DynamoDB streams to targets with filtering and
 - Lambda, SQS, SNS, EventBridge, Step Functions and Kinesis targets, called in-process; Lambda and Step Functions receive the batch as a JSON array.
 - Resources appear in the resource inventory.
 - With authorization on, enrichment and target calls assume the pipe's role, whose trust policy must allow pipes.amazonaws.com for the pipe (aws:SourceArn) and account, and are decided by the role's policies; a denied delivery is a failed delivery that the next visit retries, and soft mode records the check.
-- With authorization on, source reads (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; stream describe, iterator and record reads) are made as the pipe's role too, checked once every 30 seconds for each running pipe; a denied pipe moves nothing.
+- With authorization on, source reads (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; stream describe, iterator and record reads) are made as the pipe's role too, checked once every 30 seconds per pipe, role and source, including denials; role or source changes force a recheck, deletion drops its entry and reset clears every entry; a denied pipe moves nothing.
 
 [Supported operations](pipes.md#supported-operations) · [Limitations](pipes.md#limitations-and-future-work)
 
@@ -1253,7 +1254,7 @@ Manage application and network load balancer metadata and invoke HTTP listener b
 - Load balancers, target groups, targets, listeners, listener rules, attributes and tags.
 - Fixed responses, redirects, Lambda targets and HTTP IP targets.
 - Related subnet, security group and certificate checks through local services.
-- With authorization on, a Lambda target needs the function policy to allow elasticloadbalancing.amazonaws.com with the target group as aws:SourceArn; RegisterTargets fails with ValidationError without it in enforce mode, and a request to a target that lost its permission answers 502.
+- With authorization on, a Lambda target needs the function policy to allow elasticloadbalancing.amazonaws.com with the target group as aws:SourceArn; RegisterTargets fails with AccessDenied without it in enforce mode, and a request to a target that lost its permission answers 502.
 
 [Supported operations](elbv2.md#supported-operations) · [Limitations](elbv2.md#limitations-and-future-work)
 

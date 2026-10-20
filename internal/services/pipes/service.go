@@ -25,6 +25,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/eventsource"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -70,7 +71,7 @@ type Service struct {
 	now        func() time.Time
 	bg         *background.Group
 	// checked remembers whether each pipe's role may read its source; see authorizeReads.
-	checked checks
+	checked eventsource.ReadCache
 }
 
 // New returns a Pipes service whose runner moves records of running pipes

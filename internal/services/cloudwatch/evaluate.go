@@ -417,6 +417,7 @@ func (s *Service) act(ctx context.Context, ch *change, arn string) error {
 				"configuration": configuration(a),
 			},
 		}
+		// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarms-and-actions-Lambda.html
 		if err := s.authorize(ctx, ch, "lambda.alarms.cloudwatch.amazonaws.com", arn); err != nil {
 			return err
 		}

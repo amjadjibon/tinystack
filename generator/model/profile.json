@@ -14129,7 +14129,8 @@
         "Architectures",
         "Tags",
         "Publish",
-        "Layers"
+        "Layers",
+        "DeadLetterConfig"
       ],
       "FunctionCode": [
         "ZipFile",
@@ -14160,7 +14161,8 @@
         "Architectures",
         "RevisionId",
         "LastUpdateStatus",
-        "Layers"
+        "Layers",
+        "DeadLetterConfig"
       ],
       "EnvironmentResponse": [
         "Variables"
@@ -14309,7 +14311,8 @@
         "Environment",
         "Runtime",
         "RevisionId",
-        "Layers"
+        "Layers",
+        "DeadLetterConfig"
       ],
       "PublishVersionRequest": [
         "FunctionName",
@@ -14669,6 +14672,9 @@
       ],
       "OnFailure": [
         "Destination"
+      ],
+      "DeadLetterConfig": [
+        "TargetArn"
       ]
     }
   },

@@ -34,6 +34,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/services/eventsource"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -91,6 +92,7 @@ type Service struct {
 	// running counts each function's invocations in flight, which its
 	// reserved concurrency caps; slots guards it.
 	running map[string]int
+	checked eventsource.ReadCache
 	mu      sync.Mutex
 	slots   sync.Mutex
 }
@@ -179,7 +181,7 @@ func (s *Service) Stop() {
 // Reset ends every event source mapping's poller and removes the warm
 // environments, so nothing keeps running for functions that no longer exist.
 // Call it before the store is cleared.
-func (s *Service) Reset(context.Context) {
+func (s *Service) Reset(ctx context.Context) {
 	s.mu.Lock()
 	ids := slices.Collect(maps.Keys(s.pollers))
 	s.mu.Unlock()
@@ -187,6 +189,7 @@ func (s *Service) Reset(context.Context) {
 		<-s.stopPoller(id)
 	}
 
+	s.checked.Reset(ctx)
 	common.ResetRuntime(s.runtime)
 }
 
@@ -198,6 +201,7 @@ type function struct {
 	Name          string
 	Runtime       string `json:",omitempty"`
 	Role          string
+	DeadLetterARN string `json:",omitempty"`
 	Handler       string `json:",omitempty"`
 	Description   string `json:",omitempty"`
 	PackageType   string
@@ -421,6 +425,10 @@ func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration
 		Architectures:    []string{archX86},
 	}
 
+	if fn.DeadLetterARN != "" {
+		cfg.DeadLetterConfig = &api.DeadLetterConfig{TargetArn: new(fn.DeadLetterARN)}
+	}
+
 	if fn.Runtime != "" {
 		cfg.Runtime, cfg.Handler = new(fn.Runtime), new(fn.Handler)
 	}
@@ -503,17 +511,27 @@ func checkZip(code []byte) error {
 // settings are the configuration fields CreateFunction and
 // UpdateFunctionConfiguration share; a nil field keeps its current value.
 type settings struct {
-	Environment *api.Environment
-	Role        *string
-	Handler     *string
-	Description *string
-	Runtime     *string
-	Timeout     *int64
-	MemorySize  *int64
+	Environment      *api.Environment
+	DeadLetterConfig *api.DeadLetterConfig
+	Role             *string
+	Handler          *string
+	Description      *string
+	Runtime          *string
+	Timeout          *int64
+	MemorySize       *int64
 }
 
 // configure validates and applies c to fn.
 func (fn *function) configure(c *settings) error {
+	if c.DeadLetterConfig != nil {
+		arn := common.Value(c.DeadLetterConfig.TargetArn)
+		if err := checkDeadLetterARN(arn); err != nil {
+			return err
+		}
+
+		fn.DeadLetterARN = arn
+	}
+
 	if c.Role != nil {
 		fn.Role = *c.Role
 	}
@@ -657,13 +675,14 @@ func newFunction(in *api.CreateFunctionRequest, zipFile []byte, directory string
 	}
 
 	err := fn.configure(&settings{
-		Role:        in.Role,
-		Handler:     in.Handler,
-		Description: in.Description,
-		Runtime:     in.Runtime,
-		Timeout:     in.Timeout,
-		MemorySize:  in.MemorySize,
-		Environment: in.Environment,
+		DeadLetterConfig: in.DeadLetterConfig,
+		Role:             in.Role,
+		Handler:          in.Handler,
+		Description:      in.Description,
+		Runtime:          in.Runtime,
+		Timeout:          in.Timeout,
+		MemorySize:       in.MemorySize,
+		Environment:      in.Environment,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -779,6 +798,7 @@ func (s *Service) loadAt(ctx context.Context, raw, qualifier *string) (request.M
 		base, _, loadErr := resolve(tx, m.Scope, name, "")
 		if loadErr == nil {
 			fn.Tags = base.Tags
+			fn.DeadLetterARN = base.DeadLetterARN
 		}
 
 		return loadErr

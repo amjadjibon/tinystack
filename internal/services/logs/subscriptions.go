@@ -148,8 +148,15 @@ func (s *Service) checkDestination(ctx context.Context, scope request.Scope, gro
 	case err == nil:
 		return nil
 	case test.Role == nil:
+		// https://repost.aws/questions/QUenIyUlYJQlmukRBpyl-fLw/cloudwatch-logs-subscription-error
 		return invalid("Could not execute the lambda function. Make sure you have given CloudWatch Logs permission " +
 			"to execute your function.")
+	}
+
+	if strings.Contains(arn, ":firehose:") {
+		// https://repost.aws/questions/QUxCLxD0uFQKWT98miK5mwdQ/regarding-subscription-filter
+		return invalid("Could not deliver test message to specified Firehose stream. " +
+			"Check if the given Firehose stream is in ACTIVE state.")
 	}
 
 	return invalid("Could not deliver test message to specified destination: %s", awserror.From(err).Message)

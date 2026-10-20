@@ -602,9 +602,10 @@ func (s *Service) checkTargets(ctx context.Context, scope request.Scope, t *targ
 		}
 
 		if err := s.authorizeLambda(ctx, scope, t.arnValue(), ids[0]); err != nil {
-			return awserror.New("ValidationError",
-				"elasticloadbalancing.amazonaws.com does not have permission to call lambda:InvokeFunction on the "+
-					"specified Lambda function")
+			// https://repost.aws/knowledge-center/lambda-troubleshoot-targets-for-albs
+			return awserror.New("AccessDenied",
+				"elasticloadbalancing principal does not have permission to invoke arn "+ids[0]+
+					" from target group "+t.arnValue())
 		}
 	case targetIP:
 		for _, id := range ids {

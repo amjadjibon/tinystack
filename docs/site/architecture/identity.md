@@ -491,7 +491,7 @@ console inspector under method `DELIVER`. Enforce mode fails the delivery as fol
   `InvalidParameterException` ("Could not execute the lambda function. Make sure you have given CloudWatch Logs
   permission to execute your function.") when the function's policy does not allow `logs.amazonaws.com` for the log
   group. Events a later denial stops are dropped.
-- Load balancers: registering a Lambda target fails with `ValidationError` when the function's policy does not allow
+- Load balancers: registering a Lambda target fails with `AccessDenied` when the function's policy does not allow
   `elasticloadbalancing.amazonaws.com` for the target group, and a request to a target that has since lost the
   permission answers `502`.
 
@@ -525,7 +525,7 @@ on, TinyStack does the same in two steps for each call, with no credentials issu
 | API Gateway REST authorizer `AuthorizerCredentials` | `apigateway.amazonaws.com` | `arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id>` | `APIGateway-<api-id>` | `lambda:InvokeFunction` |
 | IoT rule action | `iot.amazonaws.com` | rule ARN | rule name | the action's operation, `iot:Publish` on `arn:aws:iot:<region>:<account>:topic/<topic>` for `republish` (a Lambda action has no role: the function's policy decides) |
 | Firehose | `firehose.amazonaws.com` | delivery stream ARN | stream name | `s3:PutObject`, the processor's `lambda:InvokeFunction` |
-| Lambda execution role | `lambda.amazonaws.com` | function ARN (no qualifier) | function name | event source reads (see below), and the delivery of asynchronous results and failed stream batches to a destination: `sqs:SendMessage`, `sns:Publish`, `events:PutEvents`, `lambda:InvokeFunction` |
+| Lambda execution role | `lambda.amazonaws.com` | function ARN (no qualifier) | function name | event source reads (see below), and dead-letter events and the delivery of asynchronous results and failed stream batches to a destination: `sqs:SendMessage`, `sns:Publish`, `events:PutEvents`, `lambda:InvokeFunction` |
 | CloudWatch Logs subscription filter to Kinesis or Firehose | `logs.amazonaws.com` | `arn:aws:logs:<region>:<account>:log-group:<name>:*` | `CloudWatchLogs` | `kinesis:PutRecord`, `firehose:PutRecord` with the filter's `RoleArn` |
 
 Each check is recorded under method `DELIVER` in `/_tinystack/requests`, with the session as the principal and
@@ -563,16 +563,36 @@ stream actions on `*` until stream ARNs resolve. Reading is checked at these poi
 
 - `CreateEventSourceMapping` fails in enforce mode with `InvalidParameterValueException` when the role cannot read the
   source: "The provided execution role does not have permissions to call ReceiveMessage on SQS", or "Cannot access
-  stream <arn>. Please ensure the role can perform the ... Actions on your stream in IAM."
-- An SQS mapping checks before each receive, a stream mapping when its poller starts and after a failed read. A
-  mapping that is denied stays `Enabled`, reads nothing and reports `PROBLEM: The provided execution role does not
-  have permissions to call <Action> on <Service>.` as its `LastProcessingResult`; it resumes when the permission is
-  back. AWS does not document the exact text of this result for a permission problem.
-- A pipe checks once every 30 seconds, because the runner visits each pipe every second and every check is recorded.
-  A denied pipe moves nothing and is tried again after the interval.
+  stream <arn>... Please ensure the role can perform the ... Actions on your stream...". The diagnostic action
+  lists and suffixes differ between DynamoDB Streams and Kinesis.
+- SQS and stream mapping pollers and Pipes share a 30-second read-check cache, keyed by reader (mapping UUID or
+  pipe ARN), role and source. It caches both successful checks and denials. Changing the role or source forces a
+  recheck. Deleting a mapping or pipe drops its entry; application reset clears every entry. Policy edits take effect
+  after the interval, on the next poll (an SQS long poll already in flight can finish first).
+- A denied mapping stays `Enabled`, reads nothing and reports `PROBLEM: The provided execution role does not
+  have permissions to call <Action> on <Service>.` as its `LastProcessingResult`. A denied pipe moves nothing.
+  Both retry authorization after the cache expires and resume when permission returns. AWS does not document the
+  exact `LastProcessingResult` text for a permission problem; this wording remains an approximation.
 
-Not checked: the `aws_lambda()` SQL function, API Gateway integrations whose `Credentials` are
-`arn:aws:iam::*:user/*`, and Lambda dead-letter queues, which TinyStack does not support.
+#### Lambda dead-letter queues
+
+`DeadLetterConfig.TargetArn` accepts a standard SQS queue or SNS topic ARN on `CreateFunction` and
+`UpdateFunctionConfiguration`; an empty configuration clears it. Published versions use the current function-level
+setting. After async retries are exhausted or the event exceeds its maximum age, Lambda sends the original event
+as the message body with `RequestID` (String), `ErrorCode` (Number, the Invoke HTTP status) and `ErrorMessage`
+(String, first 1 KB) message attributes. It also sends the invocation record to an OnFailure destination when both
+are configured; failure of either delivery does not prevent the other. AWS specifies both deliveries without a
+relative ordering guarantee. See [AWS's DLQ documentation](https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-retain-records.html#invocation-dlq)
+and [Destinations announcement](https://aws.amazon.com/blogs/compute/introducing-aws-lambda-destinations/).
+
+The send uses `executionDelivery` and `ServiceAuthorizer.Call` as the execution role, requiring `sqs:SendMessage`
+or `sns:Publish` and trust for `lambda.amazonaws.com`. Enforce mode drops a denied DLQ send and records it;
+soft mode records the denial and sends it. Failed DLQ sends appear as `lambda-dead-letter` deliveries;
+`DeadLetterErrors` metrics are not emitted. Target existence and send permission are not checked at configuration
+time. SQS event source mappings use the source queue's redrive policy; they do not use the function's DLQ.
+
+Not checked: the `aws_lambda()` SQL function and API Gateway integrations whose `Credentials` are
+`arn:aws:iam::*:user/*`.
 
 ## IAM policy simulation
 

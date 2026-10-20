@@ -132,8 +132,8 @@ func TestRoleReadsMappingRevoked(t *testing.T) {
 		t.Fatal("the function was not invoked")
 	}
 
-	// The mapping's creation and two polls checked the three reads each; the second is waiting for a message.
-	waitFor(t, "the second poll", func() bool { return len(roleChecks(t, s, role)) >= 9 })
+	// Creation and the poller each check the three reads once; later polls use the cache.
+	waitFor(t, "the read checks", func() bool { return len(roleChecks(t, s, role)) >= 6 })
 	_, err = iamClient(s, "test", "us-east-1").DeleteRolePolicy(ctx, &iam.DeleteRolePolicyInput{
 		RoleName: new("execution"), PolicyName: new("send"),
 	})
@@ -143,12 +143,22 @@ func TestRoleReadsMappingRevoked(t *testing.T) {
 		t.Fatal("the message the poll in flight read was not processed")
 	}
 
-	waitFor(t, "the problem", func() bool {
+	// Policy edits take effect after the shared 30-second cache expires.
+	deadline := time.Now().Add(60 * time.Second)
+	for {
 		got, getErr := functions.GetEventSourceMapping(ctx, &sdklambda.GetEventSourceMappingInput{UUID: mapping.UUID})
 		mustAuthorize(t, getErr)
-		return strings.Contains(aws.ToString(got.LastProcessingResult),
-			"PROBLEM: The provided execution role does not have permissions to call ReceiveMessage on SQS")
-	})
+		if strings.Contains(aws.ToString(got.LastProcessingResult),
+			"PROBLEM: The provided execution role does not have permissions to call ReceiveMessage on SQS") {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatal("timed out waiting for the cached read permission to expire")
+		}
+
+		time.Sleep(20 * time.Millisecond)
+	}
 	send()
 	if functionInvoked(runtime) {
 		t.Fatal("a role without permissions read the queue")
@@ -196,8 +206,16 @@ func TestRoleReadsMappingStreams(t *testing.T) {
 						StartingPosition: lambdatypes.EventSourcePositionTrimHorizon,
 					})
 					if mode == config.AuthorizationEnforce && choice != roleAllowed {
-						if err == nil || !strings.Contains(err.Error(), "Cannot access stream "+stream) {
-							t.Fatalf("CreateEventSourceMapping: %v", err)
+						want := "Cannot access stream " + stream + ". Please ensure the role can perform the " +
+							"GetRecords, GetShardIterator, DescribeStream, and ListStreams Actions on your stream in IAM."
+						if source == "kinesis" {
+							want = "Cannot access stream " + stream + ", Please ensure the role can perform the " +
+								"GetRecords, GetShardIterator, DescribeStream, DescribeStreamSummary, ListShards, and ListStreams " +
+								"Actions on your stream."
+						}
+
+						if err == nil || !strings.Contains(err.Error(), want) {
+							t.Fatalf("CreateEventSourceMapping: %v, want %s", err, want)
 						}
 					} else {
 						mustAuthorize(t, err)

@@ -332,7 +332,8 @@ func (s *Service) DeleteEventSourceMapping(
 		return nil, err
 	}
 
-	s.stopPoller(mp.UUID)
+	<-s.stopPoller(mp.UUID)
+	s.checked.Delete(mp.UUID)
 	cfg := mp.configuration(m.Scope)
 	cfg.State = new("Deleting")
 	return &cfg, nil
@@ -404,6 +405,7 @@ func (s *Service) UpdateEventSourceMapping(
 	}
 
 	<-s.stopPoller(current.UUID)
+	s.checked.Delete(current.UUID)
 	var updated *mapping
 	prefix := m.Key("lambda", kindMapping, "")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -724,7 +726,7 @@ func (s *Service) poll(ctx context.Context, scope request.Scope, mp mapping) {
 			continue
 		}
 
-		if denied, err := s.authorizeReads(queueCtx, scope, mp.FunctionName, mp.EventSourceArn); err != nil {
+		if denied, err := s.authorizeReads(queueCtx, scope, mp.FunctionName, mp.UUID, mp.EventSourceArn); err != nil {
 			s.recordResult(ctx, scope, mp.UUID, readProblem(denied))
 			sleep(ctx, pollBackoff)
 			continue

@@ -359,6 +359,7 @@ func build(
 	pipelines := pipes.New(store, queues, streams, tables.Streams(), logger)
 	// Stop ends the pipe runner, which writes to the store.
 	a.onStop(pipelines.Stop)
+	a.onReset(pipelines.Reset)
 	monitoring := cloudwatch.New(store, logger)
 	a.onStop(monitoring.Stop)
 	dns := route53.New(store)

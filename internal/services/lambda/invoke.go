@@ -196,6 +196,7 @@ func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload 
 	return s.bg.Go(func(ctx context.Context) {
 		cfg := s.loadInvokeConfig(ctx, scope, name, qualifier)
 		attempts, id := cfg.attempts(), uuid.NewV4().String()
+		ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, RequestID: id})
 		for attempt := 1; ; attempt++ {
 			result, _, version, err := s.run(ctx, scope, name, qualifier, payload)
 			r := &attemptResult{err: err, version: version, result: result, attempts: attempt}
@@ -221,6 +222,7 @@ func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload 
 
 			if attempt == attempts {
 				r.condition = conditionRetries
+				s.sendDeadLetter(ctx, scope, name, arn, id, payload, r)
 				s.sendResult(ctx, arn, cfg.OnFailure, id, payload, r)
 				return
 			}
@@ -233,6 +235,7 @@ func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload 
 
 			if s.now().Sub(queued) > cfg.maxAge() {
 				r.condition = conditionEventAge
+				s.sendDeadLetter(ctx, scope, name, arn, id, payload, r)
 				s.sendResult(ctx, arn, cfg.OnFailure, id, payload, r)
 				return
 			}

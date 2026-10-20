@@ -482,7 +482,7 @@ func (s *Service) sendResult(
 
 	body, err := json.Marshal(record)
 	if err == nil {
-		err = s.deliver(ctx, destination, arn, r.condition, body)
+		err = s.deliver(ctx, destination, arn, r.condition, body, nil)
 	}
 
 	s.deliveries.Add(delivery.ViaLambdaDestination, arn, destination, body, err)
@@ -495,7 +495,12 @@ func (s *Service) sendResult(
 // deliver sends a record to an SQS queue, SNS topic, Lambda function, or
 // EventBridge event bus, in the destination's account and region, under the
 // execution role of the function arn names.
-func (s *Service) deliver(ctx context.Context, destination, arn, condition string, body []byte) error {
+func (s *Service) deliver(
+	ctx context.Context,
+	destination, arn, condition string,
+	body []byte,
+	attributes map[string]any,
+) error {
 	service, _ := destinationService(destination)
 	source := strings.Split(arn, ":")
 	fnScope, name := request.Scope{AccountID: source[4], Region: source[3]}, source[6]
@@ -540,11 +545,11 @@ func (s *Service) deliver(ctx context.Context, destination, arn, condition strin
 	case serviceSQS:
 		url, _ := sqs.QueueURL(destination)
 		_, err = call(&catalog.DeliveryRole{Service: service, Operation: "SendMessage", Params: map[string]any{
-			"QueueUrl": url, "MessageBody": string(body),
+			"QueueUrl": url, "MessageBody": string(body), "MessageAttributes": attributes,
 		}})
 	case serviceSNS:
 		_, err = call(&catalog.DeliveryRole{Service: service, Operation: "Publish", Params: map[string]any{
-			"TopicArn": destination, "Message": string(body),
+			"TopicArn": destination, "Message": string(body), "MessageAttributes": attributes,
 		}})
 	default:
 		outcome := "Success"

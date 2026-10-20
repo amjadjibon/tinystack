@@ -19,6 +19,8 @@ const (
 	ViaSNS         = "sns"
 	ViaEventBridge = "eventbridge"
 	ViaLambdaAsync = "lambda-async"
+	// ViaLambdaDeadLetter records discarded async events sent to a function's dead-letter target.
+	ViaLambdaDeadLetter = "lambda-dead-letter"
 	// ViaLambdaDestination records the results asynchronous invocations send
 	// to their destinations.
 	ViaLambdaDestination  = "lambda-destination"
