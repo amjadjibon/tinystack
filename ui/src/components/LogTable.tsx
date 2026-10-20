@@ -25,7 +25,11 @@ export type LogTableProps<T> = {
 	filterText?: (item: T) => string;
 	onClear?: () => Promise<void>;
 	detailTitle?: (item: T) => string;
-	detail?: (item: T) => ReactNode;
+	detail?: (
+		item: T,
+		context: { records: T[]; select: (item: T) => void },
+	) => ReactNode;
+	filters?: { label: string; matches: (item: T) => boolean }[];
 	empty: string;
 };
 
@@ -42,9 +46,11 @@ export function LogTable<T>({
 	onClear,
 	detailTitle,
 	detail,
+	filters = [],
 	empty,
 }: LogTableProps<T>) {
 	const [live, setLive] = useState(true);
+	const [activeFilters, setActiveFilters] = useState<string[]>([]);
 	const { data, loading, reload } = usePoll(fetcher, live ? 3000 : 0);
 	const [selected, setSelected] = useState<T>();
 	const [panelOpen, setPanelOpen] = useState(false);
@@ -55,23 +61,36 @@ export function LogTable<T>({
 		filterProps,
 		paginationProps,
 		filteredItemsCount,
-	} = useCollection(data ?? [], {
-		filtering: {
-			filteringFunction: filterText
-				? (item, text) =>
-						filterText(item).toLowerCase().includes(text.toLowerCase())
-				: undefined,
-			empty: <EmptyState title="Nothing here yet" subtitle={empty} />,
-			noMatch: (
-				<EmptyState
-					title="No matches"
-					subtitle="No entries match the filter."
-				/>
+	} = useCollection(
+		(data ?? []).filter((item) =>
+			filters.every(
+				(filter) =>
+					!activeFilters.includes(filter.label) || filter.matches(item),
 			),
+		),
+		{
+			filtering: {
+				filteringFunction: filterText
+					? (item, text) =>
+							filterText(item).toLowerCase().includes(text.toLowerCase())
+					: undefined,
+				empty: (
+					<EmptyState
+						title={data?.length ? "No matches" : "Nothing here yet"}
+						subtitle={data?.length ? "No entries match the filters." : empty}
+					/>
+				),
+				noMatch: (
+					<EmptyState
+						title="No matches"
+						subtitle="No entries match the filter."
+					/>
+				),
+			},
+			pagination: { pageSize: 50 },
+			sorting: {},
 		},
-		pagination: { pageSize: 50 },
-		sorting: {},
-	});
+	);
 
 	const clear = async () => {
 		await onClear?.();
@@ -91,7 +110,13 @@ export function LogTable<T>({
 						hidePreferencesButton
 					>
 						{selected ? (
-							detail(selected)
+							detail(selected, {
+								records: data ?? [],
+								select: (item) => {
+									setSelected(item);
+									setPanelOpen(true);
+								},
+							})
 						) : (
 							<Box color="text-status-inactive">
 								Select an entry to see its details.
@@ -156,11 +181,32 @@ export function LogTable<T>({
 						</Header>
 					}
 					filter={
-						<TextFilter
-							{...filterProps}
-							filteringPlaceholder="Find entries"
-							countText={`${filteredItemsCount ?? 0} matches`}
-						/>
+						<SpaceBetween size="s">
+							{filters.length > 0 && (
+								<SpaceBetween direction="horizontal" size="m">
+									{filters.map((filter) => (
+										<Toggle
+											key={filter.label}
+											checked={activeFilters.includes(filter.label)}
+											onChange={({ detail: d }) =>
+												setActiveFilters((current) =>
+													d.checked
+														? [...current, filter.label]
+														: current.filter((label) => label !== filter.label),
+												)
+											}
+										>
+											{filter.label}
+										</Toggle>
+									))}
+								</SpaceBetween>
+							)}
+							<TextFilter
+								{...filterProps}
+								filteringPlaceholder="Find entries"
+								countText={`${filteredItemsCount ?? 0} matches`}
+							/>
+						</SpaceBetween>
 					}
 					pagination={<Pagination {...paginationProps} />}
 				/>

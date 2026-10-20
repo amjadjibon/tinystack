@@ -192,3 +192,18 @@ itself belongs to the account.
 Actual spend comes only from loaded fixtures. TinyStack does not forecast costs, evaluate anomaly definitions,
 deliver budget/anomaly alerts or write CUR files. Actions use the shared console bridge, signed sessions
 and IAM authorization. Account changes close open forms and return to the selected account's list.
+
+## Delivery authorization in the request inspector
+
+Open **Request inspector** (`/requests`) to see delivery authorization checks alongside AWS requests.
+Checks have a **DELIVER** method badge and show the service principal or role, source ARN, target,
+IAM decision and denial code. **Would deny** means soft mode allowed the delivery to continue; its
+status stays 200. Failed role trust checks appear as `sts:AssumeRole` with the role ARN as the target.
+Use **Deliveries only** and **Denials only** together to isolate failed checks, including soft denials;
+the text filter also searches context, principals and policy decisions.
+
+Select an entry to inspect its authorization and delivery context. **Caused by request** opens its
+originating request, and **Deliveries caused** opens any of that request's retained checks, even when
+filters hide the linked row. The shared log retains only 256 entries: expired origins are identified,
+and background checks may have no originating request. Checks are recorded only when authorization
+is enabled. The separate **Deliveries** page shows service delivery outcomes, rather than IAM checks.

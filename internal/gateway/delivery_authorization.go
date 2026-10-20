@@ -172,9 +172,11 @@ func (s *Server) recordDelivery(
 		Status:        http.StatusOK,
 		RequestBody:   string(body),
 	}
-	if !authorization.Allowed && authorization.Mode == config.AuthorizationEnforce {
-		rec.Status = http.StatusForbidden
+	if !authorization.Allowed {
 		rec.ErrorCode, rec.ErrorMessage = code, authorization.Message
+		if authorization.Mode == config.AuthorizationEnforce {
+			rec.Status = http.StatusForbidden
+		}
 	}
 
 	s.requests.Add(rec)
