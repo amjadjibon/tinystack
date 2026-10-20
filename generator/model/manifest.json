@@ -3,6 +3,10 @@
   "commit": "6b78958e867baa77281399bf984144de7936b86e",
   "license": "LICENSE.aws-sdk-go-v2",
   "models": {
+    "kinesisanalyticsv2": {
+      "path": "codegen/sdk-codegen/aws-models/kinesis-analytics-v2.json",
+      "sha256": "3cb699ee91c98393c266c812ac1934007409b75f4aab9bd73955cbdda6f13890"
+    },
     "account": {
       "path": "codegen/sdk-codegen/aws-models/account.json",
       "sha256": "1194d60fe798d222a7acb845bb9751e0156fe98ce72cd12db7a51126b86f274b"

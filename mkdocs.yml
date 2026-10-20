@@ -123,6 +123,7 @@ nav:
           - "AWS Lake Formation": services/lakeformation.md
           - "Amazon EMR Serverless": services/emrserverless.md
           - "Amazon MSK": services/kafka.md
+          - "Amazon Managed Service for Apache Flink": services/kinesisanalyticsv2.md
           - "Amazon OpenSearch Serverless": services/opensearchserverless.md
           - "Amazon OpenSearch Service": services/opensearch.md
           - "Amazon Redshift": services/redshift.md

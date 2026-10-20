@@ -67,6 +67,7 @@ import (
 	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
 	kafkaapi "github.com/amjadjibon/tinystack/internal/aws/generated/kafka"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
+	kinesisanalyticsv2api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesisanalyticsv2"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
 	lakeformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/lakeformation"
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -164,6 +165,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/iot"
 	"github.com/amjadjibon/tinystack/internal/services/kafka"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
+	"github.com/amjadjibon/tinystack/internal/services/kinesisanalyticsv2"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lakeformation"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
@@ -400,6 +402,7 @@ func build(
 	dmsRecords := databasemigrationservice.New(store, network)
 	emrRecords := emrserverless.New(store)
 	aossRecords := opensearchserverless.New(store)
+	flinkRecords := kinesisanalyticsv2.New(store, network, buckets, logGroups)
 	lakeRecords := lakeformation.New(store)
 	brokers := mq.New(store, network)
 	kafkaClusters := kafka.New(store, network)
@@ -511,6 +514,7 @@ func build(
 		databasemigrationserviceapi.Descriptor(dmsRecords),
 		emrserverlessapi.Descriptor(emrRecords),
 		opensearchserverlessapi.Descriptor(aossRecords),
+		kinesisanalyticsv2api.Descriptor(flinkRecords),
 		lakeformationapi.Descriptor(lakeRecords),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),

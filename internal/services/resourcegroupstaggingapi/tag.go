@@ -206,6 +206,7 @@ var taggers = map[string]tagger{
 		"ResourceTags", pairs, "ResourceTagKeys", names),
 	"codeartifact":         resourceOperations("codeartifact", "ResourceArn", pairs),
 	"timestreamwrite":      resourceOperations("timestreamwrite", "ResourceARN", pairs),
+	"kinesisanalyticsv2":   resourceOperations("kinesisanalyticsv2", "ResourceARN", pairs),
 	"opensearchserverless": resourceOperations("opensearchserverless", "ResourceArn", pairs),
 	"emrserverless":        resourceOperations("emrserverless", "ResourceArn", plain),
 	"codeconnections":      resourceOperations("codeconnections", "ResourceArn", pairs),

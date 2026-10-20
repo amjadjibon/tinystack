@@ -2297,6 +2297,31 @@
       ],
       "execution": "Records only",
       "package": "databasemigrationservice"
+    },
+    "kinesisanalyticsv2": {
+      "title": "Amazon Managed Service for Apache Flink",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "summary": "Store Managed Flink applications, configuration, versions and snapshots without running jobs.",
+      "features": [
+        "Twenty AWS JSON 1.1 operations: application create/describe/list/update/delete/start/stop, describe/list versions, add/delete VPC and CloudWatch logging configuration, create/describe/list/delete snapshots and three native tag operations",
+        "FLINK-1_6, FLINK-1_8, FLINK-1_11, FLINK-1_13, FLINK-1_15, FLINK-1_18, FLINK-1_19 and FLINK-1_20 runtimes from the pinned model; STREAMING mode only",
+        "Deterministic READY to STARTING to RUNNING and RUNNING to STOPPING to READY lifecycle; updates enter UPDATING, preserve the final running state, increment the version and retain historical configuration; Force stop accepts READY",
+        "Optimistic CurrentApplicationVersionId checks, timestamp-guarded application and snapshot deletion with whole-second creation timestamps, scoped pagination, account and Region isolation",
+        "Text and ZIP code records with size limits and MD5 metadata; S3 code objects must exist in TinyStack; environment properties, Flink checkpoint, monitoring and parallelism configuration",
+        "VPC subnet and security group existence and VPC consistency checks through TinyStack EC2; CloudWatch logging options require an existing scoped TinyStack log stream",
+        "User snapshots require RUNNING and contain READY metadata with the application version; tag limits, inventory, Resource Groups Tagging API and console integration",
+        "IAM role ARN validation and gateway PassRole checks for CreateApplication and UpdateApplication; Terraform application and snapshot coverage"
+      ],
+      "gaps": [
+        "Records only, no Flink runtime: no jobs, workers, networking, checkpoints, restore, logs, metrics or results are executed or produced",
+        "DescribeApplication returns the current lifecycle state then advances it; DELETING removes the application after that read; lists and inventory do not advance state; snapshots contain no job state and normal stop creates no automatic snapshot",
+        "SQL-1_0, Zeppelin Studio notebooks and FLINK-2_x runtimes are explicitly rejected; SQL inputs/outputs, interactive sessions, maintenance, rollback, encryption, conditional tokens and operation history are unsupported",
+        "IAM role existence and trust are not checked by the service; environment and runtime settings are metadata, not resource allocation",
+        "No CloudFormation provider; application deletion accepts READY or RUNNING and removes snapshot and version history; S3 validation reads the object before the application transaction"
+      ],
+      "execution": "Records only",
+      "package": "kinesisanalyticsv2"
     }
   },
   "future": {

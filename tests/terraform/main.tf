@@ -18,6 +18,7 @@ provider "aws" {
 
   endpoints {
     dms                  = var.endpoint
+    kinesisanalyticsv2   = var.endpoint
     opensearchserverless = var.endpoint
     budgets              = var.endpoint
     acm                  = var.endpoint
@@ -2218,4 +2219,49 @@ resource "aws_dms_replication_task" "local" {
   }] })
   start_replication_task = false
   tags                   = local.tags
+}
+
+# Records-only Managed Flink application: no job or compute is started.
+resource "aws_kinesisanalyticsv2_application" "analytics" {
+  name                   = "local-flink"
+  runtime_environment    = "FLINK-1_20"
+  service_execution_role = aws_iam_role.lambda.arn
+  start_application      = true
+  tags                   = local.tags
+
+  application_configuration {
+    application_code_configuration {
+      code_content_type = "ZIPFILE"
+      code_content {
+        s3_content_location {
+          bucket_arn = aws_s3_bucket.assets.arn
+          file_key   = aws_s3_object.echo_zip.key
+        }
+      }
+    }
+    environment_properties {
+      property_group {
+        property_group_id = "settings"
+        property_map      = { team = var.team }
+      }
+    }
+    flink_application_configuration {
+      parallelism_configuration {
+        configuration_type   = "CUSTOM"
+        parallelism          = 1
+        parallelism_per_kpu  = 1
+        auto_scaling_enabled = false
+      }
+    }
+    run_configuration {
+      application_restore_configuration {
+        application_restore_type = "SKIP_RESTORE_FROM_SNAPSHOT"
+      }
+    }
+  }
+}
+
+resource "aws_kinesisanalyticsv2_application_snapshot" "analytics" {
+  application_name = aws_kinesisanalyticsv2_application.analytics.name
+  snapshot_name    = "local-snapshot"
 }

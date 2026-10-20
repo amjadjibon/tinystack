@@ -60,6 +60,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iotjobsdataplane v1.38.4
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.65.4
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.56.4
+	github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.47.4
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.4
 	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.56.0
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.112.2

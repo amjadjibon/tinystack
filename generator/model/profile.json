@@ -27341,5 +27341,422 @@
         "TagList"
       ]
     }
+  },
+  "kinesisanalyticsv2": {
+    "operations": [
+      "AddApplicationCloudWatchLoggingOption",
+      "AddApplicationVpcConfiguration",
+      "CreateApplication",
+      "CreateApplicationSnapshot",
+      "DeleteApplication",
+      "DeleteApplicationCloudWatchLoggingOption",
+      "DeleteApplicationSnapshot",
+      "DeleteApplicationVpcConfiguration",
+      "DescribeApplication",
+      "DescribeApplicationSnapshot",
+      "DescribeApplicationVersion",
+      "ListApplicationSnapshots",
+      "ListApplicationVersions",
+      "ListApplications",
+      "ListTagsForResource",
+      "StartApplication",
+      "StopApplication",
+      "TagResource",
+      "UntagResource",
+      "UpdateApplication"
+    ],
+    "shapes": {
+      "AddApplicationCloudWatchLoggingOptionRequest": [
+        "ApplicationName",
+        "CurrentApplicationVersionId",
+        "CloudWatchLoggingOption"
+      ],
+      "AddApplicationCloudWatchLoggingOptionResponse": [
+        "ApplicationARN",
+        "ApplicationVersionId",
+        "CloudWatchLoggingOptionDescriptions"
+      ],
+      "AddApplicationVpcConfigurationRequest": [
+        "ApplicationName",
+        "CurrentApplicationVersionId",
+        "VpcConfiguration"
+      ],
+      "AddApplicationVpcConfigurationResponse": [
+        "ApplicationARN",
+        "ApplicationVersionId",
+        "VpcConfigurationDescription"
+      ],
+      "ApplicationCodeConfiguration": [
+        "CodeContent",
+        "CodeContentType"
+      ],
+      "ApplicationCodeConfigurationDescription": [
+        "CodeContentType",
+        "CodeContentDescription"
+      ],
+      "ApplicationCodeConfigurationUpdate": [
+        "CodeContentTypeUpdate",
+        "CodeContentUpdate"
+      ],
+      "ApplicationConfiguration": [
+        "FlinkApplicationConfiguration",
+        "EnvironmentProperties",
+        "ApplicationCodeConfiguration",
+        "ApplicationSnapshotConfiguration",
+        "VpcConfigurations"
+      ],
+      "ApplicationConfigurationDescription": [
+        "ApplicationCodeConfigurationDescription",
+        "RunConfigurationDescription",
+        "FlinkApplicationConfigurationDescription",
+        "EnvironmentPropertyDescriptions",
+        "ApplicationSnapshotConfigurationDescription",
+        "VpcConfigurationDescriptions"
+      ],
+      "ApplicationConfigurationUpdate": [
+        "ApplicationCodeConfigurationUpdate",
+        "FlinkApplicationConfigurationUpdate",
+        "EnvironmentPropertyUpdates",
+        "ApplicationSnapshotConfigurationUpdate",
+        "VpcConfigurationUpdates"
+      ],
+      "ApplicationDetail": [
+        "ApplicationARN",
+        "ApplicationDescription",
+        "ApplicationName",
+        "RuntimeEnvironment",
+        "ServiceExecutionRole",
+        "ApplicationStatus",
+        "ApplicationVersionId",
+        "CreateTimestamp",
+        "LastUpdateTimestamp",
+        "ApplicationConfigurationDescription",
+        "CloudWatchLoggingOptionDescriptions",
+        "ApplicationVersionUpdatedFrom",
+        "ApplicationVersionCreateTimestamp",
+        "ApplicationMode"
+      ],
+      "ApplicationRestoreConfiguration": [
+        "ApplicationRestoreType",
+        "SnapshotName"
+      ],
+      "ApplicationSnapshotConfiguration": [
+        "SnapshotsEnabled"
+      ],
+      "ApplicationSnapshotConfigurationDescription": [
+        "SnapshotsEnabled"
+      ],
+      "ApplicationSnapshotConfigurationUpdate": [
+        "SnapshotsEnabledUpdate"
+      ],
+      "ApplicationSummary": [
+        "ApplicationName",
+        "ApplicationARN",
+        "ApplicationStatus",
+        "ApplicationVersionId",
+        "RuntimeEnvironment",
+        "ApplicationMode"
+      ],
+      "ApplicationVersionSummary": [
+        "ApplicationVersionId",
+        "ApplicationStatus"
+      ],
+      "CheckpointConfiguration": [
+        "ConfigurationType",
+        "CheckpointingEnabled",
+        "CheckpointInterval",
+        "MinPauseBetweenCheckpoints"
+      ],
+      "CheckpointConfigurationDescription": [
+        "ConfigurationType",
+        "CheckpointingEnabled",
+        "CheckpointInterval",
+        "MinPauseBetweenCheckpoints"
+      ],
+      "CheckpointConfigurationUpdate": [
+        "ConfigurationTypeUpdate",
+        "CheckpointingEnabledUpdate",
+        "CheckpointIntervalUpdate",
+        "MinPauseBetweenCheckpointsUpdate"
+      ],
+      "CloudWatchLoggingOption": [
+        "LogStreamARN"
+      ],
+      "CloudWatchLoggingOptionDescription": [
+        "CloudWatchLoggingOptionId",
+        "LogStreamARN"
+      ],
+      "CloudWatchLoggingOptionUpdate": [
+        "CloudWatchLoggingOptionId",
+        "LogStreamARNUpdate"
+      ],
+      "CodeContent": [
+        "TextContent",
+        "ZipFileContent",
+        "S3ContentLocation"
+      ],
+      "CodeContentDescription": [
+        "TextContent",
+        "CodeMD5",
+        "CodeSize",
+        "S3ApplicationCodeLocationDescription"
+      ],
+      "CodeContentUpdate": [
+        "TextContentUpdate",
+        "ZipFileContentUpdate",
+        "S3ContentLocationUpdate"
+      ],
+      "CreateApplicationRequest": [
+        "ApplicationName",
+        "ApplicationDescription",
+        "RuntimeEnvironment",
+        "ServiceExecutionRole",
+        "ApplicationConfiguration",
+        "CloudWatchLoggingOptions",
+        "Tags",
+        "ApplicationMode"
+      ],
+      "CreateApplicationResponse": [
+        "ApplicationDetail"
+      ],
+      "CreateApplicationSnapshotRequest": [
+        "ApplicationName",
+        "SnapshotName"
+      ],
+      "CreateApplicationSnapshotResponse": [],
+      "DeleteApplicationCloudWatchLoggingOptionRequest": [
+        "ApplicationName",
+        "CurrentApplicationVersionId",
+        "CloudWatchLoggingOptionId"
+      ],
+      "DeleteApplicationCloudWatchLoggingOptionResponse": [
+        "ApplicationARN",
+        "ApplicationVersionId",
+        "CloudWatchLoggingOptionDescriptions"
+      ],
+      "DeleteApplicationRequest": [
+        "ApplicationName",
+        "CreateTimestamp"
+      ],
+      "DeleteApplicationResponse": [],
+      "DeleteApplicationSnapshotRequest": [
+        "ApplicationName",
+        "SnapshotName",
+        "SnapshotCreationTimestamp"
+      ],
+      "DeleteApplicationSnapshotResponse": [],
+      "DeleteApplicationVpcConfigurationRequest": [
+        "ApplicationName",
+        "CurrentApplicationVersionId",
+        "VpcConfigurationId"
+      ],
+      "DeleteApplicationVpcConfigurationResponse": [
+        "ApplicationARN",
+        "ApplicationVersionId"
+      ],
+      "DescribeApplicationRequest": [
+        "ApplicationName",
+        "IncludeAdditionalDetails"
+      ],
+      "DescribeApplicationResponse": [
+        "ApplicationDetail"
+      ],
+      "DescribeApplicationSnapshotRequest": [
+        "ApplicationName",
+        "SnapshotName"
+      ],
+      "DescribeApplicationSnapshotResponse": [
+        "SnapshotDetails"
+      ],
+      "DescribeApplicationVersionRequest": [
+        "ApplicationName",
+        "ApplicationVersionId"
+      ],
+      "DescribeApplicationVersionResponse": [
+        "ApplicationVersionDetail"
+      ],
+      "EnvironmentProperties": [
+        "PropertyGroups"
+      ],
+      "EnvironmentPropertyDescriptions": [
+        "PropertyGroupDescriptions"
+      ],
+      "EnvironmentPropertyUpdates": [
+        "PropertyGroups"
+      ],
+      "FlinkApplicationConfiguration": [
+        "CheckpointConfiguration",
+        "MonitoringConfiguration",
+        "ParallelismConfiguration"
+      ],
+      "FlinkApplicationConfigurationDescription": [
+        "CheckpointConfigurationDescription",
+        "MonitoringConfigurationDescription",
+        "ParallelismConfigurationDescription"
+      ],
+      "FlinkApplicationConfigurationUpdate": [
+        "CheckpointConfigurationUpdate",
+        "MonitoringConfigurationUpdate",
+        "ParallelismConfigurationUpdate"
+      ],
+      "FlinkRunConfiguration": [
+        "AllowNonRestoredState"
+      ],
+      "ListApplicationSnapshotsRequest": [
+        "ApplicationName",
+        "Limit",
+        "NextToken"
+      ],
+      "ListApplicationSnapshotsResponse": [
+        "SnapshotSummaries",
+        "NextToken"
+      ],
+      "ListApplicationVersionsRequest": [
+        "ApplicationName",
+        "Limit",
+        "NextToken"
+      ],
+      "ListApplicationVersionsResponse": [
+        "ApplicationVersionSummaries",
+        "NextToken"
+      ],
+      "ListApplicationsRequest": [
+        "Limit",
+        "NextToken"
+      ],
+      "ListApplicationsResponse": [
+        "ApplicationSummaries",
+        "NextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "MonitoringConfiguration": [
+        "ConfigurationType",
+        "MetricsLevel",
+        "LogLevel"
+      ],
+      "MonitoringConfigurationDescription": [
+        "ConfigurationType",
+        "MetricsLevel",
+        "LogLevel"
+      ],
+      "MonitoringConfigurationUpdate": [
+        "ConfigurationTypeUpdate",
+        "MetricsLevelUpdate",
+        "LogLevelUpdate"
+      ],
+      "ParallelismConfiguration": [
+        "ConfigurationType",
+        "Parallelism",
+        "ParallelismPerKPU",
+        "AutoScalingEnabled"
+      ],
+      "ParallelismConfigurationDescription": [
+        "ConfigurationType",
+        "Parallelism",
+        "ParallelismPerKPU",
+        "CurrentParallelism",
+        "AutoScalingEnabled"
+      ],
+      "ParallelismConfigurationUpdate": [
+        "ConfigurationTypeUpdate",
+        "ParallelismUpdate",
+        "ParallelismPerKPUUpdate",
+        "AutoScalingEnabledUpdate"
+      ],
+      "PropertyGroup": [
+        "PropertyGroupId",
+        "PropertyMap"
+      ],
+      "RunConfiguration": [
+        "FlinkRunConfiguration",
+        "ApplicationRestoreConfiguration"
+      ],
+      "RunConfigurationDescription": [
+        "ApplicationRestoreConfigurationDescription",
+        "FlinkRunConfigurationDescription"
+      ],
+      "RunConfigurationUpdate": [
+        "FlinkRunConfiguration",
+        "ApplicationRestoreConfiguration"
+      ],
+      "S3ApplicationCodeLocationDescription": [
+        "BucketARN",
+        "FileKey",
+        "ObjectVersion"
+      ],
+      "S3ContentLocation": [
+        "BucketARN",
+        "FileKey",
+        "ObjectVersion"
+      ],
+      "S3ContentLocationUpdate": [
+        "BucketARNUpdate",
+        "FileKeyUpdate",
+        "ObjectVersionUpdate"
+      ],
+      "SnapshotDetails": [
+        "SnapshotName",
+        "SnapshotStatus",
+        "ApplicationVersionId",
+        "SnapshotCreationTimestamp",
+        "RuntimeEnvironment"
+      ],
+      "StartApplicationRequest": [
+        "ApplicationName",
+        "RunConfiguration"
+      ],
+      "StartApplicationResponse": [],
+      "StopApplicationRequest": [
+        "ApplicationName",
+        "Force"
+      ],
+      "StopApplicationResponse": [],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateApplicationRequest": [
+        "ApplicationName",
+        "CurrentApplicationVersionId",
+        "ApplicationConfigurationUpdate",
+        "ServiceExecutionRoleUpdate",
+        "RunConfigurationUpdate",
+        "CloudWatchLoggingOptionUpdates",
+        "RuntimeEnvironmentUpdate"
+      ],
+      "UpdateApplicationResponse": [
+        "ApplicationDetail"
+      ],
+      "VpcConfiguration": [
+        "SubnetIds",
+        "SecurityGroupIds"
+      ],
+      "VpcConfigurationDescription": [
+        "VpcConfigurationId",
+        "VpcId",
+        "SubnetIds",
+        "SecurityGroupIds"
+      ],
+      "VpcConfigurationUpdate": [
+        "VpcConfigurationId",
+        "SubnetIdUpdates",
+        "SecurityGroupIdUpdates"
+      ]
+    }
   }
 }

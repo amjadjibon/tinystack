@@ -11,6 +11,7 @@ import (
 // resource types a group can select.
 var namespaces = map[string]string{
 	"databasemigrationservice":  "DMS",
+	"kinesisanalyticsv2":        "KinesisAnalyticsV2",
 	"budgets":                   "Budgets",
 	"costandusagereportservice": "CUR",
 	"costexplorer":              "CE",

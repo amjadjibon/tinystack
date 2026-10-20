@@ -331,6 +331,18 @@ var passedRoleInputs = map[string][]passedRoleInput{
 		principal:  "lakeformation.amazonaws.com",
 		paths:      []string{inputRoleARN},
 	}},
+	"kinesisanalyticsv2": {
+		{
+			operations: []string{"CreateApplication"},
+			principal:  "kinesisanalytics.amazonaws.com",
+			paths:      []string{"ServiceExecutionRole"},
+		},
+		{
+			operations: []string{"UpdateApplication"},
+			principal:  "kinesisanalytics.amazonaws.com",
+			paths:      []string{"ServiceExecutionRoleUpdate"},
+		},
+	},
 	"emrserverless": {{
 		operations: []string{"StartJobRun"},
 		principal:  "emr-serverless.amazonaws.com",

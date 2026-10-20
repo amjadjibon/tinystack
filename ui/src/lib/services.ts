@@ -45,6 +45,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: migration,
 		icon: "rds",
 	},
+	kinesisanalyticsv2: {
+		title: "Amazon Managed Service for Apache Flink",
+		category: analytics,
+		icon: "kinesis",
+	},
 	costexplorer: {
 		title: "AWS Cost Explorer",
 		category: management,
