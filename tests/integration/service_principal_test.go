@@ -431,25 +431,25 @@ func TestServicePrincipalEventBridgeDeadLetter(t *testing.T) {
 	}
 
 	attributes := letters.Messages[0].MessageAttributes
-	if aws.ToString(attributes["ERROR_CODE"].StringValue) != "AccessDenied" ||
+	if aws.ToString(attributes["ERROR_CODE"].StringValue) != "NO_PERMISSIONS" ||
 		!strings.Contains(aws.ToString(attributes["ERROR_MESSAGE"].StringValue), "events.amazonaws.com") ||
 		aws.ToString(attributes["RULE_ARN"].StringValue) != rule {
 		t.Fatalf("attributes = %+v", attributes)
 	}
 }
 
-// A target that names a role is invoked as that role: only identity policies, never the resource policy, apply.
+// A target that names a role is invoked as that role: its identity policies decide, never the target's resource policy.
 func TestServicePrincipalEventBridgeRoleTargetSkipsPolicy(t *testing.T) {
 	s, _ := deliveryServer(t, config.AuthorizationEnforce)
 	ctx := context.Background()
 	events := eventsClient(s, "test")
 	queues := sqsClient(s, "test")
 	url, queue := queueARN(t, queues, "inbox")
-	putRule(t, events, "orders", `{"source":["shop"]}`)
+	rule := putRule(t, events, "orders", `{"source":["shop"]}`)
+	trust, permissions := roleAllowed.documents("events.amazonaws.com", rule, queue)
+	role := createDeliveryRole(t, s, "events", trust, permissions)
 	_, err := events.PutTargets(ctx, &eventbridge.PutTargetsInput{
-		Rule: new("orders"), Targets: []ebtypes.Target{{
-			Id: new("target"), Arn: &queue, RoleArn: new("arn:aws:iam::000000000000:role/events"),
-		}},
+		Rule: new("orders"), Targets: []ebtypes.Target{{Id: new("target"), Arn: &queue, RoleArn: &role}},
 	})
 	mustAuthorize(t, err)
 	_, err = events.PutEvents(ctx, &eventbridge.PutEventsInput{Entries: []ebtypes.PutEventsRequestEntry{{
@@ -460,8 +460,10 @@ func TestServicePrincipalEventBridgeRoleTargetSkipsPolicy(t *testing.T) {
 		t.Fatal("role-based target was not delivered")
 	}
 
-	if records := deliveryChecks(t, s, queue); len(records) != 0 {
-		t.Fatalf("role-based target was checked against its resource policy: %+v", records)
+	records := deliveryChecks(t, s, queue)
+	if len(records) != 1 || records[0].Authorization.Principal != records[0].Authorization.Checks[0].Resource &&
+		!strings.Contains(records[0].Authorization.Principal, ":assumed-role/events/") {
+		t.Fatalf("role-based target was not checked as its role: %+v", records)
 	}
 }
 
@@ -545,18 +547,37 @@ func TestServicePrincipalAPIGateway(t *testing.T) {
 }
 
 // A REST API integration with a credentials role invokes its function as that role, so the function's policy plays
-// no part. HTTP API integrations cannot name a role.
+// no part and the role's must allow it. HTTP API integrations cannot name a role.
 func TestServicePrincipalAPIGatewayCredentialsRole(t *testing.T) {
-	s, _ := deliveryServer(t, config.AuthorizationEnforce)
-	fn := createFunction(t, lambdaClient(s, "test"), "pets", "app.respond")
-	id := createProxyAPI(t, s, "REST", fn.FunctionArn, new("arn:aws:iam::000000000000:role/gateway"))
-	status, _, body := call(t, s, http.MethodGet, id, "/v1/pets", nil, "")
-	if status != http.StatusCreated {
-		t.Fatalf("status=%d body=%s", status, body)
-	}
+	for _, choice := range []roleChoice{roleAllowed, roleNoPermission, roleNotTrusted} {
+		t.Run(string(choice), func(t *testing.T) {
+			s, _ := deliveryServer(t, config.AuthorizationEnforce)
+			fn := createFunction(t, lambdaClient(s, "test"), "pets", "app.respond")
+			function := *fn.FunctionArn
+			source := "arn:aws:execute-api:us-east-1:000000000000:*"
+			trust, permissions := choice.documents("apigateway.amazonaws.com", source, function)
+			permissions = strings.Replace(permissions, "sqs:SendMessage", "lambda:InvokeFunction", 1)
+			role := createDeliveryRole(t, s, "gateway", trust, permissions)
+			id := createProxyAPI(t, s, "REST", fn.FunctionArn, &role)
+			status, _, body := call(t, s, http.MethodGet, id, "/v1/pets", nil, "")
+			want := http.StatusCreated
+			if choice != roleAllowed {
+				want = http.StatusInternalServerError
+			}
 
-	if records := deliveryChecks(t, s, *fn.FunctionArn); len(records) != 0 {
-		t.Fatalf("a role-based integration was checked against the function's policy: %+v", records)
+			if status != want {
+				t.Fatalf("status=%d body=%s, want %d", status, body, want)
+			}
+
+			records := roleChecks(t, s, role)
+			if len(records) != 1 || records[0].Authorization.Allowed != (choice == roleAllowed) {
+				t.Fatalf("checks = %+v", records)
+			}
+
+			if choice == roleAllowed && records[0].Authorization.Checks[0].Action != "lambda:InvokeFunction" {
+				t.Fatalf("check = %+v", records[0].Authorization.Checks[0])
+			}
+		})
 	}
 }
 
@@ -618,6 +639,63 @@ func TestServicePrincipalExplicitDeny(t *testing.T) {
 		mustAuthorize(t, err)
 		if body := receiveOne(t, queues, url); body != "" {
 			t.Fatalf("%s: delivered %q", name, body)
+		}
+	}
+}
+
+// A topic delivers to a queue in another account only when the queue's policy allows SNS for that topic: the
+// queue's owner decides, not the topic's.
+func TestServicePrincipalSNSCrossAccount(t *testing.T) {
+	for _, mode := range []string{config.AuthorizationEnforce, config.AuthorizationSoft} {
+		for _, choice := range deliveryChoices {
+			t.Run(fmt.Sprintf("%s/%s", mode, choice), func(t *testing.T) {
+				cfg := testConfig()
+				cfg.Identity.Accounts["test"] = cfg.Defaults.Account
+				cfg.Identity.Accounts["other"] = "222222222222"
+				cfg.Identity.Authorization = mode
+				s := serverConfig(t, cfg, &fakeRuntime{})
+				ctx := context.Background()
+				topics := snsClient(s, "test")
+				queues := sqsClient(s, "other")
+				topic, err := topics.CreateTopic(ctx, &sns.CreateTopicInput{Name: new("orders")})
+				mustAuthorize(t, err)
+				queueURL, queue := queueARN(t, queues, "inbox")
+				if !strings.Contains(queue, ":222222222222:") {
+					t.Fatalf("queue %s is not in the other account", queue)
+				}
+
+				// The queue's account subscribes, which the topic's policy lets it do.
+				_, err = topics.SetTopicAttributes(ctx, &sns.SetTopicAttributesInput{
+					TopicArn: topic.TopicArn, AttributeName: new("Policy"), AttributeValue: new(fmt.Sprintf(
+						`{"Statement":[{"Effect":"Allow","Principal":{"AWS":"222222222222"},"Action":"sns:Subscribe",`+
+							`"Resource":%q}]}`, *topic.TopicArn)),
+				})
+				mustAuthorize(t, err)
+				_, err = snsClient(s, "other").Subscribe(ctx, &sns.SubscribeInput{
+					TopicArn: topic.TopicArn, Protocol: new("sqs"), Endpoint: &queue,
+				})
+				mustAuthorize(t, err)
+				switch choice {
+				case rightPolicy:
+					allowDelivery(t, s, "other", queue, "sns.amazonaws.com", *topic.TopicArn)
+				case wrongPolicy:
+					allowDelivery(t, s, "other", queue, "sns.amazonaws.com", *topic.TopicArn+"-other")
+				case noPolicy:
+				}
+
+				_, err = topics.Publish(ctx, &sns.PublishInput{TopicArn: topic.TopicArn, Message: new("order 1")})
+				mustAuthorize(t, err)
+				if got, want := receiveOne(t, queues, queueURL) != "", delivered(mode, choice); got != want {
+					t.Fatalf("delivered = %t, want %t", got, want)
+				}
+
+				records := deliveryChecks(t, s, queue)
+				if len(records) != 1 || records[0].Account != "222222222222" ||
+					records[0].Authorization.Allowed != (choice == rightPolicy) ||
+					!records[0].Authorization.Checks[0].CrossAccount {
+					t.Fatalf("records = %+v", records)
+				}
+			})
 		}
 	}
 }

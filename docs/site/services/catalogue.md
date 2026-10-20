@@ -719,6 +719,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 - Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions.
 - Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess.
 - Gateway iam:PassRole checks for explicitly supplied service roles, including Lambda, ECS, Step Functions, EventBridge targets and schedules, EC2 instance-profile roles, CloudFormation, EKS, CodeBuild, Firehose, Pipes, Lake Formation, SES event destinations, EMR Serverless job runs and other registered role inputs; identity, boundary and session layers intersect with iam:PassedToService conditions and per-role inspector checks.
+- Deliveries services make under a role (Scheduler, Pipes, Step Functions, EventBridge targets, API Gateway credentials, IoT rule actions, Firehose) check the role's trust policy for the service principal with aws:SourceArn and aws:SourceAccount, then evaluate the call as the assumed-role session through the same identity, boundary and resource-policy evaluation as signed requests, recorded under method DELIVER in the request inspector.
 - SimulatePrincipalPolicy and SimulateCustomPolicy reuse the gateway evaluator independently of authorization mode; user/group/role policies, boundary overrides, resource policies, typed context, missing keys, matched policy sources and one paginated result per action and resource.
 
 [Supported operations](iam.md#supported-operations) · [Limitations](iam.md#limitations-and-future-work)
@@ -748,9 +749,10 @@ Issue local session credentials and inspect the resolved caller identity.
 **Execution:** Local behavior. **Selected operations:** 5.
 
 - GetCallerIdentity, AssumeRole, GetSessionToken and AssumeRoleWithWebIdentity.
-- Subset of role trust policies with AWS, Federated and Service principals, and StringEquals, StringLike and Null conditions.
+- Subset of role trust policies with AWS, Federated and Service principals, and StringEquals, StringLike, ArnEquals, ArnLike and Null conditions.
 - Session credentials feed signature verification and account resolution.
 - In-process service role assumption supports the IoT credentials provider.
+- Services assume roles in-process to make deliveries without credentials: the trust policy is checked for the service principal with aws:SourceArn and aws:SourceAccount, and the session is evaluated by the gateway.
 - In `identity.mode: verify`, web identity tokens must carry a valid RS256 signature of the issuer's published keys (discovery and JWKS, cached, HTTPS outside loopback and no HTTP redirects), or of the Cognito identity pool that issued them.
 - In-process federated sessions for console single sign-on, flagged so the console accepts them and IAM limits them.
 - AssumeRole and AssumeRoleWithWebIdentity inline Policy and up to 10 managed PolicyArns persist with credentials; combined 2048-character plaintext limit and identity-document validation.
@@ -788,6 +790,7 @@ Connect devices and manage registry, policies, rules, jobs, provisioning, and fl
 - Things, types, static group trees, certificates, registered CAs, policy versions and attachments.
 - Per-account/region MQTT broker over WebSocket, optional TLS and plain TCP.
 - Topic SQL, Basic Ingest, error actions and local service destinations.
+- With authorization on, each action assumes its role, whose trust policy must allow iot.amazonaws.com for the rule, and is decided by the role's policies; a Lambda action needs the function's policy to allow iot.amazonaws.com.
 - Custom Lambda authorizers and default authorizer selection.
 - Deactivating or revoking a certificate, or deactivating its CA, disconnects its live MQTT clients with AUTH_ERROR.
 - Snapshot jobs, MQTT job notifications and credentials-provider role aliases.
@@ -1036,6 +1039,7 @@ Buffer direct or Kinesis records and deliver them to S3.
 - Delivery streams, tags, direct puts and batch puts.
 - Background buffering and S3 output after size/time thresholds.
 - Kinesis source polling and Lambda processing through the shared caller.
+- With authorization on, S3 writes and Lambda processor calls assume the destination's role, whose trust policy must allow firehose.amazonaws.com for the delivery stream, and are decided by the role's policies; a denied processor call fails its records with Lambda.InvokeAccessDenied and a denied write is recorded as a failed delivery.
 
 [Supported operations](firehose.md#supported-operations) · [Limitations](firehose.md#limitations-and-future-work)
 
@@ -1052,7 +1056,8 @@ Route events through local buses, patterns, rules, schedules, archives, and repl
 - Archives and synchronous replay.
 - AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection.
 - Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management.
-- With authorization on, SQS, SNS and Lambda targets without a role, and dead-letter queues, need their resource policy to allow events.amazonaws.com with the rule as aws:SourceArn; enforce mode fails the invocation into the existing retry and dead-letter path with AccessDenied, soft mode records the denied check.
+- With authorization on, SQS, SNS and Lambda targets without a role, and dead-letter queues, need their resource policy to allow events.amazonaws.com with the rule as aws:SourceArn; enforce mode fails the invocation into the existing retry and dead-letter path with the ERROR_CODE NO_PERMISSIONS, soft mode records the denied check.
+- Targets with a RoleArn assume that role, whose trust policy must allow events.amazonaws.com for the rule (aws:SourceArn) and account, and are then decided by the role's policies and the target's resource policy; a role that cannot be assumed reports FAILED_TO_ASSUME_ROLE.
 
 [Supported operations](eventbridge.md#supported-operations) · [Limitations](eventbridge.md#limitations-and-future-work)
 
@@ -1071,6 +1076,7 @@ Connect SQS queues and Kinesis or DynamoDB streams to targets with filtering and
 - Lambda enrichment, and InputTemplate with JSON paths and aws.pipes variables on enrichment and target.
 - Lambda, SQS, SNS, EventBridge, Step Functions and Kinesis targets, called in-process; Lambda and Step Functions receive the batch as a JSON array.
 - Resources appear in the resource inventory.
+- With authorization on, enrichment and target calls assume the pipe's role, whose trust policy must allow pipes.amazonaws.com for the pipe (aws:SourceArn) and account, and are decided by the role's policies; a denied delivery is a failed delivery that the next visit retries, and soft mode records the check.
 
 [Supported operations](pipes.md#supported-operations) · [Limitations](pipes.md#limitations-and-future-work)
 
@@ -1083,6 +1089,7 @@ Run one-time, rate, and cron schedules against implemented services.
 - Schedule groups and schedule CRUD with time-zone handling.
 - Background runner claims due schedules and invokes targets in-process.
 - Failed deliveries can reach a target SQS dead-letter queue.
+- With authorization on, each run (and the send to the dead-letter queue) assumes the target's role, whose trust policy must allow scheduler.amazonaws.com for the schedule's group (aws:SourceArn) and account, and is decided by the role's identity policies, boundary and the target's resource policy; enforce mode fails the run into the dead-letter path with the denial as ERROR_CODE and ERROR_MESSAGE, soft mode records the check.
 
 [Supported operations](scheduler.md#supported-operations) · [Limitations](scheduler.md#limitations-and-future-work)
 
@@ -1181,6 +1188,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 - Custom domains, base path mappings and access logs.
 - AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing.
 - With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode.
+- A credentials role must trust apigateway.amazonaws.com for the method's execute-api ARN and its policies must allow lambda:InvokeFunction; the same 500 reports a denial.
 
 [Supported operations](apigateway.md#supported-operations) · [Limitations](apigateway.md#limitations-and-future-work)
 
@@ -1497,6 +1505,7 @@ Execute a local Amazon States Language subset with service integrations.
 - TestState and redrive support.
 - AWS-style console for scoped state machine creation, ASL validation and editing, execution roles, logging configuration and tags.
 - Console starts and stops Standard executions with paginated execution history, input, output and failure details; Express workflows return synchronous results.
+- With authorization on, Task states assume the state machine's role, whose trust policy must allow states.amazonaws.com for the state machine (aws:SourceArn) and account, and are decided by the role's policies, including child executions and SDK integrations; a denial fails the Task with <Service>.AccessDeniedException and the denial as its cause, so Retry and Catch apply, and soft mode records the check.
 
 [Supported operations](sfn.md#supported-operations) · [Limitations](sfn.md#limitations-and-future-work)
 

@@ -25,7 +25,7 @@ See the [implemented feature catalogue](catalogue.md#eventbridge-scheduler) for 
 - Flexible windows do not delay execution.
 - ECS, SageMaker and CodeBuild templated targets are unsupported.
 - KMS key ARNs are stored without customer-managed encryption.
-- Deliveries to queues, topics and functions use the service's role in AWS and are not checked against the target's resource policy.
+- Role sessions are named after the schedule and the denial's error code is the target service's own (such as AccessDeniedException), where AWS reports its own scheduler codes.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

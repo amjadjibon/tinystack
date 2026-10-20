@@ -10,6 +10,7 @@ import (
 	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 )
@@ -377,7 +378,15 @@ func (r *run) call(ctx context.Context, svc, op, prefix string, params map[strin
 	ctx = request.WithMetadata(ctx, request.Metadata{
 		Scope: r.scope, RequestID: uuid.NewV4().String(), Service: svc, Operation: op, Endpoint: r.exec.Endpoint,
 	})
-	out, err := r.s.caller.Call(ctx, svc, op, params)
+	// The state machine's role makes the call.
+	out, err := r.s.authorizer.Call(ctx, r.s.caller, catalog.ServiceDelivery{
+		Principal:     "states.amazonaws.com",
+		SourceARN:     r.exec.StateMachineARN,
+		SourceAccount: r.scope.AccountID,
+		Role: &catalog.DeliveryRole{
+			ARN: r.machine.RoleArn, Session: r.exec.Name, Service: svc, Operation: op, Params: params,
+		},
+	})
 	var ae *awserror.Error
 	switch {
 	case err == nil:

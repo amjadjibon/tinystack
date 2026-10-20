@@ -43,9 +43,11 @@ var _ api.API = (*Service)(nil)
 type Service struct {
 	store  storage.Store
 	caller *catalog.Caller
-	logger *slog.Logger
-	now    func() time.Time
-	bg     *background.Group
+	// authorizer checks that each run's role may be assumed and may make the call; see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
+	logger     *slog.Logger
+	now        func() time.Time
+	bg         *background.Group
 }
 
 // New returns a Scheduler service whose runner runs until Stop.
@@ -62,6 +64,12 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 // UseCaller lets schedules invoke their targets. Call it before serving
 // requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes every run, and the send to a dead-letter queue, require the schedule's role to trust
+// scheduler.amazonaws.com and to allow the call. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // Stop ends the runner and waits for it.
 func (s *Service) Stop() { s.bg.Stop() }

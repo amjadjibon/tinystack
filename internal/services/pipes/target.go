@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -45,13 +46,20 @@ func (s *Service) deliver(ctx context.Context, scope request.Scope, p *pipe, eve
 	return s.send(ctx, scope, p, items)
 }
 
-// call runs an operation of another service as the pipe's account and region.
-func (s *Service) call(ctx context.Context, scope request.Scope, svc, op string, params map[string]any) (
+// call runs an operation of another service as the pipe's account and region, under the pipe's role.
+func (s *Service) call(ctx context.Context, scope request.Scope, p *pipe, svc, op string, params map[string]any) (
 	map[string]any, error,
 ) {
 	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: svc, RequestID: common.RandomID(32)})
 
-	return s.caller.Call(ctx, svc, op, params)
+	return s.authorizer.Call(ctx, s.caller, catalog.ServiceDelivery{
+		Principal:     "pipes.amazonaws.com",
+		SourceARN:     pipeARN(scope, p.Name),
+		SourceAccount: scope.AccountID,
+		Role: &catalog.DeliveryRole{
+			ARN: p.RoleArn, Session: p.Name, Service: svc, Operation: op, Params: params,
+		},
+	})
 }
 
 // enrich invokes the enrichment function with the batch and takes its answer
@@ -73,7 +81,7 @@ func (s *Service) enrich(
 	}
 
 	payload, _ := json.Marshal(input)
-	out, err := s.call(ctx, scope, "lambda", "Invoke", map[string]any{
+	out, err := s.call(ctx, scope, p, "lambda", "Invoke", map[string]any{
 		"FunctionName": p.Enrichment, "InvocationType": "RequestResponse", "Payload": string(payload),
 	})
 	if err != nil {
@@ -115,7 +123,7 @@ func (s *Service) send(ctx context.Context, scope request.Scope, p *pipe, items 
 		}
 
 		payload, _ := json.Marshal(items)
-		out, err := s.call(ctx, scope, "lambda", "Invoke", map[string]any{
+		out, err := s.call(ctx, scope, p, "lambda", "Invoke", map[string]any{
 			"FunctionName": p.Target, "InvocationType": invocation, "Payload": string(payload),
 		})
 		if err != nil {
@@ -130,7 +138,7 @@ func (s *Service) send(ctx context.Context, scope request.Scope, p *pipe, items 
 		return nil
 	case targetStates:
 		payload, _ := json.Marshal(items)
-		_, err := s.call(ctx, scope, "sfn", "StartExecution", map[string]any{
+		_, err := s.call(ctx, scope, p, "sfn", "StartExecution", map[string]any{
 			"StateMachineArn": p.Target, "Input": string(payload),
 		})
 
@@ -190,7 +198,7 @@ func (s *Service) sendItem(ctx context.Context, scope request.Scope, p *pipe, ki
 		return errors.New("TinyStack does not support the target " + p.Target)
 	}
 
-	out, err := s.call(ctx, scope, svc, op, params)
+	out, err := s.call(ctx, scope, p, svc, op, params)
 	if err != nil {
 		return err
 	}

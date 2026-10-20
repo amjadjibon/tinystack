@@ -14,6 +14,7 @@ import (
 	mqtt "github.com/mochi-mqtt/server/v2"
 	"github.com/mochi-mqtt/server/v2/packets"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -182,8 +183,24 @@ func (s *Service) act(
 		return kind, "", err
 	}
 
+	// The action's role makes the call; a Lambda action has none, and the function's policy must allow IoT.
+	role, _ := fields[fieldRole].(string)
 	call := func(svc, op string, params map[string]any) error {
-		_, err := s.caller.Call(callContext(ctx, scope, svc), svc, op, params)
+		d := catalog.ServiceDelivery{
+			Principal: "iot.amazonaws.com", SourceARN: arn(scope, kindRule, rule), SourceAccount: scope.AccountID,
+		}
+		if role == "" {
+			d.Target, _ = params["FunctionName"].(string)
+			if err := s.authorizer.Authorize(callContext(ctx, scope, svc), d); err != nil {
+				return err
+			}
+
+			_, err := s.caller.Call(callContext(ctx, scope, svc), svc, op, params)
+			return err
+		}
+
+		d.Role = &catalog.DeliveryRole{ARN: role, Session: rule, Service: svc, Operation: op, Params: params}
+		_, err := s.authorizer.Call(callContext(ctx, scope, svc), s.caller, d)
 		return err
 	}
 

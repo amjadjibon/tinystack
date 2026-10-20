@@ -13,6 +13,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
@@ -265,6 +266,24 @@ func (s *Service) deliver(ctx context.Context, scope request.Scope, st *delivery
 	return s.putObject(ctx, scope, st, expand(errorPrefix, now, defaultErrors)+objectName(st, now), lines.Bytes())
 }
 
+// call runs an operation of another service under the destination's role.
+func (s *Service) call(
+	ctx context.Context,
+	scope request.Scope,
+	st *deliveryStream,
+	svc, op string,
+	params map[string]any,
+) (map[string]any, error) {
+	return s.authorizer.Call(ctx, s.caller, catalog.ServiceDelivery{
+		Principal:     "firehose.amazonaws.com",
+		SourceARN:     streamARN(scope, st.Name),
+		SourceAccount: scope.AccountID,
+		Role: &catalog.DeliveryRole{
+			ARN: common.Value(st.Destination.RoleARN), Session: st.Name, Service: svc, Operation: op, Params: params,
+		},
+	})
+}
+
 // putObject writes an object, compressed as the destination asks, to the
 // destination bucket.
 func (s *Service) putObject(
@@ -295,7 +314,9 @@ func (s *Service) putObject(
 
 	bucket := bucketName(common.Value(d.BucketARN))
 	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: "s3", RequestID: randomID(32)})
-	_, err := s.caller.Call(ctx, "s3", "PutObject", map[string]any{"Bucket": bucket, "Key": key, "Body": string(data)})
+	_, err := s.call(ctx, scope, st, "s3", "PutObject", map[string]any{
+		"Bucket": bucket, "Key": key, "Body": string(data),
+	})
 	if s.deliveries != nil {
 		s.deliveries.Add(delivery.ViaFirehose, streamARN(scope, st.Name), "s3://"+bucket+"/"+key, data, err)
 	}
@@ -392,7 +413,7 @@ func (s *Service) transform(
 	}
 
 	ctx = request.WithMetadata(context.WithoutCancel(ctx), request.Metadata{Scope: scope, Service: "lambda"})
-	out, err := s.caller.Call(ctx, "lambda", "Invoke", map[string]any{"FunctionName": arn, "Payload": event})
+	out, err := s.call(ctx, scope, st, "lambda", "Invoke", map[string]any{"FunctionName": arn, "Payload": event})
 	if err != nil {
 		return fail("Lambda.InvokeAccessDenied", err.Error())
 	}

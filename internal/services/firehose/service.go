@@ -60,6 +60,7 @@ type Service struct {
 	store      storage.Store
 	streams    *kinesis.Service
 	caller     *catalog.Caller
+	authorizer catalog.ServiceAuthorizer
 	deliveries *delivery.Log
 	logger     *slog.Logger
 	now        func() time.Time
@@ -83,6 +84,12 @@ func New(store storage.Store, streams *kinesis.Service, deliveries *delivery.Log
 // UseCaller lets delivery streams write to S3 and invoke Lambda processors.
 // Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes every delivery and Lambda processor call require the destination's role to trust
+// firehose.amazonaws.com and to allow the call. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // Stop ends the flusher and waits for it.
 func (s *Service) Stop() { s.bg.Stop() }

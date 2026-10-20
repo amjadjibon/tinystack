@@ -196,19 +196,37 @@ func InputPathStrings(input any, path string) []string {
 }
 
 // ServiceDelivery is one in-process delivery by an AWS service to a resource in another service, such as SNS
-// writing to a queue. AWS lets the delivery through only if the resource's policy allows the service principal.
+// writing to a queue. Without a Role, AWS lets the delivery through only if the target's resource policy allows the
+// service principal. With one, the service assumes the role and the call it makes is permitted as the role's
+// session would be.
 type ServiceDelivery struct {
+	// Role is the role the service acts as, and the call it makes under it.
+	Role *DeliveryRole
 	// Principal is the delivering service, such as "sns.amazonaws.com".
 	Principal string
 	// SourceARN and SourceAccount name the resource that delivers and its account, which policies match with
 	// aws:SourceArn and aws:SourceAccount. SourceAccount is empty where AWS sends none.
 	SourceARN, SourceAccount string
-	// Target is the ARN of the queue, topic, or function delivered to.
+	// Target is the ARN of the queue, topic, or function delivered to. A delivery under a role names its target in
+	// the call instead.
 	Target string
 }
 
-// ServiceAuthorizer checks a delivery against its target's resource policy once identity.authorization is on.
-// It fails the delivery in enforce mode and only records the decision in soft mode.
+// DeliveryRole is a role a service assumes to make one call, which trust must allow the service principal to do.
+type DeliveryRole struct {
+	// Params are the call's members, keyed as Caller.Call takes them.
+	Params map[string]any
+	// ARN is the role to assume.
+	ARN string
+	// Session names the role session, such as the schedule or execution that delivers.
+	Session string
+	// Service and Operation name the call in the registry, such as "sqs" and "SendMessage".
+	Service, Operation string
+}
+
+// ServiceAuthorizer checks a delivery once identity.authorization is on: against its target's resource policy, or
+// as the session of the role it assumes. It fails the delivery in enforce mode and only records the decision in
+// soft mode.
 type ServiceAuthorizer func(context.Context, ServiceDelivery) error
 
 // Authorize allows every delivery until the app hands the service an authorizer.
@@ -218,4 +236,13 @@ func (a ServiceAuthorizer) Authorize(ctx context.Context, d ServiceDelivery) err
 	}
 
 	return a(ctx, d)
+}
+
+// Call authorizes the call a role delivery makes, then runs it.
+func (a ServiceAuthorizer) Call(ctx context.Context, c *Caller, d ServiceDelivery) (map[string]any, error) {
+	if err := a.Authorize(ctx, d); err != nil {
+		return nil, err
+	}
+
+	return c.Call(ctx, d.Role.Service, d.Role.Operation, d.Role.Params)
 }

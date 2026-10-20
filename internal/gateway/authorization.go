@@ -126,32 +126,85 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		return nil
 	}
 
-	snapshot := iam.Authorization{Principal: principal}
-	var err error
-	if s.policies != nil && principal.Kind != request.PrincipalRoot && principal.Kind != request.PrincipalAnonymous {
-		snapshot, err = s.policies(ctx, &principal)
-	}
-
-	lookupFailed := err != nil
-	if err != nil {
-		snapshot = iam.Authorization{
-			Principal:   principal,
-			Unsupported: []string{"IAM policy lookup failed: " + err.Error()},
-		}
-	}
-
+	snapshot, lookupFailed := s.identitySnapshot(ctx, &principal)
 	principal = snapshot.Principal
 	c.meta.Principal = &principal
 	c.meta.ResourceAuthorization = resourceAuthorization(c.meta.Service)
 	c.meta.AuthorizationValues = authorizationValues(r, &principal, snapshot.Tags, c.meta.Region)
 	ctx = request.WithMetadata(ctx, c.meta)
-	if resources == nil && c.service.Authorizer != nil {
-		resources, err = c.service.Authorizer.AuthorizationResources(ctx, op.Name, input)
+	record := s.evaluate(ctx, mode, &evaluation{
+		service: c.service, op: op, input: input, snapshot: snapshot, values: c.meta.AuthorizationValues,
+		resources: resources, serviceName: c.meta.Service, granted: c.identity == execute.Granted,
+		lookupFailed: lookupFailed,
+	})
+
+	c.authorization = record
+	s.logger.Info("authorization", "mode", mode, "principal", record.Principal, "allowed", record.Allowed,
+		"decision", record.Message, "checks", record.Checks)
+	if record.Allowed || mode == config.AuthorizationSoft {
+		return nil
+	}
+
+	code := "AccessDeniedException"
+	if c.meta.Protocol == catalog.RESTXML || formProtocol(c.meta.Protocol) {
+		code = accessDenied
+	}
+
+	return &awserror.Error{Code: code, Message: record.Message, StatusCode: http.StatusForbidden}
+}
+
+// evaluation is one call for evaluate to decide. The ctx it runs with carries the metadata of the call's account
+// and Region, in which resources resolve.
+type evaluation struct {
+	service *catalog.Service
+	op      *catalog.Operation
+	input   any
+	values  map[string][]string
+	// resources are the concrete targets of a console-only operation; nil asks the service to resolve them.
+	resources   []catalog.AuthorizationResource
+	serviceName string
+	// snapshot is the caller's identity policies, boundary and session policy; its Principal is the caller.
+	snapshot iam.Authorization
+	// granted marks a caller another authorizer allowed, which only an explicit deny can stop.
+	granted bool
+	// lookupFailed marks a snapshot that could not be read, which denies everything.
+	lookupFailed bool
+}
+
+// identitySnapshot reads the caller's current policies. A failed lookup yields a snapshot that carries the reason.
+func (s *Server) identitySnapshot(ctx context.Context, principal *request.Principal) (
+	snapshot iam.Authorization, lookupFailed bool,
+) {
+	snapshot = iam.Authorization{Principal: *principal}
+	if s.policies == nil || principal.Kind == request.PrincipalRoot || principal.Kind == request.PrincipalAnonymous {
+		return snapshot, false
+	}
+
+	snapshot, err := s.policies(ctx, principal)
+	if err != nil {
+		return iam.Authorization{
+			Principal:   *principal,
+			Unsupported: []string{"IAM policy lookup failed: " + err.Error()},
+		}, true
+	}
+
+	return snapshot, false
+}
+
+// evaluate decides a call against the caller's identity policies, boundary, session policy, and the resource
+// policies of its targets, as every signed request and delivery under a role is.
+func (s *Server) evaluate(ctx context.Context, mode string, e *evaluation) *AuthorizationRecord {
+	op := e.op
+	principal := e.snapshot.Principal
+	resources := e.resources
+	var err error
+	if resources == nil && e.service.Authorizer != nil {
+		resources, err = e.service.Authorizer.AuthorizationResources(ctx, op.Name, e.input)
 	}
 
 	resolutionFailed := err != nil
 	if resolutionFailed {
-		snapshot.Unsupported = append(snapshot.Unsupported, "resource resolution failed: "+err.Error())
+		e.snapshot.Unsupported = append(e.snapshot.Unsupported, "resource resolution failed: "+err.Error())
 		resources = nil
 	}
 
@@ -161,17 +214,17 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 	}
 
 	// Roles the request hands to a service are checked as iam:PassRole beside the operation's own action.
-	passed, passErr := s.passedRoles(ctx, c.meta.Service, op.Name, input)
+	passed, passErr := s.passedRoles(ctx, e.serviceName, op.Name, e.input)
 	if passErr != nil {
-		snapshot.Unsupported = append(snapshot.Unsupported, "iam:PassRole resolution failed: "+passErr.Error())
+		e.snapshot.Unsupported = append(e.snapshot.Unsupported, "iam:PassRole resolution failed: "+passErr.Error())
 		resolutionFailed = true
 	}
 
 	resources = append(resources, passed...)
 
-	action := iamAction(c.service, op)
+	action := iamAction(e.service, op)
 
-	values := c.meta.AuthorizationValues
+	values := e.values
 
 	record := &AuthorizationRecord{Mode: mode, Principal: principal.ARN, Allowed: true}
 	for _, target := range resources {
@@ -193,7 +246,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 			targetAction = action
 		}
 
-		decision := policy.Evaluate(snapshot.Documents, targetAction, target.ARN, policy.Context{
+		decision := policy.Evaluate(e.snapshot.Documents, targetAction, target.ARN, policy.Context{
 			Values: contextValues, ResourceTags: target.TagsKnown, Unknown: target.UnknownKeys,
 		})
 		var boundaryDecision, sessionDecision *policy.Decision
@@ -202,7 +255,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 			output    **policy.Decision
 			documents []policy.Document
 		}{
-			{&boundaryDecision, snapshot.Boundary}, {&sessionDecision, snapshot.Session},
+			{&boundaryDecision, e.snapshot.Boundary}, {&sessionDecision, e.snapshot.Session},
 		} {
 			if layer.documents == nil {
 				continue
@@ -219,7 +272,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 		decision.Allowed = decision.Allowed && limitsAllow
 
-		if c.meta.Service == consoleSNS {
+		if e.serviceName == consoleSNS {
 			contextValues["aws:sourceowner"] = []string{principal.Account}
 		}
 
@@ -227,7 +280,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		var resourceDecision *policy.Decision
 		anonymous := principal.Kind == request.PrincipalAnonymous
 		crossAccount := target.OwnerAccount != "" && target.OwnerAccount != principal.Account && !anonymous
-		if principal.Kind == request.PrincipalRoot || c.identity == execute.Granted {
+		if principal.Kind == request.PrincipalRoot || e.granted {
 			decision.Allowed = true
 		}
 
@@ -244,13 +297,13 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 			)
 			resourceDecision = &evaluated
 			ownerRoot := principal.Kind == request.PrincipalRoot && !crossAccount
-			bucketRecovery := c.meta.Service == consoleS3 &&
+			bucketRecovery := e.serviceName == consoleS3 &&
 				(op.Name == "GetBucketPolicy" || op.Name == "PutBucketPolicy" || op.Name == "DeleteBucketPolicy")
-			queueRecovery := c.meta.Service == consoleSQS &&
+			queueRecovery := e.serviceName == consoleSQS &&
 				(op.Name == "GetQueueAttributes" || op.Name == "SetQueueAttributes")
-			topicRecovery := c.meta.Service == consoleSNS &&
+			topicRecovery := e.serviceName == consoleSNS &&
 				(op.Name == "GetTopicAttributes" || op.Name == "SetTopicAttributes")
-			secretRecovery := c.meta.Service == authorizationSecrets &&
+			secretRecovery := e.serviceName == authorizationSecrets &&
 				(op.Name == "GetResourcePolicy" || op.Name == "PutResourcePolicy" || op.Name == "DeleteResourcePolicy")
 			recovery := ownerRoot && (bucketRecovery || queueRecovery || topicRecovery || secretRecovery)
 			if !recovery {
@@ -287,8 +340,8 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 		decision.ExplicitDeny = decision.ExplicitDeny || limitsDeny
 		decision.Allowed = decision.Allowed && !decision.ExplicitDeny
-		decision.Unsupported = append(decision.Unsupported, snapshot.Unsupported...)
-		if resolutionFailed || lookupFailed || (target.Grant != nil && len(decision.Unsupported) > 0) {
+		decision.Unsupported = append(decision.Unsupported, e.snapshot.Unsupported...)
+		if resolutionFailed || e.lookupFailed || (target.Grant != nil && len(decision.Unsupported) > 0) {
 			decision.Allowed = false
 		}
 
@@ -317,7 +370,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 
 	if record.Allowed {
 		record.Message = "allowed by identity-based or resource-based policy"
-		if c.meta.Service == authorizationKMS {
+		if e.serviceName == authorizationKMS {
 			record.Message = "allowed by identity-based policy, key policy or KMS grant"
 		}
 	}
@@ -326,19 +379,7 @@ func (s *Server) authorizeTargets(ctx context.Context, r *http.Request, c *call,
 		record.Message = "would deny: " + record.Message
 	}
 
-	c.authorization = record
-	s.logger.Info("authorization", "mode", mode, "principal", record.Principal, "allowed", record.Allowed,
-		"decision", record.Message, "checks", record.Checks)
-	if record.Allowed || mode == config.AuthorizationSoft {
-		return nil
-	}
-
-	code := "AccessDeniedException"
-	if c.meta.Protocol == catalog.RESTXML || formProtocol(c.meta.Protocol) {
-		code = accessDenied
-	}
-
-	return &awserror.Error{Code: code, Message: record.Message, StatusCode: http.StatusForbidden}
+	return record
 }
 
 func denial(arn string, check *AuthorizationCheck) string {
@@ -384,21 +425,26 @@ func denial(arn string, check *AuthorizationCheck) string {
 
 // authorizationValues keeps IAM request conditions identical on API calls and
 // filtered inventory. Forwarded headers are not trusted for source IP or TLS.
+// A call a service makes in-process has no request to take them from: it has no source IP and is secure.
 func authorizationValues(
 	r *http.Request,
 	principal *request.Principal,
 	tags map[string]string,
 	region string,
 ) map[string][]string {
-	sourceIP := r.RemoteAddr
-	if host, _, splitErr := net.SplitHostPort(sourceIP); splitErr == nil {
-		sourceIP = host
+	values := map[string][]string{
+		"aws:currenttime":     {time.Now().UTC().Format(time.RFC3339Nano)},
+		"aws:securetransport": {"true"}, "aws:requestedregion": {region},
 	}
 
-	values := map[string][]string{
-		"aws:sourceip":        {sourceIP},
-		"aws:currenttime":     {time.Now().UTC().Format(time.RFC3339Nano)},
-		"aws:securetransport": {strconv.FormatBool(r.TLS != nil)}, "aws:requestedregion": {region},
+	if r != nil {
+		sourceIP := r.RemoteAddr
+		if host, _, splitErr := net.SplitHostPort(sourceIP); splitErr == nil {
+			sourceIP = host
+		}
+
+		values["aws:sourceip"] = []string{sourceIP}
+		values["aws:securetransport"] = []string{strconv.FormatBool(r.TLS != nil)}
 	}
 
 	// An unauthenticated caller has no principal keys, so conditions on them see them absent.

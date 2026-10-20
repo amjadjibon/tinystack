@@ -64,9 +64,11 @@ type Service struct {
 	kinesis *kinesis.Service
 	streams *dynamodb.Streams
 	caller  *catalog.Caller
-	logger  *slog.Logger
-	now     func() time.Time
-	bg      *background.Group
+	// authorizer checks that the pipe's role may be assumed and may make each call; see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
+	logger     *slog.Logger
+	now        func() time.Time
+	bg         *background.Group
 }
 
 // New returns a Pipes service whose runner moves records of running pipes
@@ -94,6 +96,12 @@ func New(
 // UseCaller lets pipes invoke enrichment functions and targets. Call it
 // before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes every enrichment and target call require the pipe's role to trust
+// pipes.amazonaws.com and to allow the call. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // Stop ends the runner and waits for it.
 func (s *Service) Stop() { s.bg.Stop() }

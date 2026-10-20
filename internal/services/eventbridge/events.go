@@ -18,6 +18,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
+	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -318,13 +319,46 @@ func (s *Service) authorize(ctx context.Context, rule, targetARN string) error {
 	})
 }
 
-// send makes one delivery of payload to a target of rule. A target with a role is invoked with that role's
-// permissions, so its resource policy is not consulted.
-func (s *Service) send(ctx context.Context, rule string, t *target, eventID string, payload []byte) error {
-	if t.RoleARN == "" {
-		if err := s.authorize(ctx, rule, t.ARN); err != nil {
-			return err
+// authorizeRole checks that the target's role trusts events.amazonaws.com and lets it make the delivery.
+func (s *Service) authorizeRole(ctx context.Context, rule string, t *target, payload []byte) error {
+	var svc, op string
+	var params map[string]any
+	switch strings.SplitN(t.ARN, ":", 4)[2] {
+	case serviceSQS:
+		queueURL, _ := sqs.QueueURL(t.ARN)
+		svc, op, params = serviceSQS, "SendMessage", map[string]any{
+			"QueueUrl": queueURL, "MessageBody": string(payload),
 		}
+	case serviceSNS:
+		svc, op, params = serviceSNS, "Publish", map[string]any{"TopicArn": t.ARN, "Message": string(payload)}
+	case serviceLambda:
+		svc, op, params = serviceLambda, "Invoke", map[string]any{
+			"FunctionName": t.ARN, "InvocationType": "Event", "Payload": string(payload),
+		}
+	}
+
+	return s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
+		Principal:     "events.amazonaws.com",
+		SourceARN:     rule,
+		SourceAccount: strings.Split(rule, ":")[4],
+		Role: &catalog.DeliveryRole{
+			ARN: t.RoleARN, Session: rule[strings.LastIndex(rule, "/")+1:], Service: svc, Operation: op, Params: params,
+		},
+	})
+}
+
+// send makes one delivery of payload to a target of rule. A target with a role is delivered to as that role;
+// otherwise the target's resource policy must allow the rule.
+func (s *Service) send(ctx context.Context, rule string, t *target, eventID string, payload []byte) error {
+	var authorized error
+	if t.RoleARN == "" {
+		authorized = s.authorize(ctx, rule, t.ARN)
+	} else {
+		authorized = s.authorizeRole(ctx, rule, t, payload)
+	}
+
+	if authorized != nil {
+		return authorized
 	}
 
 	var err error

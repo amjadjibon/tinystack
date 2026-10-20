@@ -40,7 +40,7 @@ type statement struct {
 
 // trusts reports whether a role's trust policy lets c take its action. It
 // evaluates a subset: Allow and Deny statements naming AWS, Federated, or
-// Service principals and actions, and StringEquals, StringLike and Null conditions on the
+// Service principals and actions, and StringEquals, StringLike, ArnEquals, ArnLike and Null conditions on the
 // keys in c's context, alone or with the ForAnyValue and ForAllValues set
 // operators. An Allow that uses anything else grants nothing, and a Deny that
 // does applies.
@@ -146,7 +146,7 @@ func present(value string) []string {
 }
 
 // conditionsHold reports whether a statement's conditions hold, and whether
-// TinyStack knows every one of them: StringEquals, StringLike and Null on the keys
+// TinyStack knows every one of them: StringEquals, StringLike, ArnEquals, ArnLike and Null on the keys
 // in context, which hold when any of the key's values matches, or with
 // ForAllValues when every one does.
 func conditionsHold(conditions map[string]map[string]json.RawMessage, context map[string][]string) (
@@ -159,7 +159,15 @@ func conditionsHold(conditions map[string]map[string]json.RawMessage, context ma
 			set, base = "", operator
 		}
 
-		if (base != "StringEquals" && base != "StringLike" && base != operatorNull) ||
+		// ARN operators match like strings: ArnLike's wildcards also span the ARN's colons.
+		switch base {
+		case "ArnEquals":
+			base = operatorStringEquals
+		case "ArnLike":
+			base = operatorStringLike
+		}
+
+		if (base != operatorStringEquals && base != operatorStringLike && base != operatorNull) ||
 			(set != "" && set != "ForAnyValue" && set != "ForAllValues") ||
 			(base == operatorNull && set != "") {
 			return false, false
@@ -181,8 +189,8 @@ func conditionsHold(conditions map[string]map[string]json.RawMessage, context ma
 
 			matches := func(v string) bool {
 				return slices.ContainsFunc(values(raw), func(want string) bool {
-					return (base == "StringEquals" && want == v) ||
-						(base == "StringLike" && policydoc.Like(want, v, false))
+					return (base == operatorStringEquals && want == v) ||
+						(base == operatorStringLike && policydoc.Like(want, v, false))
 				})
 			}
 			if set == "ForAllValues" {
@@ -196,5 +204,9 @@ func conditionsHold(conditions map[string]map[string]json.RawMessage, context ma
 	return holds, true
 }
 
-// operatorNull is the condition operator that tests whether a key is missing.
-const operatorNull = "Null"
+const (
+	operatorStringEquals = "StringEquals"
+	operatorStringLike   = "StringLike"
+	// operatorNull is the condition operator that tests whether a key is missing.
+	operatorNull = "Null"
+)

@@ -30,13 +30,29 @@ var deliveryActions = map[string]string{
 // before serving requests.
 func (s *Server) UseDeliveryTargets(targets map[string]DeliveryTarget) { s.deliveryTargets = targets }
 
-// AuthorizeService checks an in-process delivery by an AWS service against its target's resource policy, as AWS
-// does for a service principal: only that policy can allow it, with no identity policy beside it and no default
-// for the owner's account. Soft mode records a denied check and lets the delivery through; enforce mode fails it.
+// ServiceSession returns the principal an AWS service acts as once it assumes a role on behalf of a resource, or
+// why it cannot: arguments are the service principal, the role, the session name, and the source ARN and account.
+type ServiceSession func(ctx context.Context, service, roleARN, name, sourceARN, sourceAccount string) (
+	request.Principal, error,
+)
+
+// UseServiceRoles lets AuthorizeService check deliveries made under a role against its trust policy. Call it
+// before serving requests.
+func (s *Server) UseServiceRoles(session ServiceSession) { s.serviceSession = session }
+
+// AuthorizeService checks an in-process delivery by an AWS service. Without a role it goes against its target's
+// resource policy, as AWS does for a service principal: only that policy can allow it, with no identity policy
+// beside it and no default for the owner's account. Under a role, the role's trust policy must allow the service
+// and the call is then decided as the role's session would be. Soft mode records a denied check and lets the
+// delivery through; enforce mode fails it.
 func (s *Server) AuthorizeService(ctx context.Context, d catalog.ServiceDelivery) error {
 	mode := s.cfg.Identity.Authorization
 	if mode == "" || mode == config.AuthorizationOff {
 		return nil
+	}
+
+	if d.Role != nil {
+		return s.authorizeRole(ctx, mode, &d)
 	}
 
 	parts := strings.SplitN(d.Target, ":", 6)
@@ -98,27 +114,45 @@ func (s *Server) AuthorizeService(ctx context.Context, d catalog.ServiceDelivery
 		}
 	}
 
-	s.logger.Info("authorization", "mode", mode, "principal", record.Principal, "allowed", record.Allowed,
+	return s.finishDelivery(ctx, record, &deliveryEntry{
+		Path: d.Target, Service: parts[2], Operation: action[strings.Index(action, ":")+1:], Account: parts[4],
+		Region: parts[3], Fields: map[string]string{
+			"principal": d.Principal, "source_arn": d.SourceARN, "source_account": d.SourceAccount, "target": d.Target,
+		},
+	}, accessDenied)
+}
+
+// deliveryEntry is what the request inspector shows of a delivery's check.
+type deliveryEntry struct {
+	Fields                                    map[string]string
+	Path, Service, Operation, Account, Region string
+}
+
+// finishDelivery logs and records a delivery's check, and fails the delivery with code when enforcement denies it.
+func (s *Server) finishDelivery(
+	ctx context.Context,
+	record *AuthorizationRecord,
+	entry *deliveryEntry,
+	code string,
+) error {
+	s.logger.Info("authorization", "mode", record.Mode, "principal", record.Principal, "allowed", record.Allowed,
 		"decision", record.Message, "checks", record.Checks)
-	s.recordDelivery(ctx, &d, parts, action, record)
-	if record.Allowed || mode == config.AuthorizationSoft {
+	s.recordDelivery(ctx, record, entry, code)
+	if record.Allowed || record.Mode == config.AuthorizationSoft {
 		return nil
 	}
 
-	return &awserror.Error{Code: accessDenied, Message: record.Message, StatusCode: http.StatusForbidden}
+	return &awserror.Error{Code: code, Message: record.Message, StatusCode: http.StatusForbidden}
 }
 
 // recordDelivery adds the delivery's check to the request inspector, which has no HTTP request to hang it on.
 func (s *Server) recordDelivery(
 	ctx context.Context,
-	d *catalog.ServiceDelivery,
-	target []string,
-	action string,
 	authorization *AuthorizationRecord,
+	entry *deliveryEntry,
+	code string,
 ) {
-	fields := map[string]string{
-		"principal": d.Principal, "source_arn": d.SourceARN, "source_account": d.SourceAccount, "target": d.Target,
-	}
+	fields := entry.Fields
 	// One request can cause many deliveries, so each gets its own ID and names the request that caused it.
 	if m, ok := request.FromContext(ctx); ok && m.RequestID != "" {
 		fields["caused_by"] = m.RequestID
@@ -130,17 +164,17 @@ func (s *Server) recordDelivery(
 		RequestID:     common.RandomID(32),
 		Time:          time.Now().UTC(),
 		Method:        "DELIVER",
-		Path:          d.Target,
-		Service:       target[2],
-		Operation:     action[strings.Index(action, ":")+1:],
-		Account:       target[4],
-		Region:        target[3],
+		Path:          entry.Path,
+		Service:       entry.Service,
+		Operation:     entry.Operation,
+		Account:       entry.Account,
+		Region:        entry.Region,
 		Status:        http.StatusOK,
 		RequestBody:   string(body),
 	}
 	if !authorization.Allowed && authorization.Mode == config.AuthorizationEnforce {
 		rec.Status = http.StatusForbidden
-		rec.ErrorCode, rec.ErrorMessage = accessDenied, authorization.Message
+		rec.ErrorCode, rec.ErrorMessage = code, authorization.Message
 	}
 
 	s.requests.Add(rec)

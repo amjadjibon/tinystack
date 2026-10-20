@@ -379,13 +379,24 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 	var out []byte
 	var functionError bool
 	// A role invokes the function as that role; otherwise the function's policy must allow API Gateway.
-	if common.Value(i.Credentials) == "" {
-		err = s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
-			Principal:     "apigateway.amazonaws.com",
-			SourceARN:     c.integrationARN(),
-			SourceAccount: c.scope.AccountID,
-			Target:        arn,
-		})
+	delivery := catalog.ServiceDelivery{
+		Principal:     "apigateway.amazonaws.com",
+		SourceARN:     c.integrationARN(),
+		SourceAccount: c.scope.AccountID,
+		Target:        arn,
+	}
+	credentials := common.Value(i.Credentials)
+	if strings.Contains(credentials, ":role/") {
+		delivery.Target = ""
+		delivery.Role = &catalog.DeliveryRole{
+			ARN: credentials, Session: "APIGateway-" + *c.api.API.Id, Service: "lambda", Operation: "Invoke",
+			Params: map[string]any{"FunctionName": arn, "InvocationType": "RequestResponse"},
+		}
+	}
+
+	// Credentials that are not a role, arn:aws:iam::*:user/*, invoke as the caller, whom the request authorized.
+	if credentials == "" || delivery.Role != nil {
+		err = s.authorizer.Authorize(ctx, delivery)
 	}
 
 	if err == nil {

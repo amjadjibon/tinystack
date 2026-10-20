@@ -68,6 +68,9 @@ type Service struct {
 	// caller runs rule actions; deliveries records them.
 	caller     *catalog.Caller
 	deliveries *delivery.Log
+	// authorizer checks that each action's role may be assumed and may make its call, and that a Lambda action's
+	// function allows IoT; see UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
 	// roleCredentials issues role alias credentials.
 	roleCredentials RoleCredentials
 	// brokers are the running MQTT brokers by scope, guarded by brokersMu;
@@ -107,6 +110,12 @@ func New(store storage.Store, deliveries *delivery.Log, logger *slog.Logger) *Se
 // UseCaller lets topic rules run their actions. Call it before serving
 // requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes every action require its role to trust iot.amazonaws.com and to allow the call, or
+// for a Lambda action the function's policy to allow it. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // UseIdentity sets the account and Region of connections without an
 // identity, and whether IoT policies are evaluated, as identity.mode verify

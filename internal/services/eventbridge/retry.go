@@ -122,9 +122,19 @@ func retryable(err error) bool {
 	return !ok || retryableCodes[e.Code]
 }
 
+// errorCode names a failed delivery as the dead-letter queue's ERROR_CODE does. A denial reports as EventBridge
+// does, NO_PERMISSIONS or, when the target's role cannot be assumed, FAILED_TO_ASSUME_ROLE:
+// https://docs.aws.amazon.com/eventbridge/latest/userguide/rule-dlq.html
 func errorCode(err error) (code, message string) {
 	if e, ok := errors.AsType[*awserror.Error](err); ok {
-		return e.Code, e.Message
+		switch {
+		case e.Code != "AccessDenied" && e.Code != "AccessDeniedException":
+			return e.Code, e.Message
+		case strings.Contains(e.Message, "sts:AssumeRole"):
+			return "FAILED_TO_ASSUME_ROLE", e.Message
+		}
+
+		return "NO_PERMISSIONS", e.Message
 	}
 
 	return "InternalException", err.Error()

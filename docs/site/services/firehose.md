@@ -24,7 +24,6 @@ See the [implemented feature catalogue](catalogue.md#data-firehose) for this ser
 - Only S3 destinations are implemented.
 - No HTTP, Redshift, OpenSearch, Splunk, Snowflake or Iceberg destinations.
 - No MSK/database sources, dynamic partitioning, format conversion, encryption or S3 backup behavior.
-- Deliveries use the stream's role in AWS and are not checked against the destination's resource policy.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

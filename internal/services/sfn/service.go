@@ -81,8 +81,11 @@ type Service struct {
 	store  storage.Store
 	logs   *logs.Service
 	caller *catalog.Caller
-	logger *slog.Logger
-	now    func() time.Time
+	// authorizer checks that each state machine's role may be assumed and may make each call; see
+	// UseServiceAuthorizer.
+	authorizer catalog.ServiceAuthorizer
+	logger     *slog.Logger
+	now        func() time.Time
 	// bg runs executions until Stop.
 	bg *background.Group
 	// running cancels a running execution by ARN, for StopExecution.
@@ -115,6 +118,12 @@ func New(store storage.Store, logGroups *logs.Service, logger *slog.Logger) (*Se
 // of the services the caller holds, so it is registered after New; call it
 // before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes every Task state's call require the state machine's role to trust
+// states.amazonaws.com and to allow the call. Call it before serving requests.
+func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
+	s.authorizer = authorizer
+}
 
 // Stop ends running executions and waits for them.
 func (s *Service) Stop() { s.bg.Stop() }

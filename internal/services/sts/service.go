@@ -29,6 +29,9 @@ const (
 	// global, so sessions are not scoped to an account or region.
 	sessionPrefix = "aws/sts/session/"
 
+	minSessionName = 2
+	maxSessionName = 64
+
 	minDuration     = 900
 	defaultDuration = 3600
 	// chainedDuration caps sessions that a role session assumes.
@@ -44,6 +47,8 @@ const (
 var (
 	sessionName = regexp.MustCompile(`^[\w+=,.@-]{2,64}$`)
 	externalID  = regexp.MustCompile(`^[\w+=,.@:/-]+$`)
+
+	invalidSessionName = regexp.MustCompile(`[^\w+=,.@-]`)
 )
 
 var _ api.API = (*Service)(nil)
@@ -353,15 +358,9 @@ func (s *Service) AssumeRoleForService(
 	principal, roleARN, sessionName string,
 	seconds int64,
 ) (accessKey, secret, token string, expires time.Time, err error) {
-	role, exists, err := s.roles.RoleByARN(ctx, roleARN)
+	role, err := s.trustService(ctx, principal, roleARN, nil)
 	if err != nil {
 		return "", "", "", time.Time{}, err
-	}
-
-	c := &caller{service: principal, action: "sts:AssumeRole"}
-	if !exists || !trusts(role.TrustPolicy, c) {
-		return "", "", "", time.Time{}, denied(fmt.Sprintf("%s is not authorized to perform: sts:AssumeRole on "+
-			"resource: %s", principal, roleARN))
 	}
 
 	duration, err := sessionDuration(&seconds, role.MaxSessionDuration, false)
@@ -387,6 +386,56 @@ func (s *Service) AssumeRoleForService(
 	})
 
 	return accessKey, secret, token, expires, err
+}
+
+// trustService finds the role and checks that its trust policy lets the AWS service principal assume it, with
+// the condition keys in conditions, which are lowercased and absent without values. A role that does not exist is
+// denied as a role that does not trust the service is.
+func (s *Service) trustService(
+	ctx context.Context,
+	principal, roleARN string,
+	conditions map[string][]string,
+) (iam.Role, error) {
+	role, exists, err := s.roles.RoleByARN(ctx, roleARN)
+	if err != nil {
+		return iam.Role{}, err
+	}
+
+	c := &caller{service: principal, action: "sts:AssumeRole", context: conditions}
+	if !exists || !trusts(role.TrustPolicy, c) {
+		return iam.Role{}, denied(fmt.Sprintf("%s is not authorized to perform: sts:AssumeRole on resource: %s",
+			principal, roleARN))
+	}
+
+	return role, nil
+}
+
+// ServiceSession is the principal an AWS service acts as once it assumes a role to call on behalf of the resource
+// sourceARN in sourceAccount, which the role's trust conditions see as aws:SourceArn and aws:SourceAccount. It
+// issues no credentials: the caller evaluates the role's permissions itself. The session name is made fit for
+// STS. Other packages call it in-process; no API operation reaches it.
+func (s *Service) ServiceSession(
+	ctx context.Context,
+	principal, roleARN, name, sourceARN, sourceAccount string,
+) (request.Principal, error) {
+	role, err := s.trustService(ctx, principal, roleARN, map[string][]string{
+		"aws:sourcearn": present(sourceARN), "aws:sourceaccount": present(sourceAccount), "sts:externalid": nil,
+	})
+	if err != nil {
+		return request.Principal{}, err
+	}
+
+	name = invalidSessionName.ReplaceAllString(name, "-")
+	if len(name) > maxSessionName {
+		name = name[:maxSessionName]
+	}
+
+	if len(name) < minSessionName {
+		name = "session"
+	}
+
+	issued := &session{AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID, Name: name}
+	return issued.principal(), nil
 }
 
 // FederatedSession is what AssumeRoleForFederatedUser issued.

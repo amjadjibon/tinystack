@@ -475,16 +475,58 @@ console inspector under method `DELIVER`. Enforce mode fails the delivery as fol
 - SNS to SQS or Lambda: the delivery fails and the delivery log shows it; `Publish` still succeeds.
 - S3 notifications: `PutBucketNotificationConfiguration` fails with `InvalidArgument` ("Unable to validate the
   following destination configurations") unless `SkipDestinationValidation` is set, and later deliveries are denied.
-- EventBridge: the target invocation fails with `AccessDenied` and takes the existing dead-letter queue path;
-  the dead-letter queue's own policy must allow the rule. Targets with a `RoleArn` are invoked as that role
-  and are not checked.
+- EventBridge: the target invocation fails and takes the existing dead-letter queue path with the `ERROR_CODE`
+  `NO_PERMISSIONS` (`FAILED_TO_ASSUME_ROLE` when a target's role cannot be assumed; see
+  [dead-letter queues](https://docs.aws.amazon.com/eventbridge/latest/userguide/rule-dlq.html)); the
+  dead-letter queue's own policy must allow the rule.
 - API Gateway: `500 {"message": "Internal server error"}` for REST APIs and
-  `500 {"message":"Internal Server Error"}` for HTTP APIs. REST integrations with a `Credentials` role are
-  not checked.
+  `500 {"message":"Internal Server Error"}` for HTTP APIs.
 
-Deliveries by Scheduler, Pipes, Step Functions, IoT rules and Firehose are role-based in AWS, and CloudWatch alarm
-actions, Logs subscriptions, load balancer Lambda targets, Lambda destinations, event source mappings
-and Lambda authorizers are not checked.
+CloudWatch alarm actions, Logs subscriptions, load balancer Lambda targets, Lambda destinations, event source
+mappings and Lambda authorizers are not checked.
+
+### Deliveries under a role
+
+Scheduler, Pipes, Step Functions, EventBridge targets with a `RoleArn`, API Gateway REST integrations with a
+`Credentials` role, IoT rule actions and Firehose destinations act as an assumed role in AWS. With authorization
+on, TinyStack does the same in two steps for each call, with no credentials issued:
+
+1. **Trust.** The role's trust policy must allow the service principal to `sts:AssumeRole`. The same evaluation as
+   `AssumeRole` applies (`Service` principals; `StringEquals`, `StringLike`, `ArnEquals`, `ArnLike` and `Null`
+   conditions), with `aws:SourceArn` and `aws:SourceAccount` set. A role that does not exist is denied like one
+   that does not trust the service.
+2. **Permission.** The call is decided as the session `arn:aws:sts::<account>:assumed-role/<role>/<session>`,
+   with the real action and resource of the operation, through the same evaluation as a signed request: identity
+   policies, permissions boundary, the target's resource policy (same-account union, cross-account
+   intersection), explicit Deny, and `iam:PassRole` for roles the call passes on.
+
+| Source | Principal | `aws:SourceArn` | Session name | Call |
+| --- | --- | --- | --- | --- |
+| Scheduler | `scheduler.amazonaws.com` | the schedule's group ARN, as [AWS scopes it](https://docs.aws.amazon.com/scheduler/latest/UserGuide/cross-service-confused-deputy-prevention.html) | schedule name | the target's operation (also the send to the dead-letter queue) |
+| Pipes | `pipes.amazonaws.com` | pipe ARN | pipe name | enrichment `lambda:InvokeFunction`, then the target's operation |
+| Step Functions | `states.amazonaws.com` | state machine ARN | execution name | each Task state's operation |
+| EventBridge target with `RoleArn` | `events.amazonaws.com` | rule ARN | rule name | `sqs:SendMessage`, `sns:Publish`, `lambda:InvokeFunction` |
+| API Gateway REST `Credentials` | `apigateway.amazonaws.com` | the method's execute-api ARN | `APIGateway-<api-id>` | `lambda:InvokeFunction` |
+| IoT rule action | `iot.amazonaws.com` | rule ARN | rule name | the action's operation (a Lambda action has no role: the function's policy decides) |
+| Firehose | `firehose.amazonaws.com` | delivery stream ARN | stream name | `s3:PutObject`, the processor's `lambda:InvokeFunction` |
+
+Each check is recorded under method `DELIVER` in `/_tinystack/requests`, with the session as the principal and
+`caused_by` naming the request that started it when there is one. A denied trust check shows service `sts`,
+operation `AssumeRole` and the role as the path. Soft mode records `would deny:` and lets the call through;
+enforce mode fails it through the service's own failure path:
+
+- Scheduler: the run fails and goes to the target's dead-letter queue with the denial as `ERROR_CODE` and
+  `ERROR_MESSAGE`.
+- Pipes: the delivery fails and the next visit retries it.
+- Step Functions: the Task fails with `<Service>.AccessDeniedException` (`.AccessDenied` for XML services) and the
+  denial as its cause, so `Retry` and `Catch` apply.
+- EventBridge: the retry and dead-letter path above, with `NO_PERMISSIONS` or `FAILED_TO_ASSUME_ROLE`.
+- API Gateway: the 500 above.
+- IoT: the action fails, which the error action receives. Firehose: the processor's records fail with
+  `Lambda.InvokeAccessDenied`, and a denied S3 write is a failed delivery.
+
+Not checked: Pipes' source reads, IoT `republish` and the `aws_lambda()` function, and API Gateway integrations whose
+`Credentials` are `arn:aws:iam::*:user/*`.
 
 ## IAM policy simulation
 

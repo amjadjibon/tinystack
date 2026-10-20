@@ -24,7 +24,7 @@ With identity.authorization set to soft or enforce, bus and rule actions evaluat
 ## Limitations and future work
 
 - No partner buses, cross-region bus references, event-bus targets or additional target service families.
-- Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies, and targets with a RoleArn are invoked as that role without checking the target's resource policy.
+- Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies.
 - Replays run synchronously and cannot be cancelled.
 - Cron does not support L, W or #.
 - Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests.

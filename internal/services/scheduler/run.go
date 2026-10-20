@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -110,7 +111,7 @@ func (s *Service) invoke(ctx context.Context, scope request.Scope, sc *api.GetSc
 	target, op, params, err := targetCall(t)
 	if err == nil {
 		ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: target, RequestID: randomID()})
-		_, err = s.caller.Call(ctx, target, op, params)
+		_, err = s.authorizer.Call(ctx, s.caller, s.delivery(scope, sc, target, op, params))
 	}
 
 	if err == nil {
@@ -126,17 +127,38 @@ func (s *Service) invoke(ctx context.Context, scope request.Scope, sc *api.GetSc
 	attribute := func(v string) any { return map[string]any{"DataType": "String", "StringValue": v} }
 	queueURL, _ := sqs.QueueURL(common.Value(t.DeadLetterConfig.Arn))
 	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, Service: "sqs", RequestID: randomID()})
-	_, dlqErr := s.caller.Call(ctx, "sqs", "SendMessage", map[string]any{
+	// The role that failed to deliver also sends to the dead-letter queue.
+	_, dlqErr := s.authorizer.Call(ctx, s.caller, s.delivery(scope, sc, "sqs", "SendMessage", map[string]any{
 		"QueueUrl": queueURL, "MessageBody": cmpOr(input, "{}"),
 		"MessageAttributes": map[string]any{
 			"ERROR_CODE": attribute(e.Code), "ERROR_MESSAGE": attribute(e.Message),
 			"EXHAUSTED_RETRY_CONDITION": attribute("MaximumRetryAttempts"), "RETRY_ATTEMPTS": attribute("0"),
 			"TARGET_ARN": attribute(arn), "SCHEDULE_ARN": attribute(common.Value(sc.Arn)),
 		},
-	})
+	}))
 	if dlqErr != nil {
 		s.logger.Warn("sending a failed schedule run to its dead-letter queue failed", "schedule", common.Value(sc.Arn),
 			"error", dlqErr)
+	}
+}
+
+// delivery is a call the schedule makes under its target's role. Trust policies see the schedule's group as the
+// aws:SourceArn, which is how AWS scopes them:
+// https://docs.aws.amazon.com/scheduler/latest/UserGuide/cross-service-confused-deputy-prevention.html
+func (s *Service) delivery(
+	scope request.Scope,
+	sc *api.GetScheduleOutput,
+	svc, op string,
+	params map[string]any,
+) catalog.ServiceDelivery {
+	return catalog.ServiceDelivery{
+		Principal:     "scheduler.amazonaws.com",
+		SourceARN:     groupARN(scope, common.Value(sc.GroupName)),
+		SourceAccount: scope.AccountID,
+		Role: &catalog.DeliveryRole{
+			ARN: common.Value(sc.Target.RoleArn), Session: common.Value(sc.Name), Service: svc, Operation: op,
+			Params: params,
+		},
 	}
 }
 

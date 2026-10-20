@@ -614,11 +614,19 @@ func build(
 	handler.UseDeliveryTargets(map[string]gateway.DeliveryTarget{
 		"sqs": queues.DeliveryResource, "sns": topics.DeliveryResource, "lambda": functions.DeliveryResource,
 	})
+	// Deliveries a service makes under a role need the role's trust policy to allow the service, and the role to
+	// be permitted the call.
+	handler.UseServiceRoles(tokens.ServiceSession)
 	topics.UseServiceAuthorizer(handler.AuthorizeService)
 	buckets.UseServiceAuthorizer(handler.AuthorizeService)
 	rules.UseServiceAuthorizer(handler.AuthorizeService)
 	restAPIs.UseServiceAuthorizer(handler.AuthorizeService)
 	httpAPIs.UseServiceAuthorizer(handler.AuthorizeService)
+	timers.UseServiceAuthorizer(handler.AuthorizeService)
+	pipelines.UseServiceAuthorizer(handler.AuthorizeService)
+	workflows.UseServiceAuthorizer(handler.AuthorizeService)
+	things.UseServiceAuthorizer(handler.AuthorizeService)
+	firehoses.UseServiceAuthorizer(handler.AuthorizeService)
 	handler.UseInstanceProfiles(roles.InstanceProfileOf)
 	if cfg.Identity.Mode == config.IdentityVerify {
 		// Web identity tokens must carry a valid signature of their issuer, or of
