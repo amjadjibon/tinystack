@@ -221,3 +221,31 @@ func TestParseAddition(t *testing.T) {
 		}
 	}
 }
+
+func TestAdditiveManifestPreservesExistingOrder(t *testing.T) {
+	original := []byte(`{"repository":"https://github.com/o/r","commit":"same","license":"LICENSE",
+ "models":{"zeta":{"path":"z.json","sha256":"z"},"alpha":{"path":"a.json","sha256":"a"}}}`)
+	var updated manifest
+	if err := json.Unmarshal(original, &updated); err != nil {
+		t.Fatal(err)
+	}
+
+	updated.Models["new"] = model{Path: "new.json", SHA256: "new"}
+	out, err := marshalManifest(original, updated, []addition{{name: "new"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Index(out, []byte(`"zeta"`)) > bytes.Index(out, []byte(`"alpha"`)) {
+		t.Fatal(string(out))
+	}
+
+	var got manifest
+	if err := json.Unmarshal(out, &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Models) != 3 || got.Models["new"].SHA256 != "new" {
+		t.Fatal(got)
+	}
+}

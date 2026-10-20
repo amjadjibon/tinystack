@@ -81,9 +81,9 @@ def main():
                 terraform("import", "aws_cur_report_definition.local", "local-costs")
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
-                # The budget tag/notification edit adds one in-place update; the billing alarm tag edit adds another.
+                # The collection description and tags add one in-place update to the existing fixture.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "7 added, 98 changed, 7 destroyed" in updated, updated
+                assert "7 added, 99 changed, 7 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

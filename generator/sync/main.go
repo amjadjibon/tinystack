@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -244,7 +245,7 @@ func sync(ctx context.Context, client *http.Client, dir, ref string, adds []addi
 	}
 
 	m.Commit = commit
-	out, err := json.MarshalIndent(m, "", "  ")
+	out, err := marshalManifest(b, m, adds)
 	if err != nil {
 		return nil, err
 	}
@@ -257,11 +258,79 @@ func sync(ctx context.Context, client *http.Client, dir, ref string, adds []addi
 		}
 	}
 
+	// #nosec G703 -- dir is the explicitly selected local model output directory.
 	if writeErr := os.WriteFile(filepath.Join(dir, "manifest.json"), append(out, '\n'), 0o644); writeErr != nil {
 		return nil, writeErr
 	}
 
 	return append(report, "commit: "+commit), nil
+}
+
+// marshalManifest preserves existing entry order when adding models at the same pin.
+// A pin update still rewrites the complete manifest with its new checksums.
+func marshalManifest(original []byte, updated manifest, adds []addition) ([]byte, error) {
+	var previous manifest
+	if err := json.Unmarshal(original, &previous); err != nil {
+		return nil, err
+	}
+
+	if previous.Commit != updated.Commit {
+		return json.MarshalIndent(updated, "", "  ")
+	}
+
+	for name, model := range previous.Models {
+		if updated.Models[name] != model {
+			return json.MarshalIndent(updated, "", "  ")
+		}
+	}
+
+	if len(adds) == 0 {
+		return bytes.TrimSpace(original), nil
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(original, &fields); err != nil {
+		return nil, err
+	}
+
+	models := fields["models"]
+	end := bytes.LastIndexByte(models, '}')
+	if end < 0 {
+		return nil, fmt.Errorf("manifest models must be an object")
+	}
+
+	var entries bytes.Buffer
+	entries.Write(bytes.TrimSpace(models[:end]))
+	hasEntries := len(previous.Models) > 0
+	for _, add := range adds {
+		if hasEntries {
+			entries.WriteByte(',')
+		}
+
+		name, err := json.Marshal(add.name)
+		if err != nil {
+			return nil, err
+		}
+
+		value, err := json.Marshal(updated.Models[add.name])
+		if err != nil {
+			return nil, err
+		}
+
+		entries.Write(name)
+		entries.WriteByte(':')
+		entries.Write(value)
+		hasEntries = true
+	}
+
+	entries.WriteByte('}')
+	replaced := bytes.Replace(original, models, entries.Bytes(), 1)
+	var out bytes.Buffer
+	if err := json.Indent(&out, replaced, "", "  "); err != nil {
+		return nil, err
+	}
+
+	return bytes.TrimSpace(out.Bytes()), nil
 }
 
 // cached returns the local copy of a pinned file when the sync stays on the

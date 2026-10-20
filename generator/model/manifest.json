@@ -358,6 +358,10 @@
     "xray": {
       "path": "codegen/sdk-codegen/aws-models/xray.json",
       "sha256": "4ecfdc502234eb1ab83edf8950d1b4cb083b14565a30118e1e7ec783a751212a"
+    },
+    "opensearchserverless": {
+      "path": "codegen/sdk-codegen/aws-models/opensearchserverless.json",
+      "sha256": "a1be800018333d5e45e9ac11c15063edc29abb7c04eed9fa0ef36877acd7d52a"
     }
   }
 }

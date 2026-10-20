@@ -32,6 +32,7 @@ const (
 	shapeFloat     = "float"
 	shapeDouble    = "double"
 	shapeBlob      = "blob"
+	shapeDocument  = "document"
 	unitShape      = "smithy.api#Unit"
 )
 
@@ -205,7 +206,7 @@ func (g *generator) typeName(id string) (string, error) {
 		return "float64", nil
 	case shapeBlob:
 		return "[]byte", nil
-	case "document":
+	case shapeDocument:
 		if g.xml || g.query || g.cbor {
 			return "", fmt.Errorf("document shapes require a JSON protocol: %s", id)
 		}
@@ -850,7 +851,7 @@ var prelude = map[string]string{
 	"PrimitiveInteger": shapeInteger, "Long": shapeLong, "PrimitiveLong": shapeLong, "Short": shapeInteger,
 	"PrimitiveShort": shapeInteger, "Byte": shapeInteger, "PrimitiveByte": shapeInteger, "Float": shapeFloat,
 	"PrimitiveFloat": shapeFloat, "Double": shapeDouble, "PrimitiveDouble": shapeDouble, "Timestamp": shapeTimestamp,
-	"Blob": shapeBlob,
+	"Blob": shapeBlob, "Document": shapeDocument,
 }
 
 // wrappedField sets catalog.Service.WrappedErrors in a descriptor, leaving

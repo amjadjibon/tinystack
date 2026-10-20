@@ -2250,6 +2250,27 @@
       ],
       "execution": "Fixture-backed actual spend and ACTUAL notifications",
       "package": "budgets"
+    },
+    "opensearchserverless": {
+      "title": "Amazon OpenSearch Serverless",
+      "summary": "Manage collection and security policy records; no search data plane is served.",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "features": [
+        "Collection create, batch get, filtered list, description update and delete; SEARCH, TIMESERIES and VECTORSEARCH with standby replicas and deterministic CREATING \u2192 ACTIVE and DELETING transitions on reads",
+        "Encryption and network security policy CRUD, data access policy CRUD, JSON shape validation, optimistic policy versions, resource filters and pagination; matching encryption policy required for collection creation",
+        "Collection ARN tags, Resource Groups Tagging API, Resource Groups collection type, inventory and console; account capacity settings and policy counts",
+        "Client-token replay and parameter conflict detection for collection and policy writes; Terraform collection, security policy and access policy coverage"
+      ],
+      "gaps": [
+        "Records only, no search data plane: collection and dashboard endpoints have AWS-shaped URLs but serve no data, indexes, queries or dashboard",
+        "No VPC endpoints or SAML security configurations; no provisioning or EC2 networking integration; network sources and IAM/KMS principals are syntax-checked metadata, not authorization or connectivity",
+        "No collection groups, vector options, deletion protection, lifecycle policies or data plane operations; unsupported request members are rejected",
+        "Reads return the current collection lifecycle state then advance it; inventory does not advance state; idempotency records persist until reset",
+        "Capacity settings are records only and do not allocate or meter OCUs; no quota enforcement"
+      ],
+      "execution": "Records only",
+      "package": "opensearchserverless"
     }
   },
   "future": {

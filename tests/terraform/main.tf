@@ -17,47 +17,48 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
-    budgets         = var.endpoint
-    acm             = var.endpoint
-    autoscaling     = var.endpoint
-    apigateway      = var.endpoint
-    apigatewayv2    = var.endpoint
-    appsync         = var.endpoint
-    cloudformation  = var.endpoint
-    cloudwatch      = var.endpoint
-    ce              = var.endpoint
-    cur             = var.endpoint
-    codeartifact    = var.endpoint
-    cognitoidp      = var.endpoint
-    dynamodb        = var.endpoint
-    ec2             = var.endpoint
-    ecr             = var.endpoint
-    ecs             = var.endpoint
-    eks             = var.endpoint
-    elasticache     = var.endpoint
-    emrserverless   = var.endpoint
-    elbv2           = var.endpoint
-    eventbridge     = var.endpoint
-    firehose        = var.endpoint
-    iam             = var.endpoint
-    iot             = var.endpoint
-    kinesis         = var.endpoint
-    kms             = var.endpoint
-    lambda          = var.endpoint
-    lakeformation   = var.endpoint
-    glue            = var.endpoint
-    logs            = var.endpoint
-    route53         = var.endpoint
-    s3              = var.endpoint
-    scheduler       = var.endpoint
-    secretsmanager  = var.endpoint
-    servicequotas   = var.endpoint
-    sfn             = var.endpoint
-    sns             = var.endpoint
-    sqs             = var.endpoint
-    ssm             = var.endpoint
-    sts             = var.endpoint
-    timestreamwrite = var.endpoint
+    opensearchserverless = var.endpoint
+    budgets              = var.endpoint
+    acm                  = var.endpoint
+    autoscaling          = var.endpoint
+    apigateway           = var.endpoint
+    apigatewayv2         = var.endpoint
+    appsync              = var.endpoint
+    cloudformation       = var.endpoint
+    cloudwatch           = var.endpoint
+    ce                   = var.endpoint
+    cur                  = var.endpoint
+    codeartifact         = var.endpoint
+    cognitoidp           = var.endpoint
+    dynamodb             = var.endpoint
+    ec2                  = var.endpoint
+    ecr                  = var.endpoint
+    ecs                  = var.endpoint
+    eks                  = var.endpoint
+    elasticache          = var.endpoint
+    emrserverless        = var.endpoint
+    elbv2                = var.endpoint
+    eventbridge          = var.endpoint
+    firehose             = var.endpoint
+    iam                  = var.endpoint
+    iot                  = var.endpoint
+    kinesis              = var.endpoint
+    kms                  = var.endpoint
+    lambda               = var.endpoint
+    lakeformation        = var.endpoint
+    glue                 = var.endpoint
+    logs                 = var.endpoint
+    route53              = var.endpoint
+    s3                   = var.endpoint
+    scheduler            = var.endpoint
+    secretsmanager       = var.endpoint
+    servicequotas        = var.endpoint
+    sfn                  = var.endpoint
+    sns                  = var.endpoint
+    sqs                  = var.endpoint
+    ssm                  = var.endpoint
+    sts                  = var.endpoint
+    timestreamwrite      = var.endpoint
   }
 }
 
@@ -2122,4 +2123,41 @@ resource "aws_budgets_budget" "monthly" {
     subscriber_email_addresses = var.team == "core" ? ["core@example.com", "remove@example.com"] : ["platform@example.com"]
     subscriber_sns_topic_arns  = [aws_sns_topic.alerts.arn]
   }
+}
+
+
+resource "aws_opensearchserverless_security_policy" "encryption" {
+  name = "local-encryption"
+  type = "encryption"
+  policy = jsonencode({
+    Rules       = [{ ResourceType = "collection", Resource = ["collection/local-search"] }]
+    AWSOwnedKey = true
+  })
+}
+
+resource "aws_opensearchserverless_security_policy" "network" {
+  name = "local-network"
+  type = "network"
+  policy = jsonencode([{
+    Rules           = [{ ResourceType = "collection", Resource = ["collection/local-search"] }]
+    AllowFromPublic = true
+  }])
+}
+
+resource "aws_opensearchserverless_access_policy" "data" {
+  name = "local-data"
+  type = "data"
+  policy = jsonencode([{
+    Rules     = [{ ResourceType = "collection", Resource = ["collection/local-search"], Permission = ["aoss:*"] }]
+    Principal = ["arn:aws:iam::000000000000:root"]
+  }])
+}
+
+resource "aws_opensearchserverless_collection" "search" {
+  name             = "local-search"
+  description      = "Local search metadata for ${var.team}"
+  type             = "SEARCH"
+  standby_replicas = "DISABLED"
+  tags             = { team = var.team }
+  depends_on       = [aws_opensearchserverless_security_policy.encryption]
 }

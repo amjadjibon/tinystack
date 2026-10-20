@@ -130,6 +130,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: developerTools,
 		icon: "codecommit",
 	},
+	opensearchserverless: {
+		title: "OpenSearch Serverless",
+		category: analytics,
+		icon: "opensearch",
+	},
 	opensearch: {
 		title: "OpenSearch Service",
 		category: analytics,

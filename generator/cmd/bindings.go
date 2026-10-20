@@ -117,7 +117,7 @@ func memberBindings(
 ) (map[string]catalog.MemberBinding, error) {
 	bindings := map[string]catalog.MemberBinding{}
 	for name, member := range members {
-		binding := catalog.MemberBinding{Location: "document", Name: name}
+		binding := catalog.MemberBinding{Location: shapeDocument, Name: name}
 		bound := false
 		for trait, raw := range member.Traits {
 			location := ""

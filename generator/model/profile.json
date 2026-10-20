@@ -26337,5 +26337,315 @@
         "ActualSpend"
       ]
     }
+  },
+  "opensearchserverless": {
+    "operations": [
+      "CreateCollection",
+      "BatchGetCollection",
+      "ListCollections",
+      "UpdateCollection",
+      "DeleteCollection",
+      "CreateSecurityPolicy",
+      "GetSecurityPolicy",
+      "UpdateSecurityPolicy",
+      "DeleteSecurityPolicy",
+      "ListSecurityPolicies",
+      "CreateAccessPolicy",
+      "GetAccessPolicy",
+      "UpdateAccessPolicy",
+      "DeleteAccessPolicy",
+      "ListAccessPolicies",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource",
+      "GetAccountSettings",
+      "UpdateAccountSettings",
+      "GetPoliciesStats"
+    ],
+    "shapes": {
+      "CreateCollectionRequest": [
+        "name",
+        "type",
+        "description",
+        "tags",
+        "standbyReplicas",
+        "clientToken"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ],
+      "CreateCollectionResponse": [
+        "createCollectionDetail"
+      ],
+      "CreateCollectionDetail": [
+        "id",
+        "name",
+        "status",
+        "type",
+        "description",
+        "arn",
+        "kmsKeyArn",
+        "standbyReplicas",
+        "createdDate",
+        "lastModifiedDate"
+      ],
+      "BatchGetCollectionRequest": [
+        "ids",
+        "names"
+      ],
+      "BatchGetCollectionResponse": [
+        "collectionDetails",
+        "collectionErrorDetails"
+      ],
+      "CollectionDetail": [
+        "id",
+        "name",
+        "status",
+        "type",
+        "description",
+        "arn",
+        "kmsKeyArn",
+        "standbyReplicas",
+        "createdDate",
+        "lastModifiedDate",
+        "collectionEndpoint",
+        "dashboardEndpoint",
+        "failureCode",
+        "failureMessage"
+      ],
+      "CollectionErrorDetail": [
+        "id",
+        "name",
+        "errorMessage",
+        "errorCode"
+      ],
+      "ListCollectionsRequest": [
+        "collectionFilters",
+        "nextToken",
+        "maxResults"
+      ],
+      "CollectionFilters": [
+        "name",
+        "status"
+      ],
+      "ListCollectionsResponse": [
+        "collectionSummaries",
+        "nextToken"
+      ],
+      "CollectionSummary": [
+        "id",
+        "name",
+        "status",
+        "arn",
+        "kmsKeyArn"
+      ],
+      "UpdateCollectionRequest": [
+        "id",
+        "description",
+        "clientToken"
+      ],
+      "UpdateCollectionResponse": [
+        "updateCollectionDetail"
+      ],
+      "UpdateCollectionDetail": [
+        "id",
+        "name",
+        "status",
+        "type",
+        "description",
+        "arn",
+        "createdDate",
+        "lastModifiedDate"
+      ],
+      "DeleteCollectionRequest": [
+        "id",
+        "clientToken"
+      ],
+      "DeleteCollectionResponse": [
+        "deleteCollectionDetail"
+      ],
+      "DeleteCollectionDetail": [
+        "id",
+        "name",
+        "status"
+      ],
+      "CreateSecurityPolicyRequest": [
+        "type",
+        "name",
+        "description",
+        "policy",
+        "clientToken"
+      ],
+      "CreateSecurityPolicyResponse": [
+        "securityPolicyDetail"
+      ],
+      "SecurityPolicyDetail": [
+        "type",
+        "name",
+        "policyVersion",
+        "description",
+        "policy",
+        "createdDate",
+        "lastModifiedDate"
+      ],
+      "GetSecurityPolicyRequest": [
+        "type",
+        "name"
+      ],
+      "GetSecurityPolicyResponse": [
+        "securityPolicyDetail"
+      ],
+      "UpdateSecurityPolicyRequest": [
+        "type",
+        "name",
+        "policyVersion",
+        "description",
+        "policy",
+        "clientToken"
+      ],
+      "UpdateSecurityPolicyResponse": [
+        "securityPolicyDetail"
+      ],
+      "DeleteSecurityPolicyRequest": [
+        "type",
+        "name",
+        "clientToken"
+      ],
+      "DeleteSecurityPolicyResponse": [],
+      "CreateAccessPolicyRequest": [
+        "type",
+        "name",
+        "description",
+        "policy",
+        "clientToken"
+      ],
+      "CreateAccessPolicyResponse": [
+        "accessPolicyDetail"
+      ],
+      "AccessPolicyDetail": [
+        "type",
+        "name",
+        "policyVersion",
+        "description",
+        "policy",
+        "createdDate",
+        "lastModifiedDate"
+      ],
+      "GetAccessPolicyRequest": [
+        "type",
+        "name"
+      ],
+      "GetAccessPolicyResponse": [
+        "accessPolicyDetail"
+      ],
+      "UpdateAccessPolicyRequest": [
+        "type",
+        "name",
+        "policyVersion",
+        "description",
+        "policy",
+        "clientToken"
+      ],
+      "UpdateAccessPolicyResponse": [
+        "accessPolicyDetail"
+      ],
+      "DeleteAccessPolicyRequest": [
+        "type",
+        "name",
+        "clientToken"
+      ],
+      "DeleteAccessPolicyResponse": [],
+      "ListAccessPoliciesRequest": [
+        "type",
+        "resource",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListAccessPoliciesResponse": [
+        "accessPolicySummaries",
+        "nextToken"
+      ],
+      "AccessPolicySummary": [
+        "type",
+        "name",
+        "policyVersion",
+        "description",
+        "createdDate",
+        "lastModifiedDate"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "GetAccountSettingsRequest": [],
+      "GetAccountSettingsResponse": [
+        "accountSettingsDetail"
+      ],
+      "AccountSettingsDetail": [
+        "capacityLimits"
+      ],
+      "CapacityLimits": [
+        "maxIndexingCapacityInOCU",
+        "maxSearchCapacityInOCU"
+      ],
+      "UpdateAccountSettingsRequest": [
+        "capacityLimits"
+      ],
+      "UpdateAccountSettingsResponse": [
+        "accountSettingsDetail"
+      ],
+      "GetPoliciesStatsRequest": [],
+      "GetPoliciesStatsResponse": [
+        "AccessPolicyStats",
+        "SecurityPolicyStats",
+        "SecurityConfigStats",
+        "LifecyclePolicyStats",
+        "TotalPolicyCount"
+      ],
+      "AccessPolicyStats": [
+        "DataPolicyCount"
+      ],
+      "SecurityPolicyStats": [
+        "EncryptionPolicyCount",
+        "NetworkPolicyCount"
+      ],
+      "SecurityConfigStats": [
+        "SamlConfigCount"
+      ],
+      "LifecyclePolicyStats": [
+        "RetentionPolicyCount"
+      ],
+      "ListSecurityPoliciesRequest": [
+        "type",
+        "resource",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListSecurityPoliciesResponse": [
+        "securityPolicySummaries",
+        "nextToken"
+      ],
+      "SecurityPolicySummary": [
+        "type",
+        "name",
+        "policyVersion",
+        "description",
+        "createdDate",
+        "lastModifiedDate"
+      ]
+    }
   }
 }

@@ -75,6 +75,7 @@ import (
 	mqapi "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
 	mwaaapi "github.com/amjadjibon/tinystack/internal/aws/generated/mwaa"
 	opensearchapi "github.com/amjadjibon/tinystack/internal/aws/generated/opensearch"
+	opensearchserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/opensearchserverless"
 	organizationsapi "github.com/amjadjibon/tinystack/internal/aws/generated/organizations"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
 	ramapi "github.com/amjadjibon/tinystack/internal/aws/generated/ram"
@@ -170,6 +171,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/mq"
 	"github.com/amjadjibon/tinystack/internal/services/mwaa"
 	"github.com/amjadjibon/tinystack/internal/services/opensearch"
+	"github.com/amjadjibon/tinystack/internal/services/opensearchserverless"
 	"github.com/amjadjibon/tinystack/internal/services/organizations"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
 	"github.com/amjadjibon/tinystack/internal/services/ram"
@@ -252,11 +254,11 @@ func build(
 	hooks *inithooks.Runner,
 ) (a *App, err error) {
 	a = &App{store: store, Init: hooks}
-	defer func() {
+	defer func(cleanup *App) {
 		if err != nil {
-			a.Stop()
+			cleanup.Stop()
 		}
-	}()
+	}(a)
 
 	deliveries := delivery.New()
 	a.deliveries = deliveries
@@ -394,6 +396,7 @@ func build(
 	connectionRecords := codeconnections.New(store)
 	quotaRecords := servicequotas.New(store)
 	emrRecords := emrserverless.New(store)
+	aossRecords := opensearchserverless.New(store)
 	lakeRecords := lakeformation.New(store)
 	brokers := mq.New(store, network)
 	kafkaClusters := kafka.New(store, network)
@@ -503,6 +506,7 @@ func build(
 		costandusagereportserviceapi.Descriptor(curRecords),
 		servicequotasapi.Descriptor(quotaRecords),
 		emrserverlessapi.Descriptor(emrRecords),
+		opensearchserverlessapi.Descriptor(aossRecords),
 		lakeformationapi.Descriptor(lakeRecords),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),

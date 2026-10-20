@@ -68,6 +68,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/mwaa v1.48.4
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.53.4
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.85.1
+	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.31.0
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.61.3
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.32.4
 	github.com/aws/aws-sdk-go-v2/service/ram v1.45.4
