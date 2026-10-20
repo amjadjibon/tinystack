@@ -36,6 +36,7 @@ type Started struct {
 // Runtime performs container I/O outside storage transactions.
 type Runtime interface {
 	Resources(context.Context) ([]*Spec, error)
+	Copy(context.Context, *Spec, *Spec) error
 	Ensure(context.Context, *Spec) (Started, error)
 	Probe(context.Context, *Spec, Started) error
 	Action(context.Context, *Spec, string) error
@@ -62,6 +63,19 @@ func (s *Service) spec(scope request.Scope, r *record) *Spec {
 	}
 }
 
+// dataSpec addresses snapshot volumes without referring to a live instance container.
+func (s *Service) dataSpec(scope request.Scope, r *record) *Spec {
+	spec := s.spec(scope, r)
+	if r.Kind == kindSnapshot {
+		spec.ARN = arn(scope, kindSnapshot, r.Name)
+		hash := sha256.Sum256([]byte(spec.ARN))
+		spec.Name = ""
+		spec.Volume = fmt.Sprintf("tinystack-rds-snapshot-%x-data", hash[:16])
+	}
+
+	return spec
+}
+
 func (s *Service) UseRuntime(rt Runtime) error {
 	// Persisted endpoints belong to the previous runtime. Invalidate them before
 	// serving requests; the poller republishes availability after a fresh probe.
@@ -71,27 +85,33 @@ func (s *Service) UseRuntime(rt Runtime) error {
 			if len(parts) != 3 {
 				continue
 			}
+
 			scope := request.Scope{AccountID: parts[0], Region: parts[1]}
 			r, readErr := readRecord(tx, scope, kindDB, parts[2])
 			if readErr != nil {
 				return readErr
 			}
+
 			r.Container = ""
+			r.ReadyAt = time.Time{}
 			r.Instance.Endpoint = nil
 			status := common.Value(r.Instance.DBInstanceStatus)
 			if status != stopped && status != failed {
 				r.Instance.DBInstanceStatus = new(creating)
 				r.Since = time.Now().UTC()
 			}
+
 			if writeErr := writeRecord(tx, scope, r); writeErr != nil {
 				return writeErr
 			}
 		}
+
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("prepare RDS runtime recovery: %w", err)
 	}
+
 	s.runtime = rt
 	s.bg = background.New()
 	s.bg.Every(time.Second, s.visit)
@@ -123,17 +143,22 @@ func (s *Service) Reset(ctx context.Context) {
 	}
 
 	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
-		for _, key := range tx.Keys(indexPrefix) {
-			parts := strings.Split(strings.TrimPrefix(key, indexPrefix), "/")
-			if len(parts) != 3 {
+		for _, key := range tx.Keys("") {
+			account, region, _, ok := storage.Scoped(key, serviceName)
+			if !ok {
 				continue
 			}
 
-			scope := request.Scope{AccountID: parts[0], Region: parts[1]}
-			r, err := readRecord(tx, scope, kindDB, parts[2])
-			if err != nil {
+			r, found, err := storage.Read[record](tx, key)
+			if err != nil || !found || (r.Kind != kindDB && r.Kind != kindSnapshot) {
 				continue
 			}
+
+			if (r.Kind == kindSnapshot && r.Volume == "") || r.Instance.DBClusterIdentifier != nil {
+				continue
+			}
+
+			scope := request.Scope{AccountID: account, Region: region}
 
 			records = append(records, struct {
 				r     *record
@@ -144,7 +169,7 @@ func (s *Service) Reset(ctx context.Context) {
 		return nil
 	})
 	for _, item := range records {
-		_ = s.runtime.Remove(ctx, s.spec(item.scope, item.r), true)
+		_ = s.runtime.Remove(ctx, s.dataSpec(item.scope, item.r), true)
 	}
 
 	// Drop the index while holding the lifecycle lock so the poller cannot recreate deleted containers.

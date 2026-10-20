@@ -14,6 +14,8 @@ import (
 )
 
 type fakeRuntime struct {
+	copyErr      error
+	copies       [][2]*Spec
 	password     string
 	orphans      []*Spec
 	removedSpecs []*Spec
@@ -23,6 +25,11 @@ type fakeRuntime struct {
 	fail         bool
 	ready        bool
 	closed       bool
+}
+
+func (r *fakeRuntime) Copy(_ context.Context, source, target *Spec) error {
+	r.copies = append(r.copies, [2]*Spec{source, target})
+	return r.copyErr
 }
 
 func (r *fakeRuntime) Resources(context.Context) ([]*Spec, error) { return r.orphans, nil }
@@ -240,6 +247,7 @@ func TestRuntimeRecoveryInvalidatesAvailability(t *testing.T) {
 	if err := recovered.UseRuntime(rt); err != nil {
 		t.Fatal(err)
 	}
+
 	// Drive readiness explicitly so the assertions do not race the poller.
 	recovered.bg.Stop()
 	t.Cleanup(recovered.Stop)
@@ -249,6 +257,7 @@ func TestRuntimeRecoveryInvalidatesAvailability(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if common.Value(out.DBInstances[0].DBInstanceStatus) != creating || out.DBInstances[0].Endpoint != nil {
 		t.Fatalf("restart advertised stale availability: %+v", out.DBInstances[0])
 	}
@@ -257,6 +266,7 @@ func TestRuntimeRecoveryInvalidatesAvailability(t *testing.T) {
 	if runtimeStatus(t, recovered, "recovery-db") != creating {
 		t.Fatal("became available before readiness")
 	}
+
 	rt.ready = true
 	recovered.visit(ctx)
 	if runtimeStatus(t, recovered, "recovery-db") != available {
@@ -275,13 +285,86 @@ func TestRuntimeOrphanCleanup(t *testing.T) {
 		{ARN: "arn:aws:rds:us-east-1:000000000000:db:missing", Name: "orphan-container"},
 		{ARN: "arn:aws:rds:us-east-1:000000000000:db:missing", Volume: "orphan-volume"},
 	}
+
 	s.visit(ctx)
 	if len(rt.removedSpecs) != 2 || rt.removedSpecs[0].Name != "orphan-container" ||
 		rt.removedSpecs[1].Volume != "orphan-volume" {
 		t.Fatal("orphan cleanup removed the wrong resources")
 	}
+
 	s.visit(ctx)
 	if len(rt.removedSpecs) != 2 {
 		t.Fatal("orphan cleanup ran repeatedly")
+	}
+}
+
+func TestSnapshotRuntimeCopiesAndReset(t *testing.T) {
+	store := &memory.Store{}
+	rt := &fakeRuntime{ready: true}
+	s := New(store)
+	s.runtime = rt
+	ctx := runtimeContext()
+	runtimeCreate(t, s, "source")
+	s.visit(ctx)
+	snap, err := s.CreateDBSnapshot(ctx, &api.CreateDBSnapshotMessage{
+		DBInstanceIdentifier: new("source"), DBSnapshotIdentifier: new("backup"),
+	})
+	if err != nil || snap.DBSnapshot == nil {
+		t.Fatalf("snapshot: %+v %v", snap, err)
+	}
+
+	if len(rt.copies) != 1 || rt.copies[0][0].Volume == rt.copies[0][1].Volume || rt.copies[0][1].Name != "" {
+		t.Fatalf("snapshot must have an isolated volume without an instance container: %+v", rt.copies)
+	}
+
+	time.Sleep(snapshotDelay)
+	copied, err := s.CopyDBSnapshot(ctx, &api.CopyDBSnapshotMessage{
+		SourceDBSnapshotIdentifier: new("backup"), TargetDBSnapshotIdentifier: new("copy"),
+	})
+	if err != nil || copied.DBSnapshot == nil {
+		t.Fatalf("copy: %+v %v", copied, err)
+	}
+
+	if rt.copies[1][0].Name != "" || rt.copies[1][0].Volume != rt.copies[0][1].Volume ||
+		rt.copies[1][1].Volume == rt.copies[1][0].Volume {
+		t.Fatal("snapshot copies must use independent volumes without pausing an instance")
+	}
+
+	time.Sleep(snapshotDelay)
+	if _, err = s.RestoreDBInstanceFromDBSnapshot(ctx, &api.RestoreDBInstanceFromDBSnapshotMessage{
+		DBInstanceIdentifier: new("restored"), DBSnapshotIdentifier: new("copy"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if rt.copies[2][0].Volume != rt.copies[1][1].Volume || rt.copies[2][1].Name == "" ||
+		rt.copies[2][1].Volume == rt.copies[2][0].Volume {
+		t.Fatal("restore must copy into a new instance volume")
+	}
+
+	rt.copyErr = errors.New("copy failed")
+	if _, err = s.CreateDBSnapshot(ctx, &api.CreateDBSnapshotMessage{
+		DBInstanceIdentifier: new("source"), DBSnapshotIdentifier: new("failed-copy"),
+	}); !errors.Is(err, rt.copyErr) {
+		t.Fatalf("copy failure: %v", err)
+	}
+
+	missing, err := s.DescribeDBSnapshots(ctx, &api.DescribeDBSnapshotsMessage{})
+	if err != nil || len(missing.DBSnapshots) != 2 {
+		t.Fatalf("failed copy must not publish a snapshot: %+v %v", missing, err)
+	}
+
+	s.Reset(ctx)
+	volumes := map[string]bool{}
+	for i, spec := range rt.removedSpecs {
+		if rt.removed[i] {
+			volumes[spec.Volume] = true
+		}
+	}
+
+	for _, pair := range rt.copies[:3] {
+		if !volumes[pair[1].Volume] {
+			t.Fatalf("reset missed owned volume: %s", pair[1].Volume)
+		}
 	}
 }

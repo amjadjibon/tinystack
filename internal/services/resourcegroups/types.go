@@ -102,6 +102,7 @@ var typeNames = map[string]string{
 	"ec2/vpc-endpoint":                    "VPCEndpoint",
 	"organizations/ou":                    "OrganizationalUnit",
 	"rds/db-cluster":                      "DBCluster",
+	"rds/db-snapshot":                     "DBSnapshot",
 	"rds/db-instance":                     "DBInstance",
 	"rds/db-subnet-group":                 "DBSubnetGroup",
 	"rds/db-parameter-group":              "DBParameterGroup",

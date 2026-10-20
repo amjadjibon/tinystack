@@ -19,17 +19,19 @@ import (
 )
 
 const (
-	serviceName   = "rds"
-	kindDB        = "db"
-	kindCluster   = "cluster"
-	kindSubnet    = "subgrp"
-	kindParameter = "pg"
-	available     = "available"
-	engineFilter  = "engine"
-	creating      = "creating"
-	stopped       = "stopped"
-	failed        = "failed"
-	indexPrefix   = "aws/rds/index/"
+	serviceName    = "rds"
+	kindDB         = "db"
+	kindSnapshot   = "snapshot"
+	kindCluster    = "cluster"
+	kindSubnet     = "subgrp"
+	kindParameter  = "pg"
+	available      = "available"
+	engineFilter   = "engine"
+	instanceFilter = "db-instance-id"
+	creating       = "creating"
+	stopped        = "stopped"
+	failed         = "failed"
+	indexPrefix    = "aws/rds/index/"
 )
 
 const (
@@ -46,11 +48,14 @@ var (
 	sqlName            = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
 )
 
-// Records live at <account>/<region>/rds/<db|cluster|subgrp|pg>/<name>.
+// Records live at <account>/<region>/rds/<db|snapshot|cluster|subgrp|pg>/<name>.
 // SQL passwords are private storage fields; cluster passwords are discarded after validation.
 // Credentials never appear in inventory or API output.
 type record struct {
 	Since        time.Time
+	ReadyAt      time.Time
+	Snapshot     *api.DBSnapshot
+	SourceTags   map[string]string
 	Name         string
 	Kind         string
 	Tags         map[string]string
@@ -81,6 +86,8 @@ func invalid(message string) error { return awserror.New("InvalidParameterValue"
 func resourceError(kind, suffix, name string) error {
 	shape := "DBInstance"
 	switch kind {
+	case kindSnapshot:
+		shape = "DBSnapshot"
 	case kindCluster:
 		shape = "DBCluster"
 	case kindSubnet:
@@ -142,6 +149,10 @@ func (s *Service) insert(ctx context.Context, scope request.Scope, r *record) er
 func instance(r *record) *api.DBInstance {
 	out := common.Clone(r.Instance)
 	out.TagList = tagList(r.Tags)
+	if !r.ReadyAt.IsZero() && !time.Now().Before(r.ReadyAt) {
+		out.DBInstanceStatus = new(available)
+	}
+
 	return out
 }
 

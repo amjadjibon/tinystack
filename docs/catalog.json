@@ -1118,15 +1118,23 @@
         "DescribeDBClusters shares both engines across RDS, DocumentDB and Neptune clients; engine, db-cluster-id and db-cluster-resource-id filters select exact values; MaxRecords 20\u2013100 (default 100) uses stable Marker cursors",
         "Cluster member endpoints and ports follow their parent cluster; DBClusterMembers tracks membership and writer metadata; cluster deletion requires no members, no deletion protection and SkipFinalSnapshot=true",
         "CloudFormation AWS::DocDB::DBCluster/DBInstance and AWS::Neptune::DBCluster/DBInstance share a provider: selected mutable properties and tags update, immutable properties replace, version changes fail and roll back; Ref and cluster/instance endpoint attributes are supported",
-        "Cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS"
+        "Cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS",
+        "CreateDBSnapshot, DescribeDBSnapshots, DeleteDBSnapshot and same-account/Region CopyDBSnapshot for standalone RDS instances; lowercase identifiers and local ARNs, manual snapshot metadata, creating-to-available status and 0-to-100 progress, modeled duplicate/missing/state errors",
+        "DescribeDBSnapshots supports instance/snapshot identifiers, DbiResourceId, manual or automated type selection, db-instance-id (including ARNs), db-snapshot-id, dbi-resource-id, snapshot-type and engine exact filters; MaxRecords 20\u2013100 and Marker pagination",
+        "RestoreDBInstanceFromDBSnapshot creates an independent instance from captured engine, version, storage, database and credential settings; selected class/storage/subnet/parameter-group overrides and tags; records mode restores metadata only",
+        "DeleteDBInstance accepts FinalDBSnapshotIdentifier when SkipFinalSnapshot is false (the default); final manual snapshots survive instance deletion; conflicting skip/final identifiers and snapshot name collisions fail before instance removal",
+        "Snapshot ARN tags support AddTagsToResource, RemoveTagsFromResource, ListTagsForResource, diagnostic inventory, Resource Groups and RGTA; CopyTags merges source snapshot tags with explicit overrides; CopyTagsToSnapshot controls instance-to-snapshot tags",
+        "Docker snapshots and copies use isolated, ownership-labeled data volumes; a helper using the engine image copies the volume while a running source container is paused, then resumes it even after a failed copy; restore copies the snapshot volume into a new instance volume",
+        "Snapshot deletion and reset remove owned snapshot volumes; snapshots retain volumes across shutdown and persistent restart, with startup orphan cleanup; failed copies remove their helper and partial destination volume",
+        "CloudFormation AWS::RDS::DBInstance accepts DBSnapshotIdentifier for restore and CopyTagsToSnapshot; restore creation waits for availability before endpoint publication"
       ],
       "gaps": [
         "Records mode has no SQL listener: endpoints use 127.0.0.1 and the engine default port, matching the ElastiCache records-only convention",
         "AllocatedStorage does not enforce a volume size; DBInstanceClass does not change CPU or memory limits; network topology and AWS availability behavior are not reproduced",
         "EngineVersion accepts only the listed major tags, not arbitrary AWS minor/patch versions; image tags are floating within the chosen major",
         "Parameter groups are records only; engine parameters are not applied",
-        "Snapshots, SQL replicas, Aurora/Multi-AZ clusters, Multi-AZ instances, IAM DB authentication, managed master passwords/Secrets Manager, option groups, events and proxies are unsupported; input members outside the profile fail explicitly",
-        "Delete requires SkipFinalSnapshot=true; final snapshots and snapshot identifiers are rejected; ApplyImmediately=false rejects deferred changes",
+        "SQL replicas, Aurora/Multi-AZ clusters, Multi-AZ instances, IAM DB authentication, managed master passwords/Secrets Manager, option groups, events and proxies are unsupported; input members outside the profile fail explicitly",
+        "ApplyImmediately=false rejects deferred changes",
         "Host ports can change after container recreation; no advertise host setting exists, so a remote Docker daemon is unsupported",
         "Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources",
         "Failed initial startup or readiness timeout marks the instance failed and removes its container and fresh volume; recovery failures retain an existing volume",
@@ -1137,7 +1145,11 @@
         "Cluster subnet groups and security groups must exist in the request scope and share a VPC when supplied; omitted networking does not provision default networking or enforce AWS Availability Zone coverage",
         "Cluster members accept identifier, class, matching engine, parent cluster and tags; inherited database settings and member start/stop/reboot requests fail explicitly; class changes and ApplyImmediately are metadata only",
         "Cluster snapshots are unsupported: deletion requires SkipFinalSnapshot=true and rejects FinalDBSnapshotIdentifier; CloudFormation deletion skips snapshots; cluster ApplyImmediately=false still applies metadata synchronously",
-        "Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8\u2013100 printable ASCII characters except slash, double quote and at sign; passwords are not stored or returned"
+        "Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8\u2013100 printable ASCII characters except slash, double quote and at sign; passwords are not stored or returned",
+        "Automatic backups and scheduled automated snapshots are not produced; SnapshotType=automated returns an empty list. Cross-account/Region snapshots, shared/public/awsbackup selection, snapshot attributes/sharing, encrypted snapshot copies, cluster snapshots and snapshot quotas are unsupported",
+        "Snapshot data copy is synchronous and crash-consistent, rather than an AWS storage-level online snapshot: the source database has an I/O interruption while paused for the filesystem copy, and the restored engine performs crash recovery. Snapshot metadata transitions to available after a short simulated delay; progress is 0 or 100",
+        "Snapshots created in records mode have no SQL data volume and cannot be copied/restored in Docker mode; restore supports only the whitelisted settings, does not reduce allocated storage, and uses default parameter groups unless explicitly overridden",
+        "The console still deletes instances with SkipFinalSnapshot=true and has no snapshot management page; use the AWS SDK or CLI for snapshots"
       ],
       "execution": "Records / optional Docker",
       "package": "rds"

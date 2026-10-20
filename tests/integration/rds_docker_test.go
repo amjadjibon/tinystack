@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"testing"
@@ -58,10 +59,10 @@ func TestRDSDocker(t *testing.T) {
 		t.Fatal("expected creating")
 	}
 
-	wait := func() *rds.DescribeDBInstancesOutput {
+	wait := func(instanceID string) *rds.DescribeDBInstancesOutput {
 		t.Helper()
 		for ctx.Err() == nil {
-			out, e := c.DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{DBInstanceIdentifier: new(id)})
+			out, e := c.DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{DBInstanceIdentifier: new(instanceID)})
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -106,7 +107,7 @@ func TestRDSDocker(t *testing.T) {
 		return db
 	}
 
-	db := connect(wait())
+	db := connect(wait(id))
 	var one int
 	if err = db.QueryRowContext(ctx, "SELECT 1").Scan(&one); err != nil || one != 1 {
 		t.Fatalf("SELECT 1: %d %v", one, err)
@@ -119,6 +120,53 @@ func TestRDSDocker(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	snapshotID, copyID, restoredID, finalID := id+"-snapshot", id+"-copy", id+"-restored", id+"-final"
+	t.Cleanup(func() {
+		_, _ = c.DeleteDBInstance(context.Background(), &rds.DeleteDBInstanceInput{
+			DBInstanceIdentifier: new(restoredID), SkipFinalSnapshot: new(true),
+		})
+		for _, snapshotID := range []string{snapshotID, copyID, finalID} {
+			_, _ = c.DeleteDBSnapshot(
+				context.Background(),
+				&rds.DeleteDBSnapshotInput{DBSnapshotIdentifier: new(snapshotID)},
+			)
+		}
+	})
+	if _, err = c.CreateDBSnapshot(ctx, &rds.CreateDBSnapshotInput{
+		DBInstanceIdentifier: new(id), DBSnapshotIdentifier: new(snapshotID),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	waitRDSSnapshot(t, c, snapshotID)
+	// The source is still running, and subsequent writes must not change either snapshot copy.
+	if _, err = db.ExecContext(ctx, "UPDATE durable SET value = 99"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.CopyDBSnapshot(ctx, &rds.CopyDBSnapshotInput{
+		SourceDBSnapshotIdentifier: new(snapshotID), TargetDBSnapshotIdentifier: new(copyID),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	copySnapshot := waitRDSSnapshot(t, c, copyID)
+	if _, err = c.DeleteDBSnapshot(ctx, &rds.DeleteDBSnapshotInput{DBSnapshotIdentifier: new(snapshotID)}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.RestoreDBInstanceFromDBSnapshot(ctx, &rds.RestoreDBInstanceFromDBSnapshotInput{
+		DBInstanceIdentifier: new(restoredID), DBSnapshotIdentifier: new(copyID),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	restoredDB := connect(wait(restoredID))
+	if err = restoredDB.QueryRowContext(ctx, "SELECT value FROM durable").Scan(&one); err != nil || one != 42 {
+		t.Fatalf("snapshot restore data: %d %v", one, err)
+	}
+
+	restoredDB.Close()
 	db.Close()
 	containers, err := dockercli.Run(
 		ctx,
@@ -143,15 +191,15 @@ func TestRDSDocker(t *testing.T) {
 
 	s, stop = serverStore(t, cfg, &fakeRuntime{}, store)
 	c = rdsClient(s, "test", "us-east-1")
-	db = connect(wait())
-	if err = db.QueryRowContext(ctx, "SELECT value FROM durable").Scan(&one); err != nil || one != 42 {
+	db = connect(wait(id))
+	if err = db.QueryRowContext(ctx, "SELECT value FROM durable").Scan(&one); err != nil || one != 99 {
 		t.Fatalf("durable data: %d %v", one, err)
 	}
 
 	db.Close()
 	if _, err = c.DeleteDBInstance(
 		ctx,
-		&rds.DeleteDBInstanceInput{DBInstanceIdentifier: new(id), SkipFinalSnapshot: new(true)},
+		&rds.DeleteDBInstanceInput{DBInstanceIdentifier: new(id), FinalDBSnapshotIdentifier: new(finalID)},
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -162,5 +210,39 @@ func TestRDSDocker(t *testing.T) {
 
 	if _, err = dockercli.Run(ctx, nil, "volume", "inspect", volume); !dockercli.Gone(err) {
 		t.Fatalf("volume remains: %v", err)
+	}
+
+	finalSnapshot := waitRDSSnapshot(t, c, finalID)
+	snapshotVolumes := make([]string, 0, 2)
+	snapshotARNs := []string{aws.ToString(copySnapshot.DBSnapshotArn), aws.ToString(finalSnapshot.DBSnapshotArn)}
+	for _, snapshot := range snapshotARNs {
+		volumes, e := dockercli.Run(ctx, nil, "volume", "ls", "--filter", "label=tinystack.rds="+snapshot,
+			"--format", "{{.Name}}")
+		if e != nil || volumes == "" {
+			t.Fatalf("snapshot volume: %q %v", volumes, e)
+		}
+
+		snapshotVolumes = append(snapshotVolumes, volumes)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.URL+"/_tinystack/reset", http.NoBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response, err := s.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("reset status: %d", response.StatusCode)
+	}
+
+	for _, volume := range snapshotVolumes {
+		if _, err = dockercli.Run(ctx, nil, "volume", "inspect", volume); !dockercli.Gone(err) {
+			t.Fatalf("snapshot volume remains after reset: %s %v", volume, err)
+		}
 	}
 }

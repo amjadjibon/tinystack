@@ -8,6 +8,8 @@ import (
 )
 
 const (
+	memberDBSnapshotIdentifier = "DBSnapshotIdentifier"
+	memberCopyTagsToSnapshot   = "CopyTagsToSnapshot"
 	memberMasterUsername       = "MasterUsername"
 	memberDBName               = "DBName"
 	memberDBParameterGroupName = "DBParameterGroupName"
@@ -26,6 +28,7 @@ func init() {
 	register("AWS::RDS::DBInstance", &resourceType{
 		name: memberDBInstanceIdentifier,
 		properties: []string{
+			memberDBSnapshotIdentifier, memberCopyTagsToSnapshot,
 			memberDBInstanceIdentifier,
 			memberDBInstanceClass,
 			memberEngine,
@@ -40,6 +43,7 @@ func init() {
 		},
 		attributes: []string{"Endpoint.Address", "Endpoint.Port", memberDBInstanceArn},
 		replace: []string{
+			memberDBSnapshotIdentifier,
 			memberDBInstanceIdentifier,
 			memberEngine,
 			memberEngineVersion,
@@ -66,7 +70,25 @@ func init() {
 				params[memberTags] = tagList(tags, memberKey, memberValue)
 			}
 
-			out, err := c.call(ctx, "rds", "CreateDBInstance", params)
+			operation := "CreateDBInstance"
+			if snapshotID, ok := p[memberDBSnapshotIdentifier]; ok {
+				operation = "RestoreDBInstanceFromDBSnapshot"
+				params[memberDBSnapshotIdentifier] = snapshotID
+				for _, key := range []string{
+					memberEngine, memberEngineVersion, memberMasterUsername,
+					memberMasterUserPassword, memberDBName,
+				} {
+					if _, supplied := params[key]; supplied {
+						return "", nil, validation("%s is unsupported when restoring an RDS snapshot", key)
+					}
+				}
+			}
+
+			if value, ok := p[memberCopyTagsToSnapshot]; ok {
+				params[memberCopyTagsToSnapshot] = value
+			}
+
+			out, err := c.call(ctx, "rds", operation, params)
 			if err != nil {
 				return "", nil, err
 			}
@@ -79,7 +101,7 @@ func init() {
 		},
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 			params := map[string]any{memberDBInstanceIdentifier: r.Physical, "ApplyImmediately": true}
-			for _, key := range []string{memberDBInstanceClass, memberMasterUserPassword} {
+			for _, key := range []string{memberDBInstanceClass, memberMasterUserPassword, memberCopyTagsToSnapshot} {
 				if v, ok := p[key]; ok {
 					params[key] = v
 				}

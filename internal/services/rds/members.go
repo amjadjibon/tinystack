@@ -28,7 +28,8 @@ func (s *Service) createClusterInstance(
 	}
 
 	if in.MasterUsername != nil || in.MasterUserPassword != nil || in.DBName != nil || in.AllocatedStorage != nil ||
-		in.DBParameterGroupName != nil || in.DBSubnetGroupName != nil || in.EngineVersion != nil {
+		in.DBParameterGroupName != nil || in.DBSubnetGroupName != nil || in.EngineVersion != nil ||
+		in.CopyTagsToSnapshot != nil {
 		return nil, invalid(
 			"Cluster members inherit database settings; specify only identifier, class, engine, cluster and tags",
 		)
@@ -127,6 +128,10 @@ func (s *Service) changeClusterMember(ctx context.Context, scope request.Scope, 
 ) (*api.DBInstance, error) {
 	if in == nil {
 		return nil, awserror.New("InvalidDBInstanceStateFault", "Cluster member start/stop/reboot is unsupported")
+	}
+
+	if in.CopyTagsToSnapshot != nil {
+		return nil, invalid("Cluster member snapshots are unsupported")
 	}
 
 	if in.MasterUserPassword != nil {

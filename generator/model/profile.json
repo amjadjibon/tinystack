@@ -19096,7 +19096,12 @@
       "CreateDBCluster",
       "DescribeDBClusters",
       "ModifyDBCluster",
-      "DeleteDBCluster"
+      "DeleteDBCluster",
+      "CreateDBSnapshot",
+      "DescribeDBSnapshots",
+      "DeleteDBSnapshot",
+      "CopyDBSnapshot",
+      "RestoreDBInstanceFromDBSnapshot"
     ],
     "shapes": {
       "CreateDBInstanceMessage": [
@@ -19111,7 +19116,8 @@
         "DBSubnetGroupName",
         "DBParameterGroupName",
         "Tags",
-        "DBClusterIdentifier"
+        "DBClusterIdentifier",
+        "CopyTagsToSnapshot"
       ],
       "DescribeDBInstancesMessage": [
         "DBInstanceIdentifier",
@@ -19121,13 +19127,15 @@
       ],
       "DeleteDBInstanceMessage": [
         "DBInstanceIdentifier",
-        "SkipFinalSnapshot"
+        "SkipFinalSnapshot",
+        "FinalDBSnapshotIdentifier"
       ],
       "ModifyDBInstanceMessage": [
         "DBInstanceIdentifier",
         "DBInstanceClass",
         "MasterUserPassword",
-        "ApplyImmediately"
+        "ApplyImmediately",
+        "CopyTagsToSnapshot"
       ],
       "StopDBInstanceMessage": [
         "DBInstanceIdentifier"
@@ -19200,7 +19208,9 @@
         "DBParameterGroups",
         "DBInstanceArn",
         "TagList",
-        "DBClusterIdentifier"
+        "DBClusterIdentifier",
+        "CopyTagsToSnapshot",
+        "DbiResourceId"
       ],
       "Endpoint": [
         "Address",
@@ -19296,6 +19306,61 @@
       "VpcSecurityGroupMembership": [
         "VpcSecurityGroupId",
         "Status"
+      ],
+      "CreateDBSnapshotMessage": [
+        "DBSnapshotIdentifier",
+        "DBInstanceIdentifier",
+        "Tags"
+      ],
+      "DescribeDBSnapshotsMessage": [
+        "DBInstanceIdentifier",
+        "DBSnapshotIdentifier",
+        "SnapshotType",
+        "Filters",
+        "MaxRecords",
+        "Marker",
+        "DbiResourceId"
+      ],
+      "DeleteDBSnapshotMessage": [
+        "DBSnapshotIdentifier"
+      ],
+      "CopyDBSnapshotMessage": [
+        "SourceDBSnapshotIdentifier",
+        "TargetDBSnapshotIdentifier",
+        "CopyTags",
+        "Tags"
+      ],
+      "RestoreDBInstanceFromDBSnapshotMessage": [
+        "DBInstanceIdentifier",
+        "DBSnapshotIdentifier",
+        "DBInstanceClass",
+        "DBSubnetGroupName",
+        "DBParameterGroupName",
+        "AllocatedStorage",
+        "Tags",
+        "CopyTagsToSnapshot"
+      ],
+      "DBSnapshot": [
+        "DBSnapshotIdentifier",
+        "DBInstanceIdentifier",
+        "SnapshotCreateTime",
+        "Engine",
+        "AllocatedStorage",
+        "Status",
+        "Port",
+        "InstanceCreateTime",
+        "MasterUsername",
+        "EngineVersion",
+        "SnapshotType",
+        "PercentProgress",
+        "SourceRegion",
+        "SourceDBSnapshotIdentifier",
+        "DBSnapshotArn",
+        "TagList",
+        "OriginalSnapshotCreateTime",
+        "DbiResourceId",
+        "VpcId",
+        "Encrypted"
       ]
     }
   },

@@ -13,7 +13,7 @@ Manage RDS instances with an optional Docker runtime, plus records-only Document
 | API version | `2014-10-31` |
 | Scope | Account and region |
 | Execution | Records / optional Docker |
-| Selected operations | 20 of 164 in the pinned model |
+| Selected operations | 25 of 164 in the pinned model |
 
 ## Implemented behavior
 
@@ -25,8 +25,8 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - AllocatedStorage does not enforce a volume size; DBInstanceClass does not change CPU or memory limits; network topology and AWS availability behavior are not reproduced.
 - EngineVersion accepts only the listed major tags, not arbitrary AWS minor/patch versions; image tags are floating within the chosen major.
 - Parameter groups are records only; engine parameters are not applied.
-- Snapshots, SQL replicas, Aurora/Multi-AZ clusters, Multi-AZ instances, IAM DB authentication, managed master passwords/Secrets Manager, option groups, events and proxies are unsupported; input members outside the profile fail explicitly.
-- Delete requires SkipFinalSnapshot=true; final snapshots and snapshot identifiers are rejected; ApplyImmediately=false rejects deferred changes.
+- SQL replicas, Aurora/Multi-AZ clusters, Multi-AZ instances, IAM DB authentication, managed master passwords/Secrets Manager, option groups, events and proxies are unsupported; input members outside the profile fail explicitly.
+- ApplyImmediately=false rejects deferred changes.
 - Host ports can change after container recreation; no advertise host setting exists, so a remote Docker daemon is unsupported.
 - Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources.
 - Failed initial startup or readiness timeout marks the instance failed and removes its container and fresh volume; recovery failures retain an existing volume.
@@ -38,6 +38,10 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - Cluster members accept identifier, class, matching engine, parent cluster and tags; inherited database settings and member start/stop/reboot requests fail explicitly; class changes and ApplyImmediately are metadata only.
 - Cluster snapshots are unsupported: deletion requires SkipFinalSnapshot=true and rejects FinalDBSnapshotIdentifier; CloudFormation deletion skips snapshots; cluster ApplyImmediately=false still applies metadata synchronously.
 - Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8–100 printable ASCII characters except slash, double quote and at sign; passwords are not stored or returned.
+- Automatic backups and scheduled automated snapshots are not produced; SnapshotType=automated returns an empty list. Cross-account/Region snapshots, shared/public/awsbackup selection, snapshot attributes/sharing, encrypted snapshot copies, cluster snapshots and snapshot quotas are unsupported.
+- Snapshot data copy is synchronous and crash-consistent, rather than an AWS storage-level online snapshot: the source database has an I/O interruption while paused for the filesystem copy, and the restored engine performs crash recovery. Snapshot metadata transitions to available after a short simulated delay; progress is 0 or 100.
+- Snapshots created in records mode have no SQL data volume and cannot be copied/restored in Docker mode; restore supports only the whitelisted settings, does not reduce allocated storage, and uses default parameter groups unless explicitly overridden.
+- The console still deletes instances with SkipFinalSnapshot=true and has no snapshot management page; use the AWS SDK or CLI for snapshots.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -52,29 +56,34 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | Operation | HTTP binding |
 | --- | --- |
 | `AddTagsToResource` | `POST /` |
+| `CopyDBSnapshot` | `POST /` |
 | `CreateDBCluster` | `POST /` |
 | `CreateDBInstance` | `POST /` |
 | `CreateDBParameterGroup` | `POST /` |
+| `CreateDBSnapshot` | `POST /` |
 | `CreateDBSubnetGroup` | `POST /` |
 | `DeleteDBCluster` | `POST /` |
 | `DeleteDBInstance` | `POST /` |
 | `DeleteDBParameterGroup` | `POST /` |
+| `DeleteDBSnapshot` | `POST /` |
 | `DeleteDBSubnetGroup` | `POST /` |
 | `DescribeDBClusters` | `POST /` |
 | `DescribeDBInstances` | `POST /` |
 | `DescribeDBParameterGroups` | `POST /` |
+| `DescribeDBSnapshots` | `POST /` |
 | `DescribeDBSubnetGroups` | `POST /` |
 | `ListTagsForResource` | `POST /` |
 | `ModifyDBCluster` | `POST /` |
 | `ModifyDBInstance` | `POST /` |
 | `RebootDBInstance` | `POST /` |
 | `RemoveTagsFromResource` | `POST /` |
+| `RestoreDBInstanceFromDBSnapshot` | `POST /` |
 | `StartDBInstance` | `POST /` |
 | `StopDBInstance` | `POST /` |
 
 ## Operations not implemented
 
-??? info "144 modeled operations outside the implementation"
+??? info "139 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -88,7 +97,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CopyDBClusterParameterGroup`
     - `CopyDBClusterSnapshot`
     - `CopyDBParameterGroup`
-    - `CopyDBSnapshot`
     - `CopyOptionGroup`
     - `CreateBlueGreenDeployment`
     - `CreateCustomDBEngineVersion`
@@ -100,7 +108,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateDBProxyEndpoint`
     - `CreateDBSecurityGroup`
     - `CreateDBShardGroup`
-    - `CreateDBSnapshot`
     - `CreateEventSubscription`
     - `CreateGlobalCluster`
     - `CreateIntegration`
@@ -117,7 +124,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteDBProxyEndpoint`
     - `DeleteDBSecurityGroup`
     - `DeleteDBShardGroup`
-    - `DeleteDBSnapshot`
     - `DeleteEventSubscription`
     - `DeleteGlobalCluster`
     - `DeleteIntegration`
@@ -148,7 +154,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeDBShardGroups`
     - `DescribeDBSnapshotAttributes`
     - `DescribeDBSnapshotTenantDatabases`
-    - `DescribeDBSnapshots`
     - `DescribeEngineDefaultClusterParameters`
     - `DescribeEngineDefaultParameters`
     - `DescribeEventCategories`
@@ -208,7 +213,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `RestoreDBClusterFromS3`
     - `RestoreDBClusterFromSnapshot`
     - `RestoreDBClusterToPointInTime`
-    - `RestoreDBInstanceFromDBSnapshot`
     - `RestoreDBInstanceFromS3`
     - `RestoreDBInstanceToPointInTime`
     - `RevokeDBSecurityGroupIngress`
@@ -228,5 +232,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/rds)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/rds/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/rds.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [rds_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_docker_test.go), [rds_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_test.go).
+- SDK integration examples: [rds_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_docker_test.go), [rds_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_snapshots_test.go), [rds_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

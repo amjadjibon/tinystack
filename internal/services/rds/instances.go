@@ -123,6 +123,7 @@ func (s *Service) CreateDBInstance(
 	r := &record{
 		Name: id, Kind: kindDB, Tags: tags, Password: password, RootPassword: password, Since: now,
 		Instance: &api.DBInstance{
+			CopyTagsToSnapshot: in.CopyTagsToSnapshot, DbiResourceId: new("db-" + common.RandomID(26)),
 			DBInstanceIdentifier: new(id), DBInstanceClass: new(class), Engine: new(engine),
 			EngineVersion: new(version), MasterUsername: new(username), DBName: in.DBName, AllocatedStorage: new(size),
 			DBInstanceStatus: new(available), DBInstanceArn: new(arn(scope, kindDB, id)), InstanceCreateTime: new(now),
@@ -199,7 +200,7 @@ func (s *Service) DescribeDBInstances(
 				return nil, invalid("Filter wildcards are unsupported")
 			}
 		}
-		if !slices.Contains([]string{"db-instance-id", engineFilter, subnetType}, common.Value(f.Name)) ||
+		if !slices.Contains([]string{instanceFilter, engineFilter, subnetType}, common.Value(f.Name)) ||
 			len(f.Values) == 0 {
 			return nil, invalid("Unsupported filter or empty filter Values")
 		}
@@ -270,6 +271,10 @@ func (s *Service) DeleteDBInstance(
 	}
 
 	if r.Instance.DBClusterIdentifier != nil {
+		if in.FinalDBSnapshotIdentifier != nil {
+			return nil, invalid("Cluster member final snapshots are unsupported")
+		}
+
 		e := s.store.Update(ctx, func(tx storage.WriteTx) error { return deleteClusterMember(tx, scope, r) })
 		if e != nil {
 			return nil, e
@@ -279,8 +284,21 @@ func (s *Service) DeleteDBInstance(
 		return &api.DeleteDBInstanceResult{DBInstance: instance(r)}, nil
 	}
 
+	if common.Value(in.SkipFinalSnapshot) && in.FinalDBSnapshotIdentifier != nil {
+		return nil, invalid("FinalDBSnapshotIdentifier cannot be combined with SkipFinalSnapshot")
+	}
+
 	if !common.Value(in.SkipFinalSnapshot) {
-		return nil, invalid("Snapshots are unsupported; set SkipFinalSnapshot=true")
+		if _, snapshotErr := s.createSnapshot(
+			ctx,
+			scope,
+			r,
+			common.Value(in.FinalDBSnapshotIdentifier),
+			nil,
+			true,
+		); snapshotErr != nil {
+			return nil, snapshotErr
+		}
 	}
 
 	if s.runtime != nil {
@@ -327,7 +345,7 @@ func (s *Service) change(
 		return s.changeClusterMember(ctx, scope, r, in)
 	}
 
-	status := common.Value(r.Instance.DBInstanceStatus)
+	status := common.Value(instance(r).DBInstanceStatus)
 	expected := available
 	if action == actionStart {
 		expected = stopped
@@ -337,7 +355,14 @@ func (s *Service) change(
 		return nil, awserror.New("InvalidDBInstanceStateFault", "Instance is not "+expected)
 	}
 
+	r.Instance = instance(r)
+	r.ReadyAt = time.Time{}
+
 	if in != nil {
+		if in.CopyTagsToSnapshot != nil {
+			r.Instance.CopyTagsToSnapshot = in.CopyTagsToSnapshot
+		}
+
 		if in.ApplyImmediately != nil && !*in.ApplyImmediately {
 			return nil, invalid("Deferred modifications are unsupported")
 		}

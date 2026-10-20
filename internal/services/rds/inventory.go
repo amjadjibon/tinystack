@@ -30,13 +30,19 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			typ := map[string]string{
-				kindDB: "db-instance", kindCluster: "db-cluster",
+				kindSnapshot: "db-snapshot", kindDB: "db-instance", kindCluster: "db-cluster",
 				kindSubnet: subnetType, kindParameter: "db-parameter-group",
 			}[r.Kind]
 			details := map[string]any{}
-			if r.Instance != nil {
+			if r.Snapshot != nil {
+				details["Engine"] = common.Value(r.Snapshot.Engine)
+				details["Status"] = common.Value(snapshot(r).Status)
+				details["DBInstanceIdentifier"] = common.Value(r.Snapshot.DBInstanceIdentifier)
+			}
+
+			if r.Instance != nil && r.Kind != kindSnapshot {
 				details["Engine"] = common.Value(r.Instance.Engine)
-				details["Status"] = common.Value(r.Instance.DBInstanceStatus)
+				details["Status"] = common.Value(instance(r).DBInstanceStatus)
 				if r.Instance.DBClusterIdentifier != nil {
 					details["RecordsOnly"] = true
 					details["DBClusterIdentifier"] = common.Value(r.Instance.DBClusterIdentifier)
