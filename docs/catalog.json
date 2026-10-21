@@ -248,6 +248,8 @@
         "Default and custom buses, rules, targets and input transformers",
         "Pattern matching shared with other event services",
         "SQS, SNS and Lambda targets in the same account and region",
+        "Connections (API key, Basic and OAuth client credentials, with invocation header, query string and body parameters) and API destinations; Describe never returns secrets, and DeauthorizeConnection removes the credentials as AWS does",
+        "API destination targets make a real HTTP request with the rendered event as the body: the target's HttpParameters fill the endpoint's * wildcards and add headers and query string parameters, the connection adds its parameters (which win) and its authorization, OAuth access tokens are cached until they expire, and a response other than 2xx fails the delivery into the retry and dead-letter path (5xx, 401, 407, 409 and 429 are retried, other statuses go to the dead-letter queue at once)",
         "Scheduled rules, durable retry records and SQS dead-letter queues",
         "Archives and synchronous replay",
         "AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection",
@@ -257,6 +259,8 @@
       ],
       "gaps": [
         "No partner buses, cross-region bus references, event-bus targets or additional target service families",
+        "Connection secrets are kept in the connection record: SecretArn names the Secrets Manager secret AWS would create, which does not exist; connections always report AUTHORIZED or DEAUTHORIZED, and private connectivity and KMS keys are rejected",
+        "API destination deliveries are synchronous (PutEvents waits up to 5 seconds for each endpoint), are not rate limited by InvocationRateLimitPerSecond, are not authorized against the target's RoleArn, and send the event as the body for every method; HttpParameters values that are JSONPath references such as $.detail.id are rejected, and the OAuth token request is a form POST (or GET with query parameters) with Basic client authentication",
         "Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies",
         "Replays run synchronously and cannot be cancelled",
         "Cron does not support L, W or #",

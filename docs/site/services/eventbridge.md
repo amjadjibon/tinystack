@@ -13,7 +13,7 @@ Route events through local buses, patterns, rules, schedules, archives, and repl
 | API version | `2015-10-07` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 30 of 57 in the pinned model |
+| Selected operations | 41 of 57 in the pinned model |
 
 ## Implemented behavior
 
@@ -24,6 +24,8 @@ With identity.authorization set to soft or enforce, bus and rule actions evaluat
 ## Limitations and future work
 
 - No partner buses, cross-region bus references, event-bus targets or additional target service families.
+- Connection secrets are kept in the connection record: SecretArn names the Secrets Manager secret AWS would create, which does not exist; connections always report AUTHORIZED or DEAUTHORIZED, and private connectivity and KMS keys are rejected.
+- API destination deliveries are synchronous (PutEvents waits up to 5 seconds for each endpoint), are not rate limited by InvocationRateLimitPerSecond, are not authorized against the target's RoleArn, and send the event as the body for every method; HttpParameters values that are JSONPath references such as $.detail.id are rejected, and the OAuth token request is a form POST (or GET with query parameters) with Basic client authentication.
 - Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies.
 - Replays run synchronously and cannot be cancelled.
 - Cron does not support L, W or #.
@@ -44,18 +46,27 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | Operation | HTTP binding |
 | --- | --- |
 | `CancelReplay` | `POST /` |
+| `CreateApiDestination` | `POST /` |
 | `CreateArchive` | `POST /` |
+| `CreateConnection` | `POST /` |
 | `CreateEventBus` | `POST /` |
+| `DeauthorizeConnection` | `POST /` |
+| `DeleteApiDestination` | `POST /` |
 | `DeleteArchive` | `POST /` |
+| `DeleteConnection` | `POST /` |
 | `DeleteEventBus` | `POST /` |
 | `DeleteRule` | `POST /` |
+| `DescribeApiDestination` | `POST /` |
 | `DescribeArchive` | `POST /` |
+| `DescribeConnection` | `POST /` |
 | `DescribeEventBus` | `POST /` |
 | `DescribeReplay` | `POST /` |
 | `DescribeRule` | `POST /` |
 | `DisableRule` | `POST /` |
 | `EnableRule` | `POST /` |
+| `ListApiDestinations` | `POST /` |
 | `ListArchives` | `POST /` |
+| `ListConnections` | `POST /` |
 | `ListEventBuses` | `POST /` |
 | `ListReplays` | `POST /` |
 | `ListRules` | `POST /` |
@@ -71,41 +82,32 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `TagResource` | `POST /` |
 | `TestEventPattern` | `POST /` |
 | `UntagResource` | `POST /` |
+| `UpdateApiDestination` | `POST /` |
 | `UpdateArchive` | `POST /` |
+| `UpdateConnection` | `POST /` |
 | `UpdateEventBus` | `POST /` |
 
 ## Operations not implemented
 
-??? info "27 modeled operations outside the implementation"
+??? info "16 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `ActivateEventSource`
-    - `CreateApiDestination`
-    - `CreateConnection`
     - `CreateEndpoint`
     - `CreatePartnerEventSource`
     - `DeactivateEventSource`
-    - `DeauthorizeConnection`
-    - `DeleteApiDestination`
-    - `DeleteConnection`
     - `DeleteEndpoint`
     - `DeletePartnerEventSource`
-    - `DescribeApiDestination`
-    - `DescribeConnection`
     - `DescribeEndpoint`
     - `DescribeEventSource`
     - `DescribePartnerEventSource`
-    - `ListApiDestinations`
-    - `ListConnections`
     - `ListEndpoints`
     - `ListEventSources`
     - `ListPartnerEventSourceAccounts`
     - `ListPartnerEventSources`
     - `ListRuleNamesByTarget`
     - `PutPartnerEvents`
-    - `UpdateApiDestination`
-    - `UpdateConnection`
     - `UpdateEndpoint`
 
 ## Source and examples
@@ -113,5 +115,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/eventbridge)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/eventbridge/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/eventbridge.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [eventbridge_archive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_archive_test.go), [eventbridge_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_authorization_test.go), [eventbridge_bus_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_bus_test.go), [eventbridge_retry_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_retry_test.go), [eventbridge_schedule_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_schedule_test.go), [eventbridge_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_test.go).
+- SDK integration examples: [eventbridge_archive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_archive_test.go), [eventbridge_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_authorization_test.go), [eventbridge_bus_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_bus_test.go), [eventbridge_destination_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_destination_test.go), [eventbridge_retry_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_retry_test.go), [eventbridge_schedule_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_schedule_test.go), [eventbridge_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eventbridge_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).
