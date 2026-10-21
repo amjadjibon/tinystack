@@ -125,7 +125,7 @@ func (s *Service) StartSigningJob(
 			JobId: new(id), Source: in.Source, SigningMaterial: d.SigningMaterial, PlatformId: d.PlatformId,
 			PlatformDisplayName: d.PlatformDisplayName, ProfileName: d.ProfileName, ProfileVersion: d.ProfileVersion,
 			CreatedAt: common.Seconds(now), SignatureExpiresAt: expires(d.SignatureValidityPeriod, now),
-			RequestedBy: new("arn:aws:iam::" + scope.AccountID + ":root"), Status: new("InProgress"),
+			RequestedBy: new(request.CallerARN(ctx)), Status: new("InProgress"),
 			JobOwner: new(scope.AccountID), JobInvoker: new(scope.AccountID),
 		}}
 		if e := storage.Write(tx, scope.Key(serviceName, "job", id), r); e != nil {
@@ -323,7 +323,7 @@ func (s *Service) RevokeSignature(
 
 		r.Detail.RevocationRecord = &api.SigningJobRevocationRecord{
 			Reason:    in.Reason,
-			RevokedAt: common.Seconds(time.Now()), RevokedBy: new("arn:aws:iam::" + scope.AccountID + ":root"),
+			RevokedAt: common.Seconds(time.Now()), RevokedBy: new(request.CallerARN(ctx)),
 		}
 
 		return storage.Write(tx, scope.Key(serviceName, "job", *in.JobId), r)

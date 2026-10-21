@@ -220,17 +220,12 @@ func (s *Service) RequestServiceQuotaIncrease(
 			"DesiredValue must be finite and greater than the adjustable quota value.")
 	}
 
-	caller := fmt.Sprintf("arn:aws:iam::%s:root", meta.AccountID)
-	if meta.Principal != nil {
-		caller = meta.Principal.ARN
-	}
-
 	now := common.SecondsMilli(time.Now())
 	r := api.RequestedServiceQuotaChange{
 		Id: new(common.RandomID(32)), ServiceCode: new(q.service), ServiceName: new(q.serviceTitle),
 		QuotaCode: new(q.code), QuotaName: new(q.title), DesiredValue: new(value), Status: new("PENDING"),
-		Created: now, LastUpdated: now, Requester: new(caller), QuotaArn: q.output(meta.Scope, false).QuotaArn,
-		GlobalQuota: new(q.global), Unit: new("None"),
+		Created: now, LastUpdated: now, Requester: new(request.CallerARN(ctx)),
+		QuotaArn: q.output(meta.Scope, false).QuotaArn, GlobalQuota: new(q.global), Unit: new("None"),
 	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		records, e := storage.Records[api.RequestedServiceQuotaChange](tx, meta.Prefix(serviceName, "request"))

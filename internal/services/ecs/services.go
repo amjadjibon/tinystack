@@ -39,6 +39,7 @@ type ecsService struct {
 	PropagateTags  string
 	Rebalancing    string
 	ClientToken    string
+	CreatedBy      string
 	Strategy       []api.CapacityProviderStrategyItem
 	Tags           []api.Tag
 	Deployments    []api.Deployment
@@ -249,7 +250,7 @@ func (svc *ecsService) output(tx storage.ReadTx, scope request.Scope, include []
 		HealthCheckGracePeriodSeconds: svc.GracePeriod,
 		SchedulingStrategy:            new(svc.Scheduling),
 		DeploymentController:          &api.DeploymentController{Type: new("ECS")},
-		CreatedBy:                     new("arn:aws:iam::" + scope.AccountID + ":root"),
+		CreatedBy:                     new(svc.CreatedBy),
 		EnableECSManagedTags:          new(svc.ManagedTags),
 		PropagateTags:                 new(svc.PropagateTags),
 		EnableExecuteCommand:          new(svc.ExecuteCommand),
@@ -298,6 +299,8 @@ func (s *Service) CreateService(ctx context.Context, in *api.CreateServiceReques
 	if err != nil {
 		return nil, err
 	}
+
+	svc.CreatedBy = request.CallerARN(ctx)
 
 	var out api.Service
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {

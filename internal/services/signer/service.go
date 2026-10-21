@@ -282,16 +282,11 @@ func (s *Service) RevokeSigningProfile(
 	ctx context.Context,
 	in *api.RevokeSigningProfileRequest,
 ) (*api.RevokeSigningProfileOutput, error) {
-	scope, err := request.RegionalScope(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	if common.Value(in.Reason) == "" || in.EffectiveTime == nil {
 		return nil, invalid("Reason and EffectiveTime are required.")
 	}
 
-	_, err = s.change(ctx, in.ProfileName, func(r *profile) error {
+	_, err := s.change(ctx, in.ProfileName, func(r *profile) error {
 		d, ok := r.Versions[common.Value(in.ProfileVersion)]
 		if !ok {
 			return missing()
@@ -308,7 +303,7 @@ func (s *Service) RevokeSigningProfile(
 			RevokedAt: common.Seconds(
 				time.Now(),
 			),
-			RevokedBy: new("arn:aws:iam::" + scope.AccountID + ":root"),
+			RevokedBy: new(request.CallerARN(ctx)),
 		}
 
 		d.StatusReason = in.Reason

@@ -123,7 +123,7 @@ func (s *Service) StartJobRun(ctx context.Context, in *api.StartJobRunRequest) (
 			Name:          in.Name,
 			CreatedAt:     common.SecondsMilli(time.Now()),
 			UpdatedAt:     common.SecondsMilli(time.Now()),
-			CreatedBy:     new("arn:aws:iam::" + scope.AccountID + ":root"),
+			CreatedBy:     new(request.CallerARN(ctx)),
 			ExecutionRole: in.ExecutionRoleArn,
 			State: new(
 				"SUBMITTED",

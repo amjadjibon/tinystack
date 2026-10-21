@@ -90,6 +90,17 @@ func FromContext(ctx context.Context) (Metadata, bool) {
 	return m, ok
 }
 
+// CallerARN returns the principal's ARN when Metadata.Principal is set,
+// else arn:aws:iam::<account>:root for the request's account.
+func CallerARN(ctx context.Context) string {
+	m, _ := FromContext(ctx)
+	if m.Principal != nil {
+		return m.Principal.ARN
+	}
+
+	return "arn:aws:iam::" + m.AccountID + ":root"
+}
+
 var errNoIdentity = errors.New("missing request identity")
 
 // Regional returns the request's metadata, failing when it names no account or Region.

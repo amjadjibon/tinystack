@@ -181,7 +181,7 @@ func (s *Service) RegisterTaskDefinition(
 		def.Revision = new(f.Last)
 		def.TaskDefinitionArn = new(taskDefARN(scope, *in.Family, f.Last))
 		def.RegisteredAt = seconds(s.now().UTC())
-		def.RegisteredBy = new("arn:aws:iam::" + scope.AccountID + ":root")
+		def.RegisteredBy = new(request.CallerARN(ctx))
 		if writeErr := storage.Write(tx, familyKey(scope, *in.Family), f); writeErr != nil {
 			return writeErr
 		}
