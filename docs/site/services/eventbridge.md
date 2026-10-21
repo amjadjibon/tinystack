@@ -24,8 +24,8 @@ With identity.authorization set to soft or enforce, bus and rule actions evaluat
 ## Limitations and future work
 
 - No partner buses, cross-region bus references, event-bus targets or additional target service families.
-- Connection secrets are kept in the connection record: SecretArn names the Secrets Manager secret AWS would create, which does not exist; connections always report AUTHORIZED or DEAUTHORIZED, and private connectivity and KMS keys are rejected.
-- API destination deliveries are synchronous (PutEvents waits up to 5 seconds for each endpoint), are not rate limited by InvocationRateLimitPerSecond, are not authorized against the target's RoleArn, and send the event as the body for every method; HttpParameters values that are JSONPath references such as $.detail.id are rejected, and the OAuth token request is a form POST (or GET with query parameters) with Basic client authentication.
+- Connections always report AUTHORIZED or DEAUTHORIZED, and private connectivity and KMS keys are rejected.
+- API destination deliveries are synchronous (PutEvents waits up to 5 seconds for each endpoint), are not authorized against the target's RoleArn, and send the event as the body for every method; HttpParameters values that are JSONPath references such as $.detail.id are rejected, and the OAuth token request is a form POST (or GET with query parameters) with Basic client authentication.
 - Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies.
 - Replays run synchronously and cannot be cancelled.
 - Cron does not support L, W or #.
