@@ -88,6 +88,7 @@ nav:
       - Init hooks and reset: guides/init-hooks.md
       - Fault injection: guides/fault-injection.md
       - Cost fixtures and queries: guides/costs.md
+      - Predictable Bedrock inference: guides/bedrock.md
       - Testcontainers for Go: guides/testcontainers.md
       - Persistence and restart: guides/persistence.md
       - State fixtures: guides/state-fixtures.md
@@ -175,6 +176,9 @@ nav:
           - "IoT Core": services/iot.md
           - "IoT Data Plane": services/iotdataplane.md
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md
+      - "Machine Learning":
+          - "Amazon Bedrock": services/bedrock.md
+          - "Amazon Bedrock Runtime": services/bedrockruntime.md
       - "Management & Governance":
           - "AWS Account": services/account.md
           - "AWS Backup": services/backup.md
@@ -240,7 +244,6 @@ nav:
           - "AWS Resource Access Manager cross-account access and invitations runtime": roadmap/services/ram-runtime.md
           - "AWS Signer": roadmap/services/signer.md
           - "AWS X-Ray trace ingestion and telemetry runtime": roadmap/services/xray-runtime.md
-          - "Amazon Bedrock control plane": roadmap/services/bedrock.md
           - "Amazon Inspector": roadmap/services/inspector2.md
           - "Amazon Location runtime and broader records": roadmap/services/location-runtime.md
           - "Amazon MQ configuration, users and runtime": roadmap/services/mq-runtime.md
@@ -256,7 +259,6 @@ nav:
           - "Bedrock Agent Runtime": roadmap/services/bedrock-agent-runtime.md
           - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md
           - "Bedrock Agents": roadmap/services/bedrock-agent.md
-          - "Bedrock Runtime": roadmap/services/bedrock-runtime.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
           - "CodeBuild build execution": roadmap/services/codebuild-runtime.md
           - "CodeDeploy deployment execution and agents": roadmap/services/codedeploy-runtime.md

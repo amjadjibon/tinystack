@@ -15,7 +15,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [AWS Resource Access Manager cross-account access and invitations runtime](services/ram-runtime.md) | Proposed | Extend records-only resource shares to cross-account invitations, managed permissions, and real cross-account resource access. |
 | [AWS Signer](services/signer.md) | Proposed | Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`. |
 | [AWS X-Ray trace ingestion and telemetry runtime](services/xray-runtime.md) | Proposed | Extend records-only groups and sampling rules to trace ingestion, telemetry processing, and service map analysis. |
-| [Amazon Bedrock control plane](services/bedrock.md) | Proposed | Implement `ListFoundationModels`, `GetFoundationModel`, `ListInferenceProfiles`. |
 | [Amazon Inspector](services/inspector2.md) | Proposed | Implement `ListFindings`, `ListCoverage`, `CreateFilter`. |
 | [Amazon Location runtime and broader records](services/location-runtime.md) | Proposed | Implement device-position ingestion, retrieval/history and tracker consumer associations with explicit runtime semantics. |
 | [Amazon MQ configuration, users and runtime](services/mq-runtime.md) | Future extensions | Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices. |
@@ -31,7 +30,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Bedrock Agent Runtime](services/bedrock-agent-runtime.md) | Proposed | Implement `InvokeAgent`, `InvokeInlineAgent`, `GetAgentMemory`. |
 | [Bedrock AgentCore](services/bedrock-agentcore.md) | Proposed | Implement `CreateAgentRuntime`, `GetAgentRuntime`, `ListAgentRuntimes`. |
 | [Bedrock Agents](services/bedrock-agent.md) | Proposed | Implement `CreateAgent`, `GetAgent`, `ListAgents`. |
-| [Bedrock Runtime](services/bedrock-runtime.md) | Proposed | Implement `InvokeModel`, `InvokeModelWithResponseStream`, `StartAsyncInvoke`. |
 | [CloudFront KeyValueStore](services/cloudfront-keyvaluestore.md) | Proposed | Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`. |
 | [CodeBuild build execution](services/codebuild-runtime.md) | Proposed extension | Extend the implemented project metadata with an explicit build execution/runtime contract. |
 | [CodeDeploy deployment execution and agents](services/codedeploy-runtime.md) | Proposed | Extend application, deployment configuration and group records to real deployment execution. |

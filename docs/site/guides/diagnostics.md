@@ -285,3 +285,5 @@ labels. Unknown operations use an empty operation label. These differ from metri
 CloudWatch API. Request logs, delivery logs and gateway metrics reset on restart even with persistent storage.
 
 `tinystack_injected_requests_total` counts attempts affected by injected errors or latency, using the same labels.
+
+See [Predictable Bedrock inference](bedrock.md) for stored text/tool fixtures and the Bedrock fixture endpoint.
