@@ -27,6 +27,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-http-apis) for 
 - Custom domains and API mappings use the AWS API rather than console forms.
 - In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available.
 - Console test requests execute deployed snapshots; automatic stages publish draft changes immediately, manual stages require a new deployment. AWS_IAM tests require signed execute-api CLI/SDK requests. Console action JSON is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
+- HTTP API metrics have no Route dimension or DataProcessed; requests to a missing stage report nothing.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

@@ -28,6 +28,7 @@ See the [implemented feature catalogue](catalogue.md#dynamodb) for this service'
 - Kinesis destinations turn on at once (Enable reports ENABLING, Describe ACTIVE); records are put after the item write commits, so concurrent writes to one item can arrive out of order, and a destination whose stream was deleted becomes ENABLE_FAILED until it is enabled again; DescribeTable does not list destinations.
 - Verify mode shows table inventory; item reads and management require signed CLI/SDK requests.
 - Backups, restores, exports, PartiQL, batch and transaction operations use the AWS API rather than console forms.
+- DynamoDB metrics leave out PartiQL statements, index dimensions (GlobalSecondaryIndexName), ReturnedItemCount, SystemErrors, ConditionalCheckFailedRequests and TTL deletions; TinyStack never throttles, so ThrottledRequests stays 0.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

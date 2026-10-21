@@ -28,6 +28,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for 
 - Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms.
 - In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available.
 - Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
+- REST API metrics have no Method and Resource dimensions, CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

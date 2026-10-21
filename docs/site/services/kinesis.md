@@ -24,6 +24,7 @@ See the [implemented feature catalogue](catalogue.md#kinesis-data-streams) for t
 - No SubscribeToShard enhanced fan-out delivery or throughput enforcement.
 - Resource policies, production record-size settings and warm throughput are outside the subset.
 - KMS encryption settings are stored without encrypting stream records.
+- Kinesis metrics omit shard-level, latency, throughput-exceeded and iterator-age metrics, and GetRecords.Bytes.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

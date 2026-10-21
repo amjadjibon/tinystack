@@ -25,6 +25,7 @@ See the [implemented feature catalogue](catalogue.md#sns) for this service's cap
 - No mobile application or Firehose subscriptions, delivery retries or message signatures.
 - SQS/Lambda subscription endpoints must belong to the subscriber's account.
 - In verify mode, console management requires an authenticated root console session; without a session topic/subscription inventory and delivery history remain available.
+- SNS metrics omit PublishSize, SMS metrics, filter policy and redrive metrics, and delivery metrics by protocol or application; confirmation messages are not counted.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

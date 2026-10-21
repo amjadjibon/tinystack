@@ -25,7 +25,8 @@ See the [implemented feature catalogue](catalogue.md#cloudwatch-metrics-and-alar
 - Metric streams reject OpenTelemetry formats and linked-account metrics; additional statistics support basic statistics and percentiles, not trimmed/winsorized statistics; no managed metric-stream monitoring metrics.
 - Metric streams claim completed minutes once, exclude datapoints older than two days, and record failed Firehose calls without replay; Firehose handles destination buffering and retry after accepting records.
 - No EC2/Systems Manager actions or alarm mute rules.
-- Automatic AWS namespace publication is limited to fixture-backed billing metrics; public PutMetricData still rejects AWS/ namespaces.
+- Only the metrics listed on the Lambda, SQS, DynamoDB, API Gateway, SNS and Kinesis pages and fixture-backed billing are published to AWS/ namespaces; other services publish none, and public PutMetricData still rejects AWS/ namespaces.
+- Published metrics are statistic sets, so percentile statistics (such as p99 Duration) return no datapoint for them; values appear up to one second after the request, and observations in memory are lost on a crash.
 - Billing uses Unit None and Currency=USD, with ServiceName=AmazonS3 only for the verified S3 fixture label; other services contribute only to the total, with no linked-account series or real AWS bill calculation.
 - Billing samples use publish time, refresh on a one-second worker within minute slots, and emit one final zero after last-fixture deletion; periods below 60 seconds and AWS billing refresh delays are not reproduced.
 - Local retention is 15 days for datapoints and 30 days for alarm history.
@@ -115,5 +116,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cloudwatch)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cloudwatch/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cloudwatch.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [cloudwatch_billing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_billing_test.go), [cloudwatch_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_streams_test.go), [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
+- SDK integration examples: [cloudwatch_billing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_billing_test.go), [cloudwatch_builtin_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_builtin_test.go), [cloudwatch_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_streams_test.go), [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

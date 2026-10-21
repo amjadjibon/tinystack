@@ -208,6 +208,7 @@ Write and read ordered shard records and feed local Lambda or Firehose consumers
 - Streams, shards, consumers, shard iterators and record CRUD APIs.
 - Split and merge shard metadata with stable record sequence ordering.
 - Lambda mappings and Firehose sources read records in-process.
+- AWS/Kinesis metrics with dimension StreamName: IncomingRecords and IncomingBytes (PutRecord, PutRecords and DynamoDB streaming destinations) and GetRecords.Records.
 
 [Supported operations](kinesis.md#supported-operations) · [Limitations](kinesis.md#limitations-and-future-work)
 
@@ -326,6 +327,7 @@ Publish messages to local queues and functions, or confirmed HTTP subscriptions.
 - Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens.
 - Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery.
 - With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue and Publish still succeeds.
+- AWS/SNS metrics with dimension TopicName: NumberOfMessagesPublished, NumberOfNotificationsDelivered and NumberOfNotificationsFailed, counted once per message and subscriber for SQS, Lambda, HTTP(S), email and SMS subscriptions.
 
 [Supported operations](sns.md#supported-operations) · [Limitations](sns.md#limitations-and-future-work)
 
@@ -344,6 +346,7 @@ Use queues with visibility timeouts, long polling, FIFO ordering, and dead-lette
 - PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard.
 - Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery.
 - With authorization on, SNS, S3 notification and EventBridge deliveries (including target dead-letter queues) need the queue policy to allow the service principal, matching aws:SourceArn and aws:SourceAccount; enforce mode drops a denied delivery and soft mode records it in the request inspector.
+- AWS/SQS metrics with dimension QueueName: NumberOfMessagesSent and SentMessageSize (Bytes) for SendMessage, batches, SNS and EventBridge deliveries, NumberOfMessagesReceived, NumberOfEmptyReceives and NumberOfMessagesDeleted, and, sampled once a minute while the queue is in use, ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible, ApproximateNumberOfMessagesDelayed and ApproximateAgeOfOldestMessage (Seconds).
 
 [Supported operations](sqs.md#supported-operations) · [Limitations](sqs.md#limitations-and-future-work)
 
@@ -465,6 +468,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 - With authorization on, SNS, S3 notification, EventBridge and API Gateway Lambda proxy invocations need the function policy (such as AddPermission with a service Principal, SourceArn and SourceAccount) to allow the service principal.
 - With authorization on, Lambda acts as the function's execution role, whose trust policy must allow lambda.amazonaws.com for the function (aws:SourceArn) and account, when it reads an event source (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; Kinesis and DynamoDB stream describe, shard iterator and record reads) and when it sends dead-letter events, asynchronous results and failed stream batches to SQS, SNS, EventBridge or Lambda destinations; CreateEventSourceMapping fails with InvalidParameterValueException in enforce mode when the role cannot read the source, and a mapping whose role loses the permission reports it in LastProcessingResult and stops reading after the cached check expires.
 - DeadLetterConfig on function creation and configuration updates sends discarded asynchronous events to a standard SQS queue or SNS topic as the execution role, with the original event body and RequestID, ErrorCode and ErrorMessage attributes; OnFailure destinations also receive their invocation record.
+- AWS/Lambda metrics for every synchronous, asynchronous, event source mapping and function URL invocation, with dimension FunctionName and also Resource (function:alias or function:version) for qualified invocations: Invocations, Errors (0 or 1 per invocation, including runtime failures), Duration (Milliseconds), Throttles (reserved concurrency exceeded) and ConcurrentExecutions (executions in flight when an invocation starts).
 
 [Supported operations](lambda.md#supported-operations) · [Limitations](lambda.md#limitations-and-future-work)
 
@@ -560,6 +564,7 @@ Store typed items and run expressions, transactions, streams, backups, exports, 
 - PartiQL statements and transaction execution.
 - Kinesis Data Streams streaming destinations (enable, update the timestamp precision, disable, describe; up to two active per table, one per stream): every committed item change, including batch, transaction, PartiQL and TTL writes, is put into the stream after the commit as a DynamoDB JSON record with both images, whether or not the table has a DynamoDB stream; AWS::DynamoDB::Table KinesisStreamSpecification.
 - AWS-style console with scoped table creation/deletion, primary and secondary keys, index management, typed item creation/editing/deletion, explicit query/scan with filters and pagination, capacity settings, TTL, tags, streams and Lambda connections.
+- AWS/DynamoDB metrics for PutItem, GetItem, DeleteItem, UpdateItem, Query, Scan, BatchGetItem, BatchWriteItem, TransactGetItems and TransactWriteItems: ConsumedReadCapacityUnits and ConsumedWriteCapacityUnits (item size over 4 KB or 1 KB, halved for eventually consistent reads and doubled for transactions) by TableName, SuccessfulRequestLatency (Milliseconds) and ThrottledRequests (always 0) by TableName and Operation, and UserErrors (4xx results, no dimensions) as in AWS.
 
 [Supported operations](dynamodb.md#supported-operations) · [Limitations](dynamodb.md#limitations-and-future-work)
 
@@ -1082,6 +1087,7 @@ Record metrics, evaluate alarms, and exercise local monitoring integrations.
 - JSON metric streams: CRUD, start/stop, tags, namespace/metric filters, per-minute aggregation and additional basic/percentile statistics; background delivery to Firehose under RoleArn with streams.metrics.cloudwatch.amazonaws.com trust and role permission checks; failures and delivered counts in inventory; AWS::CloudWatch::MetricStream lifecycle.
 - With authorization on, an SNS action needs the topic policy to allow cloudwatch.amazonaws.com, and a Lambda action the function policy to allow lambda.alarms.cloudwatch.amazonaws.com, with the alarm as aws:SourceArn and its account as aws:SourceAccount; a denied action is recorded in the alarm history as failed in enforce mode and as a would-deny check in soft mode.
 - Fixture-backed AWS/Billing EstimatedCharges in us-east-1: current UTC month USD total and verified AmazonS3 service dimension, sampled each minute and after fixture changes.
+- Built-in AWS/* namespaces: services publish their metrics through an internal path that PutMetricData does not open; observations aggregate in memory per series and minute, are stored every second as one statistic-set point per series and minute, and flush on shutdown, so ListMetrics, GetMetricStatistics, GetMetricData, metric streams and alarms see them (AWS/Lambda, AWS/SQS, AWS/DynamoDB, AWS/ApiGateway, AWS/SNS and AWS/Kinesis, listed on those services; plus AWS/Billing).
 - AWS-style console for scoped metric selection and graphs, explicit custom metric publication, metric/composite alarm creation and editing, actions and state tests, paginated history, tags, and dashboard JSON editing with metric/text previews.
 
 [Supported operations](cloudwatch.md#supported-operations) · [Limitations](cloudwatch.md#limitations-and-future-work)
@@ -1198,6 +1204,7 @@ Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT aut
 - AWS-style console for scoped HTTP API creation and CORS settings, routes, Lambda/HTTP integrations, JWT/Lambda authorizers, auto/manual stages, deployment snapshots, API/stage tags, and explicit deployed-stage request testing.
 - With authorization on, Lambda proxy integrations need the function policy to allow apigateway.amazonaws.com with the route's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal Server Error in enforce mode and is recorded in soft mode.
 - Lambda authorizers need the function policy to allow apigateway.amazonaws.com with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn; a denied invocation answers 500.
+- AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiId and ApiId with Stage: Count, 4xx, 5xx, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration).
 
 [Supported operations](apigatewayv2.md#supported-operations) · [Limitations](apigatewayv2.md#limitations-and-future-work)
 
@@ -1217,6 +1224,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 - With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode.
 - A credentials role must trust apigateway.amazonaws.com for the method's execute-api ARN and its policies must allow lambda:InvokeFunction; the same 500 reports a denial.
 - Lambda authorizers are invoked as apigateway.amazonaws.com, which the function policy must allow with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn, or as the authorizer's credentials role, whose trust policy must allow it for that source; a denied invocation answers 500.
+- AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiName and ApiName with Stage: Count, 4XXError, 5XXError, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration).
 
 [Supported operations](apigateway.md#supported-operations) · [Limitations](apigateway.md#limitations-and-future-work)
 

@@ -78,7 +78,8 @@
         "TTL sweeps, on-demand backups, latest-state point-in-time restores and S3 exports",
         "PartiQL statements and transaction execution",
         "Kinesis Data Streams streaming destinations (enable, update the timestamp precision, disable, describe; up to two active per table, one per stream): every committed item change, including batch, transaction, PartiQL and TTL writes, is put into the stream after the commit as a DynamoDB JSON record with both images, whether or not the table has a DynamoDB stream; AWS::DynamoDB::Table KinesisStreamSpecification",
-        "AWS-style console with scoped table creation/deletion, primary and secondary keys, index management, typed item creation/editing/deletion, explicit query/scan with filters and pagination, capacity settings, TTL, tags, streams and Lambda connections"
+        "AWS-style console with scoped table creation/deletion, primary and secondary keys, index management, typed item creation/editing/deletion, explicit query/scan with filters and pagination, capacity settings, TTL, tags, streams and Lambda connections",
+        "AWS/DynamoDB metrics for PutItem, GetItem, DeleteItem, UpdateItem, Query, Scan, BatchGetItem, BatchWriteItem, TransactGetItems and TransactWriteItems: ConsumedReadCapacityUnits and ConsumedWriteCapacityUnits (item size over 4 KB or 1 KB, halved for eventually consistent reads and doubled for transactions) by TableName, SuccessfulRequestLatency (Milliseconds) and ThrottledRequests (always 0) by TableName and Operation, and UserErrors (4xx results, no dimensions) as in AWS"
       ],
       "gaps": [
         "Index queries scan the table and are immediately consistent; no independent index storage",
@@ -87,7 +88,8 @@
         "Legacy expression parameters and replica management are outside the subset",
         "Kinesis destinations turn on at once (Enable reports ENABLING, Describe ACTIVE); records are put after the item write commits, so concurrent writes to one item can arrive out of order, and a destination whose stream was deleted becomes ENABLE_FAILED until it is enabled again; DescribeTable does not list destinations",
         "Verify mode shows table inventory; item reads and management require signed CLI/SDK requests",
-        "Backups, restores, exports, PartiQL, batch and transaction operations use the AWS API rather than console forms"
+        "Backups, restores, exports, PartiQL, batch and transaction operations use the AWS API rather than console forms",
+        "DynamoDB metrics leave out PartiQL statements, index dimensions (GlobalSecondaryIndexName), ReturnedItemCount, SystemErrors, ConditionalCheckFailedRequests and TTL deletions; TinyStack never throttles, so ThrottledRequests stays 0"
       ],
       "execution": "Local behavior",
       "package": "dynamodb"
@@ -207,14 +209,16 @@
         "AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management",
         "PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard",
         "Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery",
-        "With authorization on, SNS, S3 notification and EventBridge deliveries (including target dead-letter queues) need the queue policy to allow the service principal, matching aws:SourceArn and aws:SourceAccount; enforce mode drops a denied delivery and soft mode records it in the request inspector"
+        "With authorization on, SNS, S3 notification and EventBridge deliveries (including target dead-letter queues) need the queue policy to allow the service principal, matching aws:SourceArn and aws:SourceAccount; enforce mode drops a denied delivery and soft mode records it in the request inspector",
+        "AWS/SQS metrics with dimension QueueName: NumberOfMessagesSent and SentMessageSize (Bytes) for SendMessage, batches, SNS and EventBridge deliveries, NumberOfMessagesReceived, NumberOfEmptyReceives and NumberOfMessagesDeleted, and, sampled once a minute while the queue is in use, ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible, ApproximateNumberOfMessagesDelayed and ApproximateAgeOfOldestMessage (Seconds)"
       ],
       "gaps": [
         "No throughput enforcement",
         "No message groups on standard queues or FIFO message move tasks",
         "DeleteQueue does not enforce the AWS name-reuse delay",
         "Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained",
-        "In verify mode, console management requires an authenticated root console session; without a session only queue inventory is available"
+        "In verify mode, console management requires an authenticated root console session; without a session only queue inventory is available",
+        "SQS metrics omit ApproximateNumberOfGroupsWithInflightMessages and the other FIFO metrics; a queue reports its approximate gauges only after a request since the process started and stops after six hours without requests, and a FIFO duplicate still counts as sent"
       ],
       "execution": "Local behavior",
       "package": "sqs"
@@ -231,13 +235,15 @@
         "AWS-style console with account/Region-scoped standard and FIFO topic creation, display names, deduplication, policies and tags; subscription lists and details, endpoint selection, confirmation and deletion, raw delivery and attribute/body filters; message publishing and topic-specific delivery inspection",
         "Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens",
         "Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery",
-        "With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue and Publish still succeeds"
+        "With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue and Publish still succeeds",
+        "AWS/SNS metrics with dimension TopicName: NumberOfMessagesPublished, NumberOfNotificationsDelivered and NumberOfNotificationsFailed, counted once per message and subscriber for SQS, Lambda, HTTP(S), email and SMS subscriptions"
       ],
       "gaps": [
         "Email and SMS are recorded, not sent to providers",
         "No mobile application or Firehose subscriptions, delivery retries or message signatures",
         "SQS/Lambda subscription endpoints must belong to the subscriber's account",
-        "In verify mode, console management requires an authenticated root console session; without a session topic/subscription inventory and delivery history remain available"
+        "In verify mode, console management requires an authenticated root console session; without a session topic/subscription inventory and delivery history remain available",
+        "SNS metrics omit PublishSize, SMS metrics, filter policy and redrive metrics, and delivery metrics by protocol or application; confirmation messages are not counted"
       ],
       "execution": "Local behavior",
       "package": "sns"
@@ -301,12 +307,14 @@
       "features": [
         "Streams, shards, consumers, shard iterators and record CRUD APIs",
         "Split and merge shard metadata with stable record sequence ordering",
-        "Lambda mappings and Firehose sources read records in-process"
+        "Lambda mappings and Firehose sources read records in-process",
+        "AWS/Kinesis metrics with dimension StreamName: IncomingRecords and IncomingBytes (PutRecord, PutRecords and DynamoDB streaming destinations) and GetRecords.Records"
       ],
       "gaps": [
         "No SubscribeToShard enhanced fan-out delivery or throughput enforcement",
         "Resource policies, production record-size settings and warm throughput are outside the subset",
-        "KMS encryption settings are stored without encrypting stream records"
+        "KMS encryption settings are stored without encrypting stream records",
+        "Kinesis metrics omit shard-level, latency, throughput-exceeded and iterator-age metrics, and GetRecords.Bytes"
       ],
       "execution": "Local behavior",
       "package": "kinesis"
@@ -348,7 +356,8 @@
         "Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution",
         "With authorization on, SNS, S3 notification, EventBridge and API Gateway Lambda proxy invocations need the function policy (such as AddPermission with a service Principal, SourceArn and SourceAccount) to allow the service principal",
         "With authorization on, Lambda acts as the function's execution role, whose trust policy must allow lambda.amazonaws.com for the function (aws:SourceArn) and account, when it reads an event source (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; Kinesis and DynamoDB stream describe, shard iterator and record reads) and when it sends dead-letter events, asynchronous results and failed stream batches to SQS, SNS, EventBridge or Lambda destinations; CreateEventSourceMapping fails with InvalidParameterValueException in enforce mode when the role cannot read the source, and a mapping whose role loses the permission reports it in LastProcessingResult and stops reading after the cached check expires",
-        "DeadLetterConfig on function creation and configuration updates sends discarded asynchronous events to a standard SQS queue or SNS topic as the execution role, with the original event body and RequestID, ErrorCode and ErrorMessage attributes; OnFailure destinations also receive their invocation record"
+        "DeadLetterConfig on function creation and configuration updates sends discarded asynchronous events to a standard SQS queue or SNS topic as the execution role, with the original event body and RequestID, ErrorCode and ErrorMessage attributes; OnFailure destinations also receive their invocation record",
+        "AWS/Lambda metrics for every synchronous, asynchronous, event source mapping and function URL invocation, with dimension FunctionName and also Resource (function:alias or function:version) for qualified invocations: Invocations, Errors (0 or 1 per invocation, including runtime failures), Duration (Milliseconds), Throttles (reserved concurrency exceeded) and ConcurrentExecutions (executions in flight when an invocation starts)"
       ],
       "gaps": [
         "Local execution is not a sandbox and does not enforce memory or emulate CPU architectures; host interpreter version mismatches warn once and run locally",
@@ -364,7 +373,8 @@
         "In identity.mode: verify the console shows function and trigger inventory; management, invocation and log reads require signed CLI/SDK requests",
         "Console manages $LATEST; versions, aliases, layers and concurrency use the AWS API",
         "Reset ends event source mapping pollers and removes warm execution environments; asynchronous invocations already running can still write records back",
-        "DLQ targets are validated as standard SQS/SNS ARNs; configuration does not check target existence or execution-role permissions; failed DLQ delivery is dropped and recorded, without emitting DeadLetterErrors metrics"
+        "DLQ targets are validated as standard SQS/SNS ARNs; configuration does not check target existence or execution-role permissions; failed DLQ delivery is dropped and recorded, without emitting DeadLetterErrors metrics",
+        "Lambda metrics omit DeadLetterErrors, DestinationDeliveryFailures, IteratorAge, AsyncEventsReceived, ProvisionedConcurrency and UnreservedConcurrentExecutions; invocations that fail validation, authorization or lookup before running report nothing"
       ],
       "execution": "Local processes or Docker runtime",
       "package": "lambda",
@@ -487,7 +497,8 @@
         "AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing",
         "With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode",
         "A credentials role must trust apigateway.amazonaws.com for the method's execute-api ARN and its policies must allow lambda:InvokeFunction; the same 500 reports a denial",
-        "Lambda authorizers are invoked as apigateway.amazonaws.com, which the function policy must allow with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn, or as the authorizer's credentials role, whose trust policy must allow it for that source; a denied invocation answers 500"
+        "Lambda authorizers are invoked as apigateway.amazonaws.com, which the function policy must allow with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn, or as the authorizer's credentials role, whose trust policy must allow it for that source; a denied invocation answers 500",
+        "AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiName and ApiName with Stage: Count, 4XXError, 5XXError, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration)"
       ],
       "gaps": [
         "Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated",
@@ -496,7 +507,8 @@
         "No mutual TLS or import/export; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them",
         "Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms",
         "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
-        "Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64"
+        "Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64",
+        "REST API metrics have no Method and Resource dimensions, CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing"
       ],
       "execution": "Local behavior",
       "package": "apigateway"
@@ -512,7 +524,8 @@
         "HTTP forwarding, JWT and Lambda authorizers, access logs",
         "AWS-style console for scoped HTTP API creation and CORS settings, routes, Lambda/HTTP integrations, JWT/Lambda authorizers, auto/manual stages, deployment snapshots, API/stage tags, and explicit deployed-stage request testing",
         "With authorization on, Lambda proxy integrations need the function policy to allow apigateway.amazonaws.com with the route's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal Server Error in enforce mode and is recorded in soft mode",
-        "Lambda authorizers need the function policy to allow apigateway.amazonaws.com with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn; a denied invocation answers 500"
+        "Lambda authorizers need the function policy to allow apigateway.amazonaws.com with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn; a denied invocation answers 500",
+        "AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiId and ApiId with Stage: Count, 4xx, 5xx, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration)"
       ],
       "gaps": [
         "WebSocket APIs are not implemented",
@@ -520,7 +533,8 @@
         "Only the selected HTTP API management members are supported",
         "Custom domains and API mappings use the AWS API rather than console forms",
         "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
-        "Console test requests execute deployed snapshots; automatic stages publish draft changes immediately, manual stages require a new deployment. AWS_IAM tests require signed execute-api CLI/SDK requests. Console action JSON is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64"
+        "Console test requests execute deployed snapshots; automatic stages publish draft changes immediately, manual stages require a new deployment. AWS_IAM tests require signed execute-api CLI/SDK requests. Console action JSON is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64",
+        "HTTP API metrics have no Route dimension or DataProcessed; requests to a missing stage report nothing"
       ],
       "execution": "Local behavior",
       "package": "apigatewayv2"
@@ -832,6 +846,7 @@
         "JSON metric streams: CRUD, start/stop, tags, namespace/metric filters, per-minute aggregation and additional basic/percentile statistics; background delivery to Firehose under RoleArn with streams.metrics.cloudwatch.amazonaws.com trust and role permission checks; failures and delivered counts in inventory; AWS::CloudWatch::MetricStream lifecycle",
         "With authorization on, an SNS action needs the topic policy to allow cloudwatch.amazonaws.com, and a Lambda action the function policy to allow lambda.alarms.cloudwatch.amazonaws.com, with the alarm as aws:SourceArn and its account as aws:SourceAccount; a denied action is recorded in the alarm history as failed in enforce mode and as a would-deny check in soft mode",
         "Fixture-backed AWS/Billing EstimatedCharges in us-east-1: current UTC month USD total and verified AmazonS3 service dimension, sampled each minute and after fixture changes",
+        "Built-in AWS/* namespaces: services publish their metrics through an internal path that PutMetricData does not open; observations aggregate in memory per series and minute, are stored every second as one statistic-set point per series and minute, and flush on shutdown, so ListMetrics, GetMetricStatistics, GetMetricData, metric streams and alarms see them (AWS/Lambda, AWS/SQS, AWS/DynamoDB, AWS/ApiGateway, AWS/SNS and AWS/Kinesis, listed on those services; plus AWS/Billing)",
         "AWS-style console for scoped metric selection and graphs, explicit custom metric publication, metric/composite alarm creation and editing, actions and state tests, paginated history, tags, and dashboard JSON editing with metric/text previews"
       ],
       "gaps": [
@@ -839,7 +854,8 @@
         "Metric streams reject OpenTelemetry formats and linked-account metrics; additional statistics support basic statistics and percentiles, not trimmed/winsorized statistics; no managed metric-stream monitoring metrics",
         "Metric streams claim completed minutes once, exclude datapoints older than two days, and record failed Firehose calls without replay; Firehose handles destination buffering and retry after accepting records",
         "No EC2/Systems Manager actions or alarm mute rules",
-        "Automatic AWS namespace publication is limited to fixture-backed billing metrics; public PutMetricData still rejects AWS/ namespaces",
+        "Only the metrics listed on the Lambda, SQS, DynamoDB, API Gateway, SNS and Kinesis pages and fixture-backed billing are published to AWS/ namespaces; other services publish none, and public PutMetricData still rejects AWS/ namespaces",
+        "Published metrics are statistic sets, so percentile statistics (such as p99 Duration) return no datapoint for them; values appear up to one second after the request, and observations in memory are lost on a crash",
         "Billing uses Unit None and Currency=USD, with ServiceName=AmazonS3 only for the verified S3 fixture label; other services contribute only to the total, with no linked-account series or real AWS bill calculation",
         "Billing samples use publish time, refresh on a one-second worker within minute slots, and emit one final zero after last-fixture deletion; periods below 60 seconds and AWS billing refresh delays are not reproduced",
         "Local retention is 15 days for datapoints and 30 days for alarm history",
