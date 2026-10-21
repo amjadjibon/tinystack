@@ -10,6 +10,9 @@ func iamPrefix(name string, service *shape, signing string) string {
 	// Some model ARN namespaces differ from their IAM prefixes.
 	// https://docs.aws.amazon.com/service-authorization/latest/reference/list_cloudwatch.html
 	switch name {
+	// https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrock.html
+	case "bedrockruntime":
+		return "bedrock"
 	case "cloudwatch":
 		return "cloudwatch"
 	// https://docs.aws.amazon.com/service-authorization/latest/reference/list_iot.html
@@ -48,6 +51,9 @@ const (
 )
 
 var iamOverrides = map[string]map[string]string{
+	// Converse uses the same permission as InvokeModel.
+	// https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
+	"bedrockruntime": {"Converse": "InvokeModel"},
 	// https://docs.aws.amazon.com/service-authorization/latest/reference/list_s3.html
 	"s3": {
 		"ListObjects":                        iamListBucket,

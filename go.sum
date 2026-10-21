@@ -62,6 +62,10 @@ github.com/aws/aws-sdk-go-v2/service/backup v1.69.1 h1:VuMc2bzcGBu5WAToXz68QIyCW
 github.com/aws/aws-sdk-go-v2/service/backup v1.69.1/go.mod h1:J7cLkculKL/fbJQc7G4RIoSx7oXaX4rUkuWMuGsSwGo=
 github.com/aws/aws-sdk-go-v2/service/batch v1.78.3 h1:N8dlpv/jVMPCBA0Pgf1wGRSyS48Cmw0ZtgGQ845q+sw=
 github.com/aws/aws-sdk-go-v2/service/batch v1.78.3/go.mod h1:OPI75gLjBue1CAtEnd/qnPDMepBM5QJzp9SnGlhIbco=
+github.com/aws/aws-sdk-go-v2/service/bedrock v1.73.4 h1:5js9H3X+Z20bFBSqOwdpLEhi537W1X33viF2lPJjG40=
+github.com/aws/aws-sdk-go-v2/service/bedrock v1.73.4/go.mod h1:7oD/4Bt0gts+ehhfbzAIW3UIlQoyickLXZJCSkrd9t8=
+github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.63.4 h1:XW1H5pGqfSKa9S5+G9ICFBTKy3nmThAYwjYEhcTQ3zI=
+github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.63.4/go.mod h1:FLNP7RBDx4uMBFj96X6r6zNZiuxFVzuaMJZoGdwBQ5o=
 github.com/aws/aws-sdk-go-v2/service/budgets v1.53.1 h1:Ua/xE2mw75XcBcm9P6pGFgDL5+zJ4eCqj9UQ2r73Mzo=
 github.com/aws/aws-sdk-go-v2/service/budgets v1.53.1/go.mod h1:7V6JRjAyHZzbmv7sU+5tGYCJpU1EZBJriqqE3rIMB4Y=
 github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.4 h1:PxjGEvXT+AQFdl+4aDrEbixuLaHb/RqEu6dS3FZM8u0=

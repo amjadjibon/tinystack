@@ -27,6 +27,8 @@ import (
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
 	backupapi "github.com/amjadjibon/tinystack/internal/aws/generated/backup"
 	batchapi "github.com/amjadjibon/tinystack/internal/aws/generated/batch"
+	bedrockapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrock"
+	bedrockruntimeapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockruntime"
 	budgetsapi "github.com/amjadjibon/tinystack/internal/aws/generated/budgets"
 	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
@@ -127,6 +129,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
 	"github.com/amjadjibon/tinystack/internal/services/backup"
 	"github.com/amjadjibon/tinystack/internal/services/batch"
+	"github.com/amjadjibon/tinystack/internal/services/bedrock"
+	"github.com/amjadjibon/tinystack/internal/services/bedrockruntime"
 	"github.com/amjadjibon/tinystack/internal/services/budgets"
 	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
@@ -479,6 +483,8 @@ func build(
 	certificates := acm.New(store)
 	a.onReset(certificates.Reset)
 	signing := signer.New(store, buckets, certificates)
+	foundationModels := bedrock.New(store)
+	inference := bedrockruntime.New(store, foundationModels)
 	tags := resourcegroupstaggingapi.New()
 	groups := resourcegroups.New(store)
 	services := []catalog.Service{
@@ -528,6 +534,8 @@ func build(
 		kinesisanalyticsv2api.Descriptor(flinkRecords),
 		lakeformationapi.Descriptor(lakeRecords),
 		signerapi.Descriptor(signing),
+		bedrockapi.Descriptor(foundationModels),
+		bedrockruntimeapi.Descriptor(inference),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),
@@ -714,6 +722,9 @@ func build(
 		caches.UseRuntime(cachedocker.New(), logger)
 	}
 
+	bedrockFixtures := bedrockruntime.Handler(store, cfg.Defaults.Account)
+	handler.Handle("bedrock/fixtures", bedrockFixtures)
+	handler.Handle("bedrock/fixtures/", bedrockFixtures)
 	fixtures := costdata.Handler(store, cfg.Defaults.Account)
 	handler.Handle("costs/fixtures", fixtures)
 	handler.Handle("costs/fixtures/", fixtures)

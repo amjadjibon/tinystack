@@ -191,7 +191,8 @@ func errUntaggable(r *catalog.Owned) error {
 // taggers are the taggers of the services whose resources this API tags, by
 // service name.
 var taggers = map[string]tagger{
-	"signer": resourceOperations("signer", "ResourceArn", plain),
+	"bedrock": resourceOperations("bedrock", "ResourceARN", pairs),
+	"signer":  resourceOperations("signer", "ResourceArn", plain),
 	"emr": operations("emr", "AddTags", "RemoveTags",
 		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
 			return map[string]any{resourceIDMember: r.ARN[strings.LastIndex(r.ARN, "/")+1:]}, nil

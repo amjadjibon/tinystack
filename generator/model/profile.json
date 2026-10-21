@@ -29634,5 +29634,685 @@
       ],
       "EbsBlockDeviceConfig": []
     }
+  },
+  "bedrock": {
+    "operations": [
+      "ListFoundationModels",
+      "GetFoundationModel",
+      "ListInferenceProfiles",
+      "GetInferenceProfile",
+      "CreateInferenceProfile",
+      "DeleteInferenceProfile",
+      "CreateGuardrail",
+      "GetGuardrail",
+      "ListGuardrails",
+      "UpdateGuardrail",
+      "DeleteGuardrail",
+      "CreateGuardrailVersion",
+      "PutModelInvocationLoggingConfiguration",
+      "GetModelInvocationLoggingConfiguration",
+      "DeleteModelInvocationLoggingConfiguration",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "ListFoundationModelsRequest": [
+        "byProvider",
+        "byOutputModality",
+        "byInferenceType"
+      ],
+      "ListFoundationModelsResponse": [
+        "modelSummaries"
+      ],
+      "FoundationModelSummary": [
+        "modelArn",
+        "modelId",
+        "modelName",
+        "providerName",
+        "inputModalities",
+        "outputModalities",
+        "responseStreamingSupported",
+        "customizationsSupported",
+        "inferenceTypesSupported",
+        "modelLifecycle"
+      ],
+      "FoundationModelLifecycle": [
+        "status",
+        "startOfLifeTime",
+        "endOfLifeTime",
+        "legacyTime",
+        "publicExtendedAccessTime"
+      ],
+      "GetFoundationModelRequest": [
+        "modelIdentifier"
+      ],
+      "GetFoundationModelResponse": [
+        "modelDetails"
+      ],
+      "FoundationModelDetails": [
+        "modelArn",
+        "modelId",
+        "modelName",
+        "providerName",
+        "inputModalities",
+        "outputModalities",
+        "responseStreamingSupported",
+        "customizationsSupported",
+        "inferenceTypesSupported",
+        "modelLifecycle"
+      ],
+      "ListInferenceProfilesRequest": [
+        "maxResults",
+        "nextToken",
+        "typeEquals"
+      ],
+      "ListInferenceProfilesResponse": [
+        "inferenceProfileSummaries",
+        "nextToken"
+      ],
+      "InferenceProfileSummary": [
+        "inferenceProfileName",
+        "description",
+        "createdAt",
+        "updatedAt",
+        "inferenceProfileArn",
+        "models",
+        "inferenceProfileId",
+        "status",
+        "type"
+      ],
+      "InferenceProfileModel": [
+        "modelArn"
+      ],
+      "GetInferenceProfileRequest": [
+        "inferenceProfileIdentifier"
+      ],
+      "GetInferenceProfileResponse": [
+        "inferenceProfileName",
+        "description",
+        "createdAt",
+        "updatedAt",
+        "inferenceProfileArn",
+        "models",
+        "inferenceProfileId",
+        "status",
+        "type"
+      ],
+      "CreateInferenceProfileRequest": [
+        "inferenceProfileName",
+        "description",
+        "clientRequestToken",
+        "modelSource",
+        "tags"
+      ],
+      "InferenceProfileModelSource": [
+        "copyFrom"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ],
+      "CreateInferenceProfileResponse": [
+        "inferenceProfileArn",
+        "status"
+      ],
+      "DeleteInferenceProfileRequest": [
+        "inferenceProfileIdentifier"
+      ],
+      "DeleteInferenceProfileResponse": [],
+      "CreateGuardrailRequest": [
+        "name",
+        "description",
+        "wordPolicyConfig",
+        "blockedInputMessaging",
+        "blockedOutputsMessaging",
+        "tags",
+        "clientRequestToken"
+      ],
+      "GuardrailWordPolicyConfig": [
+        "wordsConfig"
+      ],
+      "GuardrailWordConfig": [
+        "text"
+      ],
+      "CreateGuardrailResponse": [
+        "guardrailId",
+        "guardrailArn",
+        "version",
+        "createdAt"
+      ],
+      "GetGuardrailRequest": [
+        "guardrailIdentifier",
+        "guardrailVersion"
+      ],
+      "GetGuardrailResponse": [
+        "name",
+        "description",
+        "guardrailId",
+        "guardrailArn",
+        "version",
+        "status",
+        "topicPolicy",
+        "contentPolicy",
+        "wordPolicy",
+        "sensitiveInformationPolicy",
+        "contextualGroundingPolicy",
+        "automatedReasoningPolicy",
+        "crossRegionDetails",
+        "createdAt",
+        "updatedAt",
+        "statusReasons",
+        "failureRecommendations",
+        "blockedInputMessaging",
+        "blockedOutputsMessaging",
+        "kmsKeyArn"
+      ],
+      "GuardrailTopicPolicy": [
+        "topics",
+        "tier"
+      ],
+      "GuardrailTopic": [
+        "name",
+        "definition",
+        "examples",
+        "type",
+        "inputAction",
+        "outputAction",
+        "inputEnabled",
+        "outputEnabled"
+      ],
+      "GuardrailTopicsTier": [
+        "tierName"
+      ],
+      "GuardrailContentPolicy": [
+        "filters",
+        "tier"
+      ],
+      "GuardrailContentFilter": [
+        "type",
+        "inputStrength",
+        "outputStrength",
+        "inputModalities",
+        "outputModalities",
+        "inputAction",
+        "outputAction",
+        "inputEnabled",
+        "outputEnabled"
+      ],
+      "GuardrailContentFiltersTier": [
+        "tierName"
+      ],
+      "GuardrailWordPolicy": [
+        "words",
+        "managedWordLists"
+      ],
+      "GuardrailWord": [
+        "text",
+        "inputAction",
+        "outputAction",
+        "inputEnabled",
+        "outputEnabled"
+      ],
+      "GuardrailManagedWords": [
+        "type",
+        "inputAction",
+        "outputAction",
+        "inputEnabled",
+        "outputEnabled"
+      ],
+      "GuardrailSensitiveInformationPolicy": [
+        "piiEntities",
+        "regexes"
+      ],
+      "GuardrailPiiEntity": [
+        "type",
+        "action",
+        "inputAction",
+        "outputAction",
+        "inputEnabled",
+        "outputEnabled"
+      ],
+      "GuardrailRegex": [
+        "name",
+        "description",
+        "pattern",
+        "action",
+        "inputAction",
+        "outputAction",
+        "inputEnabled",
+        "outputEnabled"
+      ],
+      "GuardrailContextualGroundingPolicy": [
+        "filters"
+      ],
+      "GuardrailContextualGroundingFilter": [
+        "type",
+        "threshold",
+        "action",
+        "enabled"
+      ],
+      "GuardrailAutomatedReasoningPolicy": [
+        "policies",
+        "confidenceThreshold"
+      ],
+      "GuardrailCrossRegionDetails": [
+        "guardrailProfileId",
+        "guardrailProfileArn"
+      ],
+      "ListGuardrailsRequest": [
+        "guardrailIdentifier",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListGuardrailsResponse": [
+        "guardrails",
+        "nextToken"
+      ],
+      "GuardrailSummary": [
+        "id",
+        "arn",
+        "status",
+        "name",
+        "description",
+        "version",
+        "createdAt",
+        "updatedAt",
+        "crossRegionDetails"
+      ],
+      "UpdateGuardrailRequest": [
+        "guardrailIdentifier",
+        "name",
+        "description",
+        "wordPolicyConfig",
+        "blockedInputMessaging",
+        "blockedOutputsMessaging"
+      ],
+      "UpdateGuardrailResponse": [
+        "guardrailId",
+        "guardrailArn",
+        "version",
+        "updatedAt"
+      ],
+      "DeleteGuardrailRequest": [
+        "guardrailIdentifier",
+        "guardrailVersion"
+      ],
+      "DeleteGuardrailResponse": [],
+      "CreateGuardrailVersionRequest": [
+        "guardrailIdentifier",
+        "description",
+        "clientRequestToken"
+      ],
+      "CreateGuardrailVersionResponse": [
+        "guardrailId",
+        "version"
+      ],
+      "PutModelInvocationLoggingConfigurationRequest": [
+        "loggingConfig"
+      ],
+      "LoggingConfig": [
+        "cloudWatchConfig",
+        "s3Config",
+        "textDataDeliveryEnabled",
+        "imageDataDeliveryEnabled",
+        "embeddingDataDeliveryEnabled",
+        "videoDataDeliveryEnabled",
+        "audioDataDeliveryEnabled"
+      ],
+      "CloudWatchConfig": [
+        "logGroupName",
+        "roleArn",
+        "largeDataDeliveryS3Config"
+      ],
+      "S3Config": [
+        "bucketName",
+        "keyPrefix"
+      ],
+      "PutModelInvocationLoggingConfigurationResponse": [],
+      "GetModelInvocationLoggingConfigurationRequest": [],
+      "GetModelInvocationLoggingConfigurationResponse": [
+        "loggingConfig"
+      ],
+      "DeleteModelInvocationLoggingConfigurationRequest": [],
+      "DeleteModelInvocationLoggingConfigurationResponse": [],
+      "TagResourceRequest": [
+        "resourceARN",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceARN",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "resourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ]
+    }
+  },
+  "bedrockruntime": {
+    "operations": [
+      "InvokeModel",
+      "Converse",
+      "CountTokens",
+      "ApplyGuardrail"
+    ],
+    "shapes": {
+      "InvokeModelRequest": [
+        "body",
+        "contentType",
+        "accept",
+        "modelId"
+      ],
+      "InvokeModelResponse": [
+        "body",
+        "contentType",
+        "performanceConfigLatency",
+        "serviceTier"
+      ],
+      "ConverseRequest": [
+        "modelId",
+        "messages",
+        "inferenceConfig",
+        "toolConfig"
+      ],
+      "Message": [
+        "role",
+        "content"
+      ],
+      "ContentBlock": [
+        "text",
+        "toolUse"
+      ],
+      "ToolUseBlock": [
+        "toolUseId",
+        "name",
+        "input",
+        "type"
+      ],
+      "InferenceConfiguration": [
+        "maxTokens"
+      ],
+      "ToolConfiguration": [
+        "tools"
+      ],
+      "Tool": [
+        "toolSpec"
+      ],
+      "ToolSpecification": [
+        "name",
+        "description",
+        "inputSchema"
+      ],
+      "ToolInputSchema": [
+        "json"
+      ],
+      "ConverseResponse": [
+        "output",
+        "stopReason",
+        "usage",
+        "metrics",
+        "additionalModelResponseFields",
+        "trace",
+        "performanceConfig",
+        "serviceTier"
+      ],
+      "ConverseOutput": [
+        "message"
+      ],
+      "TokenUsage": [
+        "inputTokens",
+        "outputTokens",
+        "totalTokens",
+        "cacheReadInputTokens",
+        "cacheWriteInputTokens",
+        "cacheDetails"
+      ],
+      "CacheDetail": [
+        "ttl",
+        "inputTokens"
+      ],
+      "ConverseMetrics": [
+        "latencyMs"
+      ],
+      "ConverseTrace": [
+        "guardrail",
+        "promptRouter"
+      ],
+      "GuardrailTraceAssessment": [
+        "modelOutput",
+        "inputAssessment",
+        "outputAssessments",
+        "actionReason"
+      ],
+      "GuardrailAssessment": [
+        "topicPolicy",
+        "contentPolicy",
+        "wordPolicy",
+        "sensitiveInformationPolicy",
+        "contextualGroundingPolicy",
+        "automatedReasoningPolicy",
+        "invocationMetrics",
+        "appliedGuardrailDetails"
+      ],
+      "GuardrailTopicPolicyAssessment": [
+        "topics"
+      ],
+      "GuardrailTopic": [
+        "name",
+        "type",
+        "action",
+        "detected"
+      ],
+      "GuardrailContentPolicyAssessment": [
+        "filters"
+      ],
+      "GuardrailContentFilter": [
+        "type",
+        "confidence",
+        "filterStrength",
+        "action",
+        "detected"
+      ],
+      "GuardrailWordPolicyAssessment": [
+        "customWords",
+        "managedWordLists"
+      ],
+      "GuardrailCustomWord": [
+        "match",
+        "action",
+        "detected"
+      ],
+      "GuardrailManagedWord": [
+        "match",
+        "type",
+        "action",
+        "detected"
+      ],
+      "GuardrailSensitiveInformationPolicyAssessment": [
+        "piiEntities",
+        "regexes"
+      ],
+      "GuardrailPiiEntityFilter": [
+        "match",
+        "type",
+        "action",
+        "detected"
+      ],
+      "GuardrailRegexFilter": [
+        "name",
+        "match",
+        "regex",
+        "action",
+        "detected"
+      ],
+      "GuardrailContextualGroundingPolicyAssessment": [
+        "filters"
+      ],
+      "GuardrailContextualGroundingFilter": [
+        "type",
+        "threshold",
+        "score",
+        "action",
+        "detected"
+      ],
+      "GuardrailAutomatedReasoningPolicyAssessment": [
+        "findings"
+      ],
+      "GuardrailAutomatedReasoningFinding": [
+        "valid",
+        "invalid",
+        "satisfiable",
+        "impossible",
+        "translationAmbiguous",
+        "tooComplex",
+        "noTranslations"
+      ],
+      "GuardrailAutomatedReasoningValidFinding": [
+        "translation",
+        "claimsTrueScenario",
+        "supportingRules",
+        "logicWarning"
+      ],
+      "GuardrailAutomatedReasoningTranslation": [
+        "premises",
+        "claims",
+        "untranslatedPremises",
+        "untranslatedClaims",
+        "confidence"
+      ],
+      "GuardrailAutomatedReasoningStatement": [
+        "logic",
+        "naturalLanguage"
+      ],
+      "GuardrailAutomatedReasoningInputTextReference": [
+        "text"
+      ],
+      "GuardrailAutomatedReasoningScenario": [
+        "statements"
+      ],
+      "GuardrailAutomatedReasoningRule": [
+        "identifier",
+        "policyVersionArn"
+      ],
+      "GuardrailAutomatedReasoningLogicWarning": [
+        "type",
+        "premises",
+        "claims"
+      ],
+      "GuardrailAutomatedReasoningInvalidFinding": [
+        "translation",
+        "contradictingRules",
+        "logicWarning"
+      ],
+      "GuardrailAutomatedReasoningSatisfiableFinding": [
+        "translation",
+        "claimsTrueScenario",
+        "claimsFalseScenario",
+        "logicWarning"
+      ],
+      "GuardrailAutomatedReasoningImpossibleFinding": [
+        "translation",
+        "contradictingRules",
+        "logicWarning"
+      ],
+      "GuardrailAutomatedReasoningTranslationAmbiguousFinding": [
+        "options",
+        "differenceScenarios"
+      ],
+      "GuardrailAutomatedReasoningTranslationOption": [
+        "translations"
+      ],
+      "GuardrailAutomatedReasoningTooComplexFinding": [],
+      "GuardrailAutomatedReasoningNoTranslationsFinding": [],
+      "GuardrailInvocationMetrics": [
+        "guardrailProcessingLatency",
+        "usage",
+        "guardrailCoverage"
+      ],
+      "GuardrailUsage": [
+        "topicPolicyUnits",
+        "contentPolicyUnits",
+        "wordPolicyUnits",
+        "sensitiveInformationPolicyUnits",
+        "sensitiveInformationPolicyFreeUnits",
+        "contextualGroundingPolicyUnits",
+        "contentPolicyImageUnits",
+        "automatedReasoningPolicyUnits",
+        "automatedReasoningPolicies"
+      ],
+      "GuardrailCoverage": [
+        "textCharacters",
+        "images"
+      ],
+      "GuardrailTextCharactersCoverage": [
+        "guarded",
+        "total"
+      ],
+      "GuardrailImageCoverage": [
+        "guarded",
+        "total"
+      ],
+      "AppliedGuardrailDetails": [
+        "guardrailId",
+        "guardrailVersion",
+        "guardrailArn",
+        "guardrailOrigin",
+        "guardrailOwnership"
+      ],
+      "PromptRouterTrace": [
+        "invokedModelId"
+      ],
+      "PerformanceConfiguration": [
+        "latency"
+      ],
+      "ServiceTier": [
+        "type"
+      ],
+      "CountTokensRequest": [
+        "modelId",
+        "input"
+      ],
+      "CountTokensInput": [
+        "invokeModel",
+        "converse"
+      ],
+      "InvokeModelTokensRequest": [
+        "body"
+      ],
+      "ConverseTokensRequest": [
+        "messages"
+      ],
+      "CountTokensResponse": [
+        "inputTokens"
+      ],
+      "ApplyGuardrailRequest": [
+        "guardrailIdentifier",
+        "guardrailVersion",
+        "source",
+        "content"
+      ],
+      "GuardrailContentBlock": [
+        "text"
+      ],
+      "GuardrailTextBlock": [
+        "text"
+      ],
+      "ApplyGuardrailResponse": [
+        "usage",
+        "action",
+        "actionReason",
+        "outputs",
+        "assessments",
+        "guardrailCoverage"
+      ],
+      "GuardrailOutputContent": [
+        "text"
+      ]
+    }
   }
 }

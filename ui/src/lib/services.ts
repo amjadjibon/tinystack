@@ -7,6 +7,7 @@ export type ServiceInfo = {
 	icon?: string;
 };
 
+const machineLearning = "Machine Learning";
 const compute = "Compute";
 const containers = "Containers";
 const storage = "Storage";
@@ -23,6 +24,7 @@ const business = "Business Applications";
 const frontend = "Front-End Web & Mobile";
 
 export const categories = [
+	machineLearning,
 	compute,
 	containers,
 	storage,
@@ -40,6 +42,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	bedrock: { title: "Amazon Bedrock", category: machineLearning },
+	bedrockruntime: {
+		title: "Amazon Bedrock Runtime",
+		category: machineLearning,
+	},
 	databasemigrationservice: {
 		title: "AWS Database Migration Service",
 		category: migration,

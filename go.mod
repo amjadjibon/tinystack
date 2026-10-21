@@ -18,6 +18,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.78.4
 	github.com/aws/aws-sdk-go-v2/service/backup v1.69.1
 	github.com/aws/aws-sdk-go-v2/service/batch v1.78.3
+	github.com/aws/aws-sdk-go-v2/service/bedrock v1.73.4
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.63.4
 	github.com/aws/aws-sdk-go-v2/service/budgets v1.53.1
 	github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.4
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.82.1

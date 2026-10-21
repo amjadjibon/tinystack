@@ -382,6 +382,14 @@
     "emr": {
       "path": "codegen/sdk-codegen/aws-models/emr.json",
       "sha256": "b36a02dfcb9a4a1b21685491c889e6f55269aae189b29054448a38ccfda4ff81"
+    },
+    "bedrock": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock.json",
+      "sha256": "d80e65bf14e8c6d2386084d3ed88582ef1e1344afb6656dc5602950b63164eb2"
+    },
+    "bedrockruntime": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-runtime.json",
+      "sha256": "8f55e75faf50a50f75fade0282d52e16c12b4249fec9754ca6ea109ac5b1ddad"
     }
   }
 }
