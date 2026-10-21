@@ -77,6 +77,14 @@ tasks:
     cmds:
       - go test -race -count=1 -v ./...
 
+  test:testcontainers:python:
+    desc: "Test the separate Python Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
+    dir: testcontainers-python
+    cmds:
+      - python3 -m venv .venv
+      - .venv/bin/pip install -q -e '.[test]'
+      - .venv/bin/pytest -v
+
   lint:testcontainers:
     desc: "Vet and lint the separate Go Testcontainers module"
     dir: testcontainers

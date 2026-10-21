@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "testcontainers-tinystack"
+version = "0.1.0"
+description = "TinyStack container for Testcontainers Python"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "testcontainers>=4",
+]
+
+[project.optional-dependencies]
+boto3 = [
+    "boto3",
+]
+test = [
+    "boto3",
+    "pytest",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["testcontainers_tinystack"]

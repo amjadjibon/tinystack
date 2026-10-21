@@ -1,28 +1,28 @@
-# Testcontainers for Go
+# Testcontainers
 
-The separate `github.com/amjadjibon/tinystack/testcontainers` Go module starts TinyStack for integration tests.
-It uses Testcontainers Go v0.44.0 and keeps Docker dependencies out of TinyStack's root module.
-
-```sh
-go get github.com/amjadjibon/tinystack/testcontainers
-```
+TinyStack provides dedicated Testcontainers modules for both Go and Python to run TinyStack in Docker for
+integration testing while keeping Docker dependencies out of the core application.
 
 ## Build an image first
 
 The registry image `ghcr.io/amjadjibon/tinystack:latest` is **not published yet**. Build a local image from the
-repository root and pass its tag to `Run`:
+repository root:
 
 ```sh
 docker build --target headless -t tinystack:test .
 ```
 
-Once published, the registry image can be used with the same API:
+Once published, the registry image can be used with both Go and Python modules.
 
-```go
-ctr, err := tinystack.Run(ctx, "ghcr.io/amjadjibon/tinystack:latest", opts...)
+## Go module
+
+The `github.com/amjadjibon/tinystack/testcontainers` Go module uses Testcontainers Go v0.44.0.
+
+```sh
+go get github.com/amjadjibon/tinystack/testcontainers
 ```
 
-## Use the AWS SDK
+### Use the AWS SDK
 
 ```go
 import (
@@ -72,7 +72,7 @@ The health response contains `status`, `services`, and `storage`. Container star
 bind the AWS listener to loopback. The optional console is not exposed by default; add
 `testcontainers.WithExposedPorts("4567/tcp")` and use `ctr.PortEndpoint(ctx, "4567/tcp", "http")` if needed.
 
-## Options and reset
+### Options and reset
 
 `Run(ctx, image, opts ...testcontainers.ContainerCustomizer)` accepts ordinary Testcontainers options, such as
 `WithEnv`, `WithDockerfile`, and network customizers, after its defaults.
@@ -103,7 +103,7 @@ For script status, failure behavior, and reset limitations, see [init hooks and 
 Use the embedded `ctr.Container` with `testcontainers.CleanupContainer` or `testcontainers.TerminateContainer`;
 the module's `Endpoint(ctx)` method has a different signature from the base Testcontainers interface.
 
-## Run this repository's suite
+### Run the Go test suite
 
 ```sh
 task test:testcontainers
@@ -111,13 +111,58 @@ task lint:testcontainers
 ```
 
 The tests build the repository's Dockerfile locally with `docker build` and the `headless` target, then pass the
-image to Testcontainers. The Docker CLI supplies the BuildKit session needed by the Dockerfile's cache mounts;
-use the same daemon for the CLI and Testcontainers. They load YAML configuration, check that a ready script ran,
-create an S3 bucket and SQS queue, then verify reset removes both. To use an existing image instead of building:
+image to Testcontainers. To use an existing image instead of building:
 
 ```sh
 TINYSTACK_IMAGE=tinystack:test task test:testcontainers
 ```
 
 `TINYSTACK_IMAGE` is a test-suite override; production callers always pass their image tag to `Run`.
-Tests skip cleanly when Docker is unavailable. Run them with a working Docker daemon in CI to exercise the container.
+Tests skip cleanly when Docker is unavailable.
+
+## Python module
+
+The `testcontainers-tinystack` package provides a `TinyStackContainer` class extending `testcontainers.core.container.DockerContainer`.
+
+### Installation
+
+```sh
+pip install testcontainers-tinystack
+```
+
+With optional `boto3` support:
+
+```sh
+pip install 'testcontainers-tinystack[boto3]'
+```
+
+### Use with boto3
+
+```python
+from testcontainers_tinystack import TinyStackContainer
+
+with TinyStackContainer("tinystack:test") as tinystack:
+    # Obtain a boto3 client preconfigured with container endpoint and dummy credentials
+    s3 = tinystack.get_client("s3")
+    s3.create_bucket(Bucket="uploads")
+
+    # Clear state between test cases
+    tinystack.reset()
+```
+
+### Configuration and features
+
+- **Image resolution:** Pass the image tag to `TinyStackContainer("tinystack:test")` or set the `TINYSTACK_IMAGE` environment variable. If neither is specified, `TinyStackContainer` raises a `ValueError`.
+- **Command & ports:** Exposes port `4566` and starts with `start --host 0.0.0.0 --port 4566`.
+- **Health check:** Uses `HttpWaitStrategy` to poll `GET /_tinystack/health` until HTTP 200 is returned, with a 120-second timeout.
+- **`get_endpoint_url()`:** Returns `http://<host>:<mapped_port>`.
+- **`get_client(service_name, region_name="us-east-1", **kwargs)`:** Returns a `boto3` client configured with `endpoint_url`, `region_name`, and dummy AWS credentials (`test`/`test`).
+- **`reset(init=False)`:** Sends a `POST` request to `/_tinystack/reset` with a 60-second timeout, resetting all state. Pass `init=True` (`POST /_tinystack/reset?init=1`) to re-execute ready-stage init scripts. Non-2xx responses raise a `RuntimeError`.
+
+### Run the Python test suite
+
+```sh
+task test:testcontainers:python
+```
+
+Tests run against Docker, building or reusing the headless image. Tests skip cleanly when Docker is unavailable.

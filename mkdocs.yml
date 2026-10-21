@@ -89,7 +89,7 @@ nav:
       - Fault injection: guides/fault-injection.md
       - Cost fixtures and queries: guides/costs.md
       - Predictable Bedrock inference: guides/bedrock.md
-      - Testcontainers for Go: guides/testcontainers.md
+      - Testcontainers: guides/testcontainers.md
       - Persistence and restart: guides/persistence.md
       - State fixtures: guides/state-fixtures.md
       - EFS records: guides/efs-records.md

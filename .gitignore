@@ -30,6 +30,12 @@ go.work
 /.venv-docs/
 **/__pycache__/
 
+# Python environments and packaging
+.venv/
+*.egg-info/
+dist/
+.pytest_cache/
+
 # Task
 .task/
 
