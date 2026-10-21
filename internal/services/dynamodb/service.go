@@ -17,6 +17,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -30,6 +31,9 @@ type Service struct {
 	logger *slog.Logger
 	// caller writes exports to S3; see UseCaller.
 	caller *catalog.Caller
+	// kinesis receives the changes of tables with Kinesis destinations; see
+	// UseKinesis.
+	kinesis *kinesis.Service
 	// bg runs the TTL sweeper until Stop.
 	bg *background.Group
 }
@@ -53,6 +57,8 @@ type table struct {
 	Tags        map[string]string `json:",omitempty"`
 	// TTL is the attribute that holds item expiry times while TTL is enabled.
 	TTL string `json:",omitempty"`
+	// Destinations are the table's Kinesis streaming destinations.
+	Destinations []destination `json:",omitempty"`
 	// Sequence is the sequence number of the table's last stream record.
 	Sequence int64 `json:",omitempty"`
 	// PITR is when point-in-time recovery was enabled, in Unix seconds, or

@@ -5033,7 +5033,11 @@
       "ListExports",
       "ExecuteStatement",
       "BatchExecuteStatement",
-      "ExecuteTransaction"
+      "ExecuteTransaction",
+      "EnableKinesisStreamingDestination",
+      "DisableKinesisStreamingDestination",
+      "DescribeKinesisStreamingDestination",
+      "UpdateKinesisStreamingDestination"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -5590,6 +5594,47 @@
         "Statement",
         "Parameters",
         "ReturnValuesOnConditionCheckFailure"
+      ],
+      "KinesisStreamingDestinationInput": [
+        "TableName",
+        "StreamArn",
+        "EnableKinesisStreamingConfiguration"
+      ],
+      "KinesisStreamingDestinationOutput": [
+        "TableName",
+        "StreamArn",
+        "DestinationStatus",
+        "EnableKinesisStreamingConfiguration"
+      ],
+      "EnableKinesisStreamingConfiguration": [
+        "ApproximateCreationDateTimePrecision"
+      ],
+      "DescribeKinesisStreamingDestinationInput": [
+        "TableName"
+      ],
+      "DescribeKinesisStreamingDestinationOutput": [
+        "TableName",
+        "KinesisDataStreamDestinations"
+      ],
+      "KinesisDataStreamDestination": [
+        "StreamArn",
+        "DestinationStatus",
+        "DestinationStatusDescription",
+        "ApproximateCreationDateTimePrecision"
+      ],
+      "UpdateKinesisStreamingDestinationInput": [
+        "TableName",
+        "StreamArn",
+        "UpdateKinesisStreamingConfiguration"
+      ],
+      "UpdateKinesisStreamingDestinationOutput": [
+        "TableName",
+        "StreamArn",
+        "DestinationStatus",
+        "UpdateKinesisStreamingConfiguration"
+      ],
+      "UpdateKinesisStreamingConfiguration": [
+        "ApproximateCreationDateTimePrecision"
       ]
     }
   },

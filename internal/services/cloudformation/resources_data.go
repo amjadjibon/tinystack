@@ -71,6 +71,7 @@ func init() {
 			"GlobalSecondaryIndexes",
 			"LocalSecondaryIndexes",
 			"StreamSpecification",
+			propertyKinesisSpecification,
 			"TimeToLiveSpecification",
 			memberTags,
 		},
@@ -256,6 +257,10 @@ func createTable(ctx context.Context, c *client, p props) (physical string, attr
 		return "", nil, err
 	}
 
+	if streamErr := kinesisStream(ctx, c, name, props{}, p); streamErr != nil {
+		return "", nil, streamErr
+	}
+
 	return name, map[string]any{
 		memberArn:       outText(out, "TableDescription", "TableArn"),
 		memberStreamArn: outText(out, "TableDescription", "LatestStreamArn"),
@@ -301,10 +306,60 @@ func updateTable(ctx context.Context, c *client, r *resource, p props) (map[stri
 		return nil, err
 	}
 
+	if err := kinesisStream(ctx, c, r.Physical, old, p); err != nil {
+		return nil, err
+	}
+
 	return attributes, retag(ctx, c, old, p, &tagger{
 		target:  map[string]any{memberResourceArn: outText(attributes, memberArn)},
 		service: "dynamodb", tag: opTagResource, untag: opUntagResource, key: memberKey, value: memberValue,
 	})
+}
+
+// kinesisStream applies a table's KinesisStreamSpecification when it changes:
+// it stops streaming to the stream the table left, then streams to the new
+// one, or only changes the precision when the stream is the same.
+func kinesisStream(ctx context.Context, c *client, name string, old, p props) error {
+	if !p.changed(old, propertyKinesisSpecification) {
+		return nil
+	}
+
+	previous, _ := old[propertyKinesisSpecification].(map[string]any)
+	spec, _ := p[propertyKinesisSpecification].(map[string]any)
+	same := previous != nil && spec != nil && previous[memberStreamArn] == spec[memberStreamArn]
+	if previous != nil && !same {
+		_, err := c.call(ctx, "dynamodb", "DisableKinesisStreamingDestination", map[string]any{
+			memberTableName: name, memberStreamArn: previous[memberStreamArn],
+		})
+		if err != nil && !gone(err, "ResourceNotFoundException", "ResourceInUseException") {
+			return err
+		}
+	}
+
+	if spec == nil {
+		return nil
+	}
+
+	params := map[string]any{memberTableName: name, memberStreamArn: spec[memberStreamArn]}
+	configuration := map[string]any{}
+	if precision, ok := spec[propertyPrecision]; ok {
+		configuration[propertyPrecision] = precision
+	}
+
+	if same {
+		// Updating requires a precision; omitting it means the default.
+		if _, ok := configuration[propertyPrecision]; !ok {
+			configuration[propertyPrecision] = "MILLISECOND"
+		}
+
+		params["UpdateKinesisStreamingConfiguration"] = configuration
+		_, err := c.call(ctx, "dynamodb", "UpdateKinesisStreamingDestination", params)
+		return err
+	}
+
+	params["EnableKinesisStreamingConfiguration"] = configuration
+	_, err := c.call(ctx, "dynamodb", "EnableKinesisStreamingDestination", params)
+	return err
 }
 
 // timeToLive applies a table's TimeToLiveSpecification when it changes.

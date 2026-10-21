@@ -172,7 +172,8 @@ func (s *Service) expire(ctx context.Context, key string, now time.Time) error {
 		return err
 	}
 
-	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+	var puts outbox
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil || t.TTL == "" {
 			return loadErr
@@ -188,11 +189,17 @@ func (s *Service) expire(ctx context.Context, key string, now time.Time) error {
 				continue
 			}
 
-			if writeErr := writeItemBy(tx, key, t, record, old, nil, ttlIdentity); writeErr != nil {
+			if writeErr := writeItemBy(tx, key, t, record, old, nil, ttlIdentity, &puts); writeErr != nil {
 				return writeErr
 			}
 		}
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	s.deliver(ctx, &puts)
+	return nil
 }

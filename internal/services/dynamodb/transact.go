@@ -235,6 +235,7 @@ func (s *Service) TransactWriteItems(
 	digest := sha256.Sum256(encoded)
 	m, _ := request.FromContext(ctx)
 	tokens := m.AccountID + "/" + m.Region + "/dynamodb-token/"
+	var puts outbox
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		now := time.Now()
 		if in.ClientRequestToken != nil {
@@ -244,12 +245,13 @@ func (s *Service) TransactWriteItems(
 			}
 		}
 
-		return transact(tx, writes)
+		return transact(tx, writes, &puts)
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	s.deliver(ctx, &puts)
 	return &api.TransactWriteItemsOutput{}, nil
 }
 
@@ -294,8 +296,8 @@ func claimToken(tx storage.WriteTx, prefix, token, digest string, now time.Time)
 
 // transact checks every write against the items as they are before the
 // transaction, then applies them all, or returns TransactionCanceledException
-// with a reason for each write.
-func transact(tx storage.WriteTx, writes []*transactWrite) error {
+// with a reason for each write. The changes are queued in out.
+func transact(tx storage.WriteTx, writes []*transactWrite, out *outbox) error {
 	type staged struct {
 		t      *table
 		old    item
@@ -376,7 +378,7 @@ func transact(tx storage.WriteTx, writes []*transactWrite) error {
 			continue
 		}
 
-		if err := writeItem(tx, w.req.key, st.t, st.record, st.old, st.next); err != nil {
+		if err := writeItem(tx, w.req.key, st.t, st.record, st.old, st.next, out); err != nil {
 			return err
 		}
 	}

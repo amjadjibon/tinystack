@@ -301,9 +301,9 @@ func appendRecord(tx storage.WriteTx, key string, t *table, old, it item, by *st
 	return saveStream(tx, scope, st)
 }
 
-// newRecord builds the stream record, without its sequence number, of the
-// change from old to it in the table's stream view.
-func newRecord(scope request.Scope, t *table, old, it item, now time.Time) (*streamsapi.Record, error) {
+// changeOf returns the event name of the change from old to it (either nil)
+// and the key attributes of the item it changes.
+func changeOf(t *table, old, it item) (event string, keys item) {
 	event, current := eventModify, it
 	switch {
 	case old == nil:
@@ -312,11 +312,18 @@ func newRecord(scope request.Scope, t *table, old, it item, now time.Time) (*str
 		event, current = eventRemove, old
 	}
 
-	keys := item{}
+	keys = item{}
 	for _, k := range t.Description.KeySchema {
 		keys[common.Value(k.AttributeName)] = current[common.Value(k.AttributeName)]
 	}
 
+	return event, keys
+}
+
+// newRecord builds the stream record, without its sequence number, of the
+// change from old to it in the table's stream view.
+func newRecord(scope request.Scope, t *table, old, it item, now time.Time) (*streamsapi.Record, error) {
+	event, keys := changeOf(t, old, it)
 	viewType := common.Value(t.Description.StreamSpecification.StreamViewType)
 	images := []item{keys}
 	var newImage, oldImage item

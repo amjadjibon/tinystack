@@ -385,7 +385,7 @@ func TestProtocolErrors(t *testing.T) {
 		body    string
 		code    string
 	}{
-		{name: "unknown operation", op: "EnableKinesisStreamingDestination", body: `{}`, code: "UnknownOperationException"},
+		{name: "unknown operation", op: "CreateGlobalTable", body: `{}`, code: "UnknownOperationException"},
 		{name: "null input", op: "ListTables", body: `null`, code: "SerializationException"},
 		{name: "trailing input", op: "ListTables", body: `{} {}`, code: "SerializationException"},
 		{name: "malformed JSON", op: "ListTables", body: `{`, code: "ValidationException"},

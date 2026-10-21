@@ -297,6 +297,7 @@ func build(
 	a.onReset(queues.Reset)
 	streams := kinesis.New(store)
 	functions.UseKinesis(streams)
+	tables.UseKinesis(streams)
 	topics := sns.New(store, queues, functions, deliveries)
 	// Stop ends HTTP deliveries in flight.
 	a.onStop(topics.Stop)

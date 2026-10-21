@@ -47,9 +47,10 @@ func loadItem(tx storage.ReadTx, record string) (it item, found bool, err error)
 
 // writeItem stores it as record in place of old (either may be nil), keeps
 // the table's item count and size current, and writes the change to the
-// table's stream.
-func writeItem(tx storage.WriteTx, key string, t *table, record string, old, it item) error {
-	return writeItemBy(tx, key, t, record, old, it, nil)
+// table's stream. The change is also queued in out for the table's Kinesis
+// destinations, which the caller delivers after the transaction commits.
+func writeItem(tx storage.WriteTx, key string, t *table, record string, old, it item, out *outbox) error {
+	return writeItemBy(tx, key, t, record, old, it, nil, out)
 }
 
 // writeItemBy is writeItem for a change a service made, such as a TTL
@@ -61,6 +62,7 @@ func writeItemBy(
 	record string,
 	old, it item,
 	by *streamsapi.Identity,
+	out *outbox,
 ) error {
 	oldSize, err := itemSize(old)
 	if err != nil {
@@ -92,6 +94,10 @@ func writeItemBy(
 	t.Description.ItemCount = &count
 	t.Description.TableSizeBytes = new(common.Value(t.Description.TableSizeBytes) - oldSize + newSize)
 	if guardErr := appendRecord(tx, key, t, old, it, by); guardErr != nil {
+		return guardErr
+	}
+
+	if guardErr := out.add(key, record, t, old, it, by); guardErr != nil {
 		return guardErr
 	}
 
@@ -246,6 +252,7 @@ func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutIt
 	}
 
 	out := &api.PutItemOutput{}
+	var puts outbox
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
@@ -269,8 +276,12 @@ func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutIt
 			out.Attributes = old
 		}
 
-		return writeItem(tx, req.key, t, record, old, in.Item)
+		return writeItem(tx, req.key, t, record, old, in.Item, &puts)
 	})
+	if err == nil {
+		s.deliver(ctx, &puts)
+	}
+
 	return out, err
 }
 
@@ -330,6 +341,7 @@ func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api
 	}
 
 	out := &api.DeleteItemOutput{}
+	var puts outbox
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
@@ -353,8 +365,12 @@ func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api
 			out.Attributes = old
 		}
 
-		return writeItem(tx, req.key, t, record, old, nil)
+		return writeItem(tx, req.key, t, record, old, nil, &puts)
 	})
+	if err == nil {
+		s.deliver(ctx, &puts)
+	}
+
 	return out, err
 }
 
@@ -382,6 +398,7 @@ func (s *Service) UpdateItem(ctx context.Context, in *api.UpdateItemInput) (*api
 	}
 
 	out := &api.UpdateItemOutput{}
+	var puts outbox
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
@@ -417,8 +434,12 @@ func (s *Service) UpdateItem(ctx context.Context, in *api.UpdateItemInput) (*api
 			out.Attributes = projection(upd.paths()).apply(next)
 		}
 
-		return writeItem(tx, req.key, t, record, old, next)
+		return writeItem(tx, req.key, t, record, old, next, &puts)
 	})
+	if err == nil {
+		s.deliver(ctx, &puts)
+	}
+
 	return out, err
 }
 

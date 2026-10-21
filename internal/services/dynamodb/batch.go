@@ -170,6 +170,7 @@ func (s *Service) BatchWriteItem(
 		return nil, awserror.Validation("Too many items requested for the BatchWriteItem call")
 	}
 
+	var puts outbox
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, name := range names {
 			key := keys[name]
@@ -208,7 +209,7 @@ func (s *Service) BatchWriteItem(
 					continue
 				}
 
-				if guardErr := writeItem(tx, key, t, record, old, next); guardErr != nil {
+				if guardErr := writeItem(tx, key, t, record, old, next, &puts); guardErr != nil {
 					return guardErr
 				}
 			}
@@ -220,5 +221,6 @@ func (s *Service) BatchWriteItem(
 		return nil, err
 	}
 
+	s.deliver(ctx, &puts)
 	return &api.BatchWriteItemOutput{UnprocessedItems: map[string][]api.WriteRequest{}}, nil
 }

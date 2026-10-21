@@ -177,6 +177,8 @@ const (
 	propertyAuthorizationType         = "AuthorizationType"
 	propertyBatchSize                 = "BatchSize"
 	propertyBillingMode               = "BillingMode"
+	propertyKinesisSpecification      = "KinesisStreamSpecification"
+	propertyPrecision                 = "ApproximateCreationDateTimePrecision"
 	propertyBinaryMediaTypes          = "BinaryMediaTypes"
 	propertyDefinitionSubstitutions   = "DefinitionSubstitutions"
 	propertyEndpoint                  = "Endpoint"

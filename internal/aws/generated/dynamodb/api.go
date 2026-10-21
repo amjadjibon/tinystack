@@ -729,6 +729,56 @@ type ExecuteTransactionOutput struct {
 	Responses []ItemResponse `json:"Responses,omitempty"`
 }
 
+type EnableKinesisStreamingConfiguration struct {
+	ApproximateCreationDateTimePrecision *string `json:"ApproximateCreationDateTimePrecision,omitempty"`
+}
+
+type KinesisStreamingDestinationInput struct {
+	TableName                           *string                              `json:"TableName,omitempty"`
+	StreamArn                           *string                              `json:"StreamArn,omitempty"`
+	EnableKinesisStreamingConfiguration *EnableKinesisStreamingConfiguration `json:"EnableKinesisStreamingConfiguration,omitempty"`
+}
+
+type KinesisStreamingDestinationOutput struct {
+	TableName                           *string                              `json:"TableName,omitempty"`
+	StreamArn                           *string                              `json:"StreamArn,omitempty"`
+	DestinationStatus                   *string                              `json:"DestinationStatus,omitempty"`
+	EnableKinesisStreamingConfiguration *EnableKinesisStreamingConfiguration `json:"EnableKinesisStreamingConfiguration,omitempty"`
+}
+
+type DescribeKinesisStreamingDestinationInput struct {
+	TableName *string `json:"TableName,omitempty"`
+}
+
+type KinesisDataStreamDestination struct {
+	StreamArn                            *string `json:"StreamArn,omitempty"`
+	DestinationStatus                    *string `json:"DestinationStatus,omitempty"`
+	DestinationStatusDescription         *string `json:"DestinationStatusDescription,omitempty"`
+	ApproximateCreationDateTimePrecision *string `json:"ApproximateCreationDateTimePrecision,omitempty"`
+}
+
+type DescribeKinesisStreamingDestinationOutput struct {
+	TableName                     *string                        `json:"TableName,omitempty"`
+	KinesisDataStreamDestinations []KinesisDataStreamDestination `json:"KinesisDataStreamDestinations,omitempty"`
+}
+
+type UpdateKinesisStreamingConfiguration struct {
+	ApproximateCreationDateTimePrecision *string `json:"ApproximateCreationDateTimePrecision,omitempty"`
+}
+
+type UpdateKinesisStreamingDestinationInput struct {
+	TableName                           *string                              `json:"TableName,omitempty"`
+	StreamArn                           *string                              `json:"StreamArn,omitempty"`
+	UpdateKinesisStreamingConfiguration *UpdateKinesisStreamingConfiguration `json:"UpdateKinesisStreamingConfiguration,omitempty"`
+}
+
+type UpdateKinesisStreamingDestinationOutput struct {
+	TableName                           *string                              `json:"TableName,omitempty"`
+	StreamArn                           *string                              `json:"StreamArn,omitempty"`
+	DestinationStatus                   *string                              `json:"DestinationStatus,omitempty"`
+	UpdateKinesisStreamingConfiguration *UpdateKinesisStreamingConfiguration `json:"UpdateKinesisStreamingConfiguration,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -764,6 +814,10 @@ type API interface {
 	ExecuteStatement(context.Context, *ExecuteStatementInput) (*ExecuteStatementOutput, error)
 	BatchExecuteStatement(context.Context, *BatchExecuteStatementInput) (*BatchExecuteStatementOutput, error)
 	ExecuteTransaction(context.Context, *ExecuteTransactionInput) (*ExecuteTransactionOutput, error)
+	EnableKinesisStreamingDestination(context.Context, *KinesisStreamingDestinationInput) (*KinesisStreamingDestinationOutput, error)
+	DisableKinesisStreamingDestination(context.Context, *KinesisStreamingDestinationInput) (*KinesisStreamingDestinationOutput, error)
+	DescribeKinesisStreamingDestination(context.Context, *DescribeKinesisStreamingDestinationInput) (*DescribeKinesisStreamingDestinationOutput, error)
+	UpdateKinesisStreamingDestination(context.Context, *UpdateKinesisStreamingDestinationInput) (*UpdateKinesisStreamingDestinationOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -861,6 +915,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ExecuteTransaction": {Name: "ExecuteTransaction", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:ExecuteTransaction", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ExecuteTransaction", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ExecuteTransactionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ExecuteTransaction(ctx, input.(*ExecuteTransactionInput))
+		}},
+		"EnableKinesisStreamingDestination": {Name: "EnableKinesisStreamingDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:EnableKinesisStreamingDestination", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.EnableKinesisStreamingDestination", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &KinesisStreamingDestinationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.EnableKinesisStreamingDestination(ctx, input.(*KinesisStreamingDestinationInput))
+		}},
+		"DisableKinesisStreamingDestination": {Name: "DisableKinesisStreamingDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:DisableKinesisStreamingDestination", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DisableKinesisStreamingDestination", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &KinesisStreamingDestinationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisableKinesisStreamingDestination(ctx, input.(*KinesisStreamingDestinationInput))
+		}},
+		"DescribeKinesisStreamingDestination": {Name: "DescribeKinesisStreamingDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:DescribeKinesisStreamingDestination", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeKinesisStreamingDestination", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeKinesisStreamingDestinationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeKinesisStreamingDestination(ctx, input.(*DescribeKinesisStreamingDestinationInput))
+		}},
+		"UpdateKinesisStreamingDestination": {Name: "UpdateKinesisStreamingDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:UpdateKinesisStreamingDestination", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UpdateKinesisStreamingDestination", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateKinesisStreamingDestinationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateKinesisStreamingDestination(ctx, input.(*UpdateKinesisStreamingDestinationInput))
 		}},
 	}}
 }
