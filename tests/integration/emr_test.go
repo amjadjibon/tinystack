@@ -1110,4 +1110,18 @@ func TestEMRScalingAndBlockPublicAccess(t *testing.T) {
 	if foundGroup == nil || foundGroup.AutoScalingPolicy != nil {
 		t.Fatalf("expected nil auto scaling policy after remove, got %v", foundGroup)
 	}
+
+	// A terminated cluster's scaling policies cannot change.
+	if _, err = c.TerminateJobFlows(ctx, &sdk.TerminateJobFlowsInput{JobFlowIds: []string{*clusterId}}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.PutManagedScalingPolicy(ctx, &sdk.PutManagedScalingPolicyInput{
+		ClusterId: clusterId,
+		ManagedScalingPolicy: &types.ManagedScalingPolicy{ComputeLimits: &types.ComputeLimits{
+			UnitType: types.ComputeLimitsUnitTypeInstances, MinimumCapacityUnits: aws.Int32(1),
+			MaximumCapacityUnits: aws.Int32(2),
+		}},
+	})
+	wantEMRError(t, err, "ValidationException")
 }

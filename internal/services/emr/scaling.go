@@ -87,6 +87,10 @@ func (s *Service) PutAutoScalingPolicy(
 
 	var arn *string
 	r, err := s.change(ctx, in.ClusterId, func(r *record) error {
+		if err := mutable(r); err != nil {
+			return err
+		}
+
 		if len(r.Fleets) > 0 ||
 			(r.Cluster.InstanceCollectionType != nil && *r.Cluster.InstanceCollectionType == "INSTANCE_FLEET") {
 			return invalid("Auto scaling policies are not supported with instance fleets.")
@@ -122,6 +126,10 @@ func (s *Service) RemoveAutoScalingPolicy(
 	in *api.RemoveAutoScalingPolicyInput,
 ) (*api.RemoveAutoScalingPolicyOutput, error) {
 	_, err := s.change(ctx, in.ClusterId, func(r *record) error {
+		if err := mutable(r); err != nil {
+			return err
+		}
+
 		if len(r.Fleets) > 0 ||
 			(r.Cluster.InstanceCollectionType != nil && *r.Cluster.InstanceCollectionType == "INSTANCE_FLEET") {
 			return invalid("Auto scaling policies are not supported with instance fleets.")
@@ -191,6 +199,10 @@ func (s *Service) PutManagedScalingPolicy(
 	}
 
 	_, err := s.change(ctx, in.ClusterId, func(r *record) error {
+		if err := mutable(r); err != nil {
+			return err
+		}
+
 		r.ManagedScalingPolicy = in.ManagedScalingPolicy
 		return nil
 	})
