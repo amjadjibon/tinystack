@@ -49,6 +49,7 @@ var retryableCodes = map[string]bool{
 	"TooManyRequestsException": true,
 	"InternalError":            true,
 	"InternalFailure":          true,
+	codeRetryable:              true,
 }
 
 // pending is a delivery that failed: the target as it was then, the rendered

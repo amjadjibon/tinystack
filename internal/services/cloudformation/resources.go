@@ -70,6 +70,7 @@ const (
 	memberKeyID                       = "KeyId"
 	memberAliasName                   = "AliasName"
 	memberSecretID                    = "SecretId"
+	memberSecretArn                   = "SecretArn"
 	memberPolicyName                  = "PolicyName"
 	memberTags                        = "Tags"
 	memberTableName                   = "TableName"

@@ -3,6 +3,7 @@ package eventbridge
 import (
 	"context"
 	"encoding/json"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -15,8 +16,8 @@ import (
 )
 
 // targetService returns the service of a target ARN in the caller's account
-// and region. TinyStack delivers only to SQS queues, SNS topics, and Lambda
-// functions there.
+// and region. TinyStack delivers only to SQS queues, SNS topics, Lambda
+// functions, and API destinations there.
 func targetService(scope request.Scope, arn string) (string, error) {
 	parts := strings.SplitN(arn, ":", 6)
 	if len(parts) != 6 || parts[0] != "arn" || parts[1] == "" || parts[5] == "" || !accountID.MatchString(parts[4]) {
@@ -25,6 +26,11 @@ func targetService(scope request.Scope, arn string) (string, error) {
 
 	switch parts[2] {
 	case serviceSQS, serviceSNS, serviceLambda:
+	case serviceEvents:
+		if !strings.HasPrefix(parts[5], "api-destination/") {
+			return "", invalid("TinyStack delivers events targets only to API destinations.")
+		}
+
 	default:
 		return "", invalid("TinyStack does not support %s targets.", parts[2])
 	}
@@ -97,6 +103,16 @@ func newTarget(scope request.Scope, in *api.Target) (target, error) {
 		t.MessageGroupID = common.Value(in.SqsParameters.MessageGroupId)
 		if len(t.MessageGroupID) > 100 {
 			return t, invalid("MessageGroupId must be at most 100 characters.")
+		}
+	}
+
+	if in.HttpParameters != nil {
+		if service != serviceEvents {
+			return t, invalid("HttpParameters apply only to API destination targets.")
+		}
+
+		if t.HTTP, err = newHTTPTarget(in.HttpParameters); err != nil {
+			return t, err
 		}
 	}
 
@@ -208,6 +224,12 @@ func (t *target) describe() api.Target {
 		out.SqsParameters = &api.SqsParameters{MessageGroupId: new(t.MessageGroupID)}
 	}
 
+	if t.HTTP != nil {
+		out.HttpParameters = &api.HttpParameters{
+			PathParameterValues: t.HTTP.Paths, HeaderParameters: t.HTTP.Headers, QueryStringParameters: t.HTTP.Query,
+		}
+	}
+
 	if t.Transformer != nil {
 		out.InputTransformer = &api.InputTransformer{
 			InputPathsMap: t.Transformer.Paths,
@@ -258,4 +280,56 @@ func (s *Service) ListTargetsByRule(
 	}
 
 	return out, nil
+}
+
+// httpTarget is the HttpParameters of an API destination target: the values of the endpoint's "*" wildcards in
+// order, and the headers and query string parameters to add.
+type httpTarget struct {
+	Headers map[string]string `json:",omitempty"`
+	Query   map[string]string `json:",omitempty"`
+	Paths   []string          `json:",omitempty"`
+}
+
+// headerName is a valid HTTP header name.
+var headerName = regexp.MustCompile("^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+$")
+
+func newHTTPTarget(in *api.HttpParameters) (*httpTarget, error) {
+	t := &httpTarget{Headers: in.HeaderParameters, Query: in.QueryStringParameters, Paths: in.PathParameterValues}
+	for k, v := range t.Headers {
+		if !headerName.MatchString(k) {
+			return nil, invalid("HeaderParameters key %s is not a valid HTTP header name.", k)
+		}
+
+		if err := checkParameter("HeaderParameters", k, v); err != nil {
+			return nil, err
+		}
+	}
+
+	for k, v := range t.Query {
+		if err := checkParameter("QueryStringParameters", k, v); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, v := range t.Paths {
+		if err := checkParameter("PathParameterValues", v, v); err != nil {
+			return nil, err
+		}
+	}
+
+	return t, nil
+}
+
+// checkParameter checks a value of HttpParameters. AWS fills a value that is a JSONPath, such as $.detail.id,
+// from the event; TinyStack sends values as given, so it refuses them.
+func checkParameter(what, key, value string) error {
+	if err := checkText(what+" "+key, value, maxAuthText); err != nil {
+		return err
+	}
+
+	if strings.HasPrefix(value, "$") {
+		return invalid("TinyStack does not support JSONPath values in %s: %s.", what, value)
+	}
+
+	return nil
 }

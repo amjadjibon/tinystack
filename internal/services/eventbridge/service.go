@@ -1,7 +1,8 @@
 // Package eventbridge implements event buses with their rules and targets,
-// without HTTP dependencies. PutEvents matches events against the rule
-// patterns of their bus and delivers them to SQS, SNS, and Lambda targets
-// in-process; the scheduler fires scheduled rules (schedule.go).
+// without HTTP dependencies on the API side. PutEvents matches events against
+// the rule patterns of their bus and delivers them to SQS, SNS, and Lambda
+// targets in-process, and to API destinations over HTTP (invoke.go); the
+// scheduler fires scheduled rules (schedule.go).
 //
 // Each rule, with its targets, is one record under
 // "<account>/<region>/eventbridge/rule/<name>" on the default bus, which every
@@ -15,6 +16,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"log/slog"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -43,6 +45,8 @@ const (
 	serviceSQS    = "sqs"
 	serviceSNS    = "sns"
 	serviceLambda = "lambda"
+	// serviceEvents is the service of an API destination's ARN, the only events target TinyStack delivers to.
+	serviceEvents = "events"
 )
 
 var _ api.API = (*Service)(nil)
@@ -60,6 +64,9 @@ type Service struct {
 	authorizer catalog.ServiceAuthorizer
 	// bg runs the scheduler until Stop.
 	bg *background.Group
+	// client makes the requests to API destinations, and tokens keeps the access tokens of OAuth connections.
+	client *http.Client
+	tokens tokenCache
 }
 
 // New returns an EventBridge service and starts its scheduler, which runs
@@ -80,6 +87,7 @@ func New(
 		logger:     slog.Default(),
 		now:        time.Now,
 		bg:         background.New(),
+		client:     newClient(),
 	}
 	s.bg.Every(scheduleInterval, s.scheduler)
 	return s
@@ -97,8 +105,10 @@ func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 type target struct {
 	Transformer *transformer `json:",omitempty"`
 	// MaxRetries and MaxAge are the RetryPolicy members that were set.
-	MaxRetries     *int64 `json:",omitempty"`
-	MaxAge         *int64 `json:",omitempty"`
+	MaxRetries *int64 `json:",omitempty"`
+	MaxAge     *int64 `json:",omitempty"`
+	// HTTP is the HttpParameters of an API destination target.
+	HTTP           *httpTarget `json:",omitempty"`
 	ID             string
 	ARN            string
 	RoleARN        string `json:",omitempty"`

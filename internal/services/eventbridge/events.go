@@ -348,8 +348,13 @@ func (s *Service) authorizeRole(ctx context.Context, rule string, t *target, pay
 }
 
 // send makes one delivery of payload to a target of rule. A target with a role is delivered to as that role;
-// otherwise the target's resource policy must allow the rule.
+// otherwise the target's resource policy must allow the rule. An API destination is not authorized: its target's
+// role is stored and not assumed.
 func (s *Service) send(ctx context.Context, rule string, t *target, eventID string, payload []byte) error {
+	if strings.SplitN(t.ARN, ":", 4)[2] == serviceEvents {
+		return s.invoke(ctx, t, payload)
+	}
+
 	var authorized error
 	if t.RoleARN == "" {
 		authorized = s.authorize(ctx, rule, t.ARN)

@@ -10,7 +10,7 @@ import (
 )
 
 // Resources lists every custom event bus, every rule with its targets, and
-// every archive and replay, for the resource browser.
+// every archive, replay, connection, and API destination, for the resource browser.
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	var out []catalog.Resource
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -61,6 +61,32 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				out = append(out, catalog.Resource{
 					Type: "replay", Account: account, Region: region, Name: name, ARN: replayARN(scope, name),
 					Details: r.list(scope),
+				})
+				continue
+			}
+
+			if name, isConnection := strings.CutPrefix(rest, "connection/"); isConnection {
+				c, _, err := storage.Read[connection](tx, key)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: "connection", Account: account, Region: region, Name: name, ARN: c.arn(scope),
+					Details: c.list(scope),
+				})
+				continue
+			}
+
+			if name, isDestination := strings.CutPrefix(rest, "destination/"); isDestination {
+				d, _, err := storage.Read[destination](tx, key)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: "api-destination", Account: account, Region: region, Name: name, ARN: d.arn(scope),
+					Details: d.list(scope),
 				})
 				continue
 			}

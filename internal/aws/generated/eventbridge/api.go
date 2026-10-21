@@ -130,6 +130,12 @@ type RetryPolicy struct {
 	MaximumEventAgeInSeconds *int64 `json:"MaximumEventAgeInSeconds,omitempty"`
 }
 
+type HttpParameters struct {
+	HeaderParameters      map[string]string `json:"HeaderParameters,omitempty"`
+	PathParameterValues   []string          `json:"PathParameterValues,omitempty"`
+	QueryStringParameters map[string]string `json:"QueryStringParameters,omitempty"`
+}
+
 type Target struct {
 	Id               *string           `json:"Id,omitempty"`
 	Arn              *string           `json:"Arn,omitempty"`
@@ -140,6 +146,7 @@ type Target struct {
 	InputTransformer *InputTransformer `json:"InputTransformer,omitempty"`
 	DeadLetterConfig *DeadLetterConfig `json:"DeadLetterConfig,omitempty"`
 	RetryPolicy      *RetryPolicy      `json:"RetryPolicy,omitempty"`
+	HttpParameters   *HttpParameters   `json:"HttpParameters,omitempty"`
 }
 
 type PutTargetsRequest struct {
@@ -461,6 +468,288 @@ type RemovePermissionRequest struct {
 	EventBusName         *string `json:"EventBusName,omitempty"`
 }
 
+type CreateConnectionBasicAuthRequestParameters struct {
+	Password *string `json:"Password,omitempty"`
+	Username *string `json:"Username,omitempty"`
+}
+
+type CreateConnectionOAuthClientRequestParameters struct {
+	ClientID     *string `json:"ClientID,omitempty"`
+	ClientSecret *string `json:"ClientSecret,omitempty"`
+}
+
+type ConnectionBodyParameter struct {
+	IsValueSecret *bool   `json:"IsValueSecret,omitempty"`
+	Key           *string `json:"Key,omitempty"`
+	Value         *string `json:"Value,omitempty"`
+}
+
+type ConnectionHeaderParameter struct {
+	IsValueSecret *bool   `json:"IsValueSecret,omitempty"`
+	Key           *string `json:"Key,omitempty"`
+	Value         *string `json:"Value,omitempty"`
+}
+
+type ConnectionQueryStringParameter struct {
+	IsValueSecret *bool   `json:"IsValueSecret,omitempty"`
+	Key           *string `json:"Key,omitempty"`
+	Value         *string `json:"Value,omitempty"`
+}
+
+type ConnectionHttpParameters struct {
+	BodyParameters        []ConnectionBodyParameter        `json:"BodyParameters,omitempty"`
+	HeaderParameters      []ConnectionHeaderParameter      `json:"HeaderParameters,omitempty"`
+	QueryStringParameters []ConnectionQueryStringParameter `json:"QueryStringParameters,omitempty"`
+}
+
+type CreateConnectionOAuthRequestParameters struct {
+	ClientParameters      *CreateConnectionOAuthClientRequestParameters `json:"ClientParameters,omitempty"`
+	AuthorizationEndpoint *string                                       `json:"AuthorizationEndpoint,omitempty"`
+	HttpMethod            *string                                       `json:"HttpMethod,omitempty"`
+	OAuthHttpParameters   *ConnectionHttpParameters                     `json:"OAuthHttpParameters,omitempty"`
+}
+
+type CreateConnectionApiKeyAuthRequestParameters struct {
+	ApiKeyName  *string `json:"ApiKeyName,omitempty"`
+	ApiKeyValue *string `json:"ApiKeyValue,omitempty"`
+}
+
+type CreateConnectionAuthRequestParameters struct {
+	BasicAuthParameters      *CreateConnectionBasicAuthRequestParameters  `json:"BasicAuthParameters,omitempty"`
+	OAuthParameters          *CreateConnectionOAuthRequestParameters      `json:"OAuthParameters,omitempty"`
+	ApiKeyAuthParameters     *CreateConnectionApiKeyAuthRequestParameters `json:"ApiKeyAuthParameters,omitempty"`
+	InvocationHttpParameters *ConnectionHttpParameters                    `json:"InvocationHttpParameters,omitempty"`
+}
+
+type CreateConnectionRequest struct {
+	Name              *string                                `json:"Name,omitempty"`
+	Description       *string                                `json:"Description,omitempty"`
+	AuthorizationType *string                                `json:"AuthorizationType,omitempty"`
+	AuthParameters    *CreateConnectionAuthRequestParameters `json:"AuthParameters,omitempty"`
+}
+
+type CreateConnectionResponse struct {
+	ConnectionArn    *string  `json:"ConnectionArn,omitempty"`
+	ConnectionState  *string  `json:"ConnectionState,omitempty"`
+	CreationTime     *float64 `json:"CreationTime,omitempty"`
+	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty"`
+}
+
+type DescribeConnectionRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type ConnectionBasicAuthResponseParameters struct {
+	Username *string `json:"Username,omitempty"`
+}
+
+type ConnectionOAuthClientResponseParameters struct {
+	ClientID *string `json:"ClientID,omitempty"`
+}
+
+type ConnectionOAuthResponseParameters struct {
+	AuthorizationEndpoint *string                                  `json:"AuthorizationEndpoint,omitempty"`
+	ClientParameters      *ConnectionOAuthClientResponseParameters `json:"ClientParameters,omitempty"`
+	HttpMethod            *string                                  `json:"HttpMethod,omitempty"`
+	OAuthHttpParameters   *ConnectionHttpParameters                `json:"OAuthHttpParameters,omitempty"`
+}
+
+type ConnectionApiKeyAuthResponseParameters struct {
+	ApiKeyName *string `json:"ApiKeyName,omitempty"`
+}
+
+type ConnectionAuthResponseParameters struct {
+	BasicAuthParameters      *ConnectionBasicAuthResponseParameters  `json:"BasicAuthParameters,omitempty"`
+	OAuthParameters          *ConnectionOAuthResponseParameters      `json:"OAuthParameters,omitempty"`
+	ApiKeyAuthParameters     *ConnectionApiKeyAuthResponseParameters `json:"ApiKeyAuthParameters,omitempty"`
+	InvocationHttpParameters *ConnectionHttpParameters               `json:"InvocationHttpParameters,omitempty"`
+}
+
+type DescribeConnectionResponse struct {
+	ConnectionArn      *string                           `json:"ConnectionArn,omitempty"`
+	Name               *string                           `json:"Name,omitempty"`
+	Description        *string                           `json:"Description,omitempty"`
+	ConnectionState    *string                           `json:"ConnectionState,omitempty"`
+	StateReason        *string                           `json:"StateReason,omitempty"`
+	AuthorizationType  *string                           `json:"AuthorizationType,omitempty"`
+	SecretArn          *string                           `json:"SecretArn,omitempty"`
+	AuthParameters     *ConnectionAuthResponseParameters `json:"AuthParameters,omitempty"`
+	CreationTime       *float64                          `json:"CreationTime,omitempty"`
+	LastModifiedTime   *float64                          `json:"LastModifiedTime,omitempty"`
+	LastAuthorizedTime *float64                          `json:"LastAuthorizedTime,omitempty"`
+}
+
+type ListConnectionsRequest struct {
+	ConnectionState *string `json:"ConnectionState,omitempty"`
+	Limit           *int64  `json:"Limit,omitempty"`
+	NamePrefix      *string `json:"NamePrefix,omitempty"`
+	NextToken       *string `json:"NextToken,omitempty"`
+}
+
+type Connection struct {
+	AuthorizationType  *string  `json:"AuthorizationType,omitempty"`
+	ConnectionArn      *string  `json:"ConnectionArn,omitempty"`
+	ConnectionState    *string  `json:"ConnectionState,omitempty"`
+	CreationTime       *float64 `json:"CreationTime,omitempty"`
+	LastAuthorizedTime *float64 `json:"LastAuthorizedTime,omitempty"`
+	LastModifiedTime   *float64 `json:"LastModifiedTime,omitempty"`
+	Name               *string  `json:"Name,omitempty"`
+	StateReason        *string  `json:"StateReason,omitempty"`
+}
+
+type ListConnectionsResponse struct {
+	Connections []Connection `json:"Connections,omitempty"`
+	NextToken   *string      `json:"NextToken,omitempty"`
+}
+
+type UpdateConnectionBasicAuthRequestParameters struct {
+	Password *string `json:"Password,omitempty"`
+	Username *string `json:"Username,omitempty"`
+}
+
+type UpdateConnectionOAuthClientRequestParameters struct {
+	ClientID     *string `json:"ClientID,omitempty"`
+	ClientSecret *string `json:"ClientSecret,omitempty"`
+}
+
+type UpdateConnectionOAuthRequestParameters struct {
+	AuthorizationEndpoint *string                                       `json:"AuthorizationEndpoint,omitempty"`
+	ClientParameters      *UpdateConnectionOAuthClientRequestParameters `json:"ClientParameters,omitempty"`
+	HttpMethod            *string                                       `json:"HttpMethod,omitempty"`
+	OAuthHttpParameters   *ConnectionHttpParameters                     `json:"OAuthHttpParameters,omitempty"`
+}
+
+type UpdateConnectionApiKeyAuthRequestParameters struct {
+	ApiKeyName  *string `json:"ApiKeyName,omitempty"`
+	ApiKeyValue *string `json:"ApiKeyValue,omitempty"`
+}
+
+type UpdateConnectionAuthRequestParameters struct {
+	BasicAuthParameters      *UpdateConnectionBasicAuthRequestParameters  `json:"BasicAuthParameters,omitempty"`
+	OAuthParameters          *UpdateConnectionOAuthRequestParameters      `json:"OAuthParameters,omitempty"`
+	ApiKeyAuthParameters     *UpdateConnectionApiKeyAuthRequestParameters `json:"ApiKeyAuthParameters,omitempty"`
+	InvocationHttpParameters *ConnectionHttpParameters                    `json:"InvocationHttpParameters,omitempty"`
+}
+
+type UpdateConnectionRequest struct {
+	Name              *string                                `json:"Name,omitempty"`
+	Description       *string                                `json:"Description,omitempty"`
+	AuthorizationType *string                                `json:"AuthorizationType,omitempty"`
+	AuthParameters    *UpdateConnectionAuthRequestParameters `json:"AuthParameters,omitempty"`
+}
+
+type UpdateConnectionResponse struct {
+	ConnectionArn      *string  `json:"ConnectionArn,omitempty"`
+	ConnectionState    *string  `json:"ConnectionState,omitempty"`
+	CreationTime       *float64 `json:"CreationTime,omitempty"`
+	LastModifiedTime   *float64 `json:"LastModifiedTime,omitempty"`
+	LastAuthorizedTime *float64 `json:"LastAuthorizedTime,omitempty"`
+}
+
+type DeleteConnectionRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeleteConnectionResponse struct {
+	ConnectionArn      *string  `json:"ConnectionArn,omitempty"`
+	ConnectionState    *string  `json:"ConnectionState,omitempty"`
+	CreationTime       *float64 `json:"CreationTime,omitempty"`
+	LastModifiedTime   *float64 `json:"LastModifiedTime,omitempty"`
+	LastAuthorizedTime *float64 `json:"LastAuthorizedTime,omitempty"`
+}
+
+type DeauthorizeConnectionRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeauthorizeConnectionResponse struct {
+	ConnectionArn      *string  `json:"ConnectionArn,omitempty"`
+	ConnectionState    *string  `json:"ConnectionState,omitempty"`
+	CreationTime       *float64 `json:"CreationTime,omitempty"`
+	LastModifiedTime   *float64 `json:"LastModifiedTime,omitempty"`
+	LastAuthorizedTime *float64 `json:"LastAuthorizedTime,omitempty"`
+}
+
+type CreateApiDestinationRequest struct {
+	ConnectionArn                *string `json:"ConnectionArn,omitempty"`
+	Description                  *string `json:"Description,omitempty"`
+	HttpMethod                   *string `json:"HttpMethod,omitempty"`
+	InvocationEndpoint           *string `json:"InvocationEndpoint,omitempty"`
+	InvocationRateLimitPerSecond *int64  `json:"InvocationRateLimitPerSecond,omitempty"`
+	Name                         *string `json:"Name,omitempty"`
+}
+
+type CreateApiDestinationResponse struct {
+	ApiDestinationArn   *string  `json:"ApiDestinationArn,omitempty"`
+	ApiDestinationState *string  `json:"ApiDestinationState,omitempty"`
+	CreationTime        *float64 `json:"CreationTime,omitempty"`
+	LastModifiedTime    *float64 `json:"LastModifiedTime,omitempty"`
+}
+
+type DescribeApiDestinationRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DescribeApiDestinationResponse struct {
+	ApiDestinationArn            *string  `json:"ApiDestinationArn,omitempty"`
+	ApiDestinationState          *string  `json:"ApiDestinationState,omitempty"`
+	ConnectionArn                *string  `json:"ConnectionArn,omitempty"`
+	CreationTime                 *float64 `json:"CreationTime,omitempty"`
+	Description                  *string  `json:"Description,omitempty"`
+	HttpMethod                   *string  `json:"HttpMethod,omitempty"`
+	InvocationEndpoint           *string  `json:"InvocationEndpoint,omitempty"`
+	InvocationRateLimitPerSecond *int64   `json:"InvocationRateLimitPerSecond,omitempty"`
+	LastModifiedTime             *float64 `json:"LastModifiedTime,omitempty"`
+	Name                         *string  `json:"Name,omitempty"`
+}
+
+type ListApiDestinationsRequest struct {
+	ConnectionArn *string `json:"ConnectionArn,omitempty"`
+	Limit         *int64  `json:"Limit,omitempty"`
+	NamePrefix    *string `json:"NamePrefix,omitempty"`
+	NextToken     *string `json:"NextToken,omitempty"`
+}
+
+type ApiDestination struct {
+	ApiDestinationArn            *string  `json:"ApiDestinationArn,omitempty"`
+	ApiDestinationState          *string  `json:"ApiDestinationState,omitempty"`
+	ConnectionArn                *string  `json:"ConnectionArn,omitempty"`
+	CreationTime                 *float64 `json:"CreationTime,omitempty"`
+	HttpMethod                   *string  `json:"HttpMethod,omitempty"`
+	InvocationEndpoint           *string  `json:"InvocationEndpoint,omitempty"`
+	InvocationRateLimitPerSecond *int64   `json:"InvocationRateLimitPerSecond,omitempty"`
+	LastModifiedTime             *float64 `json:"LastModifiedTime,omitempty"`
+	Name                         *string  `json:"Name,omitempty"`
+}
+
+type ListApiDestinationsResponse struct {
+	ApiDestinations []ApiDestination `json:"ApiDestinations,omitempty"`
+	NextToken       *string          `json:"NextToken,omitempty"`
+}
+
+type UpdateApiDestinationRequest struct {
+	ConnectionArn                *string `json:"ConnectionArn,omitempty"`
+	Description                  *string `json:"Description,omitempty"`
+	HttpMethod                   *string `json:"HttpMethod,omitempty"`
+	InvocationEndpoint           *string `json:"InvocationEndpoint,omitempty"`
+	InvocationRateLimitPerSecond *int64  `json:"InvocationRateLimitPerSecond,omitempty"`
+	Name                         *string `json:"Name,omitempty"`
+}
+
+type UpdateApiDestinationResponse struct {
+	ApiDestinationArn   *string  `json:"ApiDestinationArn,omitempty"`
+	ApiDestinationState *string  `json:"ApiDestinationState,omitempty"`
+	CreationTime        *float64 `json:"CreationTime,omitempty"`
+	LastModifiedTime    *float64 `json:"LastModifiedTime,omitempty"`
+}
+
+type DeleteApiDestinationRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeleteApiDestinationResponse struct {
+}
+
 type API interface {
 	PutEvents(context.Context, *PutEventsRequest) (*PutEventsResponse, error)
 	PutRule(context.Context, *PutRuleRequest) (*PutRuleResponse, error)
@@ -492,10 +781,21 @@ type API interface {
 	CancelReplay(context.Context, *CancelReplayRequest) (*CancelReplayResponse, error)
 	PutPermission(context.Context, *PutPermissionRequest) (*PutPermissionOutput, error)
 	RemovePermission(context.Context, *RemovePermissionRequest) (*RemovePermissionOutput, error)
+	CreateConnection(context.Context, *CreateConnectionRequest) (*CreateConnectionResponse, error)
+	DescribeConnection(context.Context, *DescribeConnectionRequest) (*DescribeConnectionResponse, error)
+	ListConnections(context.Context, *ListConnectionsRequest) (*ListConnectionsResponse, error)
+	UpdateConnection(context.Context, *UpdateConnectionRequest) (*UpdateConnectionResponse, error)
+	DeleteConnection(context.Context, *DeleteConnectionRequest) (*DeleteConnectionResponse, error)
+	DeauthorizeConnection(context.Context, *DeauthorizeConnectionRequest) (*DeauthorizeConnectionResponse, error)
+	CreateApiDestination(context.Context, *CreateApiDestinationRequest) (*CreateApiDestinationResponse, error)
+	DescribeApiDestination(context.Context, *DescribeApiDestinationRequest) (*DescribeApiDestinationResponse, error)
+	ListApiDestinations(context.Context, *ListApiDestinationsRequest) (*ListApiDestinationsResponse, error)
+	UpdateApiDestination(context.Context, *UpdateApiDestinationRequest) (*UpdateApiDestinationResponse, error)
+	DeleteApiDestination(context.Context, *DeleteApiDestinationRequest) (*DeleteApiDestinationResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "eventbridge", SigningName: "events", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "events", TargetPrefix: "AWSEvents", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IllegalStatusException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEventPatternException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ManagedRuleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationDisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PolicyLengthExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "eventbridge", SigningName: "events", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "events", TargetPrefix: "AWSEvents", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IllegalStatusException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEventPatternException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ManagedRuleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationDisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PolicyLengthExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"PutEvents": {Name: "PutEvents", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:PutEvents", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.PutEvents", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutEventsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PutEvents(ctx, input.(*PutEventsRequest))
 		}},
@@ -583,6 +883,39 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"RemovePermission": {Name: "RemovePermission", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "events:RemovePermission", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.RemovePermission", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RemovePermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.RemovePermission(ctx, input.(*RemovePermissionRequest))
+		}},
+		"CreateConnection": {Name: "CreateConnection", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "events:CreateConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.CreateConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateConnection(ctx, input.(*CreateConnectionRequest))
+		}},
+		"DescribeConnection": {Name: "DescribeConnection", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "events:DescribeConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DescribeConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeConnection(ctx, input.(*DescribeConnectionRequest))
+		}},
+		"ListConnections": {Name: "ListConnections", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:ListConnections", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.ListConnections", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListConnectionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListConnections(ctx, input.(*ListConnectionsRequest))
+		}},
+		"UpdateConnection": {Name: "UpdateConnection", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "events:UpdateConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.UpdateConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateConnection(ctx, input.(*UpdateConnectionRequest))
+		}},
+		"DeleteConnection": {Name: "DeleteConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:DeleteConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DeleteConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteConnection(ctx, input.(*DeleteConnectionRequest))
+		}},
+		"DeauthorizeConnection": {Name: "DeauthorizeConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:DeauthorizeConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DeauthorizeConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeauthorizeConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeauthorizeConnection(ctx, input.(*DeauthorizeConnectionRequest))
+		}},
+		"CreateApiDestination": {Name: "CreateApiDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:CreateApiDestination", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.CreateApiDestination", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateApiDestinationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateApiDestination(ctx, input.(*CreateApiDestinationRequest))
+		}},
+		"DescribeApiDestination": {Name: "DescribeApiDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:DescribeApiDestination", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DescribeApiDestination", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeApiDestinationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeApiDestination(ctx, input.(*DescribeApiDestinationRequest))
+		}},
+		"ListApiDestinations": {Name: "ListApiDestinations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:ListApiDestinations", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.ListApiDestinations", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListApiDestinationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListApiDestinations(ctx, input.(*ListApiDestinationsRequest))
+		}},
+		"UpdateApiDestination": {Name: "UpdateApiDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:UpdateApiDestination", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.UpdateApiDestination", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateApiDestinationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateApiDestination(ctx, input.(*UpdateApiDestinationRequest))
+		}},
+		"DeleteApiDestination": {Name: "DeleteApiDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "events:DeleteApiDestination", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSEvents.DeleteApiDestination", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteApiDestinationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteApiDestination(ctx, input.(*DeleteApiDestinationRequest))
 		}},
 	}}
 }

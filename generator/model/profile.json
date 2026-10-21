@@ -10469,7 +10469,18 @@
       "ListReplays",
       "CancelReplay",
       "PutPermission",
-      "RemovePermission"
+      "RemovePermission",
+      "CreateConnection",
+      "DescribeConnection",
+      "ListConnections",
+      "UpdateConnection",
+      "DeleteConnection",
+      "DeauthorizeConnection",
+      "CreateApiDestination",
+      "DescribeApiDestination",
+      "ListApiDestinations",
+      "UpdateApiDestination",
+      "DeleteApiDestination"
     ],
     "shapes": {
       "PutEventsRequest": [
@@ -10567,7 +10578,8 @@
         "SqsParameters",
         "InputTransformer",
         "DeadLetterConfig",
-        "RetryPolicy"
+        "RetryPolicy",
+        "HttpParameters"
       ],
       "SqsParameters": [
         "MessageGroupId"
@@ -10839,6 +10851,82 @@
         "StatementId",
         "RemoveAllPermissions",
         "EventBusName"
+      ],
+      "CreateConnectionRequest": [
+        "Name",
+        "Description",
+        "AuthorizationType",
+        "AuthParameters"
+      ],
+      "CreateConnectionResponse": [
+        "ConnectionArn",
+        "ConnectionState",
+        "CreationTime",
+        "LastModifiedTime"
+      ],
+      "CreateConnectionAuthRequestParameters": [
+        "BasicAuthParameters",
+        "OAuthParameters",
+        "ApiKeyAuthParameters",
+        "InvocationHttpParameters"
+      ],
+      "CreateConnectionOAuthRequestParameters": [
+        "ClientParameters",
+        "AuthorizationEndpoint",
+        "HttpMethod",
+        "OAuthHttpParameters"
+      ],
+      "DescribeConnectionResponse": [
+        "ConnectionArn",
+        "Name",
+        "Description",
+        "ConnectionState",
+        "StateReason",
+        "AuthorizationType",
+        "SecretArn",
+        "AuthParameters",
+        "CreationTime",
+        "LastModifiedTime",
+        "LastAuthorizedTime"
+      ],
+      "ConnectionAuthResponseParameters": [
+        "BasicAuthParameters",
+        "OAuthParameters",
+        "ApiKeyAuthParameters",
+        "InvocationHttpParameters"
+      ],
+      "UpdateConnectionRequest": [
+        "Name",
+        "Description",
+        "AuthorizationType",
+        "AuthParameters"
+      ],
+      "UpdateConnectionResponse": [
+        "ConnectionArn",
+        "ConnectionState",
+        "CreationTime",
+        "LastModifiedTime",
+        "LastAuthorizedTime"
+      ],
+      "UpdateConnectionAuthRequestParameters": [
+        "BasicAuthParameters",
+        "OAuthParameters",
+        "ApiKeyAuthParameters",
+        "InvocationHttpParameters"
+      ],
+      "DeleteConnectionResponse": [
+        "ConnectionArn",
+        "ConnectionState",
+        "CreationTime",
+        "LastModifiedTime",
+        "LastAuthorizedTime"
+      ],
+      "DeauthorizeConnectionResponse": [
+        "ConnectionArn",
+        "ConnectionState",
+        "CreationTime",
+        "LastModifiedTime",
+        "LastAuthorizedTime"
       ]
     }
   },

@@ -66,6 +66,89 @@ func init() {
 	})
 }
 
+func init() {
+	register("AWS::Events::Connection", &resourceType{
+		properties: []string{memberName, memberDescription, "AuthorizationType", "AuthParameters"},
+		attributes: []string{memberArn, memberSecretArn},
+		replace:    []string{memberName},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			params := pick(map[string]any{memberName: p.str(memberName)}, p, memberDescription, "AuthorizationType",
+				"AuthParameters")
+			out, err := c.call(ctx, "eventbridge", "CreateConnection", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			// The secret that holds the credentials is part of the connection's description.
+			described, err := c.call(
+				ctx,
+				"eventbridge",
+				"DescribeConnection",
+				map[string]any{memberName: p.str(memberName)},
+			)
+			if err != nil {
+				return "", nil, err
+			}
+
+			return p.str(memberName), map[string]any{
+				memberArn: outText(out, "ConnectionArn"), memberSecretArn: outText(described, memberSecretArn),
+			}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			params := pick(map[string]any{memberName: r.Physical}, p, memberDescription, "AuthorizationType",
+				"AuthParameters")
+			if _, err := c.call(ctx, "eventbridge", "UpdateConnection", params); err != nil {
+				return nil, err
+			}
+
+			return r.Attributes, nil
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "eventbridge", "DeleteConnection", map[string]any{memberName: r.Physical})
+			if gone(err, "ResourceNotFoundException") {
+				return nil
+			}
+
+			return err
+		},
+	})
+	register("AWS::Events::ApiDestination", &resourceType{
+		properties: []string{
+			memberName, memberDescription, "ConnectionArn", "InvocationEndpoint", "HttpMethod",
+			"InvocationRateLimitPerSecond",
+		},
+		attributes: []string{memberArn},
+		replace:    []string{memberName},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			params := pick(map[string]any{memberName: p.str(memberName)}, p, memberDescription, "ConnectionArn",
+				"InvocationEndpoint", "HttpMethod", "InvocationRateLimitPerSecond")
+			out, err := c.call(ctx, "eventbridge", "CreateApiDestination", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			return p.str(memberName), map[string]any{memberArn: outText(out, "ApiDestinationArn")}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			params := pick(map[string]any{memberName: r.Physical}, p, memberDescription, "ConnectionArn",
+				"InvocationEndpoint", "HttpMethod", "InvocationRateLimitPerSecond")
+			if _, err := c.call(ctx, "eventbridge", "UpdateApiDestination", params); err != nil {
+				return nil, err
+			}
+
+			return r.Attributes, nil
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "eventbridge", "DeleteApiDestination", map[string]any{memberName: r.Physical})
+			if gone(err, "ResourceNotFoundException") {
+				return nil
+			}
+
+			return err
+		},
+	})
+}
+
 // ruleName splits a rule's physical ID, "<bus>|<name>" on a custom bus.
 func ruleName(id string) (bus, name string) {
 	if b, n, ok := strings.Cut(id, "|"); ok {

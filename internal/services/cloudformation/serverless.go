@@ -163,7 +163,7 @@ var policyTemplates = map[string]policyTemplate{
 		"ssm:DescribeParameters", "ssm:GetParameters", "ssm:GetParameter", "ssm:GetParametersByPath",
 	}, []string{arnOf("ssm", "parameter/${ParameterName}")}},
 	"AWSSecretsManagerGetSecretValuePolicy": {
-		"SecretArn", []string{"secretsmanager:GetSecretValue"}, []string{"${SecretArn}"},
+		memberSecretArn, []string{"secretsmanager:GetSecretValue"}, []string{"${SecretArn}"},
 	},
 	"KMSDecryptPolicy": {"KeyId", []string{"kms:Decrypt"}, []string{arnOf("kms", "key/${KeyId}")}},
 	"EventBridgePutEventsPolicy": {
