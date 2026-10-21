@@ -23,18 +23,13 @@ except Exception as exc:  # noqa: BLE001
 
 
 @pytest.fixture(scope="module")
-def tinystack_image() -> str:
+def tinystack_image():
     image = os.environ.get("TINYSTACK_IMAGE")
     if image:
-        return image
+        yield image
+        return
 
-    client = docker.from_env()
-    try:
-        client.images.get("tinystack:test")
-        return "tinystack:test"
-    except docker.errors.ImageNotFound:
-        pass
-
+    # Build the current checkout, as the Go module's tests do, and remove the image afterwards.
     repo_root = Path(__file__).resolve().parents[2]
     image_tag = f"tinystack-test:{int(time.time() * 1000)}"
     subprocess.run(
@@ -42,7 +37,8 @@ def tinystack_image() -> str:
         check=True,
         capture_output=True,
     )
-    return image_tag
+    yield image_tag
+    subprocess.run(["docker", "image", "rm", image_tag], check=False, capture_output=True)
 
 
 @pytest.fixture(scope="module")

@@ -19,7 +19,6 @@ class TinyStackContainer(DockerContainer):
     def __init__(
         self,
         image: str | None = None,
-        port: int = AWS_PORT,
         **kwargs: Any,
     ) -> None:
         resolved_image = image or os.environ.get("TINYSTACK_IMAGE")
@@ -29,11 +28,10 @@ class TinyStackContainer(DockerContainer):
                 "or the TINYSTACK_IMAGE environment variable"
             )
         super().__init__(image=resolved_image, **kwargs)
-        self.edge_port = port
-        self.with_exposed_ports(self.edge_port)
-        self.with_command("start --host 0.0.0.0 --port 4566")
+        self.with_exposed_ports(AWS_PORT)
+        self.with_command(f"start --host 0.0.0.0 --port {AWS_PORT}")
         self.waiting_for(
-            HttpWaitStrategy(self.edge_port, "/_tinystack/health")
+            HttpWaitStrategy(AWS_PORT, "/_tinystack/health")
             .for_status_code(200)
             .with_startup_timeout(120)
         )
@@ -41,7 +39,7 @@ class TinyStackContainer(DockerContainer):
     def get_endpoint_url(self) -> str:
         """Return the host-accessible endpoint URL including the HTTP scheme."""
         host = self.get_container_host_ip()
-        port = self.get_exposed_port(self.edge_port)
+        port = self.get_exposed_port(AWS_PORT)
         return f"http://{host}:{port}"
 
     def reset(self, init: bool = False) -> None:
