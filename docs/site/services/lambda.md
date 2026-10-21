@@ -36,8 +36,8 @@ When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM funct
 - In identity.mode: verify the console shows function and trigger inventory; management, invocation and log reads require signed CLI/SDK requests.
 - Console manages $LATEST; versions, aliases, layers and concurrency use the AWS API.
 - Reset ends event source mapping pollers and removes warm execution environments; asynchronous invocations already running can still write records back.
-- DLQ targets are validated as standard SQS/SNS ARNs; configuration does not check target existence or execution-role permissions; failed DLQ delivery is dropped and recorded, without emitting DeadLetterErrors metrics.
-- Lambda metrics omit DeadLetterErrors, DestinationDeliveryFailures, IteratorAge, AsyncEventsReceived, ProvisionedConcurrency and UnreservedConcurrentExecutions; invocations that fail validation, authorization or lookup before running report nothing.
+- DLQ targets are validated as standard SQS/SNS ARNs; configuration does not check target existence or execution-role permissions; failed DLQ delivery is dropped and recorded.
+- Lambda metrics omit DestinationDeliveryFailures, IteratorAge, AsyncEventsReceived, ProvisionedConcurrency and UnreservedConcurrentExecutions; invocations that fail validation, authorization or lookup before running report nothing.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
