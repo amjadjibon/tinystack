@@ -39,6 +39,19 @@ def descriptor(key):
     return signing, [PROTOCOLS[p] for p in re.findall(r'"([^"]+)"', protocols)], operations
 
 
+def console_categories():
+    code = (ROOT / "ui/src/lib/services.ts").read_text()
+    consts = dict(re.findall(r'const\s+(\w+)\s*=\s*["\']([^"\']+)["\'];', code))
+    catalog = re.search(r'\bconst catalog\b[^{]*\{(.*?)\n\s*\};', code, re.S).group(1)
+    categories = {}
+    for service, body in re.findall(r'^\s*(\w+):\s*\{([^}]+)\}', catalog, re.M):
+        cat = re.search(r'\bcategory:\s*([a-zA-Z0-9_]+|"[^"]*"|\'[^\']*\')', body)
+        if cat:
+            val = cat.group(1).strip("\"'")
+            categories[service] = consts.get(val, val)
+    return categories
+
+
 def bullets(items):
     return "\n".join(f"- {item}." if not item.endswith(".") else f"- {item}" for item in items)
 
@@ -187,6 +200,15 @@ def render():
     registered = set(re.findall(r'\b(\w+)api\.Descriptor\(', (ROOT / "internal/app/app.go").read_text()))
     if registered != set(profiles):
         raise ValueError("Startup registrations and profiles differ; audit the service catalogue")
+    console = console_categories()
+    category_errors = []
+    for key, info in sorted(catalog["services"].items()):
+        if key not in console:
+            category_errors.append(f"{key}: missing from console")
+        elif info["category"] != console[key]:
+            category_errors.append(f'{key}: catalog "{info["category"]}" != console "{console[key]}"')
+    if category_errors:
+        raise ValueError("Catalogue and console categories differ:\n" + "\n".join(category_errors))
     groups = defaultdict(list)
     pages = {}
     for key, info in sorted(catalog["services"].items(), key=lambda pair: pair[1]["title"]):
