@@ -1126,7 +1126,7 @@
     "rds": {
       "title": "RDS, DocumentDB and Neptune",
       "category": "Database",
-      "summary": "Manage RDS instances with an optional Docker runtime, plus records-only DocumentDB and Neptune clusters and members.",
+      "summary": "Manage RDS instances and Aurora clusters with optional Docker engines, plus records-only DocumentDB and Neptune clusters.",
       "features": [
         "Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors",
         "PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; DocumentDB and Neptune cluster members use records only; other engines and versions fail explicitly",
@@ -1147,9 +1147,9 @@
         "Cluster identifiers, DocumentDB credentials, retention 1\u201335 days, ports 1150\u201365535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation",
         "DocumentDB versions 3.6, 4.0 and 5.0 (default); Neptune versions 1.2.1.0 and 1.3.2.0 (default); default ports 27017 and 8182 respectively; stable resource IDs and AWS-style cluster/reader endpoints report metadata only",
         "DescribeDBClusters shares both engines across RDS, DocumentDB and Neptune clients; engine, db-cluster-id and db-cluster-resource-id filters select exact values; MaxRecords 20\u2013100 (default 100) uses stable Marker cursors",
-        "Cluster member endpoints and ports follow their parent cluster; DBClusterMembers tracks membership and writer metadata; cluster deletion requires no members, no deletion protection and SkipFinalSnapshot=true",
+        "Cluster member endpoints and ports follow their parent cluster; DBClusterMembers tracks membership and writer metadata; cluster deletion requires no members and no deletion protection; DocumentDB/Neptune also require SkipFinalSnapshot=true",
         "CloudFormation AWS::DocDB::DBCluster/DBInstance and AWS::Neptune::DBCluster/DBInstance share a provider: selected mutable properties and tags update, immutable properties replace, version changes fail and roll back; Ref and cluster/instance endpoint attributes are supported",
-        "Cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS",
+        "DocumentDB/Neptune cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS",
         "CreateDBSnapshot, DescribeDBSnapshots, DeleteDBSnapshot and same-account/Region CopyDBSnapshot for standalone RDS instances; lowercase identifiers and local ARNs, manual snapshot metadata, creating-to-available status and 0-to-100 progress, modeled duplicate/missing/state errors",
         "DescribeDBSnapshots supports instance/snapshot identifiers, DbiResourceId, manual or automated type selection, db-instance-id (including ARNs), db-snapshot-id, dbi-resource-id, snapshot-type and engine exact filters; MaxRecords 20\u2013100 and Marker pagination",
         "RestoreDBInstanceFromDBSnapshot creates an independent instance from captured engine, version, storage, database and credential settings; selected class/storage/subnet/parameter-group overrides and tags; records mode restores metadata only",
@@ -1157,14 +1157,19 @@
         "Snapshot ARN tags support AddTagsToResource, RemoveTagsFromResource, ListTagsForResource, diagnostic inventory, Resource Groups and RGTA; CopyTags merges source snapshot tags with explicit overrides; CopyTagsToSnapshot controls instance-to-snapshot tags",
         "Docker snapshots and copies use isolated, ownership-labeled data volumes; a helper using the engine image copies the volume while a running source container is paused, then resumes it even after a failed copy; restore copies the snapshot volume into a new instance volume",
         "Snapshot deletion and reset remove owned snapshot volumes; snapshots retain volumes across shutdown and persistent restart, with startup orphan cleanup; failed copies remove their helper and partial destination volume",
-        "CloudFormation AWS::RDS::DBInstance accepts DBSnapshotIdentifier for restore and CopyTagsToSnapshot; restore creation waits for availability before endpoint publication"
+        "CloudFormation AWS::RDS::DBInstance accepts DBSnapshotIdentifier for restore and CopyTagsToSnapshot; restore creation waits for availability before endpoint publication",
+        "Aurora PostgreSQL (17.7 default; 16.11, 16.6, 15.10) and Aurora MySQL (8.0.mysql_aurora.3.12.0 default; 3.11.1 and 3.08.0 with the same prefix) use PostgreSQL major images and mysql:8.0 respectively; ports default to 5432 and 3306",
+        "Aurora clusters create one Docker container shared by all member instances; creating transitions to available after readiness, and cluster, reader and member endpoints publish the same loopback host port",
+        "Aurora supports DatabaseName, validated master credentials, ManageMasterUserPassword with an active Secrets Manager MasterUserSecret, HTTP endpoint flags and EnableHttpEndpoint/DisableHttpEndpoint, and stored ServerlessV2ScalingConfiguration",
+        "Modify Aurora credentials, retention, security groups, deletion protection, HTTP settings and scaling metadata; StopDBCluster/StartDBCluster control the shared engine and stop rolls back Data API transactions",
+        "CreateDBClusterSnapshot, DescribeDBClusterSnapshots, DeleteDBClusterSnapshot and final snapshots on Aurora cluster deletion; Docker snapshots copy a paused source volume, records mode captures metadata; deletion requires no members and disabled deletion protection"
       ],
       "gaps": [
         "Records mode has no SQL listener: endpoints use 127.0.0.1 and the engine default port, matching the ElastiCache records-only convention",
         "AllocatedStorage does not enforce a volume size; DBInstanceClass does not change CPU or memory limits; network topology and AWS availability behavior are not reproduced",
-        "EngineVersion accepts only the listed major tags, not arbitrary AWS minor/patch versions; image tags are floating within the chosen major",
+        "Standalone EngineVersion accepts only the listed major tags; Aurora accepts only the listed AWS version strings; community image tags float within the selected major",
         "Parameter groups are records only; engine parameters are not applied",
-        "SQL replicas, Aurora/Multi-AZ clusters, Multi-AZ instances, IAM DB authentication, managed master passwords/Secrets Manager, option groups, events and proxies are unsupported; input members outside the profile fail explicitly",
+        "SQL replicas, Multi-AZ clusters, Multi-AZ instances, IAM DB authentication, option groups, events and proxies are unsupported; input members outside the profile fail explicitly",
         "ApplyImmediately=false rejects deferred changes",
         "Host ports can change after container recreation; no advertise host setting exists, so a remote Docker daemon is unsupported",
         "Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources",
@@ -1175,12 +1180,14 @@
         "DocumentDB/Neptune engine version changes, cluster snapshots, global clusters, cluster parameter groups, cluster start/stop, DocumentDB Elastic and input members outside the profile fail explicitly",
         "Cluster subnet groups and security groups must exist in the request scope and share a VPC when supplied; omitted networking does not provision default networking or enforce AWS Availability Zone coverage",
         "Cluster members accept identifier, class, matching engine, parent cluster and tags; inherited database settings and member start/stop/reboot requests fail explicitly; class changes and ApplyImmediately are metadata only",
-        "Cluster snapshots are unsupported: deletion requires SkipFinalSnapshot=true and rejects FinalDBSnapshotIdentifier; CloudFormation deletion skips snapshots; cluster ApplyImmediately=false still applies metadata synchronously",
+        "DocumentDB/Neptune cluster snapshots are unsupported: deletion requires SkipFinalSnapshot=true and rejects FinalDBSnapshotIdentifier; CloudFormation deletion skips snapshots; cluster ApplyImmediately=false still applies metadata synchronously",
         "Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8\u2013100 printable ASCII characters except slash, double quote and at sign; passwords are not stored or returned",
-        "Automatic backups and scheduled automated snapshots are not produced; SnapshotType=automated returns an empty list. Cross-account/Region snapshots, shared/public/awsbackup selection, snapshot attributes/sharing, encrypted snapshot copies, cluster snapshots and snapshot quotas are unsupported",
+        "Automatic backups and scheduled automated snapshots are not produced; SnapshotType=automated returns an empty list. Cross-account/Region snapshots, shared/public/awsbackup selection, snapshot attributes/sharing, encrypted snapshot copies, cluster snapshot copy/restore and snapshot quotas are unsupported",
         "Snapshot data copy is synchronous and crash-consistent, rather than an AWS storage-level online snapshot: the source database has an I/O interruption while paused for the filesystem copy, and the restored engine performs crash recovery. Snapshot metadata transitions to available after a short simulated delay; progress is 0 or 100",
         "Snapshots created in records mode have no SQL data volume and cannot be copied/restored in Docker mode; restore supports only the whitelisted settings, does not reduce allocated storage, and uses default parameter groups unless explicitly overridden",
-        "The console still deletes instances with SkipFinalSnapshot=true and has no snapshot management page; use the AWS SDK or CLI for snapshots"
+        "The console still deletes instances with SkipFinalSnapshot=true and has no snapshot management page; use the AWS SDK or CLI for snapshots",
+        "Aurora runs community PostgreSQL/MySQL, not the proprietary Aurora storage engine; readers and writers share one process, scaling is metadata only, versions map to floating community image tags, and failover, replicas, global clusters and Aurora Serverless v1 are unsupported",
+        "Aurora port changes, deferred modifications and EngineVersion changes fail explicitly; managed secret rotation and KMS customization are unsupported"
       ],
       "execution": "Records / optional Docker",
       "package": "rds"
@@ -2475,6 +2482,28 @@
       ],
       "execution": "Records only",
       "package": "elasticbeanstalk"
+    },
+    "rdsdata": {
+      "title": "RDS Data API",
+      "category": "Database",
+      "summary": "Execute SQL through the AWS Data API against local Aurora Docker engines.",
+      "features": [
+        "ExecuteStatement, BatchExecuteStatement, BeginTransaction, CommitTransaction and RollbackTransaction use database/sql with PostgreSQL and MySQL drivers outside storage transactions",
+        "resourceArn resolves a same-account/Region Aurora cluster with its HTTP endpoint enabled; secretArn must resolve a Secrets Manager JSON secret whose username and password match the cluster",
+        "Database and schema selection, named parameters with string, long, double, boolean, blob and null Fields, and DATE/TIME/TIMESTAMP/DECIMAL/UUID/JSON type hints",
+        "Typed result Fields, optional column metadata, formatRecordsAs=JSON formattedRecords, affected row counts and MySQL generated IDs; PostgreSQL generated values use SQL RETURNING",
+        "Transactions remain in memory per cluster, expire after three minutes idle or 24 hours total, and roll back on cluster stop, reset or service shutdown",
+        "SQL failures preserve the database message in BadRequestException; missing clusters return NotFoundException, disabled HTTP endpoints return HttpEndpointNotEnabledException, invalid credentials return ForbiddenException, and records mode reports that no engine is running"
+      ],
+      "gaps": [
+        "Requires rds.instances: docker for SQL execution; no SQL interpreter or canned results in records mode",
+        "Array parameters/results, resultSetOptions, continueAfterTimeout, cancellation and asynchronous execution are unsupported; unimplemented input members fail explicitly",
+        "Cluster credentials are validated locally; IAM database authentication, AWS connection management, network failover and distributed transactions are not emulated",
+        "Column metadata reflects database/sql driver information; table/schema provenance and auto-increment metadata are unavailable; operations are serialized within the Data API service",
+        "Transactions and SQL connection state are not persisted across TinyStack restarts"
+      ],
+      "execution": "Optional Docker",
+      "package": "rdsdata"
     }
   },
   "future": {

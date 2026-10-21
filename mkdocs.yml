@@ -162,6 +162,7 @@ nav:
           - "DynamoDB": services/dynamodb.md
           - "DynamoDB Streams": services/dynamodbstreams.md
           - "ElastiCache": services/elasticache.md
+          - "RDS Data API": services/rdsdata.md
           - "RDS, DocumentDB and Neptune": services/rds.md
       - "Developer Tools":
           - "AWS CodeArtifact": services/codeartifact.md
