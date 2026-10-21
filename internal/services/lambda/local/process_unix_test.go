@@ -14,15 +14,16 @@ import (
 
 func TestTimeoutKillsDescendants(t *testing.T) {
 	marker := filepath.Join(t.TempDir(), "child-survived")
-	child := fmt.Sprintf("import time;time.sleep(1);open(%q,'w').write('alive')", marker)
+	child := fmt.Sprintf("import time;time.sleep(2);open(%q,'w').write('alive')", marker)
 	fn := pythonFunction(t, fmt.Sprintf("import subprocess,sys,time\ndef handler(e,c):\n"+
 		" subprocess.Popen([sys.executable,'-c',%q])\n print('child started',flush=True)\n time.sleep(30)\n", child))
-	fn.Timeout = 500 * time.Millisecond
+	fn.Timeout = time.Second
 	result := invoke(t, testRuntime(t), fn)
 	if !result.Error || !strings.Contains(result.Log, "child started") {
 		t.Fatalf("timeout result: %+v", result)
 	}
-	time.Sleep(1100 * time.Millisecond)
+
+	time.Sleep(2100 * time.Millisecond)
 	if _, err := os.Stat(marker); !os.IsNotExist(err) {
 		t.Fatalf("descendant survived: %v", err)
 	}

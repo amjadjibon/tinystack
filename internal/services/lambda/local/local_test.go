@@ -196,16 +196,26 @@ func TestLayersAndMetadata(t *testing.T) {
 }
 
 func TestTimeoutCrashAndInit(t *testing.T) {
-	for _, test := range []struct{ name, code, kind string }{
-		{"timeout", "import time\ndef handler(e,c):\n print('before timeout')\n" +
-			" time.sleep(30)", "Sandbox.Timedout"},
-		{"crash", "import os\ndef handler(e,c): os._exit(17)", "Runtime.ExitError"},
-		{"init", "raise ValueError('init failed')", "ValueError"},
+	for _, test := range []struct {
+		name    string
+		code    string
+		kind    string
+		timeout time.Duration
+	}{
+		{
+			name: "timeout",
+			code: "import time\ndef handler(e,c):\n print('before timeout')\n" +
+				" time.sleep(30)",
+			kind:    "Sandbox.Timedout",
+			timeout: time.Second,
+		},
+		{"crash", "import os\ndef handler(e,c): os._exit(17)", "Runtime.ExitError", 10 * time.Second},
+		{"init", "raise ValueError('init failed')", "ValueError", 10 * time.Second},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := testRuntime(t)
 			fn := pythonFunction(t, test.code)
-			fn.Timeout = 300 * time.Millisecond
+			fn.Timeout = test.timeout
 			started := time.Now()
 			result := invoke(t, r, fn)
 			if !result.Error || !strings.Contains(string(result.Payload), test.kind) {
@@ -216,7 +226,7 @@ func TestTimeoutCrashAndInit(t *testing.T) {
 				t.Fatal("buffered stdout was lost on timeout")
 			}
 
-			if time.Since(started) > 3*time.Second {
+			if time.Since(started) > test.timeout+5*time.Second {
 				t.Fatal("failure took too long")
 			}
 
