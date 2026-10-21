@@ -40,8 +40,6 @@ func (s *Service) ExecuteStatement(
 	ctx context.Context,
 	in *api.ExecuteStatementRequest,
 ) (*api.ExecuteStatementResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	return s.execute(ctx, in)
 }
 
@@ -55,43 +53,58 @@ func (s *Service) execute(ctx context.Context, in *api.ExecuteStatementRequest) 
 		return nil, awserror.New(badRequest, "SQL is required")
 	}
 
-	db, driver, err := s.connection(
-		ctx,
-		common.Value(in.ResourceArn),
-		common.Value(in.SecretArn),
-		common.Value(in.Database),
+	var (
+		q      executor
+		driver string
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() { _ = db.Close() }()
-	query, args, err := bind(common.Value(in.Sql), driver, in.Parameters)
-	if err != nil {
-		return nil, err
-	}
-
-	var q executor
 	if in.TransactionId != nil {
 		tx, txErr := s.getTransaction(*in.TransactionId, common.Value(in.ResourceArn), common.Value(in.SecretArn))
 		if txErr != nil {
 			return nil, txErr
 		}
 
+		tx.mu.Lock()
+		defer tx.mu.Unlock()
+		if tx.closed {
+			return nil, awserror.New(transactionMissing, "Transaction not found")
+		}
+
 		if in.Database != nil && *in.Database != tx.database {
 			return nil, awserror.New(badRequest, "Database must match the transaction database")
 		}
 
+		driver = tx.driver
 		q = tx.tx
-		defer func() { tx.used = time.Now() }()
+		defer func() {
+			s.mu.Lock()
+			tx.used = time.Now()
+			s.mu.Unlock()
+		}()
 	} else {
+		db, d, err := s.connection(
+			ctx,
+			common.Value(in.ResourceArn),
+			common.Value(in.SecretArn),
+			common.Value(in.Database),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		defer func() { _ = db.Close() }()
 		conn, connErr := db.Conn(ctx)
 		if connErr != nil {
 			return nil, sqlError(connErr)
 		}
 
 		defer func() { _ = conn.Close() }()
+		driver = d
 		q = conn
+	}
+
+	query, args, err := bind(common.Value(in.Sql), driver, in.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	if schemaErr := setSchema(ctx, q, driver, common.Value(in.Schema)); schemaErr != nil {
@@ -203,7 +216,22 @@ func (s *Service) execute(ctx context.Context, in *api.ExecuteStatementRequest) 
 			return nil, sqlError(err)
 		}
 
+		// Enforce the 1 MiB response size limit by measuring the JSON-encoded string length.
+		if len(data) > maxResponseBytes {
+			return nil, awserror.New(badRequest, "Database returned more than the allowed response size limit")
+		}
+
 		out.FormattedRecords = new(string(data))
+	} else if len(out.Records) > 0 {
+		// Enforce the 1 MiB response size limit by measuring the JSON-encoded size of the returned records.
+		data, err := json.Marshal(out.Records)
+		if err != nil {
+			return nil, sqlError(err)
+		}
+
+		if len(data) > maxResponseBytes {
+			return nil, awserror.New(badRequest, "Database returned more than the allowed response size limit")
+		}
 	}
 
 	return out, nil
@@ -230,8 +258,6 @@ func (s *Service) BatchExecuteStatement(
 	ctx context.Context,
 	in *api.BatchExecuteStatementRequest,
 ) (*api.BatchExecuteStatementResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	sets := in.ParameterSets
 	if len(sets) == 0 {
 		sets = [][]api.SqlParameter{nil}

@@ -39,6 +39,7 @@ const (
 	transactionMissing = "TransactionNotFoundException"
 	idleTimeout        = 3 * time.Minute
 	maxLifetime        = 24 * time.Hour
+	maxResponseBytes   = 1024 * 1024
 )
 
 var _ api.API = (*Service)(nil)
@@ -52,6 +53,29 @@ type transaction struct {
 	arn      string
 	secret   string
 	database string
+	driver   string
+	closed   bool
+	mu       sync.Mutex
+}
+
+func (tx *transaction) close() {
+	if tx.closed {
+		return
+	}
+
+	tx.closed = true
+	_ = tx.tx.Rollback()
+	if tx.cancel != nil {
+		tx.cancel()
+	}
+
+	_ = tx.db.Close()
+}
+
+func (tx *transaction) rollbackAndClose() {
+	tx.mu.Lock()
+	defer tx.mu.Unlock()
+	tx.close()
 }
 
 type Service struct {
@@ -78,41 +102,49 @@ func (s *Service) Stop() {
 
 func (s *Service) Reset(_ context.Context) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	txs := make([]*transaction, 0, len(s.transactions))
 	for id, tx := range s.transactions {
-		s.closeTransaction(id, tx)
+		delete(s.transactions, id)
+		txs = append(txs, tx)
+	}
+
+	s.mu.Unlock()
+	for _, tx := range txs {
+		tx.rollbackAndClose()
 	}
 }
 
 // CloseCluster rolls back open transactions when its engine stops.
 func (s *Service) CloseCluster(arn string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	var txs []*transaction
 	for id, tx := range s.transactions {
 		if tx.arn == arn {
-			s.closeTransaction(id, tx)
+			delete(s.transactions, id)
+			txs = append(txs, tx)
 		}
 	}
-}
 
-func (s *Service) closeTransaction(id string, tx *transaction) {
-	_ = tx.tx.Rollback()
-	if tx.cancel != nil {
-		tx.cancel()
+	s.mu.Unlock()
+	for _, tx := range txs {
+		tx.rollbackAndClose()
 	}
-
-	_ = tx.db.Close()
-	delete(s.transactions, id)
 }
 
 func (s *Service) expire(_ context.Context) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	now := time.Now()
+	var txs []*transaction
 	for id, tx := range s.transactions {
 		if now.Sub(tx.used) >= idleTimeout || now.Sub(tx.created) >= maxLifetime {
-			s.closeTransaction(id, tx)
+			delete(s.transactions, id)
+			txs = append(txs, tx)
 		}
+	}
+
+	s.mu.Unlock()
+	for _, tx := range txs {
+		tx.rollbackAndClose()
 	}
 }
 
@@ -186,20 +218,34 @@ func (s *Service) connection(ctx context.Context, arn, secret, database string) 
 	return db, driver, nil
 }
 
-func (s *Service) getTransaction(id, arn, secret string) (*transaction, error) {
+func (s *Service) takeTransaction(id, arn, secret string, remove bool) (*transaction, error) {
+	s.mu.Lock()
 	tx, ok := s.transactions[id]
 	if !ok || tx.arn != arn || tx.secret != secret {
+		s.mu.Unlock()
 		return nil, awserror.New(transactionMissing, "Transaction not found")
 	}
 
 	now := time.Now()
 	if now.Sub(tx.used) >= idleTimeout || now.Sub(tx.created) >= maxLifetime {
-		s.closeTransaction(id, tx)
+		delete(s.transactions, id)
+		s.mu.Unlock()
+		tx.rollbackAndClose()
 		return nil, awserror.New(transactionMissing, "Transaction has expired")
 	}
 
-	tx.used = now
+	if remove {
+		delete(s.transactions, id)
+	} else {
+		tx.used = now
+	}
+
+	s.mu.Unlock()
 	return tx, nil
+}
+
+func (s *Service) getTransaction(id, arn, secret string) (*transaction, error) {
+	return s.takeTransaction(id, arn, secret, false)
 }
 
 //nolint:contextcheck // Transactions use the service lifetime across HTTP requests, bounded to 24 hours.
@@ -207,8 +253,6 @@ func (s *Service) BeginTransaction(
 	ctx context.Context,
 	in *api.BeginTransactionRequest,
 ) (*api.BeginTransactionResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	db, driver, err := s.connection(
 		ctx,
 		common.Value(in.ResourceArn),
@@ -241,35 +285,44 @@ func (s *Service) BeginTransaction(
 	}
 
 	id, now := common.RandomID(32), time.Now()
-	s.transactions[id] = &transaction{
+	t := &transaction{
 		cancel:   txCancel,
 		tx:       tx,
 		db:       db,
 		arn:      common.Value(in.ResourceArn),
 		secret:   common.Value(in.SecretArn),
 		database: common.Value(in.Database),
+		driver:   driver,
 		created:  now,
 		used:     now,
 	}
+
+	s.mu.Lock()
+	s.transactions[id] = t
+	s.mu.Unlock()
 
 	return &api.BeginTransactionResponse{TransactionId: new(id)}, nil
 }
 
 func (s *Service) finish(ctx context.Context, arn, secret, id string, commit bool) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	db, _, err := s.connection(ctx, arn, secret, "")
 	if err != nil {
 		return err
 	}
 
 	_ = db.Close()
-	tx, err := s.getTransaction(id, arn, secret)
+	tx, err := s.takeTransaction(id, arn, secret, true)
 	if err != nil {
 		return err
 	}
 
-	defer s.closeTransaction(id, tx)
+	tx.mu.Lock()
+	defer tx.mu.Unlock()
+	if tx.closed {
+		return awserror.New(transactionMissing, "Transaction not found")
+	}
+
+	defer tx.close()
 	if commit {
 		err = tx.tx.Commit()
 	} else {
