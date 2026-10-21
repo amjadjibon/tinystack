@@ -2322,6 +2322,28 @@
       ],
       "execution": "Records only",
       "package": "kinesisanalyticsv2"
+    },
+    "signer": {
+      "title": "AWS Signer",
+      "category": "Security, Identity & Compliance",
+      "scope": "Account and Region",
+      "summary": "Store signing profiles, permissions and jobs with illustrative S3 artifacts.",
+      "features": [
+        "Seventeen REST JSON operations: five fixed signing platforms, versioned profiles, cancellation and revocation, optimistic permission revisions, signing jobs and tags",
+        "Profile status and platform filters, pagination, signature validity periods, account and Region isolation; IoT signing certificates must exist in scoped TinyStack ACM",
+        "S3 source bucket/key/version validation and synchronous destination writes; idempotent job tokens, job filters and signature revocation records",
+        "Inventory, Resource Groups tagging, console and Terraform signing profile, profile permission and signing job coverage"
+      ],
+      "gaps": [
+        "Artifacts append a TinyStack signature envelope to source bytes. Signatures are not cryptographically verifiable by AWS tooling; ZIP files are not actually signed.",
+        "SignPayload, GetRevocationStatus, Notation registry signing, platform overrides and signing parameters are unsupported.",
+        "Permissions are stored policy metadata; cross-account delegation is not executed. GetSigningProfile has no policy revision field in the AWS model; ListProfilePermissions returns revisions.",
+        "Lambda CodeSigningConfig is not implemented; Lambda currently reports no code signing configuration. No Lambda profile validation integration.",
+        "Jobs finish synchronously; S3 failures are retained as Failed jobs. Revocation is metadata only and does not modify S3 output. Interrupted jobs remain InProgress; no restart worker.",
+        "No certificate key-usage or algorithm validation, trust verification, IAM permission enforcement by Signer, CloudFormation provider or AWS cryptographic signing."
+      ],
+      "execution": "Records and illustrative artifacts",
+      "package": "signer"
     }
   },
   "future": {

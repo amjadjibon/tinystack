@@ -45,6 +45,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: migration,
 		icon: "rds",
 	},
+	signer: { title: "AWS Signer", category: security, icon: "acm" },
 	kinesisanalyticsv2: {
 		title: "Amazon Managed Service for Apache Flink",
 		category: analytics,

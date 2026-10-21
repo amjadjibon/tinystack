@@ -96,6 +96,7 @@ import (
 	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
 	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
+	signerapi "github.com/amjadjibon/tinystack/internal/aws/generated/signer"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
@@ -195,6 +196,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ses"
 	"github.com/amjadjibon/tinystack/internal/services/sesv2"
 	"github.com/amjadjibon/tinystack/internal/services/sfn"
+	"github.com/amjadjibon/tinystack/internal/services/signer"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
@@ -469,6 +471,7 @@ func build(
 	a.onStop(parameters.Stop)
 	certificates := acm.New(store)
 	a.onReset(certificates.Reset)
+	signing := signer.New(store, buckets, certificates)
 	tags := resourcegroupstaggingapi.New()
 	groups := resourcegroups.New(store)
 	services := []catalog.Service{
@@ -516,6 +519,7 @@ func build(
 		opensearchserverlessapi.Descriptor(aossRecords),
 		kinesisanalyticsv2api.Descriptor(flinkRecords),
 		lakeformationapi.Descriptor(lakeRecords),
+		signerapi.Descriptor(signing),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),

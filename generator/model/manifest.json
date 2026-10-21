@@ -370,6 +370,10 @@
     "opensearchserverless": {
       "path": "codegen/sdk-codegen/aws-models/opensearchserverless.json",
       "sha256": "a1be800018333d5e45e9ac11c15063edc29abb7c04eed9fa0ef36877acd7d52a"
+    },
+    "signer": {
+      "path": "codegen/sdk-codegen/aws-models/signer.json",
+      "sha256": "d796609f10a5879b3ca7d68084f7799e35fd8155ac2b4d5bba1e183384000970"
     }
   }
 }

@@ -27758,5 +27758,341 @@
         "SecurityGroupIdUpdates"
       ]
     }
+  },
+  "signer": {
+    "operations": [
+      "AddProfilePermission",
+      "CancelSigningProfile",
+      "DescribeSigningJob",
+      "GetSigningPlatform",
+      "GetSigningProfile",
+      "ListProfilePermissions",
+      "ListSigningJobs",
+      "ListSigningPlatforms",
+      "ListSigningProfiles",
+      "ListTagsForResource",
+      "PutSigningProfile",
+      "RemoveProfilePermission",
+      "RevokeSignature",
+      "RevokeSigningProfile",
+      "StartSigningJob",
+      "TagResource",
+      "UntagResource"
+    ],
+    "shapes": {
+      "AccessDeniedException": [
+        "message",
+        "code"
+      ],
+      "AddProfilePermissionRequest": [
+        "profileName",
+        "profileVersion",
+        "action",
+        "principal",
+        "revisionId",
+        "statementId"
+      ],
+      "AddProfilePermissionResponse": [
+        "revisionId"
+      ],
+      "BadRequestException": [
+        "message",
+        "code"
+      ],
+      "CancelSigningProfileRequest": [
+        "profileName"
+      ],
+      "ConflictException": [
+        "message",
+        "code"
+      ],
+      "DescribeSigningJobRequest": [
+        "jobId"
+      ],
+      "DescribeSigningJobResponse": [
+        "jobId",
+        "source",
+        "signingMaterial",
+        "platformId",
+        "platformDisplayName",
+        "profileName",
+        "profileVersion",
+        "createdAt",
+        "completedAt",
+        "signatureExpiresAt",
+        "requestedBy",
+        "status",
+        "statusReason",
+        "revocationRecord",
+        "signedObject",
+        "jobOwner",
+        "jobInvoker"
+      ],
+      "Destination": [
+        "s3"
+      ],
+      "EncryptionAlgorithmOptions": [
+        "allowedValues",
+        "defaultValue"
+      ],
+      "GetSigningPlatformRequest": [
+        "platformId"
+      ],
+      "GetSigningPlatformResponse": [
+        "platformId",
+        "displayName",
+        "partner",
+        "target",
+        "category",
+        "signingConfiguration",
+        "signingImageFormat",
+        "maxSizeInMB",
+        "revocationSupported"
+      ],
+      "GetSigningProfileRequest": [
+        "profileName",
+        "profileOwner"
+      ],
+      "GetSigningProfileResponse": [
+        "profileName",
+        "profileVersion",
+        "profileVersionArn",
+        "revocationRecord",
+        "signingMaterial",
+        "platformId",
+        "platformDisplayName",
+        "signatureValidityPeriod",
+        "status",
+        "statusReason",
+        "arn",
+        "tags"
+      ],
+      "HashAlgorithmOptions": [
+        "allowedValues",
+        "defaultValue"
+      ],
+      "InternalServiceErrorException": [
+        "message",
+        "code"
+      ],
+      "ListProfilePermissionsRequest": [
+        "profileName",
+        "nextToken"
+      ],
+      "ListProfilePermissionsResponse": [
+        "revisionId",
+        "policySizeBytes",
+        "permissions",
+        "nextToken"
+      ],
+      "ListSigningJobsRequest": [
+        "status",
+        "platformId",
+        "requestedBy",
+        "maxResults",
+        "nextToken",
+        "isRevoked",
+        "signatureExpiresBefore",
+        "signatureExpiresAfter",
+        "jobInvoker"
+      ],
+      "ListSigningJobsResponse": [
+        "jobs",
+        "nextToken"
+      ],
+      "ListSigningPlatformsRequest": [
+        "category",
+        "partner",
+        "target",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListSigningPlatformsResponse": [
+        "platforms",
+        "nextToken"
+      ],
+      "ListSigningProfilesRequest": [
+        "includeCanceled",
+        "maxResults",
+        "nextToken",
+        "platformId",
+        "statuses"
+      ],
+      "ListSigningProfilesResponse": [
+        "profiles",
+        "nextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "NotFoundException": [
+        "message",
+        "code"
+      ],
+      "Permission": [
+        "action",
+        "principal",
+        "statementId",
+        "profileVersion"
+      ],
+      "PutSigningProfileRequest": [
+        "profileName",
+        "signingMaterial",
+        "signatureValidityPeriod",
+        "platformId",
+        "tags"
+      ],
+      "PutSigningProfileResponse": [
+        "arn",
+        "profileVersion",
+        "profileVersionArn"
+      ],
+      "RemoveProfilePermissionRequest": [
+        "profileName",
+        "revisionId",
+        "statementId"
+      ],
+      "RemoveProfilePermissionResponse": [
+        "revisionId"
+      ],
+      "ResourceNotFoundException": [
+        "message",
+        "code"
+      ],
+      "RevokeSignatureRequest": [
+        "jobId",
+        "jobOwner",
+        "reason"
+      ],
+      "RevokeSigningProfileRequest": [
+        "profileName",
+        "profileVersion",
+        "reason",
+        "effectiveTime"
+      ],
+      "S3Destination": [
+        "bucketName",
+        "prefix"
+      ],
+      "S3SignedObject": [
+        "bucketName",
+        "key"
+      ],
+      "S3Source": [
+        "bucketName",
+        "key",
+        "version"
+      ],
+      "ServiceLimitExceededException": [
+        "message",
+        "code"
+      ],
+      "SignatureValidityPeriod": [
+        "value",
+        "type"
+      ],
+      "SignedObject": [
+        "s3"
+      ],
+      "SigningConfiguration": [
+        "encryptionAlgorithmOptions",
+        "hashAlgorithmOptions"
+      ],
+      "SigningImageFormat": [
+        "supportedFormats",
+        "defaultFormat"
+      ],
+      "SigningJob": [
+        "jobId",
+        "source",
+        "signedObject",
+        "signingMaterial",
+        "createdAt",
+        "status",
+        "isRevoked",
+        "profileName",
+        "profileVersion",
+        "platformId",
+        "platformDisplayName",
+        "signatureExpiresAt",
+        "jobOwner",
+        "jobInvoker"
+      ],
+      "SigningJobRevocationRecord": [
+        "reason",
+        "revokedAt",
+        "revokedBy"
+      ],
+      "SigningMaterial": [
+        "certificateArn"
+      ],
+      "SigningPlatform": [
+        "platformId",
+        "displayName",
+        "partner",
+        "target",
+        "category",
+        "signingConfiguration",
+        "signingImageFormat",
+        "maxSizeInMB",
+        "revocationSupported"
+      ],
+      "SigningProfile": [
+        "profileName",
+        "profileVersion",
+        "profileVersionArn",
+        "signingMaterial",
+        "signatureValidityPeriod",
+        "platformId",
+        "platformDisplayName",
+        "status",
+        "arn",
+        "tags"
+      ],
+      "SigningProfileRevocationRecord": [
+        "revocationEffectiveFrom",
+        "revokedAt",
+        "revokedBy"
+      ],
+      "Source": [
+        "s3"
+      ],
+      "StartSigningJobRequest": [
+        "source",
+        "destination",
+        "profileName",
+        "clientRequestToken",
+        "profileOwner"
+      ],
+      "StartSigningJobResponse": [
+        "jobId",
+        "jobOwner"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "ThrottlingException": [
+        "message",
+        "code"
+      ],
+      "TooManyRequestsException": [
+        "message",
+        "code"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ValidationException": [
+        "message",
+        "code"
+      ]
+    }
   }
 }

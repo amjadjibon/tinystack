@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    signer               = var.endpoint
     dms                  = var.endpoint
     kinesisanalyticsv2   = var.endpoint
     opensearchserverless = var.endpoint
@@ -2264,4 +2265,45 @@ resource "aws_kinesisanalyticsv2_application" "analytics" {
 resource "aws_kinesisanalyticsv2_application_snapshot" "analytics" {
   application_name = aws_kinesisanalyticsv2_application.analytics.name
   snapshot_name    = "local-snapshot"
+}
+
+
+resource "aws_signer_signing_profile" "local" {
+  name_prefix = "local"
+  platform_id = "AWSLambda-SHA384-ECDSA"
+  signature_validity_period {
+    value = 7
+    type  = "DAYS"
+  }
+  tags = { team = var.team }
+}
+
+resource "aws_signer_signing_profile_permission" "local" {
+  profile_name = aws_signer_signing_profile.local.name
+  action       = "signer:StartSigningJob"
+  principal    = "123456789012"
+  statement_id = "local"
+}
+
+
+resource "aws_s3_bucket" "signer_output" {
+  bucket        = "signer-output"
+  force_destroy = true
+}
+
+resource "aws_signer_signing_job" "local" {
+  profile_name = aws_signer_signing_profile.local.name
+  source {
+    s3 {
+      bucket  = aws_s3_object.hello.bucket
+      key     = aws_s3_object.hello.key
+      version = aws_s3_object.hello.version_id
+    }
+  }
+  destination {
+    s3 {
+      bucket = aws_s3_bucket.signer_output.bucket
+      prefix = "signed/"
+    }
+  }
 }
