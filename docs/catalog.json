@@ -854,13 +854,16 @@
         "JSON/YAML templates, parameters, conditions, mappings, supported intrinsics and dependency ordering",
         "Stack create/update/delete, rollback, change sets, events and exports",
         "Typed resource registry with validated properties and attributes",
+        "Nested AWS::CloudFormation::Stack resources load TinyStack S3 templates, pass parameters and tags, expose child outputs and ParentId/RootId, and cascade rollback and deletion",
+        "Lambda and SNS custom resource providers receive asynchronous Create/Update/Delete requests with TinyStack PUT response URLs; persisted pending steps await responses with a one-hour timeout, Data attributes, NoEcho and replacement cleanup",
         "Selected SAM resources and event transformations",
         "Resource operations run outside store transactions through the lenient caller",
         "AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options"
       ],
       "gaps": [
-        "Only resource types and properties registered in resources*.go are supported",
-        "No stack sets, nested stacks, custom resources, imports (ImportExistingResources is accepted but ignored) or drift detection",
+        "Only registered resource types and properties, plus provider-defined Custom::<Name> properties and attributes, are supported",
+        "Nested stack NotificationARNs and custom resource ServiceToken changes are rejected; ServiceToken must name a Lambda function or SNS topic",
+        "No stack sets, imports (ImportExistingResources is accepted but ignored) or drift detection",
         "No macros/AWS::Include, policies with unsupported semantics or snapshot deletion behavior",
         "IAM capabilities are checked but permission policies and service roles are not evaluated",
         "AWS::IAM::Role accepts PermissionsBoundary only as an absent value; AWS::S3::Bucket AccessControl is limited to Private; EXPRESS deployment mode is rejected"

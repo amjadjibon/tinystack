@@ -999,6 +999,8 @@ Create and update local stacks through the same service operations used by SDK c
 - JSON/YAML templates, parameters, conditions, mappings, supported intrinsics and dependency ordering.
 - Stack create/update/delete, rollback, change sets, events and exports.
 - Typed resource registry with validated properties and attributes.
+- Nested AWS::CloudFormation::Stack resources load TinyStack S3 templates, pass parameters and tags, expose child outputs and ParentId/RootId, and cascade rollback and deletion.
+- Lambda and SNS custom resource providers receive asynchronous Create/Update/Delete requests with TinyStack PUT response URLs; persisted pending steps await responses with a one-hour timeout, Data attributes, NoEcho and replacement cleanup.
 - Selected SAM resources and event transformations.
 - Resource operations run outside store transactions through the lenient caller.
 - AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options.
