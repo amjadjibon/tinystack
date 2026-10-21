@@ -23,7 +23,7 @@ See the [implemented feature catalogue](catalogue.md#elastic-beanstalk) for this
 
 - Environments are records only. No application code is deployed or executed; no EC2, load balancer, Auto Scaling or SQS resources are provisioned, and CNAMEs do not resolve to a runtime.
 - Process=true checks S3 object existence only; source archives and .ebextensions are not parsed or built. Unprocessed source bundles are stored without an object check.
-- Lifecycle policy settings are stored metadata; automatic version expiry, IAM role evaluation and retention jobs are not executed.
+- Lifecycle policy settings are stored metadata; automatic version expiry, IAM role evaluation and retention jobs are not executed (terminated environments expire after 1 hour, but application versions are retained indefinitely).
 - Fixed platform catalogue and a limited configuration option subset; no custom platforms, CodeCommit/CodeBuild/image sources, source-configuration cloning, operations roles, logs or real health metrics.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)

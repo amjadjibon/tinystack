@@ -603,3 +603,113 @@ func TestElasticBeanstalkTagsAndIsolation(t *testing.T) {
 	_, err = c.TerminateEnvironment(ctx, &eb.TerminateEnvironmentInput{})
 	ebError(t, err, "MissingRequiredParameter")
 }
+
+func TestElasticBeanstalkDescribeEnvironmentsDeleted(t *testing.T) {
+	t.Parallel()
+	srv := server(t)
+	ctx := context.Background()
+	c := eb.New(
+		eb.Options{
+			Region:       "us-east-1",
+			BaseEndpoint: new(srv.URL),
+			Credentials:  creds("test"),
+			Retryer:      aws.NopRetryer{},
+		},
+	)
+
+	_, err := c.CreateApplication(
+		ctx,
+		&eb.CreateApplicationInput{
+			ApplicationName: new("deleted-app"),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	env, err := c.CreateEnvironment(
+		ctx,
+		&eb.CreateEnvironmentInput{
+			ApplicationName:   new("deleted-app"),
+			EnvironmentName:   new("deleted-env"),
+			SolutionStackName: new("64bit Amazon Linux 2023 v4.10.3 running Go 1"),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ebWait(t, c, env.EnvironmentId, types.EnvironmentStatusReady)
+
+	beforeTermination := time.Now().Add(-time.Minute)
+
+	_, err = c.TerminateEnvironment(ctx, &eb.TerminateEnvironmentInput{EnvironmentId: env.EnvironmentId})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ebWait(t, c, env.EnvironmentId, types.EnvironmentStatusTerminated)
+
+	defOut, err := c.DescribeEnvironments(
+		ctx,
+		&eb.DescribeEnvironmentsInput{EnvironmentIds: []string{*env.EnvironmentId}},
+	)
+	if err != nil || len(defOut.Environments) != 1 {
+		t.Fatalf("default IncludeDeleted: %#v %v", defOut, err)
+	}
+
+	incOut, err := c.DescribeEnvironments(
+		ctx,
+		&eb.DescribeEnvironmentsInput{
+			EnvironmentIds: []string{*env.EnvironmentId},
+			IncludeDeleted: new(true),
+		},
+	)
+	if err != nil || len(incOut.Environments) != 1 {
+		t.Fatalf("IncludeDeleted true: %#v %v", incOut, err)
+	}
+
+	hideOut, err := c.DescribeEnvironments(
+		ctx,
+		&eb.DescribeEnvironmentsInput{
+			EnvironmentIds: []string{*env.EnvironmentId},
+			IncludeDeleted: new(false),
+		},
+	)
+	if err != nil || len(hideOut.Environments) != 0 {
+		t.Fatalf("IncludeDeleted false: %#v %v", hideOut, err)
+	}
+
+	backToPast, err := c.DescribeEnvironments(
+		ctx,
+		&eb.DescribeEnvironmentsInput{
+			EnvironmentIds:        []string{*env.EnvironmentId},
+			IncludedDeletedBackTo: new(beforeTermination),
+		},
+	)
+	if err != nil || len(backToPast.Environments) != 1 {
+		t.Fatalf("IncludedDeletedBackTo in past: %#v %v", backToPast, err)
+	}
+
+	afterTermination := time.Now().Add(time.Hour)
+	backToFuture, err := c.DescribeEnvironments(
+		ctx,
+		&eb.DescribeEnvironmentsInput{
+			EnvironmentIds:        []string{*env.EnvironmentId},
+			IncludedDeletedBackTo: new(afterTermination),
+		},
+	)
+	if err != nil || len(backToFuture.Environments) != 0 {
+		t.Fatalf("IncludedDeletedBackTo in future: %#v %v", backToFuture, err)
+	}
+
+	_, err = c.DescribeEnvironments(
+		ctx,
+		&eb.DescribeEnvironmentsInput{
+			EnvironmentIds:        []string{*env.EnvironmentId},
+			IncludeDeleted:        new(false),
+			IncludedDeletedBackTo: new(beforeTermination),
+		},
+	)
+	ebError(t, err, "InvalidParameterValue")
+}

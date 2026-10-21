@@ -2471,13 +2471,13 @@
       "features": [
         "32 AWS Query operations for application and version lifecycles, lifecycle policy records, environments, configuration templates, options, platform discovery, events, DNS names, tags and storage locations",
         "Eight fixed Amazon Linux 2023 platforms: Node.js, Python, Java Corretto, Docker, Go, .NET, PHP and Ruby; platform filters and paginated versions, environments, events and platforms",
-        "Background Launching/Updating to Ready and Terminating to Terminated transitions, synthetic Green/Ok health and resource records, CNAME reservations and swaps",
+        "Background Launching/Updating to Ready and Terminating to Terminated transitions, 1-hour retention and purge of terminated environments and events, synthetic Green/Ok health and resource records, CNAME reservations and swaps",
         "S3 source existence check when Process=true, optional source deletion, S3 storage bucket creation, account and Region isolation, shared inventory, Resource Groups and console integration"
       ],
       "gaps": [
         "Environments are records only. No application code is deployed or executed; no EC2, load balancer, Auto Scaling or SQS resources are provisioned, and CNAMEs do not resolve to a runtime.",
         "Process=true checks S3 object existence only; source archives and .ebextensions are not parsed or built. Unprocessed source bundles are stored without an object check.",
-        "Lifecycle policy settings are stored metadata; automatic version expiry, IAM role evaluation and retention jobs are not executed.",
+        "Lifecycle policy settings are stored metadata; automatic version expiry, IAM role evaluation and retention jobs are not executed (terminated environments expire after 1 hour, but application versions are retained indefinitely).",
         "Fixed platform catalogue and a limited configuration option subset; no custom platforms, CodeCommit/CodeBuild/image sources, source-configuration cloning, operations roles, logs or real health metrics."
       ],
       "execution": "Records only",

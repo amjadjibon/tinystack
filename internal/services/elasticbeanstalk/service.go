@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"slices"
 	"strings"
@@ -60,6 +61,8 @@ type Service struct {
 	store   storage.Store
 	buckets Buckets
 	bg      *background.Group
+	logger  *slog.Logger
+	now     func() time.Time
 }
 
 type record struct {
@@ -73,8 +76,14 @@ type record struct {
 	RetainResources bool
 }
 
-func New(store storage.Store, buckets Buckets) *Service {
-	s := &Service{store: store, buckets: buckets, bg: background.New()}
+func New(store storage.Store, buckets Buckets, logger *slog.Logger) *Service {
+	s := &Service{
+		store:   store,
+		buckets: buckets,
+		bg:      background.New(),
+		logger:  logger,
+		now:     time.Now,
+	}
 	s.bg.Every(time.Second, s.tick)
 	return s
 }

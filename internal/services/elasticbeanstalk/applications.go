@@ -209,7 +209,7 @@ func (s *Service) DeleteApplication(
 				return invalid("Application has active environments.")
 			}
 
-			transition(r, terminating)
+			s.transition(r, terminating)
 			if e := saveEnvironment(tx, sc, r); e != nil {
 				return e
 			}

@@ -14,10 +14,10 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-func transition(r *record, status string) {
+func (s *Service) transition(r *record, status string) {
 	e := r.Environment
 	e.Status = new(status)
-	e.DateUpdated = new(time.Now().UTC())
+	e.DateUpdated = new(s.now().UTC())
 	e.Health = new("Grey")
 	e.HealthStatus = new("Pending")
 	if status == terminated {
@@ -56,7 +56,8 @@ func saveEnvironment(tx storage.WriteTx, sc request.Scope, r *record) error {
 
 	r.Events = nil
 	index := "aws/elasticbeanstalk/index/" + sc.AccountID + "/" + sc.Region + "/" + id
-	if *r.Environment.Status == launching || *r.Environment.Status == updating || *r.Environment.Status == terminating {
+	if *r.Environment.Status == launching || *r.Environment.Status == updating ||
+		*r.Environment.Status == terminating || *r.Environment.Status == terminated {
 		if err := storage.Write(tx, index, sc); err != nil {
 			return err
 		}
@@ -68,11 +69,17 @@ func saveEnvironment(tx storage.WriteTx, sc request.Scope, r *record) error {
 }
 
 func (s *Service) tick(ctx context.Context) {
-	_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+	if err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+		now := s.now().UTC()
 		for _, k := range tx.Keys("aws/elasticbeanstalk/index/") {
-			sc, _, err := storage.Read[request.Scope](tx, k)
+			sc, ok, err := storage.Read[request.Scope](tx, k)
 			if err != nil {
 				return err
+			}
+
+			if !ok {
+				tx.Delete(k)
+				continue
 			}
 
 			id := k[strings.LastIndex(k, "/")+1:]
@@ -86,19 +93,40 @@ func (s *Service) tick(ctx context.Context) {
 				continue
 			}
 
+			if *r.Environment.Status == terminated {
+				if r.Environment.DateUpdated != nil && now.Sub(*r.Environment.DateUpdated) > time.Hour {
+					tx.Delete(k)
+					tx.Delete(sc.Key(serviceName, kindEnvironment, id))
+					for _, ek := range tx.Keys(sc.Prefix(serviceName, "event")) {
+						ev, evOK, evErr := storage.Read[eventRecord](tx, ek)
+						if evErr != nil {
+							return evErr
+						}
+
+						if evOK && ev.EnvironmentID == id {
+							tx.Delete(ek)
+						}
+					}
+				}
+
+				continue
+			}
+
 			status := ready
 			if *r.Environment.Status == terminating {
 				status = terminated
 			}
 
-			transition(r, status)
+			s.transition(r, status)
 			if err := saveEnvironment(tx, *sc, r); err != nil {
 				return err
 			}
 		}
 
 		return nil
-	})
+	}); err != nil && ctx.Err() == nil {
+		s.logger.Warn("update Elastic Beanstalk environments", "error", err)
+	}
 }
 
 func environment(tx storage.ReadTx, sc request.Scope, id, name *string) (*record, error) {
@@ -290,7 +318,7 @@ func (s *Service) CreateEnvironment(
 		}
 
 		id := "e-" + common.RandomID(10)
-		now := time.Now().UTC()
+		now := s.now().UTC()
 		out = &api.EnvironmentDescription{
 			EnvironmentName:   in.EnvironmentName,
 			EnvironmentId:     new(id),
@@ -308,7 +336,7 @@ func (s *Service) CreateEnvironment(
 		}
 
 		r := &record{Environment: out, Options: opts, Tags: tt}
-		transition(r, launching)
+		s.transition(r, launching)
 		return saveEnvironment(tx, sc, r)
 	})
 
@@ -324,7 +352,8 @@ func (s *Service) DescribeEnvironments(
 		return nil, err
 	}
 
-	if in.IncludedDeletedBackTo != nil && !common.Value(in.IncludeDeleted) {
+	includeDeleted := *common.OrElse(in.IncludeDeleted, new(true))
+	if in.IncludedDeletedBackTo != nil && !includeDeleted {
 		return nil, invalid("IncludeDeleted required with IncludedDeletedBackTo.")
 	}
 
@@ -343,8 +372,9 @@ func (s *Service) DescribeEnvironments(
 				continue
 			}
 
-			tooOld := in.IncludedDeletedBackTo != nil && v.DateUpdated.Before(*in.IncludedDeletedBackTo)
-			if *v.Status == terminated && (!common.Value(in.IncludeDeleted) || tooOld) {
+			tooOld := in.IncludedDeletedBackTo != nil &&
+				(v.DateUpdated == nil || v.DateUpdated.Before(*in.IncludedDeletedBackTo))
+			if *v.Status == terminated && (!includeDeleted || tooOld) {
 				continue
 			}
 
@@ -465,7 +495,7 @@ func (s *Service) UpdateEnvironment(
 				v.Description = in.Description
 			}
 
-			transition(r, updating)
+			s.transition(r, updating)
 			return nil
 		},
 	)
@@ -485,7 +515,7 @@ func (s *Service) TerminateEnvironment(
 			}
 
 			r.RetainResources = in.TerminateResources != nil && !*in.TerminateResources
-			transition(r, terminating)
+			s.transition(r, terminating)
 			return nil
 		},
 	)
@@ -504,7 +534,7 @@ func (s *Service) RebuildEnvironment(
 				return e
 			}
 
-			transition(r, launching)
+			s.transition(r, launching)
 			return nil
 		},
 	)
@@ -524,7 +554,7 @@ func (s *Service) RestartAppServer(
 				return e
 			}
 
-			transition(r, updating)
+			s.transition(r, updating)
 			return nil
 		},
 	)
@@ -564,8 +594,8 @@ func (s *Service) SwapEnvironmentCNAMEs(
 
 		a.Environment.CNAME, b.Environment.CNAME = b.Environment.CNAME, a.Environment.CNAME
 		a.Environment.EndpointURL, b.Environment.EndpointURL = a.Environment.CNAME, b.Environment.CNAME
-		transition(a, updating)
-		transition(b, updating)
+		s.transition(a, updating)
+		s.transition(b, updating)
 		if e := saveEnvironment(tx, sc, a); e != nil {
 			return e
 		}
@@ -651,7 +681,7 @@ func (s *Service) DescribeEnvironmentHealth(
 		out.Status = v.Status
 		out.Color = v.Health
 		out.HealthStatus = v.HealthStatus
-		out.RefreshedAt = new(time.Now().UTC())
+		out.RefreshedAt = new(s.now().UTC())
 		out.Causes = []string{"Synthetic health; records only, no application is running."}
 		return nil
 	})

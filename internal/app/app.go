@@ -426,7 +426,7 @@ func build(
 	quotaRecords := servicequotas.New(store)
 	dmsRecords := databasemigrationservice.New(store, network)
 	emrRecords := emrserverless.New(store)
-	beanstalk := elasticbeanstalk.New(store, buckets)
+	beanstalk := elasticbeanstalk.New(store, buckets, logger)
 	a.onStop(beanstalk.Stop)
 	classicEMR := emr.New(store, network, roles, buckets)
 	aossRecords := opensearchserverless.New(store)

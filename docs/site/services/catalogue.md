@@ -456,7 +456,7 @@ Manage applications, source versions, configuration templates and simulated envi
 
 - 32 AWS Query operations for application and version lifecycles, lifecycle policy records, environments, configuration templates, options, platform discovery, events, DNS names, tags and storage locations.
 - Eight fixed Amazon Linux 2023 platforms: Node.js, Python, Java Corretto, Docker, Go, .NET, PHP and Ruby; platform filters and paginated versions, environments, events and platforms.
-- Background Launching/Updating to Ready and Terminating to Terminated transitions, synthetic Green/Ok health and resource records, CNAME reservations and swaps.
+- Background Launching/Updating to Ready and Terminating to Terminated transitions, 1-hour retention and purge of terminated environments and events, synthetic Green/Ok health and resource records, CNAME reservations and swaps.
 - S3 source existence check when Process=true, optional source deletion, S3 storage bucket creation, account and Region isolation, shared inventory, Resource Groups and console integration.
 
 [Supported operations](elasticbeanstalk.md#supported-operations) · [Limitations](elasticbeanstalk.md#limitations-and-future-work)
