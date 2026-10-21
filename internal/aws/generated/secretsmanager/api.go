@@ -52,6 +52,7 @@ type DescribeSecretResponse struct {
 	RotationRules      *RotationRulesType  `json:"RotationRules,omitempty"`
 	LastRotatedDate    *float64            `json:"LastRotatedDate,omitempty"`
 	NextRotationDate   *float64            `json:"NextRotationDate,omitempty"`
+	OwningService      *string             `json:"OwningService,omitempty"`
 }
 
 type Filter struct {
@@ -82,6 +83,7 @@ type SecretListEntry struct {
 	RotationRules          *RotationRulesType  `json:"RotationRules,omitempty"`
 	LastRotatedDate        *float64            `json:"LastRotatedDate,omitempty"`
 	NextRotationDate       *float64            `json:"NextRotationDate,omitempty"`
+	OwningService          *string             `json:"OwningService,omitempty"`
 }
 
 type ListSecretsResponse struct {

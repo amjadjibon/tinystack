@@ -32,7 +32,7 @@ func TestRetries(t *testing.T) {
 	})
 	now := time.Date(2026, time.March, 14, 10, 0, 0, 0, time.UTC)
 	service := func() *Service {
-		s := New(store, queues, nil, nil, delivery.New())
+		s := New(store, queues, nil, nil, delivery.New(), nil)
 		// Stop the scheduler so the test drives the clock.
 		s.Stop()
 		s.now = func() time.Time { return now }

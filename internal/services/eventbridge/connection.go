@@ -2,6 +2,7 @@ package eventbridge
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
 	"regexp"
 	"slices"
@@ -15,10 +16,9 @@ import (
 )
 
 // A connection holds the authorization of API destinations. It is
-// "<account>/<region>/eventbridge/connection/<name>", with its secrets in the
-// record: Describe never returns them. AWS keeps them in a Secrets Manager
-// secret, "events!connection/<name>/<id>", whose ARN a connection reports as
-// SecretArn; here that secret does not exist.
+// "<account>/<region>/eventbridge/connection/<name>", with its secrets in Secrets Manager:
+// Describe never returns them. AWS keeps them in a Secrets Manager secret,
+// "events!connection/<name>/<id>", whose ARN a connection reports as SecretArn.
 
 const (
 	connectionAuthorized   = "AUTHORIZED"
@@ -28,6 +28,7 @@ const (
 	authOAuth              = "OAUTH_CLIENT_CREDENTIALS"
 	maxAuthText            = 512
 	maxEndpoint            = 2048
+	maxDescription         = 512
 )
 
 // resourceName is the name of a connection or API destination.
@@ -48,33 +49,47 @@ type httpParameters struct {
 }
 
 // connection is a connection's record, with the members of its authorization type set. Times are Unix
-// milliseconds.
+// milliseconds. Credentials are kept in Secrets Manager under SecretARN.
 //
 //nolint:govet // The field order groups the members by authorization type.
 type connection struct {
 	Name        string
 	ID          string
+	SecretARN   string
 	Description string `json:",omitempty"`
 	Type        string
 	State       string
 	Created     int64
 	Modified    int64
 	Authorized  int64
-	// KeyName and KeyValue are an API key.
-	KeyName  string `json:",omitempty"`
-	KeyValue string `json:",omitempty"`
-	// Username and Password are Basic credentials.
+	// KeyName is the API key header name.
+	KeyName string `json:",omitempty"`
+	// Username is the Basic username.
 	Username string `json:",omitempty"`
-	Password string `json:",omitempty"`
 	// ClientID to OAuthParameters are an OAuth client credentials grant: the endpoint that issues tokens, the
 	// method it takes, and its extra parameters.
 	ClientID        string `json:",omitempty"`
-	ClientSecret    string `json:",omitempty"`
 	Endpoint        string `json:",omitempty"`
 	Method          string `json:",omitempty"`
 	OAuthParameters httpParameters
 	// Parameters are the InvocationHttpParameters.
 	Parameters httpParameters
+}
+
+// connectionSecret is the credentials payload stored in Secrets Manager.
+type connectionSecret struct {
+	HeaderParameters      map[string]string `json:"header_parameters,omitempty"`
+	QueryStringParameters map[string]string `json:"query_string_parameters,omitempty"`
+	BodyParameters        map[string]string `json:"body_parameters,omitempty"`
+	OAuthHeaderParameters map[string]string `json:"oauth_header_parameters,omitempty"`
+	OAuthQueryParameters  map[string]string `json:"oauth_query_parameters,omitempty"`
+	OAuthBodyParameters   map[string]string `json:"oauth_body_parameters,omitempty"`
+	ApiKeyName            string            `json:"api_key_name,omitempty"`
+	ApiKeyValue           string            `json:"api_key_value,omitempty"`
+	User                  string            `json:"user,omitempty"`
+	Password              string            `json:"password,omitempty"`
+	ClientID              string            `json:"client_id,omitempty"`
+	ClientSecret          string            `json:"client_secret,omitempty"`
 }
 
 func connectionPrefix(scope request.Scope) string {
@@ -95,12 +110,6 @@ func connectionNotFound(name string) error {
 }
 
 func (c *connection) arn(scope request.Scope) string { return connectionARN(scope, c.Name, c.ID) }
-
-// secretARN is the ARN AWS gives the secret that holds the connection's credentials.
-func (c *connection) secretARN(scope request.Scope) string {
-	return "arn:aws:secretsmanager:" + scope.Region + ":" + scope.AccountID + ":secret:events!connection/" + c.Name +
-		"/" + c.ID + "-" + strings.ReplaceAll(c.ID, "-", "")[:6]
-}
 
 // loadConnection reads the connection a request names.
 func loadConnection(tx storage.ReadTx, scope request.Scope, name string) (*connection, error) {
@@ -224,7 +233,7 @@ func set(dst *string, what string, v *string, limit int) error {
 
 // apply makes c a connection of the given authorization type with in's members. Members in leaves out keep their
 // value, except when the type changes, so an update need not repeat what it keeps; c must be complete after it.
-func (c *connection) apply(kind string, in *authInput) error {
+func (c *connection) apply(kind string, in *authInput, creds *connectionSecret) error {
 	if !slices.Contains([]string{authAPIKey, authBasic, authOAuth}, kind) {
 		return invalid("AuthorizationType must be %s, %s, or %s.", authAPIKey, authBasic, authOAuth)
 	}
@@ -242,8 +251,14 @@ func (c *connection) apply(kind string, in *authInput) error {
 
 	if kind != c.Type {
 		*c = connection{
-			Name: c.Name, ID: c.ID, Description: c.Description, State: c.State, Created: c.Created,
-			Modified: c.Modified, Authorized: c.Authorized, Type: kind, Parameters: c.Parameters,
+			Name: c.Name, ID: c.ID, SecretARN: c.SecretARN, Description: c.Description, State: c.State,
+			Created: c.Created, Modified: c.Modified, Authorized: c.Authorized, Type: kind,
+			Parameters: c.Parameters,
+		}
+		*creds = connectionSecret{
+			HeaderParameters:      creds.HeaderParameters,
+			QueryStringParameters: creds.QueryStringParameters,
+			BodyParameters:        creds.BodyParameters,
 		}
 	}
 
@@ -252,15 +267,24 @@ func (c *connection) apply(kind string, in *authInput) error {
 		what       string
 	}{
 		{&c.KeyName, in.keyName, "ApiKeyName"},
-		{&c.KeyValue, in.keyValue, "ApiKeyValue"},
+		{&creds.ApiKeyValue, in.keyValue, "ApiKeyValue"},
 		{&c.Username, in.username, "Username"},
-		{&c.Password, in.password, "Password"},
+		{&creds.Password, in.password, "Password"},
 		{&c.ClientID, in.clientID, "ClientID"},
-		{&c.ClientSecret, in.clientSecret, "ClientSecret"},
+		{&creds.ClientSecret, in.clientSecret, "ClientSecret"},
 	} {
 		if err := set(field.dst, field.what, field.value, maxAuthText); err != nil {
 			return err
 		}
+	}
+
+	switch kind {
+	case authAPIKey:
+		creds.ApiKeyName = c.KeyName
+	case authBasic:
+		creds.User = c.Username
+	case authOAuth:
+		creds.ClientID = c.ClientID
 	}
 
 	if in.keyName != nil && !headerName.MatchString(c.KeyName) {
@@ -283,33 +307,70 @@ func (c *connection) apply(kind string, in *authInput) error {
 		c.Method = *in.method
 	}
 
-	var err error
 	if in.oauthParameters != nil {
-		if c.OAuthParameters, err = newParameters(in.oauthParameters, &c.OAuthParameters); err != nil {
+		if creds.OAuthHeaderParameters == nil {
+			creds.OAuthHeaderParameters = make(map[string]string)
+		}
+
+		if creds.OAuthQueryParameters == nil {
+			creds.OAuthQueryParameters = make(map[string]string)
+		}
+
+		if creds.OAuthBodyParameters == nil {
+			creds.OAuthBodyParameters = make(map[string]string)
+		}
+
+		var err error
+		if c.OAuthParameters, err = newParameters(
+			in.oauthParameters,
+			&c.OAuthParameters,
+			creds.OAuthHeaderParameters,
+			creds.OAuthQueryParameters,
+			creds.OAuthBodyParameters,
+		); err != nil {
 			return err
 		}
 	}
 
 	if in.parameters != nil {
-		if c.Parameters, err = newParameters(in.parameters, &c.Parameters); err != nil {
+		if creds.HeaderParameters == nil {
+			creds.HeaderParameters = make(map[string]string)
+		}
+
+		if creds.QueryStringParameters == nil {
+			creds.QueryStringParameters = make(map[string]string)
+		}
+
+		if creds.BodyParameters == nil {
+			creds.BodyParameters = make(map[string]string)
+		}
+
+		var err error
+		if c.Parameters, err = newParameters(
+			in.parameters,
+			&c.Parameters,
+			creds.HeaderParameters,
+			creds.QueryStringParameters,
+			creds.BodyParameters,
+		); err != nil {
 			return err
 		}
 	}
 
-	return c.complete()
+	return c.complete(creds)
 }
 
 // complete checks that the connection has everything its authorization type needs.
-func (c *connection) complete() error {
+func (c *connection) complete(creds *connectionSecret) error {
 	var missing []string
 	switch c.Type {
 	case authAPIKey:
-		missing = missingMembers(map[string]string{"ApiKeyName": c.KeyName, "ApiKeyValue": c.KeyValue})
+		missing = missingMembers(map[string]string{"ApiKeyName": c.KeyName, "ApiKeyValue": creds.ApiKeyValue})
 	case authBasic:
-		missing = missingMembers(map[string]string{"Username": c.Username, "Password": c.Password})
+		missing = missingMembers(map[string]string{"Username": c.Username, "Password": creds.Password})
 	case authOAuth:
 		missing = missingMembers(map[string]string{
-			"ClientParameters.ClientID": c.ClientID, "ClientParameters.ClientSecret": c.ClientSecret,
+			"ClientParameters.ClientID": c.ClientID, "ClientParameters.ClientSecret": creds.ClientSecret,
 			"AuthorizationEndpoint": c.Endpoint, "HttpMethod": c.Method,
 		})
 	}
@@ -341,38 +402,47 @@ type parameter struct {
 
 // newParameters builds a connection's parameters from a request. A parameter without a value keeps the value
 // the same key had in old, which is how an update leaves a secret in place, as Describe never returns it.
-func newParameters(in *api.ConnectionHttpParameters, old *httpParameters) (httpParameters, error) {
-	var headers, query, body []parameter
+func newParameters(
+	in *api.ConnectionHttpParameters,
+	old *httpParameters,
+	headers, query, body map[string]string,
+) (httpParameters, error) {
+	var hParams, qParams, bParams []parameter
 	for i := range in.HeaderParameters {
 		p := &in.HeaderParameters[i]
-		headers = append(headers, parameter{p.Key, p.Value, p.IsValueSecret})
+		hParams = append(hParams, parameter{p.Key, p.Value, p.IsValueSecret})
 	}
 
 	for i := range in.QueryStringParameters {
 		p := &in.QueryStringParameters[i]
-		query = append(query, parameter{p.Key, p.Value, p.IsValueSecret})
+		qParams = append(qParams, parameter{p.Key, p.Value, p.IsValueSecret})
 	}
 
 	for i := range in.BodyParameters {
 		p := &in.BodyParameters[i]
-		body = append(body, parameter{p.Key, p.Value, p.IsValueSecret})
+		bParams = append(bParams, parameter{p.Key, p.Value, p.IsValueSecret})
 	}
 
 	var out httpParameters
 	var err error
-	if out.Headers, err = convertParameters("header", headers, old.Headers); err != nil {
+	if out.Headers, err = convertParameters("header", hParams, old.Headers, headers); err != nil {
 		return out, err
 	}
 
-	if out.Query, err = convertParameters("query string", query, old.Query); err != nil {
+	if out.Query, err = convertParameters("query string", qParams, old.Query, query); err != nil {
 		return out, err
 	}
 
-	out.Body, err = convertParameters("body", body, old.Body)
+	out.Body, err = convertParameters("body", bParams, old.Body, body)
 	return out, err
 }
 
-func convertParameters(kind string, in []parameter, old []httpParameter) ([]httpParameter, error) {
+func convertParameters(
+	kind string,
+	in []parameter,
+	old []httpParameter,
+	secrets map[string]string,
+) ([]httpParameter, error) {
 	var out []httpParameter
 	for _, p := range in {
 		key := common.Value(p.key)
@@ -388,13 +458,32 @@ func convertParameters(kind string, in []parameter, old []httpParameter) ([]http
 			return nil, invalid("The %s parameter %s is given twice.", kind, key)
 		}
 
-		converted := httpParameter{Key: key, Secret: common.Value(p.secret)}
+		isSecret := common.Value(p.secret)
+		converted := httpParameter{Key: key, Secret: isSecret}
+		var val string
 		if p.value != nil {
-			converted.Value = *p.value
+			val = *p.value
+		} else if isSecret {
+			if oldVal, ok := secrets[key]; ok {
+				val = oldVal
+			} else {
+				return nil, invalid("The %s parameter %s needs a Value.", kind, key)
+			}
 		} else if i := slices.IndexFunc(old, func(o httpParameter) bool { return o.Key == key }); i >= 0 {
-			converted.Value = old[i].Value
+			val = old[i].Value
 		} else {
 			return nil, invalid("The %s parameter %s needs a Value.", kind, key)
+		}
+
+		if err := checkText("A "+kind+" parameter value", val, maxAuthText); err != nil {
+			return nil, err
+		}
+
+		if isSecret {
+			secrets[key] = val
+			converted.Value = ""
+		} else {
+			converted.Value = val
 		}
 
 		out = append(out, converted)
@@ -491,15 +580,26 @@ func (s *Service) CreateConnection(
 	}
 
 	now := s.now().UnixMilli()
+	id := newID()
 	c := &connection{
-		Name: name, ID: newID(), Description: common.Value(in.Description), State: connectionAuthorized,
+		Name: name, ID: id, Description: common.Value(in.Description), State: connectionAuthorized,
 		Created: now, Modified: now, Authorized: now,
 	}
+	creds := &connectionSecret{}
 	auth := createAuth(in.AuthParameters)
-	if applyErr := c.apply(common.Value(in.AuthorizationType), &auth); applyErr != nil {
+	if applyErr := c.apply(common.Value(in.AuthorizationType), &auth, creds); applyErr != nil {
 		return nil, applyErr
 	}
 
+	secretName := "events!connection/" + name + "/" + id
+	credsBytes, _ := json.Marshal(creds) //nolint:gosec // Credentials payload is stored in Secrets Manager.
+	credsStr := string(credsBytes)
+	arn, err := s.secrets.CreateManagedSecret(ctx, m.Scope, secretName, "events", c.Description, &credsStr)
+	if err != nil {
+		return nil, err
+	}
+
+	c.SecretARN = arn
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(connectionPrefix(m.Scope) + name); exists {
 			return awserror.New("ResourceAlreadyExistsException", "Connection "+name+" already exists.")
@@ -508,6 +608,7 @@ func (s *Service) CreateConnection(
 		return storage.Write(tx, connectionPrefix(m.Scope)+name, c)
 	})
 	if err != nil {
+		_ = s.secrets.DeleteManagedSecret(ctx, m.Scope, arn)
 		return nil, err
 	}
 
@@ -537,15 +638,13 @@ func (s *Service) DescribeConnection(
 	}
 
 	out := &api.DescribeConnectionResponse{
-		ConnectionArn:     new(c.arn(m.Scope)),
-		Name:              new(c.Name),
-		ConnectionState:   new(c.State),
-		AuthorizationType: new(c.Type),
-		SecretArn:         new(c.secretARN(m.Scope)),
-		AuthParameters:    c.authParameters(),
-		CreationTime: seconds(
-			c.Created,
-		),
+		ConnectionArn:      new(c.arn(m.Scope)),
+		Name:               new(c.Name),
+		ConnectionState:    new(c.State),
+		AuthorizationType:  new(c.Type),
+		SecretArn:          new(c.SecretARN),
+		AuthParameters:     c.authParameters(),
+		CreationTime:       seconds(c.Created),
 		LastModifiedTime:   seconds(c.Modified),
 		LastAuthorizedTime: seconds(c.Authorized),
 	}
@@ -614,42 +713,68 @@ func (s *Service) UpdateConnection(
 		return nil, invalid("Description must be at most 512 characters.")
 	}
 
+	name := common.Value(in.Name)
 	var c *connection
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var loadErr error
-		if c, loadErr = loadConnection(tx, m.Scope, common.Value(in.Name)); loadErr != nil {
-			return loadErr
-		}
-
-		now := s.now().UnixMilli()
-		c.Modified = now
-		if in.Description != nil {
-			c.Description = *in.Description
-		}
-
-		if in.AuthParameters != nil || in.AuthorizationType != nil {
-			auth := authInput{}
-			if in.AuthParameters != nil {
-				auth = updateAuth(in.AuthParameters)
-			}
-
-			if applyErr := c.apply(common.Value(common.OrElse(in.AuthorizationType, &c.Type)), &auth); applyErr != nil {
-				return applyErr
-			}
-
-			c.State, c.Authorized = connectionAuthorized, now
-		}
-
-		return storage.Write(tx, connectionPrefix(m.Scope)+c.Name, c)
+		c, loadErr = loadConnection(tx, m.Scope, name)
+		return loadErr
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.tokens.drop(c.arn(m.Scope))
+	updated := *c
+	now := s.now().UnixMilli()
+	updated.Modified = now
+	if in.Description != nil {
+		updated.Description = *in.Description
+	}
+
+	var creds connectionSecret
+	secretVal, err := s.secrets.GetManagedSecretValue(ctx, m.Scope, c.SecretARN)
+	if err == nil && secretVal != "" {
+		_ = json.Unmarshal([]byte(secretVal), &creds)
+	}
+
+	if in.AuthParameters != nil || in.AuthorizationType != nil {
+		auth := authInput{}
+		if in.AuthParameters != nil {
+			auth = updateAuth(in.AuthParameters)
+		}
+
+		kind := common.Value(common.OrElse(in.AuthorizationType, &updated.Type))
+		if applyErr := updated.apply(kind, &auth, &creds); applyErr != nil {
+			return nil, applyErr
+		}
+
+		updated.State, updated.Authorized = connectionAuthorized, now
+		credsBytes, _ := json.Marshal(creds) //nolint:gosec // Credentials payload is stored in Secrets Manager.
+		credsStr := string(credsBytes)
+		if updateSecErr := s.secrets.UpdateManagedSecret(
+			ctx,
+			m.Scope,
+			updated.SecretARN,
+			&credsStr,
+		); updateSecErr != nil {
+			return nil, updateSecErr
+		}
+	}
+
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		return storage.Write(tx, connectionPrefix(m.Scope)+updated.Name, &updated)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	s.tokens.drop(updated.arn(m.Scope))
 	return &api.UpdateConnectionResponse{
-		ConnectionArn: new(c.arn(m.Scope)), ConnectionState: new(c.State), CreationTime: seconds(c.Created),
-		LastModifiedTime: seconds(c.Modified), LastAuthorizedTime: seconds(c.Authorized),
+		ConnectionArn:      new(updated.arn(m.Scope)),
+		ConnectionState:    new(updated.State),
+		CreationTime:       seconds(updated.Created),
+		LastModifiedTime:   seconds(updated.Modified),
+		LastAuthorizedTime: seconds(updated.Authorized),
 	}, nil
 }
 
@@ -663,10 +788,11 @@ func (s *Service) DeleteConnection(
 		return nil, err
 	}
 
+	name := common.Value(in.Name)
 	var c *connection
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var loadErr error
-		if c, loadErr = loadConnection(tx, m.Scope, common.Value(in.Name)); loadErr != nil {
+		if c, loadErr = loadConnection(tx, m.Scope, name); loadErr != nil {
 			return loadErr
 		}
 
@@ -677,10 +803,14 @@ func (s *Service) DeleteConnection(
 		return nil, err
 	}
 
+	_ = s.secrets.DeleteManagedSecret(ctx, m.Scope, c.SecretARN)
 	s.tokens.drop(c.arn(m.Scope))
 	return &api.DeleteConnectionResponse{
-		ConnectionArn: new(c.arn(m.Scope)), ConnectionState: new(c.State), CreationTime: seconds(c.Created),
-		LastModifiedTime: seconds(c.Modified), LastAuthorizedTime: seconds(c.Authorized),
+		ConnectionArn:      new(c.arn(m.Scope)),
+		ConnectionState:    new(c.State),
+		CreationTime:       seconds(c.Created),
+		LastModifiedTime:   seconds(c.Modified),
+		LastAuthorizedTime: seconds(c.Authorized),
 	}, nil
 }
 
@@ -695,15 +825,15 @@ func (s *Service) DeauthorizeConnection(
 		return nil, err
 	}
 
+	name := common.Value(in.Name)
 	var c *connection
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var loadErr error
-		if c, loadErr = loadConnection(tx, m.Scope, common.Value(in.Name)); loadErr != nil {
+		if c, loadErr = loadConnection(tx, m.Scope, name); loadErr != nil {
 			return loadErr
 		}
 
 		c.State, c.Modified = connectionDeauthorized, s.now().UnixMilli()
-		c.KeyValue, c.Password, c.ClientSecret = "", "", ""
 		c.Parameters, c.OAuthParameters = c.Parameters.withoutSecrets(), c.OAuthParameters.withoutSecrets()
 		return storage.Write(tx, connectionPrefix(m.Scope)+c.Name, c)
 	})
@@ -711,10 +841,15 @@ func (s *Service) DeauthorizeConnection(
 		return nil, err
 	}
 
+	emptySecret := "{}"
+	_ = s.secrets.UpdateManagedSecret(ctx, m.Scope, c.SecretARN, &emptySecret)
 	s.tokens.drop(c.arn(m.Scope))
 	return &api.DeauthorizeConnectionResponse{
-		ConnectionArn: new(c.arn(m.Scope)), ConnectionState: new(c.State), CreationTime: seconds(c.Created),
-		LastModifiedTime: seconds(c.Modified), LastAuthorizedTime: seconds(c.Authorized),
+		ConnectionArn:      new(c.arn(m.Scope)),
+		ConnectionState:    new(c.State),
+		CreationTime:       seconds(c.Created),
+		LastModifiedTime:   seconds(c.Modified),
+		LastAuthorizedTime: seconds(c.Authorized),
 	}, nil
 }
 

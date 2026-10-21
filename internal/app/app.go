@@ -306,7 +306,10 @@ func build(
 	topics := sns.New(store, queues, functions, deliveries)
 	// Stop ends HTTP deliveries in flight.
 	a.onStop(topics.Stop)
-	rules := eventbridge.New(store, queues, topics, functions, deliveries)
+	secrets := secretsmanager.New(store, keys, functions, deliveries)
+	// Stop ends the rotation scheduler and running rotations.
+	a.onStop(secrets.Stop)
+	rules := eventbridge.New(store, queues, topics, functions, deliveries, secrets)
 	// Stop ends the scheduler, which writes to the store.
 	a.onStop(rules.Stop)
 	blobDir := ""
@@ -335,9 +338,6 @@ func build(
 	}
 
 	buckets.UseMaxObjectBytes(cfg.Storage.MaxObjectBytes)
-	secrets := secretsmanager.New(store, keys, functions, deliveries)
-	// Stop ends the rotation scheduler and running rotations.
-	a.onStop(secrets.Stop)
 	functions.UseObjects(buckets.Object)
 	roles := iam.New(store)
 	keys.UseAuthorization(roles.Authorization)

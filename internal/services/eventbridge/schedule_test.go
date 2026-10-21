@@ -19,7 +19,7 @@ import (
 func TestScheduledRules(t *testing.T) {
 	store := &memory.Store{}
 	queues := sqs.New(store, kms.New(store))
-	s := New(store, queues, nil, nil, delivery.New())
+	s := New(store, queues, nil, nil, delivery.New(), nil)
 	// Stop the scheduler so the test drives the clock.
 	s.Stop()
 	now := time.Date(2026, time.March, 14, 10, 0, 0, 0, time.UTC)

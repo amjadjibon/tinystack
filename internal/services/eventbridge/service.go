@@ -30,6 +30,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
+	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -53,20 +54,18 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store      storage.Store
-	queues     *sqs.Service
-	topics     *sns.Service
+	limiters   rateLimiters
+	logger     *slog.Logger
 	functions  *lambda.Service
 	deliveries *delivery.Log
-	logger     *slog.Logger
+	secrets    *secretsmanager.Service
+	topics     *sns.Service
 	now        func() time.Time
-	// authorizer checks deliveries to queues, topics, and functions against their resource policies;
-	// see UseServiceAuthorizer.
 	authorizer catalog.ServiceAuthorizer
-	// bg runs the scheduler until Stop.
-	bg *background.Group
-	// client makes the requests to API destinations, and tokens keeps the access tokens of OAuth connections.
-	client *http.Client
-	tokens tokenCache
+	bg         *background.Group
+	client     *http.Client
+	queues     *sqs.Service
+	tokens     tokenCache
 }
 
 // New returns an EventBridge service and starts its scheduler, which runs
@@ -77,6 +76,7 @@ func New(
 	topics *sns.Service,
 	functions *lambda.Service,
 	deliveries *delivery.Log,
+	secrets *secretsmanager.Service,
 ) *Service {
 	s := &Service{
 		store:      store,
@@ -84,6 +84,7 @@ func New(
 		topics:     topics,
 		functions:  functions,
 		deliveries: deliveries,
+		secrets:    secrets,
 		logger:     slog.Default(),
 		now:        time.Now,
 		bg:         background.New(),

@@ -259,6 +259,10 @@ func (s *Service) UpdateApiDestination(
 		return nil, err
 	}
 
+	if in.InvocationRateLimitPerSecond != nil {
+		s.limiters.update(d.arn(m.Scope), d.RateLimit)
+	}
+
 	return &api.UpdateApiDestinationResponse{
 		ApiDestinationArn: new(d.arn(m.Scope)), ApiDestinationState: new(destinationActive),
 		CreationTime: seconds(d.Created), LastModifiedTime: seconds(d.Modified),
@@ -274,18 +278,22 @@ func (s *Service) DeleteApiDestination(
 		return nil, err
 	}
 
+	var arn string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		d, loadErr := loadDestination(tx, m.Scope, common.Value(in.Name))
 		if loadErr != nil {
 			return loadErr
 		}
 
+		arn = d.arn(m.Scope)
 		tx.Delete(destinationPrefix(m.Scope) + d.Name)
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	s.limiters.drop(arn)
 
 	return &api.DeleteApiDestinationResponse{}, nil
 }

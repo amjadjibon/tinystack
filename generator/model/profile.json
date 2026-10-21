@@ -16708,7 +16708,8 @@
         "RotationLambdaARN",
         "RotationRules",
         "LastRotatedDate",
-        "NextRotationDate"
+        "NextRotationDate",
+        "OwningService"
       ],
       "ListSecretsRequest": [
         "IncludePlannedDeletion",
@@ -16735,7 +16736,8 @@
         "RotationLambdaARN",
         "RotationRules",
         "LastRotatedDate",
-        "NextRotationDate"
+        "NextRotationDate",
+        "OwningService"
       ],
       "Filter": [
         "Key",

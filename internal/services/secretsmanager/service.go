@@ -91,20 +91,19 @@ func (s *Service) Stop() { s.bg.Stop() }
 
 // secret is a secret's metadata.
 type secret struct {
-	Tags        map[string]string `json:",omitempty"`
-	Stages      map[string]string `json:",omitempty"` // staging label to version ID
-	Name        string
-	Suffix      string // the random end of the ARN
-	Description string `json:",omitempty"`
-	KmsKeyID    string `json:",omitempty"`
-	// Policy is the secret's resource-based policy, if it has one.
-	Policy    string    `json:",omitempty"`
-	Rotation  *rotation `json:",omitempty"`
-	Versions  []versionInfo
-	CreatedAt int64 // Unix milliseconds
-	ChangedAt int64
-	// DeletionAt is when a secret scheduled for deletion goes away, or 0.
-	DeletionAt int64 `json:",omitempty"`
+	Tags          map[string]string `json:",omitempty"`
+	Stages        map[string]string `json:",omitempty"`
+	Rotation      *rotation         `json:",omitempty"`
+	Policy        string            `json:",omitempty"`
+	Description   string            `json:",omitempty"`
+	KmsKeyID      string            `json:",omitempty"`
+	Suffix        string
+	Name          string
+	OwningService string `json:",omitempty"`
+	Versions      []versionInfo
+	CreatedAt     int64
+	ChangedAt     int64
+	DeletionAt    int64 `json:",omitempty"`
 }
 
 type versionInfo struct {

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -20,6 +21,7 @@ import (
 	cfntypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	ebtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
@@ -113,6 +115,35 @@ func TestEventBridgeConnections(t *testing.T) {
 		t.Fatal("the API key value was described")
 	}
 
+	sm := secretsClient(s, "test", "us-east-1")
+	secVal, err := sm.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{SecretId: described.SecretArn})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if secVal.SecretString == nil || !strings.Contains(*secVal.SecretString, "hunter2") ||
+		!strings.Contains(*secVal.SecretString, "hidden") || !strings.Contains(*secVal.SecretString, "q-secret") {
+		t.Fatalf("secret string %v", secVal.SecretString)
+	}
+
+	secDesc, err := sm.DescribeSecret(ctx, &secretsmanager.DescribeSecretInput{SecretId: described.SecretArn})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if aws.ToString(secDesc.OwningService) != "events" {
+		t.Fatalf("owning service %v", secDesc.OwningService)
+	}
+
+	_, err = sm.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{SecretId: described.SecretArn})
+	code(t, err, "InvalidRequestException")
+
+	_, err = sm.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+		Name:         aws.String("events!connection/user-hack/123"),
+		SecretString: aws.String("secret"),
+	})
+	code(t, err, "InvalidParameterException")
+
 	// An update that gives only some members keeps the others, and a parameter without a value keeps its secret.
 	updated, err := c.UpdateConnection(ctx, &eventbridge.UpdateConnectionInput{
 		Name:        aws.String("keyed"),
@@ -140,6 +171,12 @@ func TestEventBridgeConnections(t *testing.T) {
 		t.Fatalf("described %+v, %v", described, err)
 	}
 
+	secVal, err = sm.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{SecretId: described.SecretArn})
+	if err != nil || secVal.SecretString == nil || !strings.Contains(*secVal.SecretString, "rotated") ||
+		!strings.Contains(*secVal.SecretString, "hidden") {
+		t.Fatalf("updated secret string %v, %v", secVal, err)
+	}
+
 	// An unknown secret parameter has no value to keep.
 	_, err = c.UpdateConnection(ctx, &eventbridge.UpdateConnectionInput{
 		Name: aws.String("keyed"),
@@ -159,6 +196,11 @@ func TestEventBridgeConnections(t *testing.T) {
 	if err != nil || deauthorized.ConnectionState != ebtypes.ConnectionStateDeauthorized ||
 		aws.ToString(deauthorized.ConnectionArn) != arn {
 		t.Fatalf("deauthorized %+v, %v", deauthorized, err)
+	}
+
+	secVal, err = sm.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{SecretId: described.SecretArn})
+	if err != nil || aws.ToString(secVal.SecretString) != "{}" {
+		t.Fatalf("deauthorized secret string %v, %v", secVal, err)
 	}
 
 	_, err = c.UpdateConnection(ctx, &eventbridge.UpdateConnectionInput{
@@ -288,12 +330,21 @@ func TestEventBridgeConnections(t *testing.T) {
 		t.Fatalf("prefixed %+v, %v", prefixed, err)
 	}
 
+	oauthDesc, err := c.DescribeConnection(ctx, &eventbridge.DescribeConnectionInput{Name: aws.String("oauth")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	deleted, err := c.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String("oauth")})
 	if err != nil || aws.ToString(deleted.ConnectionArn) == "" {
 		t.Fatalf("deleted %+v, %v", deleted, err)
 	}
 
 	_, err = c.DescribeConnection(ctx, &eventbridge.DescribeConnectionInput{Name: aws.String("oauth")})
+	code(t, err, "ResourceNotFoundException")
+	_, err = sm.DescribeSecret(ctx, &secretsmanager.DescribeSecretInput{SecretId: oauthDesc.SecretArn})
+	code(t, err, "ResourceNotFoundException")
+	_, err = sm.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{SecretId: oauthDesc.SecretArn})
 	code(t, err, "ResourceNotFoundException")
 	_, err = c.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String("oauth")})
 	code(t, err, "ResourceNotFoundException")
@@ -679,8 +730,12 @@ type remote struct {
 }
 
 type received struct {
-	Header                       http.Header
-	Method, Path, RawQuery, Body string
+	Time     time.Time
+	Header   http.Header
+	Method   string
+	Path     string
+	RawQuery string
+	Body     string
 }
 
 func newRemote(t *testing.T) *remote {
@@ -696,6 +751,7 @@ func newRemote(t *testing.T) *remote {
 			RawQuery: req.URL.RawQuery,
 			Body:     string(body),
 			Header:   req.Header.Clone(),
+			Time:     time.Now(),
 		}
 		r.mu.Lock()
 		defer r.mu.Unlock()
@@ -1320,4 +1376,61 @@ Outputs:
 		&eventbridge.DescribeApiDestinationInput{Name: aws.String("stack-destination")},
 	)
 	code(t, err, "ResourceNotFoundException")
+}
+
+func TestEventBridgeApiDestinationRateLimit(t *testing.T) {
+	s := server(t)
+	c := eventsClient(s, "test")
+	r := newRemote(t)
+
+	route(
+		t,
+		c,
+		"ratelimited",
+		ebtypes.ConnectionAuthorizationTypeApiKey,
+		apiKeyAuth("X-Key", "v"),
+		ebtypes.ApiDestinationHttpMethodPost,
+		r.URL+"/hook/ratelimited",
+		&ebtypes.Target{},
+	)
+
+	_, err := c.UpdateApiDestination(context.Background(), &eventbridge.UpdateApiDestinationInput{
+		Name:                         aws.String("ratelimited"),
+		InvocationRateLimitPerSecond: aws.Int32(1),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	start := time.Now()
+	var wg sync.WaitGroup
+	for i := 1; i <= 3; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			emit(t, c, "ratelimited", fmt.Sprintf(`{"i":%d}`, id))
+		}(i)
+	}
+
+	wg.Wait()
+	calls := r.calls()
+	if len(calls) != 3 {
+		t.Fatalf("got %d calls, want 3", len(calls))
+	}
+
+	elapsed := time.Since(start)
+	if elapsed < 1500*time.Millisecond || elapsed > 4500*time.Millisecond {
+		t.Fatalf("expected elapsed between 1.5s and 4.5s for 3 rate-limited calls at 1/s, got %v", elapsed)
+	}
+
+	slices.SortFunc(calls, func(a, b received) int {
+		return a.Time.Compare(b.Time)
+	})
+
+	for i := 1; i < len(calls); i++ {
+		spacing := calls[i].Time.Sub(calls[i-1].Time)
+		if spacing < 700*time.Millisecond || spacing > 2500*time.Millisecond {
+			t.Fatalf("call %d spaced by %v from previous call, expected ~1s", i, spacing)
+		}
+	}
 }

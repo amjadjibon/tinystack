@@ -124,7 +124,23 @@ func (s *Service) invoke(ctx context.Context, t *target, payload []byte) error {
 		return failure("The connection %s of the API destination is %s.", c.Name, c.State)
 	}
 
-	req, err := s.newRequest(ctx, m.Scope, d, c, t, payload)
+	if waitErr := s.limiters.wait(ctx, t.ARN, d.RateLimit, invokeTimeout); waitErr != nil {
+		return waitErr
+	}
+
+	secretVal, err := s.secrets.GetManagedSecretValue(ctx, m.Scope, c.SecretARN)
+	if err != nil {
+		return failure("The secret for connection %s could not be retrieved: %s", c.Name, err)
+	}
+
+	var creds connectionSecret
+	if secretVal != "" {
+		if jsonErr := json.Unmarshal([]byte(secretVal), &creds); jsonErr != nil {
+			return failure("The secret for connection %s is not valid: %s", c.Name, jsonErr)
+		}
+	}
+
+	req, err := s.newRequest(ctx, m.Scope, d, c, &creds, t, payload)
 	if err != nil {
 		return err
 	}
@@ -144,6 +160,7 @@ func (s *Service) newRequest(
 	scope request.Scope,
 	d *destination,
 	c *connection,
+	creds *connectionSecret,
 	t *target,
 	payload []byte,
 ) (*http.Request, error) {
@@ -173,15 +190,35 @@ func (s *Service) newRequest(
 	}
 
 	for _, p := range c.Parameters.Headers {
-		headers.Set(p.Key, p.Value)
+		val := p.Value
+		if p.Secret && creds.HeaderParameters != nil {
+			val = creds.HeaderParameters[p.Key]
+		}
+
+		headers.Set(p.Key, val)
 	}
 
 	for _, p := range c.Parameters.Query {
-		query.Set(p.Key, p.Value)
+		val := p.Value
+		if p.Secret && creds.QueryStringParameters != nil {
+			val = creds.QueryStringParameters[p.Key]
+		}
+
+		query.Set(p.Key, val)
 	}
 
 	u.RawQuery = query.Encode()
-	if payload, err = withBodyParameters(payload, c.Parameters.Body); err != nil {
+	bodyParams := make([]httpParameter, len(c.Parameters.Body))
+	for i, p := range c.Parameters.Body {
+		val := p.Value
+		if p.Secret && creds.BodyParameters != nil {
+			val = creds.BodyParameters[p.Key]
+		}
+
+		bodyParams[i] = httpParameter{Key: p.Key, Value: val, Secret: p.Secret}
+	}
+
+	if payload, err = withBodyParameters(payload, bodyParams); err != nil {
 		return nil, err
 	}
 
@@ -193,11 +230,11 @@ func (s *Service) newRequest(
 	req.Header = headers
 	switch c.Type {
 	case authAPIKey:
-		req.Header.Set(c.KeyName, c.KeyValue)
+		req.Header.Set(c.KeyName, creds.ApiKeyValue)
 	case authBasic:
-		req.SetBasicAuth(c.Username, c.Password)
+		req.SetBasicAuth(c.Username, creds.Password)
 	case authOAuth:
-		token, tokenErr := s.accessToken(ctx, scope, c)
+		token, tokenErr := s.accessToken(ctx, scope, c, creds)
 		if tokenErr != nil {
 			return nil, tokenErr
 		}
@@ -247,7 +284,12 @@ func withBodyParameters(payload []byte, params []httpParameter) ([]byte, error) 
 
 // accessToken returns the Authorization header value of an OAuth connection: a cached access token, or a new one
 // from the authorization endpoint, which is kept until it expires.
-func (s *Service) accessToken(ctx context.Context, scope request.Scope, c *connection) (string, error) {
+func (s *Service) accessToken(
+	ctx context.Context,
+	scope request.Scope,
+	c *connection,
+	creds *connectionSecret,
+) (string, error) {
 	key := c.arn(scope)
 	if token, ok := s.tokens.get(key, s.now()); ok {
 		return token, nil
@@ -260,11 +302,21 @@ func (s *Service) accessToken(ctx context.Context, scope request.Scope, c *conne
 
 	query, form := u.Query(), url.Values{"grant_type": {"client_credentials"}}
 	for _, p := range c.OAuthParameters.Query {
-		query.Set(p.Key, p.Value)
+		val := p.Value
+		if p.Secret && creds.OAuthQueryParameters != nil {
+			val = creds.OAuthQueryParameters[p.Key]
+		}
+
+		query.Set(p.Key, val)
 	}
 
 	for _, p := range c.OAuthParameters.Body {
-		form.Set(p.Key, p.Value)
+		val := p.Value
+		if p.Secret && creds.OAuthBodyParameters != nil {
+			val = creds.OAuthBodyParameters[p.Key]
+		}
+
+		form.Set(p.Key, val)
 	}
 
 	var body io.Reader
@@ -286,9 +338,14 @@ func (s *Service) accessToken(ctx context.Context, scope request.Scope, c *conne
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 
-	req.SetBasicAuth(c.ClientID, c.ClientSecret)
+	req.SetBasicAuth(c.ClientID, creds.ClientSecret)
 	for _, p := range c.OAuthParameters.Headers {
-		req.Header.Set(p.Key, p.Value)
+		val := p.Value
+		if p.Secret && creds.OAuthHeaderParameters != nil {
+			val = creds.OAuthHeaderParameters[p.Key]
+		}
+
+		req.Header.Set(p.Key, val)
 	}
 
 	data, _, err := s.do(req, "authorization endpoint of connection "+c.Name)

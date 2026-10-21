@@ -107,6 +107,7 @@ func (s *secret) describe(scope request.Scope) *api.DescribeSecretResponse {
 		Tags:               tagList(s.Tags),
 		VersionIdsToStages: s.stagesOf(),
 		CreatedDate:        seconds(s.CreatedAt),
+		OwningService:      optional(s.OwningService),
 	}
 	if s.scheduled() {
 		out.DeletedDate = seconds(s.DeletionAt)
@@ -155,12 +156,18 @@ func fields(s *secret, key string) []string {
 		return slices.Collect(maps.Keys(s.Tags))
 	case "tag-value":
 		return slices.Collect(maps.Values(s.Tags))
+	case "owning-service":
+		if s.OwningService != "" {
+			return []string{s.OwningService}
+		}
+
+		return nil
 	case "all":
 		return slices.Concat(fields(s, "name"), fields(s, "description"), fields(s, "tag-key"),
-			fields(s, "tag-value"))
+			fields(s, "tag-value"), fields(s, "owning-service"))
 	}
 
-	// TinyStack secrets have no primary region or owning service.
+	// TinyStack secrets have no primary region.
 	return nil
 }
 
@@ -250,7 +257,7 @@ func (s *Service) ListSecrets(ctx context.Context, in *api.ListSecretsRequest) (
 				SecretVersionsToStages: d.VersionIdsToStages, CreatedDate: d.CreatedDate,
 				RotationEnabled: d.RotationEnabled, RotationLambdaARN: d.RotationLambdaARN,
 				RotationRules: d.RotationRules, LastRotatedDate: d.LastRotatedDate,
-				NextRotationDate: d.NextRotationDate,
+				NextRotationDate: d.NextRotationDate, OwningService: d.OwningService,
 			})
 		}
 
@@ -357,6 +364,10 @@ func (s *Service) DeleteSecret(ctx context.Context, in *api.DeleteSecretRequest)
 		sec, findErr := find(tx, m.Scope, in.SecretId, now)
 		if findErr != nil {
 			return findErr
+		}
+
+		if sec.OwningService != "" {
+			return invalidRequest("Operation is not allowed on secret owned by " + sec.OwningService + ".")
 		}
 
 		out = &api.DeleteSecretResponse{ARN: new(sec.arn(m.Scope)), Name: new(sec.Name)}
