@@ -428,8 +428,16 @@ func TestDynamoDBKinesisDelivery(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Each write of a PartiQL batch is streamed once.
+	if _, err := c.BatchExecuteStatement(ctx, &sdk.BatchExecuteStatementInput{Statements: []types.BatchStatementRequest{
+		{Statement: aws.String(`INSERT INTO "events" VALUE {'PK': 'p2', 'status': 'q'}`)},
+		{Statement: aws.String(`INSERT INTO "events" VALUE {'PK': 'p3', 'status': 'q'}`)},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
 	got = changes(t, kc, "milli")[3:]
-	if len(got) != 6 {
+	if len(got) != 8 {
 		t.Fatalf("%+v", got)
 	}
 
@@ -439,7 +447,7 @@ func TestDynamoDBKinesisDelivery(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(events, map[string][]string{
-		"INSERT": {"b1", "b2", "t1", "p1"}, "MODIFY": {"b1"}, "REMOVE": {"b2"},
+		"INSERT": {"b1", "b2", "t1", "p1", "p2", "p3"}, "MODIFY": {"b1"}, "REMOVE": {"b2"},
 	}) {
 		t.Fatalf("%+v", events)
 	}
@@ -459,14 +467,14 @@ func TestDynamoDBKinesisDelivery(t *testing.T) {
 	}})
 	code(t, err, "TransactionCanceledException")
 
-	if n := len(changes(t, kc, "milli")); n != 9 {
+	if n := len(changes(t, kc, "milli")); n != 11 {
 		t.Fatalf("%d records", n)
 	}
 
 	// A table without a stream streams to Kinesis all the same.
 	putItem("plain", "only")
 
-	if micros = changes(t, kc, "micro"); len(micros) != 10 || micros[9].TableName != "plain" {
+	if micros = changes(t, kc, "micro"); len(micros) != 12 || micros[11].TableName != "plain" {
 		t.Fatalf("%+v", micros)
 	}
 
@@ -479,11 +487,11 @@ func TestDynamoDBKinesisDelivery(t *testing.T) {
 
 	putItem("events", "late")
 
-	if n := len(changes(t, kc, "milli")); n != 9 {
+	if n := len(changes(t, kc, "milli")); n != 11 {
 		t.Fatalf("%d records after disabling", n)
 	}
 
-	if micros = changes(t, kc, "micro"); len(micros) != 11 || micros[10].Dynamodb.Keys["PK"]["S"] != "late" {
+	if micros = changes(t, kc, "micro"); len(micros) != 13 || micros[12].Dynamodb.Keys["PK"]["S"] != "late" {
 		t.Fatalf("%+v", micros)
 	}
 

@@ -445,9 +445,13 @@ func (s *Service) deliver(ctx context.Context, out *outbox) {
 		return
 	}
 
-	// The items are written; a client that gave up has not undone that.
+	// The items are written; a client that gave up has not undone that. The
+	// outbox is emptied, so a caller that shares it across writes, such as a
+	// PartiQL batch, delivers each change once.
 	ctx = context.WithoutCancel(ctx)
-	for _, p := range out.puts {
+	puts := out.puts
+	out.puts = nil
+	for _, p := range puts {
 		err := s.kinesis.Put(ctx, p.stream, p.data, p.partitionKey)
 		if err == nil {
 			continue
