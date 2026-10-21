@@ -29,7 +29,7 @@ See the [implemented feature catalogue](catalogue.md#waf-v2) for this service's 
 - Names support 1-128 ASCII letters/digits/underscore/hyphen. Descriptions use the exact pinned pattern and 256-character limit; metric names use the pinned pattern and 1-255 limit, excluding All and Default_Action. IPv4-mapped IPv6 CIDRs are rejected; CIDRs are preserved as supplied.
 - Update requests provide complete selected desired state; omitted description/rules clear those fields. Family and capacity cannot be updated through the WAF APIs. Deleting referenced IP sets/groups or associated ACLs returns WAFAssociatedItemException.
 - CloudFormation properties are Name/Scope/Description/Tags plus Addresses/IPAddressVersion for IPSet, Rules/VisibilityConfig/Capacity for RuleGroup, Rules/VisibilityConfig/DefaultAction for WebACL, and ResourceArn/WebACLArn for associations. Configuration name/scope and IP family/group capacity changes require replacement; Arn and Id are the only configuration GetAtt attributes.
-- CloudFormation tag updates are a local extension to the AWS documentation creation-only note: unrelated live tags remain, removals free capacity before replacement and failed tag/configuration calls compensate. No mutation console, WAF Classic or additional WAF resources.
+- CloudFormation tag updates are a local extension to the AWS documentation creation-only note: unrelated live tags remain, removals free capacity before replacement and failed tag/configuration calls compensate. No mutation console or additional WAFv2 resources.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

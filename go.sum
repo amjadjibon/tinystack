@@ -238,6 +238,8 @@ github.com/aws/aws-sdk-go-v2/service/transfer v1.85.3 h1:XAK5pci5lszUBOEpPt8jrFg
 github.com/aws/aws-sdk-go-v2/service/transfer v1.85.3/go.mod h1:SxXlk1uckGGUbo92CHnDG4anrqOCvwSorhUoSlwB2+Y=
 github.com/aws/aws-sdk-go-v2/service/verifiedpermissions v1.41.4 h1:EcGLoXhyvESrCurDkoXY7DfYV6V31Qa9bS7pDV+ScNI=
 github.com/aws/aws-sdk-go-v2/service/verifiedpermissions v1.41.4/go.mod h1:0MnoIZ55Kl9LNzzKXKNznegHa1PPnJhzIK6LJGyruco=
+github.com/aws/aws-sdk-go-v2/service/waf v1.39.0 h1:p2ekz9dzSsh/m7Mehn8/cLpLqVXOAWxsI2+MffIazpQ=
+github.com/aws/aws-sdk-go-v2/service/waf v1.39.0/go.mod h1:w7+VCVsGWA2iyqhNggdJ7/bcZZifSCqW3HbyicmkWL0=
 github.com/aws/aws-sdk-go-v2/service/wafv2 v1.83.4 h1:Rq1lBRH83Hx1IKI2Vk3Pl0Ol9BK2bzTpqcyjdo57ICw=
 github.com/aws/aws-sdk-go-v2/service/wafv2 v1.83.4/go.mod h1:V5bfe8tmHys+fBgi/D47J7obpnZw+DIu0yzj+6oPE8U=
 github.com/aws/aws-sdk-go-v2/service/xray v1.45.4 h1:+ehVcVE64APIYuWIj26dsNCR59rMZfqr9C9UCi0NhCU=

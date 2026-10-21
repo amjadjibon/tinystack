@@ -11,6 +11,7 @@ import (
 // resource types a group can select.
 var namespaces = map[string]string{
 	"signer":                    "Signer",
+	"waf":                       "WAF",
 	"databasemigrationservice":  "DMS",
 	"kinesisanalyticsv2":        "KinesisAnalyticsV2",
 	"budgets":                   "Budgets",
@@ -82,6 +83,17 @@ var namespaces = map[string]string{
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
 	"signer/signingprofile":               "SigningProfile",
+	"waf/ipset":                           "IPSet",
+	"waf/bytematchset":                    "ByteMatchSet",
+	"waf/sizeconstraintset":               "SizeConstraintSet",
+	"waf/sqlinjectionmatchset":            "SqlInjectionMatchSet",
+	"waf/xssmatchset":                     "XssMatchSet",
+	"waf/geomatchset":                     "GeoMatchSet",
+	"waf/regexpatternset":                 "RegexPatternSet",
+	"waf/regexmatchset":                   "RegexMatchSet",
+	"waf/rule":                            "Rule",
+	"waf/ratebasedrule":                   "RateBasedRule",
+	"waf/webacl":                          "WebACL",
 	"costexplorer/anomalymonitor":         "AnomalyMonitor",
 	"costexplorer/anomalysubscription":    "AnomalySubscription",
 	"costexplorer/costcategory":           "CostCategory",

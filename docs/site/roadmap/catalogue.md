@@ -55,4 +55,3 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Transcribe](services/transcribe.md) | Proposed | Implement `StartTranscriptionJob`, `GetTranscriptionJob`, `ListTranscriptionJobs`. |
 | [Transfer Family runtime and advanced configuration](services/transfer-runtime.md) | Proposed | Extend the implemented server/user/public-key records with explicitly configured runtime and advanced records. |
 | [Translate](services/translate.md) | Proposed | Implement `StartTextTranslationJob`, `DescribeTextTranslationJob`, `ListTextTranslationJobs`. |
-| [WAF Classic](services/waf-v1.md) | Proposed | Implement `ListWebACLs`, `GetWebACL`, `ListRules`. |

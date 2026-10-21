@@ -81,9 +81,9 @@ def main():
                 terraform("import", "aws_cur_report_definition.local", "local-costs")
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
-                # OpenSearch and Flink add two updates, DMS adds five, and Signer profile tags add one.
+                # OpenSearch and Flink add two updates, DMS adds five, Signer profile tags add one, and WAF Classic adds four.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "7 added, 106 changed, 7 destroyed" in updated, updated
+                assert "7 added, 110 changed, 7 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

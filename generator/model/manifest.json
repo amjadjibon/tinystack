@@ -374,6 +374,10 @@
     "signer": {
       "path": "codegen/sdk-codegen/aws-models/signer.json",
       "sha256": "d796609f10a5879b3ca7d68084f7799e35fd8155ac2b4d5bba1e183384000970"
+    },
+    "waf": {
+      "path": "codegen/sdk-codegen/aws-models/waf.json",
+      "sha256": "86cf5e5dbb46b6cc5e57bc6a5f62b8abb85cbe7c9401f9dffb1649f260f6300c"
     }
   }
 }

@@ -18,6 +18,7 @@ provider "aws" {
 
   endpoints {
     signer               = var.endpoint
+    waf                  = var.endpoint
     dms                  = var.endpoint
     kinesisanalyticsv2   = var.endpoint
     opensearchserverless = var.endpoint
@@ -2306,4 +2307,70 @@ resource "aws_signer_signing_job" "local" {
       prefix = "signed/"
     }
   }
+}
+
+resource "aws_waf_ipset" "classic" {
+  name = "local-classic-clients"
+  ip_set_descriptors {
+    type  = "IPV4"
+    value = "192.0.2.0/24"
+  }
+}
+
+resource "aws_waf_byte_match_set" "classic" {
+  name = "local-classic-bytes"
+  byte_match_tuples {
+    text_transformation   = "NONE"
+    target_string         = "${var.team}-client"
+    positional_constraint = "CONTAINS"
+    field_to_match { type = "URI" }
+  }
+}
+
+resource "aws_waf_rule" "classic" {
+  name        = "local-classic-rule"
+  metric_name = "LocalClassicRule"
+  predicates {
+    data_id = aws_waf_ipset.classic.id
+    negated = false
+    type    = "IPMatch"
+  }
+  predicates {
+    data_id = aws_waf_byte_match_set.classic.id
+    negated = false
+    type    = "ByteMatch"
+  }
+  tags = local.tags
+}
+
+resource "aws_waf_rate_based_rule" "classic" {
+  name        = "local-classic-rate"
+  metric_name = "LocalClassicRate"
+  rate_key    = "IP"
+  rate_limit  = var.team == "core" ? 100 : 200
+  predicates {
+    data_id = aws_waf_ipset.classic.id
+    negated = false
+    type    = "IPMatch"
+  }
+  tags = local.tags
+}
+
+resource "aws_waf_web_acl" "classic" {
+  name        = "local-classic-acl"
+  metric_name = "LocalClassicACL"
+  default_action { type = "ALLOW" }
+  rules {
+    priority = 1
+    rule_id  = aws_waf_rule.classic.id
+    type     = "REGULAR"
+    action { type = "BLOCK" }
+  }
+  rules {
+    priority = 2
+    rule_id  = aws_waf_rate_based_rule.classic.id
+    type     = "RATE_BASED"
+    action { type = "COUNT" }
+  }
+  tags = local.tags
 }

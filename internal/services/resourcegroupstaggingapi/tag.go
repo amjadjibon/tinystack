@@ -306,6 +306,7 @@ var taggers = map[string]tagger{
 	"servicediscovery": resourceOperations("servicediscovery", "ResourceARN", pairs),
 	"batch":            resourceOperations("batch", "ResourceArn", plain),
 	"efs":              resourceOperations("efs", "ResourceId", pairs),
+	"waf":              resourceOperations("waf", "ResourceARN", pairs),
 	"wafv2":            resourceOperations("wafv2", "ResourceARN", pairs),
 	"backup": operations("backup", "TagResource", "UntagResource", byARN("ResourceArn"),
 		"Tags", plain, "TagKeyList", names),

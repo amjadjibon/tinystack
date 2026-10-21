@@ -98,6 +98,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.43.4
 	github.com/aws/aws-sdk-go-v2/service/transfer v1.85.3
 	github.com/aws/aws-sdk-go-v2/service/verifiedpermissions v1.41.4
+	github.com/aws/aws-sdk-go-v2/service/waf v1.39.0
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.83.4
 	github.com/aws/aws-sdk-go-v2/service/xray v1.45.4
 	github.com/aws/smithy-go v1.28.5

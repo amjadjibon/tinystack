@@ -100,6 +100,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "appconfig",
 	},
+	waf: { title: "WAF Classic", category: security, icon: "wafv2" },
 	wafv2: { title: "WAF v2", category: security, icon: "wafv2" },
 	codebuild: {
 		title: "CodeBuild",

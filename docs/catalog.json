@@ -1387,7 +1387,7 @@
         "Names support 1-128 ASCII letters/digits/underscore/hyphen. Descriptions use the exact pinned pattern and 256-character limit; metric names use the pinned pattern and 1-255 limit, excluding All and Default_Action. IPv4-mapped IPv6 CIDRs are rejected; CIDRs are preserved as supplied",
         "Update requests provide complete selected desired state; omitted description/rules clear those fields. Family and capacity cannot be updated through the WAF APIs. Deleting referenced IP sets/groups or associated ACLs returns WAFAssociatedItemException",
         "CloudFormation properties are Name/Scope/Description/Tags plus Addresses/IPAddressVersion for IPSet, Rules/VisibilityConfig/Capacity for RuleGroup, Rules/VisibilityConfig/DefaultAction for WebACL, and ResourceArn/WebACLArn for associations. Configuration name/scope and IP family/group capacity changes require replacement; Arn and Id are the only configuration GetAtt attributes",
-        "CloudFormation tag updates are a local extension to the AWS documentation creation-only note: unrelated live tags remain, removals free capacity before replacement and failed tag/configuration calls compensate. No mutation console, WAF Classic or additional WAF resources"
+        "CloudFormation tag updates are a local extension to the AWS documentation creation-only note: unrelated live tags remain, removals free capacity before replacement and failed tag/configuration calls compensate. No mutation console or additional WAFv2 resources"
       ],
       "execution": "Records only",
       "package": "wafv2"
@@ -2344,6 +2344,29 @@
       ],
       "execution": "Records and illustrative artifacts",
       "package": "signer"
+    },
+    "waf": {
+      "title": "WAF Classic",
+      "category": "Identity and security",
+      "summary": "Store global WAF Classic control-plane records only, with no request filtering.",
+      "features": [
+        "65 AWS JSON 1.1 operations, target AWSWAF_20150824 and signing name waf; global account-scoped records independent of WAFv2",
+        "GetChangeToken and GetChangeTokenStatus; single-use tokens consumed atomically with successful mutations and deterministic PROVISIONED, PENDING, INSYNC transitions on status reads",
+        "Create/Get/List/Update/Delete IPSet, ByteMatchSet, SizeConstraintSet, SqlInjectionMatchSet, XssMatchSet, GeoMatchSet, RegexPatternSet and RegexMatchSet; INSERT/DELETE updates, duplicate and absent-member errors, CIDR and tuple validation",
+        "Regular and rate-based rules with validated same-account condition references, immutable metrics, IP rate keys and rate limit metadata; GetRateBasedRuleManagedKeys returns empty",
+        "Web ACLs with ALLOW/BLOCK defaults and prioritized REGULAR/RATE_BASED rules with ALLOW/BLOCK/COUNT actions; nonempty and referenced-resource delete guards",
+        "Creation tags on rules, rate-based rules and web ACLs; TagResource/UntagResource/ListTagsForResource, shared WAFv2 tag validation, inventory, Resource Groups types and generic tagging",
+        "Terraform aws_waf_ipset, aws_waf_byte_match_set, aws_waf_rule, aws_waf_rate_based_rule and aws_waf_web_acl apply/update/destroy coverage",
+        "Put/Get/Delete/ListLoggingConfigurations store web ACL logging metadata, validate an existing owned us-east-1 Firehose stream named aws-waf-logs-*, and retain redacted fields; no log delivery"
+      ],
+      "gaps": [
+        "Records only, no request filtering, request evaluation, enforcement, metrics, sampled requests or rate counters; regex strings are stored verbatim without executing or validating against an AWS regex engine",
+        "WAF Regional, ALB/API Gateway associations, rule groups, managed rule subscriptions and permission policies are unsupported",
+        "No CloudFront association integration or CloudFormation resource handlers; resource changes require unused change tokens, while tag and logging APIs follow their token-free AWS request shapes",
+        "List cursors use resource IDs and tags use keys; Limit is 1-100. Classic IPv4 ranges support /8 and /16-/32, IPv6 /24,/32,/48,/56,/64,/128; names are immutable"
+      ],
+      "execution": "Records only",
+      "package": "waf"
     }
   },
   "future": {
@@ -2536,12 +2559,6 @@
       "state": "Proposed",
       "slice": "Implement `StartTextTranslationJob`, `DescribeTextTranslationJob`, `ListTextTranslationJobs`.",
       "features": "- [ ] `StartTextTranslationJob`\n- [ ] `DescribeTextTranslationJob`\n- [ ] `ListTextTranslationJobs`\n- [ ] `StopTextTranslationJob`\n- [ ] `ListLanguages`\n- [ ] `TagResource`\n- [ ] `UntagResource`\n- [ ] `ListTagsForResource`"
-    },
-    "waf-v1": {
-      "title": "WAF Classic",
-      "state": "Proposed",
-      "slice": "Implement `ListWebACLs`, `GetWebACL`, `ListRules`.",
-      "features": "- [ ] `ListWebACLs`\n- [ ] `GetWebACL`\n- [ ] `ListRules`\n- [ ] `GetChangeToken`"
     },
     "batch-runtime": {
       "title": "AWS Batch job execution",

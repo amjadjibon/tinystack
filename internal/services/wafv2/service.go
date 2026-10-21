@@ -14,6 +14,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/wafv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/wafcommon"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -170,7 +171,7 @@ func (s *Service) create(ctx context.Context, r *record, tags []api.Tag) (*recor
 	if guardErr := descriptionOK(r.Description); guardErr != nil {
 		return nil, guardErr
 	}
-	r.Tags, err = tagsMap(tags, false)
+	r.Tags, err = wafcommon.Tags(tags, false, func(t api.Tag) (*string, *string) { return t.Key, t.Value })
 	if err != nil {
 		return nil, err
 	}

@@ -173,6 +173,7 @@ nav:
           - "IAM": services/iam.md
           - "KMS": services/kms.md
           - "STS": services/sts.md
+          - "WAF Classic": services/waf.md
           - "WAF v2": services/wafv2.md
       - "Internet of Things":
           - "IoT Core": services/iot.md
@@ -283,5 +284,4 @@ nav:
           - "Transcribe": roadmap/services/transcribe.md
           - "Transfer Family runtime and advanced configuration": roadmap/services/transfer-runtime.md
           - "Translate": roadmap/services/translate.md
-          - "WAF Classic": roadmap/services/waf-v1.md
   # GENERATED NAV END

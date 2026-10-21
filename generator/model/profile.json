@@ -28094,5 +28094,761 @@
         "code"
       ]
     }
+  },
+  "waf": {
+    "operations": [
+      "CreateByteMatchSet",
+      "CreateGeoMatchSet",
+      "CreateIPSet",
+      "CreateRateBasedRule",
+      "CreateRegexMatchSet",
+      "CreateRegexPatternSet",
+      "CreateRule",
+      "CreateSizeConstraintSet",
+      "CreateSqlInjectionMatchSet",
+      "CreateWebACL",
+      "CreateXssMatchSet",
+      "DeleteByteMatchSet",
+      "DeleteGeoMatchSet",
+      "DeleteIPSet",
+      "DeleteLoggingConfiguration",
+      "DeleteRateBasedRule",
+      "DeleteRegexMatchSet",
+      "DeleteRegexPatternSet",
+      "DeleteRule",
+      "DeleteSizeConstraintSet",
+      "DeleteSqlInjectionMatchSet",
+      "DeleteWebACL",
+      "DeleteXssMatchSet",
+      "GetByteMatchSet",
+      "GetChangeToken",
+      "GetChangeTokenStatus",
+      "GetGeoMatchSet",
+      "GetIPSet",
+      "GetLoggingConfiguration",
+      "GetRateBasedRule",
+      "GetRateBasedRuleManagedKeys",
+      "GetRegexMatchSet",
+      "GetRegexPatternSet",
+      "GetRule",
+      "GetSizeConstraintSet",
+      "GetSqlInjectionMatchSet",
+      "GetWebACL",
+      "GetXssMatchSet",
+      "ListByteMatchSets",
+      "ListGeoMatchSets",
+      "ListIPSets",
+      "ListLoggingConfigurations",
+      "ListRateBasedRules",
+      "ListRegexMatchSets",
+      "ListRegexPatternSets",
+      "ListRules",
+      "ListSizeConstraintSets",
+      "ListSqlInjectionMatchSets",
+      "ListTagsForResource",
+      "ListWebACLs",
+      "ListXssMatchSets",
+      "PutLoggingConfiguration",
+      "TagResource",
+      "UntagResource",
+      "UpdateByteMatchSet",
+      "UpdateGeoMatchSet",
+      "UpdateIPSet",
+      "UpdateRateBasedRule",
+      "UpdateRegexMatchSet",
+      "UpdateRegexPatternSet",
+      "UpdateRule",
+      "UpdateSizeConstraintSet",
+      "UpdateSqlInjectionMatchSet",
+      "UpdateWebACL",
+      "UpdateXssMatchSet"
+    ],
+    "shapes": {
+      "ActivatedRule": [
+        "Priority",
+        "RuleId",
+        "Action",
+        "Type"
+      ],
+      "ByteMatchSet": [
+        "ByteMatchSetId",
+        "Name",
+        "ByteMatchTuples"
+      ],
+      "ByteMatchSetSummary": [
+        "ByteMatchSetId",
+        "Name"
+      ],
+      "ByteMatchSetUpdate": [
+        "Action",
+        "ByteMatchTuple"
+      ],
+      "ByteMatchTuple": [
+        "FieldToMatch",
+        "TargetString",
+        "TextTransformation",
+        "PositionalConstraint"
+      ],
+      "CreateByteMatchSetRequest": [
+        "Name",
+        "ChangeToken"
+      ],
+      "CreateByteMatchSetResponse": [
+        "ByteMatchSet",
+        "ChangeToken"
+      ],
+      "CreateGeoMatchSetRequest": [
+        "Name",
+        "ChangeToken"
+      ],
+      "CreateGeoMatchSetResponse": [
+        "GeoMatchSet",
+        "ChangeToken"
+      ],
+      "CreateIPSetRequest": [
+        "Name",
+        "ChangeToken"
+      ],
+      "CreateIPSetResponse": [
+        "IPSet",
+        "ChangeToken"
+      ],
+      "CreateRateBasedRuleRequest": [
+        "Name",
+        "MetricName",
+        "RateKey",
+        "RateLimit",
+        "ChangeToken",
+        "Tags"
+      ],
+      "CreateRateBasedRuleResponse": [
+        "Rule",
+        "ChangeToken"
+      ],
+      "CreateRegexMatchSetRequest": [
+        "Name",
+        "ChangeToken"
+      ],
+      "CreateRegexMatchSetResponse": [
+        "RegexMatchSet",
+        "ChangeToken"
+      ],
+      "CreateRegexPatternSetRequest": [
+        "Name",
+        "ChangeToken"
+      ],
+      "CreateRegexPatternSetResponse": [
+        "RegexPatternSet",
+        "ChangeToken"
+      ],
+      "CreateRuleRequest": [
+        "Name",
+        "MetricName",
+        "ChangeToken",
+        "Tags"
+      ],
+      "CreateRuleResponse": [
+        "Rule",
+        "ChangeToken"
+      ],
+      "CreateSizeConstraintSetRequest": [
+        "Name",
+        "ChangeToken"
+      ],
+      "CreateSizeConstraintSetResponse": [
+        "SizeConstraintSet",
+        "ChangeToken"
+      ],
+      "CreateSqlInjectionMatchSetRequest": [
+        "Name",
+        "ChangeToken"
+      ],
+      "CreateSqlInjectionMatchSetResponse": [
+        "SqlInjectionMatchSet",
+        "ChangeToken"
+      ],
+      "CreateWebACLRequest": [
+        "Name",
+        "MetricName",
+        "DefaultAction",
+        "ChangeToken",
+        "Tags"
+      ],
+      "CreateWebACLResponse": [
+        "WebACL",
+        "ChangeToken"
+      ],
+      "CreateXssMatchSetRequest": [
+        "Name",
+        "ChangeToken"
+      ],
+      "CreateXssMatchSetResponse": [
+        "XssMatchSet",
+        "ChangeToken"
+      ],
+      "DeleteByteMatchSetRequest": [
+        "ByteMatchSetId",
+        "ChangeToken"
+      ],
+      "DeleteByteMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "DeleteGeoMatchSetRequest": [
+        "GeoMatchSetId",
+        "ChangeToken"
+      ],
+      "DeleteGeoMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "DeleteIPSetRequest": [
+        "IPSetId",
+        "ChangeToken"
+      ],
+      "DeleteIPSetResponse": [
+        "ChangeToken"
+      ],
+      "DeleteLoggingConfigurationRequest": [
+        "ResourceArn"
+      ],
+      "DeleteLoggingConfigurationResponse": [],
+      "DeleteRateBasedRuleRequest": [
+        "RuleId",
+        "ChangeToken"
+      ],
+      "DeleteRateBasedRuleResponse": [
+        "ChangeToken"
+      ],
+      "DeleteRegexMatchSetRequest": [
+        "RegexMatchSetId",
+        "ChangeToken"
+      ],
+      "DeleteRegexMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "DeleteRegexPatternSetRequest": [
+        "RegexPatternSetId",
+        "ChangeToken"
+      ],
+      "DeleteRegexPatternSetResponse": [
+        "ChangeToken"
+      ],
+      "DeleteRuleRequest": [
+        "RuleId",
+        "ChangeToken"
+      ],
+      "DeleteRuleResponse": [
+        "ChangeToken"
+      ],
+      "DeleteSizeConstraintSetRequest": [
+        "SizeConstraintSetId",
+        "ChangeToken"
+      ],
+      "DeleteSizeConstraintSetResponse": [
+        "ChangeToken"
+      ],
+      "DeleteSqlInjectionMatchSetRequest": [
+        "SqlInjectionMatchSetId",
+        "ChangeToken"
+      ],
+      "DeleteSqlInjectionMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "DeleteWebACLRequest": [
+        "WebACLId",
+        "ChangeToken"
+      ],
+      "DeleteWebACLResponse": [
+        "ChangeToken"
+      ],
+      "DeleteXssMatchSetRequest": [
+        "XssMatchSetId",
+        "ChangeToken"
+      ],
+      "DeleteXssMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "FieldToMatch": [
+        "Type",
+        "Data"
+      ],
+      "GeoMatchConstraint": [
+        "Type",
+        "Value"
+      ],
+      "GeoMatchSet": [
+        "GeoMatchSetId",
+        "Name",
+        "GeoMatchConstraints"
+      ],
+      "GeoMatchSetSummary": [
+        "GeoMatchSetId",
+        "Name"
+      ],
+      "GeoMatchSetUpdate": [
+        "Action",
+        "GeoMatchConstraint"
+      ],
+      "GetByteMatchSetRequest": [
+        "ByteMatchSetId"
+      ],
+      "GetByteMatchSetResponse": [
+        "ByteMatchSet"
+      ],
+      "GetChangeTokenRequest": [],
+      "GetChangeTokenResponse": [
+        "ChangeToken"
+      ],
+      "GetChangeTokenStatusRequest": [
+        "ChangeToken"
+      ],
+      "GetChangeTokenStatusResponse": [
+        "ChangeTokenStatus"
+      ],
+      "GetGeoMatchSetRequest": [
+        "GeoMatchSetId"
+      ],
+      "GetGeoMatchSetResponse": [
+        "GeoMatchSet"
+      ],
+      "GetIPSetRequest": [
+        "IPSetId"
+      ],
+      "GetIPSetResponse": [
+        "IPSet"
+      ],
+      "GetLoggingConfigurationRequest": [
+        "ResourceArn"
+      ],
+      "GetLoggingConfigurationResponse": [
+        "LoggingConfiguration"
+      ],
+      "GetRateBasedRuleManagedKeysRequest": [
+        "RuleId",
+        "NextMarker"
+      ],
+      "GetRateBasedRuleManagedKeysResponse": [
+        "ManagedKeys",
+        "NextMarker"
+      ],
+      "GetRateBasedRuleRequest": [
+        "RuleId"
+      ],
+      "GetRateBasedRuleResponse": [
+        "Rule"
+      ],
+      "GetRegexMatchSetRequest": [
+        "RegexMatchSetId"
+      ],
+      "GetRegexMatchSetResponse": [
+        "RegexMatchSet"
+      ],
+      "GetRegexPatternSetRequest": [
+        "RegexPatternSetId"
+      ],
+      "GetRegexPatternSetResponse": [
+        "RegexPatternSet"
+      ],
+      "GetRuleRequest": [
+        "RuleId"
+      ],
+      "GetRuleResponse": [
+        "Rule"
+      ],
+      "GetSizeConstraintSetRequest": [
+        "SizeConstraintSetId"
+      ],
+      "GetSizeConstraintSetResponse": [
+        "SizeConstraintSet"
+      ],
+      "GetSqlInjectionMatchSetRequest": [
+        "SqlInjectionMatchSetId"
+      ],
+      "GetSqlInjectionMatchSetResponse": [
+        "SqlInjectionMatchSet"
+      ],
+      "GetWebACLRequest": [
+        "WebACLId"
+      ],
+      "GetWebACLResponse": [
+        "WebACL"
+      ],
+      "GetXssMatchSetRequest": [
+        "XssMatchSetId"
+      ],
+      "GetXssMatchSetResponse": [
+        "XssMatchSet"
+      ],
+      "IPSet": [
+        "IPSetId",
+        "Name",
+        "IPSetDescriptors"
+      ],
+      "IPSetDescriptor": [
+        "Type",
+        "Value"
+      ],
+      "IPSetSummary": [
+        "IPSetId",
+        "Name"
+      ],
+      "IPSetUpdate": [
+        "Action",
+        "IPSetDescriptor"
+      ],
+      "ListByteMatchSetsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListByteMatchSetsResponse": [
+        "NextMarker",
+        "ByteMatchSets"
+      ],
+      "ListGeoMatchSetsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListGeoMatchSetsResponse": [
+        "NextMarker",
+        "GeoMatchSets"
+      ],
+      "ListIPSetsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListIPSetsResponse": [
+        "NextMarker",
+        "IPSets"
+      ],
+      "ListLoggingConfigurationsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListLoggingConfigurationsResponse": [
+        "LoggingConfigurations",
+        "NextMarker"
+      ],
+      "ListRateBasedRulesRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListRateBasedRulesResponse": [
+        "NextMarker",
+        "Rules"
+      ],
+      "ListRegexMatchSetsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListRegexMatchSetsResponse": [
+        "NextMarker",
+        "RegexMatchSets"
+      ],
+      "ListRegexPatternSetsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListRegexPatternSetsResponse": [
+        "NextMarker",
+        "RegexPatternSets"
+      ],
+      "ListRulesRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListRulesResponse": [
+        "NextMarker",
+        "Rules"
+      ],
+      "ListSizeConstraintSetsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListSizeConstraintSetsResponse": [
+        "NextMarker",
+        "SizeConstraintSets"
+      ],
+      "ListSqlInjectionMatchSetsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListSqlInjectionMatchSetsResponse": [
+        "NextMarker",
+        "SqlInjectionMatchSets"
+      ],
+      "ListTagsForResourceRequest": [
+        "NextMarker",
+        "Limit",
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "NextMarker",
+        "TagInfoForResource"
+      ],
+      "ListWebACLsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListWebACLsResponse": [
+        "NextMarker",
+        "WebACLs"
+      ],
+      "ListXssMatchSetsRequest": [
+        "NextMarker",
+        "Limit"
+      ],
+      "ListXssMatchSetsResponse": [
+        "NextMarker",
+        "XssMatchSets"
+      ],
+      "LoggingConfiguration": [
+        "ResourceArn",
+        "LogDestinationConfigs",
+        "RedactedFields"
+      ],
+      "Predicate": [
+        "Negated",
+        "Type",
+        "DataId"
+      ],
+      "PutLoggingConfigurationRequest": [
+        "LoggingConfiguration"
+      ],
+      "PutLoggingConfigurationResponse": [
+        "LoggingConfiguration"
+      ],
+      "RateBasedRule": [
+        "RuleId",
+        "Name",
+        "MetricName",
+        "MatchPredicates",
+        "RateKey",
+        "RateLimit"
+      ],
+      "RegexMatchSet": [
+        "RegexMatchSetId",
+        "Name",
+        "RegexMatchTuples"
+      ],
+      "RegexMatchSetSummary": [
+        "RegexMatchSetId",
+        "Name"
+      ],
+      "RegexMatchSetUpdate": [
+        "Action",
+        "RegexMatchTuple"
+      ],
+      "RegexMatchTuple": [
+        "FieldToMatch",
+        "TextTransformation",
+        "RegexPatternSetId"
+      ],
+      "RegexPatternSet": [
+        "RegexPatternSetId",
+        "Name",
+        "RegexPatternStrings"
+      ],
+      "RegexPatternSetSummary": [
+        "RegexPatternSetId",
+        "Name"
+      ],
+      "RegexPatternSetUpdate": [
+        "Action",
+        "RegexPatternString"
+      ],
+      "Rule": [
+        "RuleId",
+        "Name",
+        "MetricName",
+        "Predicates"
+      ],
+      "RuleSummary": [
+        "RuleId",
+        "Name"
+      ],
+      "RuleUpdate": [
+        "Action",
+        "Predicate"
+      ],
+      "SizeConstraint": [
+        "FieldToMatch",
+        "TextTransformation",
+        "ComparisonOperator",
+        "Size"
+      ],
+      "SizeConstraintSet": [
+        "SizeConstraintSetId",
+        "Name",
+        "SizeConstraints"
+      ],
+      "SizeConstraintSetSummary": [
+        "SizeConstraintSetId",
+        "Name"
+      ],
+      "SizeConstraintSetUpdate": [
+        "Action",
+        "SizeConstraint"
+      ],
+      "SqlInjectionMatchSet": [
+        "SqlInjectionMatchSetId",
+        "Name",
+        "SqlInjectionMatchTuples"
+      ],
+      "SqlInjectionMatchSetSummary": [
+        "SqlInjectionMatchSetId",
+        "Name"
+      ],
+      "SqlInjectionMatchSetUpdate": [
+        "Action",
+        "SqlInjectionMatchTuple"
+      ],
+      "SqlInjectionMatchTuple": [
+        "FieldToMatch",
+        "TextTransformation"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagInfoForResource": [
+        "ResourceARN",
+        "TagList"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateByteMatchSetRequest": [
+        "ByteMatchSetId",
+        "ChangeToken",
+        "Updates"
+      ],
+      "UpdateByteMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "UpdateGeoMatchSetRequest": [
+        "GeoMatchSetId",
+        "ChangeToken",
+        "Updates"
+      ],
+      "UpdateGeoMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "UpdateIPSetRequest": [
+        "IPSetId",
+        "ChangeToken",
+        "Updates"
+      ],
+      "UpdateIPSetResponse": [
+        "ChangeToken"
+      ],
+      "UpdateRateBasedRuleRequest": [
+        "RuleId",
+        "ChangeToken",
+        "Updates",
+        "RateLimit"
+      ],
+      "UpdateRateBasedRuleResponse": [
+        "ChangeToken"
+      ],
+      "UpdateRegexMatchSetRequest": [
+        "RegexMatchSetId",
+        "Updates",
+        "ChangeToken"
+      ],
+      "UpdateRegexMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "UpdateRegexPatternSetRequest": [
+        "RegexPatternSetId",
+        "Updates",
+        "ChangeToken"
+      ],
+      "UpdateRegexPatternSetResponse": [
+        "ChangeToken"
+      ],
+      "UpdateRuleRequest": [
+        "RuleId",
+        "ChangeToken",
+        "Updates"
+      ],
+      "UpdateRuleResponse": [
+        "ChangeToken"
+      ],
+      "UpdateSizeConstraintSetRequest": [
+        "SizeConstraintSetId",
+        "ChangeToken",
+        "Updates"
+      ],
+      "UpdateSizeConstraintSetResponse": [
+        "ChangeToken"
+      ],
+      "UpdateSqlInjectionMatchSetRequest": [
+        "SqlInjectionMatchSetId",
+        "ChangeToken",
+        "Updates"
+      ],
+      "UpdateSqlInjectionMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "UpdateWebACLRequest": [
+        "WebACLId",
+        "ChangeToken",
+        "Updates",
+        "DefaultAction"
+      ],
+      "UpdateWebACLResponse": [
+        "ChangeToken"
+      ],
+      "UpdateXssMatchSetRequest": [
+        "XssMatchSetId",
+        "ChangeToken",
+        "Updates"
+      ],
+      "UpdateXssMatchSetResponse": [
+        "ChangeToken"
+      ],
+      "WafAction": [
+        "Type"
+      ],
+      "WebACL": [
+        "WebACLId",
+        "Name",
+        "MetricName",
+        "DefaultAction",
+        "Rules",
+        "WebACLArn"
+      ],
+      "WebACLSummary": [
+        "WebACLId",
+        "Name"
+      ],
+      "WebACLUpdate": [
+        "Action",
+        "ActivatedRule"
+      ],
+      "XssMatchSet": [
+        "XssMatchSetId",
+        "Name",
+        "XssMatchTuples"
+      ],
+      "XssMatchSetSummary": [
+        "XssMatchSetId",
+        "Name"
+      ],
+      "XssMatchSetUpdate": [
+        "Action",
+        "XssMatchTuple"
+      ],
+      "XssMatchTuple": [
+        "FieldToMatch",
+        "TextTransformation"
+      ]
+    }
   }
 }
