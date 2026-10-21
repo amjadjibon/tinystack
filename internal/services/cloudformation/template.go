@@ -535,7 +535,7 @@ func (t *template) parseResources(v any) error {
 			return err
 		}
 
-		if _, known := types[r.Type]; !known {
+		if resourceTypeOf(r.Type) == nil {
 			unsupported = append(unsupported, r.Type)
 		}
 
@@ -667,9 +667,9 @@ func (t *template) check() error {
 			}
 		}
 
-		typ := types[r.Type]
+		typ := resourceTypeOf(r.Type)
 		for p := range r.Properties {
-			if !slices.Contains(typ.properties, p) {
+			if !isCustomResource(r.Type) && !slices.Contains(typ.properties, p) {
 				return validation("TinyStack does not support the %s property of %s (resource %s)", p, r.Type, name)
 			}
 		}
@@ -767,7 +767,7 @@ func (t *template) walkFunction(fn string, arg any, deps map[string]bool, path s
 			return templateError("instance of Fn::GetAtt references undefined resource %s", name)
 		}
 
-		if attribute, isText := parts[1].(string); isText && !slices.Contains(types[r.Type].attributes, attribute) {
+		if attribute, isText := parts[1].(string); isText && !supportsAttribute(r.Type, attribute) {
 			return templateError("resource %s does not support attribute type %s in Fn::GetAtt", name, attribute)
 		}
 
@@ -862,7 +862,7 @@ func (t *template) walkSub(arg any, deps map[string]bool, path string) error {
 			return templateError("Unresolved resource dependencies [%s] in %s", resource, path)
 		}
 
-		if !slices.Contains(types[r.Type].attributes, attribute) {
+		if !supportsAttribute(r.Type, attribute) {
 			return templateError("resource %s does not support attribute type %s in Fn::Sub", resource, attribute)
 		}
 
@@ -917,7 +917,7 @@ func (t *template) capabilities() (required []string, reason string) {
 	named := false
 	var iam []string
 	for _, r := range t.Resources {
-		typ := types[r.Type]
+		typ := resourceTypeOf(r.Type)
 		if !typ.iam {
 			continue
 		}

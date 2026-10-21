@@ -282,6 +282,10 @@ func (e *evaluator) attribute(name, attribute string) (any, error) {
 		return nil, templateError("resource %s has no %s attribute", name, attribute)
 	}
 
+	if r.NoEcho {
+		return "****", nil
+	}
+
 	return v, nil
 }
 

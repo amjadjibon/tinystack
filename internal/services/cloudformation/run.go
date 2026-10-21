@@ -139,7 +139,9 @@ func (s *Service) next(ctx context.Context, ref stackRef) (bool, error) {
 			return err
 		}
 
-		next = s.plan(tx, ref.scope, st)
+		if st.Op.Pending == nil {
+			next = s.plan(tx, ref.scope, st)
+		}
 		return nil
 	}); err != nil {
 		return false, err
@@ -154,6 +156,10 @@ func (s *Service) next(ctx context.Context, ref stackRef) (bool, error) {
 
 			return err
 		})
+	}
+
+	if st.Op.Pending != nil {
+		return s.resumePending(ctx, ref, st)
 	}
 
 	switch next.kind {
@@ -179,6 +185,10 @@ func (s *Service) next(ctx context.Context, ref stackRef) (bool, error) {
 		return s.start(tx, ref.scope, cur, &next)
 	}); err != nil {
 		return false, err
+	}
+
+	if resourceTypeOf(stepResourceType(st, &next)).pending {
+		return s.beginPending(ctx, ref, st, &next)
 	}
 
 	physical, attributes, err := s.perform(ctx, ref.scope, st, &next)
@@ -261,9 +271,9 @@ func (s *Service) planApply(tx storage.ReadTx, scope request.Scope, st *stack) s
 		case (r.Status == statusCreateComplete || r.Status == statusUpdateComplete) &&
 			(len(r.Properties) == 0 && len(p) == 0 || reflect.DeepEqual(r.Properties, p)):
 			continue
-		case types[decl.Type].replaces(r.Properties, p):
+		case resourceTypeOf(decl.Type).replaces(r.Properties, p):
 			next.kind = stepReplace
-			if types[decl.Type].createsFirst(r.Properties, p) {
+			if resourceTypeOf(decl.Type).createsFirst(r.Properties, p) {
 				next.kind = stepSwap
 			}
 		default:
@@ -639,7 +649,8 @@ func (s *Service) record(
 				&resource{Type: next.typ, Physical: physical, Attributes: attributes},
 			)
 		}
-		if next.kind == stepSwap && identityChanged && next.decl.UpdateReplacePolicy != policyRetain {
+		if (next.kind == stepSwap || next.kind == stepUpdate && isCustomResource(next.typ)) && identityChanged &&
+			next.decl.UpdateReplacePolicy != policyRetain {
 			old := *r
 			st.Replaced = append(st.Replaced, &replaced{Logical: next.logical, Resource: &old})
 			clusterOrderRetired(st)
@@ -726,7 +737,7 @@ func (s *Service) resourceFailed(tx storage.WriteTx, scope request.Scope, st *st
 	switch {
 	case next.kind == stepRemove:
 		status = statusDeleteFailed
-	case r.Physical == "":
+	case next.kind == stepCreate || r.Physical == "":
 		status = statusCreateFailed
 	}
 

@@ -210,6 +210,8 @@ type resourceType struct {
 	attributes []string
 	// replace are the properties whose change replaces the resource.
 	replace []string
+	// pending marks resources completed by a later runner visit.
+	pending bool
 	// iam marks types that need CAPABILITY_IAM.
 	iam bool
 }
@@ -218,6 +220,18 @@ type resourceType struct {
 var types = map[string]*resourceType{}
 
 func register(name string, t *resourceType) { types[name] = t }
+
+func resourceTypeOf(name string) *resourceType {
+	if isCustomResource(name) {
+		return customResourceType
+	}
+	return types[name]
+}
+
+func supportsAttribute(typ, name string) bool {
+	return isCustomResource(typ) || typ == stackType && strings.HasPrefix(name, "Outputs.") ||
+		slices.Contains(resourceTypeOf(typ).attributes, name)
+}
 
 // replaces reports whether going from old to p replaces a resource.
 func (t *resourceType) replaces(old, p props) bool {
@@ -230,6 +244,10 @@ func (t *resourceType) replaces(old, p props) bool {
 	if t == types[xraySamplingRuleType] {
 		return xraySamplingRuleReplaces(old, p)
 	}
+	if t == customResourceType || t == types[stackType] {
+		return false
+	}
+
 	if t.update == nil {
 		return true
 	}

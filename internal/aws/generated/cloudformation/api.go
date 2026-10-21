@@ -103,6 +103,8 @@ type Stack struct {
 	RoleARN                     *string                `json:"RoleARN,omitempty" query:"RoleARN"`
 	Tags                        []Tag                  `json:"Tags,omitempty" query:"Tags"`
 	EnableTerminationProtection *bool                  `json:"EnableTerminationProtection,omitempty" query:"EnableTerminationProtection"`
+	ParentId                    *string                `json:"ParentId,omitempty" query:"ParentId"`
+	RootId                      *string                `json:"RootId,omitempty" query:"RootId"`
 	DriftInformation            *StackDriftInformation `json:"DriftInformation,omitempty" query:"DriftInformation"`
 }
 
@@ -129,6 +131,8 @@ type StackSummary struct {
 	DeletionTime        *time.Time                    `json:"DeletionTime,omitempty" query:"DeletionTime"`
 	StackStatus         *string                       `json:"StackStatus,omitempty" query:"StackStatus"`
 	StackStatusReason   *string                       `json:"StackStatusReason,omitempty" query:"StackStatusReason"`
+	ParentId            *string                       `json:"ParentId,omitempty" query:"ParentId"`
+	RootId              *string                       `json:"RootId,omitempty" query:"RootId"`
 	DriftInformation    *StackDriftInformationSummary `json:"DriftInformation,omitempty" query:"DriftInformation"`
 }
 

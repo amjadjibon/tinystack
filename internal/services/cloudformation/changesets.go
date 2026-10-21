@@ -317,7 +317,15 @@ func changes(st *stack, body string, params []parameter) []api.Change {
 // replacement says whether changing old's properties to decl's replaces the
 // resource.
 func replacement(decl, old *resourceDecl) string {
-	typ := types[decl.Type]
+	if isCustomResource(decl.Type) {
+		return "Conditional"
+	}
+
+	if decl.Type == stackType {
+		return "False"
+	}
+
+	typ := resourceTypeOf(decl.Type)
 	if typ.update == nil {
 		return "True"
 	}

@@ -41,7 +41,7 @@ const (
 	kindChangeSet = "changeset"
 	kindExport    = "export"
 	indexPrefix   = "aws/" + service + "/index/"
-	// stackType is the resource type of a stack's own events.
+	// stackType identifies stacks and nested stack resources.
 	stackType = "AWS::CloudFormation::Stack"
 	// retention is how long deleted stacks stay listed.
 	retention = 90 * 24 * time.Hour
@@ -50,22 +50,24 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store    storage.Store
-	caller   *catalog.Caller
-	mq       mqRecords
-	msk      mskRecords
-	mwaa     mwaaRecords
 	transfer transferRecords
 	location locationRecords
 	s3tables s3tablesRecords
-	logger   *slog.Logger
+	mq       mqRecords
+	msk      mskRecords
+	mwaa     mwaaRecords
+	store    storage.Store
 	now      func() time.Time
+	logger   *slog.Logger
+	caller   *catalog.Caller
 	bg       *background.Group
 	// wake starts a visit before the next tick, after an operation commits.
 	wake chan struct{}
 	// busy holds the stacks whose operations are advancing.
 	busy map[string]bool
-	mu   sync.Mutex
+	// CustomResourceTimeout is the maximum provider response wait; set before UseCaller.
+	CustomResourceTimeout time.Duration
+	mu                    sync.Mutex
 }
 
 // New returns a CloudFormation service. Stacks change only once UseCaller
@@ -76,7 +78,7 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 	}
 
 	return &Service{
-		store: store, logger: logger, now: time.Now, bg: background.New(),
+		CustomResourceTimeout: time.Hour, store: store, logger: logger, now: time.Now, bg: background.New(),
 		wake: make(chan struct{}, 1), busy: map[string]bool{},
 	}
 }
@@ -108,6 +110,8 @@ type stack struct {
 	Deleted      *time.Time `json:",omitempty"`
 	Op           *operation `json:",omitempty"`
 	Resources    map[string]*resource
+	ParentID     string `json:",omitempty"`
+	RootID       string `json:",omitempty"`
 	ID           string
 	Name         string
 	Description  string `json:",omitempty"`
@@ -135,6 +139,7 @@ type stack struct {
 
 // operation is a stack's create, update, or delete in progress.
 type operation struct {
+	Pending *pendingStep `json:",omitempty"`
 	Started time.Time
 	// Previous is what an update's rollback returns to.
 	Previous *revision `json:",omitempty"`
@@ -184,7 +189,8 @@ type resource struct {
 	// Policy is its DeletionPolicy.
 	Policy string `json:",omitempty"`
 	// Deps are the resources it depends on, which are deleted after it.
-	Deps []string `json:",omitempty"`
+	Deps   []string `json:",omitempty"`
+	NoEcho bool     `json:",omitempty"`
 }
 
 // replaced is a resource an update replaced.

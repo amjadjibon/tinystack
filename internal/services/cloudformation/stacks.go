@@ -279,6 +279,9 @@ func (s *Service) CreateStack(ctx context.Context, in *api.CreateStackInput) (*a
 			Timeout: common.Value(in.TimeoutInMinutes), Protected: common.Value(in.EnableTerminationProtection),
 			DisableRollback: failure == onFailureNothing, Endpoint: m.Endpoint, Resources: map[string]*resource{},
 		}
+		if ancestry, ok := ctx.Value(nestedAncestryKey{}).(nestedAncestry); ok {
+			st.ParentID, st.RootID = ancestry.ParentID, ancestry.RootID
+		}
 		id = st.ID
 		return s.begin(tx, m.Scope, st, &operation{
 			Action: actionCreate, Phase: phaseApply, OnFailure: failure, Token: common.Value(in.ClientRequestToken),
@@ -507,6 +510,10 @@ func describe(st *stack) api.Stack {
 		Capabilities: st.Capabilities, EnableTerminationProtection: new(st.Protected),
 		DriftInformation: &api.StackDriftInformation{StackDriftStatus: new("NOT_CHECKED")},
 	}
+	if st.ParentID != "" {
+		out.ParentId, out.RootId = new(st.ParentID), new(st.RootID)
+	}
+
 	if st.Description != "" {
 		out.Description = &st.Description
 	}
@@ -683,6 +690,10 @@ func (s *Service) ListStacks(ctx context.Context, in *api.ListStacksInput) (*api
 			DeletionTime: st.Deleted, StackStatus: &st.Status,
 			DriftInformation: &api.StackDriftInformationSummary{StackDriftStatus: new("NOT_CHECKED")},
 		}
+		if st.ParentID != "" {
+			summary.ParentId, summary.RootId = new(st.ParentID), new(st.RootID)
+		}
+
 		if st.Description != "" {
 			summary.TemplateDescription = &st.Description
 		}

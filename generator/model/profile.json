@@ -2618,6 +2618,8 @@
         "RoleARN",
         "Tags",
         "EnableTerminationProtection",
+        "ParentId",
+        "RootId",
         "DriftInformation"
       ],
       "Parameter": [
@@ -2656,6 +2658,8 @@
         "DeletionTime",
         "StackStatus",
         "StackStatusReason",
+        "ParentId",
+        "RootId",
         "DriftInformation"
       ],
       "StackDriftInformationSummary": [

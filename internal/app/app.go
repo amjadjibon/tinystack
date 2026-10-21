@@ -716,6 +716,7 @@ func build(
 	fixtures := costdata.Handler(store, cfg.Defaults.Account)
 	handler.Handle("costs/fixtures", fixtures)
 	handler.Handle("costs/fixtures/", fixtures)
+	handler.Handle("cloudformation/responses/", gateway.CloudFormationResponses(stacks.RespondCustomResource))
 	handler.Handle("deliveries", deliveries)
 	handler.Handle("messages", delivery.MessagesHandler(deliveries))
 	handler.HandlePath("/_aws/ses", delivery.SESMessagesHandler(deliveries))
