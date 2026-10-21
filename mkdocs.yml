@@ -129,30 +129,38 @@ nav:
           - "Amazon OpenSearch Service": services/opensearch.md
           - "Amazon Redshift": services/redshift.md
           - "Athena": services/athena.md
+          - "Data Firehose": services/firehose.md
           - "Glue Data Catalog": services/glue.md
+          - "Kinesis Data Streams": services/kinesis.md
       - "Application Integration":
           - "Amazon MQ": services/mq.md
           - "Amazon MWAA": services/mwaa.md
-      - "Compute and containers":
+          - "AppSync GraphQL": services/appsync.md
+          - "EventBridge": services/eventbridge.md
+          - "EventBridge Pipes": services/pipes.md
+          - "EventBridge Scheduler": services/scheduler.md
+          - "SNS": services/sns.md
+          - "SQS": services/sqs.md
+          - "Step Functions": services/sfn.md
+      - "Business Applications":
+          - "SES v1": services/ses.md
+          - "SES v2": services/sesv2.md
+      - "Compute":
           - "AWS Batch": services/batch.md
           - "EC2": services/ec2.md
           - "EC2 Auto Scaling": services/autoscaling.md
+          - "Lambda": services/lambda.md
+      - "Containers":
           - "ECR": services/ecr.md
           - "ECS": services/ecs.md
           - "EKS": services/eks.md
-          - "Lambda": services/lambda.md
-      - "Configuration and operations":
-          - "Cloud Control API": services/cloudcontrol.md
-          - "CloudFormation": services/cloudformation.md
-          - "CloudWatch Logs": services/logs.md
-          - "CloudWatch metrics and alarms": services/cloudwatch.md
-          - "Resource Groups": services/resourcegroups.md
-          - "Resource Groups Tagging API": services/resourcegroupstaggingapi.md
-          - "Secrets Manager": services/secretsmanager.md
-          - "Systems Manager": services/ssm.md
       - "Database":
           - "Amazon MemoryDB": services/memorydb.md
           - "Amazon Timestream Write": services/timestreamwrite.md
+          - "DynamoDB": services/dynamodb.md
+          - "DynamoDB Streams": services/dynamodbstreams.md
+          - "ElastiCache": services/elasticache.md
+          - "RDS, DocumentDB and Neptune": services/rds.md
       - "Developer Tools":
           - "AWS CodeArtifact": services/codeartifact.md
           - "AWS CodeCommit": services/codecommit.md
@@ -163,26 +171,11 @@ nav:
           - "CodePipeline": services/codepipeline.md
       - "Front-End Web & Mobile":
           - "Amazon Location Service": services/location.md
-      - "Identity and security":
-          - "AWS IAM Identity Center \u2014 Identity Store": services/identitystore.md
-          - "AWS IAM Identity Center \u2014 SSO Admin": services/ssoadmin.md
-          - "AWS Private CA": services/acmpca.md
-          - "Amazon Verified Permissions": services/verifiedpermissions.md
-          - "Certificate Manager": services/acm.md
-          - "Cognito identity pools": services/cognitoidentity.md
-          - "Cognito user pools": services/cognitoidp.md
-          - "IAM": services/iam.md
-          - "KMS": services/kms.md
-          - "STS": services/sts.md
-          - "WAF Classic": services/waf.md
-          - "WAF v2": services/wafv2.md
       - "Internet of Things":
           - "IoT Core": services/iot.md
           - "IoT Data Plane": services/iotdataplane.md
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md
       - "Management & Governance":
-          - "Application Auto Scaling": services/applicationautoscaling.md
-      - "Management and governance":
           - "AWS Account": services/account.md
           - "AWS Backup": services/backup.md
           - "AWS Budgets": services/budgets.md
@@ -192,47 +185,49 @@ nav:
           - "AWS Service Quotas": services/servicequotas.md
           - "AppConfig": services/appconfig.md
           - "AppConfig Data": services/appconfigdata.md
+          - "Application Auto Scaling": services/applicationautoscaling.md
+          - "Cloud Control API": services/cloudcontrol.md
+          - "CloudFormation": services/cloudformation.md
           - "CloudTrail": services/cloudtrail.md
+          - "CloudWatch Logs": services/logs.md
+          - "CloudWatch metrics and alarms": services/cloudwatch.md
           - "Organizations": services/organizations.md
-      - "Messaging and events":
-          - "Data Firehose": services/firehose.md
-          - "EventBridge": services/eventbridge.md
-          - "EventBridge Pipes": services/pipes.md
-          - "EventBridge Scheduler": services/scheduler.md
-          - "Kinesis Data Streams": services/kinesis.md
-          - "SNS": services/sns.md
-          - "SQS": services/sqs.md
+          - "Resource Groups": services/resourcegroups.md
+          - "Resource Groups Tagging API": services/resourcegroupstaggingapi.md
+          - "Systems Manager": services/ssm.md
       - "Migration & Modernization":
           - "AWS Database Migration Service": services/databasemigrationservice.md
           - "AWS Transfer Family": services/transfer.md
-      - "Networking and APIs":
+      - "Networking & Content Delivery":
           - "API Gateway HTTP APIs": services/apigatewayv2.md
           - "API Gateway REST APIs": services/apigateway.md
-          - "AppSync GraphQL": services/appsync.md
+          - "Amazon Route 53 Resolver": services/route53resolver.md
+          - "Cloud Map": services/servicediscovery.md
           - "CloudFront": services/cloudfront.md
           - "Elastic Load Balancing (Classic)": services/elb.md
           - "Elastic Load Balancing v2": services/elbv2.md
           - "Route 53": services/route53.md
-      - "Networking and content delivery":
-          - "Amazon Route 53 Resolver": services/route53resolver.md
-          - "Cloud Map": services/servicediscovery.md
       - "Security, Identity & Compliance":
+          - "AWS IAM Identity Center \u2014 Identity Store": services/identitystore.md
+          - "AWS IAM Identity Center \u2014 SSO Admin": services/ssoadmin.md
+          - "AWS Private CA": services/acmpca.md
           - "AWS Resource Access Manager": services/ram.md
           - "AWS Signer": services/signer.md
+          - "Amazon Verified Permissions": services/verifiedpermissions.md
+          - "Certificate Manager": services/acm.md
+          - "Cognito identity pools": services/cognitoidentity.md
+          - "Cognito user pools": services/cognitoidp.md
+          - "IAM": services/iam.md
+          - "KMS": services/kms.md
+          - "STS": services/sts.md
+          - "Secrets Manager": services/secretsmanager.md
+          - "WAF Classic": services/waf.md
+          - "WAF v2": services/wafv2.md
       - "Storage":
           - "Amazon EFS": services/efs.md
           - "Amazon S3 Glacier": services/glacier.md
           - "Amazon S3 Tables": services/s3tables.md
-      - "Storage and databases":
-          - "DynamoDB": services/dynamodb.md
-          - "DynamoDB Streams": services/dynamodbstreams.md
-          - "ElastiCache": services/elasticache.md
-          - "RDS, DocumentDB and Neptune": services/rds.md
           - "S3": services/s3.md
-      - "Workflow and email":
-          - "SES v1": services/ses.md
-          - "SES v2": services/sesv2.md
-          - "Step Functions": services/sfn.md
   - Roadmap:
       - Priorities and policy: roadmap/index.md
       - Future catalogue: roadmap/catalogue.md

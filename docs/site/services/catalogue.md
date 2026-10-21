@@ -172,6 +172,20 @@ Query local S3 data through the Glue catalog using an in-memory SQLite SQL engin
 
 [Supported operations](athena.md#supported-operations) · [Limitations](athena.md#limitations-and-future-work)
 
+#### Data Firehose
+
+Buffer direct or Kinesis records and deliver them to S3.
+
+**Execution:** Local behavior. **Selected operations:** 12.
+
+- Delivery streams, tags, direct puts and batch puts.
+- Background buffering and S3 output after size/time thresholds.
+- Kinesis source polling and Lambda processing through the shared caller.
+- With authorization on, S3 writes and Lambda processor calls assume the destination's role, whose trust policy must allow firehose.amazonaws.com for the delivery stream, and are decided by the role's policies; a denied processor call fails its records with Lambda.InvokeAccessDenied and a denied write is recorded as a failed delivery.
+- PutRecord and PutRecordBatch resolve delivery stream ARNs and tags for resource-scoped identity and delivery-role policies.
+
+[Supported operations](firehose.md#supported-operations) · [Limitations](firehose.md#limitations-and-future-work)
+
 #### Glue Data Catalog
 
 Create the databases, tables, and partitions that local Athena queries use.
@@ -184,6 +198,18 @@ Create the databases, tables, and partitions that local Athena queries use.
 - Names are normalized to lowercase; deleting a database removes its tables and partitions.
 
 [Supported operations](glue.md#supported-operations) · [Limitations](glue.md#limitations-and-future-work)
+
+#### Kinesis Data Streams
+
+Write and read ordered shard records and feed local Lambda or Firehose consumers.
+
+**Execution:** Local behavior. **Selected operations:** 31.
+
+- Streams, shards, consumers, shard iterators and record CRUD APIs.
+- Split and merge shard metadata with stable record sequence ordering.
+- Lambda mappings and Firehose sources read records in-process.
+
+[Supported operations](kinesis.md#supported-operations) · [Limitations](kinesis.md#limitations-and-future-work)
 
 ### Application Integration
 
@@ -219,7 +245,155 @@ Store Apache Airflow environment configuration and tags without provisioning or 
 
 [Supported operations](mwaa.md#supported-operations) · [Limitations](mwaa.md#limitations-and-future-work)
 
-### Compute and containers
+#### AppSync GraphQL
+
+Run GraphQL APIs with local resolvers and WebSocket subscriptions.
+
+**Execution:** Local behavior. **Selected operations:** 36.
+
+- GraphQL APIs, API keys, schema/type operations, data sources, functions and resolvers.
+- Unit and pipeline resolvers using APPSYNC_JS or a VTL subset.
+- NONE, Lambda, HTTP, DynamoDB and EventBridge data sources.
+- Authentication with API keys, IAM callers, Cognito, OIDC and Lambda.
+- Lambda resolver batching and enhanced subscription filters.
+
+[Supported operations](appsync.md#supported-operations) · [Limitations](appsync.md#limitations-and-future-work)
+
+#### EventBridge
+
+Route events through local buses, patterns, rules, schedules, archives, and replays.
+
+**Execution:** Local behavior. **Selected operations:** 30.
+
+- Default and custom buses, rules, targets and input transformers.
+- Pattern matching shared with other event services.
+- SQS, SNS and Lambda targets in the same account and region.
+- Scheduled rules, durable retry records and SQS dead-letter queues.
+- Archives and synchronous replay.
+- AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection.
+- Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management.
+- With authorization on, SQS, SNS and Lambda targets without a role, and dead-letter queues, need their resource policy to allow events.amazonaws.com with the rule as aws:SourceArn; enforce mode fails the invocation into the existing retry and dead-letter path with the ERROR_CODE NO_PERMISSIONS, soft mode records the denied check.
+- Targets with a RoleArn assume that role, whose trust policy must allow events.amazonaws.com for the rule (aws:SourceArn) and account, and are then decided by the role's policies and the target's resource policy; a role that cannot be assumed reports FAILED_TO_ASSUME_ROLE.
+
+[Supported operations](eventbridge.md#supported-operations) · [Limitations](eventbridge.md#limitations-and-future-work)
+
+#### EventBridge Pipes
+
+Connect SQS queues and Kinesis or DynamoDB streams to targets with filtering and Lambda enrichment.
+
+**Execution:** Local behavior. **Selected operations:** 10.
+
+- CreatePipe, DescribePipe, UpdatePipe, DeletePipe, ListPipes with filters and pagination, StartPipe and StopPipe.
+- Pipes settle at once in RUNNING or STOPPED; responses report the transitional state.
+- Tags on pipes through TagResource, UntagResource and ListTagsForResource, and through the Resource Groups Tagging API.
+- SQS sources read in-process; messages are deleted after delivery or when a filter drops them.
+- Kinesis and DynamoDB stream sources with TRIM_HORIZON or LATEST and a per-pipe cursor.
+- FilterCriteria event patterns shared with Lambda event source mappings.
+- Lambda enrichment, and InputTemplate with JSON paths and aws.pipes variables on enrichment and target.
+- Lambda, SQS, SNS, EventBridge, Step Functions and Kinesis targets, called in-process; Lambda and Step Functions receive the batch as a JSON array.
+- Resources appear in the resource inventory.
+- With authorization on, enrichment and target calls assume the pipe's role, whose trust policy must allow pipes.amazonaws.com for the pipe (aws:SourceArn) and account, and are decided by the role's policies; a denied delivery is a failed delivery that the next visit retries, and soft mode records the check.
+- With authorization on, source reads (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; stream describe, iterator and record reads) are made as the pipe's role too, checked once every 30 seconds per pipe, role and source, including denials; role or source changes force a recheck, deletion drops its entry and reset clears every entry; a denied pipe moves nothing.
+
+[Supported operations](pipes.md#supported-operations) · [Limitations](pipes.md#limitations-and-future-work)
+
+#### EventBridge Scheduler
+
+Run one-time, rate, and cron schedules against implemented services.
+
+**Execution:** Local behavior. **Selected operations:** 12.
+
+- Schedule groups and schedule CRUD with time-zone handling.
+- Background runner claims due schedules and invokes targets in-process.
+- Failed deliveries can reach a target SQS dead-letter queue.
+- With authorization on, each run (and the send to the dead-letter queue) assumes the target's role, whose trust policy must allow scheduler.amazonaws.com for the schedule's group (aws:SourceArn) and account, and is decided by the role's identity policies, boundary and the target's resource policy; enforce mode fails the run into the dead-letter path with the denial as ERROR_CODE and ERROR_MESSAGE, soft mode records the check.
+
+[Supported operations](scheduler.md#supported-operations) · [Limitations](scheduler.md#limitations-and-future-work)
+
+#### SNS
+
+Publish messages to local queues and functions, or confirmed HTTP subscriptions.
+
+**Execution:** Local behavior. **Selected operations:** 19.
+
+- Topics, tags, subscriptions, filtering and FIFO deduplication.
+- SQS fan-out and asynchronous Lambda invocation.
+- HTTP/HTTPS confirmation and outbound delivery.
+- Email and SMS deliveries are recorded for inspection.
+- AWS-style console with account/Region-scoped standard and FIFO topic creation, display names, deduplication, policies and tags; subscription lists and details, endpoint selection, confirmation and deletion, raw delivery and attribute/body filters; message publishing and topic-specific delivery inspection.
+- Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens.
+- Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery.
+- With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue and Publish still succeeds.
+
+[Supported operations](sns.md#supported-operations) · [Limitations](sns.md#limitations-and-future-work)
+
+#### SQS
+
+Use queues with visibility timeouts, long polling, FIFO ordering, and dead-letter workflows.
+
+**Execution:** Local behavior. **Selected operations:** 23.
+
+- Queue lifecycle, attributes and tags.
+- Send, receive, delete, visibility updates and batch operations.
+- Long polling waits outside transactions.
+- FIFO deduplication and group ordering.
+- Dead-letter queues and message move tasks.
+- AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management.
+- PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard.
+- Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery.
+- With authorization on, SNS, S3 notification and EventBridge deliveries (including target dead-letter queues) need the queue policy to allow the service principal, matching aws:SourceArn and aws:SourceAccount; enforce mode drops a denied delivery and soft mode records it in the request inspector.
+
+[Supported operations](sqs.md#supported-operations) · [Limitations](sqs.md#limitations-and-future-work)
+
+#### Step Functions
+
+Execute a local Amazon States Language subset with service integrations.
+
+**Execution:** Local behavior. **Selected operations:** 34.
+
+- State machines, versions, aliases, activities, executions and history.
+- JSONPath and JSONata evaluation, supported state types, Retry/Catch and callbacks.
+- In-process AWS SDK integrations can call implemented operations.
+- TestState and redrive support.
+- AWS-style console for scoped state machine creation, ASL validation and editing, execution roles, logging configuration and tags.
+- Console starts and stops Standard executions with paginated execution history, input, output and failure details; Express workflows return synchronous results.
+- With authorization on, Task states assume the state machine's role, whose trust policy must allow states.amazonaws.com for the state machine (aws:SourceArn) and account, and are decided by the role's policies, including child executions and SDK integrations; a denial fails the Task with <Service>.AccessDeniedException and the denial as its cause, so Retry and Catch apply, and soft mode records the check.
+
+[Supported operations](sfn.md#supported-operations) · [Limitations](sfn.md#limitations-and-future-work)
+
+### Business Applications
+
+#### SES v1
+
+Send and verify email with the classic SES Query API over the same state as SES v2.
+
+**Execution:** Recorded delivery. **Selected operations:** 23.
+
+- Same signing name as SES v2: form requests reach v1 and REST JSON requests reach v2.
+- VerifyEmailIdentity, VerifyEmailAddress, VerifyDomainIdentity and VerifyDomainDkim verify immediately, with three DKIM tokens for a domain.
+- ListIdentities, GetIdentityVerificationAttributes, ListVerifiedEmailAddresses and DeleteIdentity read and write the identities SES v2 stores.
+- SendEmail, SendRawEmail (MIME parsed with net/mail), SendTemplatedEmail and SendBulkTemplatedEmail check the sender, render templates, and record messages in the delivery log.
+- CreateTemplate, GetTemplate, UpdateTemplate, DeleteTemplate and ListTemplates share SES v2 templates.
+- CreateConfigurationSet, DeleteConfigurationSet, ListConfigurationSets and DescribeConfigurationSet share SES v2 configuration sets, whose events a send publishes.
+- GetSendQuota and GetSendStatistics report the hourly send counts SES v2 keeps.
+
+[Supported operations](ses.md#supported-operations) · [Limitations](ses.md#limitations-and-future-work)
+
+#### SES v2
+
+Render and inspect email workflows without sending external mail.
+
+**Execution:** Recorded delivery. **Selected operations:** 24.
+
+- Identities are verified immediately; templates and configuration sets are stored.
+- SendEmail and bulk email validate senders and render a Handlebars subset.
+- Delivery records contain messages; configuration set events reach SNS, EventBridge and Firehose.
+- Mailbox simulator addresses generate bounce/complaint behavior.
+- Identities, templates, configuration sets and send counts are shared with SES v1.
+
+[Supported operations](sesv2.md#supported-operations) · [Limitations](sesv2.md#limitations-and-future-work)
+
+### Compute
 
 #### AWS Batch
 
@@ -269,6 +443,31 @@ Reconcile group membership with local EC2 instance records.
 
 [Supported operations](autoscaling.md#supported-operations) · [Limitations](autoscaling.md#limitations-and-future-work)
 
+#### Lambda
+
+Manage functions and execute Python/Node locally or managed runtimes in Docker.
+
+**Execution:** Local processes or Docker runtime. **Selected operations:** 50.
+
+- Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags.
+- Automatic executor selection: Docker when its daemon is reachable, otherwise host Python/Node; lambda.executor can force docker or local.
+- Local Zip execution supports Python 3.x and Node.js CJS/ESM, async/callback handlers, ordered layers, warm reuse, timeouts, logs and directory hot reload.
+- Synchronous Invoke ClientContext accepts base64-encoded JSON and reaches the handler context.
+- LocalStack-compatible hot reload using S3Bucket=hot-reload and an absolute host directory; see [CLI and Terraform examples](../guides/lambda-hot-reload.md).
+- Synchronous and asynchronous invocation, retries and destinations.
+- SQS, DynamoDB Streams and Kinesis event source mappings.
+- Resource policies, function URLs and concurrency settings.
+- Logs flow into CloudWatch Logs; tests use an in-process fake runtime.
+- AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, DynamoDB stream connections from table pages, SNS subscriptions, paginated CloudWatch logs, and function URL management for $LATEST and aliases with automatic public permissions for NONE URLs.
+- Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution.
+- With authorization on, SNS, S3 notification, EventBridge and API Gateway Lambda proxy invocations need the function policy (such as AddPermission with a service Principal, SourceArn and SourceAccount) to allow the service principal.
+- With authorization on, Lambda acts as the function's execution role, whose trust policy must allow lambda.amazonaws.com for the function (aws:SourceArn) and account, when it reads an event source (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; Kinesis and DynamoDB stream describe, shard iterator and record reads) and when it sends dead-letter events, asynchronous results and failed stream batches to SQS, SNS, EventBridge or Lambda destinations; CreateEventSourceMapping fails with InvalidParameterValueException in enforce mode when the role cannot read the source, and a mapping whose role loses the permission reports it in LastProcessingResult and stops reading after the cached check expires.
+- DeadLetterConfig on function creation and configuration updates sends discarded asynchronous events to a standard SQS queue or SNS topic as the execution role, with the original event body and RequestID, ErrorCode and ErrorMessage attributes; OnFailure destinations also receive their invocation record.
+
+[Supported operations](lambda.md#supported-operations) · [Limitations](lambda.md#limitations-and-future-work)
+
+### Containers
+
 #### ECR
 
 Manage repositories and push or pull images through a local Docker Registry API.
@@ -308,162 +507,6 @@ Manage Kubernetes cluster metadata and optionally start local k3s API servers.
 
 [Supported operations](eks.md#supported-operations) · [Limitations](eks.md#limitations-and-future-work)
 
-#### Lambda
-
-Manage functions and execute Python/Node locally or managed runtimes in Docker.
-
-**Execution:** Local processes or Docker runtime. **Selected operations:** 50.
-
-- Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags.
-- Automatic executor selection: Docker when its daemon is reachable, otherwise host Python/Node; lambda.executor can force docker or local.
-- Local Zip execution supports Python 3.x and Node.js CJS/ESM, async/callback handlers, ordered layers, warm reuse, timeouts, logs and directory hot reload.
-- Synchronous Invoke ClientContext accepts base64-encoded JSON and reaches the handler context.
-- LocalStack-compatible hot reload using S3Bucket=hot-reload and an absolute host directory; see [CLI and Terraform examples](../guides/lambda-hot-reload.md).
-- Synchronous and asynchronous invocation, retries and destinations.
-- SQS, DynamoDB Streams and Kinesis event source mappings.
-- Resource policies, function URLs and concurrency settings.
-- Logs flow into CloudWatch Logs; tests use an in-process fake runtime.
-- AWS-style console for scoped function creation/deletion, ZIP/S3/image deployment, execution roles, runtime/configuration/environment edits, tags, explicit sync/async/dry-run test invocation, SQS trigger settings, DynamoDB stream connections from table pages, SNS subscriptions, paginated CloudWatch logs, and function URL management for $LATEST and aliases with automatic public permissions for NONE URLs.
-- Gateway resource policy enforcement for function-scoped actions, qualified versions/aliases and AWS_IAM function URLs; cross-account full function ARN resolution.
-- With authorization on, SNS, S3 notification, EventBridge and API Gateway Lambda proxy invocations need the function policy (such as AddPermission with a service Principal, SourceArn and SourceAccount) to allow the service principal.
-- With authorization on, Lambda acts as the function's execution role, whose trust policy must allow lambda.amazonaws.com for the function (aws:SourceArn) and account, when it reads an event source (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; Kinesis and DynamoDB stream describe, shard iterator and record reads) and when it sends dead-letter events, asynchronous results and failed stream batches to SQS, SNS, EventBridge or Lambda destinations; CreateEventSourceMapping fails with InvalidParameterValueException in enforce mode when the role cannot read the source, and a mapping whose role loses the permission reports it in LastProcessingResult and stops reading after the cached check expires.
-- DeadLetterConfig on function creation and configuration updates sends discarded asynchronous events to a standard SQS queue or SNS topic as the execution role, with the original event body and RequestID, ErrorCode and ErrorMessage attributes; OnFailure destinations also receive their invocation record.
-
-[Supported operations](lambda.md#supported-operations) · [Limitations](lambda.md#limitations-and-future-work)
-
-### Configuration and operations
-
-#### Cloud Control API
-
-Manage live S3 buckets and SQS queues with the CloudFormation resource handlers and a durable request journal.
-
-**Execution:** Local behavior. **Selected operations:** 7.
-
-- CreateResource, GetResource, UpdateResource, DeleteResource and ListResources for AWS::S3::Bucket and AWS::SQS::Queue.
-- BucketName, Tags and VersioningConfiguration.Status (Enabled or Suspended) for buckets; queue names, FIFO settings, supported queue attributes and tags for queues.
-- Generated resource names when omitted; identifiers are bucket names or queue URLs, as in the resource schemas.
-- Reads live state from S3 and SQS, including resources created directly or through CloudFormation; lists identifiers with pagination.
-- RFC 6902 JSON Patch updates with add, remove, replace, move, copy and test; create-only and read-only changes fail explicitly.
-- Synchronous writes return SUCCESS or FAILED ProgressEvents with modeled handler error codes and request tokens.
-- GetResourceRequestStatus and paginated ListResourceRequests with operation and status filters; request history is account/Region scoped and visible for seven days.
-- ClientToken replays the original progress event for 36 hours and rejects conflicting requests; concurrent writes to the same resource are rejected.
-- Request history and client tokens survive persistent restart; interrupted writes become FAILED and release resource locks.
-- Created resources appear under S3 or SQS in the console inventory, Resource Groups and Tagging API; Cloud Control creates no separate resource copies.
-
-[Supported operations](cloudcontrol.md#supported-operations) · [Limitations](cloudcontrol.md#limitations-and-future-work)
-
-#### CloudFormation
-
-Create and update local stacks through the same service operations used by SDK clients.
-
-**Execution:** Local behavior. **Selected operations:** 20.
-
-- JSON/YAML templates, parameters, conditions, mappings, supported intrinsics and dependency ordering.
-- Stack create/update/delete, rollback, change sets, events and exports.
-- Typed resource registry with validated properties and attributes.
-- Selected SAM resources and event transformations.
-- Resource operations run outside store transactions through the lenient caller.
-- AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options.
-
-[Supported operations](cloudformation.md#supported-operations) · [Limitations](cloudformation.md#limitations-and-future-work)
-
-#### CloudWatch Logs
-
-Inspect log events and route local subscription and metric filters.
-
-**Execution:** Local behavior. **Selected operations:** 25.
-
-- Log groups, streams, retention metadata, tags and paged event reads.
-- PutLogEvents and filter patterns.
-- Subscription delivery to Lambda, Kinesis and Firehose.
-- With authorization on, a Lambda destination needs its function policy to allow logs.amazonaws.com with the log group as aws:SourceArn, and a Kinesis or Firehose destination writes as the filter's role, whose trust policy must allow logs.amazonaws.com for the log group; PutSubscriptionFilter tests the destination as AWS does and fails with InvalidParameterException when it is denied in enforce mode, and a denied delivery of events is dropped.
-- Metric filters publish local CloudWatch metrics.
-- Logs Insights subset runs synchronously and retains query results.
-- AWS-style console for scoped log groups and streams, retention and tags, explicit event searches with time/stream/term filters, older/newer event paging and details, individual event ingestion and Logs Insights results; Lambda monitor links open their log groups.
-
-[Supported operations](logs.md#supported-operations) · [Limitations](logs.md#limitations-and-future-work)
-
-#### CloudWatch metrics and alarms
-
-Record metrics, evaluate alarms, and exercise local monitoring integrations.
-
-**Execution:** Local behavior. **Selected operations:** 26.
-
-- Metrics, statistics, percentile queries and a metric-math subset.
-- Metric/composite alarms, alarm history and dashboards.
-- Background evaluation and state-change EventBridge events.
-- SNS, Lambda and Auto Scaling actions through the caller.
-- JSON metric streams: CRUD, start/stop, tags, namespace/metric filters, per-minute aggregation and additional basic/percentile statistics; background delivery to Firehose under RoleArn with streams.metrics.cloudwatch.amazonaws.com trust and role permission checks; failures and delivered counts in inventory; AWS::CloudWatch::MetricStream lifecycle.
-- With authorization on, an SNS action needs the topic policy to allow cloudwatch.amazonaws.com, and a Lambda action the function policy to allow lambda.alarms.cloudwatch.amazonaws.com, with the alarm as aws:SourceArn and its account as aws:SourceAccount; a denied action is recorded in the alarm history as failed in enforce mode and as a would-deny check in soft mode.
-- Fixture-backed AWS/Billing EstimatedCharges in us-east-1: current UTC month USD total and verified AmazonS3 service dimension, sampled each minute and after fixture changes.
-- AWS-style console for scoped metric selection and graphs, explicit custom metric publication, metric/composite alarm creation and editing, actions and state tests, paginated history, tags, and dashboard JSON editing with metric/text previews.
-
-[Supported operations](cloudwatch.md#supported-operations) · [Limitations](cloudwatch.md#limitations-and-future-work)
-
-#### Resource Groups
-
-Group resources with tag-based or CloudFormation stack queries, resolved against the same resources the Tagging API lists.
-
-**Execution:** Local behavior. **Selected operations:** 17.
-
-- CreateGroup, GetGroup, UpdateGroup, DeleteGroup and ListGroups with resource-type, configuration-type, owner, display-name and criticality filters and pagination.
-- Groups addressed by name or ARN; names are unique per account and Region and are validated as the model specifies.
-- TAG_FILTERS_1_0 queries with ResourceTypeFilters (AWS::AllSupported or CloudFormation-style types such as AWS::SQS::Queue) and TagFilters, evaluated against every service's resource inventory in the caller's account and Region.
-- CLOUDFORMATION_STACK_1_0 queries that list a stack's resources, matched to inventory resources by physical ID.
-- ListGroupResources with resource type filters and pagination, and SearchResources for ad hoc queries; unknown resource types and missing stacks are reported in QueryErrors.
-- GetGroupQuery, UpdateGroupQuery, GetGroupConfiguration and PutGroupConfiguration.
-- Tags on groups through Tag, Untag and GetTags, and through the Resource Groups Tagging API.
-- GetAccountSettings and UpdateAccountSettings, which settle at once.
-- Groups appear in the resource inventory.
-
-[Supported operations](resourcegroups.md#supported-operations) · [Limitations](resourcegroups.md#limitations-and-future-work)
-
-#### Resource Groups Tagging API
-
-Find and tag resources across services by tag, resource type, or ARN.
-
-**Execution:** Local behavior. **Selected operations:** 5.
-
-- GetResources with tag filters, resource type filters, ARN lists and pagination.
-- GetTagKeys and GetTagValues across the caller's account and Region.
-- TagResources and UntagResources through each owning service's own tag operations, with per-resource failures.
-- Reads every service's resource inventory; keeps no records of its own.
-- Global IAM and Route 53 resources are reported to us-east-1 callers.
-
-[Supported operations](resourcegroupstaggingapi.md#supported-operations) · [Limitations](resourcegroupstaggingapi.md#limitations-and-future-work)
-
-#### Secrets Manager
-
-Manage secret versions, staging labels, deletion windows, and Lambda rotation.
-
-**Execution:** Local behavior. **Selected operations:** 20.
-
-- Secret lifecycle, binary/string values, version IDs and staging labels.
-- Batch reads, tags and resource policy metadata.
-- Four-step Lambda rotation with background scheduling.
-- Customer-managed KMS key usability checks.
-- AWS-style console for scoped secret creation, key/value or plaintext and binary values, explicit retrieve/hide/copy, password generation, versions and staging labels, metadata and KMS key edits, tags, resource policies, Lambda rotation configuration and immediate rotation, and scheduled deletion with restore or permanent deletion.
-- Gateway secret resource policy enforcement, cross-account secret ARN resolution and owning-root Get/Put/DeleteResourcePolicy recovery.
-
-[Supported operations](secretsmanager.md#supported-operations) · [Limitations](secretsmanager.md#limitations-and-future-work)
-
-#### Systems Manager
-
-Store versioned parameters, publish documents, and send Run Command requests.
-
-**Execution:** Local behavior. **Selected operations:** 28.
-
-- String, StringList and SecureString parameter records.
-- SecureString values are encrypted with KMS (alias/aws/ssm, created on first use, or a customer-managed key); reads return ciphertext until WithDecryption.
-- Get by name/path, history, labels and version-aware updates.
-- Public EC2 image parameters supplied from the local catalogue.
-- Advanced-tier parameter policies are validated, stored and reported; Expiration deletes the parameter.
-- Documents: create, update, versions, default version, JSON/YAML conversion, sharing records and tags.
-- AWS-owned documents AWS-RunShellScript and AWS-RunPowerShellScript, found with the Owner and PlatformTypes filters.
-- Run Command records: SendCommand by instance IDs or tag targets, list, get invocation and cancel.
-
-[Supported operations](ssm.md#supported-operations) · [Limitations](ssm.md#limitations-and-future-work)
-
 ### Database
 
 #### Amazon MemoryDB
@@ -501,6 +544,86 @@ Store Timestream databases and tables as metadata; WriteRecords validates and co
 - Token pagination (default and maximum 20), account and Region isolation, RecordsOnly=true and ExecutionReady=false inventory with the discarded record count, and Terraform timestreamwrite endpoint key.
 
 [Supported operations](timestreamwrite.md#supported-operations) · [Limitations](timestreamwrite.md#limitations-and-future-work)
+
+#### DynamoDB
+
+Store typed items and run expressions, transactions, streams, backups, exports, and PartiQL locally.
+
+**Execution:** Local behavior. **Selected operations:** 34.
+
+- HASH and optional RANGE keys, global and local secondary indexes, sparse indexes and pagination.
+- Nested condition, projection, filter, update and key expressions.
+- Atomic batch and transaction operations with cancellation reasons and idempotency tokens.
+- TTL sweeps, on-demand backups, latest-state point-in-time restores and S3 exports.
+- PartiQL statements and transaction execution.
+- AWS-style console with scoped table creation/deletion, primary and secondary keys, index management, typed item creation/editing/deletion, explicit query/scan with filters and pagination, capacity settings, TTL, tags, streams and Lambda connections.
+
+[Supported operations](dynamodb.md#supported-operations) · [Limitations](dynamodb.md#limitations-and-future-work)
+
+#### DynamoDB Streams
+
+Read the stream records written atomically with DynamoDB item changes.
+
+**Execution:** Local behavior. **Selected operations:** 4.
+
+- List and describe streams, obtain shard iterators, and read records.
+- Stream view types follow the table configuration.
+- Lambda event source mappings consume stream records in-process.
+
+[Supported operations](dynamodbstreams.md#supported-operations) · [Limitations](dynamodbstreams.md#limitations-and-future-work)
+
+#### ElastiCache
+
+Manage Redis, Valkey, and Memcached resources with an optional Docker cache runtime.
+
+**Execution:** Records / optional Docker. **Selected operations:** 32.
+
+- Cache clusters, replication groups, serverless caches, subnet groups and parameter groups.
+- Single-shard replication groups with replica scaling, primary/reader endpoints, manual and test failover, and AUTH token updates.
+- Engine metadata, tags and lifecycle events.
+- Docker nodes expose allocated host ports and become available after readiness probes.
+- Records mode returns metadata without starting cache processes.
+
+[Supported operations](elasticache.md#supported-operations) · [Limitations](elasticache.md#limitations-and-future-work)
+
+#### RDS, DocumentDB and Neptune
+
+Manage RDS instances with an optional Docker runtime, plus records-only DocumentDB and Neptune clusters and members.
+
+**Execution:** Records / optional Docker. **Selected operations:** 25.
+
+- Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors.
+- PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; DocumentDB and Neptune cluster members use records only; other engines and versions fail explicitly.
+- Describe instances supports db-instance-id, engine and db-subnet-group exact-value filters; MaxRecords 20–100 and Marker pagination also work for subnet and parameter group lists.
+- Subnet groups validate existing EC2 subnets in one VPC; parameter groups are records with engine-family validation and in-use deletion checks.
+- Instance and group tags, diagnostic inventory and Resource Groups Tagging API integration.
+- CloudFormation AWS::RDS::DBInstance and AWS::RDS::DBSubnetGroup with selected properties.
+- Set rds.instances: docker to start real databases; default rds.instances: records returns available records immediately.
+- Docker uses credentials and database names in engine image environment variables, free host ports bound to 127.0.0.1, and TCP plus pg_isready/mysqladmin ping/mariadb-admin ping readiness checks.
+- Named volumes per account/Region/instance retain SQL data across container and persistent TinyStack restarts; available instances recreate or reattach containers from stored records.
+- StopDBInstance stops the container, StartDBInstance starts it, and RebootDBInstance restarts it; TinyStack shutdown removes containers and retains volumes; reset and deletion remove containers and volumes.
+- MasterUserPassword changes execute ALTER ROLE/ALTER USER in Docker; DBInstanceClass and AllocatedStorage are metadata; modifications apply immediately.
+- Startup removes orphaned RDS containers and volumes whose ownership ARN has no instance record.
+- Omitted DBName uses the instance identifier with hyphens replaced by underscores for the Docker database name; default AllocatedStorage is 20 GiB of metadata.
+- CloudFormation DBInstance creation waits for availability before publishing endpoint attributes.
+- AWS-style scoped console for databases, engine selection, connection commands and URLs, status polling, immediate password/class changes, tags, stop/start/reboot, confirmed deletion without snapshots, and subnet and parameter group creation and deletion.
+- DocumentDB (Engine docdb) and Neptune (Engine neptune) SDKs use the existing RDS Query API: create, describe, modify and delete records-only clusters and cluster member instances, scoped by account and Region.
+- Cluster identifiers, DocumentDB credentials, retention 1–35 days, ports 1150–65535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation.
+- DocumentDB versions 3.6, 4.0 and 5.0 (default); Neptune versions 1.2.1.0 and 1.3.2.0 (default); default ports 27017 and 8182 respectively; stable resource IDs and AWS-style cluster/reader endpoints report metadata only.
+- DescribeDBClusters shares both engines across RDS, DocumentDB and Neptune clients; engine, db-cluster-id and db-cluster-resource-id filters select exact values; MaxRecords 20–100 (default 100) uses stable Marker cursors.
+- Cluster member endpoints and ports follow their parent cluster; DBClusterMembers tracks membership and writer metadata; cluster deletion requires no members, no deletion protection and SkipFinalSnapshot=true.
+- CloudFormation AWS::DocDB::DBCluster/DBInstance and AWS::Neptune::DBCluster/DBInstance share a provider: selected mutable properties and tags update, immutable properties replace, version changes fail and roll back; Ref and cluster/instance endpoint attributes are supported.
+- Cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS.
+- CreateDBSnapshot, DescribeDBSnapshots, DeleteDBSnapshot and same-account/Region CopyDBSnapshot for standalone RDS instances; lowercase identifiers and local ARNs, manual snapshot metadata, creating-to-available status and 0-to-100 progress, modeled duplicate/missing/state errors.
+- DescribeDBSnapshots supports instance/snapshot identifiers, DbiResourceId, manual or automated type selection, db-instance-id (including ARNs), db-snapshot-id, dbi-resource-id, snapshot-type and engine exact filters; MaxRecords 20–100 and Marker pagination.
+- RestoreDBInstanceFromDBSnapshot creates an independent instance from captured engine, version, storage, database and credential settings; selected class/storage/subnet/parameter-group overrides and tags; records mode restores metadata only.
+- DeleteDBInstance accepts FinalDBSnapshotIdentifier when SkipFinalSnapshot is false (the default); final manual snapshots survive instance deletion; conflicting skip/final identifiers and snapshot name collisions fail before instance removal.
+- Snapshot ARN tags support AddTagsToResource, RemoveTagsFromResource, ListTagsForResource, diagnostic inventory, Resource Groups and RGTA; CopyTags merges source snapshot tags with explicit overrides; CopyTagsToSnapshot controls instance-to-snapshot tags.
+- Docker snapshots and copies use isolated, ownership-labeled data volumes; a helper using the engine image copies the volume while a running source container is paused, then resumes it even after a failed copy; restore copies the snapshot volume into a new instance volume.
+- Snapshot deletion and reset remove owned snapshot volumes; snapshots retain volumes across shutdown and persistent restart, with startup orphan cleanup; failed copies remove their helper and partial destination volume.
+- CloudFormation AWS::RDS::DBInstance accepts DBSnapshotIdentifier for restore and CopyTagsToSnapshot; restore creation waits for availability before endpoint publication.
+
+[Supported operations](rds.md#supported-operations) · [Limitations](rds.md#limitations-and-future-work)
 
 ### Developer Tools
 
@@ -633,221 +756,6 @@ Persist tracker configuration and tags without device positions, geofence evalua
 
 [Supported operations](location.md#supported-operations) · [Limitations](location.md#limitations-and-future-work)
 
-### Identity and security
-
-#### AWS IAM Identity Center — Identity Store
-
-Store Identity Center users, groups and group memberships without directory synchronization or sign-in.
-
-**Execution:** Configuration records only. **Selected operations:** 18.
-
-- Eighteen pinned AWS JSON 1.1 user, group and membership operations with AWS SDK v2 coverage.
-- One stable account-wide identity store shared with SSO Admin; callers discover its ID through ListInstances.
-- Users with UserName, DisplayName, GivenName/FamilyName and one primary email; groups with unique DisplayName and optional Description.
-- Atomic attribute updates validate complete candidates, reject unsupported paths/fields, and enforce case-insensitive username/group-name uniqueness.
-- UniqueAttribute lookups, exact UserName/DisplayName filters, memberships and membership-existence queries; deleting users/groups removes their memberships.
-- Deterministic cursor pagination with MaxResults 1-100; RecordsOnly=true / ExecutionReady=false inventory.
-- AWS::IdentityStore::Group and GroupMembership CloudFormation lifecycle with composite ID|IdentityStoreId Ref and GroupId/MembershipId GetAtt; Terraform identitystore endpoint and official IAM Identity Center icon.
-
-[Supported operations](identitystore.md#supported-operations) · [Limitations](identitystore.md#limitations-and-future-work)
-
-#### AWS IAM Identity Center — SSO Admin
-
-Store permission sets, policies, tags and account assignments without creating IAM roles or enabling sign-in.
-
-**Execution:** Configuration records only. **Selected operations:** 22.
-
-- Twenty-two pinned AWS JSON 1.1 instance discovery, permission set, policy, assignment and tag operations with AWS SDK v2 coverage.
-- One deterministic ACTIVE instance per account with stable InstanceArn and IdentityStoreId shared with Identity Store.
-- Permission set CRUD with Name, Description, ISO-8601 time durations of one to twelve hours (default PT1H), RelayState and up to 50 tags.
-- JSON inline policy storage with documented size/pattern limits, plus up to 25 AWS managed policy ARN attachments.
-- USER/GROUP account assignments validate Identity Store principals atomically; create/delete return stored SUCCEEDED request statuses without provisioning roles.
-- Active assignment accounts exposed by ListAccountsForProvisionedPermissionSet; permission set deletion rejects while assignments exist.
-- Native permission set tags, RGTA tagging, Resource Groups types, cursor pagination and records-only inventory.
-- AWS::SSO::PermissionSet and Assignment CloudFormation lifecycle; permission set Ref ARN|InstanceArn and PermissionSetArn GetAtt, assignment composite Ref; Terraform ssoadmin endpoint and official IAM Identity Center icon.
-
-[Supported operations](ssoadmin.md#supported-operations) · [Limitations](ssoadmin.md#limitations-and-future-work)
-
-#### AWS Private CA
-
-Store private certificate authorities, their revocation settings and tags as records without any cryptography.
-
-**Execution:** Configuration records only. **Selected operations:** 9.
-
-- Nine pinned AWS JSON 1.1 operations: Create, Describe, List, Update, Delete and Restore for certificate authorities, plus TagCertificateAuthority, UntagCertificateAuthority and ListTags, with AWS SDK v2 integration.
-- ROOT and SUBORDINATE authorities validate the documented key and signing algorithm pairs (RSA with SHA*WITHRSA, EC with SHA*WITHECDSA, ML-DSA with its own name, SM2 with SM3WITHSM2 in China Regions), the X.500 subject fields with their model limits, usage mode and key storage security standard.
-- CreateCertificateAuthority honours IdempotencyToken for five minutes and returns the same ARN for a repeated token.
-- CRL and OCSP settings are validated metadata: a disabled block carries only Enabled=false, an enabled CRL names an S3 bucket that must exist in the account and Region, CNAMEs take no protocol prefix; no CRL is written and no responder runs.
-- New authorities start PENDING_CERTIFICATE. UpdateCertificateAuthority changes the status of ACTIVE and DISABLED authorities only and replaces the supplied CRL or OCSP block; a rejected update leaves the record unchanged.
-- DeleteCertificateAuthority keeps the authority as DELETED for PermanentDeletionTimeInDays (7 to 30, default 30) with RestorableUntil; an ACTIVE authority must be disabled first, RestoreCertificateAuthority returns the status it had, and an authority past its window disappears (removed lazily on read).
-- Tags on create and with TagCertificateAuthority, UntagCertificateAuthority (a tag with a value is removed only when it matches) and ListTags, plus Resource Groups Tagging API support.
-- AWS::ACMPCA::CertificateAuthority CloudFormation resource with Ref and Fn::GetAtt Arn; revocation configuration and tags update in place and other properties replace the authority.
-- RecordsOnly=true / ExecutionReady=false inventory, official AWS Private CA icon and Terraform acmpca endpoint key.
-
-[Supported operations](acmpca.md#supported-operations) · [Limitations](acmpca.md#limitations-and-future-work)
-
-#### Amazon Verified Permissions
-
-Store policy stores, Cedar schemas, static policies and tags as records without the Cedar authorization engine.
-
-**Execution:** Configuration records only. **Selected operations:** 15.
-
-- 15 pinned AWS JSON 1.0 operations: CreatePolicyStore, GetPolicyStore, ListPolicyStores, UpdatePolicyStore, DeletePolicyStore, PutSchema, GetSchema, CreatePolicy, GetPolicy, ListPolicies, UpdatePolicy, DeletePolicy, TagResource, UntagResource, ListTagsForResource, with AWS SDK v2 integration.
-- Policy stores support ValidationSettings (OFF and STRICT validation modes), Description, clientToken idempotency, and cascading deletion of associated schemas, policies, and policy tokens.
-- PutSchema validates that the cedarJson definition is syntactically valid JSON and extracts sorted top-level namespace keys; GetSchema returns stored cedarJson and namespaces.
-- Policies support static policy definitions with statement validation (extracting Permit or Forbid effect from leading permit( or forbid( keywords), clientToken idempotency, and deletion.
-- Template-linked policy creation is rejected with an explicit ValidationException.
-- Tags supported on policy stores via TagResource, UntagResource, ListTagsForResource, and Resource Groups Tagging API.
-- CloudFormation resources AWS::VerifiedPermissions::PolicyStore (Ref/GetAtt PolicyStoreId, Arn; ValidationSettings, Schema.CedarJson, Description, Tags) and AWS::VerifiedPermissions::Policy (Ref/GetAtt PolicyId, PolicyStoreId, PolicyType; Definition.Static; Definition.TemplateLinked fails explicitly and triggers clean rollback).
-- RecordsOnly=true / ExecutionReady=false catalog inventory resource representation, official console icon, and Terraform endpoint key.
-
-[Supported operations](verifiedpermissions.md#supported-operations) · [Limitations](verifiedpermissions.md#limitations-and-future-work)
-
-#### Certificate Manager
-
-Issue or import local certificates and exercise certificate lifecycle APIs.
-
-**Execution:** Local behavior. **Selected operations:** 11.
-
-- Certificate request, describe, listing, deletion and tags.
-- Import/get/export, encrypted exported private keys and options.
-- Requests issue immediately through a TinyStack certificate authority.
-- Issuing helpers are shared with IoT.
-
-[Supported operations](acm.md#supported-operations) · [Limitations](acm.md#limitations-and-future-work)
-
-#### Cognito identity pools
-
-Link supported logins to identities and exchange them for local STS role credentials.
-
-**Execution:** Local behavior. **Selected operations:** 19.
-
-- Identity pools, identities, role mappings, developer tokens and login linking.
-- Cognito user-pool and configured OIDC logins.
-- Authenticated and unauthenticated role selection.
-- Credential exchange through STS AssumeRoleWithWebIdentity.
-
-[Supported operations](cognitoidentity.md#supported-operations) · [Limitations](cognitoidentity.md#limitations-and-future-work)
-
-#### Cognito user pools
-
-Manage users and clients, authenticate locally, and issue pool-signed JWTs.
-
-**Execution:** Local behavior. **Selected operations:** 86.
-
-- User pools, app clients, users, groups, attributes and resource servers.
-- Password and SRP flows, refresh tokens and pool RS256 JWTs.
-- JWKS/OpenID configuration endpoints and client-credentials OAuth tokens.
-- Selected Lambda triggers and inspectable verification/invitation messages.
-- TOTP/SMS MFA setup, preferences and session-bound sign-in challenges; a session ends after five wrong codes.
-- Custom authentication with Define/Create/Verify Lambda triggers, including SRP and MFA.
-- Refresh-token rotation with retry grace periods and multiple client secrets.
-- Prefix/custom domain records, OIDC identity-provider CRUD, classic UI customization and managed-login branding records.
-- Minimal hosted password/TOTP/SMS login and one-hour browser sessions; code + PKCE and opt-in implicit grants.
-- OIDC federation with discovery or explicit endpoints, mapped external users, verified ID tokens and userInfo subjects.
-- OAuth userInfo, refresh rotation and revocation with scoped JWT claims and native authentication triggers.
-
-[Supported operations](cognitoidp.md#supported-operations) · [Limitations](cognitoidp.md#limitations-and-future-work)
-
-#### IAM
-
-Store account-wide identities and optionally evaluate their permission policies.
-
-**Execution:** Local behavior. **Selected operations:** 87.
-
-- Roles, users, groups, membership and instance profiles.
-- Inline and managed policies and policy attachments.
-- OpenID Connect providers and access key lifecycle.
-- Active IAM keys participate in gateway credential resolution.
-- Optional off/soft/enforce gateway authorization for IAM users and assumed roles, including group policies and current managed policy versions.
-- Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations.
-- IAM console with account selection, policy simulator, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions.
-- Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits.
-- S3 bucket, SQS queue, SNS topic, Lambda function, Secrets Manager secret and EventBridge bus resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records.
-- KMS requires a key policy Allow: same-account direct principal grants or account delegation plus IAM; cross-account requires both key and identity policies.
-- User and role permissions boundaries on creation and Put/Delete APIs, returned by Get/List; managed policy existence and boundary usage counts.
-- Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions.
-- Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions.
-- Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess.
-- Gateway iam:PassRole checks for explicitly supplied service roles, including Lambda, ECS, Step Functions, EventBridge targets and schedules, EC2 instance-profile roles, CloudFormation, EKS, CodeBuild, Firehose, Pipes, Lake Formation, SES event destinations, EMR Serverless job runs and other registered role inputs; identity, boundary and session layers intersect with iam:PassedToService conditions and per-role inspector checks.
-- Deliveries one service makes to a queue, topic or function (SNS, S3 notifications, EventBridge targets, API Gateway integrations and Lambda authorizers, CloudWatch alarm actions, CloudWatch Logs subscriptions to Lambda, load balancer Lambda targets, IoT Lambda actions) are decided by the target's resource policy for the service principal, with aws:SourceArn and aws:SourceAccount, recorded under method DELIVER in the request inspector.
-- Deliveries services make under a role (Scheduler, Pipes including their source reads, Step Functions, EventBridge targets, API Gateway integration and authorizer credentials, IoT rule actions including republish, Firehose, Lambda execution roles for event source reads and destinations, CloudWatch Logs subscription filters to Kinesis and Firehose) check the role's trust policy for the service principal with aws:SourceArn and aws:SourceAccount, then evaluate the call as the assumed-role session through the same identity, boundary and resource-policy evaluation as signed requests, recorded under method DELIVER in the request inspector.
-- SimulatePrincipalPolicy and SimulateCustomPolicy reuse the gateway evaluator independently of authorization mode; user/group/role policies, boundary overrides, resource policies, typed context, missing keys, matched policy sources and one paginated result per action and resource.
-
-[Supported operations](iam.md#supported-operations) · [Limitations](iam.md#limitations-and-future-work)
-
-#### KMS
-
-Exercise local cryptographic key and alias workflows.
-
-**Execution:** Local behavior. **Selected operations:** 39.
-
-- Symmetric AES, HMAC and selected RSA/ECC key types.
-- Encrypt/decrypt, re-encryption, data keys, signing and public-key retrieval.
-- Key lifecycle, aliases, policies, grants and tags.
-- Grants authorize account, user and role/session principals across accounts, with encryption-context equals/subset constraints, explicit Deny precedence and grant IDs in authorization checks.
-- Grant-based CreateGrant restricts child operations and constraints; retiring and revoking grants immediately remove access.
-- SSM, Secrets Manager and SQS validate usable customer-managed keys.
-- SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use; AWS managed keys cannot be disabled, scheduled for deletion, or have their policy, description or rotation changed.
-- Default key policies enable IAM delegation; key ID, alias and ARN authorization resolves the owning key policy, with explicit Deny precedence and no root recovery.
-- CreateKey and PutKeyPolicy validate the supported resource policy subset and reject caller lockout unless BypassPolicyLockoutSafetyCheck is true.
-
-[Supported operations](kms.md#supported-operations) · [Limitations](kms.md#limitations-and-future-work)
-
-#### STS
-
-Issue local session credentials and inspect the resolved caller identity.
-
-**Execution:** Local behavior. **Selected operations:** 5.
-
-- GetCallerIdentity, AssumeRole, GetSessionToken and AssumeRoleWithWebIdentity.
-- Subset of role trust policies with AWS, Federated and Service principals, and StringEquals, StringLike, ArnEquals, ArnLike and Null conditions.
-- Session credentials feed signature verification and account resolution.
-- In-process service role assumption supports the IoT credentials provider.
-- Services assume roles in-process to make deliveries without credentials: the trust policy is checked for the service principal with aws:SourceArn and aws:SourceAccount, and the session is evaluated by the gateway.
-- In `identity.mode: verify`, web identity tokens must carry a valid RS256 signature of the issuer's published keys (discovery and JWKS, cached, HTTPS outside loopback and no HTTP redirects), or of the Cognito identity pool that issued them.
-- In-process federated sessions for console single sign-on, flagged so the console accepts them and IAM limits them.
-- AssumeRole and AssumeRoleWithWebIdentity inline Policy and up to 10 managed PolicyArns persist with credentials; combined 2048-character plaintext limit and identity-document validation.
-
-[Supported operations](sts.md#supported-operations) · [Limitations](sts.md#limitations-and-future-work)
-
-#### WAF Classic
-
-Store global WAF Classic control-plane records only, with no request filtering.
-
-**Execution:** Records only. **Selected operations:** 65.
-
-- 65 AWS JSON 1.1 operations, target AWSWAF_20150824 and signing name waf; global account-scoped records independent of WAFv2.
-- GetChangeToken and GetChangeTokenStatus; single-use tokens consumed atomically with successful mutations and deterministic PROVISIONED, PENDING, INSYNC transitions on status reads.
-- Create/Get/List/Update/Delete IPSet, ByteMatchSet, SizeConstraintSet, SqlInjectionMatchSet, XssMatchSet, GeoMatchSet, RegexPatternSet and RegexMatchSet; INSERT/DELETE updates, duplicate and absent-member errors, CIDR and tuple validation.
-- Regular and rate-based rules with validated same-account condition references, immutable metrics, IP rate keys and rate limit metadata; GetRateBasedRuleManagedKeys returns empty.
-- Web ACLs with ALLOW/BLOCK defaults and prioritized REGULAR/RATE_BASED rules with ALLOW/BLOCK/COUNT actions; nonempty and referenced-resource delete guards.
-- Creation tags on rules, rate-based rules and web ACLs; TagResource/UntagResource/ListTagsForResource, shared WAFv2 tag validation, inventory, Resource Groups types and generic tagging.
-- Terraform aws_waf_ipset, aws_waf_byte_match_set, aws_waf_rule, aws_waf_rate_based_rule and aws_waf_web_acl apply/update/destroy coverage.
-- Put/Get/Delete/ListLoggingConfigurations store web ACL logging metadata, validate an existing owned us-east-1 Firehose stream named aws-waf-logs-*, and retain redacted fields; no log delivery.
-
-[Supported operations](waf.md#supported-operations) · [Limitations](waf.md#limitations-and-future-work)
-
-#### WAF v2
-
-Persist scoped web ACLs, IP sets, rule groups, tags and regional association metadata without inspecting traffic.
-
-**Execution:** Records only. **Selected operations:** 22.
-
-- 22 AWS JSON 1.1 operations for Create/Get/Update/Delete/ListWebACL, IPSet and RuleGroup, four regional association APIs and three tag APIs; SDK signing name wafv2 and target prefix AWSWAF_20190729 come from the pinned Smithy model.
-- Stable names, UUIDs, resource ARNs and internal creation timestamps; descriptions, Allow/Block DefaultAction, VisibilityConfig booleans and metric names, declared immutable RuleGroup Capacity and selected Rules persist atomically.
-- REGIONAL records are isolated by account and Region; CLOUDFRONT records use us-east-1 and global ARN paths, with separate name namespaces and pagination cursors.
-- Rules support only direct IPSetReferenceStatement in ACLs/groups and RuleGroupReferenceStatement in ACLs; exact existing same-account/Region/scope references, unique names/priorities and required visibility configuration.
-- Direct IP references select exactly one Allow, Block or Count Action; ACL rule-group references select exactly one None or Count OverrideAction without Action; these are configuration records only.
-- IPV4 and IPV6 CIDRs, including individual /32 and /128 addresses, empty address arrays and all nonzero prefix lengths; at most 10000 addresses, with atomic family/range validation and immutable family.
-- Get/List/Create return current configuration LockToken; Update/Delete compare tokens and write/rotate in one serializable store transaction, with exactly one concurrent winner for a shared old token; tokens survive SQLite restart and tag/association changes.
-- Association replacement, idempotent disassociation, empty GetWebACLForResource when unassociated and sorted ListResourcesForWebACL; default APPLICATION_LOAD_BALANCER or explicit API_GATEWAY filters.
-- Creation tags, atomic TagResource/UntagResource, validated unique keys and 50-tag limit; deterministic tag pagination; generic inventory, Resource Groups Tagging API, official WAF console catalogue icon and Terraform wafv2 endpoint.
-- List and tag pagination use Limit 1-100 and cursors bound to account, Region, operation and WAF scope or ARN; resources sort by name/UUID and tags by key, with resume after deletion.
-- CloudFormation AWS::WAFv2::WebACL, IPSet, RuleGroup and WebACLAssociation selected properties; name|id|scope Ref, Arn/Id GetAtt on configuration resources, live lock-token fetch for update/delete, tag replacement at 50 tags, compensation and stack rollback; shared reset clears all WAF records.
-
-[Supported operations](wafv2.md#supported-operations) · [Limitations](wafv2.md#limitations-and-future-work)
-
 ### Internet of Things
 
 #### IoT Core
@@ -894,24 +802,6 @@ Let devices claim, inspect, and update snapshot job executions.
 [Supported operations](iotjobsdataplane.md#supported-operations) · [Limitations](iotjobsdataplane.md#limitations-and-future-work)
 
 ### Management & Governance
-
-#### Application Auto Scaling
-
-Store scalable targets, scaling policies and scheduled actions as configuration records without changing resource capacity.
-
-**Execution:** Configuration records only. **Selected operations:** 12.
-
-- Twelve pinned AWS JSON 1.1 target, policy, scheduled-action and tag operations with AWS SDK v2 integration.
-- Scalable target identity is ServiceNamespace, ResourceId and ScalableDimension; registration upserts preserve ARN and creation time, merge supplied suspension flags, validate namespace/dimension enums and pairing, and require nonnegative MinCapacity <= MaxCapacity.
-- TargetTrackingScaling with predefined or simple customized metrics, target value and cooldowns; StepScaling with adjustment type, step intervals, cooldown, aggregation and minimum adjustment metadata; policy upserts preserve ARN and return an empty Alarms list.
-- Scheduled action at/rate/cron schedule, IANA timezone, start/end times and target capacity bounds stored as metadata; policy/action writes require a registered target and deregistration atomically deletes both child kinds.
-- Describe filters and deterministic MaxResults/NextToken pagination (1-50, default 50), with tokens bound to account, Region, API and filters; target ARN tags and RGTA tagging.
-- AWS::ApplicationAutoScaling::ScalableTarget create/update/delete with Ref ResourceId|ScalableDimension|ServiceNamespace; ScalingPolicy create/update/delete using ScalingTargetId or explicit target identity, Ref ARN and GetAtt Arn.
-- RecordsOnly=true / ExecutionReady=false inventory, official AWS Application Auto Scaling icon and Terraform applicationautoscaling endpoint.
-
-[Supported operations](applicationautoscaling.md#supported-operations) · [Limitations](applicationautoscaling.md#limitations-and-future-work)
-
-### Management and governance
 
 #### AWS Account
 
@@ -1065,6 +955,56 @@ Poll deployed hosted configuration through configuration session tokens on the s
 
 [Supported operations](appconfigdata.md#supported-operations) · [Limitations](appconfigdata.md#limitations-and-future-work)
 
+#### Application Auto Scaling
+
+Store scalable targets, scaling policies and scheduled actions as configuration records without changing resource capacity.
+
+**Execution:** Configuration records only. **Selected operations:** 12.
+
+- Twelve pinned AWS JSON 1.1 target, policy, scheduled-action and tag operations with AWS SDK v2 integration.
+- Scalable target identity is ServiceNamespace, ResourceId and ScalableDimension; registration upserts preserve ARN and creation time, merge supplied suspension flags, validate namespace/dimension enums and pairing, and require nonnegative MinCapacity <= MaxCapacity.
+- TargetTrackingScaling with predefined or simple customized metrics, target value and cooldowns; StepScaling with adjustment type, step intervals, cooldown, aggregation and minimum adjustment metadata; policy upserts preserve ARN and return an empty Alarms list.
+- Scheduled action at/rate/cron schedule, IANA timezone, start/end times and target capacity bounds stored as metadata; policy/action writes require a registered target and deregistration atomically deletes both child kinds.
+- Describe filters and deterministic MaxResults/NextToken pagination (1-50, default 50), with tokens bound to account, Region, API and filters; target ARN tags and RGTA tagging.
+- AWS::ApplicationAutoScaling::ScalableTarget create/update/delete with Ref ResourceId|ScalableDimension|ServiceNamespace; ScalingPolicy create/update/delete using ScalingTargetId or explicit target identity, Ref ARN and GetAtt Arn.
+- RecordsOnly=true / ExecutionReady=false inventory, official AWS Application Auto Scaling icon and Terraform applicationautoscaling endpoint.
+
+[Supported operations](applicationautoscaling.md#supported-operations) · [Limitations](applicationautoscaling.md#limitations-and-future-work)
+
+#### Cloud Control API
+
+Manage live S3 buckets and SQS queues with the CloudFormation resource handlers and a durable request journal.
+
+**Execution:** Local behavior. **Selected operations:** 7.
+
+- CreateResource, GetResource, UpdateResource, DeleteResource and ListResources for AWS::S3::Bucket and AWS::SQS::Queue.
+- BucketName, Tags and VersioningConfiguration.Status (Enabled or Suspended) for buckets; queue names, FIFO settings, supported queue attributes and tags for queues.
+- Generated resource names when omitted; identifiers are bucket names or queue URLs, as in the resource schemas.
+- Reads live state from S3 and SQS, including resources created directly or through CloudFormation; lists identifiers with pagination.
+- RFC 6902 JSON Patch updates with add, remove, replace, move, copy and test; create-only and read-only changes fail explicitly.
+- Synchronous writes return SUCCESS or FAILED ProgressEvents with modeled handler error codes and request tokens.
+- GetResourceRequestStatus and paginated ListResourceRequests with operation and status filters; request history is account/Region scoped and visible for seven days.
+- ClientToken replays the original progress event for 36 hours and rejects conflicting requests; concurrent writes to the same resource are rejected.
+- Request history and client tokens survive persistent restart; interrupted writes become FAILED and release resource locks.
+- Created resources appear under S3 or SQS in the console inventory, Resource Groups and Tagging API; Cloud Control creates no separate resource copies.
+
+[Supported operations](cloudcontrol.md#supported-operations) · [Limitations](cloudcontrol.md#limitations-and-future-work)
+
+#### CloudFormation
+
+Create and update local stacks through the same service operations used by SDK clients.
+
+**Execution:** Local behavior. **Selected operations:** 20.
+
+- JSON/YAML templates, parameters, conditions, mappings, supported intrinsics and dependency ordering.
+- Stack create/update/delete, rollback, change sets, events and exports.
+- Typed resource registry with validated properties and attributes.
+- Selected SAM resources and event transformations.
+- Resource operations run outside store transactions through the lenient caller.
+- AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options.
+
+[Supported operations](cloudformation.md#supported-operations) · [Limitations](cloudformation.md#limitations-and-future-work)
+
 #### CloudTrail
 
 Manage regional trail records and look up external SDK management request history.
@@ -1080,6 +1020,39 @@ Manage regional trail records and look up external SDK management request histor
 - History stores at most the newest 1000 events per account/Region and drops events older than 90 days; persistent storage survives restart and reset clears history.
 
 [Supported operations](cloudtrail.md#supported-operations) · [Limitations](cloudtrail.md#limitations-and-future-work)
+
+#### CloudWatch Logs
+
+Inspect log events and route local subscription and metric filters.
+
+**Execution:** Local behavior. **Selected operations:** 25.
+
+- Log groups, streams, retention metadata, tags and paged event reads.
+- PutLogEvents and filter patterns.
+- Subscription delivery to Lambda, Kinesis and Firehose.
+- With authorization on, a Lambda destination needs its function policy to allow logs.amazonaws.com with the log group as aws:SourceArn, and a Kinesis or Firehose destination writes as the filter's role, whose trust policy must allow logs.amazonaws.com for the log group; PutSubscriptionFilter tests the destination as AWS does and fails with InvalidParameterException when it is denied in enforce mode, and a denied delivery of events is dropped.
+- Metric filters publish local CloudWatch metrics.
+- Logs Insights subset runs synchronously and retains query results.
+- AWS-style console for scoped log groups and streams, retention and tags, explicit event searches with time/stream/term filters, older/newer event paging and details, individual event ingestion and Logs Insights results; Lambda monitor links open their log groups.
+
+[Supported operations](logs.md#supported-operations) · [Limitations](logs.md#limitations-and-future-work)
+
+#### CloudWatch metrics and alarms
+
+Record metrics, evaluate alarms, and exercise local monitoring integrations.
+
+**Execution:** Local behavior. **Selected operations:** 26.
+
+- Metrics, statistics, percentile queries and a metric-math subset.
+- Metric/composite alarms, alarm history and dashboards.
+- Background evaluation and state-change EventBridge events.
+- SNS, Lambda and Auto Scaling actions through the caller.
+- JSON metric streams: CRUD, start/stop, tags, namespace/metric filters, per-minute aggregation and additional basic/percentile statistics; background delivery to Firehose under RoleArn with streams.metrics.cloudwatch.amazonaws.com trust and role permission checks; failures and delivered counts in inventory; AWS::CloudWatch::MetricStream lifecycle.
+- With authorization on, an SNS action needs the topic policy to allow cloudwatch.amazonaws.com, and a Lambda action the function policy to allow lambda.alarms.cloudwatch.amazonaws.com, with the alarm as aws:SourceArn and its account as aws:SourceAccount; a denied action is recorded in the alarm history as failed in enforce mode and as a would-deny check in soft mode.
+- Fixture-backed AWS/Billing EstimatedCharges in us-east-1: current UTC month USD total and verified AmazonS3 service dimension, sampled each minute and after fixture changes.
+- AWS-style console for scoped metric selection and graphs, explicit custom metric publication, metric/composite alarm creation and editing, actions and state tests, paginated history, tags, and dashboard JSON editing with metric/text previews.
+
+[Supported operations](cloudwatch.md#supported-operations) · [Limitations](cloudwatch.md#limitations-and-future-work)
 
 #### Organizations
 
@@ -1097,119 +1070,54 @@ Manage global organization, account, hierarchy and SCP records.
 
 [Supported operations](organizations.md#supported-operations) · [Limitations](organizations.md#limitations-and-future-work)
 
-### Messaging and events
+#### Resource Groups
 
-#### Data Firehose
+Group resources with tag-based or CloudFormation stack queries, resolved against the same resources the Tagging API lists.
 
-Buffer direct or Kinesis records and deliver them to S3.
+**Execution:** Local behavior. **Selected operations:** 17.
 
-**Execution:** Local behavior. **Selected operations:** 12.
+- CreateGroup, GetGroup, UpdateGroup, DeleteGroup and ListGroups with resource-type, configuration-type, owner, display-name and criticality filters and pagination.
+- Groups addressed by name or ARN; names are unique per account and Region and are validated as the model specifies.
+- TAG_FILTERS_1_0 queries with ResourceTypeFilters (AWS::AllSupported or CloudFormation-style types such as AWS::SQS::Queue) and TagFilters, evaluated against every service's resource inventory in the caller's account and Region.
+- CLOUDFORMATION_STACK_1_0 queries that list a stack's resources, matched to inventory resources by physical ID.
+- ListGroupResources with resource type filters and pagination, and SearchResources for ad hoc queries; unknown resource types and missing stacks are reported in QueryErrors.
+- GetGroupQuery, UpdateGroupQuery, GetGroupConfiguration and PutGroupConfiguration.
+- Tags on groups through Tag, Untag and GetTags, and through the Resource Groups Tagging API.
+- GetAccountSettings and UpdateAccountSettings, which settle at once.
+- Groups appear in the resource inventory.
 
-- Delivery streams, tags, direct puts and batch puts.
-- Background buffering and S3 output after size/time thresholds.
-- Kinesis source polling and Lambda processing through the shared caller.
-- With authorization on, S3 writes and Lambda processor calls assume the destination's role, whose trust policy must allow firehose.amazonaws.com for the delivery stream, and are decided by the role's policies; a denied processor call fails its records with Lambda.InvokeAccessDenied and a denied write is recorded as a failed delivery.
-- PutRecord and PutRecordBatch resolve delivery stream ARNs and tags for resource-scoped identity and delivery-role policies.
+[Supported operations](resourcegroups.md#supported-operations) · [Limitations](resourcegroups.md#limitations-and-future-work)
 
-[Supported operations](firehose.md#supported-operations) · [Limitations](firehose.md#limitations-and-future-work)
+#### Resource Groups Tagging API
 
-#### EventBridge
+Find and tag resources across services by tag, resource type, or ARN.
 
-Route events through local buses, patterns, rules, schedules, archives, and replays.
+**Execution:** Local behavior. **Selected operations:** 5.
 
-**Execution:** Local behavior. **Selected operations:** 30.
+- GetResources with tag filters, resource type filters, ARN lists and pagination.
+- GetTagKeys and GetTagValues across the caller's account and Region.
+- TagResources and UntagResources through each owning service's own tag operations, with per-resource failures.
+- Reads every service's resource inventory; keeps no records of its own.
+- Global IAM and Route 53 resources are reported to us-east-1 callers.
 
-- Default and custom buses, rules, targets and input transformers.
-- Pattern matching shared with other event services.
-- SQS, SNS and Lambda targets in the same account and region.
-- Scheduled rules, durable retry records and SQS dead-letter queues.
-- Archives and synchronous replay.
-- AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection.
-- Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management.
-- With authorization on, SQS, SNS and Lambda targets without a role, and dead-letter queues, need their resource policy to allow events.amazonaws.com with the rule as aws:SourceArn; enforce mode fails the invocation into the existing retry and dead-letter path with the ERROR_CODE NO_PERMISSIONS, soft mode records the denied check.
-- Targets with a RoleArn assume that role, whose trust policy must allow events.amazonaws.com for the rule (aws:SourceArn) and account, and are then decided by the role's policies and the target's resource policy; a role that cannot be assumed reports FAILED_TO_ASSUME_ROLE.
+[Supported operations](resourcegroupstaggingapi.md#supported-operations) · [Limitations](resourcegroupstaggingapi.md#limitations-and-future-work)
 
-[Supported operations](eventbridge.md#supported-operations) · [Limitations](eventbridge.md#limitations-and-future-work)
+#### Systems Manager
 
-#### EventBridge Pipes
+Store versioned parameters, publish documents, and send Run Command requests.
 
-Connect SQS queues and Kinesis or DynamoDB streams to targets with filtering and Lambda enrichment.
+**Execution:** Local behavior. **Selected operations:** 28.
 
-**Execution:** Local behavior. **Selected operations:** 10.
+- String, StringList and SecureString parameter records.
+- SecureString values are encrypted with KMS (alias/aws/ssm, created on first use, or a customer-managed key); reads return ciphertext until WithDecryption.
+- Get by name/path, history, labels and version-aware updates.
+- Public EC2 image parameters supplied from the local catalogue.
+- Advanced-tier parameter policies are validated, stored and reported; Expiration deletes the parameter.
+- Documents: create, update, versions, default version, JSON/YAML conversion, sharing records and tags.
+- AWS-owned documents AWS-RunShellScript and AWS-RunPowerShellScript, found with the Owner and PlatformTypes filters.
+- Run Command records: SendCommand by instance IDs or tag targets, list, get invocation and cancel.
 
-- CreatePipe, DescribePipe, UpdatePipe, DeletePipe, ListPipes with filters and pagination, StartPipe and StopPipe.
-- Pipes settle at once in RUNNING or STOPPED; responses report the transitional state.
-- Tags on pipes through TagResource, UntagResource and ListTagsForResource, and through the Resource Groups Tagging API.
-- SQS sources read in-process; messages are deleted after delivery or when a filter drops them.
-- Kinesis and DynamoDB stream sources with TRIM_HORIZON or LATEST and a per-pipe cursor.
-- FilterCriteria event patterns shared with Lambda event source mappings.
-- Lambda enrichment, and InputTemplate with JSON paths and aws.pipes variables on enrichment and target.
-- Lambda, SQS, SNS, EventBridge, Step Functions and Kinesis targets, called in-process; Lambda and Step Functions receive the batch as a JSON array.
-- Resources appear in the resource inventory.
-- With authorization on, enrichment and target calls assume the pipe's role, whose trust policy must allow pipes.amazonaws.com for the pipe (aws:SourceArn) and account, and are decided by the role's policies; a denied delivery is a failed delivery that the next visit retries, and soft mode records the check.
-- With authorization on, source reads (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; stream describe, iterator and record reads) are made as the pipe's role too, checked once every 30 seconds per pipe, role and source, including denials; role or source changes force a recheck, deletion drops its entry and reset clears every entry; a denied pipe moves nothing.
-
-[Supported operations](pipes.md#supported-operations) · [Limitations](pipes.md#limitations-and-future-work)
-
-#### EventBridge Scheduler
-
-Run one-time, rate, and cron schedules against implemented services.
-
-**Execution:** Local behavior. **Selected operations:** 12.
-
-- Schedule groups and schedule CRUD with time-zone handling.
-- Background runner claims due schedules and invokes targets in-process.
-- Failed deliveries can reach a target SQS dead-letter queue.
-- With authorization on, each run (and the send to the dead-letter queue) assumes the target's role, whose trust policy must allow scheduler.amazonaws.com for the schedule's group (aws:SourceArn) and account, and is decided by the role's identity policies, boundary and the target's resource policy; enforce mode fails the run into the dead-letter path with the denial as ERROR_CODE and ERROR_MESSAGE, soft mode records the check.
-
-[Supported operations](scheduler.md#supported-operations) · [Limitations](scheduler.md#limitations-and-future-work)
-
-#### Kinesis Data Streams
-
-Write and read ordered shard records and feed local Lambda or Firehose consumers.
-
-**Execution:** Local behavior. **Selected operations:** 31.
-
-- Streams, shards, consumers, shard iterators and record CRUD APIs.
-- Split and merge shard metadata with stable record sequence ordering.
-- Lambda mappings and Firehose sources read records in-process.
-
-[Supported operations](kinesis.md#supported-operations) · [Limitations](kinesis.md#limitations-and-future-work)
-
-#### SNS
-
-Publish messages to local queues and functions, or confirmed HTTP subscriptions.
-
-**Execution:** Local behavior. **Selected operations:** 19.
-
-- Topics, tags, subscriptions, filtering and FIFO deduplication.
-- SQS fan-out and asynchronous Lambda invocation.
-- HTTP/HTTPS confirmation and outbound delivery.
-- Email and SMS deliveries are recorded for inspection.
-- AWS-style console with account/Region-scoped standard and FIFO topic creation, display names, deduplication, policies and tags; subscription lists and details, endpoint selection, confirmation and deletion, raw delivery and attribute/body filters; message publishing and topic-specific delivery inspection.
-- Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens.
-- Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery.
-- With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue and Publish still succeeds.
-
-[Supported operations](sns.md#supported-operations) · [Limitations](sns.md#limitations-and-future-work)
-
-#### SQS
-
-Use queues with visibility timeouts, long polling, FIFO ordering, and dead-letter workflows.
-
-**Execution:** Local behavior. **Selected operations:** 23.
-
-- Queue lifecycle, attributes and tags.
-- Send, receive, delete, visibility updates and batch operations.
-- Long polling waits outside transactions.
-- FIFO deduplication and group ordering.
-- Dead-letter queues and message move tasks.
-- AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management.
-- PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard.
-- Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery.
-- With authorization on, SNS, S3 notification and EventBridge deliveries (including target dead-letter queues) need the queue policy to allow the service principal, matching aws:SourceArn and aws:SourceAccount; enforce mode drops a denied delivery and soft mode records it in the request inspector.
-
-[Supported operations](sqs.md#supported-operations) · [Limitations](sqs.md#limitations-and-future-work)
+[Supported operations](ssm.md#supported-operations) · [Limitations](ssm.md#limitations-and-future-work)
 
 ### Migration & Modernization
 
@@ -1243,7 +1151,7 @@ Store SFTP server, service-managed user, public-key and tag configuration withou
 
 [Supported operations](transfer.md#supported-operations) · [Limitations](transfer.md#limitations-and-future-work)
 
-### Networking and APIs
+### Networking & Content Delivery
 
 #### API Gateway HTTP APIs
 
@@ -1280,19 +1188,38 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 
 [Supported operations](apigateway.md#supported-operations) · [Limitations](apigateway.md#limitations-and-future-work)
 
-#### AppSync GraphQL
+#### Amazon Route 53 Resolver
 
-Run GraphQL APIs with local resolvers and WebSocket subscriptions.
+Store Resolver endpoints, rules and VPC associations as records without allocating network interfaces or forwarding DNS queries.
 
-**Execution:** Local behavior. **Selected operations:** 36.
+**Execution:** Configuration records only. **Selected operations:** 17.
 
-- GraphQL APIs, API keys, schema/type operations, data sources, functions and resolvers.
-- Unit and pipeline resolvers using APPSYNC_JS or a VTL subset.
-- NONE, Lambda, HTTP, DynamoDB and EventBridge data sources.
-- Authentication with API keys, IAM callers, Cognito, OIDC and Lambda.
-- Lambda resolver batching and enhanced subscription filters.
+- Seventeen pinned AWS JSON 1.1 endpoint, rule, association and tag APIs with AWS SDK v2 integration.
+- INBOUND/OUTBOUND endpoint CRUD with CreatorRequestId retries, scoped ARNs, IPv4 subnet configurations, EC2 subnet and security-group validation, and name updates.
+- FORWARD/SYSTEM rule CRUD with trailing-dot domain normalization, outbound endpoint references, IPv4 targets, default port 53 and atomic configuration updates.
+- VPC association CRUD with scoped EC2 existence checks, duplicate/domain conflict detection and endpoint/rule deletion guards.
+- Tags on endpoint/rule creates and ARNs, stable cursor pagination, RGTA and Resource Groups integration.
+- AWS::Route53Resolver::ResolverEndpoint, ResolverRule and ResolverRuleAssociation CloudFormation resources with ID references and documented attributes.
+- RecordsOnly=true / ExecutionReady=false inventory, official Amazon Route 53 icon and Terraform route53resolver endpoint key.
 
-[Supported operations](appsync.md#supported-operations) · [Limitations](appsync.md#limitations-and-future-work)
+[Supported operations](route53resolver.md#supported-operations) · [Limitations](route53resolver.md#limitations-and-future-work)
+
+#### Cloud Map
+
+Manage regional Cloud Map records and discover registered instances through the SDK data plane.
+
+**Execution:** Records / HTTP discovery. **Selected operations:** 25.
+
+- HTTP, public DNS and private DNS namespace records with immediate SUCCESS operations; get/list/delete and HTTP description updates.
+- Service records with DNS routing/TTL configuration and custom health checks; empty-service/namespace deletion checks and duplicate-name errors.
+- Register/deregister/get/list instances, health status and immediate custom-health changes; service instance revisions update with registrations and health changes.
+- DiscoverInstances supports required QueryParameters, preferred OptionalParameters with fallback, HEALTHY (default), UNHEALTHY, ALL and HEALTHY_OR_ELSE_ALL filtering, MaxResults 1–1000 and DiscoverInstancesRevision.
+- Namespace filters TYPE/NAME/HTTP_NAME, service filter NAMESPACE_ID and operation STATUS/TYPE/NAMESPACE_ID/SERVICE_ID filters; EQ/IN (one value) and BEGINS_WITH; list pagination MaxResults 1–100.
+- Regional/account-scoped records, resource tags, diagnostic inventory, Resource Groups Tagging API and official-icon console catalogue.
+- CloudFormation HttpNamespace, PrivateDnsNamespace, Service and Instance with selected properties; operations complete synchronously.
+- CreatorRequestId/UpdaterRequestId replay committed namespace/service/registration/HTTP-update results within the account and Region; changed inputs reject reused tokens.
+
+[Supported operations](servicediscovery.md#supported-operations) · [Limitations](servicediscovery.md#limitations-and-future-work)
 
 #### CloudFront
 
@@ -1350,42 +1277,58 @@ Manage hosted zones and record sets without running a DNS server.
 
 [Supported operations](route53.md#supported-operations) · [Limitations](route53.md#limitations-and-future-work)
 
-### Networking and content delivery
-
-#### Amazon Route 53 Resolver
-
-Store Resolver endpoints, rules and VPC associations as records without allocating network interfaces or forwarding DNS queries.
-
-**Execution:** Configuration records only. **Selected operations:** 17.
-
-- Seventeen pinned AWS JSON 1.1 endpoint, rule, association and tag APIs with AWS SDK v2 integration.
-- INBOUND/OUTBOUND endpoint CRUD with CreatorRequestId retries, scoped ARNs, IPv4 subnet configurations, EC2 subnet and security-group validation, and name updates.
-- FORWARD/SYSTEM rule CRUD with trailing-dot domain normalization, outbound endpoint references, IPv4 targets, default port 53 and atomic configuration updates.
-- VPC association CRUD with scoped EC2 existence checks, duplicate/domain conflict detection and endpoint/rule deletion guards.
-- Tags on endpoint/rule creates and ARNs, stable cursor pagination, RGTA and Resource Groups integration.
-- AWS::Route53Resolver::ResolverEndpoint, ResolverRule and ResolverRuleAssociation CloudFormation resources with ID references and documented attributes.
-- RecordsOnly=true / ExecutionReady=false inventory, official Amazon Route 53 icon and Terraform route53resolver endpoint key.
-
-[Supported operations](route53resolver.md#supported-operations) · [Limitations](route53resolver.md#limitations-and-future-work)
-
-#### Cloud Map
-
-Manage regional Cloud Map records and discover registered instances through the SDK data plane.
-
-**Execution:** Records / HTTP discovery. **Selected operations:** 25.
-
-- HTTP, public DNS and private DNS namespace records with immediate SUCCESS operations; get/list/delete and HTTP description updates.
-- Service records with DNS routing/TTL configuration and custom health checks; empty-service/namespace deletion checks and duplicate-name errors.
-- Register/deregister/get/list instances, health status and immediate custom-health changes; service instance revisions update with registrations and health changes.
-- DiscoverInstances supports required QueryParameters, preferred OptionalParameters with fallback, HEALTHY (default), UNHEALTHY, ALL and HEALTHY_OR_ELSE_ALL filtering, MaxResults 1–1000 and DiscoverInstancesRevision.
-- Namespace filters TYPE/NAME/HTTP_NAME, service filter NAMESPACE_ID and operation STATUS/TYPE/NAMESPACE_ID/SERVICE_ID filters; EQ/IN (one value) and BEGINS_WITH; list pagination MaxResults 1–100.
-- Regional/account-scoped records, resource tags, diagnostic inventory, Resource Groups Tagging API and official-icon console catalogue.
-- CloudFormation HttpNamespace, PrivateDnsNamespace, Service and Instance with selected properties; operations complete synchronously.
-- CreatorRequestId/UpdaterRequestId replay committed namespace/service/registration/HTTP-update results within the account and Region; changed inputs reject reused tokens.
-
-[Supported operations](servicediscovery.md#supported-operations) · [Limitations](servicediscovery.md#limitations-and-future-work)
-
 ### Security, Identity & Compliance
+
+#### AWS IAM Identity Center — Identity Store
+
+Store Identity Center users, groups and group memberships without directory synchronization or sign-in.
+
+**Execution:** Configuration records only. **Selected operations:** 18.
+
+- Eighteen pinned AWS JSON 1.1 user, group and membership operations with AWS SDK v2 coverage.
+- One stable account-wide identity store shared with SSO Admin; callers discover its ID through ListInstances.
+- Users with UserName, DisplayName, GivenName/FamilyName and one primary email; groups with unique DisplayName and optional Description.
+- Atomic attribute updates validate complete candidates, reject unsupported paths/fields, and enforce case-insensitive username/group-name uniqueness.
+- UniqueAttribute lookups, exact UserName/DisplayName filters, memberships and membership-existence queries; deleting users/groups removes their memberships.
+- Deterministic cursor pagination with MaxResults 1-100; RecordsOnly=true / ExecutionReady=false inventory.
+- AWS::IdentityStore::Group and GroupMembership CloudFormation lifecycle with composite ID|IdentityStoreId Ref and GroupId/MembershipId GetAtt; Terraform identitystore endpoint and official IAM Identity Center icon.
+
+[Supported operations](identitystore.md#supported-operations) · [Limitations](identitystore.md#limitations-and-future-work)
+
+#### AWS IAM Identity Center — SSO Admin
+
+Store permission sets, policies, tags and account assignments without creating IAM roles or enabling sign-in.
+
+**Execution:** Configuration records only. **Selected operations:** 22.
+
+- Twenty-two pinned AWS JSON 1.1 instance discovery, permission set, policy, assignment and tag operations with AWS SDK v2 coverage.
+- One deterministic ACTIVE instance per account with stable InstanceArn and IdentityStoreId shared with Identity Store.
+- Permission set CRUD with Name, Description, ISO-8601 time durations of one to twelve hours (default PT1H), RelayState and up to 50 tags.
+- JSON inline policy storage with documented size/pattern limits, plus up to 25 AWS managed policy ARN attachments.
+- USER/GROUP account assignments validate Identity Store principals atomically; create/delete return stored SUCCEEDED request statuses without provisioning roles.
+- Active assignment accounts exposed by ListAccountsForProvisionedPermissionSet; permission set deletion rejects while assignments exist.
+- Native permission set tags, RGTA tagging, Resource Groups types, cursor pagination and records-only inventory.
+- AWS::SSO::PermissionSet and Assignment CloudFormation lifecycle; permission set Ref ARN|InstanceArn and PermissionSetArn GetAtt, assignment composite Ref; Terraform ssoadmin endpoint and official IAM Identity Center icon.
+
+[Supported operations](ssoadmin.md#supported-operations) · [Limitations](ssoadmin.md#limitations-and-future-work)
+
+#### AWS Private CA
+
+Store private certificate authorities, their revocation settings and tags as records without any cryptography.
+
+**Execution:** Configuration records only. **Selected operations:** 9.
+
+- Nine pinned AWS JSON 1.1 operations: Create, Describe, List, Update, Delete and Restore for certificate authorities, plus TagCertificateAuthority, UntagCertificateAuthority and ListTags, with AWS SDK v2 integration.
+- ROOT and SUBORDINATE authorities validate the documented key and signing algorithm pairs (RSA with SHA*WITHRSA, EC with SHA*WITHECDSA, ML-DSA with its own name, SM2 with SM3WITHSM2 in China Regions), the X.500 subject fields with their model limits, usage mode and key storage security standard.
+- CreateCertificateAuthority honours IdempotencyToken for five minutes and returns the same ARN for a repeated token.
+- CRL and OCSP settings are validated metadata: a disabled block carries only Enabled=false, an enabled CRL names an S3 bucket that must exist in the account and Region, CNAMEs take no protocol prefix; no CRL is written and no responder runs.
+- New authorities start PENDING_CERTIFICATE. UpdateCertificateAuthority changes the status of ACTIVE and DISABLED authorities only and replaces the supplied CRL or OCSP block; a rejected update leaves the record unchanged.
+- DeleteCertificateAuthority keeps the authority as DELETED for PermanentDeletionTimeInDays (7 to 30, default 30) with RestorableUntil; an ACTIVE authority must be disabled first, RestoreCertificateAuthority returns the status it had, and an authority past its window disappears (removed lazily on read).
+- Tags on create and with TagCertificateAuthority, UntagCertificateAuthority (a tag with a value is removed only when it matches) and ListTags, plus Resource Groups Tagging API support.
+- AWS::ACMPCA::CertificateAuthority CloudFormation resource with Ref and Fn::GetAtt Arn; revocation configuration and tags update in place and other properties replace the authority.
+- RecordsOnly=true / ExecutionReady=false inventory, official AWS Private CA icon and Terraform acmpca endpoint key.
+
+[Supported operations](acmpca.md#supported-operations) · [Limitations](acmpca.md#limitations-and-future-work)
 
 #### AWS Resource Access Manager
 
@@ -1414,6 +1357,183 @@ Store signing profiles, permissions and jobs with illustrative S3 artifacts.
 - Inventory, Resource Groups tagging, console and Terraform signing profile, profile permission and signing job coverage.
 
 [Supported operations](signer.md#supported-operations) · [Limitations](signer.md#limitations-and-future-work)
+
+#### Amazon Verified Permissions
+
+Store policy stores, Cedar schemas, static policies and tags as records without the Cedar authorization engine.
+
+**Execution:** Configuration records only. **Selected operations:** 15.
+
+- 15 pinned AWS JSON 1.0 operations: CreatePolicyStore, GetPolicyStore, ListPolicyStores, UpdatePolicyStore, DeletePolicyStore, PutSchema, GetSchema, CreatePolicy, GetPolicy, ListPolicies, UpdatePolicy, DeletePolicy, TagResource, UntagResource, ListTagsForResource, with AWS SDK v2 integration.
+- Policy stores support ValidationSettings (OFF and STRICT validation modes), Description, clientToken idempotency, and cascading deletion of associated schemas, policies, and policy tokens.
+- PutSchema validates that the cedarJson definition is syntactically valid JSON and extracts sorted top-level namespace keys; GetSchema returns stored cedarJson and namespaces.
+- Policies support static policy definitions with statement validation (extracting Permit or Forbid effect from leading permit( or forbid( keywords), clientToken idempotency, and deletion.
+- Template-linked policy creation is rejected with an explicit ValidationException.
+- Tags supported on policy stores via TagResource, UntagResource, ListTagsForResource, and Resource Groups Tagging API.
+- CloudFormation resources AWS::VerifiedPermissions::PolicyStore (Ref/GetAtt PolicyStoreId, Arn; ValidationSettings, Schema.CedarJson, Description, Tags) and AWS::VerifiedPermissions::Policy (Ref/GetAtt PolicyId, PolicyStoreId, PolicyType; Definition.Static; Definition.TemplateLinked fails explicitly and triggers clean rollback).
+- RecordsOnly=true / ExecutionReady=false catalog inventory resource representation, official console icon, and Terraform endpoint key.
+
+[Supported operations](verifiedpermissions.md#supported-operations) · [Limitations](verifiedpermissions.md#limitations-and-future-work)
+
+#### Certificate Manager
+
+Issue or import local certificates and exercise certificate lifecycle APIs.
+
+**Execution:** Local behavior. **Selected operations:** 11.
+
+- Certificate request, describe, listing, deletion and tags.
+- Import/get/export, encrypted exported private keys and options.
+- Requests issue immediately through a TinyStack certificate authority.
+- Issuing helpers are shared with IoT.
+
+[Supported operations](acm.md#supported-operations) · [Limitations](acm.md#limitations-and-future-work)
+
+#### Cognito identity pools
+
+Link supported logins to identities and exchange them for local STS role credentials.
+
+**Execution:** Local behavior. **Selected operations:** 19.
+
+- Identity pools, identities, role mappings, developer tokens and login linking.
+- Cognito user-pool and configured OIDC logins.
+- Authenticated and unauthenticated role selection.
+- Credential exchange through STS AssumeRoleWithWebIdentity.
+
+[Supported operations](cognitoidentity.md#supported-operations) · [Limitations](cognitoidentity.md#limitations-and-future-work)
+
+#### Cognito user pools
+
+Manage users and clients, authenticate locally, and issue pool-signed JWTs.
+
+**Execution:** Local behavior. **Selected operations:** 86.
+
+- User pools, app clients, users, groups, attributes and resource servers.
+- Password and SRP flows, refresh tokens and pool RS256 JWTs.
+- JWKS/OpenID configuration endpoints and client-credentials OAuth tokens.
+- Selected Lambda triggers and inspectable verification/invitation messages.
+- TOTP/SMS MFA setup, preferences and session-bound sign-in challenges; a session ends after five wrong codes.
+- Custom authentication with Define/Create/Verify Lambda triggers, including SRP and MFA.
+- Refresh-token rotation with retry grace periods and multiple client secrets.
+- Prefix/custom domain records, OIDC identity-provider CRUD, classic UI customization and managed-login branding records.
+- Minimal hosted password/TOTP/SMS login and one-hour browser sessions; code + PKCE and opt-in implicit grants.
+- OIDC federation with discovery or explicit endpoints, mapped external users, verified ID tokens and userInfo subjects.
+- OAuth userInfo, refresh rotation and revocation with scoped JWT claims and native authentication triggers.
+
+[Supported operations](cognitoidp.md#supported-operations) · [Limitations](cognitoidp.md#limitations-and-future-work)
+
+#### IAM
+
+Store account-wide identities and optionally evaluate their permission policies.
+
+**Execution:** Local behavior. **Selected operations:** 87.
+
+- Roles, users, groups, membership and instance profiles.
+- Inline and managed policies and policy attachments.
+- OpenID Connect providers and access key lifecycle.
+- Active IAM keys participate in gateway credential resolution.
+- Optional off/soft/enforce gateway authorization for IAM users and assumed roles, including group policies and current managed policy versions.
+- Explicit Deny precedence, Action/NotAction, Resource/NotResource, wildcard matching, username variables and a documented condition subset with decision explanations.
+- IAM console with account selection, policy simulator, guided user and role creation, group creation with users and policies, permission copying, inherited group permissions, multiple policy and membership changes, trust policies, EC2 instance profiles, tags, access keys and policy versions.
+- Console shows the active authorization/authentication modes; request inspector exposes decisions, principals, checked actions/resources, matched statements and evaluation limits.
+- S3 bucket, SQS queue, SNS topic, Lambda function, Secrets Manager secret and EventBridge bus resource policies: explicit Deny precedence, principal matching, same-account union and cross-account identity plus resource Allow, with soft/enforce decision records.
+- KMS requires a key policy Allow: same-account direct principal grants or account delegation plus IAM; cross-account requires both key and identity policies.
+- User and role permissions boundaries on creation and Put/Delete APIs, returned by Get/List; managed policy existence and boundary usage counts.
+- Identity grants intersect permissions boundaries and STS session policies; explicit Deny in any layer wins, with boundary/session inspector decisions.
+- Same-account resource grants to user/session ARNs bypass implicit boundary/session denies; role ARN grants remain capped and account grants delegate through identity permissions.
+- Local exact AWS-managed documents for AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess.
+- Gateway iam:PassRole checks for explicitly supplied service roles, including Lambda, ECS, Step Functions, EventBridge targets and schedules, EC2 instance-profile roles, CloudFormation, EKS, CodeBuild, Firehose, Pipes, Lake Formation, SES event destinations, EMR Serverless job runs and other registered role inputs; identity, boundary and session layers intersect with iam:PassedToService conditions and per-role inspector checks.
+- Deliveries one service makes to a queue, topic or function (SNS, S3 notifications, EventBridge targets, API Gateway integrations and Lambda authorizers, CloudWatch alarm actions, CloudWatch Logs subscriptions to Lambda, load balancer Lambda targets, IoT Lambda actions) are decided by the target's resource policy for the service principal, with aws:SourceArn and aws:SourceAccount, recorded under method DELIVER in the request inspector.
+- Deliveries services make under a role (Scheduler, Pipes including their source reads, Step Functions, EventBridge targets, API Gateway integration and authorizer credentials, IoT rule actions including republish, Firehose, Lambda execution roles for event source reads and destinations, CloudWatch Logs subscription filters to Kinesis and Firehose) check the role's trust policy for the service principal with aws:SourceArn and aws:SourceAccount, then evaluate the call as the assumed-role session through the same identity, boundary and resource-policy evaluation as signed requests, recorded under method DELIVER in the request inspector.
+- SimulatePrincipalPolicy and SimulateCustomPolicy reuse the gateway evaluator independently of authorization mode; user/group/role policies, boundary overrides, resource policies, typed context, missing keys, matched policy sources and one paginated result per action and resource.
+
+[Supported operations](iam.md#supported-operations) · [Limitations](iam.md#limitations-and-future-work)
+
+#### KMS
+
+Exercise local cryptographic key and alias workflows.
+
+**Execution:** Local behavior. **Selected operations:** 39.
+
+- Symmetric AES, HMAC and selected RSA/ECC key types.
+- Encrypt/decrypt, re-encryption, data keys, signing and public-key retrieval.
+- Key lifecycle, aliases, policies, grants and tags.
+- Grants authorize account, user and role/session principals across accounts, with encryption-context equals/subset constraints, explicit Deny precedence and grant IDs in authorization checks.
+- Grant-based CreateGrant restricts child operations and constraints; retiring and revoking grants immediately remove access.
+- SSM, Secrets Manager and SQS validate usable customer-managed keys.
+- SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use; AWS managed keys cannot be disabled, scheduled for deletion, or have their policy, description or rotation changed.
+- Default key policies enable IAM delegation; key ID, alias and ARN authorization resolves the owning key policy, with explicit Deny precedence and no root recovery.
+- CreateKey and PutKeyPolicy validate the supported resource policy subset and reject caller lockout unless BypassPolicyLockoutSafetyCheck is true.
+
+[Supported operations](kms.md#supported-operations) · [Limitations](kms.md#limitations-and-future-work)
+
+#### STS
+
+Issue local session credentials and inspect the resolved caller identity.
+
+**Execution:** Local behavior. **Selected operations:** 5.
+
+- GetCallerIdentity, AssumeRole, GetSessionToken and AssumeRoleWithWebIdentity.
+- Subset of role trust policies with AWS, Federated and Service principals, and StringEquals, StringLike, ArnEquals, ArnLike and Null conditions.
+- Session credentials feed signature verification and account resolution.
+- In-process service role assumption supports the IoT credentials provider.
+- Services assume roles in-process to make deliveries without credentials: the trust policy is checked for the service principal with aws:SourceArn and aws:SourceAccount, and the session is evaluated by the gateway.
+- In `identity.mode: verify`, web identity tokens must carry a valid RS256 signature of the issuer's published keys (discovery and JWKS, cached, HTTPS outside loopback and no HTTP redirects), or of the Cognito identity pool that issued them.
+- In-process federated sessions for console single sign-on, flagged so the console accepts them and IAM limits them.
+- AssumeRole and AssumeRoleWithWebIdentity inline Policy and up to 10 managed PolicyArns persist with credentials; combined 2048-character plaintext limit and identity-document validation.
+
+[Supported operations](sts.md#supported-operations) · [Limitations](sts.md#limitations-and-future-work)
+
+#### Secrets Manager
+
+Manage secret versions, staging labels, deletion windows, and Lambda rotation.
+
+**Execution:** Local behavior. **Selected operations:** 20.
+
+- Secret lifecycle, binary/string values, version IDs and staging labels.
+- Batch reads, tags and resource policy metadata.
+- Four-step Lambda rotation with background scheduling.
+- Customer-managed KMS key usability checks.
+- AWS-style console for scoped secret creation, key/value or plaintext and binary values, explicit retrieve/hide/copy, password generation, versions and staging labels, metadata and KMS key edits, tags, resource policies, Lambda rotation configuration and immediate rotation, and scheduled deletion with restore or permanent deletion.
+- Gateway secret resource policy enforcement, cross-account secret ARN resolution and owning-root Get/Put/DeleteResourcePolicy recovery.
+
+[Supported operations](secretsmanager.md#supported-operations) · [Limitations](secretsmanager.md#limitations-and-future-work)
+
+#### WAF Classic
+
+Store global WAF Classic control-plane records only, with no request filtering.
+
+**Execution:** Records only. **Selected operations:** 65.
+
+- 65 AWS JSON 1.1 operations, target AWSWAF_20150824 and signing name waf; global account-scoped records independent of WAFv2.
+- GetChangeToken and GetChangeTokenStatus; single-use tokens consumed atomically with successful mutations and deterministic PROVISIONED, PENDING, INSYNC transitions on status reads.
+- Create/Get/List/Update/Delete IPSet, ByteMatchSet, SizeConstraintSet, SqlInjectionMatchSet, XssMatchSet, GeoMatchSet, RegexPatternSet and RegexMatchSet; INSERT/DELETE updates, duplicate and absent-member errors, CIDR and tuple validation.
+- Regular and rate-based rules with validated same-account condition references, immutable metrics, IP rate keys and rate limit metadata; GetRateBasedRuleManagedKeys returns empty.
+- Web ACLs with ALLOW/BLOCK defaults and prioritized REGULAR/RATE_BASED rules with ALLOW/BLOCK/COUNT actions; nonempty and referenced-resource delete guards.
+- Creation tags on rules, rate-based rules and web ACLs; TagResource/UntagResource/ListTagsForResource, shared WAFv2 tag validation, inventory, Resource Groups types and generic tagging.
+- Terraform aws_waf_ipset, aws_waf_byte_match_set, aws_waf_rule, aws_waf_rate_based_rule and aws_waf_web_acl apply/update/destroy coverage.
+- Put/Get/Delete/ListLoggingConfigurations store web ACL logging metadata, validate an existing owned us-east-1 Firehose stream named aws-waf-logs-*, and retain redacted fields; no log delivery.
+
+[Supported operations](waf.md#supported-operations) · [Limitations](waf.md#limitations-and-future-work)
+
+#### WAF v2
+
+Persist scoped web ACLs, IP sets, rule groups, tags and regional association metadata without inspecting traffic.
+
+**Execution:** Records only. **Selected operations:** 22.
+
+- 22 AWS JSON 1.1 operations for Create/Get/Update/Delete/ListWebACL, IPSet and RuleGroup, four regional association APIs and three tag APIs; SDK signing name wafv2 and target prefix AWSWAF_20190729 come from the pinned Smithy model.
+- Stable names, UUIDs, resource ARNs and internal creation timestamps; descriptions, Allow/Block DefaultAction, VisibilityConfig booleans and metric names, declared immutable RuleGroup Capacity and selected Rules persist atomically.
+- REGIONAL records are isolated by account and Region; CLOUDFRONT records use us-east-1 and global ARN paths, with separate name namespaces and pagination cursors.
+- Rules support only direct IPSetReferenceStatement in ACLs/groups and RuleGroupReferenceStatement in ACLs; exact existing same-account/Region/scope references, unique names/priorities and required visibility configuration.
+- Direct IP references select exactly one Allow, Block or Count Action; ACL rule-group references select exactly one None or Count OverrideAction without Action; these are configuration records only.
+- IPV4 and IPV6 CIDRs, including individual /32 and /128 addresses, empty address arrays and all nonzero prefix lengths; at most 10000 addresses, with atomic family/range validation and immutable family.
+- Get/List/Create return current configuration LockToken; Update/Delete compare tokens and write/rotate in one serializable store transaction, with exactly one concurrent winner for a shared old token; tokens survive SQLite restart and tag/association changes.
+- Association replacement, idempotent disassociation, empty GetWebACLForResource when unassociated and sorted ListResourcesForWebACL; default APPLICATION_LOAD_BALANCER or explicit API_GATEWAY filters.
+- Creation tags, atomic TagResource/UntagResource, validated unique keys and 50-tag limit; deterministic tag pagination; generic inventory, Resource Groups Tagging API, official WAF console catalogue icon and Terraform wafv2 endpoint.
+- List and tag pagination use Limit 1-100 and cursors bound to account, Region, operation and WAF scope or ARN; resources sort by name/UUID and tags by key, with resume after deletion.
+- CloudFormation AWS::WAFv2::WebACL, IPSet, RuleGroup and WebACLAssociation selected properties; name|id|scope Ref, Arn/Id GetAtt on configuration resources, live lock-token fetch for update/delete, tag replacement at 50 tags, compensation and stack rollback; shared reset clears all WAF records.
+
+[Supported operations](wafv2.md#supported-operations) · [Limitations](wafv2.md#limitations-and-future-work)
 
 ### Storage
 
@@ -1468,88 +1588,6 @@ Persist customer table buckets, one-level namespaces, table identities, rename v
 
 [Supported operations](s3tables.md#supported-operations) · [Limitations](s3tables.md#limitations-and-future-work)
 
-### Storage and databases
-
-#### DynamoDB
-
-Store typed items and run expressions, transactions, streams, backups, exports, and PartiQL locally.
-
-**Execution:** Local behavior. **Selected operations:** 34.
-
-- HASH and optional RANGE keys, global and local secondary indexes, sparse indexes and pagination.
-- Nested condition, projection, filter, update and key expressions.
-- Atomic batch and transaction operations with cancellation reasons and idempotency tokens.
-- TTL sweeps, on-demand backups, latest-state point-in-time restores and S3 exports.
-- PartiQL statements and transaction execution.
-- AWS-style console with scoped table creation/deletion, primary and secondary keys, index management, typed item creation/editing/deletion, explicit query/scan with filters and pagination, capacity settings, TTL, tags, streams and Lambda connections.
-
-[Supported operations](dynamodb.md#supported-operations) · [Limitations](dynamodb.md#limitations-and-future-work)
-
-#### DynamoDB Streams
-
-Read the stream records written atomically with DynamoDB item changes.
-
-**Execution:** Local behavior. **Selected operations:** 4.
-
-- List and describe streams, obtain shard iterators, and read records.
-- Stream view types follow the table configuration.
-- Lambda event source mappings consume stream records in-process.
-
-[Supported operations](dynamodbstreams.md#supported-operations) · [Limitations](dynamodbstreams.md#limitations-and-future-work)
-
-#### ElastiCache
-
-Manage Redis, Valkey, and Memcached resources with an optional Docker cache runtime.
-
-**Execution:** Records / optional Docker. **Selected operations:** 32.
-
-- Cache clusters, replication groups, serverless caches, subnet groups and parameter groups.
-- Single-shard replication groups with replica scaling, primary/reader endpoints, manual and test failover, and AUTH token updates.
-- Engine metadata, tags and lifecycle events.
-- Docker nodes expose allocated host ports and become available after readiness probes.
-- Records mode returns metadata without starting cache processes.
-
-[Supported operations](elasticache.md#supported-operations) · [Limitations](elasticache.md#limitations-and-future-work)
-
-#### RDS, DocumentDB and Neptune
-
-Manage RDS instances with an optional Docker runtime, plus records-only DocumentDB and Neptune clusters and members.
-
-**Execution:** Records / optional Docker. **Selected operations:** 25.
-
-- Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors.
-- PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; DocumentDB and Neptune cluster members use records only; other engines and versions fail explicitly.
-- Describe instances supports db-instance-id, engine and db-subnet-group exact-value filters; MaxRecords 20–100 and Marker pagination also work for subnet and parameter group lists.
-- Subnet groups validate existing EC2 subnets in one VPC; parameter groups are records with engine-family validation and in-use deletion checks.
-- Instance and group tags, diagnostic inventory and Resource Groups Tagging API integration.
-- CloudFormation AWS::RDS::DBInstance and AWS::RDS::DBSubnetGroup with selected properties.
-- Set rds.instances: docker to start real databases; default rds.instances: records returns available records immediately.
-- Docker uses credentials and database names in engine image environment variables, free host ports bound to 127.0.0.1, and TCP plus pg_isready/mysqladmin ping/mariadb-admin ping readiness checks.
-- Named volumes per account/Region/instance retain SQL data across container and persistent TinyStack restarts; available instances recreate or reattach containers from stored records.
-- StopDBInstance stops the container, StartDBInstance starts it, and RebootDBInstance restarts it; TinyStack shutdown removes containers and retains volumes; reset and deletion remove containers and volumes.
-- MasterUserPassword changes execute ALTER ROLE/ALTER USER in Docker; DBInstanceClass and AllocatedStorage are metadata; modifications apply immediately.
-- Startup removes orphaned RDS containers and volumes whose ownership ARN has no instance record.
-- Omitted DBName uses the instance identifier with hyphens replaced by underscores for the Docker database name; default AllocatedStorage is 20 GiB of metadata.
-- CloudFormation DBInstance creation waits for availability before publishing endpoint attributes.
-- AWS-style scoped console for databases, engine selection, connection commands and URLs, status polling, immediate password/class changes, tags, stop/start/reboot, confirmed deletion without snapshots, and subnet and parameter group creation and deletion.
-- DocumentDB (Engine docdb) and Neptune (Engine neptune) SDKs use the existing RDS Query API: create, describe, modify and delete records-only clusters and cluster member instances, scoped by account and Region.
-- Cluster identifiers, DocumentDB credentials, retention 1–35 days, ports 1150–65535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation.
-- DocumentDB versions 3.6, 4.0 and 5.0 (default); Neptune versions 1.2.1.0 and 1.3.2.0 (default); default ports 27017 and 8182 respectively; stable resource IDs and AWS-style cluster/reader endpoints report metadata only.
-- DescribeDBClusters shares both engines across RDS, DocumentDB and Neptune clients; engine, db-cluster-id and db-cluster-resource-id filters select exact values; MaxRecords 20–100 (default 100) uses stable Marker cursors.
-- Cluster member endpoints and ports follow their parent cluster; DBClusterMembers tracks membership and writer metadata; cluster deletion requires no members, no deletion protection and SkipFinalSnapshot=true.
-- CloudFormation AWS::DocDB::DBCluster/DBInstance and AWS::Neptune::DBCluster/DBInstance share a provider: selected mutable properties and tags update, immutable properties replace, version changes fail and roll back; Ref and cluster/instance endpoint attributes are supported.
-- Cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS.
-- CreateDBSnapshot, DescribeDBSnapshots, DeleteDBSnapshot and same-account/Region CopyDBSnapshot for standalone RDS instances; lowercase identifiers and local ARNs, manual snapshot metadata, creating-to-available status and 0-to-100 progress, modeled duplicate/missing/state errors.
-- DescribeDBSnapshots supports instance/snapshot identifiers, DbiResourceId, manual or automated type selection, db-instance-id (including ARNs), db-snapshot-id, dbi-resource-id, snapshot-type and engine exact filters; MaxRecords 20–100 and Marker pagination.
-- RestoreDBInstanceFromDBSnapshot creates an independent instance from captured engine, version, storage, database and credential settings; selected class/storage/subnet/parameter-group overrides and tags; records mode restores metadata only.
-- DeleteDBInstance accepts FinalDBSnapshotIdentifier when SkipFinalSnapshot is false (the default); final manual snapshots survive instance deletion; conflicting skip/final identifiers and snapshot name collisions fail before instance removal.
-- Snapshot ARN tags support AddTagsToResource, RemoveTagsFromResource, ListTagsForResource, diagnostic inventory, Resource Groups and RGTA; CopyTags merges source snapshot tags with explicit overrides; CopyTagsToSnapshot controls instance-to-snapshot tags.
-- Docker snapshots and copies use isolated, ownership-labeled data volumes; a helper using the engine image copies the volume while a running source container is paused, then resumes it even after a failed copy; restore copies the snapshot volume into a new instance volume.
-- Snapshot deletion and reset remove owned snapshot volumes; snapshots retain volumes across shutdown and persistent restart, with startup orphan cleanup; failed copies remove their helper and partial destination volume.
-- CloudFormation AWS::RDS::DBInstance accepts DBSnapshotIdentifier for restore and CopyTagsToSnapshot; restore creation waits for availability before endpoint publication.
-
-[Supported operations](rds.md#supported-operations) · [Limitations](rds.md#limitations-and-future-work)
-
 #### S3
 
 Store object metadata in the shared store and object/version/multipart bytes in local files.
@@ -1570,54 +1608,6 @@ Store object metadata in the shared store and object/version/multipart bytes in 
 - With authorization on, notification destinations (SQS, SNS, Lambda) need their resource policy to allow s3.amazonaws.com for the bucket (aws:SourceArn, aws:SourceAccount); enforce mode fails PutBucketNotificationConfiguration with InvalidArgument, unless SkipDestinationValidation is set, and denies later deliveries, while soft mode records the denied check.
 
 [Supported operations](s3.md#supported-operations) · [Limitations](s3.md#limitations-and-future-work)
-
-### Workflow and email
-
-#### SES v1
-
-Send and verify email with the classic SES Query API over the same state as SES v2.
-
-**Execution:** Recorded delivery. **Selected operations:** 23.
-
-- Same signing name as SES v2: form requests reach v1 and REST JSON requests reach v2.
-- VerifyEmailIdentity, VerifyEmailAddress, VerifyDomainIdentity and VerifyDomainDkim verify immediately, with three DKIM tokens for a domain.
-- ListIdentities, GetIdentityVerificationAttributes, ListVerifiedEmailAddresses and DeleteIdentity read and write the identities SES v2 stores.
-- SendEmail, SendRawEmail (MIME parsed with net/mail), SendTemplatedEmail and SendBulkTemplatedEmail check the sender, render templates, and record messages in the delivery log.
-- CreateTemplate, GetTemplate, UpdateTemplate, DeleteTemplate and ListTemplates share SES v2 templates.
-- CreateConfigurationSet, DeleteConfigurationSet, ListConfigurationSets and DescribeConfigurationSet share SES v2 configuration sets, whose events a send publishes.
-- GetSendQuota and GetSendStatistics report the hourly send counts SES v2 keeps.
-
-[Supported operations](ses.md#supported-operations) · [Limitations](ses.md#limitations-and-future-work)
-
-#### SES v2
-
-Render and inspect email workflows without sending external mail.
-
-**Execution:** Recorded delivery. **Selected operations:** 24.
-
-- Identities are verified immediately; templates and configuration sets are stored.
-- SendEmail and bulk email validate senders and render a Handlebars subset.
-- Delivery records contain messages; configuration set events reach SNS, EventBridge and Firehose.
-- Mailbox simulator addresses generate bounce/complaint behavior.
-- Identities, templates, configuration sets and send counts are shared with SES v1.
-
-[Supported operations](sesv2.md#supported-operations) · [Limitations](sesv2.md#limitations-and-future-work)
-
-#### Step Functions
-
-Execute a local Amazon States Language subset with service integrations.
-
-**Execution:** Local behavior. **Selected operations:** 34.
-
-- State machines, versions, aliases, activities, executions and history.
-- JSONPath and JSONata evaluation, supported state types, Retry/Catch and callbacks.
-- In-process AWS SDK integrations can call implemented operations.
-- TestState and redrive support.
-- AWS-style console for scoped state machine creation, ASL validation and editing, execution roles, logging configuration and tags.
-- Console starts and stops Standard executions with paginated execution history, input, output and failure details; Express workflows return synchronous results.
-- With authorization on, Task states assume the state machine's role, whose trust policy must allow states.amazonaws.com for the state machine (aws:SourceArn) and account, and are decided by the role's policies, including child executions and SDK integrations; a denial fails the Task with <Service>.AccessDeniedException and the denial as its cause, so Retry and Catch apply, and soft mode records the check.
-
-[Supported operations](sfn.md#supported-operations) · [Limitations](sfn.md#limitations-and-future-work)
 
 ## Keep the catalogue current
 

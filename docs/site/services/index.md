@@ -23,7 +23,9 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | [Amazon OpenSearch Service](opensearch.md) | 10 | Configuration records only |
 | [Amazon Redshift](redshift.md) | 14 | Configuration records only |
 | [Athena](athena.md) | 25 | SQLite SQL engine |
+| [Data Firehose](firehose.md) | 12 | Local behavior |
 | [Glue Data Catalog](glue.md) | 19 | Local behavior |
+| [Kinesis Data Streams](kinesis.md) | 31 | Local behavior |
 
 ## Application Integration
 
@@ -31,31 +33,37 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | --- | --- | --- |
 | [Amazon MQ](mq.md) | 8 | Records only |
 | [Amazon MWAA](mwaa.md) | 8 | Configuration records only |
+| [AppSync GraphQL](appsync.md) | 36 | Local behavior |
+| [EventBridge](eventbridge.md) | 30 | Local behavior |
+| [EventBridge Pipes](pipes.md) | 10 | Local behavior |
+| [EventBridge Scheduler](scheduler.md) | 12 | Local behavior |
+| [SNS](sns.md) | 19 | Local behavior |
+| [SQS](sqs.md) | 23 | Local behavior |
+| [Step Functions](sfn.md) | 34 | Local behavior |
 
-## Compute and containers
+## Business Applications
+
+| Service API | Operations | Execution |
+| --- | --- | --- |
+| [SES v1](ses.md) | 23 | Recorded delivery |
+| [SES v2](sesv2.md) | 24 | Recorded delivery |
+
+## Compute
 
 | Service API | Operations | Execution |
 | --- | --- | --- |
 | [AWS Batch](batch.md) | 14 | Records only |
 | [EC2](ec2.md) | 124 | Records only |
 | [EC2 Auto Scaling](autoscaling.md) | 25 | EC2 record reconciliation |
-| [ECR](ecr.md) | 26 | Local behavior |
-| [ECS](ecs.md) | 25 | Records / optional Docker |
-| [EKS](eks.md) | 46 | Records / optional k3s |
 | [Lambda](lambda.md) | 50 | Local processes or Docker runtime |
 
-## Configuration and operations
+## Containers
 
 | Service API | Operations | Execution |
 | --- | --- | --- |
-| [Cloud Control API](cloudcontrol.md) | 7 | Local behavior |
-| [CloudFormation](cloudformation.md) | 20 | Local behavior |
-| [CloudWatch Logs](logs.md) | 25 | Local behavior |
-| [CloudWatch metrics and alarms](cloudwatch.md) | 26 | Local behavior |
-| [Resource Groups](resourcegroups.md) | 17 | Local behavior |
-| [Resource Groups Tagging API](resourcegroupstaggingapi.md) | 5 | Local behavior |
-| [Secrets Manager](secretsmanager.md) | 20 | Local behavior |
-| [Systems Manager](ssm.md) | 28 | Local behavior |
+| [ECR](ecr.md) | 26 | Local behavior |
+| [ECS](ecs.md) | 25 | Records / optional Docker |
+| [EKS](eks.md) | 46 | Records / optional k3s |
 
 ## Database
 
@@ -63,6 +71,10 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | --- | --- | --- |
 | [Amazon MemoryDB](memorydb.md) | 19 | Records only |
 | [Amazon Timestream Write](timestreamwrite.md) | 15 | Records only |
+| [DynamoDB](dynamodb.md) | 34 | Local behavior |
+| [DynamoDB Streams](dynamodbstreams.md) | 4 | Local behavior |
+| [ElastiCache](elasticache.md) | 32 | Records / optional Docker |
+| [RDS, DocumentDB and Neptune](rds.md) | 25 | Records / optional Docker |
 
 ## Developer Tools
 
@@ -82,23 +94,6 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | --- | --- | --- |
 | [Amazon Location Service](location.md) | 8 | Configuration records only |
 
-## Identity and security
-
-| Service API | Operations | Execution |
-| --- | --- | --- |
-| [AWS IAM Identity Center — Identity Store](identitystore.md) | 18 | Configuration records only |
-| [AWS IAM Identity Center — SSO Admin](ssoadmin.md) | 22 | Configuration records only |
-| [AWS Private CA](acmpca.md) | 9 | Configuration records only |
-| [Amazon Verified Permissions](verifiedpermissions.md) | 15 | Configuration records only |
-| [Certificate Manager](acm.md) | 11 | Local behavior |
-| [Cognito identity pools](cognitoidentity.md) | 19 | Local behavior |
-| [Cognito user pools](cognitoidp.md) | 86 | Local behavior |
-| [IAM](iam.md) | 87 | Local behavior |
-| [KMS](kms.md) | 39 | Local behavior |
-| [STS](sts.md) | 5 | Local behavior |
-| [WAF Classic](waf.md) | 65 | Records only |
-| [WAF v2](wafv2.md) | 22 | Records only |
-
 ## Internet of Things
 
 | Service API | Operations | Execution |
@@ -111,12 +106,6 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 
 | Service API | Operations | Execution |
 | --- | --- | --- |
-| [Application Auto Scaling](applicationautoscaling.md) | 12 | Configuration records only |
-
-## Management and governance
-
-| Service API | Operations | Execution |
-| --- | --- | --- |
 | [AWS Account](account.md) | 4 | Records |
 | [AWS Backup](backup.md) | 17 | Records only |
 | [AWS Budgets](budgets.md) | 16 | Fixture-backed actual spend and ACTUAL notifications |
@@ -126,20 +115,16 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | [AWS Service Quotas](servicequotas.md) | 9 | Records only |
 | [AppConfig](appconfig.md) | 31 | Hosted configuration / immediate deployment |
 | [AppConfig Data](appconfigdata.md) | 2 | Hosted configuration polling |
+| [Application Auto Scaling](applicationautoscaling.md) | 12 | Configuration records only |
+| [Cloud Control API](cloudcontrol.md) | 7 | Local behavior |
+| [CloudFormation](cloudformation.md) | 20 | Local behavior |
 | [CloudTrail](cloudtrail.md) | 14 | Trail records / bounded local event history |
+| [CloudWatch Logs](logs.md) | 25 | Local behavior |
+| [CloudWatch metrics and alarms](cloudwatch.md) | 26 | Local behavior |
 | [Organizations](organizations.md) | 32 | Records |
-
-## Messaging and events
-
-| Service API | Operations | Execution |
-| --- | --- | --- |
-| [Data Firehose](firehose.md) | 12 | Local behavior |
-| [EventBridge](eventbridge.md) | 30 | Local behavior |
-| [EventBridge Pipes](pipes.md) | 10 | Local behavior |
-| [EventBridge Scheduler](scheduler.md) | 12 | Local behavior |
-| [Kinesis Data Streams](kinesis.md) | 31 | Local behavior |
-| [SNS](sns.md) | 19 | Local behavior |
-| [SQS](sqs.md) | 23 | Local behavior |
+| [Resource Groups](resourcegroups.md) | 17 | Local behavior |
+| [Resource Groups Tagging API](resourcegroupstaggingapi.md) | 5 | Local behavior |
+| [Systems Manager](ssm.md) | 28 | Local behavior |
 
 ## Migration & Modernization
 
@@ -148,31 +133,38 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | [AWS Database Migration Service](databasemigrationservice.md) | 22 | Records only |
 | [AWS Transfer Family](transfer.md) | 15 | Configuration records only |
 
-## Networking and APIs
+## Networking & Content Delivery
 
 | Service API | Operations | Execution |
 | --- | --- | --- |
 | [API Gateway HTTP APIs](apigatewayv2.md) | 34 | Local behavior |
 | [API Gateway REST APIs](apigateway.md) | 66 | Local behavior |
-| [AppSync GraphQL](appsync.md) | 36 | Local behavior |
+| [Amazon Route 53 Resolver](route53resolver.md) | 17 | Configuration records only |
+| [Cloud Map](servicediscovery.md) | 25 | Records / HTTP discovery |
 | [CloudFront](cloudfront.md) | 16 | Records only |
 | [Elastic Load Balancing (Classic)](elb.md) | 14 | Configuration records only |
 | [Elastic Load Balancing v2](elbv2.md) | 34 | HTTP data plane |
 | [Route 53](route53.md) | 21 | Records only |
 
-## Networking and content delivery
-
-| Service API | Operations | Execution |
-| --- | --- | --- |
-| [Amazon Route 53 Resolver](route53resolver.md) | 17 | Configuration records only |
-| [Cloud Map](servicediscovery.md) | 25 | Records / HTTP discovery |
-
 ## Security, Identity & Compliance
 
 | Service API | Operations | Execution |
 | --- | --- | --- |
+| [AWS IAM Identity Center — Identity Store](identitystore.md) | 18 | Configuration records only |
+| [AWS IAM Identity Center — SSO Admin](ssoadmin.md) | 22 | Configuration records only |
+| [AWS Private CA](acmpca.md) | 9 | Configuration records only |
 | [AWS Resource Access Manager](ram.md) | 9 | Configuration records only |
 | [AWS Signer](signer.md) | 17 | Records and illustrative artifacts |
+| [Amazon Verified Permissions](verifiedpermissions.md) | 15 | Configuration records only |
+| [Certificate Manager](acm.md) | 11 | Local behavior |
+| [Cognito identity pools](cognitoidentity.md) | 19 | Local behavior |
+| [Cognito user pools](cognitoidp.md) | 86 | Local behavior |
+| [IAM](iam.md) | 87 | Local behavior |
+| [KMS](kms.md) | 39 | Local behavior |
+| [STS](sts.md) | 5 | Local behavior |
+| [Secrets Manager](secretsmanager.md) | 20 | Local behavior |
+| [WAF Classic](waf.md) | 65 | Records only |
+| [WAF v2](wafv2.md) | 22 | Records only |
 
 ## Storage
 
@@ -181,21 +173,4 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | [Amazon EFS](efs.md) | 15 | Records only |
 | [Amazon S3 Glacier](glacier.md) | 13 | Configuration records only |
 | [Amazon S3 Tables](s3tables.md) | 16 | Metadata records only |
-
-## Storage and databases
-
-| Service API | Operations | Execution |
-| --- | --- | --- |
-| [DynamoDB](dynamodb.md) | 34 | Local behavior |
-| [DynamoDB Streams](dynamodbstreams.md) | 4 | Local behavior |
-| [ElastiCache](elasticache.md) | 32 | Records / optional Docker |
-| [RDS, DocumentDB and Neptune](rds.md) | 25 | Records / optional Docker |
 | [S3](s3.md) | 55 | Local behavior |
-
-## Workflow and email
-
-| Service API | Operations | Execution |
-| --- | --- | --- |
-| [SES v1](ses.md) | 23 | Recorded delivery |
-| [SES v2](sesv2.md) | 24 | Recorded delivery |
-| [Step Functions](sfn.md) | 34 | Local behavior |

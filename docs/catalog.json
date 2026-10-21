@@ -69,7 +69,7 @@
   "services": {
     "dynamodb": {
       "title": "DynamoDB",
-      "category": "Storage and databases",
+      "category": "Database",
       "summary": "Store typed items and run expressions, transactions, streams, backups, exports, and PartiQL locally.",
       "features": [
         "HASH and optional RANGE keys, global and local secondary indexes, sparse indexes and pagination",
@@ -92,7 +92,7 @@
     },
     "dynamodbstreams": {
       "title": "DynamoDB Streams",
-      "category": "Storage and databases",
+      "category": "Database",
       "summary": "Read the stream records written atomically with DynamoDB item changes.",
       "features": [
         "List and describe streams, obtain shard iterators, and read records",
@@ -108,7 +108,7 @@
     },
     "s3": {
       "title": "S3",
-      "category": "Storage and databases",
+      "category": "Storage",
       "summary": "Store object metadata in the shared store and object/version/multipart bytes in local files.",
       "features": [
         "Partition-wide bucket name uniqueness and ownership checks",
@@ -138,7 +138,7 @@
     },
     "elasticache": {
       "title": "ElastiCache",
-      "category": "Storage and databases",
+      "category": "Database",
       "summary": "Manage Redis, Valkey, and Memcached resources with an optional Docker cache runtime.",
       "features": [
         "Cache clusters, replication groups, serverless caches, subnet groups and parameter groups",
@@ -194,7 +194,7 @@
     },
     "sqs": {
       "title": "SQS",
-      "category": "Messaging and events",
+      "category": "Application Integration",
       "summary": "Use queues with visibility timeouts, long polling, FIFO ordering, and dead-letter workflows.",
       "features": [
         "Queue lifecycle, attributes and tags",
@@ -219,7 +219,7 @@
     },
     "sns": {
       "title": "SNS",
-      "category": "Messaging and events",
+      "category": "Application Integration",
       "summary": "Publish messages to local queues and functions, or confirmed HTTP subscriptions.",
       "features": [
         "Topics, tags, subscriptions, filtering and FIFO deduplication",
@@ -242,7 +242,7 @@
     },
     "eventbridge": {
       "title": "EventBridge",
-      "category": "Messaging and events",
+      "category": "Application Integration",
       "summary": "Route events through local buses, patterns, rules, schedules, archives, and replays.",
       "features": [
         "Default and custom buses, rules, targets and input transformers",
@@ -270,7 +270,7 @@
     },
     "scheduler": {
       "title": "EventBridge Scheduler",
-      "category": "Messaging and events",
+      "category": "Application Integration",
       "summary": "Run one-time, rate, and cron schedules against implemented services.",
       "features": [
         "Schedule groups and schedule CRUD with time-zone handling",
@@ -290,7 +290,7 @@
     },
     "kinesis": {
       "title": "Kinesis Data Streams",
-      "category": "Messaging and events",
+      "category": "Analytics",
       "summary": "Write and read ordered shard records and feed local Lambda or Firehose consumers.",
       "features": [
         "Streams, shards, consumers, shard iterators and record CRUD APIs",
@@ -307,7 +307,7 @@
     },
     "firehose": {
       "title": "Data Firehose",
-      "category": "Messaging and events",
+      "category": "Analytics",
       "summary": "Buffer direct or Kinesis records and deliver them to S3.",
       "features": [
         "Delivery streams, tags, direct puts and batch puts",
@@ -326,7 +326,7 @@
     },
     "lambda": {
       "title": "Lambda",
-      "category": "Compute and containers",
+      "category": "Compute",
       "summary": "Manage functions and execute Python/Node locally or managed runtimes in Docker.",
       "features": [
         "Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags",
@@ -366,7 +366,7 @@
     },
     "ec2": {
       "title": "EC2",
-      "category": "Compute and containers",
+      "category": "Compute",
       "summary": "Model networking and instance lifecycle for SDK and infrastructure tests.",
       "features": [
         "VPCs, subnets, security groups, internet/NAT gateways and Elastic IPs",
@@ -395,7 +395,7 @@
     },
     "autoscaling": {
       "title": "EC2 Auto Scaling",
-      "category": "Compute and containers",
+      "category": "Compute",
       "summary": "Reconcile group membership with local EC2 instance records.",
       "features": [
         "Groups, launch configurations, policies, scheduled actions and scaling activities",
@@ -412,7 +412,7 @@
     },
     "ecr": {
       "title": "ECR",
-      "category": "Compute and containers",
+      "category": "Containers",
       "summary": "Manage repositories and push or pull images through a local Docker Registry API.",
       "features": [
         "Repository lifecycle, tags, policies and lifecycle rules",
@@ -430,7 +430,7 @@
     },
     "ecs": {
       "title": "ECS",
-      "category": "Compute and containers",
+      "category": "Containers",
       "summary": "Manage clusters, task definitions, tasks, and services with optional Docker execution.",
       "features": [
         "Clusters, task definition revisions, service desired count and task lifecycle",
@@ -449,7 +449,7 @@
     },
     "eks": {
       "title": "EKS",
-      "category": "Compute and containers",
+      "category": "Containers",
       "summary": "Manage Kubernetes cluster metadata and optionally start local k3s API servers.",
       "features": [
         "Clusters, node groups, Fargate profiles, add-ons and update metadata",
@@ -469,7 +469,7 @@
     },
     "apigateway": {
       "title": "API Gateway REST APIs",
-      "category": "Networking and APIs",
+      "category": "Networking & Content Delivery",
       "summary": "Manage and invoke REST APIs with deployments, stages, proxy integrations, and authorizers.",
       "features": [
         "AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector",
@@ -497,7 +497,7 @@
     },
     "apigatewayv2": {
       "title": "API Gateway HTTP APIs",
-      "category": "Networking and APIs",
+      "category": "Networking & Content Delivery",
       "summary": "Manage and invoke HTTP APIs with routes, stages, proxy integrations, and JWT authorizers.",
       "features": [
         "AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector",
@@ -521,7 +521,7 @@
     },
     "appsync": {
       "title": "AppSync GraphQL",
-      "category": "Networking and APIs",
+      "category": "Application Integration",
       "summary": "Run GraphQL APIs with local resolvers and WebSocket subscriptions.",
       "features": [
         "GraphQL APIs, API keys, schema/type operations, data sources, functions and resolvers",
@@ -542,7 +542,7 @@
     },
     "elbv2": {
       "title": "Elastic Load Balancing v2",
-      "category": "Networking and APIs",
+      "category": "Networking & Content Delivery",
       "summary": "Manage application and network load balancer metadata and invoke HTTP listener behavior.",
       "features": [
         "Load balancers, target groups, targets, listeners, listener rules, attributes and tags",
@@ -561,7 +561,7 @@
     },
     "route53": {
       "title": "Route 53",
-      "category": "Networking and APIs",
+      "category": "Networking & Content Delivery",
       "summary": "Manage hosted zones and record sets without running a DNS server.",
       "features": [
         "Public and private hosted zones, record changes and pagination",
@@ -577,7 +577,7 @@
     },
     "cloudfront": {
       "title": "CloudFront",
-      "category": "Networking and APIs",
+      "category": "Networking & Content Delivery",
       "summary": "Manage distribution and origin access control metadata for infrastructure tests.",
       "features": [
         "Distribution lifecycle and ETag-based updates",
@@ -594,7 +594,7 @@
     },
     "iam": {
       "title": "IAM",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "summary": "Store account-wide identities and optionally evaluate their permission policies.",
       "features": [
         "Roles, users, groups, membership and instance profiles",
@@ -631,7 +631,7 @@
     },
     "sts": {
       "title": "STS",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "summary": "Issue local session credentials and inspect the resolved caller identity.",
       "features": [
         "GetCallerIdentity, AssumeRole, GetSessionToken and AssumeRoleWithWebIdentity",
@@ -653,7 +653,7 @@
     },
     "cognitoidp": {
       "title": "Cognito user pools",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "summary": "Manage users and clients, authenticate locally, and issue pool-signed JWTs.",
       "features": [
         "User pools, app clients, users, groups, attributes and resource servers",
@@ -682,7 +682,7 @@
     },
     "cognitoidentity": {
       "title": "Cognito identity pools",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "summary": "Link supported logins to identities and exchange them for local STS role credentials.",
       "features": [
         "Identity pools, identities, role mappings, developer tokens and login linking",
@@ -700,7 +700,7 @@
     },
     "kms": {
       "title": "KMS",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "summary": "Exercise local cryptographic key and alias workflows.",
       "features": [
         "Symmetric AES, HMAC and selected RSA/ECC key types",
@@ -726,7 +726,7 @@
     },
     "acm": {
       "title": "Certificate Manager",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "summary": "Issue or import local certificates and exercise certificate lifecycle APIs.",
       "features": [
         "Certificate request, describe, listing, deletion and tags",
@@ -744,7 +744,7 @@
     },
     "ssm": {
       "title": "Systems Manager",
-      "category": "Configuration and operations",
+      "category": "Management & Governance",
       "summary": "Store versioned parameters, publish documents, and send Run Command requests.",
       "features": [
         "String, StringList and SecureString parameter records",
@@ -770,7 +770,7 @@
     },
     "secretsmanager": {
       "title": "Secrets Manager",
-      "category": "Configuration and operations",
+      "category": "Security, Identity & Compliance",
       "summary": "Manage secret versions, staging labels, deletion windows, and Lambda rotation.",
       "features": [
         "Secret lifecycle, binary/string values, version IDs and staging labels",
@@ -792,7 +792,7 @@
     },
     "logs": {
       "title": "CloudWatch Logs",
-      "category": "Configuration and operations",
+      "category": "Management & Governance",
       "summary": "Inspect log events and route local subscription and metric filters.",
       "features": [
         "Log groups, streams, retention metadata, tags and paged event reads",
@@ -816,7 +816,7 @@
     },
     "cloudwatch": {
       "title": "CloudWatch metrics and alarms",
-      "category": "Configuration and operations",
+      "category": "Management & Governance",
       "summary": "Record metrics, evaluate alarms, and exercise local monitoring integrations.",
       "features": [
         "Metrics, statistics, percentile queries and a metric-math subset",
@@ -848,7 +848,7 @@
     },
     "cloudformation": {
       "title": "CloudFormation",
-      "category": "Configuration and operations",
+      "category": "Management & Governance",
       "summary": "Create and update local stacks through the same service operations used by SDK clients.",
       "features": [
         "JSON/YAML templates, parameters, conditions, mappings, supported intrinsics and dependency ordering",
@@ -870,7 +870,7 @@
     },
     "sfn": {
       "title": "Step Functions",
-      "category": "Workflow and email",
+      "category": "Application Integration",
       "summary": "Execute a local Amazon States Language subset with service integrations.",
       "features": [
         "State machines, versions, aliases, activities, executions and history",
@@ -895,7 +895,7 @@
     },
     "sesv2": {
       "title": "SES v2",
-      "category": "Workflow and email",
+      "category": "Business Applications",
       "summary": "Render and inspect email workflows without sending external mail.",
       "features": [
         "Identities are verified immediately; templates and configuration sets are stored",
@@ -913,7 +913,7 @@
     },
     "ses": {
       "title": "SES v1",
-      "category": "Workflow and email",
+      "category": "Business Applications",
       "summary": "Send and verify email with the classic SES Query API over the same state as SES v2.",
       "features": [
         "Same signing name as SES v2: form requests reach v1 and REST JSON requests reach v2",
@@ -1000,7 +1000,7 @@
     },
     "resourcegroups": {
       "title": "Resource Groups",
-      "category": "Configuration and operations",
+      "category": "Management & Governance",
       "summary": "Group resources with tag-based or CloudFormation stack queries, resolved against the same resources the Tagging API lists.",
       "features": [
         "CreateGroup, GetGroup, UpdateGroup, DeleteGroup and ListGroups with resource-type, configuration-type, owner, display-name and criticality filters and pagination",
@@ -1026,7 +1026,7 @@
     },
     "resourcegroupstaggingapi": {
       "title": "Resource Groups Tagging API",
-      "category": "Configuration and operations",
+      "category": "Management & Governance",
       "summary": "Find and tag resources across services by tag, resource type, or ARN.",
       "features": [
         "GetResources with tag filters, resource type filters, ARN lists and pagination",
@@ -1045,7 +1045,7 @@
     },
     "pipes": {
       "title": "EventBridge Pipes",
-      "category": "Messaging and events",
+      "category": "Application Integration",
       "summary": "Connect SQS queues and Kinesis or DynamoDB streams to targets with filtering and Lambda enrichment.",
       "features": [
         "CreatePipe, DescribePipe, UpdatePipe, DeletePipe, ListPipes with filters and pagination, StartPipe and StopPipe",
@@ -1073,7 +1073,7 @@
     },
     "cloudcontrol": {
       "title": "Cloud Control API",
-      "category": "Configuration and operations",
+      "category": "Management & Governance",
       "summary": "Manage live S3 buckets and SQS queues with the CloudFormation resource handlers and a durable request journal.",
       "features": [
         "CreateResource, GetResource, UpdateResource, DeleteResource and ListResources for AWS::S3::Bucket and AWS::SQS::Queue",
@@ -1100,7 +1100,7 @@
     },
     "rds": {
       "title": "RDS, DocumentDB and Neptune",
-      "category": "Storage and databases",
+      "category": "Database",
       "summary": "Manage RDS instances with an optional Docker runtime, plus records-only DocumentDB and Neptune clusters and members.",
       "features": [
         "Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors",
@@ -1162,7 +1162,7 @@
     },
     "organizations": {
       "title": "Organizations",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "summary": "Manage global organization, account, hierarchy and SCP records.",
       "features": [
         "Create/describe/delete an organization with ALL (default) or CONSOLIDATED_BILLING; caller becomes the management account",
@@ -1185,7 +1185,7 @@
     },
     "servicediscovery": {
       "title": "Cloud Map",
-      "category": "Networking and content delivery",
+      "category": "Networking & Content Delivery",
       "summary": "Manage regional Cloud Map records and discover registered instances through the SDK data plane.",
       "features": [
         "HTTP, public DNS and private DNS namespace records with immediate SUCCESS operations; get/list/delete and HTTP description updates",
@@ -1211,7 +1211,7 @@
     },
     "appconfig": {
       "title": "AppConfig",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "summary": "Manage hosted configuration and deploy it immediately to regional environments.",
       "features": [
         "Application, environment, hosted configuration profile and deployment strategy CRUD, pagination and tags; duplicate names and missing resources fail with modeled errors",
@@ -1236,7 +1236,7 @@
     },
     "appconfigdata": {
       "title": "AppConfig Data",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "summary": "Poll deployed hosted configuration through configuration session tokens on the same endpoint.",
       "features": [
         "StartConfigurationSession resolves application, environment and profile IDs or names in the caller account and Region",
@@ -1254,7 +1254,7 @@
     },
     "cloudtrail": {
       "title": "CloudTrail",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "summary": "Manage regional trail records and look up external SDK management request history.",
       "features": [
         "Trail create/get/describe/update/delete, logging status and start/stop records; S3 destination bucket existence is checked via the S3 service outside transactions",
@@ -1278,7 +1278,7 @@
     },
     "backup": {
       "title": "AWS Backup",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "summary": "Persist regional vaults, immutable backup-plan versions and resource-selection metadata without running backups.",
       "features": [
         "17 REST JSON operations for vault CRUD, plan CRUD and version listing, resource-selection CRUD and vault/plan tags",
@@ -1311,7 +1311,7 @@
     },
     "config": {
       "title": "AWS Config",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "summary": "Persist regional rule, recorder and delivery-channel metadata without resource capture, compliance evaluation or delivery.",
       "features": [
         "16 AWS JSON 1.1 operations for rule upsert/describe/delete, recorder and delivery-channel configuration/status/lifecycle, and resource tags",
@@ -1341,7 +1341,7 @@
     },
     "account": {
       "title": "AWS Account",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "summary": "Read-only account metadata, primary contact details, and region opt-in statuses for the calling account.",
       "features": [
         "GetAccountInformation returns AccountId, AccountName (defaults to TinyStack Account), AccountCreatedDate (defaults to 2024-01-01T00:00:00Z UTC), and AccountState (ACTIVE) for the caller",
@@ -1363,7 +1363,7 @@
     },
     "wafv2": {
       "title": "WAF v2",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "summary": "Persist scoped web ACLs, IP sets, rule groups, tags and regional association metadata without inspecting traffic.",
       "features": [
         "22 AWS JSON 1.1 operations for Create/Get/Update/Delete/ListWebACL, IPSet and RuleGroup, four regional association APIs and three tag APIs; SDK signing name wafv2 and target prefix AWSWAF_20190729 come from the pinned Smithy model",
@@ -1427,7 +1427,7 @@
     },
     "batch": {
       "title": "AWS Batch",
-      "category": "Compute and containers",
+      "category": "Compute",
       "summary": "Persist regional compute-environment, queue and revisioned container-definition metadata without provisioning or running jobs.",
       "features": [
         "14 REST JSON metadata operations: compute environment and queue CRUD, definition registration/description/deregistration and resource tags",
@@ -1717,7 +1717,7 @@
     },
     "route53resolver": {
       "title": "Amazon Route 53 Resolver",
-      "category": "Networking and content delivery",
+      "category": "Networking & Content Delivery",
       "scope": "Account and Region",
       "summary": "Store Resolver endpoints, rules and VPC associations as records without allocating network interfaces or forwarding DNS queries.",
       "execution": "Configuration records only",
@@ -1765,7 +1765,7 @@
     },
     "acmpca": {
       "title": "AWS Private CA",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "scope": "Account and Region",
       "summary": "Store private certificate authorities, their revocation settings and tags as records without any cryptography.",
       "execution": "Configuration records only",
@@ -1792,7 +1792,7 @@
     },
     "elb": {
       "title": "Elastic Load Balancing (Classic)",
-      "category": "Networking and APIs",
+      "category": "Networking & Content Delivery",
       "scope": "Account and Region",
       "summary": "Store Classic Load Balancer listeners, placement, health check, instance and attribute settings as configuration records without routing traffic.",
       "execution": "Configuration records only",
@@ -1820,7 +1820,7 @@
     },
     "verifiedpermissions": {
       "title": "Amazon Verified Permissions",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "scope": "Account and Region",
       "summary": "Store policy stores, Cedar schemas, static policies and tags as records without the Cedar authorization engine.",
       "execution": "Configuration records only",
@@ -1844,7 +1844,7 @@
     },
     "identitystore": {
       "title": "AWS IAM Identity Center \u2014 Identity Store",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "scope": "Account-wide",
       "summary": "Store Identity Center users, groups and group memberships without directory synchronization or sign-in.",
       "execution": "Configuration records only",
@@ -1868,7 +1868,7 @@
     },
     "ssoadmin": {
       "title": "AWS IAM Identity Center \u2014 SSO Admin",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "scope": "Account-wide",
       "summary": "Store permission sets, policies, tags and account assignments without creating IAM roles or enabling sign-in.",
       "execution": "Configuration records only",
@@ -2100,7 +2100,7 @@
     },
     "servicequotas": {
       "title": "AWS Service Quotas",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "scope": "Account and Region",
       "summary": "Read informational built-in quotas and store quota increase requests without enforcing limits.",
       "features": [
@@ -2174,7 +2174,7 @@
     },
     "costexplorer": {
       "title": "AWS Cost Explorer",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "scope": "Account-wide",
       "summary": "Store account-wide cost definitions and query user-supplied USD actual-cost fixtures.",
       "features": [
@@ -2199,7 +2199,7 @@
     },
     "costandusagereportservice": {
       "title": "AWS Cost and Usage Reports",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "scope": "Account-wide",
       "summary": "Store legacy CUR report definitions and tags as account-wide records without generating billing data or report files.",
       "features": [
@@ -2223,7 +2223,7 @@
     },
     "budgets": {
       "title": "AWS Budgets",
-      "category": "Management and governance",
+      "category": "Management & Governance",
       "scope": "Account-wide (global)",
       "summary": "Manage account-wide budgets and deliver supported ACTUAL alerts from user-supplied USD cost fixtures.",
       "features": [
@@ -2347,7 +2347,7 @@
     },
     "waf": {
       "title": "WAF Classic",
-      "category": "Identity and security",
+      "category": "Security, Identity & Compliance",
       "summary": "Store global WAF Classic control-plane records only, with no request filtering.",
       "features": [
         "65 AWS JSON 1.1 operations, target AWSWAF_20150824 and signing name waf; global account-scoped records independent of WAFv2",
