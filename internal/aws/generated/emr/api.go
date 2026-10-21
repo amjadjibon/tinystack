@@ -751,6 +751,102 @@ type GetAutoTerminationPolicyOutput struct {
 	AutoTerminationPolicy *AutoTerminationPolicy `json:"AutoTerminationPolicy,omitempty"`
 }
 
+type AutoScalingPolicy struct {
+	Constraints *ScalingConstraints `json:"Constraints,omitempty"`
+	Rules       []ScalingRule       `json:"Rules,omitempty"`
+}
+
+type PutAutoScalingPolicyInput struct {
+	ClusterId         *string            `json:"ClusterId,omitempty"`
+	InstanceGroupId   *string            `json:"InstanceGroupId,omitempty"`
+	AutoScalingPolicy *AutoScalingPolicy `json:"AutoScalingPolicy,omitempty"`
+}
+
+type PutAutoScalingPolicyOutput struct {
+	ClusterId         *string                       `json:"ClusterId,omitempty"`
+	InstanceGroupId   *string                       `json:"InstanceGroupId,omitempty"`
+	AutoScalingPolicy *AutoScalingPolicyDescription `json:"AutoScalingPolicy,omitempty"`
+	ClusterArn        *string                       `json:"ClusterArn,omitempty"`
+}
+
+type RemoveAutoScalingPolicyInput struct {
+	ClusterId       *string `json:"ClusterId,omitempty"`
+	InstanceGroupId *string `json:"InstanceGroupId,omitempty"`
+}
+
+type RemoveAutoScalingPolicyOutput struct {
+}
+
+type ComputeLimits struct {
+	UnitType                     *string `json:"UnitType,omitempty"`
+	MinimumCapacityUnits         *int64  `json:"MinimumCapacityUnits,omitempty"`
+	MaximumCapacityUnits         *int64  `json:"MaximumCapacityUnits,omitempty"`
+	MaximumOnDemandCapacityUnits *int64  `json:"MaximumOnDemandCapacityUnits,omitempty"`
+	MaximumCoreCapacityUnits     *int64  `json:"MaximumCoreCapacityUnits,omitempty"`
+}
+
+type ManagedScalingPolicy struct {
+	ComputeLimits               *ComputeLimits `json:"ComputeLimits,omitempty"`
+	UtilizationPerformanceIndex *int64         `json:"UtilizationPerformanceIndex,omitempty"`
+	ScalingStrategy             *string        `json:"ScalingStrategy,omitempty"`
+}
+
+type PutManagedScalingPolicyInput struct {
+	ClusterId            *string               `json:"ClusterId,omitempty"`
+	ManagedScalingPolicy *ManagedScalingPolicy `json:"ManagedScalingPolicy,omitempty"`
+}
+
+type PutManagedScalingPolicyOutput struct {
+}
+
+type GetManagedScalingPolicyInput struct {
+	ClusterId *string `json:"ClusterId,omitempty"`
+}
+
+type GetManagedScalingPolicyOutput struct {
+	ManagedScalingPolicy *ManagedScalingPolicy `json:"ManagedScalingPolicy,omitempty"`
+}
+
+type RemoveManagedScalingPolicyInput struct {
+	ClusterId *string `json:"ClusterId,omitempty"`
+}
+
+type RemoveManagedScalingPolicyOutput struct {
+}
+
+type GetBlockPublicAccessConfigurationInput struct {
+}
+
+type PortRange struct {
+	MinRange *int64 `json:"MinRange,omitempty"`
+	MaxRange *int64 `json:"MaxRange,omitempty"`
+}
+
+type BlockPublicAccessConfiguration struct {
+	BlockPublicSecurityGroupRules          *bool             `json:"BlockPublicSecurityGroupRules,omitempty"`
+	PermittedPublicSecurityGroupRuleRanges []PortRange       `json:"PermittedPublicSecurityGroupRuleRanges,omitempty"`
+	Classification                         *string           `json:"Classification,omitempty"`
+	Configurations                         []Configuration   `json:"Configurations,omitempty"`
+	Properties                             map[string]string `json:"Properties,omitempty"`
+}
+
+type BlockPublicAccessConfigurationMetadata struct {
+	CreationDateTime *float64 `json:"CreationDateTime,omitempty"`
+	CreatedByArn     *string  `json:"CreatedByArn,omitempty"`
+}
+
+type GetBlockPublicAccessConfigurationOutput struct {
+	BlockPublicAccessConfiguration         *BlockPublicAccessConfiguration         `json:"BlockPublicAccessConfiguration,omitempty"`
+	BlockPublicAccessConfigurationMetadata *BlockPublicAccessConfigurationMetadata `json:"BlockPublicAccessConfigurationMetadata,omitempty"`
+}
+
+type PutBlockPublicAccessConfigurationInput struct {
+	BlockPublicAccessConfiguration *BlockPublicAccessConfiguration `json:"BlockPublicAccessConfiguration,omitempty"`
+}
+
+type PutBlockPublicAccessConfigurationOutput struct {
+}
+
 type API interface {
 	RunJobFlow(context.Context, *RunJobFlowInput) (*RunJobFlowOutput, error)
 	DescribeCluster(context.Context, *DescribeClusterInput) (*DescribeClusterOutput, error)
@@ -778,6 +874,13 @@ type API interface {
 	AddTags(context.Context, *AddTagsInput) (*AddTagsOutput, error)
 	RemoveTags(context.Context, *RemoveTagsInput) (*RemoveTagsOutput, error)
 	GetAutoTerminationPolicy(context.Context, *GetAutoTerminationPolicyInput) (*GetAutoTerminationPolicyOutput, error)
+	PutAutoScalingPolicy(context.Context, *PutAutoScalingPolicyInput) (*PutAutoScalingPolicyOutput, error)
+	RemoveAutoScalingPolicy(context.Context, *RemoveAutoScalingPolicyInput) (*RemoveAutoScalingPolicyOutput, error)
+	PutManagedScalingPolicy(context.Context, *PutManagedScalingPolicyInput) (*PutManagedScalingPolicyOutput, error)
+	GetManagedScalingPolicy(context.Context, *GetManagedScalingPolicyInput) (*GetManagedScalingPolicyOutput, error)
+	RemoveManagedScalingPolicy(context.Context, *RemoveManagedScalingPolicyInput) (*RemoveManagedScalingPolicyOutput, error)
+	GetBlockPublicAccessConfiguration(context.Context, *GetBlockPublicAccessConfigurationInput) (*GetBlockPublicAccessConfigurationOutput, error)
+	PutBlockPublicAccessConfiguration(context.Context, *PutBlockPublicAccessConfigurationInput) (*PutBlockPublicAccessConfigurationOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -855,6 +958,27 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetAutoTerminationPolicy": {Name: "GetAutoTerminationPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "elasticmapreduce:GetAutoTerminationPolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ElasticMapReduce.GetAutoTerminationPolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetAutoTerminationPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetAutoTerminationPolicy(ctx, input.(*GetAutoTerminationPolicyInput))
+		}},
+		"PutAutoScalingPolicy": {Name: "PutAutoScalingPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "elasticmapreduce:PutAutoScalingPolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ElasticMapReduce.PutAutoScalingPolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutAutoScalingPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutAutoScalingPolicy(ctx, input.(*PutAutoScalingPolicyInput))
+		}},
+		"RemoveAutoScalingPolicy": {Name: "RemoveAutoScalingPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "elasticmapreduce:RemoveAutoScalingPolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ElasticMapReduce.RemoveAutoScalingPolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RemoveAutoScalingPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemoveAutoScalingPolicy(ctx, input.(*RemoveAutoScalingPolicyInput))
+		}},
+		"PutManagedScalingPolicy": {Name: "PutManagedScalingPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "elasticmapreduce:PutManagedScalingPolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ElasticMapReduce.PutManagedScalingPolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutManagedScalingPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutManagedScalingPolicy(ctx, input.(*PutManagedScalingPolicyInput))
+		}},
+		"GetManagedScalingPolicy": {Name: "GetManagedScalingPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "elasticmapreduce:GetManagedScalingPolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ElasticMapReduce.GetManagedScalingPolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetManagedScalingPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetManagedScalingPolicy(ctx, input.(*GetManagedScalingPolicyInput))
+		}},
+		"RemoveManagedScalingPolicy": {Name: "RemoveManagedScalingPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "elasticmapreduce:RemoveManagedScalingPolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ElasticMapReduce.RemoveManagedScalingPolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RemoveManagedScalingPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemoveManagedScalingPolicy(ctx, input.(*RemoveManagedScalingPolicyInput))
+		}},
+		"GetBlockPublicAccessConfiguration": {Name: "GetBlockPublicAccessConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "elasticmapreduce:GetBlockPublicAccessConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ElasticMapReduce.GetBlockPublicAccessConfiguration", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetBlockPublicAccessConfigurationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBlockPublicAccessConfiguration(ctx, input.(*GetBlockPublicAccessConfigurationInput))
+		}},
+		"PutBlockPublicAccessConfiguration": {Name: "PutBlockPublicAccessConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "elasticmapreduce:PutBlockPublicAccessConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ElasticMapReduce.PutBlockPublicAccessConfiguration", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutBlockPublicAccessConfigurationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBlockPublicAccessConfiguration(ctx, input.(*PutBlockPublicAccessConfigurationInput))
 		}},
 	}}
 }

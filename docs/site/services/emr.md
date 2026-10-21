@@ -13,7 +13,7 @@ Records only, no Hadoop/Spark runtime: store classic EMR clusters, synthetic cap
 | API version | `2009-03-31` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 26 of 65 in the pinned model |
+| Selected operations | 33 of 65 in the pinned model |
 
 ## Implemented behavior
 
@@ -23,7 +23,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-emr) for this servic
 
 - No Hadoop/Spark runtime, EC2 provisioning, bootstrap or JAR execution, logs, output, metrics, billing or actual failures; successful steps always complete and cancellation does not invoke failure policies.
 - State transitions and idle timeout checks advance on DescribeCluster, ListClusters, DescribeStep and ListSteps; inventory and capacity reads do not advance execution.
-- Studios, notebooks, sessions, managed scaling, auto-scaling, block public access, EBS configuration, custom AMIs and legacy AMI cluster creation are unsupported and rejected.
+- Studios, notebooks, sessions, EBS configuration, custom AMIs and legacy AMI cluster creation are unsupported and rejected.
 - Ec2KeyName and application/configuration properties are metadata; security configuration JSON is stored without interpreting encryption settings; synthetic instances do not exist in the EC2 API; UnhealthyNodeReplacement and EbsOptimized are metadata only.
 - Security groups require an explicit subnet; synthetic capacity is limited to 1000 instances per group/fleet; weighted fleet capacity is approximated with the first configured instance type.
 - AutoTerminationPolicy is accepted on RunJobFlow and readable through GetAutoTerminationPolicy; separate policy mutations and CloudFormation resource providers are unsupported.
@@ -51,6 +51,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DescribeSecurityConfiguration` | `POST /` |
 | `DescribeStep` | `POST /` |
 | `GetAutoTerminationPolicy` | `POST /` |
+| `GetBlockPublicAccessConfiguration` | `POST /` |
+| `GetManagedScalingPolicy` | `POST /` |
 | `ListBootstrapActions` | `POST /` |
 | `ListClusters` | `POST /` |
 | `ListInstanceFleets` | `POST /` |
@@ -61,6 +63,11 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ModifyCluster` | `POST /` |
 | `ModifyInstanceFleet` | `POST /` |
 | `ModifyInstanceGroups` | `POST /` |
+| `PutAutoScalingPolicy` | `POST /` |
+| `PutBlockPublicAccessConfiguration` | `POST /` |
+| `PutManagedScalingPolicy` | `POST /` |
+| `RemoveAutoScalingPolicy` | `POST /` |
+| `RemoveManagedScalingPolicy` | `POST /` |
 | `RemoveTags` | `POST /` |
 | `RunJobFlow` | `POST /` |
 | `SetTerminationProtection` | `POST /` |
@@ -69,7 +76,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "39 modeled operations outside the implementation"
+??? info "32 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -83,9 +90,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribePersistentAppUI`
     - `DescribeReleaseLabel`
     - `DescribeStudio`
-    - `GetBlockPublicAccessConfiguration`
     - `GetClusterSessionCredentials`
-    - `GetManagedScalingPolicy`
     - `GetOnClusterAppUIPresignedURL`
     - `GetPersistentAppUIPresignedURL`
     - `GetSession`
@@ -97,13 +102,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListStudioSessionMappings`
     - `ListStudios`
     - `ListSupportedInstanceTypes`
-    - `PutAutoScalingPolicy`
     - `PutAutoTerminationPolicy`
-    - `PutBlockPublicAccessConfiguration`
-    - `PutManagedScalingPolicy`
-    - `RemoveAutoScalingPolicy`
     - `RemoveAutoTerminationPolicy`
-    - `RemoveManagedScalingPolicy`
     - `SetKeepJobFlowAliveWhenNoSteps`
     - `SetUnhealthyNodeReplacement`
     - `StartNotebookExecution`

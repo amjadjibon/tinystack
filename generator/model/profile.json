@@ -29091,7 +29091,14 @@
       "DeleteSecurityConfiguration",
       "AddTags",
       "RemoveTags",
-      "GetAutoTerminationPolicy"
+      "GetAutoTerminationPolicy",
+      "PutAutoScalingPolicy",
+      "RemoveAutoScalingPolicy",
+      "PutManagedScalingPolicy",
+      "GetManagedScalingPolicy",
+      "RemoveManagedScalingPolicy",
+      "GetBlockPublicAccessConfiguration",
+      "PutBlockPublicAccessConfiguration"
     ],
     "shapes": {
       "RunJobFlowInput": [
@@ -29708,7 +29715,78 @@
         "EbsOptimized",
         "EbsBlockDeviceConfigs"
       ],
-      "EbsBlockDeviceConfig": []
+      "EbsBlockDeviceConfig": [],
+      "PutAutoScalingPolicyInput": [
+        "ClusterId",
+        "InstanceGroupId",
+        "AutoScalingPolicy"
+      ],
+      "PutAutoScalingPolicyOutput": [
+        "ClusterId",
+        "InstanceGroupId",
+        "AutoScalingPolicy",
+        "ClusterArn"
+      ],
+      "AutoScalingPolicy": [
+        "Constraints",
+        "Rules"
+      ],
+      "RemoveAutoScalingPolicyInput": [
+        "ClusterId",
+        "InstanceGroupId"
+      ],
+      "RemoveAutoScalingPolicyOutput": [],
+      "PutManagedScalingPolicyInput": [
+        "ClusterId",
+        "ManagedScalingPolicy"
+      ],
+      "PutManagedScalingPolicyOutput": [],
+      "GetManagedScalingPolicyInput": [
+        "ClusterId"
+      ],
+      "GetManagedScalingPolicyOutput": [
+        "ManagedScalingPolicy"
+      ],
+      "RemoveManagedScalingPolicyInput": [
+        "ClusterId"
+      ],
+      "RemoveManagedScalingPolicyOutput": [],
+      "ManagedScalingPolicy": [
+        "ComputeLimits",
+        "UtilizationPerformanceIndex",
+        "ScalingStrategy"
+      ],
+      "ComputeLimits": [
+        "UnitType",
+        "MinimumCapacityUnits",
+        "MaximumCapacityUnits",
+        "MaximumOnDemandCapacityUnits",
+        "MaximumCoreCapacityUnits"
+      ],
+      "GetBlockPublicAccessConfigurationInput": [],
+      "GetBlockPublicAccessConfigurationOutput": [
+        "BlockPublicAccessConfiguration",
+        "BlockPublicAccessConfigurationMetadata"
+      ],
+      "PutBlockPublicAccessConfigurationInput": [
+        "BlockPublicAccessConfiguration"
+      ],
+      "PutBlockPublicAccessConfigurationOutput": [],
+      "BlockPublicAccessConfiguration": [
+        "BlockPublicSecurityGroupRules",
+        "PermittedPublicSecurityGroupRuleRanges",
+        "Classification",
+        "Configurations",
+        "Properties"
+      ],
+      "BlockPublicAccessConfigurationMetadata": [
+        "CreationDateTime",
+        "CreatedByArn"
+      ],
+      "PortRange": [
+        "MinRange",
+        "MaxRange"
+      ]
     }
   },
   "bedrock": {

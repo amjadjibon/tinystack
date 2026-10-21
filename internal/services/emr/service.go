@@ -47,16 +47,17 @@ type Service struct {
 }
 
 type record struct {
-	Cluster           api.Cluster
-	CIDR              string
-	Groups            []api.InstanceGroup
-	Fleets            []api.InstanceFleet
-	Steps             []api.Step
-	FailureHandled    map[string]bool
-	Bootstrap         []api.Command
-	IdleTimeout       int64
-	IdleSince         float64
-	PauseAfterFailure bool
+	Cluster              api.Cluster
+	FailureHandled       map[string]bool
+	ManagedScalingPolicy *api.ManagedScalingPolicy
+	CIDR                 string
+	Groups               []api.InstanceGroup
+	Fleets               []api.InstanceFleet
+	Steps                []api.Step
+	Bootstrap            []api.Command
+	IdleTimeout          int64
+	IdleSince            float64
+	PauseAfterFailure    bool
 }
 
 func New(store storage.Store, network Network, identity Identity, buckets Buckets) *Service {
@@ -65,6 +66,10 @@ func New(store storage.Store, network Network, identity Identity, buckets Bucket
 
 func invalid(format string, args ...any) error {
 	return awserror.New("ValidationException", fmt.Sprintf(format, args...))
+}
+
+func invalidRequest(msg string) error {
+	return awserror.New("InvalidRequestException", msg)
 }
 
 func read(tx storage.ReadTx, scope request.Scope, id *string) (*record, error) {
