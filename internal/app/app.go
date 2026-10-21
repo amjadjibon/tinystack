@@ -55,6 +55,7 @@ import (
 	efsapi "github.com/amjadjibon/tinystack/internal/aws/generated/efs"
 	eksapi "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
+	elasticbeanstalkapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticbeanstalk"
 	elbapi "github.com/amjadjibon/tinystack/internal/aws/generated/elb"
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
 	emrapi "github.com/amjadjibon/tinystack/internal/aws/generated/emr"
@@ -161,6 +162,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/eks/k3s"
 	"github.com/amjadjibon/tinystack/internal/services/elasticache"
 	cachedocker "github.com/amjadjibon/tinystack/internal/services/elasticache/docker"
+	"github.com/amjadjibon/tinystack/internal/services/elasticbeanstalk"
 	"github.com/amjadjibon/tinystack/internal/services/elb"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
 	"github.com/amjadjibon/tinystack/internal/services/emr"
@@ -422,6 +424,8 @@ func build(
 	quotaRecords := servicequotas.New(store)
 	dmsRecords := databasemigrationservice.New(store, network)
 	emrRecords := emrserverless.New(store)
+	beanstalk := elasticbeanstalk.New(store, buckets)
+	a.onStop(beanstalk.Stop)
 	classicEMR := emr.New(store, network, roles, buckets)
 	aossRecords := opensearchserverless.New(store)
 	flinkRecords := kinesisanalyticsv2.New(store, network, buckets, logGroups)
@@ -517,6 +521,7 @@ func build(
 		ecsapi.Descriptor(containers),
 		eksapi.Descriptor(kube),
 		elasticacheapi.Descriptor(caches),
+		elasticbeanstalkapi.Descriptor(beanstalk),
 		organizationsapi.Descriptor(organizationsService),
 		accountapi.Descriptor(accounts),
 		servicediscoveryapi.Descriptor(discovery),

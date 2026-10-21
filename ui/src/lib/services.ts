@@ -52,6 +52,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: migration,
 		icon: "rds",
 	},
+	elasticbeanstalk: {
+		title: "Elastic Beanstalk",
+		category: compute,
+		icon: "ec2",
+	},
 	signer: { title: "AWS Signer", category: security, icon: "acm" },
 	kinesisanalyticsv2: {
 		title: "Amazon Managed Service for Apache Flink",

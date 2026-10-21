@@ -390,6 +390,10 @@
     "bedrockruntime": {
       "path": "codegen/sdk-codegen/aws-models/bedrock-runtime.json",
       "sha256": "8f55e75faf50a50f75fade0282d52e16c12b4249fec9754ca6ea109ac5b1ddad"
+    },
+    "elasticbeanstalk": {
+      "path": "codegen/sdk-codegen/aws-models/elastic-beanstalk.json",
+      "sha256": "e17a6e7bf75c49a96e0b856a9b225a58ef7eda3b40affa05d6b1afbe23b57069"
     }
   }
 }

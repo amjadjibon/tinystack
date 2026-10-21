@@ -30316,5 +30316,639 @@
         "text"
       ]
     }
+  },
+  "elasticbeanstalk": {
+    "operations": [
+      "CreateApplication",
+      "DescribeApplications",
+      "UpdateApplication",
+      "DeleteApplication",
+      "UpdateApplicationResourceLifecycle",
+      "CreateApplicationVersion",
+      "DescribeApplicationVersions",
+      "UpdateApplicationVersion",
+      "DeleteApplicationVersion",
+      "ListAvailableSolutionStacks",
+      "ListPlatformVersions",
+      "DescribePlatformVersion",
+      "CreateEnvironment",
+      "DescribeEnvironments",
+      "UpdateEnvironment",
+      "TerminateEnvironment",
+      "RebuildEnvironment",
+      "RestartAppServer",
+      "SwapEnvironmentCNAMEs",
+      "CheckDNSAvailability",
+      "DescribeEnvironmentResources",
+      "DescribeEnvironmentHealth",
+      "DescribeEvents",
+      "CreateConfigurationTemplate",
+      "DescribeConfigurationSettings",
+      "UpdateConfigurationTemplate",
+      "DeleteConfigurationTemplate",
+      "DescribeConfigurationOptions",
+      "ValidateConfigurationSettings",
+      "ListTagsForResource",
+      "UpdateTagsForResource",
+      "CreateStorageLocation"
+    ],
+    "shapes": {
+      "CreateApplicationMessage": [
+        "ApplicationName",
+        "Description",
+        "ResourceLifecycleConfig",
+        "Tags"
+      ],
+      "ApplicationResourceLifecycleConfig": [
+        "ServiceRole",
+        "VersionLifecycleConfig"
+      ],
+      "ApplicationVersionLifecycleConfig": [
+        "MaxCountRule",
+        "MaxAgeRule"
+      ],
+      "MaxCountRule": [
+        "Enabled",
+        "MaxCount",
+        "DeleteSourceFromS3"
+      ],
+      "MaxAgeRule": [
+        "Enabled",
+        "MaxAgeInDays",
+        "DeleteSourceFromS3"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "ApplicationDescriptionMessage": [
+        "Application"
+      ],
+      "ApplicationDescription": [
+        "ApplicationArn",
+        "ApplicationName",
+        "Description",
+        "DateCreated",
+        "DateUpdated",
+        "Versions",
+        "ConfigurationTemplates",
+        "ResourceLifecycleConfig"
+      ],
+      "TooManyApplicationsException": [
+        "message"
+      ],
+      "DescribeApplicationsMessage": [
+        "ApplicationNames"
+      ],
+      "ApplicationDescriptionsMessage": [
+        "Applications"
+      ],
+      "UpdateApplicationMessage": [
+        "ApplicationName",
+        "Description"
+      ],
+      "DeleteApplicationMessage": [
+        "ApplicationName",
+        "TerminateEnvByForce"
+      ],
+      "OperationInProgressException": [
+        "message"
+      ],
+      "UpdateApplicationResourceLifecycleMessage": [
+        "ApplicationName",
+        "ResourceLifecycleConfig"
+      ],
+      "ApplicationResourceLifecycleDescriptionMessage": [
+        "ApplicationName",
+        "ResourceLifecycleConfig"
+      ],
+      "InsufficientPrivilegesException": [
+        "message"
+      ],
+      "CreateApplicationVersionMessage": [
+        "ApplicationName",
+        "VersionLabel",
+        "Description",
+        "SourceBundle",
+        "AutoCreateApplication",
+        "Process",
+        "Tags"
+      ],
+      "S3Location": [
+        "S3Bucket",
+        "S3Key"
+      ],
+      "ApplicationVersionDescriptionMessage": [
+        "ApplicationVersion"
+      ],
+      "ApplicationVersionDescription": [
+        "ApplicationVersionArn",
+        "ApplicationName",
+        "Description",
+        "VersionLabel",
+        "SourceBuildInformation",
+        "BuildArn",
+        "SourceBundle",
+        "ImageSource",
+        "ImageBuildConfiguration",
+        "Process",
+        "DateCreated",
+        "DateUpdated",
+        "Status"
+      ],
+      "SourceBuildInformation": [
+        "SourceType",
+        "SourceRepository",
+        "SourceLocation"
+      ],
+      "ImageSource": [
+        "Uri"
+      ],
+      "ImageBuildConfiguration": [
+        "Type",
+        "DockerfileLocation",
+        "Buildpack",
+        "Architecture",
+        "CodeBuildServiceRole",
+        "ComputeType",
+        "TimeoutInMinutes"
+      ],
+      "CodeBuildNotInServiceRegionException": [
+        "message"
+      ],
+      "S3LocationNotInServiceRegionException": [
+        "message"
+      ],
+      "TooManyApplicationVersionsException": [
+        "message"
+      ],
+      "DescribeApplicationVersionsMessage": [
+        "ApplicationName",
+        "VersionLabels",
+        "MaxRecords",
+        "NextToken"
+      ],
+      "ApplicationVersionDescriptionsMessage": [
+        "ApplicationVersions",
+        "NextToken"
+      ],
+      "UpdateApplicationVersionMessage": [
+        "ApplicationName",
+        "VersionLabel",
+        "Description"
+      ],
+      "DeleteApplicationVersionMessage": [
+        "ApplicationName",
+        "VersionLabel",
+        "DeleteSourceBundle"
+      ],
+      "SourceBundleDeletionException": [
+        "message"
+      ],
+      "ListAvailableSolutionStacksResultMessage": [
+        "SolutionStacks",
+        "SolutionStackDetails"
+      ],
+      "SolutionStackDescription": [
+        "SolutionStackName",
+        "PermittedFileTypes"
+      ],
+      "ListPlatformVersionsRequest": [
+        "Filters",
+        "MaxRecords",
+        "NextToken"
+      ],
+      "PlatformFilter": [
+        "Type",
+        "Operator",
+        "Values"
+      ],
+      "ListPlatformVersionsResult": [
+        "PlatformSummaryList",
+        "NextToken"
+      ],
+      "PlatformSummary": [
+        "PlatformArn",
+        "PlatformOwner",
+        "PlatformStatus",
+        "PlatformCategory",
+        "OperatingSystemName",
+        "OperatingSystemVersion",
+        "SupportedTierList",
+        "SupportedAddonList",
+        "PlatformLifecycleState",
+        "PlatformVersion",
+        "PlatformBranchName",
+        "PlatformBranchLifecycleState"
+      ],
+      "ElasticBeanstalkServiceException": [
+        "message"
+      ],
+      "DescribePlatformVersionRequest": [
+        "PlatformArn"
+      ],
+      "DescribePlatformVersionResult": [
+        "PlatformDescription"
+      ],
+      "PlatformDescription": [
+        "PlatformArn",
+        "PlatformOwner",
+        "PlatformName",
+        "PlatformVersion",
+        "SolutionStackName",
+        "PlatformStatus",
+        "DateCreated",
+        "DateUpdated",
+        "PlatformCategory",
+        "Description",
+        "Maintainer",
+        "OperatingSystemName",
+        "OperatingSystemVersion",
+        "ProgrammingLanguages",
+        "Frameworks",
+        "CustomAmiList",
+        "SupportedTierList",
+        "SupportedAddonList",
+        "PlatformLifecycleState",
+        "PlatformBranchName",
+        "PlatformBranchLifecycleState"
+      ],
+      "PlatformProgrammingLanguage": [
+        "Name",
+        "Version"
+      ],
+      "PlatformFramework": [
+        "Name",
+        "Version"
+      ],
+      "CustomAmi": [
+        "VirtualizationType",
+        "ImageId"
+      ],
+      "CreateEnvironmentMessage": [
+        "ApplicationName",
+        "EnvironmentName",
+        "Description",
+        "CNAMEPrefix",
+        "Tier",
+        "Tags",
+        "VersionLabel",
+        "TemplateName",
+        "SolutionStackName",
+        "PlatformArn",
+        "OptionSettings"
+      ],
+      "EnvironmentTier": [
+        "Name",
+        "Type",
+        "Version"
+      ],
+      "ConfigurationOptionSetting": [
+        "ResourceName",
+        "Namespace",
+        "OptionName",
+        "Value"
+      ],
+      "EnvironmentDescription": [
+        "EnvironmentName",
+        "EnvironmentId",
+        "ApplicationName",
+        "VersionLabel",
+        "SolutionStackName",
+        "PlatformArn",
+        "TemplateName",
+        "Description",
+        "EndpointURL",
+        "CNAME",
+        "DateCreated",
+        "DateUpdated",
+        "Status",
+        "AbortableOperationInProgress",
+        "Health",
+        "HealthStatus",
+        "Resources",
+        "Tier",
+        "EnvironmentLinks",
+        "EnvironmentArn",
+        "OperationsRole"
+      ],
+      "EnvironmentResourcesDescription": [
+        "LoadBalancer"
+      ],
+      "LoadBalancerDescription": [
+        "LoadBalancerName",
+        "Domain",
+        "Listeners"
+      ],
+      "Listener": [
+        "Protocol",
+        "Port"
+      ],
+      "EnvironmentLink": [
+        "LinkName",
+        "EnvironmentName"
+      ],
+      "TooManyEnvironmentsException": [
+        "message"
+      ],
+      "DescribeEnvironmentsMessage": [
+        "ApplicationName",
+        "VersionLabel",
+        "EnvironmentIds",
+        "EnvironmentNames",
+        "IncludeDeleted",
+        "IncludedDeletedBackTo",
+        "MaxRecords",
+        "NextToken"
+      ],
+      "EnvironmentDescriptionsMessage": [
+        "Environments",
+        "NextToken"
+      ],
+      "UpdateEnvironmentMessage": [
+        "ApplicationName",
+        "EnvironmentId",
+        "EnvironmentName",
+        "Description",
+        "Tier",
+        "VersionLabel",
+        "TemplateName",
+        "SolutionStackName",
+        "PlatformArn",
+        "OptionSettings",
+        "OptionsToRemove"
+      ],
+      "OptionSpecification": [
+        "ResourceName",
+        "Namespace",
+        "OptionName"
+      ],
+      "TooManyBucketsException": [
+        "message"
+      ],
+      "TerminateEnvironmentMessage": [
+        "EnvironmentId",
+        "EnvironmentName",
+        "TerminateResources",
+        "ForceTerminate"
+      ],
+      "RebuildEnvironmentMessage": [
+        "EnvironmentId",
+        "EnvironmentName"
+      ],
+      "RestartAppServerMessage": [
+        "EnvironmentId",
+        "EnvironmentName"
+      ],
+      "SwapEnvironmentCNAMEsMessage": [
+        "SourceEnvironmentId",
+        "SourceEnvironmentName",
+        "DestinationEnvironmentId",
+        "DestinationEnvironmentName"
+      ],
+      "CheckDNSAvailabilityMessage": [
+        "CNAMEPrefix"
+      ],
+      "CheckDNSAvailabilityResultMessage": [
+        "Available",
+        "FullyQualifiedCNAME"
+      ],
+      "DescribeEnvironmentResourcesMessage": [
+        "EnvironmentId",
+        "EnvironmentName"
+      ],
+      "EnvironmentResourceDescriptionsMessage": [
+        "EnvironmentResources"
+      ],
+      "EnvironmentResourceDescription": [
+        "EnvironmentName",
+        "AutoScalingGroups",
+        "Cluster",
+        "Instances",
+        "LaunchConfigurations",
+        "LaunchTemplates",
+        "LoadBalancers",
+        "Triggers",
+        "Queues"
+      ],
+      "AutoScalingGroup": [
+        "Name"
+      ],
+      "Cluster": [
+        "ClusterArn"
+      ],
+      "Instance": [
+        "Id"
+      ],
+      "LaunchConfiguration": [
+        "Name"
+      ],
+      "LaunchTemplate": [
+        "Id"
+      ],
+      "LoadBalancer": [
+        "Name"
+      ],
+      "Trigger": [
+        "Name"
+      ],
+      "Queue": [
+        "Name",
+        "URL"
+      ],
+      "DescribeEnvironmentHealthRequest": [
+        "EnvironmentName",
+        "EnvironmentId"
+      ],
+      "DescribeEnvironmentHealthResult": [
+        "EnvironmentName",
+        "HealthStatus",
+        "Status",
+        "Color",
+        "Causes",
+        "ApplicationMetrics",
+        "InstancesHealth",
+        "RefreshedAt"
+      ],
+      "ApplicationMetrics": [
+        "Duration",
+        "RequestCount",
+        "StatusCodes",
+        "Latency"
+      ],
+      "StatusCodes": [
+        "Status2xx",
+        "Status3xx",
+        "Status4xx",
+        "Status5xx"
+      ],
+      "Latency": [
+        "P999",
+        "P99",
+        "P95",
+        "P90",
+        "P85",
+        "P75",
+        "P50",
+        "P10"
+      ],
+      "InstanceHealthSummary": [
+        "NoData",
+        "Unknown",
+        "Pending",
+        "Ok",
+        "Info",
+        "Warning",
+        "Degraded",
+        "Severe"
+      ],
+      "InvalidRequestException": [
+        "message"
+      ],
+      "DescribeEventsMessage": [
+        "ApplicationName",
+        "VersionLabel",
+        "TemplateName",
+        "EnvironmentId",
+        "EnvironmentName",
+        "PlatformArn",
+        "Severity",
+        "StartTime",
+        "EndTime",
+        "MaxRecords",
+        "NextToken"
+      ],
+      "EventDescriptionsMessage": [
+        "Events",
+        "NextToken"
+      ],
+      "EventDescription": [
+        "EventDate",
+        "Message",
+        "ApplicationName",
+        "VersionLabel",
+        "TemplateName",
+        "EnvironmentName",
+        "PlatformArn",
+        "RequestId",
+        "Severity"
+      ],
+      "CreateConfigurationTemplateMessage": [
+        "ApplicationName",
+        "TemplateName",
+        "SolutionStackName",
+        "PlatformArn",
+        "EnvironmentId",
+        "Description",
+        "OptionSettings",
+        "Tags"
+      ],
+      "ConfigurationSettingsDescription": [
+        "SolutionStackName",
+        "PlatformArn",
+        "ApplicationName",
+        "TemplateName",
+        "Description",
+        "EnvironmentName",
+        "DeploymentStatus",
+        "DateCreated",
+        "DateUpdated",
+        "OptionSettings"
+      ],
+      "TooManyConfigurationTemplatesException": [
+        "message"
+      ],
+      "DescribeConfigurationSettingsMessage": [
+        "ApplicationName",
+        "TemplateName",
+        "EnvironmentName"
+      ],
+      "ConfigurationSettingsDescriptions": [
+        "ConfigurationSettings"
+      ],
+      "UpdateConfigurationTemplateMessage": [
+        "ApplicationName",
+        "TemplateName",
+        "Description",
+        "OptionSettings",
+        "OptionsToRemove"
+      ],
+      "DeleteConfigurationTemplateMessage": [
+        "ApplicationName",
+        "TemplateName"
+      ],
+      "DescribeConfigurationOptionsMessage": [
+        "ApplicationName",
+        "TemplateName",
+        "EnvironmentName",
+        "SolutionStackName",
+        "PlatformArn",
+        "Options"
+      ],
+      "ConfigurationOptionsDescription": [
+        "SolutionStackName",
+        "PlatformArn",
+        "Options"
+      ],
+      "ConfigurationOptionDescription": [
+        "Namespace",
+        "Name",
+        "DefaultValue",
+        "ChangeSeverity",
+        "UserDefined",
+        "ValueType",
+        "ValueOptions",
+        "MinValue",
+        "MaxValue",
+        "MaxLength",
+        "Regex"
+      ],
+      "OptionRestrictionRegex": [
+        "Pattern",
+        "Label"
+      ],
+      "ValidateConfigurationSettingsMessage": [
+        "ApplicationName",
+        "TemplateName",
+        "EnvironmentName",
+        "OptionSettings"
+      ],
+      "ConfigurationSettingsValidationMessages": [
+        "Messages"
+      ],
+      "ValidationMessage": [
+        "Message",
+        "Severity",
+        "Namespace",
+        "OptionName"
+      ],
+      "ListTagsForResourceMessage": [
+        "ResourceArn"
+      ],
+      "ResourceTagsDescriptionMessage": [
+        "ResourceArn",
+        "ResourceTags"
+      ],
+      "ResourceNotFoundException": [
+        "message"
+      ],
+      "ResourceTypeNotSupportedException": [
+        "message"
+      ],
+      "UpdateTagsForResourceMessage": [
+        "ResourceArn",
+        "TagsToAdd",
+        "TagsToRemove"
+      ],
+      "TooManyTagsException": [
+        "message"
+      ],
+      "CreateStorageLocationResultMessage": [
+        "S3Bucket"
+      ],
+      "S3SubscriptionRequiredException": [
+        "message"
+      ]
+    }
   }
 }
