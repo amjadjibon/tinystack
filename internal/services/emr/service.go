@@ -117,7 +117,12 @@ func mutable(r *record) error {
 	return nil
 }
 
+// state records a transition; staying in the same state keeps the reason of the change that entered it.
 func state(r *record, v, reason string) {
+	if common.Value(r.Cluster.Status.State) == v {
+		return
+	}
+
 	r.Cluster.Status.State = new(v)
 	r.Cluster.Status.StateChangeReason = &api.ClusterStateChangeReason{Code: new(reason), Message: new(simulated)}
 	if v == waiting && r.Cluster.Status.Timeline.ReadyDateTime == nil {
