@@ -70,7 +70,8 @@ func (s *Service) CreateDBInstance(
 		return nil, err
 	}
 
-	if common.Value(in.Engine) == engineDocDB || common.Value(in.Engine) == engineNeptune {
+	if common.Value(in.Engine) == engineDocDB || common.Value(in.Engine) == engineNeptune ||
+		aurora(common.Value(in.Engine)) {
 		return s.createClusterInstance(ctx, in)
 	}
 
@@ -200,6 +201,7 @@ func (s *Service) DescribeDBInstances(
 				return nil, invalid("Filter wildcards are unsupported")
 			}
 		}
+
 		if !slices.Contains([]string{instanceFilter, engineFilter, subnetType}, common.Value(f.Name)) ||
 			len(f.Values) == 0 {
 			return nil, invalid("Unsupported filter or empty filter Values")

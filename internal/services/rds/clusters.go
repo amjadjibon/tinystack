@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -26,12 +25,16 @@ var clusterUsername = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9]*$`)
 func clusterEngine(engine, version string) (resolved string, port int64, err error) {
 	var versions []string
 	switch engine {
+	case EngineAuroraPostgres:
+		versions, port = []string{"17.7", "16.11", "16.6", "15.10"}, 5432
+	case EngineAuroraMySQL:
+		versions, port = []string{"8.0.mysql_aurora.3.12.0", "8.0.mysql_aurora.3.11.1", "8.0.mysql_aurora.3.08.0"}, 3306
 	case engineDocDB:
 		versions, port = []string{"5.0", "4.0", "3.6"}, 27017
 	case engineNeptune:
 		versions, port = []string{"1.3.2.0", "1.2.1.0"}, 8182
 	default:
-		return "", 0, invalid("DB clusters support only docdb and neptune; Aurora is unsupported")
+		return "", 0, invalid("Unsupported cluster engine")
 	}
 
 	if version == "" {
@@ -60,12 +63,20 @@ func checkClusterPassword(engine string, password *string, required bool) error 
 	}
 
 	value := common.Value(password)
-	if len(value) < 8 || len(value) > 100 {
-		return invalid("MasterUserPassword must contain 8 to 100 characters")
+	maximum := 100
+	switch engine {
+	case EngineAuroraPostgres:
+		maximum = 99
+	case EngineAuroraMySQL:
+		maximum = 41
+	}
+
+	if len(value) < 8 || len(value) > maximum {
+		return invalid(fmt.Sprintf("MasterUserPassword must contain 8 to %d characters", maximum))
 	}
 
 	for _, ch := range value {
-		if ch < 32 || ch > 126 || strings.ContainsRune(`/"@`, ch) {
+		if ch < 32 || ch > 126 || (aurora(engine) && ch == 32) || strings.ContainsRune(`/"@`, ch) {
 			return invalid("MasterUserPassword must use printable ASCII except slash, quote and at sign")
 		}
 	}
@@ -83,12 +94,28 @@ func checkCluster(c *api.DBCluster) error {
 		return err
 	}
 
-	if engine == engineDocDB {
+	switch {
+	case engine == engineDocDB:
 		username := common.Value(c.MasterUsername)
 		if !clusterUsername.MatchString(username) || len(username) > 63 || strings.EqualFold(username, "admin") {
 			return invalid("Invalid MasterUsername (admin is reserved by DocumentDB)")
 		}
-	} else if c.MasterUsername != nil {
+
+	case aurora(engine):
+		maximum := 16
+		if engine == EngineAuroraPostgres {
+			maximum = 63
+		}
+
+		if !sqlName.MatchString(common.Value(c.MasterUsername)) || len(common.Value(c.MasterUsername)) > maximum {
+			return invalid("Invalid MasterUsername")
+		}
+
+		if name := common.Value(c.DatabaseName); name != "" && (!sqlName.MatchString(name) || len(name) > 63) {
+			return invalid("Invalid DatabaseName")
+		}
+
+	case c.MasterUsername != nil:
 		return invalid("MasterUsername is not supported by Neptune")
 	}
 
@@ -159,6 +186,10 @@ func clusterGroups(ids []string) []api.VpcSecurityGroupMembership {
 func cluster(r *record) *api.DBCluster {
 	out := common.Clone(r.Cluster)
 	out.TagList = tagList(r.Tags)
+	if !r.ReadyAt.IsZero() && !time.Now().Before(r.ReadyAt) {
+		out.Status = new(available)
+	}
+
 	return out
 }
 
@@ -177,7 +208,24 @@ func (s *Service) CreateDBCluster(
 		return nil, versionErr
 	}
 
-	if err := checkClusterPassword(engine, in.MasterUserPassword, true); err != nil {
+	if !aurora(engine) && in.ManageMasterUserPassword != nil {
+		return nil, invalid("ManageMasterUserPassword requires Aurora")
+	}
+
+	if common.Value(in.ManageMasterUserPassword) && (!aurora(engine) || in.MasterUserPassword != nil) {
+		return nil, invalid("ManageMasterUserPassword requires Aurora and conflicts with MasterUserPassword")
+	}
+
+	if !aurora(engine) &&
+		(in.DatabaseName != nil || in.EnableHttpEndpoint != nil || in.ServerlessV2ScalingConfiguration != nil) {
+		return nil, invalid("DatabaseName, HTTP endpoint and serverless scaling require Aurora")
+	}
+
+	if err := checkClusterPassword(
+		engine,
+		in.MasterUserPassword,
+		!common.Value(in.ManageMasterUserPassword),
+	); err != nil {
 		return nil, err
 	}
 
@@ -186,19 +234,38 @@ func (s *Service) CreateDBCluster(
 		return nil, tagsErr
 	}
 
+	scaling, scalingErr := scalingInfo(in.ServerlessV2ScalingConfiguration)
+	if scalingErr != nil {
+		return nil, scalingErr
+	}
+
 	id := strings.ToLower(common.Value(in.DBClusterIdentifier))
 	suffix := common.RandomID(12)
 	c := &api.DBCluster{
-		DBClusterIdentifier: new(id), Engine: new(engine), EngineVersion: new(version),
-		MasterUsername: in.MasterUsername, Port: common.OrElse(in.Port, new(port)), DBSubnetGroup: in.DBSubnetGroupName,
-		VpcSecurityGroups:     clusterGroups(in.VpcSecurityGroupIds),
-		BackupRetentionPeriod: common.OrElse(in.BackupRetentionPeriod, new(int64(1))),
-		StorageEncrypted:      common.OrElse(in.StorageEncrypted, new(false)), KmsKeyId: in.KmsKeyId,
-		DeletionProtection: common.OrElse(in.DeletionProtection, new(false)), Status: new(available),
-		Endpoint:            new(fmt.Sprintf("%s.cluster-%s.%s.%s.amazonaws.com", id, suffix, scope.Region, engine)),
-		ReaderEndpoint:      new(fmt.Sprintf("%s.cluster-ro-%s.%s.%s.amazonaws.com", id, suffix, scope.Region, engine)),
+		DBClusterIdentifier:              new(id),
+		Engine:                           new(engine),
+		EngineVersion:                    new(version),
+		DatabaseName:                     in.DatabaseName,
+		HttpEndpointEnabled:              in.EnableHttpEndpoint,
+		ServerlessV2ScalingConfiguration: scaling,
+		MasterUsername:                   in.MasterUsername,
+		Port:                             common.OrElse(in.Port, new(port)),
+		DBSubnetGroup:                    in.DBSubnetGroupName,
+		VpcSecurityGroups:                clusterGroups(in.VpcSecurityGroupIds),
+		BackupRetentionPeriod:            common.OrElse(in.BackupRetentionPeriod, new(int64(1))),
+		StorageEncrypted:                 common.OrElse(in.StorageEncrypted, new(false)),
+		KmsKeyId:                         in.KmsKeyId,
+		DeletionProtection:               common.OrElse(in.DeletionProtection, new(false)),
+		Status:                           new(available),
+		Endpoint: new(
+			fmt.Sprintf("%s.cluster-%s.%s.%s.amazonaws.com", id, suffix, scope.Region, engine),
+		),
+		ReaderEndpoint: new(
+			fmt.Sprintf("%s.cluster-ro-%s.%s.%s.amazonaws.com", id, suffix, scope.Region, engine),
+		),
 		DbClusterResourceId: new("cluster-" + common.RandomID(26, common.AlphabetUpperHex)),
-		DBClusterArn:        new(arn(scope, kindCluster, id)), ClusterCreateTime: new(time.Now().UTC()),
+		DBClusterArn:        new(arn(scope, kindCluster, id)),
+		ClusterCreateTime:   new(time.Now().UTC()),
 	}
 
 	if c.DBSubnetGroup != nil {
@@ -209,7 +276,22 @@ func (s *Service) CreateDBCluster(
 		return nil, err
 	}
 
-	r := &record{Name: id, Kind: kindCluster, Tags: tags, Cluster: common.Clone(c)}
+	r := &record{
+		Name:    id,
+		Kind:    kindCluster,
+		Tags:    tags,
+		Cluster: common.Clone(c),
+		Password: common.Value(
+			in.MasterUserPassword,
+		),
+		RootPassword: common.Value(in.MasterUserPassword),
+		Since:        time.Now().UTC(),
+	}
+
+	if !aurora(engine) {
+		r.Password, r.RootPassword = "", ""
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	writeErr := s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -223,10 +305,41 @@ func (s *Service) CreateDBCluster(
 			return err
 		}
 
+		if aurora(engine) {
+			if common.Value(in.ManageMasterUserPassword) {
+				r.Password = common.RandomID(32)
+				r.RootPassword = r.Password
+			}
+
+			r.Cluster.Status = new(creating)
+			if s.runtime == nil {
+				r.ReadyAt = time.Now().Add(snapshotDelay)
+			} else {
+				r.Cluster.Endpoint, r.Cluster.ReaderEndpoint, r.Cluster.Port = nil, nil, new(int64(0))
+			}
+
+			if err := storage.Write(tx, clusterIndex+scope.AccountID+"/"+scope.Region+"/"+id, true); err != nil {
+				return err
+			}
+		}
+
 		return writeRecord(tx, scope, r)
 	})
+
 	if writeErr != nil {
 		return nil, writeErr
+	}
+
+	if common.Value(in.ManageMasterUserPassword) {
+		if err := s.createClusterSecret(ctx, scope, r); err != nil {
+			_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+				tx.Delete(scope.Key(serviceName, kindCluster, id))
+				tx.Delete(clusterIndex + scope.AccountID + "/" + scope.Region + "/" + id)
+				return nil
+			})
+
+			return nil, err
+		}
 	}
 
 	return &api.CreateDBClusterResult{DBCluster: cluster(r)}, nil
@@ -309,121 +422,18 @@ func (s *Service) ModifyDBCluster(
 	ctx context.Context,
 	in *api.ModifyDBClusterMessage,
 ) (*api.ModifyDBClusterResult, error) {
-	scope, scopeErr := request.RegionalScope(ctx)
-	if scopeErr != nil {
-		return nil, scopeErr
-	}
-
-	var result *api.DBCluster
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	writeErr := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, err := readRecord(tx, scope, kindCluster, common.Value(in.DBClusterIdentifier))
-		if err != nil {
-			return err
-		}
-
-		c := r.Cluster
-		if in.EngineVersion != nil && *in.EngineVersion != common.Value(c.EngineVersion) {
-			return invalid("EngineVersion changes are unsupported")
-		}
-
-		if err := checkClusterPassword(common.Value(c.Engine), in.MasterUserPassword, false); err != nil {
-			return err
-		}
-
-		if in.BackupRetentionPeriod != nil {
-			c.BackupRetentionPeriod = in.BackupRetentionPeriod
-		}
-
-		if in.Port != nil {
-			c.Port = in.Port
-		}
-
-		if in.VpcSecurityGroupIds != nil {
-			c.VpcSecurityGroups = clusterGroups(in.VpcSecurityGroupIds)
-		}
-
-		if in.DeletionProtection != nil {
-			c.DeletionProtection = in.DeletionProtection
-		}
-
-		if err := checkCluster(c); err != nil {
-			return err
-		}
-
-		if err := checkClusterNetwork(tx, scope, c); err != nil {
-			return err
-		}
-
-		// Keep member endpoints consistent with the cluster's port in the same transaction.
-		for _, member := range c.DBClusterMembers {
-			db, err := readRecord(tx, scope, kindDB, common.Value(member.DBInstanceIdentifier))
-			if err != nil {
-				return err
-			}
-
-			db.Instance.Endpoint.Port = c.Port
-			if err := writeRecord(tx, scope, db); err != nil {
-				return err
-			}
-		}
-
-		if err := writeRecord(tx, scope, r); err != nil {
-			return err
-		}
-
-		result = cluster(r)
-		return nil
-	})
-	if writeErr != nil {
-		return nil, writeErr
-	}
-
-	return &api.ModifyDBClusterResult{DBCluster: result}, nil
+	out, err := s.modifyCluster(ctx, in)
+	return &api.ModifyDBClusterResult{DBCluster: out}, err
 }
 
 func (s *Service) DeleteDBCluster(
 	ctx context.Context,
 	in *api.DeleteDBClusterMessage,
 ) (*api.DeleteDBClusterResult, error) {
-	if !common.Value(in.SkipFinalSnapshot) {
-		return nil, invalid("Snapshots are unsupported; set SkipFinalSnapshot=true")
+	out, err := s.deleteCluster(ctx, in)
+	if err == nil && s.dataClosed != nil {
+		s.dataClosed(common.Value(out.DBClusterArn))
 	}
 
-	if in.FinalDBSnapshotIdentifier != nil {
-		return nil, invalid("FinalDBSnapshotIdentifier conflicts with SkipFinalSnapshot")
-	}
-
-	scope, scopeErr := request.RegionalScope(ctx)
-	if scopeErr != nil {
-		return nil, scopeErr
-	}
-
-	var result *api.DBCluster
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	writeErr := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, err := readRecord(tx, scope, kindCluster, common.Value(in.DBClusterIdentifier))
-		if err != nil {
-			return err
-		}
-
-		if common.Value(r.Cluster.DeletionProtection) || len(r.Cluster.DBClusterMembers) > 0 {
-			return awserror.New(
-				"InvalidDBClusterStateFault",
-				"Disable deletion protection and delete member instances first",
-			)
-		}
-
-		tx.Delete(scope.Key(serviceName, kindCluster, r.Name))
-		result = cluster(r)
-		result.Status = new("deleting")
-		return nil
-	})
-	if writeErr != nil {
-		return nil, writeErr
-	}
-
-	return &api.DeleteDBClusterResult{DBCluster: result}, nil
+	return &api.DeleteDBClusterResult{DBCluster: out}, err
 }

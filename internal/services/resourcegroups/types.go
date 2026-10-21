@@ -141,6 +141,7 @@ var typeNames = map[string]string{
 	"sesv2/template":                         "Template",
 	"verifiedpermissions/policy-store":       "PolicyStore",
 	"verifiedpermissions/policy":             "Policy",
+	"rds/db-cluster-snapshot":                "DBClusterSnapshot",
 }
 
 // pascal writes a kebab-case inventory type as a CloudFormation name.

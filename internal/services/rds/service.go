@@ -49,25 +49,26 @@ var (
 )
 
 // Records live at <account>/<region>/rds/<db|snapshot|cluster|subgrp|pg>/<name>.
-// SQL passwords are private storage fields; cluster passwords are discarded after validation.
+// SQL passwords are private storage fields.
 // Credentials never appear in inventory or API output.
 type record struct {
-	Since        time.Time
-	ReadyAt      time.Time
-	Snapshot     *api.DBSnapshot
-	SourceTags   map[string]string
-	Name         string
-	Kind         string
-	Tags         map[string]string
-	Instance     *api.DBInstance
-	Cluster      *api.DBCluster
-	Subnet       *api.DBSubnetGroup
-	Parameter    *api.DBParameterGroup
-	Password     string
-	RootPassword string
-	Container    string
-	Volume       string
-	Initialized  bool
+	Since           time.Time
+	ReadyAt         time.Time
+	ClusterSnapshot *api.DBClusterSnapshot
+	Snapshot        *api.DBSnapshot
+	SourceTags      map[string]string
+	Name            string
+	Kind            string
+	Tags            map[string]string
+	Instance        *api.DBInstance
+	Cluster         *api.DBCluster
+	Subnet          *api.DBSubnetGroup
+	Parameter       *api.DBParameterGroup
+	Password        string
+	RootPassword    string
+	Container       string
+	Volume          string
+	Initialized     bool
 }
 
 type Service struct {
@@ -75,6 +76,7 @@ type Service struct {
 	caller      *catalog.Caller
 	runtime     Runtime
 	bg          *background.Group
+	dataClosed  func(string)
 	mu          sync.Mutex
 	orphansDone bool
 }
@@ -86,6 +88,8 @@ func invalid(message string) error { return awserror.New("InvalidParameterValue"
 func resourceError(kind, suffix, name string) error {
 	shape := "DBInstance"
 	switch kind {
+	case kindClusterSnapshot:
+		shape = "DBClusterSnapshot"
 	case kindSnapshot:
 		shape = "DBSnapshot"
 	case kindCluster:
@@ -191,5 +195,6 @@ func (s *Service) list(ctx context.Context, scope request.Scope, kind, name stri
 
 		return nil
 	})
+
 	return out, err
 }

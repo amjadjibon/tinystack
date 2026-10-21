@@ -81,6 +81,7 @@ func New(
 		now:        time.Now,
 		bg:         background.New(),
 	}
+
 	s.bg.Every(rotationInterval, s.scheduler)
 	return s
 }
@@ -118,7 +119,7 @@ type payload struct {
 }
 
 var (
-	secretName = regexp.MustCompile(`^[a-zA-Z0-9/_+=.@-]{1,512}$`)
+	secretName = regexp.MustCompile(`^(rds!cluster-[a-zA-Z0-9-]{1,100}|[a-zA-Z0-9/_+=.@-]{1,512})$`)
 	suffixSet  = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 )
 
@@ -496,6 +497,7 @@ func page[T any](items []T, sortKey func(T) string, token *string, size *int64, 
 			c := strings.Compare(sortKey(item), string(after))
 			return (c > 0 && !desc) || (c < 0 && desc)
 		})
+
 		if start < 0 {
 			start = len(items)
 		}

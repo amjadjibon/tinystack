@@ -30,8 +30,9 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			typ := map[string]string{
-				kindSnapshot: "db-snapshot", kindDB: "db-instance", kindCluster: "db-cluster",
-				kindSubnet: subnetType, kindParameter: "db-parameter-group",
+				kindClusterSnapshot: "db-cluster-snapshot", kindSnapshot: "db-snapshot", kindDB: "db-instance",
+				kindCluster: "db-cluster",
+				kindSubnet:  subnetType, kindParameter: "db-parameter-group",
 			}[r.Kind]
 			details := map[string]any{}
 			if r.Snapshot != nil {
@@ -44,15 +45,21 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				details["Engine"] = common.Value(r.Instance.Engine)
 				details["Status"] = common.Value(instance(r).DBInstanceStatus)
 				if r.Instance.DBClusterIdentifier != nil {
-					details["RecordsOnly"] = true
+					details["RecordsOnly"] = !aurora(common.Value(r.Instance.Engine))
 					details["DBClusterIdentifier"] = common.Value(r.Instance.DBClusterIdentifier)
 				}
 			}
 
-			if r.Cluster != nil {
+			if r.Cluster != nil && r.Kind == kindCluster {
 				details["Engine"] = common.Value(r.Cluster.Engine)
-				details["Status"] = common.Value(r.Cluster.Status)
-				details["RecordsOnly"] = true
+				details["Status"] = common.Value(cluster(r).Status)
+				details["RecordsOnly"] = !aurora(common.Value(r.Cluster.Engine))
+			}
+
+			if r.ClusterSnapshot != nil {
+				details["Engine"] = common.Value(r.ClusterSnapshot.Engine)
+				details["Status"] = common.Value(clusterSnapshot(r).Status)
+				details["DBClusterIdentifier"] = common.Value(r.ClusterSnapshot.DBClusterIdentifier)
 			}
 
 			out = append(out, catalog.Resource{
@@ -72,5 +79,6 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 		return nil
 	})
+
 	return out, err
 }

@@ -64,7 +64,7 @@ func (s *Service) createClusterInstance(
 			return resourceError(kindDB, "AlreadyExists", id)
 		}
 
-		r := &record{Name: id, Kind: kindDB, Tags: tags, Instance: &api.DBInstance{
+		r := &record{Name: id, Kind: kindDB, Tags: tags, ReadyAt: parent.ReadyAt, Instance: &api.DBInstance{
 			DBInstanceIdentifier: new(
 				id,
 			),
@@ -73,7 +73,7 @@ func (s *Service) createClusterInstance(
 			EngineVersion:       c.EngineVersion,
 			DBClusterIdentifier: c.DBClusterIdentifier,
 			MasterUsername:      c.MasterUsername,
-			DBInstanceStatus:    new(available),
+			DBInstanceStatus:    cluster(parent).Status,
 			DBInstanceArn:       new(arn(scope, kindDB, id)),
 			InstanceCreateTime:  new(time.Now().UTC()),
 			Endpoint:            &api.Endpoint{Address: c.Endpoint, Port: c.Port},
@@ -81,6 +81,7 @@ func (s *Service) createClusterInstance(
 		c.DBClusterMembers = append(c.DBClusterMembers, api.DBClusterMember{
 			DBInstanceIdentifier: new(id), IsClusterWriter: new(len(c.DBClusterMembers) == 0),
 		})
+
 		if err := writeRecord(tx, scope, parent); err != nil {
 			return err
 		}
@@ -92,6 +93,7 @@ func (s *Service) createClusterInstance(
 		result = instance(r)
 		return nil
 	})
+
 	if writeErr != nil {
 		return nil, writeErr
 	}
@@ -109,6 +111,7 @@ func deleteClusterMember(tx storage.WriteTx, scope request.Scope, r *record) err
 	c.DBClusterMembers = slices.DeleteFunc(c.DBClusterMembers, func(m api.DBClusterMember) bool {
 		return common.Value(m.DBInstanceIdentifier) == r.Name
 	})
+
 	if len(c.DBClusterMembers) > 0 && !slices.ContainsFunc(c.DBClusterMembers, func(m api.DBClusterMember) bool {
 		return common.Value(m.IsClusterWriter)
 	}) {

@@ -394,6 +394,10 @@
     "elasticbeanstalk": {
       "path": "codegen/sdk-codegen/aws-models/elastic-beanstalk.json",
       "sha256": "e17a6e7bf75c49a96e0b856a9b225a58ef7eda3b40affa05d6b1afbe23b57069"
+    },
+    "rdsdata": {
+      "path": "codegen/sdk-codegen/aws-models/rds-data.json",
+      "sha256": "a12dcb92728cacec7533d846d9d1ac3618ed1a6f69186b3b6b425530784200cf"
     }
   }
 }

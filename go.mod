@@ -79,6 +79,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.32.4
 	github.com/aws/aws-sdk-go-v2/service/ram v1.45.4
 	github.com/aws/aws-sdk-go-v2/service/rds v1.130.3
+	github.com/aws/aws-sdk-go-v2/service/rdsdata v1.40.4
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.71.4
 	github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.4
 	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.41.4
@@ -110,6 +111,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/dop251/goja v0.0.0-20261004200024-481fdb442bb4
 	github.com/evanphx/json-patch/v5 v5.9.11
+	github.com/go-sql-driver/mysql v1.10.1
 	github.com/lib/pq v1.10.9
 	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/recolabs/gnata v0.5.2
@@ -125,6 +127,7 @@ require (
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
+	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/air-verse/air v1.67.4 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect

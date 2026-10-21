@@ -65,6 +65,10 @@ func (s *Service) spec(scope request.Scope, r *record) *Spec {
 
 // dataSpec addresses snapshot volumes without referring to a live instance container.
 func (s *Service) dataSpec(scope request.Scope, r *record) *Spec {
+	if r.Cluster != nil {
+		return s.clusterSpec(scope, r)
+	}
+
 	spec := s.spec(scope, r)
 	if r.Kind == kindSnapshot {
 		spec.ARN = arn(scope, kindSnapshot, r.Name)
@@ -103,6 +107,29 @@ func (s *Service) UseRuntime(rt Runtime) error {
 
 			if writeErr := writeRecord(tx, scope, r); writeErr != nil {
 				return writeErr
+			}
+		}
+
+		for _, key := range tx.Keys(clusterIndex) {
+			parts := strings.Split(strings.TrimPrefix(key, clusterIndex), "/")
+			if len(parts) != 3 {
+				continue
+			}
+
+			scope := request.Scope{AccountID: parts[0], Region: parts[1]}
+			r, err := readRecord(tx, scope, kindCluster, parts[2])
+			if err != nil {
+				return err
+			}
+
+			r.Container, r.ReadyAt = "", time.Time{}
+			r.Cluster.Endpoint, r.Cluster.ReaderEndpoint, r.Cluster.Port = nil, nil, new(int64(0))
+			if common.Value(r.Cluster.Status) != stopped && common.Value(r.Cluster.Status) != failed {
+				r.Cluster.Status, r.Since = new(creating), time.Now().UTC()
+			}
+
+			if err := writeCluster(tx, scope, r); err != nil {
+				return err
 			}
 		}
 
@@ -150,11 +177,13 @@ func (s *Service) Reset(ctx context.Context) {
 			}
 
 			r, found, err := storage.Read[record](tx, key)
-			if err != nil || !found || (r.Kind != kindDB && r.Kind != kindSnapshot) {
+			if err != nil || !found ||
+				(r.Kind != kindDB && r.Kind != kindSnapshot && r.Kind != kindCluster && r.Kind != kindClusterSnapshot) {
 				continue
 			}
 
-			if (r.Kind == kindSnapshot && r.Volume == "") || r.Instance.DBClusterIdentifier != nil {
+			if (r.Cluster != nil && !aurora(common.Value(r.Cluster.Engine))) ||
+				(r.Kind == kindSnapshot && r.Volume == "") || (r.Instance != nil && r.Instance.DBClusterIdentifier != nil) {
 				continue
 			}
 
@@ -168,9 +197,18 @@ func (s *Service) Reset(ctx context.Context) {
 
 		return nil
 	})
+
 	for _, item := range records {
 		_ = s.runtime.Remove(ctx, s.dataSpec(item.scope, item.r), true)
 	}
+
+	_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		for _, key := range tx.Keys(clusterIndex) {
+			tx.Delete(key)
+		}
+
+		return nil
+	})
 
 	// Drop the index while holding the lifecycle lock so the poller cannot recreate deleted containers.
 	_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -211,6 +249,8 @@ func (s *Service) visit(ctx context.Context) {
 
 		s.orphansDone = true
 	}
+
+	s.visitClusters(ctx)
 
 	var keys []string
 	if err := s.store.View(ctx, func(tx storage.ReadTx) error { keys = tx.Keys(indexPrefix); return nil }); err != nil {

@@ -269,6 +269,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: containers,
 		icon: "eks",
 	},
+	rdsdata: {
+		title: "RDS Data API",
+		category: database,
+		icon: "rds",
+	},
 	rds: {
 		title: "RDS, DocumentDB and Neptune",
 		category: database,

@@ -19324,7 +19324,14 @@
       "DescribeDBSnapshots",
       "DeleteDBSnapshot",
       "CopyDBSnapshot",
-      "RestoreDBInstanceFromDBSnapshot"
+      "RestoreDBInstanceFromDBSnapshot",
+      "StartDBCluster",
+      "StopDBCluster",
+      "EnableHttpEndpoint",
+      "DisableHttpEndpoint",
+      "CreateDBClusterSnapshot",
+      "DescribeDBClusterSnapshots",
+      "DeleteDBClusterSnapshot"
     ],
     "shapes": {
       "CreateDBInstanceMessage": [
@@ -19478,7 +19485,11 @@
         "StorageEncrypted",
         "KmsKeyId",
         "DeletionProtection",
-        "Tags"
+        "Tags",
+        "DatabaseName",
+        "ManageMasterUserPassword",
+        "EnableHttpEndpoint",
+        "ServerlessV2ScalingConfiguration"
       ],
       "DescribeDBClustersMessage": [
         "DBClusterIdentifier",
@@ -19494,7 +19505,9 @@
         "DeletionProtection",
         "MasterUserPassword",
         "EngineVersion",
-        "ApplyImmediately"
+        "ApplyImmediately",
+        "EnableHttpEndpoint",
+        "ServerlessV2ScalingConfiguration"
       ],
       "DeleteDBClusterMessage": [
         "DBClusterIdentifier",
@@ -19520,7 +19533,11 @@
         "DbClusterResourceId",
         "DBClusterArn",
         "DBClusterMembers",
-        "ClusterCreateTime"
+        "ClusterCreateTime",
+        "DatabaseName",
+        "MasterUserSecret",
+        "HttpEndpointEnabled",
+        "ServerlessV2ScalingConfiguration"
       ],
       "DBClusterMember": [
         "DBInstanceIdentifier",
@@ -19584,6 +19601,63 @@
         "DbiResourceId",
         "VpcId",
         "Encrypted"
+      ],
+      "MasterUserSecret": [
+        "SecretArn",
+        "SecretStatus"
+      ],
+      "ServerlessV2ScalingConfiguration": [
+        "MinCapacity",
+        "MaxCapacity",
+        "SecondsUntilAutoPause"
+      ],
+      "ServerlessV2ScalingConfigurationInfo": [
+        "MinCapacity",
+        "MaxCapacity",
+        "SecondsUntilAutoPause"
+      ],
+      "StartDBClusterMessage": [
+        "DBClusterIdentifier"
+      ],
+      "StopDBClusterMessage": [
+        "DBClusterIdentifier"
+      ],
+      "EnableHttpEndpointRequest": [
+        "ResourceArn"
+      ],
+      "DisableHttpEndpointRequest": [
+        "ResourceArn"
+      ],
+      "CreateDBClusterSnapshotMessage": [
+        "DBClusterSnapshotIdentifier",
+        "DBClusterIdentifier",
+        "Tags"
+      ],
+      "DescribeDBClusterSnapshotsMessage": [
+        "DBClusterIdentifier",
+        "DBClusterSnapshotIdentifier",
+        "SnapshotType",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DeleteDBClusterSnapshotMessage": [
+        "DBClusterSnapshotIdentifier"
+      ],
+      "DBClusterSnapshot": [
+        "DBClusterSnapshotIdentifier",
+        "DBClusterIdentifier",
+        "SnapshotCreateTime",
+        "Engine",
+        "Status",
+        "Port",
+        "MasterUsername",
+        "EngineVersion",
+        "SnapshotType",
+        "PercentProgress",
+        "DBClusterSnapshotArn",
+        "TagList",
+        "StorageEncrypted",
+        "ClusterCreateTime"
       ]
     }
   },
@@ -30948,6 +31022,98 @@
       ],
       "S3SubscriptionRequiredException": [
         "message"
+      ]
+    }
+  },
+  "rdsdata": {
+    "operations": [
+      "ExecuteStatement",
+      "BatchExecuteStatement",
+      "BeginTransaction",
+      "CommitTransaction",
+      "RollbackTransaction"
+    ],
+    "shapes": {
+      "Field": [
+        "isNull",
+        "booleanValue",
+        "longValue",
+        "doubleValue",
+        "stringValue",
+        "blobValue"
+      ],
+      "SqlParameter": [
+        "name",
+        "value",
+        "typeHint"
+      ],
+      "ExecuteStatementRequest": [
+        "resourceArn",
+        "secretArn",
+        "sql",
+        "database",
+        "schema",
+        "parameters",
+        "transactionId",
+        "includeResultMetadata",
+        "formatRecordsAs"
+      ],
+      "ExecuteStatementResponse": [
+        "records",
+        "columnMetadata",
+        "numberOfRecordsUpdated",
+        "generatedFields",
+        "formattedRecords"
+      ],
+      "ColumnMetadata": [
+        "name",
+        "type",
+        "typeName",
+        "label",
+        "isSigned",
+        "nullable",
+        "precision",
+        "scale"
+      ],
+      "BatchExecuteStatementRequest": [
+        "resourceArn",
+        "secretArn",
+        "sql",
+        "database",
+        "schema",
+        "parameterSets",
+        "transactionId"
+      ],
+      "BatchExecuteStatementResponse": [
+        "updateResults"
+      ],
+      "UpdateResult": [
+        "generatedFields"
+      ],
+      "BeginTransactionRequest": [
+        "resourceArn",
+        "secretArn",
+        "database",
+        "schema"
+      ],
+      "BeginTransactionResponse": [
+        "transactionId"
+      ],
+      "CommitTransactionRequest": [
+        "resourceArn",
+        "secretArn",
+        "transactionId"
+      ],
+      "CommitTransactionResponse": [
+        "transactionStatus"
+      ],
+      "RollbackTransactionRequest": [
+        "resourceArn",
+        "secretArn",
+        "transactionId"
+      ],
+      "RollbackTransactionResponse": [
+        "transactionStatus"
       ]
     }
   }

@@ -47,7 +47,7 @@ func (s *Service) resourceTags(
 	if len(parts) != 7 || parts[0] != "arn" || parts[1] != "aws" || parts[2] != serviceName ||
 		parts[3] != scope.Region ||
 		parts[4] != scope.AccountID ||
-		(parts[5] != kindSnapshot && parts[5] != kindDB && parts[5] != kindCluster &&
+		(parts[5] != kindClusterSnapshot && parts[5] != kindSnapshot && parts[5] != kindDB && parts[5] != kindCluster &&
 			parts[5] != kindSubnet && parts[5] != kindParameter) {
 		return nil, invalid("ResourceName must be an RDS ARN in the request account and Region")
 	}
@@ -75,6 +75,7 @@ func (s *Service) resourceTags(
 		tags = tagList(r.Tags)
 		return nil
 	})
+
 	return tags, err
 }
 

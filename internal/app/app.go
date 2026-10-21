@@ -86,6 +86,7 @@ import (
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
 	ramapi "github.com/amjadjibon/tinystack/internal/aws/generated/ram"
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
+	rdsdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/rdsdata"
 	redshiftapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshift"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
@@ -192,6 +193,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ram"
 	"github.com/amjadjibon/tinystack/internal/services/rds"
 	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
+	"github.com/amjadjibon/tinystack/internal/services/rdsdata"
 	"github.com/amjadjibon/tinystack/internal/services/redshift"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
@@ -454,7 +456,10 @@ func build(
 	classicBalancers := elb.New(store, network)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
+	dataAPI := rdsdata.New(databases)
+	a.onReset(dataAPI.Reset)
 	a.onStop(databases.Stop)
+	a.onStop(dataAPI.Stop)
 	a.onReset(databases.Reset)
 	caches := elasticache.New(store)
 	a.onStop(caches.Stop)
@@ -492,6 +497,7 @@ func build(
 
 		return out, listErr
 	})
+
 	// Stop ends the sweeper that expires parameters and finishes commands.
 	a.onStop(parameters.Stop)
 	certificates := acm.New(store)
@@ -574,6 +580,7 @@ func build(
 		memorydbapi.Descriptor(memoryDBRecords),
 		elbapi.Descriptor(classicBalancers),
 		rdsapi.Descriptor(databases),
+		rdsdataapi.Descriptor(dataAPI),
 		apigatewayv2api.Descriptor(httpAPIs),
 		apigatewayapi.Descriptor(restAPIs),
 		appsyncapi.Descriptor(graphQL),
@@ -618,6 +625,7 @@ func build(
 	balancers.UseCaller(caller)
 	caches.UseCaller(caller)
 	databases.UseCaller(caller)
+	dataAPI.UseCaller(caller)
 	// CloudFormation manages stack resources with the other services'
 	// operations.
 	control.UseCaller(caller)
@@ -660,6 +668,7 @@ func build(
 	handler.UseDeliveryTargets(map[string]gateway.DeliveryTarget{
 		"sqs": queues.DeliveryResource, "sns": topics.DeliveryResource, "lambda": functions.DeliveryResource,
 	})
+
 	// Deliveries a service makes under a role need the role's trust policy to allow the service, and the role to
 	// be permitted the call.
 	handler.UseServiceRoles(tokens.ServiceSession)
