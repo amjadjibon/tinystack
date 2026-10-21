@@ -20,6 +20,7 @@ const (
 	metricLatency    = "SuccessfulRequestLatency"
 	metricThrottled  = "ThrottledRequests"
 	metricUserErrors = "UserErrors"
+	metricTTLDeleted = "TimeToLiveDeletedItemCount"
 
 	dimensionTable = "TableName"
 

@@ -12,11 +12,12 @@ import (
 const (
 	metricNamespace = "AWS/Lambda"
 
-	metricInvocations = "Invocations"
-	metricErrors      = "Errors"
-	metricDuration    = "Duration"
-	metricThrottles   = "Throttles"
-	metricConcurrent  = "ConcurrentExecutions"
+	metricInvocations      = "Invocations"
+	metricErrors           = "Errors"
+	metricDeadLetterErrors = "DeadLetterErrors"
+	metricDuration         = "Duration"
+	metricThrottles        = "Throttles"
+	metricConcurrent       = "ConcurrentExecutions"
 
 	dimensionFunction = "FunctionName"
 )

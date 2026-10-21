@@ -90,30 +90,33 @@ func (s *Service) ExecuteStatement(
 	ctx context.Context,
 	in *api.ExecuteStatementInput,
 ) (*api.ExecuteStatementOutput, error) {
-	st, p, err := parseStatement(common.Value(in.Statement), in.Parameters)
-	if err != nil {
-		return nil, err
-	}
+	var puts outbox
+	return observed(ctx, s, "ExecuteStatement", &puts.used, func() (*api.ExecuteStatementOutput, error) {
+		st, p, err := parseStatement(common.Value(in.Statement), in.Parameters)
+		if err != nil {
+			return nil, err
+		}
 
-	if st.kind == stmtSelect {
-		return s.selectItems(ctx, st, p, in)
-	}
+		if st.kind == stmtSelect {
+			return s.selectItems(ctx, st, p, in, &puts.used)
+		}
 
-	if in.NextToken != nil || in.Limit != nil {
-		return nil, awserror.Validation("Limit and NextToken are only valid for SELECT statements")
-	}
+		if in.NextToken != nil || in.Limit != nil {
+			return nil, awserror.Validation("Limit and NextToken are only valid for SELECT statements")
+		}
 
-	attributes, err := s.writeItem(ctx, st, p)
-	if err != nil {
-		return nil, err
-	}
+		attributes, err := s.writeItem(ctx, st, p, &puts)
+		if err != nil {
+			return nil, err
+		}
 
-	out := &api.ExecuteStatementOutput{Items: []map[string]api.AttributeValue{}}
-	if len(attributes) > 0 {
-		out.Items = append(out.Items, attributes)
-	}
+		out := &api.ExecuteStatementOutput{Items: []map[string]api.AttributeValue{}}
+		if len(attributes) > 0 {
+			out.Items = append(out.Items, attributes)
+		}
 
-	return out, nil
+		return out, nil
+	})
 }
 
 // describe returns a statement's table description.
@@ -128,6 +131,7 @@ func (s *Service) selectItems(
 	st *statement,
 	p *pqParser,
 	in *api.ExecuteStatementInput,
+	used *tally,
 ) (*api.ExecuteStatementOutput, error) {
 	d, err := s.describe(ctx, st.table)
 	if err != nil {
@@ -189,7 +193,7 @@ func (s *Service) selectItems(
 			ExpressionAttributeNames: names, ExpressionAttributeValues: values, ConsistentRead: in.ConsistentRead,
 			Limit: in.Limit, ExclusiveStartKey: start, ScanIndexForward: new(!st.desc),
 		}
-		out, queryErr := s.Query(ctx, q)
+		out, queryErr := s.query(ctx, q, used)
 		if queryErr != nil {
 			return nil, queryErr
 		}
@@ -204,12 +208,12 @@ func (s *Service) selectItems(
 		}
 
 		names, values := p.placeholdersOf(filter, projection)
-		out, scanErr := s.Scan(ctx, &api.ScanInput{
+		out, scanErr := s.scan(ctx, &api.ScanInput{
 			TableName: &st.table, IndexName: optional(st.index), FilterExpression: optional(filter),
 			ProjectionExpression: optional(projection), ExpressionAttributeNames: names,
 			ExpressionAttributeValues: values, ConsistentRead: in.ConsistentRead, Limit: in.Limit,
 			ExclusiveStartKey: start,
-		})
+		}, used)
 		if scanErr != nil {
 			return nil, scanErr
 		}
@@ -313,7 +317,12 @@ func (s *Service) writeRequest(ctx context.Context, st *statement, p *pqParser) 
 
 // writeItem runs an INSERT, UPDATE, or DELETE, returning the attributes its
 // RETURNING clause asks for.
-func (s *Service) writeItem(ctx context.Context, st *statement, p *pqParser) (map[string]api.AttributeValue, error) {
+func (s *Service) writeItem(
+	ctx context.Context,
+	st *statement,
+	p *pqParser,
+	puts *outbox,
+) (map[string]api.AttributeValue, error) {
 	w, err := s.writeRequest(ctx, st, p)
 	if err != nil {
 		return nil, err
@@ -321,21 +330,21 @@ func (s *Service) writeItem(ctx context.Context, st *statement, p *pqParser) (ma
 
 	switch {
 	case w.Put != nil:
-		_, err = s.PutItem(ctx, &api.PutItemInput{
+		_, err = s.putItem(ctx, &api.PutItemInput{
 			TableName: w.Put.TableName, Item: w.Put.Item, ConditionExpression: w.Put.ConditionExpression,
 			ExpressionAttributeNames: w.Put.ExpressionAttributeNames,
-		})
+		}, puts)
 		if isCode(err, "ConditionalCheckFailedException") {
 			return nil, awserror.New("DuplicateItemException", "Duplicate primary key exists in table")
 		}
 
 		return nil, err
 	case w.Delete != nil:
-		out, deleteErr := s.DeleteItem(ctx, &api.DeleteItemInput{
+		out, deleteErr := s.deleteItem(ctx, &api.DeleteItemInput{
 			TableName: w.Delete.TableName, Key: w.Delete.Key, ConditionExpression: w.Delete.ConditionExpression,
 			ExpressionAttributeNames:  w.Delete.ExpressionAttributeNames,
 			ExpressionAttributeValues: w.Delete.ExpressionAttributeValues, ReturnValues: optional(st.returning),
-		})
+		}, puts)
 		if deleteErr != nil {
 			return nil, deleteErr
 		}
@@ -343,11 +352,11 @@ func (s *Service) writeItem(ctx context.Context, st *statement, p *pqParser) (ma
 		return out.Attributes, nil
 	}
 
-	out, err := s.UpdateItem(ctx, &api.UpdateItemInput{
+	out, err := s.updateItem(ctx, &api.UpdateItemInput{
 		TableName: w.Update.TableName, Key: w.Update.Key, UpdateExpression: w.Update.UpdateExpression,
 		ConditionExpression: w.Update.ConditionExpression, ExpressionAttributeNames: w.Update.ExpressionAttributeNames,
 		ExpressionAttributeValues: w.Update.ExpressionAttributeValues, ReturnValues: optional(st.returning),
-	})
+	}, puts)
 	if err != nil {
 		return nil, err
 	}
@@ -367,52 +376,55 @@ func (s *Service) BatchExecuteStatement(
 	ctx context.Context,
 	in *api.BatchExecuteStatementInput,
 ) (*api.BatchExecuteStatementOutput, error) {
-	if len(in.Statements) == 0 || len(in.Statements) > maxBatchStatements {
-		return nil, awserror.Validation("Statements must hold 1 to %d statements", maxBatchStatements)
-	}
-
-	// Every statement is parsed before any runs, so a batch that mixes reads
-	// and writes changes nothing.
-	type parsed struct {
-		st  *statement
-		p   *pqParser
-		err error
-	}
-
-	statements := make([]parsed, len(in.Statements))
-	reads := 0
-	for i := range in.Statements {
-		st, p, err := parseStatement(common.Value(in.Statements[i].Statement), in.Statements[i].Parameters)
-		statements[i] = parsed{st: st, p: p, err: err}
-		if err == nil && st.kind == stmtSelect {
-			reads++
-		}
-	}
-
-	if reads != 0 && reads != len(in.Statements) {
-		return nil, awserror.Validation("Statements in a batch must be all reads or all writes")
-	}
-
-	out := &api.BatchExecuteStatementOutput{Responses: make([]api.BatchStatementResponse, len(in.Statements))}
-	for i, ps := range statements {
-		err := ps.err
-		if err == nil {
-			out.Responses[i].TableName = &ps.st.table
-			err = s.batchStatement(ctx, ps.st, ps.p, &in.Statements[i], &out.Responses[i])
+	var puts outbox
+	return observed(ctx, s, "BatchExecuteStatement", &puts.used, func() (*api.BatchExecuteStatementOutput, error) {
+		if len(in.Statements) == 0 || len(in.Statements) > maxBatchStatements {
+			return nil, awserror.Validation("Statements must hold 1 to %d statements", maxBatchStatements)
 		}
 
-		if err != nil {
-			code, message := "InternalServerError", err.Error()
-			var awsErr *awserror.Error
-			if errors.As(err, &awsErr) {
-				code, message = batchErrorCode(awsErr.Code), awsErr.Message
+		// Every statement is parsed before any runs, so a batch that mixes reads
+		// and writes changes nothing.
+		type parsed struct {
+			st  *statement
+			p   *pqParser
+			err error
+		}
+
+		statements := make([]parsed, len(in.Statements))
+		reads := 0
+		for i := range in.Statements {
+			st, p, err := parseStatement(common.Value(in.Statements[i].Statement), in.Statements[i].Parameters)
+			statements[i] = parsed{st: st, p: p, err: err}
+			if err == nil && st.kind == stmtSelect {
+				reads++
+			}
+		}
+
+		if reads != 0 && reads != len(in.Statements) {
+			return nil, awserror.Validation("Statements in a batch must be all reads or all writes")
+		}
+
+		out := &api.BatchExecuteStatementOutput{Responses: make([]api.BatchStatementResponse, len(in.Statements))}
+		for i, ps := range statements {
+			err := ps.err
+			if err == nil {
+				out.Responses[i].TableName = &ps.st.table
+				err = s.batchStatement(ctx, ps.st, ps.p, &in.Statements[i], &out.Responses[i], &puts)
 			}
 
-			out.Responses[i].Error = &api.BatchStatementError{Code: &code, Message: &message}
-		}
-	}
+			if err != nil {
+				code, message := "InternalServerError", err.Error()
+				var awsErr *awserror.Error
+				if errors.As(err, &awsErr) {
+					code, message = batchErrorCode(awsErr.Code), awsErr.Message
+				}
 
-	return out, nil
+				out.Responses[i].Error = &api.BatchStatementError{Code: &code, Message: &message}
+			}
+		}
+
+		return out, nil
+	})
 }
 
 func (s *Service) batchStatement(
@@ -421,9 +433,10 @@ func (s *Service) batchStatement(
 	p *pqParser,
 	r *api.BatchStatementRequest,
 	response *api.BatchStatementResponse,
+	puts *outbox,
 ) error {
 	if st.kind != stmtSelect {
-		_, err := s.writeItem(ctx, st, p)
+		_, err := s.writeItem(ctx, st, p, puts)
 		return err
 	}
 
@@ -440,7 +453,7 @@ func (s *Service) batchStatement(
 		return err
 	}
 
-	got, err := s.selectItems(ctx, st, p, &api.ExecuteStatementInput{ConsistentRead: r.ConsistentRead})
+	got, err := s.selectItems(ctx, st, p, &api.ExecuteStatementInput{ConsistentRead: r.ConsistentRead}, &puts.used)
 	if err != nil {
 		return err
 	}
@@ -475,69 +488,72 @@ func (s *Service) ExecuteTransaction(
 	ctx context.Context,
 	in *api.ExecuteTransactionInput,
 ) (*api.ExecuteTransactionOutput, error) {
-	n := len(in.TransactStatements)
-	if n == 0 || n > maxTransactStatements {
-		return nil, awserror.Validation("TransactStatements must hold 1 to %d statements", maxTransactStatements)
-	}
-
-	statements := make([]*statement, n)
-	parsers := make([]*pqParser, n)
-	reads := 0
-	for i := range in.TransactStatements {
-		st, p, err := parseStatement(
-			common.Value(in.TransactStatements[i].Statement),
-			in.TransactStatements[i].Parameters,
-		)
-		if err != nil {
-			return nil, err
+	puts := outbox{used: tally{transactional: true}}
+	return observed(ctx, s, "ExecuteTransaction", &puts.used, func() (*api.ExecuteTransactionOutput, error) {
+		n := len(in.TransactStatements)
+		if n == 0 || n > maxTransactStatements {
+			return nil, awserror.Validation("TransactStatements must hold 1 to %d statements", maxTransactStatements)
 		}
 
-		if st.returning != "" {
-			return nil, awserror.Validation("RETURNING is not supported in a transaction")
+		statements := make([]*statement, n)
+		parsers := make([]*pqParser, n)
+		reads := 0
+		for i := range in.TransactStatements {
+			st, p, err := parseStatement(
+				common.Value(in.TransactStatements[i].Statement),
+				in.TransactStatements[i].Parameters,
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			if st.returning != "" {
+				return nil, awserror.Validation("RETURNING is not supported in a transaction")
+			}
+
+			statements[i], parsers[i] = st, p
+			if st.kind == stmtSelect {
+				reads++
+			}
 		}
 
-		statements[i], parsers[i] = st, p
-		if st.kind == stmtSelect {
-			reads++
-		}
-	}
-
-	// SDKs send a ClientRequestToken with every transaction; reads ignore it.
-	switch {
-	case reads == n:
-		return s.readTransaction(ctx, statements, parsers)
-	case reads != 0:
-		return nil, awserror.Validation("Statements in a transaction must be all reads or all writes")
-	}
-
-	items := make([]api.TransactWriteItem, n)
-	for i, st := range statements {
-		w, err := s.writeRequest(ctx, st, parsers[i])
-		if err != nil {
-			return nil, err
-		}
-
-		onFailure := in.TransactStatements[i].ReturnValuesOnConditionCheckFailure
+		// SDKs send a ClientRequestToken with every transaction; reads ignore it.
 		switch {
-		case w.Put != nil:
-			w.Put.ReturnValuesOnConditionCheckFailure = onFailure
-		case w.Delete != nil:
-			w.Delete.ReturnValuesOnConditionCheckFailure = onFailure
-		default:
-			w.Update.ReturnValuesOnConditionCheckFailure = onFailure
+		case reads == n:
+			return s.readTransaction(ctx, statements, parsers, &puts.used)
+		case reads != 0:
+			return nil, awserror.Validation("Statements in a transaction must be all reads or all writes")
 		}
 
-		items[i] = *w
-	}
+		items := make([]api.TransactWriteItem, n)
+		for i, st := range statements {
+			w, err := s.writeRequest(ctx, st, parsers[i])
+			if err != nil {
+				return nil, err
+			}
 
-	_, err := s.TransactWriteItems(ctx, &api.TransactWriteItemsInput{
-		TransactItems: items, ClientRequestToken: in.ClientRequestToken,
+			onFailure := in.TransactStatements[i].ReturnValuesOnConditionCheckFailure
+			switch {
+			case w.Put != nil:
+				w.Put.ReturnValuesOnConditionCheckFailure = onFailure
+			case w.Delete != nil:
+				w.Delete.ReturnValuesOnConditionCheckFailure = onFailure
+			default:
+				w.Update.ReturnValuesOnConditionCheckFailure = onFailure
+			}
+
+			items[i] = *w
+		}
+
+		_, err := s.transactWriteItems(ctx, &api.TransactWriteItemsInput{
+			TransactItems: items, ClientRequestToken: in.ClientRequestToken,
+		}, &puts)
+		if err != nil {
+			return nil, duplicates(err, statements)
+		}
+
+		return &api.ExecuteTransactionOutput{Responses: []api.ItemResponse{}}, nil
 	})
-	if err != nil {
-		return nil, duplicates(err, statements)
-	}
-
-	return &api.ExecuteTransactionOutput{Responses: []api.ItemResponse{}}, nil
 }
 
 // readTransaction reads the items SELECT statements name in one transaction.
@@ -545,6 +561,7 @@ func (s *Service) readTransaction(
 	ctx context.Context,
 	statements []*statement,
 	parsers []*pqParser,
+	used *tally,
 ) (*api.ExecuteTransactionOutput, error) {
 	gets := make([]api.TransactGetItem, len(statements))
 	for i, st := range statements {
@@ -573,7 +590,7 @@ func (s *Service) readTransaction(
 		}}
 	}
 
-	out, err := s.TransactGetItems(ctx, &api.TransactGetItemsInput{TransactItems: gets})
+	out, err := s.transactGetItems(ctx, &api.TransactGetItemsInput{TransactItems: gets}, used)
 	if err != nil {
 		return nil, err
 	}

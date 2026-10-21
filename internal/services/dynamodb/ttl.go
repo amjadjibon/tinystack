@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -173,6 +174,7 @@ func (s *Service) expire(ctx context.Context, key string, now time.Time) error {
 	}
 
 	var puts outbox
+	var deleted int
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil || t.TTL == "" {
@@ -192,6 +194,8 @@ func (s *Service) expire(ctx context.Context, key string, now time.Time) error {
 			if writeErr := writeItemBy(tx, key, t, record, old, nil, ttlIdentity, &puts); writeErr != nil {
 				return writeErr
 			}
+
+			deleted++
 		}
 
 		return nil
@@ -201,5 +205,15 @@ func (s *Service) expire(ctx context.Context, key string, now time.Time) error {
 	}
 
 	s.deliver(ctx, &puts)
+	if deleted > 0 {
+		scope, name := tableScope(key)
+		s.metrics.Publish(scope, metricNamespace, awsmetrics.Datum{
+			Name:       metricTTLDeleted,
+			Unit:       awsmetrics.Count,
+			Value:      float64(deleted),
+			Dimensions: []awsmetrics.Dimension{{Name: dimensionTable, Value: name}},
+		})
+	}
+
 	return nil
 }

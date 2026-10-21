@@ -37,7 +37,7 @@ func checkDeadLetterARN(arn string) error {
 // https://aws.amazon.com/blogs/compute/introducing-aws-lambda-destinations/
 // Versions use the current $LATEST dead-letter configuration:
 // https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-retain-records.html
-func (s *Service) sendDeadLetter(ctx context.Context, scope request.Scope, name, arn, id string,
+func (s *Service) sendDeadLetter(ctx context.Context, scope request.Scope, name, qualifier, arn, id string,
 	payload []byte, r *attemptResult,
 ) {
 	var target string
@@ -61,6 +61,7 @@ func (s *Service) sendDeadLetter(ctx context.Context, scope request.Scope, name,
 	if err != nil {
 		s.logger.Warn("sending an async event to its dead-letter target failed", "function", arn, "target", target,
 			"error", err)
+		s.publish(scope, name, qualifier, counter(metricDeadLetterErrors, 1))
 	}
 }
 

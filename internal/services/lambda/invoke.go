@@ -225,7 +225,7 @@ func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload 
 
 			if attempt == attempts {
 				r.condition = conditionRetries
-				s.sendDeadLetter(ctx, scope, name, arn, id, payload, r)
+				s.sendDeadLetter(ctx, scope, name, qualifier, arn, id, payload, r)
 				s.sendResult(ctx, arn, cfg.OnFailure, id, payload, r)
 				return
 			}
@@ -238,7 +238,7 @@ func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload 
 
 			if s.now().Sub(queued) > cfg.maxAge() {
 				r.condition = conditionEventAge
-				s.sendDeadLetter(ctx, scope, name, arn, id, payload, r)
+				s.sendDeadLetter(ctx, scope, name, qualifier, arn, id, payload, r)
 				s.sendResult(ctx, arn, cfg.OnFailure, id, payload, r)
 				return
 			}

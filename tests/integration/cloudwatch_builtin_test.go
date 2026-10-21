@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"slices"
+	"strconv"
 	"testing"
 	"time"
 
@@ -232,6 +233,26 @@ func TestBuiltinLambdaMetrics(t *testing.T) {
 
 		time.Sleep(100 * time.Millisecond)
 	}
+
+	// A function whose dead-letter target does not exist reports DeadLetterErrors after failing.
+	missingDLQ := "arn:aws:sqs:us-east-1:000000000000:missing"
+	createFunction(t, functions, "deadletter", "app.fail")
+	if _, err = functions.UpdateFunctionConfiguration(ctx, &sdklambda.UpdateFunctionConfigurationInput{
+		FunctionName:     new("deadletter"),
+		DeadLetterConfig: &lambdatypes.DeadLetterConfig{TargetArn: &missingDLQ},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = functions.PutFunctionEventInvokeConfig(ctx, &sdklambda.PutFunctionEventInvokeConfigInput{
+		FunctionName: new("deadletter"), MaximumRetryAttempts: new(int32(0)),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	invoke("deadletter", lambdatypes.InvocationTypeEvent, nil)
+	deadLetter := dimensions("FunctionName", "deadletter")
+	expectBuiltin(t, c, "AWS/Lambda", "DeadLetterErrors", "Count", deadLetter, 1)
 }
 
 func TestBuiltinSQSMetrics(t *testing.T) {
@@ -338,9 +359,23 @@ func TestBuiltinDynamoDBMetrics(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// PartiQL ExecuteStatement produces write/read capacity and latency with Operation=ExecuteStatement.
+	if _, err := d.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+		Statement: new("INSERT INTO orders VALUE {'PK': 'partiql', 'note': 'test'}"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := d.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+		Statement:      new("SELECT * FROM orders WHERE PK = 'partiql'"),
+		ConsistentRead: new(true),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
 	table := dimensions("TableName", "orders")
-	expectBuiltin(t, c, "AWS/DynamoDB", "ConsumedWriteCapacityUnits", "Count", table, 2)
-	expectBuiltin(t, c, "AWS/DynamoDB", "ConsumedReadCapacityUnits", "Count", table, 2)
+	expectBuiltin(t, c, "AWS/DynamoDB", "ConsumedWriteCapacityUnits", "Count", table, 3)
+	expectBuiltin(t, c, "AWS/DynamoDB", "ConsumedReadCapacityUnits", "Count", table, 3)
 	expectBuiltin(t, c, "AWS/DynamoDB", "UserErrors", "Count", nil, 1)
 	put := dimensions("TableName", "orders", "Operation", "PutItem")
 	latency := builtinMetric(
@@ -356,6 +391,63 @@ func TestBuiltinDynamoDBMetrics(t *testing.T) {
 	}
 
 	expectBuiltin(t, c, "AWS/DynamoDB", "ThrottledRequests", "Count", put, 0)
+
+	executeStatement := dimensions("TableName", "orders", "Operation", "ExecuteStatement")
+	partiqlLatency := builtinMetric(
+		t,
+		c,
+		"AWS/DynamoDB",
+		"SuccessfulRequestLatency",
+		executeStatement,
+		func(b builtin) bool { return b.count == 2 },
+	)
+	if partiqlLatency.unit != "Milliseconds" {
+		t.Fatalf("%+v", partiqlLatency)
+	}
+
+	expectBuiltin(t, c, "AWS/DynamoDB", "ThrottledRequests", "Count", executeStatement, 0)
+
+	// A table with TTL and an expired item produces TimeToLiveDeletedItemCount.
+	if _, err := d.UpdateTimeToLive(ctx, &dynamodb.UpdateTimeToLiveInput{
+		TableName: new("orders"),
+		TimeToLiveSpecification: &ddbtypes.TimeToLiveSpecification{
+			Enabled:       new(true),
+			AttributeName: new("expires"),
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Now().Unix()
+	if _, err := d.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: new("orders"),
+		Item: map[string]ddbtypes.AttributeValue{
+			"PK":      &ddbtypes.AttributeValueMemberS{Value: "expired"},
+			"expires": &ddbtypes.AttributeValueMemberN{Value: strconv.FormatInt(now-60, 10)},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		got, getErr := d.GetItem(ctx, &dynamodb.GetItemInput{TableName: new("orders"), Key: key("expired")})
+		if getErr != nil {
+			t.Fatal(getErr)
+		}
+
+		if got.Item == nil {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatal("expired item was not deleted")
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	expectBuiltin(t, c, "AWS/DynamoDB", "TimeToLiveDeletedItemCount", "Count", table, 1)
 }
 
 func TestBuiltinAPIGatewayMetrics(t *testing.T) {
