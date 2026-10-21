@@ -733,8 +733,14 @@ func (s *Service) UpdateConnection(
 
 	var creds connectionSecret
 	secretVal, err := s.secrets.GetManagedSecretValue(ctx, m.Scope, c.SecretARN)
-	if err == nil && secretVal != "" {
-		_ = json.Unmarshal([]byte(secretVal), &creds)
+	if err != nil {
+		return nil, err
+	}
+
+	if secretVal != "" {
+		if jsonErr := json.Unmarshal([]byte(secretVal), &creds); jsonErr != nil {
+			return nil, jsonErr
+		}
 	}
 
 	if in.AuthParameters != nil || in.AuthorizationType != nil {
@@ -842,7 +848,10 @@ func (s *Service) DeauthorizeConnection(
 	}
 
 	emptySecret := "{}"
-	_ = s.secrets.UpdateManagedSecret(ctx, m.Scope, c.SecretARN, &emptySecret)
+	if secretErr := s.secrets.UpdateManagedSecret(ctx, m.Scope, c.SecretARN, &emptySecret); secretErr != nil {
+		return nil, secretErr
+	}
+
 	s.tokens.drop(c.arn(m.Scope))
 	return &api.DeauthorizeConnectionResponse{
 		ConnectionArn:      new(c.arn(m.Scope)),
