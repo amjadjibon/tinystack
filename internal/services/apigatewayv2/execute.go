@@ -38,6 +38,8 @@ type call struct {
 	// integrationError is why the integration failed, for access logs.
 	integrationError string
 	integrationCode  int
+	// integrated is how long the integration took, when the request reached it.
+	integrated time.Duration
 }
 
 // Execute runs a request to the HTTP API id names: it picks the stage from
@@ -46,6 +48,7 @@ type call struct {
 // applies the API's CORS configuration.
 func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
 	c := &call{req: r, requestID: newRequestID()}
+	started := time.Now()
 	found := false
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		loc, ok, err := storage.Read[location](tx, indexKey(id))
@@ -67,6 +70,7 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 	resp := s.run(ctx, c)
 	resp.Header.Set("Apigw-Requestid", c.requestID)
 	s.accessLog(ctx, c, resp)
+	s.publish(c, resp, started, c.integrated)
 	return resp, true, nil
 }
 
@@ -130,7 +134,10 @@ func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 		return withCors(c.api.CorsConfiguration, origin, denied)
 	}
 
-	return withCors(c.api.CorsConfiguration, origin, s.integrate(ctx, c, authorizer))
+	integrating := time.Now()
+	resp := s.integrate(ctx, c, authorizer)
+	c.integrated = time.Since(integrating)
+	return withCors(c.api.CorsConfiguration, origin, resp)
 }
 
 // matchRoute picks the most specific route for a request: literal segments

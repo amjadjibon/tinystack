@@ -7,6 +7,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -23,6 +24,17 @@ func duplicateKeys() error {
 // BatchGetItem reads up to 100 items from one or more tables in one snapshot.
 // Keys past the 16 MB response limit come back in UnprocessedKeys.
 func (s *Service) BatchGetItem(ctx context.Context, in *api.BatchGetItemInput) (*api.BatchGetItemOutput, error) {
+	var used tally
+	return observed(ctx, s, "BatchGetItem", &used, func() (*api.BatchGetItemOutput, error) {
+		return s.batchGetItem(ctx, in, &used)
+	})
+}
+
+func (s *Service) batchGetItem(
+	ctx context.Context,
+	in *api.BatchGetItemInput,
+	used *tally,
+) (*api.BatchGetItemOutput, error) {
 	if len(in.RequestItems) == 0 {
 		return nil, awserror.Validation("RequestItems must contain at least one table")
 	}
@@ -116,6 +128,7 @@ func (s *Service) BatchGetItem(ctx context.Context, in *api.BatchGetItemInput) (
 				}
 
 				size += bytes
+				used.charge(name, bytes, common.Value(request.ConsistentRead))
 				out.Responses[name] = append(out.Responses[name], projections[name].apply(it))
 			}
 		}
@@ -135,6 +148,17 @@ func (s *Service) BatchGetItem(ctx context.Context, in *api.BatchGetItemInput) (
 func (s *Service) BatchWriteItem(
 	ctx context.Context,
 	in *api.BatchWriteItemInput,
+) (*api.BatchWriteItemOutput, error) {
+	var puts outbox
+	return observed(ctx, s, "BatchWriteItem", &puts.used, func() (*api.BatchWriteItemOutput, error) {
+		return s.batchWriteItem(ctx, in, &puts)
+	})
+}
+
+func (s *Service) batchWriteItem(
+	ctx context.Context,
+	in *api.BatchWriteItemInput,
+	puts *outbox,
 ) (*api.BatchWriteItemOutput, error) {
 	if len(in.RequestItems) == 0 {
 		return nil, awserror.Validation("RequestItems must contain at least one table")
@@ -170,7 +194,6 @@ func (s *Service) BatchWriteItem(
 		return nil, awserror.Validation("Too many items requested for the BatchWriteItem call")
 	}
 
-	var puts outbox
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, name := range names {
 			key := keys[name]
@@ -209,7 +232,7 @@ func (s *Service) BatchWriteItem(
 					continue
 				}
 
-				if guardErr := writeItem(tx, key, t, record, old, next, &puts); guardErr != nil {
+				if guardErr := writeItem(tx, key, t, record, old, next, puts); guardErr != nil {
 					return guardErr
 				}
 			}
@@ -221,6 +244,6 @@ func (s *Service) BatchWriteItem(
 		return nil, err
 	}
 
-	s.deliver(ctx, &puts)
+	s.deliver(ctx, puts)
 	return &api.BatchWriteItemOutput{UnprocessedItems: map[string][]api.WriteRequest{}}, nil
 }

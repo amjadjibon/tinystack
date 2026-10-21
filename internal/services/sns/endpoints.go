@@ -124,6 +124,10 @@ func (s *Service) post(topicARN string, sub *subscription, header http.Header, b
 		}
 
 		s.deliveries.Add(delivery.ViaSNS, topicARN, endpoint, body, err)
+		// A confirmation request is not a notification.
+		if header.Get("X-Amz-Sns-Message-Type") == "Notification" {
+			s.notified(topicARN, err)
+		}
 	})
 }
 
@@ -143,6 +147,7 @@ func (s *Service) deliverEndpoint(sub *subscription, subARN string, envelope *no
 	switch sub.Protocol {
 	case protocolEmail, protocolEmailJSON:
 		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, body, nil)
+		s.notified(envelope.TopicArn, nil)
 		return nil
 	}
 

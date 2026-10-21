@@ -128,6 +128,8 @@ type page struct {
 	items   []item
 	count   int64
 	scanned int64
+	// bytes is the size of the items evaluated.
+	bytes int64
 }
 
 // read evaluates n items in order, as Scan and Query do: Limit and the 1 MB
@@ -159,6 +161,7 @@ func (r *readRequest) read(t *table, n int, at func(int) (item, error), limit *i
 		}
 
 		size += bytes
+		out.bytes = size
 		out.scanned++
 		if r.filter.match(it) {
 			out.count++
@@ -190,6 +193,11 @@ func (p *page) list() *[]item {
 // Scan returns a deterministic page in table key order; ordering is a local
 // implementation detail.
 func (s *Service) Scan(ctx context.Context, in *api.ScanInput) (*api.ScanOutput, error) {
+	var used tally
+	return observed(ctx, s, "Scan", &used, func() (*api.ScanOutput, error) { return s.scan(ctx, in, &used) })
+}
+
+func (s *Service) scan(ctx context.Context, in *api.ScanInput, used *tally) (*api.ScanOutput, error) {
 	req, err := newReadRequest(ctx, in.TableName, in.Limit, in.Select, in.FilterExpression,
 		in.ProjectionExpression, in.ExpressionAttributeNames, in.ExpressionAttributeValues)
 	if err != nil {
@@ -241,6 +249,7 @@ func (s *Service) Scan(ctx context.Context, in *api.ScanInput) (*api.ScanOutput,
 		return nil, err
 	}
 
+	used.charge(common.Value(in.TableName), p.bytes, common.Value(in.ConsistentRead))
 	out := &api.ScanOutput{
 		Items: p.list(), Count: &p.count, ScannedCount: &p.scanned, LastEvaluatedKey: p.last,
 	}
@@ -282,6 +291,11 @@ func segment(seg, total *int64) (func(record string) bool, error) {
 
 // Query reads one partition of the table or an index in sort key order.
 func (s *Service) Query(ctx context.Context, in *api.QueryInput) (*api.QueryOutput, error) {
+	var used tally
+	return observed(ctx, s, "Query", &used, func() (*api.QueryOutput, error) { return s.query(ctx, in, &used) })
+}
+
+func (s *Service) query(ctx context.Context, in *api.QueryInput, used *tally) (*api.QueryOutput, error) {
 	req, err := newReadRequest(ctx, in.TableName, in.Limit, in.Select, in.FilterExpression,
 		in.ProjectionExpression, in.ExpressionAttributeNames, in.ExpressionAttributeValues)
 	if err != nil {
@@ -332,6 +346,7 @@ func (s *Service) Query(ctx context.Context, in *api.QueryInput) (*api.QueryOutp
 		return nil, err
 	}
 
+	used.charge(common.Value(in.TableName), p.bytes, common.Value(in.ConsistentRead))
 	out := &api.QueryOutput{
 		Items: p.list(), Count: &p.count, ScannedCount: &p.scanned, LastEvaluatedKey: p.last,
 	}

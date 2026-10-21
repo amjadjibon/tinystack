@@ -103,12 +103,8 @@ func (s *Service) PutMetricData(ctx context.Context, in *api.PutMetricDataInput)
 func (s *Service) storeMetric(tx storage.WriteTx, scope request.Scope, namespace string,
 	d *api.MetricDatum, p *point, now time.Time,
 ) error {
-	dims := canonical(d.Dimensions)
-	id := metricID(namespace, common.Value(d.MetricName), dims)
-	rec := metric{
-		Namespace: namespace, Name: common.Value(d.MetricName), Dimensions: dims, Last: common.Unix(now),
-	}
-	if err := storage.Write(tx, metricKey(scope, id), rec); err != nil {
+	rec, id, err := recordMetric(tx, scope, namespace, common.Value(d.MetricName), d.Dimensions, now)
+	if err != nil {
 		return err
 	}
 
@@ -118,6 +114,16 @@ func (s *Service) storeMetric(tx storage.WriteTx, scope request.Scope, namespace
 
 	prune(tx, dataPrefix(scope, id), now.Add(-retention))
 	return s.queueStreamPoint(tx, scope, rec, p, now)
+}
+
+// recordMetric writes the metric's record, which ListMetrics reads, and returns it with its ID.
+func recordMetric(tx storage.WriteTx, scope request.Scope, namespace, name string, dimensions []api.Dimension,
+	now time.Time,
+) (rec metric, id string, err error) {
+	dims := canonical(dimensions)
+	id = metricID(namespace, name, dims)
+	rec = metric{Namespace: namespace, Name: name, Dimensions: dims, Last: common.Unix(now)}
+	return rec, id, storage.Write(tx, metricKey(scope, id), rec)
 }
 
 // datum checks one MetricDatum and returns its data point.

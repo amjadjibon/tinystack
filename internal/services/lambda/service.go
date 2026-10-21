@@ -32,6 +32,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/eventsource"
@@ -85,6 +86,7 @@ type Service struct {
 	authorizer catalog.ServiceAuthorizer
 	// objects reads deployment packages from S3; see UseObjects.
 	objects ObjectReader
+	metrics awsmetrics.Meter
 	now     func() time.Time
 	// bg runs background work (async invocations and pollers) until Stop.
 	bg      *background.Group

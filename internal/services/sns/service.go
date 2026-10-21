@@ -21,6 +21,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -52,7 +53,8 @@ type Service struct {
 	// authorizer checks deliveries to queues and functions against their resource policies; see UseServiceAuthorizer.
 	authorizer catalog.ServiceAuthorizer
 	// bg runs HTTP deliveries until Stop.
-	bg *background.Group
+	bg      *background.Group
+	metrics awsmetrics.Meter
 }
 
 // New returns SNS. Call Stop to end HTTP deliveries in flight.

@@ -58,10 +58,13 @@ func (s *Service) append(tx storage.WriteTx, scope request.Scope, st *stream, da
 
 func (s *Service) PutRecord(ctx context.Context, in *api.PutRecordInput) (*api.PutRecordOutput, error) {
 	out := &api.PutRecordOutput{}
-	err := s.change(ctx, in.StreamName, in.StreamARN, func(tx storage.WriteTx, scope request.Scope, st *stream) error {
+	var scope request.Scope
+	var name string
+	err := s.change(ctx, in.StreamName, in.StreamARN, func(tx storage.WriteTx, sc request.Scope, st *stream) error {
+		scope, name = sc, st.Name
 		sh, seq, err := s.append(
 			tx,
-			scope,
+			sc,
 			st,
 			in.Data,
 			common.Value(in.PartitionKey),
@@ -78,6 +81,7 @@ func (s *Service) PutRecord(ctx context.Context, in *api.PutRecordInput) (*api.P
 		return nil, err
 	}
 
+	s.incoming(scope, name, 1, len(in.Data)+len(common.Value(in.PartitionKey)))
 	return out, nil
 }
 
@@ -98,13 +102,17 @@ func (s *Service) PutRecords(ctx context.Context, in *api.PutRecordsInput) (*api
 	}
 
 	out := &api.PutRecordsOutput{FailedRecordCount: new(int64(0))}
-	err := s.change(ctx, in.StreamName, in.StreamARN, func(tx storage.WriteTx, scope request.Scope, st *stream) error {
+	var scope request.Scope
+	var name string
+	var stored, storedBytes int
+	err := s.change(ctx, in.StreamName, in.StreamARN, func(tx storage.WriteTx, sc request.Scope, st *stream) error {
+		scope, name, stored, storedBytes = sc, st.Name, 0, 0
 		out.Records, *out.FailedRecordCount = nil, 0
 		out.EncryptionType = new(st.Encryption)
 		for _, r := range in.Records {
 			sh, seq, err := s.append(
 				tx,
-				scope,
+				sc,
 				st,
 				r.Data,
 				common.Value(r.PartitionKey),
@@ -123,6 +131,8 @@ func (s *Service) PutRecords(ctx context.Context, in *api.PutRecordsInput) (*api
 				return err
 			}
 
+			stored++
+			storedBytes += len(r.Data) + len(common.Value(r.PartitionKey))
 			out.Records = append(out.Records, api.PutRecordsResultEntry{ShardId: new(sh.ID), SequenceNumber: new(seq)})
 		}
 
@@ -132,6 +142,7 @@ func (s *Service) PutRecords(ctx context.Context, in *api.PutRecordsInput) (*api
 		return nil, err
 	}
 
+	s.incoming(scope, name, stored, storedBytes)
 	return out, nil
 }
 
@@ -372,6 +383,7 @@ func (s *Service) GetRecords(ctx context.Context, in *api.GetRecordsInput) (*api
 		return nil, err
 	}
 
+	s.fetched(m.Scope, it.Stream, len(out.Records))
 	return out, nil
 }
 
@@ -451,7 +463,7 @@ func (s *Service) Put(ctx context.Context, arn string, data []byte, partitionKey
 		return invalidArgument("Invalid stream ARN %s", arn)
 	}
 
-	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		st, err := loadStream(tx, scope, name)
 		if err != nil {
 			return err
@@ -463,4 +475,10 @@ func (s *Service) Put(ctx context.Context, arn string, data []byte, partitionKey
 
 		return storage.Write(tx, streamKey(scope, name), st)
 	})
+	if err != nil {
+		return err
+	}
+
+	s.incoming(scope, name, 1, len(data)+len(partitionKey))
+	return nil
 }

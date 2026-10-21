@@ -25,6 +25,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -49,8 +50,9 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
-	now   func() time.Time
+	store   storage.Store
+	now     func() time.Time
+	metrics awsmetrics.Meter
 }
 
 func New(store storage.Store) *Service {

@@ -91,19 +91,7 @@ func checkTarget(tx storage.ReadTx, key string, st *settings) error {
 
 // attributes renders every queue attribute TinyStack supports.
 func (q *queue) attributes(key string, now int64) map[string]string {
-	var visible, inFlight, delayed int64
-	for i := range q.Messages {
-		msg := &q.Messages[i]
-		switch {
-		case msg.VisibleAt <= now:
-			visible++
-		case msg.ReceiveCount > 0:
-			inFlight++
-		default:
-			delayed++
-		}
-	}
-
+	visible, inFlight, delayed := q.counts(now)
 	st := &q.Settings
 	format := func(n int64) string { return strconv.FormatInt(n, 10) }
 	out := map[string]string{

@@ -357,6 +357,7 @@ func (s *Service) send(ctx context.Context, key string, entry *api.SendMessageBa
 	}
 
 	s.notify(key)
+	s.publish(key, counter(metricSent, 1), messageSize(o.size))
 	return o, nil
 }
 
@@ -679,6 +680,7 @@ func (s *Service) ReceiveMessage(
 		}
 
 		if len(c.messages) > 0 || !now.Before(deadline) {
+			s.publishReceive(key, len(c.messages))
 			return &api.ReceiveMessageResult{Messages: c.messages}, nil
 		}
 
@@ -727,13 +729,14 @@ func (s *Service) DeleteMessage(ctx context.Context, in *api.DeleteMessageReques
 		return nil, err
 	}
 	// A stale receipt handle succeeds without deleting, as in SQS.
+	var removed bool
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		q, loadErr := load(tx, key)
 		if loadErr != nil {
 			return loadErr
 		}
 
-		if !q.remove(id, nonce) {
+		if removed = q.remove(id, nonce); !removed {
 			return nil
 		}
 
@@ -744,6 +747,10 @@ func (s *Service) DeleteMessage(ctx context.Context, in *api.DeleteMessageReques
 	}
 	// Deleting may unblock a FIFO message group.
 	s.notify(key)
+	if removed {
+		s.publish(key, counter(metricDeleted, 1))
+	}
+
 	return &api.DeleteMessageOutput{}, nil
 }
 

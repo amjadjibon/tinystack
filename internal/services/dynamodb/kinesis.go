@@ -331,8 +331,12 @@ type kinesisPut struct {
 }
 
 // outbox collects the Kinesis records of the item changes of one request while
-// its transaction runs, for deliver to send once it commits.
-type outbox struct{ puts []kinesisPut }
+// its transaction runs, for deliver to send once it commits, and the write
+// capacity the changes consumed.
+type outbox struct {
+	used tally
+	puts []kinesisPut
+}
 
 // kinesisRecord is the JSON a Kinesis record holds for a change.
 type kinesisRecord struct {

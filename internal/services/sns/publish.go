@@ -257,6 +257,8 @@ func (s *Service) publish(
 		envelope.SequenceNumber = placed.Number
 	}
 
+	s.publishMetric(envelope.TopicArn, metricPublished)
+
 	for name, a := range e.MessageAttributes {
 		if envelope.MessageAttributes == nil {
 			envelope.MessageAttributes = map[string]notificationAttribute{}
@@ -314,6 +316,7 @@ func (s *Service) deliver(
 
 	if sub.Protocol == protocolSMS {
 		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(envelope.Message), nil)
+		s.notified(envelope.TopicArn, nil)
 		return nil
 	}
 
@@ -334,6 +337,7 @@ func (s *Service) deliver(
 		}
 
 		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, event, err)
+		s.notified(envelope.TopicArn, err)
 		return nil
 	}
 
@@ -362,6 +366,7 @@ func (s *Service) deliver(
 	}
 
 	s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(body), err)
+	s.notified(envelope.TopicArn, err)
 	return nil
 }
 

@@ -16,6 +16,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -35,7 +36,8 @@ type Service struct {
 	// UseKinesis.
 	kinesis *kinesis.Service
 	// bg runs the TTL sweeper until Stop.
-	bg *background.Group
+	bg      *background.Group
+	metrics awsmetrics.Meter
 }
 
 // New returns a DynamoDB service and starts its TTL sweeper, which runs until

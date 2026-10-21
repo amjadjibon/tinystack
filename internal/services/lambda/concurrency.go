@@ -40,24 +40,29 @@ func provisionedKey(scope request.Scope, name, qualifier string) string {
 }
 
 // acquire takes one of the function's concurrent executions, failing when its
-// reserved concurrency is in use, and returns the function that releases it.
-func (s *Service) acquire(ctx context.Context, scope request.Scope, name string) (func(), error) {
+// reserved concurrency is in use, and returns the function that releases it
+// with the executions now in flight.
+func (s *Service) acquire(
+	ctx context.Context,
+	scope request.Scope,
+	name string,
+) (release func(), running int, err error) {
 	var limit int64
 	var capped bool
-	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var readErr error
 		limit, capped, readErr = reservedConcurrency(tx, scope, name)
 		return readErr
 	})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	key := functionARN(scope, name)
 	s.slots.Lock()
 	defer s.slots.Unlock()
 	if capped && int64(s.running[key]) >= limit {
-		return nil, awserror.New("TooManyRequestsException", "Rate Exceeded.")
+		return nil, 0, awserror.New("TooManyRequestsException", "Rate Exceeded.")
 	}
 
 	s.running[key]++
@@ -68,7 +73,7 @@ func (s *Service) acquire(ctx context.Context, scope request.Scope, name string)
 		if s.running[key] == 0 {
 			delete(s.running, key)
 		}
-	}, nil
+	}, s.running[key], nil
 }
 
 // latestFunction resolves a request's unqualified function and checks that it

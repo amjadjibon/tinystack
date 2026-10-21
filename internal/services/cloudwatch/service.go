@@ -13,9 +13,23 @@
 // actions of a state change (SNS topics, Lambda functions, and Auto Scaling
 // policies) in-process through a catalog.Caller; every change also goes to
 // EventBridge's default bus as a "CloudWatch Alarm State Change" event.
+//
+// PutMetricData rejects the AWS/ namespaces, which belong to the services.
+// They report their built-in metrics through Publish (see awsmetrics), after
+// their own transactions commit. Writing every observation would put a store
+// transaction on hot paths such as an SQS send loop, so Publish only adds the
+// observation to an in-memory aggregate of its series (account, Region,
+// namespace, metric, dimensions, unit) and minute: a few nanoseconds under one
+// mutex. Every second one transaction flushes the aggregates that changed,
+// each extending its series' single statistic-set data point for that minute
+// (stored at the minute's start, under a fixed sequence), and Stop flushes
+// once more. Stored this way, the points are read, streamed and evaluated like
+// any others; the cost is that Percentile statistics cannot be answered for
+// them, and a value is visible up to one second after it was reported.
 package cloudwatch
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -57,6 +71,7 @@ type Service struct {
 	logger     *slog.Logger
 	now        func() time.Time
 	bg         *background.Group
+	pub        published
 	// seq orders records written in the same millisecond.
 	seq uint64
 	mu  sync.Mutex
@@ -68,10 +83,14 @@ func New(store storage.Store, logger *slog.Logger) *Service {
 		logger = slog.Default()
 	}
 
-	s := &Service{store: store, logger: logger, now: time.Now, bg: background.New()}
+	s := &Service{
+		store: store, logger: logger, now: time.Now, bg: background.New(),
+		pub: published{pending: map[string]*aggregate{}},
+	}
 	s.bg.Every(evaluateInterval, s.visit)
 	s.bg.Every(time.Second, s.visitBilling)
 	s.bg.Every(streamInterval, s.visitStreams)
+	s.bg.Every(publishInterval, s.flushPublished)
 	return s
 }
 
@@ -84,8 +103,13 @@ func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 	s.authorizer = authorizer
 }
 
-// Stop ends the evaluator and waits for it.
-func (s *Service) Stop() { s.bg.Stop() }
+// Stop ends the evaluator and waits for it, then stores the observations that Publish still holds. Observations
+// published after Stop are dropped.
+func (s *Service) Stop() {
+	if s.bg.Stop() {
+		s.flush(context.Background(), s.drain(true))
+	}
+}
 
 // sequenced is a key suffix ordering records by time, then arrival.
 func (s *Service) sequenced(t time.Time) string {

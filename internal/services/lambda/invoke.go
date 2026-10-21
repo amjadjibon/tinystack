@@ -133,19 +133,22 @@ func (s *Service) run(
 		}
 	}
 
-	release, err := s.acquire(ctx, scope, name)
+	release, concurrent, err := s.acquire(ctx, scope, name)
 	if err != nil {
+		s.publish(scope, name, qualifier, counter(metricThrottles, 1))
 		return Result{}, "", "", err
 	}
 
 	defer release()
 	started := time.Now()
 	result, err = s.runtime.Invoke(ctx, fn, payload)
+	duration := time.Since(started)
+	s.publishInvocation(scope, name, qualifier, duration, concurrent, err != nil || result.Error)
 	if err != nil {
 		return Result{}, "", "", awserror.New("ServiceException", "The function could not be run: "+err.Error())
 	}
 
-	return result, s.record(ctx, scope, fn, time.Since(started), result.Log), fn.Version, nil
+	return result, s.record(ctx, scope, fn, duration, result.Log), fn.Version, nil
 }
 
 // record writes an invocation's log, the function's output between START and

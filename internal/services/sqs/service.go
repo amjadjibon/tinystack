@@ -18,6 +18,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -46,12 +47,15 @@ type Service struct {
 	logger *slog.Logger
 	now    func() time.Time
 	ready  map[string]chan struct{}
+	// active is when each queue last had a request; only queues in use report gauges.
+	active  map[string]time.Time
+	metrics awsmetrics.Meter
 	// bg runs the message mover; Stop also ends long polls.
 	bg *background.Group
 	mu sync.Mutex
 }
 
-// New returns SQS and starts its message mover, which runs until Stop; keys
+// New returns SQS and starts its message mover and gauge sampler, which run until Stop; keys
 // checks the customer managed keys of encrypted queues.
 func New(store storage.Store, keys *kms.Service) *Service {
 	s := &Service{
@@ -60,10 +64,12 @@ func New(store storage.Store, keys *kms.Service) *Service {
 		logger: slog.Default(),
 		now:    time.Now,
 		ready:  map[string]chan struct{}{},
+		active: map[string]time.Time{},
 		bg:     background.New(),
 	}
 
 	s.bg.Every(moveInterval, s.mover)
+	s.bg.Every(sampleInterval, s.sample)
 	return s
 }
 

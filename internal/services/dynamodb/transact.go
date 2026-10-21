@@ -34,6 +34,17 @@ func (s *Service) TransactGetItems(
 	ctx context.Context,
 	in *api.TransactGetItemsInput,
 ) (*api.TransactGetItemsOutput, error) {
+	used := tally{transactional: true}
+	return observed(ctx, s, "TransactGetItems", &used, func() (*api.TransactGetItemsOutput, error) {
+		return s.transactGetItems(ctx, in, &used)
+	})
+}
+
+func (s *Service) transactGetItems(
+	ctx context.Context,
+	in *api.TransactGetItemsInput,
+	used *tally,
+) (*api.TransactGetItemsOutput, error) {
 	if len(in.TransactItems) == 0 || len(in.TransactItems) > maxTransactItems {
 		return nil, awserror.Validation("TransactItems must hold 1 to 100 items")
 	}
@@ -86,6 +97,12 @@ func (s *Service) TransactGetItems(
 			}
 
 			seen[record] = true
+			bytes, sizeErr := itemSize(it)
+			if sizeErr != nil {
+				return sizeErr
+			}
+
+			used.charge(common.Value(ti.Get.TableName), bytes, true)
 			out.Responses[i].Item = projections[i].apply(it)
 		}
 
@@ -209,6 +226,17 @@ func (s *Service) TransactWriteItems(
 	ctx context.Context,
 	in *api.TransactWriteItemsInput,
 ) (*api.TransactWriteItemsOutput, error) {
+	puts := outbox{used: tally{transactional: true}}
+	return observed(ctx, s, "TransactWriteItems", &puts.used, func() (*api.TransactWriteItemsOutput, error) {
+		return s.transactWriteItems(ctx, in, &puts)
+	})
+}
+
+func (s *Service) transactWriteItems(
+	ctx context.Context,
+	in *api.TransactWriteItemsInput,
+	puts *outbox,
+) (*api.TransactWriteItemsOutput, error) {
 	if len(in.TransactItems) == 0 || len(in.TransactItems) > maxTransactItems {
 		return nil, awserror.Validation("TransactItems must hold 1 to 100 items")
 	}
@@ -235,7 +263,6 @@ func (s *Service) TransactWriteItems(
 	digest := sha256.Sum256(encoded)
 	m, _ := request.FromContext(ctx)
 	tokens := m.AccountID + "/" + m.Region + "/dynamodb-token/"
-	var puts outbox
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		now := time.Now()
 		if in.ClientRequestToken != nil {
@@ -245,13 +272,13 @@ func (s *Service) TransactWriteItems(
 			}
 		}
 
-		return transact(tx, writes, &puts)
+		return transact(tx, writes, puts)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.deliver(ctx, &puts)
+	s.deliver(ctx, puts)
 	return &api.TransactWriteItemsOutput{}, nil
 }
 

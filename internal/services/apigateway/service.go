@@ -24,6 +24,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
@@ -49,6 +50,7 @@ type Service struct {
 	// authorizer checks Lambda proxy integrations against the function's resource policy;
 	// see UseServiceAuthorizer.
 	authorizer catalog.ServiceAuthorizer
+	metrics    awsmetrics.Meter
 }
 
 func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service, pools *cognitoidp.Service) *Service {

@@ -74,6 +74,11 @@ func writeItemBy(
 		return err
 	}
 
+	if by == nil {
+		_, name := tableScope(key)
+		out.used.chargeWrite(name, max(oldSize, newSize))
+	}
+
 	count := common.Value(t.Description.ItemCount)
 	if old != nil {
 		count--
@@ -237,6 +242,13 @@ func newWriteRequest(
 }
 
 func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutItemOutput, error) {
+	var puts outbox
+	return observed(ctx, s, "PutItem", &puts.used, func() (*api.PutItemOutput, error) {
+		return s.putItem(ctx, in, &puts)
+	})
+}
+
+func (s *Service) putItem(ctx context.Context, in *api.PutItemInput, puts *outbox) (*api.PutItemOutput, error) {
 	if err := returnValues(in.ReturnValues, returnAllOld); err != nil {
 		return nil, err
 	}
@@ -252,7 +264,6 @@ func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutIt
 	}
 
 	out := &api.PutItemOutput{}
-	var puts outbox
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
@@ -276,10 +287,10 @@ func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutIt
 			out.Attributes = old
 		}
 
-		return writeItem(tx, req.key, t, record, old, in.Item, &puts)
+		return writeItem(tx, req.key, t, record, old, in.Item, puts)
 	})
 	if err == nil {
-		s.deliver(ctx, &puts)
+		s.deliver(ctx, puts)
 	}
 
 	return out, err
@@ -287,6 +298,11 @@ func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutIt
 
 // GetItem returns the item, or an empty output when the key is absent.
 func (s *Service) GetItem(ctx context.Context, in *api.GetItemInput) (*api.GetItemOutput, error) {
+	var used tally
+	return observed(ctx, s, "GetItem", &used, func() (*api.GetItemOutput, error) { return s.getItem(ctx, in, &used) })
+}
+
+func (s *Service) getItem(ctx context.Context, in *api.GetItemInput, used *tally) (*api.GetItemOutput, error) {
 	key, err := tableKey(ctx, in.TableName)
 	if err != nil {
 		return nil, err
@@ -319,6 +335,12 @@ func (s *Service) GetItem(ctx context.Context, in *api.GetItemInput) (*api.GetIt
 		}
 
 		it, _, e := loadItem(tx, itemRecord(key, id))
+		if e != nil {
+			return e
+		}
+
+		bytes, e := itemSize(it)
+		used.charge(common.Value(in.TableName), bytes, common.Value(in.ConsistentRead))
 		out.Item = pr.apply(it)
 		return e
 	})
@@ -326,6 +348,17 @@ func (s *Service) GetItem(ctx context.Context, in *api.GetItemInput) (*api.GetIt
 }
 
 func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api.DeleteItemOutput, error) {
+	var puts outbox
+	return observed(ctx, s, "DeleteItem", &puts.used, func() (*api.DeleteItemOutput, error) {
+		return s.deleteItem(ctx, in, &puts)
+	})
+}
+
+func (s *Service) deleteItem(
+	ctx context.Context,
+	in *api.DeleteItemInput,
+	puts *outbox,
+) (*api.DeleteItemOutput, error) {
 	if err := returnValues(in.ReturnValues, returnAllOld); err != nil {
 		return nil, err
 	}
@@ -341,7 +374,6 @@ func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api
 	}
 
 	out := &api.DeleteItemOutput{}
-	var puts outbox
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
@@ -365,10 +397,10 @@ func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api
 			out.Attributes = old
 		}
 
-		return writeItem(tx, req.key, t, record, old, nil, &puts)
+		return writeItem(tx, req.key, t, record, old, nil, puts)
 	})
 	if err == nil {
-		s.deliver(ctx, &puts)
+		s.deliver(ctx, puts)
 	}
 
 	return out, err
@@ -377,6 +409,17 @@ func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api
 // UpdateItem applies an update expression, creating the item from its key
 // when it does not exist.
 func (s *Service) UpdateItem(ctx context.Context, in *api.UpdateItemInput) (*api.UpdateItemOutput, error) {
+	var puts outbox
+	return observed(ctx, s, "UpdateItem", &puts.used, func() (*api.UpdateItemOutput, error) {
+		return s.updateItem(ctx, in, &puts)
+	})
+}
+
+func (s *Service) updateItem(
+	ctx context.Context,
+	in *api.UpdateItemInput,
+	puts *outbox,
+) (*api.UpdateItemOutput, error) {
 	err := returnValues(in.ReturnValues, returnAllOld, returnUpdatedOld, returnAllNew, returnUpdatedNew)
 	if err != nil {
 		return nil, err
@@ -398,7 +441,6 @@ func (s *Service) UpdateItem(ctx context.Context, in *api.UpdateItemInput) (*api
 	}
 
 	out := &api.UpdateItemOutput{}
-	var puts outbox
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
@@ -434,10 +476,10 @@ func (s *Service) UpdateItem(ctx context.Context, in *api.UpdateItemInput) (*api
 			out.Attributes = projection(upd.paths()).apply(next)
 		}
 
-		return writeItem(tx, req.key, t, record, old, next, &puts)
+		return writeItem(tx, req.key, t, record, old, next, puts)
 	})
 	if err == nil {
-		s.deliver(ctx, &puts)
+		s.deliver(ctx, puts)
 	}
 
 	return out, err

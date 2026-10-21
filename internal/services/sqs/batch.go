@@ -7,6 +7,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -120,7 +121,9 @@ func (s *Service) SendMessageBatch(
 	}
 
 	out := &api.SendMessageBatchResult{}
+	var sizes []awsmetrics.Datum
 	err = s.batch(ctx, key, func(q *queue, now int64) {
+		sizes = sizes[:0]
 		for i := range in.Entries {
 			entry := &in.Entries[i]
 			o, prepareErr := s.prepare(ctx, entry)
@@ -133,6 +136,7 @@ func (s *Service) SendMessageBatch(
 				continue
 			}
 
+			sizes = append(sizes, messageSize(o.size))
 			out.Successful = append(out.Successful, api.SendMessageBatchResultEntry{
 				Id:                     entry.Id,
 				MessageId:              new(o.msg.ID),
@@ -144,6 +148,10 @@ func (s *Service) SendMessageBatch(
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if len(sizes) > 0 {
+		s.publish(key, append(sizes, counter(metricSent, len(sizes)))...)
 	}
 
 	return out, nil
@@ -168,7 +176,9 @@ func (s *Service) DeleteMessageBatch(
 	}
 
 	out := &api.DeleteMessageBatchResult{}
+	var removed int
 	err = s.batch(ctx, key, func(q *queue, _ int64) {
+		removed = 0
 		for i := range in.Entries {
 			entry := &in.Entries[i]
 			id, nonce, parseErr := parseReceipt(entry.ReceiptHandle)
@@ -177,12 +187,19 @@ func (s *Service) DeleteMessageBatch(
 				continue
 			}
 			// A stale receipt handle succeeds without deleting, as in DeleteMessage.
-			q.remove(id, nonce)
+			if q.remove(id, nonce) {
+				removed++
+			}
+
 			out.Successful = append(out.Successful, api.DeleteMessageBatchResultEntry{Id: entry.Id})
 		}
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if removed > 0 {
+		s.publish(key, counter(metricDeleted, removed))
 	}
 
 	return out, nil

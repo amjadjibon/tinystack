@@ -127,6 +127,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/appsync"
 	"github.com/amjadjibon/tinystack/internal/services/athena"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/backup"
 	"github.com/amjadjibon/tinystack/internal/services/batch"
 	"github.com/amjadjibon/tinystack/internal/services/bedrock"
@@ -379,6 +380,15 @@ func build(
 	a.onReset(pipelines.Reset)
 	monitoring := cloudwatch.New(store, logger)
 	a.onStop(monitoring.Stop)
+	// Reset drops built-in metrics not yet stored, which the reset would otherwise bring back.
+	a.onReset(monitoring.Reset)
+	// The services above report their AWS/* metrics to CloudWatch, which is built after them.
+	for _, service := range []interface{ UseMetrics(awsmetrics.Sink) }{
+		functions, queues, tables, restAPIs, httpAPIs, topics, streams,
+	} {
+		service.UseMetrics(monitoring)
+	}
+
 	dns := route53.New(store)
 	cdn := cloudfront.New(store)
 	timers := scheduler.New(store, logger)
