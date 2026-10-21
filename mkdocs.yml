@@ -150,6 +150,7 @@ nav:
           - "AWS Batch": services/batch.md
           - "EC2": services/ec2.md
           - "EC2 Auto Scaling": services/autoscaling.md
+          - "Elastic Beanstalk": services/elasticbeanstalk.md
           - "Lambda": services/lambda.md
       - "Containers":
           - "ECR": services/ecr.md
