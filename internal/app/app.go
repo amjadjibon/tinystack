@@ -55,6 +55,7 @@ import (
 	elasticacheapi "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	elbapi "github.com/amjadjibon/tinystack/internal/aws/generated/elb"
 	elbv2api "github.com/amjadjibon/tinystack/internal/aws/generated/elbv2"
+	emrapi "github.com/amjadjibon/tinystack/internal/aws/generated/emr"
 	emrserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/emrserverless"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
@@ -157,6 +158,7 @@ import (
 	cachedocker "github.com/amjadjibon/tinystack/internal/services/elasticache/docker"
 	"github.com/amjadjibon/tinystack/internal/services/elb"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
+	"github.com/amjadjibon/tinystack/internal/services/emr"
 	"github.com/amjadjibon/tinystack/internal/services/emrserverless"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
@@ -405,6 +407,7 @@ func build(
 	quotaRecords := servicequotas.New(store)
 	dmsRecords := databasemigrationservice.New(store, network)
 	emrRecords := emrserverless.New(store)
+	classicEMR := emr.New(store, network, roles, buckets)
 	aossRecords := opensearchserverless.New(store)
 	flinkRecords := kinesisanalyticsv2.New(store, network, buckets, logGroups)
 	lakeRecords := lakeformation.New(store)
@@ -519,6 +522,7 @@ func build(
 		servicequotasapi.Descriptor(quotaRecords),
 		databasemigrationserviceapi.Descriptor(dmsRecords),
 		emrserverlessapi.Descriptor(emrRecords),
+		emrapi.Descriptor(classicEMR),
 		opensearchserverlessapi.Descriptor(aossRecords),
 		kinesisanalyticsv2api.Descriptor(flinkRecords),
 		lakeformationapi.Descriptor(lakeRecords),

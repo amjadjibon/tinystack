@@ -2367,6 +2367,31 @@
       ],
       "execution": "Records only",
       "package": "waf"
+    },
+    "emr": {
+      "title": "Amazon EMR",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "summary": "Records only, no Hadoop/Spark runtime: store classic EMR clusters, synthetic capacity and simulated steps.",
+      "features": [
+        "Twenty-six JSON 1.1 ElasticMapReduce operations with elasticmapreduce signing: cluster creation, describe/list, termination protection, visibility, concurrency and termination",
+        "Read-driven STARTING \u2192 BOOTSTRAPPING \u2192 RUNNING \u2192 WAITING and TERMINATING \u2192 TERMINATED transitions with reasons and timestamps; clusters without keep-alive terminate after all steps finish",
+        "Fixed EMR 6.x and 7.x release labels, application/configuration metadata, EC2 subnet and security group existence/VPC validation, IAM service role and instance profile role validation, S3 log bucket validation and security configuration references; release list includes EMR 7.14.0",
+        "Instance group and fleet add/list/resize, synthetic instance IDs and subnet private addresses, bootstrap action metadata; no compute is allocated",
+        "Step submission, describe/list filters and cancellation; simulated PENDING \u2192 RUNNING \u2192 COMPLETED without executing scripts; ActionOnFailure concurrency validation and failure policy handling",
+        "Security configuration create/describe/list/delete with JSON validation, cluster tags with shared limits, inventory, Resource Groups integration, console and Terraform cluster/security configuration/instance group coverage",
+        "Cluster state and creation time filters, step ID/state filters and Marker pagination with 50 records per page; account and Region isolation; idle auto-termination evaluated on reads"
+      ],
+      "gaps": [
+        "No Hadoop/Spark runtime, EC2 provisioning, bootstrap or JAR execution, logs, output, metrics, billing or actual failures; successful steps always complete and cancellation does not invoke failure policies",
+        "State transitions and idle timeout checks advance on DescribeCluster, ListClusters, DescribeStep and ListSteps; inventory and capacity reads do not advance execution",
+        "Studios, notebooks, sessions, managed scaling, auto-scaling, block public access, EBS configuration, custom AMIs and legacy AMI cluster creation are unsupported and rejected",
+        "Ec2KeyName and application/configuration properties are metadata; security configuration JSON is stored without interpreting encryption settings; synthetic instances do not exist in the EC2 API; UnhealthyNodeReplacement and EbsOptimized are metadata only",
+        "Security groups require an explicit subnet; synthetic capacity is limited to 1000 instances per group/fleet; weighted fleet capacity is approximated with the first configured instance type",
+        "AutoTerminationPolicy is accepted on RunJobFlow and readable through GetAutoTerminationPolicy; separate policy mutations and CloudFormation resource providers are unsupported"
+      ],
+      "execution": "Records only",
+      "package": "emr"
     }
   },
   "future": {

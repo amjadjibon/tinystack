@@ -378,6 +378,10 @@
     "waf": {
       "path": "codegen/sdk-codegen/aws-models/waf.json",
       "sha256": "86cf5e5dbb46b6cc5e57bc6a5f62b8abb85cbe7c9401f9dffb1649f260f6300c"
+    },
+    "emr": {
+      "path": "codegen/sdk-codegen/aws-models/emr.json",
+      "sha256": "b36a02dfcb9a4a1b21685491c889e6f55269aae189b29054448a38ccfda4ff81"
     }
   }
 }

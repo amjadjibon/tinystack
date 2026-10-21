@@ -16,7 +16,10 @@ import (
 
 // maxTaggedARNs is the most resources one TagResources or UntagResources call
 // may name.
-const maxTaggedARNs = 20
+const (
+	maxTaggedARNs    = 20
+	resourceIDMember = "ResourceId"
+)
 
 // tagger tags and untags one service's resources through its own operations.
 type tagger struct {
@@ -97,7 +100,7 @@ func ssmResource(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[st
 		kind = "Document"
 	}
 
-	return map[string]any{"ResourceType": kind, "ResourceId": r.Name}, nil
+	return map[string]any{"ResourceType": kind, resourceIDMember: r.Name}, nil
 }
 
 // operations is the tagger of a service whose tag operation takes the tags in
@@ -153,7 +156,7 @@ func queue(ctx context.Context, c *catalog.Caller, r *catalog.Owned) (map[string
 func zone(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
 	kind, id, _ := strings.Cut(r.ARN[strings.LastIndex(r.ARN, ":")+1:], "/")
 
-	return map[string]any{"ResourceType": kind, "ResourceId": id}, nil
+	return map[string]any{"ResourceType": kind, resourceIDMember: id}, nil
 }
 
 // putBucketTags replaces a bucket's tags, which S3 only sets whole: tags is
@@ -189,6 +192,10 @@ func errUntaggable(r *catalog.Owned) error {
 // service name.
 var taggers = map[string]tagger{
 	"signer": resourceOperations("signer", "ResourceArn", plain),
+	"emr": operations("emr", "AddTags", "RemoveTags",
+		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
+			return map[string]any{resourceIDMember: r.ARN[strings.LastIndex(r.ARN, "/")+1:]}, nil
+		}, "Tags", pairs, "TagKeys", names),
 	"databasemigrationservice": operations("databasemigrationservice", "AddTagsToResource", "RemoveTagsFromResource",
 		byARN("ResourceArn"), "Tags", pairs, "TagKeys", names),
 	"costexplorer": operations(
@@ -297,7 +304,7 @@ var taggers = map[string]tagger{
 		"organizations",
 		"TagResource",
 		"UntagResource",
-		byName("ResourceId", nil),
+		byName(resourceIDMember, nil),
 		"Tags",
 		pairs,
 		"TagKeys",
@@ -305,14 +312,14 @@ var taggers = map[string]tagger{
 	),
 	"servicediscovery": resourceOperations("servicediscovery", "ResourceARN", pairs),
 	"batch":            resourceOperations("batch", "ResourceArn", plain),
-	"efs":              resourceOperations("efs", "ResourceId", pairs),
+	"efs":              resourceOperations("efs", resourceIDMember, pairs),
 	"waf":              resourceOperations("waf", "ResourceARN", pairs),
 	"wafv2":            resourceOperations("wafv2", "ResourceARN", pairs),
 	"backup": operations("backup", "TagResource", "UntagResource", byARN("ResourceArn"),
 		"Tags", plain, "TagKeyList", names),
 	"config":    resourceOperations("config", "ResourceArn", pairs),
 	"appconfig": resourceOperations("appconfig", "ResourceArn", plain),
-	"cloudtrail": operations("cloudtrail", "AddTags", "RemoveTags", byARN("ResourceId"),
+	"cloudtrail": operations("cloudtrail", "AddTags", "RemoveTags", byARN(resourceIDMember),
 		"TagsList", pairs, "TagsList", keyOnly),
 	"rds": operations("rds", "AddTagsToResource", "RemoveTagsFromResource", byARN("ResourceName"),
 		"Tags", pairs, "TagKeys", names),

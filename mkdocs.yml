@@ -121,6 +121,7 @@ nav:
       - Implemented catalogue: services/catalogue.md
       - "Analytics":
           - "AWS Lake Formation": services/lakeformation.md
+          - "Amazon EMR": services/emr.md
           - "Amazon EMR Serverless": services/emrserverless.md
           - "Amazon MSK": services/kafka.md
           - "Amazon Managed Service for Apache Flink": services/kinesisanalyticsv2.md

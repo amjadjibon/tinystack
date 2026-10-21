@@ -12,6 +12,7 @@ import (
 var namespaces = map[string]string{
 	"signer":                    "Signer",
 	"waf":                       "WAF",
+	"emr":                       "EMR",
 	"databasemigrationservice":  "DMS",
 	"kinesisanalyticsv2":        "KinesisAnalyticsV2",
 	"budgets":                   "Budgets",

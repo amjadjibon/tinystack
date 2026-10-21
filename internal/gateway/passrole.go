@@ -22,6 +22,7 @@ func (s *Server) UseInstanceProfiles(
 const (
 	authorizationBatch       = "batch"
 	authorizationTransfer    = "transfer"
+	inputServiceRole         = "ServiceRole"
 	inputRoleARN             = "RoleArn"
 	inputServiceRoleARN      = "ServiceRoleArn"
 	inputExecutionRoleARN    = "ExecutionRoleArn"
@@ -34,13 +35,29 @@ const (
 type passedRoleInput struct {
 	principal         string
 	operations, paths []string
-	profile           bool
+	// profile marks paths that name an instance profile; bareName marks paths that may hold a role name
+	// instead of an ARN, resolved in the caller's account.
+	profile, bareName bool
 }
 
 // passedRoleInputs is the single registry of implemented inputs that pass roles.
 // Paths use generated Go member names; intermediate lists are traversed automatically.
 // IAM role/profile membership and STS role assumption are deliberately absent.
 var passedRoleInputs = map[string][]passedRoleInput{
+	"emr": {
+		{
+			operations: []string{"RunJobFlow"},
+			principal:  "elasticmapreduce.amazonaws.com",
+			paths:      []string{inputServiceRole},
+			bareName:   true,
+		},
+		{
+			operations: []string{"RunJobFlow"},
+			principal:  ec2ServicePrincipal,
+			paths:      []string{"JobFlowRole"},
+			profile:    true,
+		},
+	},
 	"cloudwatch": {{
 		operations: []string{"PutMetricStream"},
 		principal:  "streams.metrics.cloudwatch.amazonaws.com", paths: []string{inputRoleARN},
@@ -145,7 +162,7 @@ var passedRoleInputs = map[string][]passedRoleInput{
 		{
 			operations: []string{"CreateProject", "UpdateProject"},
 			principal:  "codebuild.amazonaws.com",
-			paths:      []string{"ServiceRole"},
+			paths:      []string{inputServiceRole},
 		},
 	},
 	"codepipeline": {
@@ -215,7 +232,7 @@ var passedRoleInputs = map[string][]passedRoleInput{
 		{
 			operations: []string{"CreateComputeEnvironment", "UpdateComputeEnvironment"},
 			principal:  "batch.amazonaws.com",
-			paths:      []string{"ServiceRole"},
+			paths:      []string{inputServiceRole},
 		},
 		{
 			operations: []string{"CreateComputeEnvironment"},
@@ -437,6 +454,10 @@ func (s *Server) passedRoles(ctx context.Context, service, operation string, inp
 					}
 
 					role = profile.RoleARN
+				}
+
+				if entry.bareName && !strings.HasPrefix(role, "arn:") {
+					role = "arn:aws:iam::" + meta.AccountID + ":role/" + role
 				}
 
 				// A role can only be passed within its own account.

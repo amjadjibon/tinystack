@@ -40,6 +40,7 @@ provider "aws" {
     ecs                  = var.endpoint
     eks                  = var.endpoint
     elasticache          = var.endpoint
+    emr                  = var.endpoint
     emrserverless        = var.endpoint
     elbv2                = var.endpoint
     eventbridge          = var.endpoint
@@ -2373,4 +2374,49 @@ resource "aws_waf_web_acl" "classic" {
     action { type = "COUNT" }
   }
   tags = local.tags
+}
+
+resource "aws_emr_security_configuration" "classic" {
+  name = "classic-emr"
+  configuration = jsonencode({
+    EncryptionConfiguration = {
+      EnableInTransitEncryption = false
+      EnableAtRestEncryption    = false
+    }
+  })
+}
+
+resource "aws_emr_cluster" "classic" {
+  name                              = "classic-emr"
+  release_label                     = "emr-7.12.0"
+  applications                      = ["Spark"]
+  service_role                      = aws_iam_role.eks.arn
+  security_configuration            = aws_emr_security_configuration.classic.name
+  keep_job_flow_alive_when_no_steps = true
+  termination_protection            = false
+  tags                              = local.tags
+
+  ec2_attributes {
+    subnet_id                         = data.aws_subnets.default.ids[0]
+    instance_profile                  = aws_iam_instance_profile.nodes.arn
+    emr_managed_master_security_group = aws_security_group.web.id
+    emr_managed_slave_security_group  = aws_security_group.web.id
+  }
+
+  master_instance_group {
+    instance_type  = "m5.xlarge"
+    instance_count = 1
+  }
+
+  core_instance_group {
+    instance_type  = "m5.xlarge"
+    instance_count = 2
+  }
+}
+
+resource "aws_emr_instance_group" "classic" {
+  cluster_id     = aws_emr_cluster.classic.id
+  instance_type  = "m5.xlarge"
+  instance_count = var.team == "core" ? 1 : 2
+  name           = "classic-task"
 }

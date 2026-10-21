@@ -28850,5 +28850,652 @@
         "TextTransformation"
       ]
     }
+  },
+  "emr": {
+    "operations": [
+      "RunJobFlow",
+      "DescribeCluster",
+      "ListClusters",
+      "TerminateJobFlows",
+      "SetTerminationProtection",
+      "SetVisibleToAllUsers",
+      "ModifyCluster",
+      "ListInstanceGroups",
+      "AddInstanceGroups",
+      "ModifyInstanceGroups",
+      "ListInstanceFleets",
+      "AddInstanceFleet",
+      "ModifyInstanceFleet",
+      "ListInstances",
+      "ListBootstrapActions",
+      "AddJobFlowSteps",
+      "DescribeStep",
+      "ListSteps",
+      "CancelSteps",
+      "CreateSecurityConfiguration",
+      "DescribeSecurityConfiguration",
+      "ListSecurityConfigurations",
+      "DeleteSecurityConfiguration",
+      "AddTags",
+      "RemoveTags",
+      "GetAutoTerminationPolicy"
+    ],
+    "shapes": {
+      "RunJobFlowInput": [
+        "Name",
+        "ReleaseLabel",
+        "Applications",
+        "Instances",
+        "Steps",
+        "BootstrapActions",
+        "Configurations",
+        "LogUri",
+        "ServiceRole",
+        "JobFlowRole",
+        "VisibleToAllUsers",
+        "StepConcurrencyLevel",
+        "AutoTerminationPolicy",
+        "SecurityConfiguration",
+        "Tags"
+      ],
+      "Application": [
+        "Name",
+        "Version",
+        "Args",
+        "AdditionalInfo"
+      ],
+      "JobFlowInstancesConfig": [
+        "InstanceGroups",
+        "InstanceFleets",
+        "Ec2SubnetId",
+        "Ec2SubnetIds",
+        "Ec2KeyName",
+        "EmrManagedMasterSecurityGroup",
+        "EmrManagedSlaveSecurityGroup",
+        "ServiceAccessSecurityGroup",
+        "AdditionalMasterSecurityGroups",
+        "AdditionalSlaveSecurityGroups",
+        "KeepJobFlowAliveWhenNoSteps",
+        "TerminationProtected",
+        "UnhealthyNodeReplacement"
+      ],
+      "InstanceGroupConfig": [
+        "Name",
+        "Market",
+        "InstanceRole",
+        "BidPrice",
+        "InstanceType",
+        "InstanceCount",
+        "Configurations",
+        "EbsConfiguration"
+      ],
+      "Configuration": [
+        "Classification",
+        "Configurations",
+        "Properties"
+      ],
+      "InstanceFleetConfig": [
+        "Name",
+        "InstanceFleetType",
+        "TargetOnDemandCapacity",
+        "TargetSpotCapacity",
+        "InstanceTypeConfigs"
+      ],
+      "InstanceTypeConfig": [
+        "InstanceType",
+        "WeightedCapacity",
+        "BidPrice",
+        "BidPriceAsPercentageOfOnDemandPrice",
+        "Configurations"
+      ],
+      "StepConfig": [
+        "Name",
+        "ActionOnFailure",
+        "HadoopJarStep"
+      ],
+      "HadoopJarStepConfig": [
+        "Properties",
+        "Jar",
+        "MainClass",
+        "Args"
+      ],
+      "KeyValue": [
+        "Key",
+        "Value"
+      ],
+      "BootstrapActionConfig": [
+        "Name",
+        "ScriptBootstrapAction"
+      ],
+      "ScriptBootstrapActionConfig": [
+        "Path",
+        "Args"
+      ],
+      "AutoTerminationPolicy": [
+        "IdleTimeout"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "RunJobFlowOutput": [
+        "JobFlowId",
+        "ClusterArn"
+      ],
+      "DescribeClusterInput": [
+        "ClusterId"
+      ],
+      "DescribeClusterOutput": [
+        "Cluster"
+      ],
+      "Cluster": [
+        "Id",
+        "Name",
+        "Status",
+        "Ec2InstanceAttributes",
+        "InstanceCollectionType",
+        "LogUri",
+        "ReleaseLabel",
+        "AutoTerminate",
+        "TerminationProtected",
+        "VisibleToAllUsers",
+        "Applications",
+        "Tags",
+        "ServiceRole",
+        "MasterPublicDnsName",
+        "Configurations",
+        "SecurityConfiguration",
+        "ClusterArn",
+        "StepConcurrencyLevel",
+        "UnhealthyNodeReplacement"
+      ],
+      "ClusterStatus": [
+        "State",
+        "StateChangeReason",
+        "Timeline",
+        "ErrorDetails"
+      ],
+      "ClusterStateChangeReason": [
+        "Code",
+        "Message"
+      ],
+      "ClusterTimeline": [
+        "CreationDateTime",
+        "ReadyDateTime",
+        "EndDateTime"
+      ],
+      "ErrorDetail": [
+        "ErrorCode",
+        "ErrorData",
+        "ErrorMessage"
+      ],
+      "Ec2InstanceAttributes": [
+        "Ec2KeyName",
+        "Ec2SubnetId",
+        "RequestedEc2SubnetIds",
+        "Ec2AvailabilityZone",
+        "RequestedEc2AvailabilityZones",
+        "IamInstanceProfile",
+        "EmrManagedMasterSecurityGroup",
+        "EmrManagedSlaveSecurityGroup",
+        "ServiceAccessSecurityGroup",
+        "AdditionalMasterSecurityGroups",
+        "AdditionalSlaveSecurityGroups"
+      ],
+      "ListClustersInput": [
+        "CreatedAfter",
+        "CreatedBefore",
+        "ClusterStates",
+        "Marker"
+      ],
+      "ListClustersOutput": [
+        "Clusters",
+        "Marker"
+      ],
+      "ClusterSummary": [
+        "Id",
+        "Name",
+        "Status",
+        "NormalizedInstanceHours",
+        "ClusterArn",
+        "OutpostArn"
+      ],
+      "TerminateJobFlowsInput": [
+        "JobFlowIds"
+      ],
+      "SetTerminationProtectionInput": [
+        "JobFlowIds",
+        "TerminationProtected"
+      ],
+      "SetVisibleToAllUsersInput": [
+        "JobFlowIds",
+        "VisibleToAllUsers"
+      ],
+      "ModifyClusterInput": [
+        "ClusterId",
+        "StepConcurrencyLevel"
+      ],
+      "ModifyClusterOutput": [
+        "StepConcurrencyLevel",
+        "ExtendedSupport"
+      ],
+      "ListInstanceGroupsInput": [
+        "ClusterId",
+        "Marker"
+      ],
+      "ListInstanceGroupsOutput": [
+        "InstanceGroups",
+        "Marker"
+      ],
+      "InstanceGroup": [
+        "Id",
+        "Name",
+        "Market",
+        "InstanceGroupType",
+        "BidPrice",
+        "InstanceType",
+        "RequestedInstanceCount",
+        "RunningInstanceCount",
+        "Status",
+        "Configurations",
+        "ConfigurationsVersion",
+        "LastSuccessfullyAppliedConfigurations",
+        "LastSuccessfullyAppliedConfigurationsVersion",
+        "EbsBlockDevices",
+        "EbsOptimized",
+        "ShrinkPolicy",
+        "AutoScalingPolicy",
+        "CustomAmiId"
+      ],
+      "InstanceGroupStatus": [
+        "State",
+        "StateChangeReason",
+        "Timeline"
+      ],
+      "InstanceGroupStateChangeReason": [
+        "Code",
+        "Message"
+      ],
+      "InstanceGroupTimeline": [
+        "CreationDateTime",
+        "ReadyDateTime",
+        "EndDateTime"
+      ],
+      "EbsBlockDevice": [
+        "VolumeSpecification",
+        "Device"
+      ],
+      "VolumeSpecification": [
+        "VolumeType",
+        "Iops",
+        "SizeInGB",
+        "Throughput"
+      ],
+      "ShrinkPolicy": [
+        "DecommissionTimeout",
+        "InstanceResizePolicy"
+      ],
+      "InstanceResizePolicy": [
+        "InstancesToTerminate",
+        "InstancesToProtect",
+        "InstanceTerminationTimeout"
+      ],
+      "AutoScalingPolicyDescription": [
+        "Status",
+        "Constraints",
+        "Rules"
+      ],
+      "AutoScalingPolicyStatus": [
+        "State",
+        "StateChangeReason"
+      ],
+      "AutoScalingPolicyStateChangeReason": [
+        "Code",
+        "Message"
+      ],
+      "ScalingConstraints": [
+        "MinCapacity",
+        "MaxCapacity"
+      ],
+      "ScalingRule": [
+        "Name",
+        "Description",
+        "Action",
+        "Trigger"
+      ],
+      "ScalingAction": [
+        "Market",
+        "SimpleScalingPolicyConfiguration"
+      ],
+      "SimpleScalingPolicyConfiguration": [
+        "AdjustmentType",
+        "ScalingAdjustment",
+        "CoolDown"
+      ],
+      "ScalingTrigger": [
+        "CloudWatchAlarmDefinition"
+      ],
+      "CloudWatchAlarmDefinition": [
+        "ComparisonOperator",
+        "EvaluationPeriods",
+        "MetricName",
+        "Namespace",
+        "Period",
+        "Statistic",
+        "Threshold",
+        "Unit",
+        "Dimensions"
+      ],
+      "MetricDimension": [
+        "Key",
+        "Value"
+      ],
+      "AddInstanceGroupsInput": [
+        "InstanceGroups",
+        "JobFlowId"
+      ],
+      "AddInstanceGroupsOutput": [
+        "JobFlowId",
+        "InstanceGroupIds",
+        "ClusterArn"
+      ],
+      "ModifyInstanceGroupsInput": [
+        "ClusterId",
+        "InstanceGroups"
+      ],
+      "InstanceGroupModifyConfig": [
+        "InstanceGroupId",
+        "InstanceCount"
+      ],
+      "ListInstanceFleetsInput": [
+        "ClusterId",
+        "Marker"
+      ],
+      "ListInstanceFleetsOutput": [
+        "InstanceFleets",
+        "Marker"
+      ],
+      "InstanceFleet": [
+        "Id",
+        "Name",
+        "Status",
+        "InstanceFleetType",
+        "TargetOnDemandCapacity",
+        "TargetSpotCapacity",
+        "ProvisionedOnDemandCapacity",
+        "ProvisionedSpotCapacity",
+        "InstanceTypeSpecifications",
+        "LaunchSpecifications",
+        "ResizeSpecifications",
+        "Context"
+      ],
+      "InstanceFleetStatus": [
+        "State",
+        "StateChangeReason",
+        "Timeline"
+      ],
+      "InstanceFleetStateChangeReason": [
+        "Code",
+        "Message"
+      ],
+      "InstanceFleetTimeline": [
+        "CreationDateTime",
+        "ReadyDateTime",
+        "EndDateTime"
+      ],
+      "InstanceTypeSpecification": [
+        "InstanceType",
+        "WeightedCapacity",
+        "BidPrice",
+        "BidPriceAsPercentageOfOnDemandPrice",
+        "Configurations",
+        "EbsBlockDevices",
+        "EbsOptimized",
+        "CustomAmiId",
+        "Priority"
+      ],
+      "InstanceFleetProvisioningSpecifications": [
+        "SpotSpecification",
+        "OnDemandSpecification"
+      ],
+      "SpotProvisioningSpecification": [
+        "TimeoutDurationMinutes",
+        "TimeoutAction",
+        "BlockDurationMinutes",
+        "AllocationStrategy"
+      ],
+      "OnDemandProvisioningSpecification": [
+        "AllocationStrategy",
+        "CapacityReservationOptions"
+      ],
+      "OnDemandCapacityReservationOptions": [
+        "UsageStrategy",
+        "CapacityReservationPreference",
+        "CapacityReservationResourceGroupArn"
+      ],
+      "InstanceFleetResizingSpecifications": [
+        "SpotResizeSpecification",
+        "OnDemandResizeSpecification"
+      ],
+      "SpotResizingSpecification": [
+        "TimeoutDurationMinutes",
+        "AllocationStrategy"
+      ],
+      "OnDemandResizingSpecification": [
+        "TimeoutDurationMinutes",
+        "AllocationStrategy",
+        "CapacityReservationOptions"
+      ],
+      "AddInstanceFleetInput": [
+        "ClusterId",
+        "InstanceFleet"
+      ],
+      "AddInstanceFleetOutput": [
+        "ClusterId",
+        "InstanceFleetId",
+        "ClusterArn"
+      ],
+      "ModifyInstanceFleetInput": [
+        "ClusterId",
+        "InstanceFleet"
+      ],
+      "InstanceFleetModifyConfig": [
+        "InstanceFleetId",
+        "TargetOnDemandCapacity",
+        "TargetSpotCapacity"
+      ],
+      "ListInstancesInput": [
+        "ClusterId",
+        "InstanceGroupId",
+        "InstanceGroupTypes",
+        "InstanceFleetId",
+        "InstanceFleetType",
+        "InstanceStates",
+        "Marker"
+      ],
+      "ListInstancesOutput": [
+        "Instances",
+        "Marker"
+      ],
+      "Instance": [
+        "Id",
+        "Ec2InstanceId",
+        "PublicDnsName",
+        "PublicIpAddress",
+        "PrivateDnsName",
+        "PrivateIpAddress",
+        "Status",
+        "InstanceGroupId",
+        "InstanceFleetId",
+        "Market",
+        "InstanceType",
+        "EbsVolumes"
+      ],
+      "InstanceStatus": [
+        "State",
+        "StateChangeReason",
+        "Timeline"
+      ],
+      "InstanceStateChangeReason": [
+        "Code",
+        "Message"
+      ],
+      "InstanceTimeline": [
+        "CreationDateTime",
+        "ReadyDateTime",
+        "EndDateTime"
+      ],
+      "EbsVolume": [
+        "Device",
+        "VolumeId"
+      ],
+      "ListBootstrapActionsInput": [
+        "ClusterId",
+        "Marker"
+      ],
+      "ListBootstrapActionsOutput": [
+        "BootstrapActions",
+        "Marker"
+      ],
+      "Command": [
+        "Name",
+        "ScriptPath",
+        "Args"
+      ],
+      "AddJobFlowStepsInput": [
+        "JobFlowId",
+        "Steps"
+      ],
+      "AddJobFlowStepsOutput": [
+        "StepIds"
+      ],
+      "DescribeStepInput": [
+        "ClusterId",
+        "StepId"
+      ],
+      "DescribeStepOutput": [
+        "Step"
+      ],
+      "Step": [
+        "Id",
+        "Name",
+        "Config",
+        "ActionOnFailure",
+        "Status",
+        "ExecutionRoleArn",
+        "LogUri",
+        "EncryptionKeyArn"
+      ],
+      "HadoopStepConfig": [
+        "Jar",
+        "Properties",
+        "MainClass",
+        "Args"
+      ],
+      "StepStatus": [
+        "State",
+        "StateChangeReason",
+        "FailureDetails",
+        "Timeline"
+      ],
+      "StepStateChangeReason": [
+        "Code",
+        "Message"
+      ],
+      "FailureDetails": [
+        "Reason",
+        "Message",
+        "LogFile"
+      ],
+      "StepTimeline": [
+        "CreationDateTime",
+        "StartDateTime",
+        "EndDateTime"
+      ],
+      "ListStepsInput": [
+        "ClusterId",
+        "StepStates",
+        "StepIds",
+        "Marker"
+      ],
+      "ListStepsOutput": [
+        "Steps",
+        "Marker"
+      ],
+      "StepSummary": [
+        "Id",
+        "Name",
+        "Config",
+        "ActionOnFailure",
+        "Status",
+        "LogUri",
+        "EncryptionKeyArn"
+      ],
+      "CancelStepsInput": [
+        "ClusterId",
+        "StepIds",
+        "StepCancellationOption"
+      ],
+      "CancelStepsOutput": [
+        "CancelStepsInfoList"
+      ],
+      "CancelStepsInfo": [
+        "StepId",
+        "Status",
+        "Reason"
+      ],
+      "CreateSecurityConfigurationInput": [
+        "Name",
+        "SecurityConfiguration"
+      ],
+      "CreateSecurityConfigurationOutput": [
+        "Name",
+        "CreationDateTime"
+      ],
+      "DescribeSecurityConfigurationInput": [
+        "Name"
+      ],
+      "DescribeSecurityConfigurationOutput": [
+        "Name",
+        "SecurityConfiguration",
+        "CreationDateTime"
+      ],
+      "ListSecurityConfigurationsInput": [
+        "Marker"
+      ],
+      "ListSecurityConfigurationsOutput": [
+        "SecurityConfigurations",
+        "Marker"
+      ],
+      "SecurityConfigurationSummary": [
+        "Name",
+        "CreationDateTime"
+      ],
+      "DeleteSecurityConfigurationInput": [
+        "Name"
+      ],
+      "DeleteSecurityConfigurationOutput": [],
+      "AddTagsInput": [
+        "ResourceId",
+        "Tags"
+      ],
+      "AddTagsOutput": [],
+      "RemoveTagsInput": [
+        "ResourceId",
+        "TagKeys"
+      ],
+      "RemoveTagsOutput": [],
+      "GetAutoTerminationPolicyInput": [
+        "ClusterId"
+      ],
+      "GetAutoTerminationPolicyOutput": [
+        "AutoTerminationPolicy"
+      ],
+      "EbsConfiguration": [
+        "EbsOptimized",
+        "EbsBlockDeviceConfigs"
+      ],
+      "EbsBlockDeviceConfig": []
+    }
   }
 }
