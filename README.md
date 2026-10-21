@@ -1222,7 +1222,7 @@ and EventBridge resource policies are evaluated; see
 [identity and resource scope](docs/site/architecture/identity.md#iam-authorization).
 
 DynamoDB limits: no legacy parameters (`KeyConditions`, `Expected`, `AttributesToGet`, `AttributeUpdates`, ...),
-Kinesis streaming, stream shard splits, restores to an earlier time, or capacity accounting/throttling (batch writes never return
+stream shard splits, restores to an earlier time, or capacity accounting/throttling (batch writes never return
 `UnprocessedItems`), and index queries scan the whole table. Expressions
 support every documented comparator and function, but reserved words are accepted as attribute names.
 SQS limits: no throughput limits (the high-throughput FIFO settings only choose the deduplication scope),
