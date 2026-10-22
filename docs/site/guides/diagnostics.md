@@ -8,6 +8,7 @@ curl -fsS http://127.0.0.1:4566/_tinystack/deliveries
 
 Build with `task build` and open `http://127.0.0.1:4567` for the Cloudscape console. It shows resources,
 resource details, recent requests, deliveries and metrics from these same diagnostic handlers.
+The console build also serves a [Model Context Protocol (MCP) server](mcp.md) on `/mcp` for AI assistants.
 
 ## Signed console sessions
 
